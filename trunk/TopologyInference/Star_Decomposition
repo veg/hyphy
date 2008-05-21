@@ -1,0 +1,555 @@
+MESSAGE_LOGGING = 0;
+
+#include "Support/branchSwappingFunctions.bf";
+
+function TreeMatrix2TreeString (levelIndex, doLengths)
+{
+	treeString = "";
+	_topRecP = 0;
+	_topRecK = 0;
+	_topRecM = treeNodes[0][levelIndex+1];
+	_topRecN = treeNodes[0][levelIndex];
+
+	while (_topRecM)
+	{	
+		if (_topRecM>_topRecP)
+		{
+			if (_topRecP)
+			{
+				treeString = treeString+",";
+			}
+			for (_topRecJ=_topRecP;_topRecJ<_topRecM;_topRecJ=_topRecJ+1)
+			{
+				treeString = treeString+"(";
+			}
+		}
+		else
+		{
+			if (_topRecM<_topRecP)
+			{
+				for (_topRecJ=_topRecM;_topRecJ<_topRecP;_topRecJ=_topRecJ+1)
+				{
+					treeString = treeString+")";
+				}
+			}	
+			else
+			{
+				treeString = treeString+",";
+			}	
+		}
+		if (_topRecN<_NUMBER_OF_SEQUENCES)
+		{
+			GetString (nodeName, INFERENCE_DATA_SET, _topRecN);
+			treeString = treeString+nodeName;
+		}
+		if (doLengths>.5)
+		{
+			treeString = treeString+":"+treeNodes[_topRecK][levelIndex+2];
+		}
+		_topRecK=_topRecK+1;
+		_topRecP=_topRecM;
+		_topRecN=treeNodes[_topRecK][levelIndex];
+		_topRecM=treeNodes[_topRecK][levelIndex+1];
+	}
+
+	for (_topRecJ=_topRecM;_topRecJ<_topRecP;_topRecJ=_topRecJ+1)
+	{
+		treeString = treeString+")";
+	}
+	
+	return treeString;
+}
+
+ChoiceList (doNNIOption,"Branch Swapping",1,SKIP_NONE,
+			"No Swapping","No branch swapping is performed.",
+			"Global NNI","Nearest neighbor interchange is performed after ALL the sequences have been added. Order (sequences)^1 additional trees are examined.",
+			"Global SPR","Subtree pruning and regrafting is performed after ALL the sequences have been added. Order (sequences)^2 additional trees are examined.");
+
+if (doNNIOption<0)
+{
+	return;
+}
+
+function InferTreeTopology (verbFlag)
+{
+	treeNodes = {2*(_NUMBER_OF_SEQUENCES+1),4};
+	/* stores previous best tree in columns 0 and 1, and current working tree in columns 2,3 */
+	bestTreeNodes = {2*(_NUMBER_OF_SEQUENCES+1),2};
+	/* holder for current best tree */
+
+	cladesInfo = {_NUMBER_OF_SEQUENCES,4};
+	/* stores previous best tree clade info in columns 0 and 1, and current working tree clade info in columns 2,3 */
+	bestCladesInfo = {_NUMBER_OF_SEQUENCES,2};
+	/* holder for current best tree */
+
+	eligibleNodesCount = _NUMBER_OF_SEQUENCES;
+	eligibleNodes = {_NUMBER_OF_SEQUENCES,1};
+
+	done = false;
+
+	for (_topRecK=0; _topRecK<_NUMBER_OF_SEQUENCES; _topRecK=_topRecK+1)
+	{
+		treeNodes[_topRecK][0] = _topRecK;
+		treeNodes[_topRecK][1] = 1;
+		eligibleNodes[_topRecK] = _topRecK;
+	}
+
+	treeNodes[_NUMBER_OF_SEQUENCES][0] = _NUMBER_OF_SEQUENCES;
+	treeNodes[_NUMBER_OF_SEQUENCES][1] = 0;
+
+	cladesInfo[0][0]=0;
+	cladesInfo[0][1]=_NUMBER_OF_SEQUENCES+1;
+
+	bestTree="";
+	bestValue=-1e20;
+
+	currentTaxon = 0;
+	taxonCounter = 3;
+	cladesCount = 1;
+
+	while (eligibleNodesCount>3)
+	{
+		bestNode1 = 0;
+		bestNode2 = 0;
+		/* stores the nodes which will be grouped at this stage */
+		
+		if (verbFlag)
+		{
+			fprintf (stdout, "\n\n\nSTEP ",Format(_NUMBER_OF_SEQUENCES-eligibleNodesCount+1,0,0),"/",Format(_NUMBER_OF_SEQUENCES-3,0,0),"). ");
+		}
+		bestValue=-1e20;
+		if (eligibleNodesCount>4)
+		{
+			loop1 = 0;
+			if (verbFlag)
+			{
+				fprintf (stdout, Format((eligibleNodesCount-1)*eligibleNodesCount/2,0,0), " trees for this step.\n");
+			}
+		}
+		else
+		{
+			loop1 = 1;
+			if (verbFlag)
+			{
+				fprintf (stdout, Format(3,0,0), " trees for this step.\n");
+			}
+		}
+		for (; loop1 < eligibleNodesCount-1; loop1 = loop1+1)
+		{
+			for (loop2 = loop1+1; loop2 < eligibleNodesCount; loop2 = loop2+1)
+			{
+				_topRecN = eligibleNodes[loop1];
+				_topRecM = eligibleNodes[loop2];
+				
+				/* 3 cases to consider */
+				/* first - see what happens when both nodes grouped are leaves */
+				if ((_topRecN<_NUMBER_OF_SEQUENCES)&&(_topRecM<_NUMBER_OF_SEQUENCES))
+				{
+					/* a few things to do here:
+					   copy all nodes from the old tree to the new tree excluding the two being added
+					   add a new clade at the end of the tree
+					   update clade lengths of the original tree
+					*/
+					_topRecI=0;
+					shift = 0;
+					/* copying nodes other than _topRecN and _topRecM */
+					while (treeNodes[_topRecI][1])
+					{
+						_topRecP = treeNodes[_topRecI][0];
+						if ((_topRecP!=_topRecM)&&(_topRecP!=_topRecN))
+						{
+							treeNodes[_topRecI-shift][2]=treeNodes[_topRecI][0];
+							treeNodes[_topRecI-shift][3]=treeNodes[_topRecI][1];
+						}
+						else
+						{
+							shift = shift+1;
+						}
+						_topRecI = _topRecI+1;
+					}
+					
+					_topRecI = _topRecI-2;
+					treeNodes[_topRecI][2]=_topRecM;
+					treeNodes[_topRecI][3]=2;
+					_topRecI = _topRecI+1;
+					treeNodes[_topRecI][2]=_topRecN;
+					treeNodes[_topRecI][3]=2;
+					_topRecI = _topRecI+1;
+					treeNodes[_topRecI][2]=cladesCount+_NUMBER_OF_SEQUENCES;
+					treeNodes[_topRecI][3]=1;
+					_topRecI = _topRecI+1;
+					treeNodes[_topRecI][2]=treeNodes[_topRecI-1][0];
+					treeNodes[_topRecI][3]=treeNodes[_topRecI-1][1];
+					
+					cladesInfo[cladesCount][2] = _topRecI-3;
+					cladesInfo[cladesCount][3] = 3;
+					
+					/* copy all clades - all existing clades will have their tree positions shifted by 2 to the left, except
+					   for the "global clade", _topRecI.e the entire tree.*/
+					   
+					cladesInfo[0][2] = cladesInfo[0][0];
+					cladesInfo[0][3] = cladesInfo[0][1]+1;
+					
+					_topRecI = 1;
+					while (cladesInfo[_topRecI][1])
+					{
+						cladesInfo[_topRecI][2] = cladesInfo[_topRecI][0]-2;
+						cladesInfo[_topRecI][3] = cladesInfo[_topRecI][1];
+						_topRecI = _topRecI+1;
+					}				
+				}
+				else
+				{
+					if ((_topRecN<_NUMBER_OF_SEQUENCES)||(_topRecM<_NUMBER_OF_SEQUENCES))
+					{
+						/* one node is a leaf, and the other one is "proper" clade */
+						/* arrage so that _topRecN is the leaf */
+						if (_topRecM<_topRecN)
+						{
+							_topRecI=_topRecM;
+							_topRecM=_topRecN;
+							_topRecN=_topRecI;
+						}
+						/* again - a few things to do 
+						   copy the tree except for the leaf, which is added at the end of the existing clade
+						   shift clade info if necessary
+						*/
+						_topRecM = _topRecM-_NUMBER_OF_SEQUENCES;
+						_topRecI=0;
+						shift = 0;
+						_topRecJ = 0;
+						_topRecS = cladesInfo[_topRecM][0]+cladesInfo[_topRecM][1];
+						_topRecT = cladesInfo[_topRecM][0];
+						/* copying nodes other than _topRecN, adding leaf at the end of the clade*/
+						while (1)
+						{
+							_topRecP = treeNodes[_topRecI][0];
+							if (_topRecP==_topRecN)
+							{
+								shift = -1;
+							}
+							else
+							{	
+								if (_topRecI==_topRecS)
+								/* insert new node and new clade*/
+								{
+									treeNodes[_topRecI-1][2] = _topRecN;
+									treeNodes[_topRecI-1][3] = 2;
+									treeNodes[_topRecI][2] = cladesCount+_NUMBER_OF_SEQUENCES;
+									treeNodes[_topRecI][3] = 1;
+									cladesInfo[cladesCount][2] = cladesInfo[_topRecM][0]-1;
+									cladesInfo[cladesCount][3] = cladesInfo[_topRecM][1]+2;
+									shift = 1;
+									_topRecJ = 0;
+								}
+								else 
+								{
+									if (_topRecI==_topRecT)
+									{
+										_topRecJ=1;
+										/* send nodes of clade _topRecM one level deeper */
+									}
+								}
+								treeNodes[_topRecI+shift][2]=treeNodes[_topRecI][0];
+								treeNodes[_topRecI+shift][3]=treeNodes[_topRecI][1]+_topRecJ;							
+							}
+							if (treeNodes[_topRecI][1]==0) 
+							{
+								break;
+							}
+							_topRecI = _topRecI+1;
+						}
+						
+						treeNodes[_topRecI+1][2]=treeNodes[_topRecI][0];
+						treeNodes[_topRecI+1][3]=treeNodes[_topRecI][1];							
+						
+						/* last thing to do:
+							copy/update clade info matrix => clades starting before newly added clade will
+							get shifted 1 to the left (their starting location)
+							clades starting after the enlarged will be shifted to the right 1.
+						*/
+						_topRecS = cladesInfo[_topRecM][0]+cladesInfo[_topRecM][1];
+						_topRecT = cladesInfo[_topRecM][0];
+						for (_topRecK=1; _topRecK<cladesCount; _topRecK=_topRecK+1)
+						{
+							if (cladesInfo[_topRecK][0]<=_topRecT)
+							{
+								cladesInfo[_topRecK][2] = cladesInfo[_topRecK][0]-1;
+							}
+							else
+							{
+								cladesInfo[_topRecK][2] = cladesInfo[_topRecK][0]+1;
+							}
+							cladesInfo[_topRecK][3] = cladesInfo[_topRecK][1];
+						}
+						
+						cladesInfo[0][2]=0;
+						cladesInfo[0][3]=cladesInfo[0][1]+1;
+						
+					}
+					else
+					/* both nodes are "proper" clades 
+					   Arrange that node _topRecN is to the left of node _topRecM. */
+					{
+						/* start up the merging procedure */
+						/* copy all nodes of the tree up to the beginning of the first clade */
+						_topRecM = _topRecM-_NUMBER_OF_SEQUENCES;
+						_topRecN = _topRecN-_NUMBER_OF_SEQUENCES;
+						if (cladesInfo[_topRecM][0]<cladesInfo[_topRecN][0])
+						{
+							_topRecI=_topRecM;
+							_topRecM=_topRecN;
+							_topRecN=_topRecI;
+						}
+						for (_topRecK=cladesInfo[_topRecN][0]-1;_topRecK>=0; _topRecK=_topRecK-1)
+						{
+							treeNodes[_topRecK][2] = treeNodes[_topRecK][0];
+							treeNodes[_topRecK][3] = treeNodes[_topRecK][1];
+						}
+						/* copy the nodes of the first clade sending them one level deeper */
+
+						for (_topRecK=cladesInfo[_topRecN][0]+cladesInfo[_topRecN][1]-1;_topRecK>=cladesInfo[_topRecN][0]; _topRecK=_topRecK-1)
+						{
+							treeNodes[_topRecK][2] = treeNodes[_topRecK][0];
+							treeNodes[_topRecK][3] = treeNodes[_topRecK][1]+1;
+						}
+						/* copy the nodes of the 2nd clade sending them one level deeper */
+						_topRecP = cladesInfo[_topRecM][0];
+						_topRecS = cladesInfo[_topRecN][0]+cladesInfo[_topRecN][1]+cladesInfo[_topRecM][1];
+							
+						for (_topRecK=cladesInfo[_topRecN][0]+cladesInfo[_topRecN][1];_topRecK<_topRecS; _topRecK=_topRecK+1)
+						{
+							treeNodes[_topRecK][2] = treeNodes[_topRecP][0];
+							treeNodes[_topRecK][3] = treeNodes[_topRecP][1]+1;
+							_topRecP = _topRecP+1;
+						}
+						
+						/* add new node */
+						
+						treeNodes[_topRecS][2]=_NUMBER_OF_SEQUENCES+cladesCount;
+						treeNodes[_topRecS][3]=1;
+						
+						_topRecK=_topRecS+1;
+						
+						/* copy the nodes between the first and second clades */
+						
+						_topRecP = cladesInfo[_topRecM][0];
+						for (_topRecJ=cladesInfo[_topRecN][0]+cladesInfo[_topRecN][1]; _topRecJ<_topRecP; _topRecJ=_topRecJ+1)
+						{
+							treeNodes[_topRecK][2]=treeNodes[_topRecJ][0];
+							treeNodes[_topRecK][3]=treeNodes[_topRecJ][1];
+							_topRecK=_topRecK+1;
+						}
+											
+						/* finally, copy all the nodes after the end of the 2nd clade */
+						for (_topRecJ=cladesInfo[_topRecM][0]+cladesInfo[_topRecM][1]; treeNodes[_topRecJ][1]; _topRecJ=_topRecJ+1)
+						{
+							treeNodes[_topRecK][2]=treeNodes[_topRecJ][0];
+							treeNodes[_topRecK][3]=treeNodes[_topRecJ][1];
+							_topRecK=_topRecK+1;
+						}
+						
+						_topRecK=cladesInfo[0][1];
+						/*copy root*/
+						treeNodes[_topRecK][2]=treeNodes[_topRecK-1][0];
+						treeNodes[_topRecK][3]=treeNodes[_topRecK-1][1];
+						
+						/* create new clade info */
+						cladesInfo[cladesCount][2] = cladesInfo[_topRecN][0];
+						cladesInfo[cladesCount][3] = cladesInfo[_topRecN][1]+cladesInfo[_topRecM][1]+1;
+						
+						/* lastly - update info for other clades */
+						_topRecS = cladesInfo[_topRecN][0];
+						_topRecP = cladesInfo[_topRecN][1]+_topRecS;
+						_topRecT = cladesInfo[_topRecM][0];
+						_topRecJ = cladesInfo[_topRecM][1]+1;
+						for (_topRecK=0; _topRecK<cladesCount; _topRecK=_topRecK+1)
+						{
+							cladesInfo[_topRecK][3] = cladesInfo[_topRecK][1];
+							_topRecL = cladesInfo[_topRecK][0];
+							if (_topRecL<=_topRecS)
+							{
+								cladesInfo[_topRecK][2] = _topRecL;
+							}
+							else
+							{
+								if ((_topRecL>=_topRecP)&&(_topRecL<_topRecT))
+								{
+									cladesInfo[_topRecK][2] = _topRecL+_topRecJ;
+								}
+								else
+								{
+									if (_topRecL>=_topRecT+_topRecJ-1)
+									{
+										cladesInfo[_topRecK][2] = _topRecL+1;
+									}
+									else
+									{
+										if (_topRecL>=_topRecT)
+										{
+											cladesInfo[_topRecK][2] = _topRecL-_topRecT+_topRecP;
+										}
+										else
+										{
+											cladesInfo[_topRecK][2] = _topRecL;
+										}
+									}
+								}
+							}
+						}
+						cladesInfo[_topRecM][2] = _topRecP;
+						cladesInfo[0][3] = cladesInfo[0][1]+1;
+					}
+				}
+				
+				thisTree = TreeMatrix2TreeString (2,0);
+				if (verbFlag)
+				{
+					fprintf (stdout, "\n\tTree ",thisTree);
+				}				
+				Tree    Inferred_Tree = thisTree;
+				SpawnLikelihoodFunction ("_INF_LF_", "Inferred_Tree", INFERENCE_DATA_WINDOW, _all_sequence_matrix);
+				Optimize (res,_INF_LF_);
+				if (res[1][0]>bestValue)
+				{
+					bestValue = res[1][0];
+					bestTree = thisTree;
+					bestNode1 = eligibleNodes[loop1];
+					bestNode2 = eligibleNodes[loop2];
+					
+					for (_topRecL=0;treeNodes[_topRecL][3];_topRecL=_topRecL+1)
+					{
+						bestTreeNodes[_topRecL][0]=treeNodes[_topRecL][2];
+						bestTreeNodes[_topRecL][1]=treeNodes[_topRecL][3];
+					}
+					
+					bestTreeNodes[_topRecL][0]=treeNodes[_topRecL][2];
+					bestTreeNodes[_topRecL][1]=treeNodes[_topRecL][3];
+									
+					for (_topRecL=0; _topRecL<=cladesCount; _topRecL=_topRecL+1)
+					{
+						bestCladesInfo[_topRecL][0]=cladesInfo[_topRecL][2];
+						bestCladesInfo[_topRecL][1]=cladesInfo[_topRecL][3];
+					}
+
+				}
+				if (verbFlag)
+				{
+					fprintf (stdout, " =>", res[1][0]);
+				}
+			}
+
+		}
+		
+		/* update eligible nodes lists */
+		shift = 0;
+		for (_topRecL=0;_topRecL<eligibleNodesCount;_topRecL=_topRecL+1)
+		{
+			if ((eligibleNodes[_topRecL]==bestNode1)||(eligibleNodes[_topRecL]==bestNode2))
+			{
+				shift = shift+1;
+			}
+			else
+			{
+				eligibleNodes[_topRecL-shift]=eligibleNodes[_topRecL];
+			}
+		}
+		eligibleNodesCount = eligibleNodesCount-1;
+		eligibleNodes[eligibleNodesCount-1]=cladesCount+_NUMBER_OF_SEQUENCES;
+		
+		for (_topRecL=0;bestTreeNodes[_topRecL][1];_topRecL=_topRecL+1)
+		{
+			treeNodes[_topRecL][0]=bestTreeNodes[_topRecL][0];
+			treeNodes[_topRecL][1]=bestTreeNodes[_topRecL][1];
+		}
+
+		treeNodes[_topRecL][0]=bestTreeNodes[_topRecL][0];
+		treeNodes[_topRecL][1]=bestTreeNodes[_topRecL][1];
+		
+		for (_topRecL=0; _topRecL<=cladesCount; _topRecL=_topRecL+1)
+		{
+			cladesInfo[_topRecL][0]=bestCladesInfo[_topRecL][0];
+			cladesInfo[_topRecL][1]=bestCladesInfo[_topRecL][1];
+		}
+		
+		if (verbFlag)
+		{
+			if (bestNode1<_NUMBER_OF_SEQUENCES)
+			{
+				GetString (s1,INFERENCE_DATA_SET,bestNode1);
+			}
+			else
+			{
+				s1 = "Node"+Format(bestNode1,0,0);
+			}
+			if (bestNode2<_NUMBER_OF_SEQUENCES)
+			{
+				GetString (s2,INFERENCE_DATA_SET,bestNode2);
+			}
+			else
+			{
+				s2 = "Node"+Format(bestNode2,0,0);
+			}
+			fprintf (stdout,"\n\n\t ----> Best tree obtained by grouping ",s1," and ", s2, " is\n", bestTree, " with log likelihood of ", bestValue);
+		}
+		cladesCount = cladesCount+1;
+	}
+	
+	if (doNNIOption)
+	{
+		taxonCounter = _NUMBER_OF_SEQUENCES;
+		/* strip the root off for compatibility */
+		for (_topRecL=Rows(treeNodes)-1; _topRecL>0; _topRecL=_topRecL-1)
+		{
+			if (treeNodes[_topRecL][0]>=_NUMBER_OF_SEQUENCES)
+			{
+				if (treeNodes[_topRecL][0] == _NUMBER_OF_SEQUENCES)
+				{
+					treeNodes[_topRecL][0] = 0;
+				}
+				else
+				{
+					treeNodes[_topRecL][0] = treeNodes[_topRecL][0]-1;
+				}
+			}
+		}
+		for (_topRecL=0; _topRecL<Rows(cladesInfo)-1; _topRecL=_topRecL+1)
+		{
+			cladesInfo[_topRecL][0] = cladesInfo[_topRecL+1][0];
+			cladesInfo[_topRecL][1] = cladesInfo[_topRecL+1][1];
+		}
+		cladesInfo[_topRecL][0] = 0;
+		cladesInfo[_topRecL][1] = 0;
+		
+		starDecomposition = 1;
+		if (doNNIOption==1)
+		{
+			#include "Support/doNNISwap.bf";
+		}
+		else
+		{
+			#include "Support/doSPRSwap.bf";
+		}
+	}
+	return 1;
+}
+
+_all_sequence_matrix = {_NUMBER_OF_SEQUENCES,1};
+
+for (_topRecI=0; _topRecI<_NUMBER_OF_SEQUENCES; _topRecI=_topRecI+1)
+{
+	_all_sequence_matrix [_topRecI][0] = _topRecI;
+}
+
+_topRecL = InferTreeTopology (1.0);
+
+Tree	Inferred_Tree = bestTree;
+
+SpawnLikelihoodFunction ("_INF_LF_", "Inferred_Tree", INFERENCE_DATA_WINDOW, _all_sequence_matrix);
+
+saveTreeNodes = {2*(_NUMBER_OF_SEQUENCES+1),3};
+for (_topRecI=2*_NUMBER_OF_SEQUENCES+1;_topRecI>=0;_topRecI=_topRecI-1)
+{
+	saveTreeNodes[_topRecI][0] = bestTreeNodes[_topRecI][0];
+	saveTreeNodes[_topRecI][1] = bestTreeNodes[_topRecI][1];
+}
