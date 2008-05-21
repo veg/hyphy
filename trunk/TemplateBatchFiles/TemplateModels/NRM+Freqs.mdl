@@ -1,0 +1,70 @@
+/* This file defines the transition matrix for the General Non-Reversible model without expicit frequency parameterization
+   The file should be used as follows:
+      
+   01/04/2006  by Sergei L. Kosakovsky Pond
+*/
+
+
+global AC = 1;
+global AT = 1;
+global CA = 1;
+global CG = 1;
+global CT = 1;
+global GA = 1;
+global GC = 1;
+global GT = 1;
+global TA = 1;
+global TC = 1;
+global TG = 1;
+
+
+function PopulateModelMatrix (ModelMatrixName&)
+{
+	/* All the global rate parameters are defined relative to 
+	the rate for A->G. For instance, CG represents the ratio
+	of the rates C->G/A->G. These parameters are also going
+	to be confounded with character frequency parameters */
+
+
+	ModelMatrixName = 
+			{{*,t*AC,t,t*AT}
+			 {t*CA,*,t*CG,t*CT}
+			 {t*GA,t*GC,*,t*GT}
+			 {t*TA,t*TC,t*TG,*}};
+			 
+	return 0;
+}
+
+NRM = 0;
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("NRM");
+
+dynamicFreqs = {4,1};
+
+vectorOfFrequencies = {4,1};
+vectorOfFrequencies [0] := computeEQF (AC,AT,CG,CT,GT,CA,GA,TA,GC,TC,TG);
+vectorOfFrequencies [1] := dynamicFreqs[1];
+vectorOfFrequencies [2] := dynamicFreqs[2];
+vectorOfFrequencies [3] := dynamicFreqs[3];
+
+
+Model GRMModel = (NRM, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+FREQUENCY_SENSITIVE = 0;
+
+/*--------------------------------------------------------*/
+
+ffunction computeEQF (dummy1,dummy2,dummy3,dummy4,dummy5,dummy6,dummy7,dummy8,dummy9,dummy10,dummy11)
+{
+	t = 1;
+	tempMatrix = NRM;
+	for (k=0; k<4; k=k+1)
+	{
+		tempMatrix[k][3] = 1;
+	}
+	tempMatrix = Inverse(tempMatrix);
+	for (k=0; k<4; k=k+1)
+	{
+		dynamicFreqs[k] = tempMatrix[3][k];
+	}
+	return dynamicFreqs[0];
+}
+

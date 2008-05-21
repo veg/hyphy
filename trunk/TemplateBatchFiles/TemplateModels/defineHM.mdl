@@ -1,0 +1,421 @@
+function GaussLaguerreQuardature (n,alf)
+{
+	GLMatrix = {n,2};
+	
+	mf = 1/(Gamma (n)*Gamma (alf+1));
+	
+	for (i=1; i<=n; i=i+1)
+	{
+		if (i==1)
+		{
+			z = (1+alf)*(3+0.92*alf)/(1+2.4*n+1.8*alf);
+		}
+		else
+		{
+			if (i==2)
+			{
+				z = z+(15+6.25*alf)/(1+.9*alf+2.5*n);
+			}
+			else
+			{
+				ai = i-2;
+				z = z+((1+2.55*ai)/(1.9*ai)+1.26*ai*alf/(1+3.5*ai))*(z-GLMatrix[i-3][0])/(1+0.3*alf);
+			}
+		}
+		for (its=1;its<=10;its=its+1)
+		{
+			p1 = 1;
+			p2 = 0;
+			for (j=1; j<=n; j=j+1)
+			{
+				p3 = p2;
+				p2 = p1;
+				p1 = ((2*j-1+alf-z)*p2-(j-1+alf)*p3)/j;
+			}
+			pp = (n*p1-(n+alf)*p2)/z;
+			z1 = z;
+			z  = z1-p1/pp;
+			if (Abs (z-z1)<1e-14)
+			{
+				break;
+			}
+		}
+		GLMatrix[i-1][0] = z;
+		GLMatrix[i-1][1] = -Gamma(alf+n)*mf/(pp*n*p2);
+	}
+	
+	for (i=0; i<n; i=i+1)
+	{
+		GLMatrix[i][0] = GLMatrix[i][0]/(alf+1);
+	}
+	
+	return GLMatrix;
+}
+
+ffunction		GammaQuadWeight (ind, alph, type)
+{
+	if (alph == cachedAlpha)
+	{
+		return cachedValues[ind][type];
+	}
+	cachedAlpha = alph;
+	if (ind == 0)
+	{
+		cachedValues = GaussLaguerreQuardature (resp, alph-1);
+	}
+	return cachedValues[ind][type];
+}
+
+/*_________________________________________________________________________________________________________________*/
+
+ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
+			/*0*/"Gamma","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha.",
+			/*1*/"Beta","Two-parameter beta distrubution. Mean: betaP/(betaQ+betaP), variance: betaP*betaQ/((betaP+betaQ)^2 (betaP+betaQ+1)).",
+			/*2*/"Normal(x>0)","Two-parameter normal distrubution restriced to x>0. Mean parameter: mu, variance parameter: sigma^2.",
+			/*3*/"Log normal","Unit mean log normal distribution with parameter sigma. Variance: 1/[exp(sigma^2)-1].",
+			/*4*/"Gamma+Inv","Gamma distribution with shape parameter alpha and a zero rate class for invariable sites with weight P. Mean: (1-P), variance: (1-P)(1+alpha P)/alpha.",
+			/*5*/"Gamma Quadratures","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha. Discretized using Gauss-Laguerre quadratures, matching 2N-1 moments, with N = the number of rate classes.",
+			/*6*/"General Discrete","Unit mean general discrete.",
+			/*7*/"Gamma mod Beta","Gamma distribution with shape parameter alpha partitioned by a beta distribution.",
+			/*8*/"Lognormal mod Beta","Mean one log normal distribution with parameter sigma, partitioned by the beta. Variance: 1/[exp(sigma^2)-1].",
+			/*9*/"Normal(x>0) mod Beta","Normal (x>0) distribution with parameter sigma, partitioned by the beta. Mean parameter: mu, variance parameter: sigma^2.",
+			/*10*/"Uniform mod Beta","Mean 1 piecewise uniform on [0,1] and [1,R] partitioned by the beta.",
+			/*11*/"Uniform","Mean 1 piecewise uniform on [0,1] and [1,R].",
+			/*12*/"2 Gamma","Mixture of two mean 1 gammas.",
+			);
+
+if (distribution<0)
+{
+	return;
+}
+
+fprintf (stdout,"\nHow many rate classes should we have?");
+fscanf  (stdin,"Number", resp);
+
+eFreq = 1/resp;
+
+global lambda=.5;
+lambda:<1;
+
+hiddenMarkovM = {resp,resp};
+hiddenMarkovF = {resp,1};
+
+for (k=0; k<resp; k=k+1)
+{
+	hiddenMarkovM [k][k] := lambda+(1-lambda)/resp__;
+	hiddenMarkovF [k][1] := eFreq__;
+	
+	for (l=k+1;l<resp;l=l+1)
+	{
+		hiddenMarkovM [k][l] := (1-lambda)/resp__;
+		hiddenMarkovM [l][k] := (1-lambda)/resp__;
+	}
+}
+
+Model HMM = (hiddenMarkovM,hiddenMarkovF);
+
+
+if (distribution==0)
+{
+	global alpha = .5;
+	alpha:>0.01;alpha:<100;
+	category c = (resp, EQUAL, MEAN, 
+					GammaDist(_x_,alpha,alpha), 
+					CGammaDist(_x_,alpha,alpha), 
+					0 , 
+			  	    1e25,
+			  	    CGammaDist(_x_,alpha+1,alpha),
+			  	    HMM
+			  	 );
+}
+if (distribution==1)
+{
+	global betaP = 1;
+	global betaQ = 1;
+	betaP:>0.05;betaP:<85;
+	betaQ:>0.05;betaQ:<85;
+	category c = (resp, EQUAL, MEAN, 
+					_x_^(betaP-1)*(1-_x_)^(betaQ-1)/Beta(betaP,betaQ), /* density */
+					IBeta(_x_,betaP,betaQ), /*CDF*/
+					0, 				   /*left bound*/
+					1, 			   /*right bound*/
+					IBeta(_x_,betaP+1,betaQ)*betaP/(betaP+betaQ),
+					HMM
+			  	 );
+}
+if (distribution==2)
+{
+	global mu = 1;
+	global sigma  = .5;
+	sigma:>0.0001;
+
+	sqrt2pi = Sqrt(8*Arctan(1));
+	category c = (resp, EQUAL, MEAN, 
+					Exp((_x_-mu)^2/(2*sigma*sigma))/(sqrt2pi__*sigma)/ZCDF(mu/sigma), /* density */
+					(1-ZCDF((mu-_x_)/sigma))/ZCDF(mu/sigma), /*CDF*/
+					0, 				   /*left bound*/
+					1e25, 			   /*right bound*/
+					(mu*(1-ZCDF(-mu/sigma)-ZCDF((mu-_x_)/sigma))+
+				    sigma*(Exp(-mu*mu/(2*sigma*sigma))-
+				    Exp((_x_-mu)(mu-_x_)/(2*sigma*sigma)))/sqrt2pi__)/ZCDF(mu/sigma),
+				    HMM
+			  	 );
+}
+if (distribution==3)
+{
+	global sigma = .1;
+	sigma:>0.0001;sigma:<10;
+	sqrt2pi = Sqrt(8*Arctan(1));
+	category c = (resp, EQUAL, MEAN, 
+					Exp(-0.5*(Log(_x_)+sigma^2/2)^2/sigma^2)/ (_x_*sigma*sqrt2pi__), /*density*/
+					ZCDF (Log(_x_)/sigma+0.5*sigma), /*CDF*/
+					1e-200, 			   /*left bound*/
+					1e200, 			       /*right bound*/
+					ZCDF (Log(_x_)/sigma-0.5*sigma),
+					HMM
+			  	 );
+}
+if (distribution==4)
+{
+	global alpha   = .5;
+	alpha:>0.01;alpha:<100;
+
+	global P;
+	P :< 1-(1e-10);
+	P = 1/(resp+1);
+	
+	
+	catFreqMatrix = {resp+1,1};
+	catFreqMatrix [0] := P;
+	
+	for (h=1; h<=resp;h=h+1)
+	{
+		catFreqMatrix [h] := (1-P)/resp__;
+	}
+	
+	category c = (resp+1, catFreqMatrix, MEAN, 
+					(1-P)*GammaDist(_x_,alpha,alpha)*(_x_>0), 
+					(1-P)*CGammaDist(_x_,alpha,alpha)*(_x_>0)+P, 
+					0, 
+			  	    1e25,
+			  	    (1-P)*CGammaDist(_x_,alpha+1,alpha)*(_x_>0),
+			  	    HMM
+			  	 );
+			  	 
+}
+if (distribution==5)
+{
+	cachedAlpha = -1;
+	
+	global alpha = .5;
+	alpha:>0.01;alpha:<100;
+	alpha 		= 1;
+
+	categFreqMatrix  = {resp,1};
+	categRateMatrix	 = {resp,1};
+
+	for (h=0; h<resp; h=h+1)
+	{
+		categFreqMatrix[h][0] := GammaQuadWeight(h__,alpha,1);
+		categRateMatrix[h][0] := GammaQuadWeight(h__,alpha,0);
+	}
+	
+	category c = (resp, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25, , HMM);	
+	
+}
+
+
+if (distribution==6)
+{
+	gdDefString = "";
+	gdDefString * 1024;
+	for (mi=1; mi<resp; mi=mi+1)
+	{
+		gdDefString*("global PS_"+mi+" = 1/"+((resp+1)-mi)+";\nPS_"+mi+":<1;\n");
+	}
+	
+	gdDefString*("\n\nglobal RS_1 = .3;\nRS_1:<1;RS_1:>0.000000001;\n");
+
+	for (mi=3; mi<=resp; mi=mi+1)
+	{
+		gdDefString*("global RS_"+mi+" = 1.5;"+"\nRS_"+mi+":>1;RS_"+mi+":<100000;\n");
+	} 
+
+	rateStrMx    = {resp,1};
+	rateStrMx[0] = "RS_1";
+	rateStrMx[1] = "1";
+
+	for (mi=3; mi<=resp; mi=mi+1)
+	{
+		rateStrMx[mi-1] = rateStrMx[mi-2]+"*RS_"+mi;
+	} 	
+
+	freqStrMx    = {resp,1};
+	freqStrMx[0] = "PS_1";
+
+	for (mi=1; mi<resp-1; mi=mi+1)
+	{
+		freqStrMx[mi] = "";
+		for (mi2=1;mi2<=mi;mi2=mi2+1)
+		{
+			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+		}
+		freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);	
+	}	
+
+	freqStrMx[mi] = "";
+	for (mi2=1;mi2<mi;mi2=mi2+1)
+	{
+		freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+	}
+	freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";	
+
+
+	gdDefString*("\n\nglobal c_scale:="+rateStrMx[0]+"*"+freqStrMx[0]);
+
+	for (mi=1; mi<resp; mi=mi+1)
+	{
+		gdDefString*("+"+rateStrMx[mi]+"*"+freqStrMx[mi]);
+	}
+
+	gdDefString*(";\ncategFreqMatrix={{"+freqStrMx[0]);
+
+	for (mi=1; mi<resp; mi=mi+1)
+	{
+		gdDefString*(","+freqStrMx[mi]);
+	}
+
+	gdDefString*("}};\ncategRateMatrix={{"+rateStrMx[0]+"/c_scale");
+
+	for (mi=1; mi<resp; mi=mi+1)
+	{
+		gdDefString*(","+rateStrMx[mi]+"/c_scale");
+	}
+
+	gdDefString*("}};\n\ncategory c  = ("+resp+", categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25, , HMM);\n\n");
+	gdDefString*0;
+	ExecuteCommands (gdDefString);
+}
+
+if (distribution>6 && distribution<11)
+{
+	global betaP = 1;
+	global betaQ = 1;
+	betaP:>0.05;betaP:<85;
+	betaQ:>0.05;betaQ:<85;
+	category pc = (resp-1, EQUAL, MEAN, 
+					_x_^(betaP-1)*(1-_x_)^(betaQ-1)/Beta(betaP,betaQ), /* density */
+					IBeta(_x_,betaP,betaQ), /*CDF*/
+					0, 				   /*left bound*/
+					1, 			   /*right bound*/
+					IBeta(_x_,betaP+1,betaQ)*betaP/(betaP+betaQ)
+	);
+
+}
+
+if (distribution==7)
+{
+
+	global alpha = .5;
+	alpha:>0.01;alpha:<100;
+	category c = (resp, pc, MEAN, 
+					GammaDist(_x_,alpha,alpha), 
+					CGammaDist(_x_,alpha,alpha), 
+					0 , 
+			  	    1e25,
+			  	    CGammaDist(_x_,alpha+1,alpha),
+			  	    HMM
+			  	 );
+}
+
+if (distribution==8)
+{
+	global sigma = .1;
+	sigma:>0.0001;sigma:<10;
+	sqrt2pi = Sqrt(8*Arctan(1));
+	category c = (resp, pc, MEAN, 
+					Exp(-0.5*(Log(_x_)+sigma^2/2)^2/sigma^2)/ (_x_*sigma*sqrt2pi__), /*density*/
+					ZCDF (Log(_x_)/sigma+0.5*sigma), /*CDF*/
+					1e-200, 			   /*left bound*/
+					1e200, 			       /*right bound*/
+					ZCDF (Log(_x_)/sigma-0.5*sigma),
+					HMM
+			  	 );
+}
+
+
+if (distribution==9)
+{
+	global mu = 1;
+	global sigma  = .5;
+	sigma:>0.0001;
+
+	sqrt2pi = Sqrt(8*Arctan(1));
+	category c = (resp, pc, MEAN, 
+					Exp((_x_-mu)^2/(2*sigma*sigma))/(sqrt2pi__*sigma)/ZCDF(mu/sigma), /* density */
+					(1-ZCDF((mu-_x_)/sigma))/ZCDF(mu/sigma), /*CDF*/
+					0, 				   /*left bound*/
+					1e25, 			   /*right bound*/
+					(mu*(1-ZCDF(-mu/sigma)-ZCDF((mu-_x_)/sigma))+
+				    sigma*(Exp(-mu*mu/(2*sigma*sigma))-
+				    Exp((_x_-mu)(mu-_x_)/(2*sigma*sigma)))/sqrt2pi__)/ZCDF(mu/sigma),
+				    HMM
+			  	 );
+}
+
+
+
+if (distribution==10)
+{	
+	global	 RB = 5;
+	RB :> 1;
+	RB :< 1e25;
+	
+	category c = (resp, pc, MEAN, 
+					(_x_ <= 1)*(1-1/RB)+(_x_>1)*(_x_<=RB)/(RB^2-RB),
+					(_x_ <= 1)*(1-1/RB)*_x_+(_x_>1)*(_x_<=RB)*(1-1/RB+(_x_-1)/(RB^2-RB))+(_x_>RB), 
+					0, 			 
+					1e25, 	     
+					(_x_ <= 1)*(1-1/RB)*_x_^2/2+(_x_>1)*(_x_<=RB)*(1-1/RB+(_x_^2-1)/(RB^2-RB))/2+(_x_>RB),
+					HMM
+			  	 );
+}
+
+if (distribution==11)
+{	
+	global	 RB = 5;
+	RB :> 1;
+	RB :< 1e25;
+	
+	category c = (resp, EQUAL, MEAN, 
+					(_x_ <= 1)*(1-1/RB)+(_x_>1)*(_x_<=RB)/(RB^2-RB),
+					(_x_ <= 1)*(1-1/RB)*_x_+(_x_>1)*(_x_<=RB)*(1-1/RB+(_x_-1)/(RB^2-RB))+(_x_>RB), 
+					0, 			 
+					1e25, 	     
+					(_x_ <= 1)*(1-1/RB)*_x_^2/2+(_x_>1)*(_x_<=RB)*(1-1/RB+(_x_^2-1)/(RB^2-RB))/2+(_x_>RB),
+					HMM
+			  	 );
+	
+}
+
+if (distribution==12)
+{
+	global alpha = .5;
+	alpha:>0.01;alpha:<100;
+	global alpha_2 = 2.5;
+	alpha_2:>0.01;alpha_2:<100;
+	global P := 1/3;
+	P:<1;
+	category c = (resp, EQUAL, MEAN, 
+					P*GammaDist(_x_,alpha,alpha)+(1-P)*GammaDist(_x_,alpha_2,alpha_2), 
+					P*CGammaDist(_x_,alpha,alpha)+(1-P)*CGammaDist(_x_,alpha_2,alpha_2), 
+					0 , 
+			  	    1e25,
+			  	    P*CGammaDist(_x_,alpha+1,alpha)+(1-P)*CGammaDist(_x_,alpha_2+1,alpha_2),
+			  	    HMM
+			  	 );
+}
+
+
+
+categoriesUsed = 1;

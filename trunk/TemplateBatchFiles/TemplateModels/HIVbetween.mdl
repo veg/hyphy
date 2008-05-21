@@ -1,0 +1,32 @@
+#include "HIVbetween.ibf";
+
+equalFreqs=
+
+{
+{   0.060490222}
+{   0.020075899}
+{   0.042109048}
+{   0.071567447}
+{   0.028809447}
+{   0.072308239}
+{   0.022293943}
+{   0.069730629}
+{   0.056968211}
+{   0.098851122}
+{   0.019768318}
+{   0.044127815}
+{   0.046025282}
+{   0.053606488}
+{   0.066039665}
+{    0.05060433}
+{   0.053636813}
+{   0.061625237}
+{   0.033011601}
+{   0.028350243}
+};
+
+
+HIVBetweenMatrix	    = 0;
+MULTIPLY_BY_FREQS 	    = PopulateModelMatrix ("HIVBetweenMatrix",equalFreqs);
+Model HIVBetweenModel 	= (HIVBetweenMatrix, equalFreqs, MULTIPLY_BY_FREQS);
+FREQUENCY_SENSITIVE     = 0;

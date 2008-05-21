@@ -1,0 +1,100 @@
+/* This file defines the transition matrix for the Goldman-Yang 94 model.
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+   	#Short:GY94#
+   	#Desc:Goldman-Yang 94 codon model. Local or global dS/dN ratios. Possible Gamma Variation.#
+   	#Dimension:*#
+    #DataType:codon#
+   	#FileName:GY94.mdl#
+   
+   04/09/2000  by Sergei L. Kosakovsky Pond
+*/
+
+ModelMatrixDimension = 0;
+
+if (!ModelMatrixDimension)
+{
+	ModelMatrixDimension = 64;
+	for (h = 0 ;h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10)
+		{
+			ModelMatrixDimension = ModelMatrixDimension-1;
+		}
+	}
+}
+
+function BuildCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][0]*obsF[third][0];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][0]*obsF[third][0];
+	}
+	return result*(1.0/PIStop);
+}
+
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	#include "modelParameters.mdl";
+}
+
+if (modelType<0)
+{
+	return;
+}
+
+if (SKIP_HARVEST_FREQ == 0)
+{
+	HarvestFrequencies (observedFreq,filteredData,1,1,0);
+}
+
+global kappa = 1;
+
+if (modelType>0)
+{
+	global R = .5;
+	
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+
+#include "GY94.ibf";
+
+
+GY94 = 0;
+
+vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("GY94", observedFreq);
+
+FREQUENCY_SENSITIVE = 1;
+
+Model GY94model = (GY94,vectorOfFrequencies,1);
+

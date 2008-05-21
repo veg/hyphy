@@ -1,0 +1,18 @@
+/* 
+	A utility file for multi-parameter models.
+*/
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	ChoiceList (modelType,"Model Options",1,SKIP_NONE,
+				"Local","All model parameters are estimated independently for each branch.",
+				"Global","Model parameters are shared by all branches, branch lengths are estimated independently.",
+				"Global w/gamma","Model parameters are shared by all branches, branch lengths come from a unit mean gamma distribution, whose shape is estimated.",
+				"Global w/options","Model parameters are shared by all branches, branch lengths come from one of the collection of predefined distributions."
+	);
+}
+
+if (modelType<0)
+{
+	return;
+}

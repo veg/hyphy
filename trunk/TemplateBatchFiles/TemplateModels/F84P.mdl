@@ -1,0 +1,146 @@
+/* This file defines the transition matrix for the F84 model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:F84P#
+   	#Desc:Felsenstein 84 (PHYLIP dnaml compatible version). Gamma variation optional.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:F84P.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+   Modified on 03/06/2000 to comply with the new model syntax
+*/
+
+HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+
+
+global K = 1;
+global R = 1;
+
+
+ChoiceList (modelType,"Model Options",1,SKIP_NONE,
+		"Single Rate Class","Rates are fixed.",
+		"Multiple Rate Classes","Rates come from several classes (user will define the classes)."
+);
+	
+if (modelType<0)
+{
+	return;
+}
+
+if (modelType > 0)
+{
+	resp = 0;
+	while (resp<=0)
+	{
+		fprintf (stdout,"\nHow many rate classes should we have?");
+		fscanf  (stdin,"Number", resp);
+	}
+	
+	classMatrix = {resp,1};
+	
+	for (k=0;k<resp;k=k+1)
+	{
+		fprintf (stdout,"Rate for the ",Format(k+1,0,0)," class:");
+		fscanf  (stdin,"Number",classRate);
+		classMatrix[k]:= classRate__;
+	}
+	
+	fprintf (stdout,"\n\n Using the following rates:", classMatrix);
+	
+	fprintf (stdout,"\nCustom probabilities for rate classes (n=all equally probable,y=define your own)?");
+	
+	fscanf  (stdin,"String", fr);
+	
+	if ((fr=="y")||(fr=="Y"))
+	{
+		sum = 0;
+		cFreqMatrix = {resp,1};
+		for (k=0;k<resp-1;k=k+1)
+		{
+			fprintf (stdout,"Probability for the ",Format(k+1,0,0)," class[0,",1.0-sum,"]:");
+			fscanf  (stdin,"Number",classRate);
+			sum = sum+classRate;
+			if ((sum>1)||(classRate<0))
+			{
+				fprintf (stdout,"\nThis is an invalid choice! Try again!\n");
+				k=k-1;
+				sum = sum-classRate;
+			}
+			else
+			{
+				cFreqMatrix[k] = classRate;
+			}
+		}
+		cFreqMatrix[k] = 1-sum;
+		fprintf (stdout,"\n\n Using the following class probabilities:", cFreqMatrix);
+		category c = (resp, cFreqMatrix, MEAN, , classMatrix , 0 , 1e25);
+	}
+	else
+	{
+		category c = (resp, EQUAL, MEAN, , classMatrix , 0 , 1e25);
+	}
+	
+	categoriesUsed = 1;
+}
+
+piY = vectorOfFrequencies[1]+vectorOfFrequencies[3];
+piR = vectorOfFrequencies[0]+vectorOfFrequencies[2];
+a =  (vectorOfFrequencies[0]*vectorOfFrequencies[2]+vectorOfFrequencies[1]*vectorOfFrequencies[3])/(piR*piY);
+
+R = 0;
+
+while (R<a)
+{
+	fprintf (stdout, "\nPlease enter the transition/transvertion ratio desired. For this data set R must be at least ",a,". Ratio=?");
+	fscanf (stdin,"Number",R);
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{	
+	if (!EMBED_FREQUENCY_DEPENDENCE)
+	{
+		piA = EFV[0][0];
+		piC = EFV[1][0];
+		piG = EFV[2][0];
+		piT = EFV[3][0];
+		piY = piC+piT;
+		piR = piA+piG;
+		
+		K = (R*piR*piY-piA*piG-piC*piT)/(piA*piG/piR+piC*piT/piY);
+		
+		if (modelType == 0)
+		{
+			ModelMatrixName = {{*,a*piC__,a*piG__*(1+K__/piR__),a*piT__}{a*piA__,*,a*piG__,a*piT__*(1+K__/piY__)}
+	       	 				   {a*(1+K__/piR__)*piA__,a*piC__,*,a*piT__}{a*piA__,a*piC__*(1+K__/piY__),a*piG__,*}};		
+		}
+		else
+		{
+			ModelMatrixName = {{*,c*a*piC__,c*a*piG__*(1+K__/piR__),c*a*piT__}{c*a*piA__,*,c*a*piG__,c*a*piT__*(1+K__/piY__)}
+		       {c*a*(1+K__/piR__)*piA__,c*a*piC__,*,c*a*piT__}{c*a*piA__,c*a*piC__*(1+K__/piY__),c*a*piG__,*}};
+		}
+	}
+	else
+	{
+		fprintf (stdout, "\nSorry, this model cannot be used for frequency estimation. Try general F84 instead.");
+		return 0;
+	}
+	
+	return 0;
+}
+
+F84P = {4,4};
+
+MULTIPLY_BY_FREQUENCIES = PopulateModelMatrix ("F84P", vectorOfFrequencies);
+
+FREQUENCY_SENSITIVE = 1;
+
+Model F84Pmodel = (F84P,vectorOfFrequencies,0);
+
+

@@ -1,0 +1,17 @@
+/* 
+	A utility file for multi-parameter models.
+*/
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	ChoiceList (modelType,"Model Options",1,SKIP_NONE,
+				"Fixed Rates","Rates are fixed.",
+				"Rate variation","Branch lengths come from a user-chosen distribution, whose parameters are estimated.",
+				"Rate variation+HM","Branch lengths come from a user-chosen distribution, whose parameters is estimated; rates at adjacent sites are correlated via a simple Hidden Markov model with an autocorrelation parameter lambda."
+	);
+}
+
+if (modelType<0)
+{
+	return;
+}

@@ -1,0 +1,277 @@
+/* This file defines the transition matrix for the Muse-Gaut 94 model.
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+   	#Short:MG94#
+   	#Desc:Muse-Gaut 94 codon model. Local or global parameters. Possible Gamma Variation.#
+   	#Dimension:*#
+    #DataType:codon#
+   	#FileName:MG94.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+*/
+
+ModelMatrixDimension = 0;
+
+function GetBranchDNDS (shortName)
+{
+	sR  = "givenTree."+shortName+".synRate";
+	nsR = "givenTree."+shortName+".nonSynRate";
+	sR = valueGrab (sR);
+	nsR = valueGrab (nsR);
+	if (sR > 0.0)
+	{
+		return nsR/sR;
+	}
+	else
+	{
+		return "Infinite";
+	}
+}
+
+function BuildCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][0]*obsF[third][0];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][0]*obsF[third][0];
+	}
+	return result*(1.0/PIStop);
+}
+
+#include "modelParameters.mdl";
+
+HarvestFrequencies (observedFreq,filteredData,1,1,0);
+
+NICETY_LEVEL = 3;
+
+if (modelType>0)
+{
+	global R = .5;
+	
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+/* defines a sparse transition probabilities matrix 
+ now we'll go through the matrix and assign the elements based on syn/non-syn status*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+
+	if (modelType == 0)
+	{
+		for (h=0; h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10) 
+			{
+				hshift = hshift+1;
+				continue; 
+			}
+			vshift = hshift;
+			for (v = h+1; v<64; v=v+1)
+			{
+				diff = v-h;
+				if (_Genetic_Code[v]==10) 
+				{
+					vshift = vshift+1;
+					continue; 
+				}
+			  	if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			  	{
+			  		if (h$4==v$4)
+			  		{
+			  			transition = v%4;
+			  			transition2= h%4;
+			  		}
+			  		else
+			  		{
+			  			if(diff%16==0)
+			  			{
+			  				transition = v$16;
+			  				transition2= h$16;
+			  			}
+			  			else
+			  			{
+			  				transition = v%16$4;
+			  				transition2= h%16$4;
+			  			}
+			  		}
+			  		if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+			  		{
+			  			ModelMatrixName[h-hshift][v-vshift] := synRate*EFV__[transition__][0];
+			  			ModelMatrixName[v-vshift][h-hshift] := synRate*EFV__[transition2__][0];
+				  	}
+			  		else
+			  		{
+				  		ModelMatrixName[h-hshift][v-vshift] := nonSynRate*EFV__[transition__][0];
+			  			ModelMatrixName[v-vshift][h-hshift] := nonSynRate*EFV__[transition2__][0];
+		  			}
+			  	}
+			}
+		}
+	}
+	else
+	{
+		if (modelType == 1)
+		{
+			for (h=0; h<64; h=h+1)
+				{
+					if (_Genetic_Code[h]==10) 
+					{
+						hshift = hshift+1;
+						continue; 
+					}
+					vshift = hshift;
+					for (v = h+1; v<64; v=v+1)
+					{
+						diff = v-h;
+						if (_Genetic_Code[v]==10) 
+						{
+							vshift = vshift+1;
+							continue; 
+						}
+					  	if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+					  	{
+					  		if (h$4==v$4)
+					  		{
+					  			transition = v%4;
+					  			transition2= h%4;
+					  		}
+					  		else
+					  		{
+					  			if(diff%16==0)
+					  			{
+					  				transition = v$16;
+					  				transition2= h$16;
+					  			}
+					  			else
+					  			{
+					  				transition = v%16$4;
+					  				transition2= h%16$4;
+					  			}
+					  		}
+					  		if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					  		{
+					  			ModelMatrixName[h-hshift][v-vshift] := synRate*EFV__[transition__][0];
+					  			ModelMatrixName[v-vshift][h-hshift] := synRate*EFV__[transition2__][0];
+						  	}
+					  		else
+					  		{
+						  		ModelMatrixName[h-hshift][v-vshift] := R*synRate*EFV__[transition__][0];
+					  			ModelMatrixName[v-vshift][h-hshift] := R*synRate*EFV__[transition2__][0];
+				  			}
+					  	}
+					  }
+				}	
+		}
+		else
+		{
+			for (h=0; h<64; h=h+1)
+			{
+				if (_Genetic_Code[h]==10) 
+				{
+					hshift = hshift+1;
+					continue; 
+				}
+				vshift = hshift;
+				for (v = h+1; v<64; v=v+1)
+				{
+					diff = v-h;
+					if (_Genetic_Code[v]==10) 
+					{
+						vshift = vshift+1;
+						continue; 
+					}
+				  	if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+				  	{
+				  		if (h$4==v$4)
+				  		{
+				  			transition = v%4;
+				  			transition2= h%4;
+				  		}
+				  		else
+				  		{
+				  			if(diff%16==0)
+				  			{
+				  				transition = v$16;
+				  				transition2= h$16;
+				  			}
+				  			else
+				  			{
+				  				transition = v%16$4;
+				  				transition2= h%16$4;
+				  			}
+				  		}
+				  		if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+				  		{
+				  			ModelMatrixName[h-hshift][v-vshift] := synRate*c*EFV__[transition__][0];
+				  			ModelMatrixName[v-vshift][h-hshift] := synRate*c*EFV__[transition2__][0];
+					  	}
+				  		else
+				  		{
+					  		ModelMatrixName[h-hshift][v-vshift] := R*synRate*c*EFV__[transition__][0];
+				  			ModelMatrixName[v-vshift][h-hshift] := R*synRate*c*EFV__[transition2__][0];
+			  			}
+				   }
+			   }		
+		    }
+		}
+	}
+	
+	return 0;
+}
+
+MG94 = 0;
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94", observedFreq);
+
+FREQUENCY_SENSITIVE = 1;
+
+vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
+
+Model MG94model = (MG94,vectorOfFrequencies,0);
+
+if (modelType == 0)
+{
+	IS_DNDS_AVAILABLE = 1;
+}
+
+
