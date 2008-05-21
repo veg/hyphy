@@ -1,0 +1,82 @@
+// !$*UTF8*$!
+{
+	20286C28FDCF999611CA2CEA /* Project object */ = {
+		activeArchitecture = i386;
+		activeBuildConfigurationName = Release;
+		activeExecutable = 85A2BBBE0DE4D27F00682547 /* HyPhyXCode */;
+		activeTarget = 8D0C4E890486CD37000505A6 /* HyPhyXCode */;
+		codeSenseManager = 85A2BBC60DE4D29B00682547 /* Code sense */;
+		executables = (
+			85A2BBBE0DE4D27F00682547 /* HyPhyXCode */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					458,
+					20,
+					48.16259765625,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 233099903;
+			PBXWorkspaceStateSaveDate = 233099903;
+		};
+		sourceControlManager = 85A2BBC50DE4D29B00682547 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	85A2BBBE0DE4D27F00682547 /* HyPhyXCode */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = HyPhyXCode;
+		sourceDirectories = (
+		);
+	};
+	85A2BBC50DE4D29B00682547 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	85A2BBC60DE4D29B00682547 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	8D0C4E890486CD37000505A6 /* HyPhyXCode */ = {
+		activeExec = 0;
+		executables = (
+			85A2BBBE0DE4D27F00682547 /* HyPhyXCode */,
+		);
+	};
+}

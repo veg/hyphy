@@ -1,0 +1,245 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 44;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */; };
+		8D0C4E8E0486CD37000505A6 /* main.nib in Resources */ = {isa = PBXBuildFile; fileRef = 02345980000FD03B11CA0E72 /* main.nib */; };
+		8D0C4E900486CD37000505A6 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 20286C2BFDCF999611CA2CEA /* main.c */; settings = {ATTRIBUTES = (); }; };
+		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1870340FFE93FCAF11CA0CD7 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/main.nib; sourceTree = "<group>"; };
+		20286C2BFDCF999611CA2CEA /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
+		32DBCF6D0370B57F00C91783 /* HyPhyXCode_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HyPhyXCode_Prefix.pch; sourceTree = "<group>"; };
+		8D0C4E960486CD37000505A6 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8D0C4E970486CD37000505A6 /* HyPhyXCode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhyXCode.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D0C4E910486CD37000505A6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		195DF8CFFE9D517E11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D0C4E970486CD37000505A6 /* HyPhyXCode.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
+			isa = PBXGroup;
+			children = (
+				20286C2AFDCF999611CA2CEA /* Sources */,
+				20286C2CFDCF999611CA2CEA /* Resources */,
+				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
+				195DF8CFFE9D517E11CA2CBB /* Products */,
+			);
+			name = HyPhyXCode;
+			sourceTree = "<group>";
+		};
+		20286C2AFDCF999611CA2CEA /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				32DBCF6D0370B57F00C91783 /* HyPhyXCode_Prefix.pch */,
+				20286C2BFDCF999611CA2CEA /* main.c */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+		20286C2CFDCF999611CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8D0C4E960486CD37000505A6 /* Info.plist */,
+				0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */,
+				02345980000FD03B11CA0E72 /* main.nib */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				20286C33FDCF999611CA2CEA /* Carbon.framework */,
+			);
+			name = "External Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D0C4E890486CD37000505A6 /* HyPhyXCode */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0E91AC508A95435008D54AB /* Build configuration list for PBXNativeTarget "HyPhyXCode" */;
+			buildPhases = (
+				8D0C4E8C0486CD37000505A6 /* Resources */,
+				8D0C4E8F0486CD37000505A6 /* Sources */,
+				8D0C4E910486CD37000505A6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HyPhyXCode;
+			productInstallPath = "$(HOME)/Applications";
+			productName = HyPhyXCode;
+			productReference = 8D0C4E970486CD37000505A6 /* HyPhyXCode.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		20286C28FDCF999611CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */;
+			compatibilityVersion = "Xcode 3.0";
+			hasScannedForEncodings = 1;
+			mainGroup = 20286C29FDCF999611CA2CEA /* HyPhyXCode */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D0C4E890486CD37000505A6 /* HyPhyXCode */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D0C4E8C0486CD37000505A6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */,
+				8D0C4E8E0486CD37000505A6 /* main.nib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D0C4E8F0486CD37000505A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D0C4E900486CD37000505A6 /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		02345980000FD03B11CA0E72 /* main.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1870340FFE93FCAF11CA0CD7 /* English */,
+			);
+			name = main.nib;
+			sourceTree = "<group>";
+		};
+		0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0867D6ABFE840B52C02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		C0E91AC608A95435008D54AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = HyPhyXCode_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhyXCode;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		C0E91AC708A95435008D54AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = HyPhyXCode_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhyXCode;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		C0E91ACA08A95435008D54AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+			};
+			name = Debug;
+		};
+		C0E91ACB08A95435008D54AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C0E91AC508A95435008D54AB /* Build configuration list for PBXNativeTarget "HyPhyXCode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0E91AC608A95435008D54AB /* Debug */,
+				C0E91AC708A95435008D54AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0E91ACA08A95435008D54AB /* Debug */,
+				C0E91ACB08A95435008D54AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 20286C28FDCF999611CA2CEA /* Project object */;
+}
