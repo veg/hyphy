@@ -1,0 +1,1 @@
+#define __MAC__#define __OLDMAC__

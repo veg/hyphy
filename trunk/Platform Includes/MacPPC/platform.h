@@ -1,0 +1,1 @@
+#define __MAC__#ifndef __PLATFORM__H#define __PLATFORM__H#define	TARGET_API_MAC_CARBON		 1#define	ACCESSOR_CALLS_ARE_FUNCTIONS 1#define	OPAQUE_TOOLBOX_STRUCTS 		 1#define __MP__#define __MACHACKMP__#define _BSD_CLOCK_T_DEFINED_#define _BSD_SIZE_T_DEFINED_#define _BSD_TIME_T_DEFINED_#endif

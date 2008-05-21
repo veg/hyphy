@@ -1,0 +1,2020 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 39;
+	objects = {
+		014CEA460018CE2711CA2923 = {
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 0.01;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_CHAR_IS_UNSIGNED_CHAR = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_CPU = G5;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				HEADER_SEARCH_PATHS = "/Users/sergei/HyPhy/Source/RegEx/ /Users/sergei/HyPhy/SQLLite/ \"/Users/sergei/HyPhy/Source/GUIElements/Shared Include/Components/\" \"/Users/sergei/HyPhy/Source/GUIElements/Shared Include/WindowClasses/\" \"/Users/sergei/HyPhy/Source/GUIElements/Shared Include/\" \"/Users/sergei/HyPhy/Source/GUIElements/Platform Include/GTK/WindowClasses/\" \"/Users/sergei/HyPhy/Source/GUIElements/Platform Include/GTK/Components/\" \"/Users/sergei/HyPhy/Source/GUIElements/Platform Include/GTK/\" \"/Users/sergei/HyPhy/Source/Shared Files/\" /usr/local/lib/glib-2.0/include/ /usr/local/include/glib-2.0/ /usr/local/include/pango-1.0/ /usr/local/include/gtk-2.0/ /usr/local/lib/gtk-2.0/include/ /Users/sergei/HyPhy/Source/NN/ /usr/local/include/atk-1.0/";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				LIBRARY_STYLE = DYNAMIC;
+				OTHER_CFLAGS = "-D__HYPHY_GTK__ -D__MP__ -D__MP2__";
+				OTHER_CPLUSPLUSFLAGS = "-w -D__HYPHY_GTK__ -D__MP__ -D__MP2__";
+				OTHER_LDFLAGS = "-L/usr/local/lib -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangoxft-1.0 -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 -lintl -liconv -lcurl -lm ";
+				PREBINDING = NO;
+				ZERO_LINK = YES;
+			};
+			isa = PBXBuildStyle;
+			name = Development;
+		};
+		014CEA470018CE2711CA2923 = {
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				ZERO_LINK = NO;
+			};
+			isa = PBXBuildStyle;
+			name = Deployment;
+		};
+//010
+//011
+//012
+//013
+//014
+//020
+//021
+//022
+//023
+//024
+		0249A662FF388D9811CA2CEA = {
+			children = (
+				85388A6807298A5A00A8BED3,
+				853F66810AB89E0E00408229,
+				853F667F0AB89E0000408229,
+				8526BA020729C1C7003B6FE0,
+			);
+			isa = PBXGroup;
+			name = "External Frameworks and Libraries";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+//020
+//021
+//022
+//023
+//024
+//080
+//081
+//082
+//083
+//084
+		08FB7793FE84155DC02AAC07 = {
+			buildSettings = {
+			};
+			buildStyles = (
+				014CEA460018CE2711CA2923,
+				014CEA470018CE2711CA2923,
+			);
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = 08FB7794FE84155DC02AAC07;
+			projectDirPath = "";
+			targets = (
+				8DD76F620486A84900D96B5E,
+			);
+		};
+		08FB7794FE84155DC02AAC07 = {
+			children = (
+				08FB7795FE84155DC02AAC07,
+				C6859E8C029090F304C91782,
+				0249A662FF388D9811CA2CEA,
+				1AB674ADFE9D54B511CA2CBB,
+			);
+			isa = PBXGroup;
+			name = HyPhy_GTK;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 = {
+			children = (
+				8538ACD607E636E600392B68,
+				85864F3A0C20A64700DBE336,
+				85388A750729B25100A8BED3,
+				8526B9540729B7B2003B6FE0,
+				8526B9550729B7F7003B6FE0,
+			);
+			isa = PBXGroup;
+			name = Source;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+//080
+//081
+//082
+//083
+//084
+//1A0
+//1A1
+//1A2
+//1A3
+//1A4
+		1AB674ADFE9D54B511CA2CBB = {
+			children = (
+				8DD76F6C0486A84900D96B5E,
+			);
+			isa = PBXGroup;
+			name = Products;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+//1A0
+//1A1
+//1A2
+//1A3
+//1A4
+//850
+//851
+//852
+//853
+//854
+		8515A5C8074A4D440021662D = {
+			fileRef = 85F3E5DA07450B94001D84C8;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8515A5CB074A4D510021662D = {
+			fileRef = 85F3E5D40745098F001D84C8;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8526B9540729B7B2003B6FE0 = {
+			children = (
+				8526B9640729B84C003B6FE0,
+				8535783807411CF90014E2CC,
+				85F3E5DA07450B94001D84C8,
+				857C2C7607E9E85F00622353,
+				85F10525073A0F6400796EEF,
+				857B3D16072EF73300E7722F,
+				85DA6FD507DD392E008E0F15,
+				853EC3FF07EDDBC7004B0B92,
+				8565568F08FB2E8A007324AE,
+				853BF47E07D14FCE00B94D9A,
+				8526B9650729B84C003B6FE0,
+				857B3CEA072EF4F000E7722F,
+				85F103470738209E00796EEF,
+				853C3C4C07FDB43400BB1F8D,
+				8534B76E07FCBD230046036E,
+				8534B60207FB49370046036E,
+				853579720741F3410014E2CC,
+				853BEF9607CE509A00B94D9A,
+				85864F210C20A44F00DBE336,
+				85DA698D07D7D2F6008E0F15,
+				8536027307508C6E00DE2270,
+				85D3420807DF69A30017D0A3,
+				8526B9660729B84C003B6FE0,
+			);
+			isa = PBXGroup;
+			name = "Shared GUI";
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		8526B9550729B7F7003B6FE0 = {
+			children = (
+				85A57F1A093FADEC00859A87,
+				8534B62F07FB5FCF0046036E,
+				85F1077B073D3AF900796EEF,
+				85F3E5D40745098F001D84C8,
+				85F104FF0739958700796EEF,
+				857C2C9407E9EA7A00622353,
+				857B3D1B072EF74600E7722F,
+				8538ACD007E636D100392B68,
+				853EC3F807EDDA3F004B0B92,
+				857B3CE1072EF4E200E7722F,
+				857B3F2D072F680F00E7722F,
+				85F1034B073820DF00796EEF,
+				853C3C5F07FDB4AE00BB1F8D,
+				8534B5C607F9D6A20046036E,
+				85B356A70801FD200031852E,
+				853579740741F35F0014E2CC,
+				853BEFA007CE50FC00B94D9A,
+				85DA699907D7D335008E0F15,
+				8536027107508C5900DE2270,
+				85D3421D07DF6B090017D0A3,
+				85E20F2D0731B1700067CE94,
+				85E20E590731839B0067CE94,
+				8526B95E0729B830003B6FE0,
+			);
+			isa = PBXGroup;
+			name = "GTK GUI";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		8526B95E0729B830003B6FE0 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/HYPlatformWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8526B9640729B84C003B6FE0 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYBaseGUI.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYBaseGUI.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8526B9650729B84C003B6FE0 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYEventTypes.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYEventTypes.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8526B9660729B84C003B6FE0 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8526BA020729C1C7003B6FE0 = {
+			isa = PBXFileReference;
+			lastKnownFileType = archive.ar;
+			name = "libstdc++_ZeroLink.a";
+			path = "/usr/lib/gcc/darwin/3.3/libstdc++_ZeroLink.a";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8526BA030729C1C7003B6FE0 = {
+			fileRef = 8526BA020729C1C7003B6FE0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8534B5C607F9D6A20046036E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformParameterTable.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformParameterTable.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8534B5C707F9D6A20046036E = {
+			fileRef = 8534B5C607F9D6A20046036E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8534B60207FB49370046036E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYParameterTable.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYParameterTable.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8534B60307FB49370046036E = {
+			fileRef = 8534B60207FB49370046036E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8534B62F07FB5FCF0046036E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformBootsrapWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformBootsrapWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8534B63007FB5FCF0046036E = {
+			fileRef = 8534B62F07FB5FCF0046036E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8534B76E07FCBD230046036E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYObjectInspector.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYObjectInspector.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8534B76F07FCBD230046036E = {
+			fileRef = 8534B76E07FCBD230046036E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8535783807411CF90014E2CC = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYButton.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYButton.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8535783907411CF90014E2CC = {
+			fileRef = 8535783807411CF90014E2CC;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853579720741F3410014E2CC = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPullDown.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYPullDown.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853579730741F3410014E2CC = {
+			fileRef = 853579720741F3410014E2CC;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853579740741F35F0014E2CC = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformPullDown.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformPullDown.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853579750741F35F0014E2CC = {
+			fileRef = 853579740741F35F0014E2CC;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8536027107508C5900DE2270 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformTextBox.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformTextBox.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8536027207508C5900DE2270 = {
+			fileRef = 8536027107508C5900DE2270;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8536027307508C6E00DE2270 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYTextBox.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYTextBox.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8536027407508C6E00DE2270 = {
+			fileRef = 8536027307508C6E00DE2270;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85388A4F0729859800A8BED3 = {
+			fileRef = 8DD76F6C0486A84900D96B5E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85388A6807298A5A00A8BED3 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.dylib";
+			name = libiconv.2.2.0.dylib;
+			path = /sw/lib/libiconv.2.2.0.dylib;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85388A6907298A5A00A8BED3 = {
+			fileRef = 85388A6807298A5A00A8BED3;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85388A750729B25100A8BED3 = {
+			children = (
+				85864F490C20A68100DBE336,
+				85864F4A0C20A68100DBE336,
+				85864F4B0C20A68100DBE336,
+				85864F4C0C20A68100DBE336,
+				85864F4D0C20A68100DBE336,
+				85864F4E0C20A68100DBE336,
+				85864F4F0C20A68100DBE336,
+				85864F500C20A68100DBE336,
+				85864F510C20A68100DBE336,
+				85864F520C20A68100DBE336,
+				85864F530C20A68100DBE336,
+				85864F540C20A68100DBE336,
+				85864F550C20A68100DBE336,
+				85864F560C20A68100DBE336,
+				85864F570C20A68100DBE336,
+				85864F580C20A68100DBE336,
+				85864F590C20A68100DBE336,
+				85864F5A0C20A68100DBE336,
+				85864F5B0C20A68100DBE336,
+				85864F2F0C20A56600DBE336,
+				857C23BE07E6599800622353,
+			);
+			isa = PBXGroup;
+			name = Core;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		8538ACD007E636D100392B68 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformConsoleWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformConsoleWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8538ACD107E636D100392B68 = {
+			fileRef = 8538ACD007E636D100392B68;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8538ACD607E636E600392B68 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = "main-GTK.cpp";
+			path = "/Users/sergei/HyPhy/Source/Mains/main-GTK.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8538ACD707E636E600392B68 = {
+			fileRef = 8538ACD607E636E600392B68;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853BEF9607CE509A00B94D9A = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYSequencePanel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYSequencePanel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853BEF9707CE509A00B94D9A = {
+			fileRef = 853BEF9607CE509A00B94D9A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853BEFA007CE50FC00B94D9A = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformSequencePane.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformSequencePane.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853BEFA107CE50FC00B94D9A = {
+			fileRef = 853BEFA007CE50FC00B94D9A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853BF47E07D14FCE00B94D9A = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYDialogDefs.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYDialogDefs.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853BF47F07D14FCE00B94D9A = {
+			fileRef = 853BF47E07D14FCE00B94D9A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853C3C4C07FDB43400BB1F8D = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYModelWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYModelWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853C3C4D07FDB43400BB1F8D = {
+			fileRef = 853C3C4C07FDB43400BB1F8D;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853C3C5F07FDB4AE00BB1F8D = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformModelWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformModelWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853C3C6007FDB4AE00BB1F8D = {
+			fileRef = 853C3C5F07FDB4AE00BB1F8D;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853EC3F807EDDA3F004B0B92 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformDataPanel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformDataPanel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853EC3F907EDDA3F004B0B92 = {
+			fileRef = 853EC3F807EDDA3F004B0B92;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853EC3FF07EDDBC7004B0B92 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYDataPanel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYDataPanel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853EC40007EDDBC7004B0B92 = {
+			fileRef = 853EC3FF07EDDBC7004B0B92;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853F667F0AB89E0000408229 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.dylib";
+			name = "libgtk-x11-2.0.0.600.4.dylib";
+			path = "/usr/local/lib/libgtk-x11-2.0.0.600.4.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853F66800AB89E0000408229 = {
+			fileRef = 853F667F0AB89E0000408229;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		853F66810AB89E0E00408229 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.dylib";
+			name = "libgobject-2.0.0.600.4.dylib";
+			path = "/usr/local/lib/libgobject-2.0.0.600.4.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		853F66820AB89E0E00408229 = {
+			fileRef = 853F66810AB89E0E00408229;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8565568F08FB2E8A007324AE = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYDBWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYDBWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		8565569008FB2E8A007324AE = {
+			fileRef = 8565568F08FB2E8A007324AE;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85659FDC073034C500334463 = {
+			fileRef = 857B3D1B072EF74600E7722F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B38FC072D5EFF00E7722F = {
+			fileRef = 8526B9660729B84C003B6FE0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B38FD072D5F0000E7722F = {
+			fileRef = 8526B9650729B84C003B6FE0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B38FE072D5F0100E7722F = {
+			fileRef = 8526B9640729B84C003B6FE0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B38FF072D5F0300E7722F = {
+			fileRef = 8526B95E0729B830003B6FE0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B3CE1072EF4E200E7722F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformGraphicPane.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/HYPlatformGraphicPane.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857B3CE2072EF4E200E7722F = {
+			fileRef = 857B3CE1072EF4E200E7722F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B3CEA072EF4F000E7722F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYGraphicPane.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYGraphicPane.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857B3CEB072EF4F000E7722F = {
+			fileRef = 857B3CEA072EF4F000E7722F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B3D16072EF73300E7722F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYComponent.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYComponent.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857B3D17072EF73300E7722F = {
+			fileRef = 857B3D16072EF73300E7722F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857B3D1B072EF74600E7722F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformComponent.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/HYPlatformComponent.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857B3F2D072F680F00E7722F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformGWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformGWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857B3F2E072F680F00E7722F = {
+			fileRef = 857B3F2D072F680F00E7722F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C23BE07E6599800622353 = {
+			children = (
+				857C244107E65CB500622353,
+				857C244207E65CB500622353,
+				857C244307E65CB500622353,
+				857C244407E65CB500622353,
+				857C244507E65CB500622353,
+				857C244607E65CB500622353,
+				857C244707E65CB500622353,
+				857C244807E65CB500622353,
+				857C244907E65CB500622353,
+				857C244A07E65CB500622353,
+				857C244B07E65CB500622353,
+				857C244C07E65CB500622353,
+				857C244D07E65CB500622353,
+				857C244E07E65CB500622353,
+				857C244F07E65CB500622353,
+				857C245007E65CB500622353,
+				857C245107E65CB500622353,
+				857C245207E65CB500622353,
+				857C245307E65CB500622353,
+				857C245407E65CB500622353,
+				857C245507E65CB500622353,
+				857C245607E65CB500622353,
+				857C245707E65CB500622353,
+				857C245807E65CB500622353,
+				857C245907E65CB500622353,
+				857C245A07E65CB500622353,
+				857C245B07E65CB500622353,
+				857C245C07E65CB500622353,
+			);
+			isa = PBXGroup;
+			name = SQLite;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		857C244107E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = btree_rb.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/btree_rb.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244207E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = tokenize.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/tokenize.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244307E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = table.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/table.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244407E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = os.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/os.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244507E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = auth.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/auth.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244607E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = delete.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/delete.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244707E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = copy.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/copy.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244807E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = build.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/build.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244907E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = opcodes.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/opcodes.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244A07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = main.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/main.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244B07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = insert.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/insert.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244C07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = hash.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/hash.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244D07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = func.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/func.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244E07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = expr.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/expr.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C244F07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = select.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/select.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245007E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = random.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/random.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245107E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = printf.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/printf.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245207E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = pragma.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/pragma.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245307E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = parse.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/parse.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245407E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = pager.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/pager.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245507E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = where.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/where.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245607E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = trigger.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/trigger.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245707E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = vdbe.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/vdbe.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245807E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = vacuum.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/vacuum.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245907E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = btree.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/btree.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245A07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = util.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/util.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245B07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = update.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/update.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245C07E65CB500622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = attach.c;
+			path = /Users/sergei/HyPhy/UNIX_Build/Source/SQLite/attach.c;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C245D07E65CB500622353 = {
+			fileRef = 857C244107E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C245E07E65CB500622353 = {
+			fileRef = 857C244207E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C245F07E65CB500622353 = {
+			fileRef = 857C244307E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246007E65CB500622353 = {
+			fileRef = 857C244407E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246107E65CB500622353 = {
+			fileRef = 857C244507E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246207E65CB500622353 = {
+			fileRef = 857C244607E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246307E65CB500622353 = {
+			fileRef = 857C244707E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246407E65CB500622353 = {
+			fileRef = 857C244807E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246507E65CB500622353 = {
+			fileRef = 857C244907E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246607E65CB500622353 = {
+			fileRef = 857C244A07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246707E65CB500622353 = {
+			fileRef = 857C244B07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246807E65CB500622353 = {
+			fileRef = 857C244C07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246907E65CB500622353 = {
+			fileRef = 857C244D07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246A07E65CB500622353 = {
+			fileRef = 857C244E07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246B07E65CB500622353 = {
+			fileRef = 857C244F07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246C07E65CB500622353 = {
+			fileRef = 857C245007E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246D07E65CB500622353 = {
+			fileRef = 857C245107E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246E07E65CB500622353 = {
+			fileRef = 857C245207E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C246F07E65CB500622353 = {
+			fileRef = 857C245307E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247007E65CB500622353 = {
+			fileRef = 857C245407E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247107E65CB500622353 = {
+			fileRef = 857C245507E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247207E65CB500622353 = {
+			fileRef = 857C245607E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247307E65CB500622353 = {
+			fileRef = 857C245707E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247407E65CB500622353 = {
+			fileRef = 857C245807E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247507E65CB500622353 = {
+			fileRef = 857C245907E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247607E65CB500622353 = {
+			fileRef = 857C245A07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247707E65CB500622353 = {
+			fileRef = 857C245B07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C247807E65CB500622353 = {
+			fileRef = 857C245C07E65CB500622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C2C7607E9E85F00622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYChartWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYChartWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C2C7707E9E85F00622353 = {
+			fileRef = 857C2C7607E9E85F00622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		857C2C9407E9EA7A00622353 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformChartWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformChartWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		857C2C9507E9EA7A00622353 = {
+			fileRef = 857C2C9407E9EA7A00622353;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F210C20A44F00DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYSharedMain.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYSharedMain.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F220C20A44F00DBE336 = {
+			fileRef = 85864F210C20A44F00DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F2F0C20A56600DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = hyphyunixutils.cpp;
+			path = /Users/sergei/HyPhy/Source/Mains/hyphyunixutils.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F300C20A56600DBE336 = {
+			fileRef = 85864F2F0C20A56600DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F3A0C20A64700DBE336 = {
+			children = (
+				85864F3B0C20A64700DBE336,
+				85864F3D0C20A64700DBE336,
+				85864F470C20A66F00DBE336,
+				85864F3E0C20A64700DBE336,
+			);
+			isa = PBXGroup;
+			name = NewerFunctionality;
+			path = /Users/sergei/HyPhy/Source/NewerFunctionality;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F3B0C20A64700DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = HYNetInterface.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		85864F3D0C20A64700DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = Net.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		85864F3E0C20A64700DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = scfg.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		85864F410C20A64700DBE336 = {
+			fileRef = 85864F3B0C20A64700DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F430C20A64700DBE336 = {
+			fileRef = 85864F3D0C20A64700DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F440C20A64700DBE336 = {
+			fileRef = 85864F3E0C20A64700DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F470C20A66F00DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = bgm.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		85864F480C20A66F00DBE336 = {
+			fileRef = 85864F470C20A66F00DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F490C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = sequence.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/sequence.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4A0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = baseobj.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/baseobj.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4B0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = error.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/error.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4C0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = batchlan.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/batchlan.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4D0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = batchlan2.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/batchlan2.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4E0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = nexus.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/nexus.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F4F0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = site.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/site.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F500C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = calcnode.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/calcnode.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F510C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = likefunc.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/likefunc.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F520C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = strings.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/strings.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F530C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = category.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/category.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F540C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = parser2.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/parser2.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F550C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = regex.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/regex.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F560C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = parser.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/parser.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F570C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = list.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/list.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F580C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fisher_exact.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/fisher_exact.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F590C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = preferences.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/preferences.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F5A0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = polynoml.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/polynoml.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F5B0C20A68100DBE336 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = matrix.cpp;
+			path = /Users/sergei/HyPhy/Source/Core/matrix.cpp;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85864F5C0C20A68100DBE336 = {
+			fileRef = 85864F490C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F5D0C20A68100DBE336 = {
+			fileRef = 85864F4A0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F5E0C20A68100DBE336 = {
+			fileRef = 85864F4B0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F5F0C20A68100DBE336 = {
+			fileRef = 85864F4C0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F600C20A68100DBE336 = {
+			fileRef = 85864F4D0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F610C20A68100DBE336 = {
+			fileRef = 85864F4E0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F620C20A68100DBE336 = {
+			fileRef = 85864F4F0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F630C20A68100DBE336 = {
+			fileRef = 85864F500C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F640C20A68100DBE336 = {
+			fileRef = 85864F510C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F650C20A68100DBE336 = {
+			fileRef = 85864F520C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F660C20A68100DBE336 = {
+			fileRef = 85864F530C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F670C20A68100DBE336 = {
+			fileRef = 85864F540C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F680C20A68100DBE336 = {
+			fileRef = 85864F550C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F690C20A68100DBE336 = {
+			fileRef = 85864F560C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F6A0C20A68100DBE336 = {
+			fileRef = 85864F570C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F6B0C20A68100DBE336 = {
+			fileRef = 85864F580C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F6C0C20A68100DBE336 = {
+			fileRef = 85864F590C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F6D0C20A68100DBE336 = {
+			fileRef = 85864F5A0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85864F6E0C20A68100DBE336 = {
+			fileRef = 85864F5B0C20A68100DBE336;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85A57F1A093FADEC00859A87 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformDBWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformDBWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85A57F1B093FADEC00859A87 = {
+			fileRef = 85A57F1A093FADEC00859A87;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85B356A70801FD200031852E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformPWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformPWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85B356A80801FD200031852E = {
+			fileRef = 85B356A70801FD200031852E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85D3420807DF69A30017D0A3 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYTreePanel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYTreePanel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85D3420907DF69A30017D0A3 = {
+			fileRef = 85D3420807DF69A30017D0A3;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85D3421D07DF6B090017D0A3 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformTreePanel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformTreePanel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85D3421E07DF6B090017D0A3 = {
+			fileRef = 85D3421D07DF6B090017D0A3;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85DA698D07D7D2F6008E0F15 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYTable.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYTable.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85DA698E07D7D2F6008E0F15 = {
+			fileRef = 85DA698D07D7D2F6008E0F15;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85DA699907D7D335008E0F15 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformTable.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformTable.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85DA699A07D7D335008E0F15 = {
+			fileRef = 85DA699907D7D335008E0F15;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85DA6FD507DD392E008E0F15 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYConsoleWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/HYConsoleWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85DA6FD607DD392E008E0F15 = {
+			fileRef = 85DA6FD507DD392E008E0F15;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85E20E590731839B0067CE94 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformUtils.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/HYPlatformUtils.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85E20E5A0731839B0067CE94 = {
+			fileRef = 85E20E590731839B0067CE94;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85E20F2D0731B1700067CE94 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformTWindow.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/WindowClasses/HYPlatformTWindow.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85E20F2E0731B1700067CE94 = {
+			fileRef = 85E20F2D0731B1700067CE94;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F103470738209E00796EEF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYLabel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYLabel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F103480738209E00796EEF = {
+			fileRef = 85F103470738209E00796EEF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F1034B073820DF00796EEF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformLabel.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformLabel.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F1034C073820DF00796EEF = {
+			fileRef = 85F1034B073820DF00796EEF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F104FF0739958700796EEF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformCheckBox.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformCheckBox.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F105000739958700796EEF = {
+			fileRef = 85F104FF0739958700796EEF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F10525073A0F6400796EEF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYCheckBox.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYCheckBox.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F10526073A0F6400796EEF = {
+			fileRef = 85F10525073A0F6400796EEF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F1077B073D3AF900796EEF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformButton.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformButton.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F1077C073D3AF900796EEF = {
+			fileRef = 85F1077B073D3AF900796EEF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		85F3E5D40745098F001D84C8 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYPlatformButtonBar.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Platform Source/GTK/Components/HYPlatformButtonBar.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		85F3E5DA07450B94001D84C8 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = HYButtonBar.cpp;
+			path = "/Users/sergei/HyPhy/Source/GUIElements/Shared Source/Components/HYButtonBar.cpp";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+//850
+//851
+//852
+//853
+//854
+//8D0
+//8D1
+//8D2
+//8D3
+//8D4
+		8DD76F620486A84900D96B5E = {
+			buildPhases = (
+				8DD76F640486A84900D96B5E,
+				8DD76F660486A84900D96B5E,
+				8DD76F690486A84900D96B5E,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				INSTALL_PATH = "$(HOME)/bin";
+				LIBRARY_SEARCH_PATHS = "/sw/lib /usr/lib/gcc/darwin/3.3 /Users/sergei/HyPhy/Source/GTK";
+				PRODUCT_NAME = HyPhy_GTK;
+			};
+			dependencies = (
+			);
+			isa = PBXNativeTarget;
+			name = HyPhy_GTK;
+			productInstallPath = "$(HOME)/bin";
+			productName = HyPhy_GTK;
+			productReference = 8DD76F6C0486A84900D96B5E;
+			productType = "com.apple.product-type.tool";
+		};
+		8DD76F640486A84900D96B5E = {
+			buildActionMask = 2147483647;
+			files = (
+				857B38FC072D5EFF00E7722F,
+				857B38FD072D5F0000E7722F,
+				857B38FE072D5F0100E7722F,
+				857B38FF072D5F0300E7722F,
+				857B3CE2072EF4E200E7722F,
+				857B3CEB072EF4F000E7722F,
+				857B3D17072EF73300E7722F,
+				857B3F2E072F680F00E7722F,
+				85659FDC073034C500334463,
+				85E20E5A0731839B0067CE94,
+				85E20F2E0731B1700067CE94,
+				85F103480738209E00796EEF,
+				85F1034C073820DF00796EEF,
+				85F105000739958700796EEF,
+				85F10526073A0F6400796EEF,
+				85F1077C073D3AF900796EEF,
+				8535783907411CF90014E2CC,
+				853579730741F3410014E2CC,
+				853579750741F35F0014E2CC,
+				8515A5C8074A4D440021662D,
+				8515A5CB074A4D510021662D,
+				8536027207508C5900DE2270,
+				8536027407508C6E00DE2270,
+				853BEF9707CE509A00B94D9A,
+				853BEFA107CE50FC00B94D9A,
+				853BF47F07D14FCE00B94D9A,
+				85DA698E07D7D2F6008E0F15,
+				85DA699A07D7D335008E0F15,
+				85DA6FD607DD392E008E0F15,
+				85D3420907DF69A30017D0A3,
+				85D3421E07DF6B090017D0A3,
+				8538ACD107E636D100392B68,
+				8538ACD707E636E600392B68,
+				857C245D07E65CB500622353,
+				857C245E07E65CB500622353,
+				857C245F07E65CB500622353,
+				857C246007E65CB500622353,
+				857C246107E65CB500622353,
+				857C246207E65CB500622353,
+				857C246307E65CB500622353,
+				857C246407E65CB500622353,
+				857C246507E65CB500622353,
+				857C246607E65CB500622353,
+				857C246707E65CB500622353,
+				857C246807E65CB500622353,
+				857C246907E65CB500622353,
+				857C246A07E65CB500622353,
+				857C246B07E65CB500622353,
+				857C246C07E65CB500622353,
+				857C246D07E65CB500622353,
+				857C246E07E65CB500622353,
+				857C246F07E65CB500622353,
+				857C247007E65CB500622353,
+				857C247107E65CB500622353,
+				857C247207E65CB500622353,
+				857C247307E65CB500622353,
+				857C247407E65CB500622353,
+				857C247507E65CB500622353,
+				857C247607E65CB500622353,
+				857C247707E65CB500622353,
+				857C247807E65CB500622353,
+				857C2C7707E9E85F00622353,
+				857C2C9507E9EA7A00622353,
+				853EC3F907EDDA3F004B0B92,
+				853EC40007EDDBC7004B0B92,
+				8534B5C707F9D6A20046036E,
+				8534B60307FB49370046036E,
+				8534B63007FB5FCF0046036E,
+				8534B76F07FCBD230046036E,
+				853C3C4D07FDB43400BB1F8D,
+				853C3C6007FDB4AE00BB1F8D,
+				85B356A80801FD200031852E,
+				8565569008FB2E8A007324AE,
+				85A57F1B093FADEC00859A87,
+				85864F220C20A44F00DBE336,
+				85864F300C20A56600DBE336,
+				85864F410C20A64700DBE336,
+				85864F430C20A64700DBE336,
+				85864F440C20A64700DBE336,
+				85864F480C20A66F00DBE336,
+				85864F5C0C20A68100DBE336,
+				85864F5D0C20A68100DBE336,
+				85864F5E0C20A68100DBE336,
+				85864F5F0C20A68100DBE336,
+				85864F600C20A68100DBE336,
+				85864F610C20A68100DBE336,
+				85864F620C20A68100DBE336,
+				85864F630C20A68100DBE336,
+				85864F640C20A68100DBE336,
+				85864F650C20A68100DBE336,
+				85864F660C20A68100DBE336,
+				85864F670C20A68100DBE336,
+				85864F680C20A68100DBE336,
+				85864F690C20A68100DBE336,
+				85864F6A0C20A68100DBE336,
+				85864F6B0C20A68100DBE336,
+				85864F6C0C20A68100DBE336,
+				85864F6D0C20A68100DBE336,
+				85864F6E0C20A68100DBE336,
+			);
+			isa = PBXSourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8DD76F660486A84900D96B5E = {
+			buildActionMask = 2147483647;
+			files = (
+				85388A6907298A5A00A8BED3,
+				8526BA030729C1C7003B6FE0,
+				853F66800AB89E0000408229,
+				853F66820AB89E0E00408229,
+			);
+			isa = PBXFrameworksBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8DD76F690486A84900D96B5E = {
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				85388A4F0729859800A8BED3,
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		8DD76F6C0486A84900D96B5E = {
+			explicitFileType = "compiled.mach-o.executable";
+			includeInIndex = 0;
+			isa = PBXFileReference;
+			path = HyPhy_GTK;
+			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+//8D0
+//8D1
+//8D2
+//8D3
+//8D4
+//C60
+//C61
+//C62
+//C63
+//C64
+		C6859E8C029090F304C91782 = {
+			children = (
+			);
+			isa = PBXGroup;
+			name = Documentation;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+	};
+	rootObject = 08FB7793FE84155DC02AAC07;
+}
