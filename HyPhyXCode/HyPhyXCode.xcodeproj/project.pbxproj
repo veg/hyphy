@@ -7,19 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */; };
-		8D0C4E8E0486CD37000505A6 /* main.nib in Resources */ = {isa = PBXBuildFile; fileRef = 02345980000FD03B11CA0E72 /* main.nib */; };
-		8D0C4E900486CD37000505A6 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 20286C2BFDCF999611CA2CEA /* main.c */; settings = {ATTRIBUTES = (); }; };
 		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0867D6ABFE840B52C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		1870340FFE93FCAF11CA0CD7 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/main.nib; sourceTree = "<group>"; };
-		20286C2BFDCF999611CA2CEA /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
-		32DBCF6D0370B57F00C91783 /* HyPhyXCode_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HyPhyXCode_Prefix.pch; sourceTree = "<group>"; };
-		8D0C4E960486CD37000505A6 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D0C4E970486CD37000505A6 /* HyPhyXCode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhyXCode.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -57,8 +49,6 @@
 		20286C2AFDCF999611CA2CEA /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				32DBCF6D0370B57F00C91783 /* HyPhyXCode_Prefix.pch */,
-				20286C2BFDCF999611CA2CEA /* main.c */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -66,9 +56,6 @@
 		20286C2CFDCF999611CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				8D0C4E960486CD37000505A6 /* Info.plist */,
-				0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */,
-				02345980000FD03B11CA0E72 /* main.nib */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -112,7 +99,7 @@
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* HyPhyXCode */;
 			projectDirPath = "";
-			projectRoot = "";
+			projectRoot = ..;
 			targets = (
 				8D0C4E890486CD37000505A6 /* HyPhyXCode */,
 			);
@@ -124,8 +111,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D0C4E8D0486CD37000505A6 /* InfoPlist.strings in Resources */,
-				8D0C4E8E0486CD37000505A6 /* main.nib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,30 +121,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D0C4E900486CD37000505A6 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		02345980000FD03B11CA0E72 /* main.nib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				1870340FFE93FCAF11CA0CD7 /* English */,
-			);
-			name = main.nib;
-			sourceTree = "<group>";
-		};
-		0867D6AAFE840B52C02AAC07 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				0867D6ABFE840B52C02AAC07 /* English */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		C0E91AC608A95435008D54AB /* Debug */ = {
