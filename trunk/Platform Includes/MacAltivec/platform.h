@@ -1,1 +1,0 @@
-#define __MAC__#define __HYALTIVEC__
