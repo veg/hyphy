@@ -1,1 +1,0 @@
-#	File:		SystemFrameworkStub.exp##	Contains:	##	Written by:	Quinn##	Copyright:	Copyright © 1999 by Apple Computer, Inc., All Rights Reserved.##	Change History (most recent first):##        <1>     21/9/01    Quinn   Firs checked in.#pthread_joinpthread_createpthread_mutex_unlockpthread_mutex_lockgethostnamegetrusage
