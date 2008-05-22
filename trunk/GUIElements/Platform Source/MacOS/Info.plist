@@ -27,7 +27,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>org.hyphy</string>
 	<key>CFBundleLongVersionString</key>
-	<string>1.4, Copyright 1997-2007 Sergei L Kosakovsky Pond, Art FY Poon, Simon DW Frost and Spencer V Muse</string>
+	<string>1.4, Copyright 1997-2008 Sergei L Kosakovsky Pond, Art FY Poon, Simon DW Frost and Spencer V Muse</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.00beta</string>
 	<key>CFBundleVersion</key>
