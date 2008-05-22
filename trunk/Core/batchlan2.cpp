@@ -504,18 +504,12 @@ void	  _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 	// build the formula from the 2nd parameter (unit size)
 	
 	char	  			unit = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix); 
-						// here's our unit
+					// here's our unit
 	
 	_String  			dataFilterID (chain.AddNameSpaceToID(*(_String*)parameters(0))),
 						hSpecs, 
 						vSpecs;
 	
-	if (unit < 1)
-	{
-			_String errMsg = _String ("Non-positive filter size while creating filter") & dataFilterID & ". Supplied value: " & unit;
-			WarnError (errMsg);
-	}
-
 	long				status 	= FindDataSetFilterName (dataFilterID);
 	
 	_DataSetFilter		*thedf;
@@ -847,7 +841,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 					}
 					else
 					// return the AVL with parameters
-					// AVL will have 9 entries 
+					// AVL will have 8 entries 
 						// "Categories"
 						// "Global Independent"
 						// "Global Constrained"
@@ -857,7 +851,6 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						// "Base frequencies"
 						// "Datafilters"
 						// "Compute Template"
-						// "Models"
 					{
 						_AssociativeList * resList = new _AssociativeList;
 						
@@ -868,8 +861,6 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 											v4,
 											v5,
 											v6;
-											
-						_List				modelList;
 											
 						InsertVarIDsInList (resList, "Categories", lf->GetCategoryVars ());
 						
@@ -890,32 +881,20 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 							
 						vl = &lf->GetTheTrees ();
 						for (long n=0; n<vl->lLength; n++)
-						{
 							v5 << vl->lData[n];
-							_SimpleList partModels;
-							((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
-							if (partModels.lLength == 1)
-								modelList << modelNames (partModels.lData[0]);
-							else
-								modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
-						}
 
 
 						vl = &lf->GetTheFilters ();
 						for (long p=0; p<vl->lLength; p++)
 							v6 << vl->lData[p];
 
-						InsertVarIDsInList			(resList, "Global Independent", v1);
-						InsertVarIDsInList			(resList, "Global Constrained", v2);
-						InsertVarIDsInList			(resList, "Local Independent", v3);
-						InsertVarIDsInList			(resList, "Local Constrained", v4);
-						InsertVarIDsInList			(resList, "Trees", v5);
-						InsertVarIDsInList			(resList, "Base frequencies", lf->GetBaseFreqs());
-						InsertStringListIntoAVL		(resList, "Datafilters", v6, dataSetFilterNamesList);
-						{
-							_SimpleList indexer (modelList.lLength,0,1);
-							InsertStringListIntoAVL		(resList, "Models", indexer, modelList);
-						}
+						InsertVarIDsInList (resList, "Global Independent", v1);
+						InsertVarIDsInList (resList, "Global Constrained", v2);
+						InsertVarIDsInList (resList, "Local Independent", v3);
+						InsertVarIDsInList (resList, "Local Constrained", v4);
+						InsertVarIDsInList (resList, "Trees", v5);
+						InsertVarIDsInList (resList, "Base frequencies", lf->GetBaseFreqs());
+						InsertStringListIntoAVL (resList, "Datafilters", v6, dataSetFilterNamesList);
 						
 						_FString		aKey,
 										ct;
@@ -2055,14 +2034,16 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 	chain.currentCommand++;
 	
 	_PMathObj	avl1	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-				avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-				avl3	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(3),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+				avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 	
-	if (! (avl1 && avl2 && avl3))
-		WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & " in a call to BGM = ... must evaluate to associative arrays");
+	if (! (avl1 && avl2))
+	{
+		WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) & 
+				   " in a call to BGM = ... must evaluate to associative arrays");
+	}
 	else
 	{
-		Bgm	* bgm		= new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2, (_AssociativeList*)avl3);
+		Bgm	*	bgm			= new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
 		_String bgmName	    = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
 		long	bgmIndex	= FindBgmName (bgmName);
 		
@@ -2194,9 +2175,9 @@ bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 	if (mark1 >= 0)
 		ExtractConditions (source,mark1+1,pieces,',');
 	
-	if (pieces.lLength != 3)
+	if (pieces.lLength < 2)
 	{
-		WarnError ("Expected: BGM ident = (<discrete nodes>, <continuous nodes>, <banlist>)");
+		WarnError ("Expected: BGM ident = (<discrete nodes>, <continuous nodes>)");
 		return false;
 	}
 	
