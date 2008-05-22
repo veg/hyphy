@@ -5068,6 +5068,12 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					
 				_String rulerLabel (vScale);
 				
+				while (vScale*hScale > treeWidth-newRoot->in_object.h)
+				{
+					vScale *= 0.5;
+					rulerLabel = vScale;
+				}
+				
 				while (PSStringWidth(rulerLabel)*fontSize>vScale*hScale-3)
 				{
 					vScale *= 2.0;
