@@ -112,8 +112,38 @@
 		85A2BD730DE4EC8100682547 /* HyPhy.rsrc in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD720DE4EC8100682547 /* HyPhy.rsrc */; };
 		85A2BD770DE4EC9B00682547 /* main-mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD760DE4EC9B00682547 /* main-mac.cpp */; };
 		85A2BE010DE4FC8600682547 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2BE000DE4FC8600682547 /* QuickTime.framework */; };
+		85A2BFEC0DE505FA00682547 /* ChartAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFB90DE505FA00682547 /* ChartAddIns */; };
+		85A2C1D70DE5066E00682547 /* DatapanelAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFF00DE5066D00682547 /* DatapanelAddIns */; };
+		85A2C1D80DE5066E00682547 /* GeneticCodes in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFFC0DE5066D00682547 /* GeneticCodes */; };
+		85A2C1D90DE5066E00682547 /* SubstitutionClasses in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C00A0DE5066D00682547 /* SubstitutionClasses */; };
+		85A2C1DA0DE5066E00682547 /* SubstitutionModels in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C02C0DE5066D00682547 /* SubstitutionModels */; };
+		85A2C1DB0DE5066E00682547 /* TemplateBatchFiles in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C0590DE5066D00682547 /* TemplateBatchFiles */; };
+		85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
+		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
+		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
 		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		85A2BF8A0DE504AF00682547 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				85A2C1D70DE5066E00682547 /* DatapanelAddIns in CopyFiles */,
+				85A2C1D80DE5066E00682547 /* GeneticCodes in CopyFiles */,
+				85A2C1D90DE5066E00682547 /* SubstitutionClasses in CopyFiles */,
+				85A2C1DA0DE5066E00682547 /* SubstitutionModels in CopyFiles */,
+				85A2C1DB0DE5066E00682547 /* TemplateBatchFiles in CopyFiles */,
+				85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */,
+				85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */,
+				85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */,
+				85A2BFEC0DE505FA00682547 /* ChartAddIns in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
@@ -224,6 +254,16 @@
 		85A2BD760DE4EC9B00682547 /* main-mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "main-mac.cpp"; path = "../trunk/Mains/main-mac.cpp"; sourceTree = SOURCE_ROOT; };
 		85A2BD9E0DE4F61400682547 /* HyPhy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		85A2BE000DE4FC8600682547 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/QuickTime.framework; sourceTree = DEVELOPER_DIR; };
+		85A2BE530DE502AB00682547 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = file; name = Info.plist; path = "../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist"; sourceTree = "<group>"; };
+		85A2BFB90DE505FA00682547 /* ChartAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ChartAddIns; path = ../trunk/ChartAddIns; sourceTree = SOURCE_ROOT; };
+		85A2BFF00DE5066D00682547 /* DatapanelAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DatapanelAddIns; path = ../trunk/DatapanelAddIns; sourceTree = SOURCE_ROOT; };
+		85A2BFFC0DE5066D00682547 /* GeneticCodes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GeneticCodes; path = ../trunk/GeneticCodes; sourceTree = SOURCE_ROOT; };
+		85A2C00A0DE5066D00682547 /* SubstitutionClasses */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SubstitutionClasses; path = ../trunk/SubstitutionClasses; sourceTree = SOURCE_ROOT; };
+		85A2C02C0DE5066D00682547 /* SubstitutionModels */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SubstitutionModels; path = ../trunk/SubstitutionModels; sourceTree = SOURCE_ROOT; };
+		85A2C0590DE5066D00682547 /* TemplateBatchFiles */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TemplateBatchFiles; path = ../trunk/TemplateBatchFiles; sourceTree = SOURCE_ROOT; };
+		85A2C19D0DE5066E00682547 /* TopologyInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TopologyInference; path = ../trunk/TopologyInference; sourceTree = SOURCE_ROOT; };
+		85A2C1A80DE5066E00682547 /* TreeAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TreeAddIns; path = ../trunk/TreeAddIns; sourceTree = SOURCE_ROOT; };
+		85A2C1AC0DE5066E00682547 /* UserAddins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UserAddins; path = ../trunk/UserAddins; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -250,10 +290,12 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
+				85A2BFEF0DE5064D00682547 /* HBL */,
 				20286C2AFDCF999611CA2CEA /* Sources */,
 				20286C2CFDCF999611CA2CEA /* Resources */,
 				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
 				195DF8CFFE9D517E11CA2CBB /* Products */,
+				85A2BE530DE502AB00682547 /* Info.plist */,
 			);
 			name = HyPhyXCode;
 			sourceTree = "<group>";
@@ -466,6 +508,22 @@
 			name = SQLite;
 			sourceTree = "<group>";
 		};
+		85A2BFEF0DE5064D00682547 /* HBL */ = {
+			isa = PBXGroup;
+			children = (
+				85A2BFF00DE5066D00682547 /* DatapanelAddIns */,
+				85A2BFFC0DE5066D00682547 /* GeneticCodes */,
+				85A2C00A0DE5066D00682547 /* SubstitutionClasses */,
+				85A2C02C0DE5066D00682547 /* SubstitutionModels */,
+				85A2C0590DE5066D00682547 /* TemplateBatchFiles */,
+				85A2C19D0DE5066E00682547 /* TopologyInference */,
+				85A2C1A80DE5066E00682547 /* TreeAddIns */,
+				85A2C1AC0DE5066E00682547 /* UserAddins */,
+				85A2BFB90DE505FA00682547 /* ChartAddIns */,
+			);
+			name = HBL;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -476,6 +534,7 @@
 				8D0C4E8F0486CD37000505A6 /* Sources */,
 				8D0C4E8C0486CD37000505A6 /* Resources */,
 				8D0C4E910486CD37000505A6 /* Frameworks */,
+				85A2BF8A0DE504AF00682547 /* CopyFiles */,
 			);
 			buildRules = (
 			);
