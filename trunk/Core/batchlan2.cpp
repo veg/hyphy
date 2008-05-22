@@ -2152,7 +2152,7 @@ bool	_ElementaryCommand::ConstructNN (_String&source, _ExecutionList&target)
 
 //____________________________________________________________________________________	
 bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
-// syntax: BGM ident = (<discrete nodes>, <continuous nodes>, <banlist>)
+// syntax: BGM ident = (<discrete nodes>, <continuous nodes>)
 {
 	// locate ident in HBL string
 	long	mark1 = source.FirstSpaceIndex(0,-1,1), 
