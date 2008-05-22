@@ -254,7 +254,6 @@
 		85A2BD760DE4EC9B00682547 /* main-mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "main-mac.cpp"; path = "../trunk/Mains/main-mac.cpp"; sourceTree = SOURCE_ROOT; };
 		85A2BD9E0DE4F61400682547 /* HyPhy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		85A2BE000DE4FC8600682547 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/QuickTime.framework; sourceTree = DEVELOPER_DIR; };
-		85A2BE530DE502AB00682547 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = file; name = Info.plist; path = "../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist"; sourceTree = "<group>"; };
 		85A2BFB90DE505FA00682547 /* ChartAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ChartAddIns; path = ../trunk/ChartAddIns; sourceTree = SOURCE_ROOT; };
 		85A2BFF00DE5066D00682547 /* DatapanelAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DatapanelAddIns; path = ../trunk/DatapanelAddIns; sourceTree = SOURCE_ROOT; };
 		85A2BFFC0DE5066D00682547 /* GeneticCodes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GeneticCodes; path = ../trunk/GeneticCodes; sourceTree = SOURCE_ROOT; };
@@ -295,7 +294,6 @@
 				20286C2CFDCF999611CA2CEA /* Resources */,
 				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
 				195DF8CFFE9D517E11CA2CBB /* Products */,
-				85A2BE530DE502AB00682547 /* Info.plist */,
 			);
 			name = HyPhyXCode;
 			sourceTree = "<group>";
