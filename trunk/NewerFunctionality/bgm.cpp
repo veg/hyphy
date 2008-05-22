@@ -38,13 +38,19 @@
  *
  */
 
-#define		__OMIT_MISSING_DATA__		1
+//#define		__AFYP_DEVELOPMENT__
+#define		__MISSING_DATA__
 
 #define		LOG_SCALING_FACTOR			64.
 #define		LARGE_NEGATIVE_NUMBER		-99999.0
 #define		MAX_LSE_SCALING_ATTEMPTS	4096
 
+#define		DIRICHLET_FLATTENING_CONST	0.5
+#define		MAX_FAIL_RANDOMIZE			1000
+#define		RANDOMIZE_PROB_SWAP			0.1
+
 #include "bgm.h"
+
 
 /*SLKP 20070926; include progress report updates */
 	#if !defined __UNIX__ && !defined __HEADLESS__
@@ -54,6 +60,8 @@
 
 _String		_HYBgm_BAN_PARENT_KEY	("BanParent"),
 			_HYBgm_BAN_CHILD_KEY	("BanChild"),
+			_HYBgm_ENFORCE_PARENT_KEY	("EnforceParent"),
+			_HYBgm_ENFORCE_CHILD_KEY	("EnforceChild"),
 			
 			_HYBgm_NODE_INDEX_KEY	("NodeID"),
 			_HYBgm_PRIOR_SIZE_KEY	("PriorSize"),
@@ -65,21 +73,28 @@ _String		_HYBgm_BAN_PARENT_KEY	("BanParent"),
 /*SLKP 20070926; add string constants for progress report updates */
 			_HYBgm_STATUS_LINE_MCMC			("Running Bgm MCMC"),
 			_HYBgm_STATUS_LINE_MCMC_DONE	("Finished Bgm MCMC"),
+			_HYBgm_STATUS_LINE_CACHE		("Caching Bgm scores"),
+			_HYBgm_STATUS_LINE_CACHE_DONE	("Done caching Bgm scores"),
 /*SLKP*/
 			/* maxParentString ("Bgm_MAXIMUM_PARENTS"), */
 			maxNumRestart	("BGM_NUM_RESTARTS"),
 			numRandomize	("BGM_NUM_RANDOMIZE"),
+			useNodeOrder	("BGM_USE_NODEORDER"),
+			bgmOptimizationMethod ("BGM_OPTIMIZATION_METHOD"),
 			
 			mcmcNumChains	("BGM_MCMC_NCHAINS"),		// re-use parameter
 			mcmcTemperature ("BGM_MCMC_TEMPERATURE"),
 			mcmcSteps		("BGM_MCMC_DURATION"),
 			mcmcBurnin		("BGM_MCMC_BURNIN"),
 			mcmcSamples		("BGM_MCMC_SAMPLES"),
-
+			
+			mcemMaxSteps	("BGM_MCEM_MAXSTEPS"),
+			mcemBurnin		("BGM_MCEM_BURNIN"),
+			mcemSampleSize	("BGM_MCEM_SAMPLES"),
+			
 			isDynamicGraph	("BGM_DYNAMIC"),
 
 			_HYBgm_NThreads	("BGM_NTHREADS");
-
 
 #ifdef __MP__
 	#ifndef __MACHACKMP__
@@ -169,7 +184,7 @@ long integerPower (long base, long exponent)
 
 //___________________________________________________________________________________________
 
-Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes, _AssociativeList * banlist)
+Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 {	
 	char		buf [255];
 	_String		errorMessage;
@@ -180,10 +195,9 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes, _AssociativeList 
 	
 	_Constant	* node_id,						/* pointers into HBL associative array arguments */
 				* mp,
-				* size, * mean, * precision,
-				* banParent, * banChild;
+				* size, * mean, * precision;
 	
-	_AssociativeList	* discreteNode, * continuousNode, * bannedEdge;
+	_AssociativeList	* discreteNode, * continuousNode;
 	
 	
 	
@@ -214,7 +228,7 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes, _AssociativeList 
 	
 	CreateMatrix (&dag, num_nodes, num_nodes, false, true, false);		// allocate space for matrices
 	CreateMatrix (&banned_edges, num_nodes, num_nodes, false, true, false);
-	
+	CreateMatrix (&enforced_edges, num_nodes, num_nodes, false, true, false);
 	CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);
 	CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
 	CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
@@ -223,31 +237,8 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes, _AssociativeList 
 	is_discrete.Populate (num_nodes, 0, 0);		// allocate space for _SimpleList objects
 	num_levels.Populate (num_nodes, 0, 0);
 	max_parents.Populate (num_nodes, 0, 0);
+	has_missing.Populate (num_nodes, 0, 0);
 	
-	// node_scores.Populate (num_nodes, 0, 0);
-	
-	
-	// convert banlist to matrix form
-	for (long banitem = 0; banitem < banlist->avl.countitems(); banitem++)
-	{
-		bannedEdge	= (_AssociativeList *) (banlist->GetByKey (banitem, ASSOCIATIVE_LIST));
-		
-		if (bannedEdge)
-		{
-			banParent	= (_Constant *) (bannedEdge->GetByKey (_HYBgm_BAN_PARENT_KEY, NUMBER));
-			banChild	= (_Constant *) (bannedEdge->GetByKey (_HYBgm_BAN_CHILD_KEY, NUMBER));
-			
-			if (banParent && banChild)
-			{
-				banned_edges.Store ((long)banParent->Value(), (long)banChild->Value(), 1.);
-			}
-			else
-			{
-				errorMessage = _String("Banned edge ") & banitem & " must specify both a parent and a child node.";
-				break;
-			}
-		}
-	}
 	
 	
 	// initialize discrete nodes
@@ -380,7 +371,18 @@ void Bgm::SetDataMatrix (_Matrix * data)
 	
 	obsData			= data;
 	
-	obsData->CheckIfSparseEnough(TRUE);
+	obsData->CheckIfSparseEnough(TRUE);		// check if we can use a more compact representation of the
+											// matrix; before including this command, we suffered a
+											// noticeable slow-down in this routine. - AFYP
+	
+	
+	// reset data-dependent member variables
+	for (long node = 0; node < num_nodes; node++)
+	{
+		has_missing.lData[node] = 0;
+		num_levels.lData[node] = 0;
+	}
+	
 	
 #ifdef DEBUG_SDM
 	char buf [256];
@@ -395,9 +397,66 @@ void Bgm::SetDataMatrix (_Matrix * data)
 	}
 #endif
 	
-	if (obsData->GetVDim() == num_nodes)
+	
+	
+	if (obsData->GetVDim() == num_nodes)	// make sure the data matrix is compatible with graph
 	{
+#ifdef __MISSING_DATA__
+		long	nrows = obsData->GetHDim();
+		
 		for (long node = 0; node < num_nodes; node++)
+		{
+			if (is_discrete.lData[node])
+			{
+				num_levels.lData[node] = 1;
+				
+				for (long obs, row = 0; row < nrows; row++)
+				{
+					obs = (*obsData)(row, node);
+					
+					if (has_missing[node] == 0 && obs < 0)	// use negative integer values to annotate missing data
+					{
+						has_missing.lData[node] = 1;
+						continue;	// skip next step to check levels
+					}
+					
+					if (obs+1 > num_levels.lData[node])
+					{
+						num_levels.lData[node] = num_levels.lData[node] + 1;
+					}
+				}
+			}
+			else
+			{
+				num_levels.lData[node] = 0;
+				
+				// not implementing missing data for continuous nodes yet
+				//  not until I've decided on annotation anyhow :-/  afyp
+			}
+		}
+	
+	#ifdef DEBUG_SDM
+		sprintf (buf, "Levels: ");
+		BufferToConsole (buf);
+		for (long i = 0; i < num_nodes; i++)
+		{
+			sprintf (buf, "%d ", num_levels.lData[i]);
+			BufferToConsole (buf);
+		}
+		NLToConsole ();
+		
+		sprintf (buf, "Missing (0=FALSE, 1=TRUE): ");
+		BufferToConsole (buf);
+		for (long i = 0; i < num_nodes; i++)
+		{
+			sprintf (buf, "%d ", has_missing.lData[i]);
+			BufferToConsole (buf);
+		}
+		NLToConsole ();
+	#endif
+	
+#else
+		for (long node = 0; node < num_nodes; node++)	// for every column in matrix
 		{
 			if (is_discrete.lData[node])
 			{
@@ -417,23 +476,18 @@ void Bgm::SetDataMatrix (_Matrix * data)
 				num_levels.lData[node] = 0;
 			}
 		}
+#endif
 	}
 	else
 	{
 		_String errorMsg ("Number of variables in data matrix do not match number of nodes in graph.");
-		WarnError (errorMsg);
+		WarnError (errorMsg);		// note, this produces a crash because the batch file proceeds to execute
+									// BGM routines without data. - AFYP
 	}
 	
-#ifdef DEBUG_SDM
-	sprintf (buf, "Levels: ");
-	BufferToConsole (buf);
-	for (long i = 0; i < num_nodes; i++)
-	{
-		sprintf (buf, "%d ", num_levels.lData[i]);
-		BufferToConsole (buf);
-	}
-	NLToConsole ();
-#endif
+	
+	last_node_order.Clear();		// forget the last step taken in MCMC chain
+	best_node_order.Clear();
 	
 	CacheNodeScores();
 	
@@ -446,7 +500,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
 //___________________________________________________________________________________________
 void	Bgm::SetWeightMatrix (_Matrix * weights)
 {
-	if (obsData && obsData->GetHDim() == weights->GetHDim())
+	if (obsData && (long) (obsData->GetHDim()) == (long) (weights->GetHDim()))
 	{
 		obsWeights = weights;
 	}
@@ -461,33 +515,101 @@ void	Bgm::SetWeightMatrix (_Matrix * weights)
 
 
 
+
 //___________________________________________________________________________________________
-void Bgm::PrintDag (void)
+void	Bgm::SetGraphMatrix (_Matrix *graph)
+{
+	/*
+	char	bug [255];
+	
+	sprintf (bug, "Entered Bgm::SetGraphMatrix()\n");
+	BufferToConsole (bug);
+	*/
+	dag = (_Matrix &) (*graph);	// matrix assignment
+}
+
+
+void	Bgm::SetBanMatrix (_Matrix *banMx)
+{
+	banned_edges = (_Matrix &) (*banMx);
+}
+
+void	Bgm::SetEnforceMatrix (_Matrix *enforceMx)
+{
+	enforced_edges = (_Matrix &) (*enforceMx);
+}
+
+void	Bgm::SetBestOrder (_SimpleList * orderList)
+{
+	best_node_order.Populate(num_nodes, 0, 0);
+	
+	for (long i = 0; i < num_nodes; i++)
+	{
+		best_node_order.lData[i] = orderList->lData[i];
+	}
+}
+
+//___________________________________________________________________________________________
+//	For debugging..
+void Bgm::PrintGraph (_Matrix * g)
 {
 	char	buf [255];
-	/* for DEBUGGING */
 	
-	for (long row = 0; row < dag.GetHDim(); row++)
+	if (g)
 	{
-		for (long col = 0; col < dag.GetVDim(); col++)
+		for (long row = 0; row < g->GetHDim(); row++)
 		{
-			sprintf (buf, "%d ", (long)dag(row,col));
+			for (long col = 0; col < g->GetVDim(); col++)
+			{
+				sprintf (buf, "%d ", (long) (*g)(row,col));
+				BufferToConsole (buf);
+			}
+			sprintf (buf, "\n");
 			BufferToConsole (buf);
 		}
-		sprintf (buf, "\n");
-		BufferToConsole (buf);
 	}
-	sprintf (buf, "\n");
-	BufferToConsole(buf);
+	else
+	{
+		for (long row = 0; row < dag.GetHDim(); row++)
+		{
+			for (long col = 0; col < dag.GetVDim(); col++)
+			{
+				sprintf (buf, "%d ", (long)dag(row,col));
+				BufferToConsole (buf);
+			}
+			sprintf (buf, "\n");
+			BufferToConsole (buf);
+		}
+	}
+	NLToConsole();
 }
 
 
 //___________________________________________________________________________________________
-inline void	Bgm::ResetDag (void)
+void	Bgm::ResetGraph (_Matrix * g)
 {
-	for (long row = 0; row < num_nodes; row++)
-		for (long col = 0; col < num_nodes; col++)
-			dag.Store (row,col,0.);
+	if (g)
+	{
+		for (long row = 0; row < num_nodes; row++)
+		{
+			for (long col = 0; col < num_nodes; col++)
+			{
+				g->Store (row, col, enforced_edges (row, col));
+			}
+		}
+	}
+	else
+	{
+		for (long row = 0; row < num_nodes; row++)
+		{
+			for (long col = 0; col < num_nodes; col++)
+			{
+				// enforced edges must always appear in DAG
+				// if none specified, all entries are zeroed
+				dag.Store (row, col, enforced_edges (row, col));
+			}
+		}
+	}
 }
 
 
@@ -560,6 +682,251 @@ bool	Bgm::IsCyclic (void)
 
 
 
+
+//___________________________________________________________________________________________
+void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps, bool fixed_order)
+{
+#ifdef __DEBUG_RG__
+	char	bug [255];
+#endif
+	long	step = 0, fail = 0, 
+			child, parent, 
+			child_idx, parent_idx;
+	
+	
+	// convert order into matrix format of edge permissions
+	_Matrix orderMx (num_nodes, num_nodes, false, true);
+	
+	for (long p_index = 0; p_index < num_nodes; p_index++)
+	{
+		for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
+		{
+			orderMx.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
+		}
+	}
+	
+	
+	
+	// before we do anything, make sure that graph complies with order /* DEBUGGING */
+	for (long parent = 0; parent < num_nodes; parent++)
+	{
+		for (long child = 0; child < num_nodes; child++)
+		{
+			if ( (*graphMx)(parent, child)==1 && orderMx(parent, child)==0 )
+			{
+				PrintGraph (&orderMx);
+				PrintGraph (graphMx);
+				
+				_String oops ("Order-network discrepancy at start of RandomizeGraph(), exiting..");
+				WarnError (oops);
+				break;
+			}
+		}
+	}
+	
+	
+	// calculate number of parents for each child for rapid access later
+	_SimpleList		num_parents;
+	// long			graph_density = 0;
+	
+	num_parents.Populate (num_nodes, 0, 0);
+	
+	for (child = 0; child < num_nodes; child++)
+	{
+		for (parent = 0; parent < num_nodes; parent++)
+		{
+			if ( (*graphMx)(parent, child) > 0)
+			{
+				num_parents.lData[child]++;
+				// graph_density++;
+			}
+		}
+		
+		if (num_parents.lData[child] > max_parents.lData[child])
+		{
+			_String oops ("Number of parents exceeds maximum BEFORE randomization of graph.");
+			WarnError (oops);
+			break;
+		}
+	}
+	
+	
+	
+	// randomize graph
+	do
+	{
+		// a fail-safe to avoid infinite loops
+		if (fail > MAX_FAIL_RANDOMIZE)
+		{
+			PrintGraph (graphMx);
+			PrintGraph (&orderMx);
+			
+			_String oops ("Failed to modify the graph in GraphMCMC() after MAX_FAIL_RANDOMIZE attempts.");
+			WarnError (oops);
+			break;
+		}
+		
+		// pick a random edge
+		parent_idx	= (genrand_int32() % (num_nodes-1)) + 1;	// shift right to not include lowest node in order
+		child_idx	= genrand_int32() % parent_idx;
+		
+		child = order->lData[child_idx];
+		parent = order->lData[parent_idx];
+		
+#ifdef __DEBUG_RG__
+		sprintf (bug, "Try edge %d-->%d\n", parent, child);
+		BufferToConsole (bug);
+#endif
+		
+		if (fixed_order || genrand_real2() > RANDOMIZE_PROB_SWAP)
+		{
+			if ( (*graphMx)(parent,child) == 0 && !banned_edges(parent,child))		// add an edge
+			{
+				if (num_parents.lData[child] == max_parents.lData[child])
+				{
+					// move an edge from an existing parent to target parent
+					long	deadbeat_dad	= genrand_int32() % max_parents.lData[child];
+					long	social_worker	= 0;
+					for (; social_worker < num_nodes; social_worker++)
+					{
+						if ( (*graphMx)(social_worker,child) == 1)
+						{
+							if (deadbeat_dad)
+							{
+								deadbeat_dad--;
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					
+					if ( !enforced_edges(social_worker, child) )
+					{
+						graphMx->Store (social_worker, child, 0.);
+						num_parents.lData[child]--;
+#ifdef __DEBUG_RG__
+						sprintf (bug, "Remove and ");
+						BufferToConsole (bug);
+#endif
+					}
+					else
+					{
+						fail++;
+					}
+				}
+				else
+				{
+					graphMx->Store (parent, child, 1.);
+					num_parents.lData[child]++;
+					step++;
+#ifdef __DEBUG_RG__
+					sprintf (bug, "Add\n");
+					BufferToConsole(bug);
+#endif
+				}
+			}
+			else if ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child))		// delete an edge
+			{
+				graphMx->Store (parent, child, 0.);
+				num_parents.lData[child]--;
+				step++;
+#ifdef __DEBUG_RG__
+				sprintf (bug, "Remove\n");
+				BufferToConsole (bug);
+#endif
+			}
+			else
+			{
+				fail++;
+			}
+		}
+		else	// swap nodes in ordering and flip edge if present
+		{
+			long	buzz = 0;
+			
+			for (long bystander, i=child_idx+1; i < parent_idx; i++)
+			{
+				bystander = order->lData[i];
+				if (enforced_edges (parent, bystander) || enforced_edges (bystander, child))
+				{
+					fail++;
+					buzz = 1;
+				}
+			}
+			
+			if ( buzz == 0 && 
+				 ( (*graphMx)(parent,child) == 0
+				|| ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child) && num_parents.lData[parent] < max_parents.lData[parent] )
+				))
+			{
+				// flip the target edge
+				if ( (*graphMx)(parent,child) == 1)
+				{
+					graphMx->Store (parent,child, 0);
+					graphMx->Store (child,parent,1);
+					num_parents.lData[child]--;
+					num_parents.lData[parent]++;
+				}
+				
+				// flip the other edges affected by node swap
+				for (long bystander, i = child_idx+1; i < parent_idx; i++)
+				{
+					bystander = order->lData[i];
+					if ( (*graphMx)(bystander, child) == 1)
+					{
+						graphMx->Store (bystander, child, 0);
+						num_parents.lData[child]--;
+						
+						if (num_parents.lData[bystander] < max_parents.lData[bystander])
+						{
+							graphMx->Store (child, bystander, 1);
+							num_parents.lData[bystander]++;
+						}
+					}
+					
+					if ( (*graphMx)(parent,bystander) == 1)
+					{
+						graphMx->Store (parent, bystander, 0);
+						num_parents.lData[bystander]--;
+						
+						if (num_parents.lData[parent] < max_parents.lData[parent])
+						{
+							graphMx->Store (bystander, parent, 1);
+							num_parents.lData[parent]++;
+						}
+					}
+				}
+				
+				// swap nodes in order
+				order->lData[parent_idx] = child;
+				order->lData[child_idx] = parent;
+				
+				// refresh order matrix
+				for (long p_index = 0; p_index < num_nodes; p_index++)
+				{
+					for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
+					{
+						orderMx.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
+					}
+				}
+				
+				step++;
+				
+			}
+			else
+			{
+				fail++;
+			}	
+		}
+	}
+	while (step < num_steps);
+	
+}
+
+
+
 //___________________________________________________________________________________________
 void	Bgm::RandomizeDag (long num_steps)
 {	
@@ -574,12 +941,13 @@ void	Bgm::RandomizeDag (long num_steps)
 		
 		do
 		{
-			{
 			for (long row = 0; row < num_nodes; row++)
+			{
 				for (long col = 0; col < num_nodes; col++)
+				{
 					dag.Store (row,col,reset_dag(row,col));
+				}
 			}
-			// PrintDag();
 			
 			
 			// select a random arc, discarding cycles and banned edges
@@ -635,7 +1003,7 @@ void	Bgm::RandomizeDag (long num_steps)
 				}
 			}
 			
-			// PrintDag();
+			// PrintGraph(nil);
 			
 		} while ( IsCyclic() );
 	}
@@ -648,7 +1016,7 @@ void	Bgm::RandomizeDag (long num_steps)
 
 //___________________________________________________________________________________________
 
-inline _Parameter Bgm::LnGamma(_Constant * calculator, long x)
+inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
 {
 	// wrapper function for _Constant member function
 	calculator->SetValue (x);
@@ -675,26 +1043,24 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id)
 	return ComputeDiscreteScore (node_id, parents);
 }
 
+_Parameter	Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
+{
+	_SimpleList		parents;
+	
+	for (long par = 0; par < num_nodes; par++)
+	{
+		if ((*g)(par, node_id) == 1 && is_discrete.lData[par])
+			parents << par;
+	}
+	
+	return ComputeDiscreteScore (node_id, parents);
+}
 
 
 //___________________________________________________________________________________________
 _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
-	_SimpleList		multipliers ((long)1);
-	
-	
-	// generate list of discrete parents from graph
-	/*
-	for (long par = 0; par < num_nodes; par++)
-	{
-		if (dag(par, node_id) == 1 && is_discrete.lData[par])
-			parents << par;
-	}
-	 */
-	
-	
 	// use cached node scores if possible
-	
 	if (scores_cached)
 	{
 		_List *		scores	= (_List *) node_scores.lData[node_id];
@@ -726,65 +1092,137 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	
 	
 	
+#ifdef __MISSING_DATA__
+	//	Is node with missing data in Markov blanket of focal node?
+	if (has_missing.lData[node_id])
+	{
+		return (ImputeDiscreteScore (node_id, parents));
+	}
+	else
+	{
+		for (long par = 0; par < parents.lLength; par++)
+		{
+			if (has_missing.lData[parents.lData[par]])
+			{
+				return (ImputeDiscreteScore (node_id, parents));
+			}
+		}
+	}
+#endif
+	
+	
+	_SimpleList		multipliers ((long)1);
+	
 	// else need to compute de novo
 	_Matrix		n_ijk,
-				n_ij;		// [i] indexes child nodes, [j] indexes combinations of values for parents of i-th node, [k] indexes values of i-th node
+				n_ij;		// [i] indexes child nodes, 
+							// [j] indexes combinations of values for parents of i-th node, 
+							// [k] indexes values of i-th node
 	
-	long		num_parent_combos = 1;	// i.e. 'q'
+	long		num_parent_combos	= 1,					// i.e. 'q'
+				r_i					= num_levels.lData[node_id];
 	
 	_Parameter	n_prior_ijk	= 0,
 				n_prior_ij	= 0,
 				log_score	= 0;
 	
 	
+	
 	// how many combinations of parental states are there?
 	for (long par = 0; par < parents.lLength; par++)
 	{
 		num_parent_combos *= num_levels.lData[parents.lData[par]];
-		multipliers << num_parent_combos;		// unused!
+		multipliers << num_parent_combos;
 	}
 	
 	
+#ifdef __DEBUG_IDS__
+	char			buf [255];
+	
+	sprintf (buf, "Multipliers: ");
+	BufferToConsole (buf);
+	for (long i = 0; i < multipliers.lLength; i++)
+	{
+		sprintf (buf, "%d ", multipliers.lData[i]);
+		BufferToConsole (buf);
+	}
+	NLToConsole();
+#endif
+	
+	
 	/* count observations by parent combination, using direct indexing */
-	CreateMatrix (&n_ijk, num_parent_combos, num_levels.lData[node_id], false, true, false);
+	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
 	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
 	
+	
+#ifdef __MISSING_DATA__
+	/*  METHODS FOR COMPLETE DATA  */
+	for (long obs = 0; obs < obsData->GetHDim(); obs++)
+	{
+		long	index			= 0,
+				//multiplier	= 1,
+				child_state		= (*obsData)(obs, node_id);
+		
+		for (long par = 0; par < parents.lLength; par++)
+		{
+			long	this_parent			= parents.lData[par],
+			this_parent_state	= (*obsData)(obs, this_parent);
+			
+			index += this_parent_state * multipliers.lData[par];
+		}
+		
+		n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
+		n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
+	}
+	
+	if (prior_sample_size (node_id, 0) == 0)	// K2
+	{
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
+			log_score -= LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]);	// (N+r-1)!
+			
+			for (long k = 0; k < num_levels.lData[node_id]; k++)
+				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
+		}
+	} 
+	else	// BDe
+	{
+		n_prior_ij = prior_sample_size (node_id, 0) / num_parent_combos;
+		n_prior_ijk = n_prior_ij / num_levels.lData[node_id];
+		
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			log_score += LnGamma (calc_bit, n_prior_ij) - LnGamma (calc_bit, n_prior_ij + n_ij(j,0));
+			
+			for (long k = 0; k < num_levels.lData[node_id]; k++)
+				log_score += LnGamma (calc_bit, n_prior_ijk + n_ijk(j,k)) - LnGamma (calc_bit, n_prior_ijk);
+		}
+	}
+	
+#else
 	for (long obs = 0; obs < obsData->GetHDim(); obs++)
 	{
 		long	index		= 0,
 				multiplier	= 1,
 				child_state = (*obsData)(obs, node_id);
-#ifdef __OMIT_MISSING_DATA__
-		bool	skip_obs	= FALSE;
-		
-		if (child_state < 0)	// encode missing data using negative integer values
-			continue;
-#endif
 		
 		for (long par = 0; par < parents.lLength; par++)
 		{
 			long	this_parent			= parents.lData[par],
 					this_parent_state	= (*obsData)(obs, this_parent);
-			
-#ifdef __OMIT_MISSING_DATA__
-			if (this_parent_state < 0)
-			{
-				skip_obs = TRUE;
-				break;
-			}
-#endif
-			
-			index += this_parent_state * multiplier;
+				
+					
+			/*		// this system doesn't work with unequal levels!  :-P  afyp March 31, 2008
+			index += this_parent_state * multiplier;		
 			multiplier *= num_levels.lData[this_parent];
+			 */
+			index += this_parent_state * multipliers.lData[par];
 		}
 		
-#ifdef __OMIT_MISSING_DATA__
-		if (!skip_obs)
-#endif
-		{
-			n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
-			n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
-		}
+		n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
+		n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
+		
 	}
 	
 	
@@ -795,11 +1233,11 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		/* assume no prior information, use K2 metric */
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-			log_score -= LnGamma(calc_bit, (long) n_ij(j, 0) + num_levels.lData[node_id]);	// (N+r-1)!
+			log_score += LnGamma(calc_bit, r_i);	// (r-1)!
+			log_score -= LnGamma(calc_bit, n_ij(j, 0) + r_i);	// (N+r-1)!
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
-				log_score += LnGamma (calc_bit, ((long)n_ijk(j,k) + 1));	// (N_ijk)!
+				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
 			
 #ifdef BGM_DEBUG_CDS
 			char buf [256];
@@ -817,13 +1255,13 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(calc_bit, num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
-			sprintf (buf, "\tlog(N+r-1)! = log %d! = %lf\n", (long) n_ij(j, 0) + num_levels.lData[node_id] - 1, 
-					LnGamma(calc_bit, (long) n_ij(j, 0) + num_levels.lData[node_id]));
+			sprintf (buf, "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.lData[node_id] - 1, 
+					LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
 			{
-				sprintf (buf, "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma (calc_bit, ((long)n_ijk(j,k) + 1)));
+				sprintf (buf, "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma (calc_bit, n_ijk(j,k) + 1));
 				BufferToConsole (buf);
 			}
 			
@@ -847,6 +1285,9 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 				log_score += LnGamma (calc_bit, n_prior_ijk + n_ijk(j,k)) - LnGamma (calc_bit, n_prior_ijk);
 		}
 	}
+#endif
+	
+	
 #ifdef BGM_DEBUG_CDS
 	char	buf[255];
 	sprintf (buf, "Log score = %f\n\n", log_score);
@@ -856,6 +1297,675 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	return (log_score);
 }
 
+
+
+//___________________________________________________________________________________________
+//	Use Monte Carlo over assignments to m_ijk to calculate expectation, which can be used for EM (MCEM)
+//		but m_ijk are constrained by partial observations, a hassle for bookkeeping  :-/
+//		Alternatively, we can perform MCMC over imputations of missing values; which is faster?
+_Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
+{
+	_SimpleList		multipliers ((long)1);
+	
+	_Matrix		n_ijk,
+				n_ij;
+	
+	long		num_parent_combos	= 1,
+				r_i					= num_levels.lData[node_id],
+				mcem_interval;
+	
+	_Parameter	log_score	= 0,
+				mcem_max_steps,
+				mcem_burnin,
+				mcem_sample_size;
+	
+	
+	// set MCMC parameters from batch language definitions
+	checkParameter (mcemMaxSteps, mcem_max_steps, 0);
+	checkParameter (mcemBurnin, mcem_burnin, 0);
+	checkParameter (mcemSampleSize, mcem_sample_size, 0);
+	
+	if (mcem_max_steps == 0 || mcem_sample_size == 0)
+	{
+		_String oops ("Did you forget to specify a value for BGM_MCEM_MAXSTEPS or BGM_MCEM_SAMPLES?\n");
+		WarnError (oops);
+	}
+	
+	mcem_interval = (long) (mcem_max_steps / mcem_sample_size);
+	
+	
+	// count number of parent state combinations
+	for (long par = 0; par < parents.lLength; par++)
+	{
+		num_parent_combos *= num_levels.lData[parents.lData[par]];
+		multipliers << num_parent_combos;
+	}
+	
+	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
+	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
+	
+	
+	
+	_GrowingVector		impute,		// to store a copy of incomplete cases
+						is_missing; // boolean values mapping to missing values in [impute]
+	
+	_GrowingVector	*	post_chain = new _GrowingVector(),
+					*	prior_denom = new _GrowingVector();
+	
+	
+	// prepare containers for keeping track of state-frequencies per node
+	// for later use in imputation
+	
+	long				max_num_levels	= num_levels.lData [node_id],
+						family_size		= parents.lLength + 1;
+	
+	_SimpleList			family_nlevels (max_num_levels);
+	
+	_Matrix				m_ijk,		// let m_ijk denote missing values such that n_ijk + m_ijk sums to N_i for all j, k.
+						m_ij,
+						observed_freqs;
+	
+	
+	CreateMatrix (&m_ijk, num_parent_combos, r_i, false, true, false);	// note these are populated with 0.0's
+	CreateMatrix (&m_ij, num_parent_combos, 1, false, true, false);
+	
+	
+	// evaluate the number of levels for each node in family
+	for (long par = 0; par < parents.lLength; par++)
+	{
+		long	par_nlevels = num_levels.lData [ parents.lData[par] ];
+		
+		family_nlevels << par_nlevels;
+		if (par_nlevels > max_num_levels)
+		{
+			max_num_levels = par_nlevels;
+		}
+	}
+	
+	CreateMatrix (&observed_freqs, family_size, max_num_levels, false, true, false);
+	
+	
+	
+#ifdef __DEBUG_IDS__
+	char	buf[255];
+	sprintf (buf, "family_nlevels: ");
+	BufferToConsole (buf);
+	for (long bug = 0; bug < family_nlevels.lLength; bug++)
+	{
+		sprintf (buf, "%d ", family_nlevels.lData[bug]);
+		BufferToConsole (buf);
+	}
+	NLToConsole ();
+#endif
+	
+	
+	
+	// tally complete cases
+	for (long index, obs = 0; obs < obsData->GetHDim(); obs++)
+	{
+		long	child_state = (*obsData) (obs, node_id);
+		
+		index = 0;
+		
+		if (child_state > -1)
+		{
+			observed_freqs.Store (0, child_state, observed_freqs (0, child_state) + 1);
+			
+			for (long par = 0; par < parents.lLength; par++)
+			{
+				long	this_parent			= parents.lData[par],
+				this_parent_state	= (*obsData) (obs, this_parent);
+				
+				if (this_parent_state < 0) 
+				{
+					index = -1;	// flag observation to skip
+					break;
+				}
+				else
+				{
+					index += this_parent_state * multipliers.lData[par];
+					observed_freqs.Store (par+1, this_parent_state, observed_freqs (par+1, this_parent_state) + 1);
+				}
+			}
+		}
+		else
+		{
+			index = -1;
+		}
+		
+		if (index > -1)	// update n_ijk's with complete case
+		{
+			n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
+			n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
+		}
+		else
+		{
+			// store family in impute, always in the order (child, parent0, parent1, ...)
+			impute.Store ( (_Parameter) child_state);				
+			is_missing.Store ( (_Parameter) ((child_state < 0) ? 1 : 0) );
+			
+			for (long par = 0; par < parents.lLength; par++)
+			{
+				long	parent_state	= (*obsData) (obs, parents.lData[par]);
+				
+				impute.Store ( (_Parameter) parent_state);
+				is_missing.Store ( (_Parameter) ((parent_state < 0) ? 1 : 0) );
+			}
+		}
+	}
+	
+	
+#ifdef __DEBUG_IDS__
+	sprintf (buf, "complete cases N_ijk: \n");
+	BufferToConsole (buf);
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		for (long k = 0; k < family_nlevels.lData[0]; k++)
+		{
+			sprintf (buf, "%d ", (long) n_ijk (j,k));
+			BufferToConsole (buf);
+		}
+		NLToConsole ();
+	}
+	NLToConsole ();
+	
+	sprintf (buf, "impute: \n");
+	BufferToConsole (buf);
+	for (long bug = 0; bug < impute.GetUsed(); bug++)
+	{
+		sprintf (buf, "%d ", (long) impute (0, bug));
+		BufferToConsole (buf);
+		
+		if (bug % family_size == family_size - 1)
+		{
+			NLToConsole ();
+		}
+	}
+	NLToConsole ();
+#endif
+	
+	
+	
+	// convert observed states into frequencies
+	for (long obs_total, i = 0; i < family_size; i++)
+	{
+		obs_total = 0;
+		for (long obs_state = 0; obs_state < family_nlevels.lData[i]; obs_state++)
+		{
+			obs_total += observed_freqs (i, obs_state);
+		}
+		
+		for (long obs_state = 0; obs_state < family_nlevels.lData[i]; obs_state++)
+		{
+			observed_freqs.Store (i, obs_state, (_Parameter) (observed_freqs (i, obs_state) / obs_total));
+		}
+	}
+	
+	
+#ifdef __DEBUG_IDS__
+	sprintf (buf, "observed_freqs: \n");
+	BufferToConsole (buf);
+	
+	for (long fam = 0; fam < family_size; fam++)
+	{
+		for (long lev = 0; lev < family_nlevels.lData[fam]; lev++)
+		{
+			sprintf (buf, "%f ", observed_freqs (fam, lev));
+			BufferToConsole (buf);
+		}
+		NLToConsole ();
+	}
+	NLToConsole ();
+#endif
+	
+	
+	
+	// Initial imputation with random assignments to missing values, based on observed frequencies
+	//	We can always burn-in the chain to converge to more realistic assignments
+	//	before taking expectation.
+	//	Also use this loop to calculate m_ijk's, i.e. cell counts for cases with missing values
+	for (long i = 0; i < impute.GetUsed(); i++)
+	{
+		if (is_missing(0,i))
+		{
+			double	urn			= genrand_real2();
+			long	member		= i % family_size;
+			
+			for (long lev = 0; lev < family_nlevels.lData[member]; lev++)
+			{
+				if (urn < observed_freqs (member, lev))
+				{
+					impute._Matrix::Store (0, i, (_Parameter)lev);
+					break;
+				}
+				else
+				{
+					urn -= observed_freqs (member, lev);	// rescale random float
+				}
+			}
+		}
+	}
+	
+	
+	
+	// compute m_ijk's and m_ij's
+	long		num_incomplete_cases	= impute.GetUsed() / family_size;
+	
+	for (long ic = 0; ic < num_incomplete_cases; ic++)
+	{
+		long	index			= 0,
+		child_state		= impute (0, ic * family_size);
+		
+		for (long par = 0; par < parents.lLength; par++)
+		{
+			long	parent_state	= impute (0, ic*family_size + par+1);		
+			index += parent_state * multipliers.lData[par];
+		}
+		
+		m_ijk.Store ((long) index, child_state, m_ijk(index, child_state) + 1);
+		m_ij.Store ((long) index, 0, m_ij(index, 0) + 1);
+	}
+	
+	
+	
+#ifdef __DEBUG_IDS__
+	sprintf (buf, "impute: \n");
+	BufferToConsole (buf);
+	for (long bug = 0; bug < impute.GetUsed(); bug++)
+	{
+		sprintf (buf, "%d ", (long) impute (0, bug));
+		BufferToConsole (buf);
+		
+		if (bug % family_size == family_size - 1)
+		{
+			NLToConsole ();
+		}
+	}
+	NLToConsole ();
+	
+	sprintf (buf, "m_ijk: \n");
+	BufferToConsole (buf);
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		for (long k = 0; k < family_nlevels.lData[0]; k++)
+		{
+			sprintf (buf, "%d ", (long) m_ijk (j,k));
+			BufferToConsole (buf);
+		}
+		
+		sprintf (buf, "| %d", (long) m_ij (j,0));
+		BufferToConsole (buf);
+		
+		NLToConsole ();
+	}
+	NLToConsole ();
+#endif
+	
+	
+	// Calculate probability of imputation {m_ijk}
+	//	For the time being, use multinomial with Dirichlet prior based on non-missing cases (n_ijk)
+	//	for each node, i.e., network parameters for empty graph (independence prior).
+	//	Later, we will want to allow the user to submit their own prior distribution (e.g., after an iteration
+	//	of structural EM) - afyp (March 28, 2008)
+	
+	// add Jeffrey's invariance constant (0.5) to every cell n_ijk to avoid zero counts?
+	
+	_Parameter	log_prior_impute		= 0.0;
+	
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		
+		log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
+		- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
+		/*
+		log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
+		- LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
+		 */
+		for (long k = 0; k < r_i; k++)
+		{
+			
+			log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
+			- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
+			/*
+			log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
+			- LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
+			 */
+		}
+	}
+	
+	
+	
+	// Calculate posterior probability for initial imputation		
+	_Parameter	last_score	= log_prior_impute,
+				last_prior_impute = log_prior_impute;
+	
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		last_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
+		last_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
+		
+		for (long k = 0; k < num_levels.lData[node_id]; k++)
+		{
+			last_score += LnGamma (calc_bit, n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
+		}
+	}
+	
+	
+	
+#ifdef __DEBUG_IDS__
+	sprintf (buf, "log_prior_impute = %f\nlast_score = %f\n", log_prior_impute, last_score);
+	BufferToConsole (buf);
+#endif
+	
+	  /********
+	 /  MCMC  /
+	 ********/
+	
+	// Run MCMC over imputations, use as proposal function a single case reassignment (guaranteed to modify m_ijk's)
+	//		Take into account case being reassigned so that we don't have to re-sum m_ijk every time
+	//		use burn-in and thinning of the sample when calculating the expectation for family posterior probability
+	_Parameter	lk_ratio,
+				expect_log_score = 0.;
+	
+	_Matrix		last_impute ((_Matrix &) impute),		// duplicate matrix constructors
+				last_m_ijk (m_ijk),
+				last_m_ij (m_ij);
+	
+	
+	for (long step = 0; step < mcem_max_steps + mcem_burnin; step++)
+	{
+		/*	PROPOSAL  */
+		
+		// choose a random case from the incomplete set and pick a random variable that is missing
+		long	imp,
+				imp_case,
+				imp_var,
+				last_state,
+				child_state,
+				pick;
+		
+		
+		
+		while (1)	// this could be optimized by pre-computing a list of missing value indices
+		{
+			imp = genrand_int32 () % impute.GetUsed();
+			
+			if (is_missing(0, imp))
+			{
+				break;
+			}
+		}
+		
+		imp_case = (long) (imp / family_size);		// which incomplete case?
+		imp_var	 = imp % family_size;		// which variable?
+		last_state = impute (0, imp);
+		
+		
+		
+#ifdef __DEBUG_IDS__
+		sprintf (buf, "imp = %d\nimp_case = %d\nimp_var = %d\nnum_incomplete_cases=%d\n", imp, imp_case, imp_var, num_incomplete_cases);
+		BufferToConsole (buf);
+#endif
+		
+		
+		long	old_index = 0,
+		new_index;
+		
+		for (long par = 0; par < parents.lLength; par++)
+		{
+			long	parent_state	= impute (0, imp_case*family_size + par+1);		
+			old_index += parent_state * multipliers.lData[par];
+		}
+		
+		
+		
+		// randomly assign a new state to the variable
+		
+		if (family_nlevels.lData[imp_var] < 2)
+		{
+			_String	oops ("WARNING: Attempting to impute missing values for variable having fewer than two known levels..\n");
+			WarnError(oops);
+			
+			continue;	// drop this step from the chain
+		}
+		else if (family_nlevels.lData[imp_var] == 2)
+		{
+			// by convention, levels are zero-indexed; if not, this won't work
+			impute._Matrix::Store (0, imp, (_Parameter) (last_state ? 0 : 1));
+		}
+		else		// randomly assign a state (other than the current one) with uniform probability
+		{
+			pick = genrand_int32() % (family_nlevels.lData[imp_var]-1);
+			
+			if (pick >= last_state)
+			{
+				pick++;		// skip current state
+			}
+			
+			impute._Matrix::Store (0, imp_var, (_Parameter)pick);
+		}
+		
+		
+#ifdef __DEBUG_IDS__
+		sprintf (buf, "proposed impute: \n");
+		BufferToConsole (buf);
+		for (long bug = 0; bug < impute.GetUsed(); bug++)
+		{
+			sprintf (buf, "%d ", (long) impute (0, bug));
+			BufferToConsole (buf);
+			
+			if (bug % family_size == family_size - 1)
+			{
+				NLToConsole ();
+			}
+		}
+		NLToConsole ();
+#endif
+		
+		// given the case just modified, update m_ijk's.
+		
+		child_state = impute(0, imp_case*family_size);
+		
+		if (imp_var > 0)
+		{
+			// changed a parental variable, update index
+			new_index = 0;
+			
+			for (long par = 0; par < parents.lLength; par++)
+			{
+				long	parent_state	= impute (0, imp_case*family_size + par+1);		
+				new_index += parent_state * multipliers.lData[par];
+			}
+			
+#ifdef __DEBUG_IDS__
+			sprintf (buf, "old_index = %d\nnew_index = %d\n", old_index, new_index);
+			BufferToConsole (buf);
+#endif
+			//	It shouldn't be necessary to re-calculate log_prior_impute from scratch every time
+			//	but this doesn't work properly yet :-P afyp
+			
+			/*
+			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, child_state));
+			 log_prior_impute -= LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(new_index, child_state));
+			 */
+			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) - 1);
+			m_ijk.Store (new_index, child_state, m_ijk (new_index, child_state) + 1);
+			/*
+			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, child_state));
+			 log_prior_impute += LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(new_index, child_state));
+			 */
+			
+			// non-integer flattening constant prevents us from operating directly on factorial terms
+			/*
+			 log_prior_impute -= log ( n_ijk (old_index, child_state) + m_ijk (old_index, child_state) + DIRICHLET_FLATTENING_CONST - 1 );
+			 log_prior_impute += log ( n_ijk (new_index, child_state) + m_ijk (new_index, child_state) + DIRICHLET_FLATTENING_CONST );				
+			 */
+			
+			/*
+			 log_prior_impute -= - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
+			 log_prior_impute -= - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
+			 */
+			m_ij.Store (old_index, 0, m_ij (old_index, 0) - 1);
+			m_ij.Store (new_index, 0, m_ij (new_index, 0) + 1);
+			/*
+			 log_prior_impute += - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
+			 log_prior_impute += - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
+			 */
+		}
+		else
+		{
+			/*
+			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, last_state));
+			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, last_state));
+			 */
+			m_ijk.Store (old_index, last_state, m_ijk (old_index, last_state) - 1);
+			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) + 1);
+			/*
+			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, child_state));
+			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 + m_ijk(old_index, child_state));
+			 */
+			
+			/*
+			 log_prior_impute -= log ( n_ijk (old_index, last_state) + m_ijk (old_index, last_state) - 1);
+			 log_prior_impute += log ( n_ijk (old_index, child_state) + m_ijk (old_index, child_state) );
+			 */
+			// m_ij's unchanged, parental combination not modified
+		}
+		
+		
+		// re-compute prior
+		last_prior_impute		= log_prior_impute;
+		log_prior_impute		= 0.0;
+		/*
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
+			- LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
+			for (long k = 0; k < r_i; k++)
+			{
+				log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
+				- LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
+			}
+		}
+		*/
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
+			- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
+			
+			for (long k = 0; k < r_i; k++)
+			{
+				log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
+				- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
+			}
+		}
+		
+		
+#ifdef __DEBUG_IDS__
+		sprintf (buf, "proposed m_ijk: \n");
+		BufferToConsole (buf);
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			for (long k = 0; k < family_nlevels.lData[0]; k++)
+			{
+				sprintf (buf, "%d ", (long) m_ijk (j,k));
+				BufferToConsole (buf);
+			}
+			NLToConsole ();
+		}
+		NLToConsole ();
+#endif
+		
+		
+		// compute posterior probability for this step, given N_ijk = n_ijk + m_ijk
+		log_score = log_prior_impute;
+		
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
+			log_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
+			
+			for (long k = 0; k < num_levels.lData[node_id]; k++)
+			{
+				log_score += LnGamma (calc_bit,  n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
+			}
+		}
+		
+		/* I have a hunch this can all be stream-lined... - afyp April 4, 2008 */
+		
+		
+		// accept step?		(Metropolis-Hastings)
+		lk_ratio	= exp(log_score - last_score);
+		
+#ifdef __DEBUG_IDS__
+		sprintf (buf, "prior = %f, log_score = %f, last_score = %f, lk_ratio = %f\n", log_prior_impute, log_score, last_score, lk_ratio);
+		BufferToConsole (buf);
+#endif
+		if (lk_ratio > 1. || genrand_real2() < lk_ratio)	// accept proposed imputation
+		{
+			last_impute = (_Matrix &)impute;
+			last_score = log_score;
+			last_prior_impute	= log_prior_impute;
+			last_m_ijk = m_ijk;
+			last_m_ij = m_ij;
+#ifdef __DEBUG_IDS__			
+			sprintf (buf, "accept\n\n");
+			BufferToConsole (buf);
+#endif
+		}
+		else		// revert to original imputation
+		{
+			for (long i = 0; i < impute.GetUsed(); i++)
+			{
+				impute._Matrix::Store (0, i, last_impute (0, i));
+			}
+			log_score = last_score;
+			log_prior_impute	= last_prior_impute;
+			m_ijk = last_m_ijk;
+			m_ij = last_m_ij;
+#ifdef __DEBUG_IDS__				
+			sprintf (buf, "reject\n\n");
+			BufferToConsole (buf);
+#endif
+		}
+		
+		
+		
+		// handle sampling of chain
+		if (step >= mcem_burnin)
+		{
+			if ( (step - (long)mcem_burnin) % (long)mcem_interval == 0)
+			{
+				prior_denom->Store (log_prior_impute);	// append to _GrowingVector objects
+				post_chain->Store (log_score);
+#ifdef __DEBUG_IDS__
+				sprintf (buf, "%f, %f\n", log_prior_impute, log_score);
+				BufferToConsole (buf);
+#endif
+			}
+		}
+	}
+	// exit MCEM for-loop
+	
+	expect_log_score = LogSumExpo (post_chain) - LogSumExpo (prior_denom);
+#ifdef __DEBUG_IDS__		
+	sprintf (buf, "expected log score = %f\n\n\n", expect_log_score);
+	BufferToConsole (buf);
+#endif		
+	
+	DeleteObject (prior_denom);
+	DeleteObject (post_chain);
+	
+	return expect_log_score;
+}
 
 
 //___________________________________________________________________________________________
@@ -1171,16 +2281,16 @@ void Bgm::CacheNodeScores (void)
 	if (scores_cached)
 		return;
 	
+	/*
+	char buf [255];
+	sprintf (buf, "\nCaching node scores...\n");
+	BufferToConsole (buf);
+	*/
 	
-	//char buf [255];
-	//sprintf (buf, "\nCaching node scores...\n");
-	//BufferToConsole (buf);
-	
-	
-	//_SimpleList		* args	= new _SimpleList((unsigned long) 2);
+	_SimpleList		* args	= new _SimpleList((unsigned long) 2);
 
 	
-#ifdef __NO_DEFINE_MP__
+#ifdef __NEVER_DEFINE_MP__		// this totally crashes :-/  - AFYP
 	_Parameter		nthreads;
 	checkParameter (_HYBgm_NThreads, nthreads, 1);
 	
@@ -1238,79 +2348,111 @@ void Bgm::CacheNodeScores (void)
 		}
 		delete BgmThreads;
 		
-		
+		return;
 	}
-	else
-#else
-		// carry out as member function
-		for (long node_id = 0; node_id < num_nodes; node_id++)
-		{
-			long		maxp		= max_parents.lData[node_id];
-			_List	*	this_list	= (_List *) node_scores.lData[node_id];
-			
-			this_list->Clear();
-			
-			_SimpleList	parents;
-			_Parameter	score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
-			_Constant	orphan_score (score);
-			
-			(*this_list) && (&orphan_score);
-			
-			if (maxp > 0)
-			{
-				_Matrix		single_parent_scores (num_nodes, 1, false, true);
-				for (long par = 0; par < num_nodes; par++)
-				{
-					if (par == node_id)
-						continue;
-					
-					parents << par;
-					single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
-												ComputeContinuousScore (node_id));
-					parents.Clear();
-				}
-				(*this_list) && (&single_parent_scores);
-			}
-			
-			if (maxp > 1)
-			{
-				_SimpleList		all_but_one (num_nodes-1, 0, 1),	// 0, 1, 2, ... , n-1
-				aux_list,
-				nk_tuple;
-				
-				for (long np = 2; np <= maxp; np++)
-				{
-					_NTupleStorage	family_scores (num_nodes-1, np);
-					
-					if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
-					{
-						bool	remaining;
-						long	res;
-						do 
-						{
-							remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-							for (long par_idx = 0; par_idx < np; par_idx++)
-							{
-								long par = nk_tuple.lData[par_idx];
-								if (par >= node_id) par++;
-								parents << par;
-							}
-							score = is_discrete.lData[node_id]	?	ComputeDiscreteScore (node_id, parents) : 
-																	ComputeContinuousScore (node_id);
-							res = family_scores.Store (score, nk_tuple);
-							parents.Clear();						
-						} 
-						while (remaining);
-					} else {
-						_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-						WarnError(oops);
-					}
-					(*this_list) && (&family_scores);	// append duplicate to storage
-				}
-			}
-		}
+#else		// carry out as member function
+	
+#if !defined __UNIX__ || defined __HEADLESS__
+	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+	
+	_Parameter	seconds_accumulator = .0,
+				temp;
 #endif
 	
+	for (long node_id = 0; node_id < num_nodes; node_id++)
+	{
+		long		maxp		= max_parents.lData[node_id];
+		_List	*	this_list	= (_List *) node_scores.lData[node_id];	// retrieve pointer to list of scores for this child node
+		
+		this_list->Clear();		// reset the list
+		
+		// prepare some containers
+		_SimpleList	parents;
+		_Parameter	score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
+		_Constant	orphan_score (score);
+		
+		(*this_list) && (&orphan_score);
+		
+#if !defined __UNIX__ || defined __HEADLESS__
+		temp = .0;
+#endif
+		
+		if (maxp > 0)
+		{
+			_Matrix		single_parent_scores (num_nodes, 1, false, true);
+			for (long par = 0; par < num_nodes; par++)
+			{
+				if (par == node_id)		// child cannot be its own parent, except in Kansas
+					continue;
+				
+				parents << par;
+				single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
+											ComputeContinuousScore (node_id));
+				parents.Clear();
+			}
+			(*this_list) && (&single_parent_scores);
+		}
+		
+		if (maxp > 1)
+		{
+			_SimpleList		all_but_one (num_nodes-1, 0, 1),	// 0, 1, 2, ... , n-1
+			aux_list,
+			nk_tuple;
+			
+			for (long np = 2; np <= maxp; np++)
+			{
+				_NTupleStorage	family_scores (num_nodes-1, np);
+				
+				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+				{
+					bool	remaining;
+					long	res;
+					do 
+					{
+						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+						for (long par_idx = 0; par_idx < np; par_idx++)
+						{
+							long par = nk_tuple.lData[par_idx];
+							if (par >= node_id) par++;
+							parents << par;
+						}
+						score = is_discrete.lData[node_id]	?	ComputeDiscreteScore (node_id, parents) : 
+																ComputeContinuousScore (node_id);
+						res = family_scores.Store (score, nk_tuple);
+						parents.Clear();						
+					} 
+					while (remaining);
+				} else {
+					_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+					WarnError(oops);
+				}
+				(*this_list) && (&family_scores);	// append duplicate to storage
+			}
+		}
+		
+#if !defined __UNIX__ || defined __HEADLESS__
+		if ((temp=TimerDifferenceFunction(true))>1.0) // time to update
+		{
+			seconds_accumulator += temp;
+			
+			_String statusLine = _HYBgm_STATUS_LINE_CACHE & " " & (node_id+1) & "/" & num_nodes 
+									& " nodes (" & (1.0+node_id)/seconds_accumulator & "/second)";
+			SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
+			TimerDifferenceFunction (false); // reset timer for the next second
+			yieldCPUTime (); // let the GUI handle user actions
+			
+			if (terminateExecution) // user wants to cancel the analysis
+				break;
+		}
+#endif
+	}
+#endif
+	
+	
+#if !defined __UNIX__ || defined __HEADLESS__
+	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE_DONE);
+#endif
 	
 	scores_cached = TRUE;
 }
@@ -1318,6 +2460,17 @@ void Bgm::CacheNodeScores (void)
 
 
 //___________________________________________________________________________________________
+_Matrix *	Bgm::ExportGraph (void)
+{
+	_Matrix	* export_graph = new _Matrix ((_Matrix &)dag);	// duplicator
+	
+	return (_Matrix *) (export_graph->makeDynamic());
+}
+
+
+
+//___________________________________________________________________________________________
+//	This doesn't work yet -- afyp :-/
 _Matrix *	Bgm::ExportNodeScores (void)
 {
 	// determine the required number of rows
@@ -1394,7 +2547,7 @@ _Matrix *	Bgm::ExportNodeScores (void)
 	}
 	
 	
-	return export_mx;
+	return (_Matrix *)(export_mx->makeDynamic());
 }
 
 
@@ -1405,66 +2558,6 @@ void	Bgm::ImportNodeScores (_Matrix * import_scores)
 	
 }
 
-
-
-#ifdef __NEVER_DEFINED__
-//___________________________________________________________________________________________
-unsigned long Bgm::IndexIntoCache (long node_id, _SimpleList parents)
-{
-	/* m0							= index of child node				*/
-	/* m1, ..., m[max_parents]		= indices of parent nodes			*/
-	/* N							= total number of nodes				*/
-	/* e.g. Index = (m0 * N^3) + (m1 * N^2) + (m2 * N) + m3				*/
-	/*	if m0 == m1 then child node has only two parents;				*/
-	/*	if m0 == m1 == m2 then child node has only one parent (m3);		*/
-	/*	if m0 == m1 == m2 == m3, child node has no parents.				*/
-	
-
-	unsigned long	index = node_id * integerPower(num_nodes, max_parents);
-	long			placer = max_parents - 1;
-	
-	if (parents.lLength < max_parents)
-	{
-		// absent parents are replaced by node_id
-		for (long par = 0; par < max_parents - parents.lLength; par++)
-		{
-			index += node_id * integerPower(num_nodes, placer);
-			placer--;
-		}
-	}
-	
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		index += parents.lData[par] * integerPower (num_nodes, placer);
-		placer--;
-	}
-	
-	if (index == HUGE_VAL)
-	{
-		_String	oops ("Bgm::IndexIntoCache() overflowed.  Try reducing maximum number of parents.\n");
-		WarnError(oops);
-	}
-	return index;
-}
-
-
-//___________________________________________________________________________________________
-//	Return child and parent node id's given index; complements IndexIntoCache()
-
-void	Bgm::IndicesFromCache (long index)
-{
-	long	nn_pow = 1;
-	
-	for (long node = max_parents; node >= 0; node--)	// starting from last parent (child = node 0)
-	{
-		node_ids -> lData[node] = (long int) ((index % (nn_pow * num_nodes)) / nn_pow);
-		nn_pow *= num_nodes;
-	}
-	
-	node_ids->Flip();		// reverse order such that child node is first
-}
-
-#endif
 
 
 
@@ -1788,12 +2881,14 @@ _Parameter	Bgm::Compute (_SimpleList * node_order, _List * results)
 							_Parameter		tuple_score;
 							_SimpleList		parents;
 							
+							parents.Populate (nparents, 0, 0);	// allocate memory
+							
 							family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
 							
 							
 							do
 							{
-								parents.Clear();
+								//parents.Clear();
 								not_finished = indices.NChooseK (auxil, subset);	// cycle through index combinations
 								
 								
@@ -1801,7 +2896,7 @@ _Parameter	Bgm::Compute (_SimpleList * node_order, _List * results)
 								{
 									long	realized = precedes.lData[subset.lData[i]];
 									if (realized >= child_node) realized--;
-									parents << realized;
+									parents.lData[i] = realized;
 								}
 								parents.Sort(TRUE);
 								
@@ -1887,134 +2982,480 @@ _Parameter Bgm::Compute (void)
 
 
 //___________________________________________________________________________________________
+_Parameter Bgm::Compute (_Matrix * g)
+{
+	//CacheNodeScores();
+	
+	// return posterior probability of a given network defined by 'dag' matrix
+	_Parameter	log_score = 0.;
+	
+	for (long node_id = 0; node_id < num_nodes; node_id++)
+		log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, g) : 0 /*: ComputeContinuousScore (node_id, g)*/;
+	
+	return log_score;
+}
+
+
+
+
+//___________________________________________________________________________________________
 _Matrix *	Bgm::Optimize (void)
 {
 	#ifdef DEBUG_OPTIMIZE
 		char		buf [255];
 	#endif
 	
-	CacheNodeScores();
-	ResetDag();
+	if (!scores_cached) 
+	{
+		CacheNodeScores();
+	}
+	
 	
 	_Parameter	num_restarts,			// HBL settings
 				num_randomize;
 	
 	checkParameter (maxNumRestart, num_restarts, 1.);
 	checkParameter (numRandomize, num_randomize, num_nodes);
+	//checkParameter (useNodeOrder, use_node_order, 0);
 	
 	
-	_Matrix		log_scores (num_nodes, 1, false, true),
-				best_dag (num_nodes, num_nodes, false, true),
-				initial_dag (num_nodes, num_nodes, false, true);
 	
-	_Parameter	log_score,
-				old_score,
-				best_score = LARGE_NEGATIVE_NUMBER;
+	// char		bug [255];
+	_Parameter		optMethod;	/* 0 = K2 fixed order; 1 = K2 shuffle order with restarts */
+								/* 2 = MCMC fixed order; 3 = MCMC over networks and orders */
+	checkParameter (bgmOptimizationMethod, optMethod, 0.);
 	
-	
-	// load DAG into initial DAG
-	for (long row = 0; row < num_nodes; row++)
-		for (long col = 0; col < num_nodes; col++)
-			initial_dag.Store (row,col,dag(row,col));
-	
-	
-	// greedy hill-climbing algorithm with random restarts
-	for (long restart = 0; restart < num_restarts; restart++)
+	if (optMethod > 1)
 	{
-		for (long row = 0; row < num_nodes; row++)
-			for (long col = 0; col < num_nodes; col++)
-				dag.Store (row,col,initial_dag(row,col));
-		//dag = initial_dag;
+		return GraphMCMC( (optMethod < 3) ? TRUE : FALSE);		// use MCMC to evaluate posterior probability of network space
+	}
+	
+	
+	
+	_Parameter	this_score, best_score, next_score;
+	
+	_Matrix		orderMx (num_nodes, num_nodes, false, true),
+				best_dag (num_nodes, num_nodes, false, true);
+	
+	bool		reshuffle_order = FALSE;
+	
+	
+	// if best node order hasn't been estimated, 
+	if (optMethod == 1 && best_node_order.lLength == 0)
+	{
+		reshuffle_order = TRUE;
+		best_node_order.Populate (num_nodes, 0, 1);
+		best_node_order.Permute (1);
+	}
+	
+	
+	//	Convert node order to binary matrix where edge A->B is permitted if
+	//	orderMx[B][A] = 1, i.e. B is to the right of A in node order.
+	for (long i = 0; i < num_nodes; i++)
+	{
+		long	child = best_node_order.lData[i];
 		
-		RandomizeDag(num_nodes);	// randomly modify as many edges as there are nodes in the network (ARBITRARY)
-		log_score = Compute();
-		
-#ifdef DEBUG_OPTIMIZE
-		
-		sprintf (buf, "Randomized graph...\n");
-		BufferToConsole (buf);
-		PrintDag();
-		
-		sprintf (buf, "with initial score = %f\n", log_score);
-		BufferToConsole (buf);
-#endif
-		
-		do {
-			old_score = log_score;
+		for (long j = 0; j < num_nodes; j++)
+		{
+			long	parent = best_node_order.lData[j];
 			
-			for (long one_node = 0; one_node < num_nodes; one_node++)
+			orderMx.Store (parent, child, (j > i) ? 1 : 0);
+		}
+	}
+	
+	
+	// greedy hill-climbing algorithm (K2)
+	ResetGraph (nil);
+	best_score = Compute();		// best over all node orders (if we're reshuffling)
+	
+	
+	for (long iter = 0; iter < num_restarts; iter++)
+	{
+		next_score = Compute();		// reset to empty graph score
+		
+		
+		for (long child = 0; child < num_nodes; child++)
+		{
+			long		num_parents = 0,
+						improvement_flag = 0,
+						next_parent_to_add;
+			
+			do
 			{
-				for (long two_node = one_node + 1; two_node < num_nodes; two_node++)
+				for (long parent = 0; parent < num_nodes; parent++)
 				{
-					long	option = 0;
-					
-					if (one_node == two_node) continue;
-					
-					if (dag(one_node, two_node) == 0)
+					if ( (parent != child)						// must meet all conditions!
+						&& (dag(parent, child) == 0) 
+						&& (orderMx (parent, child) == 1) 
+						&& banned_edges(parent, child) == 0)
 					{
-						if (dag(two_node, one_node) == 0)		// no arc
+						dag.Store (parent, child, 1);
+						this_score = Compute();
+						
+						if (this_score > next_score)
 						{
-							log_score = TryEdge (one_node, two_node, 0, log_score);	// add1
-							log_score = TryEdge (two_node, one_node, 0, log_score);	// add2, will negate add1
+							improvement_flag	= 1;
+							next_score			= this_score;
+							next_parent_to_add	= parent;
 						}
-						else	// 2-->1
-						{
-							log_score = TryEdge (one_node, two_node, 1, log_score);	// reverse
-							log_score = TryEdge (one_node, two_node, 2, log_score);	// delete, will negate reverse
-						}
+						dag.Store (parent, child, 0);	// revert
 					}
-					else	// 1-->2 exists
-					{
-						if (dag(one_node, two_node) == 0)
-						{
-							log_score = TryEdge (one_node, two_node, 1, log_score);	// reverse to 2-->1
-							log_score = TryEdge (two_node, one_node, 2, log_score);	// delete 1-->2
-						}
-						else
-						{
-							// bidirectional arc should not occur
-							log_score = TryEdge (one_node, two_node, 0, log_score);	// add 2-->1 only
-							log_score = TryEdge (two_node, one_node, 0, log_score);	// add 1-->2 only
-							log_score = TryEdge (one_node, two_node, 2, log_score);	// delete both
-						}
-					}
-					// exit with best improvement
+				}
+				
+				if (improvement_flag)	// adding another parent improves network score
+				{
+					dag.Store (next_parent_to_add, child, 1);
+					num_parents++;
+					improvement_flag = 0;	// reset for next parent
+				}
+				else
+				{
+					break;	// unable to improve further
 				}
 			}
-#ifdef DEBUG_OPTIMIZE
-			sprintf (buf, "\nnext log score = %f\n", log_score);
-			BufferToConsole (buf);
-			PrintDag();
-#endif
+			while (num_parents < max_parents.lData[child]);
 		}
-		while (log_score > old_score);	// until no further gain is possible
 		
-		if (log_score > best_score)
+		
+		if (reshuffle_order)
 		{
-			best_score = log_score;
-			for (long row = 0; row < num_nodes; row++)	// best_dag = dag;
-				for (long col = 0; col < num_nodes; col++)
-					best_dag.Store (row,col,dag(row,col));
+			this_score = Compute();
+			
+			if (this_score > best_score)
+			{
+				best_score = this_score;
+				best_dag = (_Matrix &) dag;		// store graph optimized from the current ordering
+			}
+			
+			ResetGraph (nil);
+			
+			best_node_order.Permute (1);
+			
+			for (long i = 0; i < num_nodes; i++)
+			{
+				long	child = best_node_order.lData[i];
+				for (long j = 0; j < num_nodes; j++)
+				{
+					long	parent = best_node_order.lData[j];
+					orderMx.Store (parent, child, (j > i) ? 1 : 0);
+				}
+			}
+		}
+		else
+		{
+			break;	// only one iteration when node ordering is known
 		}
 	}
-	// end random restarts
+	
+	if (reshuffle_order)
 	{
-	for (long row = 0; row < num_nodes; row++)	// dag = best_dag;
-		for (long col = 0; col < num_nodes; col++)
-			dag.Store (row,col,best_dag(row,col));
+		dag = (_Matrix &) best_dag;
+		best_node_order.Clear();	// reset to initial state
 	}
 	
-	// return NULL;
+	
 	_Matrix	* result = new _Matrix(num_nodes * num_nodes, 2, false, true);
-	result->Store (0,0,best_score);
-	{
-	for (long row = 0; row < num_nodes; row++)
-		for (long col = 0; col < num_nodes; col++)
-			result->Store (row*num_nodes+col,1,dag(row,col));
-	}
-
-	return (_Matrix*)(result->makeDynamic());
+	result->Store (0, 0, Compute());
 	
+	for (long row = 0; row < num_nodes; row++)
+	{
+		for (long col = 0; col < num_nodes; col++)
+		{
+			result->Store (row*num_nodes+col, 1, dag(row, col));
+		}
+	}
+	
+	return (_Matrix*)(result->makeDynamic());
+}
+
+
+
+//___________________________________________________________________________________________
+_Matrix *	Bgm::GraphMCMC (bool fixed_order)
+{
+#ifdef __DEBUG_GMCMC__	
+	char		bug [255];
+	sprintf (bug, "Entered GraphMCMC()\n");
+	BufferToConsole (bug);
+#endif
+	
+	
+	_Matrix		*	proposed_graph	= new _Matrix (num_nodes, num_nodes, false, true),
+				*	orderMx			= new _Matrix (num_nodes, num_nodes, false, true);
+	
+	_Matrix			current_graph (num_nodes, num_nodes, false, true),
+					best_graph (num_nodes, num_nodes, false, true);
+	
+	_Parameter		mcmc_steps, mcmc_burnin, mcmc_samples,
+					current_score, proposed_score, best_score,
+					num_randomize,
+					lk_ratio;
+	
+	long			sampling_interval;
+	
+	_SimpleList	*	proposed_order	= new _SimpleList();
+	_SimpleList		current_order;
+	
+	
+	
+	checkParameter (mcmcSteps, mcmc_steps, 0);			// parse HBL settings
+	if (mcmc_steps == 0)
+	{
+		_String oops ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
+		WarnError (oops);
+	}
+	
+	checkParameter (mcmcBurnin, mcmc_burnin, 0);
+	checkParameter (mcmcSamples, mcmc_samples, 0);	
+	if (mcmc_samples == 0)
+	{
+		_String oops ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+		WarnError (oops);
+	}
+	
+	sampling_interval = (long) mcmc_steps / (long) mcmc_samples;
+	
+	checkParameter (numRandomize, num_randomize, num_nodes*num_nodes);
+	
+	
+	
+	_Matrix		* result;
+	
+	checkPointer (result = new _Matrix ( (mcmc_samples > num_nodes*num_nodes) ? mcmc_samples : num_nodes*num_nodes, 3, false, true));
+								//	Contents:	(1) chain trace; 
+								//				(2) model-averaged edge probabilities; 
+								//				(3) best graph;
+	
+	
+	
+	if (best_node_order.lLength == 0)
+	{
+		if (fixed_order)
+		{
+			_String	oops ("Cannot run fixed-order graph MCMC without defined order (via order-MCMC). Run CovarianceMatrix(receptacle, BGM) first.");
+			WarnError (oops);
+			
+			result = new _Matrix();		// return an empty matrix
+		}
+		proposed_order->Populate (num_nodes, 0, 1);
+		proposed_order->Permute (1);
+	}
+	else
+	{
+		proposed_order->Populate(num_nodes, 0, 0);	// allocate memory
+		
+		for (long i = 0; i < num_nodes; i++)
+		{
+			proposed_order->lData[i] = best_node_order.lData[i];
+		}
+	}
+	
+	
+	// make sure that the initial order complies with enforced edges
+	for (long pindex = 0; pindex < num_nodes-1; pindex++)
+	{
+		for (long parent = proposed_order->lData[pindex], cindex = pindex+1; cindex < num_nodes; cindex++)
+		{
+			long	child	= proposed_order->lData[cindex];
+			
+			if (enforced_edges(parent,child)==1 && pindex < cindex)
+			{
+				if (fixed_order)
+				{
+					_String oops ("Forced to modify fixed order to comply with enforced edge matrix.\n");
+					WarnError (oops);
+				}
+				
+				proposed_order->lData[pindex] = child;		// swap ordering
+				proposed_order->lData[cindex] = parent;
+			}
+		}
+	}
+	
+	
+	
+	//	Populate order matrix -- and while we're at it, set proposed order to current order
+	for (long i = 0; i < num_nodes; i++)
+	{
+		long	child = proposed_order->lData[i];
+		
+		for (long j = 0; j < num_nodes; j++)
+		{
+			//	if A precedes B, then set entry (A,B) == 1, permitting edge A->B
+			orderMx->Store (proposed_order->lData[j], child, (j > i) ? 1 : 0);
+		}
+	}
+	
+	
+	
+	// status line
+#if !defined __UNIX__ || defined __HEADLESS__
+	long	updates = 0;
+	TimerDifferenceFunction (false);
+	SetStatusLine (empty, _HYBgm_STATUS_LINE_MCMC, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+#endif
+	
+	
+	
+	//  Reset the graph to either an empty graph, or enforced edges if defined
+	ResetGraph (proposed_graph);
+	
+#ifdef __DEBUG_GMCMC__
+	sprintf (bug, "Reset graph to:\n");
+	BufferToConsole (bug);
+	PrintGraph (proposed_graph);
+#endif
+	
+	RandomizeGraph (proposed_graph, proposed_order, (long)num_randomize, fixed_order);
+	
+#ifdef __DEBUG_GMCMC__
+	sprintf (bug, "Randomized graph:\n");
+	BufferToConsole (bug);
+	PrintGraph (proposed_graph);
+	
+	sprintf (bug, "Initial node order:");
+	BufferToConsole (bug);
+	for (long rex = 0; rex < num_nodes; rex++)
+	{
+		sprintf (bug, "%d ", proposed_order->lData[rex]);
+		BufferToConsole (bug);
+	}
+	NLToConsole ();
+#endif
+	
+	current_order = (*proposed_order);
+	current_graph = (_Matrix &) (*proposed_graph);
+	best_graph = (_Matrix &) (*proposed_graph);
+	best_score = proposed_score = current_score = Compute(proposed_graph);
+	
+	
+	
+	
+	// MAIN LOOP
+	for (long step = 0; step < mcmc_steps + mcmc_burnin; step++)
+	{			
+		RandomizeGraph (proposed_graph, proposed_order, 1, fixed_order);
+		
+		proposed_score = Compute(proposed_graph);
+		
+		
+#ifdef __DEBUG_GMCMC__	
+		sprintf (bug, "Current score = %f\n", current_score);
+		BufferToConsole (bug);
+		sprintf (bug, "Propose graph:\n");
+		BufferToConsole (bug);
+		PrintGraph (proposed_graph);
+		sprintf (bug, "Proposed score = %f\n", proposed_score);
+		BufferToConsole (bug);
+#endif
+		
+		
+		lk_ratio = exp(proposed_score - current_score);
+		
+		if (lk_ratio > 1. || genrand_real2() < lk_ratio)		// Metropolis-Hastings
+		{
+#ifdef __DEBUG_GMCMC__
+			sprintf (bug, "Accept move\n");
+			BufferToConsole (bug);
+#endif
+			current_graph		= (_Matrix &) (*proposed_graph);		// accept proposed graph
+			current_score	= proposed_score;
+			
+			for (long foo = 0; foo < num_nodes; foo++)
+			{
+				current_order.lData[foo] = proposed_order->lData[foo];
+			}
+			
+			if (current_score > best_score)
+			{
+				best_score = current_score;
+				best_graph = (_Matrix &) current_graph;			// keep track of best graph ever visited by chain
+				
+#ifdef __DEBUG_GMCMC__
+				PrintGraph (&best_graph);
+				
+				sprintf (bug, "Update best node ordering: ");
+				BufferToConsole (bug);
+				for (long deb = 0; deb < num_nodes; deb++)
+				{
+					sprintf (bug, "%d ", current_order.lData[deb]);
+					BufferToConsole (bug);
+				}
+				NLToConsole ();
+#endif
+			}
+		}
+		else
+		{
+#ifdef __DEBUG_GMCMC__
+			sprintf (bug, "Reject move\n");
+			BufferToConsole (bug);
+#endif
+			// revert proposal
+			for (long row = 0; row < num_nodes; row++)
+			{
+				proposed_order->lData[row] = current_order.lData[row];
+				
+				for (long col = 0; col < num_nodes; col++)
+				{
+					proposed_graph->Store(row, col, current_graph(row, col));
+				}
+			}
+		}
+		
+		
+		
+		if (step >= mcmc_burnin)		// handle output
+		{
+			if ( (step-(long)mcmc_burnin) % sampling_interval == 0)
+			{
+				long	entry	= (long int) ((step-mcmc_burnin) / sampling_interval);
+				
+				result->Store (entry, 0, current_score);		// update chain trace
+				
+				for (long row = 0; row < num_nodes; row++)		// update edge tallies
+				{
+					for (long offset=row*num_nodes, col = 0; col < num_nodes; col++)
+					{
+						result->Store (offset+col, 1, (*result)(offset+col,1) + current_graph(row, col));
+					}
+				}
+			}
+		}
+		
+#if !defined __UNIX__ || defined __HEADLESS__
+		if (TimerDifferenceFunction(true)>1.0) // time to update
+		{
+			updates ++;
+			_String statusLine = _HYBgm_STATUS_LINE_MCMC & " " & (step+1) & "/" & (mcmc_steps + mcmc_burnin) 
+									& " steps (" & (1.0+step)/updates & "/second)";
+			SetStatusLine 	  (empty,statusLine,empty,100*step/(mcmc_steps + mcmc_burnin),HY_SL_TASK|HY_SL_PERCENT);
+			TimerDifferenceFunction(false); // reset timer for the next second
+			yieldCPUTime(); // let the GUI handle user actions
+			if (terminateExecution) // user wants to cancel the analysis
+				break;
+		}
+#endif
+	}
+	
+	// convert edge tallies to frequencies, and report best graph
+	for (long row = 0; row < num_nodes; row++)
+	{
+		for (long offset=row*num_nodes, col = 0; col < num_nodes; col++)
+		{
+			result->Store (offset+col, 1, (*result)(offset+col,1)/mcmc_samples);
+			result->Store (offset+col, 2, best_graph(row, col));
+		}
+	}
+	
+	
+	
+	
+	delete (proposed_graph);
+	delete (orderMx);
+	delete (proposed_order);
+	
+	return (_Matrix *) (result->makeDynamic());
 }
 
 
@@ -2022,14 +3463,12 @@ _Matrix *	Bgm::Optimize (void)
 //___________________________________________________________________________________________
 _Parameter	Bgm::TryEdge (long child, long parent, long operation, _Parameter old_score)
 {
+#ifdef _NEVER_DEFINED_
 	_Parameter	log_score,
 				last_state1	= dag (child, parent),
 				last_state2	= dag (parent, child);
 	
-#ifdef _NEVER_DEFINED_
-
 	/*
-	// PrintDag();
 	if (is_marginal)	// modification affects only child node, don't recalculate other scores
 		log_marginal = is_discrete(child,0) ? ComputeDiscreteScore (child) : ComputeContinuousScore (child);
 	 */
@@ -2066,7 +3505,7 @@ _Parameter	Bgm::TryEdge (long child, long parent, long operation, _Parameter old
 			break;
 	}
 	
-	// PrintDag();
+	// PrintGraph(nil);
 	
 	if (IsCyclic())	// new graph is cyclic, reject
 	{
@@ -2111,12 +3550,7 @@ _Parameter	Bgm::TryEdge (long child, long parent, long operation, _Parameter old
 _Parameter		Bgm::LogSumExpo (_GrowingVector * log_values)
 {
 	long		size			= log_values->GetUsed();
-	
-	_Parameter	sum_exponents			= 0.,
-				scaling_factor			= 0.,
-				largest_negative_log	= (*log_values) (0, 0) + 1.;
-	
-	char		buf [255];
+	_Parameter	sum_exponents	= 0.;
 	
 	
 	// handle some trivial cases
@@ -2151,77 +3585,6 @@ _Parameter		Bgm::LogSumExpo (_GrowingVector * log_values)
 	}
 	
 	return (log(sum_exponents) + max_log);
-	
-	
-#ifdef __NEVER_DEFINED__
-	/*
-	 // this code is slightly faster, but crashes the HyPhy GUI for some reason... :-/
-	 
-	_SimpleList		copy_of_logs (size);
-	
-	for (long val = 0; val < size; val++)
-		copy_of_logs.lData[val] = (*log_values) (val,0);
-	
-	copy_of_logs.Sort(TRUE);	// in ascending order
-	scaling_factor = copy_of_logs.lData[size/2];	// take the middle value to adjust others
-	
-	for (long val = 0; val < size; val++)
-		sum_exponents += exp(copy_of_logs.lData[val] - scaling_factor);
-	 
-	return (log(sum_exponents) + scaling_factor);
-	*/
-	
-	// determine required extent of scaling
-	for (long val = 0; val < size; val++)
-	{
-		_Parameter	this_log		= (*log_values) (val, 0);
-		long		num_attempts	= 0;
-		
-		if (this_log < largest_negative_log)
-		{
-			largest_negative_log = this_log;
-			while (exp(this_log + scaling_factor) == 0. && num_attempts < MAX_LSE_SCALING_ATTEMPTS)		// underflowed
-			{
-				scaling_factor	+= LOG_SCALING_FACTOR;	// to apply to sum of exponents
-				num_attempts++;
-			}
-		}
-		
-		if (exp(this_log + scaling_factor) == 0. && num_attempts >= MAX_LSE_SCALING_ATTEMPTS)
-			ReportWarning (_String("Bailing out of LogSumExpo() after ") & num_attempts & " attempts to adjust " & this_log & ", last scaling factor = " & scaling_factor);
-	}
-	
-	
-	// apply scaling factor to computing the sum of exponents
-	for (long val = 0; val < log_values->GetUsed(); val++)
-	{
-		sum_exponents += exp((*log_values) (val, 0) + scaling_factor);
-		/*
-		if (sum_exponents > 2147483647)
-		{
-			_String oops ("Uh-oh. Sum of exponentiated log values in LogSumExpo() is about to overflow.  Bad scaling factor :-/\n");
-			WarnError (oops);
-			printf ("val = %d, sum_exponents = %lf, scaling_factor = %lf\n", val, sum_exponents, scaling_factor);
-		}
-		 */
-	}
-	
-	if (log(sum_exponents) - scaling_factor > 99999)
-	{
-		_String oops ("Nonsense value in LogSumExpo (");
-		
-		WarnError (oops & (log(sum_exponents) - scaling_factor) & "), bailing out...\n");
-		
-		for (long foo = 0; foo < size; foo++)
-		{
-			printf ("%d: %lf + %lf\n", foo, (*log_values) (foo,0), scaling_factor);
-		}
-	}
-	
-	
-	
-	return (log(sum_exponents) - scaling_factor);
-#endif
 }
 
 
@@ -2229,13 +3592,36 @@ _Parameter		Bgm::LogSumExpo (_GrowingVector * log_values)
 //	Markov chain Monte Carlo for Bgm
 _PMathObj Bgm::CovarianceMatrix (_SimpleList * unused)
 {
+	//char	bug [255];
+	
+	
 	_Parameter		mcmc_steps,
 					mcmc_burnin,
 					mcmc_samples,
 					mcmc_nchains,
 					mcmc_temp;
 	
-	_SimpleList *	node_order	= new _SimpleList (num_nodes, 0, 1);
+	_SimpleList *	node_order;
+	
+	if (last_node_order.lLength == 0)
+	{
+		node_order = new _SimpleList (num_nodes, 0, 1);		// populate with series (0, 1, ..., num_nodes)
+		
+		if (is_dynamic_graph)
+		{
+			node_order->Permute(2);
+		}
+		else
+		{
+			node_order->Permute(1);		// initialize with randomized node ordering
+		}
+	}
+	else
+	{
+		node_order = new _SimpleList (last_node_order);
+	}
+	
+	
 	
 	_Matrix *		mcmc_output;
 	
@@ -2262,22 +3648,11 @@ _PMathObj Bgm::CovarianceMatrix (_SimpleList * unused)
 	
 	
 	// allocate space for output
-	
-	
-	
 	if (mcmc_nchains == 1)
 	{
-		if (is_dynamic_graph)
-		{
-			node_order->Permute(2);
-		}
-		else
-		{
-			node_order->Permute(1);		// initialize with randomized node ordering
-		}
-		
 		mcmc_output = RunColdChain (node_order, (long) mcmc_burnin, -1);	// negative argument indicates no sampling
 		delete (mcmc_output);		// discard burn-in
+		
 		mcmc_output = RunColdChain (node_order, (long) mcmc_steps, (long int) (mcmc_steps / mcmc_samples) );
 	}
 	else		// run coupled MCMC
@@ -2314,7 +3689,10 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 	
 	_SimpleList	proposed_order;
 	
-	_Matrix	*	mcmc_output		= new _Matrix (mcmc_samples > (num_nodes*num_nodes) ? mcmc_samples : (num_nodes*num_nodes), 2, false, true);
+	_Matrix	*	mcmc_output		= new _Matrix (mcmc_samples > (num_nodes*num_nodes) ? mcmc_samples : (num_nodes*num_nodes), 4, false, true);
+											//	Contents:	(1) chain trace; (2) edge marginal posterior probabilities;
+											//				(3) best node ordering; (4) last node ordering (for restarting chains).
+	
 	_List	*	clist			= new _List ();		// compute list
 	
 	
@@ -2324,7 +3702,8 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 	
 	_Parameter	lk_ratio,
 				prob_current_order	= Compute (current_order, clist),
-				prob_proposed_order = 0.;
+				prob_proposed_order = 0.,
+				best_prob = prob_current_order;
 	
 	
 	/* SLKP 20070926 
@@ -2351,6 +3730,18 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 	/* SLKP */
 	
 	
+	best_node_order = (_SimpleList &) (*current_order);		// initialize class member variable
+	
+#ifdef DEBUG_RCC
+	sprintf (buf, "Initial node order (log L = %f): ", prob_current_order);
+	BufferToConsole (buf);
+	for (long i = 0; i < num_nodes; i++)
+	{
+		sprintf (buf, "%d ", best_node_order.lData[i]);
+		BufferToConsole (buf);
+	}
+	NLToConsole();
+#endif
 	
 	for (long step = 0; step < nsteps; step++)
 	{
@@ -2382,11 +3773,19 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 			proposed_order.Swap (first_node, second_node);
 		}
 		
-		
-		
 		// calculate probability of proposed order --- edge posterior probs loaded into member variable
 		prob_proposed_order = Compute (&proposed_order, clist);
 		
+#ifdef DEBUG_RCC
+		sprintf (buf, "Proposed node order (log L = %f): ", prob_proposed_order);
+		BufferToConsole (buf);
+		for (long i = 0; i < num_nodes; i++)
+		{
+			sprintf (buf, "%d ", proposed_order.lData[i]);
+			BufferToConsole (buf);
+		}
+		NLToConsole();
+#endif
 		
 		
 		lk_ratio	= exp(prob_proposed_order - prob_current_order);
@@ -2396,6 +3795,17 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 			(*current_order).Clear();
 			(*current_order) << proposed_order;
 			prob_current_order = prob_proposed_order;
+			
+#ifdef DEBUG_RCC
+			sprintf (buf, "Accept\n");
+			BufferToConsole (buf);
+#endif
+			
+			if (prob_proposed_order > best_prob)
+			{
+				best_prob = prob_proposed_order;		// update best node ordering
+				best_node_order = proposed_order;
+			}
 		}
 		
 		
@@ -2414,7 +3824,7 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 				mcmc_output->Store (row, 0, prob_current_order);
 				
 				
-#ifdef DEBUG_RCC
+#ifdef _DEBUG_RCC
 				sprintf (buf, "Contents of clist:\n");
 				BufferToConsole (buf);
 				
@@ -2516,9 +3926,25 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 	
 	
 	if (sample_lag >= 0)
+	{
 		// convert sums of edge posterior probs. in container to means
 		for (long edge = 0; edge < num_nodes * num_nodes; edge++)
+		{
 			mcmc_output->Store (edge, 1, (*mcmc_output)(edge,1) / mcmc_samples);
+		}
+	}
+	
+	
+	// export node ordering info
+	for (long node = 0; node < num_nodes; node++)
+	{
+		mcmc_output->Store (node, 2, (_Parameter) (best_node_order.lData[node]));
+		mcmc_output->Store (node, 3, (_Parameter) (current_order->lData[node]));
+	}
+	
+	last_node_order = (_SimpleList &) (*current_order);
+	
+	
 	
 	// release cached scores (assuming that this is the last analysis to be done!)
 	DumpComputeLists (clist);
@@ -2664,115 +4090,146 @@ void	Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_lag
 
 
 
-//__________________________________________________________________________________
-//	note: original version of function found in baseobj.cpp (made polymorphic by afyp)
-bool 	ReadDataFromFile (char delimiter, _Matrix& data)
+//___________________________________________________________________________________________
+#ifdef __AFYP_DEVELOPMENT__
+void		Bgm::CacheNetworkParameters (void)
 {
-	_List		readStrings;
-	long		columns		= 0,
-				lastRead;
+	_SimpleList		multipliers,	// for indexing parent combinations (j)
+					parents;
 	
-	_String	prompt_filename = ReturnFileDialogInput();
-	if (!prompt_filename)
-		return false;
+	long			num_parent_combos,
+					r_i;
 	
-	FILE *f = doFileOpen (prompt_filename.getStr(), "r");
+	_Matrix			n_ijk,
+					theta_ijk;
+	
+	network_parameters.Clear();		// reset cache
 	
 	
-	if (!f)
+	for (long i = 0; i < num_nodes; i++)
 	{
-		_String errMsg ("Failed to open file ");
-		errMsg = errMsg & prompt_filename;
-		WarnError (errMsg);
-		return false;
-	}
-	
-	
-	int  c = fgetc (f);
-	while (!feof(f))
-	{
-		lastRead = readStrings.lLength;
+		// reset variables to defaults
+		multipliers.Clear();
+		multipliers << 1;
 		
-		_String  *currentTerm = new _String (16L, true);
-		checkPointer (currentTerm);
+		n_ijk.Clear();
+		theta_ijk.Clear();
 		
-		while ((c!='\n')&&(c!='\r')&&(c!=-1))
+		num_parent_combos	= 1;
+		r_i					= num_levels.lData[node_id];
+		
+		
+		// assemble parents based on current graph
+		for (long par = 0; par < num_nodes; par++)
 		{
-			if (c==delimiter)
+			if (dag(par, node_id) == 1 && is_discrete.lData[par])
 			{
-				currentTerm->Finalize();
-				readStrings << currentTerm;
-				currentTerm = new _String (16L, true);
-				checkPointer (currentTerm);
-			}
-			else	
-				(*currentTerm) << (char)c;
-			c = fgetc (f);
-		}
-		
-		currentTerm->Finalize();
-		if ((readStrings.lLength>lastRead)||(currentTerm->FirstNonSpaceIndex(0,-1,1)>=0))
-			readStrings << currentTerm;
-		else
-			DeleteObject (currentTerm);
-		
-		c = fgetc (f);
-		while ((c=='\n')||(c=='\r'))
-			c = fgetc(f);
-		
-		if (lastRead==0)
-			columns = readStrings.lLength;
-	}
-	
-	fclose (f);
-	
-	if (columns&&(readStrings.lLength>=2*columns)&&(readStrings.lLength%columns==0))
-	{
-		data.Clear();
-		CreateMatrix(&data,readStrings.lLength/columns,columns,false,true,false);
-		
-		_Constant h, v;
-		
-		// treat all lines as containing data
-		for (lastRead = 0; lastRead < readStrings.lLength/columns; lastRead++)
-		{
-			h.SetValue (lastRead);
-			for (long k=0; k<columns; k++)
-			{
-				_String * thisString = (_String*)readStrings (lastRead*columns+k);
-				if ((thisString->sLength)&&(thisString->FirstNonSpaceIndex (0,-1)>=0))
-				{
-					_Formula f (*thisString,nil,false);
-					v.SetValue (k);
-					if (!f.IsEmpty())
-						data.MStore (&h,&v,f);
-				}
+				parents << par;	// list of parents will be in ascending numerical order
+				num_parent_combos *= num_levels.lData[par];
+				multipliers << num_parent_combos;
 			}
 		}
 		
-		/*
-		 for (lastRead = 0; lastRead < columns; lastRead++)
-		 names << readStrings (lastRead);
-		 */
-	}
-	else
-	{
-		_String errMsg ("HyPhy didn't find a well-defined '");
-		errMsg = errMsg & delimiter & "'-separated data table in the input file.";
-		if (columns == 0)
-			errMsg = errMsg & " Input file was empty...";
-		else
-			if (readStrings.lLength<2*columns)
-				errMsg = errMsg & " Input file contained less than a single valid entry line";
-		else
-			errMsg = errMsg & " The number of fields read (" &(long)readStrings.lLength& ") was not divisible by the number of columns ("& columns &").";
 		
-		WarnError (errMsg);
-		return false;
+		// re-allocate space in matrix
+		CreateMatrix (&n_ijk, num_parent_combos, r_i+1, false, true, false);
+		CreateMatrix (&theta_ijk, num_parent_combos, r_i, false, true, false);
+		
+		
+		// tally observations
+		for (long obs = 0; obs < obsData->GetHDim(); obs++)
+		{
+			long	index			= 0,
+					child_state		= (*obsData)(obs, node_id);
+			
+			// is there a faster algorithm for this? - afyp
+			for (long par = 0; par < parents.lLength; par++)
+			{
+				long	this_parent			= parents.lData[par],
+						this_parent_state	= (*obsData)(obs, this_parent);
+				
+				index += this_parent_state * multipliers.lData[par];
+			}
+			
+			n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
+			n_ijk.Store ((long) index, r_i, n_ijk(index, r_i) + 1);	// store n_ij sum in last entry
+		}
+		
+		
+		// compute expected network conditional probabilities (Cooper and Herskovits 1992 eq.16)
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			_Parameter	denom = n_ijk(j,r_i+1) + r_i;
+			
+			for (long k = 0; k < r_i; k++)
+			{
+				theta_ijk.Store (j, k, (n_ijk(j,k)+1.) / denom);
+			}
+		}
+		
+		
+		// append parameters to member list
+		network_parameters && (&theta_ijk);
 	}
-	
-	return true;
 }
+#endif
+
+
+//___________________________________________________________________________________________
+#ifdef __AFYP_DEVELOPMENT__
+_Matrix *	Bgm::SimulateDiscreteCases (long ncases)
+{
+	/*	Identify nodes without parents in given graph.
+		Draw random state assignments based on learned parameters (orphan score).
+		Use graph matrix transpose to index child nodes.
+		Visit children and randomly assign states dependent on parent assignment.
+		Rinse and repeat.
+	*/
+	CacheNetworkParameters();
+	
+	_Matrix		gad		= dag.Transpose();
+	_Matrix *	cases	= new _Matrix (num_nodes, ncases, false, true);
+	
+	// proceed using postorder traversal (check for parents before resolving node)
+	
+}
+#endif
+
+
+
+//___________________________________________________________________________________________
+#ifdef __AFYP_DEVELOPMENT__
+void		PostOrderInstantiate (long node_id, _SimpleList & results)
+{
+	_SimpleList		parents;
+	
+	// assign parents first
+	for (long par = 0; par < num_nodes; par++)
+	{
+		if (par != node_id && dag (par, node_id) == 1)
+		{
+			PostOrderInstantiate (par, results);
+			parents << par;
+		}
+	}
+	
+	// assign random state given parents
+	for (long pindex = 0; pindex < parents.lLength; pindex++)
+	{
+		long	par = parents.lData[pindex];
+		
+	}
+}
+
+
+long		Bgm::PredictNode (long node_id, _Matrix * assignments)
+{
+	
+}
+#endif
+
+
+
 
 
 //___________________________________________________________________________________________
