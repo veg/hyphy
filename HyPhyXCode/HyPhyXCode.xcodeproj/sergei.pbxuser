@@ -150,6 +150,14 @@
 			sepNavWindowFrame = "{{141, 81}, {1397, 936}}";
 		};
 	};
+	85A2BC940DE4E80E00682547 /* calcnode.cpp */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1400, 169190}}";
+			sepNavSelRange = "{130280, 0}";
+			sepNavVisRange = "{129416, 1519}";
+			sepNavWindowFrame = "{{0, 4}, {1280, 774}}";
+		};
+	};
 	85A2BCA30DE4E80E00682547 /* strings.cpp */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {1338, 31066}}";

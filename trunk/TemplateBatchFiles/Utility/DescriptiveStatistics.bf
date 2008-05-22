@@ -11,7 +11,6 @@ function GatherDescriptiveStats (_dataVector)
 	sum2 = 0;
 	sum3 = 0;
 	sum4 = 0;
-	
 	_dataVector = _dataVector%0;
 	
 	data_min  = _dataVector [0];
@@ -29,6 +28,7 @@ function GatherDescriptiveStats (_dataVector)
 		median = (_dataVector[counter]+_dataVector[counter+1])/2;
 	}
 
+	_nonNegativeValues = -1;
 	for (counter=0; counter < count; counter = counter+1)
 	{
 		term = _dataVector [counter];
@@ -36,8 +36,12 @@ function GatherDescriptiveStats (_dataVector)
 		sum2 = sum2+term*term;
 		sum3 = sum3+term^3;
 		sum4 = sum4+term^4;
+		if (term >= 0 && _nonNegativeValues < 0)
+		{
+			_nonNegativeValues = count - counter;
+		}
 	}
-	
+	_nonNegativeValues = Max(_nonNegativeValues,0);
 	_dstats = {};
 
 	_dstats ["Count"] 		= count;
@@ -49,6 +53,7 @@ function GatherDescriptiveStats (_dataVector)
 	_dstats ["97.5%"] 		= data_975;
 	_dstats ["Sum"] 		= sum;
 	_dstats ["Sq. sum"] 	= sum2;
+	_dstats ["Non-negative"]= _nonNegativeValues;
 
 	if (count > 1)
 	{

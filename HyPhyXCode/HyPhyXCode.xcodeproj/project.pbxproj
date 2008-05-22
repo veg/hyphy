@@ -121,6 +121,7 @@
 		85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
 		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
 		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
+		85F8F8310DE51D080017A3D2 /* PS_Plotters.bf in Resources */ = {isa = PBXBuildFile; fileRef = 85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */; };
 		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
 /* End PBXBuildFile section */
 
@@ -263,6 +264,7 @@
 		85A2C19D0DE5066E00682547 /* TopologyInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TopologyInference; path = ../trunk/TopologyInference; sourceTree = SOURCE_ROOT; };
 		85A2C1A80DE5066E00682547 /* TreeAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TreeAddIns; path = ../trunk/TreeAddIns; sourceTree = SOURCE_ROOT; };
 		85A2C1AC0DE5066E00682547 /* UserAddins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UserAddins; path = ../trunk/UserAddins; sourceTree = SOURCE_ROOT; };
+		85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = PS_Plotters.bf; path = ../trunk/TemplateBatchFiles/Utility/PS_Plotters.bf; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -289,6 +291,7 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
+				85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */,
 				85A2BFEF0DE5064D00682547 /* HBL */,
 				20286C2AFDCF999611CA2CEA /* Sources */,
 				20286C2CFDCF999611CA2CEA /* Resources */,
@@ -570,6 +573,7 @@
 				85A2BD6D0DE4EC4900682547 /* HYPHYMP.icns in Resources */,
 				85A2BD6E0DE4EC4900682547 /* Info.plist in Resources */,
 				85A2BD730DE4EC8100682547 /* HyPhy.rsrc in Resources */,
+				85F8F8310DE51D080017A3D2 /* PS_Plotters.bf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
