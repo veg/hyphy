@@ -13,6 +13,20 @@
 			85A2BD9F0DE4F61400682547 /* HyPhy */,
 		);
 		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXBookmarksDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXBookmarksDataSource_NameID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					200,
+					200,
+					252.58349609375,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXBookmarksDataSource_LocationID,
+					PBXBookmarksDataSource_NameID,
+					PBXBookmarksDataSource_CommentsID,
+				);
+			};
 			PBXConfiguration.PBXFileTableDataSource3.PBXExecutablesDataSource = {
 				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
 				PBXFileTableDataSourceColumnSortingKey = PBXExecutablesDataSource_NameID;
@@ -32,7 +46,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					588,
+					443,
 					20,
 					48,
 					43,
@@ -55,7 +69,7 @@
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
 					20,
-					564,
+					419,
 					20,
 					48,
 					43,
@@ -78,7 +92,7 @@
 				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
-					548,
+					403,
 					60,
 					20,
 					48,
@@ -95,47 +109,75 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 233113509;
-			PBXWorkspaceStateSaveDate = 233113509;
+			PBXPerProjectTemplateStateSaveDate = 233277527;
+			PBXWorkspaceStateSaveDate = 233277527;
 		};
 		perUserProjectItems = {
-			85A2BDA20DE4F69300682547 = 85A2BDA20DE4F69300682547 /* PBXTextBookmark */;
-			85A2BDA30DE4F69300682547 = 85A2BDA30DE4F69300682547 /* PBXTextBookmark */;
-			85A2BDAB0DE4F76600682547 = 85A2BDAB0DE4F76600682547 /* PBXTextBookmark */;
-			85A2BDAD0DE4F7B700682547 = 85A2BDAD0DE4F7B700682547 /* PBXTextBookmark */;
-			85A2BDAF0DE4F7B700682547 = 85A2BDAF0DE4F7B700682547 /* PBXTextBookmark */;
-			85A2BDB20DE4F7D100682547 = 85A2BDB20DE4F7D100682547 /* PBXTextBookmark */;
-			85A2BDB30DE4F7D100682547 = 85A2BDB30DE4F7D100682547 /* PBXTextBookmark */;
-			85A2BDB60DE4F80F00682547 = 85A2BDB60DE4F80F00682547 /* PBXTextBookmark */;
-			85A2BDB70DE4F80F00682547 = 85A2BDB70DE4F80F00682547 /* PBXTextBookmark */;
-			85A2BDBE0DE4F84900682547 = 85A2BDBE0DE4F84900682547 /* PBXTextBookmark */;
-			85A2BDBF0DE4F84900682547 = 85A2BDBF0DE4F84900682547 /* PBXTextBookmark */;
-			85A2BDC10DE4F87C00682547 = 85A2BDC10DE4F87C00682547 /* PBXTextBookmark */;
-			85A2BDC30DE4F87C00682547 = 85A2BDC30DE4F87C00682547 /* PBXTextBookmark */;
-			85A2BDC70DE4F8B100682547 = 85A2BDC70DE4F8B100682547 /* PBXTextBookmark */;
-			85A2BDC80DE4F8B100682547 = 85A2BDC80DE4F8B100682547 /* PBXTextBookmark */;
-			85A2BE2E0DE4FDFE00682547 = 85A2BE2E0DE4FDFE00682547 /* PBXTextBookmark */;
-			85A2BE300DE4FDFE00682547 = 85A2BE300DE4FDFE00682547 /* PBXTextBookmark */;
-			85A2BE390DE4FE5C00682547 = 85A2BE390DE4FE5C00682547 /* PBXTextBookmark */;
-			85A2BE3A0DE4FE5C00682547 = 85A2BE3A0DE4FE5C00682547 /* PBXTextBookmark */;
-			85A2BE3B0DE4FE7F00682547 = 85A2BE3B0DE4FE7F00682547 /* PBXBookmark */;
-			85A2BE3F0DE4FE8200682547 = 85A2BE3F0DE4FE8200682547 /* PBXTextBookmark */;
-			85F8F7290DE507F60017A3D2 /* PBXTextBookmark */ = 85F8F7290DE507F60017A3D2 /* PBXTextBookmark */;
-			85F8F72A0DE507F60017A3D2 /* PBXTextBookmark */ = 85F8F72A0DE507F60017A3D2 /* PBXTextBookmark */;
-			85F8F72E0DE5082E0017A3D2 /* PBXTextBookmark */ = 85F8F72E0DE5082E0017A3D2 /* PBXTextBookmark */;
-			85F8F72F0DE5082E0017A3D2 /* PBXTextBookmark */ = 85F8F72F0DE5082E0017A3D2 /* PBXTextBookmark */;
+			856FF0470DE7874C00576C19 = 856FF0470DE7874C00576C19 /* PBXTextBookmark */;
+			8593AB7E0DE78855008384A0 = 8593AB7E0DE78855008384A0 /* PBXTextBookmark */;
+			85D146350DE7885A0087893B /* PBXTextBookmark */ = 85D146350DE7885A0087893B /* PBXTextBookmark */;
+			85D1463F0DE788830087893B /* PBXTextBookmark */ = 85D1463F0DE788830087893B /* PBXTextBookmark */;
+			85D146480DE788AE0087893B /* PBXTextBookmark */ = 85D146480DE788AE0087893B /* PBXTextBookmark */;
+			85D1464A0DE788CA0087893B /* PBXTextBookmark */ = 85D1464A0DE788CA0087893B /* PBXTextBookmark */;
+			85D1464F0DE7891A0087893B /* PBXTextBookmark */ = 85D1464F0DE7891A0087893B /* PBXTextBookmark */;
+			85D146500DE789300087893B /* PBXTextBookmark */ = 85D146500DE789300087893B /* PBXTextBookmark */;
+			85D146510DE78A360087893B /* PBXTextBookmark */ = 85D146510DE78A360087893B /* PBXTextBookmark */;
+			85D146520DE78A530087893B /* PBXTextBookmark */ = 85D146520DE78A530087893B /* PBXTextBookmark */;
+			85D146530DE78A630087893B /* PBXTextBookmark */ = 85D146530DE78A630087893B /* PBXTextBookmark */;
+			85D146540DE78A7E0087893B /* PBXTextBookmark */ = 85D146540DE78A7E0087893B /* PBXTextBookmark */;
+			85D146550DE78ACE0087893B /* PBXTextBookmark */ = 85D146550DE78ACE0087893B /* PBXTextBookmark */;
 		};
 		sourceControlManager = 85A2BBC50DE4D29B00682547 /* Source Control */;
+		userBookmarkGroup = 85D1440E0DE788570087893B /* PBXBookmarkGroup */;
 		userBuildSettings = {
 			SYMROOT = "$(PROJECT_DIR)/../HyPhy";
 		};
+	};
+	856FF0470DE7874C00576C19 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 500;
+		rType = 0;
+		vrLen = 440;
+		vrLoc = 0;
+	};
+	856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = ProbabilityDistributions.bf;
+		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/ProbabilityDistributions.bf;
+		sourceTree = "<absolute>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1338, 808}}";
+			sepNavSelRange = "{688, 0}";
+			sepNavVisRange = "{0, 688}";
+		};
+	};
+	8593AB7E0DE78855008384A0 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 8593AB7F0DE78855008384A0 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 500;
+		rType = 0;
+		vrLen = 440;
+		vrLoc = 0;
+	};
+	8593AB7F0DE78855008384A0 /* ProbabilityDistributions.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = ProbabilityDistributions.bf;
+		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/ProbabilityDistributions.bf;
+		sourceTree = "<absolute>";
 	};
 	85A2BBC50DE4D29B00682547 /* Source Control */ = {
 		isa = PBXSourceControlManager;
 		fallbackIsa = XCSourceControlManager;
 		isSCMEnabled = 0;
 		scmConfiguration = {
-			repositoryName = monkey_supreme;
+			repositoryName = LocalHyPhy;
 		};
 	};
 	85A2BBC60DE4D29B00682547 /* Code sense */ = {
@@ -187,14 +229,6 @@
 			sepNavVisRange = "{0, 1604}";
 			sepNavWindowFrame = "{{15, 87}, {1397, 936}}";
 		};
-	};
-	85A2BCF40DE4EA2100682547 /* HYPlatformButtonMenu.cpp */ = {
-		isa = PBXFileReference;
-		fileEncoding = 4;
-		lastKnownFileType = sourcecode.cpp.cpp;
-		name = HYPlatformButtonMenu.cpp;
-		path = "/Users/sergei/HyPhySource/trunk/GUIElements/Platform Source/MacOS/HYPlatformButtonMenu.cpp";
-		sourceTree = "<absolute>";
 	};
 	85A2BD090DE4EA8600682547 /* HYPlatformTable.cpp */ = {
 		uiCtxt = {
@@ -278,272 +312,137 @@
 		executableUserSymbolLevel = 0;
 		libgmallocEnabled = 0;
 		name = HyPhy;
+		savedGlobals = {
+		};
 		sourceDirectories = (
 		);
 	};
-	85A2BDA20DE4F69300682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: HYUtils.h: No such file or directory";
-		fRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */;
-		rLen = 1;
-		rLoc = 50;
-		rType = 1;
+	85D1440E0DE788570087893B /* PBXBookmarkGroup */ = {
+		isa = PBXBookmarkGroup;
+		children = (
+			85D146370DE788650087893B /* PBXBookmark */,
+		);
+		name = Root;
 	};
-	85A2BDA30DE4F69300682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */;
-		name = "baseobj.cpp: 51";
-		rLen = 22;
-		rLoc = 1323;
-		rType = 0;
-		vrLen = 474;
-		vrLoc = 1130;
-	};
-	85A2BDAB0DE4F76600682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */;
-		name = "baseobj.cpp: 51";
-		rLen = 22;
-		rLoc = 1323;
-		rType = 0;
-		vrLen = 520;
-		vrLoc = 1130;
-	};
-	85A2BDAD0DE4F7B700682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "warning: #warning This file includes at least one deprecated or antiquated header. Please consider using one of the 32 headers found in section 17.4.1.2 of the C++ standard. Examples include substituting the <X> header for the <X.h> header for C++ includes, or <iostream> instead of the deprecated header <iostream.h>. To disable this warning use -Wno-deprecated.";
-		fRef = 85A2BDAE0DE4F7B700682547 /* backward_warning.h */;
-		rLen = 1;
-		rLoc = 31;
-		rType = 1;
-	};
-	85A2BDAE0DE4F7B700682547 /* backward_warning.h */ = {
+	85D144140DE788570087893B /* Commands */ = {
 		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = backward_warning.h;
-		path = "/Developer/SDKs/MacOSX10.4u.sdk/usr/include/c++/4.0.0/backward/backward_warning.h";
-		sourceTree = "<absolute>";
+		lastKnownFileType = folder;
+		path = Commands;
+		sourceTree = "<group>";
 	};
-	85A2BDAF0DE4F7B700682547 /* PBXTextBookmark */ = {
+	85D146350DE7885A0087893B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 85A2BDB00DE4F7B700682547 /* backward_warning.h */;
-		name = "backward_warning.h: 32";
-		rLen = 76;
-		rLoc = 1475;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 500;
 		rType = 0;
-		vrLen = 1263;
-		vrLoc = 590;
+		vrLen = 440;
+		vrLoc = 0;
 	};
-	85A2BDB00DE4F7B700682547 /* backward_warning.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = backward_warning.h;
-		path = "/Developer/SDKs/MacOSX10.4u.sdk/usr/include/c++/4.0.0/backward/backward_warning.h";
-		sourceTree = "<absolute>";
-	};
-	85A2BDB20DE4F7D100682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "warning: #warning This file includes at least one deprecated or antiquated header. Please consider using one of the 32 headers found in section 17.4.1.2 of the C++ standard. Examples include substituting the <X> header for the <X.h> header for C++ includes, or <iostream> instead of the deprecated header <iostream.h>. To disable this warning use -Wno-deprecated.";
-		fRef = 85A2BDB00DE4F7B700682547 /* backward_warning.h */;
-		rLen = 1;
-		rLoc = 31;
-		rType = 1;
-	};
-	85A2BDB30DE4F7D100682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BDB00DE4F7B700682547 /* backward_warning.h */;
-		name = "backward_warning.h: 32";
-		rLen = 76;
-		rLoc = 1475;
-		rType = 0;
-		vrLen = 1263;
-		vrLoc = 590;
-	};
-	85A2BDB60DE4F80F00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "warning: #warning This file includes at least one deprecated or antiquated header. Please consider using one of the 32 headers found in section 17.4.1.2 of the C++ standard. Examples include substituting the <X> header for the <X.h> header for C++ includes, or <iostream> instead of the deprecated header <iostream.h>. To disable this warning use -Wno-deprecated.";
-		fRef = 85A2BDB00DE4F7B700682547 /* backward_warning.h */;
-		rLen = 1;
-		rLoc = 31;
-		rType = 1;
-	};
-	85A2BDB70DE4F80F00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BDB00DE4F7B700682547 /* backward_warning.h */;
-		name = "backward_warning.h: 32";
-		rLen = 76;
-		rLoc = 1475;
-		rType = 0;
-		vrLen = 1263;
-		vrLoc = 590;
-	};
-	85A2BDBE0DE4F84900682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "warning: taking address of temporary";
-		fRef = 85A2BCC50DE4E8C800682547 /* HYChartWindow.cpp */;
-		rLen = 1;
-		rLoc = 2093;
-		rType = 1;
-	};
-	85A2BDBF0DE4F84900682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BCC50DE4E8C800682547 /* HYChartWindow.cpp */;
-		name = "HYChartWindow.cpp: 2094";
-		rLen = 53;
-		rLoc = 50890;
-		rType = 0;
-		vrLen = 653;
-		vrLoc = 50592;
-	};
-	85A2BDC10DE4F87C00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: missing binary operator before token \"(\"";
-		fRef = 85A2BDC20DE4F87C00682547 /* sqliteInt.h */;
-		rLen = 1;
-		rLoc = 108;
-		rType = 1;
-	};
-	85A2BDC20DE4F87C00682547 /* sqliteInt.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = sqliteInt.h;
-		path = /Users/sergei/HyPhySource/HyPhyXCode/../SQLite/trunk/sqliteInt.h;
-		sourceTree = "<absolute>";
-	};
-	85A2BDC30DE4F87C00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BDC40DE4F87C00682547 /* sqliteInt.h */;
-		name = "sqliteInt.h: 108";
-		rLen = 11;
-		rLoc = 3422;
-		rType = 0;
-		vrLen = 737;
-		vrLoc = 2866;
-	};
-	85A2BDC40DE4F87C00682547 /* sqliteInt.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = sqliteInt.h;
-		path = /Users/sergei/HyPhySource/HyPhyXCode/../SQLite/trunk/sqliteInt.h;
-		sourceTree = "<absolute>";
-	};
-	85A2BDC70DE4F8B100682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: no matching function for call to '_HYTable::ModifySelection(long int&, long int&, int)'";
-		fRef = 85A2BCF40DE4EA2100682547 /* HYPlatformButtonMenu.cpp */;
-		rLen = 1;
-		rLoc = 1627;
-		rType = 1;
-	};
-	85A2BDC80DE4F8B100682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BCF40DE4EA2100682547 /* HYPlatformButtonMenu.cpp */;
-		name = "HYPlatformButtonMenu.cpp: 1628";
-		rLen = 60;
-		rLoc = 40010;
-		rType = 0;
-		vrLen = 547;
-		vrLoc = 36205;
-	};
-	85A2BE2E0DE4FDFE00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: Menus.h: No such file or directory";
-		fRef = 85A2BE2F0DE4FDFE00682547 /* HYUtils.h */;
-		rLen = 1;
-		rLoc = 39;
-		rType = 1;
-	};
-	85A2BE2F0DE4FDFE00682547 /* HYUtils.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = HYUtils.h;
-		path = "/Users/sergei/HyPhySource/HyPhyXCode/../trunk/GUIElements/Shared Include/HYUtils.h";
-		sourceTree = "<absolute>";
-	};
-	85A2BE300DE4FDFE00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BE310DE4FDFE00682547 /* HYUtils.h */;
-		name = "HYUtils.h: 40";
-		rLen = 19;
-		rLoc = 1105;
-		rType = 0;
-		vrLen = 1011;
-		vrLoc = 710;
-	};
-	85A2BE310DE4FDFE00682547 /* HYUtils.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = HYUtils.h;
-		path = "/Users/sergei/HyPhySource/HyPhyXCode/../trunk/GUIElements/Shared Include/HYUtils.h";
-		sourceTree = "<absolute>";
-	};
-	85A2BE390DE4FE5C00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: Menus.h: No such file or directory";
-		fRef = 85A2BE310DE4FDFE00682547 /* HYUtils.h */;
-		rLen = 1;
-		rLoc = 39;
-		rType = 1;
-	};
-	85A2BE3A0DE4FE5C00682547 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BE310DE4FDFE00682547 /* HYUtils.h */;
-		name = "HYUtils.h: 40";
-		rLen = 19;
-		rLoc = 1105;
-		rType = 0;
-		vrLen = 1011;
-		vrLoc = 710;
-	};
-	85A2BE3B0DE4FE7F00682547 /* PBXBookmark */ = {
+	85D146370DE788650087893B /* PBXBookmark */ = {
 		isa = PBXBookmark;
-		fRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */;
+		fRef = 85D144140DE788570087893B /* Commands */;
 	};
-	85A2BE3F0DE4FE8200682547 /* PBXTextBookmark */ = {
+	85D1463F0DE788830087893B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */;
-		name = "baseobj.cpp: 51";
-		rLen = 22;
-		rLoc = 1323;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 500;
 		rType = 0;
-		vrLen = 1317;
-		vrLoc = 724;
+		vrLen = 440;
+		vrLoc = 0;
 	};
-	85F8F7290DE507F60017A3D2 /* PBXTextBookmark */ = {
+	85D146480DE788AE0087893B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		comments = "warning: unused variable 'buf'";
-		fRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */;
-		rLen = 1;
-		rLoc = 173;
-		rType = 1;
-	};
-	85F8F72A0DE507F60017A3D2 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */;
-		name = "bgm.cpp: 174";
-		rLen = 18;
-		rLoc = 4563;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 25";
+		rLen = 0;
+		rLoc = 500;
 		rType = 0;
-		vrLen = 435;
-		vrLoc = 4374;
+		vrLen = 487;
+		vrLoc = 0;
 	};
-	85F8F72E0DE5082E0017A3D2 /* PBXTextBookmark */ = {
+	85D1464A0DE788CA0087893B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		comments = "warning: unused variable 'buf'";
-		fRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */;
-		rLen = 1;
-		rLoc = 173;
-		rType = 1;
-	};
-	85F8F72F0DE5082E0017A3D2 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */;
-		name = "bgm.cpp: 174";
-		rLen = 18;
-		rLoc = 4563;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 475;
 		rType = 0;
-		vrLen = 506;
-		vrLoc = 4336;
+		vrLen = 501;
+		vrLoc = 0;
+	};
+	85D1464F0DE7891A0087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 21";
+		rLen = 15;
+		rLoc = 359;
+		rType = 0;
+		vrLen = 500;
+		vrLoc = 0;
+	};
+	85D146500DE789300087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 24";
+		rLen = 0;
+		rLoc = 445;
+		rType = 0;
+		vrLen = 504;
+		vrLoc = 0;
+	};
+	85D146510DE78A360087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 33";
+		rLen = 0;
+		rLoc = 672;
+		rType = 0;
+		vrLen = 695;
+		vrLoc = 0;
+	};
+	85D146520DE78A530087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 33";
+		rLen = 0;
+		rLoc = 649;
+		rType = 0;
+		vrLen = 688;
+		vrLoc = 0;
+	};
+	85D146530DE78A630087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 33";
+		rLen = 0;
+		rLoc = 671;
+		rType = 0;
+		vrLen = 690;
+		vrLoc = 0;
+	};
+	85D146540DE78A7E0087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 37";
+		rLen = 0;
+		rLoc = 688;
+		rType = 0;
+		vrLen = 730;
+		vrLoc = 0;
+	};
+	85D146550DE78ACE0087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
+		name = "ProbabilityDistributions.bf: 35";
+		rLen = 0;
+		rLoc = 688;
+		rType = 0;
+		vrLen = 688;
+		vrLoc = 0;
 	};
 	8D0C4E890486CD37000505A6 /* HyPhyXCode */ = {
 		activeExec = 0;
