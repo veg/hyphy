@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8593AB7A0DE7883B008384A0 /* Help in Resources */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
+		8593AB7B0DE7883E008384A0 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
 		85A2BCA40DE4E80E00682547 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
 		85A2BCA50DE4E80E00682547 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
 		85A2BCA60DE4E80E00682547 /* batchlan2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC930DE4E80E00682547 /* batchlan2.cpp */; };
@@ -121,7 +123,6 @@
 		85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
 		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
 		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
-		85F8F8310DE51D080017A3D2 /* PS_Plotters.bf in Resources */ = {isa = PBXBuildFile; fileRef = 85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */; };
 		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
 /* End PBXBuildFile section */
 
@@ -132,6 +133,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
+				8593AB7B0DE7883E008384A0 /* Help in CopyFiles */,
 				85A2C1D70DE5066E00682547 /* DatapanelAddIns in CopyFiles */,
 				85A2C1D80DE5066E00682547 /* GeneticCodes in CopyFiles */,
 				85A2C1D90DE5066E00682547 /* SubstitutionClasses in CopyFiles */,
@@ -148,6 +150,7 @@
 
 /* Begin PBXFileReference section */
 		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
+		8593AB720DE7883B008384A0 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Help; path = ../trunk/Help; sourceTree = SOURCE_ROOT; };
 		85A2BC910DE4E80E00682547 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = baseobj.cpp; path = ../trunk/Core/baseobj.cpp; sourceTree = SOURCE_ROOT; };
 		85A2BC920DE4E80E00682547 /* batchlan.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = batchlan.cpp; path = ../trunk/Core/batchlan.cpp; sourceTree = SOURCE_ROOT; };
 		85A2BC930DE4E80E00682547 /* batchlan2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = batchlan2.cpp; path = ../trunk/Core/batchlan2.cpp; sourceTree = SOURCE_ROOT; };
@@ -264,7 +267,8 @@
 		85A2C19D0DE5066E00682547 /* TopologyInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TopologyInference; path = ../trunk/TopologyInference; sourceTree = SOURCE_ROOT; };
 		85A2C1A80DE5066E00682547 /* TreeAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TreeAddIns; path = ../trunk/TreeAddIns; sourceTree = SOURCE_ROOT; };
 		85A2C1AC0DE5066E00682547 /* UserAddins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UserAddins; path = ../trunk/UserAddins; sourceTree = SOURCE_ROOT; };
-		85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = PS_Plotters.bf; path = ../trunk/TemplateBatchFiles/Utility/PS_Plotters.bf; sourceTree = SOURCE_ROOT; };
+		85F903D40DE6501400D28244 /* build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = build.sh; path = ../trunk/Scripts/build.sh; sourceTree = SOURCE_ROOT; };
+		85F903D50DE6501400D28244 /* gtk_build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = gtk_build.sh; path = ../trunk/Scripts/gtk_build.sh; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -291,7 +295,8 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
-				85F8F8300DE51D080017A3D2 /* PS_Plotters.bf */,
+				8593AB720DE7883B008384A0 /* Help */,
+				85F903D10DE64F9100D28244 /* Scripts */,
 				85A2BFEF0DE5064D00682547 /* HBL */,
 				20286C2AFDCF999611CA2CEA /* Sources */,
 				20286C2CFDCF999611CA2CEA /* Resources */,
@@ -525,6 +530,15 @@
 			name = HBL;
 			sourceTree = "<group>";
 		};
+		85F903D10DE64F9100D28244 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				85F903D40DE6501400D28244 /* build.sh */,
+				85F903D50DE6501400D28244 /* gtk_build.sh */,
+			);
+			name = Scripts;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -573,7 +587,7 @@
 				85A2BD6D0DE4EC4900682547 /* HYPHYMP.icns in Resources */,
 				85A2BD6E0DE4EC4900682547 /* Info.plist in Resources */,
 				85A2BD730DE4EC8100682547 /* HyPhy.rsrc in Resources */,
-				85F8F8310DE51D080017A3D2 /* PS_Plotters.bf in Resources */,
+				8593AB7A0DE7883B008384A0 /* Help in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
