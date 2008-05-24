@@ -109,68 +109,31 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 233277527;
-			PBXWorkspaceStateSaveDate = 233277527;
+			PBXPerProjectTemplateStateSaveDate = 233279719;
+			PBXWorkspaceStateSaveDate = 233279719;
 		};
 		perUserProjectItems = {
-			856FF0470DE7874C00576C19 = 856FF0470DE7874C00576C19 /* PBXTextBookmark */;
-			8593AB7E0DE78855008384A0 = 8593AB7E0DE78855008384A0 /* PBXTextBookmark */;
-			85D146350DE7885A0087893B /* PBXTextBookmark */ = 85D146350DE7885A0087893B /* PBXTextBookmark */;
-			85D1463F0DE788830087893B /* PBXTextBookmark */ = 85D1463F0DE788830087893B /* PBXTextBookmark */;
-			85D146480DE788AE0087893B /* PBXTextBookmark */ = 85D146480DE788AE0087893B /* PBXTextBookmark */;
-			85D1464A0DE788CA0087893B /* PBXTextBookmark */ = 85D1464A0DE788CA0087893B /* PBXTextBookmark */;
-			85D1464F0DE7891A0087893B /* PBXTextBookmark */ = 85D1464F0DE7891A0087893B /* PBXTextBookmark */;
-			85D146500DE789300087893B /* PBXTextBookmark */ = 85D146500DE789300087893B /* PBXTextBookmark */;
-			85D146510DE78A360087893B /* PBXTextBookmark */ = 85D146510DE78A360087893B /* PBXTextBookmark */;
-			85D146520DE78A530087893B /* PBXTextBookmark */ = 85D146520DE78A530087893B /* PBXTextBookmark */;
-			85D146530DE78A630087893B /* PBXTextBookmark */ = 85D146530DE78A630087893B /* PBXTextBookmark */;
-			85D146540DE78A7E0087893B /* PBXTextBookmark */ = 85D146540DE78A7E0087893B /* PBXTextBookmark */;
-			85D146550DE78ACE0087893B /* PBXTextBookmark */ = 85D146550DE78ACE0087893B /* PBXTextBookmark */;
+			85D146840DE7909B0087893B = 85D146840DE7909B0087893B /* PBXTextBookmark */;
+			85D146910DE790E10087893B = 85D146910DE790E10087893B /* PBXTextBookmark */;
+			85FD774D0DE790EB00A2C12C /* PBXTextBookmark */ = 85FD774D0DE790EB00A2C12C /* PBXTextBookmark */;
+			85FD775D0DE7912900A2C12C /* PBXTextBookmark */ = 85FD775D0DE7912900A2C12C /* PBXTextBookmark */;
+			85FD777D0DE792CF00A2C12C /* PBXTextBookmark */ = 85FD777D0DE792CF00A2C12C /* PBXTextBookmark */;
+			85FD777F0DE7931500A2C12C /* PBXTextBookmark */ = 85FD777F0DE7931500A2C12C /* PBXTextBookmark */;
+			85FD77800DE7950E00A2C12C /* PBXTextBookmark */ = 85FD77800DE7950E00A2C12C /* PBXTextBookmark */;
+			85FD77810DE7957100A2C12C /* PBXTextBookmark */ = 85FD77810DE7957100A2C12C /* PBXTextBookmark */;
+			85FD77840DE797AD00A2C12C /* PBXTextBookmark */ = 85FD77840DE797AD00A2C12C /* PBXTextBookmark */;
+			85FD77870DE797AD00A2C12C /* PBXTextBookmark */ = 85FD77870DE797AD00A2C12C /* PBXTextBookmark */;
+			85FD77890DE797AD00A2C12C /* PBXTextBookmark */ = 85FD77890DE797AD00A2C12C /* PBXTextBookmark */;
+			85FD778B0DE797DE00A2C12C /* PBXTextBookmark */ = 85FD778B0DE797DE00A2C12C /* PBXTextBookmark */;
+			85FD778C0DE797DE00A2C12C /* PBXTextBookmark */ = 85FD778C0DE797DE00A2C12C /* PBXTextBookmark */;
+			85FD778D0DE7985F00A2C12C /* PBXTextBookmark */ = 85FD778D0DE7985F00A2C12C /* PBXTextBookmark */;
+			85FD778E0DE7985F00A2C12C /* PBXTextBookmark */ = 85FD778E0DE7985F00A2C12C /* PBXTextBookmark */;
 		};
 		sourceControlManager = 85A2BBC50DE4D29B00682547 /* Source Control */;
 		userBookmarkGroup = 85D1440E0DE788570087893B /* PBXBookmarkGroup */;
 		userBuildSettings = {
 			SYMROOT = "$(PROJECT_DIR)/../HyPhy";
 		};
-	};
-	856FF0470DE7874C00576C19 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
-		rLen = 0;
-		rLoc = 500;
-		rType = 0;
-		vrLen = 440;
-		vrLoc = 0;
-	};
-	856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = text;
-		name = ProbabilityDistributions.bf;
-		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/ProbabilityDistributions.bf;
-		sourceTree = "<absolute>";
-		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1338, 808}}";
-			sepNavSelRange = "{688, 0}";
-			sepNavVisRange = "{0, 688}";
-		};
-	};
-	8593AB7E0DE78855008384A0 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 8593AB7F0DE78855008384A0 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
-		rLen = 0;
-		rLoc = 500;
-		rType = 0;
-		vrLen = 440;
-		vrLoc = 0;
-	};
-	8593AB7F0DE78855008384A0 /* ProbabilityDistributions.bf */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = text;
-		name = ProbabilityDistributions.bf;
-		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/ProbabilityDistributions.bf;
-		sourceTree = "<absolute>";
 	};
 	85A2BBC50DE4D29B00682547 /* Source Control */ = {
 		isa = PBXSourceControlManager;
@@ -286,7 +249,7 @@
 	85A2BD760DE4EC9B00682547 /* main-mac.cpp */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {1338, 26194}}";
-			sepNavSelRange = "{0, 0}";
+			sepNavSelRange = "{976, 0}";
 			sepNavVisRange = "{0, 1447}";
 			sepNavWindowFrame = "{{84, 24}, {1397, 936}}";
 		};
@@ -330,119 +293,193 @@
 		path = Commands;
 		sourceTree = "<group>";
 	};
-	85D146350DE7885A0087893B /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
-		rLen = 0;
-		rLoc = 500;
-		rType = 0;
-		vrLen = 440;
-		vrLoc = 0;
-	};
 	85D146370DE788650087893B /* PBXBookmark */ = {
 		isa = PBXBookmark;
 		fRef = 85D144140DE788570087893B /* Commands */;
 	};
-	85D1463F0DE788830087893B /* PBXTextBookmark */ = {
+	85D146840DE7909B0087893B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
 		rLen = 0;
-		rLoc = 500;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 440;
+	};
+	85D146850DE7909B0087893B /* DataSimulator.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = DataSimulator.bf;
+		path = /Users/sergei/Desktop/CurrentProjects/GASP/Comparisons/RecombinantGenerator.bf;
+		sourceTree = "<absolute>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1252, 837}}";
+			sepNavSelRange = "{913, 0}";
+			sepNavVisRange = "{0, 934}";
+			sepNavWindowFrame = "{{495, 14}, {1311, 965}}";
+		};
+	};
+	85D146910DE790E10087893B /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 85D146920DE790E10087893B /* RecombinantGenerator.bf */;
+		name = "RecombinantGenerator.bf: 15";
+		rLen = 0;
+		rLoc = 934;
+		rType = 0;
+		vrLen = 666;
 		vrLoc = 0;
 	};
-	85D146480DE788AE0087893B /* PBXTextBookmark */ = {
+	85D146920DE790E10087893B /* RecombinantGenerator.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = RecombinantGenerator.bf;
+		path = /Users/sergei/Desktop/CurrentProjects/GASP/Comparisons/RecombinantGenerator.bf;
+		sourceTree = "<absolute>";
+	};
+	85FD774D0DE790EB00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 25";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 15";
 		rLen = 0;
-		rLoc = 500;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 487;
+		vrLen = 666;
 		vrLoc = 0;
 	};
-	85D1464A0DE788CA0087893B /* PBXTextBookmark */ = {
+	85FD775D0DE7912900A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 15";
 		rLen = 0;
-		rLoc = 475;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 501;
+		vrLen = 666;
 		vrLoc = 0;
 	};
-	85D1464F0DE7891A0087893B /* PBXTextBookmark */ = {
+	85FD777D0DE792CF00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 21";
-		rLen = 15;
-		rLoc = 359;
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 15";
+		rLen = 0;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 500;
+		vrLen = 666;
 		vrLoc = 0;
 	};
-	85D146500DE789300087893B /* PBXTextBookmark */ = {
+	85FD777F0DE7931500A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 24";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 16";
 		rLen = 0;
-		rLoc = 445;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 504;
+		vrLen = 654;
 		vrLoc = 0;
 	};
-	85D146510DE78A360087893B /* PBXTextBookmark */ = {
+	85FD77800DE7950E00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 33";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 16";
 		rLen = 0;
-		rLoc = 672;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 695;
+		vrLen = 654;
 		vrLoc = 0;
 	};
-	85D146520DE78A530087893B /* PBXTextBookmark */ = {
+	85FD77810DE7957100A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 33";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 18";
 		rLen = 0;
-		rLoc = 649;
+		rLoc = 934;
 		rType = 0;
-		vrLen = 688;
+		vrLen = 727;
 		vrLoc = 0;
 	};
-	85D146530DE78A630087893B /* PBXTextBookmark */ = {
+	85FD77840DE797AD00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 33";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 16";
 		rLen = 0;
-		rLoc = 671;
+		rLoc = 724;
 		rType = 0;
-		vrLen = 690;
+		vrLen = 762;
 		vrLoc = 0;
 	};
-	85D146540DE78A7E0087893B /* PBXTextBookmark */ = {
+	85FD77870DE797AD00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 37";
+		fRef = 85FD77880DE797AD00A2C12C /* GrabBag.bf */;
 		rLen = 0;
-		rLoc = 688;
+		rLoc = 2147484309;
 		rType = 0;
-		vrLen = 730;
+	};
+	85FD77880DE797AD00A2C12C /* GrabBag.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = GrabBag.bf;
+		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/GrabBag.bf;
+		sourceTree = "<absolute>";
+	};
+	85FD77890DE797AD00A2C12C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 85FD778A0DE797AD00A2C12C /* GrabBag.bf */;
+		name = "GrabBag.bf: 399";
+		rLen = 18;
+		rLoc = 10019;
+		rType = 0;
+		vrLen = 1251;
+		vrLoc = 9221;
+	};
+	85FD778A0DE797AD00A2C12C /* GrabBag.bf */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = text;
+		name = GrabBag.bf;
+		path = /Users/sergei/HyPhySource/trunk/TemplateBatchFiles/Utility/GrabBag.bf;
+		sourceTree = "<absolute>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1252, 6972}}";
+			sepNavSelRange = "{10492, 0}";
+			sepNavVisRange = "{9816, 1436}";
+			sepNavWindowFrame = "{{61, 16}, {1311, 965}}";
+		};
+	};
+	85FD778B0DE797DE00A2C12C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 85FD778A0DE797AD00A2C12C /* GrabBag.bf */;
+		name = "GrabBag.bf: 407";
+		rLen = 0;
+		rLoc = 10304;
+		rType = 0;
+		vrLen = 1252;
+		vrLoc = 9221;
+	};
+	85FD778C0DE797DE00A2C12C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 16";
+		rLen = 0;
+		rLoc = 724;
+		rType = 0;
+		vrLen = 762;
 		vrLoc = 0;
 	};
-	85D146550DE78ACE0087893B /* PBXTextBookmark */ = {
+	85FD778D0DE7985F00A2C12C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
-		fRef = 856FF0480DE7874C00576C19 /* ProbabilityDistributions.bf */;
-		name = "ProbabilityDistributions.bf: 35";
+		fRef = 85D146850DE7909B0087893B /* DataSimulator.bf */;
+		name = "RecombinantGenerator.bf: 18";
 		rLen = 0;
-		rLoc = 688;
+		rLoc = 913;
 		rType = 0;
-		vrLen = 688;
+		vrLen = 934;
 		vrLoc = 0;
+	};
+	85FD778E0DE7985F00A2C12C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 85FD778A0DE797AD00A2C12C /* GrabBag.bf */;
+		name = "GrabBag.bf: 421";
+		rLen = 0;
+		rLoc = 10509;
+		rType = 0;
+		vrLen = 1436;
+		vrLoc = 9816;
 	};
 	8D0C4E890486CD37000505A6 /* HyPhyXCode */ = {
 		activeExec = 0;
