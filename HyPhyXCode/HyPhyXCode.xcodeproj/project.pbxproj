@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8593AB7A0DE7883B008384A0 /* Help in Resources */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
 		8593AB7B0DE7883E008384A0 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
 		85A2BCA40DE4E80E00682547 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
 		85A2BCA50DE4E80E00682547 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
@@ -587,7 +586,6 @@
 				85A2BD6D0DE4EC4900682547 /* HYPHYMP.icns in Resources */,
 				85A2BD6E0DE4EC4900682547 /* Info.plist in Resources */,
 				85A2BD730DE4EC8100682547 /* HyPhy.rsrc in Resources */,
-				8593AB7A0DE7883B008384A0 /* Help in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
