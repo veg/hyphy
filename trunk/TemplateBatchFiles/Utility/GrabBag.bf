@@ -113,8 +113,7 @@ function avlToRow (_gb_anAVL, _gb_map, _gb_stride)
 }
 
 /*---------------------------------------------------------*/
-/* Turn the keys of an AVL into a string for labeling 
-   chart rows */
+/* Split a file path into DIRECTORY, FILENAME and EXTENSION  */
    
 function splitFilePath (_filePath)
 {
@@ -391,6 +390,36 @@ function vector_max (vec1)
 	}	
 	return {{maxV__,maxI__}};
 }
+
+/*---------------------------------------------
+ prompt for a value in a given range, given
+ a default value. 
+---------------------------------------------*/
+
+function prompt_for_a_value (prompt,default,lowerB,upperB,isInteger)
+{
+	value = lowerB-1;
+	while (value < lowerB || value > upperB)
+	{
+		fprintf (stdout, "<<", prompt, " (permissible range = [", lowerB, ",", upperB, "], default value = ", default);
+		if (isInteger)
+		{
+			fprintf (stdout, ", integer"); 
+		}
+		fprintf (stdout, ")>>");
+		fscanf  (stdin, "String", strVal);
+		if (Abs(strVal) == 0)
+		{
+			return default;
+		}	
+		value = strVal;
+	}
+	if (isInteger)
+		return value$1;
+		
+	return value;
+}
+
 
 
 /*---------------------------------------------
