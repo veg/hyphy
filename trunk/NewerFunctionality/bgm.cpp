@@ -51,6 +51,9 @@
 
 #include "bgm.h"
 
+#ifdef __AFYP_DEVELOPMENT__
+	#include "mpi.h"
+#endif
 
 /*SLKP 20070926; include progress report updates */
 	#if !defined __UNIX__ && !defined __HEADLESS__
@@ -2275,7 +2278,10 @@ void * CacheNodeScoreThread (void * arg)
 #endif
 
 
+
 //___________________________________________________________________________________________
+//	Master node (0) farms jobs for each graph node to compute nodes.  
+//	Compute nodes receive jobs and 
 void Bgm::CacheNodeScores (void)
 {
 	if (scores_cached)
@@ -2287,10 +2293,61 @@ void Bgm::CacheNodeScores (void)
 	BufferToConsole (buf);
 	*/
 	
-	_SimpleList		* args	= new _SimpleList((unsigned long) 2);
-
+	
+#ifdef __AFYP_DEVEOPMENT__ && __HYPHYMPI__
+	// MPI_Init() is called in main()
+	long		mpi_size,
+				my_rank;
+	_Matrix		mpi_node_status;
+	
+	char		mpi_message [256];
+	
+	MPI_Status *	mpi_status;
+	
+	MPI_Comm_size (MPI_COMM_WORLD, &mpi_size);	// number of processes
+	MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
+	
+	CreateMatrix (&mpi_node_status, mpi_size, 2, false, true, false);	// column 1 stores busy signal, 2 stores node id
+	
+	if (my_rank == 0)	// master node
+	{
+		for (long child = 0; child < num_nodes; child++)
+		{
+			// look for idle nodes
+			for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+			{
+				if (mpi_node_status(mpi_node+1, 0) == 0)
+				{
+					sprintf (mpi_message, "%d", child);
+					ReportMPIError(MPI_Send(mpi_message, strlen(message)+1, MPI_UNSIGNED_LONG, mpi_node+1, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+				}
+			}
+			
+			if (mpi_node == mpi_size-1)	// all nodes are busy
+			{
+				// wait for one of the compute nodes to return a pointer to 
+				ReportMPIError (MPI_Recv(mpi_message, 1, MPI_UNSIGNED_LONG, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, mpi_status), false);
+			}
+		}
+		
+		// shut down compute nodes
+		for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+		{
+			sprintf (mpi_message, "%d", -1);
+			ReportMPIError(MPI_Send(mpi_message, strlen(message)+1, MPI_UNSIGNED_LONG, mpi_node+1, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+		}
+	}
+	else			// compute node
+	{
+		while (1)
+		{
+			
+		}
+	}
+#else
 	
 #ifdef __NEVER_DEFINE_MP__		// this totally crashes :-/  - AFYP
+	_SimpleList		* args	= new _SimpleList((unsigned long) 2);
 	_Parameter		nthreads;
 	checkParameter (_HYBgm_NThreads, nthreads, 1);
 	
@@ -2448,7 +2505,8 @@ void Bgm::CacheNodeScores (void)
 #endif
 	}
 #endif
-	
+
+#endif
 	
 #if !defined __UNIX__ || defined __HEADLESS__
 	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE_DONE);
