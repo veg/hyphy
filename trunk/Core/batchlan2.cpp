@@ -983,11 +983,8 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 							*/
 							{
 								_AssociativeList * resList = new _AssociativeList;
-								_SimpleList        vlist;
-								vlist << tV->GetAVariable();
-								InsertVarIDsInList (resList,"RATE_MATRIX",vlist);
-								vlist.lData[0] = tV2->GetAVariable();
-								InsertVarIDsInList (resList,"EQ_FREQS",vlist);
+								resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
+								resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
 								resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
 								theReceptacle->SetValue (resList,false);
 								return;
