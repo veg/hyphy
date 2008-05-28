@@ -639,7 +639,7 @@ bool	_LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from trip
 
 bool	_LikelihoodFunction::UpdateFilterSize (long f) // from triplets
 {
-	_TheTree*  t = (_TheTree*)LocateVar (theTrees.lData[f]);
+	_TheTree*		t = (_TheTree*)LocateVar (theTrees.lData[f]);
 	_CalcNode* 		travNode = t->StepWiseTraversal(true);
 	_DataSetFilter* df = (_DataSetFilter*)dataSetFilterList.lData[f];
 	
@@ -653,37 +653,44 @@ bool	_LikelihoodFunction::UpdateFilterSize (long f) // from triplets
 		}
 		travNode = t->StepWiseTraversal(false);		
 	}
+	
 	if (!t->IsDegenerate())
 	{
-		long j,k;
+		long	j;
+		
 		_SimpleList tipMatches;
-		_List* specNames = &df->GetData()->GetNames();
+		_List*		specNames = &df->GetData()->GetNames();
+		
 		for (j=0;j<tips.lLength;j++)
 		{
-			k = specNames->Find((_String*)tips(j));
-			if (k==-1) break;
+			long k = specNames->Find((_String*)tips(j));
+			if	 (k==-1) break;
 			tipMatches<<k;
 		}
 		if (j==tips.lLength) // all matched
 		{
-			_SimpleList  sortedList, vertPart, theExclusions;
-			long		 unitSize = df->GetUnitLength();
-			sortedList.Duplicate (&tipMatches);
-			sortedList.Sort();
-			vertPart.Duplicate(&df->theOriginalOrder);
-			theExclusions.Duplicate(&df->theExclusions);
-			df->SetFilter (df->GetData(),unitSize,sortedList,vertPart,false);
-			df->theExclusions.Duplicate(&theExclusions);
-			df->FilterDeletions (&theExclusions);
-			df->SetMap(tipMatches);
-			df->SetupConversion();
-			sortedList.Clear();
-			_SimpleList*    theOO = (_SimpleList*)optimalOrders (f),
-					   *    theLS = (_SimpleList*)leafSkips (f);
+			_SimpleList  sortedList, 
+						 vertPart, 
+						 theExclusions;
+			
+			long						unitSize = df->GetUnitLength();
+			sortedList.Duplicate		(&tipMatches);
+			sortedList.Sort				();
+			vertPart.Duplicate			(&df->theOriginalOrder);
+			theExclusions.Duplicate		(&df->theExclusions);
+			df->SetFilter				(df->GetData(),unitSize,sortedList,vertPart,false);
+			df->SetMap				    (tipMatches);
+			df->FilterDeletions		    (&theExclusions);
+			df->theExclusions.Duplicate (&theExclusions);
+			df->SetupConversion		    ();
+			sortedList.Clear		    ();
+			
+			_SimpleList*				theOO = (_SimpleList*)optimalOrders (f),
+					   *				theLS = (_SimpleList*)leafSkips (f);
+			
 			theOO->Clear();
 			theLS->Clear();
-			for (j=0;j<df->theMap.lLength;j++)
-				(*theOO)<<j;
+			theOO->Populate (df->theMap.lLength/unitSize,0,1);
 			df->MatchStartNEnd (*theOO,*theLS);
 		}
 		else

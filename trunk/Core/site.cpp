@@ -2480,17 +2480,18 @@ void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 		}
 		else
 		{
-			_Parameter   *store_vec = new _Parameter [GetDimension()];
+			_Parameter   *store_vec = new _Parameter [GetDimension(false)];
 			checkPointer (store_vec);
 			
 			for (long i=0; i<theFrequencies.lLength;i++)
 			{
 				long pos = HasExclusions(i,theExc,store_vec);
-				if (pos !=-1)
+				if  (pos != -1)
 				{
 					sitesWithDeletions<<i;
 					_String warnMsg ((*this)(i,pos));				
-					warnMsg = warnMsg & " was encountered in species #"& (theNodeMap.lData[pos]+1)& ". All corresponding column data will be removed from analysis";
+					warnMsg = warnMsg & " was encountered in sequence "& *GetSequenceName (pos) & " at site pattern " & i 
+									  &	". All corresponding alignment columns will be removed from subsequent analyses.";
 					ReportWarning (warnMsg);
 				}
 			}
@@ -2504,45 +2505,8 @@ void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 			ReportWarning(errMsg);
 		}
 		
-		_SimpleList allDeleted;
-		
-		/*for (long i=sitesWithDeletions.lLength-1;i>=0;i--)
-		{
-			long sitePos = sitesWithDeletions(i);
-			//delete this site from the map and the frequencies vector, and also from the original order vector
-			theFrequencies.Delete(sitePos);
-			//delete everything from the original vector
-			_SimpleList origPositions;
-			
-			for (long j=0; j<unitLength;j++)
-				origPositions<<theData->theMap.lData[theMap.lData[sitePos*unitLength+j]];
-				
-			for (long k=theOriginalOrder.lLength-1;k>=unitLength-1;)
-			{
-				// now look in the original positions vector to find the sites which map back to the same
-				long j;
-				
-				for (j=unitLength-1;j>=0;j--)
-					if (theData->theMap.lData[theOriginalOrder.lData[k-unitLength+1+j]]!=origPositions.lData[j])
-						break;
-						
-				if (j==-1)
-				{
-					for (j=0; j<unitLength;j++)
-					{
-						allDeleted << theOriginalOrder.lData[k-j];
-						theOriginalOrder.Delete(k-j);
-					}
-					duplicateMap.Delete ((k+1)/unitLength-1);
-				}
-
-				k-=unitLength;
-			}	
-			for (long j=0; j<unitLength;j++)
-				theMap.lData[sitePos*unitLength+j]=-1;
-		}*/
-		
-		_SimpleList	dupDeletes;		
+		_SimpleList allDeleted,
+					dupDeletes;		
 		
 		for (long k=0; k < duplicateMap.lLength; k++)
 			if (sitesWithDeletions.BinaryFind (duplicateMap.lData[k]) >= 0)
@@ -2620,12 +2584,12 @@ void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 		_SimpleList saveMap (theMap);
 		theMap.DeleteList (dupDeletes);
 		{
-		for (long k=0; k<theMap.lLength; k++)
-			if (theMap.lData[k] < 0)
-			{
-				saveMap.DeleteList (dupDeletes);
-				WarnError ("Internal Error in _DataSetFilter::SetExclusions");
-			}
+			for (long k=0; k<theMap.lLength; k++)
+				if (theMap.lData[k] < 0)
+				{
+					saveMap.DeleteList (dupDeletes);
+					WarnError ("Internal Error in _DataSetFilter::FilterDeletions");
+				}
 		}
 	}	
 
@@ -3730,37 +3694,26 @@ _String*		_DataSetFilter::GetSequenceCharacters (long seqID)
 //_______________________________________________________________________
 long 	_DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, _Parameter*store )
 {
-	//static _Parameter* store = nil;
-	long   filterDim = GetDimension();
-	//if (!store||!site)
-	//{
-		//if (store) delete store;
-		//store = new _Parameter [filterDim];
-	//}
-	//if (!store) warnError( -108);
-	
-	long 	j,
-			stCount,
-			posCount;
+	long   filterDim = GetDimension(false);
 	
 	if (theNodeMap.lLength)
 		for (unsigned long k = 0; k<theNodeMap.lLength; k++)
 		{
-			Translate2Frequencies ((*this)(site,k), store, false);
-			stCount  = 0;
-			posCount = 0;
+			Translate2Frequencies	((*this)(site,k), store, false);
+			
+			long					j						= 0,
+									s						= 0;
+			
 			for (j=0; j<filterDim; j++)
-				if (store[j]!=0)
-				{
-					stCount ++;
-					posCount = j;
+				if (store[j] > 0.0)
+				{	
+					s++;
+					if (theExc->Find(j) < 0)
+						break;
 				}
-	
-			if (stCount == 1)
-			{
-				if (theExc->Find(posCount)!=-1) 
-					return k;
-			}
+			
+			if (j == filterDim && s) 
+				return k;
 		}
 
 	return -1;
