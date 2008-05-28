@@ -848,6 +848,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						// "Local Independent"
 						// "Local Constrained"
 						// "Trees"
+						// "Models"
 						// "Base frequencies"
 						// "Datafilters"
 						// "Compute Template"
@@ -861,6 +862,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 											v4,
 											v5,
 											v6;
+						_List				modelList;
 											
 						InsertVarIDsInList (resList, "Categories", lf->GetCategoryVars ());
 						
@@ -881,8 +883,16 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 							
 						vl = &lf->GetTheTrees ();
 						for (long n=0; n<vl->lLength; n++)
+						{
 							v5 << vl->lData[n];
-
+							_SimpleList partModels;
+							((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
+							if (partModels.lLength == 1)
+								modelList << modelNames (partModels.lData[0]);
+							else
+								modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
+						}
+						
 
 						vl = &lf->GetTheFilters ();
 						for (long p=0; p<vl->lLength; p++)
@@ -895,6 +905,10 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						InsertVarIDsInList (resList, "Trees", v5);
 						InsertVarIDsInList (resList, "Base frequencies", lf->GetBaseFreqs());
 						InsertStringListIntoAVL (resList, "Datafilters", v6, dataSetFilterNamesList);
+						{
+							_SimpleList indexer (modelList.lLength,0,1);
+							InsertStringListIntoAVL		(resList, "Models", indexer, modelList);
+						}
 						
 						_FString		aKey,
 										ct;
@@ -919,7 +933,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						{
 							_Variable*		theMx = LocateVar (modelMatrixIndices.lData[f]);
 							
-							if (sID2 < 0) // get a cell matrix formula
+							if (sID2 < 0) // get the sID's parameter name
 							{
 								_SimpleList		modelP;
 								_AVLList		modelPA (&modelP);
@@ -934,7 +948,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 									ReportWarning(errMsg);
 								}		
 							}
-							else 
+							else // get the formula for cell (sID, sID2)
 							{
 								_Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
 								if (cellFla)
@@ -945,12 +959,12 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						else
 						{
 							_Variable	* tV  = LocateVar(modelMatrixIndices.lData[f]),
-										* tV2;
-										
+							* tV2;
+							
 							bool		 mByF = true;
-										
+							
 							long freqID = modelFrequenciesIndices.lData[f];
-
+							
 							if (freqID>=0)
 								tV2 = LocateVar(freqID);
 							else
@@ -958,7 +972,26 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 								mByF = false;
 								tV2 = LocateVar(-freqID-1);
 							}
-							result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);							
+							if (sID == -1) // branch length expression
+								result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
+							else 
+							/* 
+								returns an AVL with keys
+								"RATE_MATRIX" - the ID of the rate matrix
+								"EQ_FREQS"	  - the ID of eq. freq. vector
+								"MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+							*/
+							{
+								_AssociativeList * resList = new _AssociativeList;
+								_SimpleList        vlist;
+								vlist << tV->GetAVariable();
+								InsertVarIDsInList (resList,"RATE_MATRIX",vlist);
+								vlist.lData[0] = tV2->GetAVariable();
+								InsertVarIDsInList (resList,"EQ_FREQS",vlist);
+								resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
+								theReceptacle->SetValue (resList,false);
+								return;
+							}
 						}
 					}
 					else
