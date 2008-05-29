@@ -2294,57 +2294,193 @@ void Bgm::CacheNodeScores (void)
 	*/
 	
 	
-#ifdef __AFYP_DEVEOPMENT__ && __HYPHYMPI__
+#ifdef __AFYP_DEVELOPMENT__ && __HYPHYMPI__
 	// MPI_Init() is called in main()
 	long		mpi_size,
 				my_rank;
-	_Matrix		mpi_node_status;
+	
+	_Matrix		single_parent_scores (num_nodes, 1, false, true);
+	
+	_SimpleList	parents,
+				all_but_one (num_nodes-1, 0, 1),
+				aux_list,
+				nk_tuple;
 	
 	char		mpi_message [256];
 	
-	MPI_Status *	mpi_status;
+	MPI_Status	status;	// contains source, tag, and error code
 	
 	MPI_Comm_size (MPI_COMM_WORLD, &mpi_size);	// number of processes
 	MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
 	
-	CreateMatrix (&mpi_node_status, mpi_size, 2, false, true, false);	// column 1 stores busy signal, 2 stores node id
 	
-	if (my_rank == 0)	// master node
+	
+	if (my_rank == 0)	// master node handles job farming, collating results into its _List member variable
 	{
+		_Matrix		mpi_node_status (mpi_size, 2, false, true);		// column 1 stores busy signal, 2 stores node id
+		long		senderID;
+		
 		for (long child = 0; child < num_nodes; child++)
 		{
-			// look for idle nodes
-			for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+			long		maxp		= max_parents.lData[child],
+						ntuple_receipt;
+			
+			bool		remaining;
+			
+			_List	*	this_list	= (_List *) node_scores.lData[node_id];
+			
+			_Parameter	score		= is_discrete.lData[node_id] ? ComputeDiscreteScore (child, parents) : ComputeContinuousScore (node_id);
+			_Constant	orphan_score (score);
+			
+			
+			this_list->Clear();
+			(*this_list) && (&orphan_score);	// handle orphan score locally
+			
+			
+			if (maxp > 0)	// don't bother to farm out trivial cases
 			{
-				if (mpi_node_status(mpi_node+1, 0) == 0)
+				// look for idle nodes
+				for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
 				{
-					sprintf (mpi_message, "%d", child);
-					ReportMPIError(MPI_Send(mpi_message, strlen(message)+1, MPI_UNSIGNED_LONG, mpi_node+1, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+					if (mpi_node_status(mpi_node+1, 0) == 0)
+					{
+						ReportMPIError(MPI_Send(&child, 1, MPI_SIGNED_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+						
+						mpi_node_status.Store (mpi_node, 0, 1);	// set busy signal
+						mpi_node_status.Store (mpi_node, 1, child);
+						
+						break;
+					}
 				}
 			}
 			
-			if (mpi_node == mpi_size-1)	// all nodes are busy
+			
+			if (mpi_node == mpi_size-1)	// all nodes are busy, wait for one to send results
 			{
-				// wait for one of the compute nodes to return a pointer to 
-				ReportMPIError (MPI_Recv(mpi_message, 1, MPI_UNSIGNED_LONG, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, mpi_status), false);
+				ReportMPIError (MPI_Recv (single_parent_scores.theData, num_nodes, MPI_DOUBLE, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+				(*this_list) && (&single_parent_scores);
+				
+				senderID = (long) status.MPI_SOURCE;
+				maxp = max_parents.lData[mpi_node_status(senderID, 1)];
+				
+				for (long np = 2; np <= maxp; np++)
+				{
+					_NTupleStorage	family_scores (num_nodes-1, np);
+					
+					if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+					{
+						_Matrix		scores_to_store (nk_tuple.lLength, 1, false, true);
+						long		score_index = 0;
+						
+						// receive nk-tuple indexed node scores from same compute node
+						ReportMPIError (MPI_Recv (scores_to_store.theData, nk_tuple.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+						
+						do
+						{
+							remaining = all_but_one.NChooseK (aux_list, nk_tuple);	// update nk-tuple in aux_list
+							ntuple_receipt = family_scores.Store (scores_to_store(score_index, 0), nk_tuple);
+							score_index++;
+						}
+						while (remaining);
+					}
+					else 
+					{
+						_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+						WarnError(oops);
+					}
+					
+					(*this_list) && (&family_scores);
+				}
 			}
 		}
+		// end loop over child nodes
 		
 		// shut down compute nodes
-		for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+		for (long shutdown = -1, mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
 		{
-			sprintf (mpi_message, "%d", -1);
-			ReportMPIError(MPI_Send(mpi_message, strlen(message)+1, MPI_UNSIGNED_LONG, mpi_node+1, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+			ReportMPIError(MPI_Send(&shutdown, 1, MPI_SIGNED_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
 		}
 	}
+	
 	else			// compute node
 	{
+		long		node_id,
+					maxp;
+		_List		list_of_matrices;
+		
 		while (1)
 		{
+			ReportMPIError (MPI_Recv (&node_id, 1, MPI_SIGNED_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
 			
+			if (node_id < 0)
+			{
+				break;	// received shutdown message (-1)
+			}
+			
+			maxp = max_parents.lData[node_id];
+			parents.Populate (1,0,0);
+			
+			for (long par = 0; par < num_nodes; par++)
+			{
+				if (par == node_id)		// child cannot be its own parent, except in Kansas
+					continue;
+				
+				parents.lData[0] = par;
+				single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
+											ComputeContinuousScore (node_id));
+			}
+			
+			parents.Clear();
+			
+			for (long np = 2; np <= maxp; np++)
+			{
+				parents.Populate (np, 0, 0);
+				
+				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+				{
+					bool		remaining;
+					long		tuple_index = 0;
+					_Matrix		tuple_scores (nk_tuple.lLength, 1, false, true);
+					
+					do
+					{
+						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+						for (long par_idx = 0; par_idx < np; par_idx++)
+						{
+							long par = nk_tuple.lData[par_idx];
+							if (par >= node_id) par++;
+							parents.lData[par_idx] = par;
+						}
+						score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
+									ComputeContinuousScore (node_id);
+						tuple_scores.Store (tuple_index, 0, score);
+					} 
+					while (remaining);
+					
+					list_of_matrices && (&tuple_scores);		// append duplicate
+				}
+				else 
+				{
+					_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+					WarnError(oops);
+				}
+			}
+			
+			// send results to master node
+			ReportMPIError (MPI_Send (&single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+			for (long np = 2; np <= maxp; np++)
+			{
+				_Matrix	* storedMx = (_Matrix *) list_of_matrices.lData[np-2];
+				ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+			}
 		}
 	}
+	
+	
+// end HYPHYMPI
 #else
+	
+	
 	
 #ifdef __NEVER_DEFINE_MP__		// this totally crashes :-/  - AFYP
 	_SimpleList		* args	= new _SimpleList((unsigned long) 2);
@@ -2477,7 +2613,7 @@ void Bgm::CacheNodeScores (void)
 						score = is_discrete.lData[node_id]	?	ComputeDiscreteScore (node_id, parents) : 
 																ComputeContinuousScore (node_id);
 						res = family_scores.Store (score, nk_tuple);
-						parents.Clear();						
+						parents.Clear();
 					} 
 					while (remaining);
 				} else {
