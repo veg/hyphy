@@ -48,6 +48,10 @@ cp 	trunk/Mains/main-GTK.cpp  $installDirectory/Source/main-GTK.cxx
 cp  trunk/Mains/main-unix.cpp $installDirectory/Source/main-unix.cxx
 cp  trunk/Mains/hyphyunixutils.cpp $installDirectory/Source/hyphyunixutils.cpp
 cp  -R trunk/{ChartAddIns,DatapanelAddIns,GeneticCodes,Help,SubstitutionClasses,SubstitutionModels,TemplateBatchFiles,TopologyInference,TreeAddIns,UserAddIns} $installDirectory
+makedir $installDirectory/GTKResources
+cp  trunk/GUIElements/Resources/GTKResources/*.* $installDirectory/GTKResources/
+makedir $installDirectory/GTKResources/theme
+cp  trunk/GUIElements/Resources/GTKResources/theme/*.* $installDirectory/GTKResources/theme
 
 cd $installDirectory
 bash build.sh MP2
