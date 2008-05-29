@@ -22,7 +22,7 @@ else
 	installDirectory=$1
 fi
 
-cd ..
+cd ../..
 
 makedir $installDirectory
 makedir $installDirectory/Source
