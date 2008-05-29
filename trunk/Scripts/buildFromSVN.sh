@@ -30,6 +30,8 @@ makedir $installDirectory/GUI
 makedir $installDirectory/Source/SQLite
 cp trunk/Core/*.{h,cp,cpp} $installDirectory/Source/
 rm -f $installDirectory/Source/preferences.cpp
+cp trunk/Core/preferences.cpp $installDirectory/GUI
+
 cp trunk/NewerFunctionality/*.{h,cpp} $installDirectory/Source/
 cp SQLite/trunk/*.{c,h} $installDirectory/Source/SQLite/
 cp trunk/Scripts/*.sh $installDirectory/
