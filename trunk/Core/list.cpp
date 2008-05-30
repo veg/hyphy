@@ -312,11 +312,16 @@ BaseRef _List::operator () (unsigned long i)
 // assignment operator
 _SimpleList _SimpleList::operator = (_SimpleList l)
 {
-	this->~_SimpleList();
-	lLength = l.lLength;
+	Clear();
+	lLength  = l.lLength;
 	laLength = l.laLength;
-	lData = l.lData;
-	l.nInstances++;
+	if (laLength)
+	{
+		checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
+		if (lLength)
+			memcpy (lData,l.lData,lLength*sizeof (Ptr));
+	}
+	
 	return *this;
 }
 
