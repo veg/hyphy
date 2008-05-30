@@ -38,7 +38,7 @@
  *
  */
 
-//#define		__AFYP_DEVELOPMENT__
+#define		__AFYP_DEVELOPMENT__
 #define		__MISSING_DATA__
 
 #define		LOG_SCALING_FACTOR			64.
@@ -2295,9 +2295,15 @@ void Bgm::CacheNodeScores (void)
 	
 	
 #ifdef __AFYP_DEVELOPMENT__ && __HYPHYMPI__
+	
+	 char buf [255];
+	 sprintf (buf, "\nMPI node score caching\n");
+	 BufferToConsole (buf);
+	 
+	
 	// MPI_Init() is called in main()
-	long		mpi_size,
-				my_rank;
+	int		mpi_size,
+			my_rank;
 	
 	_Matrix		single_parent_scores (num_nodes, 1, false, true);
 	
@@ -2305,6 +2311,8 @@ void Bgm::CacheNodeScores (void)
 				all_but_one (num_nodes-1, 0, 1),
 				aux_list,
 				nk_tuple;
+	
+	_Parameter	score;
 	
 	char		mpi_message [256];
 	
@@ -2322,14 +2330,15 @@ void Bgm::CacheNodeScores (void)
 		
 		for (long child = 0; child < num_nodes; child++)
 		{
-			long		maxp		= max_parents.lData[child],
-						ntuple_receipt;
+			long		maxp			= max_parents.lData[child],
+						ntuple_receipt,
+						mpi_node		= 0;
 			
 			bool		remaining;
 			
-			_List	*	this_list	= (_List *) node_scores.lData[node_id];
+			_List	*	this_list	= (_List *) node_scores.lData[child];
 			
-			_Parameter	score		= is_discrete.lData[node_id] ? ComputeDiscreteScore (child, parents) : ComputeContinuousScore (node_id);
+			_Parameter	score		= is_discrete.lData[child] ? ComputeDiscreteScore (child, parents) : ComputeContinuousScore (child);
 			_Constant	orphan_score (score);
 			
 			
@@ -2340,28 +2349,38 @@ void Bgm::CacheNodeScores (void)
 			if (maxp > 0)	// don't bother to farm out trivial cases
 			{
 				// look for idle nodes
-				for (long mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+				do
 				{
 					if (mpi_node_status(mpi_node+1, 0) == 0)
 					{
-						ReportMPIError(MPI_Send(&child, 1, MPI_SIGNED_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+						ReportMPIError(MPI_Send(&child, 1, MPI_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
 						
-						mpi_node_status.Store (mpi_node, 0, 1);	// set busy signal
-						mpi_node_status.Store (mpi_node, 1, child);
+						sprintf (buf, "Node 0 sent child %d to node %d\n", child, mpi_node+1);
+						BufferToConsole (buf);
+						
+						mpi_node_status.Store (mpi_node+1, 0, 1);	// set busy signal
+						mpi_node_status.Store (mpi_node+1, 1, child);
 						
 						break;
 					}
+					mpi_node++;
 				}
+				while (mpi_node < mpi_size-1);
 			}
 			
 			
 			if (mpi_node == mpi_size-1)	// all nodes are busy, wait for one to send results
 			{
-				ReportMPIError (MPI_Recv (single_parent_scores.theData, num_nodes, MPI_DOUBLE, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+				ReportMPIError (MPI_Recv ((double *)(single_parent_scores.theData), num_nodes, MPI_DOUBLE, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+				
 				(*this_list) && (&single_parent_scores);
 				
 				senderID = (long) status.MPI_SOURCE;
-				maxp = max_parents.lData[mpi_node_status(senderID, 1)];
+				mpi_node_status.Store (senderID, 0, 0);	// reset busy signal
+				maxp = max_parents.lData[(long)mpi_node_status(senderID, 1)];
+				
+				sprintf (buf, "Node 0 received scores for child %d from node %d\n", (long)mpi_node_status(senderID, 1), senderID);
+				BufferToConsole (buf);
 				
 				for (long np = 2; np <= maxp; np++)
 				{
@@ -2398,7 +2417,10 @@ void Bgm::CacheNodeScores (void)
 		// shut down compute nodes
 		for (long shutdown = -1, mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
 		{
-			ReportMPIError(MPI_Send(&shutdown, 1, MPI_SIGNED_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+			ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+			
+			sprintf (buf, "Node 0 sending shutdown signal to node %d\n", mpi_node+1);
+			BufferToConsole (buf);
 		}
 	}
 	
@@ -2410,7 +2432,10 @@ void Bgm::CacheNodeScores (void)
 		
 		while (1)
 		{
-			ReportMPIError (MPI_Recv (&node_id, 1, MPI_SIGNED_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
+			ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
+			
+			sprintf (buf, "Node %d received child %d from node %d", my_rank, node_id, status.MPI_SOURCE);
+			BufferToConsole (buf);
 			
 			if (node_id < 0)
 			{
@@ -2453,7 +2478,7 @@ void Bgm::CacheNodeScores (void)
 						}
 						score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
 									ComputeContinuousScore (node_id);
-						tuple_scores.Store (tuple_index, 0, score);
+						tuple_scores.Store (tuple_index, 0, (double)score);
 					} 
 					while (remaining);
 					
@@ -2473,6 +2498,9 @@ void Bgm::CacheNodeScores (void)
 				_Matrix	* storedMx = (_Matrix *) list_of_matrices.lData[np-2];
 				ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
 			}
+			
+			sprintf (buf, "Node %d sent scores for child %d to node 0\n", my_rank, node_id);
+			BufferToConsole (buf);
 		}
 	}
 	
@@ -4310,13 +4338,13 @@ void		Bgm::CacheNetworkParameters (void)
 		theta_ijk.Clear();
 		
 		num_parent_combos	= 1;
-		r_i					= num_levels.lData[node_id];
+		r_i					= num_levels.lData[i];
 		
 		
 		// assemble parents based on current graph
 		for (long par = 0; par < num_nodes; par++)
 		{
-			if (dag(par, node_id) == 1 && is_discrete.lData[par])
+			if (dag(par, i) == 1 && is_discrete.lData[par])
 			{
 				parents << par;	// list of parents will be in ascending numerical order
 				num_parent_combos *= num_levels.lData[par];
@@ -4334,7 +4362,7 @@ void		Bgm::CacheNetworkParameters (void)
 		for (long obs = 0; obs < obsData->GetHDim(); obs++)
 		{
 			long	index			= 0,
-					child_state		= (*obsData)(obs, node_id);
+					child_state		= (*obsData)(obs, i);
 			
 			// is there a faster algorithm for this? - afyp
 			for (long par = 0; par < parents.lLength; par++)
@@ -4370,7 +4398,7 @@ void		Bgm::CacheNetworkParameters (void)
 
 
 //___________________________________________________________________________________________
-#ifdef __AFYP_DEVELOPMENT__
+#ifdef __AFYP_DEVELOPMENT2__
 _Matrix *	Bgm::SimulateDiscreteCases (long ncases)
 {
 	/*	Identify nodes without parents in given graph.
@@ -4392,7 +4420,7 @@ _Matrix *	Bgm::SimulateDiscreteCases (long ncases)
 
 
 //___________________________________________________________________________________________
-#ifdef __AFYP_DEVELOPMENT__
+#ifdef __AFYP_DEVELOPMENT2__
 void		PostOrderInstantiate (long node_id, _SimpleList & results)
 {
 	_SimpleList		parents;
