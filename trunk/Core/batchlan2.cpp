@@ -216,7 +216,10 @@ void	  _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
 			}
 		}
 		else
+		{
 			lf->SerializeLF (*outLF->theString);
+			outLF->theString->Finalize();
+		}
 		objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
 		CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
 	}
