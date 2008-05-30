@@ -2191,12 +2191,21 @@ void	_DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizontal
 	// theFrequencies will be store the new frequencies
 	// theOriginalOrder is the receptacle for the original site order in the data filter
 	
-	_DataSetFilter* firstOne;
+	bool			copiedSelf = false; // tag if refiltering self
+	
+	_DataSetFilter* firstOne = nil;
 	if (isFilteredAlready)
 	{
-		firstOne = (_DataSetFilter*)ds;
-		ds = firstOne->theData;
+		if ((Ptr)this == (Ptr)ds)
+		{
+			firstOne = (_DataSetFilter*)makeDynamic();
+			copiedSelf = true;
+		}
+		else
+			firstOne = (_DataSetFilter*)ds;
+		ds		 = firstOne->theData;
 	}
+	
 	theMap.Clear();
 	theNodeMap.Clear();
 	theOriginalOrder.Clear();
@@ -2426,6 +2435,9 @@ void	_DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizontal
 	
 	duplicateMap.TrimMemory();
 	theOriginalOrder.TrimMemory();
+	
+	if (copiedSelf)
+		DeleteObject (firstOne);
 	
 	SetDimensions();
 	FilterDeletions();
