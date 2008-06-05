@@ -38,7 +38,7 @@
  *
  */
 
-#define		__AFYP_DEVELOPMENT__
+//#define		__AFYP_DEVELOPMENT__
 #define		__MISSING_DATA__
 
 #define		LOG_SCALING_FACTOR			64.
