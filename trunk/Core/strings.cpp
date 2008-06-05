@@ -1521,7 +1521,8 @@ void	WarnError (_String st)
 			{
 				WritePreferences();
 				SaveConsole();
-				GlobalShutdown();
+				//GlobalShutdown(); 
+				// graceless exit; no need to clean stuff up
 				exit(1);
 			}
 	}
