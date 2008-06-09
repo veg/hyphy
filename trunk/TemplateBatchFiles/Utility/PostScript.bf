@@ -100,6 +100,26 @@ and an NxM integer matrix on whether or not to draw cell boundaries
 
 ---------------------------------------------------------*/
 
+function _HYPSGetStringWidth (s)
+{
+	_w = 0;
+	for (_i = 0; _i < Abs(s); _i = _i + 1)
+	{
+		_w = _w + _charWidthForTimes[s[_i]];
+	}
+	return _w;
+}
+
+
+/*---------------------------------------------------------
+
+layout an NxM square text table (one line per cell)
+takes in a pair of dimensions, font size, an NxM text matrix
+and an NxM integer matrix on whether or not to draw cell boundaries
+(masks: 1 for L, 2 for R, 4 for T, 8 for B)
+
+---------------------------------------------------------*/
+
 function _HYPSTextTable (w,h,fs,tableText,cellBounds)
 {
 	_res_string = "";

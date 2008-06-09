@@ -257,7 +257,7 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	legendWidth		   = 0;
 	for (_dataPoint = 0; _dataPoint < _yColumns; _dataPoint = _dataPoint + 1)
 	{
-		px = Abs (dataLabels[_dataPoint]) * plotDim[2];
+		px = _HYPSGetStringWidth (dataLabels[_dataPoint]) * plotDim[2];
 		if (px > legendWitdh)
 		{
 			legendWitdh = px;
