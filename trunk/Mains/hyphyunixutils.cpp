@@ -2,8 +2,6 @@
 #include "likefunc.h"
 
 
-//#define __AFYP_DEVELOPMENT__
-
 
 #ifndef __HYPHY_NO_CURL__
 	#define	__HYPHYCURL__
@@ -23,9 +21,9 @@ int  			_hy_mpi_node_rank;
 
 void 			mpiNormalLoop    (int, int, _String &);
 void			mpiOptimizerLoop (int, int);
-	#ifdef __AFYP_DEVELOPMENT__
-	void			mpiBgmLoop (int, int);
-	#endif
+
+void			mpiBgmLoop (int, int);
+
 #endif
 
 
@@ -195,9 +193,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
 	_String* theMessage = MPIRecvString (-1,senderID),	// listen for messages from any node
 			* resStr	= nil,
-#ifdef __AFYP_DEVELOPMENT__
 			_bgmSwitch ("_BGM_SWITCH_"),
-#endif
 			css("_CONTEXT_SWITCH_MPIPARTITIONS_");
 				
 	while (theMessage->sLength)
@@ -217,7 +213,6 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 			mpiPartitionOptimizer = false;
 			pathNames && & baseDir;
 		}
-#ifdef __AFYP_DEVELOPMENT__
 		else if ( theMessage->Equal (&_bgmSwitch) )
 		{
 			ReportWarning ("Received signal to switch to mpiBgmLoop");
@@ -225,7 +220,6 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 			mpiBgmLoop (rank, size);
 			ReportWarning ("Returned from mpiBgmLoop");
 		}
-#endif
 		else
 		{
 			if (theMessage->beginswith ("#NEXUS"))
@@ -360,7 +354,6 @@ void mpiOptimizerLoop (int rank, int size)
 
 
 //__________________________________________________________________________________
-#ifdef __AFYP_DEVELOPMENT__
 void mpiBgmLoop (int rank, int size)
 {
 	long		senderID	= 0;
@@ -388,7 +381,6 @@ void mpiBgmLoop (int rank, int size)
 	}
 	
 	DeleteObject (theMessage);		
-#endif
 }
 #endif
 
