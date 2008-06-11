@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include "likefunc.h"
 
+
+//#define __AFYP_DEVELOPMENT__
+
+
 #ifndef __HYPHY_NO_CURL__
 	#define	__HYPHYCURL__
 #endif
@@ -19,7 +23,9 @@ int  			_hy_mpi_node_rank;
 
 void 			mpiNormalLoop    (int, int, _String &);
 void			mpiOptimizerLoop (int, int);
-
+	#ifdef __AFYP_DEVELOPMENT__
+	void			mpiBgmLoop (int, int);
+	#endif
 #endif
 
 
@@ -187,8 +193,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 	
 	ReportWarning ("Entered mpiNormalLoop");
 
-	_String* theMessage = MPIRecvString (-1,senderID),
+	_String* theMessage = MPIRecvString (-1,senderID),	// listen for messages from any node
 			* resStr	= nil,
+#ifdef __AFYP_DEVELOPMENT__
+			_bgmSwitch ("_BGM_SWITCH_"),
+#endif
 			css("_CONTEXT_SWITCH_MPIPARTITIONS_");
 				
 	while (theMessage->sLength)
@@ -208,6 +217,15 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 			mpiPartitionOptimizer = false;
 			pathNames && & baseDir;
 		}
+#ifdef __AFYP_DEVELOPMENT__
+		else if ( theMessage->Equal (&_bgmSwitch) )
+		{
+			ReportWarning ("Received signal to switch to mpiBgmLoop");
+			MPISendString (_bgmSwitch, senderID);	// feedback to source to confirm receipt of message
+			mpiBgmLoop (rank, size);
+			ReportWarning ("Returned from mpiBgmLoop");
+		}
+#endif
 		else
 		{
 			if (theMessage->beginswith ("#NEXUS"))
@@ -340,4 +358,37 @@ void mpiOptimizerLoop (int rank, int size)
 	DeleteObject (theMessage);		
 }
 
+
+//__________________________________________________________________________________
+#ifdef __AFYP_DEVELOPMENT__
+void mpiBgmLoop (int rank, int size)
+{
+	long		senderID	= 0;
+	_String	*	resStr		= nil;
+	
+	ReportWarning (_String ("MPI Node:") & (long)rank & " is ready for MPIBgmCacheNodeScores tasks");
+	
+	// receive serialized Bgm
+	_String* theMessage = MPIRecvString (-1, senderID);
+	
+	while (theMessage->sLength)
+	{
+		_ExecutionList	exL (*theMessage);
+		_PMathObj		res = exL.Execute();	// should send this process into CacheNodeScores()
+		
+		resStr = res ? (_String*)res->toStr() : new _String ("0");
+		ReportWarning (_String ("MPI Node: ") & (long)rank & " executed HBL with result:\n" & resStr);
+		
+		if (bgmNamesList.lLength < 1)
+		{
+			_String errMsg ("Malformed HBL. No valid BGM has been defined.\n");
+			FlagError (errMsg);
+			break;
+		}
+	}
+	
+	DeleteObject (theMessage);		
 #endif
+}
+#endif
+

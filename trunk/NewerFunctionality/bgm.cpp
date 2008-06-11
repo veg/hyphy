@@ -2294,16 +2294,19 @@ void Bgm::CacheNodeScores (void)
 	*/
 	
 	
-#ifdef __AFYP_DEVELOPMENT__ && __HYPHYMPI__
-	
-	 char buf [255];
-	 sprintf (buf, "\nMPI node score caching\n");
-	 BufferToConsole (buf);
-	 
+#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+
+#ifdef __DEBUG_CNS__
+	char buf [255];
+	sprintf (buf, "\nMPI node score caching\n");
+	BufferToConsole (buf);
+#endif
 	
 	// MPI_Init() is called in main()
-	int		mpi_size,
-			my_rank;
+	int		size,
+			rank;
+	
+	long	mpi_node;
 	
 	_Matrix		single_parent_scores (num_nodes, 1, false, true);
 	
@@ -2318,27 +2321,71 @@ void Bgm::CacheNodeScores (void)
 	
 	MPI_Status	status;	// contains source, tag, and error code
 	
-	MPI_Comm_size (MPI_COMM_WORLD, &mpi_size);	// number of processes
-	MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
+	MPI_Comm_size (MPI_COMM_WORLD, &size);	// number of processes
+	MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 	
 	
-	
-	if (my_rank == 0)	// master node handles job farming, collating results into its _List member variable
+	if (rank == 0)
 	{
-		_Matrix		mpi_node_status (mpi_size, 2, false, true);		// column 1 stores busy signal, 2 stores node id
+		_String		bgmSwitch ("_BGM_SWITCH_"),
+					bgmStr;
+		
+		_List	*	this_list;
+		
+		SerializeBgm (bgmStr);
+#ifdef __DEBUG_CNS__
+		ReportWarning (bgmStr);
+#endif
+		_Matrix		* mpi_node_status = new _Matrix ((long)size, 2, false, true);
 		long		senderID;
 		
-		for (long child = 0; child < num_nodes; child++)
+		
+		
+		// switch compute nodes from mpiNormal to bgm loop context
+		for (long ni = 1; ni < size; ni++)
 		{
-			long		maxp			= max_parents.lData[child],
+			MPISendString (bgmSwitch, ni);
+		}
+		
+		
+		
+		// receive confirmation of successful switch
+		for (long ni = 1; ni < size; ni++)
+		{
+			long fromNode = ni;
+			
+			_String t (MPIRecvString (ni,fromNode));
+			if (!t.Equal (&bgmSwitch))
+			{
+				WarnError (_String("Failed to confirm MPI mode switch at node ") & ni);
+				return;
+			}
+			else
+			{
+				ReportWarning (_String("Successful mode switch to Bgm MPI confirmed from node ") & ni);
+				MPISendString (bgmStr, ni);
+			}
+		}
+		
+		
+		
+		// farm out jobs to idle nodes until none are left
+		for (long node_id = 0; node_id < num_nodes; node_id++)
+		{
+			long		maxp			= max_parents.lData[node_id],
 						ntuple_receipt,
-						mpi_node		= 0;
+						this_node;
 			
 			bool		remaining;
 			
-			_List	*	this_list	= (_List *) node_scores.lData[child];
+			_String		mxString,
+						mxName;
 			
-			_Parameter	score		= is_discrete.lData[child] ? ComputeDiscreteScore (child, parents) : ComputeContinuousScore (child);
+			
+			this_list	= (_List *) node_scores.lData[node_id];
+			
+			
+			_Parameter	score		= is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
 			_Constant	orphan_score (score);
 			
 			
@@ -2349,165 +2396,193 @@ void Bgm::CacheNodeScores (void)
 			if (maxp > 0)	// don't bother to farm out trivial cases
 			{
 				// look for idle nodes
+				mpi_node = 1;
 				do
 				{
-					if (mpi_node_status(mpi_node+1, 0) == 0)
+					if ((*mpi_node_status)(mpi_node, 0) == 0)
 					{
-						ReportMPIError(MPI_Send(&child, 1, MPI_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+						ReportMPIError(MPI_Send(&node_id, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+						ReportWarning (_String ("Sent child ") & node_id & " to node " & mpi_node);
 						
-						sprintf (buf, "Node 0 sent child %d to node %d\n", child, mpi_node+1);
-						BufferToConsole (buf);
-						
-						mpi_node_status.Store (mpi_node+1, 0, 1);	// set busy signal
-						mpi_node_status.Store (mpi_node+1, 1, child);
+						mpi_node_status->Store (mpi_node, 0, 1);	// set busy signal
+						mpi_node_status->Store (mpi_node, 1, node_id);
 						
 						break;
 					}
 					mpi_node++;
 				}
-				while (mpi_node < mpi_size-1);
+				while (mpi_node < size);
 			}
 			
 			
-			if (mpi_node == mpi_size-1)	// all nodes are busy, wait for one to send results
+			if (mpi_node == size)	// all nodes are busy, wait for one to send results
 			{
-				ReportMPIError (MPI_Recv ((double *)(single_parent_scores.theData), num_nodes, MPI_DOUBLE, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
-				
-				(*this_list) && (&single_parent_scores);
-				
-				senderID = (long) status.MPI_SOURCE;
-				mpi_node_status.Store (senderID, 0, 0);	// reset busy signal
-				maxp = max_parents.lData[(long)mpi_node_status(senderID, 1)];
-				
-				sprintf (buf, "Node 0 received scores for child %d from node %d\n", (long)mpi_node_status(senderID, 1), senderID);
-				BufferToConsole (buf);
-				
-				for (long np = 2; np <= maxp; np++)
-				{
-					_NTupleStorage	family_scores (num_nodes-1, np);
-					
-					if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
-					{
-						_Matrix		scores_to_store (nk_tuple.lLength, 1, false, true);
-						long		score_index = 0;
-						
-						// receive nk-tuple indexed node scores from same compute node
-						ReportMPIError (MPI_Recv (scores_to_store.theData, nk_tuple.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
-						
-						do
-						{
-							remaining = all_but_one.NChooseK (aux_list, nk_tuple);	// update nk-tuple in aux_list
-							ntuple_receipt = family_scores.Store (scores_to_store(score_index, 0), nk_tuple);
-							score_index++;
-						}
-						while (remaining);
-					}
-					else 
-					{
-						_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-						WarnError(oops);
-					}
-					
-					(*this_list) && (&family_scores);
-				}
+				MPIReceiveScores (mpi_node_status, true, node_id);
 			}
 		}
 		// end loop over child nodes
 		
-		// shut down compute nodes
-		for (long shutdown = -1, mpi_node = 0; mpi_node < mpi_size-1; mpi_node++)
+		
+		// collect remaining jobs
+		while (1)
 		{
-			ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+			// look for a busy node
+			mpi_node = 1;
+			do
+			{
+				if ( (*mpi_node_status)(mpi_node,0) == 1)
+				{
+					break;
+				}
+				mpi_node++;
+			}
+			while (mpi_node < size);
 			
-			sprintf (buf, "Node 0 sending shutdown signal to node %d\n", mpi_node+1);
-			BufferToConsole (buf);
+			
+			if (mpi_node < size)	// at least one node is busy
+			{
+				MPIReceiveScores (mpi_node_status, false, node_id);
+			}
+			else
+			{
+				break;
+			}
 		}
+		
+		
+		// shut down compute nodes
+		for (long shutdown = -1, mpi_node = 1; mpi_node < size; mpi_node++)
+		{
+			ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+			ReportWarning (_String ("Node 0 sending shutdown signal to node ") & mpi_node);
+		}
+		
 	}
-	
-	else			// compute node
+	else	// compute node
 	{
 		long		node_id,
 					maxp;
+		
 		_List		list_of_matrices;
 		
 		while (1)
 		{
-			ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
+			_String		mxString,
+						mxName;
 			
-			sprintf (buf, "Node %d received child %d from node %d", my_rank, node_id, status.MPI_SOURCE);
-			BufferToConsole (buf);
+			list_of_matrices.Clear();
+			
+			
+			// wait for master node to issue node ID to compute
+			ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
+			ReportWarning (_String("Node") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE);
 			
 			if (node_id < 0)
 			{
 				break;	// received shutdown message (-1)
 			}
 			
+			
 			maxp = max_parents.lData[node_id];
+			
+			parents.Clear();
 			parents.Populate (1,0,0);
 			
+			
+			// compute single parent scores
 			for (long par = 0; par < num_nodes; par++)
 			{
 				if (par == node_id)		// child cannot be its own parent, except in Kansas
-					continue;
-				
-				parents.lData[0] = par;
-				single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
-											ComputeContinuousScore (node_id));
+				{
+					single_parent_scores.Store (par, 0, 0.);
+				}
+				else
+				{
+					parents.lData[0] = par;
+					single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
+												ComputeContinuousScore (node_id));
+				}
 			}
 			
-			parents.Clear();
 			
+			// compute multiple parents cores
 			for (long np = 2; np <= maxp; np++)
 			{
+				parents.Clear();
 				parents.Populate (np, 0, 0);
 				
 				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
 				{
 					bool		remaining;
-					long		tuple_index = 0;
-					_Matrix		tuple_scores (nk_tuple.lLength, 1, false, true);
+					long		tuple_index		= 0,
+								num_ktuples		= exp(LnGamma(calc_bit, num_nodes) - LnGamma(calc_bit, num_nodes - np) - LnGamma(calc_bit, np+1));
 					
-					do
+					
+					_Matrix		tuple_scores (num_ktuples, 1, false, true);
+					
+					for (long tuple_index = 0; tuple_index < num_ktuples; tuple_index++)
 					{
 						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+						
+						if (!remaining && tuple_index < num_ktuples-1)
+						{
+							ReportWarning (_String ("ERROR: Ran out of (n,k)tuples in CacheNodeScores()."));
+						}
+						
 						for (long par_idx = 0; par_idx < np; par_idx++)
 						{
 							long par = nk_tuple.lData[par_idx];
 							if (par >= node_id) par++;
 							parents.lData[par_idx] = par;
 						}
+						
 						score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
-									ComputeContinuousScore (node_id);
+								ComputeContinuousScore (node_id);
+						
 						tuple_scores.Store (tuple_index, 0, (double)score);
-					} 
-					while (remaining);
+					}
+					
+					if (remaining)
+					{
+						ReportWarning (_String ("ERROR: Did not compute all nk-tuples in CacheNodeScores()"));
+					}
 					
 					list_of_matrices && (&tuple_scores);		// append duplicate
 				}
 				else 
 				{
-					_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-					WarnError(oops);
+					ReportWarning (_String ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores()"));
 				}
+				
 			}
 			
 			// send results to master node
-			ReportMPIError (MPI_Send (&single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+			
+			ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+
+#ifdef __DEBUG_CNS__
+			mxName = _String ("single_parent_scores");
+			single_parent_scores.Serialize(mxString, mxName);		// DEBUGGING
+			ReportWarning (_String ("Sent serialized matrices to master node:"));
+			ReportWarning (mxString);
+#endif
+			
 			for (long np = 2; np <= maxp; np++)
 			{
-				_Matrix	* storedMx = (_Matrix *) list_of_matrices.lData[np-2];
+				_Matrix	* storedMx		= (_Matrix *) list_of_matrices.lData[np-2];
+				
+#ifdef __DEBUG_CNS__
+				mxName = _String ("tuple_scores") & np;
+				mxString.Initialize();
+				storedMx->Serialize (mxString, mxName);
+				ReportWarning (mxString);
+#endif
 				ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
 			}
-			
-			sprintf (buf, "Node %d sent scores for child %d to node 0\n", my_rank, node_id);
-			BufferToConsole (buf);
 		}
 	}
 	
-	
-// end HYPHYMPI
 #else
-	
 	
 	
 #ifdef __NEVER_DEFINE_MP__		// this totally crashes :-/  - AFYP
@@ -2678,6 +2753,101 @@ void Bgm::CacheNodeScores (void)
 	
 	scores_cached = TRUE;
 }
+
+
+
+//___________________________________________________________________________________________
+#if defined __AFYP_DEVELOPMENT && defined _HYPHYMPI_
+void	Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long node_id)
+{
+	_Matrix		single_parent_scores (num_nodes, 1, false, true);
+	MPI_Status	status;
+	
+	ReportMPIError (MPI_Recv (single_parent_scores.theData, num_nodes, MPI_DOUBLE, MPI_ANY_SOURCE, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+	
+	
+	long		senderID	= (long) status.MPI_SOURCE,
+				this_node	= (long) (*mpi_node_status) (senderID, 1),
+				maxp		= max_parents.lData[this_node];
+	
+	_List	*	this_list	= (_List *) node_scores.lData[this_node];
+	
+	
+	mpi_node_status->Store (senderID, 0, 0);	// set node status to idle
+	
+	
+	_String		mxString,
+				mxName;
+	
+	ReportWarning (_String("Received scores for child ") & this_node & " from node " & senderID);
+#ifdef __DEBUG_MPIRS__
+	mxName = _String ("single_parent_scores");
+	single_parent_scores.Serialize (mxString, mxName);
+	ReportWarning (mxString);
+#endif
+	(*this_list) && (&single_parent_scores);
+	
+	
+	
+	_SimpleList		parents,
+					all_but_one (num_nodes-1, 0, 1),
+					aux_list,
+					nk_tuple;
+	
+	_Parameter		score;
+	
+	// parse nk-tuple results
+	for (long np = 2; np <= maxp; np++)
+	{
+		_NTupleStorage	family_scores (num_nodes-1, np);
+		bool			remaining;
+		
+		
+		if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+		{
+			long		score_index		= 0,
+						num_ktuples		= exp(LnGamma(calc_bit, num_nodes) - LnGamma(calc_bit, num_nodes - np) - LnGamma(calc_bit, np+1)),
+						ntuple_receipt;
+			
+			_Matrix		scores_to_store (num_ktuples, 1, false, true);
+			
+			// receive nk-tuple indexed node scores from same compute node
+			ReportMPIError (MPI_Recv (scores_to_store.theData, num_ktuples, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD, &status), false);
+#ifdef __DEBUG_MPIRS__
+			mxName = _String("tuple_scores") & np;
+			mxString.Initialize();
+			scores_to_store.Serialize (mxString, mxName);
+			ReportWarning (mxString);
+#endif
+			
+			do
+			{
+				remaining = all_but_one.NChooseK (aux_list, nk_tuple);	// update nk-tuple in aux_list
+				ntuple_receipt = family_scores.Store (scores_to_store(score_index, 0), nk_tuple);
+				score_index++;
+			}
+			while (remaining);
+		}
+		else 
+		{
+			_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+			WarnError(oops);
+		}
+		
+		(*this_list) && (&family_scores);
+	}
+	
+	
+	// send next job
+	if (sendNextJob)
+	{
+		ReportMPIError(MPI_Send(&node_id, 1, MPI_LONG, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+		mpi_node_status->Store (senderID, 0, 1);	// reset busy signal
+		mpi_node_status->Store (senderID, 1, node_id);
+		ReportWarning (_String ("Sent child ") & node_id & " to node " & senderID);
+	}
+}
+#endif
 
 
 
@@ -4313,7 +4483,7 @@ void	Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_lag
 
 
 //___________________________________________________________________________________________
-#ifdef __AFYP_DEVELOPMENT__
+#ifdef __AFYP_DEVELOPMENT2__
 void		Bgm::CacheNetworkParameters (void)
 {
 	_SimpleList		multipliers,	// for indexing parent combinations (j)
@@ -4421,7 +4591,7 @@ _Matrix *	Bgm::SimulateDiscreteCases (long ncases)
 
 //___________________________________________________________________________________________
 #ifdef __AFYP_DEVELOPMENT2__
-void		PostOrderInstantiate (long node_id, _SimpleList & results)
+void		Bgm::PostOrderInstantiate (long node_id, _SimpleList & results)
 {
 	_SimpleList		parents;
 	
@@ -4451,8 +4621,69 @@ long		Bgm::PredictNode (long node_id, _Matrix * assignments)
 #endif
 
 
-
-
+//___________________________________________________________________________________________
+#ifdef __AFYP_DEVELOPMENT__
+void	Bgm::SerializeBgm (_String & rec)
+{
+	char		buf [255];
+	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
+	_String		dataStr,
+				dataName ("bgmData");
+	
+	// write utility functions
+	rec << "function make_dnode (id,n,maxp)\n";
+	rec << "{\ndnode={};\n";
+	rec << "dnode[\"NodeID\"]=id;\n";
+	rec << "dnode[\"PriorSize\"]=n;\n";
+	rec << "dnode[\"MaxParents\"]=maxp;\n";
+	rec << "return dnode;\n}\n";
+	
+	rec << "function make_cnode (id,n,maxp,mean,prec)\n";
+	rec << "{\ncnode={};\n";
+	rec << "cnode[\"NodeID\"]=id;\n";
+	rec << "cnode[\"PriorSize\"]=n;\n";
+	rec << "cnode[\"MaxParents\"]=maxp;\n";
+	rec << "cnode[\"PriorMean\"]=mean;\n";
+	rec << "cnode[\"PriorVar\"]=prec;\n";
+	rec << "return cnode;\n}\n";
+	
+	
+	// prepare assortative lists
+	rec << "dnodes={};\ncnodes={};\n";
+	
+	for (long node_id = 0; node_id < num_nodes; node_id++)
+	{
+		if (is_discrete.lData[node_id])
+		{
+			rec << "dnodes[Abs(dnodes)]=make_dnode(";
+			sprintf (buf, "%d,%d,%d", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
+			rec << buf;
+			rec << ");\n";
+		}
+		else
+		{
+			rec << "cnodes[Abs(cnodes)]=make_cnode(";
+			sprintf (buf, "%d,%d,%d,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
+											prior_mean(node_id,0), prior_precision(node_id,0));
+			rec << buf;
+			rec << ");\n";
+		}
+	}
+	
+	// write BGM constructor
+	rec << "BGM ";
+	rec << bgmName;
+	rec << "=(dnodes,cnodes);\n";
+	
+	// serialize data matrix and assign to BGM
+	obsData->Serialize (dataStr, dataName);
+	rec << dataStr;
+	rec << "\n";
+	rec << "SetParameter(";
+	rec << bgmName;
+	rec << ",BGM_DATA_MATRIX,bgmData);\n";
+}
+#endif
 
 //___________________________________________________________________________________________
 //___________________________________________________________________________________________

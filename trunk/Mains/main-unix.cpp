@@ -61,6 +61,7 @@ long	DisplayListOfPostChoices 	(void);
 void    mpiOptimizerLoop 			(int, int);
 void 	mpiNormalLoop	 			(int, int, _String*);
 
+
 extern	long
 		systemCPUCount;
 		
