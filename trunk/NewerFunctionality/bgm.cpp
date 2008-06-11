@@ -38,7 +38,7 @@
  *
  */
 
-//#define		__AFYP_DEVELOPMENT__
+#define		__AFYP_DEVELOPMENT__
 #define		__MISSING_DATA__
 
 #define		LOG_SCALING_FACTOR			64.
@@ -2756,8 +2756,9 @@ void Bgm::CacheNodeScores (void)
 
 
 
+
 //___________________________________________________________________________________________
-#if defined __AFYP_DEVELOPMENT && defined _HYPHYMPI_
+#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
 void	Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long node_id)
 {
 	_Matrix		single_parent_scores (num_nodes, 1, false, true);
