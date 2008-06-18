@@ -1,0 +1,1292 @@
+# This is an automatically generated file by the R module for SWIG.
+
+##   Generated via the command line invocation:
+##	 /usr/local/bin/swig -r -c++ -o Source/Link/THyPhy_r.cxx Source/Link/THyPhy.h
+
+
+#                         srun.swg                            #
+#
+# This is the basic code that is needed at run time within R to
+# provide and define the relevant classes.  It is included
+# automatically in the generated code by copying the contents of
+# srun.swg into the newly created binding code.
+
+
+# This could be provided as a separate run-time library but this
+# approach allows the code to to be included directly into the
+# generated bindings and so removes the need to have and install an
+# additional library.  We may however end up with multiple copies of
+# this and some confusion at run-time as to which class to use. This
+# is an issue when we use NAMESPACES as we may need to export certain
+# classes.
+
+######################################################################
+
+if(length(getClassDef("RSWIGStruct")) == 0) 
+  setClass("RSWIGStruct", representation("VIRTUAL"))
+
+
+
+if(length(getClassDef("ExternalReference")) == 0) 
+# Should be virtual but this means it loses its slots currently
+#representation("VIRTUAL")
+  setClass("ExternalReference", representation( ref = "externalptr"))
+
+
+
+if(length(getClassDef("NativeRoutinePointer")) == 0) 
+  setClass("NativeRoutinePointer", 
+              representation(parameterTypes = "character",
+                             returnType = "character",
+                             "VIRTUAL"), 
+              contains = "ExternalReference")
+
+if(length(getClassDef("CRoutinePointer")) == 0) 
+  setClass("CRoutinePointer", contains = "NativeRoutinePointer")
+
+
+if(length(getClassDef("EnumerationValue")) == 0) 
+  setClass("EnumerationValue", contains = "integer")
+
+
+if(!isGeneric("copyToR")) 
+ setGeneric("copyToR",
+            function(value, obj = new(gsub("Ref$", "", class(value)))) 
+               standardGeneric("copyToR"
+           ))
+
+setGeneric("delete", function(obj) standardGeneric("delete"))
+
+
+SWIG_createNewRef = 
+function(className, ..., append = TRUE)
+{
+  f = get(paste("new", className, sep = "_"), mode = "function")
+
+  f(...)
+}
+
+if(!isGeneric("copyToC")) 
+ setGeneric("copyToC", 
+             function(value, obj = RSWIG_createNewRef(class(value)))
+              standardGeneric("copyToC"
+            ))
+
+
+# 
+defineEnumeration =
+function(name, .values, where = topenv(parent.frame()), suffix = "Value")
+{
+   # Mirror the class definitions via the E analogous to .__C__
+  defName = paste(".__E__", name, sep = "")
+  assign(defName,  .values,  envir = where)
+
+  if(nchar(suffix))
+    name = paste(name, suffix, sep = "")
+
+  setClass(name, contains = "EnumerationValue", where = where)
+}
+
+enumToInteger <- function(name,type)
+{
+   if (is.character(name)) {
+   ans <- as.integer(get(paste(".__E__", type, sep = ""))[name])
+   if (is.na(ans)) {warning("enum not found ", name, " ", type)}
+   ans
+   } 
+}
+
+enumFromInteger =
+function(i,type)
+{
+  itemlist <- get(paste(".__E__", type, sep=""))
+  names(itemlist)[match(i, itemlist)]
+}
+
+coerceIfNotSubclass =
+function(obj, type) 
+{
+    if(!is(obj, type)) {as(obj, type)} else obj
+}
+
+
+setClass("SWIGArray", representation(dims = "integer"), contains = "ExternalReference")
+
+setMethod("length", "SWIGArray", function(x) x@dims[1])
+
+
+defineEnumeration("SCopyReferences",
+                   .values = c( "FALSE" = 0, "TRUE" = 1, "DEEP" = 2))
+
+assert = 
+function(condition, message = "")
+{
+  if(!condition)
+    stop(message)
+
+  TRUE
+}
+
+
+if(FALSE) {
+print.SWIGFunction =
+function(x, ...)
+ {
+ }
+}
+
+
+#######################################################################
+
+R_SWIG_getCallbackFunctionStack =
+function()
+{
+    # No PACKAGE argument as we don't know what the DLL is.
+  .Call("R_SWIG_debug_getCallbackFunctionData")
+}
+
+R_SWIG_addCallbackFunctionStack =
+function(fun, userData = NULL)
+{
+    # No PACKAGE argument as we don't know what the DLL is.
+  .Call("R_SWIG_R_pushCallbackFunctionData", fun, userData)
+}
+
+
+#######################################################################
+
+
+setClass('C++Reference', contains = 'ExternalReference')
+setClass('_p__THyPhyReturnObject', contains = 'C++Reference')
+setClass('_p__THyPhyString', contains = c('_p__THyPhyReturnObject'))
+setClass('_p__THyPhyNumber', contains = c('_p__THyPhyReturnObject'))
+setClass('_p__THyPhyMatrix', contains = c('_p__THyPhyReturnObject'))
+setClass('_p__THyPhy', contains = 'C++Reference')
+
+
+
+setMethod('[', "ExternalReference",
+function(x,i,j, ..., drop=TRUE) 
+if (!is.null(x$"__getitem__")) 
+sapply(i, function(n) x$"__getitem__"(i=as.integer(n-1))))
+
+setMethod('[<-' , "ExternalReference",
+function(x,i,j, ..., value) 
+if (!is.null(x$"__setitem__")) {
+sapply(1:length(i), function(n) 
+x$"__setitem__"(i=as.integer(i[n]-1), x=value[n]))
+x
+})
+
+setAs('ExternalReference', 'character',
+function(from) {if (!is.null(from$"__str__")) from$"__str__"()})
+
+setMethod('print', 'ExternalReference',
+function(x) {print(as(x, "character"))})
+
+# Start of _THyPhyReturnObject_myType
+
+`_THyPhyReturnObject_myType` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyReturnObject") 
+  .Call('R_swig__THyPhyReturnObject_myType', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyReturnObject_myType`, 'returnType') = 'numeric'
+attr(`_THyPhyReturnObject_myType`, "inputTypes") = c('_p__THyPhyReturnObject')
+class(`_THyPhyReturnObject_myType`) = c("SWIGFunction", class('_THyPhyReturnObject_myType'))
+
+# Start of delete__THyPhyReturnObject
+
+`delete__THyPhyReturnObject` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyReturnObject") 
+  .Call('R_swig_delete__THyPhyReturnObject', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`delete__THyPhyReturnObject`, 'returnType') = 'void'
+attr(`delete__THyPhyReturnObject`, "inputTypes") = c('_p__THyPhyReturnObject')
+class(`delete__THyPhyReturnObject`) = c("SWIGFunction", class('delete__THyPhyReturnObject'))
+
+# Start of _THyPhyReturnObject_castToString
+
+`_THyPhyReturnObject_castToString` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyReturnObject") 
+  ans = .Call('R_swig__THyPhyReturnObject_castToString', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhyReturnObject_castToString`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhyReturnObject_castToString`, "inputTypes") = c('_p__THyPhyReturnObject')
+class(`_THyPhyReturnObject_castToString`) = c("SWIGFunction", class('_THyPhyReturnObject_castToString'))
+
+# Start of _THyPhyReturnObject_castToNumber
+
+`_THyPhyReturnObject_castToNumber` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyReturnObject") 
+  ans = .Call('R_swig__THyPhyReturnObject_castToNumber', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyNumber"
+  
+  ans
+  
+}
+
+attr(`_THyPhyReturnObject_castToNumber`, 'returnType') = '_p__THyPhyNumber'
+attr(`_THyPhyReturnObject_castToNumber`, "inputTypes") = c('_p__THyPhyReturnObject')
+class(`_THyPhyReturnObject_castToNumber`) = c("SWIGFunction", class('_THyPhyReturnObject_castToNumber'))
+
+# Start of _THyPhyReturnObject_castToMatrix
+
+`_THyPhyReturnObject_castToMatrix` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyReturnObject") 
+  ans = .Call('R_swig__THyPhyReturnObject_castToMatrix', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyMatrix"
+  
+  ans
+  
+}
+
+attr(`_THyPhyReturnObject_castToMatrix`, 'returnType') = '_p__THyPhyMatrix'
+attr(`_THyPhyReturnObject_castToMatrix`, "inputTypes") = c('_p__THyPhyReturnObject')
+class(`_THyPhyReturnObject_castToMatrix`) = c("SWIGFunction", class('_THyPhyReturnObject_castToMatrix'))
+
+# Start of accessor method for _THyPhyReturnObject
+setMethod('$', '_p__THyPhyReturnObject', function(x, name)
+
+{
+  accessorFuns = list('myType' = `_THyPhyReturnObject_myType`, 'castToString' = `_THyPhyReturnObject_castToString`, 'castToNumber' = `_THyPhyReturnObject_castToNumber`, 'castToMatrix' = `_THyPhyReturnObject_castToMatrix`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name))
+  f = accessorFuns[[idx]]
+  formals(f)[[1]] = x
+  f
+}
+
+
+)
+# end of accessor method for _THyPhyReturnObject
+setMethod('delete', '_p__THyPhyReturnObject', function(obj) {delete__THyPhyReturnObject(obj)})
+# Start of new__THyPhyString
+
+`_THyPhyString__SWIG_0` = function(s_arg1, s_arg2)
+{
+  s_arg1 = as(s_arg1, "character") 
+  s_arg2 = as.numeric(s_arg2) 
+  ans = .Call('R_swig_new__THyPhyString__SWIG_0', s_arg1, s_arg2, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhyString__SWIG_0`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhyString__SWIG_0`, "inputTypes") = c('character', 'numeric')
+class(`_THyPhyString__SWIG_0`) = c("SWIGFunction", class('_THyPhyString__SWIG_0'))
+
+# Start of new__THyPhyString
+
+`_THyPhyString__SWIG_1` = function(s_arg1)
+{
+  s_arg1 = as(s_arg1, "character") 
+  ans = .Call('R_swig_new__THyPhyString__SWIG_1', s_arg1, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhyString__SWIG_1`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhyString__SWIG_1`, "inputTypes") = c('character')
+class(`_THyPhyString__SWIG_1`) = c("SWIGFunction", class('_THyPhyString__SWIG_1'))
+
+# Start of new__THyPhyString
+
+`_THyPhyString__SWIG_2` = function()
+{
+  ans = .Call('R_swig_new__THyPhyString__SWIG_2', PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhyString__SWIG_2`, 'returnType') = '_p__THyPhyString'
+class(`_THyPhyString__SWIG_2`) = c("SWIGFunction", class('_THyPhyString__SWIG_2'))
+
+`_THyPhyString` <- function(...) {
+  argtypes <- mapply(class, list(...))
+  argc <- length(argtypes)
+# dispatch functions 3
+  if (argc == 0) {
+    f <- `_THyPhyString__SWIG_2`
+  } else if (argc == 1) {
+    if (extends(argtypes[1], 'character')) {
+      f <- `_THyPhyString__SWIG_1` 
+    }
+  } else if (argc == 2) {
+    if (extends(argtypes[1], 'character') && extends(argtypes[2], 'numeric')) {
+      f <- `_THyPhyString__SWIG_0` 
+    }
+  }
+  f(...)
+}
+
+# Dispatch function
+# Start of _THyPhyString_myType
+
+`_THyPhyString_myType` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  .Call('R_swig__THyPhyString_myType', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyString_myType`, 'returnType') = 'numeric'
+attr(`_THyPhyString_myType`, "inputTypes") = c('_p__THyPhyString')
+class(`_THyPhyString_myType`) = c("SWIGFunction", class('_THyPhyString_myType'))
+
+# Start of delete__THyPhyString
+
+`delete__THyPhyString` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  .Call('R_swig_delete__THyPhyString', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`delete__THyPhyString`, 'returnType') = 'void'
+attr(`delete__THyPhyString`, "inputTypes") = c('_p__THyPhyString')
+class(`delete__THyPhyString`) = c("SWIGFunction", class('delete__THyPhyString'))
+
+# Start of _THyPhyString_sLength_set
+
+`_THyPhyString_sLength_set` = function(self, s_sLength)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  s_sLength = as.numeric(s_sLength) 
+  .Call('R_swig__THyPhyString_sLength_set', self, s_sLength, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyString_sLength_set`, 'returnType') = 'void'
+attr(`_THyPhyString_sLength_set`, "inputTypes") = c('_p__THyPhyString', 'numeric')
+class(`_THyPhyString_sLength_set`) = c("SWIGFunction", class('_THyPhyString_sLength_set'))
+
+# Start of _THyPhyString_sLength_get
+
+`_THyPhyString_sLength_get` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  .Call('R_swig__THyPhyString_sLength_get', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyString_sLength_get`, 'returnType') = 'numeric'
+attr(`_THyPhyString_sLength_get`, "inputTypes") = c('_p__THyPhyString')
+class(`_THyPhyString_sLength_get`) = c("SWIGFunction", class('_THyPhyString_sLength_get'))
+
+# Start of _THyPhyString_sData_set
+
+`_THyPhyString_sData_set` = function(self, s_sData)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  s_sData = as(s_sData, "character") 
+  .Call('R_swig__THyPhyString_sData_set', self, s_sData, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyString_sData_set`, 'returnType') = 'void'
+attr(`_THyPhyString_sData_set`, "inputTypes") = c('_p__THyPhyString', 'character')
+class(`_THyPhyString_sData_set`) = c("SWIGFunction", class('_THyPhyString_sData_set'))
+
+# Start of _THyPhyString_sData_get
+
+`_THyPhyString_sData_get` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyString") 
+  .Call('R_swig__THyPhyString_sData_get', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyString_sData_get`, 'returnType') = 'character'
+attr(`_THyPhyString_sData_get`, "inputTypes") = c('_p__THyPhyString')
+class(`_THyPhyString_sData_get`) = c("SWIGFunction", class('_THyPhyString_sData_get'))
+
+# Start of accessor method for _THyPhyString
+setMethod('$', '_p__THyPhyString', function(x, name)
+
+{
+  accessorFuns = list('myType' = `_THyPhyString_myType`, 'sLength' = `_THyPhyString_sLength_get`, 'sData' = `_THyPhyString_sData_get`)
+  vaccessors = c('sLength', 'sData')
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name))
+  f = accessorFuns[[idx]]
+  formals(f)[[1]] = x
+  if (is.na(match(name, vaccessors))) f else f(x)
+}
+
+
+)
+# end of accessor method for _THyPhyString
+# Start of accessor method for _THyPhyString
+setMethod('$<-', '_p__THyPhyString', function(x, name, value)
+
+{
+  accessorFuns = list('sLength' = `_THyPhyString_sLength_set`, 'sData' = `_THyPhyString_sData_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+setMethod('[[<-', c('_p__THyPhyString', 'character'),function(x, i, j, ..., value)
+
+{
+  name = i
+  accessorFuns = list('sLength' = `_THyPhyString_sLength_set`, 'sData' = `_THyPhyString_sData_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+# end of accessor method for _THyPhyString
+setMethod('delete', '_p__THyPhyString', function(obj) {delete__THyPhyString(obj)})
+# Start of new__THyPhyNumber
+
+`_THyPhyNumber__SWIG_0` = function(s_arg1)
+{
+  s_arg1 = as.numeric(s_arg1) 
+  ans = .Call('R_swig_new__THyPhyNumber__SWIG_0', s_arg1, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyNumber"
+  
+  ans
+  
+}
+
+attr(`_THyPhyNumber__SWIG_0`, 'returnType') = '_p__THyPhyNumber'
+attr(`_THyPhyNumber__SWIG_0`, "inputTypes") = c('numeric')
+class(`_THyPhyNumber__SWIG_0`) = c("SWIGFunction", class('_THyPhyNumber__SWIG_0'))
+
+# Start of new__THyPhyNumber
+
+`_THyPhyNumber__SWIG_1` = function()
+{
+  ans = .Call('R_swig_new__THyPhyNumber__SWIG_1', PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyNumber"
+  
+  ans
+  
+}
+
+attr(`_THyPhyNumber__SWIG_1`, 'returnType') = '_p__THyPhyNumber'
+class(`_THyPhyNumber__SWIG_1`) = c("SWIGFunction", class('_THyPhyNumber__SWIG_1'))
+
+`_THyPhyNumber` <- function(...) {
+  argtypes <- mapply(class, list(...))
+  argc <- length(argtypes)
+# dispatch functions 2
+  if (argc == 0) {
+    f <- `_THyPhyNumber__SWIG_1`
+  } else if (argc == 1) {
+    if (extends(argtypes[1], 'numeric')) {
+      f <- `_THyPhyNumber__SWIG_0` 
+    }
+  }
+  f(...)
+}
+
+# Dispatch function
+# Start of _THyPhyNumber_myType
+
+`_THyPhyNumber_myType` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyNumber") 
+  .Call('R_swig__THyPhyNumber_myType', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyNumber_myType`, 'returnType') = 'numeric'
+attr(`_THyPhyNumber_myType`, "inputTypes") = c('_p__THyPhyNumber')
+class(`_THyPhyNumber_myType`) = c("SWIGFunction", class('_THyPhyNumber_myType'))
+
+# Start of delete__THyPhyNumber
+
+`delete__THyPhyNumber` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyNumber") 
+  .Call('R_swig_delete__THyPhyNumber', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`delete__THyPhyNumber`, 'returnType') = 'void'
+attr(`delete__THyPhyNumber`, "inputTypes") = c('_p__THyPhyNumber')
+class(`delete__THyPhyNumber`) = c("SWIGFunction", class('delete__THyPhyNumber'))
+
+# Start of _THyPhyNumber_nValue_set
+
+`_THyPhyNumber_nValue_set` = function(self, s_nValue)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyNumber") 
+  s_nValue = as.numeric(s_nValue) 
+  .Call('R_swig__THyPhyNumber_nValue_set', self, s_nValue, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyNumber_nValue_set`, 'returnType') = 'void'
+attr(`_THyPhyNumber_nValue_set`, "inputTypes") = c('_p__THyPhyNumber', 'numeric')
+class(`_THyPhyNumber_nValue_set`) = c("SWIGFunction", class('_THyPhyNumber_nValue_set'))
+
+# Start of _THyPhyNumber_nValue_get
+
+`_THyPhyNumber_nValue_get` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyNumber") 
+  .Call('R_swig__THyPhyNumber_nValue_get', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyNumber_nValue_get`, 'returnType') = 'numeric'
+attr(`_THyPhyNumber_nValue_get`, "inputTypes") = c('_p__THyPhyNumber')
+class(`_THyPhyNumber_nValue_get`) = c("SWIGFunction", class('_THyPhyNumber_nValue_get'))
+
+# Start of accessor method for _THyPhyNumber
+setMethod('$', '_p__THyPhyNumber', function(x, name)
+
+{
+  accessorFuns = list('myType' = `_THyPhyNumber_myType`, 'nValue' = `_THyPhyNumber_nValue_get`)
+  vaccessors = c('nValue')
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name))
+  f = accessorFuns[[idx]]
+  formals(f)[[1]] = x
+  if (is.na(match(name, vaccessors))) f else f(x)
+}
+
+
+)
+# end of accessor method for _THyPhyNumber
+# Start of accessor method for _THyPhyNumber
+setMethod('$<-', '_p__THyPhyNumber', function(x, name, value)
+
+{
+  accessorFuns = list('nValue' = `_THyPhyNumber_nValue_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+setMethod('[[<-', c('_p__THyPhyNumber', 'character'),function(x, i, j, ..., value)
+
+{
+  name = i
+  accessorFuns = list('nValue' = `_THyPhyNumber_nValue_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+# end of accessor method for _THyPhyNumber
+setMethod('delete', '_p__THyPhyNumber', function(obj) {delete__THyPhyNumber(obj)})
+# Start of new__THyPhyMatrix
+
+`_THyPhyMatrix__SWIG_0` = function()
+{
+  ans = .Call('R_swig_new__THyPhyMatrix__SWIG_0', PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyMatrix"
+  
+  ans
+  
+}
+
+attr(`_THyPhyMatrix__SWIG_0`, 'returnType') = '_p__THyPhyMatrix'
+class(`_THyPhyMatrix__SWIG_0`) = c("SWIGFunction", class('_THyPhyMatrix__SWIG_0'))
+
+# Start of new__THyPhyMatrix
+
+`_THyPhyMatrix__SWIG_1` = function(s_arg1, s_arg2, s_arg3)
+{
+  s_arg1 = as.numeric(s_arg1) 
+  s_arg2 = as.numeric(s_arg2) 
+  s_arg3 = as.numeric(s_arg3) 
+  ans = .Call('R_swig_new__THyPhyMatrix__SWIG_1', s_arg1, s_arg2, s_arg3, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyMatrix"
+  
+  ans
+  
+}
+
+attr(`_THyPhyMatrix__SWIG_1`, 'returnType') = '_p__THyPhyMatrix'
+attr(`_THyPhyMatrix__SWIG_1`, "inputTypes") = c('numeric', 'numeric', 'numeric')
+class(`_THyPhyMatrix__SWIG_1`) = c("SWIGFunction", class('_THyPhyMatrix__SWIG_1'))
+
+`_THyPhyMatrix` <- function(...) {
+  argtypes <- mapply(class, list(...))
+  argc <- length(argtypes)
+# dispatch functions 2
+  if (argc == 0) {
+    f <- `_THyPhyMatrix__SWIG_0`
+  } else if (argc == 3) {
+    if (extends(argtypes[1], 'numeric') && extends(argtypes[2], 'numeric') && extends(argtypes[3], 'numeric')) {
+      f <- `_THyPhyMatrix__SWIG_1` 
+    }
+  }
+  f(...)
+}
+
+# Dispatch function
+# Start of _THyPhyMatrix_myType
+
+`_THyPhyMatrix_myType` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  .Call('R_swig__THyPhyMatrix_myType', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_myType`, 'returnType') = 'numeric'
+attr(`_THyPhyMatrix_myType`, "inputTypes") = c('_p__THyPhyMatrix')
+class(`_THyPhyMatrix_myType`) = c("SWIGFunction", class('_THyPhyMatrix_myType'))
+
+# Start of delete__THyPhyMatrix
+
+`delete__THyPhyMatrix` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  .Call('R_swig_delete__THyPhyMatrix', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`delete__THyPhyMatrix`, 'returnType') = 'void'
+attr(`delete__THyPhyMatrix`, "inputTypes") = c('_p__THyPhyMatrix')
+class(`delete__THyPhyMatrix`) = c("SWIGFunction", class('delete__THyPhyMatrix'))
+
+# Start of _THyPhyMatrix_MatrixCell
+
+`_THyPhyMatrix_MatrixCell` = function(self, s_arg2, s_arg3, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  s_arg2 = as.numeric(s_arg2) 
+  s_arg3 = as.numeric(s_arg3) 
+  .Call('R_swig__THyPhyMatrix_MatrixCell', self, s_arg2, s_arg3, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_MatrixCell`, 'returnType') = 'numeric'
+attr(`_THyPhyMatrix_MatrixCell`, "inputTypes") = c('_p__THyPhyMatrix', 'numeric', 'numeric')
+class(`_THyPhyMatrix_MatrixCell`) = c("SWIGFunction", class('_THyPhyMatrix_MatrixCell'))
+
+# Start of _THyPhyMatrix_mRows_set
+
+`_THyPhyMatrix_mRows_set` = function(self, s_mRows)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  s_mRows = as.numeric(s_mRows) 
+  .Call('R_swig__THyPhyMatrix_mRows_set', self, s_mRows, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_mRows_set`, 'returnType') = 'void'
+attr(`_THyPhyMatrix_mRows_set`, "inputTypes") = c('_p__THyPhyMatrix', 'numeric')
+class(`_THyPhyMatrix_mRows_set`) = c("SWIGFunction", class('_THyPhyMatrix_mRows_set'))
+
+# Start of _THyPhyMatrix_mRows_get
+
+`_THyPhyMatrix_mRows_get` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  .Call('R_swig__THyPhyMatrix_mRows_get', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_mRows_get`, 'returnType') = 'numeric'
+attr(`_THyPhyMatrix_mRows_get`, "inputTypes") = c('_p__THyPhyMatrix')
+class(`_THyPhyMatrix_mRows_get`) = c("SWIGFunction", class('_THyPhyMatrix_mRows_get'))
+
+# Start of _THyPhyMatrix_mCols_set
+
+`_THyPhyMatrix_mCols_set` = function(self, s_mCols)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  s_mCols = as.numeric(s_mCols) 
+  .Call('R_swig__THyPhyMatrix_mCols_set', self, s_mCols, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_mCols_set`, 'returnType') = 'void'
+attr(`_THyPhyMatrix_mCols_set`, "inputTypes") = c('_p__THyPhyMatrix', 'numeric')
+class(`_THyPhyMatrix_mCols_set`) = c("SWIGFunction", class('_THyPhyMatrix_mCols_set'))
+
+# Start of _THyPhyMatrix_mCols_get
+
+`_THyPhyMatrix_mCols_get` = function(self, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  .Call('R_swig__THyPhyMatrix_mCols_get', self, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_mCols_get`, 'returnType') = 'numeric'
+attr(`_THyPhyMatrix_mCols_get`, "inputTypes") = c('_p__THyPhyMatrix')
+class(`_THyPhyMatrix_mCols_get`) = c("SWIGFunction", class('_THyPhyMatrix_mCols_get'))
+
+# Start of _THyPhyMatrix_mData_set
+
+`_THyPhyMatrix_mData_set` = function(self, s_mData)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  s_mData = as.numeric(s_mData) 
+  .Call('R_swig__THyPhyMatrix_mData_set', self, s_mData, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyMatrix_mData_set`, 'returnType') = 'void'
+attr(`_THyPhyMatrix_mData_set`, "inputTypes") = c('_p__THyPhyMatrix', 'numeric')
+class(`_THyPhyMatrix_mData_set`) = c("SWIGFunction", class('_THyPhyMatrix_mData_set'))
+
+# Start of _THyPhyMatrix_mData_get
+
+`_THyPhyMatrix_mData_get` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhyMatrix") 
+  ans = .Call('R_swig__THyPhyMatrix_mData_get', self, PACKAGE='HyPhy')
+  class(ans) <- "_p_double"
+  
+  ans
+  
+}
+
+attr(`_THyPhyMatrix_mData_get`, 'returnType') = 'numeric'
+attr(`_THyPhyMatrix_mData_get`, "inputTypes") = c('_p__THyPhyMatrix')
+class(`_THyPhyMatrix_mData_get`) = c("SWIGFunction", class('_THyPhyMatrix_mData_get'))
+
+# Start of accessor method for _THyPhyMatrix
+setMethod('$', '_p__THyPhyMatrix', function(x, name)
+
+{
+  accessorFuns = list('myType' = `_THyPhyMatrix_myType`, 'MatrixCell' = `_THyPhyMatrix_MatrixCell`, 'mRows' = `_THyPhyMatrix_mRows_get`, 'mCols' = `_THyPhyMatrix_mCols_get`, 'mData' = `_THyPhyMatrix_mData_get`)
+  vaccessors = c('mRows', 'mCols', 'mData')
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name))
+  f = accessorFuns[[idx]]
+  formals(f)[[1]] = x
+  if (is.na(match(name, vaccessors))) f else f(x)
+}
+
+
+)
+# end of accessor method for _THyPhyMatrix
+# Start of accessor method for _THyPhyMatrix
+setMethod('$<-', '_p__THyPhyMatrix', function(x, name, value)
+
+{
+  accessorFuns = list('mRows' = `_THyPhyMatrix_mRows_set`, 'mCols' = `_THyPhyMatrix_mCols_set`, 'mData' = `_THyPhyMatrix_mData_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+setMethod('[[<-', c('_p__THyPhyMatrix', 'character'),function(x, i, j, ..., value)
+
+{
+  name = i
+  accessorFuns = list('mRows' = `_THyPhyMatrix_mRows_set`, 'mCols' = `_THyPhyMatrix_mCols_set`, 'mData' = `_THyPhyMatrix_mData_set`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name, value))
+  f = accessorFuns[[idx]]
+  f(x, value)
+  x
+}
+
+
+)
+# end of accessor method for _THyPhyMatrix
+setMethod('delete', '_p__THyPhyMatrix', function(obj) {delete__THyPhyMatrix(obj)})
+# Start of new__THyPhy
+
+`_THyPhy__SWIG_0` = function(s_arg1, s_arg2, s_arg3)
+{
+  s_arg1 = coerceIfNotSubclass(s_arg1, "_p_f_p_char_int_double__bool") 
+  s_arg2 = as(s_arg2, "character") 
+  s_arg3 = as.numeric(s_arg3) 
+  ans = .Call('R_swig_new__THyPhy__SWIG_0', s_arg1, s_arg2, s_arg3, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhy"
+  
+  ans
+  
+}
+
+attr(`_THyPhy__SWIG_0`, 'returnType') = '_p__THyPhy'
+attr(`_THyPhy__SWIG_0`, "inputTypes") = c('_p_f_p_char_int_double__bool', 'character', 'numeric')
+class(`_THyPhy__SWIG_0`) = c("SWIGFunction", class('_THyPhy__SWIG_0'))
+
+# Start of new__THyPhy
+
+`_THyPhy__SWIG_1` = function(s_arg1, s_arg2)
+{
+  s_arg1 = coerceIfNotSubclass(s_arg1, "_p_f_p_char_int_double__bool") 
+  s_arg2 = as(s_arg2, "character") 
+  ans = .Call('R_swig_new__THyPhy__SWIG_1', s_arg1, s_arg2, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhy"
+  
+  ans
+  
+}
+
+attr(`_THyPhy__SWIG_1`, 'returnType') = '_p__THyPhy'
+attr(`_THyPhy__SWIG_1`, "inputTypes") = c('_p_f_p_char_int_double__bool', 'character')
+class(`_THyPhy__SWIG_1`) = c("SWIGFunction", class('_THyPhy__SWIG_1'))
+
+# Start of new__THyPhy
+
+`_THyPhy__SWIG_2` = function(s_arg1, s_arg2)
+{
+  s_arg1 = as(s_arg1, "character") 
+  s_arg2 = as.numeric(s_arg2) 
+  ans = .Call('R_swig_new__THyPhy__SWIG_2', s_arg1, s_arg2, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhy"
+  
+  ans
+  
+}
+
+attr(`_THyPhy__SWIG_2`, 'returnType') = '_p__THyPhy'
+attr(`_THyPhy__SWIG_2`, "inputTypes") = c('character', 'numeric')
+class(`_THyPhy__SWIG_2`) = c("SWIGFunction", class('_THyPhy__SWIG_2'))
+
+# Start of new__THyPhy
+
+`_THyPhy__SWIG_3` = function(s_arg1)
+{
+  s_arg1 = as(s_arg1, "character") 
+  ans = .Call('R_swig_new__THyPhy__SWIG_3', s_arg1, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhy"
+  
+  ans
+  
+}
+
+attr(`_THyPhy__SWIG_3`, 'returnType') = '_p__THyPhy'
+attr(`_THyPhy__SWIG_3`, "inputTypes") = c('character')
+class(`_THyPhy__SWIG_3`) = c("SWIGFunction", class('_THyPhy__SWIG_3'))
+
+`_THyPhy` <- function(...) {
+  argtypes <- mapply(class, list(...))
+  argc <- length(argtypes)
+# dispatch functions 4
+  if (argc == 1) {
+    if (extends(argtypes[1], 'character')) {
+      f <- `_THyPhy__SWIG_3` 
+    }
+  } else if (argc == 2) {
+    if (extends(argtypes[1], '_p_f_p_char_int_double__bool') && extends(argtypes[2], 'character')) {
+      f <- `_THyPhy__SWIG_1` 
+    }
+    else if (extends(argtypes[1], 'character') && extends(argtypes[2], 'numeric')) {
+      f <- `_THyPhy__SWIG_2` 
+    }
+  } else if (argc == 3) {
+    if (extends(argtypes[1], '_p_f_p_char_int_double__bool') && extends(argtypes[2], 'character') && extends(argtypes[3], 'numeric')) {
+      f <- `_THyPhy__SWIG_0` 
+    }
+  }
+  f(...)
+}
+
+# Dispatch function
+# Start of delete__THyPhy
+
+`delete__THyPhy` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  .Call('R_swig_delete__THyPhy', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`delete__THyPhy`, 'returnType') = 'void'
+attr(`delete__THyPhy`, "inputTypes") = c('_p__THyPhy')
+class(`delete__THyPhy`) = c("SWIGFunction", class('delete__THyPhy'))
+
+# Start of _THyPhy_ExecuteBF
+
+`_THyPhy_ExecuteBF__SWIG_0` = function(self, s_arg2, s_arg3)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = as(s_arg2, "character") 
+  s_arg3 = as.logical(s_arg3) 
+  ans = .Call('R_swig__THyPhy_ExecuteBF__SWIG_0', self, s_arg2, s_arg3, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_ExecuteBF__SWIG_0`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhy_ExecuteBF__SWIG_0`, "inputTypes") = c('_p__THyPhy', 'character', 'logical')
+class(`_THyPhy_ExecuteBF__SWIG_0`) = c("SWIGFunction", class('_THyPhy_ExecuteBF__SWIG_0'))
+
+# Start of _THyPhy_ExecuteBF
+
+`_THyPhy_ExecuteBF__SWIG_1` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = as(s_arg2, "character") 
+  ans = .Call('R_swig__THyPhy_ExecuteBF__SWIG_1', self, s_arg2, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_ExecuteBF__SWIG_1`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhy_ExecuteBF__SWIG_1`, "inputTypes") = c('_p__THyPhy', 'character')
+class(`_THyPhy_ExecuteBF__SWIG_1`) = c("SWIGFunction", class('_THyPhy_ExecuteBF__SWIG_1'))
+
+`_THyPhy_ExecuteBF` <- function(...) {
+  argtypes <- mapply(class, list(...))
+  argc <- length(argtypes)
+# dispatch functions 2
+  if (argc == 2) {
+    if (extends(argtypes[1], '_p__THyPhy') && extends(argtypes[2], 'character')) {
+      f <- `_THyPhy_ExecuteBF__SWIG_1` 
+    }
+  } else if (argc == 3) {
+    if (extends(argtypes[1], '_p__THyPhy') && extends(argtypes[2], 'character') && extends(argtypes[3], 'logical')) {
+      f <- `_THyPhy_ExecuteBF__SWIG_0` 
+    }
+  }
+  f(...)
+}
+
+# Dispatch function
+# Start of _THyPhy_ClearAll
+
+`_THyPhy_ClearAll` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  .Call('R_swig__THyPhy_ClearAll', self, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_ClearAll`, 'returnType') = 'void'
+attr(`_THyPhy_ClearAll`, "inputTypes") = c('_p__THyPhy')
+class(`_THyPhy_ClearAll`) = c("SWIGFunction", class('_THyPhy_ClearAll'))
+
+# Start of _THyPhy_AskFor
+
+`_THyPhy_AskFor` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = as(s_arg2, "character") 
+  ans = .Call('R_swig__THyPhy_AskFor', self, s_arg2, PACKAGE='HyPhy')
+  class(ans) <- "_p_void"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_AskFor`, 'returnType') = '_p_void'
+attr(`_THyPhy_AskFor`, "inputTypes") = c('_p__THyPhy', 'character')
+class(`_THyPhy_AskFor`) = c("SWIGFunction", class('_THyPhy_AskFor'))
+
+# Start of _THyPhy_DumpResult
+
+`_THyPhy_DumpResult` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  .Call('R_swig__THyPhy_DumpResult', self, s_arg2, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_DumpResult`, 'returnType') = 'void'
+attr(`_THyPhy_DumpResult`, "inputTypes") = c('_p__THyPhy', '_p_void')
+class(`_THyPhy_DumpResult`) = c("SWIGFunction", class('_THyPhy_DumpResult'))
+
+# Start of _THyPhy_CanCast
+
+`_THyPhy_CanCast` = function(self, s_arg2, s_arg3, .copy = FALSE)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  s_arg3 = as.integer(s_arg3) 
+  
+  if(length(s_arg3) > 1) {
+    Rf_warning("using only the first element of s_arg3")
+  }
+  
+  .Call('R_swig__THyPhy_CanCast', self, s_arg2, s_arg3, as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_CanCast`, 'returnType') = 'logical'
+attr(`_THyPhy_CanCast`, "inputTypes") = c('_p__THyPhy', '_p_void', 'numeric')
+class(`_THyPhy_CanCast`) = c("SWIGFunction", class('_THyPhy_CanCast'))
+
+# Start of _THyPhy_CastResult
+
+`_THyPhy_CastResult` = function(self, s_arg2, s_arg3)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  s_arg3 = as.integer(s_arg3) 
+  
+  if(length(s_arg3) > 1) {
+    Rf_warning("using only the first element of s_arg3")
+  }
+  
+  ans = .Call('R_swig__THyPhy_CastResult', self, s_arg2, s_arg3, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyReturnObject"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_CastResult`, 'returnType') = '_p__THyPhyReturnObject'
+attr(`_THyPhy_CastResult`, "inputTypes") = c('_p__THyPhy', '_p_void', 'numeric')
+class(`_THyPhy_CastResult`) = c("SWIGFunction", class('_THyPhy_CastResult'))
+
+# Start of _THyPhy_SetCallbackHandler
+
+`_THyPhy_SetCallbackHandler` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_f_p_char_int_double__bool") 
+  .Call('R_swig__THyPhy_SetCallbackHandler', self, s_arg2, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_SetCallbackHandler`, 'returnType') = 'void'
+attr(`_THyPhy_SetCallbackHandler`, "inputTypes") = c('_p__THyPhy', '_p_f_p_char_int_double__bool')
+class(`_THyPhy_SetCallbackHandler`) = c("SWIGFunction", class('_THyPhy_SetCallbackHandler'))
+
+# Start of _THyPhy_GetCallbackHandler
+
+`_THyPhy_GetCallbackHandler` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  ans = .Call('R_swig__THyPhy_GetCallbackHandler', self, PACKAGE='HyPhy')
+  class(ans) <- "_p_f_p_char_int_double__bool"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_GetCallbackHandler`, 'returnType') = '_p_f_p_char_int_double__bool'
+attr(`_THyPhy_GetCallbackHandler`, "inputTypes") = c('_p__THyPhy')
+class(`_THyPhy_GetCallbackHandler`) = c("SWIGFunction", class('_THyPhy_GetCallbackHandler'))
+
+# Start of _THyPhy_GetWarnings
+
+`_THyPhy_GetWarnings` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  ans = .Call('R_swig__THyPhy_GetWarnings', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_GetWarnings`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhy_GetWarnings`, "inputTypes") = c('_p__THyPhy')
+class(`_THyPhy_GetWarnings`) = c("SWIGFunction", class('_THyPhy_GetWarnings'))
+
+# Start of _THyPhy_GetErrors
+
+`_THyPhy_GetErrors` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  ans = .Call('R_swig__THyPhy_GetErrors', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_GetErrors`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhy_GetErrors`, "inputTypes") = c('_p__THyPhy')
+class(`_THyPhy_GetErrors`) = c("SWIGFunction", class('_THyPhy_GetErrors'))
+
+# Start of _THyPhy_GetStdout
+
+`_THyPhy_GetStdout` = function(self)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  ans = .Call('R_swig__THyPhy_GetStdout', self, PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhyString"
+  
+  ans
+  
+}
+
+attr(`_THyPhy_GetStdout`, 'returnType') = '_p__THyPhyString'
+attr(`_THyPhy_GetStdout`, "inputTypes") = c('_p__THyPhy')
+class(`_THyPhy_GetStdout`) = c("SWIGFunction", class('_THyPhy_GetStdout'))
+
+# Start of _THyPhy_PushWarning
+
+`_THyPhy_PushWarning` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  .Call('R_swig__THyPhy_PushWarning', self, s_arg2, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_PushWarning`, 'returnType') = 'void'
+attr(`_THyPhy_PushWarning`, "inputTypes") = c('_p__THyPhy', '_p_void')
+class(`_THyPhy_PushWarning`) = c("SWIGFunction", class('_THyPhy_PushWarning'))
+
+# Start of _THyPhy_PushError
+
+`_THyPhy_PushError` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  .Call('R_swig__THyPhy_PushError', self, s_arg2, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_PushError`, 'returnType') = 'void'
+attr(`_THyPhy_PushError`, "inputTypes") = c('_p__THyPhy', '_p_void')
+class(`_THyPhy_PushError`) = c("SWIGFunction", class('_THyPhy_PushError'))
+
+# Start of _THyPhy_PushOutString
+
+`_THyPhy_PushOutString` = function(self, s_arg2)
+{
+  self = coerceIfNotSubclass(self, "_p__THyPhy") 
+  s_arg2 = coerceIfNotSubclass(s_arg2, "_p_void") 
+  .Call('R_swig__THyPhy_PushOutString', self, s_arg2, PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhy_PushOutString`, 'returnType') = 'void'
+attr(`_THyPhy_PushOutString`, "inputTypes") = c('_p__THyPhy', '_p_void')
+class(`_THyPhy_PushOutString`) = c("SWIGFunction", class('_THyPhy_PushOutString'))
+
+# Start of accessor method for _THyPhy
+setMethod('$', '_p__THyPhy', function(x, name)
+
+{
+  accessorFuns = list('ExecuteBF' = `_THyPhy_ExecuteBF`, 'ClearAll' = `_THyPhy_ClearAll`, 'AskFor' = `_THyPhy_AskFor`, 'DumpResult' = `_THyPhy_DumpResult`, 'CanCast' = `_THyPhy_CanCast`, 'CastResult' = `_THyPhy_CastResult`, 'SetCallbackHandler' = `_THyPhy_SetCallbackHandler`, 'GetCallbackHandler' = `_THyPhy_GetCallbackHandler`, 'GetWarnings' = `_THyPhy_GetWarnings`, 'GetErrors' = `_THyPhy_GetErrors`, 'GetStdout' = `_THyPhy_GetStdout`, 'PushWarning' = `_THyPhy_PushWarning`, 'PushError' = `_THyPhy_PushError`, 'PushOutString' = `_THyPhy_PushOutString`)
+  idx = pmatch(name, names(accessorFuns))
+  if(is.na(idx)) 
+  return(callNextMethod(x, name))
+  f = accessorFuns[[idx]]
+  formals(f)[[1]] = x
+  f
+}
+
+
+)
+# end of accessor method for _THyPhy
+setMethod('delete', '_p__THyPhy', function(obj) {delete__THyPhy(obj)})
+# Start of _THyPhyGetLongStatus
+
+`_THyPhyGetLongStatus` = function(.copy = FALSE)
+{
+  .Call('R_swig__THyPhyGetLongStatus', as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyGetLongStatus`, 'returnType') = 'numeric'
+class(`_THyPhyGetLongStatus`) = c("SWIGFunction", class('_THyPhyGetLongStatus'))
+
+# Start of _THyPhyGetStringStatus
+
+`_THyPhyGetStringStatus` = function()
+{
+  .Call('R_swig__THyPhyGetStringStatus', PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyGetStringStatus`, 'returnType') = 'character'
+class(`_THyPhyGetStringStatus`) = c("SWIGFunction", class('_THyPhyGetStringStatus'))
+
+# Start of _THyPhyGetDoubleStatus
+
+`_THyPhyGetDoubleStatus` = function(.copy = FALSE)
+{
+  .Call('R_swig__THyPhyGetDoubleStatus', as.logical(.copy), PACKAGE='HyPhy')
+  
+}
+
+attr(`_THyPhyGetDoubleStatus`, 'returnType') = 'numeric'
+class(`_THyPhyGetDoubleStatus`) = c("SWIGFunction", class('_THyPhyGetDoubleStatus'))
+
+# Start of globalInterfaceInstance_set
+
+`globalInterfaceInstance_set` = function(s_globalInterfaceInstance)
+{
+  s_globalInterfaceInstance = coerceIfNotSubclass(s_globalInterfaceInstance, "_p__THyPhy") 
+  .Call('R_swig_globalInterfaceInstance_set', s_globalInterfaceInstance, PACKAGE='HyPhy')
+  
+}
+
+attr(`globalInterfaceInstance_set`, 'returnType') = 'void'
+attr(`globalInterfaceInstance_set`, "inputTypes") = c('_p__THyPhy')
+class(`globalInterfaceInstance_set`) = c("SWIGFunction", class('globalInterfaceInstance_set'))
+
+# Start of globalInterfaceInstance_get
+
+`globalInterfaceInstance_get` = function()
+{
+  ans = .Call('R_swig_globalInterfaceInstance_get', PACKAGE='HyPhy')
+  class(ans) <- "_p__THyPhy"
+  
+  ans
+  
+}
+
+attr(`globalInterfaceInstance_get`, 'returnType') = '_p__THyPhy'
+class(`globalInterfaceInstance_get`) = c("SWIGFunction", class('globalInterfaceInstance_get'))
+
+globalInterfaceInstance = 
+function(value)
+{
+  if(missing(value)) {
+    globalInterfaceInstance_get()
+  } else {
+    globalInterfaceInstance_set(value)
+  }
+}
+
+
