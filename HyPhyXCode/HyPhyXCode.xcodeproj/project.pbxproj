@@ -150,6 +150,7 @@
 /* Begin PBXFileReference section */
 		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		8593AB720DE7883B008384A0 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Help; path = ../trunk/Help; sourceTree = SOURCE_ROOT; };
+		859FCF250E09C2E70007B356 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = ../trunk/Library; sourceTree = SOURCE_ROOT; };
 		85A2BC910DE4E80E00682547 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = baseobj.cpp; path = ../trunk/Core/baseobj.cpp; sourceTree = SOURCE_ROOT; };
 		85A2BC920DE4E80E00682547 /* batchlan.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = batchlan.cpp; path = ../trunk/Core/batchlan.cpp; sourceTree = SOURCE_ROOT; };
 		85A2BC930DE4E80E00682547 /* batchlan2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = batchlan2.cpp; path = ../trunk/Core/batchlan2.cpp; sourceTree = SOURCE_ROOT; };
@@ -294,6 +295,7 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
+				859FCF250E09C2E70007B356 /* Library */,
 				8593AB720DE7883B008384A0 /* Help */,
 				85F903D10DE64F9100D28244 /* Scripts */,
 				85A2BFEF0DE5064D00682547 /* HBL */,
