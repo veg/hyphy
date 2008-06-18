@@ -38,8 +38,8 @@
  *
  */
 
-#define		__AFYP_DEVELOPMENT__
-#define		__MISSING_DATA__
+//#define		__AFYP_DEVELOPMENT__
+//#define		__MISSING_DATA__
 
 #define		LOG_SCALING_FACTOR			64.
 #define		LARGE_NEGATIVE_NUMBER		-99999.0
@@ -2650,7 +2650,11 @@ void Bgm::CacheNodeScores (void)
 	
 #if !defined __UNIX__ || defined __HEADLESS__
 	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+#if !defined __HEADLESS__
 	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+#else
+	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
+#endif	
 	
 	_Parameter	seconds_accumulator = .0,
 				temp;
@@ -2734,7 +2738,12 @@ void Bgm::CacheNodeScores (void)
 			
 			_String statusLine = _HYBgm_STATUS_LINE_CACHE & " " & (node_id+1) & "/" & num_nodes 
 									& " nodes (" & (1.0+node_id)/seconds_accumulator & "/second)";
-			SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
+			
+#if defined __HEADLESS__
+	SetStatusLine (statusLine);
+#else
+	SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
+#endif
 			TimerDifferenceFunction (false); // reset timer for the next second
 			yieldCPUTime (); // let the GUI handle user actions
 			
@@ -3685,7 +3694,11 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 #if !defined __UNIX__ || defined __HEADLESS__
 	long	updates = 0;
 	TimerDifferenceFunction (false);
+#if defined __HEADLESS__
+	SetStatusLine (_HYBgm_STATUS_LINE_MCMC);
+#else	
 	SetStatusLine (empty, _HYBgm_STATUS_LINE_MCMC, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+#endif
 #endif
 	
 	
@@ -3822,7 +3835,11 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 			updates ++;
 			_String statusLine = _HYBgm_STATUS_LINE_MCMC & " " & (step+1) & "/" & (mcmc_steps + mcmc_burnin) 
 									& " steps (" & (1.0+step)/updates & "/second)";
+#if defined __HEADLESS__
+			SetStatusLine 	  (statusLine);
+#else	
 			SetStatusLine 	  (empty,statusLine,empty,100*step/(mcmc_steps + mcmc_burnin),HY_SL_TASK|HY_SL_PERCENT);
+#endif
 			TimerDifferenceFunction(false); // reset timer for the next second
 			yieldCPUTime(); // let the GUI handle user actions
 			if (terminateExecution) // user wants to cancel the analysis
