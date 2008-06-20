@@ -434,7 +434,7 @@ _String	ProcessStringArgument (_String* data)
 	{
 		if (data->sData[data->sLength-1]=='_' && data->sData[data->sLength-2]=='_')
 		{
-			_String varName (data,0,data->sLength-3);
+			_String varName (*data,0,data->sLength-3);
 			_FString* theVar = (_FString*)FetchObjectFromVariableByType(&varName,STRING);
 			if (theVar)
 				return *theVar->theString;
