@@ -818,10 +818,12 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
 			else
 				return Minus();
 			break;
-		case 55: // ^
+		case 54: // Type
+			return Type();
+			break;
+		case 56: // ^
 			return Raise(p);
 			break;
-
 	}
 	
 	_String errMsg ("Operation ");

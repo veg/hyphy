@@ -129,6 +129,7 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 	virtual	_MathObject* RerootTree	 (_MathObject*)	   {return nil;}
 	virtual	_MathObject* TEXTreeString(_MathObject*)
 												   	   {return nil;}
+	virtual	_MathObject* Type						   (void);
 	virtual	_MathObject* PlainTreeString(_MathObject*)
 						 						   	   {return nil;}
 	virtual	_MathObject* FormatNumberString (_MathObject*,_MathObject*)

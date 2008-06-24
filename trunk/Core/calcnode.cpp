@@ -2514,7 +2514,10 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 		case 52: // TipName
 			return TipName(p);
 			break;
-		case 55: //^
+		case 54: // Type
+			return Type();
+			break;
+		case 56: //^
 			return AVLRepresentation (p);
 			break;
 	}
@@ -2539,6 +2542,9 @@ _PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 			break;
 		case 48: // TEXTreeString
 			return TEXTreeString(p);
+			break;
+		case 54: // Type
+			return Type();
 			break;
 	}
 

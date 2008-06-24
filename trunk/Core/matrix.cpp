@@ -1279,7 +1279,10 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			result->Transpose ();
 			return result;
 		}
-		case 55: // ^ (Poisson log-likelihood)
+		case 54: // Type
+			return Type();
+			break;
+		case 56: // ^ (Poisson log-likelihood)
 			return  PoissonLL (p);
 	}
 	
@@ -8971,7 +8974,11 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 			else
 				return new _Matrix (*(_List*)avl.dataList);
 			break;
+		case 54: // Type
+			return Type();
+			break;
 	}
+	
 	
 	_String errMsg ("Operation ");
 	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for associative lists";

@@ -240,11 +240,6 @@ _SimpleList::~_SimpleList(void)
 _List::~_List(void)
 //destructor
 {
-	if (isReleasing)
-	{
-		memReleased+=sizeof(_List);
-		isReleasing++;
-	}
 	if (nInstances<=1)
 	{
 		for (unsigned long i = 0; i<lLength; i++)

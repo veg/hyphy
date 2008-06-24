@@ -596,7 +596,7 @@ bool _MathObject::IsDefined	(_String& s)  // is this operation defined for the t
 
 //__________________________________________________________________________________
 
-_String		UnOps ("-,!,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,"), 
+_String		UnOps ("-,!,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,"), 
 			HalfOps (":<>=!&|");
 		
 _SimpleList	opPrecedence, 
@@ -897,19 +897,57 @@ void	SetupOperationLists (void)
 		s = "Transpose";//53
 		BuiltInFunctionParameterCount<<1;		
 		BuiltInFunctions&& &s;
-		s = "ZCDF";//54
+		s = "Type";//54
 		BuiltInFunctionParameterCount<<1;		
 		BuiltInFunctions&& &s;
-		s = "^";//55
-		simpleOperationCodes<<55;
+		s = "ZCDF";//55
+		BuiltInFunctionParameterCount<<1;		
+		BuiltInFunctions&& &s;
+		s = "^";//56
+		simpleOperationCodes<<56;
 		simpleOperationFunctions<<(long)Power;
 		BuiltInFunctionParameterCount<<2;		
 		BuiltInFunctions&& &s;
-		s = "||";//56
+		s = "||";//57
 		BuiltInFunctionParameterCount<<2;		
 		BuiltInFunctions&& &s;
 	}			
 }
+//__________________________________________________________________________________
+
+
+_PMathObj _MathObject::Type (void)  
+{
+	_FString * ts = new _FString();
+	switch (ObjectClass())
+	{
+
+		case NUMBER:
+			*(ts->theString)="Number"; break;
+		case MATRIX:
+			*(ts->theString)="Matrix"; break;
+		case CONTAINER:
+			*(ts->theString)="Container"; break;
+		case TREE_NODE:
+			*(ts->theString)="TreeNode"; break;
+		case TREE:
+			*(ts->theString)="Tree"; break;
+		case STRING:
+			*(ts->theString)="String"; break;
+		case ASSOCIATIVE_LIST:
+			*(ts->theString)="AssociativeList"; break;
+		case TOPOLOGY:
+			*(ts->theString)="Topology"; break;
+		case POLYNOMIAL:
+			*(ts->theString)="Polynomial"; break;
+		default:
+			*(ts->theString) = "Unknown";
+				
+	}
+	
+	return ts;
+}
+
 
 //__________________________________________________________________________________
 	
@@ -1036,13 +1074,16 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
 		case 50: // Time
 			return Time();
 			break;
-		case 54: // ZCDF
+		case 54: // Type
+			return Type();
+			break;
+		case 55: // ZCDF
 			return ZCDF();
 			break;
-		case 55: // ^
+		case 56: // ^
 			return Raise(p);
 			break;
-		case 56: // ||
+		case 57: // ||
 			return LOr(p);
 			break;
 		default:

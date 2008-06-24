@@ -924,7 +924,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 55: // ^
+		case 56: // ^
 		// f[x]^g[x] (g'[x] Log[f[x]] + f'[x]g[x]/f[x])
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
@@ -1134,7 +1134,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 					}
 					break;
 					
-					case 55: // ^
+					case 56: // ^
 					{
 						if (firstConst&&CheckEqual (theVal,1.0)) // 1^? => 1
 						{
@@ -2628,7 +2628,8 @@ void _Formula::SimplifyConstants (void)
 			}
 			else
 			{
-				if (thisOp->numberOfTerms > 0 && (thisOp->opCode==5||thisOp->opCode==8||thisOp->opCode==54))
+				if (thisOp->numberOfTerms > 0 && (thisOp->opCode==5||thisOp->opCode==8||thisOp->opCode==56)) 
+				// *,/,^ 1 can be removed
 				{
 					_Operation*  aTerm = ((_Operation*)((BaseRef**)theFormula.lData)[i-1]);
 					if (!((aTerm->IsAVariable())||(aTerm->opCode>=0)))
@@ -3336,10 +3337,13 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 		case 44: // Count Objects of given type
 			return CountGlobalObjects();
 			break;
-		case 55: // Replace (^)
+		case 54: // Type
+			return Type();
+			break;
+		case 56: // Replace (^)
 			return ReplaceReqExp (p);
 			break;
-		case 56: // Match all instances of the reg.ex (||) 
+		case 57: // Match all instances of the reg.ex (||) 
 			return EqualRegExp (p, true);
 			break;
 	}
