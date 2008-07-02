@@ -52,6 +52,8 @@ public:
 	_Matrix *		ExportNodeScores (void);
 	_Matrix *		ExportGraph (void);
 	
+	void			SerializeBgm (_String &);
+	
 	void			ImportNodeScores (_Matrix *);
 	
 	
@@ -65,7 +67,8 @@ public:
 					
 					ComputeContinuousScore (long node_id),	// compute scoring metric for continuous node with both discrete
 															// and continuous parents.
-					ComputeContinuousScore (long, _Matrix *);
+					ComputeContinuousScore (long, _Matrix *),
+					ComputeContinuousScore (long, _SimpleList &, _SimpleList &);
 	
 	long			GetNumNodes (void)		{ return num_nodes; }
 	long			GetNumCases (void)		{ return (obsData ? obsData->GetHDim() : 0); }
@@ -78,6 +81,11 @@ protected:
 	
 	void			CacheNodeScores (void);
 	void			ReleaseNodeScores (void);
+
+	void			MPICacheNodeScores (long);
+	void			MPIReceiveScores (_Matrix *, bool, long);
+	void			CacheNetworkParameters (void);
+	
 	//unsigned long	IndexIntoCache (long, _SimpleList);
 	//void			IndicesFromCache (long);
 	
@@ -140,7 +148,7 @@ private:
 					best_node_order;
 					
 	_List			node_scores,
-					dag_parameters;
+					network_parameters;
 	
 	
 	_Matrix		*	obsData,			// data matrix read from file
