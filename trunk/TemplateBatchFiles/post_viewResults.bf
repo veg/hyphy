@@ -31,5 +31,4 @@ if (RESTORE_GLOBALS)
 }
 
 GetString (likelihoodFunctionName,LikelihoodFunction,likelihoodFnChoice);
-
-fprintf (stdout, "\n", likelihoodFunctionName__ ,"\n");
+fprintf   (stdout, "\n", likelihoodFunctionName__ ,"\n");
