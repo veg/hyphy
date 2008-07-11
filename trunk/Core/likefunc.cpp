@@ -475,6 +475,13 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	computingTemplate   = nil;
 	mstCache			= nil;
 	nonConstantDep      = nil;
+	
+#ifdef	_SLKP_LFENGINE_REWRITE_
+	conditionalInternalNodeLikelihoodCaches = nil;
+	conditionalTerminalNodeLikelihoodCaches = nil;
+	conditionalTerminalNodeStateFlag		= nil;
+	
+#endif	
 }
 
 //_______________________________________________________________________________________
@@ -482,18 +489,9 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 _LikelihoodFunction::_LikelihoodFunction (_String& s) // from triplets
 //format: datasetfilter name, tree name, frequency matrix name; etc...
 {
-	siteResults 		= nil;
-	bySiteResults 		= nil;
-	hasBeenOptimized    = false;
-	hasBeenSetUp        = 0;
-	templateKind        = false;
-	computingTemplate   = nil;
-	mstCache			= nil;
-	nonConstantDep	    = nil;
-	
+	_LikelihoodFunction::_LikelihoodFunction();
 	Construct(s,nil);
 }
-
 
 //_______________________________________________________________________________________
 
@@ -547,23 +545,13 @@ bool	_LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from trip
 	
 	if (!t->IsDegenerate())
 	{
-		long j,k;
+		long		j,
+					k;
+		
 		_SimpleList tipMatches;
 		// produce a sorted list of sequence names
 		
 		j = df->FindSpeciesName (tips, tipMatches);		
-		
-		/*for (j=0;j<tips.lLength;j++)
-		{
-			k = df->FindSpeciesName((_String*)tips(j));
-			if (k==-1) 
-				break;
-				
-			tipMatches<<k;
-		}*/
-		
-		j = df->FindSpeciesName (tips,tipMatches);
-		
 		
 		if (j!=tips.lLength) // try numeric match
 		{
@@ -724,21 +712,11 @@ void	 _LikelihoodFunction::Clear (void)
 	indexCat.Clear();
 	blockDependancies.Clear();
 	computationalResults.Clear();
-	if (siteResults)
-	{
-		DeleteObject (siteResults);
-		siteResults = nil;
-	}
-	if (bySiteResults)
-	{
-		DeleteObject (bySiteResults);
-		bySiteResults = nil;
-	}
 	
 	optimalOrders.Clear();
 	leafSkips.Clear();
-	hasBeenSetUp = 0;
-	hasBeenOptimized = false;
+	hasBeenSetUp			= 0;
+	hasBeenOptimized		= false;
 	if (computingTemplate)
 	{
 		delete computingTemplate;
@@ -750,6 +728,7 @@ void	 _LikelihoodFunction::Clear (void)
 		delete (mstCache);
 		mstCache = nil;
 	}
+	DeleteCaches ();
 }
 
 
@@ -3847,11 +3826,74 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		#endif
 	#endif
 	
+	#ifdef	_SLKP_LFENGINE_REWRITE_
+		// need to decide which data represenation to use, 
+		// large trees short alignments 
+		// an acceptable cache size etc
+		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
+		checkPointer(conditionalTerminalNodeLikelihoodCaches = new _GrowingVector[theTrees.lLength]);
+		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
+	#endif
+
 	for (i=0; i<theTrees.lLength; i++)
 	{
 		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
+		
 		if (cT->CountTreeCategories() >categCount)
 			categCount = cT->categoryCount;
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		_DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+		long patternCount	= theFilter->NumberDistinctSites(),
+		stateSpaceDim	= theFilter->GetDimension (),
+		leafCount		= cT->GetLeafCount(),
+		iNodeCount		= cT->GetINodeCount(),
+		atomSize		= theFilter->GetUnitLength();
+		
+		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*categCount]);
+		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
+		
+		// now process filter characters by site / column
+		
+		_List		 foundCharactersAux; 
+		_AVLListX	 foundCharacters (&foundCharactersAux);
+		_String		 aState ((unsigned long)atomSize);
+		
+		char			** columnBlock		= new char*[atomSize]; checkPointer (columnBlock);
+		_Parameter		* translationCache	= new _Parameter [stateSpaceDim]; checkPointer (translationCache);
+		
+		for (long siteID = 0; siteID < patternCount; siteID ++)
+		{
+			for (long k = 0; k < atomSize; k++)
+				columnBlock[k] = theFilter->GetColumn(k*atomSize+k); 
+			
+			for (long leafID = 0; leafID < leafCount; leafID ++)
+			{
+				long mappedLeaf  = theFilter->theNodeMap.lData[leafID],
+				translation;
+				
+				for (long k = 0; k < atomSize; k++)
+					aState.sData[k] = columnBlock[k][mappedLeaf];
+				
+				translation = foundCharacters.Find (&aState);
+				if (translation < 0)
+				{
+					translation = theFilter->Translate2Frequencies (aState, translationCache);
+					if (translation < 0)
+					{
+						for (long j = 0; j < stateSpaceDim; j++)
+							conditionalTerminalNodeLikelihoodCaches[i].Store(translationCache[j]);
+						translation = -conditionalTerminalNodeLikelihoodCaches[i].GetUsed()/stateSpaceDim;
+						foundCharacters.Insert (&aState, translation);
+					}
+				}
+				else
+					translation = foundCharacters.GetXtra (translation);
+				conditionalTerminalNodeStateFlag [i][mappedLeaf*patternCount + siteID] = translation;
+			}
+		}
+		
+		delete columnBlock; delete translationCache;
+#endif
 	}
 
 #ifdef __HYPHYMPI__
@@ -4765,7 +4807,11 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 		cT->CleanUpMatrices();
 		cT->KillTopLevelCache();
 	}
-	
+
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		DeleteCaches (false);
+#endif		
+		
 #ifdef __HYPHYMPI__
 	}
 	CleanupMPIOptimizer(); 
@@ -7558,42 +7604,54 @@ void	_LikelihoodFunction::UpdateDependent (long index)
 
 void	_LikelihoodFunction::Cleanup (void)
 {
-/*	for (int i=0; i<theTrees.lLength; i++)
-	{
-		((_TheTree*)(LocateVar(theTrees(i))))->PurgeTree ();
-	} */
-	if (siteResults) 
-	{
-		DeleteObject (siteResults);
-		siteResults = nil;
-	}
-	if (bySiteResults) 
-	{
-		DeleteObject (bySiteResults);
-		siteResults = nil;
-	}
-	if (mstCache)
-	{
-		delete (mstCache);
-		mstCache = nil;
-	}
+	DeleteCaches();
 }
+	
+
+//_______________________________________________________________________________________
+
+void	_LikelihoodFunction::DeleteCaches (bool all)
+{
+	if (all)
+	{
+		DeleteObject (siteResults);  siteResults = nil;
+		DeleteObject (bySiteResults);siteResults = nil;
+	}
+	
+#ifdef	_SLKP_LFENGINE_REWRITE_
+	if (conditionalInternalNodeLikelihoodCaches)
+	{
+		delete (conditionalInternalNodeLikelihoodCaches);
+		conditionalInternalNodeLikelihoodCaches = nil;
+	}
+	if (conditionalTerminalNodeLikelihoodCaches)
+	{
+		delete (conditionalTerminalNodeLikelihoodCaches);
+		conditionalTerminalNodeLikelihoodCaches = nil;
+	}
+	if (conditionalTerminalNodeStateFlag)
+	{
+		delete (conditionalTerminalNodeStateFlag);
+		conditionalTerminalNodeStateFlag = nil;
+	}
+#endif
+}
+	
 
 //_______________________________________________________________________________________
 
 void	_LikelihoodFunction::Setup (void)
 {
-	blockComputed = -1;
-	_Parameter kp = 0.0;
+	_Parameter kp		= 0.0;
+	blockComputed		= -1;
 	//RankVariables();
-	checkParameter (useFullMST,kp,1.0);
-	if (kp>.5)
-	{
-		if (!mstCache)
-			checkPointer (mstCache = new MSTCache);
-	}
+	checkParameter		(useFullMST,kp,1.0);
+	
+	if (kp>.5 && !mstCache)
+		checkPointer (mstCache = new MSTCache);
+
 	if (theTrees.lLength==optimalOrders.lLength) //check to see if we need to recompute the
-														   // optimal summation order
+												 // optimal summation order
 	{
 		checkParameter (keepOptimalOrder,kp,0.0);
 		if (kp)
@@ -7603,9 +7661,10 @@ void	_LikelihoodFunction::Setup (void)
 				_SimpleList* s = (_SimpleList*)optimalOrders(i),
 						   * l = (_SimpleList*)leafSkips(i);
 						   
-				_DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-				_Matrix *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
-				_TheTree *t = ((_TheTree*)LocateVar(theTrees.lData[i]));
+				_DataSetFilter* df			= ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+				_Matrix		  *glFreqs		= (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
+				_TheTree	  *t			= ((_TheTree*)LocateVar(theTrees.lData[i]));
+				
 				t->InitializeTreeFrequencies (glFreqs, true);
 				if (s->lLength!=df->NumberDistinctSites())
 				{
@@ -7911,7 +7970,7 @@ void	_LikelihoodFunction::ComputeBlockInt1 (long index, _Parameter& res, _TheTre
 _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 // compute likelihood over block index i
 {
-	blockComputed = index;
+	blockComputed				= index;
 	// set up global matrix frequencies
 	_Matrix 			*glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
 	SetGlobalFrequencyMatrix (glFreqs);
@@ -7931,7 +7990,6 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 //			forceRecomputation = computingTemplate->HasChanged();
 	}
 		
-		
 	usedCachedResults = false;
 	
 	if (computingTemplate&&templateKind)
@@ -7939,7 +7997,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		if (!(forceRecomputation||t->HasChanged()||(!siteArrayPopulated)))
 		{		
 			usedCachedResults = true;
-			return -1e300;
+			return			  -1e300;
 		}	
 	}
 	else
@@ -7950,7 +8008,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			return ((_Constant*)computationalResults.lData[index])->Value();
 		}
 	}
-
+	
 	if (1)
 	{
 		long * siteList = sl->lData, 
@@ -11819,37 +11877,37 @@ long	_LikelihoodFunction::SiteCount (void)
 }		
 
 //_______________________________________________________________________________________
+
+	
+	
+//_______________________________________________________________________________________
 	
 void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 {
 	if (hasBeenSetUp == 0)
 	{
-		long i, 
-			 categCount = 1;
+		long categCount = 1;
 								
-		for (i=0; i<theTrees.lLength; i++)
+		for (long i=0; i<theTrees.lLength; i++)
 		{
-			_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
+			_TheTree			* cT = ((_TheTree*)(LocateVar(theTrees(i))));
 						
 			long locCC = cT->CountTreeCategories();
-			if (locCC >categCount)
-				categCount = locCC;
+			if   (locCC >categCount) categCount = locCC;
 			cT->SetUpMatrices (locCC);
 			
 			#if USE_SCALING_TO_FIX_UNDERFLOW
 				cT->AllocateUnderflowScalers (((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->NumberDistinctSites());
 			#endif
+			
+			
 		}
 		
-		for (i=0; i<theProbabilities.lLength; i++)
-			((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeSimple();
+		for (long i2=0; i2<theProbabilities.lLength; i2++)
+			((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
 
 		SetReferenceNodes ();
-		//for (i=0; i<theTrees.lLength; i++)
-		//{
-			//_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-			//cT->SetUpMatrices(categCount);
-		//}
+		
 		if (disableClear)
 			hasBeenSetUp = 0x6FFFFFFF;
 		else

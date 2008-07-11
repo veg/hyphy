@@ -247,6 +247,7 @@ static	void			CheckFibonacci (_Parameter);
 		void			CleanUpOptimize				(void);
 		void			ComputeBlockForTemplate		(long, bool = false);
 		void			ComputeBlockForTemplate2	(long, _Parameter*, _Parameter*, long);
+		void			DeleteCaches				(bool = true);
 			
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
@@ -274,6 +275,39 @@ static	void			CheckFibonacci (_Parameter);
 																		
 		_Formula*		computingTemplate;
 		MSTCache*		mstCache;
+	
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		/* 
+		   these variables store conditional likelihoods for every paritition
+		   internal node (post-order traversal)
+		   and leaves;
+		 
+		   -conditionalInternalNodeLikelihoodCaches: 3D vector
+		 
+				1st coordinate - the node index (in post-order traversal)
+				2nd coordinate - the site (unique pattern) index (left-to-right)
+				3rd coordiante - i-th marginal (for the i-th character; 0-filterCharDimension)
+		 
+				stores the probability for the subtree below this node given that i-th character
+				is present at the node
+		 
+				for partitions with category variables this vector is copied enough times to 
+				store every combination of category values
+		
+			-conditionalTerminalNodeStateFlag: 2D vector
+				1st coordinate - the leaf index (in post-order traversal)
+				2nd coordinate - the site (unique pattern) index (left-to-right) 
+				
+				stores a non-negative integer for a leaf with a simple (non-ambiguous) character
+				stores a negative value to index (-value-1) into the vector of conditionalTerminalNodeLikelihoodCaches
+				and read off filterCharDimension characters from there
+		*/
+	
+		_Parameter**		conditionalInternalNodeLikelihoodCaches;
+		_GrowingVector*		conditionalTerminalNodeLikelihoodCaches;
+		long	  **		conditionalTerminalNodeStateFlag;
+	
+#endif	
 };
 
 //_______________________________________________________________________________________

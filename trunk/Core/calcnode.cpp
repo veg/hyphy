@@ -6050,12 +6050,8 @@ void	 _TheTree::InitializeTreeFrequencies (_Matrix *mx, bool setDim)
 	if	(setDim)
 		SetTreeCodeBase (vecDim);
 	else
-	{
-		//if (!theProbs)
-			//SetTreeCodeBase (vecDim);
 		for (long i=0; i<vecDim; i++)
 			theProbs[i] = mx->theData[i];		
-	}
 }
 //_______________________________________________________________________________________________
 void	 _TheTree::SetTreeCodeBase (long b)
