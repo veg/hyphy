@@ -1994,9 +1994,11 @@ _DataSetFilter::~_DataSetFilter (void)
 
 //_______________________________________________________________________
 	
-_DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _DataSet *ds)
+_DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _DataSet *ds, long cc)
 {
 	unitLength 		= 1;
+	categoryCount	= cc;
+	
 	SetData			(ds);
 	
 	_SimpleList		baseFreqs;
@@ -2005,6 +2007,8 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 	dimension = 			   ((_Matrix*)values(0))->GetVDim();
 	
 	theNodeMap.Populate 		(ds->GetNames().lLength,0,1);
+	theOriginalOrder.Populate	(((_Matrix*)values(0))->GetHDim()/categoryCount,0,1);
+								 
 	//theMap.Populate 			(theFrequencies.lLength,0,1);
 	//theOriginalOrder.Populate 	(theFrequencies.lLength,0,1);
 	//duplicateMap.Populate		(theFrequencies.lLength,0,1);
@@ -2039,7 +2043,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 			for (long state = 0; state < dimension; state++)
 				testV += ((_Matrix*)(((_Matrix**)values.lData)[k]))->theData[site*dimension+state];
 					
-		sprintf (buffer, "%20.18g", testV);
+		sprintf		(buffer, "%20.18g", testV);
 		_String 	testS (buffer);
 		long 		f = siteIndices.Find (&testS);
 
@@ -2097,18 +2101,22 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
 	}
 	
 	siteIndices.Clear(true);
-	shifter = theFrequencies.lLength*dimension;
+	shifter			= theFrequencies.lLength*dimension;
+	categoryShifter = shifter*theNodeMap.lLength;
 
-	CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter,false,true, false);
-	
-	_Parameter   *storeHere = probabilityVectors.theData;
-	for (long spec = 0; spec < theNodeMap.lLength; spec++)
+	CreateMatrix (&probabilityVectors, theNodeMap.lLength, shifter*categoryCount,false,true, false);
+	_Parameter   *storeHere    = probabilityVectors.theData;
+				
+	long	  refShifter = 0;
+	for (long cc = 0; cc < categoryCount; cc++, refShifter += theOriginalOrder.lLength * dimension)
 	{
-		_Matrix * specMatrix = (_Matrix*)values(spec);
-		for (long site = 0; site < theFrequencies.lLength; site++)
-			for (long state = 0; state < dimension; state++,storeHere++)
-				//probabilityVectors.theData [shifter*spec + site*dimension+state] 
-				*storeHere= specMatrix->theData[theMap.lData[site]*dimension+state];
+		for (long spec = 0; spec < theNodeMap.lLength; spec++)
+		{
+			_Matrix * specMatrix = (_Matrix*)values(spec);
+			for (long site = 0; site < theFrequencies.lLength; site++)
+				for (long state = 0; state < dimension; state++,storeHere++)
+						*storeHere = specMatrix->theData[refShifter + theMap.lData[site]*dimension+state];
+		}
 	}
 }
 
@@ -2160,9 +2168,9 @@ BaseRef _DataSetFilterNumeric::makeDynamic (void)
 
 //_______________________________________________________________________
 	
-_Parameter * _DataSetFilterNumeric::getProbabilityVector (long spec, long site)
+_Parameter * _DataSetFilterNumeric::getProbabilityVector (long spec, long site, long categoryID)
 {
-	return probabilityVectors.theData + spec*shifter + site*dimension;
+	return probabilityVectors.theData + categoryID * categoryShifter + spec * shifter + site * dimension;
 }
 
 //_______________________________________________________________________

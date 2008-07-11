@@ -2468,8 +2468,8 @@ void		_Matrix::MakeMeSimple (void)
 			
 			cmd 		     			= new _CompiledMatrixData;
 			cmd->varIndex.Duplicate (&varList);
-			cmd->theStack    			= (_Parameter*)MatrixMemAllocate (stackLength*sizeof(_Parameter));
-			cmd->varValues 				= (_Parameter*)MatrixMemAllocate ((cmd->varIndex.lLength>0?varList.lLength:1)*sizeof(_Parameter));
+			cmd->theStack    			= (_SimpleFormulaDatum*)MatrixMemAllocate (stackLength*sizeof(_SimpleFormulaDatum));
+			cmd->varValues 				= (_SimpleFormulaDatum*)MatrixMemAllocate ((cmd->varIndex.lLength>0?varList.lLength:1)*sizeof(_SimpleFormulaDatum));
 			cmd->formulaRefs			= references.lData;
 			references.lData 			= nil;
 			cmd->formulaValues 	 		= new _Parameter [newFormulas.lLength];
@@ -2722,11 +2722,15 @@ _PMathObj 	_Matrix::EvaluateSimple (void)
 		for (long i=0; i<cmd->varIndex.lLength; i++)
 		{
 			_Variable* curVar = LocateVar(cmd->varIndex.lData[i]);
-			if (curVar->IsIndependent())
-				cmd->varValues[i] = LocateVar (cmd->varIndex.lData[i])->Value();
-			else
-				cmd->varValues[i] = LocateVar (cmd->varIndex.lData[i])->Compute()->Value();
-				
+			if (curVar->ObjectClass () != MATRIX)
+			{
+				if (curVar->IsIndependent())
+					cmd->varValues[i].value = LocateVar (cmd->varIndex.lData[i])->Value();
+				else
+					cmd->varValues[i].value = LocateVar (cmd->varIndex.lData[i])->Compute()->Value();
+			}
+			else	
+				cmd->varValues[i].reference = (Ptr)((_Matrix*)LocateVar (cmd->varIndex.lData[i])->Compute())->theData;
 		}
 	}
 
@@ -4662,8 +4666,8 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 				_SimpleList   vIndex;		  
 				if (f.AmISimple (stackDepth,vIndex))
 				{
-					_Parameter * stack     = new _Parameter [stackDepth+1],
-							   * varValues = new _Parameter [vIndex.lLength];
+					_SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
+										* varValues = new _SimpleFormulaDatum [vIndex.lLength];
 							    
 					f.ConvertToSimple (vIndex);
 					
@@ -4672,23 +4676,20 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 					for (long k=0; k<3; k++)
 						rid[k] = vIndex.Find(rid[k]);
 						
-					{
-					for (long k=0; k<vIndex.lLength; k++)
-						varValues[k] = LocateVar (vIndex.lData[k])->Compute()->Value();
-					}
+					PopulateArraysForASimpleFormula(vIndex, varValues);
 						
 					for (long r=0; r<hDim; r++)
 					{
 						if (rid[0]>=0)
-							varValues[rid[0]] = r;
+							varValues[rid[0]].value = r;
 						
 						for (long c=0; c<vDim; c++)
 						{
 							if (rid[1]>=0)
-								varValues[rid[1]] = c;
+								varValues[rid[1]].value = c;
 							
 							if (rid[2]>=0)
-								varValues[rid[2]] = (*this)(r,c);
+								varValues[rid[2]].value = (*this)(r,c);
 							
 							retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
 						}

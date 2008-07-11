@@ -2091,10 +2091,10 @@ void	_HYChartWindow::Generate3DChart (_SimpleList& columns, _HYRect plotRect, ch
 				 
 		for (j=0; j<surfaceDivs; j++)
 		{
-			xVar->SetValue (&_Constant(plotBase.theData[j]));
+			xVar->SetNumericValue (plotBase.theData[j]);
 			for (k=0; k<surfaceDivs; k++)
 			{
-				yVar->SetValue (&_Constant(plotBase.theData[surfaceDivs+k]));
+				yVar->SetNumericValue (plotBase.theData[surfaceDivs+k]);
 				y3DMax = overlayPlot.Compute()->Value();
 				if (y3DMax < 0)
 					y3DMax = 0.;
@@ -3574,13 +3574,13 @@ void	_HYChartWindow::HandleChartOptions		(void)
 	args && & yLabel;
 	args && & zLabel;
 	args << overlayString;
-	args && &(_String (xAxis3DScale));
-	args && &(_String (yAxis3DScale));
-	args && &(_String (surfaceDivs));
+	args.AppendNewInstance(new _String (xAxis3DScale));
+	args.AppendNewInstance(new _String (yAxis3DScale));
+	args.AppendNewInstance(new _String (surfaceDivs));
 	if (!CheckEqual (userMin, userMax))
 	{
-		args && &(_String (userMin));
-		args && &(_String (userMax));		
+		args.AppendNewInstance(new _String (userMin));
+		args.AppendNewInstance(new _String (userMax));		
 	}
 	else
 	{
@@ -4384,8 +4384,8 @@ bool	_HYChartOptionDialog::ProcessEvent (_HYEvent* e)
 				args->Replace (k-6,&tbv, true);
 			}
 			
-			args->Replace (4,&_String (((_HYPullDown*)GetObject(15))->GetSelection()-2),true);
-			args->Replace (5,&_String (((_HYPullDown*)GetObject(16))->GetSelection()-2),true);
+			args->Replace (4,new _String (((_HYPullDown*)GetObject(15))->GetSelection()-2),false);
+			args->Replace (5,new _String (((_HYPullDown*)GetObject(16))->GetSelection()-2),false);
 			_String       *tb;
 			((_HYTextBox*)GetObject (21))->StoreText (tb);
 			args->Replace (6,tb,false);
@@ -4802,7 +4802,7 @@ void		_HYDistributionChartWindow::ProduceDistribution	(_SimpleList& vars, _Simpl
 	
 	for (long k = 0; k < wts->GetHDim () * wts->GetVDim (); k++)
 	{
-		v->SetValue (&_Constant ((*probs)[k]));
+		v->SetNumericValue ((*probs)[k]);
 		if (idx < vars.lLength-1)
 			ProduceDistribution (vars, map, res, f, idx+1, p*(*wts)[k]);
 		else

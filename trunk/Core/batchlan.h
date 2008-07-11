@@ -41,8 +41,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //____________________________________________________________________________________	
 struct	  _CELInternals 
 {
-	_Parameter		* values,
-					* stack;
+	_SimpleFormulaDatum		* values,
+							* stack;
 					
 	_SimpleList		  varList,
 					  storeResults;

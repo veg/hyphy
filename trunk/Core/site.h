@@ -360,7 +360,8 @@ class _DataSetFilter:public BaseObj {
 	
 	long	 NumberSpecies (void) {return theNodeMap.lLength;}
 	
-	long	 GetFullLengthSpecies (void) {return theOriginalOrder.lLength;}
+	virtual	 long	 
+			 GetFullLengthSpecies (void) {return theOriginalOrder.lLength;}
 
 	long	 GetFrequency  (long i) {return theFrequencies(i);}
 	
@@ -477,7 +478,7 @@ class _DataSetFilterNumeric:public _DataSetFilter {
 			_DataSetFilterNumeric   	  				(void) 
 														{
 														}
-			_DataSetFilterNumeric   	  				(_Matrix*, _List&,_DataSet*);
+			_DataSetFilterNumeric   	  				(_Matrix*, _List&,_DataSet*,long);
 	
 	virtual  bool	 									IsNormalFilter 			(void)
 														{
@@ -491,10 +492,12 @@ class _DataSetFilterNumeric:public _DataSetFilter {
 															return dimension;
 														}
 	
-	_Parameter*					getProbabilityVector	(long,long);	
+	_Parameter*					getProbabilityVector	(long,long,long = 0);	
 	virtual  bool	 			CompareTwoSites 		(unsigned long, unsigned long,unsigned long);
 	
-		long					shifter;
+		long					shifter,
+								categoryShifter,
+								categoryCount;
 		_Matrix					probabilityVectors;
 								// N x M dense matrix
 								// N = spec count

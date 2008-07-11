@@ -382,7 +382,7 @@ class _TheTree: public _TreeTopology {
 			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long);	
 #endif
 			_Parameter	Probij 							(long, long, _CalcNode*);
-			_Parameter	ReleafTreeCharNumFilter4Tree3	(_DataSetFilterNumeric*, long);
+			_Parameter	ReleafTreeCharNumFilter4Tree3	(_DataSetFilterNumeric*, long, long = 0);
 			_Parameter	PruneTree	  					(long categID = -1);
 			_Parameter	PruneTreeChar 					(long categID = -1);
 			_Parameter	PruneTreeCharCache 				(long categID = -1);
@@ -391,7 +391,7 @@ class _TheTree: public _TreeTopology {
 			
 			_List*		RecoverAncestralSequences 		(_DataSetFilter*, long, long, _Parameter* = nil);
 			void		RecoverNodeSupportStates 		(_DataSetFilter*, long, long, _Matrix&);
-			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*);
+			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*,long);
 			_List*		SampleAncestors 				(_DataSetFilter*, node<long>*);
 			
 			void		PurgeTree						(void); 		

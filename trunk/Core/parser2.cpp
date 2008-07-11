@@ -83,7 +83,7 @@ long		subNumericValues = 0;
 
 _Parameter	InterpolateValue 		(_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
 _Parameter	TrapezoidLevelK 		(_Formula&, _Variable*, _Parameter, _Parameter, long);
-_Parameter	TrapezoidLevelKSimple 	(_Formula&, _Variable*, _Parameter, _Parameter, long, _Parameter*, _Parameter*, _SimpleList&, _SimpleList&);
+_Parameter	TrapezoidLevelKSimple 	(_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
 
 //__________________________________________________________________________________
 _Parameter	AddNumbers  (_Parameter x, _Parameter y) {return x+y;}
@@ -100,6 +100,7 @@ _Parameter	MaxNumbers	(_Parameter x, _Parameter y) {return x<y?y:x;}
 _Parameter	MinNumbers	(_Parameter x, _Parameter y) {return x<y?x:y;}
 _Parameter	ExpNumbers  (_Parameter x) {return exp(x);}
 _Parameter	LogNumbers  (_Parameter x) {return log(x);}
+_Parameter	FastMxAccess(Ptr m, _Parameter index) {return ((_Parameter*)m)[(long)index];}
 
 //__________________________________________________________________________________
 
@@ -128,7 +129,18 @@ _Parameter  EqualNumbers(_Parameter a, _Parameter b)
 	return (b<=machineEps)&&(b>=-machineEps);
 }
 
-
+//_______________________________________________________________________________________
+void		PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* values)
+{
+	for (long k2 = 0; k2 < vars.lLength; k2++)
+	{
+		_PMathObj varValue = LocateVar (vars.lData[k2])->Compute();
+		if (varValue->ObjectClass() == NUMBER)
+			values[k2].value = varValue->Value();
+		else
+			values[k2].reference = (Ptr)((_Matrix*)varValue)->theData;
+	}
+}
 
 //__________________________________________________________________________________
 
@@ -1945,7 +1957,7 @@ _Parameter	InterpolateValue (_Parameter* theX, _Parameter* theY, long n, _Parame
 }
 
 //__________________________________________________________________________________
-_Parameter	TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left, _Parameter right, long k, _Parameter * stack, _Parameter* values, _SimpleList& changingVars, _SimpleList& varToStack)
+_Parameter	TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left, _Parameter right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack)
 {
 	_Parameter x, 
 			   tnm, 
@@ -1963,13 +1975,12 @@ _Parameter	TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left, 
 	if (k==1)
 	{
 		if (changingVars.lLength == 1)
-			values[varToStack.lData[0]] = (left+right)*0.5;
+			values[varToStack.lData[0]].value = (left+right)*0.5;
 		else
 		{
-			_Constant dummy ((left+right)*0.5);
-			xvar->SetValue (&dummy);
+			xvar->SetValue  (new _Constant ((left+right)*0.5), false);
 			for (long vi = 0; vi < changingVars.lLength; vi++)
-				values[varToStack.lData[vi]] = LocateVar(changingVars.lData[vi])->Compute()->Value();
+				values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
 		}
 		s = f.ComputeSimple(stack, values);
 		return s;
@@ -1984,26 +1995,24 @@ _Parameter	TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, _Parameter left, 
 	for (sum=0.0, j=1; j<=it; j++, x+=del)
 	{
 		if (changingVars.lLength == 1)
-			values[varToStack.lData[0]] = x;
+			values[varToStack.lData[0]].value = x;
 		else
 		{
-			_Constant dummy(x);
-			xvar->SetValue(&dummy);
+			xvar->SetValue(new _Constant (x), false);
 			for (long vi = 0; vi < changingVars.lLength; vi++)
-				values[varToStack.lData[vi]] = LocateVar(changingVars.lData[vi])->Compute()->Value();
+				values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
 		}
 		sum += f.ComputeSimple(stack, values);
 		
 		x+=ddel;
 		
 		if (changingVars.lLength == 1)
-			values[varToStack.lData[0]] = x;
+			values[varToStack.lData[0]].value = x;
 		else
 		{
-			_Constant dummy(x);
-			xvar->SetValue(&dummy);
+			xvar->SetValue(new _Constant (x), false);
 			for (long vi = 0; vi < changingVars.lLength; vi++)
-				values[varToStack.lData[vi]] = LocateVar(changingVars.lData[vi])->Compute()->Value();
+				values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
 		}
 		sum += f.ComputeSimple(stack, values);
 	}
@@ -2114,7 +2123,9 @@ _Parameter	 _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right,
 				 idxMap;
 					 
 	_Parameter	 * ic = new _Parameter[interpolateSteps],
-				 * id = new _Parameter[interpolateSteps],
+				 * id = new _Parameter[interpolateSteps];
+	
+	_SimpleFormulaDatum			 
 				 * stack = nil,
 				 * vvals = nil;
 				 
@@ -2123,9 +2134,9 @@ _Parameter	 _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right,
 	
 	if (AmISimple (stackDepth,fvidx))
 	{
-	    stack = new _Parameter [stackDepth];
+	    stack = new _SimpleFormulaDatum [stackDepth];
 	    checkPointer (stack);
-	    vvals = new _Parameter [fvidx.lLength];
+	    vvals = new _SimpleFormulaDatum [fvidx.lLength];
 	    checkPointer (vvals);
 		ConvertToSimple (fvidx);
 		stackDepth = dx->GetAVariable();
@@ -2137,7 +2148,7 @@ _Parameter	 _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right,
 				changingVars << fvidx.lData[vi];
 				idxMap << vi;
 			}
-			vvals[vi] = checkvar->Compute()->Value();
+			vvals[vi].value = checkvar->Compute()->Value();
 		}
 		changingVars.InsertElement ((BaseRef)stackDepth,0,false,false);
 		idxMap.InsertElement ((BaseRef)fvidx.Find(stackDepth),0,false,false);
@@ -2243,6 +2254,28 @@ _PMathObj _Formula::Compute (long startAt) // compute the value of the formula
 
 //__________________________________________________________________________________
 
+bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
+{
+	if (thisObj)
+	{
+		long oc = thisObj->ObjectClass();
+		if (oc !=NUMBER)
+		{
+			if (oc ==MATRIX)
+			{
+				_Matrix * mv = (_Matrix*)thisObj->Compute();
+				if (mv->IsIndependent () && !mv->SparseDataStructure())
+					return true;
+			}
+		}
+		else
+			return true;
+	}
+	return false;
+}
+
+//__________________________________________________________________________________
+
 bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex) 
 {
 	if (!theFormula.lLength) return true;
@@ -2253,11 +2286,12 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 	{
 		_Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
 		locDepth++;
-		if ((thisOp->theData<-2)||(thisOp->numberOfTerms<0))
-		   return false;
+		if ( thisOp->theData<-2 || thisOp->numberOfTerms<0)
+			return false;
+		
 		if (thisOp->theNumber)
 		{
-			if (thisOp->theNumber->ObjectClass()!=NUMBER)
+			if (thisOp->theNumber->ObjectClass() != NUMBER)
 				return false;
 		}
 		else
@@ -2266,7 +2300,11 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 			{
 				_Variable* thisVar = LocateVar (thisOp->theData);
 				if (thisVar->ObjectClass()!=NUMBER)
-					return false;
+				{
+					_PMathObj cv = thisVar->GetValue();
+					if (!CheckSimpleTerm (cv))
+						return false;
+				}
 				if (variableIndex.Find (thisOp->theData)==-1)
 					variableIndex<<thisOp->theData;
 			}
@@ -2274,6 +2312,10 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 			{
 				if (simpleOperationCodes.Find(thisOp->opCode)==-1)
 					return false;
+				else
+					if (thisOp->opCode == 37 && thisOp->numberOfTerms != 2)
+						return false;
+				
 				locDepth-=thisOp->numberOfTerms;
 			}
 		}
@@ -2299,16 +2341,24 @@ void _Formula::ConvertToSimple (_SimpleList& variableIndex)
 		{
 			_Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
 			if (thisOp->theNumber)
+			{
 				continue;
+			}
 			else
-				if (thisOp->theData>-1)
+				if (thisOp->theData >= 0)
+				{
 					thisOp->theData = variableIndex.Find (thisOp->theData);
+				}
 				else
 					if (thisOp->opCode == 7 && thisOp->numberOfTerms == 1)
 						thisOp->opCode = (long)MinusNumber;
 					else	
+					{
+						if (thisOp->opCode == 37)
+							thisOp->numberOfTerms = -2;
 						thisOp->opCode = simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
-						
+					}
+				
 		}
 }
 
@@ -2331,14 +2381,18 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
 				if (thisOp->opCode == (long)MinusNumber)
 					thisOp->opCode = 7;
 				else
+				{
+					if (thisOp->opCode == (long)FastMxAccess)
+						thisOp->numberOfTerms = 2;
 					thisOp->opCode = simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
+				}
 		}
 	}
 }
 
 //__________________________________________________________________________________
 
-_Parameter _Formula::ComputeSimple (_Parameter* stack, _Parameter* varValues) 
+_Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) 
 {
 	if (!theFormula.lLength) return 0.0;
 	
@@ -2349,7 +2403,7 @@ _Parameter _Formula::ComputeSimple (_Parameter* stack, _Parameter* varValues)
 		_Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
 		if (thisOp->theNumber)
 		{
-			stack[stackTop++] = thisOp->theNumber->Value();
+			stack[stackTop++].value = thisOp->theNumber->Value();
 			continue;
 		}
 		else
@@ -2371,18 +2425,33 @@ _Parameter _Formula::ComputeSimple (_Parameter* stack, _Parameter* varValues)
 						WarnError (errMsg);
 						return 0.0;
 					}
-					stack[stackTop-1] = (*theFunc)(stack[stackTop-1],stack[stackTop]);
+					stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
 				}
 				else					
 				{
-					_Parameter	(*theFunc) (_Parameter);
-					theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
-					stack[stackTop++] = (*theFunc)(stack[stackTop]);
+					if (thisOp->numberOfTerms==-2)
+					{
+						_Parameter	(*theFunc) (Ptr,_Parameter);
+						theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
+						if (stackTop<1)
+						{
+							_String errMsg = "Internal error in _Formula::ComputeSimple - stack underflow.)";
+							WarnError (errMsg);
+							return 0.0;
+						}
+						stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);						
+					}
+					else
+					{
+						_Parameter	(*theFunc) (_Parameter);
+						theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
+						stack[stackTop++].value = (*theFunc)(stack[stackTop].value);
+					}
 				}
 			}
 		}
 	}
-	return *stack;
+	return stack->value;
 }
 
 //__________________________________________________________________________________

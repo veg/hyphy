@@ -45,8 +45,8 @@ if (distanceChoice > 0)
 }
 
 ChoiceList (methodIndex,"Clustering Method",1,SKIP_NONE,
-			"UPGMA","Weighted Pair Group Method using Arithmetic Averages. (new distance)=1/2(sum of old distances).",
-			"WPGMA","Unweighted Pair Group Method using Arithmetic Averages. (new distance)=((Taxa in clade 1)dist1+(Taxa in clade 2)dist2)/(Taxa in clade 1+Taxa in clade 2).",
+			"UPGMA","Unweighted Pair Group Method using Arithmetic Averages. (new distance)=1/2(sum of old distances).",
+			"WPGMA","Weighted Pair Group Method using Arithmetic Averages. (new distance)=((Taxa in clade 1)dist1+(Taxa in clade 2)dist2)/(Taxa in clade 1+Taxa in clade 2).",
 			"Complete Linkage","Complete Linkage Method. (new distance)=max(old distances).",
 			"Single Linkage","Single Linkage Method. (new distance)=min(old distances).");
 			

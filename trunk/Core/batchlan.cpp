@@ -1201,8 +1201,8 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 	{
 		cli = new _CELInternals;
 		checkPointer (cli);
-		checkPointer (cli->values = new _Parameter[varList.lLength+1]);
-		checkPointer (cli->stack  = new _Parameter[stackDepth+1]);
+		checkPointer (cli->values = new _SimpleFormulaDatum[varList.lLength+1]);
+		checkPointer (cli->stack  = new _SimpleFormulaDatum[stackDepth+1]);
 		
 		_SimpleList  avlData;
 		_AVLListX	 avlList (&avlData);
@@ -1230,16 +1230,14 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 
 void		_ExecutionList::ExecuteSimple		(void)		
 {	
-	for (long vi = 0; vi < cli->varList.lLength; vi++)
-		cli->values[vi] = LocateVar(cli->varList.lData[vi])->Compute()->Value();
-		
+	PopulateArraysForASimpleFormula (cli->varList, cli->values);
 	Execute();	
 
 	for (long vi2 = 0; vi2 < cli->varList.lLength; vi2++)
 	{
-		_Constant * nv = new _Constant (cli->values[vi2]);
-		LocateVar(cli->varList.lData[vi2])->SetValue (nv,false);
-		
+		_Variable * mv = LocateVar(cli->varList.lData[vi2]);
+		if (mv->ObjectClass() == NUMBER)
+			mv->SetValue (new _Constant (cli->values[vi2].value),false);
 	}
 }
 
@@ -2492,7 +2490,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 		_Parameter result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
 		long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
 		if (sti>=0)
-			chain.cli->values[sti] = result;
+			chain.cli->values[sti].value = result;
 		return;
 	}
 	

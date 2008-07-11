@@ -38,10 +38,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 struct		_CompiledMatrixData {
 	
-	_Parameter* theStack;
+	_SimpleFormulaDatum	* theStack,
+						* varValues;
 	
-	_Parameter* varValues,
-			  * formulaValues;
+	_Parameter		   * formulaValues;
 			  
 	long	  * formulaRefs;
 			  
@@ -282,7 +282,8 @@ class		_Matrix: public _MathObject {
 																										
 _Parameter*		  fastIndex(void)	{return (!theIndex)&&(storageType==1)?(_Parameter*)theData:nil;}
 inline			  _Parameter&		  directIndex(long k)	{return theData[k];}
-long			  MatrixType (void) { return storageType;}			
+long			  MatrixType (void) { return storageType;}	
+bool			  SparseDataStructure (void) {return theIndex;}
 void			  CheckIfSparseEnough (bool);		// check if matrix is sparse enough to justify
 void			  Convert2Formulas 		(void);		// converts a numeric matrix to formula-based mx
 													// sparse storage

@@ -2262,7 +2262,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	if (computingTemplate)
 	{
 		siteArrayPopulated = true;
-		_Matrix blockValues (theTrees.lLength,1,false,true);
+		_Matrix				  blockValues (theTrees.lLength,1,false,true);
 		siteWiseVar->SetValue (&blockValues);
 		
 		_Matrix* varMxValue = (_Matrix*)siteWiseVar->GetValue();
@@ -8058,7 +8058,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					}
 					#endif
 				}
-				else
+				else // no cache
 					if (t->IsDegenerate())
 					{
 						res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, false));
@@ -8095,8 +8095,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
                             _Parameter accumulator = 1.0;
                             for (i = 1; i<sl->lLength; i++,siteList++)
                             {
-                              //res += myLog(t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList)) \
-                               //  *(_Parameter)df->theFrequencies.lData[*siteList];                                    \
+								//res += myLog(t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList)) \
+								//  *(_Parameter)df->theFrequencies.lData[*siteList];                                    \
                                                                                                                         
                                 long thisSiteFreq = df->theFrequencies.lData[*siteList];
                                 _Parameter thisSiteScore = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList);
@@ -8195,7 +8195,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 						#ifdef __MP__
 						}
 						#endif
-					}
+					} // no cache
 					else
 						if (t->IsDegenerate())
 						{
@@ -8452,19 +8452,21 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					#endif
 						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, true, categID);				
 						siteList++;
-						for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
+						for (int i = 1; i<sl->lLength; i++,	siteList++,	leafList++)
 						{
-								#if !defined __UNIX__ || defined __HEADLESS__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									#ifdef __MP__
-										yieldTime = true;
-									#else
-										yieldCPUTime();
-									#endif
+							#if !defined __UNIX__ || defined __HEADLESS__
+							siteEvalCount ++;
+							if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
+								#ifdef __MP__
+								yieldTime = true;
+								#else
+								yieldCPUTime();
 								#endif
-								siteRes[*siteList]=t->ThreadReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, i*t->categoryCount+categID);
+							#endif
+							siteRes[*siteList]=t->ThreadReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, i*t->categoryCount+categID);
 						}
+					
+						
 					#ifdef __MP__
 					}
 					#endif
@@ -8489,17 +8491,33 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					{
 						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, false, categID);				
 						siteList++;
-						for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
+						if (df->IsNormalFilter())
 						{
-							#if !defined __UNIX__ || defined __HEADLESS__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									yieldCPUTime();
-							#endif
-							siteRes[*siteList]=t->ReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16);
+							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
+							{
+								#if !defined __UNIX__ || defined __HEADLESS__
+									siteEvalCount ++;
+									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
+										yieldCPUTime();
+								#endif
+								siteRes[*siteList]=t->ReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16);
+							}
 						}
+						else
+						{
+							/*for (i = 0; i < 3; i++)
+							{
+								_Matrix *mp = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[t->theRoot->nodes.data[2]->in_object])->GetCompExp();
+								_String t ((long)mp);
+								StringToConsole (t);
+								NLToConsole ();
+							}*/
+							for (i = 1; i<sl->lLength; i++,siteList++)
+								siteRes[*siteList] = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList,categID);
+						}
+				
 					}
-				}		
+				}
 			}
 			else
 			{

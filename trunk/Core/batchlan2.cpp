@@ -403,6 +403,12 @@ void	  _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 			{
 				_String errCode;
 				
+				long	categoryCount = 1;
+				
+				if (parameters.lLength > 2) 
+				// have multiple categories
+					categoryCount = (long) ProcessNumericArgument((_String*)parameters(2),nil);
+				
 				_String namesKey ("FILTER_NAMES"),
 						dataKey	 ("FILTER_ARRAYS"),
 						freqKey	 ("FILTER_FREQS");
@@ -442,7 +448,7 @@ void	  _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 									 else
 									 	if (dataMx->GetVDim() != categDim)
 									 		break;
-									 if (dataMx->GetHDim () != sitePatterns)
+									 if (dataMx->GetHDim () != sitePatterns*categoryCount)
 									 	break;
 									 
 									 goodSeqs << dataMx;
@@ -461,15 +467,15 @@ void	  _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
 								dsID = FindDataSetName (errCode);
 								if (dsID < 0)
 								{
-									dataSetList<<dummyDS;
-									DeleteObject (dummyDS);
-									dataSetNamesList&& &errCode;
+									dataSetList			<<dummyDS;
+									DeleteObject		(dummyDS);
+									dataSetNamesList&&  &errCode;
 								}
 								else
 									dataSetList.Replace (dsID,dummyDS,false);
 								
 								errCode = (*(_String*)parameters(0));
-								_DataSetFilterNumeric * dsn = new _DataSetFilterNumeric (freqList,goodSeqs,dummyDS);
+								_DataSetFilterNumeric * dsn = new _DataSetFilterNumeric (freqList,goodSeqs,dummyDS,categoryCount);
 								checkPointer (dsn);
 								dsID 	= FindDataSetFilterName (errCode);
 									
@@ -639,7 +645,10 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 				anLF->Compute		  ();
 				objectID						= dsf->NumberDistinctSites();
 				
-				_Matrix				*condMx 	= new _Matrix	(2*objectID*(testTree->GetLeafCount() + testTree->GetINodeCount()), testTree->GetCodeBase(), false, true);
+				_Matrix				*condMx 	= new _Matrix	(2*objectID*(testTree->GetLeafCount() 
+																+ testTree->GetINodeCount()) * testTree->categoryCount, 
+																 testTree->GetCodeBase(), 
+																 false, true);
 				_List				leafNames,
 									inodeNames;
 				

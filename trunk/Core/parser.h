@@ -343,6 +343,14 @@ virtual bool			EqualOp				(_Operation*);
 	
 	
 	
+//__________________________________________________________________________________
+
+union		_SimpleFormulaDatum
+{
+	_Parameter value;
+	Ptr		   reference;
+};
+
 
 //__________________________________________________________________________________
 
@@ -396,7 +404,7 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		void 	   	ConvertFromSimple 	(_SimpleList& variableIndex);
 		void	   	SimplifyConstants	(void);
 	
-		_Parameter	ComputeSimple 		(_Parameter* stack, _Parameter* varValues) ;
+		_Parameter	ComputeSimple 		(_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 	
 		_Parameter	Newton 				(_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
 		_Parameter 	Newton 				(_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
@@ -420,6 +428,7 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		void		internalToStr 		(_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
 		void    	ConvertToTree 		(void);
 		void		ConvertFromTree 	(void);
+		bool		CheckSimpleTerm		(_PMathObj);
 		node<long>* DuplicateFormula 	(node<long>*,_Formula&);  
 		
 		_List  		theFormula;
@@ -766,6 +775,10 @@ _Parameter	LogNumbers  (_Parameter);
 _Parameter	MinusNumber (_Parameter);
 _Parameter	MaxNumbers  (_Parameter, _Parameter);
 _Parameter	MinNumbers  (_Parameter, _Parameter);
+_Parameter  FastMxAccess(Ptr, _Parameter);
+
+void		PopulateArraysForASimpleFormula
+						(_SimpleList&, _SimpleFormulaDatum*);
 
 extern		_Parameter  pi_const;
 extern		bool		useGlobalUpdateFlag;

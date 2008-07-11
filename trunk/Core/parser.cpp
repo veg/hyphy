@@ -843,6 +843,8 @@ void	SetupOperationLists (void)
 		s = "MAccess";//37
 		BuiltInFunctionParameterCount<<3;		
 		BuiltInFunctions&& &s;
+		simpleOperationCodes<<37;
+		simpleOperationFunctions<<(long)FastMxAccess;
 		s = "MCoord";//38
 		BuiltInFunctionParameterCount<<3;		
 		BuiltInFunctions&& &s;

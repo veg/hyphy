@@ -77,7 +77,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "HYDataPanel.h"
 #include "HYUtils.h"
 #include "HYDialogs.h"
-#include <iostream.h>
 
 #include "preferences.h"
 
@@ -1731,8 +1730,8 @@ int main (void)
 
      defaults.fontID = ATSUFindFontFromName ("Times Roman",
                         strlen("Times Roman"),
-                        kFontFullName, kFontNoPlatform, 
-                        kFontNoScript, kFontNoLanguage,
+                        kFontFullName, kFontNoPlatformCode, 
+                        kFontNoScriptCode, kFontNoLanguageCode,
                         &theFontID);      
                             
 	 defaults.pointSize = kTXNDefaultFontSize;               
