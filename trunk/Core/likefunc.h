@@ -248,7 +248,6 @@ static	void			CheckFibonacci (_Parameter);
 		void			ComputeBlockForTemplate		(long, bool = false);
 		void			ComputeBlockForTemplate2	(long, _Parameter*, _Parameter*, long);
 		void			DeleteCaches				(bool = true);
-			
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
 						theProbabilities, 

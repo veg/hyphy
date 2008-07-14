@@ -3844,10 +3844,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		_DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
 		long patternCount	= theFilter->NumberDistinctSites(),
-		stateSpaceDim	= theFilter->GetDimension (),
-		leafCount		= cT->GetLeafCount(),
-		iNodeCount		= cT->GetINodeCount(),
-		atomSize		= theFilter->GetUnitLength();
+			 stateSpaceDim	= theFilter->GetDimension (),
+			 leafCount		= cT->GetLeafCount(),
+			 iNodeCount		= cT->GetINodeCount(),
+			 atomSize		= theFilter->GetUnitLength();
 		
 		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*categCount]);
 		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
@@ -3864,12 +3864,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		for (long siteID = 0; siteID < patternCount; siteID ++)
 		{
 			for (long k = 0; k < atomSize; k++)
-				columnBlock[k] = theFilter->GetColumn(k*atomSize+k); 
+				columnBlock[k] = theFilter->GetColumn(siteID*atomSize+k); 
 			
 			for (long leafID = 0; leafID < leafCount; leafID ++)
 			{
 				long mappedLeaf  = theFilter->theNodeMap.lData[leafID],
-				translation;
+					 translation;
 				
 				for (long k = 0; k < atomSize; k++)
 					aState.sData[k] = columnBlock[k][mappedLeaf];
@@ -3883,12 +3883,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						for (long j = 0; j < stateSpaceDim; j++)
 							conditionalTerminalNodeLikelihoodCaches[i].Store(translationCache[j]);
 						translation = -conditionalTerminalNodeLikelihoodCaches[i].GetUsed()/stateSpaceDim;
-						foundCharacters.Insert (&aState, translation);
 					}
+					foundCharacters.Insert (new _String(aState), translation);
 				}
 				else
 					translation = foundCharacters.GetXtra (translation);
-				conditionalTerminalNodeStateFlag [i][mappedLeaf*patternCount + siteID] = translation;
+				conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
 			}
 		}
 		
@@ -8008,6 +8008,20 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			return ((_Constant*)computationalResults.lData[index])->Value();
 		}
 	}
+	
+#ifdef _SLKP_LFENGINE_REWRITE_
+	if (conditionalInternalNodeLikelihoodCaches)
+	{
+		_SimpleList allLeaves (t->GetLeafCount()+t->GetINodeCount()-1, 0, 1);
+		
+		return t->ComputeTreeBlockByBranch (*sl, 
+											allLeaves, 
+											df, 
+											conditionalInternalNodeLikelihoodCaches[index],
+											conditionalTerminalNodeStateFlag[index],
+											conditionalTerminalNodeLikelihoodCaches+index);
+	}
+#endif	
 	
 	if (1)
 	{

@@ -2239,12 +2239,7 @@ void	_TheTree::SetCompMatrices (long catID)
 				
 void _TheTree::SetUp (void)
 {
-	_CalcNode* travNode;
-
-	flatTree.Clear();
-	flatNodes.Clear();
-	
-	travNode = DepthWiseTraversal (TRUE);
+	_CalcNode* travNode = DepthWiseTraversal (TRUE);
 
 	if (marginalLikelihoodCache)
 	{
@@ -2264,6 +2259,16 @@ void _TheTree::SetUp (void)
 		nodeMarkers = nil;
 	}
 
+	flatTree.Clear();
+	flatNodes.Clear();
+	flatLeaves.Clear();
+	flatCLeaves.Clear();
+	
+	
+	#ifdef	_SLKP_LFENGINE_REWRITE_
+		flatParents.Clear();
+	#endif
+	
 	while 	(travNode)
 	{
 		if (!IsCurrentNodeATip())
@@ -2272,27 +2277,31 @@ void _TheTree::SetUp (void)
 			flatNodes<<(long)(currentNode);
 			travNode->lastState = -1;
 		}
+		else
+		{
+			flatLeaves << (long)(currentNode);
+			flatCLeaves << travNode;
+		}
+		#ifdef	_SLKP_LFENGINE_REWRITE_
+			flatParents << (long)(currentNode->parent);
+		#endif
 		travNode = DepthWiseTraversal ();
 	}
 	
-	flatLeaves.Clear();
-	flatCLeaves.Clear();
-	travNode = LeafWiseTraversal (TRUE);
-	
-	while 	(travNode)
-	{
-		flatCLeaves<<travNode;
-		flatLeaves<<long(currentNode);
-		travNode = LeafWiseTraversal ();
-	}
-	
+	#ifdef	_SLKP_LFENGINE_REWRITE_
+		_SimpleList parentlist (flatNodes), indexer (flatNodes.lLength,0,1);
+		SortLists   (&parentlist,&indexer);
+		for (long k=0; k<flatParents.lLength; k++)
+			if (flatParents.lData[k])
+				flatParents.lData[k] = indexer.lData[parentlist.BinaryFind(flatParents.lData[k])];
+			else
+				flatParents.lData[k] = -1;
+	#endif
+
 	if (cBase>0)
-		marginalLikelihoodCache = 
-			(_Parameter*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (_Parameter)*cBase*systemCPUCount);
-	nodeStates = 
-		(long*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (long)*systemCPUCount);
-	nodeMarkers = 
-		(char*)MemAllocate (flatNodes.lLength*sizeof (char)*systemCPUCount);
+		marginalLikelihoodCache = (_Parameter*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (_Parameter)*cBase*systemCPUCount);
+	nodeStates					= (long*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (long)*systemCPUCount);
+	nodeMarkers					= (char*)MemAllocate (flatNodes.lLength*sizeof (char)*systemCPUCount);
 		
 	long	iNodeCounter = 0,
 			leafCounter = 0;
@@ -7453,7 +7462,7 @@ _Parameter	 _TheTree::ReleafTreeCache (_DataSetFilter* dsf, long index, long las
 		}
 	}	
 	
-	_Parameter result = 0;
+	_Parameter result = 0.;
 	
 	for (long i=0; i<cBase; i++)
 		result+= theProbs[i]*theChildNode->theProbs[i];

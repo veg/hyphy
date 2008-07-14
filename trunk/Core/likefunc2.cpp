@@ -28,20 +28,3 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "likefunc.h"
 
-#ifdef	_SLKP_LFENGINE_REWRITE_
-
-_Parameter		_LikelihoodFunction::ComputeTreeBlockByBranch	(long index, _TheTree* tree, _SimpleList& siteOrdering, _SimpleList& updateLeaves, _SimpleList& updateInternals)
-// the updatePolicy flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
-// that must be recomputed
-{
-	// process the leaves first 
-	long			nodeCount	   = tree->GetLeafCount();
-	_SimpleList		taggedInternals (tree->GetINodeCount(), 0, 0);
-	
-	for  (long leafID = 0; leafID < updateLeaves.lLength; leafID++)
-	{
-		long parentCode = tree->flatParents.lData[updateLeaves.lData[leafID]];
-	}
-}
-
-#endif

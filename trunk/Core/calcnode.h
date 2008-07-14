@@ -282,7 +282,7 @@ class _TreeTopology: public _CalcNode {
 		virtual	_PMathObj 		BranchLength	 					(_PMathObj);
 		virtual	_PMathObj 		RerootTree	 						(_PMathObj);
 				_List*			SplitTreeIntoClusters 				(unsigned long, unsigned long);
-				void			SetLeafName						(long, _String*);
+				void			SetLeafName						    (long, _String*);
 };
 
 #if USE_SCALING_TO_FIX_UNDERFLOW
@@ -474,6 +474,10 @@ class _TheTree: public _TreeTopology {
 			void		AllocateUnderflowScalers		(long); 				
 			void		DeallocateUnderflowScalers		(void); 				
 		 #endif
+		 
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _DataSetFilter*, _Parameter*, long*, _GrowingVector*, long = -1);
+#endif			
 
 	// --------------------------
 	
@@ -514,7 +518,10 @@ class _TheTree: public _TreeTopology {
  	_SimpleList flatLeaves, 
  				flatNodes, 
  				leftiNodes, 
- 				topLevelNodes,
+ 	#ifdef	_SLKP_LFENGINE_REWRITE_
+				flatParents,
+	#endif
+				topLevelNodes,
  				topLevelLeftL,
  				topLevelRightL;
  				
