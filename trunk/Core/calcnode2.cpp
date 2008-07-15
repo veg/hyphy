@@ -40,8 +40,13 @@ _Parameter			_lfScalerUpwards		  = pow(2.,300.),
 /*----------------------------------------------------------------------------------------------------------*/
 void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
 {
-	for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++)
-		((_CalcNode*) expNodes(nodeID))->RecomputeMatrix (catID, categoryCount, nil);
+	long nodeID;
+	//#pragma omp parallel private(nodeID) shared (catID) if(cBase >= 20 && expNodes.lLength > 1)
+	{
+	//	#pragma omp for 
+		for (nodeID = 0; nodeID < expNodes.lLength; nodeID++)
+			((_CalcNode*) expNodes(nodeID))->RecomputeMatrix (catID, categoryCount, nil);
+	}
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
