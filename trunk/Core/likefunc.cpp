@@ -7950,21 +7950,44 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 #ifdef _SLKP_LFENGINE_REWRITE_
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
-		_SimpleList changedBranches;
-		_List		changedModels;
-		
-		t->DetermineNodesForUpdate		   (changedBranches,&changedModels);
-		if (changedModels.lLength)
-			t->ExponentiateMatrices(changedModels);
-		
-		return t->ComputeTreeBlockByBranch (*sl, 
-											changedBranches, 
+		if (computedLocalUpdatePolicy.lLength)
+		{
+			_SimpleList* branches = (_SimpleList*)localUpdatePolicy(index);
+			_List*		 matrices = (_List*)matricesToExponentiate(index);
+			if (computedLocalUpdatePolicy.lData[index] == 0)
+			{
+				t->DetermineNodesForUpdate		   (*branches, matrices);
+				computedLocalUpdatePolicy.lData[index] = 1;
+			}
+			if (matrices->lLength)
+				t->ExponentiateMatrices(*matrices);
+			return t->ComputeTreeBlockByBranch (*sl, 
+											*branches, 
 											df, 
 											conditionalInternalNodeLikelihoodCaches[index],
 											conditionalTerminalNodeStateFlag[index],
 											siteScalingFactors[index],
 											conditionalTerminalNodeLikelihoodCaches+index,
 											overallScalingFactors[index]);
+		}
+		else
+		{
+			_SimpleList changedBranches;
+			_List		changedModels;
+			
+			t->DetermineNodesForUpdate		   (changedBranches,&changedModels);
+			if (changedModels.lLength)
+				t->ExponentiateMatrices(changedModels);
+			
+			return t->ComputeTreeBlockByBranch (*sl, 
+												changedBranches, 
+												df, 
+												conditionalInternalNodeLikelihoodCaches[index],
+												conditionalTerminalNodeStateFlag[index],
+												siteScalingFactors[index],
+												conditionalTerminalNodeLikelihoodCaches+index,
+												overallScalingFactors[index]);
+		}
 	}
 #endif	
 	
