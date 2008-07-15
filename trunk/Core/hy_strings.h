@@ -290,7 +290,7 @@ void	WarnError					(_String);
 _String GetVersionString			(void);
 _String GetTimeStamp				(bool = false);
 void	StringToConsole				(_String&);
-void	BufferToConsole				(char*);
+void	BufferToConsole				(const char*);
 void	NLToConsole					(void);
 _String*StringFromConsole			(bool=true);
 char	GetPlatformDirectoryChar	(void);

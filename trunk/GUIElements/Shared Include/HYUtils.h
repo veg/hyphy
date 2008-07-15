@@ -37,7 +37,7 @@ void	PlaceStringInClipboard	(_String&,Ptr);
 
 
 #ifdef __MAC__
-	#include<Menus.h>
+	#include <Menus.h>
 
 	void 	StringToStr255 		(_String&, Str255&);
 	void 	Str255ToStr 		(_String&, Str255&);

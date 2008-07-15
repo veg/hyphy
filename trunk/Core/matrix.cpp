@@ -9013,7 +9013,7 @@ long		_GrowingVector::Store (_Parameter toStore)
 {
 	if (used < GetHDim())
 	{
-		_Matrix::Store (0,used++,toStore);	// increment AFTER argument is sent to function
+		_Matrix::Store (used++,0,toStore);	// increment AFTER argument is sent to function
 		return used-1;
 	}
 	else

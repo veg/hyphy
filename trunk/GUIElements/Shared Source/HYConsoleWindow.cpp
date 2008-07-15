@@ -606,7 +606,7 @@ void 	StringToConsole (_String & s)
 
 //_________________________________________________________________________
 
-void 	BufferToConsole (char* buffer)
+void 	BufferToConsole (const char* buffer)
 {
 	_String s (buffer);
 	StringToConsole (s);
