@@ -28,3 +28,29 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "likefunc.h"
 
+#ifdef	_SLKP_LFENGINE_REWRITE_
+
+/*--------------------------------------------------------------------------------------------------*/
+
+void	_LikelihoodFunction::DetermineLocalUpdatePolicy (void)
+{
+	computedLocalUpdatePolicy.Populate (theTrees.lLength,0,0);
+	for (long k = 0; k < theTrees.lLength; k ++)
+	{
+		localUpdatePolicy.AppendNewInstance (new _SimpleList);
+		matricesToExponentiate.AppendNewInstance (new _List);
+	}
+}
+
+/*--------------------------------------------------------------------------------------------------*/
+
+void	_LikelihoodFunction::FlushLocalUpdatePolicy (void)
+{
+	computedLocalUpdatePolicy.Clear();
+	localUpdatePolicy.Clear();
+	matricesToExponentiate.Clear();
+}
+
+/*--------------------------------------------------------------------------------------------------*/
+
+#endif

@@ -2266,8 +2266,10 @@ void _TheTree::SetUp (void)
 	
 	
 	#ifdef	_SLKP_LFENGINE_REWRITE_
-		flatParents.Clear();
+	flatParents.Clear();
+	_SimpleList flatINodeParents;
 	#endif
+	
 	
 	while 	(travNode)
 	{
@@ -2276,19 +2278,23 @@ void _TheTree::SetUp (void)
 			flatTree<<travNode;
 			flatNodes<<(long)(currentNode);
 			travNode->lastState = -1;
+#ifdef	_SLKP_LFENGINE_REWRITE_
+			flatINodeParents << (long)(currentNode->parent);
+#endif
 		}
 		else
 		{
 			flatLeaves << (long)(currentNode);
 			flatCLeaves << travNode;
-		}
-		#ifdef	_SLKP_LFENGINE_REWRITE_
+			#ifdef	_SLKP_LFENGINE_REWRITE_
 			flatParents << (long)(currentNode->parent);
-		#endif
+			#endif
+		}
 		travNode = DepthWiseTraversal ();
 	}
 	
 	#ifdef	_SLKP_LFENGINE_REWRITE_
+		flatParents << flatINodeParents;
 		_SimpleList parentlist (flatNodes), indexer (flatNodes.lLength,0,1);
 		SortLists   (&parentlist,&indexer);
 		for (long k=0; k<flatParents.lLength; k++)
@@ -2296,6 +2302,7 @@ void _TheTree::SetUp (void)
 				flatParents.lData[k] = indexer.lData[parentlist.BinaryFind(flatParents.lData[k])];
 			else
 				flatParents.lData[k] = -1;
+	
 	#endif
 
 	if (cBase>0)

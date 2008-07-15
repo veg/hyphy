@@ -248,6 +248,10 @@ static	void			CheckFibonacci (_Parameter);
 		void			ComputeBlockForTemplate		(long, bool = false);
 		void			ComputeBlockForTemplate2	(long, _Parameter*, _Parameter*, long);
 		void			DeleteCaches				(bool = true);
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		void			DetermineLocalUpdatePolicy  (void);
+		void			FlushLocalUpdatePolicy		(void);
+#endif		
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
 						theProbabilities, 
@@ -302,9 +306,19 @@ static	void			CheckFibonacci (_Parameter);
 				and read off filterCharDimension characters from there
 		*/
 	
-		_Parameter**		conditionalInternalNodeLikelihoodCaches;
-		_GrowingVector*		conditionalTerminalNodeLikelihoodCaches;
+		_Parameter**		conditionalInternalNodeLikelihoodCaches,
+				  **		siteScalingFactors,
+				  *			overallScalingFactors;
+	
+		_GrowingVector*		conditionalTerminalNodeLikelihoodCaches;	
 		long	  **		conditionalTerminalNodeStateFlag;
+	
+		/* these variables are used to precache 'tainted variables' */
+	
+		_SimpleList			computedLocalUpdatePolicy;
+		 
+		_List				localUpdatePolicy, 
+							matricesToExponentiate;
 	
 #endif	
 };

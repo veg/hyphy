@@ -480,6 +480,8 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	conditionalInternalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;
+	siteScalingFactors						= nil;
+	overallScalingFactors					= nil;
 	
 #endif	
 }
@@ -704,6 +706,7 @@ void	 _LikelihoodFunction::Rebuild (void)
 
 void	 _LikelihoodFunction::Clear (void)
 {
+	DeleteCaches  ();
 	theTrees.Clear();
 	theDataFilters.Clear();
 	theProbabilities.Clear();
@@ -728,7 +731,6 @@ void	 _LikelihoodFunction::Clear (void)
 		delete (mstCache);
 		mstCache = nil;
 	}
-	DeleteCaches ();
 }
 
 
@@ -3831,8 +3833,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		// large trees short alignments 
 		// an acceptable cache size etc
 		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
+		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeLikelihoodCaches = new _GrowingVector[theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
+		checkPointer(overallScalingFactors					 = new _Parameter	 [theTrees.lLength]);
 	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
@@ -3851,6 +3855,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		
 		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*categCount]);
 		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
+		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*categCount]);
+		
+		for (long k = 0; k < patternCount*iNodeCount*categCount; (siteScalingFactors[i])[k] = 1., k++) ; 
+		
+		overallScalingFactors[i] = 0.;
 		
 		// now process filter characters by site / column
 		
@@ -3863,6 +3872,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		
 		for (long siteID = 0; siteID < patternCount; siteID ++)
 		{
+			siteScalingFactors[i][siteID] = 1.;
 			for (long k = 0; k < atomSize; k++)
 				columnBlock[k] = theFilter->GetColumn(siteID*atomSize+k); 
 			
@@ -6546,9 +6556,19 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 
 void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Parameter& maxSoFar, _Parameter& bestVal)
 {
-	_Parameter left, right, middle,
-			   leftValue, middleValue, rightValue,  bp = 2.*gPrecision,
+	_Parameter left, 
+			   right, 
+			   middle,
+			   leftValue, 
+			   middleValue, 
+			   rightValue,  
+			   bp = 2.*gPrecision,
 			   gRatio = (3.0-sqrt(5.0))*.5;
+	
+#ifdef _SLKP_LFENGINE_REWRITE_
+	DetermineLocalUpdatePolicy			 ();
+#endif	
+	
 	int outcome = BracketOneVar(index,left,middle,right,leftValue, middleValue, rightValue,bp);
 	long		fCount = likeFuncEvalCallCount;
 	if (outcome!=-1) // successfull bracket
@@ -6564,112 +6584,12 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			}
 			else
 				SetIthIndependent (index,bestVal);
+#ifdef _SLKP_LFENGINE_REWRITE_
+			FlushLocalUpdatePolicy			  ();
+#endif		
 			return;	
 		}
-		//newMiddleValue = middleValue;
-		
-		// do a Fibonnaci type bump location
-		
-		/*_Parameter shrinkBy = (right-left)/gPrecision, leftPart, rightPart, leftPValue, rightPValue, factor;
-		bool movingLeft = false;
-		CheckFibonacci (shrinkBy);
-		long N=0;
-		while (Fibonacci(N)<shrinkBy) N++;
-		N++;
-		for (long i=1; i<N; i++)
-		{
-			factor = Fibonacci(N-i-1)/(_Parameter)Fibonacci(N-i+1);
-			if (i==1)
-			{
-				leftPart=(1-factor)*left+factor*right;
-				rightPart = (1-factor)*right+factor*left;
-				SetIthIndependent (index,leftPart);
-				leftPValue = Compute();
-				SetIthIndependent (index,rightPart);
-				rightPValue = Compute();
-			}
-			else
-			{
-				if (movingLeft)
-				{
-					rightPart = leftPart;
-					rightPValue = leftPValue;
-					leftPart = (1-factor)*left+factor*right;
-					SetIthIndependent (index,leftPart);
-					leftPValue = Compute();
-				}
-				else
-				{
-					leftPart = rightPart ;
-					leftPValue = rightPValue;
-					rightPart = (1-factor)*right+factor*left;
-					SetIthIndependent (index,rightPart);
-					rightPValue = Compute();
-				}
-			}
-			if (leftPValue>rightPValue)
-			{
-				movingLeft = true;
-				right = rightPart;
-				rightValue = rightPValue;
-			}
-			else
-			{
-				movingLeft = false;
-				left = leftPart;
-				leftValue = leftPValue;
-			}
 			
-		}*/
-		/*while (right-left>gPrecision)
-		{
-			if (middle-left>right-middle)
-			{
-				//newMiddle = (2*left+(1+sqrt(5.0))*right)/(3+sqrt(5.0));
-				newMiddle = middle-gRatio*(middle-left);
-			}
-			else
-			{
-				newMiddle = middle+gRatio*(right-middle);
-			}
-				
-			SetIthIndependent (index,newMiddle);
-			newMiddleValue = Compute();
-			
-			if (newMiddleValue>middleValue)
-			{
-				if (newMiddle>middle)
-				{
-					left=middle;
-					leftValue = middleValue;
-				}
-				else
-				{
-					right=middle;
-					rightValue = middleValue;
-				}
-				middle = newMiddle;
-				middleValue = newMiddleValue;
-			}
-			else
-			{
-				
-				if (newMiddle<middle)
-				{
-					left=newMiddle;
-					leftValue = newMiddleValue;
-				}
-				else
-				{
-					right=newMiddle;
-					rightValue = newMiddleValue;
-				}
-			}
-		}*/
-		
-		// Brent's method
-		//printf ("/nBracketed the max in (%g,%g,%g) with values (%g,%g,%g)", left, middle, right, leftValue, middleValue, rightValue);
-		//if (right-left>gPrecision)
 		{
 			_Parameter U,V,W,X=middle,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
 			W = middle;
@@ -6771,6 +6691,9 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 	
 	oneDFCount += likeFuncEvalCallCount-fCount;
 	oneDCount ++;
+#ifdef _SLKP_LFENGINE_REWRITE_
+	FlushLocalUpdatePolicy			  ();
+#endif		
 }
 
 //_______________________________________________________________________________________
@@ -7621,6 +7544,8 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 #ifdef	_SLKP_LFENGINE_REWRITE_
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
+		for (long k = 0; k < theTrees.lLength; k++)
+			delete (conditionalInternalNodeLikelihoodCaches[k]);
 		delete (conditionalInternalNodeLikelihoodCaches);
 		conditionalInternalNodeLikelihoodCaches = nil;
 	}
@@ -7631,10 +7556,23 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	}
 	if (conditionalTerminalNodeStateFlag)
 	{
+		for (long k = 0; k < theTrees.lLength; k++)
+			delete (conditionalTerminalNodeStateFlag[k]);
 		delete (conditionalTerminalNodeStateFlag);
 		conditionalTerminalNodeStateFlag = nil;
 	}
-#endif
+	if (siteScalingFactors)
+	{
+		for (long k = 0; k < theTrees.lLength; k++)
+			delete (siteScalingFactors[k]);
+		delete (siteScalingFactors);
+		siteScalingFactors = nil;
+	}
+	if (overallScalingFactors)
+	{
+		delete overallScalingFactors; overallScalingFactors = nil;
+	}
+	#endif
 }
 	
 
@@ -8012,14 +7950,21 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 #ifdef _SLKP_LFENGINE_REWRITE_
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
-		_SimpleList allLeaves (t->GetLeafCount()+t->GetINodeCount()-1, 0, 1);
+		_SimpleList changedBranches;
+		_List		changedModels;
+		
+		t->DetermineNodesForUpdate		   (changedBranches,&changedModels);
+		if (changedModels.lLength)
+			t->ExponentiateMatrices(changedModels);
 		
 		return t->ComputeTreeBlockByBranch (*sl, 
-											allLeaves, 
+											changedBranches, 
 											df, 
 											conditionalInternalNodeLikelihoodCaches[index],
 											conditionalTerminalNodeStateFlag[index],
-											conditionalTerminalNodeLikelihoodCaches+index);
+											siteScalingFactors[index],
+											conditionalTerminalNodeLikelihoodCaches+index,
+											overallScalingFactors[index]);
 	}
 #endif	
 	

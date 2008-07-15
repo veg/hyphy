@@ -4293,17 +4293,17 @@ _Matrix*	_Matrix::Exponentiate (void)
 			max = MaxRow()*MaxColumn();
 			if (max > .1)
 			{
-				max /= .1;
-				max = sqrt (max);
-				power2 = (long)((log (max)/log ((_Parameter)2.0)))+1;
-				max = exp (power2 * log ((_Parameter)2.0));
-				(*this)*=1.0/max;
+				max				*= 10.;
+				max				= sqrt (max);
+				power2			= (long)((log (max)/log ((_Parameter)2.0)))+1;
+				max				= exp (power2 * log ((_Parameter)2.0));
+				(*this)			*= 1.0/max;
 			}
 			else
 				power2 = 0;
 				
 			if (theIndex)
-			// transpose
+			// transpose sparse matrix
 			{
 				for (i=0; i<lDim; i++)
 				{
@@ -4325,8 +4325,8 @@ _Matrix*	_Matrix::Exponentiate (void)
 		
 		if (storageType)
 		{
-			for (i=0; i<(*result).lDim; i+=vDim+1)
-				(*result).theData[i]=1.0;
+			for (i=0; i<result->lDim; i+=vDim+1)
+				result->theData[i]=1.0;
 		}
 		else
 		{
@@ -4338,7 +4338,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 		if (max == 0.0)
 			return result;
 		
-		(*result)+=(*this);
+		(*result) += (*this);
 		
 		i = 2;
 		
@@ -4419,14 +4419,12 @@ _Matrix*	_Matrix::Exponentiate (void)
 				if (k!=-1)
 					theIndex[i] = (k%vDim)*vDim + k/vDim;
 			}
-			(*result).Transpose();
+			result->Transpose();
 		}
 		
-		for (i = 0; i<power2; i++)
-		{
-			(*result).Sqr();
-			squaringsCount++;
-		}
+		for (i = 0; i<power2; i++, squaringsCount++)
+			result->Sqr();
+					
 		return result;	
 }	
 
