@@ -50,6 +50,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "profiler.h"
 #endif
 
+#ifdef	_SLKP_LFENGINE_REWRITE_
+	#include "scfg.h"
+#endif
 
 #if !defined __UNIX__ || defined __HEADLESS__
 	#ifndef __HEADLESS__
@@ -731,6 +734,10 @@ void	 _LikelihoodFunction::Clear (void)
 		delete (mstCache);
 		mstCache = nil;
 	}
+	
+#ifdef _SLKP_LFENGINE_REWRITE_	
+	treeTraversalMasks.Clear();
+#endif
 }
 
 
@@ -1003,18 +1010,7 @@ bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) // fr
 
 _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 {	
-	hasBeenSetUp = 0;
-	theTrees.Clear();
-	theProbabilities.Clear();
-	theDataFilters.Clear();
-	indexInd.Clear();
-	indexDep.Clear();
-	indexCat.Clear();
-	optimalOrders.Clear();
-	leafSkips.Clear();
-	computationalResults.Clear();
-	siteResults = nil;
-	
+	Clear();
 	
 	hasBeenOptimized    = lf.hasBeenOptimized;
 	templateKind        = lf.templateKind;
@@ -1024,8 +1020,8 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 	else
 		computingTemplate   = nil;
 		
-	mstCache = nil;
-	nonConstantDep = nil;
+	mstCache		= nil;
+	nonConstantDep  = nil;
 	
 	Duplicate (&lf);
 }
@@ -7588,16 +7584,17 @@ void	_LikelihoodFunction::Setup (void)
 	if (kp>.5 && !mstCache)
 		checkPointer (mstCache = new MSTCache);
 
-	if (theTrees.lLength==optimalOrders.lLength) //check to see if we need to recompute the
-												 // optimal summation order
+	if (theTrees.lLength==optimalOrders.lLength) 
+		//check to see if we need to recompute the
+		// optimal summation order
 	{
 		checkParameter (keepOptimalOrder,kp,0.0);
 		if (kp)
 		{			
 			for (int i=0; i<theTrees.lLength; i++)
 			{
-				_SimpleList* s = (_SimpleList*)optimalOrders(i),
-						   * l = (_SimpleList*)leafSkips(i);
+				_SimpleList*	s = (_SimpleList*)optimalOrders(i),
+						   *	l = (_SimpleList*)leafSkips(i);
 						   
 				_DataSetFilter* df			= ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
 				_Matrix		  *glFreqs		= (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
@@ -7618,27 +7615,30 @@ void	_LikelihoodFunction::Setup (void)
 			
 	optimalOrders.Clear();
 	leafSkips.Clear();
-	long i;
-	for (i=0; i<theTrees.lLength; i++)
+	
+#ifdef	_SLKP_LFENGINE_REWRITE_
+	treeTraversalMasks.Clear();
+#endif
+	
+	for (long i=0; i<theTrees.lLength; i++)
 	{
-		_Matrix *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
-		_TheTree *t = ((_TheTree*)LocateVar(theTrees.lData[i]));
+		_Matrix			*glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
+		_DataSetFilter* df		= ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+		_TheTree		*t		 = ((_TheTree*)LocateVar(theTrees.lData[i]));
 		t->InitializeTreeFrequencies (glFreqs, true);
-		_DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-		_SimpleList s,l;
-		OptimalOrder  (i,s);
-		df->MatchStartNEnd(s,l);
-		optimalOrders&&(&s);
-		leafSkips&&(&l);
+		_SimpleList		   *s = new _SimpleList,
+						   *l = new _SimpleList;
+		
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		treeTraversalMasks.AppendNewInstance(new _SimpleList (t->GetINodeCount() * df->NumberDistinctSites() / _HY_BITMASK_WIDTH_ + 1,0,0));
+#endif
+		
+		OptimalOrder	  (i,*s);
+		df->MatchStartNEnd(*s,*l);
+		optimalOrders.AppendNewInstance(s);
+		leafSkips.AppendNewInstance(l);
 	}
 	
-	// set up the deletion preferences/one per partition
-/*	for (i=0; i<theTrees.lLength; i++)
-	{
-		_SimpleList s;
-		DumpingOrder (i,s);
-		dumpingOrder&&(&s);
-	}*/
 }
 
 //_______________________________________________________________________________________
@@ -7982,6 +7982,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			for (blockID = 0; blockID < np; blockID ++)
 				sum += t->ComputeTreeBlockByBranch (*sl, 
 													*branches, 
+													(_SimpleList*)treeTraversalMasks(index),
 													df, 
 													conditionalInternalNodeLikelihoodCaches[index],
 													conditionalTerminalNodeStateFlag[index],
@@ -7998,7 +7999,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 
 		return t->ComputeTreeBlockByBranch (*sl, 
 											*branches, 
-											df, 
+											(_SimpleList*)treeTraversalMasks(index),
+											df,
 											conditionalInternalNodeLikelihoodCaches[index],
 											conditionalTerminalNodeStateFlag[index],
 											siteScalingFactors[index],
@@ -8783,11 +8785,11 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 }
 
 //_______________________________________________________________________________________
-long		_LikelihoodFunction::CostOfPath	 (_DataSetFilter* df, _TheTree* t, _SimpleList& sl)
+long		_LikelihoodFunction::CostOfPath	 (_DataSetFilter* df, _TheTree* t, _SimpleList& sl, _SimpleList* tcc)
 {
 	long res = 0;
 	for (long i=0; i<(long)sl.lLength-1; i++)
-		res+=t->ComputeReleafingCost (df,sl.lData[i],sl.lData[i+1]);
+		res+=t->ComputeReleafingCost (df,sl.lData[i],sl.lData[i+1], tcc, i+1);
 	return res;
 }
 //_______________________________________________________________________________________
@@ -9304,12 +9306,17 @@ void		_LikelihoodFunction::OptimalOrder	 (long index, _SimpleList& sl)
 		 }
 	}
 		
-	_SimpleList straight;
+	_SimpleList straight (sl.lLength, 0, 1),
+				* tcc = nil;
 	
-	for (k=0;k<sl.lLength;k++)
-		straight<<k;
-
-	_Parameter strl = CostOfPath (df,t,straight), optl = CostOfPath (df,t,sl);
+#ifdef _SLKP_LFENGINE_REWRITE_
+	 if (treeTraversalMasks.lLength > index)
+		 tcc =  (_SimpleList*) treeTraversalMasks(index);
+#endif
+	
+	_Parameter strl = CostOfPath (df,t,straight), 
+			   optl = CostOfPath (df,t,sl,tcc);
+	
 	if (vLevel>500)
 	{
 		_String* opPath = (_String*)sl.toStr();

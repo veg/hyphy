@@ -3216,16 +3216,12 @@ void _DataSetFilter::GrabSite (unsigned long site, unsigned long pos, _String& s
 	
 	long vIndex = theNodeMap.lData[pos];
 	if (unitLength==1)
-	{
 		storage.sData[0]=(((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site]]])->sData[vIndex];
-	}
 	else
 	{
 		site*=unitLength;
 		for (int k = 0; k<unitLength; k++)
-		{
 			storage.sData[k] = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site++]]])->sData[vIndex];
-		}
 	}
 }
 
@@ -3478,11 +3474,11 @@ bool	 _DataSetFilter::CompareTwoSites (unsigned long site1, unsigned long site2,
 		site2*=3;
 		if (
 			((((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site1]]])->sData[pos1]==
-			(((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site2]]])->sData[pos1])
-		    &&((((_String**)theData->lData)[theData->theMap.lData[theMap.lData[++site1]]])->sData[pos1]==
-			(((_String**)theData->lData)[theData->theMap.lData[theMap.lData[++site2]]])->sData[pos1])
-			&&((((_String**)theData->lData)[theData->theMap.lData[theMap.lData[++site1]]])->sData[pos1]==
-			(((_String**)theData->lData)[theData->theMap.lData[theMap.lData[++site2]]])->sData[pos1]))
+			( ((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site2]]])->sData[pos1])
+		  &&((((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site1+1]]])->sData[pos1]==
+			 (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site2+1]]])->sData[pos1])
+		  &&((((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site1+2]]])->sData[pos1]==
+			 (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[site2+2]]])->sData[pos1]))
 		{	
 			return true;
 		}

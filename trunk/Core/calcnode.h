@@ -395,7 +395,7 @@ class _TheTree: public _TreeTopology {
 			
 			void		PurgeTree						(void); 		
 			
-			long	 	ComputeReleafingCost    		(_DataSetFilter*, long, long);
+			long	 	ComputeReleafingCost    		(_DataSetFilter*, long, long, _SimpleList* = nil, long = 0);
 			long	 	ComputeReleafingCostChar 		(_DataSetFilter*, long, long);
 			void	 	DumpingOrder 					(_DataSetFilter*, _SimpleList&);
 			void	 	SetTreeCodeBase 				(long);
@@ -475,7 +475,7 @@ class _TheTree: public _TreeTopology {
 		 #endif
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
-	_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, _Parameter&, long, long, long = -1, _Parameter* = nil);
+	_Parameter		ComputeTreeBlockByBranch			(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, _Parameter&, long, long, long = -1, _Parameter* = nil);
 		void			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1);
 		void			ExponentiateMatrices			(_List&, long = -1);
 #endif			
@@ -519,9 +519,7 @@ class _TheTree: public _TreeTopology {
  	_SimpleList flatLeaves, 
  				flatNodes, 
  				leftiNodes, 
- 	#ifdef	_SLKP_LFENGINE_REWRITE_
 				flatParents,
-	#endif
 				topLevelNodes,
  				topLevelLeftL,
  				topLevelRightL;

@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ctype.h"
 #include "string.h"
 #include "calcnode.h"
+#include "scfg.h"
 
 #include "category.h"
 #include "batchlan.h"
@@ -769,7 +770,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 	
 	if ((GetModelMatrix()->MatrixType()!=_POLYNOMIAL_TYPE)&&(explicitFormMatrixExponential<0.5))
 	{
-		_Matrix*temp = (_Matrix*)GetModelMatrix()->MultByFreqs(theModel);
+		_Matrix *temp = (_Matrix*)GetModelMatrix()->MultByFreqs(theModel);
 			
 		if (dVariables)
 			for (i=0; i<dVariables->lLength; i+=2)
@@ -2273,10 +2274,8 @@ void _TheTree::SetUp (void)
 	flatCLeaves.Clear();
 	
 	
-	#ifdef	_SLKP_LFENGINE_REWRITE_
 	flatParents.Clear();
 	_SimpleList flatINodeParents;
-	#endif
 	
 	
 	while 	(travNode)
@@ -2286,22 +2285,17 @@ void _TheTree::SetUp (void)
 			flatTree<<travNode;
 			flatNodes<<(long)(currentNode);
 			travNode->lastState = -1;
-#ifdef	_SLKP_LFENGINE_REWRITE_
 			flatINodeParents << (long)(currentNode->parent);
-#endif
 		}
 		else
 		{
 			flatLeaves << (long)(currentNode);
 			flatCLeaves << travNode;
-			#ifdef	_SLKP_LFENGINE_REWRITE_
 			flatParents << (long)(currentNode->parent);
-			#endif
 		}
 		travNode = DepthWiseTraversal ();
 	}
 	
-	#ifdef	_SLKP_LFENGINE_REWRITE_
 		flatParents << flatINodeParents;
 		_SimpleList parentlist (flatNodes), indexer (flatNodes.lLength,0,1);
 		SortLists   (&parentlist,&indexer);
@@ -2311,7 +2305,6 @@ void _TheTree::SetUp (void)
 			else
 				flatParents.lData[k] = -1;
 	
-	#endif
 
 	if (cBase>0)
 		marginalLikelihoodCache = (_Parameter*)MemAllocate ((flatNodes.lLength+flatLeaves.lLength)*sizeof (_Parameter)*cBase*systemCPUCount);
@@ -10813,46 +10806,30 @@ _Parameter  _TheTree::PruneTreeChar (long categID)
 
 long	_TheTree::ComputeReleafingCostChar (_DataSetFilter* dsf, long firstIndex, long secondIndex)
 {
-	
-	//static _SimpleList flatLeaves, nodeCount;
-	//static _List	   flatTree;
-	long theCost = 0,f; // also used as node count in the first loop
-	
-	_CalcNode* travNode ;
-	
+		
 	char *pastState = dsf->GetColumn(firstIndex), 
 		 *thisState = dsf->GetColumn(secondIndex);
-		
-	for (theCost = 0; theCost<flatLeaves.lLength; theCost++)
+	
+	_SimpleList markedNodes (flatTree.lLength, 0, 0);
+	
+	for (long nodeID = 0; nodeID<flatLeaves.lLength; nodeID++)
 	{
-		travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[theCost]);
-		f = dsf->theNodeMap.lData[theCost];
+		long f = dsf->theNodeMap.lData[nodeID];
 		if (thisState[f]!=pastState[f])
-		{
-			// mark all the nodes up the ladder as "tainted"
-			node <long>* theTreeNode = ((node <long>*)(flatLeaves.lData[theCost]))->parent;
-			_CalcNode* cN = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theTreeNode->in_object]);
-			cN->cBase = -1;
-		}
+			markedNodes.lData[flatParents.lData[nodeID]] = 1;
 	}
 	
-	theCost = 0;
+	long theCost = 0;
 	
 	for (long i=0; i<flatTree.lLength; i++)
 	{
-		travNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[i]);
-		if (travNode->cBase == -1)
+		if (markedNodes.lData[i])
 		{
-			travNode->cBase = cBase;
-			node <long>* theTreeNode = ((node <long>*)(flatNodes.lData[i]))->parent;
-			if (theTreeNode)
-			{
-				_CalcNode* cN = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theTreeNode->in_object]);
-				cN->cBase = -1;
-			}			
+			long myParent = flatParents.lData[i + flatLeaves.lLength];
+			if (myParent >= 0)
+				markedNodes.lData[myParent] = 1;	
 			theCost += ((node <long>*)(flatNodes.lData[i]))->nodes.length;
 		}
-	
 	}
 	
 	return theCost;
@@ -10874,44 +10851,48 @@ void	_TheTree::ClearConstraints (void)
 
 //_______________________________________________________________________________________________
 
-long	_TheTree::ComputeReleafingCost (_DataSetFilter* dsf, long firstIndex, long secondIndex)
+long	_TheTree::ComputeReleafingCost (_DataSetFilter* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex)
 {
 	
 	//static _SimpleList flatLeaves, nodeCount;
 	//static _List	   flatTree;
-	long theCost = 0; // also used as node count in the first loop
+	long		filterL = dsf->NumberDistinctSites();
 	
-	_CalcNode* travNode ;
+	_SimpleList		markedNodes (flatTree.lLength,0,0);
 	
-	for (theCost = 0; theCost<flatLeaves.lLength; theCost++)
-	{
-		travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[theCost]);
-		if (!dsf->CompareTwoSites(firstIndex,secondIndex,theCost))
-		{
-			// mark all the nodes up the ladder as "tainted"
-			node <long>* theTreeNode = ((node <long>*)(flatLeaves.lData[theCost]))->parent;
-			while (theTreeNode)
-			{
-				_CalcNode* cN = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theTreeNode->in_object]);
-				if (*(cN->theProbs)<0) break;
-				cN->theProbs[0] -= 2.0;
-				theTreeNode=theTreeNode->parent;
-			}
-		}
-	}
-	
+	for (long leafID = 0; leafID<flatLeaves.lLength; leafID++)
+		if (!dsf->CompareTwoSites(firstIndex,secondIndex,leafID))
+			markedNodes.lData [flatParents.lData[leafID]] = 1;
+		
 	// now compute the cost
 	
-	theCost = 0;
+	long theCost = 0;
+	
 	
 	for (long i=0; i<flatTree.lLength; i++)
 	{
-		travNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[i]);
-		if (travNode->theProbs[0]<0.0)
+		if (markedNodes.lData[i])
 		{
-			travNode->theProbs[0]+=2.0;
-			theCost += ((node <long>*)(flatNodes.lData[i]))->nodes.length;
+			long myParent	 =  flatParents.lData[flatLeaves.lLength + i];
+			if (myParent >= 0)
+				markedNodes.lData[myParent] = 1;
+			theCost			+= ((node <long>*)(flatNodes.lData[i]))->nodes.length;
 		}
+		else
+			if (traversalTags && orderIndex)
+			{
+				long theIndex = filterL * i + orderIndex;
+				traversalTags->lData[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];
+				/*printf ("%d %d %d %d %d %d\n", firstIndex, secondIndex, orderIndex, i, theIndex/_HY_BITMASK_WIDTH_, theIndex%_HY_BITMASK_WIDTH_);
+				char b[4]; b[3] = 0;
+				for (long k = 0; k < flatLeaves.lLength; k++)
+				{
+					dsf->GrabSite (firstIndex, dsf->theNodeMap.lData[k], b);
+					printf ("%s ", b);
+					dsf->GrabSite (secondIndex, dsf->theNodeMap.lData[k], b);
+					printf ("%s\n", b);
+				}*/
+			}
 	}
 	
 	return theCost;

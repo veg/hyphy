@@ -2191,6 +2191,9 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 		}
 		
 		theValue = theP->Value();
+		
+		if (!dup)
+			DeleteObject (theP);
 			
 		if ((theValue<lowerBound)||(theValue>upperBound))
 		{
@@ -2199,9 +2202,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 			ReportWarning (s);
 			DeleteObject(t);*/
 			if (theValue<=lowerBound+1e-50)
-			{
 				theValue = lowerBound;
-			}
 			else
 				theValue = upperBound;
 		}
