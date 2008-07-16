@@ -31,20 +31,8 @@ _String		_HYSCFG_TERM_KEY_T  ("T"),
 
 #define		SCFG_OPTIMIZATION_THRESHOLD		0.0001	// minimum difference between log-likelihood to terminate
 #define		MAX_ITERATIONS_OPTIMIZE			1000		// maximum number of times to iterate Optimize() main loop
-			
-struct		bitMasks 
-{
-	unsigned long masks[32];
-	bitMasks (void)
-	{
-		unsigned long aBit = 1;
-		for (long k=0; k<32; k++)
-		{
-			masks[k] = aBit;
-			aBit = aBit << 1;
- 		}
-	}
-} bitMaskArray;
+
+bitMasks bitMaskArray;
 		
 		
 _String		// various constants used in AddSCFGInfo		

@@ -205,7 +205,7 @@ virtual	void			ScanAllVariables 		(void);
 		void			ConjugateGradientDescent 
 											  (_Parameter , _Matrix& );
 
-		long			CostOfPath	 		  (_DataSetFilter*, _TheTree* , _SimpleList&);
+		long			CostOfPath	 		  (_DataSetFilter*, _TheTree* , _SimpleList&, _SimpleList* = nil);
 
 		void			BuildLeafProbs 		  (node<long>& , long*, long&, _DataSet&, _TheTree*, long&, bool, long, _DataSetFilter*, long, _DataSet* = nil);
 		bool			SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter*, _SimpleList* = nil);
@@ -318,7 +318,8 @@ static	void			CheckFibonacci (_Parameter);
 		_SimpleList			computedLocalUpdatePolicy;
 		 
 		_List				localUpdatePolicy, 
-							matricesToExponentiate;
+							matricesToExponentiate,
+							treeTraversalMasks;
 	
 #endif	
 };

@@ -622,4 +622,22 @@ inline	void	setIndexBit			 					(long,long,long,long,_SimpleList&);
 	
 #endif
 
+#define    _HY_BITMASK_WIDTH_ (8*sizeof (unsigned long))
+
+struct		bitMasks 
+{
+	unsigned long masks[_HY_BITMASK_WIDTH_];
+	bitMasks (void)
+	{
+		unsigned long aBit = 1;
+		for (long k=0; k<_HY_BITMASK_WIDTH_; k++)
+		{
+			masks[k] = aBit;
+			aBit = aBit << 1;
+ 		}
+	}
+};
+
+extern bitMasks bitMaskArray;
+
 #endif
