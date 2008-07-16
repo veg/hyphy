@@ -157,7 +157,7 @@ void	StringToConsole (_String & s)
 
 //__________________________________________________________________________________
 
-void	BufferToConsole (char* s)
+void	BufferToConsole (const char* s)
 {
 #ifdef __HYPHYMPI__
 	if (_hy_mpi_node_rank == 0)
