@@ -310,7 +310,7 @@ static	void			CheckFibonacci (_Parameter);
 				  **		siteScalingFactors,
 				  *			overallScalingFactors;
 	
-		_GrowingVector*		conditionalTerminalNodeLikelihoodCaches;	
+		_List				conditionalTerminalNodeLikelihoodCaches;	
 		long	  **		conditionalTerminalNodeStateFlag;
 	
 		/* these variables are used to precache 'tainted variables' */

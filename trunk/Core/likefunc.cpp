@@ -481,7 +481,6 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	
 #ifdef	_SLKP_LFENGINE_REWRITE_
 	conditionalInternalNodeLikelihoodCaches = nil;
-	conditionalTerminalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;
 	siteScalingFactors						= nil;
 	overallScalingFactors					= nil;
@@ -3830,7 +3829,6 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		// an acceptable cache size etc
 		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
 		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
-		checkPointer(conditionalTerminalNodeLikelihoodCaches = new _GrowingVector[theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 		checkPointer(overallScalingFactors					 = new _Parameter	 [theTrees.lLength]);
 	#endif
@@ -3865,6 +3863,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		
 		char			** columnBlock		= new char*[atomSize]; checkPointer (columnBlock);
 		_Parameter		* translationCache	= new _Parameter [stateSpaceDim]; checkPointer (translationCache);
+		_GrowingVector  * ambigs			= new _GrowingVector();
 		
 		for (long siteID = 0; siteID < patternCount; siteID ++)
 		{
@@ -3887,8 +3886,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					if (translation < 0)
 					{
 						for (long j = 0; j < stateSpaceDim; j++)
-							conditionalTerminalNodeLikelihoodCaches[i].Store(translationCache[j]);
-						translation = -conditionalTerminalNodeLikelihoodCaches[i].GetUsed()/stateSpaceDim;
+							ambigs->Store(translationCache[j]);
+						translation = -ambigs->GetUsed()/stateSpaceDim;
 					}
 					foundCharacters.Insert (new _String(aState), translation);
 				}
@@ -3897,7 +3896,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
 			}
 		}
-		
+		conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
 		delete columnBlock; delete translationCache;
 #endif
 	}
@@ -7545,11 +7544,7 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 		delete (conditionalInternalNodeLikelihoodCaches);
 		conditionalInternalNodeLikelihoodCaches = nil;
 	}
-	if (conditionalTerminalNodeLikelihoodCaches)
-	{
-		delete (conditionalTerminalNodeLikelihoodCaches);
-		conditionalTerminalNodeLikelihoodCaches = nil;
-	}
+	conditionalTerminalNodeLikelihoodCaches.Clear();
 	if (conditionalTerminalNodeStateFlag)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
@@ -7987,7 +7982,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 													conditionalInternalNodeLikelihoodCaches[index],
 													conditionalTerminalNodeStateFlag[index],
 													siteScalingFactors[index],
-													conditionalTerminalNodeLikelihoodCaches+index,
+													(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 													overallScalingFactors[index],
 													blockID * sitesPerP,
 													(1+blockID) * sitesPerP );				
@@ -8004,7 +7999,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 											conditionalInternalNodeLikelihoodCaches[index],
 											conditionalTerminalNodeStateFlag[index],
 											siteScalingFactors[index],
-											conditionalTerminalNodeLikelihoodCaches+index,
+											(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 											overallScalingFactors[index],
 											0,
 											df->NumberDistinctSites () ) - overallScalingFactors[index];

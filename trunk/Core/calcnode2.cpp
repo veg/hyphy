@@ -303,7 +303,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					parentConditionals [1]							   *= _lfScalerUpwards;
 					parentConditionals [2]							   *= _lfScalerUpwards;
 					parentConditionals [3]							   *= _lfScalerUpwards;
-					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteID];
+					localScalerChange								   += _logLFScaler * theFilter->theFrequencies [siteID];
 				}
 				else
 				{
