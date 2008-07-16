@@ -89,7 +89,7 @@ class		_CalcNode: public _VariableContainer {
 						// change the codeBase value for this node
 						// this will resize the vector used to handle frequencies
 		
-	void				RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil);		
+	void				RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil);		
 						// reexponentiate the transition matrix and 
 						// store it in compExp.
 												
@@ -113,8 +113,7 @@ class		_CalcNode: public _VariableContainer {
 	_Parameter* 	    GetProbs 		(void)   
 							{return theProbs;}
 	
-	void			    SetCompExp 		(_Matrix* mx) 
-							{ mx->nInstances++; compExp = mx; }
+	void			    SetCompExp 		(_Matrix*, long = -1);
 	void			    SetCompMatrix 	(long);
 	_Matrix*    		GetCompExp 		(long catID = -1);
 							
@@ -476,7 +475,7 @@ class _TheTree: public _TreeTopology {
 		 #endif
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
-		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, _Parameter&, long = -1);
+	_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, _Parameter&, long, long, long = -1, _Parameter* = nil);
 		void			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1);
 		void			ExponentiateMatrices			(_List&, long = -1);
 #endif			
@@ -533,5 +532,8 @@ extern char 	isDefiningATree;
 extern _String	expectedNumberOfSubs,
 				stringSuppliedLengths,
 				includeModelSpecs;
-				
+#ifdef _OPENMP
+#include "omp.h"
+#endif 
+
 #endif

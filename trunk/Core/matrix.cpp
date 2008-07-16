@@ -3016,24 +3016,23 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 		
 		if (storageType == 1)
 		{
-			long i,k;
-			
 			if (&storage != this) // not an add&store operation
 			{
+				// copy *this to storage 
 				if (theIndex) //sparse matrix
 				{
-					for (i = 0; i<lDim; i++)
+					for (long i = 0; i<lDim; i++)
 					{
-						k = theIndex[i];
+						long k = theIndex[i];
 						if (k!=-1)
-							storage[k]=theData[i];
+							storage[k] = theData[i];
 					}
 				}
-				else // normal matrix
+				else // dense matrix
 				{
-					_Parameter* thisData = fastIndex(), *stData = storage.fastIndex();
-					for (i = 0; i<lDim; i++, thisData++, stData++)
-						*stData=*thisData;
+					_Parameter *	__restrict__ stData = storage.fastIndex();
+					for (long i = 0; i<lDim; i++)
+						stData[i] = theData[i];
 				}
 			}
 			
@@ -3043,18 +3042,18 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				{
 					if (subtract)
 					{
-						for (i = 0; i<secondArg.lDim; i++)
+						for (long i = 0; i<secondArg.lDim; i++)
 						{
-							k = secondArg.theIndex[i];
+							long k = secondArg.theIndex[i];
 							if (k!=-1)
 								storage[k]-=secondArg.theData[i];
 						}
 					}
 					else
 					{
-						for (i = 0; i<secondArg.lDim; i++)
+						for (long i = 0; i<secondArg.lDim; i++)
 						{
-							k = secondArg.theIndex[i];
+							long k = secondArg.theIndex[i];
 							if (k!=-1)
 								storage[k]+=secondArg.theData[i];
 						}
@@ -3064,18 +3063,18 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				{
 					if (subtract)
 					{
-						for (i = 0; i<secondArg.lDim; i++)
+						for (long i = 0; i<secondArg.lDim; i++)
 						{
-							k = secondArg.theIndex[i];
+							long k = secondArg.theIndex[i];
 							if (k!=-1)
 								storage.theData[k]-=secondArg.theData[i];
 						}
 					}
 					else
 					{
-						for (i = 0; i<secondArg.lDim; i++)
+						for (long i = 0; i<secondArg.lDim; i++)
 						{
-							k = secondArg.theIndex[i];
+							long k = secondArg.theIndex[i];
 							if (k!=-1)
 								storage.theData[k]+=secondArg.theData[i];
 						}
@@ -3085,14 +3084,14 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 			}
 			else
 			{
-				_Parameter* argData = secondArg.theData, *stData = storage.theData, 
-							*bound = storage.theData+storage.lDim;
-				if (!subtract)
-					for (;stData!=bound; argData++, stData++)
-						*stData+=*argData;
+				_Parameter __restrict__ * argData = secondArg.theData, 
+										* stData = storage.theData; 
+				if (subtract)
+					for (long idx = 0; idx < lDim; idx++)
+						stData[idx]-=argData[idx];
 				else
-					for (;stData!=bound; argData++, stData++)
-						*stData-=*argData;
+					for (long idx = 0; idx < lDim; idx++)
+						stData[idx]+=argData[idx];
 			}
 		}
 		else
@@ -3387,24 +3386,22 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 
 {
 			
-		long i,j,k,l,m,n;
-		_Constant zeroC(0.0);
 		_PMathObj tempP, tempP2;
 		
-		if ((!theIndex)&&(!secondArg.theIndex))
+		if ( !theIndex && !secondArg.theIndex)
 		// simplest case of two non-sparse matrices - multiply in a straightforward way
 		{
 			if ((storageType == 0)&&(secondArg.storageType ==0)) // both matrices are polynomial in nature
 			{
-				for (i=0; i<hDim; i++)
-					for (j=i*secondArg.vDim; j<(i+1)*secondArg.vDim; j++)
+				for (long i=0; i<hDim; i++)
+					for (long j=i*secondArg.vDim; j<(i+1)*secondArg.vDim; j++)
 					{
 						_MathObject* secTerm = secondArg.GetObject(j%secondArg.vDim), *firstTerm = GetObject (i*vDim);
 						if (firstTerm&&secTerm)
 							storage.StoreObject (j,firstTerm->Mult (secTerm));
 						else
 							storage.StoreObject (j,new _Polynomial(0.0));
-						for (k=i*vDim+1, l=j%secondArg.vDim+secondArg.vDim; k<(i+1)*vDim; k++, l+=secondArg.vDim)
+						for (long k=i*vDim+1, l=j%secondArg.vDim+secondArg.vDim; k<(i+1)*vDim; k++, l+=secondArg.vDim)
 						{
 							tempP = GetObject (k), tempP2 = secondArg.GetObject(l);
 							if (tempP&&tempP2)
@@ -3418,35 +3415,19 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			}
 			else
 			{
-				_Parameter *rD, 
-						   *fD, 
-						   *sD,
-						   *stop, 
-						   resCell;
-				
-				if ((hDim == vDim)&&(secondArg.hDim == secondArg.vDim)&&(hDim%4==0))
+				if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
+				/* two sqare dense matrices */
 				{
-					for (i=0; i<hDim; i++)
+					long cumulativeIndex = 0;
+					
+					for (long i=0; i<hDim; i++)
 					{
-						rD = storage.theData+i*secondArg.vDim;
-						for (j=0; j<secondArg.vDim; j++,rD++)
+						for (long j=0; j<secondArg.vDim; j++)
 						{
-							resCell = 0.0;
-							fD = theData+i*vDim;
-							stop = fD+vDim;
-							sD = secondArg.theData+j;
-							for (;fD!=stop;)
-							{
-								resCell += *(fD++)**sD;
-								sD += secondArg.vDim;	
-								resCell += *(fD++)**sD;
-								sD += secondArg.vDim;	
-								resCell += *(fD++)**sD;
-								sD += secondArg.vDim;	
-								resCell += *(fD++)**sD;
-								sD += secondArg.vDim;	
-							}
-							*rD = resCell;
+							_Parameter resCell = 0.0;
+							for (long k = 0; k < vDim; k++)
+								resCell += theData[i*vDim + k] * secondArg.theData [k*secondArg.vDim + j];
+							storage.theData[cumulativeIndex++] = resCell;
 						}
 					}
 				}
@@ -3457,10 +3438,16 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							off3 = 3*secondArg.vDim,
 							off4 = 4*secondArg.vDim;*/
 							
-					for (i=0; i<hDim; i++)
+					_Parameter *rD, 
+							   *fD, 
+							   *sD,
+							   *stop, 
+							   resCell;
+
+					for (long i=0; i<hDim; i++)
 					{
 						rD = storage.theData+i*secondArg.vDim;
-						for (j=0; j<secondArg.vDim; j++,rD++)
+						for (long j=0; j<secondArg.vDim; j++,rD++)
 						{
 							resCell = 0.0;
 							fD = theData+i*vDim;
@@ -3489,16 +3476,16 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			{
 				if ((vDim == hDim)&&(secondArg.vDim==secondArg.hDim))
 				{
-					n = secondArg.vDim%4;
+					long n = secondArg.vDim%4;
 					if (n==1)
 					{
-						for (k=0; k<lDim; k++)
+						for (long k=0; k<lDim; k++)
 						{
-							m = theIndex[k];
+							long m = theIndex[k];
 							if (m!=-1)
 							{
-								i = m/vDim;
-								j = m%vDim;
+								long i = m/vDim;
+								long j = m%vDim;
 								_Parameter c = theData[k];
 								_Parameter* stData = storage.theData+i*secondArg.vDim, 
 										  * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3523,13 +3510,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					else
 					if (n==2)
 					{
-						for (k=0; k<lDim; k++)
+						for (long k=0; k<lDim; k++)
 						{
-							m = theIndex[k];
+							long m = theIndex[k];
 							if (m!=-1)
 							{
-								i = m/vDim;
-								j = m%vDim;
+								long i = m/vDim;
+								long j = m%vDim;
 								_Parameter c = theData[k];
 								_Parameter* stData = storage.theData+i*secondArg.vDim, 
 										  * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3551,13 +3538,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					else
 					if (n==3)
 					{
-						for (k=0; k<lDim; k++)
+						for (long k=0; k<lDim; k++)
 						{
-							m = theIndex[k];
+							long m = theIndex[k];
 							if (m!=-1)
 							{
-								i = m/vDim;
-								j = m%vDim;
+								long i = m/vDim;
+								long j = m%vDim;
 								_Parameter c = theData[k];
 								_Parameter* stData = storage.theData+i*secondArg.vDim, 
 										  * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3578,13 +3565,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					}
 					else
 					{
-						for (k=0; k<lDim; k++)
+						for (long k=0; k<lDim; k++)
 						{
-							m = theIndex[k];
+							long m = theIndex[k];
 							if (m!=-1)
 							{
-								i = m/vDim;
-								j = m%vDim;
+								long i = m/vDim;
+								long j = m%vDim;
 								_Parameter c = theData[k];
 								_Parameter* stData = storage.theData+i*secondArg.vDim, 
 										  * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3605,13 +3592,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 				}
 				else
 				{
-					for (k=0; k<lDim; k++)
+					for (long k=0; k<lDim; k++)
 					{
-						m = theIndex[k];
+						long m = theIndex[k];
 						if (m!=-1)
 						{
-							i = m/vDim;
-							j = m%vDim;
+							long i = m/vDim;
+							long j = m%vDim;
 							_Parameter c = theData[k];
 							_Parameter* stData = storage.theData+i*secondArg.vDim, 
 									  * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3624,14 +3611,14 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			}
 			else // polynomial entries
 			{
-				for (k=0; k<lDim; k++)
+				for (long k=0; k<lDim; k++)
 				{
 					if (IsNonEmpty(k))
 					{
-						i = theIndex[k]/vDim;
-						j = theIndex[k]%vDim;
+						long i = theIndex[k]/vDim;
+						long j = theIndex[k]%vDim;
 						_MathObject* p = GetObject(k);
-						for (l=j*secondArg.vDim, m=i*secondArg.vDim; l<(j+1)*secondArg.vDim; l++,m++)
+						for (long l=j*secondArg.vDim, m=i*secondArg.vDim; l<(j+1)*secondArg.vDim; l++,m++)
 						{
 							tempP = secondArg.GetObject (l);
 							if (!tempP) continue;
@@ -3656,13 +3643,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			{
 				if ((vDim == hDim)&&(secondArg.vDim==secondArg.hDim))
 				{
-					for (k=0; k<secondArg.lDim; k++)
+					for (long k=0; k<secondArg.lDim; k++)
 					{
-						m = secondArg.theIndex[k];
+						long m = secondArg.theIndex[k];
 						if (m!=-1)
 						{
-							i = m/secondArg.vDim;
-							j = m%secondArg.vDim;
+							long i = m/secondArg.vDim;
+							long j = m%secondArg.vDim;
 							_Parameter c = secondArg.theData[k];
 							m = vDim%4;
 							_Parameter *stData = storage.theData+j, 
@@ -3710,13 +3697,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 				}
 				else
 				{
-					for (k=0; k<secondArg.lDim; k++)
+					for (long k=0; k<secondArg.lDim; k++)
 					{
-						m = secondArg.theIndex[k];
+						long m = secondArg.theIndex[k];
 						if (m!=-1)
 						{
-							i = m/secondArg.vDim;
-							j = m%secondArg.vDim;
+							long i = m/secondArg.vDim;
+							long j = m%secondArg.vDim;
 							_Parameter c = secondArg.theData[k];
 							_Parameter *stData = storage.theData+j, 
 									   *secData = theData+i,
@@ -3729,15 +3716,15 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			}
 			else // polynomial entries
 			{
-				for (k=0; k<secondArg.lDim; k++)
+				for (long k=0; k<secondArg.lDim; k++)
 				{
 					
 					if (secondArg.IsNonEmpty(k))
 					{
-						i = secondArg.theIndex[k]/secondArg.vDim;
-						j = secondArg.theIndex[k]%secondArg.vDim;
+						long i = secondArg.theIndex[k]/secondArg.vDim;
+						long j = secondArg.theIndex[k]%secondArg.vDim;
 						_MathObject* p = secondArg.GetObject(k);
-						for (l=i, m=j; l<lDim; l+=vDim,m+=secondArg.vDim)
+						for (long l=i, m=j; l<lDim; l+=vDim,m+=secondArg.vDim)
 						{
 							tempP = GetObject (l);
 							if (!tempP) continue;
@@ -3779,26 +3766,26 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			memset (indexVector,0,secondArg.hDim*sizeof(long));
 			if (storageType == 1)
 			{
-				for (i=0;i<secondArg.lDim; i++)
+				for (long i=0; i<secondArg.lDim; i++)
 				{
 					if ((t=secondArg.theIndex[i])!=-1)
 					{
-						k = t/secondArg.vDim;
-						j = k*dd+(indexVector[k]++);
+						long k = t/secondArg.vDim;
+						long j = k*dd+(indexVector[k]++);
 						indexTable [j] = t%secondArg.vDim;
 						indexTable2[j] = i;
 					}
 				}
-				for (k=0; k<lDim; k++)
+				for (long k=0; k<lDim; k++)
 				{
 					if ((t=theIndex[k])!=-1)
 					{
-						i = t/vDim;
-						j = t%vDim;
+						long i = t/vDim;
+						long j = t%vDim;
 						_Parameter c = theData[k];
-						n = j*dd;
-						m = i*secondArg.vDim;
-						for (l=n; l<n+indexVector[j]; l++)
+						long n = j*dd;
+						long m = i*secondArg.vDim;
+						for (long l=n; l<n+indexVector[j]; l++)
 							storage.theData[m+indexTable[l]]+= c*secondArg.theData[indexTable2[l]];
 					}
 				}
@@ -3834,27 +3821,27 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			} */
 			else // polynomial entries
 			{
-				for (i=0;i<secondArg.lDim; i++)
+				for (long i=0;i<secondArg.lDim; i++)
 				{
 					t=secondArg.theIndex[i];
 					if (IsNonEmpty(i))
 					{
-						k = t/secondArg.vDim;
-						j = k*dd+(indexVector[k]++);
+						long k = t/secondArg.vDim;
+						long j = k*dd+(indexVector[k]++);
 						indexTable [j] = t%secondArg.vDim;
 						indexTable2[j] = i;
 					}
 				}
-				for (k=0; k<lDim; k++)
+				for (long k=0; k<lDim; k++)
 				{
 					if (IsNonEmpty(k))
 					{
-						i = theIndex[k]/vDim;
-						j = theIndex[k]%vDim;
+						long i = theIndex[k]/vDim;
+						long j = theIndex[k]%vDim;
 						_MathObject* p = GetObject(k);
-						n = j*dd;
-						m = i*secondArg.vDim;
-						for (l=n; l<n+indexVector[j]; l++)
+						long n = j*dd;
+						long m = i*secondArg.vDim;
+						for (long l=n; l<n+indexVector[j]; l++)
 						{
 							_MathObject* temp = p->Mult (secondArg.GetObject (indexTable2[l]));
 							tempP = storage.GetObject(m+indexTable[l]%secondArg.vDim);

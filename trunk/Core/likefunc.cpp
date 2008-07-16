@@ -7950,44 +7950,62 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 #ifdef _SLKP_LFENGINE_REWRITE_
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
+		_SimpleList changedBranches, *branches;
+		_List		changedModels,   *matrices;
+
 		if (computedLocalUpdatePolicy.lLength)
 		{
-			_SimpleList* branches = (_SimpleList*)localUpdatePolicy(index);
-			_List*		 matrices = (_List*)matricesToExponentiate(index);
+			branches = (_SimpleList*)localUpdatePolicy(index);
+			matrices = (_List*)matricesToExponentiate(index);
 			if (computedLocalUpdatePolicy.lData[index] == 0)
 			{
 				t->DetermineNodesForUpdate		   (*branches, matrices);
 				computedLocalUpdatePolicy.lData[index] = 1;
 			}
-			if (matrices->lLength)
-				t->ExponentiateMatrices(*matrices);
-			return t->ComputeTreeBlockByBranch (*sl, 
+		}
+		else
+		{
+			t->DetermineNodesForUpdate		   (changedBranches,&changedModels);
+			branches = &changedBranches;
+			matrices = &changedModels;
+		}
+		if (matrices->lLength)
+			t->ExponentiateMatrices(*matrices);
+		
+#ifdef _OPENMP
+		long np			= MIN(systemCPUCount,omp_get_max_threads()),
+			 sitesPerP  = df->NumberDistinctSites() / np + 1,
+			 blockID    = 0;
+
+		_Parameter sum  = 0.;
+		#pragma omp  parallel for default(shared) schedule(runtime) private(blockID) num_threads (np) reduction(+:sum)
+			for (blockID = 0; blockID < np; blockID ++)
+				sum += t->ComputeTreeBlockByBranch (*sl, 
+													*branches, 
+													df, 
+													conditionalInternalNodeLikelihoodCaches[index],
+													conditionalTerminalNodeStateFlag[index],
+													siteScalingFactors[index],
+													conditionalTerminalNodeLikelihoodCaches+index,
+													overallScalingFactors[index],
+													blockID * sitesPerP,
+													(1+blockID) * sitesPerP );				
+		
+		// some heuristics on how many patterns / processor
+		return sum - overallScalingFactors[index];
+		
+#endif		
+
+		return t->ComputeTreeBlockByBranch (*sl, 
 											*branches, 
 											df, 
 											conditionalInternalNodeLikelihoodCaches[index],
 											conditionalTerminalNodeStateFlag[index],
 											siteScalingFactors[index],
 											conditionalTerminalNodeLikelihoodCaches+index,
-											overallScalingFactors[index]);
-		}
-		else
-		{
-			_SimpleList changedBranches;
-			_List		changedModels;
-			
-			t->DetermineNodesForUpdate		   (changedBranches,&changedModels);
-			if (changedModels.lLength)
-				t->ExponentiateMatrices(changedModels);
-			
-			return t->ComputeTreeBlockByBranch (*sl, 
-												changedBranches, 
-												df, 
-												conditionalInternalNodeLikelihoodCaches[index],
-												conditionalTerminalNodeStateFlag[index],
-												siteScalingFactors[index],
-												conditionalTerminalNodeLikelihoodCaches+index,
-												overallScalingFactors[index]);
-		}
+											overallScalingFactors[index],
+											0,
+											df->NumberDistinctSites () ) - overallScalingFactors[index];
 	}
 #endif	
 	
@@ -9726,7 +9744,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		if (dV2.lData[idx]>=0)
 		{
 			rec << "\nUseModel (";
-			rec << *(_String*)modelNames (dV2.lData[idx]);
+			rec << *((_String*)modelNames (dV2.lData[idx]));
 			rec << ");\n";
 			setParameter (includeModelSpecs,0.0);
 		}

@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "likefunc.h"
 #include "math.h"
 
-
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
 _Parameter			_lfScalerUpwards		  = pow(2.,300.),
@@ -40,13 +39,24 @@ _Parameter			_lfScalerUpwards		  = pow(2.,300.),
 /*----------------------------------------------------------------------------------------------------------*/
 void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
 {
-	long nodeID;
-	//#pragma omp parallel private(nodeID) shared (catID) if(cBase >= 20 && expNodes.lLength > 1)
+	_List	  matrixQueue,
+			  nodesToDo;
+	
+	for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++)
 	{
-	//	#pragma omp for 
-		for (nodeID = 0; nodeID < expNodes.lLength; nodeID++)
-			((_CalcNode*) expNodes(nodeID))->RecomputeMatrix (catID, categoryCount, nil);
+		long didIncrease = matrixQueue.lLength;
+		_CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
+		thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue);
+		if (matrixQueue.lLength - didIncrease)
+			nodesToDo << thisNode;
 	}
+	
+	long matrixID;
+	
+	#pragma omp parallel for default(none) shared (matrixQueue, catID, nodesToDo) schedule(guided,10) private(matrixID) \
+			if (cBase >= 20 && matrixQueue.lLength > 1)  num_threads (MIN(MIN(systemCPUCount,omp_get_max_threads()), matrixQueue.lLength))
+		for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
+		((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
@@ -94,8 +104,7 @@ void		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-_Parameter		_TheTree::ComputeTreeBlockByBranch	(
-																		_SimpleList&		siteOrdering, 
+_Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering, 
 																		_SimpleList&		updateNodes, 
 																		_DataSetFilter*		theFilter,
 																		_Parameter*			iNodeCache,
@@ -103,9 +112,12 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 																		_Parameter*			scalingAdjustments,
 																		_GrowingVector*		lNodeResolutions,
 																		_Parameter&			overallScaler,
-																		long				catID
+																		long				siteFrom,
+																		long				siteTo,
+																		long				catID,
+																		_Parameter*			storageVec
 																 )
-// the updatePolicy flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
+// the updateNodes flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
 // that must be recomputed
 {
 	// process the leaves first 
@@ -115,6 +127,9 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 					alphabetDimensionmod4 =			alphabetDimension-alphabetDimension%4;
 	
 	_CalcNode		*currentTreeNode;
+	_Parameter		localScalerChange	  =			0.;
+	
+	if (siteTo	> siteCount)	siteTo = siteCount;
 	
 	for  (long nodeID = 0; nodeID < updateNodes.lLength; nodeID++)
 	{
@@ -126,29 +141,29 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 		if (!isLeaf)
 			nodeCode -=  flatLeaves.lLength;
 				
-		_Parameter		* parentConditionals = iNodeCache + parentCode * alphabetDimension * siteCount;
+		_Parameter * parentConditionals = iNodeCache +			  (siteFrom + parentCode  * siteCount) * alphabetDimension;
 		if (taggedInternals.lData[parentCode] == 0)
 		// mark the parent for update and clear its conditionals if needed
 		{
 			taggedInternals.lData[parentCode]	  = 1;
-			_Parameter		*localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
+			_Parameter		__restrict__ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
 			
 			if (alphabetDimension == 4)
 			{
 				long k3		= 0;
-				for (long k = 0; k < siteCount; k++)
+				for (long k = siteFrom; k < siteTo; k++, k3+=4)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					parentConditionals [k3++] = scaler;
-					parentConditionals [k3++] = scaler;
-					parentConditionals [k3++] = scaler;
-					parentConditionals [k3++] = scaler;
+					parentConditionals [k3] = scaler;
+					parentConditionals [k3+1] = scaler;
+					parentConditionals [k3+2] = scaler;
+					parentConditionals [k3+3] = scaler;
 				}
 			}
 			else
 			{
 				long k3		= 0;
-				for (long k = 0; k < siteCount; k++)
+				for (long k = siteFrom; k < siteTo; k++)
 				{
 					_Parameter scaler = localScalingFactor[k];
 					for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
@@ -160,15 +175,15 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 		currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
 								  ((_CalcNode*) flatTree    (nodeCode));
 						
-		_Parameter *		transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
-		_Parameter *		childVector;
+		_Parameter  *		__restrict__ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+		_Parameter  *	    childVector;
 		
 		if (!isLeaf)
-			childVector = iNodeCache + nodeCode * siteCount * alphabetDimension;
+			childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
 		
-		for (long siteID = 0; siteID < siteCount; siteID++)
+		for (long siteID = siteFrom; siteID < siteTo; siteID++)
 		{
-			_Parameter		*tMatrix = transitionMatrix,
+			_Parameter  *tMatrix = transitionMatrix,
 							sum		 = 0.0;
 			if (isLeaf)
 			{
@@ -216,8 +231,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 					parentConditionals [1]							   *= _lfScalerUpwards;
 					parentConditionals [2]							   *= _lfScalerUpwards;
 					parentConditionals [3]							   *= _lfScalerUpwards;
-					overallScaler									   += _logLFScaler * theFilter->theFrequencies [siteID];
-					//printf ("Set s.f. PID %d Site %d %g\n",			   parentCode, siteID, scalingAdjustments [parentCode*siteCount + siteID]);
+					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteID];
 				}
 				else
 				{
@@ -228,7 +242,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 						parentConditionals [1]							   *= _lfScalingFactorThreshold;
 						parentConditionals [2]							   *= _lfScalingFactorThreshold;
 						parentConditionals [3]							   *= _lfScalingFactorThreshold;
-						overallScaler									   -= _logLFScaler * theFilter->theFrequencies [siteID];
+						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteID];
 					}
 				}
 				
@@ -236,6 +250,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 			}
 			else
 			{
+				_Parameter sum = 0.0;
+				
 				for (long p = 0; p < alphabetDimension; p++)
 				{
 					_Parameter		accumulator = 0.0;
@@ -249,7 +265,25 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 						accumulator +=  tMatrix[c] * childVector[c];
 					
 					tMatrix				  += alphabetDimension;
-					parentConditionals[p] *= accumulator;
+					sum += (parentConditionals[p] *= accumulator);
+					
+				}
+				if (sum < _lfScalingFactorThreshold && sum > 0.0)
+				{
+					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
+					for (long c = 0; c < alphabetDimension; c++) 
+						parentConditionals [c] *= _lfScalerUpwards;
+					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteID];
+				}
+				else
+				{
+					if (sum > _lfScalerUpwards)
+					{
+						scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalingFactorThreshold;
+						for (long c = 0; c < alphabetDimension; c++) 
+							parentConditionals [c] *= _lfScalingFactorThreshold;
+						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteID];
+					}
 				}
 				childVector	   += alphabetDimension;
 			}
@@ -259,21 +293,30 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(
 	
 	// assemble the entire likelihood
 	
-	_Parameter * rootConditionals = iNodeCache + (flatTree.lLength-1) * alphabetDimension * siteCount,
+	_Parameter * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
 			   result = 0.0;
 	
-	for (long siteID = 0; siteID < siteCount; siteID++)
+	for (long siteID = siteFrom; siteID < siteTo; siteID++)
 	{
 		_Parameter accumulator = 0.;
 		for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
 			accumulator += *rootConditionals * theProbs[p];
 		
-		if (accumulator <= 0.0)
-			return -A_LARGE_NUMBER;
-		result += log(accumulator) * theFilter->theFrequencies [siteID];
+		if (storageVec)
+			storageVec [siteID] = accumulator;
+		else
+		{
+			if (accumulator <= 0.0)
+				return -A_LARGE_NUMBER;
+			result += log(accumulator) * theFilter->theFrequencies [siteID];
+		}
 	}
 	
-	return result - overallScaler;
+	if (localScalerChange != 0.0) 
+	#pragma omp atomic
+		overallScaler += localScalerChange; 
+	
+	return result;
 }
 
 #endif

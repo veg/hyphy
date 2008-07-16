@@ -9139,7 +9139,7 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 		((_Matrix*)   tV2->GetValue())->Serialize (rec,*tV2->GetName());
 
 	rec << "\nModel ";
-	rec << *(_String*)modelNames (theModel);
+	rec << *((_String*)modelNames (theModel));
 	rec << "=(";
 	rec << *tV->GetName();
 	rec << ',';

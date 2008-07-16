@@ -686,7 +686,7 @@ bool		_CalcNode::NeedToExponentiate(long catID)
 }
 		
 //_______________________________________________________________________________________________
-void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix)	
+void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue)	
 {
 	// assumed that NeedToExponentiate was called prior to this function
 	
@@ -797,17 +797,19 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 			}
 		#endif
 		
-		compExp = (_Matrix*)temp->Exponentiate();
-				
+		#ifdef	_SLKP_LFENGINE_REWRITE_
+			if (queue)
+			{
+				(*queue) << temp;
+				return;
+			}
+		#endif
+		SetCompExp ((_Matrix*)temp->Exponentiate(), categID);	
 		#ifdef __MP__
 			if (matrixTasks)
 				DeleteObject (temp);
 		#endif
 
-		if (totalCategs>1)
-		{
-			matrixCache[categID] = compExp;
-		}
 	}
 	else
 	{
@@ -819,7 +821,13 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 	}
 }
 
-
+//_______________________________________________________________________________________________
+void		_CalcNode::SetCompExp  (_Matrix* m, long catID)	
+{
+	compExp = m;
+	if (catID >= 0)
+		matrixCache[catID] = compExp;
+}
 //_______________________________________________________________________________________________
 _Matrix*		_CalcNode::ComputeModelMatrix  (bool)	
 {
