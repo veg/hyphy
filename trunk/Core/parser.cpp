@@ -2474,13 +2474,8 @@ bool  _Variable::HasChanged (bool ignoreCats) // does this variable need recompu
 				
 void _Variable::MarkDone (void)
 {
-	if (!varFormula)
-	{
-		if (!(varValue&&(varValue->IsVariable())))
-			//hasBeenChanged = false;
-			if (varFlags & HY_VARIABLE_CHANGED)
-				varFlags -= HY_VARIABLE_CHANGED;
-	}
+	if (!varFormula && (varFlags & HY_VARIABLE_CHANGED) && !(varValue && varValue->IsVariable()))
+		varFlags -= HY_VARIABLE_CHANGED;
 }
 
 //__________________________________________________________________________________

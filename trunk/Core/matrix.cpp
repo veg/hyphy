@@ -3030,7 +3030,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				}
 				else // dense matrix
 				{
-					_Parameter *	__restrict__ stData = storage.fastIndex();
+					_Parameter *	
+#ifdef __GNUC__ 
+__restrict 
+#endif
+ stData = storage.fastIndex();
 					for (long i = 0; i<lDim; i++)
 						stData[i] = theData[i];
 				}
@@ -3084,7 +3088,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 			}
 			else
 			{
-				_Parameter __restrict__ * argData = secondArg.theData, 
+				_Parameter 
+#ifdef __GNUC__ 
+__restrict 
+#endif
+ * argData = secondArg.theData, 
 										* stData = storage.theData; 
 				if (subtract)
 					for (long idx = 0; idx < lDim; idx++)

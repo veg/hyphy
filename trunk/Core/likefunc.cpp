@@ -344,7 +344,8 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 {
 	long		 alterIndex = 0;
-	if (lf->HasComputingTemplate())
+	
+	if		(lf->HasComputingTemplate())
 	{
 		for (long k=0; k<lf->GetIndependentVars().lLength;k++)
 			if (!LocateVar (lf->GetIndependentVars().lData[k])->IsGlobal())
@@ -354,45 +355,50 @@ void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 			}
 	}
 	
-	#ifdef		 __MAC__
-		long 	 		stash1 = siteEvalCount;
-		UnsignedWide	microsecsIn, microsecsOut;
+	
+#ifndef _SLKP_LFENGINE_REWRITE_	
+	long				   stash1 = siteEvalCount;
+#endif
+	TimerDifferenceFunction (false);
+	lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
+	lf->Compute			  ();
+
+	
+#ifdef _SLKP_LFENGINE_REWRITE_	
+	_Parameter			  tdiff = TimerDifferenceFunction(true);
+#ifdef	_OPENMP
+	if (systemCPUCount > 1)
+	{
+		_Parameter			minDiff = tdiff;
+		long				bestTC  = 1;
 		
-		Microseconds	  (&microsecsIn);	
+		printf				("1: %g\n", tdiff);
 		
-		lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
-		lf->Compute			  ();
-		Microseconds	  (&microsecsOut);	
-		
-		_Parameter		timeDiff = (microsecsOut.hi-microsecsIn.hi)*(_Parameter)0xffffffff + (microsecsOut.lo-microsecsIn.lo);
-		
-		divideBy		= (siteEvalCount-stash1) * 500000. / timeDiff;
-	#else	
-		#ifdef __WINDOZE__
-		long 	 		stash1 = siteEvalCount;
-		
-		LARGE_INTEGER 	tIn, 
-					  	tOut,
-					  	tRes;
-					 
-		if (QueryPerformanceFrequency(&tRes) && (tRes.QuadPart))
+		for (long k = 2; k < systemCPUCount; k++)
 		{
-			QueryPerformanceCounter (&tIn);
-			lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
-			lf->Compute			  ();
-			QueryPerformanceCounter (&tOut);
-			_Parameter		timeDiff   = tOut.QuadPart-tIn.QuadPart,
-							normalizer = 1000000./tRes.QuadPart;
-			if (timeDiff)
+			lf->SetThreadCount					(k);
+			TimerDifferenceFunction			(false);
+			lf->SetIthIndependent			(alterIndex,lf->GetIthIndependent(alterIndex));
+			lf->Compute						();
+			tdiff = TimerDifferenceFunction (true);
+			printf				("%d: %g\n", k, tdiff);
+			if (tdiff < minDiff)
 			{
-				long testVal			= (siteEvalCount-stash1) * 500000. / (timeDiff*normalizer);
-				if (testVal>0)
-					divideBy		= testVal;
+				minDiff = tdiff;
+				bestTC	= k;
 			}
 		}
-		#endif
-	#endif
-
+		lf->SetThreadCount (bestTC);
+		divideBy			  = 0.5 / minDiff;		
+	}
+	else
+#endif
+		divideBy			  = 0.5 / tdiff;
+		
+#else	
+	divideBy			  = (siteEvalCount-stash1) * 0.5 / TimerDifferenceFunction(true);
+#endif
+	
 }
 
 #endif
@@ -484,7 +490,9 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	conditionalTerminalNodeStateFlag		= nil;
 	siteScalingFactors						= nil;
 	overallScalingFactors					= nil;
-	
+#ifdef	_OPENMP
+	SetThreadCount		(systemCPUCount);
+#endif
 #endif	
 }
 
@@ -736,6 +744,9 @@ void	 _LikelihoodFunction::Clear (void)
 	
 #ifdef _SLKP_LFENGINE_REWRITE_	
 	treeTraversalMasks.Clear();
+#ifdef	_OPENMP
+	SetThreadCount		(systemCPUCount);
+#endif
 #endif
 }
 
@@ -7968,12 +7979,12 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			t->ExponentiateMatrices(*matrices);
 		
 #ifdef _OPENMP
-		long np			= MIN(systemCPUCount,omp_get_max_threads()),
+		long np			= MIN(GetThreadCount(),omp_get_max_threads()),
 			 sitesPerP  = df->NumberDistinctSites() / np + 1,
 			 blockID    = 0;
 
 		_Parameter sum  = 0.;
-		#pragma omp  parallel for default(shared) schedule(runtime) private(blockID) num_threads (np) reduction(+:sum)
+		#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum)
 			for (blockID = 0; blockID < np; blockID ++)
 			{
 				sum += t->ComputeTreeBlockByBranch (*sl, 
@@ -7990,7 +8001,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			}
 		
 		// some heuristics on how many patterns / processor
-		printf ("%d %g\n", likeFuncEvalCallCount, sum - overallScalingFactors[index]);
+		//printf ("%d %g\n", likeFuncEvalCallCount, sum - overallScalingFactors[index]);
 		return sum - overallScalingFactors[index];
 		
 #endif		

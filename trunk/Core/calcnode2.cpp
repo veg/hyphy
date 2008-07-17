@@ -33,9 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
-_Parameter			_lfScalerUpwards		  = pow(2.,300.),
+_Parameter			_lfScalerUpwards		  = pow(2.,100.),
 					_lfScalingFactorThreshold = 1./_lfScalerUpwards,
-					_logLFScaler			  = 300.*log(2.);
+					_logLFScaler			  = 100.*log(2.);
 
 /*----------------------------------------------------------------------------------------------------------*/
 void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
@@ -54,7 +54,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
 	
 	long matrixID;
 	
-	#pragma omp parallel for default(none) shared (matrixQueue, catID, nodesToDo) schedule(guided,10) private(matrixID) \
+	#pragma omp parallel for default(none) shared (matrixQueue, catID, nodesToDo) schedule(static) private(matrixID) \
 			if (cBase >= 20 && matrixQueue.lLength > 1)  num_threads (MIN(MIN(systemCPUCount,omp_get_max_threads()), matrixQueue.lLength))
 		for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
 		((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
@@ -149,7 +149,11 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		// mark the parent for update and clear its conditionals if needed
 		{
 			taggedInternals.lData[parentCode]	  = 1;
-			_Parameter		__restrict__ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
+			_Parameter		
+#ifdef __GNUC__ 
+__restrict 
+#endif
+ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
 			
 			if (alphabetDimension == 4)
 			{
@@ -178,7 +182,11 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
 								  ((_CalcNode*) flatTree    (nodeCode));
 						
-		_Parameter  *		__restrict__ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+		_Parameter  *		
+#ifdef __GNUC__ 
+__restrict 
+#endif
+ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
 		_Parameter  *	    childVector, 
 					*		lastUpdatedSite;
 		
@@ -236,6 +244,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			_Parameter  *tMatrix = transitionMatrix,
 						sum		 = 0.0;
 
+			bool		didScale = false;
+			
 			if (isLeaf)
 			{
 				long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
@@ -289,7 +299,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				// handle scaling if necessary 
 				// the check for sum > 0.0 is necessary for 'degenerate' log-L functions (-infinity)
 				
-				sum = parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
+				sum		= parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
 					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
@@ -298,6 +308,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					parentConditionals [2]							   *= _lfScalerUpwards;
 					parentConditionals [3]							   *= _lfScalerUpwards;
 					localScalerChange								   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+					didScale											= true;
 				}
 				else
 				{
@@ -309,6 +320,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						parentConditionals [2]							   *= _lfScalingFactorThreshold;
 						parentConditionals [3]							   *= _lfScalingFactorThreshold;
 						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						didScale											= true;
 					}
 				}
 				
@@ -340,7 +352,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					for (long c = 0; c < alphabetDimension; c++) 
 						parentConditionals [c] *= _lfScalerUpwards;
 					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
-				}
+					didScale											    = true;
+			}
 				else
 				{
 					if (sum > _lfScalerUpwards)
@@ -349,16 +362,52 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						for (long c = 0; c < alphabetDimension; c++) 
 							parentConditionals [c] *= _lfScalingFactorThreshold;
 						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						didScale											= true;
 					}
 				}
 				childVector	   += alphabetDimension;
+			}
+
+			if (tcc && didScale)
+			{
+				// look ahead to see if we need to correct for downstream cached nodes  
+				long cparentTCCIIndex	=	parentTCCIIndex,
+				cparentTCCIBit		=	parentTCCIBit;
+				
+				_Parameter				scM, lsA;
+				if (sum > _lfScalerUpwards)
+				{	scM = _lfScalingFactorThreshold; lsA = -_logLFScaler; }
+				else
+				{	scM = _lfScalerUpwards; lsA = _logLFScaler; }
+					
+				
+				for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++)
+				{
+					if (cparentTCCIBit == _HY_BITMASK_WIDTH_)
+					{
+						cparentTCCIBit   = 0;
+						cparentTCCIIndex ++;
+					}
+					
+					if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0)
+					{
+						scalingAdjustments [parentCode*siteCount + sid] *= scM;
+						localScalerChange								+= lsA * theFilter->theFrequencies [siteOrdering.lData[sid]];
+					}
+					else
+						break;
+				}
 			}
 		}
 	}
 		
 	// assemble the entire likelihood
 	
-	_Parameter __restrict__ * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
+	_Parameter 
+#ifdef __GNUC__ 
+__restrict 
+#endif
+ * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
 			   result = 0.0;
 	
 
