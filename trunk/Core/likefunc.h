@@ -160,7 +160,11 @@ virtual	_PMathObj	CovarianceMatrix (_SimpleList* = nil);
 		void		StateCounter 		  	(long);
 		void		MPI_LF_Compute 			(long, bool = false);
 												
-	protected:
+#if defined	_SLKP_LFENGINE_REWRITE_ && defined _OPENMP
+		void		SetThreadCount			  (long tc) { lfThreadCount = tc;}
+		long		GetThreadCount			  (void) { return lfThreadCount;}
+#endif 
+protected:
 	
 		_Matrix* 		PairwiseDistances 		(long index);
 		void			CheckDependentBounds	(void);
@@ -214,10 +218,9 @@ virtual	void			ScanAllVariables 		(void);
 		bool			HasBlockChanged		  (long);
 		long			BlockLength			  (long);
 		
-static	void			RandomizeList (_SimpleList&, long);		
-static	void			CheckFibonacci (_Parameter);
+static	void			RandomizeList			(_SimpleList&, long);		
+static	void			CheckFibonacci			(_Parameter);
 
-		
 		
 	private: 	
 	
@@ -320,6 +323,10 @@ static	void			CheckFibonacci (_Parameter);
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
 							treeTraversalMasks;
+	
+#ifdef	_OPENMP
+		long				lfThreadCount;
+#endif	
 	
 #endif	
 };
