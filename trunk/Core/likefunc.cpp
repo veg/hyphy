@@ -7975,6 +7975,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		_Parameter sum  = 0.;
 		#pragma omp  parallel for default(shared) schedule(runtime) private(blockID) num_threads (np) reduction(+:sum)
 			for (blockID = 0; blockID < np; blockID ++)
+			{
 				sum += t->ComputeTreeBlockByBranch (*sl, 
 													*branches, 
 													(_SimpleList*)treeTraversalMasks(index),
@@ -7985,9 +7986,11 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 													(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 													overallScalingFactors[index],
 													blockID * sitesPerP,
-													(1+blockID) * sitesPerP );				
+													(1+blockID) * sitesPerP );
+			}
 		
 		// some heuristics on how many patterns / processor
+		printf ("%d %g\n", likeFuncEvalCallCount, sum - overallScalingFactors[index]);
 		return sum - overallScalingFactors[index];
 		
 #endif		

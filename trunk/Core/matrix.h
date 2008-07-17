@@ -292,7 +292,16 @@ void			  Resize				(long); 	// resize a dense numeric matrix to have more rows
 	
 	_Parameter 	*theData;							  // matrix elements
 	
-_String*		  BranchLengthExpression(_Matrix*, bool);									
+_String*		  BranchLengthExpression(_Matrix*, bool);			
+protected:
+	
+	// data
+	
+	long		hDim, vDim, lDim; 				// matrix physical dimensions; lDim - length of 
+	// actual storage allocated
+	
+	long* 		theIndex;						// indices of matrix elements in logical storage	
+	
 private:
 	
 	_Parameter	computePFDR			(_Parameter, _Parameter);
@@ -359,12 +368,6 @@ private:
 	void		SimplexHelper3 			(long,long,long,long);
 	// 	helper functions for SimplexSolver
 	
-	// data
-	
-	long		hDim, vDim, lDim; 				// matrix physical dimensions; lDim - length of 
-												// actual storage allocated
-	
-	long* 		theIndex;						// indices of matrix elements in logical storage	
 												// if nil - matrix stored conventionally
 												
 	static		int 	storageIncrement,		// how many percent of full matrix size 
