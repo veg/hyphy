@@ -8998,9 +8998,9 @@ BaseRef 	_GrowingVector::makeDynamic (void)
 
 long		_GrowingVector::Store (_Parameter toStore)
 {
-	if (used < GetHDim())
+	if (used < hDim)
 	{
-		_Matrix::Store (used++,0,toStore);	// increment AFTER argument is sent to function
+		theData[used++] = toStore;	// increment AFTER argument is sent to function
 		return used-1;
 	}
 	else

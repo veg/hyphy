@@ -123,6 +123,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 // that must be recomputed
 {
 	// process the leaves first 
+	
 	_SimpleList		taggedInternals					(flatNodes.lLength, 0, 0);
 	long			alphabetDimension	  =			theFilter->GetDimension(),
 					siteCount			  =			theFilter->NumberDistinctSites(),
@@ -137,7 +138,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 	{
 		long	nodeCode   = updateNodes.lData [nodeID],
 				parentCode = flatParents.lData [nodeCode];
-				
+		
 		bool	isLeaf	   = nodeCode < flatLeaves.lLength;
 		
 		if (!isLeaf)
@@ -156,7 +157,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				for (long k = siteFrom; k < siteTo; k++, k3+=4)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					parentConditionals [k3] = scaler;
+					parentConditionals [k3]   = scaler;
 					parentConditionals [k3+1] = scaler;
 					parentConditionals [k3+2] = scaler;
 					parentConditionals [k3+3] = scaler;
@@ -219,10 +220,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				{
 					if (!isLeaf)
 					{
-						//for (long k = 0; k < alphabetDimension; k++) 
-						//	childVector[k] = childVector[k-alphabetDimension];
 						childVector     += alphabetDimension;
-						//successiveSkips ++;
 						if (++currentTCCBit == _HY_BITMASK_WIDTH_)
 						{
 							currentTCCBit   = 0;
@@ -242,7 +240,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			{
 				long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
 				if (siteState >= 0)
-				/* a single character state; sweep down the appropriate column */
+				// a single character state; sweep down the appropriate column 
 				{
 					if (alphabetDimension == 4) // special case for nuc data
 					{
@@ -269,21 +267,17 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				{
 					if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
 					{
-						//if (successiveSkips == 0)
-						  //  successiveSkips = 1;
 						for (long k = 0; k < alphabetDimension; k++) 
 							childVector[k] = lastUpdatedSite[k];
-						//successiveSkips = 0;
 					}			
 					if (++currentTCCBit == _HY_BITMASK_WIDTH_)
 					{
 						currentTCCBit   = 0;
 						currentTCCIndex ++;
 					}
+					lastUpdatedSite = childVector;
 				}
-				lastUpdatedSite = childVector;
 			}
-			
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
@@ -303,7 +297,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					parentConditionals [1]							   *= _lfScalerUpwards;
 					parentConditionals [2]							   *= _lfScalerUpwards;
 					parentConditionals [3]							   *= _lfScalerUpwards;
-					localScalerChange								   += _logLFScaler * theFilter->theFrequencies [siteID];
+					localScalerChange								   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 				}
 				else
 				{
@@ -314,7 +308,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						parentConditionals [1]							   *= _lfScalingFactorThreshold;
 						parentConditionals [2]							   *= _lfScalingFactorThreshold;
 						parentConditionals [3]							   *= _lfScalingFactorThreshold;
-						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteID];
+						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 					}
 				}
 				
@@ -345,7 +339,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
 					for (long c = 0; c < alphabetDimension; c++) 
 						parentConditionals [c] *= _lfScalerUpwards;
-					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteID];
+					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 				}
 				else
 				{
@@ -354,19 +348,20 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalingFactorThreshold;
 						for (long c = 0; c < alphabetDimension; c++) 
 							parentConditionals [c] *= _lfScalingFactorThreshold;
-						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteID];
+						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 					}
 				}
 				childVector	   += alphabetDimension;
 			}
 		}
 	}
-	
+		
 	// assemble the entire likelihood
 	
 	_Parameter __restrict__ * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
 			   result = 0.0;
 	
+
 	for (long siteID = siteFrom; siteID < siteTo; siteID++)
 	{
 		_Parameter accumulator = 0.;
@@ -374,18 +369,23 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			accumulator += *rootConditionals * theProbs[p];
 		
 		if (storageVec)
-			storageVec [siteID] = accumulator;
+			storageVec [siteOrdering.lData[siteID]] = accumulator;
 		else
 		{
 			if (accumulator <= 0.0)
-				return -A_LARGE_NUMBER;
+			{
+				result = -A_LARGE_NUMBER;
+				break;
+			}
 			result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 		}
 	}
 	
-	if (localScalerChange != 0.0) 
-	#pragma omp atomic
+	if (localScalerChange > 0.1 || localScalerChange < -0.1) 
+	{
+#pragma omp atomic
 		overallScaler += localScalerChange; 
+	}
 	
 	return result;
 }
