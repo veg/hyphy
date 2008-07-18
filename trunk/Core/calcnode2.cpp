@@ -38,7 +38,7 @@ _Parameter			_lfScalerUpwards		  = pow(2.,100.),
 					_logLFScaler			  = 100.*log(2.);
 
 /*----------------------------------------------------------------------------------------------------------*/
-void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
+void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 {
 	_List	  matrixQueue,
 			  nodesToDo;
@@ -54,9 +54,12 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long catID)
 	
 	long matrixID;
 	
-	#pragma omp parallel for default(none) shared (matrixQueue, catID, nodesToDo) schedule(static) private(matrixID) \
-			if (cBase >= 20 && matrixQueue.lLength > 1)  num_threads (MIN(MIN(systemCPUCount,omp_get_max_threads()), matrixQueue.lLength))
-		for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
+#ifdef _OPENMP
+	long nt = MIN(tc, matrixQueue.lLength / 19 + 1);
+#endif
+	
+#pragma omp parallel for default(shared) private (matrixID) schedule(static) if (cBase >= 20)  num_threads (nt)
+	for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
 		((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
 }
 
@@ -127,7 +130,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 	_SimpleList		taggedInternals					(flatNodes.lLength, 0, 0);
 	long			alphabetDimension	  =			theFilter->GetDimension(),
 					siteCount			  =			theFilter->NumberDistinctSites(),
-					alphabetDimensionmod4 =			alphabetDimension-alphabetDimension%4;
+					alphabetDimensionmod4  =		alphabetDimension-alphabetDimension%8;
 	
 	_CalcNode		*currentTreeNode;
 	_Parameter		localScalerChange	  =			0.;
@@ -333,8 +336,9 @@ __restrict
 				for (long p = 0; p < alphabetDimension; p++)
 				{
 					_Parameter		accumulator = 0.0;
+					
 					for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-						accumulator +=  tMatrix[c] * childVector[c] + 
+						accumulator +=  tMatrix[c]   * childVector[c] + 
 										tMatrix[c+1] * childVector[c+1] +
 										tMatrix[c+2] * childVector[c+2] +
 										tMatrix[c+3] * childVector[c+3];

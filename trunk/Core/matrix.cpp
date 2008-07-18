@@ -3974,44 +3974,43 @@ _Parameter	_Matrix::MaxColumn  (void)
 //_____________________________________________________________________________________________
 
 _Parameter	_Matrix::MaxRow  (void)	
-// returns matrix's largest abs value element
+// returns the maximum of row sums of a matrix
 {
-	if (storageType == 1)
+	if (storageType == 1) // numeric matrix
 	{
-		_Parameter max = 0, temp;
-		long	   i,k;
-		_Parameter *rowMax = new _Parameter [hDim];
-		checkPointer (rowMax);
-		for (i=0; i<hDim; i++)
-			rowMax[i] = 0.0;
-		if (theIndex)
-		{
-			for (i = 0; i<lDim; i++)
+		_Parameter	max = 0., 
+					*rowMax;
+		
+		checkPointer (rowMax = (_Parameter*)calloc (hDim,sizeof(_Parameter)));
+		
+		if (theIndex) // sparse matrix
+			for (long i = 0; i<lDim; i++)
 			{
-				k = theIndex[i];
+				long k = theIndex[i];
 				if (k!=-1)
 				{
-					temp = theData[i];
+					_Parameter temp = theData[i];
 					if (temp<0.0)
-						temp*=-1;
-					rowMax[k/vDim] += temp;
+						rowMax[k/vDim] -= temp;
+					else
+						rowMax[k/vDim] += temp;
 				}
 			}
-		}
-		else
-		{
-			for (i = 0; i<lDim; i++)
+		else // dense matrix
+			for (long i = 0; i<lDim; i++)
 			{
-				temp = theData[i];
+				_Parameter temp = theData[i];
 				if (temp<0.0)
-					temp*=-1;
-				rowMax[i/vDim] += temp;
+					rowMax[i/vDim] -= temp;
+				else
+					rowMax[i/vDim] += temp;
 			}
-		}
-		for (i=0; i<hDim; i++)
+
+		for (long i=0; i<hDim; i++)
 			if (rowMax[i]>max)	
 				max = rowMax [i];
-		delete (rowMax);
+		
+		free(rowMax);
 		return max;		
 	}
 	return 10.0;
@@ -4417,8 +4416,11 @@ _Matrix*	_Matrix::Exponentiate (void)
 			result->Transpose();
 		}
 		
-		for (i = 0; i<power2; i++, squaringsCount++)
-			result->Sqr();
+		_Parameter * stash = new _Parameter[result->lDim];
+	
+		for (long s = 0; s<power2; s++, squaringsCount++)
+			result->Sqr(stash);
+		delete (stash);
 					
 		return result;	
 }	
@@ -4708,7 +4710,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 						}
 					}					
 				}
-				
+				retMatrix->AmISparse();
 				return retMatrix;
 			}
 			ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & *((_FString*)p)->theString);
@@ -5350,13 +5352,18 @@ void		_Matrix::SqrStrassen (void)
 */
 
 //_____________________________________________________________________________________________
-void		_Matrix::Sqr (void)
+void		_Matrix::Sqr (_Parameter* 
+#ifdef __GNUC__ 
+						  __restrict 
+#endif 
+						  stash
+)
 {
 	if (hDim!=vDim) return;
-	// a non-square matrix
+	// not a square matrix
 	
-	if (theIndex||(storageType!=1))
-	// sparse matrix
+	if (theIndex|| storageType!=1 )
+	// sparse or non-numeric matrix
 	{
 		_Matrix temp (hDim, vDim, storageType==0?theIndex!=nil:false, storageType);
 		Multiply (temp, *this);
@@ -5364,322 +5371,48 @@ void		_Matrix::Sqr (void)
 	}
 	else
 	{
-		if (hDim!=4)
+		if (hDim==4)
+		// special case for nucleotides
 		{
-			/*_Parameter * transpose = (_Parameter*)MemAllocate (lDim*sizeof(_Parameter));
-			checkPointer (transpose);		
-			for (long i=0; i<hDim; i++)
+			for (long i=0, k = 0; i<16; i+=4)
 			{
-				long k = i*vDim+i;
-				transpose[k]=theData[k];
-				k++;
-				for (long j=i+1;j<hDim;j++,k++)
+				for (long j=0; j<4; j++, k++)
 				{
-					transpose[k]=theData[j*hDim+i];
-					transpose[j*hDim+i]=theData[k];
+					stash[k] = theData[i]   * theData [j] 
+					+ theData[i+1] * theData [j+4] 
+					+ theData[i+2] * theData [j+8] 
+					+ theData[i+3] * theData [j+12];
 				}
 			}
-			_Matrix 	temp (hDim, vDim, (bool)false, true);
-			_Parameter* rec = temp.theData;
-			long 		h = vDim%4;
-			
-			for (long i=0; i<hDim; i++)
-			{
-				for (long j=0; j<vDim; j++)
-				{
-					_Parameter *p1 = theData+i*vDim,
-							   *p2 = transpose+j*vDim,
-							   *p3 = p1+vDim-h,
-							   buffer = 0.0;
-					for (;p1!=p3;)
-					{
-						buffer += *(p1++) * *(p2++);
-						buffer += *(p1++) * *(p2++);
-						buffer += *(p1++) * *(p2++);
-						buffer += *(p1++) * *(p2++);
-						
-					}
-					
-					if (h)
-					{
-						if (h==1)
-							buffer += *p1 * *p2;
-						else
-							if (h==2)
-								buffer += p1[0]*p2[0] + p1[1]*p2[1];
-							else 
-							if (h==3)
-								buffer += p1[0]*p2[0] + p1[1]*p2[1] + p2[2]*p2[2];
-					}
-					*(rec++) = buffer;
-				}
-			}
-			
-			free (transpose);*/
-			//_Matrix 	temp (hDim, vDim, (bool)false, true);
-			
-			
-			_Parameter* temp = (_Parameter*)MemAllocate (lDim*sizeof(_Parameter)),
-					  *	rec = temp;
-			long		h     = vDim%4;
-			
-			if (!temp)
-				warnError (-108);
-				
-			if (h == 1)
-			{
-				for (long i=0; i<hDim; i++)
-				{
-					for (long j=0; j<vDim; j++)
-					{
-						_Parameter *p1  = theData+i*vDim,
-								   *p2  = theData+j,
-								   *p3 = p1+vDim-h,
-								   buffer = 0.0;
-								   
-						for (;p1!=p3;)
-						{
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							
-						}
-						
-						*(rec++) = buffer + *p1 * *p2;
-					}
-				}
-			}
-			else
-			if (h==2)
-			{
-				for (long i=0; i<hDim; i++)
-				{
-					for (long j=0; j<vDim; j++)
-					{
-						_Parameter *p1 = theData+i*vDim,
-								   *p2 = theData+j,
-								   *p3 = p1+vDim-h,
-								   buffer = 0.0;
-						for (;p1!=p3;)
-						{
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							
-						}
-						*(rec++) = buffer + *p1 * *p2 + p1[1]*p2[vDim];
-					}
-				}			
-			}
-			else
-			if (h==3)
-			{
-				for (long i=0; i<hDim; i++)
-				{
-					for (long j=0; j<vDim; j++)
-					{
-						_Parameter *p1 = theData+i*vDim,
-								   *p2 = theData+j,
-								   *p3 = p1+vDim-h,
-								   buffer = 0.0;
-						for (;p1!=p3;)
-						{
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							
-						}
-						*(rec++) = buffer + *p1 * *p2 + p1[1]*p2[vDim] + p1[2]*p2[vDim+vDim];
-					}
-				}			
-			}
-			else
-			{
-				for (long i=0; i<hDim; i++)
-				{
-					for (long j=0; j<vDim; j++)
-					{
-						_Parameter *p1 = theData+i*vDim,
-								   *p2 = theData+j,
-								   *p3 = p1+vDim,
-								   buffer = 0.0;
-						for (;p1!=p3;)
-						{
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-							buffer += *(p1++) * *p2;
-							p2 += vDim;
-						}
-						*(rec++) = buffer;
-					}
-				}			
-			}
-			
-			free (theData);
-			theData = temp;
-			
-			/*_Parameter buffer,buffer2;
-			long i,j,k,h,v;
-			for (i=0; i<hDim; i++)
-			{
-				k = i*vDim;
-				for (j=0;j<i;j++)
-				{
-					buffer = 0.0;
-					_Parameter *p1 = theData+i*vDim,
-							   *p2 = theData+j,
-							   *p3 = p1+vDim;
-					for (;p1!=p3;p1++,p2+=vDim)
-					{
-						buffer += *p1 * *p2;
-					}
-					// unroll this loop to level 4
-					_Parameter *p1 = theData+i*vDim,
-							   *p2 = theData+j,
-							   *p3 = p1+vDim-vDim%4;
-					for (;p1!=p3;)
-					{
-						buffer += *(p1++) * *p2;
-						p2 += vDim;
-						buffer += *(p1++) * *p2;
-						p2 += vDim;
-						buffer += *(p1++) * *p2;
-						p2 += vDim;
-						buffer += *(p1++) * *p2;
-						p2 += vDim;
-					}
-					
-					h = vDim%4;
-					if (h)
-					{
-						if (h==1)
-							buffer += *p1 * *p2;
-						else
-							if (h==2)
-							{
-								buffer += *(p1++) * *p2;
-								p2 += vDim;
-								buffer += *p1 * *p2;
-							}
-							else 
-							if (h==3)
-							{
-								buffer += *(p1++) * *p2;
-								p2 += vDim;
-								buffer += *p1 * *p2;
-							}
-					}
-					temp.theData[k++]=buffer;
-				}
-				k++;
-				for (j=i+1;j<hDim;j++)
-				{
-					_Parameter *p1 = theData+i*vDim,
-							   *p2 = theData+j,
-							   *p3 = p1+hDim;
-					buffer = 0.0;
-					for (;p1!=p3;p1++,p2+=vDim)
-					{
-						buffer += *p1 * *p2;
-					}
-					buffer = 0.0;
-					temp.theData[k++]=buffer;
-				}		
-			}				
-			for (i=0; i<hDim; i++)
-			{
-				buffer2 = 0.0;
-				h = i*vDim;
-				v = i;
-				k = vDim+1;
-				for (j=0; j<i; j++, h++, v+=vDim)
-				{
-					buffer = theData[h]*theData[v];
-					buffer2 += buffer;
-					temp.theData[k*j] += buffer;
-				}
-				k = i*vDim+i;
-				buffer = theData[k];
-				temp.theData[k]+= buffer2 + buffer*buffer;
-				
-			}*/
-			//Swap(temp);
 		}
 		else
 		{
-			_Matrix temp (hDim, vDim, (bool)false, true);
-			_Parameter* rec = temp.theData,
-					  * p1,
-					  * p2;
+			//long loopBound = vDim - vDim % 4;
 			
-			for (long i=0; i<4; i++)
+			for (long i=0, e = 0; i<lDim; i+=vDim)
 			{
-				for (long j=0; j<4; j++)
+				for (long j=0; j<vDim; j++, e++)
 				{
-					p1 = theData+i*4;
-					p2 = theData+j;
-					*(rec++) = p1[0] * p2[0] + p1[1] * p2[4] + p1[2] * p2[8] + p1[3] * p2[12];
+					_Parameter  buffer = 0.0;
+					
+					long		m = j;
+					
+					/*for (; k < loopBound; i+=4, m+=4*vDim)
+						buffer += theData[i]   * theData [m] + 
+								  theData[i+1] * theData [m+vDim] +
+								  theData[i+2] * theData [m+2*vDim] +
+								  theData[i+3] * theData [m+3*vDim];*/
+					
+					for (long k=0; k < vDim; k++, m+=vDim)
+						buffer += theData[i+k] * theData [m]; 
+
+					stash[e] = buffer;
 				}
-			}
-			Swap (temp);
-			/*#ifdef __HYALTIVEC__
-			_Matrix tmp (hDim, vDim, (bool)false, true);
-			_Parameter * transpose = (_Parameter*)VecMemAllocate (lDim*sizeof(_Parameter));		
-			for (long i=0; i<hDim; i++)
-			{
-				long k = i*vDim+i;
-				transpose[k]=theData[k];
-				k++;
-				for (long j=i+1;j<hDim;j++,k++)
-				{
-					transpose[k]=theData[j*hDim+i];
-					transpose[j*hDim+i]=theData[k];
-				}
-			}
-			long d = hDim/4;
-			for (long i=0;i<hDim; i++)
-			{
-				vector float *a = (vector float*)(theData+i*hDim),
-							 *b =  (vector float*)(transpose);
-				for (long j=0; j<hDim; j++)
-				{
-					vector float vtemp = VECTOR_ZERO;
-					for (long k=0; k<d; k++,b++)
-					{
-						//vector float vec2 = *, vec1 = a[k];
-						vtemp = vec_madd (*b,a[k],vtemp);
-					}
-					vtemp = vec_add(vtemp,vec_sld(vtemp,vtemp,4));
-					vtemp = vec_add(vtemp,vec_sld(vtemp,vtemp,8));
-					vec_ste(vtemp,0,&(tmp.theData [i*hDim+j]));
-				}
-			}
-			vec_free (transpose);
-			Swap(tmp);
-			#endif*/
-		
+			}			
 		}
+		for (long s = 0; s < lDim; s++)
+			theData[s] = stash[s];
 	}
-			
 }
 //_____________________________________________________________________________________________
 void		_Matrix::AgreeObjects (_Matrix& m)

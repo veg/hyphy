@@ -359,6 +359,9 @@ void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 #ifndef _SLKP_LFENGINE_REWRITE_	
 	long				   stash1 = siteEvalCount;
 #endif
+#ifdef	_OPENMP
+	lf->SetThreadCount (1);
+#endif	
 	TimerDifferenceFunction (false);
 	lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
 	lf->Compute			  ();
@@ -372,28 +375,30 @@ void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 		_Parameter			minDiff = tdiff;
 		long				bestTC  = 1;
 		
-		printf				("1: %g\n", tdiff);
-		
-		for (long k = 2; k < systemCPUCount; k++)
+		for (long k = 2; k <= systemCPUCount; k++)
 		{
-			lf->SetThreadCount					(k);
+			lf->SetThreadCount				(k);
 			TimerDifferenceFunction			(false);
 			lf->SetIthIndependent			(alterIndex,lf->GetIthIndependent(alterIndex));
 			lf->Compute						();
 			tdiff = TimerDifferenceFunction (true);
-			printf				("%d: %g\n", k, tdiff);
 			if (tdiff < minDiff)
 			{
 				minDiff = tdiff;
 				bestTC	= k;
 			}
+			else
+				break;
 		}
 		lf->SetThreadCount (bestTC);
 		divideBy			  = 0.5 / minDiff;		
+		printf				("%d %d\n", bestTC, divideBy);	
+		ReportWarning		(_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
 	}
 	else
 #endif
 		divideBy			  = 0.5 / tdiff;
+	ReportWarning		(_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
 		
 #else	
 	divideBy			  = (siteEvalCount-stash1) * 0.5 / TimerDifferenceFunction(true);
@@ -7976,7 +7981,14 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			matrices = &changedModels;
 		}
 		if (matrices->lLength)
-			t->ExponentiateMatrices(*matrices);
+			t->ExponentiateMatrices(*matrices, GetThreadCount());
+		
+
+	#if !defined __UNIX__ || defined __HEADLESS__
+		if (divideBy && (likeFuncEvalCallCount % divideBy == 0))
+			yieldCPUTime();
+	#endif
+
 		
 #ifdef _OPENMP
 		long np			= MIN(GetThreadCount(),omp_get_max_threads()),

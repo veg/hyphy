@@ -160,9 +160,13 @@ virtual	_PMathObj	CovarianceMatrix (_SimpleList* = nil);
 		void		StateCounter 		  	(long);
 		void		MPI_LF_Compute 			(long, bool = false);
 												
-#if defined	_SLKP_LFENGINE_REWRITE_ && defined _OPENMP
+#if defined	_SLKP_LFENGINE_REWRITE_ 
+	#if defined _OPENMP
 		void		SetThreadCount			  (long tc) { lfThreadCount = tc;}
 		long		GetThreadCount			  (void) { return lfThreadCount;}
+	#else
+		long		GetThreadCount			  (void) { return 1;}
+	#endif
 #endif 
 protected:
 	

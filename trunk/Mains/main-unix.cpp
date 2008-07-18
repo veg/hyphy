@@ -45,6 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "dmalloc.h"
 #endif
 
+#ifdef _OPENMP
+	#include "omp.h"
+#endif
 
 _List	availableTemplateFiles, 
 		availablePostProcessors,
@@ -543,7 +546,10 @@ int main (int argc, char* argv[])
 				argFile = thisArg;
 	}
 	
-   	GlobalStartup();
+#ifdef _OPENMP
+	systemCPUCount = omp_get_max_threads();
+#endif
+  	GlobalStartup();
 
 	if (calculatorMode)
 	{

@@ -157,7 +157,12 @@ class		_Matrix: public _MathObject {
 	
 	void	 	operator *= (_Parameter);		// multiply by a #/store operation on matrices
 
-	void	 	Sqr (void);						// square the matrix
+	void	 	Sqr			(
+#ifdef __GNUC__ 
+							 __restrict 
+#endif							 
+							 _Parameter*);				// square the matrix; takes a scratch vector 
+												// of at least lDim doubles 
 	
 	_List*		ComputeRowAndColSums 			(void);
 	_Matrix* 	MutualInformation				(void);
