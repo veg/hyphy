@@ -423,7 +423,6 @@ virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic co
 				used = 0;
 			}
 
-private:
 			long   used;
 
 };

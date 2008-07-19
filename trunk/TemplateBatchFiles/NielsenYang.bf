@@ -16,6 +16,8 @@ ModelNames = {{"Neutral",
 			  			       
 MAXIMUM_ITERATIONS_PER_VARIABLE = 2000;
 OPTIMIZATION_PRECISION 			= 0.001;
+
+modelLL							= {};
 			  
 /*-------------------------------------------------------------------------------*/
 
@@ -1370,7 +1372,7 @@ if (chosenModelList[0]>0)
 	{
 		timer = Time(1);
 		Optimize (res,lf);
-		dummy = ReceiveJobs (0);
+		ReceiveJobs (0);
 	}
 
 	/*timer = res[1][1]-res[1][2];
@@ -1389,7 +1391,7 @@ for (rateType = 0; rateType < 15; rateType = rateType + 1)
 		continue;
 	}
 
-	dummy = SetWDistribution (categCount);
+	SetWDistribution (categCount);
 	modelMatrix = 0;
 	MULTIPLY_BY_FREQS = PopulateModelMatrix ("modelMatrix", observedFreq);
 	Model theModel = (modelMatrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);
@@ -1424,7 +1426,7 @@ for (rateType = 0; rateType < 15; rateType = rateType + 1)
 	{
 		timer = Time(1);
 		Optimize (res,lf);
-		dummy = ReceiveJobs (0);
+		ReceiveJobs (0);
 	}
 
 	if (modelType>1)
@@ -1489,7 +1491,7 @@ function ReceiveJobs (sendOrNot)
 		res = lf_MLES;
 	}
 	
-	dummy = WriteSnapshot (rateType);
+	WriteSnapshot (rateType);
 
 	GetString  (lfInfo,lf,-1);
 
@@ -1524,6 +1526,8 @@ function ReceiveJobs (sendOrNot)
 		fprintf (stdout, "|  0. Single Rate Model   | ",Format (res[1][0],14,6)," | ",Format (c,13,8)," |  ",Format(degFCount,5,0),"  |\n",
 					 		 tableSeparator);
 	}
+	
+	modelLL [rateType] = res[1][0];
 						 
 	if (MPI_NODE_COUNT>1)
 	{

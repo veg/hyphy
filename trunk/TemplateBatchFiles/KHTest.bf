@@ -237,21 +237,21 @@ if (compType)
 }
 else
 {
-	LikelihoodFunction lf1 = (filteredData,firstTree);
-	Optimize (res1, lf1);
-	ConstructCategoryMatrix (v1,lf1,COMPLETE);
-	fprintf (stdout, "\n\n1). FITTING TREE 1 TO THE DATA\n", lf1);
+	LikelihoodFunction		 lf1 = (filteredData,firstTree);
+	Optimize				 (res1, lf1);
+	ConstructCategoryMatrix  (v1,lf1,COMPLETE);
+	fprintf					 (stdout, "\n\n1). FITTING TREE 1 TO THE DATA\n", lf1);
 	LikelihoodFunction lf2 = (filteredData,secondTree);
-	Optimize (res2, lf2);
-	ConstructCategoryMatrix (v1,lf2,COMPLETE);
-	fprintf (stdout, "\n\n2). FITTING TREE 2 TO THE DATA1\n", lf2);
+	Optimize				 (res2, lf2);
+	ConstructCategoryMatrix  (v2,lf2,COMPLETE);
+	fprintf					 (stdout, "\n\n2). FITTING TREE 2 TO THE DATA\n", lf2);
 
-	LRT1 = 2*(res1[1][0]-res2[1][0]);
+	LRT1					 = 2*(res1[1][0]-res2[1][0]);
 	
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tLRT = ",LRT1);
 	if (LRT1 < 0)
 	{
-		fprintf (stdout, "\n\nERROR: The LRTs was expeceted to be positive.\nPlease check your trees and alignemt");
+		fprintf (stdout, "\n\nERROR: The LRTs was expeceted to be positive.\nPlease check your trees and alignment (or swap the trees)");
 		return 0;
 	}
 
@@ -264,6 +264,7 @@ else
 			break;
 		}
 	}	
+	
 	fprintf (stdout, "\n\nEstimated p-value for  (based on ", itCount," replicates): ", Format(k/itCount,10,4),"\n");
 	OpenWindow (CHARTWINDOW,{{"Simulated LRT"}
 		{"labels"}

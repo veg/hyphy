@@ -508,7 +508,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 		}
 	}
 	
-	parameterList.Duplicate (&scannedVarsList);
+	parameterList.Duplicate  (&scannedVarsList);
+	affectedClasses.Populate (parameterList.lLength,-1,0);
 	
 	hiddenMarkovModel = -1;
 	if (parameters.countitems()>7) // aux mean formula
@@ -668,6 +669,7 @@ void		_CategoryVariable::Duplicate(BaseRef s)
 	hiddenMarkovModel = cv->hiddenMarkovModel;
 	flags = cv->flags;
 	parameterList.Duplicate (&cv->parameterList);
+	affectedClasses.Duplicate (&cv->affectedClasses);
 	this->_Variable::Duplicate (s);
 }
 
@@ -684,6 +686,8 @@ void	_CategoryVariable::Clear (void)
 	intervalSplitter  = -1;
 	hiddenMarkovModel = -1;
 	flags 			  = 0;
+	parameterList.Clear();
+	affectedClasses.Clear();
 }
 	
 //___________________________________________________________________________________________	
@@ -894,10 +898,12 @@ _Matrix*	_CategoryVariable::GetHiddenMarkovFreqs (void)
 	return (_Matrix*)theMX->GetValue();
 }
 //___________________________________________________________________________________________	
-bool	_CategoryVariable::HaveParametersChanged (void)
+bool	_CategoryVariable::HaveParametersChanged (long catID)
 {
 	for (long i=0; i<parameterList.lLength; i++)
-		if (LocateVar(parameterList.lData[i])->HasChanged()) return true;
+		if (LocateVar(parameterList.lData[i])->HasChanged()) 
+			if (catID < 0 || affectedClasses.lData [i] < 0 || catID == affectedClasses.lData[i])
+				return true;
 
 	return false;
 }

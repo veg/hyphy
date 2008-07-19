@@ -3399,7 +3399,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 		if ( !theIndex && !secondArg.theIndex)
 		// simplest case of two non-sparse matrices - multiply in a straightforward way
 		{
-			if ((storageType == 0)&&(secondArg.storageType ==0)) // both matrices are polynomial in nature
+			if ( storageType == 0 && secondArg.storageType ==0) // both matrices are polynomial in nature
 			{
 				for (long i=0; i<hDim; i++)
 					for (long j=i*secondArg.vDim; j<(i+1)*secondArg.vDim; j++)
@@ -3424,22 +3424,25 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			else
 			{
 				if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
-				/* two sqare dense matrices */
+				/* two square dense matrices */
 				{
 					long cumulativeIndex = 0;
 					
-					for (long i=0; i<hDim; i++)
+					_Parameter * row = theData;
+					for (long i=0; i<hDim; i++, row += vDim)
 					{
 						for (long j=0; j<secondArg.vDim; j++)
 						{
-							_Parameter resCell = 0.0;
-							for (long k = 0; k < vDim; k++)
-								resCell += theData[i*vDim + k] * secondArg.theData [k*secondArg.vDim + j];
+							_Parameter resCell = 0.0,
+									   *column  = secondArg.theData + j;
+							for (long k = 0; k < vDim; k++, column += secondArg.vDim)
+								resCell += row[k] * *column;
 							storage.theData[cumulativeIndex++] = resCell;
 						}
 					}
 				}
 				else
+				/* rectangular matrices */
 				{
 					/*long	off1 = secondArg.vDim,
 							off2 = 2*secondArg.vDim,
@@ -3477,14 +3480,33 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			
 		}
 		else
-		if ((theIndex)&&(!secondArg.theIndex))
-		// sparse multiplied by non-sparse
+		if (theIndex && !secondArg.theIndex) // sparse multiplied by non-sparse
 		{
-			if ((storageType == 1)&&(secondArg.storageType ==1))
+			if (storageType == 1 && secondArg.storageType ==1) // both numeric
 			{
-				if ((vDim == hDim)&&(secondArg.vDim==secondArg.hDim))
+				if ( vDim == hDim && secondArg.vDim==secondArg.hDim) // both square and same dimension
 				{
-					long n = secondArg.vDim%4;
+					for (long k=0; k<lDim; k++) // loop over entries in the 1st matrix
+					{
+						long m = theIndex[k];
+						if (m!=-1) // non-zero
+						{
+							long r = m/vDim,
+								 c = m%vDim;
+							
+							// this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
+							// in the form of A_rc * B_cc'
+							
+							_Parameter  value	  = theData[k],
+										_hprestrict_ *res      = storage.theData   + r*vDim,
+										_hprestrict_ *secArg	  = secondArg.theData + c*vDim;
+							
+							for (long i = 0; i < vDim; i++)
+								res[i] += value * secArg[i];
+						}
+					}	
+
+					/*long n = secondArg.vDim%4;
 					if (n==1)
 					{
 						for (long k=0; k<lDim; k++)
@@ -3501,10 +3523,6 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 								// unroll the loop 4x
 								for (;secArgData!=stopper;stData+=4, secArgData+=4)
 								{
-									/**(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);*/
 									stData[0] += c*secArgData[0];
 									stData[1] += c*secArgData[1];
 									stData[2] += c*secArgData[2];
@@ -3594,7 +3612,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 								}
 							}
 						}	
-					}
+					}*/
 					
 								
 				}

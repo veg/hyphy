@@ -392,7 +392,6 @@ void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 		}
 		lf->SetThreadCount (bestTC);
 		divideBy			  = 0.5 / minDiff;		
-		printf				("%d %d\n", bestTC, divideBy);	
 		ReportWarning		(_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
 	}
 	else
@@ -494,7 +493,6 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	conditionalInternalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;
 	siteScalingFactors						= nil;
-	overallScalingFactors					= nil;
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
@@ -749,6 +747,7 @@ void	 _LikelihoodFunction::Clear (void)
 	
 #ifdef _SLKP_LFENGINE_REWRITE_	
 	treeTraversalMasks.Clear();
+	siteCorrections.Clear();
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
@@ -2123,6 +2122,8 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				
 				categID = 0;
 				
+				long	blockLength = BlockLength(j);
+				
 				if (blockDependancies.lData[j])
 				{
 					if ( computationalResults.lLength<=j || HasBlockChanged(j))
@@ -2137,12 +2138,30 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							long ff = HasHiddenMarkov(blockDependancies.lData[j],false);
 							if (ff<0)
 							{
-								RecurseCategory (j,0,blockDependancies.lData[j],HighestBit(blockDependancies.lData[j]),1);
+#ifdef _SLKP_LFENGINE_REWRITE_
+								_SimpleList	scalerTabs (blockLength, 0, 0);
+								long		cumulativeCorrection = 0;
+#endif
+								RecurseCategory (j,0,blockDependancies.lData[j],HighestBit(blockDependancies.lData[j]),1
+#ifdef _SLKP_LFENGINE_REWRITE_
+								,&scalerTabs
+#endif
+								);
+								
 								if (computingTemplate && templateKind)
 									ComputeBlockForTemplate2 (j, bySiteResults->theData+j*bySiteResults->GetVDim(), sR, bySiteResults->GetVDim());
 								else
-									for (i=BlockLength(j)-1;i>=0;i--)
-										blockResult+=myLog(sR[i])*df->theFrequencies.lData[i];
+									for (long s = 0; s < blockLength; s++)
+									{
+										blockResult+=myLog(sR[s])*df->theFrequencies.lData[s];
+#ifdef _SLKP_LFENGINE_REWRITE_
+										cumulativeCorrection += scalerTabs.lData[s];
+#endif
+									}
+#ifdef _SLKP_LFENGINE_REWRITE_
+								blockResult -= cumulativeCorrection*_logLFScaler;
+#endif
+								
 							}
 							else
 							// do constant on partition
@@ -2397,13 +2416,21 @@ void	  _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long in
 
 //_______________________________________________________________________________________
 		
-void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight)
+void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
+#ifdef _SLKP_LFENGINE_REWRITE_
+											,_SimpleList* siteMultipliers  
+#endif				
+	)
 {
 	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
 	if (index<highestIndex)
 	{
 		if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov())
-			RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight);
+			RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
+#ifdef _SLKP_LFENGINE_REWRITE_
+			,siteMultipliers  
+#endif				
+			);
 		else
 		{
 			thisC->Refresh();
@@ -2422,7 +2449,6 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 	}
 	else
 	{
-		
 		if (thisC->IsHiddenMarkov())
 		{
 			if (offsetCounter == 1) // this is the only categ for the block
@@ -2439,22 +2465,46 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			_Parameter* sR 	= siteResults->fastIndex();
 			_Matrix*	cws	= thisC->GetWeights();
 			
+#ifdef _SLKP_LFENGINE_REWRITE_
+			long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lData;
+#endif			
+			
 			for (long k = 0; k<nI; k++)
 			{
-				thisC->SetIntervalValue(k,!k);
-				ComputeBlock (blockIndex,sR+hDim);						
-				_Parameter  localWeight = cws->theData[k]*weight ;
-				/*long j,l;
-				j = currentOffset-1;
-				l = j+hDim;
-				for (; j>=0;j--)
-				{
-					sR[j]+=localWeight*sR[l];
-					l--;
-				}*/
+				thisC->SetIntervalValue		(k,!k);
+				ComputeBlock				(blockIndex,sR+hDim);						
+				_Parameter					localWeight = cws->theData[k]*weight ;
 				for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
-					sR[r1] += localWeight * sR[r2];
+				{
+					#ifdef _SLKP_LFENGINE_REWRITE_
+
+					long scv = *siteCorrectors;
 					
+					if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+					{
+						siteMultipliers->lData[r1] = scv;
+						sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+					}
+					else
+					{
+						if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+							sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
+						else // same scaling factors
+							sR[r1] += localWeight * sR[r2];
+					}
+					
+					/*if (*siteCorrectors)
+						sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (*siteCorrectors);
+					else	
+						sR[r1] += localWeight * sR[r2];*/
+					
+
+					siteCorrectors++;
+					#else
+						sR[r1] += localWeight * sR[r2];
+					#endif			
+				}
+				
 				categID+=offsetCounter;
 			}
 			if (offsetCounter>1)
@@ -3846,7 +3896,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
 		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
-		checkPointer(overallScalingFactors					 = new _Parameter	 [theTrees.lLength]);
+		overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
 	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
@@ -3863,13 +3913,16 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			 iNodeCount		= cT->GetINodeCount(),
 			 atomSize		= theFilter->GetUnitLength();
 		
-		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*categCount]);
+		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount]);
 		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
-		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*categCount]);
+		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*cT->categoryCount]);
 		
-		for (long k = 0; k < patternCount*iNodeCount*categCount; (siteScalingFactors[i])[k] = 1., k++) ; 
-		
-		overallScalingFactors[i] = 0.;
+		if (cT->categoryCount == 1)
+			siteCorrections.AppendNewInstance (new _SimpleList);
+		else
+			siteCorrections.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
+
+		for (long k = 0; k < patternCount*iNodeCount*cT->categoryCount; (siteScalingFactors[i])[k] = 1., k++) ; 
 		
 		// now process filter characters by site / column
 		
@@ -4831,6 +4884,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		DeleteCaches (false);
+		siteCorrections.Clear();
 #endif		
 		
 #ifdef __HYPHYMPI__
@@ -7575,10 +7629,6 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 		delete (siteScalingFactors);
 		siteScalingFactors = nil;
 	}
-	if (overallScalingFactors)
-	{
-		delete overallScalingFactors; overallScalingFactors = nil;
-	}
 	#endif
 }
 	
@@ -7641,7 +7691,7 @@ void	_LikelihoodFunction::Setup (void)
 						   *l = new _SimpleList;
 		
 #ifdef	_SLKP_LFENGINE_REWRITE_
-		treeTraversalMasks.AppendNewInstance(new _SimpleList (t->GetINodeCount() * df->NumberDistinctSites() / _HY_BITMASK_WIDTH_ + 1,0,0));
+		treeTraversalMasks.AppendNewInstance(new _SimpleList (t->GetINodeCount() * df->NumberDistinctSites() / _HY_BITMASK_WIDTH_ + 1,0,0));			
 #endif
 		
 		OptimalOrder	  (i,*s);
@@ -7963,6 +8013,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 	{
 		_SimpleList changedBranches, *branches;
 		_List		changedModels,   *matrices;
+		
+		long		catID = siteRes?categID:-1;
 
 		if (computedLocalUpdatePolicy.lLength)
 		{
@@ -7970,7 +8022,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			matrices = (_List*)matricesToExponentiate(index);
 			if (computedLocalUpdatePolicy.lData[index] == 0)
 			{
-				t->DetermineNodesForUpdate		   (*branches, matrices);
+				t->DetermineNodesForUpdate		   (*branches, matrices,catID);
 				computedLocalUpdatePolicy.lData[index] = 1;
 			}
 		}
@@ -7981,7 +8033,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			matrices = &changedModels;
 		}
 		if (matrices->lLength)
-			t->ExponentiateMatrices(*matrices, GetThreadCount());
+			t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
 		
 
 	#if !defined __UNIX__ || defined __HEADLESS__
@@ -7989,13 +8041,23 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			yieldCPUTime();
 	#endif
 
+		long blockID    = df->NumberDistinctSites()*t->GetINodeCount();
+
+		_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
+									  conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
+				  *ssf  = (categID<1)?siteScalingFactors[index]: siteScalingFactors[index] + categID*blockID;
+		
+		long *scc = nil;
+		
+		if (siteRes)
+			scc = ((_SimpleList*)siteCorrections(index))->lData + ((categID<1)?0:df->NumberDistinctSites()*categID);
 		
 #ifdef _OPENMP
-		long np			= MIN(GetThreadCount(),omp_get_max_threads()),
-			 sitesPerP  = df->NumberDistinctSites() / np + 1,
-			 blockID    = 0;
-
+		long np			 = MIN(GetThreadCount(),omp_get_max_threads()),
+			  sitesPerP  = df->NumberDistinctSites() / np + 1;		
+		
 		_Parameter sum  = 0.;
+		
 		#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum)
 			for (blockID = 0; blockID < np; blockID ++)
 			{
@@ -8003,18 +8065,21 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 													*branches, 
 													(_SimpleList*)treeTraversalMasks(index),
 													df, 
-													conditionalInternalNodeLikelihoodCaches[index],
+													inc,
 													conditionalTerminalNodeStateFlag[index],
-													siteScalingFactors[index],
+													ssf,
 													(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 													overallScalingFactors[index],
 													blockID * sitesPerP,
-													(1+blockID) * sitesPerP );
+													(1+blockID) * sitesPerP,
+													catID,
+													siteRes,
+													scc);
 			}
 		
 		// some heuristics on how many patterns / processor
 		//printf ("%d %g\n", likeFuncEvalCallCount, sum - overallScalingFactors[index]);
-		return sum - overallScalingFactors[index];
+		return sum - _logLFScaler * overallScalingFactors[index];
 		
 #endif		
 
@@ -8022,13 +8087,15 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 											*branches, 
 											(_SimpleList*)treeTraversalMasks(index),
 											df,
-											conditionalInternalNodeLikelihoodCaches[index],
+											inc,
 											conditionalTerminalNodeStateFlag[index],
-											siteScalingFactors[index],
+											ssf,
 											(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 											overallScalingFactors[index],
 											0,
-											df->NumberDistinctSites () ) - overallScalingFactors[index];
+											df->NumberDistinctSites (),
+											catID,
+											siteRes,scc) - _logLFScaler * overallScalingFactors[index];
 	}
 #endif	
 	
@@ -8519,14 +8586,6 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 							}
 						delete theTasks;
 						delete theThreads;	
-						/*BufferToConsole ("Me here!\n");
-						for (i = 0; i<sl->lLength; i++)
-						{
-							char buffer[255];
-							sprintf (buffer,"%d %d %g\n", USE_SCALING_TO_FIX_UNDERFLOW, i, siteRes[i]);
-							BufferToConsole (buffer);
-						}
-						StringFromConsole();	*/		
 					}
 					else
 					{

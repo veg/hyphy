@@ -81,7 +81,7 @@ virtual
 virtual		
 	void	   ScanForGVariables 		(_AVLList&);
 	
-	bool	   HaveParametersChanged 	(void);
+	bool	   HaveParametersChanged 	(long = -1);
 						   
 /*virtual		
 	bool	   IsIndependent (void) { return false;} */  
@@ -167,8 +167,13 @@ virtual
 					*weights,
 					*conditionalWeights;
 					
-		_Parameter	x_min, x_max; // distribution range
-		_SimpleList	parameterList;
+		_Parameter	x_min, 
+					x_max;		// distribution range
+	
+		_SimpleList	parameterList,
+					affectedClasses; 
+					
+					
 
 };
 

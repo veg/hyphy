@@ -239,7 +239,11 @@ static	void			CheckFibonacci			(_Parameter);
 										 			long, bool normalize = true);
 		bool		 	SniffAround 				(_Matrix& , _Parameter& , _Parameter&);
 		long		 	HasPrecisionBeenAchieved 	(_Parameter funcValue = 2.*A_LARGE_NUMBER, bool = false);
-		void		 	RecurseCategory				(long,long,long,long,_Parameter);
+		void		 	RecurseCategory				(long,long,long,long,_Parameter
+#ifdef _SLKP_LFENGINE_REWRITE_
+													,_SimpleList* = nil  
+#endif
+													 );
 		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);
 		void		 	FindMaxCategory				(long,long,long,long,long,_Matrix&);
 		void		 	WriteAllCategories			(long,long,long,long,long,_Matrix&);
@@ -314,19 +318,20 @@ static	void			CheckFibonacci			(_Parameter);
 		*/
 	
 		_Parameter**		conditionalInternalNodeLikelihoodCaches,
-				  **		siteScalingFactors,
-				  *			overallScalingFactors;
+				  **		siteScalingFactors;
 	
 		_List				conditionalTerminalNodeLikelihoodCaches;	
 		long	  **		conditionalTerminalNodeStateFlag;
 	
 		/* these variables are used to precache 'tainted variables' */
 	
-		_SimpleList			computedLocalUpdatePolicy;
+		_SimpleList			computedLocalUpdatePolicy,	overallScalingFactors;
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
-							treeTraversalMasks;
+							treeTraversalMasks,
+							siteCorrections; 
+							// for models with categories, a list of site by site scaling operation counts
 	
 #ifdef	_OPENMP
 		long				lfThreadCount;
@@ -414,7 +419,16 @@ void	StateCounterResultHandler 	(_Formula&, _SimpleList*,long&,long&,long,_Matri
 
 _LikelihoodFunction*
 		FindLikeFuncByName		 	 (_String&);
+#ifdef	_SLKP_LFENGINE_REWRITE_
+extern _Parameter			_lfScalerUpwards,
+							_lfScalingFactorThreshold,
+							_logLFScaler;	
 
+extern	_GrowingVector		_scalerMultipliers, 
+							_scalerDividers;
+
+_Parameter					acquireScalerMultiplier (long);
+#endif
 #endif
 		
 		

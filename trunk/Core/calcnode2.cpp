@@ -37,6 +37,27 @@ _Parameter			_lfScalerUpwards		  = pow(2.,100.),
 					_lfScalingFactorThreshold = 1./_lfScalerUpwards,
 					_logLFScaler			  = 100.*log(2.);
 
+_GrowingVector		_scalerMultipliers, 
+					_scalerDividers;
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+_Parameter	acquireScalerMultiplier (long s)
+{
+	if (s>0)
+	{
+		if (s >= _scalerMultipliers.used)
+			for (long k = _scalerMultipliers.used; k <= s; k++)
+				_scalerMultipliers.Store (exp (-_logLFScaler * k));
+		return _scalerMultipliers.theData[s];
+	}
+	s = -s;
+	if (s >= _scalerDividers.used)
+		for (long k = _scalerDividers.used; k <= s; k++)
+			_scalerDividers.Store (exp (_logLFScaler * k));
+	return _scalerDividers.theData[s];
+}
+
 /*----------------------------------------------------------------------------------------------------------*/
 void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 {
@@ -55,10 +76,10 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 	long matrixID;
 	
 #ifdef _OPENMP
-	long nt = MIN(tc, matrixQueue.lLength / 19 + 1);
+	long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 9 + 1));
 #endif
 	
-#pragma omp parallel for default(shared) private (matrixID) schedule(static) if (cBase >= 20)  num_threads (nt)
+#pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
 	for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
 		((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
 }
@@ -116,11 +137,12 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 																		long	  *			lNodeFlags,
 																		_Parameter*			scalingAdjustments,
 																		_GrowingVector*		lNodeResolutions,
-																		_Parameter&			overallScaler,
+																		long&				overallScaler,
 																		long				siteFrom,
 																		long				siteTo,
 																		long				catID,
-																		_Parameter*			storageVec
+																		_Parameter*			storageVec,
+																		long*				siteCorrectionCounts
 																 )
 // the updateNodes flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
 // that must be recomputed
@@ -133,7 +155,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					alphabetDimensionmod4  =		alphabetDimension-alphabetDimension%8;
 	
 	_CalcNode		*currentTreeNode;
-	_Parameter		localScalerChange	  =			0.;
+	long			localScalerChange	  =			0;
 	
 	if (siteTo	> siteCount)	siteTo = siteCount;
 	
@@ -152,11 +174,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		// mark the parent for update and clear its conditionals if needed
 		{
 			taggedInternals.lData[parentCode]	  = 1;
-			_Parameter		
-#ifdef __GNUC__ 
-__restrict 
-#endif
- *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
+			_Parameter		_hprestrict_ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
 			
 			if (alphabetDimension == 4)
 			{
@@ -185,11 +203,7 @@ __restrict
 		currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
 								  ((_CalcNode*) flatTree    (nodeCode));
 						
-		_Parameter  *		
-#ifdef __GNUC__ 
-__restrict 
-#endif
- transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+		_Parameter  *		_hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
 		_Parameter  *	    childVector, 
 					*		lastUpdatedSite;
 		
@@ -247,7 +261,7 @@ __restrict
 			_Parameter  *tMatrix = transitionMatrix,
 						sum		 = 0.0;
 
-			bool		didScale = false;
+			char		didScale = 0;
 			
 			if (isLeaf)
 			{
@@ -310,8 +324,8 @@ __restrict
 					parentConditionals [1]							   *= _lfScalerUpwards;
 					parentConditionals [2]							   *= _lfScalerUpwards;
 					parentConditionals [3]							   *= _lfScalerUpwards;
-					localScalerChange								   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
-					didScale											= true;
+					localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+					didScale											= 1;
 				}
 				else
 				{
@@ -322,8 +336,8 @@ __restrict
 						parentConditionals [1]							   *= _lfScalingFactorThreshold;
 						parentConditionals [2]							   *= _lfScalingFactorThreshold;
 						parentConditionals [3]							   *= _lfScalingFactorThreshold;
-						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
-						didScale											= true;
+						localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						didScale											= -1;
 					}
 				}
 				
@@ -355,9 +369,9 @@ __restrict
 					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
 					for (long c = 0; c < alphabetDimension; c++) 
 						parentConditionals [c] *= _lfScalerUpwards;
-					localScalerChange									   += _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
-					didScale											    = true;
-			}
+					localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+					didScale											    = 1;
+				}
 				else
 				{
 					if (sum > _lfScalerUpwards)
@@ -365,41 +379,50 @@ __restrict
 						scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalingFactorThreshold;
 						for (long c = 0; c < alphabetDimension; c++) 
 							parentConditionals [c] *= _lfScalingFactorThreshold;
-						localScalerChange								   -= _logLFScaler * theFilter->theFrequencies [siteOrdering.lData[siteID]];
-						didScale											= true;
+						localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						didScale											= -1;
 					}
 				}
 				childVector	   += alphabetDimension;
 			}
 
-			if (tcc && didScale)
+			if (didScale)
 			{
-				// look ahead to see if we need to correct for downstream cached nodes  
-				long cparentTCCIIndex	=	parentTCCIIndex,
-				cparentTCCIBit		=	parentTCCIBit;
-				
-				_Parameter				scM, lsA;
-				if (sum > _lfScalerUpwards)
-				{	scM = _lfScalingFactorThreshold; lsA = -_logLFScaler; }
-				else
-				{	scM = _lfScalerUpwards; lsA = _logLFScaler; }
-					
-				
-				for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++)
+				if (siteCorrectionCounts)
+					siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale; 
+
+				if (tcc)
 				{
-					if (cparentTCCIBit == _HY_BITMASK_WIDTH_)
-					{
-						cparentTCCIBit   = 0;
-						cparentTCCIIndex ++;
-					}
+					// look ahead to see if we need to correct for downstream cached nodes  
+					long cparentTCCIIndex	=	parentTCCIIndex,
+					cparentTCCIBit		=	parentTCCIBit;
 					
-					if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0)
-					{
-						scalingAdjustments [parentCode*siteCount + sid] *= scM;
-						localScalerChange								+= lsA * theFilter->theFrequencies [siteOrdering.lData[sid]];
-					}
+					_Parameter				scM;
+					long					lsA = didScale;
+					if (didScale)
+					{	scM = _lfScalingFactorThreshold; }
 					else
-						break;
+					{	scM = _lfScalerUpwards;  }
+						
+					
+					for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++)
+					{
+						if (cparentTCCIBit == _HY_BITMASK_WIDTH_)
+						{
+							cparentTCCIBit   = 0;
+							cparentTCCIIndex ++;
+						}
+						
+						if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0)
+						{
+							if (siteCorrectionCounts)
+								siteCorrectionCounts [siteOrdering.lData[sid]] += didScale; 
+							scalingAdjustments   [parentCode*siteCount + sid] *= scM;
+							localScalerChange								+= lsA * theFilter->theFrequencies [siteOrdering.lData[sid]];
+						}
+						else
+							break;
+					}
 				}
 			}
 		}
@@ -422,7 +445,9 @@ __restrict
 			accumulator += *rootConditionals * theProbs[p];
 		
 		if (storageVec)
+		{
 			storageVec [siteOrdering.lData[siteID]] = accumulator;
+		}
 		else
 		{
 			if (accumulator <= 0.0)
@@ -434,7 +459,7 @@ __restrict
 		}
 	}
 	
-	if (localScalerChange > 0.1 || localScalerChange < -0.1) 
+	if (!storageVec && localScalerChange) 
 	{
 #pragma omp atomic
 		overallScaler += localScalerChange; 

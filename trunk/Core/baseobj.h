@@ -49,6 +49,12 @@ typedef	char* Ptr;
 	#include "THyPhy.h"
 #endif
 
+#ifdef __GNUC__ 
+	#define _hprestrict_ __restrict
+#else
+	#define _hprestrict_
+#endif
+
 #include "stdio.h"
 
 class BaseObj  {
