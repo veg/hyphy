@@ -487,6 +487,10 @@ int main (int argc, char* argv[])
 	
 	_ExecutionList ex;
 			
+#ifdef _OPENMP
+	systemCPUCount = omp_get_max_threads();
+#endif
+
 	for (long i=1; i<argc;i++)
 	{
 		_String thisArg (argv[i]);
@@ -546,9 +550,6 @@ int main (int argc, char* argv[])
 				argFile = thisArg;
 	}
 	
-#ifdef _OPENMP
-	systemCPUCount = omp_get_max_threads();
-#endif
   	GlobalStartup();
 
 	if (calculatorMode)

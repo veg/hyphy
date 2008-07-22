@@ -318,18 +318,20 @@ static	void			CheckFibonacci			(_Parameter);
 		*/
 	
 		_Parameter**		conditionalInternalNodeLikelihoodCaches,
-				  **		siteScalingFactors;
+				  **		siteScalingFactors,
+				  **		branchCaches;
 	
 		_List				conditionalTerminalNodeLikelihoodCaches;	
 		long	  **		conditionalTerminalNodeStateFlag;
 	
 		/* these variables are used to precache 'tainted variables' */
 	
-		_SimpleList			computedLocalUpdatePolicy,	overallScalingFactors;
+		_SimpleList			overallScalingFactors;
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
 							treeTraversalMasks,
+							computedLocalUpdatePolicy,
 							siteCorrections; 
 							// for models with categories, a list of site by site scaling operation counts
 	

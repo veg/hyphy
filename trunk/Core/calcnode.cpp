@@ -680,7 +680,7 @@ bool		_CalcNode::NeedToExponentiate(long catID)
 			return true;
 		
 		for (long i = 0; i<categoryVariables.lLength; i++)
-			if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged()) 
+			if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged(catID)) 
 				return true;
 	}
 	return false;
@@ -5296,15 +5296,15 @@ void	_TheTree::KillTopLevelCache (void)
 
 long	_TheTree::CountTreeCategories (void)
 {
-	_SimpleList cV;
+	categoryVariables.Clear();
 	{
-		_AVLList		   cVA (&cV);
+		_AVLList		   cVA (&categoryVariables);
 		ScanForCVariables (cVA);
 		cVA.ReorderList   ();
 	}
 	categoryCount = 1;
-	for (long k=0; k<cV.lLength; k++)
-		categoryCount *= ((_CategoryVariable*)LocateVar(cV.lData[k]))->GetNumberOfIntervals();
+	for (long k=0; k<categoryVariables.lLength; k++)
+		categoryCount *= ((_CategoryVariable*)LocateVar(categoryVariables.lData[k]))->GetNumberOfIntervals();
 	return categoryCount;
 }
 
@@ -6029,6 +6029,9 @@ bool _TheTree::HasChanged (void)
 				
 bool _TheTree::HasChanged2 (void)
 {
+	for (long k = 0; k < categoryVariables.lLength;  k++)
+		if (((_CategoryVariable*)LocateVar(categoryVariables.lData[k]))->HaveParametersChanged())
+			return true;
 	_CalcNode* curNode = StepWiseTraversal (true);
 	while (curNode)
 	{

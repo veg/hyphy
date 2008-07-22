@@ -116,7 +116,7 @@ class		_Matrix: public _MathObject {
 	virtual	_PMathObj	RetrieveNumeric (void);	// returns the numeric value of this matrix
 
 	virtual	void		ScanForVariables  (_AVLList&, bool inclG = false);
-	virtual	void		ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1);
+	virtual	void		ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true);
 												// scans for all local independent variables on which the matrix depends
 												// and stores them in the list passed as the parameter
 	
@@ -157,11 +157,8 @@ class		_Matrix: public _MathObject {
 	
 	void	 	operator *= (_Parameter);		// multiply by a #/store operation on matrices
 
-	void	 	Sqr			(
-#ifdef __GNUC__ 
-							 __restrict 
-#endif							 
-							 _Parameter*);				// square the matrix; takes a scratch vector 
+	void	 	Sqr			(_Parameter* _hprestrict_);				
+												// square the matrix; takes a scratch vector 
 												// of at least lDim doubles 
 	
 	_List*		ComputeRowAndColSums 			(void);

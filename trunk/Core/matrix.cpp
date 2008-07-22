@@ -2116,7 +2116,7 @@ void	_Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG)
 }
 //_____________________________________________________________________________________________
 
-void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID)
+void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat)
 {
 	if (storageType == 2) // a formula based matrix, there is stuff to do
 	{
@@ -2202,12 +2202,12 @@ void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long model
 		{
 			for (long i = 0; i<lDim; i++)
 				if (IsNonEmpty(i))
-					theFormulas[i]->ScanFForVariables(theReceptacle,inclG);
+					theFormulas[i]->ScanFForVariables(theReceptacle,inclG,false,inclCat);
 		}
 		else
 			for (long i = 0; i<lDim; i++)
 				if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
-					theFormulas[i]->ScanFForVariables (theReceptacle,inclG);			
+					theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat);			
 	}
 	else
 		if (storageType == 0) // a polynomial based matrix, there is stuff to do
@@ -5370,12 +5370,7 @@ void		_Matrix::SqrStrassen (void)
 */
 
 //_____________________________________________________________________________________________
-void		_Matrix::Sqr (_Parameter* 
-#ifdef __GNUC__ 
-						  __restrict 
-#endif 
-						  stash
-)
+void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 {
 	if (hDim!=vDim) return;
 	// not a square matrix
@@ -5405,24 +5400,26 @@ void		_Matrix::Sqr (_Parameter*
 		}
 		else
 		{
-			//long loopBound = vDim - vDim % 4;
+			long loopBound = vDim - vDim % 4;
 			
 			for (long i=0, e = 0; i<lDim; i+=vDim)
 			{
+				_Parameter * row = theData + i;
 				for (long j=0; j<vDim; j++, e++)
 				{
 					_Parameter  buffer = 0.0;
 					
-					long		m = j;
+					long		m = j,
+								k = 0;
 					
-					/*for (; k < loopBound; i+=4, m+=4*vDim)
-						buffer += theData[i]   * theData [m] + 
-								  theData[i+1] * theData [m+vDim] +
-								  theData[i+2] * theData [m+2*vDim] +
-								  theData[i+3] * theData [m+3*vDim];*/
+					for (; k < loopBound; k+=4, m+=4*vDim)
+						buffer += row[k]   * theData [m] + 
+								  row[k+1] * theData [m+vDim] +
+								  row[k+2] * theData [m+vDim+vDim] +
+								  row[k+3] * theData [m+vDim+vDim+vDim];
 					
-					for (long k=0; k < vDim; k++, m+=vDim)
-						buffer += theData[i+k] * theData [m]; 
+					for (; k < vDim; k++, m+=vDim)
+						buffer += row[k] * theData [m]; 
 
 					stash[e] = buffer;
 				}

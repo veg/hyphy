@@ -34,11 +34,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void	_LikelihoodFunction::DetermineLocalUpdatePolicy (void)
 {
-	computedLocalUpdatePolicy.Populate (theTrees.lLength,0,0);
 	for (long k = 0; k < theTrees.lLength; k ++)
 	{
-		localUpdatePolicy.AppendNewInstance (new _SimpleList);
-		matricesToExponentiate.AppendNewInstance (new _List);
+		long catCount = ((_TheTree*)LocateVar(theTrees(k)))->categoryCount;
+		_List * lup = new _List,
+			  * mte = new _List;
+		
+		computedLocalUpdatePolicy.AppendNewInstance (new _SimpleList (catCount,0,0));
+		for (long l = 0; l < catCount; l++)
+		{
+			lup->AppendNewInstance (new _SimpleList);
+			mte->AppendNewInstance (new _List);
+		}
+			
+		localUpdatePolicy.AppendNewInstance		 (lup);
+		matricesToExponentiate.AppendNewInstance (mte);
 	}
 }
 

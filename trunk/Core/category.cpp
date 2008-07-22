@@ -118,9 +118,11 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
 {
 	_String 	errorMsg = _String ("While attempting to construct category variable ") & *GetName() & ": ";
-	_SimpleList scannedVarsList; 
 	
-	//_AVLList    scannedVars (&scannedVarsList);
+	_SimpleList scannedVarsList,
+				variableDependanceAllocationsAux;
+	
+	_AVLListXL	variableDependanceAllocations (&variableDependanceAllocationsAux);
 	
 	bool 	check,
 			covariantVar = false;
@@ -129,7 +131,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	
 	Clear(); // clear this variable if needed
 	
-	if (!_x_) // first run. initialize the dummy
+	if (!_x_) // first run. initialize the internal variables
 	{
 		_String xname ("_x_");
 		_hyApplicationGlobals.Insert (new _String (xname));
@@ -143,8 +145,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	
 	checkParameter (maxCatIvals, maxCategoryIntervals, 100);
 	// set up the number of intervals and the matrices
-	_String* param = (_String*)parameters(0); 
-	intervals = ProcessNumericArgument(param,theP);
+	_String*			param = (_String*)parameters(0); 
+	intervals				  = ProcessNumericArgument(param,theP);
 	if (intervals<=0)
 	{
 		WarnError (errorMsg & _String("Category variable must have a positive number of classes - had ")
@@ -208,19 +210,21 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 				sv.ReorderList();
 			}
 			
+			_Matrix *tryMatrix = (_Matrix*)probabilities.GetTheMatrix();
 			// check to see if it is a matrix spec
-			_PMathObj  tryMatrix = probabilities.GetTheMatrix();
 			if (tryMatrix)
 			{
 				_Matrix* weightMatrix = (_Matrix*)tryMatrix;
+				
 				if (!( ((weightMatrix->GetHDim()==1)&&(weightMatrix->GetVDim()==intervals))||
-					 ((weightMatrix->GetHDim()==intervals)&&(weightMatrix->GetVDim()==1))))
+					   ((weightMatrix->GetHDim()==intervals)&&(weightMatrix->GetVDim()==1))))
 				{
 					if (weightMatrix->GetVDim() == intervals)
+					// covariance structure here
 					{
 						if (weightMatrix->GetHDim() > 1)
 						{
-							check = true;
+							check		 = true;
 							covariantVar = true;
 							if (weightMatrix->IsIndependent())
 								for (long k=0; check && (k<weightMatrix->GetHDim()); k++)
@@ -236,11 +240,32 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 						check = false;	
 				}
 				else
+					// indepenent category variable
 				{
 					if (weightMatrix->IsIndependent())
 						check=checkWeightMatrix(*weightMatrix);
 					else
+					{
+						for (long k = 0; k < weightMatrix->GetHDim() * weightMatrix->GetVDim (); k++)
+						{
+							_Formula* thisCell = weightMatrix->GetFormula (k,-1);
+							if (thisCell)
+							{
+								_SimpleList	  probVars;
+								_AVLList	  sv (&probVars);
+								thisCell->ScanFForVariables (sv, true);
+								sv.ReorderList();
+								for (long v = 0; v < probVars.lLength; v++)
+								{
+									long f = variableDependanceAllocations.Find ((BaseRef)probVars.lData[v]);
+									if (f < 0)
+										f = variableDependanceAllocations.Insert ((BaseRef)probVars.lData[v], (long)(new _SimpleList (intervals,0,0)));
+									((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
+								}
+							}
+						}
 						check = true;
+					}
 					if (check)
 						weights->Duplicate(weightMatrix);
 				}
@@ -413,7 +438,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 		// expect a matrix for the cumulative distribution
 		if (covariantVar)
 		{
-			param	= (_String*)parameters(3);
+			param				= (_String*)parameters(3);
 			_String				splitterName (AppendContainerName(*param,theP));
 			f = LocateVarByName (splitterName);
 			check = true;
@@ -472,31 +497,41 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 			else
 			{
 				values->Duplicate(catMatrix);
+				if (!catMatrix->IsIndependent()) // not a constant matrix
 				{
-					_SimpleList	  densityVars,
-								  existingVars (scannedVarsList);
-								  
-					_AVLList      sv (&densityVars);
-					catMatrix->ScanForVariables (sv, true);
-					sv.ReorderList();
-					scannedVarsList.Union (densityVars,existingVars);
+					for (long k = 0; k < catMatrix->GetHDim() * catMatrix->GetVDim (); k++)
+					{
+						_Formula* thisCell = catMatrix->GetFormula (k,-1);
+						if (thisCell)
+						{
+							_SimpleList	  densityVars,
+										  existingVars (scannedVarsList);
+					
+							_AVLList	  sv (&densityVars);
+							thisCell->ScanFForVariables (sv, true);
+							sv.ReorderList();
+							for (long v = 0; v < densityVars.lLength; v++)
+							{
+								long f = variableDependanceAllocations.Find ((BaseRef)densityVars.lData[v]);
+								if (f < 0)
+									f = variableDependanceAllocations.Insert ((BaseRef)densityVars.lData[v], (long)(new _SimpleList (intervals,0,0)));
+								((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
+							}
+							
+							scannedVarsList.Union (densityVars,existingVars);
+						}
+					}
 				}
-				//catMatrix->ScanForVariables(scannedVars,true);
 			}
 		}
 		else
 		{
-			_String * s;
-			errorMsg = errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution. Had:");
-			s = (_String*)cumulative.toStr();
-			errorMsg = errorMsg & *s;
-			DeleteObject(s);
-			WarnError (errorMsg );
+			WarnError (errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution. Had:") & _String((_String*)cumulative.toStr()) );
 			return;
 		}
 	}
 	
-	// finally go thru all the variables and put them where they belong in dependance containers
+	// disallow category -> category dependance
 	for (long i=0; i<scannedVarsList.lLength; i++)
 	{
 		_Variable * curVar = (_Variable*)variablePtrs (scannedVarsList.lData[i]);
@@ -509,7 +544,19 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	}
 	
 	parameterList.Duplicate  (&scannedVarsList);
-	affectedClasses.Populate (parameterList.lLength,-1,0);
+	// finally go thru all the variables and put them where they belong in dependance containers
+	
+	for (long vid = 0; vid < parameterList.lLength; vid ++)
+	{
+		long vf = variableDependanceAllocations.Find ((BaseRef)parameterList.lData[vid]);
+		if (vf >= 0)
+			affectedClasses << (_SimpleList*)(variableDependanceAllocations.GetXtra (vf));
+		else
+			affectedClasses.AppendNewInstance (new _SimpleList (intervals,1,0));
+		
+		_String vlog = _String ("Variable ") & *LocateVar(parameterList.lData[vid])->GetName() & " mapped to class " & _String(((_String*)affectedClasses(vid)->toStr()));
+		ReportWarning (vlog);
+	}
 	
 	hiddenMarkovModel = -1;
 	if (parameters.countitems()>7) // aux mean formula
@@ -897,14 +944,18 @@ _Matrix*	_CategoryVariable::GetHiddenMarkovFreqs (void)
 	_Variable* theMX = LocateVar (fIndex);
 	return (_Matrix*)theMX->GetValue();
 }
+
 //___________________________________________________________________________________________	
 bool	_CategoryVariable::HaveParametersChanged (long catID)
 {
 	for (long i=0; i<parameterList.lLength; i++)
-		if (LocateVar(parameterList.lData[i])->HasChanged()) 
-			if (catID < 0 || affectedClasses.lData [i] < 0 || catID == affectedClasses.lData[i])
+	{
+		_Variable * p = LocateVar(parameterList.lData[i]);
+		//printf ("%i %s %d\n", i, p->GetName()->sData, p->HasChanged());
+		if (p->HasChanged())
+			if (catID < 0 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID])
 				return true;
-
+	}
 	return false;
 }
 

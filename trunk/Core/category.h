@@ -170,8 +170,8 @@ virtual
 		_Parameter	x_min, 
 					x_max;		// distribution range
 	
-		_SimpleList	parameterList,
-					affectedClasses; 
+		_SimpleList	parameterList;
+		_List		affectedClasses; 
 					
 					
 

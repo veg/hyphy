@@ -476,8 +476,21 @@ class _TheTree: public _TreeTopology {
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil);
-		void			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1);
+		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1);
 		void			ExponentiateMatrices			(_List&, long, long = -1);
+		void			ComputeBranchCache				( _SimpleList&,
+														  long nodeID,
+														 _Parameter*			cache,
+														 _Parameter*			iNodeCache,
+														 _DataSetFilter*		theFilter,
+														 long		   *		lNodeFlags,
+														 _Parameter*			scalingAdjustments,
+														 _GrowingVector*		lNodeResolutions,
+														 long					siteFrom,
+														 long					siteTo,
+														 long					catID,
+														 _SimpleList*			= nil
+														 );
 #endif			
 
 	// --------------------------

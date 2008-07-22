@@ -2700,11 +2700,11 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 			{
 			
 				_AVLList 		   ma (&mVars);
-				GetModelMatrix ()->ScanForVariables2 (ma,true,curVar->GetAVariable());
+				GetModelMatrix ()->ScanForVariables2 (ma,true,curVar->GetAVariable(),false);
 				
 				long freqID 	= modelFrequenciesIndices.lData[theModel];
 				if (freqID>=0)
-					((_Matrix*) (LocateVar(freqID)->GetValue()))->ScanForVariables(ma,true);
+					((_Matrix*) (LocateVar(freqID)->GetValue()))->ScanForVariables2(ma,true,-1,false);
 					
 				ma.ReorderList();
 				
