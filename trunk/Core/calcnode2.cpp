@@ -86,7 +86,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNodes, long catID)
+long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNodes, long catID, long addOne)
 {
 	_SimpleList		nodesToUpdate (flatLeaves.lLength + flatTree.lLength - 1, 0, 0); 
 	_CalcNode		*currentTreeNode;
@@ -94,6 +94,9 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 
 	// look for nodes with model changes and mark the path up to the root as needing an update
 	
+	if (addOne >= 0)
+		nodesToUpdate.lData[addOne] = 1;
+
 	for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
 	{
 		bool	isLeaf	   = nodeID < flatLeaves.lLength;
@@ -106,6 +109,7 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 			if (expNodes)
 			{
 				(*expNodes) << currentTreeNode;
+				//printf ("EXP>%s\n", currentTreeNode->GetName()->sData);
 				lastNodeID = nodeID;
 			}
 			else
@@ -117,6 +121,7 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 		if (nodesToUpdate.lData[nodeID])
 			nodesToUpdate.lData[flatParents.lData[nodeID]+flatLeaves.lLength] = 1;
 	}
+	
 	
 	// one more pass to pick up all descendants of changed internal nodes
 	
@@ -439,12 +444,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		
 	// assemble the entire likelihood
 	
-	_Parameter 
-#ifdef __GNUC__ 
-__restrict 
-#endif
- * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
-			   result = 0.0;
+	_Parameter _hprestrict_	* rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
+							  result = 0.0;
 	
 
 	for (long siteID = siteFrom; siteID < siteTo; siteID++)
@@ -481,7 +482,7 @@ __restrict
 
 void			_TheTree::ComputeBranchCache	(	 
 													  _SimpleList&			siteOrdering,
-													  long					nodeID,
+													  long					brID,
 													  _Parameter*			cache,
 													  _Parameter*			iNodeCache,
 													  _DataSetFilter*		theFilter,
@@ -498,7 +499,7 @@ void			_TheTree::ComputeBranchCache	(
 				nodesToProcess,
 				rootPath;
 	
-	long		myParent			   = nodeID-flatLeaves.lLength,
+	long		myParent			   = brID		-flatLeaves.lLength,
 				alphabetDimension	   =			theFilter->GetDimension(),
 				alphabetDimensionmod4  =			alphabetDimension - alphabetDimension % 4,
 				siteCount			   =			theFilter->NumberDistinctSites();
@@ -515,7 +516,10 @@ void			_TheTree::ComputeBranchCache	(
 	{
 		myParent = flatParents.lData[k];
 		if (taggedNodes.lData[myParent+flatLeaves.lLength] == 1 && taggedNodes.lData[k] == 0)
-			nodesToProcess << k;
+		{
+			if (myParent != brID - flatLeaves.lLength)
+				nodesToProcess << k;
+		}
 		if (taggedNodes.lData[k])
 			rootPath << k;
 	}
@@ -525,11 +529,11 @@ void			_TheTree::ComputeBranchCache	(
 
 	// first populate the downward looking vector of conditionals
 
-	if (nodeID < flatLeaves.lLength) // a leaf
+	if (brID < flatLeaves.lLength) // a leaf
 	{
 		for (long siteID = siteFrom; siteID < siteTo; siteID ++, state += alphabetDimension)
 		{
-			long siteState = lNodeFlags[nodeID*siteCount + siteOrdering.lData[siteID]] ;
+			long siteState = lNodeFlags[brID*siteCount + siteOrdering.lData[siteID]] ;
 			if (siteState >= 0)
 				// a single character state; sweep down the appropriate column 
 			{
@@ -547,8 +551,8 @@ void			_TheTree::ComputeBranchCache	(
 	}
 	else // an internal branch
 	{
-		long		nodeCode = nodeID - flatLeaves.lLength;
-		_Parameter *lastUpdated = iNodeCache + (nodeCode * siteCount) * alphabetDimension;
+		long		nodeCode = brID - flatLeaves.lLength;
+		_Parameter *lastUpdated = iNodeCache + (nodeCode * siteCount + siteFrom) * alphabetDimension;
 		
 		long currentTCCIndex		,
 			 currentTCCBit			;
@@ -567,10 +571,6 @@ void			_TheTree::ComputeBranchCache	(
 				if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) == 0)
 					lastUpdated = iNodeCache + (nodeCode * siteCount + siteID) * alphabetDimension;
 			}
-			else
-			{
-					lastUpdated = iNodeCache + (nodeCode * siteCount + siteID) * alphabetDimension;
-			}
 			
 			for (long s = 0; s < alphabetDimension; s++)
 				state[s] = lastUpdated[s];
@@ -583,32 +583,37 @@ void			_TheTree::ComputeBranchCache	(
 					currentTCCIndex ++;
 				}
 			}
+			else
+				lastUpdated += alphabetDimension;
 		}
 	}
 	
 	state = cache + alphabetDimension * siteCount; 
 	
-	// traverse marked children
-	
 	taggedNodes.Populate (flatTree.lLength, 0, 0);
+	rootPath.Flip ();
 
-	for  (long nodeID = 0; nodeID < nodesToProcess.lLength; nodeID++)
+	//printf  ("%d\n", brID);
+
+	for  (long nodeID = 0; nodeID < nodesToProcess.lLength + rootPath.lLength - 2; nodeID++)
 	{
-		long	nodeCode   = nodesToProcess.lData [nodeID],
-				parentCode = flatParents.lData [nodeCode];
+		bool	notPassedRoot = nodeID<nodesToProcess.lLength;
+
+		long	nodeCode   = notPassedRoot?nodesToProcess.lData [nodeID]:rootPath.lData[nodeID-nodesToProcess.lLength],
+				parentCode = notPassedRoot?flatParents.lData [nodeCode]:(rootPath.lData[nodeID-nodesToProcess.lLength+1] - flatLeaves.lLength);
 		
 		bool	isLeaf	   = nodeCode < flatLeaves.lLength;
 		
 		if (!isLeaf)
 			nodeCode -=  flatLeaves.lLength;
 		
+		//printf  ("%d %d(%d) %d\n", nodeID, nodeCode, isLeaf, parentCode);
 		_Parameter * parentConditionals = iNodeCache +			  (siteFrom + parentCode  * siteCount) * alphabetDimension;
 		if (taggedNodes.lData[parentCode] == 0)
 			// mark the parent for update and clear its conditionals if needed
 		{
 			taggedNodes.lData[parentCode]	  = 1;
 			_Parameter		_hprestrict_ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
-			
 			if (alphabetDimension == 4)
 			{
 				long k3		= 0;
@@ -633,62 +638,29 @@ void			_TheTree::ComputeBranchCache	(
 			}
 		}
 		
-		_CalcNode * currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
-					((_CalcNode*) flatTree    (nodeCode));
+		_CalcNode    * currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
+											     ((_CalcNode*) flatTree    (notPassedRoot?nodeCode:parentCode));
 		
 		_Parameter  *		_hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
-		_Parameter  *	    childVector, 
+		
+		_Parameter  *	    childVector,
 					*		lastUpdatedSite;
 		
 		if (!isLeaf)
-			childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
+			lastUpdatedSite = childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
 		
 		long currentTCCIndex		,
-			 currentTCCBit			,
-			 parentTCCIIndex		,
-			 parentTCCIBit			;
+			 currentTCCBit			;
 		
 		if (tcc)
 		{
-			parentTCCIIndex = siteCount * parentCode + siteFrom;
-			parentTCCIBit	= parentTCCIIndex % _HY_BITMASK_WIDTH_;
-			parentTCCIIndex = parentTCCIIndex / _HY_BITMASK_WIDTH_;
-			if (! isLeaf)
-			{
-				currentTCCIndex = siteCount * nodeCode + siteFrom;
-				currentTCCBit	= currentTCCIndex % _HY_BITMASK_WIDTH_;
-				currentTCCIndex /= _HY_BITMASK_WIDTH_;				
-			}
+			currentTCCIndex = siteCount * nodeCode + siteFrom;
+			currentTCCBit	= currentTCCIndex % _HY_BITMASK_WIDTH_;
+			currentTCCIndex /= _HY_BITMASK_WIDTH_;				
 		}
-		
+
 		for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += alphabetDimension)
 		{		
-			if (tcc)
-			{
-				if (parentTCCIBit == _HY_BITMASK_WIDTH_)
-				{
-					parentTCCIBit   = 0;
-					parentTCCIIndex ++;
-				}
-				
-				
-				if (siteID > siteFrom && (tcc->lData[parentTCCIIndex] & bitMaskArray.masks[parentTCCIBit]) > 0)
-				{
-					if (!isLeaf)
-					{
-						childVector     += alphabetDimension;
-						if (++currentTCCBit == _HY_BITMASK_WIDTH_)
-						{
-							currentTCCBit   = 0;
-							currentTCCIndex ++;
-						}
-					}
-					parentTCCIBit++;
-					continue;
-				}
-				parentTCCIBit++;
-			}
-			
 			_Parameter  *tMatrix = transitionMatrix;						
 			if (isLeaf)
 			{
@@ -717,7 +689,7 @@ void			_TheTree::ComputeBranchCache	(
 			}
 			else
 			{
-				if (tcc)
+				if (tcc && notPassedRoot)
 				{
 					if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
 					{
@@ -730,8 +702,9 @@ void			_TheTree::ComputeBranchCache	(
 						currentTCCIndex ++;
 					}
 					lastUpdatedSite = childVector;
-				}
+				}				
 			}
+			
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
@@ -739,10 +712,7 @@ void			_TheTree::ComputeBranchCache	(
 				parentConditionals [1] *= tMatrix[4] * childVector[0]		+tMatrix[5] * childVector[1]		+tMatrix[6] * childVector[2]		+tMatrix[7] * childVector[3];
 				parentConditionals [2] *= tMatrix[8] * childVector[0]		+tMatrix[9] * childVector[1]		+tMatrix[10] * childVector[2]		+tMatrix[11] * childVector[3];
 				parentConditionals [3] *= tMatrix[12] * childVector[0]		+tMatrix[13] * childVector[1]		+tMatrix[14] * childVector[2]		+tMatrix[15] * childVector[3];
-				
-				// handle scaling if necessary 
-				// the check for sum > 0.0 is necessary for 'degenerate' log-L functions (-infinity)
-				
+								
 				childVector += 4;
 			}
 			else
@@ -761,13 +731,78 @@ void			_TheTree::ComputeBranchCache	(
 						accumulator +=  tMatrix[c] * childVector[c];
 					
 					tMatrix				  += alphabetDimension;
-					
+					parentConditionals[p] *= accumulator;
 				}
 				childVector	   += alphabetDimension;
 			}
 			
 		}
 	}
+	
+	_Parameter _hprestrict_	*rootConditionals   = iNodeCache +	(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength)  * siteCount * alphabetDimension;
+	
+	for (long ii = siteFrom * alphabetDimension; ii < alphabetDimension*siteTo; ii++)
+		state[ii] = rootConditionals[ii];
+
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+_Parameter			_TheTree::ComputeLLWithBranchCache (	 
+												     _SimpleList&			siteOrdering,
+												     long					brID,
+												     _Parameter*			cache,
+													 _DataSetFilter*		theFilter,
+													 long					siteFrom,
+													 long					siteTo,
+													 long					catID,
+													 _Parameter*			storageVec
+													 )
+{
+	long		alphabetDimension	   = theFilter->GetDimension(),
+				//alphabetDimensionmod4  = alphabetDimension - alphabetDimension % 4,
+				siteCount			   =  theFilter->NumberDistinctSites();
+	
+	if (siteTo	> siteCount)	siteTo = siteCount;
+
+	_Parameter _hprestrict_	*branchConditionals	= cache				 + siteFrom * alphabetDimension,
+							*rootConditionals   = branchConditionals + siteCount * alphabetDimension,
+							result = 0.0;
+							
+	
+	_CalcNode *givenTreeNode = brID < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[brID]):
+														   (((_CalcNode**) flatTree.lData)   [brID - flatLeaves.lLength]);
+	
+	_Parameter  *	_hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
+	
+	for (long siteID = siteFrom; siteID < siteTo; siteID++)
+	{
+		_Parameter accumulator = 0.,
+					*rmx	       = transitionMatrix;
+		
+		for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
+		{
+			_Parameter	   r2 = 0.;
+			for (long c = 0; c < alphabetDimension; c++, rmx++)
+				r2 += branchConditionals[c] *  *rmx;
+			accumulator += *rootConditionals * theProbs[p] * r2;
+		}
+		
+		branchConditionals += alphabetDimension;
+		
+		if (storageVec)
+			storageVec [siteOrdering.lData[siteID]] = accumulator;
+		else
+		{
+			if (accumulator <= 0.0)
+			{
+				result = -A_LARGE_NUMBER;
+				break;
+			}
+			result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+		}
+	}
+	return result;
 }
 
 #endif

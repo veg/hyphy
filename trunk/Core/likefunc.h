@@ -326,7 +326,8 @@ static	void			CheckFibonacci			(_Parameter);
 	
 		/* these variables are used to precache 'tainted variables' */
 	
-		_SimpleList			overallScalingFactors;
+		_SimpleList			overallScalingFactors,
+							cachedBranches;
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,

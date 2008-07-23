@@ -3899,6 +3899,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 		overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
+		cachedBranches.Populate								  (theTrees.lLength, -1,0);
 	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
@@ -8029,7 +8030,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		long		doCachedComp	 = 0;	  // whether or not to use a cached branch calculation when only one
 											  // local tree parameter is being adjusted at a time
 		
-		long		catID		= siteRes?categID:-1;
+		long		catID			 = siteRes?categID:-1;
 		
 		if (computedLocalUpdatePolicy.lLength)
 		{
@@ -8039,60 +8040,63 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			matrices = (_List*)      (*((_List*)matricesToExponentiate(index)))(ciid) ;
 			
 			long nodeID = ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid];
-			if (nodeID == 0)
+			if (nodeID == 0 || nodeID == 1)
 			{
-				nodeID = t->DetermineNodesForUpdate		   (*branches, matrices,catID);
-				if (nodeID >= 0)
+//				if (cachedBranches.lData[index]>=0)
+//					printf ("Clean up %d\n", cachedBranches.lData[index]);
+				
+				long snID = -1;
+				
+				if (nodeID == 1)
 				{
-					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID+2;
-					doCachedComp = -(nodeID-1);
+					if (matrices->lLength == 2)
+					{
+						branches->Clear();
+						matrices->Clear();
+						
+						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,cachedBranches.lData[index]);			
+					}
 				}
 				else
-					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = 1;
+					snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,cachedBranches.lData[index]);
+				
+				cachedBranches.lData[index] = -1;
+				if (snID >= 0)
+				{
+					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
+					doCachedComp = -snID-1;
+				}
+				else
+					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
 			}
 			else
 				doCachedComp = nodeID;
 		}
 		else
 		{
-			t->DetermineNodesForUpdate		   (changedBranches,&changedModels,catID);
-			branches = &changedBranches;
-			matrices = &changedModels;
+//			if (cachedBranches.lData[index]>=0)
+//				printf ("Clean up %d\n", cachedBranches.lData[index]);
+			t->DetermineNodesForUpdate		   (changedBranches,&changedModels,catID,cachedBranches.lData[index]);
+			cachedBranches.lData		[index] = -1;
+			branches					= &changedBranches;
+			matrices					= &changedModels;
 		}
 		if (matrices->lLength)
 			t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
-		
-		/*static long		lastLFCount = 0;
-		static BaseRef	lastModel = nil;
-		if (matrices->lLength == 1)
-		{
-			if ((*matrices)(0) != lastModel)
-			{
-				lastLFCount = likeFuncEvalCallCount;
-				lastModel	= (*matrices)(0);
-			}
-		}
-		else
-		{
-			if (lastModel)
-				printf ("%d\n", likeFuncEvalCallCount-lastLFCount); 
-			lastLFCount = likeFuncEvalCallCount;
-			lastModel   = nil;
-		}*/
-		
-
+	
 		//printf ("%d %d\n",likeFuncEvalCallCount, matrixExpCount);
 #if !defined __UNIX__ || defined __HEADLESS__
 		if (divideBy && (likeFuncEvalCallCount % divideBy == 0))
 			yieldCPUTime();
 	#endif
 
+
 		long blockID    = df->NumberDistinctSites()*t->GetINodeCount();
 
 		_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
 									  conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
 				  *ssf  = (categID<1)?siteScalingFactors[index]: siteScalingFactors[index] + categID*blockID,
-				  *bc   = (categID<1)?branchCaches[index]: branchCaches[index] + df->NumberDistinctSites()*df->GetDimension()*2;
+				  *bc   = (categID<1)?branchCaches[index]: (branchCaches[index] + categID*df->NumberDistinctSites()*df->GetDimension()*2);
 		
 		long *scc = nil;
 		
@@ -8100,62 +8104,66 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			scc = ((_SimpleList*)siteCorrections(index))->lData + ((categID<1)?0:df->NumberDistinctSites()*categID);
 		
 		_Parameter sum  = 0.;
-#ifdef _OPENMP
-		if (1)
+		if (doCachedComp >= 3)
 		{
-			long np			 = MIN(GetThreadCount(),omp_get_max_threads()),
-				  sitesPerP  = df->NumberDistinctSites() / np + 1;		
-			
-			
-			#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum)
-				for (blockID = 0; blockID < np; blockID ++)
-				{
-					sum += t->ComputeTreeBlockByBranch (*sl, 
-														*branches, 
-														(_SimpleList*)treeTraversalMasks(index),
-														df, 
-														inc,
-														conditionalTerminalNodeStateFlag[index],
-														ssf,
-														(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-														overallScalingFactors[index],
-														blockID * sitesPerP,
-														(1+blockID) * sitesPerP,
-														catID,
-														siteRes,
-														scc);
-				}
-			
-			sum -= _logLFScaler * overallScalingFactors[index];
+			sum = t->ComputeLLWithBranchCache (*sl,
+												doCachedComp-3,
+												bc,
+												df,
+												0,
+												df->NumberDistinctSites (),
+												catID,
+												siteRes)
+												-	_logLFScaler * overallScalingFactors[index];
+			//printf ("%d %g\n", doCachedComp-3, sum);
+			return sum;
 		}
-		else
-		
+
+		long np = 1, sitesPerP = df->NumberDistinctSites() / np + 1;
+#ifdef _OPENMP
+		np			 = MIN(GetThreadCount(),omp_get_max_threads());
+		sitesPerP    = df->NumberDistinctSites() / np + 1;		
 #endif		
+			
+			
+		#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
+		for (blockID = 0; blockID < np; blockID ++)
 		{
-			sum = t->ComputeTreeBlockByBranch (*sl, 
+			sum += t->ComputeTreeBlockByBranch (*sl, 
 												*branches, 
 												(_SimpleList*)treeTraversalMasks(index),
-												df,
+												df, 
 												inc,
 												conditionalTerminalNodeStateFlag[index],
 												ssf,
 												(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
 												overallScalingFactors[index],
-												0,
-												df->NumberDistinctSites (),
+												blockID * sitesPerP,
+												(1+blockID) * sitesPerP,
 												catID,
-												siteRes,scc) - _logLFScaler * overallScalingFactors[index];
+												siteRes,
+												scc);
 		}
+		
+		sum -= _logLFScaler * overallScalingFactors[index];
+
 
 		if (doCachedComp < 0)
 		{
-			t->ComputeBranchCache (-doCachedComp, bc, inc, df, 
-												conditionalTerminalNodeStateFlag[index], 
-												ssf, 
-												(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-												0,
-												df->NumberDistinctSites (),
-												catID);
+			doCachedComp = -doCachedComp-1;
+			//printf ("Set up %d\n", doCachedComp);
+			cachedBranches.lData[index] = doCachedComp;
+#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+			for (blockID = 0; blockID < np; blockID ++)
+			{
+				t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df, 
+									   conditionalTerminalNodeStateFlag[index], 
+									   ssf, 
+									   (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+									   blockID * sitesPerP,
+									   (1+blockID) * sitesPerP,
+									   catID,(_SimpleList*)treeTraversalMasks(index));
+			}
 		}
 		return sum;
 	}
