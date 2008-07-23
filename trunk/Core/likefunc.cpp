@@ -3899,7 +3899,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 		overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
-		cachedBranches.Populate								  (theTrees.lLength, -1,0);
+		cachedBranches.Clear();
 	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
@@ -3921,6 +3921,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*cT->categoryCount]);
 		checkPointer (branchCaches[i]							 = new _Parameter [2*patternCount*stateSpaceDim*cT->categoryCount]);
 		
+		cachedBranches.AppendNewInstance (new _SimpleList (cT->categoryCount,-1,0));
 		if (cT->categoryCount == 1)
 			siteCorrections.AppendNewInstance (new _SimpleList);
 		else
@@ -8030,21 +8031,18 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		long		doCachedComp	 = 0;	  // whether or not to use a cached branch calculation when only one
 											  // local tree parameter is being adjusted at a time
 		
-		long		catID			 = siteRes?categID:-1;
+		long		catID			 = siteRes?categID:-1,
+					ciid			 = MAX(0,categID),
+					*cbid			 = &(((_SimpleList*)cachedBranches(index))->lData[ciid]);
 		
 		if (computedLocalUpdatePolicy.lLength)
 		{
-			long ciid = MAX(0,categID);
-			
 			branches = (_SimpleList*)(*((_List*)localUpdatePolicy(index)))(ciid);
 			matrices = (_List*)      (*((_List*)matricesToExponentiate(index)))(ciid) ;
 			
 			long nodeID = ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid];
 			if (nodeID == 0 || nodeID == 1)
 			{
-//				if (cachedBranches.lData[index]>=0)
-//					printf ("Clean up %d\n", cachedBranches.lData[index]);
-				
 				long snID = -1;
 				
 				if (nodeID == 1)
@@ -8054,13 +8052,13 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 						branches->Clear();
 						matrices->Clear();
 						
-						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,cachedBranches.lData[index]);			
+						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);			
 					}
 				}
 				else
-					snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,cachedBranches.lData[index]);
+					snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);
 				
-				cachedBranches.lData[index] = -1;
+				*cbid = -1;
 				if (snID >= 0)
 				{
 					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
@@ -8074,13 +8072,12 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		}
 		else
 		{
-//			if (cachedBranches.lData[index]>=0)
-//				printf ("Clean up %d\n", cachedBranches.lData[index]);
-			t->DetermineNodesForUpdate		   (changedBranches,&changedModels,catID,cachedBranches.lData[index]);
-			cachedBranches.lData		[index] = -1;
+			t->DetermineNodesForUpdate		   (changedBranches,&changedModels,catID,*cbid);
+			*cbid						= -1;
 			branches					= &changedBranches;
 			matrices					= &changedModels;
 		}
+		
 		if (matrices->lLength)
 			t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
 	
@@ -8152,7 +8149,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		{
 			doCachedComp = -doCachedComp-1;
 			//printf ("Set up %d\n", doCachedComp);
-			cachedBranches.lData[index] = doCachedComp;
+			*cbid = doCachedComp;
 #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
 			for (blockID = 0; blockID < np; blockID ++)
 			{

@@ -326,14 +326,14 @@ static	void			CheckFibonacci			(_Parameter);
 	
 		/* these variables are used to precache 'tainted variables' */
 	
-		_SimpleList			overallScalingFactors,
-							cachedBranches;
+		_SimpleList			overallScalingFactors;
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
 							treeTraversalMasks,
 							computedLocalUpdatePolicy,
-							siteCorrections; 
+							siteCorrections,
+							cachedBranches;
 							// for models with categories, a list of site by site scaling operation counts
 	
 #ifdef	_OPENMP
