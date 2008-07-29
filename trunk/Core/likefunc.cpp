@@ -2161,6 +2161,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 									}
 #ifdef _SLKP_LFENGINE_REWRITE_
 								blockResult -= cumulativeCorrection*_logLFScaler;
+								//printf ("%d %g\n", likeFuncEvalCallCount, blockResult);
 #endif
 								
 							}
@@ -2493,6 +2494,9 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 						else // same scaling factors
 							sR[r1] += localWeight * sR[r2];
 					}
+					
+					//if (sR[r1] > 1.)
+					//	printf ("Fubar %d %d %d %g!\n",categID, r1, scv, sR[r1]);
 					
 					/*if (*siteCorrectors)
 						sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (*siteCorrectors);
@@ -8063,6 +8067,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 				{
 					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
 					doCachedComp = -snID-1;
+					//doCachedComp = 0;
 				}
 				else
 					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
@@ -8089,6 +8094,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 
 
 		long blockID    = df->NumberDistinctSites()*t->GetINodeCount();
+		
+		_SimpleList* tcc = (_SimpleList*)treeTraversalMasks(index);
 
 		_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
 									  conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
@@ -8112,7 +8119,6 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 												catID,
 												siteRes)
 												-	_logLFScaler * overallScalingFactors[index];
-			//printf ("%d %g\n", doCachedComp-3, sum);
 			return sum;
 		}
 
@@ -8128,7 +8134,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		{
 			sum += t->ComputeTreeBlockByBranch (*sl, 
 												*branches, 
-												(_SimpleList*)treeTraversalMasks(index),
+												tcc,
 												df, 
 												inc,
 												conditionalTerminalNodeStateFlag[index],
@@ -8147,6 +8153,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 
 		if (doCachedComp < 0)
 		{
+			//printf ("Cache check in %d %d\n", doCachedComp, overallScalingFactors[index]);
 			doCachedComp = -doCachedComp-1;
 			//printf ("Set up %d\n", doCachedComp);
 			*cbid = doCachedComp;
@@ -8156,11 +8163,30 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 				t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df, 
 									   conditionalTerminalNodeStateFlag[index], 
 									   ssf, 
+									   scc,
 									   (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+									   overallScalingFactors[index],
 									   blockID * sitesPerP,
 									   (1+blockID) * sitesPerP,
-									   catID,(_SimpleList*)treeTraversalMasks(index));
+									   catID,tcc);
 			}
+			
+			/*_Parameter check2 =  t->ComputeLLWithBranchCache (*sl,
+																   doCachedComp,
+																   bc,
+																   df,
+																   0,
+																   df->NumberDistinctSites (),
+																   catID,
+																   siteRes)
+			-	_logLFScaler * overallScalingFactors[index];
+			
+			if (fabs(check2-sum)>0.1)
+				printf ("Cache check failed %d %g %g %d\n", doCachedComp, sum, check2, overallScalingFactors[index]);
+			else
+				printf ("Cache check OK\n");*/
+			//printf ("Cache compute %d\n", catID);
+			
 		}
 		return sum;
 	}
@@ -9459,6 +9485,7 @@ void		_LikelihoodFunction::OptimalOrder	 (long index, _SimpleList& sl)
 #ifdef _SLKP_LFENGINE_REWRITE_
 	 if (treeTraversalMasks.lLength > index)
 		 tcc =  (_SimpleList*) treeTraversalMasks(index);
+	
 #endif
 	
 	_Parameter strl = CostOfPath (df,t,straight), 
