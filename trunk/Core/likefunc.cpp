@@ -2161,7 +2161,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 									}
 #ifdef _SLKP_LFENGINE_REWRITE_
 								blockResult -= cumulativeCorrection*_logLFScaler;
-								//printf ("%d %g\n", likeFuncEvalCallCount, blockResult);
+								//printf ("%d,%g\n", likeFuncEvalCallCount, blockResult);
 #endif
 								
 							}
@@ -8170,7 +8170,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 									   (1+blockID) * sitesPerP,
 									   catID,tcc);
 			}
-			
+						
 			/*_Parameter check2 =  t->ComputeLLWithBranchCache (*sl,
 																   doCachedComp,
 																   bc,
@@ -8182,9 +8182,10 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			-	_logLFScaler * overallScalingFactors[index];
 			
 			if (fabs(check2-sum)>0.1)
-				printf ("Cache check failed %d %g %g %d\n", doCachedComp, sum, check2, overallScalingFactors[index]);
-			else
-				printf ("Cache check OK\n");*/
+				printf ("Cache check failed LF-eval %d node %d scaled difference %g %d\n", likeFuncEvalCallCount, doCachedComp, fabs(sum-check2)/_logLFScaler, overallScalingFactors[index]);
+			*/
+			 //else
+			//	printf ("Cache check OK\n");
 			//printf ("Cache compute %d\n", catID);
 			
 		}

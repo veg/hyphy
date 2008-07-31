@@ -35,9 +35,9 @@ extern	long likeFuncEvalCallCount;
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
-_Parameter			_lfScalerUpwards		  = pow(2.,100.),
+_Parameter			_lfScalerUpwards		  = pow(2.,200.),
 					_lfScalingFactorThreshold = 1./_lfScalerUpwards,
-					_logLFScaler			  = 100.*log(2.);
+					_logLFScaler			  = 200. *log(2.);
 
 _GrowingVector		_scalerMultipliers, 
 					_scalerDividers;
@@ -324,10 +324,23 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
-				parentConditionals [0] *= tMatrix[0] * childVector[0]		+tMatrix[1] * childVector[1]		+tMatrix[2] * childVector[2]		+tMatrix[3] * childVector[3];
+				/*parentConditionals [0] *= tMatrix[0] * childVector[0]		+tMatrix[1] * childVector[1]		+tMatrix[2] * childVector[2]		+tMatrix[3] * childVector[3];
 				parentConditionals [1] *= tMatrix[4] * childVector[0]		+tMatrix[5] * childVector[1]		+tMatrix[6] * childVector[2]		+tMatrix[7] * childVector[3];
 				parentConditionals [2] *= tMatrix[8] * childVector[0]		+tMatrix[9] * childVector[1]		+tMatrix[10] * childVector[2]		+tMatrix[11] * childVector[3];
 				parentConditionals [3] *= tMatrix[12] * childVector[0]		+tMatrix[13] * childVector[1]		+tMatrix[14] * childVector[2]		+tMatrix[15] * childVector[3];
+				*/
+				
+				_Parameter t1 = childVector[0] - childVector[3],
+						   t2 = childVector[1] - childVector[3],
+						   t3 = childVector[2] - childVector[3],
+						   t4 = childVector[3];
+				
+				
+				parentConditionals [0] *= tMatrix[0]  * t1 + tMatrix[1] * t2 + tMatrix[2] * t3 + t4;
+				parentConditionals [1] *= tMatrix[4]  * t1 + tMatrix[5] * t2 + tMatrix[6] * t3 + t4;
+				parentConditionals [2] *= tMatrix[8]  * t1 + tMatrix[9] * t2 + tMatrix[10] * t3 + t4;
+				parentConditionals [3] *= tMatrix[12] * t1 + tMatrix[13] * t2 + tMatrix[14] * t3 + t4;
+				
 				
 				// handle scaling if necessary 
 				// the check for sum > 0.0 is necessary for 'degenerate' log-L functions (-infinity)
@@ -416,7 +429,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						  cparentTCCIBit	=	parentTCCIBit;
 					
 					_Parameter				scM;
-					long					lsA = didScale;
 					if (didScale < 0)
 					{	scM = _lfScalingFactorThreshold; }
 					else
@@ -436,7 +448,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 							if (siteCorrectionCounts)
 								siteCorrectionCounts [siteOrdering.lData[sid]] += didScale; 
 							scalingAdjustments   [parentCode*siteCount + sid] *= scM;
-							localScalerChange								+= lsA * theFilter->theFrequencies [siteOrdering.lData[sid]];
+							localScalerChange								+= didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
 							
 							//printf ("NFC: %d(%d) %d/%d\n", sid, siteID, cparentTCCIIndex, cparentTCCIBit);
 
@@ -658,9 +670,9 @@ void			_TheTree::ComputeBranchCache	(
 			lastUpdatedSite = childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
 		
 		long currentTCCIndex		,
-		currentTCCBit			,
-		parentTCCIIndex		,
-		parentTCCIBit			;
+			 currentTCCBit			,
+			 parentTCCIIndex		,
+			 parentTCCIBit			;
 		
 		if (tcc)
 		{
@@ -720,13 +732,7 @@ void			_TheTree::ComputeBranchCache	(
 						else
 							canScale = 0;
 					}
-					else
-					{
-						//canScale		= (tcc->lData[parentTCCIIndex] & bitMaskArray.masks[parentTCCIBit]) == 0;
-						//if (canScale)
-						lastUpdatedSite = childVector;
-					}
-						
+					lastUpdatedSite = childVector;
 					
 					if (++currentTCCBit == _HY_BITMASK_WIDTH_)
 					{
@@ -746,12 +752,25 @@ void			_TheTree::ComputeBranchCache	(
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
+				/*
 				parentConditionals [0] *= tMatrix[0] * childVector[0]		+tMatrix[1] * childVector[1]		+tMatrix[2] * childVector[2]		+tMatrix[3] * childVector[3];
 				parentConditionals [1] *= tMatrix[4] * childVector[0]		+tMatrix[5] * childVector[1]		+tMatrix[6] * childVector[2]		+tMatrix[7] * childVector[3];
 				parentConditionals [2] *= tMatrix[8] * childVector[0]		+tMatrix[9] * childVector[1]		+tMatrix[10] * childVector[2]		+tMatrix[11] * childVector[3];
 				parentConditionals [3] *= tMatrix[12] * childVector[0]		+tMatrix[13] * childVector[1]		+tMatrix[14] * childVector[2]		+tMatrix[15] * childVector[3];
-								
-				if (!notPassedRoot && canScale)
+				*/
+				
+				_Parameter t1 = childVector[0] - childVector[3],
+						   t2 = childVector[1] - childVector[3],
+						   t3 = childVector[2] - childVector[3],
+						   t4 = childVector[3];
+				
+				
+				parentConditionals [0] *= tMatrix[0]  * t1 + tMatrix[1] * t2 + tMatrix[2] * t3 + t4;
+				parentConditionals [1] *= tMatrix[4]  * t1 + tMatrix[5] * t2 + tMatrix[6] * t3 + t4;
+				parentConditionals [2] *= tMatrix[8]  * t1 + tMatrix[9] * t2 + tMatrix[10] * t3 + t4;
+				parentConditionals [3] *= tMatrix[12] * t1 + tMatrix[13] * t2 + tMatrix[14] * t3 + t4;
+
+				/*if (0 && !notPassedRoot && canScale)
 				{
 					sum		= parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
@@ -763,13 +782,11 @@ void			_TheTree::ComputeBranchCache	(
 						parentConditionals [2]							   *= _lfScalerUpwards;
 						parentConditionals [3]							   *= _lfScalerUpwards;
 						
-						childVector		   [0]							   *= _lfScalerUpwards;
-						childVector		   [1]							   *= _lfScalerUpwards;
-						childVector		   [2]							   *= _lfScalerUpwards;
-						childVector		   [3]							   *= _lfScalerUpwards;
-						
 						localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
 						didScale											= 1;
+						
+						//if (likeFuncEvalCallCount == 56)
+						//	printf ("Scaled node %d (parent %d) UP at site %d. localScalerChange = %d\n", nodeCode, parentCode, siteID, localScalerChange);
 					}
 					else
 					{
@@ -782,16 +799,14 @@ void			_TheTree::ComputeBranchCache	(
 							parentConditionals [2]							   *= _lfScalingFactorThreshold;
 							parentConditionals [3]							   *= _lfScalingFactorThreshold;
 														
-							childVector		   [0]							   *= _lfScalingFactorThreshold;
-							childVector		   [1]							   *= _lfScalingFactorThreshold;
-							childVector		   [2]							   *= _lfScalingFactorThreshold;
-							childVector		   [3]							   *= _lfScalingFactorThreshold;
 
 							localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
 							didScale											= -1;
+							//if (likeFuncEvalCallCount == 56)
+							//	printf ("Scaled node %d (parent %d) DOWN at site %d. localScalerChange = %d\n", nodeCode, parentCode, siteID, localScalerChange);
 						}
 					}
-				}
+				}*/
 				childVector += 4;
 			}
 			else
@@ -812,7 +827,7 @@ void			_TheTree::ComputeBranchCache	(
 					tMatrix				  += alphabetDimension;
 					sum += (parentConditionals[p] *= accumulator);
 				}
-				if (!notPassedRoot && canScale)
+				if (0 && !notPassedRoot && canScale)
 				{
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
@@ -821,7 +836,7 @@ void			_TheTree::ComputeBranchCache	(
 						{childVector[c] *= _lfScalerUpwards; parentConditionals [c] *= _lfScalerUpwards;}
 						
 						localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
-						didScale											    ++;
+						didScale											    = 1;
 					}
 					else
 					{
@@ -832,7 +847,7 @@ void			_TheTree::ComputeBranchCache	(
 							{parentConditionals [c] *= _lfScalingFactorThreshold;childVector [c] *= _lfScalingFactorThreshold;}
 							
 							localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
-							didScale											--;
+							didScale											= -1;
 						}
 					}			
 				}
@@ -853,7 +868,6 @@ void			_TheTree::ComputeBranchCache	(
 						 cparentTCCIBit		=	currentTCCBit;
 					
 					_Parameter				scM;
-					long					lsA = didScale;
 					if (didScale < 0)
 					{	scM = _lfScalingFactorThreshold; }
 					else
@@ -873,7 +887,9 @@ void			_TheTree::ComputeBranchCache	(
 							if (siteCorrectionCounts)
 								siteCorrectionCounts						[siteOrdering.lData[sid]] += didScale; 
 							scalingAdjustments								[nodeCode*siteCount + sid] *= scM;
-							localScalerChange								+= lsA * theFilter->theFrequencies [siteOrdering.lData[sid]];
+							localScalerChange								+= didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
+							//if (likeFuncEvalCallCount == 56)
+							//	printf ("Forward copy node %d (parent %d) site %d. localScalerChange = %d\n", nodeCode, parentCode, sid, localScalerChange);
 						}
 						else
 							break;
