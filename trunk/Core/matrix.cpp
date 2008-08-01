@@ -5404,7 +5404,7 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 			
 			// loop interchange rocks!
 			
-			_Parameter	* column = stash+lDim;
+			/*_Parameter	* column = stash+lDim;
 			
 			for (long j = 0; j < vDim; j++)
 			{
@@ -5426,6 +5426,29 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 					
 					for (; k < vDim; k++)
 						buffer += row[k] * column [k]; 
+					
+					stash[i+j] = buffer;
+				}
+			}*/
+			
+			for (long j = 0; j < vDim; j++)
+			{
+				for (long i = 0; i < lDim; i += vDim)
+				{
+					_Parameter * row    = theData + i,
+								buffer = 0.0;
+					
+					long		k = 0,
+								m = j;
+					
+					for (; k < loopBound; k+=4,m+=vDim*4)
+						buffer += row[k]   * theData [m] + 
+						row[k+1] * theData [m+vDim] +
+						row[k+2] * theData [m+vDim+vDim] +
+						row[k+3] * theData [m+vDim+vDim+vDim];
+					
+					for (; k < vDim; k++, m+=vDim)
+						buffer += row[k] * theData [m]; 
 					
 					stash[i+j] = buffer;
 				}
