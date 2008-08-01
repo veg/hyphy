@@ -410,9 +410,10 @@ function prompt_for_a_value (prompt,default,lowerB,upperB,isInteger)
 		fscanf  (stdin, "String", strVal);
 		if (Abs(strVal) == 0)
 		{
-			return default;
+			value = 0+default;
+			break;
 		}	
-		value = strVal;
+		value = 0+strVal;
 	}
 	if (isInteger)
 		return value$1;

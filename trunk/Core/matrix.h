@@ -316,8 +316,7 @@ private:
 	void		Add					(_Matrix&, _Matrix&, bool sub = false);				
 									// aux arithmetic rountines
 	bool		AddWithThreshold 	(_Matrix&, _Parameter);
-	_Parameter  MaxColumn		 	(void);
-	_Parameter  MaxRow			 	(void);
+	void		RowAndColumnMax		(_Parameter&, _Parameter&, _Parameter* = nil);
 	void		Subtract			(_Matrix&, _Matrix&);				
 	void		Multiply			(_Matrix&, _Parameter);	
 	void		Multiply			(_Matrix&, _Matrix&);	

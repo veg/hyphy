@@ -3945,93 +3945,80 @@ _Parameter	_Matrix::MaxElement  (void)
 
 //_____________________________________________________________________________________________
 
-_Parameter	_Matrix::MaxColumn  (void)	
-// returns matrix's largest abs value element
-{
-	if (storageType == 1)
-	{
-		_Parameter max = 0, temp;
-		long	   i,k;
-		_Parameter *columnMax = new _Parameter [hDim];
-		checkPointer (columnMax);
-		for (i=0; i<hDim; i++)
-			columnMax[i] = 0.0;
-		if (theIndex)
-		{
-			for (i = 0; i<lDim; i++)
-			{
-				k = theIndex[i];
-				if (k!=-1)
-				{
-					temp = theData[i];
-					if (temp<0.0)
-						temp*=-1;
-					columnMax[k%vDim] += temp;
-				}
-			}
-		}
-		else
-		{
-			for (i = 0; i<lDim; i++)
-			{
-				temp = theData[i];
-				if (temp<0.0)
-					temp*=-1;
-				columnMax[i%vDim] += temp;
-			}
-		}
-		for (i=0; i<hDim; i++)
-			if (columnMax[i]>max)	
-				max = columnMax [i];
-		delete (columnMax);
-		return max;		
-	}
-	return 10.0;
-}
+void	_Matrix::RowAndColumnMax  (_Parameter& r, _Parameter &c, _Parameter * cache)	
 
-//_____________________________________________________________________________________________
+// returns the maximum row sum / column sum
+// the cache must be big enough to hold hDim + vDim
+// leave as nil to allocate cache run time
 
-_Parameter	_Matrix::MaxRow  (void)	
-// returns the maximum of row sums of a matrix
 {
+	r = c = 10.;
+	
 	if (storageType == 1) // numeric matrix
 	{
-		_Parameter	max = 0., 
-					*rowMax;
+		_Parameter	*maxScratch = cache;
+		r = c = 0.;
 		
-		checkPointer (rowMax = (_Parameter*)calloc (hDim,sizeof(_Parameter)));
+		if (maxScratch == nil)
+			checkPointer (maxScratch = (_Parameter*)calloc (hDim+vDim,sizeof(_Parameter)));
+		else
+			for (long k = 0; k < hDim + vDim; k++)
+				maxScratch[k] = .0;
 		
-		if (theIndex) // sparse matrix
+		_Parameter * rowMax = maxScratch,
+				   * colMax = maxScratch + hDim; 
+		
+		if (theIndex) 
+		// sparse matrix
 			for (long i = 0; i<lDim; i++)
 			{
 				long k = theIndex[i];
 				if (k!=-1)
 				{
 					_Parameter temp = theData[i];
+					
 					if (temp<0.0)
+					{
 						rowMax[k/vDim] -= temp;
+						colMax[k%vDim] -= temp;
+					}
 					else
+					{
 						rowMax[k/vDim] += temp;
+						colMax[k%vDim] += temp;
+					}
 				}
 			}
-		else // dense matrix
-			for (long i = 0; i<lDim; i++)
+		else 
+		// dense matrix
+			for (long i = 0, k=0; i<hDim; i++)
 			{
-				_Parameter temp = theData[i];
-				if (temp<0.0)
-					rowMax[i/vDim] -= temp;
-				else
-					rowMax[i/vDim] += temp;
+				for (long j=0; j<vDim; j++, k++)
+				{
+					_Parameter temp = theData[k];
+					if (temp<0.0)
+					{
+						rowMax[i] -= temp;
+						colMax[j] -= temp;
+					}
+					else
+					{
+						rowMax[i] += temp;
+						colMax[j] += temp;
+					}
+				}
 			}
 
 		for (long i=0; i<hDim; i++)
-			if (rowMax[i]>max)	
-				max = rowMax [i];
+			if (rowMax[i]>r)	
+				r = rowMax [i];
+		for (long j=0; j<vDim; j++)
+			if (colMax[j]>c)	
+				c = rowMax [j];
 		
-		free(rowMax);
-		return max;		
+		if (!cache)
+			free(maxScratch);
 	}
-	return 10.0;
 }
 
 //_____________________________________________________________________________________________
@@ -4298,15 +4285,17 @@ _Matrix*	_Matrix::Exponentiate (void)
 			 
 		matrixExpCount++;
 		
-		_Parameter max = 1.0;
+		_Parameter max	   = 1.0,
+				   *stash  = new _Parameter[hDim*(1+vDim)];
 
 		if (storageType)
 		{
-			max = MaxRow()*MaxColumn();
+			_Parameter t;
+			RowAndColumnMax (max, t, stash);
+			max *= t;
 			if (max > .1)
 			{
-				max				*= 10.;
-				max				= sqrt (max);
+				max				= sqrt (10.*max);
 				power2			= (long)((log (max)/log ((_Parameter)2.0)))+1;
 				max				= exp (power2 * log ((_Parameter)2.0));
 				(*this)			*= 1.0/max;
@@ -4330,7 +4319,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 			max = 1.;
 		
 		_Matrix *result = new _Matrix(hDim, vDim , !storageType, storageType), 
-				temp (*this);
+				temp	(*this);
 		
 		checkPointer (result);
 		// put ones on the diagonal
@@ -4348,7 +4337,10 @@ _Matrix*	_Matrix::Exponentiate (void)
 		}
 		
 		if (max == 0.0)
+		{
+			free   (stash);
 			return result;
+		}
 		
 		(*result) += (*this);
 		
@@ -4434,7 +4426,6 @@ _Matrix*	_Matrix::Exponentiate (void)
 			result->Transpose();
 		}
 		
-		_Parameter * stash = new _Parameter[result->lDim+result->vDim];
 	
 		for (long s = 0; s<power2; s++, squaringsCount++)
 			result->Sqr(stash);
@@ -5404,7 +5395,7 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 			
 			// loop interchange rocks!
 			
-			/*_Parameter	* column = stash+lDim;
+			_Parameter	* column = stash+lDim;
 			
 			for (long j = 0; j < vDim; j++)
 			{
@@ -5426,29 +5417,6 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 					
 					for (; k < vDim; k++)
 						buffer += row[k] * column [k]; 
-					
-					stash[i+j] = buffer;
-				}
-			}*/
-			
-			for (long j = 0; j < vDim; j++)
-			{
-				for (long i = 0; i < lDim; i += vDim)
-				{
-					_Parameter * row    = theData + i,
-								buffer = 0.0;
-					
-					long		k = 0,
-								m = j;
-					
-					for (; k < loopBound; k+=4,m+=vDim*4)
-						buffer += row[k]   * theData [m] + 
-						row[k+1] * theData [m+vDim] +
-						row[k+2] * theData [m+vDim+vDim] +
-						row[k+3] * theData [m+vDim+vDim+vDim];
-					
-					for (; k < vDim; k++, m+=vDim)
-						buffer += row[k] * theData [m]; 
 					
 					stash[i+j] = buffer;
 				}
