@@ -4434,7 +4434,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 			result->Transpose();
 		}
 		
-		_Parameter * stash = new _Parameter[result->lDim];
+		_Parameter * stash = new _Parameter[result->lDim+result->vDim];
 	
 		for (long s = 0; s<power2; s++, squaringsCount++)
 			result->Sqr(stash);
@@ -5392,9 +5392,9 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 				for (long j=0; j<4; j++, k++)
 				{
 					stash[k] = theData[i]   * theData [j] 
-					+ theData[i+1] * theData [j+4] 
-					+ theData[i+2] * theData [j+8] 
-					+ theData[i+3] * theData [j+12];
+							 + theData[i+1] * theData [j+4] 
+					         + theData[i+2] * theData [j+8] 
+					         + theData[i+3] * theData [j+12];
 				}
 			}
 		}
@@ -5402,29 +5402,36 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 		{
 			long loopBound = vDim - vDim % 4;
 			
-			for (long i=0, e = 0; i<lDim; i+=vDim)
+			// loop interchange rocks!
+			
+			_Parameter	* column = stash+lDim;
+			
+			for (long j = 0; j < vDim; j++)
 			{
-				_Parameter * row = theData + i;
-				for (long j=0; j<vDim; j++, e++)
+				for (long c = 0; c < vDim; c++)
+					column[c] = theData[j + c * vDim];
+				
+				for (long i = 0; i < lDim; i += vDim)
 				{
-					_Parameter  buffer = 0.0;
+					_Parameter * row    = theData + i,
+								 buffer = 0.0;
 					
-					long		m = j,
-								k = 0;
+					long		k = 0;
 					
-					for (; k < loopBound; k+=4, m+=4*vDim)
-						buffer += row[k]   * theData [m] + 
-								  row[k+1] * theData [m+vDim] +
-								  row[k+2] * theData [m+vDim+vDim] +
-								  row[k+3] * theData [m+vDim+vDim+vDim];
+					for (; k < loopBound; k+=4)
+						buffer += row[k]   * column [k] + 
+								  row[k+1] * column [k+1] +
+								  row[k+2] * column [k+2] +
+								  row[k+3] * column [k+3];
 					
-					for (; k < vDim; k++, m+=vDim)
-						buffer += row[k] * theData [m]; 
-
-					stash[e] = buffer;
+					for (; k < vDim; k++)
+						buffer += row[k] * column [k]; 
+					
+					stash[i+j] = buffer;
 				}
-			}			
+			}
 		}
+		
 		for (long s = 0; s < lDim; s++)
 			theData[s] = stash[s];
 	}
