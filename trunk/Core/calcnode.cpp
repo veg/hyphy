@@ -805,7 +805,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 				return;
 			}
 		#endif
-		SetCompExp ((_Matrix*)temp->Exponentiate(), categID);	
+		SetCompExp ((_Matrix*)temp->Exponentiate(), totalCategs>1?categID:-1);	
 		#ifdef __MP__
 			if (matrixTasks)
 				DeleteObject (temp);

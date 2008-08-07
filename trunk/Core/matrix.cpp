@@ -3030,11 +3030,7 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				}
 				else // dense matrix
 				{
-					_Parameter *	
-#ifdef __GNUC__ 
-__restrict 
-#endif
- stData = storage.fastIndex();
+					_Parameter * _hprestrict_ stData = storage.fastIndex();
 					for (long i = 0; i<lDim; i++)
 						stData[i] = theData[i];
 				}
@@ -3088,11 +3084,7 @@ __restrict
 			}
 			else
 			{
-				_Parameter 
-#ifdef __GNUC__ 
-__restrict 
-#endif
- * argData = secondArg.theData, 
+				_Parameter _hprestrict_ * argData = secondArg.theData, 
 										* stData = storage.theData; 
 				if (subtract)
 					for (long idx = 0; idx < lDim; idx++)
@@ -3486,135 +3478,34 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			{
 				if ( vDim == hDim && secondArg.vDim==secondArg.hDim) // both square and same dimension
 				{
+					long loopBound = vDim - vDim%4;
+					
 					for (long k=0; k<lDim; k++) // loop over entries in the 1st matrix
 					{
 						long m = theIndex[k];
-						if (m!=-1) // non-zero
+						if  (m!=-1)  // non-zero
 						{
-							long r = m/vDim,
-								 c = m%vDim;
+							long i;
 							
 							// this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
 							// in the form of A_rc * B_cc'
 							
-							_Parameter  value	  = theData[k],
-										_hprestrict_ *res      = storage.theData   + r*vDim,
-										_hprestrict_ *secArg	  = secondArg.theData + c*vDim;
+							_Parameter  value							= theData[k],
+										_hprestrict_ *res				= storage.theData    + (m/vDim)*vDim,
+										_hprestrict_ *secArg			= secondArg.theData  + (m%vDim)*vDim;
 							
-							for (long i = 0; i < vDim; i++)
-								res[i] += value * secArg[i];
+							for (i = 0; i < loopBound; i+=4)
+							{
+								res[i]   += value * secArg[i];
+								res[i+1] += value * secArg[i+1];
+								res[i+2] += value * secArg[i+2];
+								res[i+3] += value * secArg[i+3];
+							}
+							
+							for (; i < vDim; i++)
+								res[i]   += value * secArg[i];
 						}
 					}	
-
-					/*long n = secondArg.vDim%4;
-					if (n==1)
-					{
-						for (long k=0; k<lDim; k++)
-						{
-							long m = theIndex[k];
-							if (m!=-1)
-							{
-								long i = m/vDim;
-								long j = m%vDim;
-								_Parameter c = theData[k];
-								_Parameter* stData = storage.theData+i*secondArg.vDim, 
-										  * secArgData=secondArg.theData+j*secondArg.vDim,
-										  * stopper = secArgData+secondArg.vDim-n;
-								// unroll the loop 4x
-								for (;secArgData!=stopper;stData+=4, secArgData+=4)
-								{
-									stData[0] += c*secArgData[0];
-									stData[1] += c*secArgData[1];
-									stData[2] += c*secArgData[2];
-									stData[3] += c*secArgData[3];
-								}
-								
-								*stData+=c**secArgData;
-							}
-						}	
-					}
-					else
-					if (n==2)
-					{
-						for (long k=0; k<lDim; k++)
-						{
-							long m = theIndex[k];
-							if (m!=-1)
-							{
-								long i = m/vDim;
-								long j = m%vDim;
-								_Parameter c = theData[k];
-								_Parameter* stData = storage.theData+i*secondArg.vDim, 
-										  * secArgData=secondArg.theData+j*secondArg.vDim,
-										  * stopper = secArgData+secondArg.vDim-n;
-								// unroll the loop 4x
-								for (;secArgData!=stopper;)
-								{
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-								}
-								
-								*(stData++)+=c**(secArgData++);
-								*stData+=c**secArgData;
-							}
-						}	
-					}
-					else
-					if (n==3)
-					{
-						for (long k=0; k<lDim; k++)
-						{
-							long m = theIndex[k];
-							if (m!=-1)
-							{
-								long i = m/vDim;
-								long j = m%vDim;
-								_Parameter c = theData[k];
-								_Parameter* stData = storage.theData+i*secondArg.vDim, 
-										  * secArgData=secondArg.theData+j*secondArg.vDim,
-										  * stopper = secArgData+secondArg.vDim-n;
-								// unroll the loop 4x
-								for (;secArgData!=stopper;)
-								{
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-								}
-								*(stData++)+=c**(secArgData++);
-								*(stData++)+=c**(secArgData++);
-								*stData+=c**secArgData;
-							}
-						}	
-					}
-					else
-					{
-						for (long k=0; k<lDim; k++)
-						{
-							long m = theIndex[k];
-							if (m!=-1)
-							{
-								long i = m/vDim;
-								long j = m%vDim;
-								_Parameter c = theData[k];
-								_Parameter* stData = storage.theData+i*secondArg.vDim, 
-										  * secArgData=secondArg.theData+j*secondArg.vDim,
-										  * stopper = secArgData+secondArg.vDim;
-								// unroll the loop 4x
-								for (;secArgData!=stopper;)
-								{
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-									*(stData++)+=c**(secArgData++);
-								}
-							}
-						}	
-					}*/
-					
-								
 				}
 				else
 				{
@@ -3973,7 +3864,7 @@ void	_Matrix::RowAndColumnMax  (_Parameter& r, _Parameter &c, _Parameter * cache
 			for (long i = 0; i<lDim; i++)
 			{
 				long k = theIndex[i];
-				if (k!=-1)
+				if	(k!=-1)
 				{
 					_Parameter temp = theData[i];
 					
@@ -4009,12 +3900,8 @@ void	_Matrix::RowAndColumnMax  (_Parameter& r, _Parameter &c, _Parameter * cache
 				}
 			}
 
-		for (long i=0; i<hDim; i++)
-			if (rowMax[i]>r)	
-				r = rowMax [i];
-		for (long j=0; j<vDim; j++)
-			if (colMax[j]>c)	
-				c = rowMax [j];
+		for (long i=0; i<hDim; i++) if (rowMax[i]>r)	r = rowMax [i];
+		for (long j=0; j<vDim; j++) if (colMax[j]>c)	c = colMax [j];
 		
 		if (!cache)
 			free(maxScratch);
@@ -4306,12 +4193,46 @@ _Matrix*	_Matrix::Exponentiate (void)
 			if (theIndex)
 			// transpose sparse matrix
 			{
-				for (i=0; i<lDim; i++)
+				_SimpleList sortedIndex  ((unsigned long)lDim)
+							,sortedIndex3 ((unsigned long)lDim)
+							,sortedIndex2
+							; 
+
+				
+				long blockChunk = 8,
+					 blockShift = hDim / blockChunk + 1;
+				
+				for (long i2=0; i2<lDim; i2++)
 				{
-					long k = theIndex[i];
-					if (k!=-1)
-						theIndex[i] = (k%vDim)*vDim + k/vDim;
+					long k = theIndex[i2];
+					if	(k!=-1)
+					{
+						long r = k/vDim, c = k%vDim,
+							 r2 = r / blockChunk * blockShift + c / blockChunk;
+						
+						sortedIndex  << (c*vDim + r);
+					    sortedIndex3 << r2 * lDim + r * vDim + c;
+					    stash[sortedIndex.lLength-1] = theData[i2];
+					}
 				}
+				
+				sortedIndex2.Populate(sortedIndex.lLength,0,1);
+				SortLists(&sortedIndex3,&sortedIndex2);
+				
+				for (i=0; i<sortedIndex.lLength; i++)
+				{
+					theIndex[i] = sortedIndex.lData[sortedIndex2.lData[i]];
+					theData[i]  = stash[sortedIndex2.lData[i]];
+					//theIndex[i] = sortedIndex.lData[i];
+					//theData[i]  = stash[i];
+					
+					//printf ("%d %d\n", sortedIndex.lData[sortedIndex2.lData[i]] % vDim, sortedIndex.lData[sortedIndex2.lData[i]]/vDim);
+				}
+				
+				//for (; i<lDim; i++)
+				//	theIndex[i] = -1;
+				
+				lDim = sortedIndex.lLength;
 			}
 			
 		}
@@ -4351,8 +4272,8 @@ _Matrix*	_Matrix::Exponentiate (void)
 			if (storageType)
 				for (; i<=precisionArg; i++)
 				{
-					temp *= (*this);
-					temp *= 1.0/i;
+					temp	  *= (*this);
+					temp	  *= 1.0/i;
 					(*result) += temp;
 				}
 			else
@@ -4361,9 +4282,9 @@ _Matrix*	_Matrix::Exponentiate (void)
 				{
 					if (i>maxPolynomialExpIterates)
 						break;
-					temp *= (*this);
-					temp *= 1.0/i;
-					(*result) += temp;
+					temp		*= (*this);
+					temp		*= 1.0/i;
+					(*result)   += temp;
 					i++;
 				}
 				if (i>maxPolynomialExpIterates)
@@ -4380,8 +4301,8 @@ _Matrix*	_Matrix::Exponentiate (void)
 			i=2;
 			do 
 			{
-				temp.MultbyS (*this,theIndex!=nil);
-				temp *= 1.0/i;
+				temp.MultbyS		(*this,theIndex!=nil);
+				temp	  *= 1.0/i;
 				(*result) += temp;
 				i++;
 				taylorTermsCount++;
@@ -4420,7 +4341,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 			for (i=0; i<lDim; i++)
 			{
 				long k = theIndex[i];
-				if (k!=-1)
+				if	(k!=-1)
 					theIndex[i] = (k%vDim)*vDim + k/vDim;
 			}
 			result->Transpose();
@@ -6691,13 +6612,16 @@ void		_Matrix::operator *= (_Matrix& m)
 void		_Matrix::MultbyS (_Matrix& m, bool leftMultiply)
 {
 	_Matrix result (hDim, m.vDim, false, storageType);
+	
 	if (leftMultiply)
 		m.Multiply (result,*this);
 	else
-		Multiply (result,m);
-	//if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
-	if (theIndex&&m.theIndex) result.AmISparseFast();
-	Swap(result);
+		Multiply   (result,m);
+
+	if (theIndex&&m.theIndex) 
+		result.AmISparseFast();
+	
+	Swap			(result);
 }
 
 //_____________________________________________________________________________________________

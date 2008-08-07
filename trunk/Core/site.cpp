@@ -2239,10 +2239,7 @@ void	_DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizontal
 			else
 				j = firstOne->theNodeMap.lLength;
 
-			horizontalList.RequestSpace (j);
-			for (long ii = 0; ii<j; ii++)
-				horizontalList.lData[ii] = ii;
-			horizontalList.lLength = j;
+			horizontalList.Populate (j,0,1);
 		}
 		if (verticalList.lLength<unit)
 		{
@@ -2252,10 +2249,7 @@ void	_DataSetFilter::SetFilter (_DataSet* ds, char unit, _SimpleList& horizontal
 			else
 				j = firstOne->theOriginalOrder.lLength;
 				
-			verticalList.RequestSpace (j);
-			for (long ii = 0; ii<j; ii++)
-				verticalList.lData[ii] = ii;
-			verticalList.lLength = j;
+			verticalList.Populate (j,0,1);
 		}
 	}
 
@@ -4960,26 +4954,34 @@ void 	_DataSetFilter::SetupConversion (void)
 				}
 				else
 				{
-					alphabet << 'A';
-					alphabet << 'C';
-					alphabet << 'D';
-					alphabet << 'E';
-					alphabet << 'F';
-					alphabet << 'G';
-					alphabet << 'H';
-					alphabet << 'I';
-					alphabet << 'K';
-					alphabet << 'L';
-					alphabet << 'M';
-					alphabet << 'N';
-					alphabet << 'P';
-					alphabet << 'Q';
-					alphabet << 'R';
-					alphabet << 'S';
-					alphabet << 'T';
-					alphabet << 'V';
-					alphabet << 'W';
-					alphabet << 'Y';
+					if (theData->theTT->baseLength == 20)
+					{
+						alphabet << 'A';
+						alphabet << 'C';
+						alphabet << 'D';
+						alphabet << 'E';
+						alphabet << 'F';
+						alphabet << 'G';
+						alphabet << 'H';
+						alphabet << 'I';
+						alphabet << 'K';
+						alphabet << 'L';
+						alphabet << 'M';
+						alphabet << 'N';
+						alphabet << 'P';
+						alphabet << 'Q';
+						alphabet << 'R';
+						alphabet << 'S';
+						alphabet << 'T';
+						alphabet << 'V';
+						alphabet << 'W';
+						alphabet << 'Y';
+					}
+					else
+					{
+						alphabet << '0';
+						alphabet << '1';
+					}
 				}
 			}
 			else
@@ -5047,19 +5049,7 @@ void 	_DataSetFilter::SetupConversion (void)
 			
 			//delete vcache;
 			delete tcache;
-		}
-			
-		/*if ((unitLength>1)&&!conversionCache.lLength)
-		{
-			_Parameter *temp = (_Parameter*)MemAllocate ((undimension+1)*sizeof(_Parameter));
-			for (long j=0; j<theNodeMap.lLength; j++)
-				for (long i=0; i<theFrequencies.lLength; i++)
-				{
-					conversionCache << Translate2Frequencies ((*this)(i,j),temp,true);
-				}
-				
-			free (temp);
-		}*/
+		}			
 	}
 }
 

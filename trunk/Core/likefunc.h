@@ -70,6 +70,7 @@ class	_LikelihoodFunction: public BaseObj {
 		_LikelihoodFunction (void); // default - doesn't do much
 		_LikelihoodFunction (_String&); // from triplets
 		_LikelihoodFunction (_LikelihoodFunction&); // stack copy
+		void		Init	  (void);
 		
 		bool		Construct (_String&,_VariableContainer*);
 		

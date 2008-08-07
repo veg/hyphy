@@ -324,12 +324,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
-				/*parentConditionals [0] *= tMatrix[0] * childVector[0]		+tMatrix[1] * childVector[1]		+tMatrix[2] * childVector[2]		+tMatrix[3] * childVector[3];
-				parentConditionals [1] *= tMatrix[4] * childVector[0]		+tMatrix[5] * childVector[1]		+tMatrix[6] * childVector[2]		+tMatrix[7] * childVector[3];
-				parentConditionals [2] *= tMatrix[8] * childVector[0]		+tMatrix[9] * childVector[1]		+tMatrix[10] * childVector[2]		+tMatrix[11] * childVector[3];
-				parentConditionals [3] *= tMatrix[12] * childVector[0]		+tMatrix[13] * childVector[1]		+tMatrix[14] * childVector[2]		+tMatrix[15] * childVector[3];
-				*/
-				
 				_Parameter t1 = childVector[0] - childVector[3],
 						   t2 = childVector[1] - childVector[3],
 						   t3 = childVector[2] - childVector[3],
@@ -391,8 +385,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					
 					tMatrix				  += alphabetDimension;
 					sum += (parentConditionals[p] *= accumulator);
-					
 				}
+				
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
 					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
@@ -449,9 +443,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 								siteCorrectionCounts [siteOrdering.lData[sid]] += didScale; 
 							scalingAdjustments   [parentCode*siteCount + sid] *= scM;
 							localScalerChange								+= didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
-							
-							//printf ("NFC: %d(%d) %d/%d\n", sid, siteID, cparentTCCIIndex, cparentTCCIBit);
-
 						}
 						else
 							break;

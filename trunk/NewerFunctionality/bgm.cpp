@@ -130,7 +130,7 @@ void		ConsoleBGMStatus (_String, _Parameter, _String * fileName = nil);
 
 //__________________________________________________________________________________
 
-void		ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName = nil)
+void		ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName)
 {
 	FILE		   *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
 	

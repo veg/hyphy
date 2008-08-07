@@ -480,6 +480,13 @@ _Parameter			SumUpHiddenMarkov (_Matrix& hmc, _Matrix& hmm, _Matrix& hmf, _Simpl
 
 _LikelihoodFunction::_LikelihoodFunction (void)
 {
+	Init();
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::Init (void)
+{
 	siteResults 		= nil;
 	bySiteResults 		= nil;
 	hasBeenOptimized 	= false;
@@ -498,6 +505,7 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 	SetThreadCount		(systemCPUCount);
 #endif
 #endif	
+	
 }
 
 //_______________________________________________________________________________________
@@ -505,7 +513,7 @@ _LikelihoodFunction::_LikelihoodFunction (void)
 _LikelihoodFunction::_LikelihoodFunction (_String& s) // from triplets
 //format: datasetfilter name, tree name, frequency matrix name; etc...
 {
-	_LikelihoodFunction::_LikelihoodFunction();
+	Init();
 	Construct(s,nil);
 }
 
@@ -7614,8 +7622,8 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 {
 	if (all)
 	{
-		DeleteObject (siteResults);  siteResults = nil;
-		DeleteObject (bySiteResults);siteResults = nil;
+		DeleteObject (siteResults);   siteResults = nil;
+		DeleteObject (bySiteResults); bySiteResults = nil;
 	}
 	
 #ifdef	_SLKP_LFENGINE_REWRITE_
