@@ -55,4 +55,5 @@ cp  trunk/GUIElements/Resources/GTKResources/theme/*.* $installDirectory/GTKReso
 
 cd $installDirectory
 bash build.sh MP2
+bash build.sh DEV
 bash gtk_build.sh MP2

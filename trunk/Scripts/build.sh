@@ -23,6 +23,7 @@ then
 	echo "  SP : for a single threaded build"
 	echo "  MP : for a multi-threaded build with pthreads."
 	echo "  MP2 : for a multi-threaded build with pthreads which support setconcurrency function."
+	echo "  DEV : developmental OpenMP build with likelihood function speedups."
 	echo "  MPI : for a single-threaded build with MPI message passing support."
 	echo "  DEBUG: single threaded debug version."
 	echo "  LIBRARY [Python|R]: multi-threaded library version with optional wrappers for Python or R."
@@ -150,6 +151,16 @@ then
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
 	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ "
+fi
+
+if [ $1 = "DEV" ] 
+then
+	TARGET_NAME="HYPHYMP_DEV";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -fopenmp -lm -lpthread ";
+	echo "+-----------------------------------------------------------+"
+	echo "|Building a OpenMP/speedups developmental version of HyPhy  |"
+	echo "+-----------------------------------------------------------+"
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -fopenmp "
 fi
 
 if [ $1 = "MPI" ] 
