@@ -3906,12 +3906,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		// need to decide which data represenation to use, 
 		// large trees short alignments 
 		// an acceptable cache size etc
+		categID = 0;
 		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
 		checkPointer(branchCaches							 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 		overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
-		cachedBranches.Clear();
 	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
@@ -4889,6 +4889,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 void _LikelihoodFunction::CleanUpOptimize (void)
 {
 	
+	categID = 0;
 	//printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrixExpCount);
 #ifdef __HYPHYMPI__
 	if (!mpiPartitionOptimizer || !parallelOptimizerTasks.lLength)
@@ -7627,6 +7628,15 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	}
 	
 #ifdef	_SLKP_LFENGINE_REWRITE_
+	conditionalTerminalNodeLikelihoodCaches.Clear();
+	siteCorrections.Clear();
+	cachedBranches.Clear();
+	computedLocalUpdatePolicy.Clear();
+	treeTraversalMasks.Clear();
+	matricesToExponentiate.Clear();
+	overallScalingFactors.Clear();
+	localUpdatePolicy.Clear();
+	
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
@@ -7641,7 +7651,6 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 		delete (branchCaches);
 		branchCaches = nil;
 	}
-	conditionalTerminalNodeLikelihoodCaches.Clear();
 	if (conditionalTerminalNodeStateFlag)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
