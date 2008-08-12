@@ -263,6 +263,7 @@ static	void			CheckFibonacci			(_Parameter);
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		void			DetermineLocalUpdatePolicy  (void);
 		void			FlushLocalUpdatePolicy		(void);
+		void			SetupLFCaches				(void);
 #endif		
 		_SimpleList	 	theTrees, 
 						theDataFilters, 

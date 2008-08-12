@@ -1936,7 +1936,17 @@ void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
 {
 	long 	blockWidth = bySiteResults->GetVDim();
 	_Parameter	 * resStore = bySiteResults->theData+i*blockWidth;
+#ifdef _SLKP_LFENGINE_REWRITE_
+	categID = -1;
+#endif
 	ComputeBlock (i,resStore);
+#ifdef _SLKP_LFENGINE_REWRITE_
+	// multiply scaling factors into the expression
+	long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[i]->lData,
+				upto			= ((_SimpleList**)siteCorrections.lData)[i]->lLength;
+	for (long s = 0; s < upto; s++)
+		resStore[s] *= acquireScalerMultiplier(siteCorrectors[s]);
+#endif
 	if (f || !usedCachedResults)
 	// remap compressed sites to full length
 		ComputeBlockForTemplate2 (i, resStore, resStore, blockWidth);
@@ -2015,23 +2025,12 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				
 				_Matrix 		*blockResult 	= nil;
 				_String 		mxName 			= siteWiseMatrix & (long)(i+1); 
-				_Variable* 		matrixStorage 	= nil;
+				_Variable* 		matrixStorage 	= CheckReceptacle (&mxName, empty, false);
 				
-				categID = LocateVarByName (mxName);
+				if (matrixStorage->ObjectClass() == MATRIX)
+					blockResult = (_Matrix*)matrixStorage->GetValue();
 				
-				if (categID<0)
-				{
-					_Variable dummy (mxName);
-					matrixStorage = LocateVar (dummy.GetAVariable());
-				}
-				else
-				{
-					matrixStorage = FetchVar (categID);
-					if (matrixStorage->ObjectClass() == MATRIX)
-						blockResult = (_Matrix*)matrixStorage->GetValue();
-				}
-				
-				bool			madeMatrix 		= (!blockResult);
+				bool			madeMatrix 		= !blockResult;
 				
 				
 				if (blockDependancies.lData[i])
@@ -2070,11 +2069,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							else
 								blockResult->CheckIfSparseEnough(true);
 						}
+						
 						if (madeMatrix)
-						{
-							blockResult 		= new _Matrix (1,blockWidth,false,true);
-							checkPointer 		(blockResult);
-						}
+							checkPointer (blockResult 		= new _Matrix (1,blockWidth,false,true));
 						
 						long*				dupMap = df->duplicateMap.lData;
 						
@@ -3821,6 +3818,91 @@ void	_LikelihoodFunction::CleanupMPIOptimizer (void)
 		}
 	#endif
 }
+	
+	//_______________________________________________________________________________________
+#ifdef _SLKP_LFENGINE_REWRITE_
+void			_LikelihoodFunction::SetupLFCaches				(void)
+{
+	// need to decide which data represenation to use, 
+	// large trees short alignments 
+	// an acceptable cache size etc
+	categID = 0;
+	checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
+	checkPointer(branchCaches							 = new _Parameter*   [theTrees.lLength]);
+	checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
+	checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
+	overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
+
+	for (long i=0; i<theTrees.lLength; i++)
+	{
+		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
+		_DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+		long patternCount	= theFilter->NumberDistinctSites(),
+		stateSpaceDim	= theFilter->GetDimension (),
+		leafCount		= cT->GetLeafCount(),
+		iNodeCount		= cT->GetINodeCount(),
+		atomSize		= theFilter->GetUnitLength();
+		
+		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount]);
+		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
+		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*cT->categoryCount]);
+		checkPointer (branchCaches[i]							 = new _Parameter [2*patternCount*stateSpaceDim*cT->categoryCount]);
+		
+		cachedBranches.AppendNewInstance (new _SimpleList (cT->categoryCount,-1,0));
+		if (cT->categoryCount == 1)
+			siteCorrections.AppendNewInstance (new _SimpleList (patternCount,0,0));
+		else
+			siteCorrections.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
+		
+		for (long k = 0; k < patternCount*iNodeCount*cT->categoryCount; (siteScalingFactors[i])[k] = 1., k++) ; 
+		
+		// now process filter characters by site / column
+		
+		_List		 foundCharactersAux; 
+		_AVLListX	 foundCharacters (&foundCharactersAux);
+		_String		 aState ((unsigned long)atomSize);
+		
+		char			** columnBlock		= new char*[atomSize]; checkPointer (columnBlock);
+		_Parameter		* translationCache	= new _Parameter [stateSpaceDim]; checkPointer (translationCache);
+		_GrowingVector  * ambigs			= new _GrowingVector();
+		
+		for (long siteID = 0; siteID < patternCount; siteID ++)
+		{
+			siteScalingFactors[i][siteID] = 1.;
+			for (long k = 0; k < atomSize; k++)
+				columnBlock[k] = theFilter->GetColumn(siteID*atomSize+k); 
+			
+			for (long leafID = 0; leafID < leafCount; leafID ++)
+			{
+				long mappedLeaf  = theFilter->theNodeMap.lData[leafID],
+				translation;
+				
+				for (long k = 0; k < atomSize; k++)
+					aState.sData[k] = columnBlock[k][mappedLeaf];
+				
+				translation = foundCharacters.Find (&aState);
+				if (translation < 0)
+				{
+					translation = theFilter->Translate2Frequencies (aState, translationCache);
+					if (translation < 0)
+					{
+						for (long j = 0; j < stateSpaceDim; j++)
+							ambigs->Store(translationCache[j]);
+						translation = -ambigs->GetUsed()/stateSpaceDim;
+					}
+					foundCharacters.Insert (new _String(aState), translation);
+				}
+				else
+					translation = foundCharacters.GetXtra (translation);
+				conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
+			}
+		}
+		conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
+		delete columnBlock; delete translationCache;
+	}
+}
+	
+#endif
 
 //extern long marginalLFEvals, marginalLFEvalsAmb;
 
@@ -3902,17 +3984,6 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		#endif
 	#endif
 	
-	#ifdef	_SLKP_LFENGINE_REWRITE_
-		// need to decide which data represenation to use, 
-		// large trees short alignments 
-		// an acceptable cache size etc
-		categID = 0;
-		checkPointer(conditionalInternalNodeLikelihoodCaches = new _Parameter*   [theTrees.lLength]);
-		checkPointer(branchCaches							 = new _Parameter*   [theTrees.lLength]);
-		checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
-		checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
-		overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
-	#endif
 
 	for (i=0; i<theTrees.lLength; i++)
 	{
@@ -3920,72 +3991,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		
 		if (cT->CountTreeCategories() >categCount)
 			categCount = cT->categoryCount;
-#ifdef	_SLKP_LFENGINE_REWRITE_
-		_DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-		long patternCount	= theFilter->NumberDistinctSites(),
-			 stateSpaceDim	= theFilter->GetDimension (),
-			 leafCount		= cT->GetLeafCount(),
-			 iNodeCount		= cT->GetINodeCount(),
-			 atomSize		= theFilter->GetUnitLength();
-		
-		checkPointer (conditionalInternalNodeLikelihoodCaches[i] = new _Parameter [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount]);
-		checkPointer (conditionalTerminalNodeStateFlag[i]		 = new long		  [patternCount*leafCount]);
-		checkPointer (siteScalingFactors[i]						 = new _Parameter [patternCount*iNodeCount*cT->categoryCount]);
-		checkPointer (branchCaches[i]							 = new _Parameter [2*patternCount*stateSpaceDim*cT->categoryCount]);
-		
-		cachedBranches.AppendNewInstance (new _SimpleList (cT->categoryCount,-1,0));
-		if (cT->categoryCount == 1)
-			siteCorrections.AppendNewInstance (new _SimpleList);
-		else
-			siteCorrections.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
-
-		for (long k = 0; k < patternCount*iNodeCount*cT->categoryCount; (siteScalingFactors[i])[k] = 1., k++) ; 
-		
-		// now process filter characters by site / column
-		
-		_List		 foundCharactersAux; 
-		_AVLListX	 foundCharacters (&foundCharactersAux);
-		_String		 aState ((unsigned long)atomSize);
-		
-		char			** columnBlock		= new char*[atomSize]; checkPointer (columnBlock);
-		_Parameter		* translationCache	= new _Parameter [stateSpaceDim]; checkPointer (translationCache);
-		_GrowingVector  * ambigs			= new _GrowingVector();
-		
-		for (long siteID = 0; siteID < patternCount; siteID ++)
-		{
-			siteScalingFactors[i][siteID] = 1.;
-			for (long k = 0; k < atomSize; k++)
-				columnBlock[k] = theFilter->GetColumn(siteID*atomSize+k); 
-			
-			for (long leafID = 0; leafID < leafCount; leafID ++)
-			{
-				long mappedLeaf  = theFilter->theNodeMap.lData[leafID],
-					 translation;
-				
-				for (long k = 0; k < atomSize; k++)
-					aState.sData[k] = columnBlock[k][mappedLeaf];
-				
-				translation = foundCharacters.Find (&aState);
-				if (translation < 0)
-				{
-					translation = theFilter->Translate2Frequencies (aState, translationCache);
-					if (translation < 0)
-					{
-						for (long j = 0; j < stateSpaceDim; j++)
-							ambigs->Store(translationCache[j]);
-						translation = -ambigs->GetUsed()/stateSpaceDim;
-					}
-					foundCharacters.Insert (new _String(aState), translation);
-				}
-				else
-					translation = foundCharacters.GetXtra (translation);
-				conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
-			}
-		}
-		conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
-		delete columnBlock; delete translationCache;
-#endif
 	}
+	
+	SetupLFCaches();
 
 #ifdef __HYPHYMPI__
 	InitMPIOptimizer ();
@@ -7629,13 +7637,12 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	
 #ifdef	_SLKP_LFENGINE_REWRITE_
 	conditionalTerminalNodeLikelihoodCaches.Clear();
-	siteCorrections.Clear();
 	cachedBranches.Clear();
-	computedLocalUpdatePolicy.Clear();
-	treeTraversalMasks.Clear();
-	matricesToExponentiate.Clear();
-	overallScalingFactors.Clear();
-	localUpdatePolicy.Clear();
+//	computedLocalUpdatePolicy.Clear();
+//	treeTraversalMasks.Clear();
+//	matricesToExponentiate.Clear();
+//	overallScalingFactors.Clear();
+//  localUpdatePolicy.Clear();
 	
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
@@ -12099,12 +12106,12 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 				cT->AllocateUnderflowScalers (((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->NumberDistinctSites());
 			#endif
 			
-			
 		}
 		
 		for (long i2=0; i2<theProbabilities.lLength; i2++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
 
+		SetupLFCaches	  ();
 		SetReferenceNodes ();
 		
 		if (disableClear)
