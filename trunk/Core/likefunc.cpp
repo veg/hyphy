@@ -756,7 +756,6 @@ void	 _LikelihoodFunction::Clear (void)
 	
 #ifdef _SLKP_LFENGINE_REWRITE_	
 	treeTraversalMasks.Clear();
-	siteCorrections.Clear();
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
@@ -1942,10 +1941,16 @@ void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
 	ComputeBlock (i,resStore);
 #ifdef _SLKP_LFENGINE_REWRITE_
 	// multiply scaling factors into the expression
-	long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[i]->lData,
-				upto			= ((_SimpleList**)siteCorrections.lData)[i]->lLength;
-	for (long s = 0; s < upto; s++)
-		resStore[s] *= acquireScalerMultiplier(siteCorrectors[s]);
+	if (! usedCachedResults)
+	{
+		long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[i]->lData,
+					upto			= ((_SimpleList**)siteCorrections.lData)[i]->lLength;
+		for (long s = 0; s < upto; s++)
+		{
+		//	printf ("%d\t%d\t%g\t%d\n", i, s, resStore[s], siteCorrectors[s]);
+			resStore[s] *= acquireScalerMultiplier(siteCorrectors[s]);
+		}
+	}
 #endif
 	if (f || !usedCachedResults)
 	// remap compressed sites to full length
@@ -2200,10 +2205,8 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							if (computationalResults.lLength>j)
 								((_Constant*)computationalResults(j))->SetValue (blockResult);
 							else
-							{
-								_Constant c_res (blockResult);
-								computationalResults&&(&c_res);
-							}
+								computationalResults.AppendNewInstance(new _Constant(blockResult));
+
 							result  += blockResult;
 							categID  = 0;
 						}
@@ -4912,7 +4915,6 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		DeleteCaches (false);
-		siteCorrections.Clear();
 #endif		
 		
 #ifdef __HYPHYMPI__
@@ -7638,6 +7640,7 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 #ifdef	_SLKP_LFENGINE_REWRITE_
 	conditionalTerminalNodeLikelihoodCaches.Clear();
 	cachedBranches.Clear();
+	siteCorrections.Clear();
 //	computedLocalUpdatePolicy.Clear();
 //	treeTraversalMasks.Clear();
 //	matricesToExponentiate.Clear();
@@ -12147,6 +12150,7 @@ void	_LikelihoodFunction::DoneComputing (bool force)
 		for (long i=0; i<theProbabilities.lLength; i++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeGeneral();
         }
+		DeleteCaches		(false);
 		hasBeenSetUp 	   = 0;
 		siteArrayPopulated = false;
 	}

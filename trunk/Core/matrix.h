@@ -273,6 +273,7 @@ class		_Matrix: public _MathObject {
 	void		MakeMeSimple				(void);
 	void		MakeMeGeneral				(void);	
 	void		ConvertToSimpleList 		(_SimpleList&);
+	void		CompressSparseMatrix		(bool, _Parameter*);
 	//prepare the transition probs matrix for exponentiation
 	
 	long		Hash (long, long);					// hashing function, which finds matrix
@@ -327,7 +328,7 @@ private:
 	long		HashBack 			(long);					
 									// hashing function, which finds matrix
 									// physical element given local storage
-	void		MultbyS				(_Matrix&,bool);
+	void		MultbyS				(_Matrix&,bool,_Matrix* = nil, _Parameter* = nil);
 									// internal function used in exponentiating sparse matrices
 									
 	void		Balance			    (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
@@ -341,7 +342,7 @@ private:
 														  // lifted from hqr in NR
 													
 												
-	bool		AmISparseFast 		(void);												
+	bool		AmISparseFast 		(_Matrix&);												
 														
 	bool		IncreaseStorage 	(void);				
 									// expand the buffer, where elements are held

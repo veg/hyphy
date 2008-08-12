@@ -78,7 +78,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 	long matrixID;
 	
 #ifdef _OPENMP
-	long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 9 + 1));
+	long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
 #endif
 	
 #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)

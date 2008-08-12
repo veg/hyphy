@@ -1399,26 +1399,21 @@ void	CreateMatrix	(_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse 
 //_____________________________________________________________________________________________
 bool	_Matrix::AmISparse(void)
 {
-	if (theIndex) return TRUE; // duh!
-	if (storageType==2) return FALSE;
+	if (theIndex)		return true; // duh!
+	if (storageType==2) return false;
 	
-	long k=0,i;
+	long k=0;
 	if (storageType==1)
 	{
-		for (i=0;i<lDim; i++)
-		{
+		for (long i=0;i<lDim; i++)
 			if (theData[i]!=ZEROOBJECT)
 				k++;
-		}
 	}
 	else
 	{
-		for (i=0;i<lDim; i++)
-		{
-			if (IsNonEmpty(i))
-				if (!GetObject(i)->IsObjectEmpty())
+		for (long i=0;i<lDim; i++)
+			if (IsNonEmpty(i) && !GetObject(i)->IsObjectEmpty())
 					k++;
-		}
 	}
 		
 		
@@ -1428,7 +1423,7 @@ bool	_Matrix::AmISparse(void)
 		_Matrix sparseMe (hDim,vDim,true,storageType==1); 
 		if (storageType==1)
 		{
-			for (i=0;i<lDim; i++)
+			for (long i=0;i<lDim; i++)
 			{
 				if (theData[i]!=ZEROOBJECT)
 					sparseMe[i]=theData[i];
@@ -1437,7 +1432,7 @@ bool	_Matrix::AmISparse(void)
 		else
 			if (storageType==0)
 			{
-				for (i=0;i<lDim; i++)
+				for (long i=0;i<lDim; i++)
 				{
 					if ((GetObject(i)!=ZEROPOINTER)&&(!GetObject(i)->IsObjectEmpty()))
 						sparseMe.StoreObject(i,GetObject(i));
@@ -1447,16 +1442,19 @@ bool	_Matrix::AmISparse(void)
 		
 		Clear();
 		DuplicateMatrix (this, &sparseMe);
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 //_____________________________________________________________________________________________
-bool	_Matrix::AmISparseFast(void)
+bool	_Matrix::AmISparseFast (_Matrix& whereTo)
 {
-	if (theIndex) return TRUE; // duh!
-	long k=0,i;
+	if (theIndex) return true; // duh!
+	
+	long k=0,
+		 i;
+	
 	for (i=0;i<lDim; i++)
 		if (theData[i]!=ZEROOBJECT)
 			k++;
@@ -1464,27 +1462,33 @@ bool	_Matrix::AmISparseFast(void)
 	if ((k*100)/lDim<=_Matrix::switchThreshold)
 	{
 		// we indeed are sparse enough
-		if (!k)
-			k = 1;
-		_Parameter * newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
-		theIndex = (long*)MemAllocate (k*sizeof(long));
-		if (!(newData&&theIndex))
+		if (k == 0)	k = 1;
+		
+		_Parameter *		  newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
+		if (whereTo.theIndex)
+			free (whereTo.theIndex);
+		whereTo.theIndex			   = (long*)MemAllocate (k*sizeof(long));
+		
+		if (!(newData&&whereTo.theIndex))
 			warnError (-108);
+		
 		long p = 0;
-		theIndex[0] = -1;
+		
+		whereTo.theIndex[0] = -1;
+		
 		for (i=0;i<lDim; i++)
-		{
 			if (theData[i]!=ZEROOBJECT)
 			{
-				theIndex[p] = i;
+				whereTo.theIndex[p] = i;
 				newData[p++]=theData[i];
 			}
-		}
-		lDim = k;
-		free (theData);
-		theData = newData;
+
+		whereTo.lDim	 = k;
+		free	 (whereTo.theData);
+		whereTo.theData = newData;
 		return true;
 	}
+	
 	return false;
 }
 
@@ -3485,14 +3489,14 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 						long m = theIndex[k];
 						if  (m!=-1)  // non-zero
 						{
-							long i;
+							long i = m%vDim;
 							
 							// this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
 							// in the form of A_rc * B_cc'
 							
-							_Parameter  value							= theData[k],
-										_hprestrict_ *res				= storage.theData    + (m/vDim)*vDim,
-										_hprestrict_ *secArg			= secondArg.theData  + (m%vDim)*vDim;
+							_Parameter  value							= theData[k];
+							_Parameter	_hprestrict_ *res				= storage.theData    + (m-i);
+							_Parameter	_hprestrict_ *secArg			= secondArg.theData  + i*vDim;
 							
 							for (i = 0; i < loopBound; i+=4)
 							{
@@ -4161,6 +4165,49 @@ void	_Matrix::Transpose (void)
 	}			
 }
 
+//_____________________________________________________________________________________________
+
+void	_Matrix::CompressSparseMatrix (bool transpose, _Parameter * stash)
+{
+	if (theIndex)
+	{
+		_SimpleList sortedIndex  ((unsigned long)lDim)
+					,sortedIndex3 ((unsigned long)lDim)
+					,sortedIndex2
+					; 
+		
+		
+		long blockChunk = 8,
+		blockShift = hDim / blockChunk + 1;
+		
+		for (long i2=0; i2<lDim; i2++)
+		{
+			long k = theIndex[i2];
+			if	(k!=-1)
+			{
+				long r = transpose?(k/vDim):(k%vDim), 
+					 c = transpose?(k%vDim):(k/vDim),
+					 r2 = c / blockChunk * blockShift + r / blockChunk;
+				
+				sortedIndex  << (c*vDim + r);
+				sortedIndex3 << r2 * lDim + r * vDim + c;
+				stash[sortedIndex.lLength-1] = theData[i2];
+			}
+		}
+		
+		sortedIndex2.Populate(sortedIndex.lLength,0,1);
+		SortLists(&sortedIndex3,&sortedIndex2);
+		
+		for (long i=0; i<sortedIndex.lLength; i++)
+		{
+			theIndex[i] = sortedIndex.lData[sortedIndex2.lData[i]];
+			theData[i]  = stash[sortedIndex2.lData[i]];
+		}
+		
+		lDim = sortedIndex.lLength;
+	}
+}
+
 
 //_____________________________________________________________________________________________
 
@@ -4192,48 +4239,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 				
 			if (theIndex)
 			// transpose sparse matrix
-			{
-				_SimpleList sortedIndex  ((unsigned long)lDim)
-							,sortedIndex3 ((unsigned long)lDim)
-							,sortedIndex2
-							; 
-
-				
-				long blockChunk = 8,
-					 blockShift = hDim / blockChunk + 1;
-				
-				for (long i2=0; i2<lDim; i2++)
-				{
-					long k = theIndex[i2];
-					if	(k!=-1)
-					{
-						long r = k/vDim, c = k%vDim,
-							 r2 = r / blockChunk * blockShift + c / blockChunk;
-						
-						sortedIndex  << (c*vDim + r);
-					    sortedIndex3 << r2 * lDim + r * vDim + c;
-					    stash[sortedIndex.lLength-1] = theData[i2];
-					}
-				}
-				
-				sortedIndex2.Populate(sortedIndex.lLength,0,1);
-				SortLists(&sortedIndex3,&sortedIndex2);
-				
-				for (i=0; i<sortedIndex.lLength; i++)
-				{
-					theIndex[i] = sortedIndex.lData[sortedIndex2.lData[i]];
-					theData[i]  = stash[sortedIndex2.lData[i]];
-					//theIndex[i] = sortedIndex.lData[i];
-					//theData[i]  = stash[i];
-					
-					//printf ("%d %d\n", sortedIndex.lData[sortedIndex2.lData[i]] % vDim, sortedIndex.lData[sortedIndex2.lData[i]]/vDim);
-				}
-				
-				//for (; i<lDim; i++)
-				//	theIndex[i] = -1;
-				
-				lDim = sortedIndex.lLength;
-			}
+				CompressSparseMatrix (true,stash);
 			
 		}
 		else
@@ -4299,12 +4305,13 @@ _Matrix*	_Matrix::Exponentiate (void)
 			_Parameter tMax = MinElement()*sqrt ((_Parameter)hDim);
 			//_Parameter tMax = MaxElement();
 			i=2;
+			_Matrix tempS (hDim, vDim, false, temp.storageType);
 			do 
 			{
-				temp.MultbyS		(*this,theIndex!=nil);
+				temp.MultbyS		(*this,theIndex!=nil, &tempS, stash);
 				temp	  *= 1.0/i;
 				(*result) += temp;
-				i++;
+				i		  ++;
 				taylorTermsCount++;
 			}
 			while (temp.IsMaxElement(tMax*truncPrecision*i));
@@ -5534,7 +5541,8 @@ void		_Matrix::ConvertNumbers2Poly (void)
 void		_Matrix::operator += (_Matrix& m)
 {
 	AgreeObjects (m);
-	if ((!m.theIndex)&&theIndex) CheckIfSparseEnough(true);
+	if ((!m.theIndex) && theIndex) 
+		CheckIfSparseEnough(true);
 	Add (*this,m);
 }
 
@@ -6599,29 +6607,47 @@ _Matrix		_Matrix::operator * (_Parameter c)
 //_____________________________________________________________________________________________
 void		_Matrix::operator *= (_Matrix& m)
 {
-	CheckDimensions(m);
-	AgreeObjects (m);
-	_Matrix result (hDim, m.vDim, false, storageType);
-	Multiply (result,m);
+	CheckDimensions		(m);
+	AgreeObjects		(m);
+	_Matrix	  result	(hDim, m.vDim, false, storageType);
+	Multiply			(result,m);
 	//if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
-	if ((theIndex!=nil)&&(m.theIndex!=nil)) result.AmISparse();
-	Swap(result);
+	if (theIndex!=nil && m.theIndex!=nil) 
+		result.AmISparse();
+	Swap				(result);
 }
 
 //_____________________________________________________________________________________________
-void		_Matrix::MultbyS (_Matrix& m, bool leftMultiply)
+void		_Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, _Parameter* stash)
 {
-	_Matrix result (hDim, m.vDim, false, storageType);
+	_Matrix * result = nil;
+	if (!externalStorage)
+		result = new _Matrix (hDim, m.vDim, false, storageType);
 	
+	_Matrix * receptacle = (externalStorage?externalStorage:result);
+
 	if (leftMultiply)
-		m.Multiply (result,*this);
+		m.Multiply (*receptacle,*this);
 	else
-		Multiply   (result,m);
+		Multiply   (*receptacle,m);
 
 	if (theIndex&&m.theIndex) 
-		result.AmISparseFast();
+	{
+		if (receptacle->AmISparseFast(*this) == false)
+			Swap			(*receptacle);
+		else
+			CompressSparseMatrix(false,stash);
+	}
+	else // both dense
+		Swap			(*receptacle);
 	
-	Swap			(result);
+	if (!externalStorage)
+		DeleteObject (result);
+	else
+	{
+		externalStorage->CheckIfSparseEnough (true);
+		for (long s = 0; s < externalStorage->lDim; s++) externalStorage->theData[s] = 0.0;
+	}
 }
 
 //_____________________________________________________________________________________________
