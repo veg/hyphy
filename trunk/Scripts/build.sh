@@ -8,7 +8,7 @@ if [ $# -ne 1 -a $# -ne 2 ]
 then
 	TARGET_NAME="HELP";
 else
-	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" ] 
+	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" ] 
 	then
 		$TARGET_NAME = "HELP"
 	else
