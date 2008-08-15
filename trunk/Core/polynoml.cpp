@@ -334,9 +334,7 @@ void	_PolynomialData::DeleteTerm (long index)
 		allocTerms-=POLY_DATA_INCREMENT;
 		theCoeff = (_Parameter*)MemReallocate ((char*)theCoeff, allocTerms*sizeof(_Parameter));
 		if (numberVars)
-		{
 			thePowers = (long*)MemReallocate ((char*)thePowers, allocTerms*sizeof(long)*numberVars);
-		}
 	}
 }
 
@@ -920,8 +918,8 @@ bool		 _Polynomial::Equal(_MathObject* m)
 				result = fabs (v->Value()) < 1.e-6;
 				DeleteObject (v);
 			}
-			_String * diffS = (_String*)diff->toStr();
-			printf ("%s\n", diffS->getStr());
+			//_String * diffS = (_String*)diff->toStr();
+			//printf ("%s\n", diffS->getStr());
 			DeleteObject (diff);
 		}
 		
@@ -941,15 +939,14 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 		_Polynomial* result = new _Polynomial (*this);
 		checkPointer(result);
 		_Parameter mV = subtract?-m->Value():m->Value();
-		if (!variableIndex.countitems()) // constant poly
+		
+		if (!variableIndex.lLength) // constant poly
 		{
 			if (theTerms->NumberOfTerms())
 			{
 				result->theTerms->GetCoeff(0)+=mV;
 				if (result->theTerms->GetCoeff(0)==0.0)
-				{
 					result->theTerms->DeleteTerm(0);
-				}
 			}
 			else
 			{
@@ -965,9 +962,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 				{
 					result->theTerms->GetCoeff(0)+=mV;
 					if (result->theTerms->GetCoeff(0)==0.0)
-					{
 						result->theTerms->DeleteTerm(0);
-					}
 				}
 				else
 					result->theTerms->AddTerm(mV);

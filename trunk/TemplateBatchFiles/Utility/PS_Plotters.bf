@@ -437,3 +437,187 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	return psDensityPlot;
 }
 
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
+function CircleGraphPlot	  (edgeWeights&, 			/* a KxK matrix of graph edge weights */
+							  fontFace,		/* use this font */
+							  plotDim, 		/* 1x4 matrix {{width, height,font_size,maxlinewidth}} of the plot in points */
+							  dataLabels,   /* Kx1 matrix of strings to label the nodes with */
+							  colors,		/* Kx3 matrix of colors for the nodes  */
+							  doWrappers    /* should PS prefix and suffix be included */
+							  )
+{
+	
+	
+	psCircleGraphPlot = ""; 
+	psCircleGraphPlot*1024;
+	
+	plotHeight = Max (100, plotDim[1]);
+	plotWidth  = Max (100, plotDim[0]);
+	
+	plotOriginX = plotDim[2];
+	plotOriginY = plotDim[2];
+	
+	plotSpanX	= plotWidth;
+	plotSpanY   = plotHeight;
+	plotWidth   = plotWidth  - 2*plotDim[2];
+	plotHeight	= plotHeight - 2*plotDim[2];
+	
+	if (doWrappers)
+	{
+		psCircleGraphPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Circular graph plot");
+		psCircleGraphPlot * "\n";
+		psCircleGraphPlot * _HYPSTextCommands(0);
+	}
+	
+	psCircleGraphPlot * _HYPSSetFont (fontFace, plotDim[2]);
+	psCircleGraphPlot * "\n";
+	
+	psCircleGraphPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
+	psCircleGraphPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	
+	_x 		      		 = Rows (edgeWeights);
+	_yTotalHeight 		 = {1,_x};
+	maxlinewidth		 = Max(plotDim[3],1);
+	
+	_nodeCenters		 = {_x,2};
+	_anglePerNode		 = 2*3.1415926/_x;
+	_radialCenter		 = {{plotWidth__/2+plotOriginX__,plotHeight__/2+plotOriginY__}
+							{plotWidth__/2,plotHeight__/2}
+						   };
+	
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		myX_coord = _radialCenter[0][0] + _radialCenter[1][0]*Cos(_anglePerNode*_dataPoint);
+		myY_coord = _radialCenter[0][1] + _radialCenter[1][1]*Sin(_anglePerNode*_dataPoint);
+		_nodeCenters[_dataPoint][0] = myX_coord;
+		_nodeCenters[_dataPoint][1] = myY_coord;
+	}
+
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		for (_dataPoint2 = _dataPoint+1; _dataPoint2 < _x; _dataPoint2 = _dataPoint2 + 1)
+		{
+			myEW = edgeWeights[_dataPoint][_dataPoint2];
+			if (myEW > 0.95)
+			{
+				psCircleGraphPlot * ("newpath " + _nodeCenters[_dataPoint][0] + " "
+												+ _nodeCenters[_dataPoint][1] + " moveto " 
+												+ myEW * maxlinewidth + " setlinewidth " 
+												+ _nodeCenters[_dataPoint2][0] + " "
+												+ _nodeCenters[_dataPoint2][1] + " lineto stroke\n");
+			}								
+		}
+	}
+		
+	/*
+	plotWidth 	= plotWidth  - 2;
+	plotHeight  = plotHeight - 2;
+	px 			= plotWidth /(xMax - xMin + barWidth);
+	py 			= plotHeight/(yMax - yMin + 2);
+	barWidth 	= barWidth * px;
+	xShift		= 1;	
+	
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px+xShift;
+		myY_coord = plotOriginY;
+		
+		for (_yIterator = 0; _yIterator < _yColumns; _yIterator = _yIterator + 1)
+		{	
+			_rectHeight = xy[_dataPoint][_yIterator+1]*py;
+			if (_rectHeight > 0)
+			{
+				psCircleGraphPlot * (""+ colors[_yIterator][0] + " " + colors[_yIterator][1] + " " + colors[_yIterator][2] + " setrgbcolor\n");
+				psCircleGraphPlot * (""+ myX_coord + " " + myY_coord + " " + barWidth*1.5 + " " + _rectHeight + " rectfill\n");
+				myY_coord = myY_coord + _rectHeight;
+			}
+		}									
+	}	
+	
+	if (lastLabelSP)
+	{
+		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+		{
+			myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px+xShift;
+			myY_coord = plotOriginY + xy[_dataPoint][_yIterator+1]*py;
+			psCircleGraphPlot * (""+ colors[_yIterator][0] + " " + colors[_yIterator][1] + " " + colors[_yIterator][2] + " setrgbcolor\n");
+			psCircleGraphPlot * ("newpath " + (myX_coord) + " " 
+										+ (myY_coord) + " " 
+										+ "1 0 360 arc fill\n");
+		}
+	}
+
+	plotWidth 	= plotWidth  + 2;
+	plotHeight  = plotHeight + 2;
+
+
+	xscaler = determineCoordinateTicks (xMin,xMax);
+	_x	= ((xMin/xscaler)$1)*xscaler;
+	psCircleGraphPlot * ("0 0 0 setrgbcolor\n");
+	plottedZero = (_x == 0);
+	
+	while (_x < xMax)
+	{
+		xStep = (plotOriginX + px*(_x-xMin));
+		psCircleGraphPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,0) + ") centertext\n");  
+		psCircleGraphPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
+							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
+		_x = _x + xscaler;
+	}
+	
+	
+	yscaler = determineCoordinateTicks (yMin,yMax);
+	_y	= ((yMin/yscaler)$1)*yscaler;
+	if (plottedZero && (_y == 0))
+	{
+		_y = yscaler;
+	}
+	
+	while (_y < yMax)
+	{
+		yStep = (plotOriginY + py*(_y-yMin));
+		psCircleGraphPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,0) + ") righttext\n");  
+		psCircleGraphPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
+		_y = _y + yscaler;
+	}
+
+	psCircleGraphPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
+	psCircleGraphPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
+
+	if (legendWitdh)
+	{
+		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
+		xLoc = plotOriginX +  _x * px + 0.5*plotDim[2];
+		
+		for (_segment = 0; _segment < _yColumns; _segment = _segment + 1)
+		{
+			psCircleGraphPlot * ("" + colors[_segment][0] + " " + colors[_segment][1] + " " + colors[_segment][2] + " setrgbcolor\n");
+			psCircleGraphPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectfill\n");
+			psCircleGraphPlot * ("0 0 0 setrgbcolor\n");
+			psCircleGraphPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectstroke\n");
+									
+			psCircleGraphPlot * ("newpath " + (xLoc + plotDim[2]*1.5) + " " + (yLoc+plotDim[2]/6) + " moveto (" + dataLabels[_segment] + ") show stroke\n");
+
+			yLoc = yLoc - plotDim[2] * 1.5;
+			
+		}
+	}*/
+
+	psCircleGraphPlot * 0;
+	
+	if (doWrappers)
+	{
+		psCircleGraphPlot * "\nshowpage\n";
+	}
+	return psCircleGraphPlot;
+}
+

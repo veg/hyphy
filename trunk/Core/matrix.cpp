@@ -1551,10 +1551,10 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 							else
 								compResult = false;
 							
-							DeleteObject (rcp); DeleteObject (crp);
+							//DeleteObject (rcp); DeleteObject (crp);
 						}
 						else
-							compResult = rc || cr;
+							compResult = !(rc || cr);
 					}
 					if (!compResult)
 						return false;
@@ -1579,7 +1579,7 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 						else
 							compResult = rc->EqualFormula(cr);
 
-						DeleteObject (rcp); DeleteObject (crp);
+						//DeleteObject (rcp); DeleteObject (crp);
 					}
 					else
 						compResult = !(rc || cr);
