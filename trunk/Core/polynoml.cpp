@@ -823,9 +823,9 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
 			break;
 	}
 	
-	_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for polynomials";
-	FlagError (errMsg);
+	//_String errMsg ("Operation ");
+	//errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for polynomials";
+	//WarnError (errMsg);
 	return nil;
 
 }

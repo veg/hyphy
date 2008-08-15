@@ -3978,18 +3978,17 @@ bool		_Operation::ExecutePolynomial (_Stack& theScrap)
 		return 	  false;
 	}
 	
-	_PMathObj term1, term2 = nil, temp;
+	_PMathObj term1, 
+			  term2 = nil, 
+			  temp;
 
+	bool	  opResult = true;
 	
 	if (numberOfTerms == 2)
-	{
 		term2 = theScrap.Pop();
-	}
 
 	term1 = theScrap.Pop();
-	
-	temp = term1->Execute (opCode, term2, nil);
-	
+	temp  = term1->Execute (opCode, term2, nil);
 	DeleteObject (term1);
 	
 	if (temp)
@@ -3997,12 +3996,13 @@ bool		_Operation::ExecutePolynomial (_Stack& theScrap)
 		theScrap.Push (temp);
 		DeleteObject (temp);
 	}
+	else
+		opResult = false;
 	
 	if (term2)
-	{
 		DeleteObject (term2);
-	}
-	return true;
+
+	return opResult;
 }
 
 //__________________________________________________________________________________

@@ -2449,7 +2449,11 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			for (long k = 0; k<nI; k++)
 			{
 				thisC->SetIntervalValue(k);
-				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k));
+				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
+#ifdef _SLKP_LFENGINE_REWRITE_
+								,siteMultipliers  
+#endif				
+				);
 				categID+=offsetCounter/nI;
 			}
 			offsetCounter/=nI;
@@ -2476,7 +2480,9 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			_Matrix*	cws	= thisC->GetWeights();
 			
 #ifdef _SLKP_LFENGINE_REWRITE_
-			long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lLength?((_SimpleList**)siteCorrections.lData)[blockIndex]->lData:nil;
+			long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lLength?
+										  (((_SimpleList**)siteCorrections.lData)[blockIndex]->lData) + categID * currentOffset
+										  :nil;
 #endif			
 			
 			for (long k = 0; k<nI; k++)
@@ -2512,6 +2518,10 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				}
 				
 				categID+=offsetCounter;
+				#ifdef _SLKP_LFENGINE_REWRITE_
+				if (offsetCounter > 1)
+					siteCorrectors += (offsetCounter-1) * currentOffset;
+				#endif
 			}
 			if (offsetCounter>1)
 				categID-=nI*offsetCounter;
