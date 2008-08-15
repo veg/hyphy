@@ -765,17 +765,16 @@ BaseObj*	_Polynomial::makeDynamic(void)
 {
 	_Polynomial* res = new _Polynomial;
 	checkPointer(res);
+	
 	res->variableIndex.Duplicate (&variableIndex);
 	res->compList1.Duplicate (&compList1);
 	res->compList2.Duplicate (&compList2);
+	
 	if (theTerms)
-	{
-		res->theTerms = new _PolynomialData ;
-		checkPointer(res->theTerms);
 		res->theTerms->Duplicate (theTerms);	
-	}
 	else
 	{
+		DeleteObject (res->theTerms);
 		res->theTerms = nil;
 	}
 	return res;
@@ -980,7 +979,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 		Convert2OperationForm();
 		_Polynomial* p2 = (_Polynomial*)m;
 		
-		if (!variableIndex.countitems())
+		if (variableIndex.lLength == 0)
 		{
 			if (theTerms->NumberOfTerms())
 			{
@@ -992,8 +991,9 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 				else
 				{
 					_Polynomial *ppp = (_Polynomial*)p2->Plus (&coef1,true);
-					_Parameter *invC = ppp->theTerms->theCoeff;
-					for (long inv = 0; inv<ppp->theTerms->actTerms; (*invC)*=(-1.0), inv++, invC++) {}
+					_Parameter  *invC = ppp->theTerms->theCoeff;
+					for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) 
+						(*invC) *= -1.0;
 					return ppp;
 				}
 			}
@@ -1006,18 +1006,20 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 					_Polynomial* ppp = new _Polynomial (*p2);
 					checkPointer(ppp);
 					_Parameter *invC = ppp->theTerms->theCoeff;
-					for (long inv = 0; inv<ppp->theTerms->actTerms; (*invC)*=(-1.0), inv++, invC++) {}
+					for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) 
+						(*invC)*=(-1.0);
+
 					return ppp;
 				}
 			}
 					
 		}
-		if (!p2->variableIndex.countitems())
+		if (p2->variableIndex.lLength == 0)
 		{
 			if (p2->theTerms->NumberOfTerms())
 			{
 				_Constant coef2 (p2->theTerms->GetCoeff(0));
-				return  Plus (&coef2,subtract);
+				return    Plus (&coef2,subtract);
 			}
 			else
 			{
@@ -1028,22 +1030,36 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 					_Polynomial* ppp = new _Polynomial (*this);
 					checkPointer(ppp);
 					_Parameter *invC = ppp->theTerms->theCoeff;
-					for (long inv = 0; inv<ppp->theTerms->actTerms; (*invC)*=(-1.0), inv++, invC++) {}
+					for (long inv = 0; inv<ppp->theTerms->actTerms; inv++, invC++) 
+						(*invC)*=(-1.0);
+					
 					return ppp;
 				}
 			}
 		}
 		
 		p2->Convert2OperationForm();
-		long nt2 = p2->theTerms->NumberOfTerms(), nt1 = theTerms->NumberOfTerms(), pos1 = 0, pos2 = 0,
-			 * term1, * term2;
-		char c = 0, advancing = -1;
-		_Parameter * coeff1 = theTerms->GetCoeff(), *coeff2 = p2->theTerms->GetCoeff();
+		
+		long nt2		= p2->theTerms->NumberOfTerms(), 
+			 nt1		= theTerms->NumberOfTerms(), 
+			 pos1		= 0, 
+			 pos2		= 0,
+			 * term1, 
+			 * term2;
+		
+		char c			= 0, 
+			 advancing  = -1;
+		
+		_Parameter * coeff1 = theTerms->GetCoeff(), 
+				    *coeff2 = p2->theTerms->GetCoeff();
+		
 		_Polynomial* res;
-		if (variableIndex.Equal(p2->variableIndex)) // same variable arrays - proceed to the operation directly
+		
+		if (variableIndex.Equal(p2->variableIndex)) 
+		// same variable arrays - proceed to the operation directly
 		{
 			res = new _Polynomial (variableIndex); // create a blank new result holder
-			checkPointer(res);
+			checkPointer		(res);
 			ResetPolynomialCheck(res);
 			while (1) // stuff left to do
 			{
@@ -1069,7 +1085,6 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 						res->theTerms->AddTerm (term2,subtract?-*coeff2:*coeff2);
 						continue;
 					}
-						
 				}
 				else
 					if (advancing == 1) // advancing in the 2nd polynomial
@@ -1634,8 +1649,7 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 		if (res->theTerms->GetNoTerms()==0)
 		{
 			DeleteObject (res);
-			_Polynomial zeroPol (0.0);
-			return (_PMathObj)zeroPol.makeDynamic();
+			return new _Polynomial (0.0);
 		}
 		return res;
 	}	
