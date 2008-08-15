@@ -709,6 +709,8 @@ _Variable*  LocateVar 		(long index);
 _Variable*  FetchVar 		(long index);
 _PMathObj	FetchObjectFromVariableByType 
 							(_String*, int);
+_PMathObj	FetchObjectFromVariableByTypeIndex 
+							(long, int);
 _String&    AppendContainerName
 							(_String&, _VariableContainer*);
 

@@ -834,7 +834,7 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
 }
 
 //__________________________________________________________________________________
-_MathObject*	_Polynomial::IsANumber (void) 
+_MathObject*	_Polynomial::IsANumber (bool returnLeading) 
 {
 	long nV = variableIndex.countitems();
 	if (!nV) 
@@ -850,7 +850,7 @@ _MathObject*	_Polynomial::IsANumber (void)
 	if (theTerms->NumberOfTerms()<=1)
 	{
 		if (theTerms->NumberOfTerms()==0) return new _Constant(0.0);
-		if (theTerms->IsFirstANumber())
+		if (theTerms->IsFirstANumber() || returnLeading)
 			return new _Constant(theTerms->theCoeff[0]);			
 	}
 	return nil;
@@ -906,6 +906,28 @@ void _Polynomial::CheckTerm (void)
 
 //__________________________________________________________________________________
 
+bool		 _Polynomial::Equal(_MathObject* m)
+{
+	bool result = false;
+	if (m->ObjectClass() == POLYNOMIAL || m->ObjectClass() == NUMBER)
+	{
+		_Polynomial * diff = (_Polynomial *)Sub(m);
+		if (diff)
+		{
+			_Constant * v;
+			if (v = (_Constant*)diff->IsANumber(true))
+			{
+				result = fabs (v->Value()) < 1.e-6;
+				DeleteObject (v);
+			}
+			_String * diffS = (_String*)diff->toStr();
+			printf ("%s\n", diffS->getStr());
+			DeleteObject (diff);
+		}
+		
+	}
+	return result;
+}
 
 
 //__________________________________________________________________________________
@@ -1646,14 +1668,13 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 {
 	long objectT = m->ObjectClass();
 	
-	if (objectT==1) // a number or a monomial
+	if (objectT==NUMBER) // a number or a monomial
 	{
 		Convert2OperationForm();
 		_Parameter nb = ((_Constant*)m)->Value();
 		if (nb==0.0)
-		{
-			return new _Polynomial;
-		}
+				return new _Polynomial;
+
 		_Polynomial* result = new _Polynomial (*this);
 		checkPointer(result);
 		for (long i = theTerms->NumberOfTerms()-1; i>=0; i--)

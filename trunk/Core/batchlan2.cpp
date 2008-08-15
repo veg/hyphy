@@ -2618,4 +2618,26 @@ inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _Simple
 	}
 }
 
+//____________________________________________________________________________________	
+
+void	RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
+{
+	mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
+	long fvi = modelFrequenciesIndices.lData[mid];
+	fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
+	mbf = (fvi>=0);
+}
+
+//____________________________________________________________________________________	
+
+bool	IsModelReversible (long mid)
+{
+	_Matrix *m, *f;
+	bool	mbf;
+	RetrieveModelComponents (mid, m, f, mbf);
+	if (m&&f)
+		return m->IsReversible(mbf?nil:f);
+	return false;
+}
+
 

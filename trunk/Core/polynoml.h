@@ -119,10 +119,11 @@ class _Polynomial : public _MathObject {
 	virtual	_MathObject* 	Minus 				(void);
 	virtual	_MathObject* 	Mult 				(_MathObject*);
 	virtual	_MathObject* 	Compute 			(void);
+	virtual	bool			Equal				(_MathObject*);
 	_Parameter				ComputePolynomial	(void);
 	
 	_Parameter 				ComputeP 			(_Parameter* , _Parameter* , long , long, long*, long*);
-	_MathObject*			IsANumber			(void);
+	_MathObject*			IsANumber			(bool = false);
 	virtual	 bool 			IsObjectEmpty 		(void);
 
 	virtual	long			ObjectClass (void) 			

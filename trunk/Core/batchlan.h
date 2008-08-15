@@ -531,6 +531,8 @@ void	PopFilePath					 (void);
 _Matrix*CheckMatrixArg				 (_String*, bool);
 _AssociativeList *   
 		CheckAssociativeListArg 	 (_String*);
+void	RetrieveModelComponents		 (long, _Matrix*&, _Matrix*&, bool&);
+bool	IsModelReversible			 (long);
 
 
 extern 	bool	numericalParameterSuccessFlag;									

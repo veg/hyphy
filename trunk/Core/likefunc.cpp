@@ -2476,7 +2476,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			_Matrix*	cws	= thisC->GetWeights();
 			
 #ifdef _SLKP_LFENGINE_REWRITE_
-			long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lData;
+			long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lLength?((_SimpleList**)siteCorrections.lData)[blockIndex]->lData:nil;
 #endif			
 			
 			for (long k = 0; k<nI; k++)
@@ -2487,35 +2487,28 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
 				{
 					#ifdef _SLKP_LFENGINE_REWRITE_
-
-					long scv = *siteCorrectors;
-					
-					if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+					if (siteCorrectors)
 					{
-						siteMultipliers->lData[r1] = scv;
-						sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+						long scv = *siteCorrectors;
+						
+						if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+						{
+							siteMultipliers->lData[r1] = scv;
+							sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+						}
+						else
+						{
+							if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+								sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
+							else // same scaling factors
+								sR[r1] += localWeight * sR[r2];
+						}
+						
+						siteCorrectors++;
 					}
 					else
-					{
-						if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
-							sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
-						else // same scaling factors
-							sR[r1] += localWeight * sR[r2];
-					}
-					
-					//if (sR[r1] > 1.)
-					//	printf ("Fubar %d %d %d %g!\n",categID, r1, scv, sR[r1]);
-					
-					/*if (*siteCorrectors)
-						sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (*siteCorrectors);
-					else	
-						sR[r1] += localWeight * sR[r2];*/
-					
-
-					siteCorrectors++;
-					#else
+					#endif
 						sR[r1] += localWeight * sR[r2];
-					#endif			
 				}
 				
 				categID+=offsetCounter;
@@ -3840,6 +3833,16 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 	{
 		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
 		_DataSetFilter *theFilter = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+		
+		if (!theFilter->IsNormalFilter())
+		{
+			conditionalInternalNodeLikelihoodCaches[i] = nil;
+			conditionalTerminalNodeStateFlag	   [i] = nil;
+			siteScalingFactors					   [i] = nil;
+			branchCaches						   [i] = nil;
+			siteCorrections.AppendNewInstance	   (new _SimpleList);
+			continue;
+		}
 		long patternCount	= theFilter->NumberDistinctSites(),
 		stateSpaceDim	= theFilter->GetDimension (),
 		leafCount		= cT->GetLeafCount(),
@@ -7641,6 +7644,7 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	conditionalTerminalNodeLikelihoodCaches.Clear();
 	cachedBranches.Clear();
 	siteCorrections.Clear();
+	canUseReversibleSpeedups.Clear();
 //	computedLocalUpdatePolicy.Clear();
 //	treeTraversalMasks.Clear();
 //	matricesToExponentiate.Clear();
@@ -7650,28 +7654,28 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			delete (conditionalInternalNodeLikelihoodCaches[k]);
+			if (conditionalInternalNodeLikelihoodCaches[k]) delete (conditionalInternalNodeLikelihoodCaches[k]);
 		delete (conditionalInternalNodeLikelihoodCaches);
 		conditionalInternalNodeLikelihoodCaches = nil;
 	}
 	if (branchCaches)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			delete (branchCaches[k]);
+			if (branchCaches[k]) delete (branchCaches[k]);
 		delete (branchCaches);
 		branchCaches = nil;
 	}
 	if (conditionalTerminalNodeStateFlag)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			delete (conditionalTerminalNodeStateFlag[k]);
+			if (conditionalTerminalNodeStateFlag[k]) delete (conditionalTerminalNodeStateFlag[k]);
 		delete (conditionalTerminalNodeStateFlag);
 		conditionalTerminalNodeStateFlag = nil;
 	}
 	if (siteScalingFactors)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			delete (siteScalingFactors[k]);
+			if (siteScalingFactors[k]) delete (siteScalingFactors[k]);
 		delete (siteScalingFactors);
 		siteScalingFactors = nil;
 	}
@@ -7725,6 +7729,9 @@ void	_LikelihoodFunction::Setup (void)
 	
 #ifdef	_SLKP_LFENGINE_REWRITE_
 	treeTraversalMasks.Clear();
+	canUseReversibleSpeedups.Clear();
+	_SimpleList alreadyDoneModelsL;
+	_AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
 #endif
 	
 	for (long i=0; i<theTrees.lLength; i++)
@@ -7744,6 +7751,26 @@ void	_LikelihoodFunction::Setup (void)
 		df->MatchStartNEnd(*s,*l);
 		optimalOrders.AppendNewInstance(s);
 		leafSkips.AppendNewInstance(l);
+#ifdef	_SLKP_LFENGINE_REWRITE_
+		_SimpleList treeModels;
+		t->CompileListOfModels (treeModels);
+		bool isReversiblePartition = true;
+		for (long m = 0; m < treeModels.lLength && isReversiblePartition; m++)
+		{
+			long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
+			if (alreadyDone>=0)
+				alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
+			else
+			{
+				alreadyDone = IsModelReversible (treeModels.lData[m]);
+				alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
+			}
+			isReversiblePartition = isReversiblePartition && alreadyDone;
+		}
+		ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
+		canUseReversibleSpeedups << isReversiblePartition;
+		
+#endif
 	}
 	
 }
@@ -8055,7 +8082,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 	}
 	
 #ifdef _SLKP_LFENGINE_REWRITE_
-	if (conditionalInternalNodeLikelihoodCaches)
+	if (conditionalInternalNodeLikelihoodCaches && conditionalInternalNodeLikelihoodCaches[index])
 	{
 		_SimpleList changedBranches, *branches;
 		_List		changedModels,   *matrices;
@@ -8090,7 +8117,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);
 				
 				*cbid = -1;
-				if (snID >= 0)
+				if (snID >= 0 && canUseReversibleSpeedups.lData[index])
 				{
 					((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
 					doCachedComp = -snID-1;

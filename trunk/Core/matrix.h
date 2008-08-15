@@ -269,6 +269,11 @@ class		_Matrix: public _MathObject {
 	_PMathObj	pFDR			 			(_PMathObj);	// positive false discovery rate
 	_PMathObj	PoissonLL			 		(_PMathObj);	// log likelihood of a vector of poisson samples given a parameter value
 	
+	
+	bool		IsReversible				(_Matrix* = nil);
+	// check if the matrix is reversible
+	// if given a base frequencies assumes that rate matrix entries will not be multiplied by freq terms
+	
 	bool		IsAStringMatrix 			(void);
 	void		MakeMeSimple				(void);
 	void		MakeMeGeneral				(void);	

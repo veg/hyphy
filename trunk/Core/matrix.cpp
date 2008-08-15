@@ -1494,6 +1494,125 @@ bool	_Matrix::AmISparseFast (_Matrix& whereTo)
 
 //_____________________________________________________________________________________________
 
+bool	_Matrix::IsReversible(_Matrix* freqs)
+{
+	if (hDim != vDim || (freqs && freqs->hDim * freqs->vDim != hDim) 
+					 || (storageType != 1 && storageType != 2) || 
+					 (freqs && freqs->storageType != 1 && freqs->storageType != 2))
+		return false;
+	
+	bool   needAnalytics = storageType == 2 || (freqs && freqs->storageType == 2);
+	if (needAnalytics)
+	{
+		if (freqs)
+		{
+			for (long r = 0; r < hDim; r++)
+				for (long c = r+1; c < hDim; c++)
+				{
+					bool compResult = true;
+					if (storageType == 2)
+					{
+						_Formula* rc = GetFormula(r,c),
+								* cr = GetFormula(c,r);
+							
+						if (rc && cr)
+						{
+							_Polynomial *rcp = (_Polynomial *)rc->ConstructPolynomial(),
+										*crp = (_Polynomial *)cr->ConstructPolynomial();
+							
+							if (rcp && crp)
+							{
+								_PMathObj     tr = nil, tc = nil;
+								if (freqs->storageType == 2)
+								{
+									if (freqs->GetFormula(r,0))
+										tr = freqs->GetFormula(r,0)->ConstructPolynomial();
+									if (freqs->GetFormula(c,0))
+										tc = freqs->GetFormula(c,0)->ConstructPolynomial();
+								}
+								else
+								{
+									tr = new _Constant ((*freqs)[r]);
+									tc = new _Constant ((*freqs)[c]);
+								}
+								if (tr && tc)
+								{
+									_Polynomial		   * rcpF = (_Polynomial*)rcp->Mult(tr),
+													   * crpF = (_Polynomial*)crp->Mult(tc);
+								
+									compResult		   = rcpF->Equal(crpF);
+									DeleteObject (rcpF); DeleteObject (crpF);
+								}
+								else
+									compResult == !(tr||tc);
+								
+								DeleteObject (tr);   DeleteObject (tc);
+							}
+							else
+								compResult = false;
+							
+							DeleteObject (rcp); DeleteObject (crp);
+						}
+						else
+							compResult = rc || cr;
+					}
+					if (!compResult)
+						return false;
+				}			
+		}
+		else
+		{
+			for (long r = 0; r < hDim; r++)
+				for (long c = r+1; c < hDim; c++)
+				{
+					bool compResult = true;
+					_Formula* rc = GetFormula(r,c),
+							* cr = GetFormula(c,r);
+					
+					if (rc && cr)
+					{
+						_Polynomial *rcp = (_Polynomial *)rc->ConstructPolynomial(),
+									*crp = (_Polynomial *)cr->ConstructPolynomial();
+						
+						if (rcp && crp)
+							compResult = rcp->Equal(crp);
+						else
+							compResult = rc->EqualFormula(cr);
+
+						DeleteObject (rcp); DeleteObject (crp);
+					}
+					else
+						compResult = !(rc || cr);
+					
+					if (!compResult)
+						return false;
+				}
+		}
+		return true;		
+	}
+	else
+	{
+		if (!freqs)
+		{
+			for (long r = 0; r < hDim; r++)
+				for (long c = r+1; c < hDim; c++)
+					if (! CheckEqual ((*this)(r,c)*(*freqs)[r], (*this)(c,r)*(*freqs)[c]))
+						return false;
+		}
+		else
+		{
+			for (long r = 0; r < hDim; r++)
+				for (long c = r+1; c < hDim; c++)
+					if (! CheckEqual ((*this)(r,c), (*this)(c,r)))
+						return false;
+		}
+		return true;
+	}
+	return false;
+}
+
+//_____________________________________________________________________________________________
+
 void	_Matrix::CheckIfSparseEnough(bool force = false)
 
 // check if matrix is sparse enough to justify compressed storage

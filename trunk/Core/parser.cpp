@@ -166,6 +166,15 @@ _PMathObj	FetchObjectFromVariableByType (_String* id, int objectClass)
 }
 
 //__________________________________________________________________________________
+_PMathObj	FetchObjectFromVariableByTypeIndex (long idx, int objectClass)
+{
+	_Variable * v = FetchVar (idx);
+	if (v && v->ObjectClass () == objectClass)
+		return v->GetValue();
+	return nil;
+}
+
+//__________________________________________________________________________________
 long LocateVarByName (_String& name)
 {
 	return variableNames.Find (&name);

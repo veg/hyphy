@@ -326,9 +326,10 @@ static	void			CheckFibonacci			(_Parameter);
 		_List				conditionalTerminalNodeLikelihoodCaches;	
 		long	  **		conditionalTerminalNodeStateFlag;
 	
-		/* these variables are used to precache 'tainted variables' */
-	
-		_SimpleList			overallScalingFactors;
+		_SimpleList			overallScalingFactors,
+							canUseReversibleSpeedups; 
+							// a partition will be tagged with '1' if its tree has only
+							// time-reversible models
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
