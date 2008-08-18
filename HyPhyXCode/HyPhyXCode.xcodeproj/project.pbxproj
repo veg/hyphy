@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
+		8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
+		8529BBD70E2D543E001B4F53 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BBD60E2D543E001B4F53 /* Carbon.framework */; };
+		858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917B0E2BC5C90070B4AE /* likefunc2.cpp */; };
+		858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917C0E2BC5C90070B4AE /* calcnode2.cpp */; settings = {COMPILER_FLAGS = "-fstrict-aliasing -funroll-loops"; }; };
 		8593AB7B0DE7883E008384A0 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
 		85A2BCA40DE4E80E00682547 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
 		85A2BCA50DE4E80E00682547 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
@@ -27,7 +32,6 @@
 		85A2BCB40DE4E80E00682547 /* sequence.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA10DE4E80E00682547 /* sequence.cpp */; };
 		85A2BCB50DE4E80E00682547 /* site.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA20DE4E80E00682547 /* site.cpp */; };
 		85A2BCB60DE4E80E00682547 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
-		85A2BCBF0DE4E87D00682547 /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		85A2BCC00DE4E87D00682547 /* HYNetInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBC0DE4E87D00682547 /* HYNetInterface.cpp */; };
 		85A2BCC10DE4E87D00682547 /* Net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBD0DE4E87D00682547 /* Net.cpp */; };
 		85A2BCC20DE4E87D00682547 /* scfg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBE0DE4E87D00682547 /* scfg.cpp */; };
@@ -112,7 +116,6 @@
 		85A2BD700DE4EC6200682547 /* hydialogs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD6F0DE4EC6200682547 /* hydialogs.cpp */; };
 		85A2BD730DE4EC8100682547 /* HyPhy.rsrc in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD720DE4EC8100682547 /* HyPhy.rsrc */; };
 		85A2BD770DE4EC9B00682547 /* main-mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD760DE4EC9B00682547 /* main-mac.cpp */; };
-		85A2BE010DE4FC8600682547 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2BE000DE4FC8600682547 /* QuickTime.framework */; };
 		85A2BFEC0DE505FA00682547 /* ChartAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFB90DE505FA00682547 /* ChartAddIns */; };
 		85A2C1D70DE5066E00682547 /* DatapanelAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFF00DE5066D00682547 /* DatapanelAddIns */; };
 		85A2C1D80DE5066E00682547 /* GeneticCodes in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFFC0DE5066D00682547 /* GeneticCodes */; };
@@ -122,7 +125,6 @@
 		85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
 		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
 		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
-		8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20286C33FDCF999611CA2CEA /* Carbon.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -148,7 +150,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		20286C33FDCF999611CA2CEA /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
+		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
+		8529BBD60E2D543E001B4F53 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		858A917B0E2BC5C90070B4AE /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = likefunc2.cpp; path = ../trunk/Core/likefunc2.cpp; sourceTree = SOURCE_ROOT; };
+		858A917C0E2BC5C90070B4AE /* calcnode2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = calcnode2.cpp; path = ../trunk/Core/calcnode2.cpp; sourceTree = SOURCE_ROOT; };
 		8593AB720DE7883B008384A0 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Help; path = ../trunk/Help; sourceTree = SOURCE_ROOT; };
 		859FCF250E09C2E70007B356 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = ../trunk/Library; sourceTree = SOURCE_ROOT; };
 		85A2BC910DE4E80E00682547 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = baseobj.cpp; path = ../trunk/Core/baseobj.cpp; sourceTree = SOURCE_ROOT; };
@@ -257,7 +262,6 @@
 		85A2BD720DE4EC8100682547 /* HyPhy.rsrc */ = {isa = PBXFileReference; lastKnownFileType = archive.rsrc; name = HyPhy.rsrc; path = ../trunk/GUIElements/Resources/HyPhy.rsrc; sourceTree = SOURCE_ROOT; };
 		85A2BD760DE4EC9B00682547 /* main-mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "main-mac.cpp"; path = "../trunk/Mains/main-mac.cpp"; sourceTree = SOURCE_ROOT; };
 		85A2BD9E0DE4F61400682547 /* HyPhy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhy.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		85A2BE000DE4FC8600682547 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/QuickTime.framework; sourceTree = DEVELOPER_DIR; };
 		85A2BFB90DE505FA00682547 /* ChartAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ChartAddIns; path = ../trunk/ChartAddIns; sourceTree = SOURCE_ROOT; };
 		85A2BFF00DE5066D00682547 /* DatapanelAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DatapanelAddIns; path = ../trunk/DatapanelAddIns; sourceTree = SOURCE_ROOT; };
 		85A2BFFC0DE5066D00682547 /* GeneticCodes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GeneticCodes; path = ../trunk/GeneticCodes; sourceTree = SOURCE_ROOT; };
@@ -267,6 +271,8 @@
 		85A2C19D0DE5066E00682547 /* TopologyInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TopologyInference; path = ../trunk/TopologyInference; sourceTree = SOURCE_ROOT; };
 		85A2C1A80DE5066E00682547 /* TreeAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TreeAddIns; path = ../trunk/TreeAddIns; sourceTree = SOURCE_ROOT; };
 		85A2C1AC0DE5066E00682547 /* UserAddins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UserAddins; path = ../trunk/UserAddins; sourceTree = SOURCE_ROOT; };
+		85EA05E40E35487400FDE33E /* buildFromSVN.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = buildFromSVN.sh; path = ../trunk/Scripts/buildFromSVN.sh; sourceTree = SOURCE_ROOT; };
+		85EA05E50E3548BA00FDE33E /* intelCCbuild.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = intelCCbuild.sh; path = ../trunk/Scripts/intelCCbuild.sh; sourceTree = SOURCE_ROOT; };
 		85F903D40DE6501400D28244 /* build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = build.sh; path = ../trunk/Scripts/build.sh; sourceTree = SOURCE_ROOT; };
 		85F903D50DE6501400D28244 /* gtk_build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = gtk_build.sh; path = ../trunk/Scripts/gtk_build.sh; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -276,8 +282,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D0C4E920486CD37000505A6 /* Carbon.framework in Frameworks */,
-				85A2BE010DE4FC8600682547 /* QuickTime.framework in Frameworks */,
+				8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */,
+				8529BBD70E2D543E001B4F53 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,8 +341,8 @@
 		20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				85A2BE000DE4FC8600682547 /* QuickTime.framework */,
-				20286C33FDCF999611CA2CEA /* Carbon.framework */,
+				8529BBD60E2D543E001B4F53 /* Carbon.framework */,
+				8529BB140E2D5431001B4F53 /* QuickTime.framework */,
 			);
 			name = "External Frameworks and Libraries";
 			sourceTree = "<group>";
@@ -348,10 +354,12 @@
 				85A2BC920DE4E80E00682547 /* batchlan.cpp */,
 				85A2BC930DE4E80E00682547 /* batchlan2.cpp */,
 				85A2BC940DE4E80E00682547 /* calcnode.cpp */,
+				858A917C0E2BC5C90070B4AE /* calcnode2.cpp */,
 				85A2BC950DE4E80E00682547 /* category.cpp */,
 				85A2BC960DE4E80E00682547 /* error.cpp */,
 				85A2BC970DE4E80E00682547 /* fisher_exact.cpp */,
 				85A2BC980DE4E80E00682547 /* likefunc.cpp */,
+				858A917B0E2BC5C90070B4AE /* likefunc2.cpp */,
 				85A2BC990DE4E80E00682547 /* list.cpp */,
 				85A2BC9A0DE4E80E00682547 /* matrix.cpp */,
 				85A2BC9B0DE4E80E00682547 /* nexus.cpp */,
@@ -535,6 +543,8 @@
 			isa = PBXGroup;
 			children = (
 				85F903D40DE6501400D28244 /* build.sh */,
+				85EA05E50E3548BA00FDE33E /* intelCCbuild.sh */,
+				85EA05E40E35487400FDE33E /* buildFromSVN.sh */,
 				85F903D50DE6501400D28244 /* gtk_build.sh */,
 			);
 			name = Scripts;
@@ -617,7 +627,6 @@
 				85A2BCB40DE4E80E00682547 /* sequence.cpp in Sources */,
 				85A2BCB50DE4E80E00682547 /* site.cpp in Sources */,
 				85A2BCB60DE4E80E00682547 /* strings.cpp in Sources */,
-				85A2BCBF0DE4E87D00682547 /* bgm.cpp in Sources */,
 				85A2BCC00DE4E87D00682547 /* HYNetInterface.cpp in Sources */,
 				85A2BCC10DE4E87D00682547 /* Net.cpp in Sources */,
 				85A2BCC20DE4E87D00682547 /* scfg.cpp in Sources */,
@@ -698,6 +707,9 @@
 				85A2BD670DE4EAD800682547 /* where.c in Sources */,
 				85A2BD700DE4EC6200682547 /* hydialogs.cpp in Sources */,
 				85A2BD770DE4EC9B00682547 /* main-mac.cpp in Sources */,
+				858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */,
+				858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */,
+				8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -708,10 +720,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(DEVELOPER_DIR)/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks\"",
-				);
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
@@ -730,10 +739,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(DEVELOPER_DIR)/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks\"",
-				);
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -754,6 +760,8 @@
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1.00beta;
 				DEAD_CODE_STRIPPING = YES;
+				ENABLE_OPENMP_SUPPORT = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -767,7 +775,9 @@
 					"TARGET_API_MAC_CARBON=1",
 					__MP__,
 					"SQLITE_PTR_SZ=4",
+					_SLKP_LFENGINE_REWRITE_,
 				);
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -780,7 +790,7 @@
 				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Debug;
@@ -793,15 +803,18 @@
 					i386,
 				);
 				CURRENT_PROJECT_VERSION = 1.00beta;
+				ENABLE_OPENMP_SUPPORT = YES;
 				GCC_AUTO_VECTORIZATION = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					_SLKP_LFENGINE_REWRITE_,
 					__HYPHYXCODE__,
 					__MAC__,
 					"ACCESSOR_CALLS_ARE_FUNCTIONS=1",
@@ -810,7 +823,9 @@
 					__MP__,
 					"SQLITE_PTR_SZ=4",
 				);
+				GCC_STRICT_ALIASING = NO;
 				GCC_UNROLL_LOOPS = YES;
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -818,7 +833,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.3;
 				PREBINDING = NO;
 				PRODUCT_NAME = HYPHY;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Release;
