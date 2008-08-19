@@ -445,7 +445,7 @@ class _TheTree: public _TreeTopology {
 															{ return rooted; }
 
 			nodeCoord	TreeTEXRecurse 		  			(node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long);
-			void		TreePSRecurse 		  			(node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long,long,long,_AssociativeList* = nil);
+			void		TreePSRecurse 		  			(node<nodeCoord>*,_String&,_Parameter,_Parameter,long,long,long,long,_AssociativeList* = nil, char = 0, _Parameter* = nil);
 			
 			bool		AllBranchesHaveModels 			(long);
 			void		ScanSubtreeVars	 				(_List&, char, _CalcNode*); 
