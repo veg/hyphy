@@ -295,9 +295,26 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					else
 					{
 						tMatrix  +=  siteState;
-						for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
+						if (alphabetDimension == 4)
+						{
+							parentConditionals[0] *= tMatrix[0];
+							parentConditionals[1] *= tMatrix[4];
+							parentConditionals[2] *= tMatrix[8];
+							parentConditionals[3] *= tMatrix[12];
+						}
+						else
+						{
+							long k = 0;
+							for (; k < alphabetDimensionmod4; k+=4, tMatrix += alphabetDimension+alphabetDimension+alphabetDimension+alphabetDimension)  
+							{
+									parentConditionals[k]   *= tMatrix[0];
+									parentConditionals[k+1] *= tMatrix[alphabetDimension];
+									parentConditionals[k+2] *= tMatrix[alphabetDimension+alphabetDimension];
+									parentConditionals[k+3] *= tMatrix[alphabetDimension+alphabetDimension+alphabetDimension];
+							}
+							for (; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
 								parentConditionals[k] *= *tMatrix;
-						
+						}
 					}
 					continue;
 				}
@@ -370,22 +387,37 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			{
 				_Parameter sum = 0.0;
 				
-				for (long p = 0; p < alphabetDimension; p++)
-				{
-					_Parameter		accumulator = 0.0;
-					
-					for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-						accumulator +=  tMatrix[c]   * childVector[c] + 
-										tMatrix[c+1] * childVector[c+1] +
-										tMatrix[c+2] * childVector[c+2] +
-										tMatrix[c+3] * childVector[c+3];
-					
-					for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) 
-						accumulator +=  tMatrix[c] * childVector[c];
-					
-					tMatrix				  += alphabetDimension;
-					sum += (parentConditionals[p] *= accumulator);
-				}
+				if (alphabetDimension > alphabetDimensionmod4)
+					for (long p = 0; p < alphabetDimension; p++)
+					{
+						_Parameter		accumulator = 0.0;
+						
+						for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
+							accumulator +=  tMatrix[c]   * childVector[c] + 
+											tMatrix[c+1] * childVector[c+1] +
+											tMatrix[c+2] * childVector[c+2] +
+											tMatrix[c+3] * childVector[c+3];
+						
+						for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) 
+							accumulator +=  tMatrix[c] * childVector[c];
+						
+						tMatrix				  += alphabetDimension;
+						sum += (parentConditionals[p] *= accumulator);
+					}
+				else
+					for (long p = 0; p < alphabetDimension; p++)
+					{
+						_Parameter		accumulator = 0.0;
+						
+						for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
+							accumulator +=  tMatrix[c]   * childVector[c] + 
+							tMatrix[c+1] * childVector[c+1] +
+							tMatrix[c+2] * childVector[c+2] +
+							tMatrix[c+3] * childVector[c+3];
+						
+						tMatrix				  += alphabetDimension;
+						sum += (parentConditionals[p] *= accumulator);
+					}
 				
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{

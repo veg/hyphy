@@ -437,8 +437,10 @@ class _TheTree: public _TreeTopology {
 			node<nodeCoord>* 
 						ScaledBranchMapping				(node<nodeCoord>* , _String*, long, long&);
 
-			void 
-						ScaledBranchReMapping			(node<nodeCoord>*, _Parameter);
+			node<nodeCoord>* 
+						RadialBranchMapping				(node<long>* , node<nodeCoord>*, _String*, _Parameter, long&, _Parameter&);
+
+			void		ScaledBranchReMapping			(node<nodeCoord>*, _Parameter);
 			char&		RootedFlag						(void) 
 															{ return rooted; }
 
