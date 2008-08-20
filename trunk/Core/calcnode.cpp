@@ -53,6 +53,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define		LIKELIHOOD_SCALER			1.0
 #define		LIKELIHOOD_SCALER_INT		1.0
 
+#define		DEGREES_PER_RADIAN		    57.29577951308232286465
+
 
 extern	 	_Parameter   explicitFormMatrixExponential;	
 extern		_String		 VerbosityLevelString;
@@ -4619,10 +4621,85 @@ void _TheTree::ScaledBranchReMapping (node<nodeCoord>* theNode, _Parameter tw)
 		ScaledBranchReMapping (theNode->go_down(k), tw);
 	}
 }
+//__________________________________________________________________________________
+
+_String		 _TheTree::DetermineBranchLengthMappingMode (_String* param, char& mapMode)
+{
+	mapMode = 3;
+	if (param)
+	{
+		if (param->Equal(&expectedNumberOfSubs))
+			mapMode = 1;
+		else
+			if (param->Equal(&stringSuppliedLengths))
+				mapMode = 2;
+			else
+			{
+				mapMode = 0;
+				return _String('.') & *param;
+			}
+			
+	}
+	return empty;
+}
+//__________________________________________________________________________________
+
+_Parameter		 _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef, _String& matchString, char mapMode)
+{
+	if (mapMode == 3)
+		return 1.;
+	
+	_CalcNode * travNode = (_CalcNode*)(((BaseRef*)variablePtrs.lData)[varRef]);
+	_Parameter branchLength = BAD_BRANCH_LENGTH;
+
+	if (mapMode==1)
+		return travNode->BranchLength();
+	else
+		if (mapMode==2)
+		{
+			branchLength = travNode->Value();
+			if (branchLength<=0.0)
+				branchLength = BAD_BRANCH_LENGTH;				
+		}
+		else
+		{	
+			long j;
+			if (travNode->iVariables)
+				for (j=0; j<travNode->iVariables->lLength; j+=2)
+				{
+					_Variable* curVar  = LocateVar (travNode->iVariables->lData[j]);
+					if (curVar->GetName()->endswith (matchString))
+					{
+						branchLength = curVar->Compute()->Value();
+						if (branchLength<=0.0)
+							branchLength = BAD_BRANCH_LENGTH;
+						else
+							break;
+					}
+				}
+			
+			if (((!travNode->iVariables) || j == travNode->iVariables->lLength) && travNode->dVariables)
+				for (j=0; j<travNode->dVariables->lLength; j+=2)
+				{
+					_Variable* curVar = LocateVar (travNode->dVariables->lData[j]);
+					if (curVar->GetName()->endswith (matchString))
+					{
+						branchLength = curVar->Compute()->Value();
+						if (branchLength<=0.0)
+							branchLength = BAD_BRANCH_LENGTH;
+						else
+							break;
+					}
+				}
+		}
+	
+	return branchLength;
+}
+
 
 //__________________________________________________________________________________
 
-node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _String* scalingParameter, long locDepth, long& depth)
+node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _String* scalingParameter, long locDepth, long& depth, char mapMode)
 {
 	// run a pass of aligned tip mapping then perform one more pass from the root to the children
 	// pre-order to remap the length of branches.
@@ -4638,103 +4715,33 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
 	}
 	
 	node<nodeCoord>* currentN;
-	long descendants = theParent->get_num_nodes(),k=1,j,b=-1;
+	long descendants = theParent->get_num_nodes(),
+		 k			 = 1,
+		 j,
+		 b			 = -1;
 
 	_Parameter	branchLength = BAD_BRANCH_LENGTH;
-	_CalcNode*	travNode;
-	_Variable*  curVar;
-	bool		eSubs = (expectedNumberOfSubs == *scalingParameter),
-				defLengths =  (stringSuppliedLengths == *scalingParameter);
-	_String		matchString = _String('.')&*scalingParameter;
 	
 	for  (; k<=descendants; k++)
 	{
 		currentN = theParent->go_down(k);
-		j = currentN->in_object.varRef;
+		j		 = currentN->in_object.varRef;
+		
 		if (j>=0)
 		{
-			travNode = (_CalcNode*)(((BaseRef*)variablePtrs.lData)[j]);
-			if (eSubs)
-				branchLength = travNode->BranchLength();
-			else
-			if (defLengths)
-			{
-				branchLength = travNode->Value();
-				if (branchLength<=0.0)
-					branchLength = BAD_BRANCH_LENGTH;				
-			}
-			else
-			{	
-				#ifndef USE_POINTER_VC
-				for (j=0; j<travNode->independentVars.lLength; j++)
-				{
-					curVar = LocateVar (travNode->independentVars.lData[j]);
-					if (curVar->GetName()->endswith (matchString))
-					{
-						branchLength = curVar->Compute()->Value();
-						if (branchLength<=0.0)
-							branchLength = BAD_BRANCH_LENGTH;
-						else
-							break;
-					}
-				}
-				if (j==travNode->independentVars.lLength)
-					for (j=0; j<travNode->dependentVars.lLength; j++)
-					{
-						curVar = LocateVar (travNode->dependentVars.lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<=0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-				#else
-				if (travNode->iVariables)
-					for (j=0; j<travNode->iVariables->lLength; j+=2)
-					{
-						curVar = LocateVar (travNode->iVariables->lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<=0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-					
-				if (((!travNode->iVariables) || j == travNode->iVariables->lLength) && travNode->dVariables)
-					for (j=0; j<travNode->dVariables->lLength; j+=2)
-					{
-						curVar = LocateVar (travNode->dVariables->lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<=0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-				#endif
-			}
-				
-			currentN->in_object.bL = branchLength;
+			
+			branchLength  = currentN->in_object.bL = DetermineBranchLengthGivenScalingParameter(j,*scalingParameter,mapMode);
 			branchLength += theParent->in_object.h;
 			
 			if (branchLength>treeWidth)
 				treeWidth = branchLength;
 				
 			theParent->go_down (k)->in_object.h = branchLength;
-			ScaledBranchMapping (theParent->go_down(k), scalingParameter, locDepth+1, depth);
+			ScaledBranchMapping (theParent->go_down(k), scalingParameter, locDepth+1, depth, mapMode);
 			
 		}
 		else
 		{
-			//ScaledBranchMapping (theParent->go_down(k), scalingParameter, locDepth+1, depth);
 			theParent->go_down (k)->in_object.h = 0;
 			b = k;
 		}
@@ -4758,7 +4765,7 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
 			treeWidth -= branchLength;
 			ScaledBranchReMapping (theParent->go_down(j),branchLength);
 			theParent->go_down(b)->in_object.h = branchLength;
-			ScaledBranchMapping (theParent->go_down(b), scalingParameter, locDepth+1, depth);			
+			ScaledBranchMapping (theParent->go_down(b), scalingParameter, locDepth+1, depth, mapMode);			
 		}
 		ScaledBranchReMapping (theParent, treeWidth);
 		return theParent;
@@ -4768,7 +4775,7 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
 
 //__________________________________________________________________________________
 
-node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<nodeCoord>* parentNode, _String* scalingParameter, _Parameter anglePerTip, long& currentTipID, _Parameter& maxRadius)
+node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<nodeCoord>* parentNode, _String* scalingParameter, _Parameter anglePerTip, long& currentTipID, _Parameter& maxRadius, char mapMode)
 {	
 	// label 1 stores current radial distance from the root 
 	// label 2 stores the angle of the line to this node
@@ -4776,29 +4783,34 @@ node<nodeCoord>* _TheTree::RadialBranchMapping (node<long>* referenceNode, node<
 	
 	node <nodeCoord>* current_node = new node <nodeCoord>;
 	
-	_Parameter			branchL		= 1.,
+	_Parameter			branchL		= 0.,
 						referenceL	= 0.;
 
 	if  (parentNode == nil)
 	{
 		current_node->in_object.label1 = 0.0; 
 		current_node->in_object.label2 = 0.0;
-		branchL		= 0.;
 	}
 	else
+	{
 		referenceL = parentNode->in_object.label1;
+		branchL = DetermineBranchLengthGivenScalingParameter(referenceNode->in_object,*scalingParameter,mapMode);
+	}
 	
 	long				children	= referenceNode->get_num_nodes();
 	
 	current_node->in_object.label1 = referenceL + branchL;
 	if (children == 0)
+	{
 		current_node->in_object.label2 = anglePerTip * currentTipID++;
+		//printf ("%d %g\n",currentTipID, current_node->in_object.label2);
+	}
 	else
 	{
 		_Parameter angleSum = 0.;
 		for (long n = 1; n <= children; n++)
 		{
-			node<nodeCoord>* newChild = RadialBranchMapping (referenceNode->go_down(n), current_node, scalingParameter, anglePerTip, currentTipID, maxRadius);
+			node<nodeCoord>* newChild = RadialBranchMapping (referenceNode->go_down(n), current_node, scalingParameter, anglePerTip, currentTipID, maxRadius, mapMode);
 			current_node->add_node(*newChild);
 			angleSum += newChild->in_object.label2;
 		}
@@ -4827,11 +4839,9 @@ void _TheTree::AssignLabelsToBranches (node<nodeCoord>* theParent, _String* scal
 	long descendants = theParent->get_num_nodes(),k=1,j,b=-1;
 
 	_Parameter	branchLength = BAD_BRANCH_LENGTH;
-	_CalcNode*	travNode;
-	_Variable*  curVar;
-	bool		eSubs = 	  (expectedNumberOfSubs == *scalingParameter),
-				defLengths =  (stringSuppliedLengths == *scalingParameter);
-	_String		matchString = _String('.')&*scalingParameter;
+	
+	char		mapMode;
+	_String		matchString = DetermineBranchLengthMappingMode(scalingParameter, mapMode);
 	
 	for  (; k<=descendants; k++)
 	{
@@ -4839,75 +4849,8 @@ void _TheTree::AssignLabelsToBranches (node<nodeCoord>* theParent, _String* scal
 		j = currentN->in_object.varRef;
 		if (j>=0)
 		{
-			travNode = (_CalcNode*)(((BaseRef*)variablePtrs.lData)[j]);
-			if (eSubs)
-				branchLength = travNode->BranchLength();
-			else
-			if (defLengths)
-			{
-				branchLength = travNode->Value();
-				if (branchLength<0.0)
-					branchLength = BAD_BRANCH_LENGTH;				
-			}
-			else
-			{
-			#ifndef USE_POINTER_VC
-				for (j=0; j<travNode->independentVars.lLength; j++)
-				{
-					curVar = LocateVar (travNode->independentVars.lData[j]);
-					if (curVar->GetName()->endswith (matchString))
-					{
-						branchLength = curVar->Compute()->Value();
-						if (branchLength<0.0)
-							branchLength = BAD_BRANCH_LENGTH;
-						else
-							break;
-					}
-				}
-				if (j==travNode->independentVars.lLength)
-					for (j=0; j<travNode->dependentVars.lLength; j++)
-					{
-						curVar = LocateVar (travNode->dependentVars.lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-				#else
-				if (travNode->iVariables)
-					for (j=0; j<travNode->iVariables->lLength; j+=2)
-					{
-						curVar = LocateVar (travNode->iVariables->lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-					
-				if (((!travNode->iVariables) || j == travNode->iVariables->lLength) && travNode->dVariables)
-					for (j=0; j<travNode->dVariables->lLength; j+=2)
-					{
-						curVar = LocateVar (travNode->dVariables->lData[j]);
-						if (curVar->GetName()->endswith (matchString))
-						{
-							branchLength = curVar->Compute()->Value();
-							if (branchLength<0.0)
-								branchLength = BAD_BRANCH_LENGTH;
-							else
-								break;
-						}
-					}
-				#endif
-			}
-				
+			
+			branchLength = DetermineBranchLengthGivenScalingParameter(j, matchString, mapMode);	
 			if (below) 
 				currentN->in_object.label2 = branchLength;
 			else
@@ -5078,6 +5021,11 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					xtraChars = fontSizeIn->Value();
 			}
 
+			char	mapMode			   = 0;
+			_String scalingStringMatch;
+			
+			if (scaling)
+				scalingStringMatch = DetermineBranchLengthMappingMode (theParam, mapMode);
 			
 			if (treeLayout == 1)
 			{
@@ -5086,16 +5034,16 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				DeleteObject		(tempValue);
 				long				tipID = 0;
 				hScale				= 0.;
-				newRoot				= RadialBranchMapping (theRoot,nil,scaling?theParam:nil,treeArcAngle/(pi_const*2.*(tipCount-1)),tipID,hScale);
+				newRoot				= RadialBranchMapping (theRoot,nil,&scalingStringMatch,treeArcAngle*pi_const/(180.*tipCount),tipID,hScale,mapMode);
 			}
 			else
 			{
 				if (scaling)
-					newRoot 	= ScaledBranchMapping (nil, theParam, 0, tipCount);	
+					newRoot 	= ScaledBranchMapping (nil, &scalingStringMatch, 0, tipCount,mapMode);	
 				else
 					newRoot		= AlignedTipsMapping(true);
 				hScale	  = -treeWidth/newRoot->in_object.h;
-		}
+			}
 			
 			currentNd = NodeTraverser (newRoot);
 			
@@ -5134,23 +5082,48 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			currentNd = NodeTraverser (newRoot);
 			
 
+			if (treeLayout == 1)
+				vScale = treeRadius/hScale;
+
 			while (currentNd)
 			{	
 				if (!currentNd->get_num_nodes() && currentNd->in_object.varRef>=0)
 				{
 					_String nodeName (*LocateVar (currentNd->in_object.varRef)->GetName());
-					nodeName.Trim (nodeName.FindBackwards ('.',0,-1)+1,-1);
+					nodeName.Trim	 (nodeName.FindBackwards ('.',0,-1)+1,-1);
 					
-					_Parameter    nnWidth = 1.+PSStringWidth (nodeName);
+					_Parameter		nnWidth = 1.+PSStringWidth (nodeName);
 					
 					nnWidth += _maxTimesCharWidth * xtraChars;
-					nnWidth *= fontSize;					
-					if (nnWidth>treeWidth*.5)
+					nnWidth *= fontSize;	
+					
+					if (treeLayout == 1)
 					{
-						fontSize = fontSize / (2.*nnWidth/treeWidth);
-						if (fontSize<2)
-							fontSize = 2;
-						nnWidth  = treeWidth*.5;
+						_Parameter chordLength = currentNd->in_object.label2*DEGREES_PER_RADIAN,
+								   sinV		   = fabs(sin(chordLength)),
+								   cosV		   = fabs(cos(chordLength));
+						
+						chordLength = treeRadius/MAX(sinV,cosV);
+						nnWidth = nnWidth + currentNd->in_object.label1 * vScale;
+						nnWidth = MAX(0,nnWidth-chordLength);
+					
+						if (nnWidth>treeRadius*.5)
+						{
+							fontSize = fontSize / (2.*nnWidth/treeRadius);
+							if (fontSize<2)
+								fontSize = 2;
+							nnWidth  = treeRadius*.5;
+						}
+					}
+					else
+					{
+						if (nnWidth>treeWidth*.5)
+						{
+							fontSize = fontSize / (2.*nnWidth/treeWidth);
+							if (fontSize<2)
+								fontSize = 2;
+							nnWidth  = treeWidth*.5;
+						}
 					}
 						
 					if (nnWidth > labelWidth)
@@ -5169,7 +5142,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			{
 				labelWidth  = MIN (labelWidth, treeRadius/2);
 				hScale		= (treeRadius-labelWidth)/hScale;
-				vScale		= 1.;
+				vScale		= 0.;
 			}
 			else
 			{
@@ -5549,7 +5522,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 	
 	_PMathObj nodeLabel 	= nodeOptions?nodeOptions->GetByKey (treeOutputLabel,STRING):nil,
 			  nodeTLabel	= nodeOptions?nodeOptions->GetByKey (treeOutputTLabel,STRING):nil;
-
+	
 	if (layout == 1)
 	{
 		hcl = currNode->in_object.h*hScale;
@@ -5564,7 +5537,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 	if ((descendants==0 || nodeLabel) && (descendants==0 || !nodeTLabel)) // terminal node
 	{
 		t = empty;
-		_Parameter myAngle = layout==1?currNode->in_object.label2*2.*pi_const:0.0;
+		_Parameter myAngle = layout==1?currNode->in_object.label2*DEGREES_PER_RADIAN:0.0;
 		if (layout == 1)
 		{
 			res << (_String(myAngle) & " rotate\n");
@@ -5612,7 +5585,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			currNode->in_object.h = hc-halfFontSize;
 		
 		if (layout == 1)
-			res << (_String(-currNode->in_object.label2*2.*pi_const) & " rotate\n");
+			res << (_String(-currNode->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
 	}
 	
 	if (descendants)
@@ -5658,7 +5631,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 							   childDash;
 			
 			if (layout == 1)
-				res << (_String(child->in_object.label2*2.*pi_const) & " rotate\n");
+				res << (_String(child->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
 				
 			if (outOptions)
 			{
@@ -5704,7 +5677,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			if (layout == 1 && k == descendants)
 			{
 				res << "newpath\n";
-				res << (_String("0 0 ") & currNode->in_object.label1*hScale & ' ' & ((hc1-hc2) *2. * pi_const) & " 0 arc \n");
+				res << (_String("0 0 ") & currNode->in_object.label1*hScale & ' ' & ((hc1-hc2)*DEGREES_PER_RADIAN) & " 0 arc \n");
 				res << "stroke\n";
 			}
 			else
@@ -5751,7 +5724,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			}
 			res << &colorString;
 			if (layout == 1)
-				res << (_String(-child->in_object.label2*2.*pi_const) & " rotate\n");
+				res << (_String(-child->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
 		}
 		
 		if (layout == 0 && doVLines)
@@ -5851,7 +5824,7 @@ _PMathObj _TheTree::TEXTreeString (_PMathObj p)
 						 	treeWidth;
 		if (scaling)
 		{
-			newRoot = ScaledBranchMapping (nil, theParam, 0, tipCount);
+			newRoot = ScaledBranchMapping (nil, theParam, 0, tipCount, 0);
 			
 			treeWidth = tipCount*WIDTH_PER_BRANCH;
 			

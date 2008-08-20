@@ -1898,7 +1898,11 @@ void	_HYTreePanel::SetFlags (unsigned int f)
 				if (!scaleVariable.sLength)
 					newTree = me->AlignedTipsMapping(true);
 				else
-					newTree = me->ScaledBranchMapping(nil,&scaleVariable,0,tipCount);
+				{
+					char     mapMode;
+					_String  scalerString = me->DetermineBranchLengthMappingMode(&scaleVariable, mapMode);
+					newTree = me->ScaledBranchMapping(nil,&scalerString,0,tipCount,mapMode);
+				}
 				CopyNodeParameters (newTree,coordTree);
 				coordTree->delete_tree();
 				delete 	(coordTree);
@@ -2286,7 +2290,11 @@ bool	_HYTreePanel::BuildTree (bool saveOrigin)
 	if (!scaling)
 		coordTree = me->AlignedTipsMapping(true);
 	else
-		coordTree = me->ScaledBranchMapping(nil,&scaleVariable,0,tipCount);
+	{
+		char     mapMode;
+		_String  scalerString = me->DetermineBranchLengthMappingMode(&scaleVariable, mapMode);
+		coordTree = me->ScaledBranchMapping(nil,&scalerString,0,tipCount,mapMode);
+	}
 	
 	treeWidth		= -coordTree->in_object.h;
 	tipCount		= coordTree->tree_depth();

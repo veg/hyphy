@@ -435,10 +435,10 @@ class _TheTree: public _TreeTopology {
 			void		AlignNodes 						(node<nodeCoord>*);
 						
 			node<nodeCoord>* 
-						ScaledBranchMapping				(node<nodeCoord>* , _String*, long, long&);
+						ScaledBranchMapping				(node<nodeCoord>* , _String*, long, long&, char);
 
 			node<nodeCoord>* 
-						RadialBranchMapping				(node<long>* , node<nodeCoord>*, _String*, _Parameter, long&, _Parameter&);
+						RadialBranchMapping				(node<long>* , node<nodeCoord>*, _String*, _Parameter, long&, _Parameter&, char);
 
 			void		ScaledBranchReMapping			(node<nodeCoord>*, _Parameter);
 			char&		RootedFlag						(void) 
@@ -471,6 +471,9 @@ class _TheTree: public _TreeTopology {
 			void		AddNodeNamesToDS				(_DataSet*, bool, bool, bool);
 			_Parameter	PSStringWidth					(_String&);
 
+			_String		DetermineBranchLengthMappingMode(_String*, char&);
+			_Parameter	DetermineBranchLengthGivenScalingParameter 
+														(long, _String&, char);
 		 #if USE_SCALING_TO_FIX_UNDERFLOW
 			void		AllocateUnderflowScalers		(long); 				
 			void		DeallocateUnderflowScalers		(void); 				
