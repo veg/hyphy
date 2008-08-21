@@ -186,6 +186,24 @@ _maxTimesCharWidth = 0.980392;
 
 //__________________________________________________________________________________
 
+_Parameter	computeChordLength (_Parameter l, _Parameter angle, _Parameter* maxCoord = nil)
+{
+	_Parameter sinV		   = sin(angle),
+			   cosV		   = cos(angle);
+	
+	if (maxCoord)
+	{
+		maxCoord[0] = MAX (maxCoord[0], cosV*l);
+		maxCoord[1] = MIN (maxCoord[1], cosV*l);
+		maxCoord[2] = MAX (maxCoord[2], sinV*l);
+		maxCoord[3] = MIN (maxCoord[3], sinV*l);
+	}
+	
+	return l/MAX(fabs(sinV),fabs(cosV));
+}
+
+//__________________________________________________________________________________
+
 #define MIN_TEX_HEIGHT 	 50
 #define	MIN_TEX_WIDTH    50
 #define MAX_TEX_WIDTH    160
@@ -4930,18 +4948,22 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 							doLabelWidth	= true;
 			
 			long  			tipCount 		= 0, 
-				  			fontSize		= -1,
-				  			labelWidth      = 0;
+							fontSize		= -1;
+			
+			_Matrix*		dimMatrix		    = ((_Matrix*)p2->Compute());
 				  
 			
 			_Parameter 		hScale				= 1.0, 
 							vScale				= 1.0,
+							labelWidth			= 0.,
 							
-							treeHeight			= (*((_Matrix*)p2->Compute()))(0,1),
-							treeWidth			= (*((_Matrix*)p2->Compute()))(0,0),
-				
+							treeHeight			= (*dimMatrix)(0,1),
+							treeWidth			= (*dimMatrix)(0,0),
+			
+							treeRotation		= (dimMatrix->GetVDim()>2)?(*dimMatrix)(0,2):0.0,
 							treeRadius			,
 							treeArcAngle		,
+							totalTreeL			= 0.,
 			
 							mappedTreeHeight	= 0.0,
 							mappedTreeHeight2	= 1e+100;
@@ -4958,6 +4980,8 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					treeArcAngle = 360.0;
 				
 				treeWidth = treeHeight = treeRadius * 2.;
+				
+				treeRotation = (treeRotation - floor(treeRotation/360.)*360.)/DEGREES_PER_RADIAN;
 			}
 			else
 			{
@@ -5003,7 +5027,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << " lineto\n";
 					(*res) << _String(treeWidth);
 					(*res) << " 0 lineto\n";
-					(*res) << "closepath\nfill\n";
+					(*res) << "closepath\nfill\n0 0 0 setrgbcolor\n";
 				}	
 				
 				_Constant* fontSizeIn = (_Constant*)(toptions)->GetByKey (treeOutputFSPlaceH, NUMBER);
@@ -5035,13 +5059,15 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				long				tipID = 0;
 				hScale				= 0.;
 				newRoot				= RadialBranchMapping (theRoot,nil,&scalingStringMatch,treeArcAngle*pi_const/(180.*tipCount),tipID,hScale,mapMode);
+				totalTreeL			= hScale;
 			}
 			else
 			{
 				if (scaling)
 					newRoot 	= ScaledBranchMapping (nil, &scalingStringMatch, 0, tipCount,mapMode);	
 				else
-					newRoot		= AlignedTipsMapping(true);
+					newRoot		= AlignedTipsMapping  (true);
+				
 				hScale	  = -treeWidth/newRoot->in_object.h;
 			}
 			
@@ -5081,39 +5107,72 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			
 			currentNd = NodeTraverser (newRoot);
 			
+			_Parameter  plotBounds[4];
 
 			if (treeLayout == 1)
-				vScale = treeRadius/hScale;
+			{
+				vScale      = treeRadius/hScale;
+				plotBounds [0] = plotBounds[1] = plotBounds [2] = plotBounds[3] = 0.;
+			}
 
 			while (currentNd)
 			{	
-				if (!currentNd->get_num_nodes() && currentNd->in_object.varRef>=0)
+				if (currentNd->in_object.varRef>=0)
 				{
 					_String nodeName (*LocateVar (currentNd->in_object.varRef)->GetName());
-					nodeName.Trim	 (nodeName.FindBackwards ('.',0,-1)+1,-1);
+							nodeName.Trim	 (nodeName.FindBackwards ('.',0,-1)+1,-1);
 					
-					_Parameter		nnWidth = 1.+PSStringWidth (nodeName);
+					_AssociativeList * nodeOptions = nil;
+					if (toptions)
+						nodeOptions = (_AssociativeList *) toptions->GetByKey (nodeName, ASSOCIATIVE_LIST);
+					
+					
+					_PMathObj nodeLabel 	= nodeOptions?nodeOptions->GetByKey (treeOutputLabel,STRING):nil,
+							  nodeTLabel	= nodeOptions?nodeOptions->GetByKey (treeOutputTLabel,STRING):nil;
+					
+					_Parameter		nnWidth = 0.0;
+					
+					if (nodeLabel)
+						nnWidth = 0.0;
+					else
+						if (nodeTLabel)
+						{
+							nnWidth = 1.+PSStringWidth (*((_FString*)nodeTLabel->Compute())->theString);	
+							//printf ("%g\n", nnWidth);
+						}
+						else
+							if (currentNd->get_num_nodes() == 0)
+								nnWidth = 1.+PSStringWidth (nodeName);
 					
 					nnWidth += _maxTimesCharWidth * xtraChars;
 					nnWidth *= fontSize;	
 					
 					if (treeLayout == 1)
 					{
-						_Parameter chordLength = currentNd->in_object.label2*DEGREES_PER_RADIAN,
-								   sinV		   = fabs(sin(chordLength)),
-								   cosV		   = fabs(cos(chordLength));
+						currentNd->in_object.label2 += treeRotation;
+						_Parameter chordLength =  computeChordLength (treeRadius, currentNd->in_object.label2,plotBounds),
+								   overflow    =  MAX(0., treeRadius + 
+														  (nnWidth - chordLength) * 
+														  hScale / MAX(BAD_BRANCH_LENGTH,currentNd->in_object.label1));
+													  
+													  //nnWidth + currentNd->in_object.label1 * vScale-chordLength);
 						
-						chordLength = treeRadius/MAX(sinV,cosV);
-						nnWidth = nnWidth + currentNd->in_object.label1 * vScale;
-						nnWidth = MAX(0,nnWidth-chordLength);
-					
-						if (nnWidth>treeRadius*.5)
+						
+							
+						if (overflow > treeRadius*.5) // shift too big
 						{
-							fontSize = fontSize / (2.*nnWidth/treeRadius);
+							chordLength -= currentNd->in_object.label1/(2.*hScale) * treeRadius;
+							
+							chordLength = chordLength / nnWidth;
+							fontSize = fontSize * chordLength;
+							
 							if (fontSize<2)
 								fontSize = 2;
+							
 							nnWidth  = treeRadius*.5;
 						}
+						else
+							nnWidth = overflow;
 					}
 					else
 					{
@@ -5125,7 +5184,6 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 							nnWidth  = treeWidth*.5;
 						}
 					}
-						
 					if (nnWidth > labelWidth)
 						labelWidth = nnWidth;
 				}
@@ -5140,7 +5198,6 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			
 			if (treeLayout == 1)
 			{
-				labelWidth  = MIN (labelWidth, treeRadius/2);
 				hScale		= (treeRadius-labelWidth)/hScale;
 				vScale		= 0.;
 			}
@@ -5161,41 +5218,56 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			
 			if (treeLayout == 1)
 			{
+				//newRoot->in_object.h = -plotBounds[1];
+				//newRoot->in_object.v = -plotBounds[3];
+				//hScale				 *= 2.*treeRadius / MAX(plotBounds[0]-plotBounds[1],plotBounds[2]-plotBounds[3]);
 				newRoot->in_object.h = treeRadius;
 				newRoot->in_object.v = treeRadius;
 				vScale				 = 0.;
 				
-				TreePSRecurse (newRoot, (*res), hScale, vScale, ceil(treeWidth), ceil(treeHeight), fontSize/2, labelWidth-fontSize/2, toptions, true); 
+				TreePSRecurse (newRoot, (*res), hScale, vScale, ceil(treeWidth), ceil(treeHeight), fontSize/2, labelWidth-fontSize/2, toptions, 1, &treeRadius); 
 			}
 			else
 				TreePSRecurse (newRoot, (*res), hScale, vScale, ceil(treeWidth), ceil(treeHeight), fontSize/2, labelWidth-fontSize/2, toptions); 
 			
 			if (scaling) /* ruler */
 			{
+				if (fontSize < 8)
+				{
+					fontSize = 8;
+					(*res) << (_String ("/Times-Roman findfont\n") & fontSize & " scalefont\nsetfont\n");
+				}
 				
 				if (treeWidth < 4*fontSize) // enforce minimal ruler width
 					treeWidth = 4*fontSize;
 					
-				vScale = exp (log(10.)*floor (log10(treeWidth/hScale))); // compute the scaling factor
+				vScale = exp (log(10.)*floor (log10(treeLayout==1?totalTreeL:treeWidth/hScale))); // compute the scaling factor
 				if (vScale*hScale < 10.0)
 					vScale *= 10.;
 					
 				_String rulerLabel (vScale);
 				
-				while (vScale*hScale > treeWidth-newRoot->in_object.h)
+				while (vScale*hScale > (treeLayout==1?treeRadius:treeWidth-newRoot->in_object.h))
 				{
-					vScale *= 0.5;
+					vScale	   *= 0.5;
 					rulerLabel = vScale;
 				}
 				
 				while (PSStringWidth(rulerLabel)*fontSize>vScale*hScale-3)
 				{
-					vScale *= 2.0;
+					vScale	    *= 2.0;
 					rulerLabel = vScale;
 				}
 				
 				long   lm = newRoot->in_object.h,
 					   rm = lw+vScale*hScale;
+				
+				if (treeLayout == 1)
+				{
+					treeHeight = 2*treeRadius - 4*fontSize;
+					lm -= rm*0.5;
+					rm += lm;
+				}
 
 				(*res) << "newpath\n";
 				t  = _String (lm) & ' ' & _String ((long)treeHeight+2*lw) & " moveto\n"; 
@@ -5534,7 +5606,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 		hcl = hSize+currNode->in_object.h*hScale-shift;		
 	}
 	
-	if ((descendants==0 || nodeLabel) && (descendants==0 || !nodeTLabel)) // terminal node
+	if (descendants==0 || nodeLabel) 
+	// terminal node or default label
 	{
 		t = empty;
 		_Parameter myAngle = layout==1?currNode->in_object.label2*DEGREES_PER_RADIAN:0.0;
@@ -5551,35 +5624,39 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			hc = hcl+halfFontSize;			
 		}
 		
-		res<<"newpath\n"; 
-		
-		if (nodeLabel)
+		if (!nodeTLabel)
 		{
-			t = _String(hcl) & ' ' & _String (vc) & " moveto\n";
-			res << &t;
-			t = *((_FString*)nodeLabel->Compute())->theString;
-			t = t.Replace (treeOutputNNPlaceH, varName, true);
-			t = t.Replace (treeOutputFSPlaceH, _String(halfFontSize*2), true) & '\n';				
-		}
-		
-		if (descendants==0 && t.sLength == 0)
-		// generate the default label
-		{
-			if (layout == 1 && myAngle > 90. && myAngle < 270.)
+			res<<"newpath\n"; 
+			
+			if (nodeLabel)
 			{
-				_Parameter xt = hc-halfFontSize/2,
-						   yt = vc-2*halfFontSize/3;
-				t = _String (xt) & _String (" 0 translate 180 rotate 0 ") & _String (yt) & _String ('(') & varName & ") righttext 180 rotate -" & xt & " 0 translate\n";
+				t = _String(hcl) & ' ' & _String (vc) & " moveto\n";
+				
+				res << &t;
+				t = *((_FString*)nodeLabel->Compute())->theString;
+				t = t.Replace (treeOutputNNPlaceH, varName, true);
+				t = t.Replace (treeOutputFSPlaceH, _String(halfFontSize*2), true) & '\n';				
 			}
-			else
+			
+			if (descendants==0 && t.sLength == 0)
+			// generate the default label
 			{
-				t = _String(hc-halfFontSize/2) & ' ' & _String (vc-2*halfFontSize/3) & " moveto\n";
-				res<<&t;
-				t = _String ('(') & varName & ") show\n";
+				if (layout == 1 && myAngle > 90. && myAngle < 270.)
+				{
+					_Parameter xt = hc-halfFontSize/2,
+							   yt = vc-2*halfFontSize/3;
+					t = _String (xt) & _String (" 0 translate 180 rotate 0 ") & _String (yt) & _String ('(') & varName & ") righttext 180 rotate -" & xt & " 0 translate\n";
+				}
+				else
+				{
+					t = _String(hc-halfFontSize/2) & ' ' & _String (vc-2*halfFontSize/3) & " moveto\n";
+					res<<&t;
+					t = _String ('(') & varName & ") show\n";
+				}
 			}
+			
+			res<<&t;
 		}
-		
-		res<<&t;
 		
 		if (descendants==0)
 			currNode->in_object.h = hc-halfFontSize;
@@ -5588,13 +5665,13 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			res << (_String(-currNode->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
 	}
 	
+	long  minChildHC = 0x0fffffff,
+		  newV		 = 0;
+
 	if (descendants)
 	{
 		vc = vSize - currNode->in_object.v*vScale;
 		hc = hSize + currNode->in_object.h*hScale-shift;
-		
-		long newV = 0,
-			 minChildHC = 0x0fffffff;
 		
 		nodeCoord childCoord;
 		for (long k = 1; k<=descendants; k++)
@@ -5663,10 +5740,12 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			if (blabelString)
 			{
 				if (layout == 1)
-					t = _String(currNode->in_object.label1*hScale) & ' ' & _String (halfFontSize) & " moveto\n";
+					t = _String(currNode->in_object.label1*hScale) & " 0 moveto\n";
 				else
 					t = _String(hc) & ' ' & _String (child->in_object.v) & " moveto\n";
 				res<<&t;	
+				*blabelString = blabelString->Replace (treeOutputNNPlaceH, varName, true).Replace (treeOutputFSPlaceH, _String(halfFontSize*2), true) & '\n';
+		
 				res<<blabelString;
 				res<<'\n';
 			}
@@ -5674,11 +5753,14 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			res << &childDash;
 			res << &childColor;
 			
-			if (layout == 1 && k == descendants)
+			if (layout == 1)
 			{
-				res << "newpath\n";
-				res << (_String("0 0 ") & currNode->in_object.label1*hScale & ' ' & ((hc1-hc2)*DEGREES_PER_RADIAN) & " 0 arc \n");
-				res << "stroke\n";
+				if (child->get_num_nodes()) // internal node
+				{
+					res << "newpath\n";
+					res << (_String("0 0 ") & child->in_object.label1*hScale & ' ' & child->in_object.v & ' ' & (child->in_object.auxD) & " arc \n");
+					res << "stroke\n";
+				}
 			}
 			else
 			{
@@ -5707,7 +5789,10 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				t = _String(hc) & ' ' & _String (child->in_object.v) & " moveto\n";
 				res<<&t;	
 				t = _String(child->in_object.h) & ' ' & _String (child->in_object.v) & " lineto\n";
-				minChildHC = MIN(child->in_object.h,minChildHC);
+				if (layout == 1)
+					minChildHC = MIN(child->in_object.label1,minChildHC);
+				else
+					minChildHC = MIN(child->in_object.h,minChildHC);
 			}
 			res<<&t;	
 			res << "stroke\n";
@@ -5718,7 +5803,21 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			if (splitBranch >= 0.0 && splitBranch <= 1.0)
 			{
 				res << "newpath\n";
-				t = _String(hc+(child->in_object.h-hc)*(1.-splitBranch)) & ' ' & _String (child->in_object.v) & " " & halfFontSize  & " 0 360 arc\n";				
+				_Parameter x,
+						   y;
+				
+				if (layout == 1)
+				{
+					x = (child->in_object.label1 - child->in_object.bL*splitBranch)*hScale;
+					y = 0.;
+				}
+				else
+				{
+					x = hc+(child->in_object.h-hc)*(1.-splitBranch);
+					y = child->in_object.v;
+				}
+				
+				t = _String(x) & ' ' & _String (y) & " " & halfFontSize  & " 0 360 arc\n";				
 				res<<&t;	
 				res << "fill\n";
 			}
@@ -5743,58 +5842,79 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			res << "stroke\n";			
 		}
 		
-		
-		
-		if (nodeTLabel)
-		{
-			t = *((_FString*)nodeTLabel->Compute())->theString;
-			if (t.sLength)
-			{
-				_Parameter    nnWidth = 1.+PSStringWidth (t),
-							  scF	  = 2.*halfFontSize;
-							  
-				res << (_String("%")&(minChildHC - hc)&','&hScale&','&nnWidth&'\n');
-				nnWidth = (minChildHC - hc)/nnWidth;
-				
-				vcl 	= newV/descendants;
-				
-				if (nnWidth < 2.*halfFontSize)
-				{
-					scF = nnWidth;
-					res << (_String("/Times-Roman findfont\n")& scF & " scalefont\nsetfont\n");
-				}
-				else
-					nnWidth = 1.;
-				
-				
-				res << "newpath\n";
-				hcl += scF*0.5;
-				vcl -= scF*0.33;
-				
-				res << (_String(hcl) & ' ' & _String (vcl) & " moveto\n");
-				{
-					res << '(';
-					res << t;
-					res << ") show \n";
-				}
-
-				res << "stroke\n";
-
-				if (scF != 2.*halfFontSize)
-					res << (_String("/Times-Roman findfont\n")& halfFontSize*2 & " scalefont\nsetfont\n");
-			}
-			
-		}
-		
 		if (layout == 0)
 		{
 			currNode->in_object.h = hc;
 			currNode->in_object.v = newV/descendants;
 		}
+		else
+		{
+			currNode->in_object.auxD = (hc2-currNode->in_object.label2)*DEGREES_PER_RADIAN;
+			if (currNode->parent)
+				currNode->in_object.v    = (hc1-currNode->in_object.label2)*DEGREES_PER_RADIAN;
+		}
 	}
 	else
 		currNode->in_object.v = vc;
 	
+	if (nodeTLabel)
+	{
+		t = *((_FString*)nodeTLabel->Compute())->theString;
+		if (t.sLength)
+		{
+			_Parameter    nnWidth = 1.+PSStringWidth (t),
+						  scF	  = 2.*halfFontSize;
+			
+			if (layout == 1)
+				res << (_String(currNode->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
+			else
+			{
+				if (descendants)
+				{
+					nnWidth = (minChildHC - hc)/nnWidth;
+					vcl 	= currNode->in_object.v;
+					if (nnWidth < 2.*halfFontSize)
+						scF = nnWidth;
+					else
+						nnWidth = 1.;
+				}
+			}
+			
+			
+			if (scF != 2.*halfFontSize)
+				res << (_String("/Times-Roman findfont\n")& scF & " scalefont\nsetfont\n");
+			
+			res << "newpath\n";
+			if (layout == 1)
+				res << (_String(currNode->in_object.label1 * hScale + halfFontSize) & ' ' & _String (-2*halfFontSize/3) & " moveto\n");
+			else
+			{
+				if (descendants)
+				{
+					hc = hcl + scF*0.5;
+					vc = vcl - scF*0.33;
+
+				}
+				else
+				{
+					hc -= scF*0.25;
+					vc -= scF*0.33;
+				}
+				res << (_String(hc) & ' ' & _String (vc) & " moveto\n");
+			}
+			
+			res << '(';
+			res << t;
+			res << ") show \n";
+			
+			if (scF != 2.*halfFontSize)
+				res << (_String("/Times-Roman findfont\n")& halfFontSize*2 & " scalefont\nsetfont\n");
+			
+			if (layout == 1)
+				res << (_String(-currNode->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
+		}			
+	}
+
 	if (colorString.sLength)
 		res << "0 0 0 setrgbcolor\n";
 	
