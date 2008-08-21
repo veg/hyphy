@@ -98,6 +98,7 @@
 ** A handle for an open file is stored in an OsFile object.
 */
 #if OS_UNIX
+
 # include <sys/types.h>
 # include <sys/stat.h>
 # include <fcntl.h>
@@ -128,7 +129,7 @@
     HANDLE h;               /* Handle for accessing the file */
     int locked;             /* 0: unlocked, <0: write lock, >0: read lock */
   };
-# if defined(_MSC_VER) || defined(__BORLANDC__)
+# if defined(_MSC_VER) || defined(__BORLANDC__) 
     typedef __int64 off_t;
 # else
 #  if !defined(_CYGWIN_TYPES_H)

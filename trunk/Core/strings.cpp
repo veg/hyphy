@@ -45,7 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 _String	  __KERNEL__VERSION__ ("1.0020080819beta");
 
 #ifdef	 __UNIX__
-	#include <sys/utsname.h>
+	#if !defined __MINGW32__
+		#include <sys/utsname.h>
+	#endif
 	extern  bool dropIntoDebugMode;
 #else	
 	void 	SaveConsole (void);
@@ -2015,10 +2017,13 @@ _String		GetVersionString (void)
 		theMessage = theMessage & "Windows (Win32)";
 	#endif
 	#ifdef __UNIX__
-		#ifndef __HEADLESS_WIN32__
+		#if !defined __HEADLESS_WIN32__ && ! defined __MINGW32__
 			struct		utsname 	 name;
 			uname 		(&name);
 			theMessage = theMessage & name.sysname & " on " & name.machine;
+		#endif
+		#if defined __MINGW32__
+			theMessage = theMessage & "MinGW version " & __MINGW32_VERSION;
 		#endif
 	#endif
 	return theMessage;

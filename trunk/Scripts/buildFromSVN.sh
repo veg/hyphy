@@ -44,6 +44,7 @@ cp  'trunk/GUIElements/Platform Include/GTK/Components/'*.h $installDirectory/GU
 cp  'trunk/GUIElements/Platform Source/GTK/'*.cpp $installDirectory/GUI/
 cp  'trunk/GUIElements/Platform Source/GTK/Components/'*.cpp $installDirectory/GUI/
 cp  'trunk/GUIElements/Platform Source/GTK/WindowClasses/'*.cpp $installDirectory/GUI/
+
 cp 	trunk/Mains/main-GTK.cpp  $installDirectory/Source/main-GTK.cxx
 cp  trunk/Mains/main-unix.cpp $installDirectory/Source/main-unix.cxx
 cp  trunk/Mains/hyphyunixutils.cpp $installDirectory/Source/hyphyunixutils.cpp

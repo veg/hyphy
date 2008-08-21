@@ -31,7 +31,7 @@
   #pragma alloca
 #endif
 
-#ifndef REGEX_MALLOC
+#if !defined REGEX_MALLOC && !defined __MINGW32__
 	#include <alloca.h>
 #endif
 
@@ -289,7 +289,7 @@ char *alloca ();
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#if !defined __WINDOZE__  || defined __BORLAND_HACK__
+#if !defined __WINDOZE__  || defined __BORLAND_HACK__ || defined __MINGW32__
 	typedef char boolean;
 #endif
 

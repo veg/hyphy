@@ -13,6 +13,12 @@
 **
 ** @(#) $Id: sqliteInt.h,v 1.196 2003/08/09 21:32:28 drh Exp $
 */
+
+# if defined __MINGW32__
+#    define _OFF_T_
+# endif
+
+
 #include "config.h"
 #include "sqlite.h"
 #include "hash.h"
@@ -23,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
 /*
 ** The maximum number of in-memory pages to use for the main database
 ** table and for temporary tables.

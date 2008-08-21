@@ -26,7 +26,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "batchlan.h"
 #include "calcnode.h"
 #include <unistd.h>
-#include <termios.h>
+#if !defined __MINGW32__
+	#include <termios.h>
+#endif
 //#include <signal.h>
 #if defined   __MP2__ || defined __MP__
 	#include <pthread.h>
