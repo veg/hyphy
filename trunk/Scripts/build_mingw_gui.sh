@@ -69,7 +69,7 @@ echo "LINKER_FLAGS   = "$LINKER_FLAGS
 
 cd Source 
 
-for fileName in *.cpp
+for fileName in *.cpp main-win.cxx
 do
   if [ ${fileName} != "hyphyunixutils.cpp" ]
   then

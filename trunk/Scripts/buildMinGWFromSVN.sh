@@ -46,9 +46,13 @@ cp  'trunk/GUIElements/Platform Source/Windows/'*.cpp $installDirectory/Win32GUI
 cp  'trunk/GUIElements/Platform Source/Windows/Components/'*.cpp $installDirectory/Win32GUI/
 cp  'trunk/GUIElements/Platform Source/Windows/WindowClasses/'*.cpp $installDirectory/Win32GUI/
 
+cp  trunk/Mains/hyphyunixutils.cpp $installDirectory/Source/hyphyunixutils.cpp
 cp  trunk/Mains/main-win.cpp $installDirectory/Source/main-win.cxx
+cp  trunk/Mains/main-unix.cpp $installDirectory/Source/main-unix.cxx
 cp  -R trunk/{ChartAddIns,DatapanelAddIns,GeneticCodes,Help,SubstitutionClasses,SubstitutionModels,TemplateBatchFiles,TopologyInference,TreeAddIns,UserAddIns} $installDirectory
 cp  -R 'trunk/GUIElements/Resources/Windows' $installDirectory/Win32GUI/
+rm -f $installDirectory/Win32GUI/Windows/*.{dll,lib}
+cp  'trunk/GUIElements/Resources/Windows/pthreadGC2.dll' $installDirectory
 
 cd $installDirectory
 bash build_mingw.sh
