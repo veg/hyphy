@@ -4675,22 +4675,32 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					continue;
 				}
 				
-				_List *vH = nil;
+				_List	   *vH = nil;
 				_Parameter brackStep;
 				
 				if (useAdaptiveStep>0.5)
 				{
 					vH  = (_List*)(*stepHistory)(j);
+					//_Parameter	suggestedPrecision	= currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
+
 					if (vH->lLength>1)
 					{
-						brackStep = ((_Constant*)(*vH)(vH->lLength-1))->theValue/((_Constant*)(*vH)(vH->lLength-2))->theValue;
-						if (brackStep > 0.5)
-							brackStep = 0.5;
-						brackStep = ((_Constant*)(*vH)(vH->lLength-1))->theValue*brackStep;
+						_Parameter	lastParameterValue			= ((_Constant*)(*vH)(vH->lLength-1))->theValue,
+									previousParameterValue		= ((_Constant*)(*vH)(vH->lLength-2))->theValue;		
+																		
+						brackStep = fabs((lastParameterValue-previousParameterValue)/MAX(previousParameterValue,1.e-5));
+						
+						if (brackStep > 0.25) 
+							brackStep = 0.25;
+						else
+							if (brackStep < 0.05)
+								brackStep = 0.05;
+						
+						brackStep *= lastParameterValue;
 						
 					}
 					else
-						brackStep = ((_Constant*)(*vH)(vH->lLength-1))->theValue*0.5;
+						brackStep = ((_Constant*)(*vH)(vH->lLength-1))->theValue*0.25;
 						
 					if (brackStep < 1e-6)
 						brackStep = 1e-6;
@@ -4853,6 +4863,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				ConjugateGradientDescent (currentPrecision, bestMSoFar);
 			}			
 		}
+		
+		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes\n");
 
 		if (optMethod == 7)
 		{
