@@ -400,6 +400,7 @@ extern	_List
 		
 		likeFuncNamesList,
 		modelNames,
+		executionStack,
 		compiledFormulaeParameters;	
 
 
@@ -410,6 +411,7 @@ extern	_SimpleList
 		modelMatrixIndices,
 		modelFrequenciesIndices,
 		listOfCompiledFormulae;
+
 
 extern	_String		
 
@@ -504,6 +506,7 @@ long	FindBgmName					 (_String &);
 
 long	FindLikeFuncName		 	 (_String&);
 long	FindModelName			 	 (_String&);
+_String*ReturnCurrentCallStack		 (void);
 	
 void	ReadBatchFile				 (_String&, _ExecutionList&);
 _String	ReturnDialogInput 			 (bool dispPath = false);

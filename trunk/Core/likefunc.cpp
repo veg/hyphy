@@ -4008,8 +4008,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		if (cT->CountTreeCategories() >categCount)
 			categCount = cT->categoryCount;
 	}
-	
+#ifdef _SLKP_LFENGINE_REWRITE_	
 	SetupLFCaches();
+#endif
 
 #ifdef __HYPHYMPI__
 	InitMPIOptimizer ();
@@ -12150,8 +12151,9 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 		
 		for (long i2=0; i2<theProbabilities.lLength; i2++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
-
+#ifdef _SLKP_LFENGINE_REWRITE_
 		SetupLFCaches	  ();
+#endif
 		SetReferenceNodes ();
 		
 		if (disableClear)

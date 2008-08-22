@@ -309,6 +309,7 @@ void	PurgeAll (bool all)
 	batchLanguageFunctionParameterLists.Clear();
 	batchLanguageFunctionParameters.Clear();
 	batchLanguageFunctionClassification.Clear();
+	executionStack.Clear();
 	if (all)
 	{
 		likeFuncList.Clear();

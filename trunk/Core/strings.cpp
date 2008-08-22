@@ -1403,12 +1403,7 @@ void	FlagError (_String st)
 #else		
 	char  str[] = "\nError:";
 	
-		if (currentExecutionList)
-		{
-			_String* cL = (_String*)((_ElementaryCommand*)(*currentExecutionList)(currentExecutionList->currentCommand?currentExecutionList->currentCommand-1:0))->toStr();
-			st = st & "\nCurrent BL Command:" & *cL;
-			DeleteObject (cL);
-		}
+		st = st & _String(ReturnCurrentCallStack());
 		if (globalErrorFile) 
 		{
 			fwrite (str, 1, 7, globalErrorFile);
@@ -1467,12 +1462,7 @@ void	WarnError (_String st)
 #else		
 	char  str[] = "\nError:";
 #ifndef __HYPHY_GTK__
-	if (currentExecutionList)
-	{
-		_String* cL = (_String*)((_ElementaryCommand*)(*currentExecutionList)(currentExecutionList->currentCommand?currentExecutionList->currentCommand-1:0))->toStr();
-		st = st & "\nCurrent BL Command:" & *cL;
-		DeleteObject (cL);
-	}
+	st = st & _String(ReturnCurrentCallStack());
 #endif
 
 	if (globalErrorFile)

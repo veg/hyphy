@@ -114,6 +114,7 @@ _List
 			batchLanguageFunctionParameterLists,
 			compiledFormulaeParameters,
 			modelNames,
+			executionStack,
 			openFileHandlesBackend;
 	
 #ifdef __MAC__
@@ -1046,6 +1047,7 @@ _PMathObj		_ExecutionList::Execute		(void)		// run this execution list
 {
 	_ExecutionList* 	 stashCEL = currentExecutionList;
 	callPoints << currentCommand;
+	executionStack		 << this;
 	
 	_String  			dd (GetPlatformDirectoryChar());
 		
@@ -1097,6 +1099,8 @@ _PMathObj		_ExecutionList::Execute		(void)		// run this execution list
 
 	if (stashed)
 		setParameter		(pathToCurrentBF,stashed,false);
+	
+	executionStack.Delete (executionStack.lLength-1);
 
 	return result;
 }
