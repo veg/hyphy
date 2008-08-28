@@ -509,6 +509,16 @@ class _TheTree: public _TreeTopology {
 															 long					catID,
 															 _Parameter*			storageVec = nil
 														  );
+	
+	_Parameter			ComputeTwoSequenceLikelihood	(
+														 _SimpleList&			siteOrdering,
+														 _DataSetFilter*		theFilter, 
+														 long		   *		lNodeFlags,
+														 _GrowingVector*		lNodeResolutions,
+														 long siteFrom, 
+														 long siteTo, 
+														 long catID, 
+														 _Parameter* storageVec = nil);
 #endif			
 
 	// --------------------------
