@@ -1009,4 +1009,155 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 	return result;
 }
 
+/*----------------------------------------------------------------------------------------------------------*/
+
+_Parameter		_TheTree::ComputeTwoSequenceLikelihood	
+													(			
+													 _SimpleList   &	siteOrdering,
+													 _DataSetFilter*	theFilter,
+													 long	  *			lNodeFlags,
+													 _GrowingVector*	lNodeResolutions,
+													 long				siteFrom,
+													 long				siteTo,
+													 long				catID,
+													 _Parameter*		storageVec
+													 )
+// the updateNodes flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
+// that must be recomputed
+{
+	// process the leaves first 
+	
+	long			alphabetDimension	   =			theFilter->GetDimension(),
+					siteCount			   =			theFilter->NumberDistinctSites(),
+					alphabetDimensionmod4  =			alphabetDimension-alphabetDimension%4;
+	
+	_CalcNode		*theNode			   =			((_CalcNode*) flatCLeaves (0));
+	_Parameter  *	_hprestrict_ transitionMatrix 
+										   =			theNode->GetCompExp(catID)->theData,
+					result				   =			0.;
+
+	if (siteTo	> siteCount)	siteTo = siteCount;
+	
+	for (long siteID = siteFrom; siteID < siteTo; siteID++)
+	{		
+		_Parameter  *tMatrix = transitionMatrix,
+					sum	 = 0.;
+		
+		long siteState1 = lNodeFlags[siteOrdering.lData[siteID]],
+			 siteState2 = lNodeFlags[siteCount + siteOrdering.lData[siteID]];
+		
+		if (siteState1 >= 0)
+			// a single character state; sweep down the appropriate column 
+		{
+			if (siteState2 >= 0) // both completely resolved;
+			{
+				sum = tMatrix[siteState1*alphabetDimension + siteState2];
+			}
+			else // first resolved, second is not
+			{
+				_Parameter* childVector = lNodeResolutions->theData + (-siteState2-1) * alphabetDimension;
+				tMatrix	  +=  siteState1*alphabetDimension;
+				if (alphabetDimension == 4) // special case for nuc data
+				{
+					sum = tMatrix[0] * childVector[0] +
+						  tMatrix[1] * childVector[1] +
+						  tMatrix[2] * childVector[2] +
+						  tMatrix[3] * childVector[3];
+				}
+				else
+				{
+					for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
+						sum +=  tMatrix[c]   * childVector[c] + 
+								tMatrix[c+1] * childVector[c+1] +
+								tMatrix[c+2] * childVector[c+2] +
+								tMatrix[c+3] * childVector[c+3];
+					
+					for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) 
+						sum +=  tMatrix[c] * childVector[c];
+				}
+			}
+			sum *= theProbs[siteState1];
+		}
+		else
+		{
+			if (siteState2 >=0 ) // second resolved, but not the first
+			{
+				_Parameter* childVector = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension;
+				tMatrix	               +=  siteState2;
+				if (alphabetDimension == 4) // special case for nuc data
+				{
+					sum = tMatrix[0] * childVector[0]  * theProbs[0]+
+						  tMatrix[4] * childVector[1]  * theProbs[1]+
+						  tMatrix[8] * childVector[2]  * theProbs[2]+
+						  tMatrix[12] * childVector[3] * theProbs[3];
+					
+				}
+				else
+				{
+					for (long c = 0; c < alphabetDimensionmod4; c+=4, tMatrix += 4*alphabetDimension) // 4 - unroll the loop
+						sum +=  tMatrix[0]   * childVector[c] * theProbs[c]+ 
+							    tMatrix[alphabetDimension] * childVector[c+1] * theProbs[c+1]+
+								tMatrix[alphabetDimension+alphabetDimension] * childVector[c+2] * theProbs[c+2]+
+							    tMatrix[alphabetDimension+alphabetDimension+alphabetDimension] * childVector[c+3] * theProbs[c+3];
+					
+					for (long c = alphabetDimensionmod4; c < alphabetDimension; c++, tMatrix += alphabetDimension) 
+						sum +=  tMatrix[0] * childVector[c] * theProbs[c];
+				}
+			}
+			else
+			// both unresolved
+			{
+				_Parameter *childVector1 = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension,
+						   *childVector2 = lNodeResolutions->theData + (-siteState2-1) * alphabetDimension;
+
+				if (alphabetDimension == 4) // special case for nuc data
+				{
+					sum = (tMatrix[0] * childVector2[0] + tMatrix[1] * childVector2[1] + tMatrix[2] * childVector2[2] + tMatrix[3] * childVector2[3]) * childVector1[0] * theProbs[0]+ 
+						  (tMatrix[4] * childVector2[0] + tMatrix[5] * childVector2[1] + tMatrix[6] * childVector2[2] + tMatrix[7] * childVector2[3]) * childVector1[1] * theProbs[1]+
+					      (tMatrix[8] * childVector2[0] + tMatrix[9] * childVector2[1] + tMatrix[10] * childVector2[2] + tMatrix[11] * childVector2[3]) * childVector1[2] * theProbs[2] +
+					      (tMatrix[12] * childVector2[0] + tMatrix[13] * childVector2[1] + tMatrix[14] * childVector2[2] + tMatrix[15] * childVector2[3]) * childVector1[3] * theProbs[3];
+					
+				}
+				else
+				{
+					for (long r = 0; r < alphabetDimension; r++) // 4 - unroll the loop
+					{
+						if (childVector1[r] > 0.0)
+						{
+							_Parameter sum2 = 0.0;
+							for (long c = 0; c < alphabetDimensionmod4; c+=4, tMatrix += 4) // 4 - unroll the loop
+								sum2   +=  tMatrix[0] * childVector2[c]   * theProbs[c]+ 
+										   tMatrix[1] * childVector2[c+1] * theProbs[c+1]+
+										   tMatrix[2] * childVector2[c+2] * theProbs[c+2]+
+										   tMatrix[3] * childVector2[c+3] * theProbs[c+3];
+					
+							for (long c = alphabetDimensionmod4; c < alphabetDimension; c++, tMatrix ++) 
+								sum2 +=  tMatrix[0] * childVector2[c] * theProbs[c];
+							
+							sum += sum2 * childVector1[r];
+						}
+						else
+							tMatrix += alphabetDimension;
+					}
+				}
+			}
+		}
+		if (storageVec)
+			storageVec [siteOrdering.lData[siteID]] = sum;
+		else
+		{
+			if (sum <= 0.0)
+				return -A_LARGE_NUMBER;
+			else
+			{
+				printf ("%d: %g\n", siteID, sum);
+				result += log(sum) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+			}
+		}
+	}
+		
+	return result;
+}
+
+
 #endif
