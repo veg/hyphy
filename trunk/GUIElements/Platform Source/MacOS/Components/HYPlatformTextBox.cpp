@@ -562,7 +562,10 @@ void		_HYPlatformTextBox::_InsertText (const _String& editBoxText, bool append)
 		if (!txn)
 			_SetText (editBoxText);
 		else
+		{
+			//printf ("Insert text\n");
 			TXNSetData (txn,kTXNTextData,editBoxText.sData,editBoxText.sLength,append?kTXNEndOffset:kTXNUseCurrentSelection,append?kTXNEndOffset:kTXNUseCurrentSelection);
+		}
 	#else
 		if (!te)
 			_SetText (editBoxText);

@@ -399,13 +399,13 @@ void	_HYConsoleWindow::PrintString	(_String& s)
 	{
 		if (echoFileRef && echoStatus == 1)
 			fprintf (echoFileRef,"%s",s.sData);
-		#ifndef __MAC__
+		//#ifndef __MAC__
 			forceUpdateForScrolling = true;
-		#endif
+		//#endif
 		((_HYTextBox *)components(0))->InsertText (s,true,true);
-		#ifndef __MAC__
+		//#ifndef __MAC__
 			forceUpdateForScrolling = false;
-		#endif
+		//#endif
 		#ifdef __WINDOZE__
 			yieldCPUTime ();
 		#endif
