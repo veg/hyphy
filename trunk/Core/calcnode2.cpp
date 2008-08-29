@@ -1112,9 +1112,9 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 
 				if (alphabetDimension == 4) // special case for nuc data
 				{
-					sum = (tMatrix[0] * childVector2[0] + tMatrix[1] * childVector2[1] + tMatrix[2] * childVector2[2] + tMatrix[3] * childVector2[3]) * childVector1[0] * theProbs[0]+ 
-						  (tMatrix[4] * childVector2[0] + tMatrix[5] * childVector2[1] + tMatrix[6] * childVector2[2] + tMatrix[7] * childVector2[3]) * childVector1[1] * theProbs[1]+
-					      (tMatrix[8] * childVector2[0] + tMatrix[9] * childVector2[1] + tMatrix[10] * childVector2[2] + tMatrix[11] * childVector2[3]) * childVector1[2] * theProbs[2] +
+					sum = (tMatrix[0] * childVector2[0] + tMatrix[1] * childVector2[1] + tMatrix[2] * childVector2[2] + tMatrix[3] * childVector2[3])     * childVector1[0] * theProbs[0]+ 
+						  (tMatrix[4] * childVector2[0] + tMatrix[5] * childVector2[1] + tMatrix[6] * childVector2[2] + tMatrix[7] * childVector2[3])     * childVector1[1] * theProbs[1]+
+					      (tMatrix[8] * childVector2[0] + tMatrix[9] * childVector2[1] + tMatrix[10] * childVector2[2] + tMatrix[11] * childVector2[3])   * childVector1[2] * theProbs[2] +
 					      (tMatrix[12] * childVector2[0] + tMatrix[13] * childVector2[1] + tMatrix[14] * childVector2[2] + tMatrix[15] * childVector2[3]) * childVector1[3] * theProbs[3];
 					
 				}
@@ -1126,15 +1126,15 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 						{
 							_Parameter sum2 = 0.0;
 							for (long c = 0; c < alphabetDimensionmod4; c+=4, tMatrix += 4) // 4 - unroll the loop
-								sum2   +=  tMatrix[0] * childVector2[c]   * theProbs[c]+ 
-										   tMatrix[1] * childVector2[c+1] * theProbs[c+1]+
-										   tMatrix[2] * childVector2[c+2] * theProbs[c+2]+
-										   tMatrix[3] * childVector2[c+3] * theProbs[c+3];
+								sum2   +=  tMatrix[0] * childVector2[c] + 
+										   tMatrix[1] * childVector2[c+1]+
+										   tMatrix[2] * childVector2[c+2]+
+										   tMatrix[3] * childVector2[c+3];
 					
 							for (long c = alphabetDimensionmod4; c < alphabetDimension; c++, tMatrix ++) 
-								sum2 +=  tMatrix[0] * childVector2[c] * theProbs[c];
+								sum2 +=  tMatrix[0] * childVector2[c];
 							
-							sum += sum2 * childVector1[r];
+							sum += sum2 * childVector1[r] * theProbs[r];
 						}
 						else
 							tMatrix += alphabetDimension;
@@ -1150,7 +1150,7 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 				return -A_LARGE_NUMBER;
 			else
 			{
-				printf ("%d: %g\n", siteID, sum);
+				//printf ("%d: %g\n", siteID, sum);
 				result += log(sum) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
 			}
 		}

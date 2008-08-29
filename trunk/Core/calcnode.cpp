@@ -9266,7 +9266,7 @@ _Parameter	 _TheTree::ReleafTreeChar4Degenerate (_DataSetFilter* dsf, long index
 				*nodeProbs = *fastIdx** rootState;
 				nodeProbs[1] = fastIdx[4]* rootState[1];
 				nodeProbs[2] = fastIdx[8]* rootState[2];
-				nodeProbs[3] = fastIdx[12]* rootState[1];
+				nodeProbs[3] = fastIdx[12]* rootState[3];
 				
 				reslt = *theProbs ** nodeProbs+
 						 theProbs[1]*nodeProbs[1]+
@@ -9300,6 +9300,7 @@ _Parameter	 _TheTree::ReleafTreeChar4Degenerate (_DataSetFilter* dsf, long index
 						 theProbs[3]*nodeProbs[3];
 			}
 	if (reslt<=0.0) reslt = ALMOST_ZERO;
+	//printf ("%d\t%g\n", index, reslt);
 	return reslt;
 }
 
