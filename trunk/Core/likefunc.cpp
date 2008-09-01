@@ -756,6 +756,7 @@ void	 _LikelihoodFunction::Clear (void)
 	
 #ifdef _SLKP_LFENGINE_REWRITE_	
 	treeTraversalMasks.Clear();
+	canUseReversibleSpeedups.Clear();
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
@@ -7676,7 +7677,6 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	conditionalTerminalNodeLikelihoodCaches.Clear();
 	cachedBranches.Clear();
 	siteCorrections.Clear();
-	canUseReversibleSpeedups.Clear();
 //	computedLocalUpdatePolicy.Clear();
 //	treeTraversalMasks.Clear();
 //	matricesToExponentiate.Clear();
