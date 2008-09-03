@@ -7352,7 +7352,8 @@ long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _Li
 		}
 	}
 	
-	receptacle.AppendNewInstance (new _String(source,lastsemi,index-1));
+	if (lastsemi <= index-1)
+		receptacle.AppendNewInstance (new _String(source,lastsemi,index-1));
 	return index+1;
 }
 		
@@ -8883,22 +8884,20 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
 		_String errMsg ("Overwritten previously defined function:\"");
 		errMsg = errMsg & *funcID & '"';
 		ReportWarning (errMsg);
-		//isInFunction = false;
-		//return false;
 	}
 	
 	_List pieces;
+	
 	long upto = ExtractConditions (source,mark2+1,pieces,',');
 	
-	if ((upto==source.Length())||(source[upto]!='{')||(source[source.Length()-1]!='}'))
+	if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}')
 	{
-		_String errMsg ("Function declaration is missing a valid function body.");
-		WarnError (errMsg);
-		isInFunction = false;
+		WarnError (_String("Function declaration is missing a valid function body."));
+		isInFunction= false;
 		return false;
 	}
 		
-	_String sfunctionBody = source.Cut (upto+1,source.Length()-2);
+	_String			sfunctionBody (source, upto+1,source.Length()-2);
 	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody);
 	//  take care of all the return statements
 	while (returnlist.lLength)
