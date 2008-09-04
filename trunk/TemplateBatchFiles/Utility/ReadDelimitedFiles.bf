@@ -153,6 +153,7 @@ function splitOnRegExp (string, splitter)
 	return splitBits;
 }
 
+
 /*----------------------------------------------------------------*/
 
 function extractSubexpressions (string, splitter, merge, spacer)
@@ -167,11 +168,12 @@ function extractSubexpressions (string, splitter, merge, spacer)
 	{
 		splitBits = {};
 	}
-	if (Rows(matched)>2)
+	rMatched = Rows(matched);
+	if (rMatched>2)
 	{
 		if (merge)
 		{
-			for (mc = 2; mc < Rows (matched); mc = mc+2)
+			for (mc = 2; mc < rMatched; mc = mc+2)
 			{
 				if (mc>2)
 				{
@@ -182,7 +184,7 @@ function extractSubexpressions (string, splitter, merge, spacer)
 		}		
 		else
 		{
-			for (mc = 2; mc < Rows (matched); mc = mc+2)
+			for (mc = 2; mc < rMatched; mc = mc+2)
 			{
 				splitBits [Abs(splitBits)] = string[matched[mc]][matched[mc+1]];
 			}
@@ -193,6 +195,24 @@ function extractSubexpressions (string, splitter, merge, spacer)
 		splitBits * 0;		
 	}
 	return splitBits;
+}
+
+
+
+/*----------------------------------------------------------------*/
+
+function extractAllExpressions (_string, _splitter, _subexpression)
+{
+	_matched = _string || _splitter;
+	_splitBits = {};
+	if (_matched [0] >= 0)
+	{
+		for (_mc = 0; _mc < Rows (_matched); _mc = _mc+2)
+		{
+			_splitBits [Abs(_splitBits)] = extractSubexpressions(_string[_matched[_mc]][_matched[_mc+1]],_subexpression,1,"");
+		}
+	}
+	return _splitBits;
 }
 
 /*----------------------------------------------------------------*/
