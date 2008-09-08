@@ -7297,7 +7297,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 }
 //____________________________________________________________________________________	
 
-long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _List& receptacle, char delimeter)
+long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _List& receptacle, char delimeter, bool includeEmptyConditions)
 {
 	long 	parenLevel		= 1, 
 			lastsemi		= startwith, 
@@ -7352,7 +7352,7 @@ long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _Li
 		}
 	}
 	
-	if (lastsemi <= index-1)
+	if (includeEmptyConditions || lastsemi <= index-1)
 		receptacle.AppendNewInstance (new _String(source,lastsemi,index-1));
 	return index+1;
 }
@@ -8865,7 +8865,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
 			mark2 = source.Find ('(', mark1, -1);
 	
 	
-	if ((mark1==-1)||(mark2==-1)||(mark1+1>mark2-1))
+	if ( mark1==-1 || mark2==-1 || mark1+1>mark2-1)
 	{
 		_String errMsg ("Function declaration missing a valid function identifier or parameter list.");
 		acknError (errMsg);
@@ -8888,7 +8888,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
 	
 	_List pieces;
 	
-	long upto = ExtractConditions (source,mark2+1,pieces,',');
+	long upto = ExtractConditions (source,mark2+1,pieces,',',false);
 	
 	if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}')
 	{

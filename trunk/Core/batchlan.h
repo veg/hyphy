@@ -173,7 +173,7 @@ static	_String	  FindNextCommand 		(_String&);
 									   // finds & returns the next command block in input 
 									   // chops the input to remove the newly found line
 
-static	long	  ExtractConditions 	(_String& , long , _List&, char delimeter = ';');
+static	long	  ExtractConditions 	(_String& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
 										// used to extract the loop, if-then conditions
 									   
 static	bool	  BuildFor				(_String&, _ExecutionList&);
