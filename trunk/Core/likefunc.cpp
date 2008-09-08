@@ -7722,7 +7722,7 @@ void	_LikelihoodFunction::Setup (void)
 	_Parameter kp		= 0.0;
 	blockComputed		= -1;
 	//RankVariables();
-	checkParameter		(useFullMST,kp,1.0);
+	checkParameter		(useFullMST,kp,0.0);
 	
 	if (kp>.5 && !mstCache)
 		checkPointer (mstCache = new MSTCache);

@@ -1545,11 +1545,11 @@ bool	_TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeName,
 		nodeValue	   = empty;
 	}
 	else
+	{
 		if (!nodeParameters.sLength && lastMatrixDeclared!=-1)
-		{
 			nodeParameters=*(((_String**)modelNames.lData)[lastMatrixDeclared]);
-			ReportWarning ((_String("Model ")&nodeParameters&_String(" assigned to ")& nodeName));
-		}
+		ReportWarning ((_String("Model ")&nodeParameters&_String(" assigned to ")& nodeName));
+	}
 	
 	isDefiningATree = 2;
 	_CalcNode cNt (nodeName,nodeParameters, 4, this, aCache);

@@ -112,7 +112,7 @@ class		_Matrix: public _MathObject {
 												// implements the M[i][j]= operation for objects
 	virtual	_PMathObj	Compute (void);			// returns the numeric value of this matrix
 	
-	virtual	_PMathObj	ComputeNumeric (void);	// returns the numeric value of this matrix
+	virtual	_PMathObj	ComputeNumeric (bool = false);	// returns the numeric value of this matrix
 	virtual	_PMathObj	RetrieveNumeric (void);	// returns the numeric value of this matrix
 
 	virtual	void		ScanForVariables  (_AVLList&, bool inclG = false);

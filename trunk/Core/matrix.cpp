@@ -1027,7 +1027,7 @@ _PMathObj	_Matrix::Inverse (void)
 _PMathObj	_Matrix::MultByFreqs (long freqID)
 // multiply this transition probs matrix by frequencies
 {
-	_PMathObj value = ComputeNumeric();
+	_PMathObj value = ComputeNumeric(true);
 		
 	if (freqID>=0)
 	{
@@ -1145,7 +1145,7 @@ _PMathObj	_Matrix::Compute (void)
 }
 
 //__________________________________________________________________________________
-_PMathObj	_Matrix::ComputeNumeric (void)
+_PMathObj	_Matrix::ComputeNumeric (bool copy)
 {	
 	if (storageType != 1)
 	{
@@ -1160,6 +1160,14 @@ _PMathObj	_Matrix::ComputeNumeric (void)
 		 else
 		 	theValue  = EvaluateSimple ();
 		 return theValue;
+	}
+	if (copy)
+	{
+		if (theValue)
+		 	DeleteObject (theValue);
+		
+		theValue = (_Matrix*)makeDynamic();
+		return theValue;
 	}
 	return this;
 }
@@ -1592,7 +1600,7 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 	}
 	else
 	{
-		if (!freqs)
+		if (freqs)
 		{
 			for (long r = 0; r < hDim; r++)
 				for (long c = r+1; c < hDim; c++)
