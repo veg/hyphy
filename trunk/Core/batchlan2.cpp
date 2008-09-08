@@ -1373,7 +1373,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 					_Matrix * scoreMatrix = (_Matrix*)mappingTable->GetByKey (seqAlignScore, MATRIX);
 					if (scoreMatrix && scoreMatrix->GetHDim () == charCount && scoreMatrix->GetVDim () == charCount)
 					{
-						scoreMatrix = (_Matrix*)scoreMatrix->ComputeNumeric();
+						scoreMatrix = (_Matrix*)scoreMatrix->ComputeNumeric()->CheckIfSparseEnough(true);
 						
 						char		gapCharacter = '-';
 						_FString	*gapC = (_FString*)mappingTable->GetByKey (seqAlignGapChar, STRING);
