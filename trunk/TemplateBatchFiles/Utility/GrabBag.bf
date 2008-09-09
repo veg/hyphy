@@ -174,7 +174,7 @@ function promptForGlobalParameters (_lfName)
 }
 
 /*---------------------------------------------------------*/
-/* prompt for global variabless in a LF and fix their values */
+/* echo global parameters */
    
 function echoGlobalParameters (_lfName)
 {
@@ -185,7 +185,7 @@ function echoGlobalParameters (_lfName)
 		ExecuteCommands ("_tval = "+_lfInfo[_gb_idx]);
 		fprintf (stdout, _lfInfo[_gb_idx], " : ", Format (_tval, 12, 4), "\n");
 	} 	
-	return 0;
+	return Columns (_lfInfo);
 }
 
 
