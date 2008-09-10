@@ -95,6 +95,7 @@ _List		scfgList,
 
 int  	 	 _HYSQLCallBack 		(void* exList,int cc,char** rd,char** cn);
 _Parameter	 AlignStrings 			(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
+_Parameter	 CostOnly				(_String*,_String*, _SimpleList&, _Matrix*, char, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix* );
 void 		 BacktrackAlign			(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
 void 		 MismatchScore			(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&);
 _String		 ProcessStringArgument 	(_String*);
@@ -2572,13 +2573,147 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 	sprintf (checkScore, "\nScore check: %g\n", scoreCheck);
 	BufferToConsole (checkScore);*/
 
-	store << res1;
-	store << res2;
-	DeleteObject (res1);
-	DeleteObject (res2);
+	store.AppendNewInstance(res1);
+	store.AppendNewInstance(res2);
 	
 	return score;
 }
+
+//____________________________________________________________________________________	
+
+_Parameter	 CostOnly 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,_Parameter gopen2,_Parameter gextend2,bool doLocal,bool doAffine,
+							_Matrix& scoreMatrix, _Matrix * gapScore1, _Matrix * gapScore2)
+{	
+	_Parameter	 score = 0.;
+	
+	if (s1->sLength) 
+	// first string not empty
+	{
+		if (s2->sLength) 
+		// second string not empty
+		{
+			long				rowCount =  s1->sLength+1,
+								colCount = 	s2->sLength+1;
+			
+			_Parameter			aux1, 
+								aux2,
+								aux3,
+								aux4;
+						
+			if (!doLocal)
+			// initialize gap costs in first row
+			{
+				if (doAffine)
+				{
+					_Parameter cost = -gopen;
+					for (long k=1; k < colCount; k++, cost-=gextend)
+					{
+						scoreMatrix.theData[k]  = cost;
+						gapScore1->theData [k]  = cost;
+						gapScore2->theData [k]  = cost;
+					}
+					aux1 = -gopen2;
+				}				
+				else
+				{
+					_Parameter cost = -gopen;
+					for (long m=1; m < colCount; m++, cost-=gopen)
+						scoreMatrix.theData[m] = cost;
+					
+					aux1 = -gopen2;
+				}
+			}
+			
+			if (doAffine)
+			{
+				long mapL = ccost->GetVDim();
+				for (long r=1; r<=s1->sLength; r++)
+				{
+					long	  c1 = cmap.lData[s1->sData[r-1]];
+					for (long c=1; c<=s2->sLength; c++)
+					{
+						long	   mIndex 	= r*colCount+c,
+								   mIndex2	= mIndex-colCount;
+						
+						_Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-gextend2), 	// gap in 2nd 
+								   gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-gextend),    // gap in 1st
+								   gscore3  = scoreMatrix.theData[mIndex2-1];     
+						
+						
+						if (c1>=0)
+						{
+							long	   c2 = cmap.lData[s2->sData[c-1]];
+							
+							if (c2>=0)
+								gscore3 += ccost->theData[c1*mapL+c2];
+						}
+						
+						scoreMatrix.theData[mIndex] = MAX(gscore1,MAX(gscore2,gscore3));
+						gapScore2->theData[mIndex]  = gscore1;
+						gapScore1->theData[mIndex]  = gscore2;
+					}
+				}
+			}
+			else
+				// populate the cost matrix row by row
+			{
+				long upto1 = doLocal?s1->sLength-1:s1->sLength,
+				upto2 = doLocal?s2->sLength-1:s2->sLength;
+				
+				for (long r=1; r<=upto1; r++)
+				{
+					long	  c1 = cmap.lData[s1->sData[r-1]];
+					for (long c=1; c<=upto2; c++)
+					{
+						_Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
+								   score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
+								   score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+						
+						if (c1>=0)
+						{
+							long	   c2 = cmap.lData[s2->sData[c-1]];
+							
+							if (c2>=0)
+								score3 += (*ccost)(c1,c2);
+						}
+						
+						scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+					}
+				}
+			}
+			
+		}
+		else // 2nd string empty
+		{
+			/*(*res1) << *s1;
+			for (long s1i = 0; s1i < s1->sLength; s1i++)
+				(*res2) << gap;
+			
+			if (!doLocal)
+				if (doAffine)
+					return -gopen2-(s1->sLength-1)*gextend2;
+				else
+					return s1->sLength*gopen2;*/
+		}
+	}
+	else // first string empty
+		if (s2->sLength) // second string not empty
+		{
+			/*(*res2) << *s2;
+			for (long s2i = 0; s2i < s2->sLength; s2i++)
+				(*res1) << gap;
+			
+			if (!doLocal)
+				if (doAffine)
+					return -gopen-(s2->sLength-1)*gextend;
+				else
+					return s2->sLength*gopen;
+			 */
+		}
+	
+	return score;
+}
+
 
 //____________________________________________________________________________________	
 
