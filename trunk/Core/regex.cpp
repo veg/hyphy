@@ -35,7 +35,9 @@
 	#include <alloca.h>
 #endif
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif
 
 /* We need this for `regex.h', and perhaps for the Emacs include files.  */
 /*#include <sys/types.h>*/
