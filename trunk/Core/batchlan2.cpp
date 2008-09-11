@@ -95,7 +95,7 @@ _List		scfgList,
 
 int  	 	 _HYSQLCallBack 		(void* exList,int cc,char** rd,char** cn);
 _Parameter	 AlignStrings 			(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
-_Parameter	 CostOnly				(_String*,_String*, _SimpleList&, _Matrix*, char, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix* );
+_Parameter	 CostOnly				(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix* );
 void 		 BacktrackAlign			(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
 void 		 MismatchScore			(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&);
 _String		 ProcessStringArgument 	(_String*);
@@ -1467,7 +1467,8 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 						
 						_AssociativeList *alignedStrings = new _AssociativeList;
 						checkPointer (alignedStrings);
-							
+						
+						
 						for (long s1 = 0; s1 < stringCount; s1++)
 						{
 							_String*  str1 = ((_FString*)inStrings->GetFormula(0,s1)->Compute())->theString;
@@ -1476,9 +1477,15 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								_AssociativeList * pairwiseComp = new _AssociativeList;
 								checkPointer (pairwiseComp);
 								_List 		  store;
-								_Parameter 	  score = AlignStrings (str1,((_FString*)inStrings->GetFormula(0,s2)->Compute())->theString,ccount,scoreMatrix,gapCharacter,
+								_String		  *string2 = ((_FString*)inStrings->GetFormula(0,s2)->Compute())->theString;
+								_Parameter 	  score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
 																	gapOpen,gapExtend,gapOpen2,gapExtend2,doLocal,doAffine,doLinear,store);
 								
+								_Matrix		  scoreM	  (string2->sLength+1,1,false,true),
+											  gap1Matrix  (string2->sLength+1,1,false,true),
+											  gap2Matrix  (string2->sLength+1,1,false,true);
+								
+								_Parameter	      score2 = CostOnly (str1,string2,ccount, scoreMatrix, gapOpen, gapExtend, gapOpen2, gapExtend2, doLocal,doAffine, scoreM, & gap1Matrix, & gap2Matrix);
 								if (store.lLength == 0)
 								{
 									errStr = "Unspecified error in AlignStrings";
@@ -1487,30 +1494,12 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 									break;
 								}
 								
-								_String key ("0");
-								{
-									_FString 	e1 (key,false);
-									_Constant 	sc (score);
-									pairwiseComp->MStore (&e1, &sc, true);
-								}
-								key = "1";			
-								{
-									_FString 	e1  (key,false);
-									store.bumpNInst();
-									_FString	* as1 = new _FString((_String*)store(0));
-									pairwiseComp->MStore (&e1,as1, false);
-								}
-								key = "2";			
-								{
-									_FString 	e1  (key,false);
-									_FString	* as1 = new _FString((_String*)store(1));
-									pairwiseComp->MStore (&e1,as1, false);
-								}
-								key = s1;			
-								{
-									_FString 	e1  (key,false);
-									alignedStrings->MStore (&e1, pairwiseComp, false);
-								}
+								pairwiseComp->MStore ("0", new _Constant (score), false);
+								store.bumpNInst();
+								pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
+								pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
+								pairwiseComp->MStore ("3", new _Constant (score2), false);
+								alignedStrings->MStore (_String(s1), pairwiseComp, false);
 							}
 						}
 						
@@ -2278,12 +2267,14 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 						
 					cost = -gopen2;
 					
-					gapScore1->theData[0] = gopen;
+					gapScore1->theData[0] = -gopen;
+					gapScore2->theData[0] = -gopen2;
+					
 					for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount, cost-=gextend2)
 					{
 						scoreMatrix.theData[m] = cost;
-						gapScore1->theData[m] = cost;
-						gapScore2->theData[m] = cost;
+						gapScore1->theData [m] = cost;
+						gapScore2->theData [m] = cost;
 					}
 				}				
 				else
@@ -2296,6 +2287,16 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 					for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
 						scoreMatrix.theData[k] = cost;
 				}
+			}
+			else
+			{
+				if (doAffine)
+				{
+					for (long m=1; m < colCount; m++)
+						gapScore2->theData[m] = -gopen2;						
+					for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount)
+						gapScore1->theData[m] = -gopen;						
+				}	
 			}
 			
 			if (doAffine)
@@ -2312,8 +2313,8 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 						long	   mIndex 	= r*colCount+c,
 								   mIndex2	= mIndex-colCount;
 						
-						_Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-gextend2), 	// gap in 2nd 
-								   gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-gextend),  		// gap in 1st
+						_Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>1)?gextend2:gopen2)), 	// gap in 2nd 
+								   gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-((c>1)?gextend:gopen)),    // gap in 1st
 								   gscore3  = scoreMatrix.theData[mIndex2-1];     
 								   
 								   
@@ -2334,8 +2335,8 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 			else
 			// populate the cost matrix row by row
 			{
-				long upto1 = doLocal?s1->sLength-1:s1->sLength,
-					 upto2 = doLocal?s2->sLength-1:s2->sLength;
+				long upto1 = s1->sLength,
+					 upto2 = s2->sLength;
 					 
 				for (long r=1; r<=upto1; r++)
 				{
@@ -2400,7 +2401,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 							   bscore3 = scoreMatrix.theData[(p1-1)*colCount+p2-1];
 							   
 					MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore3);
-					if ((bscore1>=bscore2)&&(bscore1>=bscore3))
+					if (bscore1>=bscore2 && bscore1>=bscore3)
 					{
 						long  ci = p1*colCount+p2;
 						p1--;
@@ -2414,7 +2415,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 					}
 					else
 					{
-						if ((bscore2>=bscore1)&&(bscore2>=bscore3))
+						if (bscore2>=bscore1 && bscore2>=bscore3)
 						{
 							long  ci = p1*colCount+p2;
 							p2--;
@@ -2478,7 +2479,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				}
 				
 			
-			/*_String		alignDebug ("alignScoreMatrix");
+			_String		alignDebug ("alignScoreMatrix");
 			_Variable * ad = CheckReceptacle (&alignDebug, empty, false);
 			ad->SetValue (&scoreMatrix, true);
 			if (doAffine)
@@ -2489,7 +2490,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				alignDebug  = ("alignScoreMatrixG2");
 				ad = CheckReceptacle (&alignDebug, empty, false);
 				ad->SetValue (gapScore2, true);
-			}*/
+			}
 
 			DeleteObject (gapScore1);
 			DeleteObject (gapScore2);
@@ -2524,6 +2525,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 		
 	res1->Finalize();
 	res2->Finalize();
+	
 	
 	/* verify the score */
 			
@@ -2581,8 +2583,19 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 
 //____________________________________________________________________________________	
 
-_Parameter	 CostOnly 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,_Parameter gopen2,_Parameter gextend2,bool doLocal,bool doAffine,
-							_Matrix& scoreMatrix, _Matrix * gapScore1, _Matrix * gapScore2)
+_Parameter	 CostOnly 	(_String* s1,				// first string
+						 _String* s2,				// second string
+						 _SimpleList& cmap,			// char -> position in scoring matrix mapper
+						 _Matrix* ccost,			// NxN matrix of edit distances on characters
+						 _Parameter gopen,			// the cost of opening a gap in sequence 1
+						 _Parameter gextend,		// the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+						 _Parameter gopen2,			// the cost of opening a gap in sequence 2
+						 _Parameter gextend2,		// the cost of opening a gap in sequence 2	 (ignored unless doAffine == true)
+						 bool doLocal,				// ignore prefix and suffix gaps
+						 bool doAffine,				// use affine gap penalties
+						 _Matrix& scoreMatrix,		// where to write the last row of the scoring matrix
+						 _Matrix * gapScore1,		// where to write the last row of open gap in 1st sequence matrix (ignored unless doAffine == true)
+						 _Matrix * gapScore2)		// same but for open gap in 2nd sequence matrix
 {	
 	_Parameter	 score = 0.;
 	
@@ -2592,16 +2605,16 @@ _Parameter	 CostOnly 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,
 		if (s2->sLength) 
 		// second string not empty
 		{
-			long				rowCount =  s1->sLength+1,
-								colCount = 	s2->sLength+1;
+			long				colCount = 	s2->sLength+1;
 			
-			_Parameter			aux1, 
-								aux2,
-								aux3,
-								aux4;
+			_Parameter			aux2;	
+			
+			scoreMatrix.theData[0] = 0.;
+			if (doAffine)
+				gapScore1->theData[0] = gapScore2->theData[0] = 0.;
 						
 			if (!doLocal)
-			// initialize gap costs in first row
+			// initialize 
 			{
 				if (doAffine)
 				{
@@ -2612,33 +2625,70 @@ _Parameter	 CostOnly 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,
 						gapScore1->theData [k]  = cost;
 						gapScore2->theData [k]  = cost;
 					}
-					aux1 = -gopen2;
 				}				
 				else
 				{
 					_Parameter cost = -gopen;
 					for (long m=1; m < colCount; m++, cost-=gopen)
 						scoreMatrix.theData[m] = cost;
-					
-					aux1 = -gopen2;
+				}
+			}
+			else
+			{
+				for (long k=1; k < colCount; k++)
+					scoreMatrix.theData[k] = 0.;
+
+				if (doAffine)
+				{
+					for (long k=1; k < colCount; k++)
+					{
+						gapScore1->theData[k] = 0;
+						gapScore2->theData[k] = -gopen2;
+					}
+					gapScore1->theData[0] = -gopen;
 				}
 			}
 			
+			long mapL = ccost->GetVDim(); // how many valid characters
 			if (doAffine)
 			{
-				long mapL = ccost->GetVDim();
-				for (long r=1; r<=s1->sLength; r++)
+				aux2 = 0.;
+				
+				if (!doLocal)
+				{
+					gapScore1->theData[0] = gapScore2->theData[0] = -gopen2; 
+					scoreMatrix.theData[0] = -gopen2; 
+				}
+				
+				for (long r=1; r<=s1->sLength; r++) // iterate by rows
 				{
 					long	  c1 = cmap.lData[s1->sData[r-1]];
-					for (long c=1; c<=s2->sLength; c++)
+					if (doLocal)
+						aux2		= 0.;
+					else
 					{
-						long	   mIndex 	= r*colCount+c,
-								   mIndex2	= mIndex-colCount;
+						if (r>1)
+							aux2	     = -((r-2)*gextend2 + gopen2); 
+						scoreMatrix.theData[0] = -(gopen2 + (r-1)*gextend2);
+					}
+					
+					//printf ("%g\t", scoreMatrix.theData[0]);
+
+					for (long c=1; c<=s2->sLength; c++) // iterate by columns
+					{
+						_Parameter gscore1  , 	// gap in 2nd 
+								   gscore2  ,    // gap in 1st
+								   gscore3  = aux2;																	// no gap
 						
-						_Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-gextend2), 	// gap in 2nd 
-								   gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-gextend),    // gap in 1st
-								   gscore3  = scoreMatrix.theData[mIndex2-1];     
+						if (doLocal && r == s1->sLength)
+							gscore2 = MAX(scoreMatrix.theData[c-1],gapScore1->theData[c-1]);
+						else
+							gscore2 = MAX(scoreMatrix.theData[c-1]-gopen,gapScore1->theData[c-1]-((c>1)?gextend:gopen));
 						
+						if (doLocal && c == s2->sLength)
+							gscore1 = MAX(scoreMatrix.theData[c],gapScore2->theData[c]);							
+						else
+							gscore1 = MAX(scoreMatrix.theData[c]-gopen2,gapScore2->theData[c]-((r>1)?gextend2:gopen2));
 						
 						if (c1>=0)
 						{
@@ -2648,40 +2698,62 @@ _Parameter	 CostOnly 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,
 								gscore3 += ccost->theData[c1*mapL+c2];
 						}
 						
-						scoreMatrix.theData[mIndex] = MAX(gscore1,MAX(gscore2,gscore3));
-						gapScore2->theData[mIndex]  = gscore1;
-						gapScore1->theData[mIndex]  = gscore2;
+						aux2					= scoreMatrix.theData[c];
+						scoreMatrix.theData[c]  = MAX(gscore1,MAX(gscore2,gscore3));
+						gapScore2->theData [c]  = gscore1;
+						gapScore1->theData [c]  = gscore2;
+						
+						//printf ("%g\t", scoreMatrix.theData[c]);
+					}
+					//printf ("\n");
+					if (!doLocal)
+					{
+						gapScore1->theData[0]-=gextend2;gapScore2->theData[0]-=gextend2;
 					}
 				}
 			}
 			else
 				// populate the cost matrix row by row
 			{
-				long upto1 = doLocal?s1->sLength-1:s1->sLength,
-				upto2 = doLocal?s2->sLength-1:s2->sLength;
+				long upto1  = s1->sLength,
+					 upto2  = s2->sLength;
+				
+				aux2 = 0.;
 				
 				for (long r=1; r<=upto1; r++)
 				{
+					if (doLocal)
+						aux2		= 0.;
+					else
+						if (r>1)
+							aux2	     = -((r-2)*gopen2); 
+					
 					long	  c1 = cmap.lData[s1->sData[r-1]];
 					for (long c=1; c<=upto2; c++)
 					{
-						_Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
-								   score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
-								   score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+						_Parameter score1 = scoreMatrix.theData[c], // gap in 2nd 
+								   score2 = scoreMatrix.theData[c-1],  // gap in 1st
+								   score3 = aux2;     
+						
+						if (c < upto2 || !doLocal)
+							score1 -= gopen2;
+						if (r < upto1 || !doLocal)
+							score2 -= gopen;
 						
 						if (c1>=0)
 						{
 							long	   c2 = cmap.lData[s2->sData[c-1]];
 							
 							if (c2>=0)
-								score3 += (*ccost)(c1,c2);
+								score3 += ccost->theData[c1*mapL+c2];
 						}
 						
-						scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+						aux2					= scoreMatrix.theData[c];
+						scoreMatrix.theData[c] = MAX(score1,MAX(score2,score3));
 					}
 				}
 			}
-			
+			score = scoreMatrix.theData[s2->sLength];
 		}
 		else // 2nd string empty
 		{
