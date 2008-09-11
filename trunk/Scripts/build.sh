@@ -4,11 +4,13 @@
 TARGET_NAME="BLANK"
 LIBRARY_BINDINGS="NONE"
 
+export PATH=$PATH:/opt/ibmcmp/xlc/ssc/0.9/bin/
+
 if [ $# -ne 1 -a $# -ne 2 ]
 then
 	TARGET_NAME="HELP";
 else
-	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" ] 
+	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" -a $1 != "PS3" ] 
 	then
 		$TARGET_NAME = "HELP"
 	else
@@ -24,6 +26,7 @@ then
 	echo "  MP : for a multi-threaded build with pthreads."
 	echo "  MP2 : for a multi-threaded build with pthreads which support setconcurrency function."
 	echo "  DEV : developmental OpenMP build with likelihood function speedups."
+	echo "  PS3 : developmental PS3 OpenMP build with likelihood function speedups."
 	echo "  MPI : for a single-threaded build with MPI message passing support."
 	echo "  DEBUG: single threaded debug version."
 	echo "  LIBRARY [Python|R]: multi-threaded library version with optional wrappers for Python or R."
@@ -161,6 +164,18 @@ then
 	echo "|Building a OpenMP/speedups developmental version of HyPhy  |"
 	echo "+-----------------------------------------------------------+"
 	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -fopenmp "
+fi
+
+if [ $1 = "PS3" ] 
+then
+	TARGET_NAME="HYPHY_PS3";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm ";
+	echo "+-----------------------------------------------------------+"
+	echo "|Building a OpenMP/PS3      developmental version of HyPhy  |"
+	echo "+-----------------------------------------------------------+"
+	COMPILER=cbexlc++
+	COMPILERC=cbexlc
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
 fi
 
 if [ $1 = "MPI" ] 
