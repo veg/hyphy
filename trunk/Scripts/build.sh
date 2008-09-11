@@ -78,8 +78,14 @@ then
 else
 	if [ $sysName == "AIX" ]
 	then
-		COMPILER="xlC";
-		COMPILERC="xlc";
+		if [ $TARGET_NAME = "PS3" ]
+		then
+			COMPILER="cbexlc++"
+			COMPILERC="cbexlc"
+		else
+			COMPILER="xlC";
+			COMPILERC="xlc";
+		fi
 		COMPILER_FLAGS=" -c -qchar=signed -O3 -D INTPTR_TYPE=long -D __UNIX__ ";
 		COMPILER_LINK_FLAGS="  -qchar=signed ";
 	else
@@ -182,8 +188,6 @@ then
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a OpenMP/PS3      developmental version of HyPhy  |"
 	echo "+-----------------------------------------------------------+"
-	COMPILER=cbexlc++
-	COMPILERC=cbexlc
 	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
 fi
 
