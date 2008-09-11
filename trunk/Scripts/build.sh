@@ -33,6 +33,7 @@ then
 	exit 1
 fi
 
+
 if [ $TARGET_NAME = "LIBRARY" -a $# -eq 2 ]
 then
 	if [ $2 != "R" -a $2 != "Python" ] 
@@ -52,9 +53,17 @@ fi
 	
 COMPILER="g++";
 COMPILERC="gcc";
-sysName=`uname`;
-echo $sysName;
+
 CURL_LINKER_LIBS=" -lssl -lcrypto -lcurl";
+
+if [ $TARGET_NAME = "PS3" ]
+then
+	sysName="AIX"
+else
+	sysName=`uname`;
+fi
+echo $sysName;
+
 
 if [ $sysName == "Darwin" ]
 then
@@ -175,7 +184,7 @@ then
 	echo "+-----------------------------------------------------------+"
 	COMPILER=cbexlc++
 	COMPILERC=cbexlc
-	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
+	COMPILER_FLAGS=$COMPILER_FLAGS" chars=signed -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
 fi
 
 if [ $1 = "MPI" ] 
