@@ -184,7 +184,7 @@ then
 	echo "+-----------------------------------------------------------+"
 	COMPILER=cbexlc++
 	COMPILERC=cbexlc
-	COMPILER_FLAGS=$COMPILER_FLAGS" chars=signed -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -qtune=cell -qarch=cell -O5 "
 fi
 
 if [ $1 = "MPI" ] 
