@@ -644,6 +644,18 @@ _String _String::Cut(long from, long to)
 }
 
 //_______________________________________________________________________
+// s[0]...s[sLength-1] => s[sLength-1]...s[0]
+void _String::Flip(void)
+{
+	for (long i = 0; i < sLength/2; i++)
+	{
+		char c = sData[i];
+		sData[i] = sData[sLength-1-i];
+		sData[sLength-1-i] = c;
+	}
+}
+
+//_______________________________________________________________________
 // compute Adler-32 CRC for a string
 // implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
 

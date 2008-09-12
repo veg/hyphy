@@ -119,10 +119,13 @@ virtual		operator const char* (void);
  			_String Chop(long, long);
  				// chop the segment from, to (-1 for any means from beginning/to end)
  				
- 			_String Cut(long, long);
+ 			_String Cut (long, long);
  				// cut the string between from and to
 
- 			void 	Trim(long, long);
+			void	Flip(void);
+				// in-place flip string
+	
+			void 	Trim(long, long);
  				// trim the string between from and to
  				
  			void	Insert (char, long);
