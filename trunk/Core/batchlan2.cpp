@@ -1482,20 +1482,24 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								_Parameter 	  score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
 																	gapOpen,gapExtend,gapOpen2,gapExtend2,doLocal,doAffine,doLinear,store);
 								
-								_Matrix		  scoreM	  (string2->sLength+1,1,false,true),
-											  scoreM2	  (string2->sLength+1,1,false,true),
-											  gap1Matrix  (string2->sLength+1,1,false,true),
-											  gap2Matrix  (string2->sLength+1,1,false,true),
-											  gap1Matrix2  (string2->sLength+1,1,false,true),
-											  gap2Matrix2  (string2->sLength+1,1,false,true),
+								_Matrix		  scoreM	    (string2->sLength+1,1,false,true),
+											  scoreM2	    (string2->sLength+1,1,false,true),
+											  gap1Matrix    (string2->sLength+1,1,false,true),
+											  gap2Matrix    (string2->sLength+1,1,false,true),
+											  gap1Matrix2   (string2->sLength+1,1,false,true),
+											  gap2Matrix2   (string2->sLength+1,1,false,true),
 											  *buffers[6];
 								
 								
 								buffers[0] = &scoreM; buffers[1] = &gap1Matrix; buffers[2] = &gap2Matrix;
 								buffers[3] = &scoreM2; buffers[4] = &gap1Matrix2; buffers[5] = &gap2Matrix2;
 								_SimpleList ops (str1->sLength+1,0,0);
+								ops.lData[str1->sLength] = string2->sLength;
 								
-								_Parameter score2 = LinearSpaceAlign(str1,string2,ccount,scoreMatrix,gapOpen,gapExtend,gapOpen2,gapExtend2,doLocal,doAffine,ops,score,0,str1->sLength,0,string2->sLength,buffers);
+								_Parameter score2 = LinearSpaceAlign(str1,string2,ccount,scoreMatrix,
+																	 gapOpen,gapExtend,gapOpen2,gapExtend2,
+																	 doLocal,doAffine,ops,score,0,
+																	 str1->sLength,0,string2->sLength,buffers);
 								
 								_String		tempS ((_String*)ops.toStr());
 								StringToConsole (tempS); NLToConsole();
@@ -1503,7 +1507,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								_String		*result1 = new _String (str1->sLength+1, true),
 											*result2 = new _String (string2->sLength+1, true);
 								
-								long		last_column		= string2->sLength+1;
+								/*long		last_column		= string2->sLength+1;
 								
 								for (long position = ops.lLength-1; position>=0; position--)
 								{
@@ -1525,7 +1529,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 										(*result2) << string2->sData[current_column-1];
 									}
 									//printf ("%s %s\n", result1->sData, result2->sData);
-								}
+								}*/
 								result1->Finalize(); result1->Flip ();
 								result2->Finalize(); result2->Flip ();
 								
@@ -2524,7 +2528,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				}
 				
 			
-			_String		alignDebug ("alignScoreMatrix");
+			/*_String		alignDebug ("alignScoreMatrix");
 			_Variable * ad = CheckReceptacle (&alignDebug, empty, false);
 			ad->SetValue (&scoreMatrix, true);
 			if (doAffine)
@@ -2535,7 +2539,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				alignDebug  = ("alignScoreMatrixG2");
 				ad = CheckReceptacle (&alignDebug, empty, false);
 				ad->SetValue (gapScore2, true);
-			}
+			}*/
 			
 			DeleteObject (gapScore1);
 			DeleteObject (gapScore2);
@@ -2649,13 +2653,7 @@ _Parameter		LinearSpaceAlign (_String *s1,					// first string
 {
 	if (to1-from1 <= 1)
 	{
-		ops.lData[to1] = to2;
-		return 0.0;
-	}
-	if (to2-from2 <= 1)
-	{
-		for (long k=from1; k <= to1; k++)
-			ops.lData[k] = to2;
+		//ops.lData[from1] = to2-1;
 		return 0.0;
 	}
 	
@@ -2673,7 +2671,7 @@ _Parameter		LinearSpaceAlign (_String *s1,					// first string
 		for (long k = 0; k <= span; k++)
 		{
 			_Parameter currentScore = buffer[0]->theData[k] + buffer[3]->theData[span-k];
-			if (currentScore > maxScore)
+			if (currentScore >= maxScore)
 			{
 				maxScore = currentScore; maxIndex = k;
 			}
@@ -2682,7 +2680,7 @@ _Parameter		LinearSpaceAlign (_String *s1,					// first string
 		{
 			printf ( "Score mismtach %g %g\n", maxScore, scoreCheck);
 		}
-		ops.lData[1+midpoint] = maxIndex;
+		ops.lData[midpoint] = from2+maxIndex;
 		
 		_Parameter check1 = buffer[0]->theData[maxIndex],
 				   check2 = buffer[3]->theData[span-maxIndex];
@@ -2742,7 +2740,10 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 		// second string not empty
 		{
 			_Parameter			aux2;	
-			long				colCount = 	s2Length+1;
+			long				colCount = s2Length+1;
+			
+			//if (colCount > scoreMatrix.GetHDim())
+			//	printf ("Wazzap?|?\n");
 			
 			scoreMatrix.theData[0] = 0.;
 			if (doAffine)
