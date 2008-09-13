@@ -1501,37 +1501,108 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 																	 doLocal,doAffine,ops,score,0,
 																	 str1->sLength,0,string2->sLength,buffers);
 								
-								_String		tempS ((_String*)ops.toStr());
-								StringToConsole (tempS); NLToConsole();
 									
 								_String		*result1 = new _String (str1->sLength+1, true),
 											*result2 = new _String (string2->sLength+1, true);
 								
-								/*long		last_column		= string2->sLength+1;
+								long		last_column		= ops.lData[ops.lLength-1];
 								
-								for (long position = ops.lLength-1; position>=0; position--)
+								for (long position = ops.lLength-2; position>=0; position--)
 								{
 									long current_column = ops.lData[position];
+									
 									if (current_column == last_column) // insert in sequence 2
 									{
-										(*result1) << str1->sData[position-1];
+										(*result1) << str1->sData[position];
 										(*result2) << gapCharacter;
 									}
 									else
 									{
 										last_column--;
-										for (; last_column > current_column; last_column--)
+										for (; last_column > current_column; last_column--) // insert in column 1
 										{
-											(*result2) << string2->sData[last_column-1];
+											(*result2) << string2->sData[last_column];
 											(*result1) << gapCharacter;												
 										}
-										(*result1) << str1->sData[position-1];
-										(*result2) << string2->sData[current_column-1];
+										(*result1) << str1->sData[position];
+										(*result2) << string2->sData[current_column];
 									}
 									//printf ("%s %s\n", result1->sData, result2->sData);
-								}*/
+								}
+								
+								for (last_column--; last_column >=0; last_column--)
+								{
+									(*result1) << gapCharacter;
+									(*result2) << string2->sData[last_column];								
+								}
+								
 								result1->Finalize(); result1->Flip ();
 								result2->Finalize(); result2->Flip ();
+								
+								long gap1c = 0,
+									 gap2c = 0;
+								 
+								 _Parameter scoreCheck = 0.;
+								 
+								 for (long sp = 0; sp<result1->sLength; sp++)
+								 {
+									 char cs1 = result1->sData[sp],
+										  cs2 = result2->sData[sp];
+									 
+									 if (cs1 == gapCharacter)
+									 {
+										 if (gap1c && doAffine)
+											 scoreCheck -= gapExtend;
+										 else
+											 scoreCheck -= gapOpen;
+										 gap2c = 0;
+										 gap1c++;
+									 }
+									 else
+									 if (cs2 == gapCharacter)
+									 {
+										 if (gap2c && doAffine)
+											 scoreCheck -= gapExtend2;
+										 else
+											 scoreCheck -= gapOpen2;
+										 gap1c = 0;
+										 gap2c++;
+									 }
+									 else
+									 {
+										 gap1c = 0;
+										 gap2c = 0;
+										 long code1 = ccount.lData[cs1],
+											  code2 = ccount.lData[cs2];
+									 
+										 if (code1 >=0 && code2 >=0 )
+											 scoreCheck += (*scoreMatrix)(code1,code2);
+									 }
+								 }
+								 if (doLocal)
+								 {
+									for (long k = 0; result1->sData[k] == gapCharacter; k++)
+										if (doAffine)
+											scoreCheck += k?gapExtend:gapOpen;
+										else
+											scoreCheck += gapOpen;
+									 for (long k = 0; result2->sData[k] == gapCharacter; k++)
+										 if (doAffine)
+											 scoreCheck += k?gapExtend2:gapOpen2;
+										 else
+											 scoreCheck += gapOpen2;
+									 for (long k = result1->sLength-1; result1->sData[k] == gapCharacter; k--)
+										 if (doAffine)
+											 scoreCheck += k==result1->sLength-1?gapExtend:gapOpen;
+										 else
+											 scoreCheck += gapOpen;
+									 for (long k = result2->sLength-1; result2->sData[k] == gapCharacter; k--)
+										 if (doAffine)
+											 scoreCheck += k==result2->sLength-1?gapExtend2:gapOpen2;
+										 else
+											 scoreCheck += gapOpen2;
+								 }
+								 						
 								
 								if (store.lLength == 0)
 								{
@@ -1548,7 +1619,9 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								pairwiseComp->MStore ("3", new _Constant (score2), false);
 								pairwiseComp->MStore ("4", new _FString(result1), false);
 								pairwiseComp->MStore ("5", new _FString(result2), false);
+								pairwiseComp->MStore ("6", new _FString((_String*)ops.toStr()), false);
 								alignedStrings->MStore (_String(s1), pairwiseComp, false);
+								pairwiseComp->MStore ("7", new _Constant (scoreCheck), false);
 							}
 						}
 						
@@ -2633,60 +2706,129 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 //____________________________________________________________________________________	
 
 _Parameter		LinearSpaceAlign (_String *s1,					// first string
-							  _String *s2,					// second string
-							  _SimpleList& cmap,			// char -> position in scoring matrix mapper
-							  _Matrix*    ccost,			// NxN matrix of edit distances on characters
-							  _Parameter gopen,				// the cost of opening a gap in sequence 1
-							  _Parameter gextend,			// the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-							  _Parameter gopen2,			// the cost of opening a gap in sequence 2
-							  _Parameter gextend2,			// the cost of opening a gap in sequence 2	 (ignored unless doAffine == true)
-							  bool doLocal,					// ignore prefix and suffix gaps
-							  bool doAffine,				// use affine gap penalties
-							  _SimpleList& ops,				// edit operations for the optimal alignment
-							  _Parameter   scoreCheck,		// check the score of the alignment
+							  _String *s2,						// second string
+							  _SimpleList& cmap,				// char -> position in scoring matrix mapper
+							  _Matrix*    ccost,				// NxN matrix of edit distances on characters
+							  _Parameter gopen,					// the cost of opening a gap in sequence 1
+							  _Parameter gextend,				// the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+							  _Parameter gopen2,				// the cost of opening a gap in sequence 2
+							  _Parameter gextend2,				// the cost of opening a gap in sequence 2	 (ignored unless doAffine == true)
+							  bool doLocal,						// ignore prefix and suffix gaps
+							  bool doAffine,					// use affine gap penalties
+							  _SimpleList& ops,					// edit operations for the optimal alignment
+							  _Parameter   scoreCheck,			// check the score of the alignment
 							  long		   from1,
 							  long		   to1,
 							  long		   from2,
 							  long		   to2,
-							  _Matrix	   **buffer		// matrix storage
+							  _Matrix	   **buffer				// matrix storage
 							  )
 {
-	if (to1-from1 <= 1)
+	/*if (to1-from1 <= 1)
 	{
-		//ops.lData[from1] = to2-1;
+		if (to2-from2 <= 1 || to1-from1 == 0)
+			ops.lData[from1] = to2-1;
+				return 0.0;
+	}*/
+	
+	if (to2 == from2)
+	{
+		for (long k = from1; k < to1; k++)
+			ops.lData[k] = to2;
 		return 0.0;
 	}
-	
+	if (to1 == from1)
+		return 0;
+			 
 	long					midpoint = (from1 + to1)/2,
-							span	 = to2-from2;
+							span	 = to2-from2,
+							span1	 = to1-from1;
 	
-	CostOnly				(s1,s2,from1,from2,midpoint,to2,false,false,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[0]), buffer[1], buffer[2]);
-	CostOnly				(s1,s2,midpoint,from2,to1,to2,true,true,  cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[3]), buffer[4], buffer[5]);
+	if						(span1 > 1)
+	{
+		CostOnly				(s1,s2,from1,from2,midpoint,to2,false,false,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[0]), buffer[1], buffer[2]);
+		CostOnly				(s1,s2,midpoint,from2,to1,to2,true,true,  cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,*(buffer[3]), buffer[4], buffer[5]);
+	}
 	
 	_Parameter maxScore = -1e100;	
-	long	   maxIndex;
+	long	   maxIndex = 0;
 	if (!doAffine)
 	{
 		// decide where the midpoint is
-		for (long k = 0; k <= span; k++)
+		if (span1 > 1)
 		{
-			_Parameter currentScore = buffer[0]->theData[k] + buffer[3]->theData[span-k];
-			if (currentScore >= maxScore)
+			for (long k = 0; k <= span; k++)
 			{
-				maxScore = currentScore; maxIndex = k;
+				_Parameter currentScore = buffer[0]->theData[k] + buffer[3]->theData[span-k];
+				if (currentScore > maxScore)
+				{
+					maxScore = currentScore; maxIndex = k;
+				}
 			}
 		}
+		else
+		{
+			
+			long	   mapL = ccost->GetVDim(); // how many valid characters
+			long	   c1 = cmap.lData[s1->sData[from1]];
+			if (c1 >= 0)
+			{
+				if (doLocal && (from2 == 0 || to2 == s2->sLength))
+				{
+					for (long p = 0; p < span; p++)
+					{
+						_Parameter currentScore = -gopen*(span-1);
+						long	   c2 = cmap.lData[s2->sData[from2+p]];
+						if (c2>=0)
+							currentScore += ccost->theData[c1*mapL+c2];	
+						
+						if (from2 == 0 && p)
+							currentScore += gopen * (p-1);
+						
+						if (to2 == s2->sLength)
+							currentScore += gopen * (span-p);
+						
+						if (currentScore > maxScore)
+						{
+							maxScore = currentScore; maxIndex = p;
+						}
+					}
+				}
+				else
+				{
+					for (long p = 0; p < span; p++)
+					{
+						_Parameter currentScore = 0.;
+						long	   c2 = cmap.lData[s2->sData[from2+p]];
+						if (c2>=0)
+							currentScore = ccost->theData[c1*mapL+c2];				
+						if (currentScore > maxScore)
+						{
+							maxScore = currentScore; maxIndex = p;
+						}
+					}
+					maxScore -= gopen*(span-1);
+				}
+			}
+			else
+				maxScore = -gopen*(span-1);
+		}
+		
 		if (maxScore != scoreCheck) // oops!
 		{
-			printf ( "Score mismtach %g %g\n", maxScore, scoreCheck);
+			printf ( "Score mismatch %g %g\n", maxScore, scoreCheck);
 		}
 		ops.lData[midpoint] = from2+maxIndex;
 		
 		_Parameter check1 = buffer[0]->theData[maxIndex],
 				   check2 = buffer[3]->theData[span-maxIndex];
 		
-		LinearSpaceAlign (s1,s2,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,ops,check1, from1, midpoint, from2, from2 + maxIndex, buffer); 
-		LinearSpaceAlign (s1,s2,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,ops,check2, midpoint, to1, from2 + maxIndex, to2, buffer); 
+		//printf ("%d %d %d %d\n", from1, to1,  midpoint, from2 + maxIndex);
+		if (span1>1)
+		{
+			LinearSpaceAlign (s1,s2,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,ops,check1, from1, midpoint, from2, from2 + maxIndex, buffer); 
+			LinearSpaceAlign (s1,s2,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,ops,check2, midpoint, to1, from2 + maxIndex, to2, buffer); 
+		}
 	}
 	return maxScore;
 }
@@ -2724,13 +2866,21 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 	long		 s1Length = to1-from1,
 				 s2Length = to2-from2;
 	
+	
 	char		 doLocal1 = 0, 
 				 doLocal2 = 0;
 	
 	if (doLocal)
 	{
-		doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_START + (to1==s1->sLength)*_ALIGNMENT_LOCAL_END; 
-		doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_START + (to2==s2->sLength)*_ALIGNMENT_LOCAL_END; 
+		if (rev1)
+			doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_END + (to1==s1->sLength)*_ALIGNMENT_LOCAL_START; 		
+		else
+			doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_START + (to1==s1->sLength)*_ALIGNMENT_LOCAL_END; 
+		
+		if (rev2)
+			doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_END + (to2==s2->sLength)*_ALIGNMENT_LOCAL_START; 			
+		else
+			doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_START + (to2==s2->sLength)*_ALIGNMENT_LOCAL_END; 
 	}
 	
 	if (s1Length) 
@@ -2857,7 +3007,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 							aux2	     = -((r-1)*gopen2); 
 					}
 					
-					//printf ("%g\t", scoreMatrix.theData[0]);
+					//printf ("%d: %g\t", r, scoreMatrix.theData[0]);
 					long	  c1 = cmap.lData[s1->sData[rev1?(to1-r):(from1+r-1)]];
 					
 					for (long c=1; c<=s2Length; c++)
@@ -2907,9 +3057,10 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 			{
 				score = -gopen;
 				
-				gapScore1->theData[0] = gapScore2->theData[0] = scoreMatrix.theData[0] = 0.;
+				scoreMatrix.theData[0] = 0.0;
 				if (doAffine)
 				{	
+					gapScore1->theData[0] = gapScore2->theData[0] = 0.0;
 					for (long k = 1; k <= s2Length; k++, score-=gextend)
 						scoreMatrix.theData[k] = gapScore1->theData[k] = gapScore2->theData[k] = score;
 					
@@ -2918,7 +3069,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 				else
 				{
 					for (long k = 1; k <= s2Length; k++, score-=gopen)
-						scoreMatrix.theData[k] = gapScore1->theData[k] = gapScore2->theData[k] = score;
+						scoreMatrix.theData[k] = score;
 					score += gopen;
 				}
 			}
