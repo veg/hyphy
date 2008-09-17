@@ -391,12 +391,12 @@ void		 DecideOnDivideBy (_LikelihoodFunction* lf)
 				break;
 		}
 		lf->SetThreadCount (bestTC);
-		divideBy			  = 0.5 / minDiff;		
+		divideBy			  = MAX(1.0,0.5 / minDiff);		
 		ReportWarning		(_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
 	}
 	else
 #endif
-		divideBy			  = 0.5 / tdiff;
+		divideBy			  = MAX(1.0, 0.5 / tdiff);
 	ReportWarning		(_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
 		
 #else	

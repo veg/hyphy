@@ -3,7 +3,7 @@ RequireVersion ("1.0020071011");
 _ancestralRecoveryCache       = {};
 
 /*******************************************
-	call this function with the likelihood function ID 
+	call _buildAncestralCache function with the likelihood function ID 
 	and a 0-based partition index to produce an
 	internal structure storing internal states at 
 	nodes;
@@ -18,7 +18,25 @@ ExecuteAFile  (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+
 
 _bacCacheInstanceCounter = 0;
 
+/*******************************************
+	wrapper functions
+*******************************************/
+
 function _buildAncestralCache (_lfID, _lfComponentID)
+{
+	_buildAncestralCacheInternal (_lfID, _lfComponentID, 0);
+}
+
+function _buildAncestralCacheSample (_lfID, _lfComponentID,1)
+{
+	_buildAncestralCacheInternal (_lfID, _lfComponentID, 0);
+}
+
+/*******************************************
+	internal function to do the work
+*******************************************/
+
+function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 {
 
 /* 1; grab the information AVL from the likelihood function */
@@ -33,10 +51,19 @@ function _buildAncestralCache (_lfID, _lfComponentID)
 
 /* 2; construct a temporary likelihood function with 
    the tree and the filter; and an AVL representation of the tree */
+   
+    if (doSample)
+    {
+		_ancestorCall = "SampleAncestors";
+    }  
+	else
+	{
+		_ancestorCall = "ReconstructAncestors";	
+	}
 	   
 	ExecuteCommands ("_bac_tree_avl = " + _bac_treeID + "^0;"+
 					 "LikelihoodFunction _bac_tree_LF = (" + _bac_filterID + "," + _bac_treeID+");"+
-					 "DataSet _bac_ancDS = ReconstructAncestors (_bac_tree_LF);"+
+					 "DataSet _bac_ancDS = " + _ancestorCall + " (_bac_tree_LF);"+
 					 "GetString (_bacSequenceNames,"+ _bac_filterID +",-1);");
 					 
 /* 3; obtain ID->string mapping for the datafilter;
@@ -344,8 +371,65 @@ function _buildAncestralCache (_lfID, _lfComponentID)
 	}
 	
 /*******************************************
+	
+	_filterDimensions returns a {{sites,branches}} matrix
+	
+*******************************************/
+
+	function _filterDimensions (_ancID)
+	{
+		_result = {1,2};
+		if (Abs (_ancestralRecoveryCache[_ancID]))
+		{
+			_sites    = Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]);
+			_branches = Rows	((_ancestralRecoveryCache[_ancID])["MATRIX"])-1;
+			_result [0] = _sites;
+			_result [1] = _branches;
+		}
+		return _result;
+	}
+
+/*******************************************
+	
+	_countSubstitutionsByBranchSite returns a 
+	binary vector (one entry per branch) which
+	contains '1' if the branch has substitutions
+	defined by '_filter' (a CxC matrix)
 
 *******************************************/
+
+	function _countSubstitutionsByBranchSite (_ancID, _siteID, _filter)
+	{
+		_result = {0,1};
+		if (Abs (_ancestralRecoveryCache[_ancID]))
+		{
+			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
+			{
+				TREE_OUTPUT_OPTIONS = {};
+				_thisColumn 		= ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
+				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
+				_bacSiteDim 		= Columns (_bacSiteC);
+				_bacCounter 		= Rows (_thisColumn)-1;
+				_result				= {_bacCounter,1};
+				_unit				= {1,_bacSiteDim}["1"];
+
+
+				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
+				{
+					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
+					_myState	   = _thisColumn[_bacTreeIterator];
+					_pState		   = _thisColumn[_bacParentID];
+					_bacSiteMx			= {_bacSiteDim,_bacSiteDim};
+					_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
+					_result[_bacTreeIterator] = (_unit*(_bacSiteMx$_filter)*Transpose(_unit))[0]>=1;
+				}
+				
+			}
+		}
+		return _result;
+	}
+	
+/*******************************************/
 	
 	function _expandSubstitutionMap (_state1, _state2, _ancID, _resultMatrix&)
 	{
