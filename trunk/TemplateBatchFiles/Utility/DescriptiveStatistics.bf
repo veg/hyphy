@@ -95,3 +95,23 @@ function GatherDescriptiveStats (_dataVector)
 	}
 	return _dstats;
 }
+
+function PrintDescriptiveStats (label,_stats)
+{
+	fprintf (stdout, "\n", label, "\n\n\tCount    = ", _stats["Count"],
+				 "\n\tMean     = ", _stats["Mean"],
+				 "\n\tMedian   = ", _stats["Median"],
+				 "\n\tVariance = ", _stats["Variance"],
+				 "\n\tStd.Dev  = ", _stats["Std.Dev"],
+				 "\n\tCOV      = ", _stats["COV"],
+				 "\n\tSum      = ", _stats["Sum"],
+				 "\n\tSq. sum  = ", _stats["Sq. sum"],
+				 "\n\tSkewness = ", _stats["Skewness"],
+				 "\n\tKurtosis = ", _stats["Kurtosis"],
+				 "\n\tMin      = ", _stats["Min"],
+				 "\n\t2.5%     = ", _stats["2.5%"],
+				 "\n\t97.5%    = ", _stats["97.5%"],
+				 "\n\tMax      = ", _stats["Max"],"\n\n");
+
+	return 0;
+}
