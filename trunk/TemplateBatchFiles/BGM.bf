@@ -180,6 +180,76 @@ function obtainSubstitutionMatrix (_lfID, sample_flag, site_map, _filterMatrix)
 
 /* ________________________________________________________________	*/
 
+function handleMPIBGM (_bgm_data, jobID)
+{
+	if (MPI_NODE_COUNT <= 1)
+	{
+		if (jobID >= 0)
+		{				
+			_sample_results [jobID] = runBGM(_bgm_data);
+		}
+	}
+	else
+	{
+		
+	}
+}
+
+/* ________________________________________________________________	*/
+
+function handleMPIBGM (_bgm_data, jobID)
+{
+	if (MPI_NODE_COUNT <= 1)
+	{
+		if (jobID >= 0)
+		{				
+			_sample_results [jobID] = runBGM(_bgm_data);
+			fprintf (stdout, "Ancestral sample ", jobID + 1, "\n");
+		}
+	}
+	else
+	{
+		mpiNode = 0;
+		jobToSend = "";
+		if (jobID >= 0)
+		{
+			bgmFilePath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BGM.bf";
+			jobToSend * 128;
+			jobToSend * ("ExecuteAFile (`bgmFilePath`);");
+			jobToSend * (""+_bgm_data);
+			jobToSend * ("; return runBGM(_hyphyAssociativeArray);");
+			jobToSend * 0;
+			for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode=mpiNode+1)
+			{
+				if (bgm_MPI[mpiNode] < 0)
+				{
+					break;
+				}
+			}
+			
+		}
+		doReceive = (jobID < 0) || (mpiNode == MPI_NODE_COUNT-1);
+		if (doReceive)
+		{
+			MPIReceive		(-1, mpiNode, _jobResult);
+			mpiNode			= mpiNode-1;
+			receivedID		= _sample_results [mpiNode];
+			fprintf (stdout, "Ancestral sample ", receivedID + 1, " from node ", mpiNode+1, "\n");
+			ExecuteCommands ("_sample_results [" + receivedID + "] = " + _jobResult);
+			bgm_MPI[mpiNode] = -1;
+		}
+		
+		if (Abs(jobToSend))
+		{
+			bgm_MPI[mpiNode] = jobID;
+			MPISend (mpiNode+1,jobToSend);
+		}
+	}
+	return 0;
+}
+
+/* ________________________________________________________________	*/
+
 function runBGM (_bgm_data)
 {
 	

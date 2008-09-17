@@ -87,17 +87,28 @@ if (cOptions == 9)
 		{
 			_null_map[_it] = _it;
 		}
+		
+		bgm_MPI = {MPI_NODE_COUNT-1,1}["-1"];
+		
 		if (_resamples>0)
 		{
 			_bgm_data["MAP"] = _null_map;
 			for (_it = 0; _it < _resamples; _it = _it + 1)
 			{
 				_bgm_data["MATRIX"]   = obtainSubstitutionMatrix("lf", 1, _site_map, _OBSERVED_NS_);
-				_sample_results [_it] = runBGM(_bgm_data);
-				fprintf (stdout, "Ancestral sample ", _it + 1, "\n");
+				handleMPIBGM (_bgm_data, _it);
 			}
 		}
 												
+		if (_resamples>0 && MPI_NODE_COUNT>1)
+		{
+			left_to_do = handleMPIBGM["1"] * handleMPIBGM["_MATRIX_ELEMENT_VALUE_>=0"];
+			for (_it = 0; _it < left_to_do; _it = _it + 1)
+			{
+				handleMPIBGM (0,-1);
+			}
+		}
+
 		columnHeaders = {{"LogL"}};
 		trace = ml_bgm_results[{{0,0}}][{{BGM_MCMC_SAMPLES-1,0}}];	
 		traceStats = GatherDescriptiveStats (trace);
