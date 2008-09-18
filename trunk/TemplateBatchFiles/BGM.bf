@@ -215,7 +215,7 @@ function handleMPIBGM (_bgm_data, jobID)
 		{
 			bgmFilePath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BGM.bf";
 			jobToSend * 128;
-			jobToSend * ("ExecuteAFile (`bgmFilePath`);");
+			jobToSend * ("ExecuteAFile (\""+bgmFilePath+"\");");
 			jobToSend * (""+_bgm_data);
 			jobToSend * ("; return runBGM(_hyphyAssociativeArray);");
 			jobToSend * 0;
@@ -233,7 +233,7 @@ function handleMPIBGM (_bgm_data, jobID)
 		{
 			MPIReceive		(-1, mpiNode, _jobResult);
 			mpiNode			= mpiNode-1;
-			receivedID		= _sample_results [mpiNode];
+			receivedID		= bgm_MPI [mpiNode];
 			fprintf (stdout, "Ancestral sample ", receivedID + 1, " from node ", mpiNode+1, "\n");
 			ExecuteCommands ("_sample_results [" + receivedID + "] = " + _jobResult);
 			bgm_MPI[mpiNode] = -1;
@@ -256,6 +256,10 @@ function runBGM (_bgm_data)
 	num_nodes			=	Abs (_bgm_data["MAP"]);
 	num_parents			=	_bgm_data["PARENTS"];
 	branches			=	Rows(_bgm_data["MATRIX"]);
+	
+	BGM_MCMC_DURATION   = _bgm_data ["BGM_MCMC_DURATION"];				 		 
+	BGM_MCMC_BURNIN     = _bgm_data ["BGM_MCMC_BURNIN"];	
+	BGM_MCMC_SAMPLES	= _bgm_data ["BGM_MCMC_SAMPLES"];
 	
 	bgm_data_matrix = {branches,num_nodes};
 	

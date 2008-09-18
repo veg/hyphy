@@ -102,8 +102,8 @@ if (cOptions == 9)
 												
 		if (_resamples>0 && MPI_NODE_COUNT>1)
 		{
-			left_to_do = handleMPIBGM["1"] * handleMPIBGM["_MATRIX_ELEMENT_VALUE_>=0"];
-			for (_it = 0; _it < left_to_do; _it = _it + 1)
+			left_to_do = Transpose(bgm_MPI["1"]) * bgm_MPI["_MATRIX_ELEMENT_VALUE_>=0"];
+			for (_it = 0; _it < left_to_do[0]; _it = _it + 1)
 			{
 				handleMPIBGM (0,-1);
 			}
@@ -162,7 +162,7 @@ if (cOptions == 9)
 		
 		if (_resamples > 0)
 		{
-			fprintf (LAST_FILE_PATH, "Support for Site1->Site2,Support for Site1->Site2,Support for Site1<->Site2");
+			fprintf (LAST_FILE_PATH, ",Support for Site1->Site2,Support for Site1->Site2,Support for Site1<->Site2");
 		}
 		
 		for (h=0; h<nodeCount; h=h+1)
