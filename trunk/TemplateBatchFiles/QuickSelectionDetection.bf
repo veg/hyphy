@@ -184,10 +184,7 @@ if (cOptions == 9)
 						_ss [2] = _ss[0] + _ss[1];
 						for (k = 0; k < 3; k=k+1)
 						{
-							if (_ss[k] >= allEdges[h2][2+k])
-							{
-								allEdges[h2][5+k] = allEdges[h2][5+k]+1;
-							}
+							allEdges[h2][5+k] = allEdges[h2][5+k]+_ss;
 						}
 					}
 					for (k = 0; k < 3; k=k+1)
