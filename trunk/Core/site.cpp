@@ -6674,31 +6674,34 @@ void	_DataSetFilter::internalToStr (FILE*dest,_String& rec)
 					if (theData->theTT->IsStandardAA())
 						rec << "DATATYPE = PROTEIN\n";
 					else
-					{
-						rec << "\t\tSYMBOLS = \"";
-						_String * bSet = &theData->theTT->baseSet;
-						for (long bc = 0; bc < bSet->sLength-1; bc++)
+						if (theData->theTT->IsStandardBinary())
+							rec << "DATATYPE = BINARY\n";
+						else
 						{
-							rec << bSet->sData[bc];
-							rec << ' ';
-						}
-						rec << bSet->sData[bSet->sLength-1];
-						rec << "\"\n";
-						if (theData->theTT->tokensAdded.sLength)
-							for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++)
+							rec << "\t\tSYMBOLS = \"";
+							_String * bSet = &theData->theTT->baseSet;
+							for (long bc = 0; bc < bSet->sLength-1; bc++)
 							{
-								rec << "\nEQUATE =\"";
-								rec << theData->theTT->tokensAdded.sData[at];
-								rec << " = ";
-								long	buf [256];
-								theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
-								for (long tc = 0; tc < bSet->sLength; tc++)
-									if (buf[tc])
-										rec << bSet->sData[tc];
-								
-								rec << "\"";
+								rec << bSet->sData[bc];
+								rec << ' ';
 							}
-					}
+							rec << bSet->sData[bSet->sLength-1];
+							rec << "\"\n";
+							if (theData->theTT->tokensAdded.sLength)
+								for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++)
+								{
+									rec << "\nEQUATE =\"";
+									rec << theData->theTT->tokensAdded.sData[at];
+									rec << " = ";
+									long	buf [256];
+									theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
+									for (long tc = 0; tc < bSet->sLength; tc++)
+										if (buf[tc])
+											rec << bSet->sData[tc];
+									
+									rec << "\"";
+								}
+						}
 				}
 				if (theData->theTT->GetGapChar())
 				{
