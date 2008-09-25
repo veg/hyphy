@@ -3010,20 +3010,37 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 				 s2Length = to2-from2;
 	
 	
-	char		 doLocal1 = 0, 
-				 doLocal2 = 0;
+	bool		 doLocal1S = false,
+				 doLocal1E = false,
+				 doLocal2S = false,
+				 doLocal2E = false;
 	
 	if (doLocal)
 	{
 		if (rev1)
-			doLocal1 = (to1==s1->sLength)*_ALIGNMENT_LOCAL_START + (from1 == 0)*_ALIGNMENT_LOCAL_END; 		
+		{
+			doLocal1S = (to1==s1->sLength);
+			doLocal1E = from1 == 0;
+			//doLocal1 = (to1==s1->sLength)*_ALIGNMENT_LOCAL_START + (from1 == 0)*_ALIGNMENT_LOCAL_END; 	
+		}
 		else
-			doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_START + (to1==s1->sLength)*_ALIGNMENT_LOCAL_END; 
-		
+		{
+			doLocal1E = (to1==s1->sLength);
+			doLocal1S = from1 == 0;
+			//doLocal1 = (from1==0)*_ALIGNMENT_LOCAL_START + (to1==s1->sLength)*_ALIGNMENT_LOCAL_END; 
+		}
 		if (rev2)
-			doLocal2 = (to2==s2->sLength)*_ALIGNMENT_LOCAL_START + (from2 == 0)*_ALIGNMENT_LOCAL_END; 			
+		{
+			doLocal2E = from2 == 0;
+			doLocal2S = (to2==s2->sLength);
+			//doLocal2 = (to2==s2->sLength)*_ALIGNMENT_LOCAL_START + (from2 == 0)*_ALIGNMENT_LOCAL_END; 			
+		}
 		else
-			doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_START + (to2==s2->sLength)*_ALIGNMENT_LOCAL_END; 
+		{
+			doLocal2S = from2 == 0;
+			doLocal2E = (to2==s2->sLength);
+			//doLocal2 = (from2==0)*_ALIGNMENT_LOCAL_START + (to2==s2->sLength)*_ALIGNMENT_LOCAL_END; 
+		}
 	}
 	
 	if (s1Length) 
@@ -3040,7 +3057,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 				gapScore1->theData[0] = gapScore2->theData[0] = 0.;
 			
 			
-			if ((doLocal1 & _ALIGNMENT_LOCAL_START) == 0)
+			if (doLocal1S == 0)
 			{
 				_Parameter cost = -gopen;
 				if (doAffine)
@@ -3080,14 +3097,16 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 			{
 				aux2 = 0.;
 				
-				if ((doLocal2 & _ALIGNMENT_LOCAL_START) == 0)
+				if (doLocal2S == 0)
 					gapScore1->theData[0] = gapScore2->theData[0] = -(secondGap==1?gextend2:gopen2); 
 				
+				from2 --;
+				from1 --;
 				for (long r=1; r<=s1Length; r++) // iterate by rows
 				{
-					long	  c1 = cmap.lData[s1->sData[rev1?(to1-r):(from1+r-1)]];
+					long	  c1 = cmap.lData[s1->sData[rev1?(to1-r):(from1+r)]];
 					
-					if (doLocal2 & _ALIGNMENT_LOCAL_START)
+					if (doLocal2S)
 						aux2		= 0.;
 					else
 					{
@@ -3100,48 +3119,72 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 					{
 						_Parameter gscore1  ,			// gap in 2nd 
 								   gscore2  ,			// gap in 1st
-								   gscore3  = aux2;		// no gap
+								   gscore3  = aux2,		// no gap
+								   t;
 						
 						// if secondGap == 2, then we MUST _start_ with a gap in the 2nd sequence
 						
 						
-						if ((doLocal1 & _ALIGNMENT_LOCAL_END) && r == s1Length)
-							gscore2 = MAX(scoreMatrix.theData[c-1],gapScore1->theData[c-1]);
+						if (doLocal1E && r == s1Length)
+						{
+							//gscore2 = MAX(scoreMatrix.theData[c-1],gapScore1->theData[c-1]);
+							gscore2 = scoreMatrix.theData[c-1];
+							if (gapScore1->theData[c-1] > gscore2)
+								gscore2 = gapScore1->theData[c-1];
+						}
 						else
-							gscore2 = MAX(scoreMatrix.theData[c-1]-gopen,gapScore1->theData[c-1]-((c>1)?gextend:gopen));
+						{
+							gscore2 = scoreMatrix.theData[c-1]-gopen;
+							t       = gapScore1->theData[c-1]-((c>1)?gextend:gopen);
+							if (t > gscore2)
+								gscore2 = t;
+						}
 						
-						if ((doLocal2 & _ALIGNMENT_LOCAL_END) && c == s2Length)
-							gscore1 = MAX(scoreMatrix.theData[c],gapScore2->theData[c]);							
+						if (doLocal2E && c == s2Length)
+						{
+							//gscore1 = MAX(scoreMatrix.theData[c],gapScore2->theData[c]);	
+							gscore1 = scoreMatrix.theData[c];
+							if (gscore1 < gapScore2->theData[c])
+								gscore1 = gapScore2->theData[c];
+						}
 						else
-							gscore1 = MAX(scoreMatrix.theData[c]-gopen2,gapScore2->theData[c]-((r>1)?gextend2:gopen2));
+						{
+							//gscore1 = MAX(scoreMatrix.theData[c]-gopen2,gapScore2->theData[c]-((r>1)?gextend2:gopen2));
+							gscore1 = scoreMatrix.theData[c]-gopen2;
+							t		= gapScore2->theData[c]-((r>1)?gextend2:gopen2);
+							if (t > gscore1)
+								gscore1 = t;
+						}
 						// either open a new gap from a character; or continue an existing one
 						// if this is the second row, then we start a gap in the second sequence -|
 						
 						if (c1>=0)
 						{
-							long	   c2 = cmap.lData[s2->sData[rev2?(to2-c):(from2+c-1)]];
+							long	   c2 = cmap.lData[s2->sData[rev2?(to2-c):(from2+c)]];
 							
 							if (c2>=0)
 								gscore3 += ccost->theData[c1*mapL+c2];
 						}
 						
 						aux2					= scoreMatrix.theData[c];
-						char					option = 0;
-						scoreMatrix.theData[c]  = gscore2;
+						char					  option = 0;
+						t						= gscore2;
+						
 						
 						if (r > 1 || secondGap == 0)
 						{
 							if (gscore1 > gscore2)
 							{
-								scoreMatrix.theData[c] = gscore1;
+								t = gscore1;
 								option				   = 1;
 							}
-							if (gscore3 > scoreMatrix.theData[c])
+							if (gscore3 > t)
 							{
-								scoreMatrix.theData[c] = gscore3;
+								t					   = gscore3;
 								option				   = 2;
 							}
 						}
+						scoreMatrix.theData[c] = t;
 						if (howAchieved)
 							howAchieved[c] = option;
 						
@@ -3153,7 +3196,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 						
 					}
 					
-					if ((doLocal2 & _ALIGNMENT_LOCAL_START) == 0 && r < s1Length)
+					if (doLocal2S && r < s1Length)
 					{
 						gapScore1->theData[0]-=gextend2;gapScore2->theData[0]-=gextend2;
 					}
@@ -3165,7 +3208,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 				aux2 = 0.;
 				for (long r=1; r<=s1Length; r++)
 				{
-					if (doLocal2 & _ALIGNMENT_LOCAL_START)
+					if (doLocal2S)
 						aux2		= 0.;
 					else
 					{
@@ -3183,9 +3226,9 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 								   score2 = scoreMatrix.theData[c-1],  // gap in 1st
 								   score3 = aux2;     
 						
-						if (c < s2Length || (doLocal2 & _ALIGNMENT_LOCAL_END) == 0)
+						if (c < s2Length || doLocal2E == 0)
 							score1 -= gopen2;
-						if (r < s1Length || (doLocal1 & _ALIGNMENT_LOCAL_END) == 0)
+						if (r < s1Length || doLocal1E == 0)
 							score2 -= gopen;
 						
 						if (c1>=0)
@@ -3220,7 +3263,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 		}
 		else // 2nd string empty
 		{
-			if (doLocal2 == 0)
+			if ((doLocal2S || doLocal2E) == false)
 			{
 				if (doAffine)
 					score = gopen2+gextend2*s1Length;
@@ -3232,7 +3275,7 @@ _Parameter	 CostOnly 	(_String* s1,				// first string
 	else // first string empty
 		if (s2Length) // second string not empty
 		{
-			if (doLocal1 == 0)
+			if ((doLocal1S || doLocal1E) == false)
 			{
 				score = -gopen;
 				

@@ -26,13 +26,17 @@ codonDistanceChoices =
  {"p_Distance_codon","Substitution counts normalized by sequence length."}
 };
 
+binaryDistanceChoices = 
+{{"p_Distance_binary","Substitution counts normalized by sequence length."}
+};
+
 if (DISTANCE_PROMPTS)
 {
 	/* determine the size of the data set filter */
-	GetDataInfo (dummy, filteredData, 0, 1);
-	dummy = Rows (dummy);
+	GetDataInfo (cInfo, filteredData, "CHARACTERS");
+	filterCharacters = Columns (cInfo);
 	
-	if (dummy == 4)
+	if (filterCharacters == 4)
 	{
 		ChoiceList (dfileChoice,"Nucleotide based distance formula.",1,SKIP_NONE,nucDistanceChoices);
 		if (dfileChoice < 0)
@@ -43,7 +47,7 @@ if (DISTANCE_PROMPTS)
 	}
 	else
 	{
-		if (dummy == 20)
+		if (filterCharacters == 20)
 		{
 			ChoiceList (dfileChoice,"Amino-acid based distance formula.",1,SKIP_NONE,aaDistanceChoices);
 			if (dfileChoice < 0)
@@ -54,14 +58,25 @@ if (DISTANCE_PROMPTS)
 		}
 		else
 		{
-			if (Abs (_Genetic_Code) > 0)
+			if (filterCharacters == 2)
 			{
-				ChoiceList (dfileChoice,"Codon based distance formula.",1,SKIP_NONE,codonDistanceChoices);
+				ChoiceList (dfileChoice,"Binary charcters based distance formula.",1,SKIP_NONE,binaryDistanceChoices);
 				if (dfileChoice < 0)
 				{
 					return 0;
 				}
-				ExecuteCommands ("#include\"Distances/"+codonDistanceChoices[dfileChoice][0]+"\";");					
+				ExecuteCommands ("#include\"Distances/"+binaryDistanceChoices[dfileChoice][0]+"\";");		
+			}
+			{
+				if (Abs (_Genetic_Code) > 0)
+				{
+					ChoiceList (dfileChoice,"Codon based distance formula.",1,SKIP_NONE,codonDistanceChoices);
+					if (dfileChoice < 0)
+					{
+						return 0;
+					}
+					ExecuteCommands ("#include\"Distances/"+codonDistanceChoices[dfileChoice][0]+"\";");					
+				}
 			}
 			else
 			{
