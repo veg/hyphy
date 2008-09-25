@@ -67,6 +67,7 @@ if (DISTANCE_PROMPTS)
 				}
 				ExecuteCommands ("#include\"Distances/"+binaryDistanceChoices[dfileChoice][0]+"\";");		
 			}
+			else
 			{
 				if (Abs (_Genetic_Code) > 0)
 				{
@@ -77,11 +78,11 @@ if (DISTANCE_PROMPTS)
 					}
 					ExecuteCommands ("#include\"Distances/"+codonDistanceChoices[dfileChoice][0]+"\";");					
 				}
-			}
-			else
-			{
-				fprintf (stdout, "\n\nNonstandard data type - no distance formulae are available\n\n");
-				return 1;
+				else
+				{
+					fprintf (stdout, "\n\nNonstandard data type - no distance formulae are available\n\n");
+					return 1;
+				}
 			}
 		}
 	}
