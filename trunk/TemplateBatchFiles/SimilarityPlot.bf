@@ -43,7 +43,7 @@ if (doNPBS == 1)
 
 InitializeDistances (0);
 
-steps 	= (ds.sites - windowSize)/windowStride+1;
+steps 	= (ds.sites - windowSize)$windowStride+1;
 
 gdInfo  	  = {steps, ds.species+2};
 columnHeaders = {1, ds.species+2};
