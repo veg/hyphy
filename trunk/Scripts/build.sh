@@ -213,7 +213,7 @@ then
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a single-threaded HYPHYKernelMPI for MPI          |"
 	echo "+-----------------------------------------------------------+"
-	COMPILER_FLAGS=$COMPILER_FLAGS" -D __HYPHYMPI__ "
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __HYPHYMPI__ -D _SLKP_LFENGINE_REWRITE_ "
 fi
 
 if [ $1 = "DEBUG" ]

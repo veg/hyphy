@@ -1,21 +1,38 @@
-#include "TemplateModels/chooseGeneticCode.def";
-
-SetDialogPrompt ("Please choose a codon data file:");
-
-DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-fprintf (stdout, "\n\nData Read:\n", ds);
-
-if (IS_TREE_PRESENT_IN_DATA)
+if (onlyFilterSequenceNames != 1)
 {
-	fprintf (stdout, "\nTree In Data:", DATAFILE_TREE);
+	#include "TemplateModels/chooseGeneticCode.def";
+
+	SetDialogPrompt ("Please choose a codon data file:");
+
+	DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
+	fprintf (stdout, "\n\nData Read:\n", ds);
+
+	if (IS_TREE_PRESENT_IN_DATA)
+	{
+		fprintf (stdout, "\nTree In Data:", DATAFILE_TREE);
+	}
+
+	DataSetFilter	    all64 = CreateFilter (ds, 3, "", "");
+
+	stopCodonTemplate   = {1,64};
+
+	stopCodonTemplate   	= {1,64};
+	nonStopCodonTemplate	= {1,64};
 }
+else
+{
+	SetDialogPrompt ("Please choose a data file:");
 
-DataSetFilter	    all64 = CreateFilter (ds, 3, "", "");
+	DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
+	fprintf (stdout, "\n\nData Read:\n", ds);
 
-stopCodonTemplate   = {1,64};
+	if (IS_TREE_PRESENT_IN_DATA)
+	{
+		fprintf (stdout, "\nTree In Data:", DATAFILE_TREE);
+	}
 
-stopCodonTemplate   	= {1,64};
-nonStopCodonTemplate	= {1,64};
+	DataSetFilter	    all64 = CreateFilter (ds, 1, "", "");
+}
 
 ChoiceList (filteringOption,"Filter duplicates/gaps?",1,SKIP_NONE,"No/No", "Keep all sequences and sites",
 															   "No/Yes",   "Keep all sequences, filter sites with nothing but gaps",
@@ -26,17 +43,27 @@ if (filteringOption < 0)
 {
 	return 0;
 }
+GetDataInfo (filterDimensions,all64,"CHARACTERS");
+filterDimensions = Columns(filterDimensions);
 
-for (stateCount=0; stateCount<64; stateCount=stateCount+1)
+if (onlyFilterSequenceNames != 1)
 {
-	if (_Genetic_Code[stateCount] == 10)
+	for (stateCount=0; stateCount<64; stateCount=stateCount+1)
 	{
-		stopCodonTemplate[stateCount] = 1;
+		if (_Genetic_Code[stateCount] == 10)
+		{
+			stopCodonTemplate[stateCount] = 1;
+		}
+		else
+		{
+			nonStopCodonTemplate[stateCount] = 1;
+		}
 	}
-	else
-	{
-		nonStopCodonTemplate[stateCount] = 1;
-	}
+}
+else
+{
+	nonStopCodonTemplate = {1,filterDimensions}["1"];
+	stopCodonTemplate	 = {1,filterDimensions}["0"];
 }
 
 sequenceNames = {all64.species, 1};
@@ -101,8 +128,14 @@ for (k=0; k<all64.species;k=k+1)
 GetInformation (sequenceData, 	 all64);
 GetDataInfo    (duplicateMapper, all64);
 
-
-replacementString = "---";
+if (onlyFilterSequenceNames != 1)
+{
+	replacementString = "---";
+}
+else
+{
+	replacementString = "-";
+}
 
 notDuplicate 	  = {};
 duplicateChecker  = {};
@@ -128,7 +161,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 		{
 			if (haveInfoAtSites[siteIndex] == 0)
 			{
-				if (siteInfo1[0]+siteInfo2[0] < 64)
+				if (siteInfo1[0]+siteInfo2[0] < stopCodonTemplate)
 				{
 					haveInfoAtSites[siteIndex] = 1;
 				}
