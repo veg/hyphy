@@ -1,0 +1,168 @@
+modelList = {};
+
+index = 0;
+/* Dayhoff */
+modelList [index] = {};
+(modelList [index])["Name"] 	       = "Dayhoff";
+(modelList [index])["Description"]     = "PAM-based. Derived from pairwise comparisons and phylogenetic comparisons of 71 groups of closely related proteins (1572 total point accepted mutations).";
+(modelList [index])["Reference"]       = "Dayhoff MO, Schwartz RM , Orcutt BC (1978) A model of evolutionary change in proteins.  Pp. 345-352 in M. O. Dayhoff, ed. Atlas of protein sequence and structure. Vol. 5, suppl. 3.";
+(modelList [index])["URL"]		       = "http://www-math.mit.edu/~lippert/18.417/papers/dayhoffetal1978.pdf";
+(modelList [index])["File"]            = "Dayhoff";
+(modelList [index])["GeneticCode"] 	   =  0;
+(modelList [index])["HasFrequencies"]  =  1;
+
+index = 1;
+/* JTT */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "JTT (Jones,Taylor,Thornton)";
+(modelList [index])["Description"] 		= "PAM-based. Derived from pairwise comparisons of SWISSPROT sequences at 85% or greater (approximate) similarity.";
+(modelList [index])["Reference"]   		= "Jones DT, Taylor WR, and Thornton JM (1992) The rapid generation of mutation data matrices from protein sequences. Comput. Appl. Biosci. 8: 275-282.";
+(modelList [index])["URL"]		   		= "http://bioinformatics.oxfordjournals.org/cgi/content/abstract/8/3/275";
+(modelList [index])["File"]        		= "JTT";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 2;
+/* WAG */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "WAG (Whelan and Goldman)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from globular protein sequences comprising 3,905 amino acid sequences split into 182 protein families.";
+(modelList [index])["Reference"]   		= "Whelan, S. and Goldman N  (2001)  A general empirical model of protein evolution derived from multiple protein families using a maximum likelihood approach.  Mol. Bio. Evol. 18:691-699.";
+(modelList [index])["URL"]		   		= "http://mbe.oxfordjournals.org/cgi/content/full/18/5/691";
+(modelList [index])["File"]        		= "WAG";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 3;
+/* rtREV */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "rtREV (reverse transcriptase)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from 33 amino acid sequences from the retroviral Pol proteins.";
+(modelList [index])["Reference"]   		= "Dimmic MW, Rest JS, Mindell DP, Goldstein RA (2002) rtREV: an amino acid substitution matrix for inference of retrovirus and reverse transcriptase phylogeny. J Mol Evol. 55(1):65-73";
+(modelList [index])["URL"]		   		= "http://www.springerlink.com/content/rbg67l8yc12yh7hv/";
+(modelList [index])["File"]        		= "rtREV";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 4;
+/* HIVBetween */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "HIV (between hosts)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from 1025 sequences representing 8 HIV genes.";
+(modelList [index])["Reference"]   		= "Nickle DC, Heath L, Jensen MA, Gilbert PB, Mullins JI, Kosakovsky Pond SL (2007) HIV-specific probabilistic models of protein evolution. PLoS ONE 2(6): e503";
+(modelList [index])["URL"]		   		= "http://www.pubmedcentral.nih.gov/articlerender.fcgi?artid=1876811";
+(modelList [index])["File"]        		= "HIVBetween";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 5;
+/* HIVWithin */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "HIV (within host)";
+(modelList [index])["Description"] 		= "ML-based. Inferred jointly from 48 patient clonal sequence alignments (encompassing portions of the env gene from 32 patients, from the pro gene from 8, and from the pol gene from 7 patients).";
+(modelList [index])["Reference"]   		= "Nickle DC, Heath L, Jensen MA, Gilbert PB, Mullins JI, Kosakovsky Pond SL (2007) HIV-specific probabilistic models of protein evolution. PLoS ONE 2(6): e503";
+(modelList [index])["URL"]		   		= "http://www.pubmedcentral.nih.gov/articlerender.fcgi?artid=1876811";
+(modelList [index])["File"]        		= "HIVWithin";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 6;
+/* IAV */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "IAV (Influenza A virus)";
+(modelList [index])["Description"] 		= "ML-based. Inferred jointly from 1035 sequences representing 8 genomic segments of H5N1 IAV sequences.";
+(modelList [index])["Reference"]   		= "Kosakovsky Pond SL, Poon AFY, Leigh Brown AJ, Frost SDW (2008)  A maximum likelihood method for detecting directional evolution in protein sequences and its application to Influenza A virus. Mol. Biol. Evol. (in press)";
+(modelList [index])["URL"]		   		= "";
+(modelList [index])["File"]        		= "IAV";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 7;
+/* mtMAM */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "mtMAM (mammalian mitochondrial)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from 12 mtDNA proteins from 20 mammalian species.";
+(modelList [index])["Reference"]   		= "Cao Y, Janke A, Waddell PJ, Westerman M, Takenaka O, Murata S, Okada N, Paabo S, and Hasegawa M (1998) Conflict among individual mitochondrial proteins in resolving the phylogeny of eutherian orders. J Mol Evol 47: 307-322.";
+(modelList [index])["URL"]		   		= "http://www.springerlink.com/content/vry44fkm8ev5l73v/";
+(modelList [index])["File"]        		= "mtMAM";
+(modelList [index])["GeneticCode"] 		=  1;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 8;
+/* mtREV24 */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "mtREV24 (vertebrate mitochondrial)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from complete mtDNA data from 20 vertebrate species.";
+(modelList [index])["Reference"]   		= "Adachi, J, and Hasegawa, M (1996) Model of amino acid substitution in proteins encoded by mitochondrial DNA. J. Mol. Evol. 42: 459-468.";
+(modelList [index])["URL"]		   		= "http://www.springerlink.com/content/jd1aj3krrn1bhjpb/fulltext.pdf";
+(modelList [index])["File"]        		= "mtREV24";
+(modelList [index])["GeneticCode"] 		=  1;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 9;
+/* cpREV */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "cpREV (chloroplast)";
+(modelList [index])["Description"] 		= "ML-based. Inferred from 9,957 amino acid sites of 45 proteins encoded in the plastid genomes of Cyanophora, a diatom, a rhodophyte (red algae), a euglenophyte, and five land plants.";
+(modelList [index])["Reference"]   		= "Adachi J, Waddell P, Martin W and Hasegawa M (2000) Plastid genome phylogeny and a model of amino acid substitution for proteins encoded by chloroplast DNA. J. Mol. Evol. 50:348-358.";
+(modelList [index])["URL"]		   		= "http://www.springerlink.com/content/ledt3at2br74db2a/";
+(modelList [index])["File"]        		= "cpREV";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 10;
+/* VT */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "VT (Vingron and Muller)";
+(modelList [index])["Description"] 		= "Rate matrix resolvent method. Inferred from SYSTERS (1998) database of aligned protein families (~2.7 million pairs of aligned residues).";
+(modelList [index])["Reference"]   		= "Muller, T and Vingron, M (2000) Modeling Amino Acid Replacement. J. Comp. Biol. 7(6): 761-776.";
+(modelList [index])["URL"]		   		= "http://www.liebertonline.com/doi/pdfplus/10.1089/10665270050514918";
+(modelList [index])["File"]        		= "VT";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 11;
+/* MtArt */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "MtArt (arthropoda mitochondrial)";
+(modelList [index])["Description"] 		= "ML based. This model has been derived from 36 arthropoda mitochondrial genomes.";
+(modelList [index])["Reference"]   		= "Abascal F, Posada D, Zardoya R. (2007) MtArt: A new model of amino acid replacement for Arthropoda. Mol. Biol. Evol 24:1-5";
+(modelList [index])["URL"]		   		= "http://darwin.uvigo.es/download/papers/50.mtArt07.pdf";
+(modelList [index])["File"]        		= "MtArt";
+(modelList [index])["GeneticCode"] 		=  1;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 12;
+/* BLOSUM 62 */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "BLOSUM62";
+(modelList [index])["Description"] 		= "PAM based. Inferred from  504 nonredundant groups of proteins catalogued in Prosite 8.0 keyed to Swiss-Prot 20";
+(modelList [index])["Reference"]   		= "Henikoff S and Henikoff JG (1992) Amino Acid Substitution Matrices from Protein Blocks. PNAS USA 89:10915-1091";
+(modelList [index])["URL"]		   		= "http://www.pnas.org/cgi/reprint/89/22/10915";
+(modelList [index])["File"]        		= "BLOSUM62";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+index = 13;
+/* LG */
+modelList [index] = {};
+(modelList [index])["Name"] 	   		= "LG (Le and Gascuel)";
+(modelList [index])["Description"] 		= "ML-Based. Inferred from 3912 alignments from Pfam, comprising 50,000 sequences and 6.5 million residues overall";
+(modelList [index])["Reference"]   		= "Le SQ and Gascuel O (2008) An Improved General Amino-Acid Replacement Matrix. Mol Bio Evol doi:10.1093/molbev/msn067 ";
+(modelList [index])["URL"]		   		= "http://mbe.oxfordjournals.org/cgi/content/abstract/msn067";
+(modelList [index])["File"]        		= "LG";
+(modelList [index])["GeneticCode"] 		=  0;
+(modelList [index])["HasFrequencies"] 	=  1;
+
+/*----------------------------------------*/
+function	generateSelectionList		()
+{
+	availableModels = Abs (modelList);
+	matrixWithChoices = {availableModels,2};
+	for (_k = 0; _k < availableModels; _k = _k+1)
+	{
+		matrixWithChoices[_k][0] = (modelList[_k])["Name"];
+		matrixWithChoices[_k][1] = (modelList[_k])["Description"];
+	}
+	return matrixWithChoices;
+}
