@@ -22,7 +22,8 @@ FREQUENCY_SENSITIVE = 1;
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
-	ExecuteAFile 			(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"AAModels" +DIRECTORY_SEPARATOR+ "modellist.ibf");
+	baseTMPath =			HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"AAModels"+DIRECTORY_SEPARATOR;
+	ExecuteAFile 			(baseTMPath + "modellist.ibf");
 	
 	selectedModelMatrix = 	generateSelectionList();
 	ChoiceList (selectedModelMatrix,"Choose An Empirical Matrix",1,SKIP_NONE,selectedModelMatrix);
@@ -32,8 +33,8 @@ if (!SKIP_MODEL_PARAMETER_LIST)
 		return -1;
 	}
 	
-	_hasEFV = (models[selectedModelMatrix])["HasFrequencies"];
-	
+	_hasEFV = 0+(modelList[selectedModelMatrix])["HasFrequencies"];
+	baseTMPath = baseTMPath + (modelList[selectedModelMatrix])["File"];
 	if (_hasEFV)
 	{
 		ChoiceList (FREQUENCY_SENSITIVE,"Base frequencies",1,SKIP_NONE,"Fixed","Frequencies are fixed from the training dataset or the estimation procedure",
@@ -43,11 +44,11 @@ if (!SKIP_MODEL_PARAMETER_LIST)
 		{
 			return -1;
 		}
-		fscanf ("AAModels/" + (models[selectedModelMatrix])["File"], "String,NMatrix,NMatrix",aaOrder,_eRateMatrix,_eEFV);
+		fscanf (baseTMPath, "String,NMatrix,NMatrix",aaOrder,_eRateMatrix,_eEFV);
 	}
 	else
 	{
-		fscanf ("AAModels/" + (models[selectedModelMatrix])["File"], "String,NMatrix",aaOrder,_eRateMatrix);	
+		fscanf (baseTMPath, "String,NMatrix",aaOrder,_eRateMatrix);	
 	}
 
 	if (modelType == 1)
@@ -69,8 +70,8 @@ function PopulateModelMatrix (ModelMatrixName&, EFV)
 		{
 			for (v = h+1; v < 20; v=v+1)
 			{
-				ModelMatrixName[h][v] := t*_eRateMatrix__[h][v];
-				ModelMatrixName[v][h] := t*_eRateMatrix__[v][h];
+				ModelMatrixName[h][v] := t*_eRateMatrix__[h__][v__];
+				ModelMatrixName[v][h] := t*_eRateMatrix__[v__][h__];
 			}
 		}	
 	}
@@ -80,8 +81,8 @@ function PopulateModelMatrix (ModelMatrixName&, EFV)
 		{
 			for (v = h+1; v < 20; v=v+1)
 			{
-				ModelMatrixName[h][v] := c*t*_eRateMatrix__[h][v];
-				ModelMatrixName[v][h] := c*t*_eRateMatrix__[v][h];
+				ModelMatrixName[h][v] := c*t*_eRateMatrix__[h__][v__];
+				ModelMatrixName[v][h] := c*t*_eRateMatrix__[v__][h__];
 			}
 		}	
 	
@@ -97,6 +98,7 @@ if (FREQUENCY_SENSITIVE)
 }
 else
 {
+	equalFreqs = _eEFV;
 	MULTIPLY_BY_FREQS = PopulateModelMatrix ("EEAA",equalFreqs);
 	Model EmpiricalAAModel 					= (EEAA, equalFreqs);
 }
