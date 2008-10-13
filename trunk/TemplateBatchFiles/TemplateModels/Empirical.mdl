@@ -16,15 +16,13 @@
    10/13/2008  by Sergei L. Kosakovsky Pond
 */
 
-NICETY_LEVEL = 2;
-
 #include "modelParameters2.mdl";
 
 FREQUENCY_SENSITIVE = 1;
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
-	ExecuteAFile 			("AAModels/modellist.ibf");
+	ExecuteAFile 			(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"AAModels" +DIRECTORY_SEPARATOR+ "modellist.ibf");
 	
 	selectedModelMatrix = 	generateSelectionList();
 	ChoiceList (selectedModelMatrix,"Choose An Empirical Matrix",1,SKIP_NONE,selectedModelMatrix);
