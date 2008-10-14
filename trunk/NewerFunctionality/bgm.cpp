@@ -38,90 +38,45 @@
  *
  */
 
-//#define		__AFYP_DEVELOPMENT__
-//#define		__MISSING_DATA__
+#define		__AFYP_DEVELOPMENT__
+#define		__MISSING_DATA__
 
-#define		LOG_SCALING_FACTOR			64.
-#define		LARGE_NEGATIVE_NUMBER		-99999.0
-#define		MAX_LSE_SCALING_ATTEMPTS	4096
-
-#define		DIRICHLET_FLATTENING_CONST	0.5
-#define		MAX_FAIL_RANDOMIZE			1000
-#define		RANDOMIZE_PROB_SWAP			0.1
 
 #include "bgm.h"
-
-#ifdef __AFYP_DEVELOPMENT__
-	#include "mpi.h"
-#endif
-
-/*SLKP 20070926; include progress report updates */
-	#if !defined __UNIX__ && !defined __HEADLESS__
-			#include "HYConsoleWindow.h"
-	#endif
-/*SLKP*/
 
 _String		_HYBgm_BAN_PARENT_KEY	("BanParent"),
 			_HYBgm_BAN_CHILD_KEY	("BanChild"),
 			_HYBgm_ENFORCE_PARENT_KEY	("EnforceParent"),
 			_HYBgm_ENFORCE_CHILD_KEY	("EnforceChild"),
-			
+
 			_HYBgm_NODE_INDEX_KEY	("NodeID"),
 			_HYBgm_PRIOR_SIZE_KEY	("PriorSize"),
 			_HYBgm_MAX_PARENT_KEY	("MaxParents"),
 
 			_HYBgm_PRIOR_MEAN_KEY	("PriorMean"),		/* for continuous (Gaussian) nodes */
 			_HYBgm_PRIOR_PREC_KEY	("PriorVar"),
-			
-/*SLKP 20070926; add string constants for progress report updates */
+
+			/*SLKP 20070926; add string constants for progress report updates */
 			_HYBgm_STATUS_LINE_MCMC			("Running Bgm MCMC"),
 			_HYBgm_STATUS_LINE_MCMC_DONE	("Finished Bgm MCMC"),
 			_HYBgm_STATUS_LINE_CACHE		("Caching Bgm scores"),
 			_HYBgm_STATUS_LINE_CACHE_DONE	("Done caching Bgm scores"),
-/*SLKP*/
+			/*SLKP*/
 			/* maxParentString ("Bgm_MAXIMUM_PARENTS"), */
 			maxNumRestart	("BGM_NUM_RESTARTS"),
 			numRandomize	("BGM_NUM_RANDOMIZE"),
 			useNodeOrder	("BGM_USE_NODEORDER"),
 			bgmOptimizationMethod ("BGM_OPTIMIZATION_METHOD"),
-			
+
 			mcmcNumChains	("BGM_MCMC_NCHAINS"),		// re-use parameter
 			mcmcTemperature ("BGM_MCMC_TEMPERATURE"),
 			mcmcSteps		("BGM_MCMC_DURATION"),
 			mcmcBurnin		("BGM_MCMC_BURNIN"),
 			mcmcSamples		("BGM_MCMC_SAMPLES"),
-			
+
 			mcemMaxSteps	("BGM_MCEM_MAXSTEPS"),
 			mcemBurnin		("BGM_MCEM_BURNIN"),
-			mcemSampleSize	("BGM_MCEM_SAMPLES"),
-			
-			isDynamicGraph	("BGM_DYNAMIC"),
-
-			_HYBgm_NThreads	("BGM_NTHREADS");
-
-#ifdef __MP__
-	#ifndef __MACHACKMP__
-		#include <pthread.h>
-	#else
-		#include "mypthread.h"
-	#endif
-	struct	ThreadCacheTask {
-		Bgm		* b;
-		
-		long	startNode,
-				nextNode,	// one past the last node
-				numNodes;
-		
-		_List	*		nodeScores;
-		
-		_SimpleList		maxParents,		// pass member variables to global scope
-						isDiscrete;
-	};
-	
-	pthread_t *			BgmThreads	= nil;
-	ThreadCacheTask *	BgmTasks	= nil;
-	void *				CacheNodeScoreThread (void *);
-#endif
+			mcemSampleSize	("BGM_MCEM_SAMPLES");
 
 
 #ifdef 		__UNIX__
@@ -130,7 +85,7 @@ void		ConsoleBGMStatus (_String, _Parameter, _String * fileName = nil);
 
 //__________________________________________________________________________________
 
-void		ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName)
+void		ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName = nil)
 {
 	FILE		   *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
 	
@@ -163,6 +118,7 @@ void		ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fi
 
 #endif
 
+
 //___________________________________________________________________________________________
 
 long integerPower (long base, long exponent)
@@ -187,14 +143,30 @@ long integerPower (long base, long exponent)
 
 //___________________________________________________________________________________________
 
+inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
+{
+	// wrapper function for _Constant member function
+	calculator->SetValue (x);
+	calculator = (_Constant *) calculator->LnGamma();
+	_Parameter rv = calculator->Value();
+	DeleteObject(calculator);
+	return rv;
+}
+
+
+
+//___________________________________________________________________________________________
 Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 {	
-	char		buf [255];
 	_String		errorMessage;
 	
 	long		num_discrete	= dnodes->avl.countitems(),
 				num_continuous	= cnodes->avl.countitems(),
 				node_index;
+	
+	num_nodes	= num_discrete + num_continuous;	// set member variable
+	
+	
 	
 	_Constant	* node_id,						/* pointers into HBL associative array arguments */
 				* mp,
@@ -211,33 +183,18 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 	obsWeights			= NULL;
 	
 	
-	// is this a dynamic Bayesian network?
-	_Parameter		dynamicArg;
-	checkParameter (isDynamicGraph, dynamicArg, 0.);
-	if (dynamicArg > 0)
-		is_dynamic_graph = TRUE;
-	else
-		is_dynamic_graph = FALSE;
-	
 	
 	// extract number of variables in data
-	num_nodes = num_discrete + num_continuous;
-	if (num_nodes < 2)
-		WarnError (_String("ERROR: Attempting to construct Bayesian network on fewer than two variables."));
-	
-	//sprintf (buf, "Initializing Bgm with %d nodes...\n", num_nodes);
-	//BufferToConsole (buf);	
-	
-	
 	CreateMatrix (&dag, num_nodes, num_nodes, false, true, false);		// allocate space for matrices
 	CreateMatrix (&banned_edges, num_nodes, num_nodes, false, true, false);
 	CreateMatrix (&enforced_edges, num_nodes, num_nodes, false, true, false);
-	CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);
+	CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);	// for storing floats as _Parameter objects
 	CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
 	CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
 	
 	
-	is_discrete.Populate (num_nodes, 0, 0);		// allocate space for _SimpleList objects
+	// allocate space for _SimpleList objects
+	is_discrete.Populate (num_nodes, 0, 0);
 	num_levels.Populate (num_nodes, 0, 0);
 	max_parents.Populate (num_nodes, 0, 0);
 	has_missing.Populate (num_nodes, 0, 0);
@@ -280,7 +237,6 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 			break;
 		}
 	}
-	
 	if (errorMessage.sLength)
 	{
 		WarnError (errorMessage);
@@ -339,18 +295,13 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 	
 	
 	
-	// append pointer to _List object that will store floats or _NTupleStorage objects
+	// append duplicates of _List object to store pointers to _Constant, _Matrix, _NTupleStorage objects
 	_List		emptyList (max_max_parents+1);
-	
-	for (long node = 0; node < num_nodes; node++)
-	{
-		node_scores && (&emptyList);
-	}
+	for (long node = 0; node < num_nodes; node++) node_scores && (&emptyList);
 	
 	
 	// require Bgm to recalculate node scores
 	scores_cached = FALSE;
-	
 }
 
 
@@ -633,6 +584,7 @@ long	Bgm::MarginalSum (bool over_rows, long offset)
 
 
 //___________________________________________________________________________________________
+//	DEPRECATED
 bool	Bgm::IsCyclic (void)
 {
 	_Matrix		nodes_left (num_nodes, 1, false, true);
@@ -1016,23 +968,8 @@ void	Bgm::RandomizeDag (long num_steps)
 
 
 
-
 //___________________________________________________________________________________________
-
-inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
-{
-	// wrapper function for _Constant member function
-	calculator->SetValue (x);
-	calculator = (_Constant *) calculator->LnGamma();
-	_Parameter rv = calculator->Value();
-	DeleteObject(calculator);
-	return rv;
-}
-
-
-
-//___________________________________________________________________________________________
-//	Wrapper to retain original functionality.
+//	Wrappers to retain original functionality.
 _Parameter	Bgm::ComputeDiscreteScore (long node_id)
 {
 	_SimpleList		parents;
@@ -1061,8 +998,11 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
 
 
 //___________________________________________________________________________________________
+//#define BGM_DEBUG_CDS
 _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
+	char			buf [255];
+	
 	// use cached node scores if possible
 	if (scores_cached)
 	{
@@ -1096,10 +1036,12 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	
 	
 #ifdef __MISSING_DATA__
+	
 	//	Is node with missing data in Markov blanket of focal node?
 	if (has_missing.lData[node_id])
 	{
-		return (ImputeDiscreteScore (node_id, parents));
+		//return (ImputeDiscreteScore (node_id, parents));
+		return (GibbsApproximateDiscreteScore (node_id, parents));
 	}
 	else
 	{
@@ -1107,7 +1049,8 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		{
 			if (has_missing.lData[parents.lData[par]])
 			{
-				return (ImputeDiscreteScore (node_id, parents));
+				// return (ImputeDiscreteScore (node_id, parents));
+				return (GibbsApproximateDiscreteScore (node_id, parents));
 			}
 		}
 	}
@@ -1139,9 +1082,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	}
 	
 	
-#ifdef __DEBUG_IDS__
-	char			buf [255];
-	
+#ifdef BGM_DEBUG_CDS
 	sprintf (buf, "Multipliers: ");
 	BufferToConsole (buf);
 	for (long i = 0; i < multipliers.lLength; i++)
@@ -1178,6 +1119,32 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
 	}
 	
+	
+#ifdef BGM_DEBUG_CDS
+	sprintf (buf, "Node %d, parent(s) ", node_id);
+	BufferToConsole (buf);
+	
+	for (long k = 0; k < parents.lLength; k++)
+	{
+		sprintf (buf, "%d ", parents.lData[k]);
+		BufferToConsole (buf);
+	}
+	NLToConsole();
+	
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		sprintf (buf, "N(%d,%d) = %f\n", node_id, j, n_ij(j,0));
+		BufferToConsole (buf);
+		
+		for (long k = 0; k < r_i; k++)
+		{
+			sprintf (buf, "N(%d,%d,%d) = %f\n", node_id, j, k, n_ijk(j,k));
+			BufferToConsole (buf);
+		}
+	}
+#endif
+	
+	
 	if (prior_sample_size (node_id, 0) == 0)	// K2
 	{
 		for (long j = 0; j < num_parent_combos; j++)
@@ -1185,8 +1152,26 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
 			log_score -= LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]);	// (N+r-1)!
 			
-			for (long k = 0; k < num_levels.lData[node_id]; k++)
+			for (long k = 0; k < r_i; k++)
 				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
+			
+#ifdef BGM_DEBUG_CDS
+			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(calc_bit, num_levels.lData[node_id]));
+			BufferToConsole (buf);
+			
+			sprintf (buf, "\tlog(N(%d,%d)+r-1)! = log %d! = %lf\n", node_id, j, ((long)n_ij(j, 0)) + r_i - 1, 
+					 LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]));
+			BufferToConsole (buf);
+			
+			for (long k = 0; k < r_i; k++)
+			{
+				sprintf (buf, "\tlog (N(%d,%d,%d)!) = log %d! = %lf\n", node_id, j, k, ((long)n_ijk(j,k)), LnGamma (calc_bit, n_ijk(j,k) + 1));
+				BufferToConsole (buf);
+			}
+			
+			sprintf (buf, "j = %d\tcumulative log score = %lf\n", j, log_score);
+			BufferToConsole (buf);
+#endif
 		}
 	} 
 	else	// BDe
@@ -1207,7 +1192,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	for (long obs = 0; obs < obsData->GetHDim(); obs++)
 	{
 		long	index		= 0,
-				multiplier	= 1,
+				//multiplier	= 1,
 				child_state = (*obsData)(obs, node_id);
 		
 		for (long par = 0; par < parents.lLength; par++)
@@ -1242,8 +1227,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
 				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
 			
-#ifdef BGM_DEBUG_CDS
-			char buf [256];
+			
 			
 			sprintf (buf, "Node %d, parent(s) ", node_id);
 			BufferToConsole (buf);
@@ -1255,6 +1239,10 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 			}
 			NLToConsole();
 			
+			sprintf (buf, "j = %d\tcumulative log score = %lf\n", j, log_score);
+			BufferToConsole (buf);
+			
+#ifdef BGM_DEBUG_CDS
 			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(calc_bit, num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
@@ -1268,8 +1256,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 				BufferToConsole (buf);
 			}
 			
-			sprintf (buf, "j = %d\tcumulative log score = %lf\n", j, log_score);
-			BufferToConsole (buf);
+			
 #endif
 		}
 	} 
@@ -1290,998 +1277,26 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	}
 #endif
 	
-	
-#ifdef BGM_DEBUG_CDS
-	char	buf[255];
-	sprintf (buf, "Log score = %f\n\n", log_score);
+	/*
+	sprintf (buf, "Node %d, parents (%d): ", node_id, parents.lLength);
 	BufferToConsole (buf);
-#endif
+	
+	for (long par = 0; par < parents.lLength; par++)
+	{
+		sprintf (buf, " %d", parents.lData[par]);
+		BufferToConsole (buf);
+	}
+	sprintf (buf, " Log score = %f\n", log_score);
+	BufferToConsole (buf);
+	*/
 	
 	return (log_score);
 }
 
 
 
-//___________________________________________________________________________________________
-//	Use Monte Carlo over assignments to m_ijk to calculate expectation, which can be used for EM (MCEM)
-//		but m_ijk are constrained by partial observations, a hassle for bookkeeping  :-/
-//		Alternatively, we can perform MCMC over imputations of missing values; which is faster?
-_Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
-{
-	_SimpleList		multipliers ((long)1);
-	
-	_Matrix		n_ijk,
-				n_ij;
-	
-	long		num_parent_combos	= 1,
-				r_i					= num_levels.lData[node_id],
-				mcem_interval;
-	
-	_Parameter	log_score	= 0,
-				mcem_max_steps,
-				mcem_burnin,
-				mcem_sample_size;
-	
-	
-	// set MCMC parameters from batch language definitions
-	checkParameter (mcemMaxSteps, mcem_max_steps, 0);
-	checkParameter (mcemBurnin, mcem_burnin, 0);
-	checkParameter (mcemSampleSize, mcem_sample_size, 0);
-	
-	if (mcem_max_steps == 0 || mcem_sample_size == 0)
-	{
-		_String oops ("Did you forget to specify a value for BGM_MCEM_MAXSTEPS or BGM_MCEM_SAMPLES?\n");
-		WarnError (oops);
-	}
-	
-	mcem_interval = (long) (mcem_max_steps / mcem_sample_size);
-	
-	
-	// count number of parent state combinations
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		num_parent_combos *= num_levels.lData[parents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	
-	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
-	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
-	
-	
-	
-	_GrowingVector		impute,		// to store a copy of incomplete cases
-						is_missing; // boolean values mapping to missing values in [impute]
-	
-	_GrowingVector	*	post_chain = new _GrowingVector(),
-					*	prior_denom = new _GrowingVector();
-	
-	
-	// prepare containers for keeping track of state-frequencies per node
-	// for later use in imputation
-	
-	long				max_num_levels	= num_levels.lData [node_id],
-						family_size		= parents.lLength + 1;
-	
-	_SimpleList			family_nlevels (max_num_levels);
-	
-	_Matrix				m_ijk,		// let m_ijk denote missing values such that n_ijk + m_ijk sums to N_i for all j, k.
-						m_ij,
-						observed_freqs;
-	
-	
-	CreateMatrix (&m_ijk, num_parent_combos, r_i, false, true, false);	// note these are populated with 0.0's
-	CreateMatrix (&m_ij, num_parent_combos, 1, false, true, false);
-	
-	
-	// evaluate the number of levels for each node in family
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		long	par_nlevels = num_levels.lData [ parents.lData[par] ];
-		
-		family_nlevels << par_nlevels;
-		if (par_nlevels > max_num_levels)
-		{
-			max_num_levels = par_nlevels;
-		}
-	}
-	
-	CreateMatrix (&observed_freqs, family_size, max_num_levels, false, true, false);
-	
-	
-	
-#ifdef __DEBUG_IDS__
-	char	buf[255];
-	sprintf (buf, "family_nlevels: ");
-	BufferToConsole (buf);
-	for (long bug = 0; bug < family_nlevels.lLength; bug++)
-	{
-		sprintf (buf, "%d ", family_nlevels.lData[bug]);
-		BufferToConsole (buf);
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
-	// tally complete cases
-	for (long index, obs = 0; obs < obsData->GetHDim(); obs++)
-	{
-		long	child_state = (*obsData) (obs, node_id);
-		
-		index = 0;
-		
-		if (child_state > -1)
-		{
-			observed_freqs.Store (0, child_state, observed_freqs (0, child_state) + 1);
-			
-			for (long par = 0; par < parents.lLength; par++)
-			{
-				long	this_parent			= parents.lData[par],
-				this_parent_state	= (*obsData) (obs, this_parent);
-				
-				if (this_parent_state < 0) 
-				{
-					index = -1;	// flag observation to skip
-					break;
-				}
-				else
-				{
-					index += this_parent_state * multipliers.lData[par];
-					observed_freqs.Store (par+1, this_parent_state, observed_freqs (par+1, this_parent_state) + 1);
-				}
-			}
-		}
-		else
-		{
-			index = -1;
-		}
-		
-		if (index > -1)	// update n_ijk's with complete case
-		{
-			n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
-			n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
-		}
-		else
-		{
-			// store family in impute, always in the order (child, parent0, parent1, ...)
-			impute.Store ( (_Parameter) child_state);				
-			is_missing.Store ( (_Parameter) ((child_state < 0) ? 1 : 0) );
-			
-			for (long par = 0; par < parents.lLength; par++)
-			{
-				long	parent_state	= (*obsData) (obs, parents.lData[par]);
-				
-				impute.Store ( (_Parameter) parent_state);
-				is_missing.Store ( (_Parameter) ((parent_state < 0) ? 1 : 0) );
-			}
-		}
-	}
-	
-	
-#ifdef __DEBUG_IDS__
-	sprintf (buf, "complete cases N_ijk: \n");
-	BufferToConsole (buf);
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		for (long k = 0; k < family_nlevels.lData[0]; k++)
-		{
-			sprintf (buf, "%d ", (long) n_ijk (j,k));
-			BufferToConsole (buf);
-		}
-		NLToConsole ();
-	}
-	NLToConsole ();
-	
-	sprintf (buf, "impute: \n");
-	BufferToConsole (buf);
-	for (long bug = 0; bug < impute.GetUsed(); bug++)
-	{
-		sprintf (buf, "%d ", (long) impute (0, bug));
-		BufferToConsole (buf);
-		
-		if (bug % family_size == family_size - 1)
-		{
-			NLToConsole ();
-		}
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
-	// convert observed states into frequencies
-	for (long obs_total, i = 0; i < family_size; i++)
-	{
-		obs_total = 0;
-		for (long obs_state = 0; obs_state < family_nlevels.lData[i]; obs_state++)
-		{
-			obs_total += observed_freqs (i, obs_state);
-		}
-		
-		for (long obs_state = 0; obs_state < family_nlevels.lData[i]; obs_state++)
-		{
-			observed_freqs.Store (i, obs_state, (_Parameter) (observed_freqs (i, obs_state) / obs_total));
-		}
-	}
-	
-	
-#ifdef __DEBUG_IDS__
-	sprintf (buf, "observed_freqs: \n");
-	BufferToConsole (buf);
-	
-	for (long fam = 0; fam < family_size; fam++)
-	{
-		for (long lev = 0; lev < family_nlevels.lData[fam]; lev++)
-		{
-			sprintf (buf, "%f ", observed_freqs (fam, lev));
-			BufferToConsole (buf);
-		}
-		NLToConsole ();
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
-	// Initial imputation with random assignments to missing values, based on observed frequencies
-	//	We can always burn-in the chain to converge to more realistic assignments
-	//	before taking expectation.
-	//	Also use this loop to calculate m_ijk's, i.e. cell counts for cases with missing values
-	for (long i = 0; i < impute.GetUsed(); i++)
-	{
-		if (is_missing(0,i))
-		{
-			double	urn			= genrand_real2();
-			long	member		= i % family_size;
-			
-			for (long lev = 0; lev < family_nlevels.lData[member]; lev++)
-			{
-				if (urn < observed_freqs (member, lev))
-				{
-					impute._Matrix::Store (0, i, (_Parameter)lev);
-					break;
-				}
-				else
-				{
-					urn -= observed_freqs (member, lev);	// rescale random float
-				}
-			}
-		}
-	}
-	
-	
-	
-	// compute m_ijk's and m_ij's
-	long		num_incomplete_cases	= impute.GetUsed() / family_size;
-	
-	for (long ic = 0; ic < num_incomplete_cases; ic++)
-	{
-		long	index			= 0,
-		child_state		= impute (0, ic * family_size);
-		
-		for (long par = 0; par < parents.lLength; par++)
-		{
-			long	parent_state	= impute (0, ic*family_size + par+1);		
-			index += parent_state * multipliers.lData[par];
-		}
-		
-		m_ijk.Store ((long) index, child_state, m_ijk(index, child_state) + 1);
-		m_ij.Store ((long) index, 0, m_ij(index, 0) + 1);
-	}
-	
-	
-	
-#ifdef __DEBUG_IDS__
-	sprintf (buf, "impute: \n");
-	BufferToConsole (buf);
-	for (long bug = 0; bug < impute.GetUsed(); bug++)
-	{
-		sprintf (buf, "%d ", (long) impute (0, bug));
-		BufferToConsole (buf);
-		
-		if (bug % family_size == family_size - 1)
-		{
-			NLToConsole ();
-		}
-	}
-	NLToConsole ();
-	
-	sprintf (buf, "m_ijk: \n");
-	BufferToConsole (buf);
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		for (long k = 0; k < family_nlevels.lData[0]; k++)
-		{
-			sprintf (buf, "%d ", (long) m_ijk (j,k));
-			BufferToConsole (buf);
-		}
-		
-		sprintf (buf, "| %d", (long) m_ij (j,0));
-		BufferToConsole (buf);
-		
-		NLToConsole ();
-	}
-	NLToConsole ();
-#endif
-	
-	
-	// Calculate probability of imputation {m_ijk}
-	//	For the time being, use multinomial with Dirichlet prior based on non-missing cases (n_ijk)
-	//	for each node, i.e., network parameters for empty graph (independence prior).
-	//	Later, we will want to allow the user to submit their own prior distribution (e.g., after an iteration
-	//	of structural EM) - afyp (March 28, 2008)
-	
-	// add Jeffrey's invariance constant (0.5) to every cell n_ijk to avoid zero counts?
-	
-	_Parameter	log_prior_impute		= 0.0;
-	
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		
-		log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
-		- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
-		/*
-		log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
-		- LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
-		 */
-		for (long k = 0; k < r_i; k++)
-		{
-			
-			log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
-			- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
-			/*
-			log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
-			- LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
-			 */
-		}
-	}
-	
-	
-	
-	// Calculate posterior probability for initial imputation		
-	_Parameter	last_score	= log_prior_impute,
-				last_prior_impute = log_prior_impute;
-	
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		last_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-		last_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
-		
-		for (long k = 0; k < num_levels.lData[node_id]; k++)
-		{
-			last_score += LnGamma (calc_bit, n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
-		}
-	}
-	
-	
-	
-#ifdef __DEBUG_IDS__
-	sprintf (buf, "log_prior_impute = %f\nlast_score = %f\n", log_prior_impute, last_score);
-	BufferToConsole (buf);
-#endif
-	
-	  /********
-	 /  MCMC  /
-	 ********/
-	
-	// Run MCMC over imputations, use as proposal function a single case reassignment (guaranteed to modify m_ijk's)
-	//		Take into account case being reassigned so that we don't have to re-sum m_ijk every time
-	//		use burn-in and thinning of the sample when calculating the expectation for family posterior probability
-	_Parameter	lk_ratio,
-				expect_log_score = 0.;
-	
-	_Matrix		last_impute ((_Matrix &) impute),		// duplicate matrix constructors
-				last_m_ijk (m_ijk),
-				last_m_ij (m_ij);
-	
-	
-	for (long step = 0; step < mcem_max_steps + mcem_burnin; step++)
-	{
-		/*	PROPOSAL  */
-		
-		// choose a random case from the incomplete set and pick a random variable that is missing
-		long	imp,
-				imp_case,
-				imp_var,
-				last_state,
-				child_state,
-				pick;
-		
-		
-		
-		while (1)	// this could be optimized by pre-computing a list of missing value indices
-		{
-			imp = genrand_int32 () % impute.GetUsed();
-			
-			if (is_missing(0, imp))
-			{
-				break;
-			}
-		}
-		
-		imp_case = (long) (imp / family_size);		// which incomplete case?
-		imp_var	 = imp % family_size;		// which variable?
-		last_state = impute (0, imp);
-		
-		
-		
-#ifdef __DEBUG_IDS__
-		sprintf (buf, "imp = %d\nimp_case = %d\nimp_var = %d\nnum_incomplete_cases=%d\n", imp, imp_case, imp_var, num_incomplete_cases);
-		BufferToConsole (buf);
-#endif
-		
-		
-		long	old_index = 0,
-		new_index;
-		
-		for (long par = 0; par < parents.lLength; par++)
-		{
-			long	parent_state	= impute (0, imp_case*family_size + par+1);		
-			old_index += parent_state * multipliers.lData[par];
-		}
-		
-		
-		
-		// randomly assign a new state to the variable
-		
-		if (family_nlevels.lData[imp_var] < 2)
-		{
-			_String	oops ("WARNING: Attempting to impute missing values for variable having fewer than two known levels..\n");
-			WarnError(oops);
-			
-			continue;	// drop this step from the chain
-		}
-		else if (family_nlevels.lData[imp_var] == 2)
-		{
-			// by convention, levels are zero-indexed; if not, this won't work
-			impute._Matrix::Store (0, imp, (_Parameter) (last_state ? 0 : 1));
-		}
-		else		// randomly assign a state (other than the current one) with uniform probability
-		{
-			pick = genrand_int32() % (family_nlevels.lData[imp_var]-1);
-			
-			if (pick >= last_state)
-			{
-				pick++;		// skip current state
-			}
-			
-			impute._Matrix::Store (0, imp_var, (_Parameter)pick);
-		}
-		
-		
-#ifdef __DEBUG_IDS__
-		sprintf (buf, "proposed impute: \n");
-		BufferToConsole (buf);
-		for (long bug = 0; bug < impute.GetUsed(); bug++)
-		{
-			sprintf (buf, "%d ", (long) impute (0, bug));
-			BufferToConsole (buf);
-			
-			if (bug % family_size == family_size - 1)
-			{
-				NLToConsole ();
-			}
-		}
-		NLToConsole ();
-#endif
-		
-		// given the case just modified, update m_ijk's.
-		
-		child_state = impute(0, imp_case*family_size);
-		
-		if (imp_var > 0)
-		{
-			// changed a parental variable, update index
-			new_index = 0;
-			
-			for (long par = 0; par < parents.lLength; par++)
-			{
-				long	parent_state	= impute (0, imp_case*family_size + par+1);		
-				new_index += parent_state * multipliers.lData[par];
-			}
-			
-#ifdef __DEBUG_IDS__
-			sprintf (buf, "old_index = %d\nnew_index = %d\n", old_index, new_index);
-			BufferToConsole (buf);
-#endif
-			//	It shouldn't be necessary to re-calculate log_prior_impute from scratch every time
-			//	but this doesn't work properly yet :-P afyp
-			
-			/*
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, child_state));
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(new_index, child_state));
-			 */
-			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) - 1);
-			m_ijk.Store (new_index, child_state, m_ijk (new_index, child_state) + 1);
-			/*
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, child_state));
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(new_index, child_state));
-			 */
-			
-			// non-integer flattening constant prevents us from operating directly on factorial terms
-			/*
-			 log_prior_impute -= log ( n_ijk (old_index, child_state) + m_ijk (old_index, child_state) + DIRICHLET_FLATTENING_CONST - 1 );
-			 log_prior_impute += log ( n_ijk (new_index, child_state) + m_ijk (new_index, child_state) + DIRICHLET_FLATTENING_CONST );				
-			 */
-			
-			/*
-			 log_prior_impute -= - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
-			 log_prior_impute -= - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
-			 */
-			m_ij.Store (old_index, 0, m_ij (old_index, 0) - 1);
-			m_ij.Store (new_index, 0, m_ij (new_index, 0) + 1);
-			/*
-			 log_prior_impute += - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
-			 log_prior_impute += - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
-			 */
-		}
-		else
-		{
-			/*
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, last_state));
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, last_state));
-			 */
-			m_ijk.Store (old_index, last_state, m_ijk (old_index, last_state) - 1);
-			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) + 1);
-			/*
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, child_state));
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
-			 + m_ijk(old_index, child_state));
-			 */
-			
-			/*
-			 log_prior_impute -= log ( n_ijk (old_index, last_state) + m_ijk (old_index, last_state) - 1);
-			 log_prior_impute += log ( n_ijk (old_index, child_state) + m_ijk (old_index, child_state) );
-			 */
-			// m_ij's unchanged, parental combination not modified
-		}
-		
-		
-		// re-compute prior
-		last_prior_impute		= log_prior_impute;
-		log_prior_impute		= 0.0;
-		/*
-		for (long j = 0; j < num_parent_combos; j++)
-		{
-			log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
-			- LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
-			for (long k = 0; k < r_i; k++)
-			{
-				log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
-				- LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
-			}
-		}
-		*/
-		for (long j = 0; j < num_parent_combos; j++)
-		{
-			log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
-			- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
-			
-			for (long k = 0; k < r_i; k++)
-			{
-				log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
-				- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
-			}
-		}
-		
-		
-#ifdef __DEBUG_IDS__
-		sprintf (buf, "proposed m_ijk: \n");
-		BufferToConsole (buf);
-		for (long j = 0; j < num_parent_combos; j++)
-		{
-			for (long k = 0; k < family_nlevels.lData[0]; k++)
-			{
-				sprintf (buf, "%d ", (long) m_ijk (j,k));
-				BufferToConsole (buf);
-			}
-			NLToConsole ();
-		}
-		NLToConsole ();
-#endif
-		
-		
-		// compute posterior probability for this step, given N_ijk = n_ijk + m_ijk
-		log_score = log_prior_impute;
-		
-		for (long j = 0; j < num_parent_combos; j++)
-		{
-			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-			log_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
-			
-			for (long k = 0; k < num_levels.lData[node_id]; k++)
-			{
-				log_score += LnGamma (calc_bit,  n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
-			}
-		}
-		
-		/* I have a hunch this can all be stream-lined... - afyp April 4, 2008 */
-		
-		
-		// accept step?		(Metropolis-Hastings)
-		lk_ratio	= exp(log_score - last_score);
-		
-#ifdef __DEBUG_IDS__
-		sprintf (buf, "prior = %f, log_score = %f, last_score = %f, lk_ratio = %f\n", log_prior_impute, log_score, last_score, lk_ratio);
-		BufferToConsole (buf);
-#endif
-		if (lk_ratio > 1. || genrand_real2() < lk_ratio)	// accept proposed imputation
-		{
-			last_impute = (_Matrix &)impute;
-			last_score = log_score;
-			last_prior_impute	= log_prior_impute;
-			last_m_ijk = m_ijk;
-			last_m_ij = m_ij;
-#ifdef __DEBUG_IDS__			
-			sprintf (buf, "accept\n\n");
-			BufferToConsole (buf);
-#endif
-		}
-		else		// revert to original imputation
-		{
-			for (long i = 0; i < impute.GetUsed(); i++)
-			{
-				impute._Matrix::Store (0, i, last_impute (0, i));
-			}
-			log_score = last_score;
-			log_prior_impute	= last_prior_impute;
-			m_ijk = last_m_ijk;
-			m_ij = last_m_ij;
-#ifdef __DEBUG_IDS__				
-			sprintf (buf, "reject\n\n");
-			BufferToConsole (buf);
-#endif
-		}
-		
-		
-		
-		// handle sampling of chain
-		if (step >= mcem_burnin)
-		{
-			if ( (step - (long)mcem_burnin) % (long)mcem_interval == 0)
-			{
-				prior_denom->Store (log_prior_impute);	// append to _GrowingVector objects
-				post_chain->Store (log_score);
-#ifdef __DEBUG_IDS__
-				sprintf (buf, "%f, %f\n", log_prior_impute, log_score);
-				BufferToConsole (buf);
-#endif
-			}
-		}
-	}
-	// exit MCEM for-loop
-	
-	expect_log_score = LogSumExpo (post_chain) - LogSumExpo (prior_denom);
-#ifdef __DEBUG_IDS__		
-	sprintf (buf, "expected log score = %f\n\n\n", expect_log_score);
-	BufferToConsole (buf);
-#endif		
-	
-	DeleteObject (prior_denom);
-	DeleteObject (post_chain);
-	
-	return expect_log_score;
-}
-
 
 //___________________________________________________________________________________________
-
-_Parameter Bgm::ComputeContinuousScore (long node_id)
-{
-	/* WARNING, untested function! */
-	/* --------------------------- */
-	
-	// mm = prior estimate of unconditional mean at continuous node (i.e. intercept)
-	// phi = scale parameter of inverse gamma prior for variance, uninformative at low values 
-	//						(Kohn, Smith, and Chan, 2001 Stat Comput 11: 313-322)
-	
-	_Parameter	log_score = 0.;
-	
-	long		num_parent_combos = 1;	// i.e. 'q'
-	
-	_Matrix		n_ij,
-				pa_indexing,		// track discrete parent combinations per observation
-				mu,
-				tau;
-	
-	_SimpleList		parents,
-					continuous_parents,
-					multipliers ((long)1);
-	
-	
-	
-	// generate lists of discrete or continuous parents from graph
-	for (long par = 0; par < num_nodes; par++)
-	{
-		if (dag(par, node_id) == 1)
-		{
-			if (is_discrete.lData[par])
-				parents << par;
-			else
-				continuous_parents << par;
-		}
-	}
-	
-	// current number of continuous parents
-	long	k = continuous_parents.lLength;
-	
-	
-	// set location hyperparameter for Gaussian prior
-	CreateMatrix (&mu, k+1, 1, false, true, false);
-	mu.Store (0, 0, prior_mean (node_id, 0));				// prior intercept
-	for (long i = 1; i < mu.GetHDim(); i++)
-	{
-		mu.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
-	}
-	
-	
-	
-	// how many combinations of parental states are there?
-	{
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		num_parent_combos *= num_levels.lData[parents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	}
-	
-	// set prior degrees of freedom (for inverse gamma / scaled inverse chi-square)
-	_Parameter		rho	= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
-	
-	
-	// set precision hyperparameter for Gaussian prior
-	CreateMatrix (&tau, k+1, k+1, false, true, false);
-	for (long row = 0; row < tau.GetHDim(); row++)
-	{
-		for (long col = 0; col < tau.GetVDim(); col++)
-		{
-			if (row == col) tau.Store (row, col, rho);
-			else tau.Store (row, col, 0.);	// zero off-diagonal entries
-		}
-	}
-	
-	
-	// count up number of data points per parent combination
-	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
-	CreateMatrix (&pa_indexing, obsData->GetHDim(), 1, false, true, false);
-	for (long obs = 0; obs < obsData->GetHDim(); obs++)
-	{
-		long	index		= 0,
-				multiplier	= 1,
-				child_state = (*obsData)(obs, node_id);
-		
-		for (long par = 0; par < parents.lLength; par++)
-		{
-			long	this_parent		= parents.lData[par];
-			// max index = sum (parent * levels(parent))
-			index += (*obsData)(obs, this_parent) * multiplier;
-			multiplier *= num_levels.lData[this_parent];
-		}
-		
-		pa_indexing.Store (obs, 0, index);
-		n_ij.Store (index, 0, n_ij(index, 0) + 1);
-	}
-	
-	
-	
-	// for every parent combination, calculate contribution to score
-	for (long pa = 0; pa < num_parent_combos; pa++)
-	{
-		_Parameter	pa_log_score = 0.;
-		
-		_Matrix		zbpa (n_ij(pa, 0), continuous_parents.lLength + 1, false, true),
-					yb (n_ij(pa, 0), 1, false, true),
-					scale;
-		
-		long		count_n		= 0;	
-								// number of data points with this parent combination.
-		
-		
-		// populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
-		for (long obs = 0; obs < obsData->GetHDim(); obs++)
-		{
-			if (pa_indexing(obs, 0) == pa)		// this observation has the current parent combo
-			{									// load observed states at continuous parents into matrix
-												//   I'm sure there's a faster way to do this! - afyp
-				
-				zbpa.Store (count_n, 0, 1);		// intercept
-				
-				for (long parent = 0; parent < continuous_parents.lLength; parent++)
-					zbpa.Store (count_n, parent+1, (*obsData)(obs, continuous_parents.lData[parent]));
-				
-				// state vector for this continuous node
-				yb.Store (count_n, 0, (*obsData)(obs, node_id));
-				
-				count_n++;
-			}
-		}
-		
-		// calculate scale parameter for non-central t distribution
-		// from S. Bottcher (2001) p.25
-		scale = zbpa;
-		scale *=  * (_Matrix *) tau.Inverse();
-		zbpa.Transpose();
-		scale *= zbpa;
-		zbpa.Transpose();
-		for (long row = 0; row < scale.GetHDim(); row++)	// add identity matrix
-		{
-			scale.Store (row, row, scale(row, row)+(_Parameter)1.);
-		}
-		scale *= (_Parameter) (prior_precision (node_id, 0) / rho);
-		
-		
-		// calculate the determinant of scale parameter matrix
-		_Matrix			temp_mat (scale);
-		_Parameter		pi_const = 3.141592653589793;
-		
-		temp_mat *= (_Parameter) (pi_const * rho);
-		
-		_AssociativeList *	eigen		= (_AssociativeList *) temp_mat.Eigensystem();
-		_Matrix *			eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-		_Parameter			det			= 1.;
-		
-		// determinant is product of eigenvalues (should be > 0 for positive definite matrices)
-		for (long i = 0; i < eigenvalues->GetHDim(); i++)
-			det *= (_Parameter)(*eigenvalues) (i,0);
-		
-		
-		// calculate first term of score
-		pa_log_score += LnGamma (calc_bit, (rho + n_ij(pa, 0))/2.);
-		pa_log_score -= LnGamma (calc_bit, rho/2.) + 0.5 * log(det);
-		
-		
-		// calculate second term of score
-		_Matrix		next_mat;
-		zbpa *= mu;
-		yb -= zbpa;
-		temp_mat = yb;
-		next_mat = temp_mat;
-		next_mat *= * (_Matrix *) scale.Inverse();
-		temp_mat.Transpose();
-		next_mat *= temp_mat;
-		next_mat *= (_Parameter) (1./prior_precision (node_id, 0));	// should be a 1-element matrix
-		
-		pa_log_score += -(rho + n_ij(pa,0))/2. * (next_mat(0,0) + 1.);
-		log_score += pa_log_score;
-	}
-	
-	
-	return log_score;
-}
-
-
-
-//___________________________________________________________________________________________
-//  THIS DOES NOT WORK YET --- need to provide global scope for member variable node_scores, 
-//	through accessor function maybe?
-#ifdef __NOT_DEFINED_MP__
-void * CacheNodeScoreThread (void * arg)
-{
-	ThreadCacheTask	*	theTask	= (ThreadCacheTask *) arg;
-	
-	long				num_nodes	= theTask->numNodes;
-	_SimpleList			is_discrete	= theTask->isDiscrete;
-	
-	for (long node_id = theTask->startNode; node_id < theTask->nextNode; node_id++)
-	{
-		long		maxp		= theTask->maxParents.lData[node_id];
-		_List	*	this_list	= (_List *) (theTask->nodeScores)->lData[node_id];
-		
-		
-		this_list->Clear();
-		
-		/*
-		for (long par = 0; par < num_nodes; par++)	// reset local graph at this node
-		{
-			dag.Store (par, node_id, 0);
-		}
-		*/
-		
-		// handle case of no parents
-		_SimpleList	parents;
-		_Parameter	score = is_discrete.lData[node_id] ? theTask->b->ComputeDiscreteScore (node_id, parents) : theTask->b->ComputeContinuousScore (node_id);
-		_Constant	orphan_score (score);
-		
-		(*this_list) && (&orphan_score);		// _List Append() specific to objects in BaseObj hierarchy
-		
-		
-		char buf [256];
-		sprintf (buf, "orphan score = %f\n", score);
-		BufferToConsole (buf);
-		
-		
-		// handle case of one parent
-		if (maxp > 0)
-		{
-			_Matrix		single_parent_scores (num_nodes, 1, false, true);
-			
-			for (long par = 0; par < num_nodes; par++)
-			{
-				if (par == node_id)		// unused
-					continue;
-				
-				//dag.Store (par, node_id, 1);
-				parents << par;
-				single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? theTask->b->ComputeDiscreteScore (node_id, parents) : 
-											theTask->b->ComputeContinuousScore (node_id));
-				parents.Clear();
-				//dag.Store (par, node_id, 0);	// reset
-			}
-			(*this_list) && (&single_parent_scores);
-		}
-		
-		
-		// handle cases of more than one parent using (n,k)-tuple indexing
-		if (maxp > 1)
-		{
-			_SimpleList		all_but_one (num_nodes-1, 0, 1),	// 0, 1, 2, ... , n-1
-							aux_list,
-							nk_tuple;
-			
-			for (long np = 2; np <= maxp; np++)
-			{
-				_NTupleStorage	family_scores (num_nodes-1, np);
-				
-				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
-				{
-					bool	remaining;
-					long	res;
-					
-					do 
-					{
-						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-						
-						
-						for (long par_idx = 0; par_idx < np; par_idx++)
-						{
-							long par = nk_tuple.lData[par_idx];
-							
-							if (par >= node_id) par++;	// map from (n-1) parent space to nodespace
-							parents << par;
-						//	dag.Store (par, node_id, 1);
-						}
-						 
-						
-						score = is_discrete.lData[node_id] ? theTask->b->ComputeDiscreteScore (node_id, parents) : 
-															theTask->b->ComputeContinuousScore (node_id);
-						
-						res = family_scores.Store (score, nk_tuple);
-						
-						parents.Clear();
-						/*
-						for (long par = 0; par < num_nodes; par++)
-						{
-							dag.Store (par, node_id, 0);	// reset graph
-						}
-						 */
-						
-					} while (remaining);
-					
-				} else {
-					_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-					WarnError(oops);
-				}
-				
-				(*this_list) && (&family_scores);	// append duplicate to storage
-			}
-		}
-	}	
-	pthread_exit (NULL);
-}
-#endif
-
-
-
-//___________________________________________________________________________________________
-//	Master node (0) farms jobs for each graph node to compute nodes.  
-//	Compute nodes receive jobs and 
 void Bgm::CacheNodeScores (void)
 {
 	if (scores_cached)
@@ -2384,7 +1399,7 @@ void Bgm::CacheNodeScores (void)
 			
 			this_list	= (_List *) node_scores.lData[node_id];
 			
-			
+						// [_SimpleList parents] should always be empty here
 			_Parameter	score		= is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
 			_Constant	orphan_score (score);
 			
@@ -2650,12 +1665,12 @@ void Bgm::CacheNodeScores (void)
 	
 #if !defined __UNIX__ || defined __HEADLESS__
 	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
 #if !defined __HEADLESS__
 	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
 #else
 	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
 #endif	
-	
 	_Parameter	seconds_accumulator = .0,
 				temp;
 #endif
@@ -2740,9 +1755,9 @@ void Bgm::CacheNodeScores (void)
 									& " nodes (" & (1.0+node_id)/seconds_accumulator & "/second)";
 			
 #if defined __HEADLESS__
-	SetStatusLine (statusLine);
+			SetStatusLine (statusLine);
 #else
-	SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
+			SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
 #endif
 			TimerDifferenceFunction (false); // reset timer for the next second
 			yieldCPUTime (); // let the GUI handle user actions
@@ -2871,98 +1886,6 @@ _Matrix *	Bgm::ExportGraph (void)
 
 
 
-//___________________________________________________________________________________________
-//	This doesn't work yet -- afyp :-/
-_Matrix *	Bgm::ExportNodeScores (void)
-{
-	// determine the required number of rows
-	long		nrows = 0;
-	
-	for (long child = 0; child < num_nodes; child++)
-	{
-		long	maxp = max_parents.lData[child];
-		nrows++;
-		if (maxp > 0)
-		{
-			nrows += num_nodes - 1;
-			if (maxp > 1)
-			{
-				_List	* childs_list	= (_List *) node_scores.lData[child];
-				for (long np = 2; np < maxp; np++)
-				{
-					_NTupleStorage	* nts	= (_NTupleStorage *) childs_list->lData[np];
-					nrows += nts->GetSize();
-				}
-			}
-		}
-	}
-	
-	
-	_Matrix *	export_mx = new _Matrix (nrows, 4, false, true);		// child ID, #parents, parent combo #, score
-	
-	
-	for (long index = 0, child = 0; child < num_nodes; child++)
-	{
-		_List	* childs_list	= (_List *) node_scores.lData[child];
-		
-		for (long np = 0; np < max_parents.lData[child]; np++)
-		{
-			if (np == 0)
-			{
-				_Constant	*	orphan_score = (_Constant *) childs_list->lData[0];
-				
-				export_mx->Store (index, 0, child);
-				export_mx->Store (index, 1, np);
-				export_mx->Store (index, 2, 0);
-				export_mx->Store (index, 3, orphan_score->Value());
-				
-				index++;
-			}
-			else if (np == 1)
-			{
-				_Matrix	*	single_parent_scores = (_Matrix *) childs_list->lData[1];
-				
-				for (long parent = 0; parent < num_nodes; parent++)
-				{
-					if (parent == child) continue;
-					export_mx->Store (index, 0, child);
-					export_mx->Store (index, 1, np);
-					export_mx->Store (index, 2, parent);
-					export_mx->Store (index, 3, (*single_parent_scores) (parent, 0));
-					index++;
-				}
-			}
-			else
-			{
-				_NTupleStorage *	family_scores = (_NTupleStorage *) childs_list->lData[np];
-				
-				for (long family = 0; family < family_scores->GetSize(); family++)
-				{
-					export_mx->Store (index, 0, child);
-					export_mx->Store (index, 1, np);
-					export_mx->Store (index, 2, family);	// direct index
-					export_mx->Store (index, 3, family_scores->DirectIndex(family));
-					index++;
-				}
-			}
-		}
-	}
-	
-	
-	return (_Matrix *)(export_mx->makeDynamic());
-}
-
-
-
-//___________________________________________________________________________________________
-void	Bgm::ImportNodeScores (_Matrix * import_scores)
-{
-	
-}
-
-
-
-
 
 //___________________________________________________________________________________________
 //	Allocate memory for storing node scores and edge posteriors
@@ -3005,25 +1928,10 @@ _Parameter	Bgm::Compute (_SimpleList * node_order, _List * results)
 		a position in an ordered sequence.  In addition, compute marginal posteriors of
 		each potential edge in the graph, by Proposition 3.2.								*/
 	
-	
+		
+
 	_Parameter			log_likel	= 0.;
-	
 	_GrowingVector		*gv1, *gv2;
-	
-#ifdef DEBUG_COMPUTE
-	char buf [256];
-	
-	sprintf (buf, "\nCompute(): node order {%d", node_order->lData[0]);
-	BufferToConsole (buf);
-	
-	for (long i = 1; i < num_nodes; i++)
-	{
-		sprintf (buf, ",%d", node_order->lData[i]);
-		BufferToConsole (buf);
-	}
-	sprintf (buf, "}\n");
-	BufferToConsole (buf);
-#endif
 	
 	
 	// reset _GrowingVector objects stored in _List object
@@ -3032,335 +1940,113 @@ _Parameter	Bgm::Compute (_SimpleList * node_order, _List * results)
 		gv1 = (_GrowingVector *) results->lData[i];
 		gv1 -> ZeroUsed();
 	}
-
 	
-	if (is_dynamic_graph)	// DBN
+	
+	for (long nodeIndex = 0; nodeIndex < node_order->lLength; nodeIndex++)
 	{
-		// loop through node order
-		for (long nodeIndex = 0; nodeIndex < node_order->lLength; nodeIndex++)
+		long				child_node		= node_order->lData[nodeIndex],
+							maxp			= max_parents.lData[child_node];
+		
+		_List			*	score_lists		= (_List *) node_scores.lData[child_node];
+		_Constant		*	orphan_score	= (_Constant *) (score_lists->lData[0]);
+						
+		
+		gv1 = (_GrowingVector *) results->lData[child_node * num_nodes + child_node];	// store denominator in diagonal
+		gv1->ZeroUsed();
+		gv1 -> Store (orphan_score->Value());	// handle case of no parents
+		
+		
+		
+		if (maxp > 0)
 		{
-			long				child_node		= node_order->lData[nodeIndex],
-								maxp			= max_parents.lData[child_node];
-			
-			_List			*	score_lists		= (_List *) node_scores.lData[child_node];
-			
-			
-#ifdef DEBUG_COMPUTE
-			sprintf (buf, "\tNode %d:\n", child_node);
-			BufferToConsole (buf);
-#endif
-			
-			
-			gv1 = (_GrowingVector *) results->lData[child_node * num_nodes + child_node];	// store denominator (all scores) in diagonal
-			gv1->ZeroUsed();
-			
-			
-			if (child_node % 2 == 1)	// previous time slice, no parents
+			// all nodes to the right are potential parents, except banned parents!
+			_SimpleList		precedes;
+			for (long parIndex = nodeIndex + 1; parIndex < node_order->lLength; parIndex++)
 			{
-				_Constant		*	orphan_score	= (_Constant *) (score_lists->lData[0]);
-				gv1 -> Store (orphan_score->Value());
+				long	par = node_order->lData[parIndex];
 				
-#ifdef DEBUG_COMPUTE
-				sprintf (buf, "\t\torphan score: %f\n", orphan_score->Value());
-				BufferToConsole (buf);
-#endif
+				if (banned_edges(par, child_node) == 0)
+					precedes << par;
 			}
-			else
+			
+			
+			// handle trivial case of one parent
+			_Matrix *	single_parent_scores	= (_Matrix *) (score_lists->lData[1]);
+			
+			for (long i = 0; i < precedes.lLength; i++)
 			{
-				// handle trivial case of one parent
-				_Matrix *	single_parent_scores	= (_Matrix *) (score_lists->lData[1]);
-				long		self_parent				= node_order->lData[nodeIndex + 1];
+				long	par = precedes.lData[i];
 				
+				gv1 -> Store ((*single_parent_scores) (par, 0));
+				gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + par];
+				gv2 -> Store ((*single_parent_scores) (par, 0));
+			}
+			
+			
+			// more than one parent requires k-tuples
+			if (maxp > 1)
+			{
+				_SimpleList			indices (precedes.lLength, 0, 1);	// populates list with 0, 1, 2, ..., M-1
+																		// where M is the number of eligible parents in [precedes]
+				_NTupleStorage *	family_scores;
 				
-				gv1 -> Store ((*single_parent_scores) (self_parent, 0));
-				
-				gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + self_parent];
-				gv2 -> Store ((*single_parent_scores) (self_parent, 0));
-				
-#ifdef DEBUG_COMPUTE
-				sprintf (buf, "\t\tsingle parent score: %f\n", (*single_parent_scores) (self_parent, 0));
-				BufferToConsole (buf);
-#endif
-				
-				if (maxp > 1)
+				for (long nparents = 2; nparents <= maxp; nparents++)
 				{
-					// always include self from previous time point, plus...
-					_SimpleList			parents,
-										eligible_parents;
+					_SimpleList		subset,
+									auxil;
 					
-					_Parameter			tuple_score;
-					
-					_NTupleStorage *	family_scores;
+					bool			not_finished;
 					
 					
-					// skip every other node in ordering to stay in parental time slice
-#ifdef DEBUG_COMPUTE
-					sprintf (buf, "\t\teligible non-self parents:");
-					BufferToConsole (buf);
-#endif
-					for (long parIndex = nodeIndex + 3; parIndex < node_order->lLength; parIndex = parIndex + 2)
+					if (nparents > precedes.lLength)	// not enough eligible parents to form tuples!
+						break;
+					
+					
+					if (indices.NChooseKInit (auxil, subset, nparents, false))
 					{
-						long	par = node_order->lData[parIndex];
+						_Parameter		tuple_score;
+						_SimpleList		parents;
 						
-						if (banned_edges (par, child_node) == 0)
+						parents.Populate (nparents, 0, 0);	// allocate memory
+						
+						family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
+						
+						
+						do
 						{
-							eligible_parents << par;
-#ifdef DEBUG_COMPUTE
-							sprintf (buf, " %d", par);
-							BufferToConsole (buf);
-#endif
-						}
-					}
-#ifdef DEBUG_COMPUTE
-					NLToConsole ();
-#endif
-					
-					// two parents
-					family_scores = (_NTupleStorage *) (score_lists->lData[2]);
-					
-					for (long ep = 0; ep < eligible_parents.lLength; ep++)
-					{
-						long	this_parent	= eligible_parents.lData[ep];
-						
-						// prepare 2-tuple, adjusting for k-tuple indexing (skips child node)
-						parents.Clear();
-						parents << self_parent-1;
-						
-						if (this_parent > child_node)
-						{
-							parents << this_parent - 1;
-						}
-						else
-						{
-							parents << this_parent;
-						}
-						
-						parents.Sort(TRUE);
-						tuple_score	= family_scores -> Retrieve (parents);
-						
-						gv1 -> Store (tuple_score);
-						
-						gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + self_parent];
-						gv2 -> Store (tuple_score);
-						gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + this_parent];
-						gv2 -> Store (tuple_score);
-#ifdef DEBUG_COMPUTE
-						sprintf (buf, "\t\t2-parent score (%d,%d) = %f\n", parents.lData[0], parents.lData[1], tuple_score);
-						BufferToConsole (buf);
-#endif
-					}
-					
-					
-					if (maxp > 2)	// more than two parents, need to use k-tuple objects
-					{
-						_SimpleList			indices (eligible_parents.lLength, 0, 1);
-						
-						for (long nparents = 3; nparents <= maxp; nparents++)
-						{
-							_SimpleList		subset,
-											auxil;
-							
-							bool			not_finished;
+							//parents.Clear();
+							not_finished = indices.NChooseK (auxil, subset);	// cycle through index combinations
 							
 							
-							if (nparents-1 > eligible_parents.lLength)
-								break;
-							
-							if (indices.NChooseKInit (auxil, subset, nparents-1, false))
+							for (long i = 0; i < nparents; i++)	// convert indices to parent IDs (skipping child)
 							{
-								family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
-								
-								do
-								{
-									parents.Clear();
-									parents << self_parent;
-									
-									not_finished = indices.NChooseK (auxil, subset);	// cycle through index combinations
-									
-									
-									for (long i = 0; i < nparents-1; i++)	// convert indices to parent IDs (skipping child)
-									{
-										long	realized = eligible_parents.lData[subset.lData[i]];
-										
-										if (realized >= child_node) realized--;
-										parents << realized;
-									}
-									parents.Sort(TRUE);
-									
-									
-									tuple_score	= family_scores -> Retrieve (parents);
-									
-									gv1 -> Store (tuple_score);
-									
-									gv2 = (_GrowingVector *) results -> lData [child_node*num_nodes + self_parent];
-									gv2 -> Store (tuple_score);
-									
-									for (long i = 0; i < nparents-1; i++)
-									{
-										gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + eligible_parents.lData[subset.lData[i]]];
-										gv2 -> Store (tuple_score);
-									}
-#ifdef DEBUG_COMPUTE
-									sprintf (buf, "\t\t%d-parent score = %f\n", nparents, tuple_score);
-									BufferToConsole (buf);
-#endif
-								}
-								while (not_finished);
+								long	realized = precedes.lData[subset.lData[i]];
+								if (realized >= child_node) realized--;
+								parents.lData[i] = realized;
 							}
-						}
-					}
-				}
-			}
-			
-			gv1 -> _Matrix::Store (0, 0, LogSumExpo(gv1));	// replace first entry with sum, i.e. marginal log-likelihood of child node
-			log_likel += (*gv1)(0, 0);
-		} // end loop over node order
-	}
-	else	// static Bayesian network
-	{
-		for (long nodeIndex = 0; nodeIndex < node_order->lLength; nodeIndex++)
-		{
-			long				child_node		= node_order->lData[nodeIndex],
-								maxp			= max_parents.lData[child_node];
-			
-			_List			*	score_lists		= (_List *) node_scores.lData[child_node];
-			_Constant		*	orphan_score	= (_Constant *) (score_lists->lData[0]);
+							parents.Sort(TRUE);
 							
-			
-			gv1 = (_GrowingVector *) results->lData[child_node * num_nodes + child_node];	// store denominator in diagonal
-			gv1->ZeroUsed();
-			gv1 -> Store (orphan_score->Value());	// handle case of no parents
-			
-			
-			
-			if (maxp > 0)
-			{
-				// all nodes to the right are potential parents, except banned parents!
-				_SimpleList		precedes;
-				for (long parIndex = nodeIndex + 1; parIndex < node_order->lLength; parIndex++)
-				{
-					long	par = node_order->lData[parIndex];
-					
-					if (banned_edges(par, child_node) == 0)
-						precedes << par;
-				}
-				
-				
-				// handle trivial case of one parent
-				_Matrix *	single_parent_scores	= (_Matrix *) (score_lists->lData[1]);
-				
-				for (long i = 0; i < precedes.lLength; i++)
-				{
-					long	par = precedes.lData[i];
-					
-					gv1 -> Store ((*single_parent_scores) (par, 0));
-					gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + par];
-					gv2 -> Store ((*single_parent_scores) (par, 0));
-				}
-				
-				
-				// more than one parent requires k-tuples
-				if (maxp > 1)
-				{
-					_SimpleList			indices (precedes.lLength, 0, 1);	// populates list with 0, 1, 2, ..., M-1
-																			// where M is the number of eligible parents in [precedes]
-					_NTupleStorage *	family_scores;
-					
-					for (long nparents = 2; nparents <= maxp; nparents++)
-					{
-						_SimpleList		subset,
-										auxil;
-						
-						bool			not_finished;
-						
-						
-						if (nparents > precedes.lLength)	// not enough eligible parents to form tuples!
-							break;
-						
-						
-						if (indices.NChooseKInit (auxil, subset, nparents, false))
-						{
-							_Parameter		tuple_score;
-							_SimpleList		parents;
+							tuple_score	= family_scores -> Retrieve (parents);
 							
-							parents.Populate (nparents, 0, 0);	// allocate memory
+							gv1 -> Store (tuple_score);
 							
-							family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
-							
-							
-							do
+							for (long i = 0; i < nparents; i++)
 							{
-								//parents.Clear();
-								not_finished = indices.NChooseK (auxil, subset);	// cycle through index combinations
-								
-								
-								for (long i = 0; i < nparents; i++)	// convert indices to parent IDs (skipping child)
-								{
-									long	realized = precedes.lData[subset.lData[i]];
-									if (realized >= child_node) realized--;
-									parents.lData[i] = realized;
-								}
-								parents.Sort(TRUE);
-								
-	#ifdef DEBUG_COMPUTE
-								sprintf (buf, "\tnk-tuple: ");
-								BufferToConsole (buf);
-								for (long k = 0; k < subset.lLength; k++)
-								{
-									sprintf (buf, "%d ", subset.lData[k]);
-									BufferToConsole (buf);
-								}
-								NLToConsole();
-								
-								sprintf (buf, "\tparents: ");
-								BufferToConsole (buf);
-								for (long k = 0; k < parents.lLength; k++)
-								{
-									sprintf (buf, "%d ", parents.lData[k]);
-									BufferToConsole (buf);
-								}
-								NLToConsole();
-	#endif		
-								
-								tuple_score	= family_scores -> Retrieve (parents);
-								
-								gv1 -> Store (tuple_score);
-								
-								for (long i = 0; i < nparents; i++)
-								{
-									gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
-									gv2 -> Store (tuple_score);
-								}
-							} 
-							while (not_finished);
-						}
+								gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
+								gv2 -> Store (tuple_score);
+							}
+						} 
+						while (not_finished);
 					}
 				}
-				
-	#ifdef DEBUG_COMPUTE
-				sprintf (buf, "\tnode %d: ", child_node);
-				BufferToConsole (buf);
-				
-				for (long i = 0; i < gv1->GetUsed(); i++)
-				{
-					sprintf (buf, "%f ", (_Parameter)(*gv1)(i,0));
-					BufferToConsole (buf);
-				}
-				NLToConsole ();
-	#endif
-				
 			}
-			
-			gv1 -> _Matrix::Store (0, 0, LogSumExpo(gv1));	// replace first entry with sum, i.e. marginal log-likelihood of child node
-			log_likel += (*gv1)(0, 0);
-			
 		}
-		// end loop over child nodes
+		
+		gv1 -> _Matrix::Store (0, 0, LogSumExpo(gv1));	// replace first entry with sum, i.e. marginal log-likelihood of child node
+		log_likel += (*gv1)(0, 0);
+		
 	}
-#ifdef DEBUG_COMPUTE
-	sprintf (buf, "log L = %f\n", log_likel);
-	BufferToConsole (buf);
-#endif
+	// end loop over child nodes
 	
 	return log_likel;
 }
@@ -3392,7 +2078,7 @@ _Parameter Bgm::Compute (_Matrix * g)
 	_Parameter	log_score = 0.;
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
-		log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, g) : 0 /*: ComputeContinuousScore (node_id, g)*/;
+		log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, g) : ComputeContinuousScore (node_id, g);
 	
 	return log_score;
 }
@@ -3702,7 +2388,6 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 #endif
 	
 	
-	
 	//  Reset the graph to either an empty graph, or enforced edges if defined
 	ResetGraph (proposed_graph);
 	
@@ -3858,9 +2543,6 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 		}
 	}
 	
-	
-	
-	
 	delete (proposed_graph);
 	delete (orderMx);
 	delete (proposed_order);
@@ -3871,6 +2553,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 
 
 //___________________________________________________________________________________________
+//	DEPRECATED
 _Parameter	Bgm::TryEdge (long child, long parent, long operation, _Parameter old_score)
 {
 #ifdef _NEVER_DEFINED_
@@ -4017,14 +2700,9 @@ _PMathObj Bgm::CovarianceMatrix (_SimpleList * unused)
 	{
 		node_order = new _SimpleList (num_nodes, 0, 1);		// populate with series (0, 1, ..., num_nodes)
 		
-		if (is_dynamic_graph)
-		{
-			node_order->Permute(2);
-		}
-		else
-		{
-			node_order->Permute(1);		// initialize with randomized node ordering
-		}
+
+		node_order->Permute(1);		// initialize with randomized node ordering
+		
 	}
 	else
 	{
@@ -4161,27 +2839,14 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 		
 		
 		// swap random nodes in ordered sequence
-		if (is_dynamic_graph)
-		{
-			first_node	= genrand_int32() % (num_nodes / 2);
-			second_node = genrand_int32() % (num_nodes / 2);
-			while (first_node == second_node)
-				second_node = genrand_int32() % (num_nodes / 2);
-			
-			// swap tuples --- note that this enforces causal edge X(t-1) --> X(t)
-			proposed_order.Swap (first_node*2, second_node*2);
-			proposed_order.Swap (first_node*2 + 1, second_node*2 + 1);
-		}
-		else
-		{
-			first_node	= genrand_int32() % num_nodes;
+		first_node	= genrand_int32() % num_nodes;
+		second_node = genrand_int32() % num_nodes;
+		
+		while (first_node == second_node)	// keep sampling until pick different node
 			second_node = genrand_int32() % num_nodes;
-			
-			while (first_node == second_node)	// keep sampling until pick different node
-				second_node = genrand_int32() % num_nodes;
-			
-			proposed_order.Swap (first_node, second_node);
-		}
+		
+		proposed_order.Swap (first_node, second_node);
+		
 		
 		// calculate probability of proposed order --- edge posterior probs loaded into member variable
 		prob_proposed_order = Compute (&proposed_order, clist);
@@ -4648,6 +3313,12 @@ void	Bgm::SerializeBgm (_String & rec)
 	_String		dataStr,
 				dataName ("bgmData");
 	
+	_Parameter	mcem_max_steps, mcem_burnin, mcem_sample_size;
+	
+	checkParameter (mcemMaxSteps, mcem_max_steps, 10000);
+	checkParameter (mcemBurnin, mcem_burnin, 1000);
+	checkParameter (mcemSampleSize, mcem_sample_size, 100);
+	
 	// write utility functions
 	rec << "function make_dnode (id,n,maxp)\n";
 	rec << "{\ndnode={};\n";
@@ -4692,6 +3363,14 @@ void	Bgm::SerializeBgm (_String & rec)
 	rec << "BGM ";
 	rec << bgmName;
 	rec << "=(dnodes,cnodes);\n";
+	
+	// missing data imputation settings
+	rec << "BGM_MCEM_MAXSTEPS = ";
+	rec << (long) mcem_max_steps;
+	rec << ";\nBGM_MCEM_BURNIN = ";
+	rec << (long) mcem_burnin;
+	rec << ";\nBGM_MCEM_SAMPLES = ";
+	rec << ";\n";
 	
 	// serialize data matrix and assign to BGM
 	obsData->Serialize (dataStr, dataName);
