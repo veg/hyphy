@@ -82,12 +82,14 @@ else
 		then
 			COMPILER="cbexlc++"
 			COMPILERC="cbexlc"
+			COMPILER_FLAGS=" -c -qchar=signed -O3 -D INTPTR_TYPE=long -D __UNIX__ ";
+			COMPILER_LINK_FLAGS="  -qchar=signed ";
 		else
 			COMPILER="xlC";
 			COMPILERC="xlc";
+			COMPILER_FLAGS=" -qsmp=omp -c -D _SLKP_LFENGINE_REWRITE_ -qchar=signed -O3 -D INTPTR_TYPE=long -D __UNIX__ -qreport  -qarch=auto -qtune=auto ";
+			COMPILER_LINK_FLAGS=" -qsmp=omp -qchar=signed -lxlsmp  -bmaxdata:0x80000000 ";
 		fi
-		COMPILER_FLAGS=" -c -qchar=signed -O3 -D INTPTR_TYPE=long -D __UNIX__ ";
-		COMPILER_LINK_FLAGS="  -qchar=signed ";
 	else
 		COMPILER_LINK_FLAGS=" -w -fsigned-char ";
 		COMPILER_FLAGS=" -w -c -fsigned-char -O3 -fpermissive -I`pwd`/Source -I`pwd`/Source/SQLite -D INTPTR_TYPE=long -D __UNIX__ ";
