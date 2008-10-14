@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
 		8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
 		8529BBD70E2D543E001B4F53 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BBD60E2D543E001B4F53 /* Carbon.framework */; };
@@ -150,6 +151,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0E63E81D0E7C6A00002AC53B /* bgm2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bgm2.cpp; path = ../trunk/NewerFunctionality/bgm2.cpp; sourceTree = SOURCE_ROOT; };
 		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
 		8529BBD60E2D543E001B4F53 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		858A917B0E2BC5C90070B4AE /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = likefunc2.cpp; path = ../trunk/Core/likefunc2.cpp; sourceTree = SOURCE_ROOT; };
@@ -379,6 +381,7 @@
 			isa = PBXGroup;
 			children = (
 				85A2BCBB0DE4E87D00682547 /* bgm.cpp */,
+				0E63E81D0E7C6A00002AC53B /* bgm2.cpp */,
 				85A2BCBC0DE4E87D00682547 /* HYNetInterface.cpp */,
 				85A2BCBD0DE4E87D00682547 /* Net.cpp */,
 				85A2BCBE0DE4E87D00682547 /* scfg.cpp */,
@@ -710,6 +713,7 @@
 				858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */,
 				858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */,
 				8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */,
+				0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
