@@ -4979,7 +4979,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					}
 					else
 					{
-						errMsg = _String("Data matrix does not contain same number of nodes as graph.");
+						errMsg = _String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").";
 						acknError (errMsg);
 						return;
 					}
