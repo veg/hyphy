@@ -4977,6 +4977,10 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					{
 						((Bgm *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
 					}
+					else if (dataMx->GetVDim() == 2*num_nodes)	// dynamic BGM
+					{
+						((_DynamicBgm *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
+					}
 					else
 					{
 						errMsg = _String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").";

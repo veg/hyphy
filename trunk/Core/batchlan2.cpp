@@ -70,7 +70,9 @@ _String		sqlOpen 				("SQL_OPEN"),
 			seqAlignGapLinearSpace	("SEQ_ALIGN_LINEAR_SPACE"),
 			completeFlag 			("COMPLETE"),
 			lastSetOfConstraints	("LAST_SET_OF_CONSTRAINTS"),
-			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION");
+			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
+
+			isDynamicGraph			("BGM_DYNAMIC");
 			
 			
 extern		_String					blDoSQL,
@@ -2274,7 +2276,16 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 	}
 	else
 	{
-		Bgm	*	bgm			= new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		// is this a dynamic Bayesian network?
+		_Parameter		dynamicArg;
+		checkParameter (isDynamicGraph, dynamicArg, 0.);
+		bool is_dynamic_graph = (dynamicArg > 0) ? TRUE : FALSE;
+		
+		Bgm		* bgm;	// pointer to base class
+		
+		if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		else					bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		
 		_String bgmName	    = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
 		long	bgmIndex	= FindBgmName (bgmName);
 		
