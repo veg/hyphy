@@ -142,15 +142,48 @@ long integerPower (long base, long exponent)
 
 
 //___________________________________________________________________________________________
-
-inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
+//	afyp Oct. 15, 2008, replaced wrapper function for _Constant member function
+//	with this local function.
+_Parameter Bgm::LnGamma(_Parameter theValue)
 {
-	// wrapper function for _Constant member function
-	calculator->SetValue (x);
-	calculator = (_Constant *) calculator->LnGamma();
-	_Parameter rv = calculator->Value();
-	DeleteObject(calculator);
-	return rv;
+	if (theValue <= 0)
+	{
+		
+		
+		_String oops ("ERROR: Requested Bgm::LnGamma(x) for x <= 0.");
+		WarnError (oops);
+		
+		return 0;
+	}
+	
+	static _Parameter lngammaCoeff [6] = {	 76.18009172947146,
+											-86.50532032941677,
+											 24.01409824083091,
+											- 1.231739572450155,
+											  0.1208650973866179e-2,
+											- 0.5395239384953e-5	};
+	
+	static _Parameter lookUpTable [20] = {	0., 0., 0.6931472, 1.7917595, 3.1780538,
+									4.7874917, 6.5792512, 8.5251614, 10.6046029, 12.8018275, 
+									15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
+									27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842};
+	
+	// use look-up table for small integer values
+	if (theValue <= 20 && (theValue - (long)theValue) > 0.)	
+		return (lookUpTable [(long) theValue - 1]);
+	
+	
+	// else do it the hard way
+	_Parameter	x, y, tmp, ser;
+	
+	y = x = theValue;
+	tmp = x + 5.5;
+	tmp -= (x+0.5) * log(tmp);
+	ser = 1.000000000190015;
+	
+	for (long j = 0; j <= 5; j++) ser += lngammaCoeff[j] / ++y;
+	
+	return (-tmp + log(2.506628274631005*ser/x));
 }
 
 
@@ -1149,23 +1182,23 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	{
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-			log_score -= LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]);	// (N+r-1)!
+			log_score += LnGamma(num_levels.lData[node_id]);	// (r-1)!
+			log_score -= LnGamma(n_ij(j, 0) + num_levels.lData[node_id]);	// (N+r-1)!
 			
 			for (long k = 0; k < r_i; k++)
-				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
+				log_score += LnGamma (n_ijk(j,k) + 1);	// (N_ijk)!
 			
 #ifdef BGM_DEBUG_CDS
-			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(calc_bit, num_levels.lData[node_id]));
+			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
 			sprintf (buf, "\tlog(N(%d,%d)+r-1)! = log %d! = %lf\n", node_id, j, ((long)n_ij(j, 0)) + r_i - 1, 
-					 LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]));
+					 LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
 			for (long k = 0; k < r_i; k++)
 			{
-				sprintf (buf, "\tlog (N(%d,%d,%d)!) = log %d! = %lf\n", node_id, j, k, ((long)n_ijk(j,k)), LnGamma (calc_bit, n_ijk(j,k) + 1));
+				sprintf (buf, "\tlog (N(%d,%d,%d)!) = log %d! = %lf\n", node_id, j, k, ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
 				BufferToConsole (buf);
 			}
 			
@@ -1181,10 +1214,10 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma (calc_bit, n_prior_ij) - LnGamma (calc_bit, n_prior_ij + n_ij(j,0));
+			log_score += LnGamma(n_prior_ij) - LnGamma(n_prior_ij + n_ij(j,0));
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
-				log_score += LnGamma (calc_bit, n_prior_ijk + n_ijk(j,k)) - LnGamma (calc_bit, n_prior_ijk);
+				log_score += LnGamma(n_prior_ijk + n_ijk(j,k)) - LnGamma(n_prior_ijk);
 		}
 	}
 	
@@ -1221,11 +1254,11 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		/* assume no prior information, use K2 metric */
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma(calc_bit, r_i);	// (r-1)!
-			log_score -= LnGamma(calc_bit, n_ij(j, 0) + r_i);	// (N+r-1)!
+			log_score += LnGamma(r_i);	// (r-1)!
+			log_score -= LnGamma(n_ij(j, 0) + r_i);	// (N+r-1)!
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
-				log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
+				log_score += LnGamma(n_ijk(j,k) + 1);	// (N_ijk)!
 			
 			
 			
@@ -1243,16 +1276,16 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 			BufferToConsole (buf);
 			
 #ifdef BGM_DEBUG_CDS
-			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(calc_bit, num_levels.lData[node_id]));
+			sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
 			sprintf (buf, "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.lData[node_id] - 1, 
-					LnGamma(calc_bit, n_ij(j, 0) + num_levels.lData[node_id]));
+					LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
 			BufferToConsole (buf);
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
 			{
-				sprintf (buf, "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma (calc_bit, n_ijk(j,k) + 1));
+				sprintf (buf, "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
 				BufferToConsole (buf);
 			}
 			
@@ -1269,10 +1302,10 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma (calc_bit, n_prior_ij) - LnGamma (calc_bit, n_prior_ij + n_ij(j,0));
+			log_score += LnGamma(n_prior_ij) - LnGamma(n_prior_ij + n_ij(j,0));
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
-				log_score += LnGamma (calc_bit, n_prior_ijk + n_ijk(j,k)) - LnGamma (calc_bit, n_prior_ijk);
+				log_score += LnGamma(n_prior_ijk + n_ijk(j,k)) - LnGamma(n_prior_ijk);
 		}
 	}
 #endif
@@ -1530,7 +1563,7 @@ void Bgm::CacheNodeScores (void)
 				{
 					bool		remaining;
 					long		tuple_index		= 0,
-								num_ktuples		= exp(LnGamma(calc_bit, num_nodes) - LnGamma(calc_bit, num_nodes - np) - LnGamma(calc_bit, np+1));
+								num_ktuples		= exp(LnGamma(num_nodes) - LnGamma(num_nodes - np) - LnGamma(np+1));
 					
 					
 					_Matrix		tuple_scores (num_ktuples, 1, false, true);
@@ -1831,7 +1864,7 @@ void	Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long no
 		if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
 		{
 			long		score_index		= 0,
-						num_ktuples		= exp(LnGamma(calc_bit, num_nodes) - LnGamma(calc_bit, num_nodes - np) - LnGamma(calc_bit, np+1)),
+						num_ktuples		= exp(LnGamma(num_nodes) - LnGamma(num_nodes - np) - LnGamma(np+1)),
 						ntuple_receipt;
 			
 			_Matrix		scores_to_store (num_ktuples, 1, false, true);

@@ -125,7 +125,7 @@ protected:
 
 			
 	
-			_Parameter		LnGamma (_Constant *, _Parameter),
+			_Parameter		LnGamma (_Parameter),
 							LogSumExpo (_GrowingVector *);
 			
 			_Matrix *		RunColdChain (_SimpleList *, long, long);

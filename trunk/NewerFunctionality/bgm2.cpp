@@ -10,8 +10,10 @@
 #include "bgm.h"
 
 
-//___________________________________________________________________________________________
 
+// this old method is WAY too slow, constantly allocating and freeing _Constant objects
+
+/*
 inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
 {
 	// wrapper function for _Constant member function
@@ -21,6 +23,7 @@ inline _Parameter Bgm::LnGamma(_Constant * calculator, _Parameter x)
 	DeleteObject(calculator);
 	return rv;
 }
+*/
 
 //___________________________________________________________________________________________
 
@@ -586,20 +589,20 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 	for (long j = 0; j < num_parent_combos; j++)
 	{
 		
-		log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
-		- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
+		log_prior_impute += LnGamma(n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
+		- LnGamma(n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
 		/*
-		 log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
-		 - LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
+		 log_prior_impute += LnGamma(m_ij(j,0)+1) + LnGamma(n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
+		 - LnGamma(m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
 		 */
 		for (long k = 0; k < r_i; k++)
 		{
 			
-			log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
-			- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
+			log_prior_impute += LnGamma(n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
+			- LnGamma(n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
 			/*
-			 log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
-			 - LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
+			 log_prior_impute += LnGamma(m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
+			 - LnGamma(m_ijk(j,k)+1) - LnGamma(n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
 			 */
 		}
 	}
@@ -613,12 +616,12 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 	
 	for (long j = 0; j < num_parent_combos; j++)
 	{
-		last_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-		last_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
+		last_score += LnGamma(num_levels.lData[node_id]);	// (r-1)!
+		last_score -= LnGamma(n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
 		
 		for (long k = 0; k < num_levels.lData[node_id]; k++)
 		{
-			last_score += LnGamma (calc_bit, n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
+			last_score += LnGamma(n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
 		}
 	}
 	
@@ -757,17 +760,17 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 			//	but this doesn't work properly yet :-P afyp
 			
 			/*
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute -= LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, child_state));
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute -= LnGamma(n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(new_index, child_state));
 			 */
 			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) - 1);
 			m_ijk.Store (new_index, child_state, m_ijk (new_index, child_state) + 1);
 			/*
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute += LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, child_state));
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute += LnGamma(n_ijk(new_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(new_index, child_state));
 			 */
 			
@@ -778,30 +781,30 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 			 */
 			
 			/*
-			 log_prior_impute -= - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
-			 log_prior_impute -= - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
+			 log_prior_impute -= - LnGamma(n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
+			 log_prior_impute -= - LnGamma(n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
 			 */
 			m_ij.Store (old_index, 0, m_ij (old_index, 0) - 1);
 			m_ij.Store (new_index, 0, m_ij (new_index, 0) + 1);
 			/*
-			 log_prior_impute += - LnGamma (calc_bit, n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
-			 log_prior_impute += - LnGamma (calc_bit, n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
+			 log_prior_impute += - LnGamma(n_ij(old_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(old_index,0));
+			 log_prior_impute += - LnGamma(n_ij(new_index,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(new_index,0));
 			 */
 		}
 		else
 		{
 			/*
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute -= LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, last_state));
-			 log_prior_impute -= LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute -= LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, last_state));
 			 */
 			m_ijk.Store (old_index, last_state, m_ijk (old_index, last_state) - 1);
 			m_ijk.Store (old_index, child_state, m_ijk (old_index, child_state) + 1);
 			/*
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute += LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, child_state));
-			 log_prior_impute += LnGamma (calc_bit, n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
+			 log_prior_impute += LnGamma(n_ijk(old_index,child_state) + DIRICHLET_FLATTENING_CONST 
 			 + m_ijk(old_index, child_state));
 			 */
 			
@@ -819,24 +822,24 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 		/*
 		 for (long j = 0; j < num_parent_combos; j++)
 		 {
-		 log_prior_impute += LnGamma (calc_bit, m_ij(j,0)+1) + LnGamma (calc_bit, n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
-		 - LnGamma (calc_bit, m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
+		 log_prior_impute += LnGamma(m_ij(j,0)+1) + LnGamma(n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i)
+		 - LnGamma(m_ij(j,0)+n_ij(j,0)+DIRICHLET_FLATTENING_CONST*r_i);
 		 for (long k = 0; k < r_i; k++)
 		 {
-		 log_prior_impute += LnGamma (calc_bit, m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
-		 - LnGamma (calc_bit, m_ijk(j,k)+1) - LnGamma (calc_bit, n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
+		 log_prior_impute += LnGamma(m_ijk(j,k) + n_ijk(j,k)+DIRICHLET_FLATTENING_CONST) 
+		 - LnGamma(m_ijk(j,k)+1) - LnGamma(n_ijk(j,k)+DIRICHLET_FLATTENING_CONST);
 		 }
 		 }
 		 */
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_prior_impute += LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
-			- LnGamma (calc_bit, n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
+			log_prior_impute += LnGamma(n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i)
+			- LnGamma(n_ij(j,0) + DIRICHLET_FLATTENING_CONST * r_i + m_ij(j,0));
 			
 			for (long k = 0; k < r_i; k++)
 			{
-				log_prior_impute += LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
-				- LnGamma (calc_bit, n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
+				log_prior_impute += LnGamma(n_ijk(j,k) + DIRICHLET_FLATTENING_CONST + m_ijk(j,k))
+				- LnGamma(n_ijk(j,k) + DIRICHLET_FLATTENING_CONST);
 			}
 		}
 		
@@ -862,12 +865,12 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 		
 		for (long j = 0; j < num_parent_combos; j++)
 		{
-			log_score += LnGamma(calc_bit, num_levels.lData[node_id]);	// (r-1)!
-			log_score -= LnGamma(calc_bit, n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
+			log_score += LnGamma(num_levels.lData[node_id]);	// (r-1)!
+			log_score -= LnGamma(n_ij(j, 0) + m_ij(j,0) + num_levels.lData[node_id]);	// (N+r-1)!
 			
 			for (long k = 0; k < num_levels.lData[node_id]; k++)
 			{
-				log_score += LnGamma (calc_bit,  n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
+				log_score += LnGamma( n_ijk (j,k) + m_ijk (j,k) + 1);	// (N_ijk)!
 			}
 		}
 		
@@ -1143,8 +1146,8 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
 		
 		
 		// calculate first term of score
-		pa_log_score += LnGamma (calc_bit, (rho + n_ij(pa, 0))/2.);
-		pa_log_score -= LnGamma (calc_bit, rho/2.) + 0.5 * log(det);
+		pa_log_score += LnGamma((rho + n_ij(pa, 0))/2.);
+		pa_log_score -= LnGamma(rho/2.) + 0.5 * log(det);
 		
 		
 		// calculate second term of score
@@ -1882,6 +1885,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	{
 		is_missing.Permute(1);	// shuffle list of missing entries
 		
+		log_score = K2Score (r_i, n_ij, n_ijk);	// compute initial score
 		
 		for (long row, col, pa_index, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++)
 		{
@@ -1908,11 +1912,19 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 			
 			if (col == 0)	// child node, reassign N_ijk's, keep N_ij's constant
 			{				
-				// delete current observation
 				child_state = data_deep_copy (row, col);
+				log_score -= log(n_ijk(pa_index, child_state));
+				
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
+				// compute probabilities for all instantiations of child node
+				for (long k = 0; k < r_i; k++)
+				{
+					reassign_probs->Store (log_score + log (n_ijk(pa_index, k) + 1));
+				}
 				
+				
+				/*
 				// compute probabilities, look over k-values (child node states)
 				for (long lev = 0; lev < r_i; lev++)
 				{
@@ -1922,6 +1934,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					
 					n_ijk.Store (pa_index, lev, n_ijk(pa_index, lev) - 1);
 				}
+				*/
 				
 				denom = LogSumExpo (reassign_probs);
 				
@@ -1945,8 +1958,10 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					if ( urn  <  ( this_prob = exp ((* (_Matrix *) reassign_probs) (lev,0) - denom) ))
 					{
 						n_ijk.Store (pa_index, lev, n_ijk(pa_index,lev) + 1);
-						
 						data_deep_copy.Store (row, col, lev);
+						
+						log_score = (* (_Matrix *) reassign_probs) (lev, 0);
+						
 						if (missing_idx == is_missing.lLength - 1) vector_of_scores->Store ((* (_Matrix *) reassign_probs) (lev,0));
 						
 #ifdef __DEBUG_GADS__
@@ -1966,12 +1981,27 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				parent_state	= data_deep_copy (row, col);
 				child_state		= data_deep_copy (row, 0);
 				
-				n_ij.Store (pa_index, 0, n_ij(pa_index,0) - 1);
+				log_score	-= log (n_ijk (pa_index, (long) child_state));
+				log_score	+= log (n_ij  (pa_index, 0) + 1);
+				
+				n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
-				pa_index -= parent_state * multipliers.lData[col-1];
+				pa_index	-= parent_state * multipliers.lData[col-1];
 				
 				
+				for (long pa_temp, lev = 0; lev < family_nlevels.lData[col]; lev++)
+				{
+					pa_temp = pa_index + lev * multipliers.lData[col-1];
+					reassign_probs->Store (log_score + log (n_ijk (pa_temp, (long) child_state) + 1)
+										   - log (n_ij (pa_temp, 0) + 2) );
+				}
+				
+				
+				
+				
+				
+				/*
 				for (long lev = 0; lev < family_nlevels.lData[col]; lev++)
 				{
 					pa_index += lev * multipliers.lData[col-1];
@@ -1988,7 +2018,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					pa_index -= lev * multipliers.lData[col-1];
 				}
 				// note, [pa_index] remains in decremented state, restored below once new state is determined
-				
+				*/
 				
 				
 				// compute denominator and convert log-values to probability vector
@@ -2022,6 +2052,8 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 						
 						n_ij.Store (pa_index, 0, n_ij(pa_index,0) + 1);
 						n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) + 1);
+						
+						log_score = (* (_Matrix *) reassign_probs) (lev, 0);
 						
 						data_deep_copy.Store (row, col, lev);
 						if (missing_idx == is_missing.lLength - 1) vector_of_scores->Store ((* (_Matrix *) reassign_probs) (lev,0));
@@ -2074,12 +2106,23 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	}
 	// end loop over iterations
 	
+	
+	// compute the average of sampled log-likelihoods
+	log_score = LogSumExpo (vector_of_scores) - log(max_iterations);
+	
+	
 #ifdef __DEBUG_GADS2__
 	sprintf (buf, "| (%d) %f\n", vector_of_scores->GetUsed(), LogSumExpo (vector_of_scores) - log(max_iterations));
 	BufferToConsole (buf);
 #endif
 	
-	return (LogSumExpo (vector_of_scores) - log(max_iterations));
+	
+	DeleteObject (vector_of_scores);
+	DeleteObject (reassign_probs);
+	
+	
+	
+	return (log_score);
 }
 
 
@@ -2091,12 +2134,12 @@ _Parameter Bgm::K2Score (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
 	
 	for (long j = 0; j < n_ij.GetHDim(); j++)
 	{
-		log_score += LnGamma(calc_bit, r_i);	// (r-1)!
-		log_score -= LnGamma(calc_bit, n_ij(j, 0) + r_i);	// (N+r-1)!
+		log_score += LnGamma(r_i);	// (r-1)!
+		log_score -= LnGamma(n_ij(j, 0) + r_i);	// (N+r-1)!
 		
 		for (long k = 0; k < r_i; k++)
 		{
-			log_score += LnGamma (calc_bit, n_ijk(j,k) + 1);	// (N_ijk)!
+			log_score += LnGamma(n_ijk(j,k) + 1);	// (N_ijk)!
 		}
 	}
 	
@@ -2115,11 +2158,11 @@ _Parameter Bgm::BDeScore (long r_i, _Matrix & n_ij, _Matrix & n_ijk)
 	
 	for (long j = 0; j < num_parent_combos; j++)
 	{
-		log_score += LnGamma (calc_bit, n_prior_ij) - LnGamma (calc_bit, n_prior_ij + n_ij(j,0));
+		log_score += LnGamma(n_prior_ij) - LnGamma(n_prior_ij + n_ij(j,0));
 		
 		for (long k = 0; k < num_levels.lData[node_id]; k++)
 		{
-			log_score += LnGamma (calc_bit, n_prior_ijk + n_ijk(j,k)) - LnGamma (calc_bit, n_prior_ijk);
+			log_score += LnGamma(n_prior_ijk + n_ijk(j,k)) - LnGamma(n_prior_ijk);
 		}
 	}
 	
