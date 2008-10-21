@@ -1646,7 +1646,15 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 		}
 		
 		if (!res->theTerms->checkMe())
+		{
+			BufferToConsole (_String((_String*)toStr()));
+			NLToConsole();
+			BufferToConsole (_String((_String*)m->toStr()));
+			NLToConsole();
+			BufferToConsole (_String((_String*)res->toStr()));
+			NLToConsole();			
 			return nil;
+		}
 //		res->theTerms->ChopTerms();
 		if (res->theTerms->GetNoTerms()==0)
 		{
