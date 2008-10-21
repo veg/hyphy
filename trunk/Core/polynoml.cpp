@@ -149,7 +149,7 @@ void _PolynomialData::Duplicate (BaseRef source)
 }
 
 //__________________________________________________________________________________
-void	_PolynomialData::checkMe (void)
+bool	_PolynomialData::checkMe (void)
 {
 	if (actTerms>1)
 	{
@@ -160,12 +160,13 @@ void	_PolynomialData::checkMe (void)
 			t2 = GetTerm(i); 
 			if (CompareTerms (t1,t2)>=0)
 			{
-				BufferToConsole ("\n A fucked-up polynomial found!");
-				exit(0);
+				WarnError ("\n Internal polynomial error!");
+				return false;
 			}
 			t1 = t2;
 		}
 	}
+	return true;
 }
 //__________________________________________________________________________________
 long*	_PolynomialData::GetTerm (long index)
@@ -1644,7 +1645,8 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 			}						
 		}
 		
-		res->theTerms->checkMe();
+		if (!res->theTerms->checkMe())
+			return nil;
 //		res->theTerms->ChopTerms();
 		if (res->theTerms->GetNoTerms()==0)
 		{

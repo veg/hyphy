@@ -67,8 +67,22 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, c_string, d_string)
 	modelDefString = "";
 	modelDefString*16384;
 
-	synCatRateMult 	  = "("+c_string+")*";
-	nonsynCatRateMult = "("+d_string+")*";;
+	if (Abs(c_string))
+	{
+		synCatRateMult 	  = "("+c_string+")*";
+	}
+	else
+	{
+		synCatRateMult    = "";
+	}
+	if (Abs(d_string))
+	{
+		nonsynCatRateMult = "("+d_string+")*";;
+	}
+	else
+	{
+		nonsynCatRateMult  = "";
+	}
 	
 	for (h=0; h<64; h=h+1)
 	{
@@ -124,8 +138,16 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, c_string, d_string)
 				}
 				else
 				{
-					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts+"]["+ps+"];\n"+
-													 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts2+"]["+ps+"];\n");						
+					if (Abs(nonsynCatRateMult) == 0)
+					{
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+rateMultipliers[transition][transition2]+"nonSynRate*EFV__["+ts+"]["+ps+"];\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+rateMultipliers[transition][transition2]+"nonSynRate*EFV__["+ts2+"]["+ps+"];\n");									
+					}
+					else
+					{
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts+"]["+ps+"];\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts2+"]["+ps+"];\n");				
+					}
 				}
 			}
 	    }

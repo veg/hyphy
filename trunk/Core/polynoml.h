@@ -70,7 +70,7 @@ class _PolynomialData : public BaseObj {
 	
 	// temp!
 		
-	void	checkMe (void);
+	bool				checkMe (void);
 	
 	friend class _Polynomial;
 	
