@@ -571,10 +571,9 @@ void  _PolynomialData::RearrangeTerm (long* target, long* source, long* markup, 
 //__________________________________________________________________________________
 char	_PolynomialData::CompareTerms (long* s1, long* s2)
 {
-	long comp;
-	for (long i=0; i<numberVars; i++,s1++,s2++)
+	for (long i=0; i<numberVars; i++)
 	{
-		comp = *s1-*s2;
+		long comp = s1[i]-s2[i];
 		if (comp>0) return 1;
 		if (comp<0) return -1;
 	}
@@ -613,46 +612,45 @@ char	_PolynomialData::CompareTerms (long* s1, long* s2, long* secondReindex, lon
 //__________________________________________________________________________________
 char	_PolynomialData::CompareTerms (long* s1, long* s2, long* firstReindex, long* secondReindex,long actLength1,  long actLength2)
 {
-	long comp,i, minLength = actLength1<actLength2?actLength1:actLength2;
-	for (i=0; i<minLength; i++,s1++,s2++,firstReindex++, secondReindex++)
+	bool secondLonger = actLength1<actLength2,
+		 firstLonger  = actLength1>actLength2;
+	
+	long minLength = actLength1<actLength2?actLength1:actLength2,
+		 i;
+	
+	for (i=0; i<minLength; i++,s1++,s2++,firstReindex++,secondReindex++)
 	{
-		comp = *firstReindex-*secondReindex;
+		long comp = *firstReindex-*secondReindex;
 		if (comp<0)
 		{
-			if (*s1) return 1;
-			/*if (i==actLength1-1)
-			{
-				return -1;
-			}*/
-			secondReindex--;
-			s2--;
-			if ((minLength==actLength2)&&(minLength!=actLength1))
+			if (*s1) 
+				return 1;
+			secondReindex--; s2--;
+			
+			if (firstLonger && minLength!=actLength1)
 				minLength++;
+			
 			continue;
 		}
 		if (comp>0)
 		{
-			if (*s2) return -1;
-			firstReindex--;
-			s1--;
-			if ((minLength!=actLength2)&&(minLength==actLength1))
+			if (*s2) 
+				return -1;
+			firstReindex--;	s1--;
+			
+			if (minLength!=actLength2 && secondLonger)
 				minLength++;
 			continue;
 		}
+		
 		comp = *s1-*s2;
 		if (comp>0) return 1;
 		if (comp<0) return -1;
 	}
 	if (actLength1>minLength)
-		for (;i<actLength1;i++,s1++)
-		{
-			if (*s1) return 1;
-		}
+		for (;i<actLength1;i++,s1++){if (*s1) return 1;}
 	else
-		for (;i<actLength2;i++,s2++)
-		{
-			if (*s2) return -1;
-		}
+		for (;i<actLength2;i++,s2++){if (*s2) return -1;}
 	return 0;
 }
 
@@ -1464,11 +1462,15 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 			else 
 			// both variable indices must be reindexed
 			{
-				long  *ri1 = merge1.quickArrayAccess(), *ri2 = merge2.quickArrayAccess(),
-					   rl1 = merge1.countitems(),rl2 = merge2.countitems() ;
+				long  *ri1 = merge1.quickArrayAccess(), 
+					  *ri2 = merge2.quickArrayAccess(),
+					   rl1 = merge1.countitems(),
+					   rl2 = merge2.countitems() ;
+
 				res = new _Polynomial (mergedVariables); // create a blank new result holder
 				checkPointer(res);
 				ResetPolynomialCheck(res);
+				
 				while (1) // stuff left to do
 				{
 					if (advancing == 0) // advancing in the 1st polynomial
@@ -1647,12 +1649,12 @@ _MathObject* _Polynomial::Plus (_MathObject* m, bool subtract)
 		
 		if (!res->theTerms->checkMe())
 		{
-			BufferToConsole (_String((_String*)toStr()));
-			NLToConsole();
-			BufferToConsole (_String((_String*)m->toStr()));
-			NLToConsole();
-			BufferToConsole (_String((_String*)res->toStr()));
-			NLToConsole();			
+			//BufferToConsole (_String((_String*)toStr()));
+			//NLToConsole();
+			//BufferToConsole (_String((_String*)m->toStr()));
+			//NLToConsole();
+			//BufferToConsole (_String((_String*)res->toStr()));
+			//NLToConsole();			
 			return nil;
 		}
 //		res->theTerms->ChopTerms();

@@ -380,14 +380,24 @@ bool _List::Equal(_List& l2)
 void _SimpleList::Merge(_SimpleList& l1, _SimpleList& l2, _SimpleList* mergeResults1, _SimpleList* mergeResults2)
 {
 	Clear();
-	if (mergeResults1) mergeResults1->Clear();
-	if (mergeResults2) mergeResults2->Clear();
+	if (mergeResults1) 
+		mergeResults1->Clear();
+	if (mergeResults2) 
+		mergeResults2->Clear();
 	char    advancing = -1;
-	long * list1 = l1.quickArrayAccess(), * list2 = l2.quickArrayAccess(),
-		 pos1=0, pos2 =0, nt1 = l1.lLength, nt2 = l2.lLength,c,i;
-	if ((mergeResults1)&&(mergeResults2))
+	long	* list1 = l1.quickArrayAccess(), 
+			* list2 = l2.quickArrayAccess(),
+			pos1=0, 
+			pos2 =0, 
+			nt1 = l1.lLength, 
+			nt2 = l2.lLength,
+			c,
+			i;
+	
+	if (mergeResults1 && mergeResults2)
 	{
-		bool   doMerge1 = false, doMerge2 = false;
+		bool   doMerge1 = false, 
+			   doMerge2 = false;
 		while (1) // stuff left to do
 		{
 			if (advancing == 0) // advancing in the 1st list

@@ -2388,8 +2388,9 @@ bool	_Matrix::IsConstant(void)
 	
 //_____________________________________________________________________________________________
 
-bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList, _SimpleList& newFormulas, 
-									  _SimpleList& references, _AVLListX& flaStrings, bool runAll)
+bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList,   _SimpleList& newFormulas, 
+														 _SimpleList& references, _AVLListX& flaStrings, 
+														 bool runAll, _Matrix * stencil)
 {
 	_Formula *		thisFormula = nil;
 	_Formula ** 	theFormulas = (_Formula**)theData;
@@ -2400,8 +2401,13 @@ bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList, _Simple
 	{
 		for (long i = 0; i<lDim; i++)
 		{
-			if (theIndex [i]>-1)
+			long cellIndex = theIndex [i];
+			if (cellIndex>-1)
 			{
+				if (stencil && CheckEqual(stencil->theData[cellIndex],0.0))
+				{
+					references << -1; continue;
+				}
 				thisFormula = theFormulas[i];
 				
 				if (runAll || thisFormula->AmISimple(stackLength,varList))
@@ -2438,6 +2444,11 @@ bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList, _Simple
 			{
 				thisFormula = theFormulas[i];
 				
+				if (stencil && CheckEqual(stencil->theData[i],0.0))
+				{
+					references << -1; continue;
+				}
+
 				if (runAll || thisFormula->AmISimple(stackLength,varList))
 				{
 					_String * flaString = (_String*)thisFormula->toStr(nil,true);
@@ -2465,7 +2476,21 @@ bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList, _Simple
 	}
 	return isGood;
 }
-	
+
+//_____________________________________________________________________________________________
+_Matrix*		_Matrix::branchLengthStencil (void)
+{
+	_Matrix * stencil = (_Matrix*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,MATRIX);
+	if (stencil)
+	{
+		if (stencil->storageType==1 && stencil->hDim==stencil->vDim && stencil->hDim == hDim)
+			stencil->CheckIfSparseEnough (true);
+		else
+			stencil = nil;
+	}
+	return stencil;
+}
+
 //_____________________________________________________________________________________________
 _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 {
@@ -2480,8 +2505,9 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 						
 		_List			flaStringsL;
 		_AVLListX		flaStrings(&flaStringsL);
+		_Matrix*		stencil = branchLengthStencil();
 		
-		ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings,true);	
+		ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings,true,stencil);	
 			
 		_String * sendMeBack = new _String(128L, true);
 		if (baseFreqs->storageType == 1)
@@ -2492,18 +2518,25 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 			{
 				long thisRef = references.lData[i];
 				if (thisRef>=0)
+				{
 					multipliersByRate.theData[thisRef] += (*baseFreqs)(i/vDim,0) * 
-													(mbf?(*baseFreqs)(i%vDim,0):1.0);
+														  (mbf?(*baseFreqs)(i%vDim,0):1.0);
+				}
 			}
+			bool	firstDone = false;
 			for (long k=0; k<newFormulas.lLength; k++)
 			{
-				if (k)
-					(*sendMeBack) << '+'; 
-				_String * fStr = (_String*)flaStringsL(k);
-				(*sendMeBack) << '(';
-				(*sendMeBack) << fStr;
-				(*sendMeBack) << ")*";
-				(*sendMeBack) << _String(multipliersByRate.theData[k]);
+				if (!CheckEqual(multipliersByRate.theData[k],0.0))
+				{
+					if (firstDone)
+						(*sendMeBack) << '+'; 
+					_String * fStr = (_String*)flaStringsL(k);
+					(*sendMeBack) << '(';
+					(*sendMeBack) << fStr;
+					(*sendMeBack) << ")*";
+					(*sendMeBack) << _String(multipliersByRate.theData[k]);
+					firstDone = true;
+				}
 			}
 		}
 		else
@@ -2515,20 +2548,20 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 						multipliersByRate;
 				
 				{
-				for (long k=0; k<newFormulas.lLength; k++)
-				{
-					_String *d = new _String (128L,true);
-					multipliersByRate << d;
-					DeleteObject (d);
-				}
+					for (long k=0; k<newFormulas.lLength; k++)
+					{
+						_String *d = new _String (128L,true);
+						multipliersByRate << d;
+						DeleteObject (d);
+					}
                 }
 				{
-				for (long i = 0; i<hDim; i++)
-				{
-					_String * flaString = (_String*)baseFreqs->GetFormula(i,0)->toStr(nil,true);
-					freqFla << flaString;
-					DeleteObject (flaString);
-				}
+					for (long i = 0; i<hDim; i++)
+					{
+						_String * flaString = (_String*)baseFreqs->GetFormula(i,0)->toStr(nil,true);
+						freqFla << flaString;
+						DeleteObject (flaString);
+					}
                 }
 				for (long i = 0; i<lDim; i++)
 				{
@@ -7576,7 +7609,7 @@ _Parameter	_Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
 		
 	_Parameter 		result 		= 	0.0;
 	_Matrix			*nf 		= 	nil,
-					*stencil	= 	nil;
+					*stencil	= 	branchLengthStencil();
 	
 	if (freqs->theIndex)
  	{
@@ -7587,18 +7620,6 @@ _Parameter	_Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
 	else
 		nf = freqs;
 	
-	// check for possible stencil 
-	
-	_Variable * checkForStencil = FetchVar (LocateVarByName (BRANCH_LENGTH_STENCIL));
-	if (checkForStencil && checkForStencil->ObjectClass() == MATRIX)
-	{
-		stencil = (_Matrix*)checkForStencil->GetValue();
-		if (stencil->storageType==1 && stencil->hDim==stencil->vDim && stencil->hDim == hDim)
-			stencil->CheckIfSparseEnough (true);
-		else
-			stencil = nil;
-		
-	}
 		
 	if (theIndex)
 	{

@@ -314,9 +314,10 @@ private:
 	
 	_Parameter	computePFDR			(_Parameter, _Parameter);
 	void		InitMxVar 			(_SimpleList&	, _Parameter);
-	bool		ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false);
+	bool		ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = false);
 	_PMathObj	PathLogLikelihood	(_PMathObj);
 	_PMathObj	ProfileMeanFit		(_PMathObj);
+	_Matrix*	branchLengthStencil (void);
 	
 	//bool		IsAStringMatrix 	(void);
 	void		Add					(_Matrix&, _Matrix&, bool sub = false);				

@@ -1736,6 +1736,14 @@ bool	RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theConstr
 	bool		doThisOne = (firstNode->get_parent()!=nil), good = true;
 	long 		index, ind, i;
 	
+	/*if (!doThisOne)
+	{
+		BufferToConsole (_String((_String*)theParts.toStr()));
+		NLToConsole();
+		BufferToConsole (_String((_String*)partIndex.toStr()));
+		NLToConsole();
+	}*/
+	
 	// there are a few cases to consider
 	for (ind = 1; ind<=firstNode->get_num_nodes(); ind++)// have children nodes
 	{
