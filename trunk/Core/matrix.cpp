@@ -2463,7 +2463,7 @@ bool		_Matrix::ProcessFormulas (long& stackLength, _SimpleList& varList,   _Simp
 						newFormulas << (long)thisFormula;							
 						references << fref;
 					}
-			}
+				}
 				else
 				{
 					isGood = false;
@@ -2519,8 +2519,12 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 				long thisRef = references.lData[i];
 				if (thisRef>=0)
 				{
-					multipliersByRate.theData[thisRef] += (*baseFreqs)(i/vDim,0) * 
-														  (mbf?(*baseFreqs)(i%vDim,0):1.0);
+					long cellIndex = i;
+					if (theIndex)
+						cellIndex = theIndex[i];
+					
+					multipliersByRate.theData[thisRef] += (*baseFreqs)(cellIndex/vDim,0) * 
+														  (mbf?(*baseFreqs)(cellIndex%vDim,0):1.0);
 				}
 			}
 			bool	firstDone = false;
@@ -2571,10 +2575,20 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 						_String * thisAdder = (_String*)multipliersByRate(thisRef); 
 						if (thisAdder->sLength)
 							(*thisAdder) << '+';
+						
+						long cellIndex = i;
+						if (theIndex)
+							cellIndex = theIndex[i];
+						
 						(*thisAdder) << '(';
-						(*thisAdder) << (_String*)freqFla(i%vDim);
-						(*thisAdder) << ")*(";
-						(*thisAdder) << (_String*)freqFla(i/vDim);
+						if (mbf)
+						{
+							
+							(*thisAdder) << (_String*)freqFla(cellIndex%vDim);
+							(*thisAdder) << ")*(";
+						}
+							
+						(*thisAdder) << (_String*)freqFla(cellIndex/vDim);
 						(*thisAdder) << ')';						
 					}
 				}
