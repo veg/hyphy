@@ -1807,6 +1807,7 @@ bool	RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theConstr
 				bool found1 = false;
 				for (k = 0; k<partIndex.lLength; k++)
 					if (partIndex.lData[k]==i) break;
+				
 				for (; j<avVars.lLength; j++)
 				{
 					firstVar = firstCNode->GetIthParameter(avVars.lData[j]);						
@@ -1898,9 +1899,11 @@ void	  _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 			
 	if (ind1<0)
 	{
-		ReportWarning (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
+		WarnError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
 		return ;
 	}
+	
+	_SimpleList thisHits (parameters.lLength-1,0,0);
 	
 	while (ind1>=0) // references to 'this' still exist
 	{			
@@ -1918,7 +1921,16 @@ void	  _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 		else // non-branch argument
 			newS = newS.Replace (thisS,*((_String*)parameters(ind3)), true);
 		parts&& &newS;
-		thisIndex<<(ind3-1); // sequence of references to this
+		ind3--;
+		thisIndex<<ind3; // sequence of references to this
+		
+		if (ind3<0 || ind3 >= thisHits.lLength)
+		{
+			WarnError (_String("Invalid reference to ") & thisS & " in the constraint specification");
+			return ;			
+		}
+		thisHits.lData[ind3] = 1;
+		
 		if (ind2>=replicateSource->sLength-1) 
 			break;
 		ind1 = replicateSource->Find("this",ind2+1,-1);
@@ -1934,6 +1946,12 @@ void	  _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 	
 	for (ind1 = 1; ind1<parameters.lLength; ind1++)
 	{ 
+		if (thisHits.lData[ind1-1] == 0)
+		{
+			WarnError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
+			return ;			
+		}
+								  
 		ind2 = LocateVarByName (*(_String*)parameters(ind1));
 		if (ind2<0)
 		{
