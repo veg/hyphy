@@ -1534,9 +1534,15 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 								if (freqs->storageType == 2)
 								{
 									if (freqs->GetFormula(r,0))
+									{
 										tr = freqs->GetFormula(r,0)->ConstructPolynomial();
+										tr->nInstances++;
+									}
 									if (freqs->GetFormula(c,0))
+									{
 										tc = freqs->GetFormula(c,0)->ConstructPolynomial();
+										tc->nInstances++;
+									}
 								}
 								else
 								{
