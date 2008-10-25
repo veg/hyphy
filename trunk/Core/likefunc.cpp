@@ -1496,8 +1496,21 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 					else
 					{
 						long ff = HasHiddenMarkov(blockDependancies.lData[i],false);
+#ifdef _SLKP_LFENGINE_REWRITE_
+						_SimpleList	scalerTabs (BlockLength(i), 0, 0);
+#endif
 						if (ff<0)
-							FindMaxCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, *result);						
+						{
+#ifdef _SLKP_LFENGINE_REWRITE_
+							RecurseCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, 
+											&scalerTabs, 1, result->theData+currentOffset);
+							
+#else
+							FindMaxCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, *result);
+#endif		
+											
+
+						}
 						else
 						{
 							long	mxDim = 1,
@@ -2429,7 +2442,7 @@ void	  _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long in
 		
 void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-											,_SimpleList* siteMultipliers  
+											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage  
 #endif				
 	)
 {
@@ -2439,7 +2452,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 		if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov())
 			RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-			,siteMultipliers  
+			,siteMultipliers,runMode,runStorage
 #endif				
 			);
 		else
@@ -2452,7 +2465,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				thisC->SetIntervalValue(k);
 				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
 #ifdef _SLKP_LFENGINE_REWRITE_
-								,siteMultipliers  
+								,siteMultipliers,runMode,runStorage 
 #endif				
 				);
 				categID+=offsetCounter/nI;
@@ -2491,33 +2504,77 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				thisC->SetIntervalValue		(k,!k);
 				ComputeBlock				(blockIndex,sR+hDim);						
 				_Parameter					localWeight = cws->theData[k]*weight ;
-				for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
+				#ifdef _SLKP_LFENGINE_REWRITE_
+				if (runMode == 1)
 				{
-					#ifdef _SLKP_LFENGINE_REWRITE_
-					if (siteCorrectors)
+					for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
 					{
-						long scv = *siteCorrectors;
-						
-						if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+						bool doChange = false;
+						if (siteCorrectors)
 						{
-							siteMultipliers->lData[r1] = scv;
-							sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+							long scv = *siteCorrectors;
+							
+							if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+							{
+								siteMultipliers->lData[r1] = scv;
+								_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+								if (sR[r2] > scaled)
+									doChange = true;
+								else
+									sR[r1] = scaled;
+							}
+							else
+							{
+								if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+									 sR[r2] *= acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);		
+								doChange = sR[r2] > sR[r1] && ! CheckEqual (sR[r2],sR[r1]);
+							}
+							
+							siteCorrectors++;
 						}
 						else
-						{
-							if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
-								sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
-							else // same scaling factors
-								sR[r1] += localWeight * sR[r2];
-						}
+							doChange = sR[r2] > sR[r1] && ! CheckEqual (sR[r2],sR[r1]);
 						
-						siteCorrectors++;
+						if (doChange)
+						{
+							sR[r1]		   = sR[r2];
+							runStorage[r1] = categID;
+						}
 					}
-					else
-					#endif
-						sR[r1] += localWeight * sR[r2];
+					
 				}
-				
+				else
+				{
+					#endif
+					for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
+					{
+						#ifdef _SLKP_LFENGINE_REWRITE_
+						if (siteCorrectors)
+						{
+							long scv = *siteCorrectors;
+							
+							if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+							{
+								siteMultipliers->lData[r1] = scv;
+								sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+							}
+							else
+							{
+								if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+									sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
+								else // same scaling factors
+									sR[r1] += localWeight * sR[r2];
+							}
+							
+							siteCorrectors++;
+						}
+						else
+						#endif
+							sR[r1] += localWeight * sR[r2];
+					}
+				#ifdef _SLKP_LFENGINE_REWRITE_
+				}	
+				#endif
 				categID+=offsetCounter;
 				#ifdef _SLKP_LFENGINE_REWRITE_
 				if (offsetCounter > 1)
@@ -2531,7 +2588,9 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 }
 
 //_______________________________________________________________________________________
-		
+
+#ifndef _SLKP_LFENGINE_REWRITE_
+
 void	  _LikelihoodFunction::FindMaxCategory(long blockIndex, long index, long dependance, long lowestIndex, long matrixOffset, _Matrix&storage)
 {
 	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
@@ -2588,11 +2647,16 @@ void	  _LikelihoodFunction::FindMaxCategory(long blockIndex, long index, long de
 			categID-=nI*offsetCounter;
 	}
 }
-
-
+#endif
+	
 //_______________________________________________________________________________________
 		
-void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long dependance, long lowestIndex, long matrixOffset, _Matrix&storage)
+void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long dependance, long lowestIndex, long matrixOffset, _Matrix&storage
+#ifdef _SLKP_LFENGINE_REWRITE_
+												  ,_SimpleList* siteMultipliers  
+#endif			
+												  )
+	
 {
 	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat(index));
 	if (index>lowestIndex)
@@ -2639,7 +2703,12 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 
 //_______________________________________________________________________________________
 		
-void	  _LikelihoodFunction::WriteAllCategoriesTemplate (long blockIndex, long index, long dependance, long lowestIndex, long vDim, _Parameter* storage, long* dupMap)
+void	  _LikelihoodFunction::WriteAllCategoriesTemplate (long blockIndex, long index, long dependance, long lowestIndex, long vDim, _Parameter* storage, long* dupMap
+#ifdef _SLKP_LFENGINE_REWRITE_
+														   ,_SimpleList* siteMultipliers  
+#endif			
+														   )
+	
 {
 	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat(index));
 	if (index>lowestIndex)

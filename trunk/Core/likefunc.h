@@ -242,13 +242,24 @@ static	void			CheckFibonacci			(_Parameter);
 		long		 	HasPrecisionBeenAchieved 	(_Parameter funcValue = 2.*A_LARGE_NUMBER, bool = false);
 		void		 	RecurseCategory				(long,long,long,long,_Parameter
 #ifdef _SLKP_LFENGINE_REWRITE_
-													,_SimpleList* = nil  
+													,_SimpleList* = nil, char = 0, _Parameter* = nil
 #endif
 													 );
 		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);
+#ifndef _SLKP_LFENGINE_REWRITE_
 		void		 	FindMaxCategory				(long,long,long,long,long,_Matrix&);
-		void		 	WriteAllCategories			(long,long,long,long,long,_Matrix&);
-		void			WriteAllCategoriesTemplate  (long, long, long, long, long, _Parameter*, long*);
+#endif
+													 
+		void		 	WriteAllCategories			(long,long,long,long,long,_Matrix&
+#ifdef _SLKP_LFENGINE_REWRITE_
+													 ,_SimpleList* = nil  
+#endif
+													 );	
+		void			WriteAllCategoriesTemplate  (long, long, long, long, long, _Parameter*, long*
+#ifdef _SLKP_LFENGINE_REWRITE_
+													 ,_SimpleList* = nil  
+#endif
+													 );
 		void		 	SetNthBit 					(long&,char);
 		bool		 	CheckNthBit 				(long&,char);
 		void		 	BuildIncrements 			(long, _SimpleList&);

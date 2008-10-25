@@ -847,7 +847,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 void		_CalcNode::SetCompExp  (_Matrix* m, long catID)	
 {
 	compExp = m;
-	if (catID >= 0)
+	if (catID >= 0 && matrixCache)
 		matrixCache[catID] = compExp;
 }
 //_______________________________________________________________________________________________
@@ -895,7 +895,7 @@ _Matrix*    _CalcNode::GetCompExp 		(long catID)
 	if (catID==-1) 
 		return compExp; 
   	else 
-  		return matrixCache?matrixCache[catID]:nil; 
+  		return matrixCache?matrixCache[catID]:compExp; 
 }
 	
 //_______________________________________________________________________________________________
