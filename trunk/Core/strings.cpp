@@ -1665,7 +1665,7 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 	if (!sLength) return;
 
 
-#if defined __UNIX__ || defined __HYPHY_GTK__
+#if (defined __UNIX__ || defined __HYPHY_GTK__) && !defined __MINGW32__
 //UNIX LINES HERE
 	if (Find('\\')!=-1) // DOS (ASSUME RELATIVE) PATH
 		*this = Replace ("\\","/",true);
@@ -1700,7 +1700,7 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 	}
 #endif
 
-#if defined	__WINDOZE__ // WIN/DOS code
+#if defined	__WINDOZE__ || defined __MINGW32__ // WIN/DOS code
 	if (Find('/')!=-1) // UNIX PATH
 	{
 		if (getChar(0)=='/')
@@ -1879,7 +1879,7 @@ char	GetPlatformDirectoryChar (void)
 	#ifdef __MAC__ 
 		c = ':';
 	#endif
-	#ifdef __WINDOZE__ 
+	#if defined __WINDOZE__ || defined __MINGW32__
 		c = '\\';
 	#endif
 
@@ -2025,7 +2025,7 @@ _String		GetVersionString (void)
 			theMessage = theMessage & name.sysname & " on " & name.machine;
 		#endif
 		#if defined __MINGW32__
-			theMessage = theMessage & "MinGW version " & __MINGW32_VERSION;
+			theMessage = theMessage & "MinGW ";// " & __MINGW32_VERSION;
 		#endif
 	#endif
 	return theMessage;

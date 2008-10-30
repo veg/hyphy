@@ -474,14 +474,15 @@ int main (int argc, char* argv[])
 		  }
 	#endif
 	
-	char 	curWd[4096];
+	char 	curWd[4096],
+		    dirSlash = GetPlatformDirectoryChar ();
 	getcwd (curWd,4096);
 
 	_String baseDir (curWd), 
 			argFile;
 		
 
-	baseDir=baseDir&'/';
+	baseDir=baseDir & dirSlash;
 	pathNames&& &baseDir;
 	
 	baseDirectory = baseDir;
@@ -506,8 +507,8 @@ int main (int argc, char* argv[])
 				baseArgDir = thisArg.Cut(9,-1);
 				if (baseArgDir.sLength)
 				{
-					if (baseArgDir.sData[baseArgDir.sLength-1]!='/')
-						baseArgDir = baseArgDir&"/";
+					if (baseArgDir.sData[baseArgDir.sLength-1]!=dirSlash)
+						baseArgDir = baseArgDir&dirSlash;
 						
 					baseDirectory = baseArgDir;
 				}
@@ -624,9 +625,9 @@ int main (int argc, char* argv[])
 			_String templ;
 
 			if (selection >= 0)
-			    templ = baseArgDir &"TemplateBatchFiles/";
+			    templ = baseArgDir &"TemplateBatchFiles" & dirSlash;
 			else
-			  	templ = baseArgDir & "TemplateBatchFiles/WebUpdate.bf";				
+			  	templ = baseArgDir & "TemplateBatchFiles" & dirSlash & "WebUpdate.bf";				
 			
 			if (selection >= 0)
 				templ= templ&*(_String*)(*(_List*)availableTemplateFiles(selection))(2);
@@ -637,9 +638,13 @@ int main (int argc, char* argv[])
 	}
 	else
 	{
+#ifndef __MINGW32__
 		if (argFile.sData[0] != '/')
 			argFile		  = baseDirectory & argFile;
-		
+#else
+		if (argFile.sData[1] != ':') // not an absolute path 
+			argFile		  = baseDirectory & argFile;		
+#endif
 		PushFilePath  (argFile);
 		ReadBatchFile (argFile,ex);
 	}
