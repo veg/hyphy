@@ -1790,8 +1790,9 @@ long	_HYTreePanel::GetUniversalSaveOptions (_List&l)
 	l&& & option;
 	option = "NEXUS"; l&& & option;
 	option = "NEXUS Numeric"; l&& & option;
-	option = "PostScript file"; l&& & option;
-	return 4;
+	option = "PostScript file [cladogram]"; l&& & option;
+	option = "PostScript file [radial]"; l&& & option;
+	return 5;
 }
 
 //__________________________________________________________
@@ -6512,6 +6513,7 @@ void	_HYTreePanel::HandleTreeSave (long c, _String filePath)
 				break;
 			case 2:
 			case 3:
+			case 4:
 				if (_TheTree	* me    = LocateMyTreeVariable())
 				{
 					if (c==2)
@@ -6548,6 +6550,11 @@ void	_HYTreePanel::HandleTreeSave (long c, _String filePath)
 						plot_dim.theData[0] = theCanvas->w;
 						plot_dim.theData[1] = theCanvas->h;
 						_FString  plot_sc  (new _String(((treeFlags&HY_TREEPANEL_SCALED)&&scaleVariable.sLength)?scaleVariable:empty));
+						
+						_AssociativeList*   viewOptions = new _AssociativeList ();
+						viewOptions->MStore (treeOutputLayout,new _Constant(c==4), false);
+						setParameter (treeOutputAVL,viewOptions,false);
+						
 						_FString   *res = (_FString*)me->PlainTreeString (&plot_sc,&plot_dim);
 						fwrite (res->theString->sData,1,res->theString->sLength,theFile);
 						DeleteObject (res);
