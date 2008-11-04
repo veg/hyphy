@@ -55,5 +55,5 @@ rm -f $installDirectory/Win32GUI/Windows/*.{dll,lib}
 cp  'trunk/GUIElements/Resources/Windows/pthreadGC2.dll' $installDirectory
 
 cd $installDirectory
-bash build_mingw.sh
-bash build_mingw_gui.sh
+sh build_mingw.sh
+sh build_mingw_gui.sh

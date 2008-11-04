@@ -210,7 +210,10 @@ _String
 	storeRootSupportFlag			("STORE_ROOT_SUPPORT"),
 	supportMatrixVariable			("SUPPORT_MATRIX_LIST"),
 	optimizationStatusFile			("SAVE_OPT_STATUS_TO"),
-	autoParalellizeLF				("AUTO_PARALLELIZE_OPTIMIZE");
+	autoParalellizeLF				("AUTO_PARALLELIZE_OPTIMIZE"),
+	optimizationStringTemplate	    ("OPTIMIZATION_PROGRESS_TEMPLATE"),
+	optimizationStringStatus		("OPTIMIZATION_PROGRESS_STATUS"),
+	optimizationStringQuantum		("OPTIMIZATION_PROGRESS_QUANTUM");
 	
 	
 
@@ -282,56 +285,58 @@ void		UpdateOptimizationStatus (_Parameter, long, char, bool, _String * fileName
 void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool optimization, _String* fileName)
 {
 	static long    lCount;
-	static time_t  startedAt;
-	static clock_t userTimeStart;
 	static long	   lastDone;
+	static double  startedAt;
+	static double  elapsed_time;
+	static clock_t userTimeStart;
 	FILE		   *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
 	
 	if (init==0)
 	{
-		lCount = likeFuncEvalCallCount;
-		time    (&startedAt);
-		setvbuf (stdout,nil, _IONBF,1);
-		lastDone = 0;
+		lCount	     = likeFuncEvalCallCount;
+		startedAt    = TimerDifferenceFunction (false);
+		setvbuf      (stdout,nil, _IONBF,1);
+		lastDone      = 0;
 		userTimeStart = clock();
 	}
 	else
-	if (init==1)
-	{
-		time_t timeNow;
-		time (&timeNow);
-		if (timeNow == startedAt) timeNow++;
-		if (pdone<0)
-			pdone = lastDone;
-		if (optimization)
+		if (init==1)
 		{
-			if (outFile)
-				fprintf (outFile,"Likelihood function optimization status\nCurrent Maximum: %-14.8g (%d %% done)\nLikelihood Function evaluations/second: %-8.4g", (double)max, pdone, 
-						(likeFuncEvalCallCount-lCount)/(double) (timeNow-startedAt));			
-			else
+			double timeDiff = TimerDifferenceFunction (true);
+			
+
+			if (pdone<0)
+				pdone = lastDone;
+			
+			if (optimization)
 			{
-				printf ("\033\015 Current Max: %-14.8g (%d %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, 
-						(likeFuncEvalCallCount-lCount)/(double) (timeNow-startedAt));
-	
-				if (timeNow-startedAt)
-					printf ("CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*(timeNow-startedAt)));
+				if (outFile)
+					fprintf (outFile,"Likelihood function optimization status\nCurrent Maximum: %-14.8g (%d %% done)\nLikelihood Function evaluations/second: %-8.4g", (double)max, pdone, 
+							(likeFuncEvalCallCount-lCount)/timeDiff);			
+				else
+				{
+					printf ("\033\015 Current Max: %-14.8g (%d %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, 
+							(likeFuncEvalCallCount-lCount)/timeDiff);
+		
+					if (timeNow-startedAt)
+						printf ("CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*(timeNow-startedAt)));
+				}
 			}
+			else
+				printf ("\033\015 Sites done: %g (%d %% done)", (double)max, pdone);		
+
+			lastDone = pdone;
 		}
 		else
-			printf ("\033\015 Sites done: %g (%d %% done)", (double)max, pdone);		
-
-		lastDone = pdone;
-	}
-	else
-	{
-		if (outFile)
-			fprintf (outFile,"DONE");
-		else
 		{
-			printf ("\033\015 ");
-			setvbuf (stdout,nil,_IOLBF,1024);
-		}	
-	}
+			if (outFile)
+				fprintf (outFile,"DONE");
+			else
+			{
+				printf ("\033\015 ");
+				setvbuf (stdout,nil,_IOLBF,1024);
+			}	
+		}
 	if (outFile)
 		fclose (outFile);
 }
