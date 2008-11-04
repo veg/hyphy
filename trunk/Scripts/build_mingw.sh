@@ -5,8 +5,8 @@ TARGET_NAME="DEV"
 LIBRARY_BINDINGS="NONE"
 
 	
-COMPILER="wine  /Users/sergei/.wine/drive_c/MinGW/bin/mingw32-g++.exe";
-COMPILERC="wine /Users/sergei/.wine/drive_c/MinGW/bin/mingw32-gcc.exe";
+COMPILER="g++.exe";
+COMPILERC="gcc.exe";
 
 COMPILER_FLAGS=" -D __UNIX__ -w -c -fsigned-char -O3 -fpermissive -I`pwd`/Source -I`pwd`/Source/SQLite -D INTPTR_TYPE=long "	
 

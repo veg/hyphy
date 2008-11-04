@@ -570,7 +570,9 @@ class _TheTree: public _TreeTopology {
 extern char 	isDefiningATree;
 extern _String	expectedNumberOfSubs,
 				stringSuppliedLengths,
-				includeModelSpecs;
+				includeModelSpecs,
+				treeOutputAVL,
+				treeOutputLayout;
 #ifdef _OPENMP
 #include "omp.h"
 #endif 

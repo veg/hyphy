@@ -5,9 +5,9 @@ TARGET_NAME="DEV_GUI"
 LIBRARY_BINDINGS="NONE"
 
 	
-COMPILER="wine  /Users/sergei/.wine/drive_c/MinGW/bin/mingw32-g++.exe";
-COMPILERC="wine /Users/sergei/.wine/drive_c/MinGW/bin/mingw32-gcc.exe";
-RC_COMPILER="wine /Users/sergei/.wine/drive_c/MinGW/bin/windres.exe"
+COMPILER="g++.exe";
+COMPILERC="gcc.exe";
+RC_COMPILER="windres.exe"
 
 COMPILER_FLAGS=" -D __WINDOZE__ -w -c -fsigned-char -O3 -fpermissive -I`pwd`/Source -I`pwd`/Source/SQLite -I`pwd`/Win32GUI -D INTPTR_TYPE=long "	
 
