@@ -1233,6 +1233,32 @@ bool _String::endswith (_String s, bool caseSensitive)
 
 //_______________________________________________________________________
 // replace string 1 with string 2, all occurences true/false
+void _String::FormatTimeString(long time_diff)
+{
+	long secs = time_diff, 
+		 mins = secs/60, 
+	     hrs  = mins/60;
+
+	mins = mins%60;
+	secs = secs%60;
+	if (hrs<10)
+		(*this) = _String('0')&hrs;
+	else
+		(*this) = _String(hrs);
+	(*this) = (*this) &':';
+	if (mins<10)
+		(*this) = (*this)&_String('0')&mins;
+	else
+		(*this) = (*this)&_String(mins);
+	(*this) = (*this) &':';
+	if (secs<10)
+		(*this) = (*this)&_String('0')&secs;
+	else
+		(*this) = (*this)&_String(secs);	
+}
+
+//_______________________________________________________________________
+// replace string 1 with string 2, all occurences true/false
 _String _String::Replace(_String s, _String d, bool flag)
 {
 	if (!sLength) 		

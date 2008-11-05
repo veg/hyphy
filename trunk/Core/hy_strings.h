@@ -166,6 +166,9 @@ virtual		operator const char* (void);
  				// finds a character in an alphabetized string
  				
  			long Adler32 (void);
+	
+			void FormatTimeString (long);
+				// convert the seconds argument into a hh:mm:ss format
 
  			bool operator == (_String);
  				// lexicographic comparison

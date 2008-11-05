@@ -275,26 +275,7 @@ void	ExecuteAPostProcessor (_String justTheName)
 //_________________________________________________________________________
 void	updateTimerF (_String& rec, long time_diff)
 {
-	long secs = time_diff, 
-		 mins = secs/60, 
-		 hrs  = mins/60;
-		 
-	mins = mins%60;
-	secs = secs%60;
-	if (hrs<10)
-		rec = _String('0')&hrs;
-	else
-		rec = _String(hrs);
-	rec = rec &':';
-	if (mins<10)
-		rec = rec&_String('0')&mins;
-	else
-		rec = rec&_String(mins);
-	rec = rec &':';
-	if (secs<10)
-		rec = rec&_String('0')&secs;
-	else
-		rec = rec&_String(secs);	
+	rec.FormatTimeString (time_diff);
 }
 
 //__________________________________________________________________________________

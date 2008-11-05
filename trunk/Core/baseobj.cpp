@@ -43,6 +43,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "likefunc.h"
 #endif
 
+#ifdef   __UNIX__
+	#include <sys/time.h>
+#endif
+
 #ifdef 	  __HYPHYDMALLOC__
 	#include "dmalloc.h"
 #endif
@@ -525,7 +529,7 @@ double		TimerDifferenceFunction (bool doRetrieve)
 	#endif
 
 	#if !defined __WINDOZE__ && !defined __MAC__
-		static	clock_t 		clockIn;
+		/*static	clock_t 		clockIn;
 				clock_t			clockOut;
 					  
 		if (doRetrieve)
@@ -534,7 +538,16 @@ double		TimerDifferenceFunction (bool doRetrieve)
 			timeDiff   = (clockOut-clockIn) * 1.0 / CLOCKS_PER_SEC;
 		}
 		else
-			clockIn  = clock();
+			clockIn  = clock();*/
+		static timeval clockIn, clockOut;
+		if (doRetrieve)
+		{
+			gettimeofday (&clockOut,nil);
+			timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
+		}
+		else
+			gettimeofday (&clockIn,nil);
+		
 	#endif
 	
 
