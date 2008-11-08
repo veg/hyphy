@@ -1404,8 +1404,7 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap) 
 // 
 {
-	long		 				i,
-				 				hDim,
+	long		 				hDim,
 				 				vDim,
 				 				currentOffset = 0;
 				 				
@@ -1421,7 +1420,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 		vDim = 0;
 		hDim = 1;
 		// compute the horizontal dimension of the matrix 
-		for (i=0;i<theTrees.lLength;i++)
+		for (long i=0;i<theTrees.lLength;i++)
 			if (HasHiddenMarkov(blockDependancies.lData[i])>=0)
 			{
 				df = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
@@ -1433,9 +1432,9 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 		_Matrix *result = new _Matrix (hDim,vDim,false,true);
 		checkPointer (result);
 		// now proceed to compute each of the blocks
-		for (i=0;i<theTrees.lLength;i++)
+		for (long i=0;i<theTrees.lLength;i++)
 		{
-			categID = 0;
+			categID		  = 0;
 			offsetCounter = 1;
 			if (!blockDependancies.lData[i])
 			{
@@ -1644,7 +1643,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	{
 		vDim = 0;
 		hDim = 1;
-		for (i=0;i<theTrees.lLength;i++)
+		for (long i=0;i<theTrees.lLength;i++)
 		{
 			vDim+=BlockLength(i);
 			long dim = 1, checkByte = blockDependancies.lData[i],m;
@@ -1657,7 +1656,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	
 		_Matrix result (hDim,vDim,false,true);
 		// now proceed to compute each of the blocks
-		for (i=0;i<theTrees.lLength;i++)
+		for (long i=0;i<theTrees.lLength;i++)
 		{
 			categID = 0;
 			offsetCounter = 1;
@@ -1669,7 +1668,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 				forceRecomputation = false;
 			}
 			else
-				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, result);
+				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result);
 			currentOffset+=BlockLength(i);
 		}
 		DoneComputing();
@@ -2574,7 +2573,8 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				ComputeBlock				(blockIndex,sR+hDim);						
 				_Parameter					localWeight = cws->theData[k]*weight ;
 				#ifdef _SLKP_LFENGINE_REWRITE_
-				if (runMode == 1)
+				if (runMode == 1) 
+					// decide what is the most likely category assignment 
 				{
 					for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
 					{
@@ -2610,7 +2610,6 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 							runStorage[r1] = categID;
 						}
 					}
-					
 				}
 				else
 				{
