@@ -803,16 +803,15 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 	zMin		= 1e100;
 	zMax		= -1e100;
 
-	psDensityPlot * _HYPSPageHeader (plotWidth + 5*plotDim[2], plotHeight + 4*plotDim[2], "Density Plot");
+	psDensityPlot * _HYPSPageHeader (plotWidth + 5*plotDim[2], plotHeight + 6*plotDim[2], "Density Plot");
 	psDensityPlot * "\n";
 	psDensityPlot * _HYPSSetFont ("Times-Roman", plotDim[2]);
 
 	psDensityPlot * "\n";
 	psDensityPlot * _HYPSTextCommands(0);
-	psDensityPlot * _HYPSHatchRectanglePattern (45, Min(10,px$2), px, py, {{0.5,0.5,0.5}}, "hatch");
+	psDensityPlot * _HYPSHatchRectanglePattern (45, Min(10,px$2), px, py, {{0.5,0.5,0.5}}, "hatch",plotOriginX,plotOriginY);
 	
-	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
-	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor\n";
 	
 	zValues		= {xBoxes,yBoxes};
 	doPlot		= {xBoxes,yBoxes};
@@ -852,7 +851,7 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 			}
 			else
 			{
-				psDensityPlot * ("/Pattern setcolorspace hatch setcolor " + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");
+				psDensityPlot * ("/Pattern setcolorspace hatch setcolor " + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");	
 			}
 		}
 	}
@@ -894,6 +893,27 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");
 		
+	psDensityPlot * ("\n0 0 0 setrgbcolor " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	
+	_thermLabels = {{"0%",".2"}{"25%",".2"}{"50%",".2"}{"75%",".2"}{"100%",".2"}};
+	_colorLabels = {5,6};
+	for (_x = 0; _x < 5; _x = _x+1)
+	{
+		meColor = _x*0.25;
+		meColor2 = colors[0][-1]*(1-meColor) + colors[1][-1]*meColor;
+		_colorLabels[_x][0] = meColor2[0];
+		_colorLabels[_x][1] = meColor2[1];
+		_colorLabels[_x][2] = meColor2[2];
+		if (Max(_colorLabels[_x][0],Max(_colorLabels[_x][1],_colorLabels[_x][2])) < 0.4)
+		{
+			_colorLabels[_x][3] = 1;
+			_colorLabels[_x][4] = 1;
+			_colorLabels[_x][5] = 1;		
+		}
+	}
+	
+	psDensityPlot * ("" + plotOriginX + " " + (plotHeight+plotOriginY+plotDim[2]/2) + " translate \n"); 
+	psDensityPlot * (_HYPSLabeledBoxes (200,1.5*plotDim[2],plotDim[2],_thermLabels,_colorLabels))["PS"];
 	psDensityPlot * "\nshowpage\n";
 	psDensityPlot * 0;
 	

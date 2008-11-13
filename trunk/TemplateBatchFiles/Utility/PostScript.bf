@@ -97,11 +97,12 @@ genearete a pattern dictionary for a simple hatching pattern
 
 ---------------------------------------------------------*/
 
-function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name)
+function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name,offset_x,offset_y)
 {
 	_patternDef = "";
 	_patternDef * 128;
 		
+	_patternDef * (""+offset_x+" "+offset_y + " translate\n");	
 	_patternDef * "<< % Begin prototype pattern dictionary\n/PaintType 1\n/PatternType 1\n/TilingType 1";
     _patternDef * ("/BBox [0 0 " + width + " " + height + "]\n/XStep "+width+" \n/YStep " + height + "\n/PaintProc\n{\nbegin\n");
 	_patternDef * ("" + color[0] + " " + color[1] + " " + color[2] + " setrgbcolor\n");
@@ -114,7 +115,7 @@ function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name)
 	{
 		_x1 = 0;
 	}
-	_x  = -Abs(_x1); 
+	_x  = -((1+Abs(_x1)$spacing)*spacing); 
 	
 	while (_x < width)
 	{
@@ -123,6 +124,7 @@ function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name)
 	}
 	
 	_patternDef * ("\nend\n}\n>>matrix\nmakepattern\n/" + name + " exch def\n");
+	_patternDef * ("-"+offset_x+" -"+offset_y + " translate\n");	
 	_patternDef * 0;
 	return _patternDef;
 }
