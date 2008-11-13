@@ -809,7 +809,6 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 
 	psDensityPlot * "\n";
 	psDensityPlot * _HYPSTextCommands(0);
-	psDensityPlot * _HYPSHatchRectanglePattern (45, Min(10,px$2), px, py, {{0.5,0.5,0.5}}, "hatch",plotOriginX,plotOriginY);
 	
 	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor\n";
 	
@@ -849,10 +848,12 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 				psDensityPlot * (""+ meColor2[0] + " " + meColor2[1] + " " + meColor2[2] + " setrgbcolor\n");
 				psDensityPlot * ("" + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");
 			}
-			else
+			/*else
 			{
-				psDensityPlot * ("/Pattern setcolorspace hatch setcolor " + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");	
-			}
+				meColor2 = colors[0][-1]*(0.5) + colors[1][-1]*0.5;
+				psDensityPlot * (""+ meColor2[0] + " " + meColor2[1] + " " + meColor2[2] + " setrgbcolor\n");
+				psDensityPlot * (Format(plotOriginX+(_x+0.5)*px,20,10) + " " + Format(plotOriginY+(_y+0.5)*py,20,10) + " " + Format(Max(px,py)/2,20,10) + " 0 360 arc fill\n");
+			}*/
 		}
 	}
 	
@@ -904,12 +905,15 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 		_colorLabels[_x][0] = meColor2[0];
 		_colorLabels[_x][1] = meColor2[1];
 		_colorLabels[_x][2] = meColor2[2];
-		if (Max(_colorLabels[_x][0],Max(_colorLabels[_x][1],_colorLabels[_x][2])) < 0.4)
+		_colorLabels[_x][3] = 1-meColor2[0];
+		_colorLabels[_x][4] = 1-meColor2[1];
+		_colorLabels[_x][5] = 1-meColor2[2];
+		/*if (Max(_colorLabels[_x][0],Max(_colorLabels[_x][1],_colorLabels[_x][2])) < 0.4)
 		{
 			_colorLabels[_x][3] = 1;
 			_colorLabels[_x][4] = 1;
 			_colorLabels[_x][5] = 1;		
-		}
+		}*/
 	}
 	
 	psDensityPlot * ("" + plotOriginX + " " + (plotHeight+plotOriginY+plotDim[2]/2) + " translate \n"); 

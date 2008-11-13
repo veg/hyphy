@@ -3271,10 +3271,10 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				_Parameter _hprestrict_ * argData = secondArg.theData, 
 										* stData = storage.theData; 
 				if (subtract)
-					for (long idx = 0; idx < lDim; idx++)
+					for (long idx = 0; idx < secondArg.lDim; idx++)
 						stData[idx]-=argData[idx];
 				else
-					for (long idx = 0; idx < lDim; idx++)
+					for (long idx = 0; idx < secondArg.lDim; idx++)
 						stData[idx]+=argData[idx];
 			}
 		}

@@ -104,7 +104,7 @@ function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name,offse
 		
 	_patternDef * (""+offset_x+" "+offset_y + " translate\n");	
 	_patternDef * "<< % Begin prototype pattern dictionary\n/PaintType 1\n/PatternType 1\n/TilingType 1";
-    _patternDef * ("/BBox [0 0 " + width + " " + height + "]\n/XStep "+width+" \n/YStep " + height + "\n/PaintProc\n{\nbegin\n");
+    _patternDef * ("/BBox [0 0 " + (width) + " " + (height) + "]\n/XStep "+width+" \n/YStep " + height + "\n/PaintProc\n{\nbegin\n");
 	_patternDef * ("" + color[0] + " " + color[1] + " " + color[2] + " setrgbcolor\n");
 	
 	if (angle != 90)
@@ -115,8 +115,8 @@ function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name,offse
 	{
 		_x1 = 0;
 	}
-	_x  = -((1+Abs(_x1)$spacing)*spacing); 
-	
+	_x  = -((Abs(_x1)$spacing)*spacing)-0.5; 
+	_x  = 0.5;
 	while (_x < width)
 	{
 		_patternDef * ("\n" + _x + " 0 moveto " + (_x + _x1) + " " + height + " lineto stroke");
