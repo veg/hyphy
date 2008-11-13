@@ -646,7 +646,7 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 	plotOriginY = 3.5*plotDim[2];
 	
 	xBoxes		= xyranges[0][2];
-	yBoxes		= xyranges[0][2];
+	yBoxes		= xyranges[1][2];
 	xStep		= (xyranges[0][1]-xyranges[0][0])/xBoxes;
 	yStep		= (xyranges[1][1]-xyranges[1][0])/yBoxes;
 	px			= plotWidth/xBoxes;
@@ -765,6 +765,135 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 		psDensityPlot * ("newpath " + xStep + " " + yStep + " " + circles[_y][2] + " 0 360 arc stroke\n");
 	}
 	
+	psDensityPlot * "\nshowpage\n";
+	psDensityPlot * 0;
+	
+	return psDensityPlot;
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
+
+function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0, >0) points to plot */
+							  xyranges, 	/* 2x2 matrix {{x_bins, x_left, x_steps}{y_bins, y_bottom, y_steps} */
+							  zrange,   	/* 1x2 matrix {{z_min, z_max}}, used for color scaling 
+							  			   	z_min and z_max will be automatically adjusted to include
+							  			   	at least the range of values from data_matrix*/
+							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points */
+							  colors, 		/* 2x3 matrix {{R_base,G_base,B_base}{R_max,G_max,R_max
+							  			 		the colors are linearly interpolated from base (min intensity)*/
+							  labels  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
+							  )
+{
+	
+	psDensityPlot = ""; psDensityPlot*1024;
+	
+	plotHeight = Max (100, plotDim[1]);
+	plotWidth  = Max (100, plotDim[0]);
+	
+	plotOriginX = 4.5*plotDim[2];
+	plotOriginY = 3.5*plotDim[2];
+	
+	xBoxes		= xyranges[0][0];
+	yBoxes		= xyranges[1][0];
+	xStep		= xyranges[0][2];
+	yStep		= xyranges[1][2];
+	px			= plotWidth/xBoxes;
+	py			= plotHeight/yBoxes;
+	zMin		= 1e100;
+	zMax		= -1e100;
+
+	psDensityPlot * _HYPSPageHeader (plotWidth + 5*plotDim[2], plotHeight + 4*plotDim[2], "Density Plot");
+	psDensityPlot * "\n";
+	psDensityPlot * _HYPSSetFont ("Times-Roman", plotDim[2]);
+
+	psDensityPlot * "\n";
+	psDensityPlot * _HYPSTextCommands(0);
+	psDensityPlot * _HYPSHatchRectanglePattern (45, Min(10,px$2), px, py, {{0.5,0.5,0.5}}, "hatch");
+	
+	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
+	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	
+	zValues		= {xBoxes,yBoxes};
+	doPlot		= {xBoxes,yBoxes};
+	
+	/* compute and condense the data matrix */
+	
+	
+	_x = Rows (data_matrix);
+	
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		xSquare = _dataPoint $ yBoxes;
+		ySquare = _dataPoint % yBoxes;
+		plotMe  = data_matrix[_dataPoint][3];
+		if		(plotMe)
+		{
+			zValues [xSquare][ySquare]  = data_matrix[_dataPoint][2]/plotMe;
+			zMin						= Min(zMin,zValues [xSquare][ySquare]);
+			zMax						= Max(zMax,zValues [xSquare][ySquare]);
+			doPlot[xSquare][ySquare]    = 1;
+		}
+	}
+	
+	zMin = Min(zMin,zrange[0]);
+	zMax = Max(zMax,zrange[1])-zMin;
+	
+	for (_x = 0; _x < xBoxes; _x = _x+1)
+	{
+		for (_y = 0; _y < yBoxes; _y = _y+1)
+		{
+			if (doPlot[_x][_y])
+			{
+				meColor = (zValues [_x][_y]-zMin)/zMax;
+				meColor2 = colors[0][-1]*(1-meColor) + colors[1][-1]*meColor;
+				psDensityPlot * (""+ meColor2[0] + " " + meColor2[1] + " " + meColor2[2] + " setrgbcolor\n");
+				psDensityPlot * ("" + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");
+			}
+			else
+			{
+				psDensityPlot * ("/Pattern setcolorspace hatch setcolor " + Format(plotOriginX+_x*px,20,10) + " " + Format(plotOriginY+_y*py,20,10) + " " + Format(px,20,10) + " " + Format(py,20,10) + " rectfill\n");
+			}
+		}
+	}
+	
+	/* now do the coordinates */
+	/* determine base scale */
+	
+	if (doPercentage)
+	{
+		psDensityPlot * _HYPSSetFont ("Times-Roman", plotDim[2]);
+		psDensityPlot * "\n";
+	}
+	
+	x_max = xyranges[0][1]+xyranges[0][0]*xyranges[0][2];
+	xscaler = determineCoordinateTicks (xyranges[0][1],x_max);
+	_x	= ((xyranges[0][1]/xscaler)$1 + 1)*xscaler;
+	px	= plotWidth/(x_max-xyranges[0][1]);
+	psDensityPlot * ("0 0 0 setrgbcolor\n");
+	while (_x < x_max)
+	{
+		xStep = (plotOriginX + px*(_x-xyranges[0][1]));
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,4,2) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
+		_x = _x + xscaler;
+	}
+	
+	y_max = xyranges[1][1]+xyranges[1][0]*xyranges[1][2];
+	yscaler = determineCoordinateTicks (xyranges[1][1],y_max);
+	_y	= ((xyranges[1][1]/yscaler)$1 + 1)*yscaler;
+	py	= plotHeight/(y_max-xyranges[1][1]);
+	while (_y < y_max)
+	{
+		yStep = (plotOriginY + py*(_y-xyranges[1][1]));
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,4,2) + ") righttext\n");  
+		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
+		_y = _y + yscaler;
+	}
+	
+	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
+	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");
+		
 	psDensityPlot * "\nshowpage\n";
 	psDensityPlot * 0;
 	

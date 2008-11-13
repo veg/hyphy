@@ -93,6 +93,43 @@ for (_i = 0; _i < Abs(_asciiCharString); _i=_i+1)
 
 /*---------------------------------------------------------
 
+genearete a pattern dictionary for a simple hatching pattern
+
+---------------------------------------------------------*/
+
+function _HYPSHatchRectanglePattern (angle,spacing,width,height,color,name)
+{
+	_patternDef = "";
+	_patternDef * 128;
+		
+	_patternDef * "<< % Begin prototype pattern dictionary\n/PaintType 1\n/PatternType 1\n/TilingType 1";
+    _patternDef * ("/BBox [0 0 " + width + " " + height + "]\n/XStep "+width+" \n/YStep " + height + "\n/PaintProc\n{\nbegin\n");
+	_patternDef * ("" + color[0] + " " + color[1] + " " + color[2] + " setrgbcolor\n");
+	
+	if (angle != 90)
+	{
+		_x1 = height/Tan(angle*Arctan(1)/45);
+	}
+	else
+	{
+		_x1 = 0;
+	}
+	_x  = -Abs(_x1); 
+	
+	while (_x < width)
+	{
+		_patternDef * ("\n" + _x + " 0 moveto " + (_x + _x1) + " " + height + " lineto stroke");
+		_x = _x + spacing; 
+	}
+	
+	_patternDef * ("\nend\n}\n>>matrix\nmakepattern\n/" + name + " exch def\n");
+	_patternDef * 0;
+	return _patternDef;
+}
+
+
+/*---------------------------------------------------------
+
 layout an NxM square text table (one line per cell)
 takes in a pair of dimensions, font size, an NxM text matrix
 and an NxM integer matrix on whether or not to draw cell boundaries
