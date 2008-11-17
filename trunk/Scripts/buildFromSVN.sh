@@ -26,11 +26,13 @@ cd ../..
 
 makedir $installDirectory
 makedir $installDirectory/Source
+makedir $installDirectory/Source/Link
 makedir $installDirectory/GUI
 makedir $installDirectory/Source/SQLite
 cp trunk/Core/*.{h,cp,cpp} $installDirectory/Source/
 rm -f $installDirectory/Source/preferences.cpp
 cp trunk/Core/preferences.cpp $installDirectory/GUI
+cp trunk/HeadlessLink/*.{h,cpp} $installDirectory/Source/Link
 
 cp trunk/NewerFunctionality/*.{h,cpp} $installDirectory/Source/
 cp SQLite/trunk/*.{c,h} $installDirectory/Source/SQLite/
