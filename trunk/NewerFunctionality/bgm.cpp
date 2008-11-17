@@ -1698,7 +1698,6 @@ void Bgm::CacheNodeScores (void)
 	
 #if !defined __UNIX__ || defined __HEADLESS__
 	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
 #if !defined __HEADLESS__
 	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
 #else
