@@ -372,6 +372,16 @@ END;
 
 BEGIN HYPHY;
 
+fprintf (stdout, "\nRunning an HKY85+3GDD rate variation model fit on an Influenza A alignment with 349 sequences and 967 nucleotides\n");
+timer = Time (1);
+
+
+VERBOSITY_LEVEL = 1;
+OPTIMIZATION_PROGRESS_QUANTUM = 0.5;
+OPTIMIZATION_PROGRESS_STATUS  = "OPTIMIZING THE LIKELIHOOD FUNCTION";
+OPTIMIZATION_PROGRESS_TEMPLATE = "$1 Log(L) = $2 ($3% done) Time elapsed: $4 LF evals/second: $5 CPU load: $6";
+
+
 global flu_part_SharedAC = 1;
 global flu_part_SharedAT = 1;
 global flu_part_SharedCG = 1;
@@ -383,10 +393,30 @@ flu_part_Shape2:>0.01;
 flu_part_Shape2:<100;
 
 
+global RS_3=26.31658413689864;
+RS_3:>1;
+RS_3:<100000;
+global RS_1=0.1058865366091921;
+RS_1:>1e-09;
+RS_1:<1;
+global PS_2=0.8897113715350019;
+PS_2:<1;
+global PS_1=0.8178407161902067;
+PS_1:<1;
+global R=0.2193557045781114;
+global c_scale:=RS_1*PS_1+1*(1-PS_1)*PS_2+1*RS_3*(1-PS_1)*(1-PS_2);
+c.weights={1,3};
+c.weights[0][0]:=PS_1;
+c.weights[0][1]:=(1-PS_1)*PS_2;
+c.weights[0][2]:=(1-PS_1)*(1-PS_2);
 
-category flu_part_Categ2=(5,EQUAL,MEAN,GammaDist(_x_,flu_part_Shape2,flu_part_Shape2),
-									   CGammaDist(_x_,flu_part_Shape2,flu_part_Shape2),0,1e+25,
-									   CGammaDist(_x_,flu_part_Shape2+1,flu_part_Shape2));
+c.points={1,3};
+c.points[0][0]:=RS_1/c_scale;
+c.points[0][1]:=1/c_scale;
+c.points[0][2]:=1*RS_3/c_scale;
+
+
+category flu_part_Categ2=(3,c.weights,MEAN,,c.points,-1e-150,1,);
 
 flu_part_REV2={4,4};
 flu_part_REV2[0][1]:=flu_part_SharedAC*mu*flu_part_Categ2;
@@ -420,5 +450,13 @@ LikelihoodFunction flu_LF 		= (flu_part,Tree_1);
 
 Optimize						(res_flu_LF,flu_LF);
 
-fprintf							(stdout,"\n",flu_LF);
+expectedLL = -10852.3841561208;
+diffLL 	   = Abs (res_flu_LF[1][0] - expectedLL);
+
+timer2 = Time (1);
+
+fprintf (stdout, "\n", res_flu_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n");
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf ("Results/IntermediateNucExport.bf",CLEAR_FILE,flu_LF); 
+
 END;
