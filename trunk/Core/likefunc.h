@@ -242,7 +242,7 @@ static	void			CheckFibonacci			(_Parameter);
 		long		 	HasPrecisionBeenAchieved 	(_Parameter funcValue = 2.*A_LARGE_NUMBER, bool = false);
 		void		 	RecurseCategory				(long,long,long,long,_Parameter
 #ifdef _SLKP_LFENGINE_REWRITE_
-													,_SimpleList* = nil, char = 0, _Parameter* = nil
+													,_SimpleList* = nil, char = 0, _Parameter* = nil, long = 0
 #endif
 													 );
 		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);

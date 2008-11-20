@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "likefunc.h"
 #endif
 
-#ifdef   __UNIX__
+#if defined   __UNIX__ || defined __HYPHY_GTK__
 	#include <sys/time.h>
 #endif
 

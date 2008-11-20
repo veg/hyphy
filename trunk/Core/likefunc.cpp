@@ -1660,15 +1660,24 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 		{
 			categID = 0;
 			offsetCounter = 1;
+			
 			if (!blockDependancies.lData[i])
 			{
 				categID = -1;
 				forceRecomputation = true;
 				ComputeBlock(i,result.fastIndex()+currentOffset);
+				// FIX: need to accommodate site scaling
 				forceRecomputation = false;
 			}
 			else
+#ifdef _SLKP_LFENGINE_REWRITE_
+			{
+				_SimpleList	scalerTabs (BlockLength(i), 0, 0);
+				RecurseCategory   (i, HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), 1., &scalerTabs, 2, result.theData, currentOffset);
+			}
+#else
 				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result);
+#endif
 			currentOffset+=BlockLength(i);
 		}
 		DoneComputing();
@@ -2510,7 +2519,7 @@ void	  _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long in
 		
 void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage  
+											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage, long columnShift  
 #endif				
 	)
 {
@@ -2520,7 +2529,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 		if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov())
 			RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-			,siteMultipliers,runMode,runStorage
+			,siteMultipliers,runMode,runStorage,columnShift
 #endif				
 			);
 		else
@@ -2533,7 +2542,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				thisC->SetIntervalValue(k);
 				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
 #ifdef _SLKP_LFENGINE_REWRITE_
-								,siteMultipliers,runMode,runStorage 
+								,siteMultipliers,runMode,runStorage,columnShift 
 #endif				
 				);
 				categID+=offsetCounter/nI;
@@ -2585,12 +2594,12 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 							
 							if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
 							{
-								siteMultipliers->lData[r1] = scv;
-								_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+								_Parameter scaled = sR[r1]*acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
 								if (sR[r2] > scaled)
 									doChange = true;
 								else
 									sR[r1] = scaled;
+								siteMultipliers->lData[r1] = scv;
 							}
 							else
 							{
@@ -2613,33 +2622,60 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				}
 				else
 				{
-					#endif
-					for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
+					if (runMode == 2) 
+					// write out conditional probs
 					{
-						#ifdef _SLKP_LFENGINE_REWRITE_
-						if (siteCorrectors)
+						for (long r1 = 0, r2 = hDim, r3 = categID*(hDim+columnShift); r1 < currentOffset; r1++,r2++,r3++)
 						{
-							long scv = *siteCorrectors;
-							
-							if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+							if (siteCorrectors)
 							{
-								siteMultipliers->lData[r1] = scv;
-								sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+								long scv = *siteCorrectors;
+								if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+								{
+									_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+									for (long z = r3-(hDim+columnShift); z >= 0; z-=(hDim+columnShift))
+										runStorage[z] *= scaled;
+									siteMultipliers->lData[r1] = scv;
+								}
+								else
+								{
+									if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+										sR[r2] *= acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);		
+								}
+								
+								siteCorrectors++;
+							}
+							runStorage[r3] = sR[r2];
+						}
+					}
+					else
+					#endif
+						for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
+						{
+							#ifdef _SLKP_LFENGINE_REWRITE_
+							if (siteCorrectors)
+							{
+								long scv = *siteCorrectors;
+								
+								if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+								{
+									sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
+									siteMultipliers->lData[r1] = scv;
+								}
+								else
+								{
+									if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+										sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
+									else // same scaling factors
+										sR[r1] += localWeight * sR[r2];
+								}
+								
+								siteCorrectors++;
 							}
 							else
-							{
-								if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
-									sR[r1] += localWeight * sR[r2] * acquireScalerMultiplier (scv - siteMultipliers->lData[r1]);							
-								else // same scaling factors
-									sR[r1] += localWeight * sR[r2];
-							}
-							
-							siteCorrectors++;
+							#endif
+								sR[r1] += localWeight * sR[r2];
 						}
-						else
-						#endif
-							sR[r1] += localWeight * sR[r2];
-					}
 				#ifdef _SLKP_LFENGINE_REWRITE_
 				}	
 				#endif
