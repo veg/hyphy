@@ -1673,7 +1673,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 #ifdef _SLKP_LFENGINE_REWRITE_
 			{
 				_SimpleList	scalerTabs (BlockLength(i), 0, 0);
-				RecurseCategory   (i, HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), 1., &scalerTabs, 2, result.theData, currentOffset);
+				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result, &scalerTabs);
 			}
 #else
 				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result);
@@ -2519,7 +2519,7 @@ void	  _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long in
 		
 void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage, long columnShift  
+											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage
 #endif				
 	)
 {
@@ -2529,7 +2529,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 		if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov())
 			RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-			,siteMultipliers,runMode,runStorage,columnShift
+			,siteMultipliers,runMode,runStorage
 #endif				
 			);
 		else
@@ -2542,7 +2542,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				thisC->SetIntervalValue(k);
 				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
 #ifdef _SLKP_LFENGINE_REWRITE_
-								,siteMultipliers,runMode,runStorage,columnShift 
+								,siteMultipliers,runMode,runStorage 
 #endif				
 				);
 				categID+=offsetCounter/nI;
@@ -2622,7 +2622,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				}
 				else
 				{
-					if (runMode == 2) 
+					/*if (runMode == 2) 
 					// write out conditional probs
 					{
 						for (long r1 = 0, r2 = hDim, r3 = categID*(hDim+columnShift); r1 < currentOffset; r1++,r2++,r3++)
@@ -2648,7 +2648,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 							runStorage[r3] = sR[r2];
 						}
 					}
-					else
+					else*/
 					#endif
 						for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++,r2++)
 						{
@@ -2766,7 +2766,11 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 	if (index>lowestIndex)
 	{
 		if ((!CheckNthBit(dependance,index))||(thisC->IsHiddenMarkov()))
-			WriteAllCategories (blockIndex, index-1, dependance,lowestIndex,matrixOffset,storage);
+			WriteAllCategories (blockIndex, index-1, dependance,lowestIndex,matrixOffset,storage
+#ifdef _SLKP_LFENGINE_REWRITE_
+								,siteMultipliers  
+#endif			
+			);
 		else
 		{
 			thisC->Refresh();
@@ -2775,7 +2779,11 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 			for (long k = 0; k<nI; k++)
 			{
 				thisC->SetIntervalValue(k);
-				WriteAllCategories(blockIndex,index-1,dependance, lowestIndex,matrixOffset,storage);
+				WriteAllCategories(blockIndex,index-1,dependance, lowestIndex,matrixOffset,storage
+#ifdef _SLKP_LFENGINE_REWRITE_
+								   ,siteMultipliers  
+#endif			
+				);
 				categID+=offsetCounter/nI;
 			}
 			offsetCounter/=nI;
@@ -2786,9 +2794,50 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 	else
 	{
 		thisC->Refresh();
-		long vDim = storage.GetVDim(), nI = thisC->GetNumberOfIntervals (),
-			 currentOffset = BlockLength(blockIndex);
-		_Parameter* sR = siteResults->fastIndex();
+		long		vDim = storage.GetVDim(), 
+					nI = thisC->GetNumberOfIntervals (),
+					currentOffset = BlockLength(blockIndex);
+		_Parameter* sR = siteResults->theData;
+		
+#ifdef _SLKP_LFENGINE_REWRITE_
+		long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lLength?
+									  (((_SimpleList**)siteCorrections.lData)[blockIndex]->lData) + categID * currentOffset
+									  :nil;
+
+		for (long k = 0; k<nI; k++)
+		{
+			thisC->SetIntervalValue		(k,!k);
+			ComputeBlock (blockIndex,sR);		
+			long	     r3 = categID*vDim+matrixOffset;
+			
+			for (long r1 = 0; r1 < currentOffset; r1++,r3++)
+			{
+				if (siteCorrectors)
+				{
+					long scv = *siteCorrectors;
+					if (scv > siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
+					{
+						_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1]-scv);
+						for (long z = r3-vDim; z >= 0; z-=vDim)
+							storage.theData[z] *= scaled;
+						siteMultipliers->lData[r1] = scv;
+					}
+					else
+					{
+						if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+							sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);		
+					}
+					
+					siteCorrectors++;
+				}
+				storage.theData[r3] = sR[r1];
+			}
+			
+			if (siteCorrectors)
+				siteCorrectors += currentOffset * (offsetCounter-1);
+			categID+=offsetCounter;
+		}
+#else
 		for (long k = 0; k<nI; k++)
 		{
 			thisC->SetIntervalValue(k);
@@ -2800,6 +2849,7 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 			}
 			categID+=offsetCounter;
 		}
+#endif	
 		if (offsetCounter>1)
 			categID-=nI*offsetCounter;
 	}

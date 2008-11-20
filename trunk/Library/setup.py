@@ -10,7 +10,7 @@ from os		 			 import listdir,getcwd,path
 
 global sourceFiles, currentWDir
 
-dirFiles 	= ("../Core", "../NewerFunctionality", "../../SQLite/trunk","Link")
+dirFiles 	= ("../Source", "../Source/SQLite/","../Source/Link")
 sourceFiles = []
 currentWDir	= getcwd()
 
@@ -21,7 +21,7 @@ for aDir in dirFiles:
 	else:
 		sourceFiles = [path.normpath(path.join(currentWDir,aDir,aPath)) for aPath in listdir (aDir) if (aPath.endswith ('cpp') or aPath.endswith ('c'))]
 		
-sourceFiles.append (path.normpath(path.join(currentWDir,"../Mains/hyphyunixutils.cpp")))
+#sourceFiles.append (path.normpath(path.join(currentWDir,"../Mains/hyphyunixutils.cpp")))
 sourceFiles.append (path.normpath(path.join(currentWDir,"SWIGWrappers/THyPhy_python.cpp")))
 
 setup(name='HyPhy',
@@ -40,6 +40,7 @@ setup(name='HyPhy',
       						   ('__UNIX__',''),
       						   ('__MP__',''),
       						   ('__MP2__',''),
+      						   ('_SLKP_LFENGINE_REWRITE_',''),
       						   ('__HEADLESS__','')],
       		libraries = ['pthread','ssl','crypto','curl'],
       		extra_compile_args = ['-w','-c', '-fsigned-char', '-O3', '-fpermissive', '-fPIC']
