@@ -3397,6 +3397,8 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				return res;
 			}
 			break;
+		case 36: // Log - check sum
+			return new _Constant (theString->Adler32());
 		case 37: // MAccess
 			return CharAccess(p,p2);
 			break;
