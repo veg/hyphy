@@ -2824,7 +2824,7 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 					}
 					else
 					{
-						if (scv > siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
+						if (scv < siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
 							sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);		
 					}
 					
