@@ -1401,7 +1401,7 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 }
 									  
 //_______________________________________________________________________________________
-_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap) 
+_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap, _String* storageID) 
 // 
 {
 	long		 				hDim,
@@ -1656,6 +1656,9 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	
 		_Matrix result (hDim,vDim,false,true);
 		// now proceed to compute each of the blocks
+#ifdef _SLKP_LFENGINE_REWRITE_
+		_Matrix scalers (1, vDim, false, true);
+#endif
 		for (long i=0;i<theTrees.lLength;i++)
 		{
 			categID = 0;
@@ -1672,8 +1675,10 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 			else
 #ifdef _SLKP_LFENGINE_REWRITE_
 			{
-				_SimpleList	scalerTabs (BlockLength(i), 0, 0);
+				_SimpleList	scalerTabs (BlockLength(i), -1, 0);
 				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result, &scalerTabs);
+				for (long i2 = 0; i2 < scalerTabs.lLength; i2++)
+					scalers.theData[currentOffset + i2] = scalerTabs.lData[i2];
 			}
 #else
 				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result);
@@ -1683,7 +1688,20 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 		DoneComputing();
 		//return (_Matrix*)result.makeDynamic();
 		if (remap)
+		{
+#ifdef _SLKP_LFENGINE_REWRITE_
+			if (storageID)
+			{
+				_Matrix * remappedCorrections = RemapMatrix(&scalers);
+				_String   scalerID			  = (*storageID) & ".site_scalers";
+				CheckReceptacleAndStore (&scalerID, empty, false, remappedCorrections, false);
+				scalerID = (*storageID) & ".log_scale_multiplier";
+				CheckReceptacleAndStore (&scalerID, empty, false, new _Constant(_logLFScaler), false);
+			}
+#endif
+			
 			return RemapMatrix(&result);
+		}
 		return (_Matrix*)result.makeDynamic();
 	}
 	return nil;
@@ -2817,15 +2835,22 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 					long scv = *siteCorrectors;
 					if (scv > siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
 					{
-						_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1]-scv);
-						for (long z = r3-vDim; z >= 0; z-=vDim)
-							storage.theData[z] *= scaled;
-						siteMultipliers->lData[r1] = scv;
+						if (siteMultipliers->lData[r1] == -1)
+							siteMultipliers->lData[r1] = scv;
+						else
+							sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);
 					}
 					else
 					{
 						if (scv < siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
-							sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);		
+						{							
+							_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1]-scv);
+							for (long z = r3-vDim; z >= 0; z-=vDim)
+								storage.theData[z] *= scaled;
+							
+							siteMultipliers->lData[r1] = scv;
+							//sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);	
+						}
 					}
 					
 					siteCorrectors++;

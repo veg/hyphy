@@ -117,7 +117,7 @@ virtual
 		void		DoneComputing 	 (bool = false);
 virtual		
 		_Matrix*	Optimize ();
-		_Matrix* 	ConstructCategoryMatrix (bool complete = false, bool = true);
+		_Matrix* 	ConstructCategoryMatrix (bool complete = false, bool = true, _String* = nil);
 		_Parameter	SimplexMethod (_Parameter& precision);
 		void		Anneal (_Parameter& precision);
 			

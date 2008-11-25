@@ -4764,71 +4764,79 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 			
 			if (!f.IsEmpty())
 			{
-				_String cell_value ("_MATRIX_ELEMENT_VALUE_"),
-						cell_row   ("_MATRIX_ELEMENT_ROW_"),
-						cell_column("_MATRIX_ELEMENT_COLUMN_");
-						
-				_Variable * cv = CheckReceptacle(&cell_value, empty, false),
-						  * cr = CheckReceptacle(&cell_row, empty, false),
-						  * cc = CheckReceptacle(&cell_column, empty, false);
-						  
-				_Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
+				/* check formula validity */
 				
-				long	      stackDepth = 0;
-				_SimpleList   vIndex;		  
-				if (f.AmISimple (stackDepth,vIndex))
-				{
-					_SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
-										* varValues = new _SimpleFormulaDatum [vIndex.lLength];
-							    
-					f.ConvertToSimple (vIndex);
-					
-					long rid []={cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
-						 
-					for (long k=0; k<3; k++)
-						rid[k] = vIndex.Find(rid[k]);
-						
-					PopulateArraysForASimpleFormula(vIndex, varValues);
-						
-					for (long r=0; r<hDim; r++)
-					{
-						if (rid[0]>=0)
-							varValues[rid[0]].value = r;
-						
-						for (long c=0; c<vDim; c++)
-						{
-							if (rid[1]>=0)
-								varValues[rid[1]].value = c;
-							
-							if (rid[2]>=0)
-								varValues[rid[2]].value = (*this)(r,c);
-							
-							retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
-						}
-					}					
-					
-					f.ConvertFromSimple (vIndex);
-					
-					delete  stack;
-					delete  varValues;
-				}
+				f.Compute();
+				if (terminateExecution)
+					return new _Matrix ();
 				else
 				{
-					for (long r=0; r<hDim; r++)
+					_String cell_value ("_MATRIX_ELEMENT_VALUE_"),
+							cell_row   ("_MATRIX_ELEMENT_ROW_"),
+							cell_column("_MATRIX_ELEMENT_COLUMN_");
+							
+					_Variable * cv = CheckReceptacle(&cell_value, empty, false),
+							  * cr = CheckReceptacle(&cell_row, empty, false),
+							  * cc = CheckReceptacle(&cell_column, empty, false);
+							  
+					_Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
+					
+					long	      stackDepth = 0;
+					_SimpleList   vIndex;		  
+					if (f.AmISimple (stackDepth,vIndex))
 					{
-						cr->CheckAndSet (r);
-						for (long c=0; c<vDim; c++)
+						_SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
+											* varValues = new _SimpleFormulaDatum [vIndex.lLength];
+									
+						f.ConvertToSimple (vIndex);
+						
+						long rid []={cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
+							 
+						for (long k=0; k<3; k++)
+							rid[k] = vIndex.Find(rid[k]);
+							
+						PopulateArraysForASimpleFormula(vIndex, varValues);
+							
+						for (long r=0; r<hDim; r++)
 						{
-							cc->CheckAndSet (c);
-							cv->CheckAndSet ((*this)(r,c));
-							_PMathObj fv = f.Compute();
-							if (fv->ObjectClass()==NUMBER)
-								retMatrix->Store (r,c,fv->Value());
-						}
-					}					
+							if (rid[0]>=0)
+								varValues[rid[0]].value = r;
+							
+							for (long c=0; c<vDim; c++)
+							{
+								if (rid[1]>=0)
+									varValues[rid[1]].value = c;
+								
+								if (rid[2]>=0)
+									varValues[rid[2]].value = (*this)(r,c);
+								
+								retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
+							}
+						}					
+						
+						f.ConvertFromSimple (vIndex);
+						
+						delete  stack;
+						delete  varValues;
+					}
+					else
+					{
+						for (long r=0; r<hDim; r++)
+						{
+							cr->CheckAndSet (r);
+							for (long c=0; c<vDim; c++)
+							{
+								cc->CheckAndSet (c);
+								cv->CheckAndSet ((*this)(r,c));
+								_PMathObj fv = f.Compute();
+								if (fv->ObjectClass()==NUMBER)
+									retMatrix->Store (r,c,fv->Value());
+							}
+						}					
+					}
+					retMatrix->AmISparse();
+					return retMatrix;
 				}
-				retMatrix->AmISparse();
-				return retMatrix;
 			}
 			ReportWarning (_String("Invalid formula expression for element-wise matrix operations: ") & *((_FString*)p)->theString);
 			return new _Matrix;

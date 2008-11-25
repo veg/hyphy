@@ -2228,7 +2228,8 @@ long	 _Formula::NumberOperations(void)
 
 _PMathObj _Formula::Compute (long startAt) // compute the value of the formula
 {
-	if (theFormula.lLength == 0) return nil;
+	if (theFormula.lLength == 0) 
+		return nil;
 	
 	bool wellDone = true;
 	if (startAt == 0)
@@ -2243,9 +2244,7 @@ _PMathObj _Formula::Compute (long startAt) // compute the value of the formula
 
 	if (theStack.theStack.lLength != 1 || !wellDone) 
 	{
-		_String errMsg((_String*)toStr());
-		errMsg = errMsg& " contains errors.";
-		WarnError (errMsg);
+		WarnError (_String((_String*)toStr()) & _String(" contains errors."));
 		return	  new _Constant (0.0);
 	}
 	

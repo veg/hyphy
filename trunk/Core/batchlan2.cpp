@@ -627,12 +627,14 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 	
 	// check what the argument is
 	
-	_String objectName 	  = 	chain.AddNameSpaceToID(*(_String*)parameters(1));
+	_String objectName 	  = 	chain.AddNameSpaceToID(*(_String*)parameters(1)),
+			resultID      =     chain.AddNameSpaceToID(*(_String*)parameters(0));
+
 	long objectID 		  = 	FindLikeFuncName (objectName);
 	_PMathObj ob  		  = 	nil;
 	
 	if (objectID >=0) // likelihood function
-		ob = ((_LikelihoodFunction*)likeFuncList(objectID))->ConstructCategoryMatrix((parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false);
+		ob = ((_LikelihoodFunction*)likeFuncList(objectID))->ConstructCategoryMatrix((parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false,true,&resultID);
 	else
 	{
 		_TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
@@ -694,8 +696,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 	}
 	else
 	{
-		objectName = chain.AddNameSpaceToID(*(_String*)parameters(0));
-		CheckReceptacleAndStore (&objectName, blConstructCM, true, ob, false);
+		CheckReceptacleAndStore (&resultID, blConstructCM, true, ob, false);
 	}
 		
 }
