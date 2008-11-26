@@ -202,6 +202,8 @@ _String
 			pathToCurrentBF					("PATH_TO_CURRENT_BF"),
 			hfCountGap						("COUNT_GAPS_IN_FREQUENCIES"),
 			gdiDFAtomSize					("ATOM_SIZE"),
+			statusBarProgressValue			("STATUS_BAR_PROGRESS_VALUE"),
+			statusBarUpdateString			("STATUS_BAR_STATUS_STRING"),
 			dialogPrompt,
 			lastModelUsed,
 			baseDirectory,
@@ -4954,7 +4956,27 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 		setParameter (randomSeed, ((long)globalRandSeed));
 		return;
 	}
+
+	if (currentArgument->Equal (&statusBarProgressValue))
+	{
+#if !defined __HEADLESS__
+		SetStatusLine 	  (empty,empty, empty,  ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix), HY_SL_PERCENT);
+#endif	
+		return;
+	}
+
+	if (currentArgument->Equal (&statusBarUpdateString))
+	{
+		_String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
+#if !defined __HEADLESS__
+		SetStatusLine 	  (empty,sbar_value, empty, 0, HY_SL_TASK);
+#else
+		SetStatusLine 	  (sbar_value);
+#endif	
+		return;
+	}
 	
+
 	long	f 		  = likeFuncNamesList.Find(&nmspc),
 			g 		  = (f>=0?-1:scfgNamesList.Find (&nmspc)),
 			bgm_index = ((f>=0||g>=0)?-1:bgmNamesList.Find (&nmspc));

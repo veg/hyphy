@@ -485,3 +485,36 @@ function generate_gdd_freqs (numberOfRates, freqs&, lfMixing&, probPrefix, incre
 	lfMixing * 0;
 	return 0;
 }
+
+/*---------------------------------------------
+reverse complement a nucleotide string
+---------------------------------------------*/
+
+_nucleotide_rc = {};
+_nucleotide_rc["A"] = "T";
+_nucleotide_rc["C"] = "G";
+_nucleotide_rc["G"] = "C";
+_nucleotide_rc["T"] = "A";
+_nucleotide_rc["M"] = "K";
+_nucleotide_rc["R"] = "Y";
+_nucleotide_rc["W"] = "W";
+_nucleotide_rc["S"] = "S";
+_nucleotide_rc["Y"] = "R";
+_nucleotide_rc["K"] = "M";
+_nucleotide_rc["B"] = "V";  /* not A */
+_nucleotide_rc["D"] = "H";  /* not C */
+_nucleotide_rc["H"] = "D";  /* not G */
+_nucleotide_rc["V"] = "B";  /* not T */
+_nucleotide_rc["N"] = "N";
+
+function nucleotideReverseComplement (seqIn)
+{
+	_seqOut = "";_seqOut*128;
+	_seqL   = Abs(seqIn);
+	for (_r = _seqL-1; _r >=0 ; _r = _r-1)
+	{
+		_seqOut *_nucleotide_rc[seqIn[_r]];
+	}
+	_seqOut*0;
+	return _seqOut;
+}

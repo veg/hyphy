@@ -56,6 +56,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 bool		terminateExecution  = false;
 
+#include	"batchlan.h"
+
 //____________________________________________________________________________________	
 
 FILE*	  globalErrorFile   = nil,
@@ -63,9 +65,7 @@ FILE*	  globalErrorFile   = nil,
 
 extern    bool 			isInFunction;
 
-extern	  _String		randomSeed,
-						scanfLastFilePath,
-						baseDirectory;
+extern	  _String	scanfLastFilePath;
 						
 extern 	  _SimpleList	freeSlots;
 
@@ -153,6 +153,8 @@ bool	GlobalStartup (void)
 	_hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
 	_hyApplicationGlobals.Insert(new _String (selectionStrings));
 	_hyApplicationGlobals.Insert(new _String (randomSeed));
+	_hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
+	_hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
 	_hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
 	_hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
 	

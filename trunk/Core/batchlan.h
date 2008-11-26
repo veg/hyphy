@@ -486,6 +486,9 @@ extern	_String
 		bgmData							,
 		bgmWeights						,
 		pathToCurrentBF					,
+		statusBarUpdateString			,
+		statusBarProgressValue			,
+		
 #ifdef		__HYPHYMPI__
 		mpiNodeID 						,
 		mpiNodeCount					,
