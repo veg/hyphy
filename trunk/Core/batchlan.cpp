@@ -4959,7 +4959,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 
 	if (currentArgument->Equal (&statusBarProgressValue))
 	{
-#if !defined __HEADLESS__
+#if !defined __UNIX__ 
 		SetStatusLine 	  (empty,empty, empty,  ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix), HY_SL_PERCENT);
 #endif	
 		return;
@@ -4968,11 +4968,13 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 	if (currentArgument->Equal (&statusBarUpdateString))
 	{
 		_String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
+#if !defined __UNIX__ || defined __HEADLESS__ 
 #if !defined __HEADLESS__
 		SetStatusLine 	  (empty,sbar_value, empty, 0, HY_SL_TASK);
 #else
 		SetStatusLine 	  (sbar_value);
 #endif	
+#endif 
 		return;
 	}
 	
