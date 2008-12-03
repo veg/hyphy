@@ -1,0 +1,208 @@
+/*---------------------------------------------*/
+/* read/write a result cache file
+/*---------------------------------------------*/
+
+function _openCacheDB   (fileName)
+{
+	DoSQL (SQL_OPEN, fileName, DB_ID);
+	return DB_ID;
+}
+
+/*---------------------------------------------*/
+
+function _closeCacheDB   (DB_ID)
+{
+	DoSQL (SQL_CLOSE, "", DB_ID);
+	return 0;
+}
+ 
+/*---------------------------------------------*/
+
+function _TableExists (DB_ID, tableID)
+{
+	_dbRecordCounter = 0;
+	DoSQL (DB_ID, "SELECT SQL FROM SQLITE_MASTER WHERE NAME == '"+tableID+"'", "return _CountMatchingRecords(0)");
+	return _dbRecordCounter;
+}
+
+/*---------------------------------------------*/
+
+function bufferBuilder (key, value)
+{
+	if (_counter)
+	{
+		_buffer * (",");
+	}
+	_counter = _counter + 1;
+	_buffer * (key + " " + value + "\n"); 
+	
+	return 0;
+}
+ 
+/*---------------------------------------------*/
+
+function _CreateTableIfNeeded (DB_ID, tableID, tableDefinition, force)
+{
+	haveTable = _TableExists(DB_ID, tableID);
+	if (haveTable)
+	{
+		DoSQL (DB_ID,"DROP TABLE " + tableID, "return 0;");
+	}
+	
+	if (haveTable == 0 || force)
+	{
+		_buffer  = ""; _buffer * 128;
+		_counter = 0;
+		_buffer * "(";
+		tableDefinition["bufferBuilder"][""];
+		_buffer * ")";
+		_buffer * 0;
+		DoSQL (DB_ID, "CREATE TABLE `tableID` `_buffer`", "");
+		return 1;
+	}
+	return 0;
+} 
+   
+/*---------------------------------------------*/
+
+function _CheckDBID (DB_ID, tableID, tableColumns)
+{
+	_dbRecordCounter = 0;
+	DoSQL (DB_ID, "SELECT SQL FROM SQLITE_MASTER WHERE NAME == '"+tableID+"'", "return _CountMatchingRecords(0)");
+	if (_dbRecordCounter>0)
+	{
+		DoSQL (DB_ID, "DROP TABLE "+tableID, "");
+	}
+	
+	dbColumnLabels = Rows (tableColumns);
+	sqlCode = "";
+	sqlCode *128;
+	sqlCode * ("CREATE TABLE  "+tableID + " (");
+	for (_k=0; _k<Columns(dbColumnLabels); _k=_k+1)
+	{
+		if (_k)
+		{
+			sqlCode * ",";
+		}
+		sqlCode * (dbColumnLabels[_k] + " " + tableColumns[dbColumnLabels[_k]]);
+	}
+	sqlCode * ")";
+	sqlCode * 0;
+	
+	DoSQL (DB_ID, sqlCode ,"");
+	return 0;
+}
+
+/*---------------------------------------------*/
+
+function _CountMatchingRecords (dummy)
+{
+	_dbRecordCounter = _dbRecordCounter + 1;
+	return 0;
+}
+
+/*---------------------------------------------*/
+
+function _ExecuteSQL (DB_ID, theCode)
+{
+	_recordsFound = {};
+	DoSQL (DB_ID, theCode, "return _matchRecordsByField (1);");	
+	return _recordsFound;
+	
+}
+
+/*---------------------------------------------*/
+
+function _matchRecordsByField (dummy)
+{
+	_rc = Columns(SQL_ROW_DATA);
+	if (_rc > 1 || dummy)
+	{
+		_cAbs = Abs(_recordsFound);
+		_recordsFound[_cAbs] = {};
+		for (_rcc = 0; _rcc < _rc; _rcc = _rcc+1)
+		{
+			(_recordsFound[_cAbs])[SQL_COLUMN_NAMES[_rcc]] = SQL_ROW_DATA[_rcc];
+		}
+	}
+	else
+	{
+		_fieldValue = SQL_ROW_DATA[0];
+		if (Abs(_fieldValue))
+		{
+			_recordsFound [Abs(_recordsFound)] = _fieldValue;
+		}
+	}
+	return 0;
+}
+
+/*---------------------------------------------*/
+
+function _InsertRecord (DB_ID,tableName, fieldData)
+{
+	if (Abs (fieldData))
+	{
+		_fieldNames = Rows (fieldData);
+		_fieldList = "";
+		_fieldList * 128;
+		_valueList = "";
+		_valueList * 128;
+		
+		_doIt 	   = 1;
+		for (_k = 0; _k < Columns (_fieldNames); _k = _k+1)
+		{
+			if (_k)
+			{
+				_fieldList * ",";
+				_valueList * ",";
+			}
+			_fieldList * (_fieldNames[_k]);
+			_valueList * ("'" + fieldData[_fieldNames[_k]] + "'");
+		}
+		_fieldList * 0;
+		_valueList * 0;
+		sqlCode = "INSERT INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ")";
+		DoSQL (DB_ID,sqlCode ,"");		
+	}
+	return 0;
+}
+
+/*---------------------------------------------*/
+
+function _InsertMultipleRecords (DB_ID,tableName, recordData)
+{
+	sqlCode = "";
+	sqlCode * 128;
+	sqlCode * "BEGIN TRANSACTION;\n";
+	for (_k2 = 0; _k2 < Abs (recordData); _k2 = _k2 + 1)
+	{
+		fieldData = recordData[_k2];
+		if (Abs (fieldData))
+		{
+			_fieldNames = Rows (fieldData);
+			_fieldList = "";
+			_fieldList * 128;
+			_valueList = "";
+			_valueList * 128;
+			
+			_doIt 	   = 1;
+			for (_k = 0; _k < Columns (_fieldNames); _k = _k+1)
+			{
+				if (_k)
+				{
+					_fieldList * ",";
+					_valueList * ",";
+				}
+				_fieldList * (_fieldNames[_k]);
+				_valueList * ("'" + fieldData[_fieldNames[_k]] + "'");
+			}
+			_fieldList * 0;
+			_valueList * 0;
+			sqlCode * ("\nINSERT INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ");");
+		}
+	}
+	sqlCode * "END TRANSACTION;\n";
+	sqlCode * 0;
+	DoSQL (DB_ID,sqlCode ,"");		
+	return 0;
+}

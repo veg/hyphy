@@ -486,8 +486,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		
 	// assemble the entire likelihood
 	
-	_Parameter _hprestrict_	* rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount),
-							  result = 0.0;
+	_Parameter _hprestrict_	* rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount);
+	_Parameter				  result = 0.0;
 	
 
 	for (long siteID = siteFrom; siteID < siteTo; siteID++)
@@ -953,9 +953,9 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 	
 	if (siteTo	> siteCount)	siteTo = siteCount;
 
-	_Parameter _hprestrict_	*branchConditionals	= cache				 + siteFrom * alphabetDimension,
-							*rootConditionals   = branchConditionals + siteCount * alphabetDimension,
-							result = 0.0;
+	_Parameter _hprestrict_	*branchConditionals	= cache				 + siteFrom * alphabetDimension;
+	_Parameter _hprestrict_	*rootConditionals   = branchConditionals + siteCount * alphabetDimension;
+	_Parameter	result = 0.0;
 							
 	
 	_CalcNode *givenTreeNode = brID < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[brID]):

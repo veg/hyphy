@@ -3268,8 +3268,8 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 			}
 			else
 			{
-				_Parameter _hprestrict_ * argData = secondArg.theData, 
-										* stData = storage.theData; 
+				_Parameter _hprestrict_ * argData = secondArg.theData;
+				_Parameter _hprestrict_ * stData = storage.theData; 
 				if (subtract)
 					for (long idx = 0; idx < secondArg.lDim; idx++)
 						stData[idx]-=argData[idx];
