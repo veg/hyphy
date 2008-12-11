@@ -2977,22 +2977,11 @@ _PMathObj _FString::EqualRegExp (_PMathObj p, bool matchAll)
 		else
 			theString->RegExpMatchOnce(theStr->theString, matches, true, true);
 			
-		_Matrix * res = nil;
-		if (matches.lLength)
+		if (matches.lLength == 0)
 		{
-			res = new _Matrix (matches.lLength,1,false,true);
-			checkPointer (res);
-			for (long k=0; k<matches.lLength; k++)
-				res->theData[k] = matches.lData[k];
+			matches << -1; matches << -1;
 		}
-		else
-		{
-			res = new _Matrix (2,1,false,true);
-			checkPointer (res);
-			res->theData[0] = -1;
-			res->theData[1] = -1;
-		}
-		return res;
+		return new _Matrix (matches);
 	}
 	else
 	{

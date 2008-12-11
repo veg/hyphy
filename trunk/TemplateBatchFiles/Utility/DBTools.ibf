@@ -4,7 +4,14 @@
 
 function _openCacheDB   (fileName)
 {
-	DoSQL (SQL_OPEN, fileName, DB_ID);
+	if (Abs(fileName))
+	{
+		DoSQL (SQL_OPEN, fileName, DB_ID);
+	}
+	else
+	{
+		DoSQL (SQL_OPEN, PROMPT_FOR_FILE, DB_ID);
+	}
 	return DB_ID;
 }
 
