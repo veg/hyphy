@@ -2981,7 +2981,8 @@ _PMathObj _FString::EqualRegExp (_PMathObj p, bool matchAll)
 		{
 			matches << -1; matches << -1;
 		}
-		return new _Matrix (matches);
+		_Matrix * res = new _Matrix (matches); res->Transpose();
+		return res;
 	}
 	else
 	{
