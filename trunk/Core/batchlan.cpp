@@ -2354,11 +2354,14 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 					converted = (_String*)parameters(2)->toStr();
 					result = result& _String(" for sequence ")&(*converted);				
 					DeleteObject(converted);
-					converted = (_String*)parameters(3)->toStr();
-					if (parameters.lLength>4)
-						result = result& _String(" and site ")&(*converted);	
-					else
-						result = result& _String(" and sequence ")&(*converted);	
+					if (parameters.lLength>3)
+					{
+						converted = (_String*)parameters(3)->toStr();
+						if (parameters.lLength>4)
+							result = result& _String(" and site ")&(*converted);	
+						else
+							result = result& _String(" and sequence ")&(*converted);
+					}
 					DeleteObject(converted);
 				}	
 				converted = (_String*)parameters(0)->toStr();
