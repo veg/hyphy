@@ -430,8 +430,7 @@ else
 	
 	for (mi = 0; mi < Rows(modelTypes)*Columns(modelTypes); mi = mi + 1)
 	{
-		modelChoice = modelTypes[mi];
-		chosenModelList[modelChoice] = 1;
+		chosenModelList[modelTypes[mi]] = 1;
 	}	
 }
 
@@ -464,16 +463,13 @@ if (randomizeInitValues < 0)
 resp  = 0;
 resp2 = 0;
 
-while (resp<2)
-{
-	fprintf (stdout,"Number of synonymous (and single variable rate modles) rate classes (>=2):");
-	fscanf  (stdin, "Number", resp);
-}
+ExecuteAFile ("Utility/GrabBag.bf");
 
-while (resp2<2)
+resp = prompt_for_a_value ("Number of synonymous (and single variable rate modles) rate classes",3,2,32,1);
+
+if (chosenModelList[3]+chosenModelList[4])
 {
-	fprintf (stdout,"Number of non-synonymous rate classes (>=2):");
-	fscanf  (stdin, "Number", resp2);
+	resp2 = prompt_for_a_value ("Number of non-synonymous rate classes",3,1,32,1);
 }
 			
 fudgeFactor = 1.0;
