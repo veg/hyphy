@@ -2274,13 +2274,13 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 									for (long s = 0; s < blockLength; s++)
 									{
 										blockResult+=myLog(sR[s])*df->theFrequencies.lData[s];
-#ifdef _SLKP_LFENGINE_REWRITE_
+#ifdef _SLKP_LFENGINE_REWRITE_	
 										cumulativeCorrection += scalerTabs.lData[s];
 #endif
 									}
 #ifdef _SLKP_LFENGINE_REWRITE_
 								blockResult -= cumulativeCorrection*_logLFScaler;
-								//printf ("%d,%g\n", likeFuncEvalCallCount, blockResult);
+								//printf ("[LFEVAL:] %d,%g\n", likeFuncEvalCallCount, blockResult);
 #endif
 								
 							}
