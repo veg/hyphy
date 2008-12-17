@@ -44,9 +44,9 @@ _String	   defaultEqual 		("EQUAL"),
 _Parameter maxCategoryIntervals = 100.0;
 
 #ifdef	   _SLKP_LFENGINE_REWRITE_
-	#define    SLIGHT_SHIFT 1e-150
+	#define    SLIGHT_SHIFT  0.
 #else
-	#define    SLIGHT_SHIFT 0
+	#define    SLIGHT_SHIFT  1e-150
 #endif
 
 _Variable  *_x_ = nil, 

@@ -198,8 +198,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				for (long k = siteFrom; k < siteTo; k++, k3+=4)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					if (scaler >= HUGE_VALL)
-						scaler = 0.;
 					parentConditionals [k3]   = scaler;
 					parentConditionals [k3+1] = scaler;
 					parentConditionals [k3+2] = scaler;
@@ -212,8 +210,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				for (long k = siteFrom; k < siteTo; k++)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					if (scaler >= HUGE_VALL)
-						scaler = 0.;
 					for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
 						parentConditionals [k3] = scaler;
 				}
@@ -363,13 +359,17 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				sum		= parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
-					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
-					parentConditionals [0]							   *= _lfScalerUpwards;
-					parentConditionals [1]							   *= _lfScalerUpwards;
-					parentConditionals [2]							   *= _lfScalerUpwards;
-					parentConditionals [3]							   *= _lfScalerUpwards;
-					localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
-					didScale											= 1;
+					_Parameter tryScale									= scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
+					if (tryScale < HUGE_VALL)
+					{
+						parentConditionals [0]							   *= _lfScalerUpwards;
+						parentConditionals [1]							   *= _lfScalerUpwards;
+						parentConditionals [2]							   *= _lfScalerUpwards;
+						parentConditionals [3]							   *= _lfScalerUpwards;
+						localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						scalingAdjustments [parentCode*siteCount + siteID]  = tryScale;
+						didScale											= 1;
+					}
 				}
 				else
 				{
@@ -425,12 +425,16 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
-					scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalerUpwards;
-					for (long c = 0; c < alphabetDimension; c++) 
-						parentConditionals [c] *= _lfScalerUpwards;
-					
-					localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
-					didScale											    = 1;
+					_Parameter tryScale									= scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
+					if (tryScale < HUGE_VALL)
+					{
+						scalingAdjustments [parentCode*siteCount + siteID] = tryScale;
+						for (long c = 0; c < alphabetDimension; c++) 
+							parentConditionals [c] *= _lfScalerUpwards;
+						
+						localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+						didScale											    = 1;
+					}
 				}
 				else
 				{
@@ -666,8 +670,6 @@ void			_TheTree::ComputeBranchCache	(
 				for (long k = siteFrom; k < siteTo; k++, k3+=4)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					if (scaler >= HUGE_VALL)
-						scaler = 0.;
 					parentConditionals [k3]   = scaler;
 					parentConditionals [k3+1] = scaler;
 					parentConditionals [k3+2] = scaler;
@@ -680,8 +682,6 @@ void			_TheTree::ComputeBranchCache	(
 				for (long k = siteFrom; k < siteTo; k++)
 				{
 					_Parameter scaler = localScalingFactor[k];
-					if (scaler >= HUGE_VALL)
-						scaler = 0.;
 					for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
 						parentConditionals [k3] = scaler;
 				}
@@ -778,7 +778,7 @@ void			_TheTree::ComputeBranchCache	(
 			}
 			
 			_Parameter sum		= .0;
-			char	   didScale = 0;
+			//char	   didScale = 0;
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
@@ -886,7 +886,7 @@ void			_TheTree::ComputeBranchCache	(
 			
 
 
-			if (didScale)
+			/*if (didScale)
 			{
 				if (siteCorrectionCounts)
 					siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;		
@@ -925,7 +925,7 @@ void			_TheTree::ComputeBranchCache	(
 							break;
 					}
 				}
-			}
+			}*/
 		}
 	}
 	
