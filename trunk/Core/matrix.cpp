@@ -4145,6 +4145,17 @@ _Parameter	_Matrix::MaxRelError  (_Matrix& compMx)
 
 //_____________________________________________________________________________________________
 
+bool	_Matrix::IsAVector  (char type)	
+{
+	if (GetHDim() == 1)
+		return type != HY_MATRIX_COLUMN_VECTOR;
+	if (GetVDim() == 1)
+		return (type != HY_MATRIX_ROW_VECTOR);
+	return false;
+}
+
+//_____________________________________________________________________________________________
+
 _Parameter	_Matrix::MinElement  (void)	
 // returns matrix's smalles non-zero abs value element
 {

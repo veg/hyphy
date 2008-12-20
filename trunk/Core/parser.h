@@ -674,6 +674,8 @@ class _FString : public _MathObject { // strings encountered in formulas
 					  					{ return STRING;}
 	virtual	_PMathObj Compute 			(void) 
 					  					{ return this; }
+	
+	virtual _PMathObj MapStringToVector (_PMathObj);
 	virtual _PMathObj CharAccess		(_PMathObj,_PMathObj);
 	virtual _PMathObj Execute 			(long opCode, _MathObject* p = nil , _MathObject* p2 = nil);  
 	virtual	BaseRef	  toStr 			(void);

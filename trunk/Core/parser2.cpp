@@ -2944,10 +2944,8 @@ _PMathObj _FString::EqualAmb (_PMathObj p)
 	}
 	else
 	{
-		_String* convStr = (_String*)p->toStr();
-		bool	 equal = theString->EqualWithWildChar(convStr);
-		DeleteObject (convStr);
-		return new _Constant ((_Parameter)equal);
+		_String	 convStr	  ((_String*)p->toStr());
+		return   new _Constant(theString->EqualWithWildChar(&convStr));
 	}	
 }
 
@@ -3331,7 +3329,10 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 			}
 			break;
 		case 5: // *
-			return new _Constant(AddOn(p));
+			if (p->ObjectClass() == MATRIX)
+				return		MapStringToVector (p);
+			else
+				return new _Constant(AddOn(p));
 			break;
 		case 6: // +
 			return Add(p);
@@ -3408,13 +3409,50 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 			break;
 	}
 	
-	_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for strings.";
-	WarnError (errMsg);
+	_String		errMsg ("Operation ");
+	errMsg		= errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for strings.";
+	WarnError	(errMsg);
 	return new _FString;
 
 }
 
+//__________________________________________________________________________________
+_PMathObj	_FString::MapStringToVector (_PMathObj p)
+{
+	if (theString->sLength && p->ObjectClass () == MATRIX)
+	{
+		_Matrix			* factoringMatrix = (_Matrix *)p;
+		
+		if (factoringMatrix->IsAVector () && factoringMatrix->IsAStringMatrix())
+		{
+			long			mapper [255],
+							keys	= factoringMatrix->GetHDim() * factoringMatrix->GetVDim(),
+							byRows	= factoringMatrix->IsAVector (HY_MATRIX_COLUMN_VECTOR);
+			
+			for (long c = 0; c < 255; c++)
+				mapper[c] = -1;
+			
+			for (long r = 0; r < keys; r++)
+			{
+				_FString* aKey = (_FString*)factoringMatrix->GetFormula(byRows?r:0,byRows?0:r)->Compute();
+				if (aKey->theString->sLength == 1)
+				{
+					char thisChar = aKey->theString->sData[0];
+					if (mapper[thisChar] < 0)
+						mapper[thisChar] = r;
+				}
+			}
+			
+			_SimpleList mapped;
+			for (long s = 0; s < theString->sLength; s++)
+				mapped << mapper[theString->sData[s]];
+			
+			return new _Matrix (mapped);
+		}
+	}
+	
+	return new _Matrix;
+}
 
 //__________________________________________________________________________________
 _PMathObj	_FString::CharAccess (_PMathObj p,_PMathObj p2)

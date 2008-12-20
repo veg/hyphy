@@ -36,6 +36,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define		_NUMERICAL_TYPE  1
 #define		_FORMULA_TYPE 2
 
+#define		HY_MATRIX_COLUMN_VECTOR		1
+#define		HY_MATRIX_ROW_VECTOR		2
+
+/*__________________________________________________________________________________________________________________________________________ */
+
 struct		_CompiledMatrixData {
 	
 	_SimpleFormulaDatum	* theStack,
@@ -93,6 +98,8 @@ class		_Matrix: public _MathObject {
 	
 	virtual void		Serialize (_String&,_String&);   
 												// write the matrix definition in HBL
+	
+	virtual bool		IsAVector (char = 0);   // is a vector? 0 - either row or column; 1 column; 2 row
 	
 	_PMathObj			Evaluate (bool replace = true);	// evaluates the matrix if contains formulas
 													// if replace is true, overwrites the original
