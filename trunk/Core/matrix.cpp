@@ -8627,7 +8627,30 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 			}
 			
 			
-			for (long k=0; k<avl.dataList->lLength;k++)
+			_SimpleList	 hist;
+			long		 ls, 
+						 cn	= avl.Traverser (hist,ls,avl.GetRoot());
+			
+			while (cn >= 0)
+			{
+				_String* aKey = ((_String**)avl.dataList->lData)[cn];				
+				if (aKey)
+				{
+					_FString fKey (*aKey);
+					if (fID2 >= 0)
+					{
+						((_Operation**)testFormula.GetList().lData)[0]->SetNumber(&fKey);
+						if (CheckEqual(testFormula.Compute()->Value(),0.0))
+							continue;
+					}
+					((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(&fKey);
+					((_Operation**)actionFormula.GetList().lData)[1]->SetNumber((_PMathObj)avl.GetXtra (cn));
+					actionFormula.Compute();
+					done ++;
+				}
+				cn = avl.Traverser (hist,ls);
+			}
+			/*for (long k=0; k<avl.dataList->lLength;k++)
 			{
 				_String* aKey = ((_String**)avl.dataList->lData)[k];
 				if (aKey)
@@ -8644,7 +8667,9 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 					actionFormula.Compute();
 					done ++;
 				}
-			}
+			}*/
+			
+			
 			((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(nil);
 			((_Operation**)actionFormula.GetList().lData)[1]->SetNumber(nil);
 			if (fID2 >= 0)

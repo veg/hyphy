@@ -534,7 +534,7 @@ class 			_AssociativeList: public _MathObject
 	
 	private:
 	
-	_List	 		theData;
+		_List	 		theData;
 };
 
 
