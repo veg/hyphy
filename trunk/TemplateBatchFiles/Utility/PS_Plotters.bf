@@ -334,6 +334,11 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	barWidth 	= barWidth * px;
 	xShift		= 1;	
 	
+	if (Rows(colors) == 0)
+	{
+		colors = _hyDefaultPSColors;
+	}
+	
 	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
 	{
 		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px+xShift;
@@ -921,5 +926,140 @@ function generateHeatMap	 (data_matrix&, /* Nx4 matrix with x,y,z,plot/or not (0
 	psDensityPlot * "\nshowpage\n";
 	psDensityPlot * 0;
 	
+	return psDensityPlot;
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
+function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
+							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
+							  				   will be adjusted to cover the data in xy if needed*/
+							  fontFace, 	/* font to use for plotting */
+							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points */
+							  colors, 		/* Kx3 matrix of RGB colors to plot each point with; pass an empty matrix to use defaults */
+							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
+							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode (Impulse to connect to the x-axis; dots otherwise */,
+							  doWrappers    /* should PS prefix and suffix be included */
+							  )
+{
+	
+	
+	psDensityPlot = ""; psDensityPlot*1024;
+	
+	plotHeight = Max (100, plotDim[1]);
+	plotWidth  = Max (100, plotDim[0]);
+	
+	plotOriginX = 4.5*plotDim[2];
+	plotOriginY = 3.5*plotDim[2];
+	
+	xMin		= xyranges[0][0];
+	xMax		= xyranges[0][1];
+	yMin		= xyranges[1][0];
+	yMax		= xyranges[1][1];
+	
+	plotSpanX   = plotWidth + 5*plotDim[2];
+	plotSpanY	= plotHeight + 4*plotDim[2];
+	
+	if (doWrappers)
+	{
+		psDensityPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Density Plot");
+		psDensityPlot * "\n";
+		psDensityPlot * _HYPSTextCommands(0);
+	}
+	
+	psDensityPlot * _HYPSSetFont (fontFace, plotDim[2]);
+	psDensityPlot * "\n";
+	
+	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin\n";
+	
+	/* adjust data ranges if necessary */
+	
+	_x 				= Rows (xy);
+	_series			= Columns(xy)-1;
+
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		xMin = Min(xMin,xy[_dataPoint][0]);
+		xMax = Max(xMax,xy[_dataPoint][0]);
+		for (_seriesCount = 1; _seriesCount <= _series; _seriesCount = _seriesCount+1)
+		{
+			yMin = Min(yMin,xy[_dataPoint][_seriesCount]);
+			yMax = Max(yMax,xy[_dataPoint][_seriesCount]);
+		}
+	}
+		
+	
+	px = plotWidth /(xMax-xMin);
+	py = plotHeight/(yMax-yMin);
+	
+	for (_seriesCount = 1; _seriesCount <= _series; _seriesCount = _seriesCount+1)
+	{
+		if (Rows(colors)==0)
+		{
+			_doImpulse = (_seriesCount-1)%Rows (_hyDefaultPSColors);
+			psDensityPlot * (""+ _hyDefaultPSColors[_doImpulse][0] + " " + _hyDefaultPSColors[_doImpulse][1] + " " + _hyDefaultPSColors[_doImpulse][2] + " setrgbcolor\n");
+		}
+		else
+		{
+			psDensityPlot * (""+ colors[_seriesCount-1][0] + " " + colors[_seriesCount-1][1] + " " + colors[_seriesCount-1][2] + " setrgbcolor\n");		
+		}
+		
+		_doImpulse 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "IMPULSE");
+		
+		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+		{
+			myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
+			myY_coord = plotOriginY+(xy[_dataPoint][_seriesCount]-yMin)*py;
+			if (_doImpulse)
+			{
+				if (myY_coord - plotOriginY > 0.1)
+				{
+					psDensityPlot * ("newpath " + (myX_coord) + " " 
+												+ (myY_coord) + " moveto " 
+												+ (plotOriginX) + " " 
+												+ (myY_coord) + " lineto stroke\n");
+				}
+			}
+			else
+			{
+				psDensityPlot * ("newpath " + (myX_coord) + " " 
+											+ (myY_coord) + " " 
+											+ "1 1 rectfill\n");	
+			}
+		}
+	}
+	
+	xscaler = determineCoordinateTicks (xMin,xMax);
+	_x	= ((xMin/xscaler)$1)*xscaler;
+	psDensityPlot * ("0 0 0 setrgbcolor\n");
+	while (_x < xMax)
+	{
+		xStep = (plotOriginX + px*(_x-xMin));
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,4,2) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
+							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
+		_x = _x + xscaler;
+	}
+	
+	
+	yscaler = determineCoordinateTicks (yMin,yMax);
+	_y	= ((yMin/yscaler)$1)*yscaler;
+	while (_y < yMax)
+	{
+		yStep = (plotOriginY + py*(_y-yMin));
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,4,2) + ") righttext\n");  
+		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
+		_y = _y + yscaler;
+	}
+
+	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
+	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
+	psDensityPlot * ("\n 0 0 0 setrgbcolor" + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	psDensityPlot * 0;
+	
+	if (doWrappers)
+	{
+		psDensityPlot * "\nshowpage\n";
+	}
 	return psDensityPlot;
 }
