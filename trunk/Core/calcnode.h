@@ -277,11 +277,12 @@ class _TreeTopology: public _CalcNode {
  				_String			CompareTrees						(_TreeTopology*);
 				_String			MatchTreePattern					(_TreeTopology*);
 		virtual	_PMathObj 		TipName	 							(_PMathObj);
-		virtual	_PMathObj 		BranchName	 						(_PMathObj, bool = false);
+		virtual	_PMathObj 		BranchName	 						(_PMathObj, bool = false, _PMathObj = nil);
 		virtual	_PMathObj 		BranchLength	 					(_PMathObj);
 		virtual	_PMathObj 		RerootTree	 						(_PMathObj);
 				_List*			SplitTreeIntoClusters 				(unsigned long, unsigned long);
 				void			SetLeafName						    (long, _String*);
+				_String			DetermineBranchLengthMappingMode	(_String*, char&);
 };
 
 #if USE_SCALING_TO_FIX_UNDERFLOW
@@ -471,7 +472,6 @@ class _TheTree: public _TreeTopology {
 			void		AddNodeNamesToDS				(_DataSet*, bool, bool, bool);
 			_Parameter	PSStringWidth					(_String&);
 
-			_String		DetermineBranchLengthMappingMode(_String*, char&);
 			_Parameter	DetermineBranchLengthGivenScalingParameter 
 														(long, _String&, char);
 		 #if USE_SCALING_TO_FIX_UNDERFLOW

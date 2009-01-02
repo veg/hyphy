@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <ctype.h>
 #include <time.h>
 
-_String	  __KERNEL__VERSION__ ("1.0020081222beta");
+_String	  __KERNEL__VERSION__ ("1.0020090101beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__
@@ -543,8 +543,19 @@ void _String::operator << (const char c)
 
 //_______________________________________________________________________
 // append operator
-void _String::EscapeAndAppend (const char c)
+void _String::EscapeAndAppend (const char c, bool isPostscript)
 {
+	if (isPostscript)
+	{
+		switch (c)
+		{
+			case '(':
+			case ')':
+			case '%':
+				(*this) << '\\'; (*this) << c;
+				return;
+		}
+	}
 	switch (c)
 	{
 		case '\n':
@@ -570,10 +581,10 @@ void _String::EscapeAndAppend (const char c)
 
 //_______________________________________________________________________
 // append operator
-void _String::EscapeAndAppend (const _String & s)
+void _String::EscapeAndAppend (const _String & s, bool isPostscript)
 {
 	for (long i=0; i<s.sLength;  i++)
-		EscapeAndAppend (s.sData[i]);
+		EscapeAndAppend (s.sData[i], isPostscript);
 }
 
 

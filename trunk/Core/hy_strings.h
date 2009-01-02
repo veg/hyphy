@@ -95,10 +95,10 @@ virtual 	char& operator [] (long);
  			virtual void operator << (const char);
  				// append into operator
 				
-			virtual void EscapeAndAppend (const char);
+			virtual void EscapeAndAppend (const char, bool);
 				// escape a character and append to this string
 
-			virtual void EscapeAndAppend (const _String &);
+			virtual void EscapeAndAppend (const _String &, bool isPostscript = false);
 				// escape all characters in a string and append to this string
 
  			virtual void operator << (const char*);

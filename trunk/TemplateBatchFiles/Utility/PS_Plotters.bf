@@ -337,6 +337,9 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	if (Rows(colors) == 0)
 	{
 		colors = _hyDefaultPSColors;
+		colors[_yColumns][0] = 0;
+		colors[_yColumns][1] = 0;
+		colors[_yColumns][2] = 0;
 	}
 	
 	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
@@ -403,13 +406,14 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 		_y = _y + yscaler;
 	}
 
-	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
-	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
+	psDensityPlot * ("" + (plotOriginX+plotWidth/2)  + " " + (0.5*plotDim[2])  + " (" + labels[1] + ") centertext\n");
+	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) + " (" + labels[2] + ") vcentertext\n");	
 
 	if (legendWitdh)
 	{
+		_x   = _x - legendWidth;
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
-		xLoc = plotOriginX +  _x * px + 0.5*plotDim[2];
+		xLoc = plotOriginX + _x*px      + 0.5*plotDim[2];
 		
 		for (_segment = 0; _segment < _yColumns; _segment = _segment + 1)
 		{
@@ -957,13 +961,37 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	yMin		= xyranges[1][0];
 	yMax		= xyranges[1][1];
 	
-	plotSpanX   = plotWidth + 5*plotDim[2];
-	plotSpanY	= plotHeight + 4*plotDim[2];
 	
+	_x 				= Rows (xy);
+	_series			= Columns(xy)-1;
+
+	legendWidth		   = 0;
+	for (_dataPoint = 0; _dataPoint < _series; _dataPoint = _dataPoint + 1)
+	{
+		px = _HYPSGetStringWidth (seriesLabels[_dataPoint][0]) * plotDim[2];
+		if (px > legendWitdh)
+		{
+			legendWitdh = px;
+		}
+	}
+	
+	if (legendWitdh)
+	{
+		legendWitdh = legendWitdh + 2*plotDim[2];
+	}
+	
+	plotSpanX	= plotWidth;
+	plotSpanY   = plotHeight;
+	plotWidth   = plotWidth  - 5*plotDim[2]-legendWitdh;
+	plotHeight	= plotHeight - 4*plotDim[2];
+
 	if (doWrappers)
 	{
-		psDensityPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Density Plot");
-		psDensityPlot * "\n";
+		if (doWrappers != 2)
+		{
+			psDensityPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Density Plot");
+			psDensityPlot * "\n";
+		}
 		psDensityPlot * _HYPSTextCommands(0);
 	}
 	
@@ -974,8 +1002,6 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	
 	/* adjust data ranges if necessary */
 	
-	_x 				= Rows (xy);
-	_series			= Columns(xy)-1;
 
 	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
 	{
@@ -989,22 +1015,19 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	}
 		
 	
+	if (Rows(colors)==0)
+	{
+		colors = _hyDefaultPSColors;
+	}
 	px = plotWidth /(xMax-xMin);
 	py = plotHeight/(yMax-yMin);
 	
 	for (_seriesCount = 1; _seriesCount <= _series; _seriesCount = _seriesCount+1)
 	{
-		if (Rows(colors)==0)
-		{
-			_doImpulse = (_seriesCount-1)%Rows (_hyDefaultPSColors);
-			psDensityPlot * (""+ _hyDefaultPSColors[_doImpulse][0] + " " + _hyDefaultPSColors[_doImpulse][1] + " " + _hyDefaultPSColors[_doImpulse][2] + " setrgbcolor\n");
-		}
-		else
-		{
-			psDensityPlot * (""+ colors[_seriesCount-1][0] + " " + colors[_seriesCount-1][1] + " " + colors[_seriesCount-1][2] + " setrgbcolor\n");		
-		}
+		psDensityPlot * (""+ colors[_seriesCount-1][0] + " " + colors[_seriesCount-1][1] + " " + colors[_seriesCount-1][2] + " setrgbcolor\n");		
 		
 		_doImpulse 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "IMPULSE");
+		
 		
 		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
 		{
@@ -1016,15 +1039,21 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 				{
 					psDensityPlot * ("newpath " + (myX_coord) + " " 
 												+ (myY_coord) + " moveto " 
-												+ (plotOriginX) + " " 
-												+ (myY_coord) + " lineto stroke\n");
+												+ (myX_coord) + " " 
+												+ (plotOriginY) + " lineto stroke\n");
 				}
 			}
 			else
 			{
-				psDensityPlot * ("newpath " + (myX_coord) + " " 
-											+ (myY_coord) + " " 
-											+ "1 1 rectfill\n");	
+				if (_dataPoint)
+				{
+					psDensityPlot * ("newpath " + (myX_coord) + " " 
+												+ (myY_coord) + " moveto " 
+												+ (last_myX_coord) + " " 
+												+ (last_myY_coord) + " lineto stroke\n" );	
+				}
+				last_myX_coord = myX_coord;
+				last_myY_coord = myY_coord;
 			}
 		}
 	}
@@ -1035,7 +1064,7 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	while (_x < xMax)
 	{
 		xStep = (plotOriginX + px*(_x-xMin));
-		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,4,2) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,0) + ") centertext\n");  
 		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
 							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
 		_x = _x + xscaler;
@@ -1047,19 +1076,46 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	while (_y < yMax)
 	{
 		yStep = (plotOriginY + py*(_y-yMin));
-		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,4,2) + ") righttext\n");  
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,0) + ") righttext\n");  
 		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
 		_y = _y + yscaler;
 	}
 
+	if (legendWitdh)
+	{
+		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
+		xLoc = plotOriginX + plotWidth   + 0.5*plotDim[2];
+		psDensityPlot * ("%" + xLoc + "/" + yLoc + "\n");
+		
+		for (_segment = 0; _segment < _series; _segment = _segment + 1)
+		{
+			psDensityPlot * ("" + colors[_segment][0] + " " + colors[_segment][1] + " " + colors[_segment][2] + " setrgbcolor\n");
+			psDensityPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectfill\n");
+			psDensityPlot * ("0 0 0 setrgbcolor\n");
+			psDensityPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectstroke\n");
+									
+			psDensityPlot * ("newpath " + (xLoc + plotDim[2]*1.5) + " " + (yLoc+plotDim[2]/6) + " moveto (" + seriesLabels[_segment][0] + ") show stroke\n");
+
+			yLoc = yLoc - plotDim[2] * 1.5;
+			
+		}
+	}
+
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
-	psDensityPlot * ("\n 0 0 0 setrgbcolor" + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
-	psDensityPlot * 0;
-	
-	if (doWrappers)
+	psDensityPlot * ("\n 0 0 0 setrgbcolor " + plotOriginX + " " + plotOriginY + " " + (plotWidth+1) + " " + (plotHeight+1) + " rectstroke\n");
+	if (doWrappers==1)
 	{
 		psDensityPlot * "\nshowpage\n";
 	}
+	psDensityPlot * 0;
 	return psDensityPlot;
 }

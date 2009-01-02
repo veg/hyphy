@@ -3308,10 +3308,10 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				else
 				{
 					_String * t = nil;
-					if (CheckEqual(pVal,2.0))
+					if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0))
 					{
 						checkPointer (t = new _String (theString->sLength+1,true));
-						t->EscapeAndAppend (*theString);
+						t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0));
 						t->Finalize();
 					}
 					else
@@ -3572,11 +3572,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 		if (code == -4)
 			newF.DuplicateReference(f2);
 		else
-		{
-			_PMathObj varObj = (_PMathObj)f2->Compute()->makeDynamic();
-			_Operation newOp (varObj);
-			newF.theFormula&&(&newOp);
-		}	
+			newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute()->makeDynamic()));
 
 		long stackD = -1,
 			 last0	= 0;

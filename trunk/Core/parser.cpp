@@ -3565,9 +3565,9 @@ _Operation::_Operation 	(_PMathObj theObj)
 // number of operands
 {
 	numberOfTerms = 0;
-	theData = -1;
-	opCode = -1;
-	theNumber = theObj;
+	theData		  = -1;
+	opCode		  = -1;
+	theNumber	  = theObj;
 }
 //__________________________________________________________________________________
 _Operation::_Operation 	(bool isVar, _String& stuff, bool isG, _VariableContainer* theParent)

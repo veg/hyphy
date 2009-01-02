@@ -8425,9 +8425,12 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 				t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
 		
 			//printf ("%d %d\n",likeFuncEvalCallCount, matrixExpCount);
-	#if !defined __UNIX__ || defined __HEADLESS__
+		#if !defined __UNIX__ || defined __HEADLESS__
 			if (divideBy && (likeFuncEvalCallCount % divideBy == 0))
+			{
+#pragma omp critical
 				yieldCPUTime();
+			}
 		#endif
 
 

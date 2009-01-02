@@ -366,8 +366,7 @@ RC				 = {};
 fprintf				  (stdout, "\n[PHASE 2] Detecting reading frames for each unprocessed sequence...\n");
 frameCounter		  = {3,2};
 stillHasStops		  = {};
-
-aRecord				= {};
+aRecord				  = {};
 
 for (seqCounter = 0; seqCounter < unalSequenceCount; seqCounter = seqCounter+1)
 {

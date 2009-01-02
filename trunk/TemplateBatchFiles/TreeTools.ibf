@@ -493,5 +493,45 @@ function	computeTreeSplits (treeID,mirror)
 	return _splitStrings;
 }
 
+/*************************************************************************************/
 
+/* 
+   return the most recent common ancestor for a group 
+   of nodes in an AVL; returns the index of the MRCA
+*/
+
+function	_findMRCA (treeAVL, nodeIDList)
+{
+	_nodeCount	 = Rows(nodeIDList)*Columns(nodeIDList);
+	
+	if (_nodeCount)
+	{
+		nodeIDList    = nodeIDList % 0;
+		_highestNode  = (treeAVL[nodeIDList[0]])["Depth"];
+		_currentDepth = _highestNode;
+		_lastNode	  = nodeIDList[_nodeCount-1];
+		for (_nodeIterator = nodeIDList[0]+1; _nodeIterator <= _lastNode; 
+											  _nodeIterator  = _nodeIterator + 1)
+		{
+			_currentDepth = (treeAVL[_nodeIterator])["Depth"];
+			if (_currentDepth < _highestNode)
+			{
+				_highestNode   = _currentDepth;
+			}
+		}
+				
+		for (; _nodeIterator <= Abs(treeAVL); _nodeIterator = _nodeIterator+1)
+		{
+			if ((treeAVL[_nodeIterator])["Depth"] < _highestNode)
+			{
+				return _nodeIterator;
+			}
+		} 
+		
+	}
+	
+	return Abs(treeAVL)-1;
+}
+
+/*************************************************************************************/
 

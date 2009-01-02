@@ -112,6 +112,7 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputAVL		  = "TREE_OUTPUT_OPTIONS",
 			treeOutputBackground  = "TREE_OUTPUT_BACKGROUND",
 			treeOutputRightMargin = "TREE_OUTPUT_RIGHT_MARGIN",
+			treeOutputEmbed		  = "TREE_OUTPUT_EMBED",
 			treeOutputXtraMargin  = "TREE_OUTPUT_XTRA_MARGIN",
 			treeOutputSplit		  = "TREE_OUTPUT_BRANCH_SPLIT",
 			treeOutputLabel		  = "TREE_OUTPUT_BRANCH_LABEL",
@@ -2535,7 +2536,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 			return new _FString (tStr);
 		}
 		case 37: // MAccess
-			return BranchName (p,true);
+			return BranchName (p,true, p2);
 			break;
 		case 40: // COT (Min)
 			return FindCOT (p);
@@ -4053,7 +4054,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 
 }
 //__________________________________________________________________________________
-_PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree)
+_PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree, _PMathObj p2)
 {	
 	_String resString;
 	
@@ -4076,8 +4077,24 @@ _PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree)
 					{
 						if (subtree)
 						{
-							_String st (128L, true);
-							SubTreeString (st);
+							_String			st (128L, true);
+							char			mapMode  = -1;
+							if (p2)
+							{
+								_String * t = (_String*)p2->Compute()->toStr();
+								DetermineBranchLengthMappingMode (t,mapMode);
+								DeleteObject (t);
+								switch (mapMode)
+								{
+									case 3:
+										mapMode = -1; break;
+									case 1:
+										mapMode = -3; break;
+									case 2:
+										mapMode = -2; break;
+								}
+							}
+							SubTreeString   (st,true,mapMode);
 							st.Finalize();
 							resString = st;
 						}
@@ -4641,7 +4658,7 @@ void _TheTree::ScaledBranchReMapping (node<nodeCoord>* theNode, _Parameter tw)
 }
 //__________________________________________________________________________________
 
-_String		 _TheTree::DetermineBranchLengthMappingMode (_String* param, char& mapMode)
+_String		 _TreeTopology::DetermineBranchLengthMappingMode (_String* param, char& mapMode)
 {
 	mapMode = 3;
 	if (param)
@@ -4932,6 +4949,8 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			node<nodeCoord>* newRoot,
 						   *currentNd;
 			
+			bool	doEmbed = false;
+			
 			_AssociativeList * toptions  = (_AssociativeList*)FetchObjectFromVariableByType (&treeOutputAVL,ASSOCIATIVE_LIST);
 			
 			if (toptions)
@@ -4939,6 +4958,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				_PMathObj lc = toptions->GetByKey (treeOutputLayout, NUMBER);
 				if (lc)
 					treeLayout = lc->Value();
+				lc = toptions->GetByKey (treeOutputEmbed, NUMBER);
+				if (lc)
+					doEmbed = lc->Value();
 			}
 
 			_String*		theParam = (_String*) p->toStr(), 
@@ -5000,13 +5022,16 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				(*res) << "% Radial layout\n";
 				(*res) << "/righttext  {dup newpath 0 0 moveto false charpath closepath pathbbox pop exch pop exch sub       4 -1 roll exch sub 3 -1 roll newpath moveto show} def\n";
 			}
-			(*res)<<"<< /PageSize [";
-			
-			(*res)<<_String(treeWidth);
-		 	(*res)<<' ';
-			(*res)<<_String(treeHeight);
-		 	
-			(*res)<<"] >> setpagedevice\n";
+			if (!doEmbed)
+			{
+				(*res)<<"<< /PageSize [";
+				
+				(*res)<<_String(treeWidth);
+				(*res)<<' ';
+				(*res)<<_String(treeHeight);
+				
+				(*res)<<"] >> setpagedevice\n";
+			}
 			
 			long	    xtraChars = 0;
 			
@@ -5291,8 +5316,11 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			newRoot->delete_tree ();
 			delete  newRoot;
 			
-			t = "showpage";
-			(*res)<<&t;
+			if (!doEmbed)
+			{
+				t = "showpage";
+				(*res)<<&t;
+			}
 			DeleteObject (theParam);
 		}
 		else

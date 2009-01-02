@@ -421,7 +421,70 @@ function prompt_for_a_value (prompt,default,lowerB,upperB,isInteger)
 	return value;
 }
 
+/*---------------------------------------------
+take an AVL of the form ["string"] = number
+and print it as:
 
+key[_sepChar]+: number (%)
+
+---------------------------------------------*/
+	
+function _printAnAVL (_theList, _sepChar)
+{
+	_gb_keys 		= _sortStrings(Rows (_theList));
+	_gb_dim   		= Abs(_theList);
+	_gb_total 		= 0;
+	_gb_max_key_len = 0;
+	
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_gb_key 		= _gb_keys[_gb_idx];
+		_gb_max_key_len = Max (_gb_max_key_len, Abs(_gb_key));
+		_gb_total 		= _gb_total + _theList[_gb_key];
+	}
+	
+	fprintf (stdout, "\n");
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_gb_key 		= _gb_keys[_gb_idx];
+		fprintf (stdout, _gb_key);
+		for (_gb_idx2 = Abs(_gb_key); _gb_idx2 < _gb_max_key_len; _gb_idx2 = _gb_idx2 + 1)
+		{
+			fprintf (stdout, _sepChar);
+		}
+		fprintf (stdout, ":", Format (_theList[_gb_key],8,0), " (", Format (100*_theList[_gb_key]/_gb_total,5,2), "%)\n");
+	}
+		
+	return 0;
+}
+
+/*---------------------------------------------
+sort a matrix of strings; return a 
+column vector
+---------------------------------------------*/
+function _sortStringsAux (theKey, theValue)
+{
+	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2=_gb_idx2+1)
+	{
+		_gb_sortedStrings [_gb_idx] = theKey;
+		_gb_idx = _gb_idx + 1;
+	}
+	return 0;
+}
+
+function _sortStrings (_theList)
+{
+	_gb_dim = Rows (_theList)*Columns (_theList);
+	_toSort = {};
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_toSort[_theList[_gb_idx]] = _toSort[_theList[_gb_idx]]+1;
+	}
+	_gb_sortedStrings = {_gb_dim,1};
+	_gb_idx = 0;
+	_toSort["_sortStringsAux"][""];
+	return _gb_sortedStrings;
+}
 
 /*---------------------------------------------
 construct the frequency vector and a LF mixing componenent for 
