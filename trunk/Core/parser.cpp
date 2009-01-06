@@ -3767,16 +3767,23 @@ bool		_Operation::Execute (_Stack& theScrap)
 					long 	  f = LocateVarByName (*argNameString);
 					_PMathObj nthterm = theScrap.Pop();
 					
-					if (isRefVar && (nthterm->ObjectClass()!=STRING))
+					if (isRefVar && nthterm->ObjectClass()!=STRING)
 					{
-						_String errMsg ("User Defined Function '");
-						errMsg = errMsg&*(_String*)batchLanguageFunctionNames(-numberOfTerms-1)
-								&"' needs a string for the reference variable '" & *argNameString &"'";
+						_FString * type = (_FString*)nthterm->Type();
+						
+						_String errMsg = _String ("User Defined Function '")
+										 &*(_String*)batchLanguageFunctionNames(-numberOfTerms-1)
+								         &"' expected a string for the reference variable '" 
+										 & *argNameString 
+										 &"' but was passed a " & *type->theString 
+										 & " with the value of " & _String((_String*)nthterm->toStr());
+						
+						DeleteObject (type);
 						WarnError (errMsg);
 						return false;
 					}
 					
-					if (f<0) // existing var
+					if (f<0) // not an existing var
 					{
 						_Variable newV (*argNameString);
 						f =  LocateVarByName (*argNameString);

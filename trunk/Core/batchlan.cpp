@@ -8936,6 +8936,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
 		((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
 		returnlist.Delete(0);
 	}
+	
 
 	if (mark1>=0)
 	{
