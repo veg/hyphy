@@ -4777,18 +4777,23 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 			{
 				/* check formula validity */
 				
+				_String cell_value ("_MATRIX_ELEMENT_VALUE_"),
+						cell_row   ("_MATRIX_ELEMENT_ROW_"),
+						cell_column("_MATRIX_ELEMENT_COLUMN_");
+				
+				_Variable * cv = CheckReceptacle(&cell_value, empty, false),
+						  * cr = CheckReceptacle(&cell_row, empty, false),
+						  * cc = CheckReceptacle(&cell_column, empty, false);
+					
+				cv->CheckAndSet (0.0);
+				cr->CheckAndSet (0.0);
+				cc->CheckAndSet (0.0);
+				
 				f.Compute();
 				if (terminateExecution)
 					return new _Matrix ();
 				else
 				{
-					_String cell_value ("_MATRIX_ELEMENT_VALUE_"),
-							cell_row   ("_MATRIX_ELEMENT_ROW_"),
-							cell_column("_MATRIX_ELEMENT_COLUMN_");
-							
-					_Variable * cv = CheckReceptacle(&cell_value, empty, false),
-							  * cr = CheckReceptacle(&cell_row, empty, false),
-							  * cc = CheckReceptacle(&cell_column, empty, false);
 							  
 					_Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
 					
