@@ -88,7 +88,6 @@ if (cOptions == 9)
 			_null_map[_it] = _it;
 		}
 		
-		bgm_MPI = {MPI_NODE_COUNT-1,1}["-1"];
 		
 		if (_resamples>0)
 		{
@@ -102,6 +101,7 @@ if (cOptions == 9)
 												
 		if (_resamples>0 && MPI_NODE_COUNT>1)
 		{
+			bgm_MPI = {MPI_NODE_COUNT-1,1}["-1"];
 			left_to_do = Transpose(bgm_MPI["1"]) * bgm_MPI["_MATRIX_ELEMENT_VALUE_>=0"];
 			for (_it = 0; _it < left_to_do[0]; _it = _it + 1)
 			{
