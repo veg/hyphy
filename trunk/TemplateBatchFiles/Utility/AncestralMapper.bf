@@ -288,12 +288,12 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
 			{
 				_bacRootState   = {};
-				_bacRootIndex   = ((_bacAncestralCache ["TREE_AVL"])[0])["Root"]-1;
+				_bacRootIndex   = (((_ancestralRecoveryCache[_ancID]) ["TREE_AVL"])[0])["Root"]-1;
 				_rootStateIndex = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[_bacRootIndex][_siteID];
 				_bacRootState["INDEX"] = _rootStateIndex;
 				if (_rootStateIndex>=0)
 				{
-					_bacRootState["CHAR"] = (_bacAncestralCache ["CHARS"])[_rootStateIndex];
+					_bacRootState["CHAR"] = ((_ancestralRecoveryCache[_ancID]) ["CHARS"])[_rootStateIndex];
 				}
 				else
 				{

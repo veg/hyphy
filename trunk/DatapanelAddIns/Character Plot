@@ -2,10 +2,8 @@ RequireVersion ("0.9920060501");
 
 #include "ibfs/char_colors.def";
 
-_idx = "`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf";
-ExecuteCommands ("#include\"`_idx`\";");
-_idx = "`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf";
-ExecuteCommands ("#include\"`_idx`\";");
+ExecuteAFile ("`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf");
+ExecuteAFile ("`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf");
 
 if (_selFilters == 1)
 {
@@ -17,7 +15,8 @@ else
 }
 
 _font_size  = 14;
-_char_space = (_font_size*1.1)$1;
+_char_space_mult = 1 + 0.1*((Log (_DATAPANEL_DATAFILTER_.sites)/Log(2) + 1.5)$1);
+_char_space = (_font_size*_char_space_mult);
 _page_w	    = 612;
 _page_h     = 792;
 _atom		= 5;

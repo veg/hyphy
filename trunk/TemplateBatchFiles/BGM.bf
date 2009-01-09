@@ -111,7 +111,7 @@ function obtainBGMParameters (_lfID)
 	BGM_MCMC_BURNIN						= prompt_for_a_value ("How many burn-in steps before the main chain is run",BGM_MCMC_DURATION$10, 100, 1e26, 1);
 	BGM_MCMC_SAMPLES					= prompt_for_a_value ("Sample from the chain every so many steps",BGM_MCMC_DURATION$100, 10, BGM_MCMC_DURATION, 1);
 	
-	ChoiceList  (resample,"Maximum parents",1,NO_SKIP,
+	ChoiceList  (resample,"Ancestral Resampling",1,NO_SKIP,
 				/*0*/ "No","Base inference on the maximum likelihood ancestal reconstruction only",
 				/*1*/ "Yes","In addition to maximum likelihood ancestral states, sample a number (S) of alternative ancestral reconstructions to assess robustness. Runs S additional BGM analyses [MPI Enabled]");		
 
