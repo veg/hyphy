@@ -369,6 +369,47 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 		}
 		return "";
 	}
+
+/*******************************************
+	map all site substitutions to a tree; 
+	'_scaled' != 0 will use branch lengths to draw the tree
+	returns Newick code for the annotated tree
+
+*******************************************/
+
+	function _mapSubstitutionsBySiteNewick (_ancID, _siteID, _scaled)
+	{
+		if (Abs (_ancestralRecoveryCache[_ancID]))
+		{
+			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
+			{
+				_thisColumn 		= ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
+				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
+				_bacSiteDim 		= Columns (_bacSiteC);
+				_bacCounter 		= Rows (_thisColumn)-1;
+				
+				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
+				{
+					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
+					_myState	   = _thisColumn[_bacTreeIterator];
+					_pState		   = _thisColumn[_bacParentID];
+					_bacStateLabel = "";
+					
+					
+					if (_myState >= 0 && _pState >= 0 && _myState != _pState)
+					{
+					 	_bacStateLabel = _bacSiteC[_pState] + "->" + _bacSiteC[_myState];
+					}
+					
+					(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["SubLabel"] = _bacStateLabel;
+				}
+				
+				return 	 PostOrderAVL2StringAnnotate ((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled, "SubLabel");
+			}
+		}
+		return "";
+	}
+
 	
 /*******************************************
 	

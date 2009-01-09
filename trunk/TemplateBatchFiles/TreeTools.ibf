@@ -2,6 +2,13 @@
 
 function PostOrderAVL2StringDL (theAVL, doLengths)
 {
+	return PostOrderAVL2StringAnnotate (theAVL, doLengths, "");
+}
+
+/*************************************************************************************/
+
+function PostOrderAVL2StringAnnotate (theAVL, doLengths, label)
+{
 	_ost = "";
 	_ost * 256;
 	
@@ -46,6 +53,14 @@ function PostOrderAVL2StringDL (theAVL, doLengths)
 				_ost * nodeInfo["Name"];
 			}
 			
+			if (Abs (label))
+			{
+				if (Abs(nodeInfo[label]))
+				{
+					_ost * ("[" + nodeInfo[label] + "]");
+				}
+			}
+
 			if (doLengths)
 			{
 				if (nodeIndex < treeSize - 1)
@@ -61,6 +76,7 @@ function PostOrderAVL2StringDL (theAVL, doLengths)
 	_ost * 0;
 	return _ost;
 }
+
 
 /*************************************************************************************/
 
