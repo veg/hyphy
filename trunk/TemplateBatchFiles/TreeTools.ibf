@@ -48,10 +48,10 @@ function PostOrderAVL2StringAnnotate (theAVL, doLengths, label)
 					_ost * ",";
 				}
 			}
-			if (Abs(nodeInfo["Children"])==0)
-			{
+			/*if (Abs(nodeInfo["Children"])==0)
+			{*/
 				_ost * nodeInfo["Name"];
-			}
+			/*}*/
 			
 			if (Abs (label))
 			{

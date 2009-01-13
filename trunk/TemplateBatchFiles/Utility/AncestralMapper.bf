@@ -348,7 +348,9 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				}
 				
 				_bacTreeString 	  = PostOrderAVL2StringDL ((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled);
+				ACCEPT_ROOTED_TREES = 1;
 				Tree _bacTempTree = _bacTreeString;
+				ACCEPT_ROOTED_TREES = 0;
 				
 				_bac_bn = "";
 				_bac_bn * 128;
