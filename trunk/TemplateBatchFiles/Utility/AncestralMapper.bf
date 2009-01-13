@@ -267,6 +267,51 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 		}
 		return {};
 	}
+	
+
+/*******************************************
+	count subsitutions at a given site;
+	along a subset of branches. 
+	
+	["CHARS"]  - the 1xN matrix which maps index->character string
+	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix 
+				 with counts of substitutions at the site
+	
+	pass this function the ID of ancestral cache
+	and the index of the site to recover
+
+*******************************************/
+
+	function _substitutionsBySiteSubset (_ancID, _siteID, _branchSubset)
+	{
+		if (Abs (_ancestralRecoveryCache[_ancID]))
+		{
+			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
+			{
+				_bacSiteC   = {};
+				_thisColumn 		= ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
+				_bacSiteC ["CHARS"] = (_ancestralRecoveryCache[_ancID])["CHARS"];
+				_bacSiteDim 		= Columns (_bacSiteC ["CHARS"]);
+				_bacCounter 		= Rows (_thisColumn)-1;
+				_bacSiteMx			= {_bacSiteDim,_bacSiteDim};
+				
+				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
+				{
+					if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]])
+					{
+						_bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
+						_myState	 = _thisColumn[_bacTreeIterator];
+						_pState		 = _thisColumn[_bacParentID];
+						_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
+					}
+				}
+				
+				_bacSiteC ["COUNTS"] = _bacSiteMx;
+				return _bacSiteC;
+			}
+		}
+		return {};
+	}	
 
 /*******************************************
 	returns the reconstructed root state for a given site;
@@ -348,10 +393,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				}
 				
 				_bacTreeString 	  = PostOrderAVL2StringDL ((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled);
-				ACCEPT_ROOTED_TREES = 1;
 				Tree _bacTempTree = _bacTreeString;
-				ACCEPT_ROOTED_TREES = 0;
-				
 				_bac_bn = "";
 				_bac_bn * 128;
 				_bac_bn * "/drawletter {5 5 rmoveto 1 copy false charpath pathbbox 2 index 3 sub sub exch 3 index 3 sub sub exch  0.85 setgray 4 copy rectfill 0 setgray  3 index 3 index currentlinewidth 0.5 setlinewidth 7 3 roll rectstroke setlinewidth exch 1.5 add exch 1.5 add moveto show} def\n";

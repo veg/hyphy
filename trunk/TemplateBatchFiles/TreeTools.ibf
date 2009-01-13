@@ -550,4 +550,133 @@ function	_findMRCA (treeAVL, nodeIDList)
 }
 
 /*************************************************************************************/
+/* 
+  	use parsimony to reconstruct ancestral states based on leaf AVL labels 
+  	return the number of substitutions
+*/
 
+function _parsimonyAncestralMapping (treeAVL, label)
+{
+	uniqueLabels = {};
+	idToLabel	 = {};
+	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
+	{
+		isLeaf = Abs((treeAVL[_nodeIterator])["Children"]) > 0;
+		if (isLeaf)
+		{
+			isLeaf = (treeAVL[_nodeIterator])[label];
+			if (uniqueLabels[isLeaf] == 0)
+			{
+				uniqueLabels [isLeaf] = Abs(uniqueLabels);
+				idToLabel[Abs(idToLabel)] = isLeaf;
+			}
+		}
+	}
+
+	assignmentMatrices = {};
+	kindCount		   = Abs (uniqeLabels);
+	
+	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
+	{
+		aMx = {2,kindCount};
+		s2  = uniqueLabels[(treeAVL[_nodeIterator])[label]]-1;
+		for (k=0; k<kindCount; k=k+1)
+		{
+			aMx[0][k] = s2;
+			aMx[1][k] = 1-(k==s2);	
+		}
+		assignmentMatrices [(treeAVL[_nodeIterator])["Name"]] = aMx;
+	}
+
+	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
+	{
+		nodeInfo 		= treeAVL[_nodeIterator];
+		nodeChildren	= nodeInfo ["Children"];
+		cCount			= Abs(nodeChildren);
+		
+		if (cCount)
+		{
+			localMatrices = {};
+			
+			nodeName = nodeInfo["Name"];
+			
+			for (s1 = 0; s1<cCount; s1=s1+1)
+			{
+				localMatrices[s1] = assignmentMatrices[treeAVL	 [nodeChildren[s1]]  ["Name"]];
+			}
+			
+			twoWay = {kindCount,1};
+			
+			for (s2 = 0; s2 < kindCount; s2 = s2+1)
+			{
+				lc = 0;
+				for (s3 = 0; s3<cCount; s3=s3+1)
+				{
+					lc  = lc + (localMatrices[s3])[1][s2];
+				}
+				twoWay[s2] = lc;
+			}
+						
+			if (nodeInfo["Parent"])
+			{
+				aMx = {2,kindCount};
+				
+				for (s2 = 0; s2 < kindCount; s2 = s2+1)
+				{
+					minV = 1e100;
+					minI = 0;
+					
+					for (s3 = 0; s3 < kindCount; s3 = s3+1)
+					{
+						aCost = (s3!=s2) + twoWay[s3];
+						if (minV > aCost)
+						{
+							minV  = aCost;
+							minI  = s3;
+						}	
+					}
+					
+					aMx[0][s2] = minI;
+					aMx[1][s2] = minV;
+				}
+				
+				assignmentMatrices [nodeName] = aMx;
+			}
+			else
+			{
+				totalCost = 1e100;
+				rootState = 0;
+				
+				for (s2 = 0; s2 < kindCount; s2 = s2+1)
+				{
+					if (twoWay[s2] < totalCost)
+					{
+						totalCost = twoWay[s2];
+						rootState = s2;
+					}	
+				}
+				(treeAVL[_nodeIterator])[label] = idToLabel[rootState];
+			}
+		}
+	}
+	
+	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
+	{
+		nodeInfo 		= treeAVL[_nodeIterator];
+		nodeChildren	= nodeInfo ["Children"];
+		
+		if (Abs(nodeChildren))
+		{			
+			nodeName   = nodeInfo["Name"];
+			nodeParent = nodeInfo["Parent"];
+			if (nodeParent)
+			{
+				aMx							    = assignmentMatrices [nodeName];
+				(treeAVL[_nodeIterator])[label] = idToLabel[aMx[0][uniqueLabels[(treeAVL[nodeParent])[label]]-1];
+			}
+		}
+	}	
+
+	assignmentMatrices = 0;
+	return totalCost;
+}
