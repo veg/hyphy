@@ -297,7 +297,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 				
 				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
 				{
-					if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]])
+					if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"] && 1])
 					{
 						_bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
 						_myState	 = _thisColumn[_bacTreeIterator];

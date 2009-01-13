@@ -7,7 +7,14 @@ function PostOrderAVL2StringDL (theAVL, doLengths)
 
 /*************************************************************************************/
 
-function PostOrderAVL2StringAnnotate (theAVL, doLengths, label)
+function PostOrderAVL2StringAnnotate (theAVL, doLengths,label)
+{
+	return PostOrderAVL2StringAnnotateAux (theAVL, doLengths, "", "[]");
+}
+
+/*************************************************************************************/
+
+function PostOrderAVL2StringAnnotateAux (theAVL, doLengths, label, chars)
 {
 	_ost = "";
 	_ost * 256;
@@ -48,16 +55,14 @@ function PostOrderAVL2StringAnnotate (theAVL, doLengths, label)
 					_ost * ",";
 				}
 			}
-			/*if (Abs(nodeInfo["Children"])==0)
-			{*/
-				_ost * nodeInfo["Name"];
-			/*}*/
+			
+			_ost * nodeInfo["Name"];
 			
 			if (Abs (label))
 			{
 				if (Abs(nodeInfo[label]))
 				{
-					_ost * ("[" + nodeInfo[label] + "]");
+					_ost * (chars[0] + nodeInfo[label] + chars[1]);
 				}
 			}
 
@@ -561,20 +566,20 @@ function _parsimonyAncestralMapping (treeAVL, label)
 	idToLabel	 = {};
 	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
 	{
-		isLeaf = Abs((treeAVL[_nodeIterator])["Children"]) > 0;
+		isLeaf = Abs((treeAVL[_nodeIterator])["Children"]) == 0;
 		if (isLeaf)
 		{
 			isLeaf = (treeAVL[_nodeIterator])[label];
 			if (uniqueLabels[isLeaf] == 0)
 			{
-				uniqueLabels [isLeaf] = Abs(uniqueLabels);
+				uniqueLabels [isLeaf]     = 1+Abs(uniqueLabels);
 				idToLabel[Abs(idToLabel)] = isLeaf;
 			}
 		}
 	}
 
 	assignmentMatrices = {};
-	kindCount		   = Abs (uniqeLabels);
+	kindCount		   = Abs (uniqueLabels);
 	
 	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
 	{
@@ -602,7 +607,7 @@ function _parsimonyAncestralMapping (treeAVL, label)
 			
 			for (s1 = 0; s1<cCount; s1=s1+1)
 			{
-				localMatrices[s1] = assignmentMatrices[treeAVL	 [nodeChildren[s1]]  ["Name"]];
+				localMatrices[s1] = assignmentMatrices[(treeAVL	 [nodeChildren[s1]])  ["Name"]];
 			}
 			
 			twoWay = {kindCount,1};
@@ -660,7 +665,7 @@ function _parsimonyAncestralMapping (treeAVL, label)
 		}
 	}
 	
-	for (_nodeIterator = 1; _nodeIterator < Abs (treeAVL); _nodeIterator = _nodeIterator + 1)
+	for (_nodeIterator = Abs (treeAVL)-1; _nodeIterator >=1 ; _nodeIterator = _nodeIterator - 1)
 	{
 		nodeInfo 		= treeAVL[_nodeIterator];
 		nodeChildren	= nodeInfo ["Children"];
@@ -672,7 +677,7 @@ function _parsimonyAncestralMapping (treeAVL, label)
 			if (nodeParent)
 			{
 				aMx							    = assignmentMatrices [nodeName];
-				(treeAVL[_nodeIterator])[label] = idToLabel[aMx[0][uniqueLabels[(treeAVL[nodeParent])[label]]-1];
+				(treeAVL[_nodeIterator])[label] = idToLabel[aMx[0][uniqueLabels[(treeAVL[nodeParent])[label]]-1]];
 			}
 		}
 	}	
