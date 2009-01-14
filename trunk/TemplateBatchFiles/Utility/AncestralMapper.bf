@@ -351,13 +351,26 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}	
 	
 /*******************************************
-	map all site substitutions to a tree; 
+	map all site substitutions or character states to a tree; 
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns PostScript code for the image
 
 *******************************************/
-
 	function _mapSubstitutionsBySite (_ancID, _siteID, _scaled)
+	{
+		return _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, 0);
+	}
+
+	/********************************************/
+
+	function _mapCharactersBySite (_ancID, _siteID, _scaled)
+	{
+		return _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, 1);
+	}
+
+	/********************************************/
+	
+	function _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, mode)
 	{
 		if (Abs (_ancestralRecoveryCache[_ancID]))
 		{
@@ -377,18 +390,36 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_bacStateLabel = "";
 					
 					
-					if (_myState >= 0 && _pState >= 0 && _myState != _pState)
+					if (_myState >= 0)
 					{
-					 	_bacStateLabel = _bacSiteC[_pState] + "->" + _bacSiteC[_myState];
+						if (mode == 0)
+						{
+							 if (_myState != _pState && _pState >= 0)
+							 {
+								_bacStateLabel = _bacSiteC[_pState] + "->" + _bacSiteC[_myState];
+							 }
+						}
+						else
+						{
+							_bacStateLabel = _bacSiteC[_myState];
+						}
 					}
 					
 					_bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"];
+					
 					if (Abs(_bacStateLabel))
 					{
 						TREE_OUTPUT_OPTIONS [_bac_bn] = {};
-						(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_OVER_BRANCH"] = "gsave 0.7 0.7 scale ("+_bacStateLabel+") drawletter grestore\n";
-						(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_LABEL"]  = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n (__NODE_NAME__) show";
-						(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0,0}};
+						if (mode == 0)
+						{
+							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_OVER_BRANCH"] = "gsave 0.7 0.7 scale ("+_bacStateLabel+") drawletter grestore\n";
+							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_LABEL"]  = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n (__NODE_NAME__) show";
+							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0,0}};
+						}
+						else
+						{
+							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_TLABEL"] = _bacStateLabel;						
+						}
 					}
 				}
 				
@@ -415,13 +446,22 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 /*******************************************
-	map all site substitutions to a tree; 
+	map all site substitutions (or character states) to a tree; 
 	'_scaled' != 0 will use branch lengths to draw the tree
 	returns Newick code for the annotated tree
 
 *******************************************/
-
 	function _mapSubstitutionsBySiteNewick (_ancID, _siteID, _scaled)
+	{
+		return _mapSubstitutionsBySiteNewickAux (_ancID, _siteID, _scaled, 0);
+	}
+
+	function _mapCharactersBySiteNewick (_ancID, _siteID, _scaled)
+	{
+		return _mapSubstitutionsBySiteNewickAux (_ancID, _siteID, _scaled, 1);
+	}
+
+	function _mapSubstitutionsBySiteNewickAux (_ancID, _siteID, _scaled, mode)
 	{
 		if (Abs (_ancestralRecoveryCache[_ancID]))
 		{
@@ -440,9 +480,19 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_bacStateLabel = "";
 					
 					
-					if (_myState >= 0 && _pState >= 0 && _myState != _pState)
+					if (_myState >= 0)
 					{
-					 	_bacStateLabel = _bacSiteC[_pState] + "->" + _bacSiteC[_myState];
+						if (mode == 0)
+						{
+							 if (_myState != _pState && _pState >= 0)
+							 {
+								_bacStateLabel = _bacSiteC[_pState] + "->" + _bacSiteC[_myState];
+							 }
+						}
+						else
+						{
+							_bacStateLabel = _bacSiteC[_myState];
+						}
 					}
 					
 					(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["SubLabel"] = _bacStateLabel;

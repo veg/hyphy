@@ -9,7 +9,7 @@ function PostOrderAVL2StringDL (theAVL, doLengths)
 
 function PostOrderAVL2StringAnnotate (theAVL, doLengths,label)
 {
-	return PostOrderAVL2StringAnnotateAux (theAVL, doLengths, "", "[]");
+	return PostOrderAVL2StringAnnotateAux (theAVL, doLengths, label, "[]");
 }
 
 /*************************************************************************************/
