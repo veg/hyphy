@@ -3569,7 +3569,6 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 // storage is assumed to NOT be *this
 
 {
-			
 		_PMathObj tempP, tempP2;
 		
 		if ( !theIndex && !secondArg.theIndex)
@@ -3737,62 +3736,28 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			
 		}
 		else
-		if ((!theIndex)&&(secondArg.theIndex))
+		if ( !theIndex && secondArg.theIndex)
 		// non-sparse multiplied by sparse
 		{
-			if ((storageType == 1)&&(secondArg.storageType ==1))
+			if ( storageType == 1 && secondArg.storageType ==1)
 			{
-				if ((vDim == hDim)&&(secondArg.vDim==secondArg.hDim))
+				if (vDim == hDim && secondArg.vDim==secondArg.hDim)
+					// both are square matrices
 				{
 					for (long k=0; k<secondArg.lDim; k++)
 					{
 						long m = secondArg.theIndex[k];
-						if (m!=-1)
-						{
-							long i = m/secondArg.vDim;
-							long j = m%secondArg.vDim;
-							_Parameter c = secondArg.theData[k];
-							m = vDim%4;
-							_Parameter *stData = storage.theData+j, 
-									   *secData = theData+i,
-									   *stopper = secData+(vDim-m)*vDim;
-							for (; secData!=stopper;)
-							{
-								*stData += c**secData;
- 								secData+=vDim;
- 								stData+=secondArg.vDim;								
-								*stData += c**secData;
- 								secData+=vDim;
- 								stData+=secondArg.vDim;								
-								*stData += c**secData;
- 								secData+=vDim;
- 								stData+=secondArg.vDim;								
-								*stData += c**secData;
- 								secData+=vDim;
- 								stData+=secondArg.vDim;								
-							}
+						if (m!=-1) // a non-zero value
+						{							
+							// because r_ij = sum_k a_ik * b_kj 
+							// a non-zero b_kj will contribute a_ik * b_kj to the a_ij cell of the result
+							// loop over i...
 							
-							switch (m)
-							{
-								case 1:
-									*stData += c**secData;
-									break;
-								case 2:
-									*stData += c**secData;
-	 								secData+=vDim;
-	 								stData+=secondArg.vDim;								
-									*stData += c**secData;
-									break;
-								case 3:
-									*stData += c**secData;
-	 								secData+=vDim;
-	 								stData+=secondArg.vDim;								
-									*stData += c**secData;
-	 								secData+=vDim;
-	 								stData+=secondArg.vDim;								
-									*stData += c**secData;
-									break;
-							}
+							_Parameter c = secondArg.theData[k];
+							
+							for (long cell = m%secondArg.vDim, secondCell = m/secondArg.vDim; cell < lDim; cell += vDim, secondCell += vDim)
+								theData[cell] += c * secondArg.theData[secondCell];
+							
 						}
 					}
 				}
@@ -3866,6 +3831,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 			memset (indexTable2,0,indexTableDim*sizeof(long));
 			memset (indexVector,0,secondArg.hDim*sizeof(long));
 			if (storageType == 1)
+			// numeric
 			{
 				for (long i=0; i<secondArg.lDim; i++)
 				{
@@ -3891,35 +3857,6 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					}
 				}
 			}					
-			
-			/*if (storageType == 1)
-			{
-				for (i=0;i<secondArg.lDim; i++)
-				{
-					if ((t=secondArg.theIndex[i])!=-1)
-					{
-						k = t/secondArg.vDim;
-						j = k*dd;
-						indexTable [j+(++indexTable[j])] = t*65536+i;
-					}
-				}
-				for (k=0; k<lDim; k++)
-				{
-					if ((t=theIndex[k])!=-1)
-					{
-						i = t/vDim;
-						j = t%vDim;
-						_Parameter c = theData[k];
-						n = j*dd;
-						m = i*secondArg.vDim;
-						for (l=n+1; l<n+1+indexTable[n]; l++)
-						{
-							p = indexTable[l];
-							storage.theData[m+(p>>16)%secondArg.vDim]+= c*secondArg.theData[p&0x0000ffff];
-						}
-					}
-				}
-			} */
 			else // polynomial entries
 			{
 				for (long i=0;i<secondArg.lDim; i++)

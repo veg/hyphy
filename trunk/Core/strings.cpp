@@ -1357,29 +1357,23 @@ _String _String::Replace(_String s, _String d, bool flag)
 //_______________________________________________________________________
 _List* _String::Tokenize (_String s)
 {
-	_List res;
+	_List *res = new _List;
 	if (s.sLength!=0)
 	{
 		long cp=0,cpp;
 		while ((cpp = Find(s,cp,-1))!=-1)
 		{
 			if (cpp>cp)
-			{	
-				_String ss (Cut(cp,cpp-1));
-				res&&(&ss);
-			}
+				res->AppendNewInstance (new _String (*this,cp,cpp-1));
 			else
-			{	
-				_String ss ("");
-				res&&(&ss);
-			}
+				(*res) && (&empty);
+
 			cp=cpp+s.sLength;
 		}
 		
-		_String ss (Cut(cp,-1));
-		res&&(&ss);
+		res->AppendNewInstance (new _String (*this,cp,-1));
 	}
-	return (_List*)res.makeDynamic();
+	return res;
 }
 
 

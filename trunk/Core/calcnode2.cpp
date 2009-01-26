@@ -285,36 +285,26 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				if (siteState >= 0)
 				// a single character state; sweep down the appropriate column 
 				{
-					if (alphabetDimension == 4) // special case for nuc data
+					tMatrix  +=  siteState;
+					if (alphabetDimension == 4)
 					{
-						parentConditionals[0] *= tMatrix[siteState];
-						parentConditionals[1] *= tMatrix[siteState+4];
-						parentConditionals[2] *= tMatrix[siteState+8];
-						parentConditionals[3] *= tMatrix[siteState+12];						
+						parentConditionals[0] *= tMatrix[0];
+						parentConditionals[1] *= tMatrix[4];
+						parentConditionals[2] *= tMatrix[8];
+						parentConditionals[3] *= tMatrix[12];
 					}
 					else
 					{
-						tMatrix  +=  siteState;
-						if (alphabetDimension == 4)
+						long k = 0;
+						for (; k < alphabetDimensionmod4; k+=4, tMatrix += alphabetDimension+alphabetDimension+alphabetDimension+alphabetDimension)  
 						{
-							parentConditionals[0] *= tMatrix[0];
-							parentConditionals[1] *= tMatrix[4];
-							parentConditionals[2] *= tMatrix[8];
-							parentConditionals[3] *= tMatrix[12];
+								parentConditionals[k]   *= tMatrix[0];
+								parentConditionals[k+1] *= tMatrix[alphabetDimension];
+								parentConditionals[k+2] *= tMatrix[alphabetDimension+alphabetDimension];
+								parentConditionals[k+3] *= tMatrix[alphabetDimension+alphabetDimension+alphabetDimension];
 						}
-						else
-						{
-							long k = 0;
-							for (; k < alphabetDimensionmod4; k+=4, tMatrix += alphabetDimension+alphabetDimension+alphabetDimension+alphabetDimension)  
-							{
-									parentConditionals[k]   *= tMatrix[0];
-									parentConditionals[k+1] *= tMatrix[alphabetDimension];
-									parentConditionals[k+2] *= tMatrix[alphabetDimension+alphabetDimension];
-									parentConditionals[k+3] *= tMatrix[alphabetDimension+alphabetDimension+alphabetDimension];
-							}
-							for (; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
-								parentConditionals[k] *= *tMatrix;
-						}
+						for (; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
+							parentConditionals[k] *= *tMatrix;
 					}
 					continue;
 				}

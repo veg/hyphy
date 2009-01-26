@@ -2686,61 +2686,34 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 
 	theExclusions.Clear();
 	
-	if (theList->getChar(0)=='"') 
-		theList->Trim(1,-1);
-		
-	if (theList->getChar(theList->Length()-1)=='"') 
-		theList->Trim(0,theList->Length()-2);
-	
+	theList->StripQuotes();	
 	if (theList->sLength == 0) 
 		return;
 		
-	long f 				= theList->Find(','),
-		 g 				= 0,
-		 alphLength		= GetDimension (false),
-		 excCount,
-		 posMarker;
-		 
-	_Parameter	 *store = new _Parameter[alphLength];
+	_List *tokens 		= theList->Tokenize(',');	
+	_Parameter	 *store = new _Parameter[GetDimension (false)];
 	checkPointer(store);
 
 	_SimpleList hack;
-	do
+	for (long k = 0; k < tokens->lLength; k++)
 	{
-		_String anExclusion (theList->Cut(g,f==-1?theList->Length():f-1));
-		Translate2Frequencies(anExclusion,store,true);
-		excCount = 0;
-		posMarker = -1;
-		for (long i=0; i<alphLength; i++)
-		{
-			if (store[i]!=0)
-			{
-				excCount++;
-				posMarker = i;
-			}
-		}
-		if (excCount != 1)
-		{
-			_String warnMsg ("Exclusion Symbol ");
-			warnMsg = warnMsg & anExclusion &" does not represent a unique state and will therefore be ignored.";
-			ReportWarning (warnMsg);
-		}
+		long posMarker = Translate2Frequencies(*(_String*)((*tokens)(k)),store,true);
+
+		if (posMarker < 0)
+			ReportWarning (_String("Exclusion request for '") & *(_String*)((*tokens)(k)) &"' does not represent a unique state and will therefore be ignored.");
 		else
 			hack<<posMarker;
-
-		g = f+1;
-		f = theList->Find(',',g,-1);
 	}
-	while (g);
 	
-	delete store;
+	delete		  store;
+	DeleteObject (tokens);
 	
 	hack.Sort(true);
+	
 	if (filter)
 		FilterDeletions (&hack);
 	
-	for (long i=0; i<hack.lLength; i++)
-		theExclusions<<hack.lData[i];
+	theExclusions << hack;
 }
 
 //_______________________________________________________________________
