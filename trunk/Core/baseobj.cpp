@@ -456,7 +456,7 @@ char* MemReallocate (Ptr oldP, long chunk)
 			
 			while (isSuspended)
 			{
-				MessageLoop();
+				MessageLoop(false);
 				if (hyphyExiting)
 				{
 				 	WritePreferences	();
