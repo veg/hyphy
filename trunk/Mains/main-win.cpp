@@ -445,7 +445,7 @@ int MessageLoop			(bool peek)
 {
 	MSG msg;
 	int loopMore = peek?PeekMessage(&msg, NULL, 0, 0, PM_REMOVE):GetMessage (&msg, NULL, 0, 0);
-	while (loopMore && peek)
+	while (loopMore)
 	{
 		_HYWindow* me = nil;
 		HWND	   daWindow = msg.hwnd;
