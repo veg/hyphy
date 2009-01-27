@@ -440,11 +440,10 @@ char* MemReallocate (Ptr oldP, long chunk)
 		#include 		"Windows.h"
 		#include		"preferences.h"
 		#include		"HYSharedMain.h"
+		#include		"HYPlatformWindow.h"
 
 		extern  bool 	hyphyExiting;
 					 
-		int 			MessageLoop		 (bool = true);
-			
 		void			yieldCPUTime	 (void)
 		{
 			MessageLoop();
@@ -456,11 +455,11 @@ char* MemReallocate (Ptr oldP, long chunk)
 			
 			while (isSuspended)
 			{
-				MessageLoop(false);
+				MessageLoop(true,false);
 				if (hyphyExiting)
 				{
 				 	WritePreferences	();
-					ExitProcess(0);
+					ExitProcess			(0);
 				}
 			}
 		}	

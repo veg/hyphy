@@ -441,7 +441,7 @@ bool displayFirstDialog (long& choice)
 
 //_________________________________________________________________________
 
-int MessageLoop			(bool peek)				
+int MessageLoop			(bool peek, bool moreThanOne)				
 {
 	MSG msg;
 	int loopMore = peek?PeekMessage(&msg, NULL, 0, 0, PM_REMOVE):GetMessage (&msg, NULL, 0, 0);
@@ -460,7 +460,7 @@ int MessageLoop			(bool peek)
 		if (f>=0)
 		{
 			 me = (_HYWindow*)(windowObjectRefs.lData[f]);				
-			 if ((me->menuKeys!=NULL)&&TranslateAccelerator (daWindow, me->menuKeys, &msg))
+			 if ( me->menuKeys!=NULL && TranslateAccelerator (daWindow, me->menuKeys, &msg) && moreThanOne)
 			 {
 				loopMore = peek?PeekMessage(&msg, NULL, 0, 0, PM_REMOVE):GetMessage (&msg, NULL, 0, 0);
 				continue;
@@ -469,10 +469,13 @@ int MessageLoop			(bool peek)
 		}			
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-
-		loopMore = peek?PeekMessage(&msg, NULL, 0, 0, PM_REMOVE):GetMessage (&msg, NULL, 0, 0);
+		
     	if (hyphyExiting)
     		return 0;
+		if (moreThanOne)
+			loopMore = peek?PeekMessage(&msg, NULL, 0, 0, PM_REMOVE):GetMessage (&msg, NULL, 0, 0);
+		else
+			return msg.wParam;
     }
 	return msg.wParam ;
 }
