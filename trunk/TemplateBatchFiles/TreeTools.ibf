@@ -560,7 +560,7 @@ function	_findMRCA (treeAVL, nodeIDList)
   	return the number of substitutions
 */
 
-function _parsimonyAncestralMapping (treeAVL, label)
+function _parsimonyAncestralMapping (treeAVL&, label)
 {
 	uniqueLabels = {};
 	idToLabel	 = {};

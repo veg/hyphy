@@ -5272,7 +5272,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					
 				_String rulerLabel (vScale);
 				
-				while (vScale*hScale > (treeLayout==1?treeRadius:treeWidth-newRoot->in_object.h))
+				while (vScale*hScale > (treeLayout==1?treeRadius/3:treeWidth-newRoot->in_object.h))
 				{
 					vScale	   *= 0.5;
 					rulerLabel = vScale;
@@ -5289,9 +5289,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				
 				if (treeLayout == 1)
 				{
-					treeHeight = 2*treeRadius - 4*fontSize;
-					lm -= rm*0.5;
-					rm += lm;
+					treeHeight = 2*treeRadius - 2*fontSize;
+					lm = treeWidth - fontSize - rm;
+					rm = treeWidth - fontSize - lw;
 				}
 
 				(*res) << "newpath\n";
