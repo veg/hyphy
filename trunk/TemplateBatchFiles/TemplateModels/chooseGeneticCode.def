@@ -52,6 +52,14 @@ _geneticCodeOptionMatrix   =
 			{"Blepharisma Nuclear","Blepharisma Nuclear code. (Genebank transl_table=15)."}
 			};
 			
+_hyphyAAOrdering		   = "FLIMVSPTAYXHQNKDECWRG";
+_aaLetterToCode			   = {};
+
+for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
+{
+	_aaLetterToCode[_hyphyAAOrdering[_idx]] = _idx;
+}
+
 _geneticCodeNameToIndexMap = {};
 
 for (_idx = 0; _idx < Rows(_geneticCodeOptionMatrix); _idx = _idx+1)
