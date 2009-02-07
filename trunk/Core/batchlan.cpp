@@ -1448,28 +1448,39 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 		{
 			if (lastif.countitems())
 			{
-				long temp = countitems(), lif = lastif(lastif.countitems()-1), lc = lastif.countitems();
-				_ElementaryCommand stuff;
-				stuff.MakeJumpCommand(nil,0,0,*this);
-				(*this)&&(&stuff);
-				currentLine.Trim(4,-1);
-				long index = currentLine.Length()-1, scopeIn=0;
-				while ((currentLine[scopeIn]=='{')&&(currentLine[index]=='}'))
+				long	temp = countitems(), 
+						lc   = lastif.countitems(),
+						lif  = lastif.lData[lc-1];
+				
+				_ElementaryCommand		* stuff = new _ElementaryCommand ();
+				stuff->MakeJumpCommand	(nil,0,0,*this);
+				AppendNewInstance		(stuff);
+				currentLine.Trim		(4,-1);
+				
+				long  index			= currentLine.Length()-1, 
+					  scopeIn		= 0;
+					
+				while (currentLine.sData[scopeIn]=='{' && currentLine.sData[index]=='}')
 				{
 					scopeIn++;
 					index--;
 				}
+				
 				if (scopeIn)
 					currentLine.Trim (scopeIn,index);
+				
 				BuildList (currentLine,bc,true);
-				if ((lif<0)||(lif>=lLength))
+				
+				if (lif<0 || lif>=lLength)
 				{
 					_String errMsg("'else' w/o an if to latch on to...");
 					WarnError (errMsg);
 					return false;
 				}
+				
 				((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
 				((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
+				
 				while (lastif.countitems()>=lc)
 					lastif.Delete(lastif.countitems()-1);
 			}
@@ -7120,15 +7131,17 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 	
 	bool 	isString = false, 
 			skipping = false, 
-			isComment = false, 
-			isDoWhileLoop = false;
-			
+			isComment = false;
+	
+	
 	long	scopeIn 	= 0,  
 			matrixScope = 0, 
 			parenIn 	= 0, 
 			bracketIn   = 0,
 			index,
 			saveSI = _String::storageIncrement;
+	
+	_SimpleList isDoWhileLoop;
 	
 	if (input.sLength/4 > saveSI)
 		_String::storageIncrement = input.sLength/4;
@@ -7267,8 +7280,11 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 						long t = input.FirstNonSpaceIndex (0, index-1, -1);
 						if (t>=1)
 						{
-							if ((input.sData[t]=='o')&&(input.sData[t-1]=='d'))
-								isDoWhileLoop = true;
+							if (input.getChar(t)=='o' && input.getChar(t-1)=='d')
+							{
+								isDoWhileLoop << scopeIn-1;
+								//printf ("%d\n%s\n\n", isDoWhileLoop, input.Cut (t,-1).sData);
+							}
 						}
 					}
 				}
@@ -7283,11 +7299,17 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 			else
 			{
 				scopeIn--;
-				if (! scopeIn&& !parenIn && !isDoWhileLoop && !bracketIn)
-					break;
+				if (!parenIn && !bracketIn)
+					if (scopeIn >=0 && isDoWhileLoop.lLength && isDoWhileLoop.lData[isDoWhileLoop.lLength-1] == scopeIn)
+						isDoWhileLoop.Delete (isDoWhileLoop.lLength-1);
+					else 
+						if (scopeIn == 0)
+							break;
+
 			}		
 			lastChar = 0;continue;
 		}
+		
 		lastChar = c;
 	}
 	
@@ -7299,11 +7321,11 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 		if (result!='}')
 		{
 			acknError ((_String)("Expression appears to be incomplete/syntax error:")&input);
-			input = "";
+			input = empty;
 			return empty;
 		}
 		else
-			result = "";
+			result = empty;
 	}
 
 	lastChar=0;

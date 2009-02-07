@@ -10917,14 +10917,19 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample)
 		
 		for (j = 0; j<dsf->theFrequencies.lLength; j++)
 		{
-			if (doSetRates)
-				tree->SetCompMatrices ((*rateAssignments)(0,offset2+j));
+			
+				if (doSetRates)
+					tree->SetCompMatrices ((*rateAssignments)(0,offset2+j));
 				
 			if (sample)
 			{
 				_List * recStrings = new _List;
-				checkPointer (recStrings);
-				tree->ReleafTree (dsf, j, -1, 0, tree->flatCLeaves.lLength-1);
+				checkPointer		(recStrings);
+				
+				#ifndef _SLKP_LFENGINE_REWRITE_
+					tree->ReleafTree (dsf, j, -1, 0, tree->flatCLeaves.lLength-1);
+				#endif
+				
 				for (long jj = 0; jj<dsf->theFrequencies.lData[j]; jj++)
 				{
 					_List * recoveredStrings = tree->SampleAncestors (dsf, tree->theRoot);
@@ -10936,7 +10941,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample)
 						sprintf (buffer,"Site %d/%d\n", sitesDone++, dsf->theMap.lLength/dsf->GetUnitLength());
 						BufferToConsole (buffer);		
 					}
-
+					
 				}
 				thisSet << recStrings;
 				DeleteObject (recStrings);

@@ -417,23 +417,30 @@ class _DataSetFilter:public BaseObj {
 	_String* GetSequenceCharacters 
 							(long);
 
-	_DataSet*GetData (void) {return theData;}
-	void	 SetData (_DataSet* ds) {theData = ds;}
-	_String	 ConvertCodeToLetters (long code, char base) { return theData->theTT->ConvertCodeToLetters(code,base);}
-	long	 CorrectCode (long code);
-	virtual  bool	 CompareTwoSites (unsigned long, unsigned long,unsigned long);
-	bool	 CompareTwoSitesChar (unsigned long, unsigned long,unsigned long);
-	long	 FindSpeciesName (_List&, _SimpleList&);
-	_DataSetFilter* 
-			 PairFilter (long index1, long index2, _DataSetFilter* result);
-	void	 SetDimensions();
-	long	 LookupConversion (char c, _Parameter* receptacle);
-	void	 SetupConversion (void);
-	void	 FilterDeletions(_SimpleList* theExc = nil);
-	_Matrix* GetFilterCharacters 	  (bool = false);
-	_SimpleList*
-			 CountAndResolve (long, _Parameter* = nil, bool = false);
-	_Matrix* PairwiseCompare (_SimpleList*, _SimpleList*, _List* = nil);
+	_DataSet*						GetData						(void)					
+																	{return theData;}
+	void							SetData						(_DataSet* ds)		
+																	{theData = ds;}
+	_String							ConvertCodeToLetters		(long code, char base) 
+																	{ return theData->theTT->ConvertCodeToLetters(code,base);}
+	long							CorrectCode					(long code);
+	virtual  bool					CompareTwoSites				(unsigned long, unsigned long,unsigned long);
+	bool							CompareTwoSitesChar			(unsigned long, unsigned long,unsigned long);
+	long							FindSpeciesName				(_List&, _SimpleList&);
+	_DataSetFilter*					PairFilter					(long, long, _DataSetFilter*);
+	void							SetDimensions				();
+	long							LookupConversion			(char c, _Parameter* receptacle);
+	void							SetupConversion				(void);
+	void							FilterDeletions				(_SimpleList* theExc = nil);
+	_Matrix*						GetFilterCharacters			(bool = false);
+	_SimpleList*					CountAndResolve				(long, _Parameter* = nil, bool = false);
+	_Matrix*						PairwiseCompare				(_SimpleList*, _SimpleList*, _List* = nil);
+	
+	_List*							ComputePatternToSiteMap		(void);
+	// 20090206: SLKP
+	// a utility function to return a _List of simplelists (one per unique site pattern) that provides an ordered list of 
+	//			 the indices of all sites that have the same pattern in the original alignment
+	
 	
 	_SimpleList     
 			 theFrequencies, 

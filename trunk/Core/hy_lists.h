@@ -330,6 +330,7 @@ virtual		~_AVLList	(void) {}
 	virtual  long		Traverser			(_SimpleList&, long &, long = -1);
 	virtual  long		GetRoot				(void) { return root;}
 	virtual  void		DeleteXtra			(long) {};
+	virtual  void		DeleteAll			(void) {Clear(true); DeleteObject (dataList); }
 	
 	// data members
 	

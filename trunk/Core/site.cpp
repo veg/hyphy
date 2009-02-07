@@ -3424,6 +3424,18 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
 
 //_______________________________________________________________________
 
+_List *	 _DataSetFilter::ComputePatternToSiteMap (void)
+{
+	_List * result = new _List ();
+	for (long k = 0; k < theFrequencies.lLength; k++)
+		result->AppendNewInstance (new _SimpleList);
+	for (long s = 0; s < theMap.lLength; s++)
+		*((_SimpleList**)result->lData)[theMap[s]] << s;
+	return result;
+}
+
+//_______________________________________________________________________
+
 char	 _DataSetFilter::GetChar (unsigned long site, unsigned long pos)
 {
 	//long vIndex = theNodeMap.lLength?theNodeMap.lData[pos]:pos;

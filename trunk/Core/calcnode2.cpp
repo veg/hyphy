@@ -1156,5 +1156,100 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 	return result;
 }
 
+//_______________________________________________________________________________________________
+
+void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
+											  _List& result, _SimpleList* parentStates, _List& expandedSiteMap, double* catAssignments, long catCount)	
+
+// must be called initially with the root node 
+
+
+// dsf:							the filter to sample from
+// currentNode:					the node index to sample for
+// nodeToIndex:					an AVL that maps the address of an internal node pointed to by node<long> to its order in the tree postorder traversal
+// iNodeCache:					internal node likelihood caches
+// results:						the list that will store sampled strings
+// parentStates:				sampled states for the parent of the current node
+// expandedSiteMap:				a list of simple lists giving site indices for each unique column pattern in the alignment
+// catAssignments:				a vector assigning a (partition specific) rate category to each site
+// catCount:					the number of rate classes
+
+{	
+	long					  childrenCount		= currentNode->get_num_nodes();
+	
+	if (childrenCount)
+	{
+		long			siteCount						= dsf->NumberDistinctSites	(),
+						alphabetDimension				= dsf->GetDimension			(),
+						nodeIndex						= nodeToIndex->GetXtra (nodeToIndex->Find ((BaseRef)currentNode)),
+						unitLength						= dsf->GetUnitLength(),
+						catBlockShifter					= catAssignments?(dsf->NumberDistinctSites()*GetINodeCount()):0;
+
+		
+		_CalcNode *		currentTreeNode	= ((_CalcNode*)	flatTree (nodeIndex));
+		_SimpleList		sampledStates	  (dsf->GetFullLengthSpecies (), 0, 0);
+		
+		_Parameter  *		_hprestrict_ transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+		_Parameter  *		_hprestrict_ conditionals	  = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
+		_Parameter	*		_hprestrict_ cache			  = new _Parameter [alphabetDimension];
+		
+		for (long			pattern = 0; pattern < siteCount; pattern++)
+		{
+			_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (pattern);
+			if (catAssignments)
+			{
+				long localCatID = catAssignments[pattern];
+				transitionMatrix = currentTreeNode->GetCompExp(localCatID)->theData;
+				conditionals	 = iNodeCache + localCatID*alphabetDimension*catBlockShifter + (pattern + nodeIndex  * siteCount) * alphabetDimension;
+			}
+			
+			for (long site = 0; site < patternMap->lLength; site++)
+			{
+				long		siteID =   patternMap->lData[site];
+				
+				_Parameter	randVal  = genrand_real2(),
+							totalSum = 0.;
+				
+				if			(parentStates)
+					for (long i = 0; i<alphabetDimension; i++)
+						totalSum += (cache[i] = theProbs[i]*conditionals[i]);
+				else
+				{
+					_Parameter  *		_hprestrict_  matrixRow = transitionMatrix + parentStates->lData[siteID] * alphabetDimension;
+					
+					for (long i = 0; i<alphabetDimension; i++)
+						totalSum += (cache[i] = matrixRow[i]*conditionals[i]);
+				}
+				
+				randVal *= totalSum;
+				totalSum	= 0.0;
+				long	    sampledChar = -1;
+				while		(totalSum < randVal)
+				{
+					sampledChar ++;
+					totalSum += cache[sampledChar];
+				}
+				sampledStates.lData[siteID] = sampledChar;
+			}
+			
+			if (catAssignments == nil)
+				conditionals += alphabetDimension;
+		}
+		
+		delete (cache);
+		
+		_String * sampledSequence = new _String (siteCount*unitLength, true);
+		for (long charIndexer = 0; charIndexer < sampledStates.lLength; charIndexer++)
+		{
+			_String  letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength);
+			(*sampledSequence) << letterValue;
+		}
+		sampledSequence->Finalize();
+		result.AppendNewInstance(sampledSequence);
+		
+		for (long child = 1; child <= childrenCount; child ++)
+			SampleAncestorsBySequence (dsf, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
+	}
+}
 
 #endif

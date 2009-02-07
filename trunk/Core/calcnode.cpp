@@ -10232,26 +10232,22 @@ void	 _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* res
 //_______________________________________________________________________________________________
 
 _List* _TheTree::MapCBaseToCharacters (_DataSetFilter* dsf, bool normalanc)
+// 20090203/SLKP: clean up 
 {
-	_List * reply = new _List;
+	_List				* reply = new _List;
+	checkPointer		 (reply);
 	
-	checkPointer (reply);
+	long unitLength = dsf->GetUnitLength();
 	
-	long nodeCount = dsf->GetUnitLength(),
-		 f;
+	for (long pad = 0; pad<unitLength ; pad ++)
+		reply->AppendNewInstance (new _String (5,true));
 	
-	for (f=0; f<nodeCount ;f++)
-	{
-		_String*  dummy = new _String (5,true);
-		checkPointer (dummy);
-		(*reply) << dummy;
-		DeleteObject (dummy);
-	}
+	_CalcNode*  theChildNode = StepWiseTraversal (true);
+	_String		rootValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(theChildNode->cBase), unitLength);
 	
-	_CalcNode* theChildNode = StepWiseTraversal (true);
-	_String  rootValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(theChildNode->cBase), nodeCount);
-	for (f=0; f<nodeCount; f++)
+	for (long f=0; f<unitLength; f++)
 		*((_String*)(*reply)(f)) << rootValue[f];
+	
 	theChildNode = StepWiseTraversal (false);
 	
 	while (theChildNode)
@@ -10265,15 +10261,15 @@ _List* _TheTree::MapCBaseToCharacters (_DataSetFilter* dsf, bool normalanc)
 				theChildNode->categoryVariables.Delete(theChildNode->categoryVariables.lLength-1);
 			}
 			
-			_String  letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(theChildNode->cBase), nodeCount);
-			for (f=0; f<nodeCount; f++)
-				*((_String*)(*reply)(f)) << letterValue[f];
+			_String  letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(theChildNode->cBase), unitLength);
+			for (long i=0; i<unitLength; i++)
+				*((_String*)(*reply)(i)) << letterValue[i];
 		}
 		theChildNode = StepWiseTraversal (false);
 	}
 	
-	for (f=0; f<nodeCount; f++)
-		((_String*)(*reply)(f))->Finalize();
+	for (long j = 0; j<unitLength ; j ++)
+		((_String*)(*reply)(j))->Finalize();
 		
 	return reply;
 }
@@ -10595,6 +10591,7 @@ _List*	 _TheTree::SampleAncestors (_DataSetFilter* dsf, node<long>* aNode)
 		
 	}*/
 	
+
 	_Parameter	randVal  = genrand_real2(),
 				totalSum = 0.;
 				
@@ -10615,7 +10612,8 @@ _List*	 _TheTree::SampleAncestors (_DataSetFilter* dsf, node<long>* aNode)
 		}
 		cNode->cBase = ms;
 		for (ms = aNode->get_num_nodes(); ms; ms--)
-			SampleAncestors (dsf, aNode->go_down (ms));
+			SampleAncestors (dsf, aNode->go_down (ms));							 
+
 	
 		return nil;
 	}
@@ -10645,6 +10643,20 @@ _List*	 _TheTree::SampleAncestors (_DataSetFilter* dsf, node<long>* aNode)
 		}
 		return MapCBaseToCharacters (dsf,false);
 	}
+}
+
+//_______________________________________________________________________________________________
+_AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
+{
+	_SimpleList * nodes  = new _SimpleList,
+				* whichL = doINodes?&flatNodes:&flatLeaves;
+	_AVLListX   * result = new _AVLListX (nodes);
+	
+	for (long   pistolero = 0; pistolero < whichL->lLength; pistolero++)
+		result->InsertData ((BaseRef)whichL->lData[pistolero], pistolero, false);
+	
+	return		  result;
+	
 }
 
 //_______________________________________________________________________________________________

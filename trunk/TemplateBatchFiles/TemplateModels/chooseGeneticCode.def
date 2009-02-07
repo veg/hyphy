@@ -81,6 +81,24 @@ if (!skipCodeSelectionStep)
 }
 
 
+function ComputeCodonCodeToStringMap (genCode)
+{
+	_codonMap = {};
+	_shift	  = 0;
+	_nucLetters = "ACGT";
+	for (_idx = 0; _idx < Columns(genCode); _idx = _idx+1)
+	{
+		if (genCode[_idx] == 10)
+		{
+			_shift = _shift + 1;
+		}
+		else
+		{
+			_codonMap [_idx-_shift] = _nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4];
+		}
+	}
+	return _codonMap;
+}
 
 
 function ApplyGeneticCodeTable (myModelType)

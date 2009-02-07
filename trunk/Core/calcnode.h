@@ -393,7 +393,6 @@ class _TheTree: public _TreeTopology {
 			void		RecoverNodeSupportStates 		(_DataSetFilter*, long, long, _Matrix&);
 			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*,long);
 			_List*		SampleAncestors 				(_DataSetFilter*, node<long>*);
-			
 			void		PurgeTree						(void); 		
 			
 			long	 	ComputeReleafingCost    		(_DataSetFilter*, long, long, _SimpleList* = nil, long = 0);
@@ -474,12 +473,20 @@ class _TheTree: public _TreeTopology {
 
 			_Parameter	DetermineBranchLengthGivenScalingParameter 
 														(long, _String&, char);
+	
+			_AVLListX*  ConstructNodeToIndexMap			(bool);
+						// 20090206: SLKP
+						// makes an AVL of with keys storing memory addresses of node<long> tree nodes
+						// and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
+	
+	
 		 #if USE_SCALING_TO_FIX_UNDERFLOW
 			void		AllocateUnderflowScalers		(long); 				
 			void		DeallocateUnderflowScalers		(void); 				
 		 #endif
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
+		void			SampleAncestorsBySequence		(_DataSetFilter*, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, double*, long);
 		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil);
 		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1, long = -1);
 		void			ExponentiateMatrices			(_List&, long, long = -1);
