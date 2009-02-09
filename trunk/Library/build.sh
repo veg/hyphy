@@ -161,17 +161,19 @@ then
 	
 fi
 
+COMPILER_FLAGS=$COMPILER_FLAGS" -I `pwd`/../Source"
+
 echo "COMPILER=$COMPILER, $COMPILERC";
 echo "COMPILER_FLAGS=$COMPILER_FLAGS";
 
-
-compileAll ../NewerFunctionality cpp ../Library
-compileAll ../Core cpp ../Library
-compileAll ../../SQLite/trunk c ../../trunk/Library
-compileAll ../Mains hyphyunixutils.cpp ../Library
+compileAll ../Source cpp ../Library
+compileAll ../GUI preferences.cpp ../Library
+compileAll ../Source/SQLite c ../../Library
 
 if [ $LIBRARY_BINDINGS = "R" ]
-then
+then	
+	echo $COMPILER_FLAGS
+	compileAll Link THyPhy.cpp ../
 	echo Linking HyPhy.so
 	cppf="PKG_CPPFLAGS=\"-I`pwd`/Link/\""
 	#echo  $cppf R CMD SHLIB -o LibraryModules/R/HyPhy.so $OBJ_DIR_NAME/*.o    Link/Source/THyPhy_R.cpp $LINKER_FLAGS

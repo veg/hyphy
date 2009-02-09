@@ -26,6 +26,7 @@ cd ../..
 
 makedir $installDirectory
 makedir $installDirectory/Source
+makedir $installDirectory/Library
 makedir $installDirectory/Source/Link
 makedir $installDirectory/GUI
 makedir $installDirectory/Source/SQLite
@@ -35,6 +36,7 @@ cp trunk/Core/preferences.cpp $installDirectory/GUI
 cp trunk/HeadlessLink/*.{h,cpp} $installDirectory/Source/Link
 
 cp trunk/NewerFunctionality/*.{h,cpp} $installDirectory/Source/
+cp -R trunk/Library $installDirectory/Library/
 cp SQLite/trunk/*.{c,h} $installDirectory/Source/SQLite/
 cp trunk/Scripts/*.sh $installDirectory/
 cp 'trunk/GUIElements/Shared Source/'*.cpp $installDirectory/GUI/
