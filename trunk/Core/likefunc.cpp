@@ -1399,6 +1399,17 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 		}
 	#endif
 }
+
+//_______________________________________________________________________________________
+void			_LikelihoodFunction::PartitionCatVars	  (_SimpleList& storage, long partIndex)
+{
+	if (partIndex < blockDependancies.lLength)
+	{
+		for (long bit = 0; bit < 32; bit++)
+			if (CheckNthBit(blockDependancies.lData[partIndex], bit))
+				storage << indexCat.lData[bit];
+	}
+}
 									  
 //_______________________________________________________________________________________
 _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap, _String* storageID) 
@@ -1423,8 +1434,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 		for (long i=0;i<theTrees.lLength;i++)
 			if (HasHiddenMarkov(blockDependancies.lData[i])>=0)
 			{
-				df = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
-				vDim+=df->GetFullLengthSpecies()/df->GetUnitLength();
+				df			=		(_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
+				vDim		+=		df->GetFullLengthSpecies()/df->GetUnitLength();
 			}
 			else
 				vDim+=BlockLength(i);
@@ -1479,7 +1490,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 						for (m=HighestBit(blockDependancies.lData[i]);m>=0;m--)
 							if (CheckNthBit (blockDependancies.lData[i],m))
 							{
-								_CategoryVariable * aC = (_CategoryVariable*)LocateVar(indexCat.lData[i]);
+								_CategoryVariable * aC = (_CategoryVariable*)LocateVar(indexCat.lData[m]);
 								if (! (aC->IsHiddenMarkov() || aC->IsConstantOnPartition()))
 									hmmShifter *= aC->GetNumberOfIntervals();
 							}
@@ -1570,6 +1581,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 						if (ff<0)
 						{
 #ifdef _SLKP_LFENGINE_REWRITE_
+							ZeroSiteResults();
 							RecurseCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, 
 											&scalerTabs, 1, result->theData+currentOffset);
 							
@@ -1723,6 +1735,18 @@ void	_LikelihoodFunction::AllocateSiteResults 		(void)
 	siteResults = new _Matrix (hDim,2,false,true);
 	checkPointer(siteResults);
 }
+
+//_______________________________________________________________________________________
+void	_LikelihoodFunction::ZeroSiteResults 		(void)
+{
+	if (siteResults)
+	{
+		long upperLimit = siteResults->GetSize();
+		for (long k=0; k<upperLimit; k++)
+			siteResults->theData[k] = 0;
+	}
+}
+
 
 //_______________________________________________________________________________________
 
@@ -2593,7 +2617,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 										  (((_SimpleList**)siteCorrections.lData)[blockIndex]->lData) + categID * currentOffset
 										  :nil;
 #endif			
-			
+						
 			for (long k = 0; k<nI; k++)
 			{
 				thisC->SetIntervalValue		(k,!k);
@@ -10760,294 +10784,298 @@ BaseRef	_LikelihoodFunction::toStr (void)
 	
 }
 	
+#ifndef _SLKP_LFENGINE_REWRITE_
+// a deprecated version goes here
 //_______________________________________________________________________________________
-
-void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample)
-{
-	long  i,
-		  j,
-		  k,
-		  m,
-		  n,
-		  sc,
-		  offset = 0,
-		  offset2= 0;
 	
-	_DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(0));	
-	target.SetTranslationTable (dsf->GetData());	
-
-	_SimpleList 	thisSite,
-					localExclusions;
-	
-	_TheTree    	*firstTree = (_TheTree*)LocateVar(theTrees(0));
-	
-	_Matrix			*rateAssignments = nil;
-	
-	_List			categoryVars;
-	
-	if  (indexCat.lLength>0)
+	void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, long branch, long segment)
 	{
-		rateAssignments = ConstructCategoryMatrix(false,false);
-		checkPointer (rateAssignments);
-		// use Bayes' formula now to obtain posterior probabilities of rates at sites
-		// first, compute the probabilities for each class
-		_Matrix		  probs (rateAssignments->GetHDim(),1,false,true);
+		long  i,
+		j,
+		k,
+		m,
+		n,
+		sc,
+		offset = 0,
+		offset2= 0;
+		
+		_DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(0));	
+		target.SetTranslationTable (dsf->GetData());	
+		
+		_SimpleList 	thisSite,
+		localExclusions;
+		
+		_TheTree    	*firstTree = (_TheTree*)LocateVar(theTrees(0));
+		
+		_Matrix			*rateAssignments = nil;
+		
+		_List			categoryVars;
+				
+		if  (indexCat.lLength>0)
+		{
+			// use Bayes' formula now to obtain posterior probabilities of rates at sites
+			// first, compute the probabilities for each class
+			rateAssignments = ConstructCategoryMatrix(false,false);
+			checkPointer (rateAssignments);
+			_Matrix		  probs (rateAssignments->GetHDim(),1,false,true);
+			for (i = 0; i<theTrees.lLength; i++)
+			{
+				unsigned    long p2 = 0x80000000; // set high bit
+				_SimpleList partitionClasses,
+				partitionVars;
+				
+				_List       partitionProbs;
+				
+				m = 1;
+				
+				for (j=31; j>=0; j--)
+				{
+					if (blockDependancies.lData[i] & p2)
+					{
+						_CategoryVariable * cV = ((_CategoryVariable*)LocateVar(indexCat.lData[j]));
+						
+						partitionVars    << indexCat.lData[j];
+						partitionClasses << (n=cV->GetNumberOfIntervals());
+						partitionProbs   && cV->GetWeights ();
+						m*=n;
+					}
+					p2 /= 2;
+				}
+				
+				categoryVars && &partitionVars;
+				
+				// now compute the probs 
+				
+				for (j=0; j<m; j++)
+				{
+					k = j;
+					
+					_Parameter theProb = 1.0;
+					
+					for (n=0; n<partitionClasses.lLength; n++)
+					{
+						theProb *= (*(_Matrix*)partitionProbs (n)) [k%partitionClasses.lData[n]];
+						k/=partitionClasses.lData[n];
+					}
+					
+					probs[j] = theProb;
+				}
+				
+				dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
+				
+				
+				for (j=offset; j<offset+dsf->theFrequencies.lLength; j++)
+				{
+					_Parameter maxProb  = 0.0;
+					
+					long 	   maxIndex = 0;
+					
+					for (k=0; k<m; k++)
+					{
+						_Parameter tProb = (*rateAssignments)(k,j)*probs[k];
+						if (tProb>maxProb)
+						{
+							maxProb  = tProb;
+							maxIndex = k;
+						}
+					}
+					
+					// now that we found that maximum index, unroll it and 
+					// put the data in the matrix
+					
+					rateAssignments->Store (0,j,maxIndex);
+				}
+				offset += dsf->theFrequencies.lLength;
+			}
+			offset = 0;
+		}
+		
+		PrepareToCompute();
+		
+		computationalResults.Clear();
+		Compute(); // set up all the matrices
+		
+		_Parameter			doRootSupportFlag = 0.0;
+		
+		checkParameter 		(storeRootSupportFlag, doRootSupportFlag, 0.0);
+		_AssociativeList *  supportAVL = nil;
+		
+		if (doRootSupportFlag > 0.5)
+			supportAVL = new _AssociativeList;
+		
 		for (i = 0; i<theTrees.lLength; i++)
 		{
-			unsigned    long p2 = 0x80000000; // set high bit
-			_SimpleList partitionClasses,
-						partitionVars;
-						
-			_List       partitionProbs;
-						
-			m = 1;
-						
-			for (j=31; j>=0; j--)
-			{
-				if (blockDependancies.lData[i] & p2)
-				{
-					_CategoryVariable * cV = ((_CategoryVariable*)LocateVar(indexCat.lData[j]));
-					
-					partitionVars    << indexCat.lData[j];
-					partitionClasses << (n=cV->GetNumberOfIntervals());
-					partitionProbs   && cV->GetWeights ();
-					m*=n;
-				}
-				p2 /= 2;
-			}
-			
-			categoryVars && &partitionVars;
-	
-			// now compute the probs 
-			
-			for (j=0; j<m; j++)
-			{
-				k = j;
-				
-				_Parameter theProb = 1.0;
-				
-				for (n=0; n<partitionClasses.lLength; n++)
-				{
-					theProb *= (*(_Matrix*)partitionProbs (n)) [k%partitionClasses.lData[n]];
-					k/=partitionClasses.lData[n];
-				}
-				
-				probs[j] = theProb;
-			}
-			
+			_TheTree   *tree  = (_TheTree*)LocateVar(theTrees(i));
+			long	   treeNameL = tree->GetName()->sLength;
 			dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
 			
-			
-			for (j=offset; j<offset+dsf->theFrequencies.lLength; j++)
+			bool  doSetRates = (rateAssignments && ((_SimpleList*)categoryVars(i))->lLength);
+			if (i==0)
 			{
-				_Parameter maxProb  = 0.0;
-						   
-				long 	   maxIndex = 0;
-				
-				for (k=0; k<m; k++)
+				_CalcNode* travNode = tree->StepWiseTraversal (true);
+				while (travNode)
 				{
-					_Parameter tProb = (*rateAssignments)(k,j)*probs[k];
-					if (tProb>maxProb)
+					if (!tree->IsCurrentNodeATip ())
 					{
-						maxProb  = tProb;
-						maxIndex = k;
+						_String nodeName (*travNode->GetName(),treeNameL+1,-1);
+						target.GetNames() && & nodeName;
 					}
+					
+					travNode = tree->StepWiseTraversal (false);
 				}
-				
-				// now that we found that maximum index, unroll it and 
-				// put the data in the matrix
-
-				rateAssignments->Store (0,j,maxIndex);
+				sc = target.GetNames().lLength;
 			}
-			offset += dsf->theFrequencies.lLength;
-		}
-		offset = 0;
-	}
-
-	PrepareToCompute();
-
-	computationalResults.Clear();
-	Compute(); // set up all the matrices
-	
-	_Parameter			doRootSupportFlag = 0.0;
-				
-	checkParameter 		(storeRootSupportFlag, doRootSupportFlag, 0.0);
-	_AssociativeList *  supportAVL = nil;
-	
-	if (doRootSupportFlag > 0.5)
-		supportAVL = new _AssociativeList;
-
-	for (i = 0; i<theTrees.lLength; i++)
-	{
-		_TheTree   *tree  = (_TheTree*)LocateVar(theTrees(i));
-		long	   treeNameL = tree->GetName()->sLength;
-		dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
-		
-		bool  doSetRates = (rateAssignments && ((_SimpleList*)categoryVars(i))->lLength);
-		if (i==0)
-		{
-			_CalcNode* travNode = tree->StepWiseTraversal (true);
-			while (travNode)
-			{
-				if (!tree->IsCurrentNodeATip ())
+			else
+				if (!tree->Equal(firstTree)) // incompatible likelihood function
 				{
-					_String nodeName (*travNode->GetName(),treeNameL+1,-1);
-					target.GetNames() && & nodeName;
+					ReportWarning ((_String("Ancestor reconstruction had to ignore part ")&_String(i+1)&" of the likelihood function since it has a different tree topology than the first part."));
+					continue;
 				}
-				
-				travNode = tree->StepWiseTraversal (false);
-			}
-			sc = target.GetNames().lLength;
-		}
-		else
-			if (!tree->Equal(firstTree)) // incompatible likelihood function
+			
+			_List      	thisSet;
+			
+			_Parameter	verbLevel = VerbosityLevel();
+			
+			long		sitesDone = 0,
+			filterStates = dsf->GetDimension (true); 
+			
+			_Matrix*    rootSupportMatrix = supportAVL&&(!sample) ? new _Matrix (dsf->theFrequencies.lLength,filterStates,false,false) : nil;
+			
+			for (j = 0; j<dsf->theFrequencies.lLength; j++)
 			{
-				ReportWarning ((_String("Ancestor reconstruction had to ignore part ")&_String(i+1)&" of the likelihood function since it has a different tree topology than the first part."));
-				continue;
-			}
-			
-		_List      	thisSet;
-		
-		_Parameter	verbLevel = VerbosityLevel();
-		
-		long		sitesDone = 0,
-					filterStates = dsf->GetDimension (true); 
-
-		_Matrix*    rootSupportMatrix = supportAVL&&(!sample) ? new _Matrix (dsf->theFrequencies.lLength,filterStates,false,true) : nil;
-		
-		for (j = 0; j<dsf->theFrequencies.lLength; j++)
-		{
-			
+				
 				if (doSetRates)
 					tree->SetCompMatrices ((*rateAssignments)(0,offset2+j));
 				
+				if (sample)
+				{
+					_List * recStrings = new _List;
+					checkPointer		(recStrings);
+					
+					tree->ReleafTree (dsf, j, -1, 0, tree->flatCLeaves.lLength-1);
+					
+					for (long jj = 0; jj<dsf->theFrequencies.lData[j]; jj++)
+					{
+						_List * recoveredStrings = tree->SampleAncestors (dsf, tree->theRoot);
+						(* recStrings) << recoveredStrings;
+						DeleteObject (recoveredStrings);
+						if (verbLevel > 9.999)
+						{	
+							char buffer[64];
+							sprintf (buffer,"Site %d/%d\n", sitesDone++, dsf->theMap.lLength/dsf->GetUnitLength());
+							BufferToConsole (buffer);		
+						}
+						
+					}
+					thisSet << recStrings;
+					DeleteObject (recStrings);
+				}
+				else
+				{
+					_List *  recoveredStrings = tree->RecoverAncestralSequences (dsf,j,j-1, rootSupportMatrix?rootSupportMatrix->theData+j*filterStates: nil);
+					for (m = 0; m<recoveredStrings->lLength;m++)
+						thisSet << (*recoveredStrings)(m);
+					
+					DeleteObject (recoveredStrings);
+				}
+			}
+			
+			m = dsf->GetUnitLength();
+			
 			if (sample)
 			{
-				_List * recStrings = new _List;
-				checkPointer		(recStrings);
-				
-				#ifndef _SLKP_LFENGINE_REWRITE_
-					tree->ReleafTree (dsf, j, -1, 0, tree->flatCLeaves.lLength-1);
-				#endif
-				
-				for (long jj = 0; jj<dsf->theFrequencies.lData[j]; jj++)
-				{
-					_List * recoveredStrings = tree->SampleAncestors (dsf, tree->theRoot);
-					(* recStrings) << recoveredStrings;
-					DeleteObject (recoveredStrings);
-					if (verbLevel > 9.999)
-					{	
-						char buffer[64];
-						sprintf (buffer,"Site %d/%d\n", sitesDone++, dsf->theMap.lLength/dsf->GetUnitLength());
-						BufferToConsole (buffer);		
-					}
-					
-				}
-				thisSet << recStrings;
-				DeleteObject (recStrings);
-			}
-			else
-			{
-				_List *  recoveredStrings = tree->RecoverAncestralSequences (dsf,j,j-1, rootSupportMatrix?rootSupportMatrix->theData+j*filterStates: nil);
-				for (m = 0; m<recoveredStrings->lLength;m++)
-					thisSet << (*recoveredStrings)(m);
-					
-				DeleteObject (recoveredStrings);
-			}
-		}
-		
-		m = dsf->GetUnitLength();
-		
-		if (sample)
-		{
-			_SimpleList patMatched (dsf->theFrequencies.lLength); 
 
-			for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
-			{
-				k = dsf->duplicateMap.lData[j];
-				
-				_List*   thisList = (_List*)(*((_List*)thisSet(k)))(patMatched.lData[k]++);
-				
-				for (n = 0; n<m; n++)
-					target.AddSite (((_String*)(*thisList)(n))->sData[0]);
-					
-				for (long p = 1; p<sc; p++)
-					for (n = 0; n<m; n++)
-						target.Write2Site (offset+j*m+n,((_String*)thisList->lData[n])->sData[p]);	
-						
-				for (n = 0; n<m; n++)
-					target.Compact (offset+j*m+n);
-						
-				target.ResetIHelper();
-			}
-		}
-		else
-		{
-			
-			if (rootSupportMatrix)
-			{
-				long 	  k 				  = dsf->theOriginalOrder.lLength/m;
-				_Matrix * mappedSupportMatrix = new _Matrix (k, filterStates,false,true);
+				_SimpleList patMatched (dsf->theFrequencies.lLength); 
 				
 				for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
 				{
-					_Parameter * sourceVec = rootSupportMatrix->theData+dsf->duplicateMap.lData[j]*filterStates;
+					k = dsf->duplicateMap.lData[j];
 					
-					for (long j2 = filterStates * j; j2 < filterStates * (j+1); j2++, sourceVec++)	
-						mappedSupportMatrix->theData[j2] = *sourceVec;
-						
-				}	
-				
-				DeleteObject (rootSupportMatrix);
-				_FString	 aKey;
-				*aKey.theString = i;
-				supportAVL->MStore (&aKey, mappedSupportMatrix, false);
+					_List*   thisList = (_List*)(*((_List*)thisSet(k)))(patMatched.lData[k]++);
+					
+					for (n = 0; n<m; n++)
+						target.AddSite (((_String*)(*thisList)(n))->sData[0]);
+					
+					for (long p = 1; p<sc; p++)
+						for (n = 0; n<m; n++)
+							target.Write2Site (offset+j*m+n,((_String*)thisList->lData[n])->sData[p]);	
+					
+					for (n = 0; n<m; n++)
+						target.Compact (offset+j*m+n);
+					
+					target.ResetIHelper();
+				}
 			}
-			
-			for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
+			else
 			{
-				k = dsf->duplicateMap.lData[j] * m;
-				for (n = 0; n<m; n++)
-					target.AddSite (((_String*)thisSet(k+n))->sData[0]);
 				
-			}
-			
-			for (long p = 1; p<sc; p++)
+				if (rootSupportMatrix)
+				{
+					long 	  k 				  = dsf->theOriginalOrder.lLength/m;
+					_Matrix * mappedSupportMatrix = new _Matrix (k, filterStates,false,true);
+					
+					for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
+					{
+						_Parameter * sourceVec = rootSupportMatrix->theData+dsf->duplicateMap.lData[j]*filterStates;
+						
+						for (long j2 = filterStates * j; j2 < filterStates * (j+1); j2++, sourceVec++)	
+							mappedSupportMatrix->theData[j2] = *sourceVec;
+						
+					}	
+					
+					DeleteObject (rootSupportMatrix);
+					_FString	 aKey;
+					*aKey.theString = i;
+					supportAVL->MStore (&aKey, mappedSupportMatrix, false);
+				}
+				
 				for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
 				{
 					k = dsf->duplicateMap.lData[j] * m;
 					for (n = 0; n<m; n++)
-						target.Write2Site (offset+j*m+n,((_String*)(thisSet.lData[k+n]))->sData[p]);	
+						target.AddSite (((_String*)thisSet(k+n))->sData[0]);
+					
 				}
+				
+				for (long p = 1; p<sc; p++)
+					for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
+					{
+						k = dsf->duplicateMap.lData[j] * m;
+						for (n = 0; n<m; n++)
+							target.Write2Site (offset+j*m+n,((_String*)(thisSet.lData[k+n]))->sData[p]);	
+					}
+			}
+			
+			offset  += dsf->theOriginalOrder.lLength;
+			offset2 += dsf->theFrequencies.lLength;
 		}
-
-		offset  += dsf->theOriginalOrder.lLength;
-		offset2 += dsf->theFrequencies.lLength;
-	}
-	
-	if (supportAVL)
-	{
-		_Variable * vid = CheckReceptacle (&supportMatrixVariable, "Ancestral State Reconstruction", false);
-		if (vid)
-			vid->SetValue (supportAVL, false);
-		else
-			DeleteObject (supportAVL);
-	}
-	
-	for (i=0; i<theTrees.lLength; i++)
-	{
-		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-		cT->CleanUpMatrices();
-	}
-	target.Finalize();
-	target.SetNoSpecies(target.GetNames().lLength);
-	
-	if (rateAssignments)
-		DeleteObject (rateAssignments);
 		
-	DoneComputing ();
+		if (supportAVL)
+		{
+			_Variable * vid = CheckReceptacle (&supportMatrixVariable, "Ancestral State Reconstruction", false);
+			if (vid)
+				vid->SetValue (supportAVL, false);
+			else
+				DeleteObject (supportAVL);
+		}
+		
+		for (i=0; i<theTrees.lLength; i++)
+		{
+			_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
+			cT->CleanUpMatrices();
+		}
+		target.Finalize();
+		target.SetNoSpecies(target.GetNames().lLength);
+		
+		if (rateAssignments)
+			DeleteObject (rateAssignments);
+		
+		DoneComputing ();
+		
+	}
 	
-}
+#endif
+	
 
 //_______________________________________________________________________________________
 

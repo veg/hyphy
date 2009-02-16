@@ -363,6 +363,9 @@ class _DataSetFilter:public BaseObj {
 	virtual	 long	 
 			 GetFullLengthSpecies (void) {return theOriginalOrder.lLength;}
 
+	virtual	 long	 
+			 GetSiteCount		(void) {return duplicateMap.lLength;}
+	
 	long	 GetFrequency  (long i) {return theFrequencies(i);}
 	
 	long	 GetUnitLength  (void) {return unitLength;}
@@ -390,12 +393,9 @@ class _DataSetFilter:public BaseObj {
 	void	 GrabSite (unsigned long,unsigned long,char*);
 
 	virtual	 char      GetChar(unsigned long site, unsigned long pos);
-			 long	   SiteFrequency (unsigned long site);
-			
+			 long	   SiteFrequency  (unsigned long site);
 		     bool	   HasDeletions   (unsigned long site, _AVLList* = nil);
-	
 		     long	   HasExclusions  (unsigned long site, _SimpleList* theExc, _Parameter *buffer);
-		     
 		     bool	   IsConstant     (unsigned long site,  bool relaxedDeletions = true);
 
 	long	 Translate2Frequencies (_String&, _Parameter*, bool = true);
@@ -423,6 +423,13 @@ class _DataSetFilter:public BaseObj {
 																	{theData = ds;}
 	_String							ConvertCodeToLetters		(long code, char base) 
 																	{ return theData->theTT->ConvertCodeToLetters(code,base);}
+	
+	void							ConvertCodeToLettersBuffered(long code, char base, char *, _AVLListXL* ); 
+	// 20090212: SLKP
+	// added this function to cache repeated character code -> string conversions
+	// and to skip returning temp objects but simply writing to buffer
+																	
+
 	long							CorrectCode					(long code);
 	virtual  bool					CompareTwoSites				(unsigned long, unsigned long,unsigned long);
 	bool							CompareTwoSitesChar			(unsigned long, unsigned long,unsigned long);

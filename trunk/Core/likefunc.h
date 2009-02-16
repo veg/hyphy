@@ -122,8 +122,11 @@ virtual
 		void		Anneal (_Parameter& precision);
 			
 		void		Simulate (_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
-		void		ReconstructAncestors (_DataSet &, bool = false);
-		
+	
+		void		ReconstructAncestors (_DataSet &, bool = false, long = 0, long = -1);
+					// 20090211: added an argument to allow the sampling of an individual node 
+					// (third argument) from a given partition (fourth argument)
+	
 		long		MaximumDimension (void);
 		
 virtual	_PMathObj	CovarianceMatrix (_SimpleList* = nil);
@@ -174,6 +177,8 @@ protected:
 		_Matrix* 		PairwiseDistances 		(long index);
 		void			CheckDependentBounds	(void);
 		void			AllocateSiteResults 	(void);
+		void			ZeroSiteResults			(void);
+		// 20090211: A utility function to reset site results.
 		void			GetInitialValues 		(void);
 		bool			checkPermissibility 	(_Matrix&m, long row);
 		_Parameter		computeAtAPoint 		(_Matrix&m, long row = 0);
@@ -222,6 +227,10 @@ virtual	void			ScanAllVariables 		(void);
 					    
 		bool			HasBlockChanged		  (long);
 		long			BlockLength			  (long);
+		void			PartitionCatVars	  (_SimpleList&, long);
+		// 20090210: extract variable indices for category variables in i-th partition 
+		// and append them to _SimpleList
+	
 		
 static	void			RandomizeList			(_SimpleList&, long);		
 static	void			CheckFibonacci			(_Parameter);

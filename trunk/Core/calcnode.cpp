@@ -9935,6 +9935,7 @@ bool	 _TheTree::IntPopulateLeaves (_DataSetFilter* dsf, long index, long)
 }
 
 
+#ifndef _SLKP_LFENGINE_REWRITE_
 //_______________________________________________________________________________________________
 
 _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf, long index, long lastIndex, _Parameter * supportVector)	
@@ -10100,6 +10101,8 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf, long index, lo
 	
 	return resList;
 }
+
+#endif
 
 //_______________________________________________________________________________________________
 
@@ -10653,7 +10656,7 @@ _AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
 	_AVLListX   * result = new _AVLListX (nodes);
 	
 	for (long   pistolero = 0; pistolero < whichL->lLength; pistolero++)
-		result->InsertData ((BaseRef)whichL->lData[pistolero], pistolero, false);
+		result->Insert ((BaseRef)whichL->lData[pistolero], pistolero, false);
 	
 	return		  result;
 	
@@ -12321,17 +12324,11 @@ void	 _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals, b
 		if (IsCurrentNodeATip())
 		{
 			if (doTips)
-			{
-				_String tmp (*iNodeTraverser->GetName(), j, -1);
-				ds->GetNames() && & tmp;
-			}
+				ds->GetNames().AppendNewInstance(new _String (*iNodeTraverser->GetName(), j, -1));
 		}
 		else
 			if (doInternals)
-			{
-				_String tmp (*iNodeTraverser->GetName(), j, -1);
-				ds->GetNames() && & tmp;
-			}
+				ds->GetNames().AppendNewInstance(new _String (*iNodeTraverser->GetName(), j, -1));
 			
 		iNodeTraverser = dOrS?DepthWiseTraversal (false) :StepWiseTraversal (false);
 	}

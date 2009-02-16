@@ -660,67 +660,76 @@ char	_TranslationTable::GetGapChar (void)
 //_________________________________________________________
 _String	_TranslationTable::ConvertCodeToLetters (long code, char base)
 {
+	
 	_String res (base,false);
+	if (code >= 0)
+	{
 	// OPTIMIZE FLAG; repeated memory allocation/deallocation
-	if (baseSet.sLength)
-		for (long k=1; k<=base; k++, code/=baseLength)
-			res.sData[base-k]=baseSet.sData[code%baseLength];	
-	else
-		if (baseLength==4)
-		{
+		if (baseSet.sLength)
 			for (long k=1; k<=base; k++, code/=baseLength)
-			{
-				switch (code%baseLength)
-				{
-					case 0:
-						res[base-k]='A';
-						break;	
-					case 1:
-						res[base-k]='C';
-						break;	
-					case 2:
-						res[base-k]='G';
-						break;	
-					case 3:
-						res[base-k]='T';
-						break;	
-				}
-			}
-		}
+				res.sData[base-k]=baseSet.sData[code%baseLength];	
 		else
-			if (baseLength == 20)
+			if (baseLength==4)
 			{
 				for (long k=1; k<=base; k++, code/=baseLength)
 				{
-					char out = code%baseLength;
-					if (out==0) 	res[base-k] = 'A';
-					else
-					if (out<=7) 	res[base-k] = 'B'+out;
-					else
-					if (out<=11) 	res[base-k] = 'C'+out;
-					else
-					if (out<=16) 	res[base-k] = 'D'+out;
-					else
-					if (out<=18) 	res[base-k] = 'E'+out;
-					else
-					res[base-k]='Y';
+					switch (code%baseLength)
+					{
+						case 0:
+							res[base-k]='A';
+							break;	
+						case 1:
+							res[base-k]='C';
+							break;	
+						case 2:
+							res[base-k]='G';
+							break;	
+						case 3:
+							res[base-k]='T';
+							break;	
+					}
 				}
 			}
 			else
-				if (baseLength == 2)
+				if (baseLength == 20)
+				{
 					for (long k=1; k<=base; k++, code/=baseLength)
 					{
-						switch (code%baseLength)
-						{
-							case 0:
-								res[base-k]='0';
-								break;	
-							case 1:
-								res[base-k]='1';
-								break;	
-						}
+						char out = code%baseLength;
+						if (out==0) 	res[base-k] = 'A';
+						else
+						if (out<=7) 	res[base-k] = 'B'+out;
+						else
+						if (out<=11) 	res[base-k] = 'C'+out;
+						else
+						if (out<=16) 	res[base-k] = 'D'+out;
+						else
+						if (out<=18) 	res[base-k] = 'E'+out;
+						else
+						res[base-k]='Y';
 					}
-	
+				}
+				else
+					if (baseLength == 2)
+						for (long k=1; k<=base; k++, code/=baseLength)
+						{
+							switch (code%baseLength)
+							{
+								case 0:
+									res[base-k]='0';
+									break;	
+								case 1:
+									res[base-k]='1';
+									break;	
+							}
+						}
+	}
+	else
+	{
+		char c = GetGapChar();
+		for (long k=0; k<base; k++)
+			res.sData[k] = c;
+	}
 	return res;
 
 
@@ -983,34 +992,39 @@ void	 _DataSet::ConvertRepresentations (void)
 	{
 		_List horStrings;
 		
-		_Site * aSite = (_Site*)lData[0];
-		
-		for (long str = 0; str < aSite->sLength; str++)
+		if (lLength == 0)
+			AppendNewInstance (new _Site);
+		else
 		{
-			_String * aString = new _String (DATA_SET_SWITCH_THRESHOLD,true);
-			horStrings << aString;
-			aString->nInstances --;
-		}
-
-		for  (long s = 0; s < lLength; s++)
-		{
-			_Site * aSite = (_Site*)lData[s];
-			if (aSite->sLength>horStrings.lLength || aSite->GetRefNo() != -1)
+			_Site * aSite = (_Site*)lData[0];
+			
+			for (long str = 0; str < aSite->sLength; str++)
 			{
-				FlagError ("Irrecoverable internal error in _DataSet::ConvertRepresentations. Sorry about that.");
-				return;
+				_String * aString = new _String (DATA_SET_SWITCH_THRESHOLD,true);
+				horStrings << aString;
+				aString->nInstances --;
 			}
-			aSite->Finalize();
-			for (long s2 = 0; s2 < aSite->sLength; s2++)
-				(*(_String*)horStrings.lData[s2]) << aSite->sData[s2];
+
+			for  (long s = 0; s < lLength; s++)
+			{
+				_Site * aSite = (_Site*)lData[s];
+				if (aSite->sLength>horStrings.lLength || aSite->GetRefNo() != -1)
+				{
+					FlagError ("Irrecoverable internal error in _DataSet::ConvertRepresentations. Sorry about that.");
+					return;
+				}
+				aSite->Finalize();
+				for (long s2 = 0; s2 < aSite->sLength; s2++)
+					(*(_String*)horStrings.lData[s2]) << aSite->sData[s2];
+			}
+			
+			_List::Clear();
+			theFrequencies.Clear();
+			{
+			for  (long s = 0; s < horStrings.lLength; s++)
+				(*this) << horStrings(s);
+			}	
 		}
-		
-		_List::Clear();
-		theFrequencies.Clear();
-		{
-		for  (long s = 0; s < horStrings.lLength; s++)
-			(*this) << horStrings(s);
-		}	
 		useHorizontalRep = true;	
 	}
 }
@@ -3429,8 +3443,8 @@ _List *	 _DataSetFilter::ComputePatternToSiteMap (void)
 	_List * result = new _List ();
 	for (long k = 0; k < theFrequencies.lLength; k++)
 		result->AppendNewInstance (new _SimpleList);
-	for (long s = 0; s < theMap.lLength; s++)
-		*((_SimpleList**)result->lData)[theMap[s]] << s;
+	for (long s = 0; s < duplicateMap.lLength; s++)
+		*((_SimpleList**)result->lData)[duplicateMap.lData[s]] << s;
 	return result;
 }
 
@@ -6274,6 +6288,26 @@ void	_DataSetFilter::toFileStr (FILE*dest)
 	_String		  dummy;
 	internalToStr (dest,dummy);
 }
+
+//_________________________________________________________
+void	_DataSetFilter::ConvertCodeToLettersBuffered (long code, char unit, char* storage, _AVLListXL* lookup)
+{
+	// write out the file with this dataset filter
+	long	  lookupC     = lookup->Find ((BaseRef)code);
+	char	  *lookupV;
+	if (lookupC>=0)
+		lookupV = ((_String*)lookup->GetXtra(lookupC))->sData;
+	else
+	{
+		_String * newT = new _String (ConvertCodeToLetters (code,unit));
+		lookup->Insert ((BaseRef)code, (long)newT, false);
+		lookupV = newT->sData;
+	}	
+	
+	for (long k = 0; k < unit; k++)
+		storage[k] = lookupV[k];
+}
+
 
 //_________________________________________________________
 

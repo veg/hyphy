@@ -1158,13 +1158,14 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 
 //_______________________________________________________________________________________________
 
-void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
-											  _List& result, _SimpleList* parentStates, _List& expandedSiteMap, double* catAssignments, long catCount)	
+void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
+											  _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
 
 // must be called initially with the root node 
 
 
 // dsf:							the filter to sample from
+// siteOrdering:				the map from cache ordering to actual pattern ordering
 // currentNode:					the node index to sample for
 // nodeToIndex:					an AVL that maps the address of an internal node pointed to by node<long> to its order in the tree postorder traversal
 // iNodeCache:					internal node likelihood caches
@@ -1187,21 +1188,23 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, node<long>* curr
 
 		
 		_CalcNode *		currentTreeNode	= ((_CalcNode*)	flatTree (nodeIndex));
-		_SimpleList		sampledStates	  (dsf->GetFullLengthSpecies (), 0, 0);
+		_SimpleList		sampledStates	  (dsf->GetSiteCount (), 0, 0);
 		
-		_Parameter  *		_hprestrict_ transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+		_Parameter  *		_hprestrict_ transitionMatrix = (catAssignments|| !parentStates)?nil:currentTreeNode->GetCompExp()->theData;
 		_Parameter  *		_hprestrict_ conditionals	  = catAssignments?nil:(iNodeCache + nodeIndex  * siteCount * alphabetDimension);
 		_Parameter	*		_hprestrict_ cache			  = new _Parameter [alphabetDimension];
 		
 		for (long			pattern = 0; pattern < siteCount; pattern++)
 		{
-			_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (pattern);
+			_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[pattern]);
 			if (catAssignments)
 			{
-				long localCatID = catAssignments[pattern];
-				transitionMatrix = currentTreeNode->GetCompExp(localCatID)->theData;
+				long localCatID = catAssignments[siteOrdering.lData[pattern]];
+				if (parentStates)
+					transitionMatrix = currentTreeNode->GetCompExp(localCatID)->theData;
 				conditionals	 = iNodeCache + localCatID*alphabetDimension*catBlockShifter + (pattern + nodeIndex  * siteCount) * alphabetDimension;
 			}
+			
 			
 			for (long site = 0; site < patternMap->lLength; site++)
 			{
@@ -1210,7 +1213,7 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, node<long>* curr
 				_Parameter	randVal  = genrand_real2(),
 							totalSum = 0.;
 				
-				if			(parentStates)
+				if			(parentStates == nil)
 					for (long i = 0; i<alphabetDimension; i++)
 						totalSum += (cache[i] = theProbs[i]*conditionals[i]);
 				else
@@ -1246,10 +1249,270 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, node<long>* curr
 		}
 		sampledSequence->Finalize();
 		result.AppendNewInstance(sampledSequence);
+		//printf ("%d: %s\n", nodeIndex, sampledSequence->sData);
 		
 		for (long child = 1; child <= childrenCount; child ++)
-			SampleAncestorsBySequence (dsf, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
+			SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
 	}
+}
+
+
+//_______________________________________________________________________________________________
+
+_List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf, 
+											  _SimpleList& siteOrdering,  
+											  _List& expandedSiteMap, 
+											  _AVLListX* nodeToIndex, 
+											  _Parameter* iNodeCache, 
+											  _Parameter* catAssignments, 
+											  long catCount,
+											  long* lNodeFlags,
+											  _GrowingVector* lNodeResolutions)	
+
+
+// dsf:							the filter to sample from
+// siteOrdering:				the map from cache ordering to actual pattern ordering
+// nodeToIndex:					an AVL that maps the address of an internal node pointed to by node<long> to its order in the tree postorder traversal
+// expandedSiteMap:				a list of simple lists giving site indices for each unique column pattern in the alignment
+// iNodeCache:					internal node likelihood caches
+// catAssignments:				a vector assigning a (partition specific) rate category to each site
+// catCount:					the number of rate classes
+
+{	
+	
+	long			patternCount					= dsf->NumberDistinctSites	(),
+					alphabetDimension				= dsf->GetDimension			(),
+					unitLength						= dsf->GetUnitLength		(),
+					iNodeCount						= GetINodeCount				(),
+					siteCount						= dsf->GetSiteCount			(),
+					allNodeCount					= 0,
+					catBlockShifter					= catAssignments?(iNodeCount*patternCount):0,
+	
+					*stateCache						= new long [patternCount*(iNodeCount-1)*alphabetDimension],
+					*leafBuffer						= new long [alphabetDimension];
+	
+	
+					// a Patterns x Int-Nodes x CharStates integer table
+					// with the best character assignment for node i given that its parent state is j for a given site
+	
+	_Parameter			*buffer							= new _Parameter [alphabetDimension];
+					// iNodeCache will be OVERWRITTEN with conditional pair (i,j) conditional likelihoods
+	
+	checkPointer (stateCache);
+	_SimpleList	   taggedInternals (iNodeCount, 0, 0),
+					postToIn		   (iNodeCount, 0, 0);
+	
+	_CalcNode* traversalNode = StepWiseTraversal(true);
+	
+	allNodeCount = 0;
+	
+	while (traversalNode)
+	{
+		if (!IsCurrentNodeATip())
+			postToIn [nodeToIndex->GetXtra (nodeToIndex->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
+		traversalNode = StepWiseTraversal(false);
+	}
+	
+		
+	// all nodes except the root
+	
+	allNodeCount = iNodeCount + GetLeafCount () - 1;
+	
+	for  (long nodeID = 0; nodeID < allNodeCount; nodeID++)
+	{
+		long	parentCode = flatParents.lData [nodeID],
+				nodeCode   = nodeID;
+		
+		bool	isLeaf	   = nodeID < flatLeaves.lLength;
+		
+
+		if (!isLeaf)
+			nodeCode -=  flatLeaves.lLength;
+		
+		_Parameter * parentConditionals = iNodeCache + parentCode * alphabetDimension * patternCount;
+		
+		if (taggedInternals.lData[parentCode] == 0)
+			// mark the parent for update and clear its conditionals if needed
+		{
+			taggedInternals.lData[parentCode]	  = 1;
+			long k3		= 0;
+			for (long k = 0; k < patternCount; k++)
+			{
+				for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
+					parentConditionals [k3] = 1.;
+			}
+		}
+		
+		_CalcNode *			 currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
+		_Parameter  *		_hprestrict_ transitionMatrix = catAssignments?nil:currentTreeNode->GetCompExp()->theData;
+		// this will need to be toggled on a per site basis
+		_Parameter  *	    childVector;
+		
+		if (!isLeaf)
+			childVector = iNodeCache + (nodeCode * patternCount) * alphabetDimension;
+		
+		
+		for (long siteID = 0; siteID < patternCount; siteID++, parentConditionals += alphabetDimension)
+		{					
+			if (catAssignments)
+				transitionMatrix = currentTreeNode->GetCompExp(catAssignments[siteOrdering.lData[siteID]])->theData;
+
+			_Parameter  _hprestrict_ *tMatrix = transitionMatrix;
+			if (isLeaf)
+			{
+				long siteState = lNodeFlags[nodeCode*patternCount + siteOrdering.lData[siteID]] ;
+				if (siteState >= 0)
+					// a fully resolved leaf
+				{
+					tMatrix  +=  siteState;
+					for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
+						parentConditionals[k] *= *tMatrix;
+					continue;
+				}
+				else
+					// an ambiguous leaf
+					childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
+					
+			}
+			
+			// now repopulate this vector as necessary -- if we are here this means 
+			// that the subtree below has been completely processed, 
+			// the i-th cell of childVector contains the likelihood of the _optimal_
+			// assignment in the subtree below given that the character at the current
+			// node is i.
+			
+			// hence, given parent state 'p', we optimize 
+			// max_i pr (p->i) childVector [i] and store it in the p cell of vector childVector
+			
+			_Parameter overallMax					  = 0.0;
+			
+			long	   *stateBuffer					  = isLeaf?leafBuffer:stateCache;
+			
+			// check for degeneracy
+			
+			long howManyOnes = 0;
+			for (long k = 0; k < alphabetDimension; k++)
+				howManyOnes += childVector[k]==1.;
+			
+			if (howManyOnes == alphabetDimension)
+			{
+				for (long k = 0; k < alphabetDimension; k++)
+					stateBuffer[k] = -1;
+			}
+			else
+			{
+				for (long p = 0; p < alphabetDimension; p++)
+				{
+					_Parameter max_lik = 0.;
+					long	   max_idx = 0;
+					
+					for (long c = 0; c < alphabetDimension; c++)
+					{
+						_Parameter thisV = tMatrix[c] * childVector[c];
+						if (thisV > max_lik)
+						{
+							max_lik = thisV;
+							max_idx = c;
+						}
+					}
+					
+					stateBuffer [p] = max_idx;
+					buffer [p]      = max_lik;
+					
+					if (max_lik > overallMax)
+						overallMax = max_lik;
+
+					tMatrix += alphabetDimension;
+				}
+				
+				if (overallMax > 0.0 && overallMax < _lfScalingFactorThreshold)
+					for (long k = 0; k < alphabetDimension; k++)
+						buffer[k] *= _lfScalerUpwards;
+				
+				
+				tMatrix = transitionMatrix;
+				for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)
+				{
+					long stateValue = stateBuffer[k];
+					if (stateValue >= 0)
+						parentConditionals[k] *= buffer[k] * tMatrix[stateValue]; 
+				}
+			}
+
+			if (!isLeaf)
+				stateCache += alphabetDimension;
+			
+			childVector += alphabetDimension;
+		}
+	}
+	
+	
+	_List	   *result = new _List;
+	for (long k = 0; k < iNodeCount; k++)
+		result->AppendNewInstance (new _String(siteCount*unitLength,false));
+	
+	_Parameter _hprestrict_	* rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
+	_SimpleList  parentStates (iNodeCount,0,0),
+				 conversion;
+	
+	stateCache -= patternCount*(iNodeCount-1)*alphabetDimension;
+	
+	_AVLListXL	  conversionAVL (&conversion);
+	_String		  codeBuffer	(unitLength, false);
+	
+	for (long siteID = 0; siteID < patternCount; siteID++, rootConditionals += alphabetDimension)
+	{
+		_Parameter max_lik = 0.;
+		long	   max_idx = 0;
+		
+		long howManyOnes = 0;
+		for (long k = 0; k < alphabetDimension; k++)
+			howManyOnes += rootConditionals[k]==1.;
+		if (howManyOnes != alphabetDimension)
+		{
+			for (long c = 0; c < alphabetDimension; c++)
+			{
+				_Parameter thisV = theProbs[c] * rootConditionals[c];
+				if (thisV > max_lik)
+				{
+					max_lik = thisV;
+					max_idx = c;
+				}
+			}
+			
+			parentStates.lData[iNodeCount-1] = max_idx;
+			for  (long nodeID = iNodeCount-2; nodeID >=0 ; nodeID--)
+			{
+				long parentState = parentStates.lData[flatParents.lData [nodeID+flatLeaves.lLength]];
+				if (parentState == -1)
+					parentStates.lData[nodeID] = -1;
+				else
+					parentStates.lData[nodeID] = stateCache[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
+			}
+		}
+		else
+			parentStates.Populate(iNodeCount,-1,0);
+		
+		
+		
+		_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[siteID]);
+		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
+		{
+			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.sData, &conversionAVL);
+			_String  *sequence   = (_String*) (*result)(postToIn.lData[nodeID]);
+			
+			for (long site = 0; site < patternMap->lLength; site++)
+			{
+				char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
+				for (long charS = 0; charS < unitLength; charS ++)
+					storeHere[charS] = codeBuffer.sData[charS];
+			}
+		}
+	}
+		
+	delete stateCache; delete leafBuffer;
+	delete buffer;
+	return result;
 }
 
 #endif

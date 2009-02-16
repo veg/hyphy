@@ -138,11 +138,13 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	if (!_x_) // first run. initialize the internal variables
 	{
 		_String xname ("_x_");
-		_hyApplicationGlobals.Insert (new _String (xname));
+		if (_hyApplicationGlobals.Find (&xname) < 0)
+			_hyApplicationGlobals.Insert (new _String (xname));
 		_Variable dummy_x (xname,true); // create it as global
 		_x_ = FetchVar(LocateVarByName (xname));
 		xname = "_n_";
-		_hyApplicationGlobals.Insert (new _String (xname));
+		if (_hyApplicationGlobals.Find (&xname) < 0)
+			_hyApplicationGlobals.Insert (new _String (xname));
 		_Variable dummy_n (xname,true); // create it as global
 		_n_ = FetchVar(LocateVarByName (xname));
 	}

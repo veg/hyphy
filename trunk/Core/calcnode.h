@@ -389,7 +389,11 @@ class _TheTree: public _TreeTopology {
 			_Parameter	PruneTreeChar4					(long categID = -1);
 			_Parameter	PruneTreeChar4Cache 			(long categID = -1);
 			
+#ifdef		_SLKP_LFENGINE_REWRITE_
+			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _AVLListX*, _Parameter*, _Parameter*, long, long*, _GrowingVector*);
+#else
 			_List*		RecoverAncestralSequences 		(_DataSetFilter*, long, long, _Parameter* = nil);
+#endif	
 			void		RecoverNodeSupportStates 		(_DataSetFilter*, long, long, _Matrix&);
 			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*,long);
 			_List*		SampleAncestors 				(_DataSetFilter*, node<long>*);
@@ -486,7 +490,8 @@ class _TheTree: public _TreeTopology {
 		 #endif
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
-		void			SampleAncestorsBySequence		(_DataSetFilter*, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, double*, long);
+		void			SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
+	
 		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil);
 		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1, long = -1);
 		void			ExponentiateMatrices			(_List&, long, long = -1);
