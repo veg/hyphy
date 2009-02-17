@@ -768,7 +768,7 @@ void			_TheTree::ComputeBranchCache	(
 			}
 			
 			_Parameter sum		= .0;
-			//char	   didScale = 0;
+			char	   didScale = 0;
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
@@ -789,8 +789,15 @@ void			_TheTree::ComputeBranchCache	(
 				parentConditionals [1] *= tMatrix[4]  * t1 + tMatrix[5] * t2 + tMatrix[6] * t3 + t4;
 				parentConditionals [2] *= tMatrix[8]  * t1 + tMatrix[9] * t2 + tMatrix[10] * t3 + t4;
 				parentConditionals [3] *= tMatrix[12] * t1 + tMatrix[13] * t2 + tMatrix[14] * t3 + t4;
+				
+				/*if (likeFuncEvalCallCount == 22 && siteOrdering.lData[siteID] == 3)
+				{
+					printf ("%d %d %g %g %g %g\n", siteID, catID, parentConditionals [0], parentConditionals [1], parentConditionals [2], parentConditionals [3]);
+					for (long mi = 0; mi < 16; mi++)
+						printf ("%d %g\n", mi, tMatrix[mi]);
+				}*/
 
-				/*if (0 && !notPassedRoot && canScale)
+				if (!notPassedRoot && canScale)
 				{
 					sum		= parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
@@ -826,7 +833,7 @@ void			_TheTree::ComputeBranchCache	(
 							//	printf ("Scaled node %d (parent %d) DOWN at site %d. localScalerChange = %d\n", nodeCode, parentCode, siteID, localScalerChange);
 						}
 					}
-				}*/
+				}
 				childVector += 4;
 			}
 			else
@@ -847,7 +854,7 @@ void			_TheTree::ComputeBranchCache	(
 					tMatrix				  += alphabetDimension;
 					sum += (parentConditionals[p] *= accumulator);
 				}
-				/*if (0 && !notPassedRoot && canScale)
+				if (!notPassedRoot && canScale)
 				{
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
@@ -870,13 +877,13 @@ void			_TheTree::ComputeBranchCache	(
 							didScale											= -1;
 						}
 					}			
-				}*/
+				}
 				childVector	   += alphabetDimension;
 			}
 			
 
 
-			/*if (didScale)
+			if (didScale)
 			{
 				if (siteCorrectionCounts)
 					siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;		
@@ -915,7 +922,7 @@ void			_TheTree::ComputeBranchCache	(
 							break;
 					}
 				}
-			}*/
+			}
 		}
 	}
 	
@@ -964,7 +971,8 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 	{
 		_Parameter accumulator = 0.,
 					*rmx	       = transitionMatrix;
-		
+				
+
 		if (alphabetDimension == 4)
 		{
 			  accumulator =    rootConditionals[0] * theProbs[0] * 
@@ -1286,10 +1294,9 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 					iNodeCount						= GetINodeCount				(),
 					siteCount						= dsf->GetSiteCount			(),
 					allNodeCount					= 0,
-					catBlockShifter					= catAssignments?(iNodeCount*patternCount):0,
-	
 					*stateCache						= new long [patternCount*(iNodeCount-1)*alphabetDimension],
-					*leafBuffer						= new long [alphabetDimension];
+					*leafBuffer						= new long [alphabetDimension],
+					*correctionFactors				= new long [patternCount];
 	
 	
 					// a Patterns x Int-Nodes x CharStates integer table
@@ -1298,11 +1305,13 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	_Parameter			*buffer							= new _Parameter [alphabetDimension];
 					// iNodeCache will be OVERWRITTEN with conditional pair (i,j) conditional likelihoods
 	
-	checkPointer (stateCache);
-	_SimpleList	   taggedInternals (iNodeCount, 0, 0),
+	checkPointer	(stateCache);
+	checkPointer	(correctionFactors);
+	
+	_SimpleList		taggedInternals (iNodeCount, 0, 0),
 					postToIn		   (iNodeCount, 0, 0);
 	
-	_CalcNode* traversalNode = StepWiseTraversal(true);
+	_CalcNode*		traversalNode = StepWiseTraversal(true);
 	
 	allNodeCount = 0;
 	
@@ -1313,6 +1322,8 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		traversalNode = StepWiseTraversal(false);
 	}
 	
+	for (long zeros = 0; zeros < patternCount; zeros ++)
+		
 		
 	// all nodes except the root
 	
@@ -1350,8 +1361,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		
 		if (!isLeaf)
 			childVector = iNodeCache + (nodeCode * patternCount) * alphabetDimension;
-		
-		
+				
 		for (long siteID = 0; siteID < patternCount; siteID++, parentConditionals += alphabetDimension)
 		{					
 			if (catAssignments)

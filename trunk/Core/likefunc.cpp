@@ -1238,8 +1238,7 @@ _Parameter	_LikelihoodFunction::GetIthDependent (long index)
 void	_LikelihoodFunction::SetIthIndependent (long index, _Parameter p) 
 {
 	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
-	_Constant c(p);
-	v->SetValue (&c);
+	v->SetValue (new _Constant (p), false);
 }
 
 //_______________________________________________________________________________________
