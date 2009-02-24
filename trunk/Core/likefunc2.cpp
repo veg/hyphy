@@ -62,6 +62,74 @@ void	_LikelihoodFunction::FlushLocalUpdatePolicy (void)
 }
 
 //_______________________________________________________________________________________
+void			_LikelihoodFunction::PartitionCatVars	  (_SimpleList& storage, long partIndex)
+{
+	if (partIndex < blockDependancies.lLength)
+	{
+		for (long bit = 0; bit < 32; bit++)
+			if (CheckNthBit(blockDependancies.lData[partIndex], bit))
+				storage << indexCat.lData[bit];
+	}
+}
+
+//_______________________________________________________________________________________
+void			_LikelihoodFunction::PartitionCatVarsProbs	  (_GrowingVector& storage, long partIndex)
+{
+	_SimpleList myCatVars;
+	PartitionCatVars (myCatVars, partIndex);
+	
+	if (myCatVars.lLength == 0)
+		return;
+	
+	_SimpleList myCatStates (myCatVars.lLength, 0, 0),
+				myCatCount;
+	
+	_List		weights;
+	
+	for (long k = 0; k < myCatVars.lLength; k++)
+	{
+		_CategoryVariable * acv = (_CategoryVariable*)LocateVar(myCatVars.lData[k]);
+		acv->Refresh();
+		myCatCount << acv->GetNumberOfIntervals();
+		weights	   << acv->GetWeights		   ();
+	}
+	
+	long   currentCat = 0;
+	while (1)
+	{
+		while (currentCat < myCatVars.lLength - 1 && myCatStates.lData[currentCat] < myCatCount.lData[currentCat])
+			currentCat++;
+		myCatStates.lData[currentCat] ++;
+		while (currentCat > 0 && myCatStates.lData[currentCat] == myCatCount.lData[currentCat])
+		{
+			myCatStates.lData[currentCat]   = 0;
+			myCatStates.lData[--currentCat] ++;
+		}
+		if (myCatStates.lData[0] >= myCatCount.lData[0])
+			break;
+		_Parameter thisCat = 1.;
+		for (long c = 0; c < myCatStates.lLength; c++)
+			thisCat *= (*(_Matrix*)weights(c))[myCatStates.lData[c]];
+		storage.Store(thisCat);
+	}
+}
+
+
+/*--------------------------------------------------------------------------------------------------*/
+
+void	_LikelihoodFunction::RestoreScalingFactors (long index, long branchID, long patternCnt, long* scc, long *sccb)
+{	
+	if (branchID >= 0) // finished using an existing cache
+	{
+		overallScalingFactors[index] = overallScalingFactorsBackup[index];
+		if (sccb)
+			for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++)
+				scc[recoverIndex] = sccb[recoverIndex];
+	}	
+}
+
+
+//_______________________________________________________________________________________
 
 void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, long segment, long branch)
 {
@@ -76,6 +144,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 	
 	_DataSetFilter *dsf				= (_DataSetFilter*)dataSetFilterList (theDataFilters(0));	
 	_TheTree    	*firstTree		= (_TheTree*)LocateVar(theTrees(0));
+	_Parameter		logResult		= 0.;
 	
 	target.SetTranslationTable		(dsf->GetData());	
 	target.ConvertRepresentations();
@@ -153,14 +222,18 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 		if (sample)
 		{
 			thisSet = new _List;
-			tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[i], &tree->GetRoot(), nodeMapper, conditionalInternalNodeLikelihoodCaches[i],
-											 *thisSet, nil,*expandedMap,  catCounter?rateAssignments->theData+siteOffset:nil, catCounter);
+			logResult = tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[i], &tree->GetRoot(), nodeMapper, conditionalInternalNodeLikelihoodCaches[i],
+														 *thisSet, nil,*expandedMap,  catCounter?rateAssignments->theData+siteOffset:nil, catCounter);
 			
 			
-			// store the results
+			
 		}
 		else
 		{
+			_GrowingVector categoryWeights;
+			if (catCounter)
+				PartitionCatVarsProbs (categoryWeights, i);
+			
 			thisSet = tree->RecoverAncestralSequences (dsf, 
 														*(_SimpleList*)optimalOrders.lData[i],
 														*expandedMap,
@@ -169,11 +242,15 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 														catCounter?rateAssignments->theData+siteOffset:nil, 
 														catCounter,
 														conditionalTerminalNodeStateFlag[i],
-														(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(i)
+														(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(i),
+													    catCounter?&categoryWeights:nil,
+												        logResult
 														);
 														
 														
 		}
+		
+		printf ("%g\n", logResult);
 		
 		_String * sampledString = (_String*)(*thisSet)(0);
 		

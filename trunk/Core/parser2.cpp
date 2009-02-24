@@ -2248,6 +2248,13 @@ _PMathObj _Formula::Compute (long startAt) // compute the value of the formula
 		return	  new _Constant (0.0);
 	}
 	
+	
+	/*_PMathObj result = theStack.Pop(false);
+	
+	if (result->ObjectClass() == NUMBER && isnan(result->Value()))
+		WarnError (_String((_String*)toStr()) & _String(" evaluated to an NAN."));
+		
+	return result;*/
 	return theStack.Pop(false);
 }
 
@@ -2450,6 +2457,7 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
 			}
 		}
 	}
+
 	return stack->value;
 }
 

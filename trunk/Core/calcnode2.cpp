@@ -96,6 +96,7 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 
 	// look for nodes with model changes and mark the path up to the root as needing an update
 	
+	
 	if (addOne >= 0)
 		nodesToUpdate.lData[addOne] = 1;
 
@@ -158,7 +159,9 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 																		long				siteTo,
 																		long				catID,
 																		_Parameter*			storageVec,
-																		long*				siteCorrectionCounts
+																		long*				siteCorrectionCounts,
+																		long				setBranch,
+																		long*				setBranchTo
 																 )
 // the updateNodes flags the nodes (leaves followed by inodes in the same order as flatLeaves and flatNodes)
 // that must be recomputed
@@ -180,7 +183,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		long	nodeCode   = updateNodes.lData [nodeID],
 				parentCode = flatParents.lData [nodeCode];
 		
-		bool	isLeaf	   = nodeCode < flatLeaves.lLength;
+		bool	isLeaf	   = nodeCode < flatLeaves.lLength,
+				matchSet   = nodeCode == setBranch;
 		
 		if (!isLeaf)
 			nodeCode -=  flatLeaves.lLength;
@@ -195,23 +199,46 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			if (alphabetDimension == 4)
 			{
 				long k3		= 0;
-				for (long k = siteFrom; k < siteTo; k++, k3+=4)
-				{
-					_Parameter scaler = localScalingFactor[k];
-					parentConditionals [k3]   = scaler;
-					parentConditionals [k3+1] = scaler;
-					parentConditionals [k3+2] = scaler;
-					parentConditionals [k3+3] = scaler;
-				}
+				if (matchSet)
+					for (long k = siteFrom; k < siteTo; k++, k3+=4)
+					{
+						parentConditionals [k3]   = 0.;
+						parentConditionals [k3+1] = 0.;
+						parentConditionals [k3+2] = 0.;
+						parentConditionals [k3+3] = 0.;
+						parentConditionals [k3+setBranchTo[k]] = localScalingFactor[k];
+					}
+				else					
+					for (long k = siteFrom; k < siteTo; k++, k3+=4)
+					{
+						_Parameter scaler = localScalingFactor[k];
+						parentConditionals [k3]   = scaler;
+						parentConditionals [k3+1] = scaler;
+						parentConditionals [k3+2] = scaler;
+						parentConditionals [k3+3] = scaler;
+					}
 			}
 			else
 			{
 				long k3		= 0;
-				for (long k = siteFrom; k < siteTo; k++)
+				if (matchSet)
 				{
-					_Parameter scaler = localScalingFactor[k];
-					for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
-						parentConditionals [k3] = scaler;
+					for (long k = siteFrom; k < siteTo; k++)
+					{
+						for (long k2 = 0; k2 < alphabetDimension; k2++)
+							parentConditionals [k3+k2] = 0.;
+						parentConditionals[k3 + setBranchTo[k]] = localScalingFactor[k];
+						k3+=alphabetDimension;
+					}					
+				}
+				else
+				{
+					for (long k = siteFrom; k < siteTo; k++)
+					{
+						_Parameter scaler = localScalingFactor[k];
+						for (long k2 = 0; k2 < alphabetDimension; k2++, k3++)
+							parentConditionals [k3] = scaler;
+					}
 				}
 			}
 		}
@@ -494,7 +521,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		_Parameter accumulator = 0.;
 		for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
 			accumulator += *rootConditionals * theProbs[p];
-		
+							   		
 		if (storageVec)
 			storageVec [siteOrdering.lData[siteID]] = accumulator;
 		else
@@ -517,6 +544,20 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 	return result;
 }
 
+#ifdef _SLKP_DEBUG_
+
+/*----------------------------------------------------------------------------------------------------------*/
+void echoNodeList (_SimpleList& theNodes, _SimpleList& leaves, _SimpleList& iNodes)
+{
+	for (long n = 0; n < theNodes.lLength; n++)
+	{
+		node<long>* nd = (node<long>*)(theNodes(n)<leaves.lLength?leaves(theNodes(n)):iNodes(theNodes(n)-leaves.lLength));
+		printf ("%d %d %s\n", n, theNodes(n), LocateVar(nd->in_object)->GetName()->sData);
+	}
+}
+
+#endif
+
 /*----------------------------------------------------------------------------------------------------------*/
 
 void			_TheTree::ComputeBranchCache	(	 
@@ -533,9 +574,11 @@ void			_TheTree::ComputeBranchCache	(
 													  long					siteFrom,
 													  long					siteTo,
 													  long					catID,
-													  _SimpleList*			tcc
+													  _SimpleList*			tcc,
+													  _Parameter*			siteRes
 												)
 {	
+	
 	_SimpleList	taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
 				nodesToProcess,
 				rootPath;
@@ -544,6 +587,7 @@ void			_TheTree::ComputeBranchCache	(
 				alphabetDimension	   =			theFilter->GetDimension(),
 				alphabetDimensionmod4  =			alphabetDimension - alphabetDimension % 4,
 				siteCount			   =			theFilter->NumberDistinctSites();
+	
 	if (siteTo	> siteCount)	siteTo = siteCount;
 	
 	do
@@ -566,6 +610,12 @@ void			_TheTree::ComputeBranchCache	(
 			rootPath << k;
 	}
 	
+	//printf ("ComputeBranchCache at branch %d; siteOdering %s\n", 
+	//		brID, _String((_String*)siteOrdering.toStr()).sData);
+	
+	//echoNodeList (rootPath,flatLeaves,flatNodes );
+	//echoNodeList (nodesToProcess,flatLeaves,flatNodes);
+
 	_Parameter * state = cache + alphabetDimension * siteFrom,
 			   * childVector;
 	
@@ -599,7 +649,8 @@ void			_TheTree::ComputeBranchCache	(
 		_Parameter *lastUpdated = iNodeCache + (nodeCode * siteCount + siteFrom) * alphabetDimension;
 		
 		long currentTCCIndex		,
-			 currentTCCBit			;		
+			 currentTCCBit			;	
+		
 		if (tcc)
 		{
 				currentTCCIndex = siteCount * nodeCode + siteFrom;
@@ -711,7 +762,7 @@ void			_TheTree::ComputeBranchCache	(
 		{		 
 			_Parameter  *tMatrix = transitionMatrix;			
 			
-			char canScale = 1;
+			char canScale = !notPassedRoot;
 			
 			if (isLeaf)
 			{
@@ -737,22 +788,19 @@ void			_TheTree::ComputeBranchCache	(
 				}
 				else
 					childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
+				canScale = 0;
 			}
 			else
 			{
-				if (tcc)
-				{
+				if (tcc&&notPassedRoot)
+				{			
 					if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
-					{
-						if (notPassedRoot)
-						{
+						// the value of this conditional vector needs to be copied from a previously stored site
+						// subtree duplication
 							for (long k = 0; k < alphabetDimension; k++) 
 								childVector[k] = lastUpdatedSite[k];
-						}
 						else
-							canScale = 0;
-					}
-					lastUpdatedSite = childVector;
+							lastUpdatedSite = childVector;
 					
 					if (++currentTCCBit == _HY_BITMASK_WIDTH_)
 					{
@@ -766,19 +814,12 @@ void			_TheTree::ComputeBranchCache	(
 					}
 				}	
 			}
-			
+
 			_Parameter sum		= .0;
 			char	   didScale = 0;
 			
 			if (alphabetDimension == 4) // special case for nuc data 
 			{
-				/*
-				parentConditionals [0] *= tMatrix[0] * childVector[0]		+tMatrix[1] * childVector[1]		+tMatrix[2] * childVector[2]		+tMatrix[3] * childVector[3];
-				parentConditionals [1] *= tMatrix[4] * childVector[0]		+tMatrix[5] * childVector[1]		+tMatrix[6] * childVector[2]		+tMatrix[7] * childVector[3];
-				parentConditionals [2] *= tMatrix[8] * childVector[0]		+tMatrix[9] * childVector[1]		+tMatrix[10] * childVector[2]		+tMatrix[11] * childVector[3];
-				parentConditionals [3] *= tMatrix[12] * childVector[0]		+tMatrix[13] * childVector[1]		+tMatrix[14] * childVector[2]		+tMatrix[15] * childVector[3];
-				*/
-				
 				_Parameter t1 = childVector[0] - childVector[3],
 						   t2 = childVector[1] - childVector[3],
 						   t3 = childVector[2] - childVector[3],
@@ -790,47 +831,34 @@ void			_TheTree::ComputeBranchCache	(
 				parentConditionals [2] *= tMatrix[8]  * t1 + tMatrix[9] * t2 + tMatrix[10] * t3 + t4;
 				parentConditionals [3] *= tMatrix[12] * t1 + tMatrix[13] * t2 + tMatrix[14] * t3 + t4;
 				
-				/*if (likeFuncEvalCallCount == 22 && siteOrdering.lData[siteID] == 3)
-				{
-					printf ("%d %d %g %g %g %g\n", siteID, catID, parentConditionals [0], parentConditionals [1], parentConditionals [2], parentConditionals [3]);
-					for (long mi = 0; mi < 16; mi++)
-						printf ("%d %g\n", mi, tMatrix[mi]);
-				}*/
-
-				if (!notPassedRoot && canScale)
+				if (canScale)
 				{
 					sum		= parentConditionals [0] + parentConditionals [1] + parentConditionals [2] + parentConditionals [3];
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
-						scalingAdjustments [nodeCode*siteCount + siteID]   *= _lfScalerUpwards;
-						
-						parentConditionals [0]							   *= _lfScalerUpwards;
-						parentConditionals [1]							   *= _lfScalerUpwards;
-						parentConditionals [2]							   *= _lfScalerUpwards;
-						parentConditionals [3]							   *= _lfScalerUpwards;
-						
-						localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
-						didScale											= 1;
-						
-						//if (likeFuncEvalCallCount == 56)
-						//	printf ("Scaled node %d (parent %d) UP at site %d. localScalerChange = %d\n", nodeCode, parentCode, siteID, localScalerChange);
+						_Parameter tryScale									= scalingAdjustments [nodeCode*siteCount + siteID] * _lfScalerUpwards;
+						if (tryScale < HUGE_VALL)
+						{
+								parentConditionals[0]							  *= _lfScalerUpwards;
+								parentConditionals[1]							  *= _lfScalerUpwards;
+								parentConditionals[2]							  *= _lfScalerUpwards;
+								parentConditionals[3]							  *= _lfScalerUpwards;
+							
+								localScalerChange								   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+								didScale											= 1;
+						}
 					}
 					else
 					{
 						if (sum > _lfScalerUpwards)
 						{
-							scalingAdjustments [nodeCode*siteCount + siteID]   *= _lfScalingFactorThreshold;
-							
 							parentConditionals [0]							   *= _lfScalingFactorThreshold;
 							parentConditionals [1]							   *= _lfScalingFactorThreshold;
 							parentConditionals [2]							   *= _lfScalingFactorThreshold;
 							parentConditionals [3]							   *= _lfScalingFactorThreshold;
-														
-
+							
 							localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
 							didScale											= -1;
-							//if (likeFuncEvalCallCount == 56)
-							//	printf ("Scaled node %d (parent %d) DOWN at site %d. localScalerChange = %d\n", nodeCode, parentCode, siteID, localScalerChange);
 						}
 					}
 				}
@@ -854,24 +882,26 @@ void			_TheTree::ComputeBranchCache	(
 					tMatrix				  += alphabetDimension;
 					sum += (parentConditionals[p] *= accumulator);
 				}
-				if (!notPassedRoot && canScale)
+				if (canScale)
 				{
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
-						scalingAdjustments [nodeCode*siteCount + siteID] *= _lfScalerUpwards;
-						for (long c = 0; c < alphabetDimension; c++) 
-						{childVector[c] *= _lfScalerUpwards; parentConditionals [c] *= _lfScalerUpwards;}
-						
-						localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
-						didScale											    = 1;
+						_Parameter tryScale									= scalingAdjustments [nodeCode*siteCount + siteID] * _lfScalerUpwards;
+						if (tryScale < HUGE_VALL)
+						{
+							for (long c = 0; c < alphabetDimension; c++) 
+								parentConditionals [c] *= _lfScalerUpwards;
+							
+							localScalerChange									   += theFilter->theFrequencies [siteOrdering.lData[siteID]];
+							didScale											    = 1;
+						}
 					}
 					else
 					{
 						if (sum > _lfScalerUpwards)
 						{
-							scalingAdjustments [nodeCode*siteCount + siteID] *= _lfScalingFactorThreshold;
 							for (long c = 0; c < alphabetDimension; c++) 
-							{parentConditionals [c] *= _lfScalingFactorThreshold;childVector [c] *= _lfScalingFactorThreshold;}
+								parentConditionals [c] *= _lfScalingFactorThreshold;
 							
 							localScalerChange								   -= theFilter->theFrequencies [siteOrdering.lData[siteID]];
 							didScale											= -1;
@@ -881,50 +911,14 @@ void			_TheTree::ComputeBranchCache	(
 				childVector	   += alphabetDimension;
 			}
 			
-
-
-			if (didScale)
+			if (didScale&&siteCorrectionCounts)
 			{
-				if (siteCorrectionCounts)
-					siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;		
-				
-				if (tcc)
-				{
-					// look ahead to see if we need to correct for downstream cached nodes  
-					long cparentTCCIIndex	=	currentTCCIndex,
-						 cparentTCCIBit		=	currentTCCBit;
-					
-					_Parameter				scM;
-					if (didScale < 0)
-					{	scM = _lfScalingFactorThreshold; }
-					else
-					{	scM = _lfScalerUpwards;  }
-					
-					
-					for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++)
-					{
-						if (cparentTCCIBit == _HY_BITMASK_WIDTH_)
-						{
-							cparentTCCIBit   = 0;
-							cparentTCCIIndex ++;
-						}
-						
-						if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0)
-						{
-							if (siteCorrectionCounts)
-								siteCorrectionCounts						[siteOrdering.lData[sid]] += didScale; 
-							scalingAdjustments								[nodeCode*siteCount + sid] *= scM;
-							localScalerChange								+= didScale * theFilter->theFrequencies [siteOrdering.lData[sid]];
-							//if (likeFuncEvalCallCount == 56)
-							//	printf ("Forward copy node %d (parent %d) site %d. localScalerChange = %d\n", nodeCode, parentCode, sid, localScalerChange);
-						}
-						else
-							break;
-					}
-				}
+				siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;		
+				siteRes[siteOrdering.lData[siteID]] *= didScale<0?_lfScalingFactorThreshold:_lfScalerUpwards;
 			}
 		}
 	}
+	
 	
 	_Parameter _hprestrict_	*rootConditionals   = iNodeCache +	(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength)  * siteCount * alphabetDimension;
 	
@@ -954,13 +948,15 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 	long		alphabetDimension	   = theFilter->GetDimension(),
 				//alphabetDimensionmod4  = alphabetDimension - alphabetDimension % 4,
 				siteCount			   =  theFilter->NumberDistinctSites();
-	
+					
 	if (siteTo	> siteCount)	siteTo = siteCount;
 
 	_Parameter _hprestrict_	*branchConditionals	= cache				 + siteFrom * alphabetDimension;
 	_Parameter _hprestrict_	*rootConditionals   = branchConditionals + siteCount * alphabetDimension;
 	_Parameter	result = 0.0;
 							
+	
+	//printf ("ComputeLLWithBranchCache @ %d catID = %d branchID = %d\n", likeFuncEvalCallCount, catID, brID);
 	
 	_CalcNode *givenTreeNode = brID < flatLeaves.lLength ? (((_CalcNode**) flatCLeaves.lData)[brID]):
 														   (((_CalcNode**) flatTree.lData)   [brID - flatLeaves.lLength]);
@@ -1166,7 +1162,7 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 
 //_______________________________________________________________________________________________
 
-void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
+_Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
 											  _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
 
 // must be called initially with the root node 
@@ -1185,6 +1181,7 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 
 {	
 	long					  childrenCount		= currentNode->get_num_nodes();
+	_Parameter				  myResult			= 0.;
 	
 	if (childrenCount)
 	{
@@ -1221,16 +1218,15 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 				_Parameter	randVal  = genrand_real2(),
 							totalSum = 0.;
 				
-				if			(parentStates == nil)
-					for (long i = 0; i<alphabetDimension; i++)
-						totalSum += (cache[i] = theProbs[i]*conditionals[i]);
+				_Parameter  *		_hprestrict_  matrixRow; 
+				
+				if  (parentStates == nil)
+					matrixRow = theProbs;
 				else
-				{
-					_Parameter  *		_hprestrict_  matrixRow = transitionMatrix + parentStates->lData[siteID] * alphabetDimension;
-					
-					for (long i = 0; i<alphabetDimension; i++)
-						totalSum += (cache[i] = matrixRow[i]*conditionals[i]);
-				}
+					matrixRow = transitionMatrix + parentStates->lData[siteID] * alphabetDimension;
+				
+				for (long i = 0; i<alphabetDimension; i++)
+					totalSum += (cache[i] = theProbs[i]*conditionals[i]);
 				
 				randVal *= totalSum;
 				totalSum	= 0.0;
@@ -1240,6 +1236,9 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 					sampledChar ++;
 					totalSum += cache[sampledChar];
 				}
+				if (parentStates)
+					myResult += log (matrixRow[sampledChar]);
+				
 				sampledStates.lData[siteID] = sampledChar;
 			}
 			
@@ -1260,8 +1259,9 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 		//printf ("%d: %s\n", nodeIndex, sampledSequence->sData);
 		
 		for (long child = 1; child <= childrenCount; child ++)
-			SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
+			myResult += SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
 	}
+	return myResult;
 }
 
 
@@ -1275,7 +1275,9 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 											  _Parameter* catAssignments, 
 											  long catCount,
 											  long* lNodeFlags,
-											  _GrowingVector* lNodeResolutions)	
+											  _GrowingVector* lNodeResolutions,
+											  _GrowingVector* catValues,
+											  _Parameter& logScore)	
 
 
 // dsf:							the filter to sample from
@@ -1306,6 +1308,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 					// iNodeCache will be OVERWRITTEN with conditional pair (i,j) conditional likelihoods
 	
 	checkPointer	(stateCache);
+	checkPointer	(leafBuffer);
 	checkPointer	(correctionFactors);
 	
 	_SimpleList		taggedInternals (iNodeCount, 0, 0),
@@ -1323,7 +1326,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	}
 	
 	for (long zeros = 0; zeros < patternCount; zeros ++)
-		
+		correctionFactors[zeros] = 0.0;
 		
 	// all nodes except the root
 	
@@ -1436,9 +1439,11 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 				}
 				
 				if (overallMax > 0.0 && overallMax < _lfScalingFactorThreshold)
+				{
 					for (long k = 0; k < alphabetDimension; k++)
 						buffer[k] *= _lfScalerUpwards;
-				
+					correctionFactors[siteID] ++;
+				}
 				
 				tMatrix = transitionMatrix;
 				for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)
@@ -1478,6 +1483,9 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		long howManyOnes = 0;
 		for (long k = 0; k < alphabetDimension; k++)
 			howManyOnes += rootConditionals[k]==1.;
+		
+		_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[siteID]);
+
 		if (howManyOnes != alphabetDimension)
 		{
 			for (long c = 0; c < alphabetDimension; c++)
@@ -1489,6 +1497,12 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 					max_idx = c;
 				}
 			}
+		
+			_Parameter patternScore = (log (max_lik) - _logLFScaler*correctionFactors[siteID]);
+			if (catValues)
+				patternScore += (*catValues)[(long)catAssignments[siteOrdering.lData[siteID]]];
+				
+			logScore += patternScore*patternMap->lLength ;
 			
 			parentStates.lData[iNodeCount-1] = max_idx;
 			for  (long nodeID = iNodeCount-2; nodeID >=0 ; nodeID--)
@@ -1503,9 +1517,6 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		else
 			parentStates.Populate(iNodeCount,-1,0);
 		
-		
-		
-		_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteOrdering.lData[siteID]);
 		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
 		{
 			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.sData, &conversionAVL);
@@ -1520,7 +1531,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		}
 	}
 		
-	delete stateCache; delete leafBuffer;
+	delete stateCache; delete leafBuffer; delete correctionFactors;
 	delete buffer;
 	return result;
 }

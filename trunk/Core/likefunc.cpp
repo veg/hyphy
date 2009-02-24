@@ -1399,16 +1399,7 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 	#endif
 }
 
-//_______________________________________________________________________________________
-void			_LikelihoodFunction::PartitionCatVars	  (_SimpleList& storage, long partIndex)
-{
-	if (partIndex < blockDependancies.lLength)
-	{
-		for (long bit = 0; bit < 32; bit++)
-			if (CheckNthBit(blockDependancies.lData[partIndex], bit))
-				storage << indexCat.lData[bit];
-	}
-}
+
 									  
 //_______________________________________________________________________________________
 _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap, _String* storageID) 
@@ -2291,6 +2282,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 #endif
 								);
 								
+								
 								if (computingTemplate && templateKind)
 									ComputeBlockForTemplate2 (j, bySiteResults->theData+j*bySiteResults->GetVDim(), sR, bySiteResults->GetVDim());
 								else
@@ -2698,6 +2690,11 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 							{
 								long scv = *siteCorrectors;
 								
+								//if (likeFuncEvalCallCount == 43)
+								//{
+								//	printf ("catID %d site %d corrector %d (%d) value %g:%g\n", categID, r1, scv, siteMultipliers->lData[r1], sR[r2], sR[r2]*acquireScalerMultiplier (scv-siteMultipliers->lData[r1] )); 
+								//}
+								
 								if (scv < siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
 								{
 									sR[r1] = localWeight * sR[r2] + sR[r1] * acquireScalerMultiplier (siteMultipliers->lData[r1] - scv);
@@ -2716,6 +2713,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 							else
 							#endif
 								sR[r1] += localWeight * sR[r2];
+							
 						}
 				#ifdef _SLKP_LFENGINE_REWRITE_
 				}	
@@ -4110,6 +4108,7 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 	checkPointer(siteScalingFactors						 = new _Parameter*   [theTrees.lLength]);
 	checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 	overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
+	overallScalingFactorsBackup.Populate				  (theTrees.lLength, 0,0);
 
 	for (long i=0; i<theTrees.lLength; i++)
 	{
@@ -4124,6 +4123,7 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 		if (!theFilter->IsNormalFilter())
 		{
 			siteCorrections.AppendNewInstance	   (new _SimpleList);
+			siteCorrectionsBackup.AppendNewInstance (new _SimpleList);
 			conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (new _GrowingVector);
 			continue;
 		}
@@ -4145,9 +4145,15 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 		
 		cachedBranches.AppendNewInstance (new _SimpleList (cT->categoryCount,-1,0));
 		if (cT->categoryCount == 1)
+		{
 			siteCorrections.AppendNewInstance (new _SimpleList (patternCount,0,0));
+			siteCorrectionsBackup.AppendNewInstance (new _SimpleList (patternCount,0,0));
+		}
 		else
+		{
 			siteCorrections.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
+			siteCorrectionsBackup.AppendNewInstance (new _SimpleList (cT->categoryCount*patternCount,0,0));
+		}
 		
 		for (long k = 0; k < patternCount*iNodeCount*cT->categoryCount; (siteScalingFactors[i])[k] = 1., k++) ; 
 		
@@ -7948,6 +7954,8 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	conditionalTerminalNodeLikelihoodCaches.Clear();
 	cachedBranches.Clear();
 	siteCorrections.Clear();
+	siteCorrectionsBackup.Clear();
+	
 //	computedLocalUpdatePolicy.Clear();
 //	treeTraversalMasks.Clear();
 //	matricesToExponentiate.Clear();
@@ -8392,6 +8400,25 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		if (conditionalInternalNodeLikelihoodCaches[index])
 		// not a 2 sequence analysis
 		{
+			long blockID    = df->NumberDistinctSites()*t->GetINodeCount(),
+				 patternCnt = df->NumberDistinctSites();
+			
+			_SimpleList* tcc = (_SimpleList*)treeTraversalMasks(index);
+			
+			_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
+			conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
+			*ssf  = (categID<1)?siteScalingFactors[index]: siteScalingFactors[index] + categID*blockID,
+			*bc   = (categID<1)?branchCaches[index]: (branchCaches[index] + categID*patternCnt*df->GetDimension()*2);
+			
+			long *scc = nil,
+			*sccb = nil;
+			
+			if (siteRes)
+			{
+				sccb = ((_SimpleList*)siteCorrectionsBackup(index))->lData + ((categID<1)?0:patternCnt*categID);
+				scc =  ((_SimpleList*)siteCorrections(index))->lData       + ((categID<1)?0:patternCnt*categID);
+			}
+			
 			_SimpleList changedBranches, *branches;
 			_List		changedModels,   *matrices;
 			long		doCachedComp	 = 0,	  // whether or not to use a cached branch calculation when only one
@@ -8423,11 +8450,14 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					else
 						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);
 					
+					RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
 					*cbid = -1;
 					if (snID >= 0 && canUseReversibleSpeedups.lData[index])
 					{
 						((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
 						doCachedComp = -snID-1;
+						//printf ("%d %s %s\n", likeFuncEvalCallCount, _String((_String*)cachedBranches(index)->toStr()).sData,
+						//		_String((_String*)branches->toStr()).sData);
 						//doCachedComp = 0;
 					}
 					else
@@ -8438,7 +8468,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			}
 			else
 			{
-				t->DetermineNodesForUpdate		   (changedBranches,&changedModels,catID,*cbid);
+				RestoreScalingFactors		(index, *cbid, patternCnt, scc, sccb);
+				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,*cbid);
 				*cbid						= -1;
 				branches					= &changedBranches;
 				matrices					= &changedModels;
@@ -8457,19 +8488,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		#endif
 
 
-			long blockID    = df->NumberDistinctSites()*t->GetINodeCount();
-			
-			_SimpleList* tcc = (_SimpleList*)treeTraversalMasks(index);
 
-			_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
-										  conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
-					  *ssf  = (categID<1)?siteScalingFactors[index]: siteScalingFactors[index] + categID*blockID,
-					  *bc   = (categID<1)?branchCaches[index]: (branchCaches[index] + categID*df->NumberDistinctSites()*df->GetDimension()*2);
-			
-			long *scc = nil;
-			
-			if (siteRes)
-				scc = ((_SimpleList*)siteCorrections(index))->lData + ((categID<1)?0:df->NumberDistinctSites()*categID);
 			
 			_Parameter sum  = 0.;
 			if (doCachedComp >= 3)
@@ -8521,7 +8540,13 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 				doCachedComp = -doCachedComp-1;
 				//printf ("Set up %d\n", doCachedComp);
 				*cbid = doCachedComp;
-	#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+					
+				overallScalingFactorsBackup[index] = overallScalingFactors[index];
+				if (sccb)
+					for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++)
+						sccb[recoverIndex] = scc[recoverIndex];
+
+#pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
 				for (blockID = 0; blockID < np; blockID ++)
 				{
 					t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df, 
@@ -8532,9 +8557,10 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 										   overallScalingFactors[index],
 										   blockID * sitesPerP,
 										   (1+blockID) * sitesPerP,
-										   catID,tcc);
+										   catID,tcc,siteRes);
 				}
-											
+				
+				// need to update siteRes when computing cache and changing scaling factors!
 			}
 			return sum;
 		}

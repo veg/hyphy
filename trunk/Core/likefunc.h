@@ -230,6 +230,9 @@ virtual	void			ScanAllVariables 		(void);
 		void			PartitionCatVars	  (_SimpleList&, long);
 		// 20090210: extract variable indices for category variables in i-th partition 
 		// and append them to _SimpleList
+		void			PartitionCatVarsProbs (_GrowingVector&, long);
+		// 20090223: retrieve the probabilities of every category in a partition and
+		// append them to _GrowingVector
 	
 		
 static	void			RandomizeList			(_SimpleList&, long);		
@@ -283,6 +286,7 @@ static	void			CheckFibonacci			(_Parameter);
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		void			DetermineLocalUpdatePolicy  (void);
 		void			FlushLocalUpdatePolicy		(void);
+		void			RestoreScalingFactors		(long, long, long, long*, long *);
 		void			SetupLFCaches				(void);
 #endif		
 		_SimpleList	 	theTrees, 
@@ -347,6 +351,12 @@ static	void			CheckFibonacci			(_Parameter);
 		long	  **		conditionalTerminalNodeStateFlag;
 	
 		_SimpleList			overallScalingFactors,
+							overallScalingFactorsBackup,
+							// this (and siteCorrectionsBackup)
+							// is needed to store site/partition scaling factors when treeTraversalMasks
+							// and branch caching are used, otherwise scaling done by ComputeBranchCaches
+							// will fubar the scaling for ComputeTreeBlockByBranch depending on site
+							// patterns
 							canUseReversibleSpeedups; 
 							// a partition will be tagged with '1' if its tree has only
 							// time-reversible models
@@ -356,6 +366,7 @@ static	void			CheckFibonacci			(_Parameter);
 							treeTraversalMasks,
 							computedLocalUpdatePolicy,
 							siteCorrections,
+							siteCorrectionsBackup,
 							cachedBranches;
 							// for models with categories, a list of site by site scaling operation counts
 	
