@@ -65,7 +65,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 {
 	_List	  matrixQueue,
 			  nodesToDo;
-	
+		
 	for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++)
 	{
 		long didIncrease = matrixQueue.lLength;
@@ -1163,7 +1163,7 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 //_______________________________________________________________________________________________
 
 _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
-											  _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
+											      _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
 
 // must be called initially with the root node 
 
@@ -1226,7 +1226,7 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 					matrixRow = transitionMatrix + parentStates->lData[siteID] * alphabetDimension;
 				
 				for (long i = 0; i<alphabetDimension; i++)
-					totalSum += (cache[i] = theProbs[i]*conditionals[i]);
+					totalSum += (cache[i] = matrixRow[i]*conditionals[i]);
 				
 				randVal *= totalSum;
 				totalSum	= 0.0;
@@ -1236,9 +1236,8 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 					sampledChar ++;
 					totalSum += cache[sampledChar];
 				}
-				if (parentStates)
-					myResult += log (matrixRow[sampledChar]);
 				
+				myResult += log (matrixRow[sampledChar]);
 				sampledStates.lData[siteID] = sampledChar;
 			}
 			
@@ -1260,6 +1259,10 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 		
 		for (long child = 1; child <= childrenCount; child ++)
 			myResult += SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
+	}
+	else
+	{
+			
 	}
 	return myResult;
 }

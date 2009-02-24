@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "likefunc.h"
+#include <math.h>
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
@@ -93,7 +94,7 @@ void			_LikelihoodFunction::PartitionCatVarsProbs	  (_GrowingVector& storage, lo
 		myCatCount << acv->GetNumberOfIntervals();
 		weights	   << acv->GetWeights		   ();
 	}
-	
+	myCatStates.lData[myCatVars.lLength-1] = -1;
 	long   currentCat = 0;
 	while (1)
 	{
@@ -232,7 +233,12 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 		{
 			_GrowingVector categoryWeights;
 			if (catCounter)
+			{
 				PartitionCatVarsProbs (categoryWeights, i);
+				long catNumber = categoryWeights.GetSize();
+				for (long i = 0; i < catNumber; i++) categoryWeights.theData[i] = log (categoryWeights.theData[i]);
+			}
+				
 			
 			thisSet = tree->RecoverAncestralSequences (dsf, 
 														*(_SimpleList*)optimalOrders.lData[i],
