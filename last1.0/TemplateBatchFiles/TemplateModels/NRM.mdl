@@ -1,0 +1,67 @@
+/* This file defines the transition matrix for the General Non-Reversible model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:GRM#
+   	#Desc:General Reversible Model. Local or global parameters. Possible Gamma Variation.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:GRM.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+   Modified on 03/06/2000 to comply with the new Model syntax.
+*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	/* frequency ratios */
+	 
+	r0 = EFV[0]/EFV[3];
+	r1 = EFV[1]/EFV[3];
+	r2 = EFV[2]/EFV[3];
+
+	/* All the global rate parameters are defined relative to 
+	the rate for A->G. For instance, CG represents the ratio
+	of the rates C->G/A->G. */
+
+	global AC = 1;
+	global AT = 1;
+	global CA = 1;
+	global CG = 1;
+	global CT = 1;
+	global GA = 1;
+	global GC = 1;
+	global GT = 1;
+
+	/* note that these constraints are 
+	satisfied if we restrict the model to the
+	general reversible case */
+
+	global TA:=AT+(AC-CA)*r1__+(1-GA)*r2__;
+	global TC:=CT+(CA-AC)*r0__+(CG-GC)*r2__;
+	global TG:=GT+(GA-1)*r0__+(GC-CG)*r1__;
+
+
+	ModelMatrixName = 
+			{{*,t*AC,t,t*AT}
+			 {t*CA,*,t*CG,t*CT}
+			 {t*GA,t*GC,*,t*GT}
+			 {t*TA,t*TC,t*TG,*}};
+			 
+	return 1;
+}
+
+NRM = 0;
+
+HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("NRM",vectorOfFrequencies);
+
+Model GRMModel = (NRM, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 1;

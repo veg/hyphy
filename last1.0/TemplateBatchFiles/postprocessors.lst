@@ -1,0 +1,16 @@
+"View Results","post_viewResults.bf","!A_DISTANCE_METHOD";
+"Save Results","post_saveResults.bf","!A_DISTANCE_METHOD";
+"Rate Classes","categoryEcho.bf","categoriesUsed";
+"SEPARATOR","","";
+"Variance Estimates","post_variance.bf","!A_DISTANCE_METHOD";
+"Save Covariance Matrix","post_covariance.bf","!A_DISTANCE_METHOD";
+"SEPARATOR","","";
+"Parametric Bootstrap","post_pbs.bf","IS_BOOTSTRAP_AVAILABLE";
+"Nonparametric Bootstrap","post_npbs.bf","IS_NPBOOTSTRAP_AVAILABLE";
+"Parameter Sampler","post_sampler.bf","Rows("LikelihoodFunction")>0";
+"SEPARATOR","","";
+"dN-dS for Branches","post_dNdS.bf","IS_DNDS_AVAILABLE";
+"Syn and non-syn trees","post_sns.bf","Abs(_Genetic_Code)";
+"SEPARATOR","","";
+"Ancestral Sequences","post_ancestors.bf","!A_DISTANCE_METHOD";
+"Suzuki-Gojobori Derived Adapative Selection Tool","post_counting.bf","(!A_DISTANCE_METHOD)&&Abs(GeneticCodeExclusions)";

@@ -1,0 +1,31 @@
+#include "HIVwithin.ibf";
+
+equalFreqs=
+{
+{0.0377494}
+{0.0240105}
+{0.0342034}
+{0.0618606}
+{0.0422741}
+{0.0838496}
+{0.0156076}
+{0.0983641}
+{0.0641682}
+{0.0577867}
+{0.0158419}
+{0.0891129}
+{0.0458601}
+{0.0437824}
+{0.057321}
+{0.0550846}
+{0.0813774}
+{0.0515639}
+{0.019597}
+{0.0205847}
+};
+
+
+HIVWithinMatrix	    	= 0;
+MULTIPLY_BY_FREQS 	    = PopulateModelMatrix ("HIVWithinMatrix",equalFreqs);
+Model HIVWithinModel 	= (HIVWithinMatrix, equalFreqs, MULTIPLY_BY_FREQS);
+FREQUENCY_SENSITIVE     = 0;

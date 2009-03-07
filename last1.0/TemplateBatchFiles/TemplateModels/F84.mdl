@@ -1,0 +1,96 @@
+/* This file defines the transition matrix for the F84 model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:F84#
+   	#Desc:Felsenstein 84. Gamma variation optional.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:F84.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+   Modified on 03/06/2000 to comply with the new model syntax
+*/
+
+HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+
+
+global K = 1;
+
+
+#include "modelParameters2.mdl";
+
+if (modelType > 0)
+{
+	global alpha = .5;
+	alpha:>0.01;alpha:<100;
+	if (modelType == 1)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 2)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{	
+	if (!EMBED_FREQUENCY_DEPENDENCE)
+	{
+		piA = EFV[0][0];
+		piC = EFV[1][0];
+		piG = EFV[2][0];
+		piT = EFV[3][0];
+		piY = piC+piT;
+		piR = piA+piG;
+		
+		if (modelType == 0)
+		{
+			ModelMatrixName = {{*,t*piC__,t*piG__*(1+K/piR__),t*piT__}{t*piA__,*,t*piG__,t*piT__*(1+K/piY__)}
+	       	 				   {t*(1+K/piR__)*piA__,t*piC__,*,t*piT__}{t*piA__,t*piC__*(1+K/piY__),t*piG__,*}};		
+		}
+		else
+		{
+			ModelMatrixName = {{*,c*t*piC__,c*t*piG__*(1+K/piR__),c*t*piT__}{c*t*piA__,*,c*t*piG__,c*t*piT__*(1+K/piY__)}
+		       {c*t*(1+K/piR__)*piA__,c*t*piC__,*,c*t*piT__}{c*t*piA__,c*t*piC__*(1+K/piY__),c*t*piG__,*}};
+		}
+	}
+	else
+	{
+		piA := vectorOfFrequencies[0];
+		piC := vectorOfFrequencies[1];
+		piG := vectorOfFrequencies[2];
+		piT := vectorOfFrequencies[3];
+		piY := piC+piT;
+		piR := piA+piG;
+		
+		if (modelType == 0)
+		{
+			ModelMatrixName = {{*,t*piC,t*piG*(1+K/piR),t*piT}{t*piA,*,t*piG,t*piT*(1+K/piY)}
+	       	 				   {t*(1+K/piR)*piA,t*piC,*,t*piT}{t*piA,t*piC*(1+K/piY),t*piG,*}};		
+		}
+		else
+		{
+			ModelMatrixName = {{*,c*t*piC,c*t*piG*(1+K/piR),c*t*piT}{c*t*piA,*,c*t*piG,c*t*piT*(1+K/piY)}
+		       {c*t*(1+K/piR)*piA,c*t*piC,*,c*t*piT}{c*t*piA,c*t*piC*(1+K/piY),c*t*piG,*}};
+		}
+	}
+	
+	return 0;
+}
+
+F84 = {4,4};
+
+MULTIPLY_BY_FREQUENCIES = PopulateModelMatrix ("F84", vectorOfFrequencies);
+
+FREQUENCY_SENSITIVE = 1;
+
+Model F84model = (F84,vectorOfFrequencies,0);
+
+

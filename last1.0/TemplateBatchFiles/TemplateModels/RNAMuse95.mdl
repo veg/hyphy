@@ -1,0 +1,164 @@
+/* This file defines the transition matrix for the General Reversible model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:RNAMuse95
+   	#Desc:Model allowing for secondary structure constraints in the RNA evolution.#
+   	#Dimension:16#
+    #DataType:di-nucleotide#
+   	#FileName:RNAMuse95.mdl#
+   
+   05/17/2005  by Sergei L. Kosakovsky Pond
+*/
+
+_PairingsVector = {{
+0, /* AA - mispairing */
+0, /* AC - mispairing */
+0, /* AG - mispairing */
+1, /* AU - Watson-Crick */
+
+0, /* CA - mispairing */
+0, /* CC - mispairing */
+1, /* CG - Watson-Crick */
+0, /* CU - mispairing */
+
+0, /* GA - mispairing */
+1, /* GC - Watson-Crick */
+0, /* GG - mispairing */
+0, /* GU - mispairing */
+ 
+1, /* UA - Watson-Crick */
+0, /* UC - mispairing */
+0, /* UG - mispairing */
+0  /* UU - mispairing */
+}};
+
+/*----------------------------------------------------------------------------------------------------*/
+
+function BuildDinucFrequencies (result&,obsF)
+{
+	result = {16,1};
+	h = obsF[0]*obsF[3]+obsF[1]*obsF[2];
+	global freq_Mod := 1/(1+2*(h__*(R_gained/R_lost-1)));
+	for (h=0; h<4; h=h+1)
+	{
+		for (v=0; v<4; v=v+1)
+		{
+			idx = h*4+v;
+			if (_PairingsVector[idx])
+			{
+				result[idx] := freq_Mod*R_gained/R_lost*obsF__[h__]*obsF__[v__];
+			}
+			else
+			{
+				result[idx] := freq_Mod*obsF__[h__]*obsF__[v__];			
+			}
+		}
+	}
+	return result;
+}
+
+/*----------------------------------------------------------------------------------------------------*/
+
+_nucModMatrix = {{"","R_TVTS*","","R_TVTS*"}
+				 {"R_TVTS*","","R_TVTS*",""}
+				 {"","R_TVTS*","","R_TVTS*"}
+				 {"R_TVTS*","","R_TVTS*",""}};
+
+/*----------------------------------------------------------------------------------------------------*/
+
+modelType = 0;
+
+#include "modelParameters2.mdl";
+
+if (dinucModelType < 0)
+{
+	return 0;
+}
+
+if (modelType == 1)
+{
+	#include "defineGamma.mdl";
+}
+if (modelType == 2)
+{
+	#include "defineHM.mdl";
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	global R_TVTS   = 1;
+	global R_gained = 1;
+	global R_lost  := 1/R_gained;
+		   
+	ModelMatrixName = {16,16};
+	
+	for (h=0; h<16; h=h+1)
+	{
+		for (v=h+1; v<16; v=v+1)
+		{
+			if (v!=h)
+			{
+				fromNuc = -1;
+				toNuc   = -1;
+				if (h$4 == v$4) /* same 1st nuc */
+				{
+					toNuc   = v%4;
+					fromNuc = h%4;
+				}
+				else
+				{
+					if (v%4 == h%4) /* same 2nd nuc */
+					{
+						toNuc   = v$4;
+						fromNuc = h$4;
+					}
+				}
+				if (fromNuc >= 0)
+				{
+					rateMult  = "";
+					rateMult2 = "";
+					if (_PairingsVector[h]<_PairingsVector[v])
+					{
+						rateMult  = "R_gained*";
+						rateMult2 = "R_lost*";
+					}
+					else
+					{
+						if (_PairingsVector[h]>_PairingsVector[v])
+						{
+							rateMult   = "R_lost*";
+							rateMult2  = "R_gained*";
+						}
+					}
+					rateMult  = _nucModMatrix[fromNuc][toNuc]+rateMult;
+					rateMult2 = _nucModMatrix[fromNuc][toNuc]+rateMult2;
+					if (modelType >= 1)
+					{
+						rateMult  = rateMult  + "c*";
+						rateMult2 = rateMult2 + "c*";
+					}
+					
+					
+					ExecuteCommands ("ModelMatrixName["+h+"]["+v+"]:="+rateMult  +"t*EFV__["+toNuc+"];");
+					ExecuteCommands ("ModelMatrixName["+v+"]["+h+"]:="+rateMult2 +"t*EFV__["+fromNuc+"];");
+				}
+			}
+		}
+	}
+	
+	
+	return 0;
+}
+
+HarvestFrequencies (observedFreq,filteredData,1,1,1);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("M95",observedFreq);
+BuildDinucFrequencies ("vectorOfFrequencies",observedFreq);
+Model M95Model = (M95, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+FREQUENCY_SENSITIVE = 1;

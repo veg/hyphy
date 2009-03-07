@@ -1,0 +1,26 @@
+if (randomizeInitValues)
+{
+    global PS1 = Random (0.0001,1);
+    global PS2 = Random (0.0001,1);
+    global RS1 = Random (0.0001,0.9999);
+    global RS3 = Random (1.0001,5);
+}
+else
+{
+    global PS1 = 1/3;
+    global PS2 = .5;
+    global RS1 = .3;
+    global RS3 = 1.5;
+}
+
+PS1:<1;
+PS2:<1;
+RS1:<1; RS1:>0.000000001;
+RS3:>1; RS3:<100000;
+global synRate_scale := RS1*PS1 + (1-PS1)*PS2 + RS3*(1-PS1)*(1-PS2);
+categFreqMatrix = {{PS1,(1-PS1)*PS2, (1-PS1)*(1-PS2)}} ;
+categRateMatrix = {{RS1/synRate_scale,1/synRate_scale,RS3/synRate_scale}};
+category c1 = (3, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);			
+category c2 = (3, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);			
+category c3 = (3, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);			
+

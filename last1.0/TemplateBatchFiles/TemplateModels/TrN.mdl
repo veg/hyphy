@@ -1,0 +1,64 @@
+/* This file defines the transition matrix for the Tamura and Nei (1993) model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:TrN#
+   	#Desc:Tamura and Nei 1993. Local or global parameters. Possible Gamma Variation.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:TrN.mdl#
+   
+   04/04/2000  by Sergei L. Kosakovsky Pond
+*/
+
+#include "modelParameters.mdl";
+
+if (modelType >= 1)
+{
+	global TRSV    = 1;
+	global TRST_CT = 1;
+	
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (modelType == 0)
+	{
+		ModelMatrixName = {{*,a,b,a}{a,*,a,c}{b,a,*,a}{a,c,a,*}};
+	}
+	else
+	{
+		if (modelType<2)
+		{
+			ModelMatrixName = {{*,TRSV*t,t,TRSV*t}{TRSV*t,*,TRSV*t,TRST_CT*t}{t,TRSV*t,*,TRSV*t}{TRSV*t,TRST_CT*t,TRSV*t,*}};
+		}
+		else
+		{
+			ModelMatrixName = {{*,TRSV*t*c,t*c,TRSV*t*c}{TRSV*t*c,*,TRSV*t*c,TRST_CT*t*c}{t*c,TRSV*t*c,*,TRSV*t*c}{TRSV*t*c,TRST_CT*t*c,TRSV*t*c,*}};
+		}
+	}
+	return 1;
+}
+
+TrN = 0;
+
+HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("TrN",vectorOfFrequencies);
+
+Model TrNModel = (TrN, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 1;

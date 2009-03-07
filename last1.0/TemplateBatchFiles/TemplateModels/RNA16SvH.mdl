@@ -1,0 +1,143 @@
+/* This file defines the transition matrix for the General Reversible model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:RNASvH16
+   	#Desc:Model allowing for secondary structure constraints in the RNA evolution.#
+   	#Dimension:16#
+    #DataType:di-nucleotide#
+   	#FileName:RNASvH16.mdl#
+   
+   05/19/2005  by Sergei L. Kosakovsky Pond
+*/
+
+
+/*----------------------------------------------------------------------------------------------------*/
+
+modelType = 0;
+
+#include "modelParameters2.mdl";
+
+if (dinucModelType < 0)
+{
+	return 0;
+}
+
+if (modelType == 1)
+{
+	#include "defineGamma.mdl";
+}
+if (modelType == 2)
+{
+	#include "defineHM.mdl";
+}
+
+global AC = 1;
+global AT = 1;
+global CG = 1;
+global CT = 1;
+global GT = 1;
+
+done = 0;
+while (!done)
+{
+	fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
+	fscanf  (stdin,"String", modelDesc);
+	if (Abs(modelDesc)==6)
+	{	
+		done = 1;
+	}
+}			
+ModelTitle = "MG94x"+modelDesc[0];
+			
+rateBiasTerms   = {{"AC","1","AT","CG","CT","GT"}};
+
+rateMultipliers = {{"","AC*","","AT*"}
+				   {"AC*","","CG*","CT*"}
+				   {"","CG*","","GT*"}
+				   {"AT*","CT*","GT*",""}};
+paramCount	  = 0;
+
+modelConstraintString = "";
+
+for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
+{
+	for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
+	{
+		if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
+		{
+			ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];	
+			if (rateBiasTerms[customLoopCounter2] == "1")
+			{
+				modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
+			}
+			else
+			{
+				modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+			}
+			break;
+		}
+	}
+}	
+
+if (Abs(modelConstraintString))
+{
+	ExecuteCommands (modelConstraintString);
+}
+
+			
+/*----------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	ModelMatrixName = {16,16};
+	
+	for (h=0; h<16; h=h+1)
+	{
+		for (v=h+1; v<16; v=v+1)
+		{
+			fromNuc = -1;
+			toNuc   = -1;
+			cNuc    = -1;
+			if (h$4 == v$4) /* same 1st nuc */
+			{
+				toNuc   = v%4;
+				fromNuc = h%4;
+				cNuc    = h$4;
+			}
+			else
+			{
+				if (v%4 == h%4) /* same 2nd nuc */
+				{
+					toNuc   = v$4;
+					fromNuc = h$4;
+					cNuc	= h%4;
+				}
+			}
+			if (fromNuc >= 0)
+			{
+				rateMult  = rateMultipliers[fromNuc][toNuc] + "1/" + EFV[cNuc] + "*"; 
+				if (modelType >= 1)
+				{
+					rateMult = rateMult + "c*";
+				}	
+				ExecuteCommands ("ModelMatrixName["+h+"]["+v+"]:="+rateMult  +"t;");
+				ExecuteCommands ("ModelMatrixName["+v+"]["+h+"]:="+rateMult  +"t;");
+			}
+		}
+	}	
+	
+	return 1;
+}
+
+/*----------------------------------------------------------------------------------*/
+
+HarvestFrequencies (vectorOfFrequencies,filteredData,2,2,1);
+HarvestFrequencies (observedFreq, filteredData,1,1,0);
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("RNA16SvH",observedFreq);
+Model RNA16SvHModel = (RNA16SvH, vectorOfFrequencies, MULTIPLY_BY_FREQS);

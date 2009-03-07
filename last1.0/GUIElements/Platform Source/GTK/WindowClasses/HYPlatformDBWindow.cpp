@@ -1,0 +1,1 @@
+/*	GTK Portions of the DB Window class		Sergei L. Kosakovsky Pond, Fall 2005.*/#include "HYDBWindow.h"//__________________________________________________________________bool 		_HYDBWindow::_ProcessMenuSelection (long msel){	// TBI	return _HYTWindow::_ProcessMenuSelection(msel);}//EOF

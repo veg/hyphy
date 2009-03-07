@@ -1,0 +1,371 @@
+/* This file defines the transition matrix an arbitrary time reversible model.
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:Custom#
+   	#Desc:Custom 4x4 reversible model (defined as in 010023) with choice of several equilibrium frequencies options.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:custm4x4.mdl#
+   
+   12/17/1999  by Sergei L. Kosakovsky Pond
+   Modified    on 03/06/2000 to comply with new Model syntax. 
+   Fixed	   04/2002 to really comply with the new Model syntax :\
+*/
+
+function  setElement (h,v,cc)
+{	
+	mSpecMatrix[h][v]=cc+1;
+	mSpecMatrix[v][h]=cc+1;
+	return 1;
+}
+
+done = 0;
+
+while (!done)
+{
+	fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
+	fscanf  (stdin,"String", modelDesc);
+	if (Abs(modelDesc)==6)
+	{	
+		done = 1;
+	}
+}
+
+sharedFlag = 0;
+categoriesUsed = 0;
+
+#include "modelParameters.mdl";
+
+if (modelType >0)
+{
+	sharedFlag = 1;
+	if (modelType == 2)
+	{
+		categoriesUsed = 1;
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		categoriesUsed = 1;
+		#include "defineHM.mdl";
+	}
+}
+
+if (sharedFlag)
+{
+	global AC=1;
+	global AT=1;
+	global CG=1;
+	global CT=1;
+	global GT=1;
+}
+
+
+mSpecMatrix = {{*,1,1,1}{1,*,1,1}{1,1,*,1}{1,1,1,*}};
+
+elementAssignments = {{0,0,0,0,0,0}};
+
+paramCount = 1;
+
+customLoopCounter3=setElement (0,1,0);
+
+for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
+{
+	for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
+	{
+		if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
+		{
+			elementAssignments[customLoopCounter2]=elementAssignments[customLoopCounter];
+			if (customLoopCounter2<3)
+			{
+				customLoopCounter3=setElement (0,customLoopCounter2+1,elementAssignments[customLoopCounter]);
+			}
+			else
+			{
+				if (customLoopCounter2<5)
+				{
+					customLoopCounter3=setElement (1,customLoopCounter2-1,elementAssignments[customLoopCounter]);
+				}
+				else
+				{
+					customLoopCounter3=setElement (2,3,elementAssignments[customLoopCounter]);
+				}
+			}
+			break;
+		}
+	}
+	if (customLoopCounter==customLoopCounter2)
+	{
+		if (customLoopCounter2<3)
+		{
+			customLoopCounter3=setElement (0,customLoopCounter2+1,paramCount);
+		}
+		else
+		{
+			if (customLoopCounter2<5)
+			{
+				customLoopCounter3=setElement (1,customLoopCounter2-1,paramCount);
+			}
+			else
+			{
+				customLoopCounter3=setElement (2,3,paramCount);
+			}
+		}
+		elementAssignments[customLoopCounter2] = paramCount;
+		paramCount = paramCount+1;
+	}
+	
+}
+
+rateBiasTerms = {{"AC","1","AT","CG","CT","GT"}};
+
+/*------------------------------------------------------------------------------------*/
+
+function promptForUserValue (ParameterName)
+{
+	parValue = -1;
+	while (parValue < 0)
+	{
+		fprintf (stdout, "Enter the rate for ", ParameterName, " (relative to AG rate):");
+		fscanf  (stdin, "Number", parValue);
+	}
+	return parValue;
+}
+
+/*------------------------------------------------------------------------------------*/
+
+if (sharedFlag)
+{
+	ChoiceList  (rateResp,"Rate Parameters",1,NO_SKIP,
+				 "Estimated","Rate parameters are inferred by maximum likelihood.",
+				 "User","Rate parameters are fixed at user specified values");
+				 
+	if (rateResp<0)
+	{
+		return 1;
+	}
+	
+	if (rateResp == 1)
+	{
+		if (elementAssignments[1]!=elementAssignments[0])
+		{
+			AC = promptForUserValue ("AC");
+		}
+		for (customLoopCounter=2; customLoopCounter < 6; customLoopCounter = customLoopCounter + 1)
+		{
+			for (customLoopCounter2=0; customLoopCounter2 < customLoopCounter; customLoopCounter2 = customLoopCounter2 + 1)
+			{
+				if (elementAssignments[customLoopCounter2]==elementAssignments[customLoopCounter])
+				{
+					break;
+				}
+			}
+			
+			if (customLoopCounter2 == customLoopCounter)
+			{
+				customLoopCounter2 = promptForUserValue (rateBiasTerms[customLoopCounter]);
+				ExecuteCommands (rateBiasTerms[customLoopCounter]+"=customLoopCounter2;");
+			}
+		}
+	}
+}
+
+
+ChoiceList  (freqResp,"Equilibrium Frequencies",1,NO_SKIP,
+			 "Observed","Nucleotide frequencies collected from the data file will be used as equilibrium frequencies.",
+			 "Equal","Equal (.25) frequencies are used as equilibrium frequencies",
+			 "Custom","Define your own vector of frequencies.");
+			 
+if (freqResp<0) 
+{
+	return 1;
+}
+else
+{
+	 if (freqResp<1)
+	 {
+		HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+		FREQUENCY_SENSITIVE = 1;
+	 }
+	 else
+	 {
+	 	if (freqResp<2)
+	 	{
+	 		equalFreqs = {{.25}{.25}{.25}{.25}};
+	 	}
+	 	else
+	 	{
+	 		userFreqs = {4,1};
+	 		while (1)
+	 		{
+	 			fprintf (stdout, "\nEnter the frequencies of A,C and G (T computed automatically). Use spaces to separate the entries:");
+	 			fscanf  (stdin, "Number,Number,Number",customLoopCounter,customLoopCounter2,customLoopCounter3);
+	 			if ((customLoopCounter>=0)&&(customLoopCounter2>=0)&&(customLoopCounter3>=0)&&(customLoopCounter+customLoopCounter2+customLoopCounter3<=1))
+	 			{
+	 				userFreqs[0][0]=customLoopCounter;
+	 				userFreqs[1][0]=customLoopCounter2;
+	 				userFreqs[2][0]=customLoopCounter3;
+	 				userFreqs[3][0]=1-customLoopCounter-customLoopCounter2-customLoopCounter3;
+	 				fprintf (stdout, "\nUsing the following frequencies:",userFreqs);
+	 				break;
+	 			}
+	 			else
+	 			{
+	 				fprintf (stdout, "\nInvalid choice of frequencies. Please try again");
+	 			}
+	 		}
+	 	}
+	 	
+	 }
+	 
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	ModelMatrixName = {4,4};
+	if (sharedFlag)
+	{
+		modelConstraintString = "";
+		
+		modelDesc = Format(mSpecMatrix[0][1],1,0)+Format(mSpecMatrix[0][2],1,0)+Format(mSpecMatrix[0][3],1,0)+Format(mSpecMatrix[1][2],1,0)+Format(mSpecMatrix[1][3],1,0)
+					+Format(mSpecMatrix[2][3],1,0);
+
+		AC = AC;
+		AT = AT;
+		CG = CG;
+		CT = CT;
+		GT = GT;
+
+		for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
+		{
+			for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
+			{
+				if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
+				{
+					if (rateBiasTerms[customLoopCounter2] == "1")
+					{
+						modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
+					}
+					else
+					{
+						modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+					}
+					break;
+				}
+			}
+		}	
+
+		if (Abs(modelConstraintString))
+		{
+			ExecuteCommands (modelConstraintString);
+			if (rateResp==1)
+			{
+				AC:=AC__;
+				AT:=AT__;
+				CG:=CG__;
+				CT:=CT__;
+				GT:=GT__;
+			}
+		}
+		
+		if (categoriesUsed)
+		{
+			ModelMatrixName = 
+				 {{*,AC*c*t,c*t,AT*c*t}
+				 {AC*c*t,*,CG*c*t,CT*c*t}
+				 {c*t,CG*c*t,*,GT*c*t}
+				 {AT*c*t,CT*c*t,GT*c*t,*}};
+		}
+		else
+		{
+			ModelMatrixName = 
+				 {{*,AC*t,t,AT*t}
+				 {AC*t,*,CG*t,CT*t}
+				 {t,CG*t,*,GT*t}
+				 {AT*t,CT*t,GT*t,*}};
+		}
+	}
+	else
+	{
+		for (customLoopCounter=0;customLoopCounter<4;customLoopCounter=customLoopCounter+1)
+		{
+			for (customLoopCounter_2=customLoopCounter+1;customLoopCounter_2<4;customLoopCounter_2=customLoopCounter_2+1)
+			{
+				customLoopCounter_r = mSpecMatrix[customLoopCounter][customLoopCounter_2];
+				if (customLoopCounter_r==1)
+				{
+					ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_ac;
+					ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_ac;
+				}
+				else
+				{
+					if (customLoopCounter_r==2)
+					{
+						ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_ag;
+						ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_ag;
+					}
+					else
+					{
+						if (customLoopCounter_r==3)
+						{
+							ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_at;
+							ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_at;
+						}
+						else
+						{
+							if (customLoopCounter_r==4)
+							{
+								ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_cg;
+								ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_cg;
+							}
+							else
+							{
+								if (customLoopCounter_r==5)
+								{
+									ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_ct;
+									ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_ct;
+								}
+								else
+								{
+									ModelMatrixName[customLoopCounter][customLoopCounter_2]:=t_gt;
+									ModelMatrixName[customLoopCounter_2][customLoopCounter]:=t_gt;
+								}
+							}
+						}
+					}
+				}
+				
+			}
+		}
+	}	
+	return 1;
+}
+
+custom4x4matrix = 0;
+
+if (freqResp>0)
+{
+	if (freqResp<2)
+	{
+		MULTIPLY_BY_FREQS = PopulateModelMatrix ("custom4x4matrix",equalFreqs);
+		Model custom4x4 = (custom4x4matrix,equalFreqs,MULTIPLY_BY_FREQS);	
+	}
+	else
+	{
+		MULTIPLY_BY_FREQS = PopulateModelMatrix ("custom4x4matrix",userFreqs);
+		Model custom4x4 = (custom4x4matrix,userFreqs,MULTIPLY_BY_FREQS);	
+		equalFreqs = userFreqs; 
+		/* Hack. Used in rebuilding models in NJ and CLUSTER bootstrap */
+	}
+}
+else
+{
+	MULTIPLY_BY_FREQS = PopulateModelMatrix ("custom4x4matrix",vectorOfFrequencies);
+	Model custom4x4 = (custom4x4matrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);	
+}

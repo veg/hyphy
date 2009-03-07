@@ -1,0 +1,353 @@
+global		R;
+global 		kappa;
+
+R 	  = 1;
+kappa = 1;
+
+nucModelString = "nucModelMatrix = {{*,kappa*t,t,kappa*t}{kappa*t,*,kappa*t,t}{t,kappa*t,*,kappa*t}{kappa*t,t,kappa*t,*}};";
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+function SetCodonNorm (subWeights)
+{
+	nFSTV = subWeights[0][0]+subWeights[2][0]+subWeights[3][0]+subWeights[5][0];
+	nFSTS = subWeights[1][0]+subWeights[4][0];
+	nFNTV = subWeights[0][1]+subWeights[2][1]+subWeights[3][1]+subWeights[5][1];
+	nFNTS = subWeights[1][1]+subWeights[4][1];
+	global codonFactor:=fudgeFactor__*(kappa*(nFSTV__+R*nFNTV__)+nFSTS__+nFNTS__*R);
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV, modelType)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+
+	if (modelType == 0)
+	{
+		for (h=0; h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10) 
+			{
+				hshift = hshift+1;
+				continue; 
+			}
+			vshift = hshift;
+			for (v = h+1; v<64; v=v+1)
+			{
+				diff = v-h;
+				if (_Genetic_Code[v]==10) 
+				{
+					vshift = vshift+1;
+					continue; 
+				}
+				nucPosInCodon = 2;
+				if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+				{
+					if (h$4==v$4)
+					{
+						transition = v%4;
+						transition2= h%4;
+					}
+					else
+					{
+						if(diff%16==0)
+						{
+							transition = v$16;
+							transition2= h$16;
+							nucPosInCodon = 0;
+						}
+						else
+						{
+							transition = v%16$4;
+							transition2= h%16$4;
+							nucPosInCodon = 1;
+						}
+					}
+					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					{
+			  			if (Abs(transition-transition2)%2)
+			  			{
+							ModelMatrixName[h-hshift][v-vshift] := synRate*kappa;
+							ModelMatrixName[v-vshift][h-hshift] := synRate*kappa;
+			  			}
+			  			else
+			  			{
+							ModelMatrixName[h-hshift][v-vshift] := synRate;
+							ModelMatrixName[v-vshift][h-hshift] := synRate;
+			  			}
+					}
+					else
+					{
+			  			if (Abs(transition-transition2)%2)
+			  			{
+							ModelMatrixName[h-hshift][v-vshift] := R*synRate*kappa;
+							ModelMatrixName[v-vshift][h-hshift] := R*synRate*kappa;
+			  			}
+			  			else
+			  			{
+							ModelMatrixName[h-hshift][v-vshift] := R*synRate;
+							ModelMatrixName[v-vshift][h-hshift] := R*synRate;
+			  			}
+					}
+				}
+		   }
+	    }		
+	}
+	else
+	{
+		ExecuteCommands (categDef1);
+		if (modelType == 1)
+		{
+			for (h=0; h<64; h=h+1)
+			{
+				if (_Genetic_Code[h]==10) 
+				{
+					hshift = hshift+1;
+					continue; 
+				}
+				vshift = hshift;
+				for (v = h+1; v<64; v=v+1)
+				{
+					diff = v-h;
+					if (_Genetic_Code[v]==10) 
+					{
+						vshift = vshift+1;
+						continue; 
+					}
+					nucPosInCodon = 2;
+					if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+					{
+						if (h$4==v$4)
+						{
+							transition = v%4;
+							transition2= h%4;
+						}
+						else
+						{
+							if(diff%16==0)
+							{
+								transition = v$16;
+								transition2= h$16;
+								nucPosInCodon = 0;
+							}
+							else
+							{
+								transition = v%16$4;
+								transition2= h%16$4;
+								nucPosInCodon = 1;
+							}
+						}
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						{
+				  			if (Abs(transition-transition2)%2)
+				  			{
+								ModelMatrixName[h-hshift][v-vshift] := c*synRate*kappa;
+								ModelMatrixName[v-vshift][h-hshift] := c*synRate*kappa;
+				  			}
+				  			else
+				  			{
+								ModelMatrixName[h-hshift][v-vshift] := c*synRate;
+								ModelMatrixName[v-vshift][h-hshift] := c*synRate;
+				  			}
+						}
+						else
+						{
+				  			if (Abs(transition-transition2)%2)
+				  			{
+								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate*kappa;
+								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate*kappa;
+				  			}
+				  			else
+				  			{
+								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate;
+								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate;
+				  			}
+						}
+					}
+			   }
+		    }		
+		}
+		else
+		{
+			if (modelType == 2)
+			{
+				for (h=0; h<64; h=h+1)
+				{
+					if (_Genetic_Code[h]==10) 
+					{
+						hshift = hshift+1;
+						continue; 
+					}
+					vshift = hshift;
+					for (v = h+1; v<64; v=v+1)
+					{
+						diff = v-h;
+						if (_Genetic_Code[v]==10) 
+						{
+							vshift = vshift+1;
+							continue; 
+						}
+						nucPosInCodon = 2;
+						if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+						{
+							if (h$4==v$4)
+							{
+								transition = v%4;
+								transition2= h%4;
+							}
+							else
+							{
+								if(diff%16==0)
+								{
+									transition = v$16;
+									transition2= h$16;
+									nucPosInCodon = 0;
+								}
+								else
+								{
+									transition = v%16$4;
+									transition2= h%16$4;
+									nucPosInCodon = 1;
+								}
+							}
+							if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+							{
+				  				if (Abs(transition-transition2)%2)
+				  				{
+									ModelMatrixName[h-hshift][v-vshift] := kappa*synRate;
+									ModelMatrixName[v-vshift][h-hshift] := kappa*synRate;
+								}
+								else
+								{
+									ModelMatrixName[h-hshift][v-vshift] := synRate;
+									ModelMatrixName[v-vshift][h-hshift] := synRate;
+								}
+							}
+							else
+							{
+				  				if (Abs(transition-transition2)%2)
+				  				{
+									ModelMatrixName[h-hshift][v-vshift] := c*R*kappa*synRate;
+									ModelMatrixName[v-vshift][h-hshift] := c*R*kappa*synRate;
+								}
+								else
+								{
+									ModelMatrixName[h-hshift][v-vshift] := c*R*synRate;
+									ModelMatrixName[v-vshift][h-hshift] := c*R*synRate;
+								}
+							}
+						}
+				   }
+			    }		
+			}
+			else
+			{
+				ExecuteCommands (categDef2);
+			 	
+				for (h=0; h<64; h=h+1)
+				{
+					if (_Genetic_Code[h]==10) 
+					{
+						hshift = hshift+1;
+						continue; 
+					}
+					vshift = hshift;
+					for (v = h+1; v<64; v=v+1)
+					{
+						diff = v-h;
+						if (_Genetic_Code[v]==10) 
+						{
+							vshift = vshift+1;
+							continue; 
+						}
+						nucPosInCodon = 2;
+						if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+						{
+							if (h$4==v$4)
+							{
+								transition = v%4;
+								transition2= h%4;
+							}
+							else
+							{
+								if(diff%16==0)
+								{
+									transition = v$16;
+									transition2= h$16;
+									nucPosInCodon = 0;
+								}
+								else
+								{
+									transition = v%16$4;
+									transition2= h%16$4;
+									nucPosInCodon = 1;
+								}
+							}
+					  		if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					  		{
+				  				if (Abs(transition-transition2)%2)
+				  				{
+					  				ModelMatrixName[h-hshift][v-vshift] := kappa*synRate*c;
+					  				ModelMatrixName[v-vshift][h-hshift] := kappa*synRate*c;
+					  			}
+					  			else
+					  			{
+					  				ModelMatrixName[h-hshift][v-vshift] := synRate*c;
+					  				ModelMatrixName[v-vshift][h-hshift] := synRate*c;
+					  			}
+						  	}
+					  		else
+					  		{
+					  			if (modelType!=4)
+					  			{
+				  					if (Abs(transition-transition2)%2)
+				  					{
+						  				ModelMatrixName[h-hshift][v-vshift] := kappa*R*synRate*d;
+					  					ModelMatrixName[v-vshift][h-hshift] := kappa*R*synRate*d;
+					  				}
+					  				else
+				  					{
+						  				ModelMatrixName[h-hshift][v-vshift] := R*synRate*d;
+					  					ModelMatrixName[v-vshift][h-hshift] := R*synRate*d;
+					  				}
+					  				
+					  			}
+					  			else
+					  			{
+				  					if (Abs(transition-transition2)%2)
+				  					{
+								  		ModelMatrixName[h-hshift][v-vshift] := kappa*r*synRate*d;
+						  				ModelMatrixName[v-vshift][h-hshift] := kappa*r*synRate*d;
+						  			}
+						  			else
+				  					{
+								  		ModelMatrixName[h-hshift][v-vshift] := r*synRate*d;
+						  				ModelMatrixName[v-vshift][h-hshift] := r*synRate*d;
+						  			}
+					  			}
+				  			}
+					   }
+				   }
+		    	}
+			}
+		}
+	}
+	
+	return 1;
+}

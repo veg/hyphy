@@ -1,0 +1,56 @@
+/* This file defines the transition matrix for the Jukes-Cantor 69 model 
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:JC69#
+   	#Desc:Jukes-Cantor 1969. Gamma variation possible.#
+   	#Dimension:4#
+   	#DataType:nucleotide#
+   	#FileName:JC69.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+*/
+
+equalFreqs = {{.25}{.25}{.25}{.25}};
+
+#include "modelParameters2.mdl";
+
+if (modelType>0)
+{
+	if (modelType == 1)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 2)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (modelType == 0)
+	{
+		ModelMatrixName = {{*,a,a,a}{a,*,a,a}{a,a,*,a}{a,a,a,*}};
+	}
+	else
+	{
+		ModelMatrixName = {{*,a*c,a*c,a*c}{a*c,*,a*c,a*c}{a*c,a*c,*,a*c}{a*c,a*c,a*c,*}};
+	}
+	return 1;
+}
+
+JC69 = 0;
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("JC69",equalFreqs);
+
+Model JC69Model = (JC69, equalFreqs, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 0;
+
+DUPLICATE_MODELS_OK = 1;

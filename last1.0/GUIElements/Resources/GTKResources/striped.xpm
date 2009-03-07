@@ -1,0 +1,18 @@
+/* XPM */
+static char *striped-01-01[] =
+{
+/* width height ncolors chars_per_pixel */
+"8 8 2 1",
+/* colors */
+"A c #EEEEEEEEEEEE",
+"B c #DDDDDDDDDDDD",
+/* pixels */
+"AAAAAAAA",
+"BBBBBBBB",
+"BBBBBBBB",
+"AAAAAAAA",
+"AAAAAAAA",
+"BBBBBBBB",
+"BBBBBBBB",
+"AAAAAAAA",
+};

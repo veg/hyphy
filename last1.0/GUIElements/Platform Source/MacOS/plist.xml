@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>txt</string>
+				<string>text</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>129</string>
+			<key>CFBundleTypeName</key>
+			<string>Text document</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>TEXT</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+	</array>
+	<key>CFBundleIconFile</key>
+	<string>128</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.hyphy</string>
+	<key>CFBundleLongVersionString</key>
+	<string>1.4, Copyright 1997-2006 Sergei L Kosakovsky Pond, Simon DW Frost and Spencer V Muse</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.00beta</string>
+	<key>CFBundleVersion</key>
+	<string>1.00beta</string>
+</dict>
+</plist>
