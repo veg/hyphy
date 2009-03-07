@@ -1,0 +1,285 @@
+/* This file to replace MG94GY94xREV_PARRIS.mdl. The latter implements only syn1, while this file implements both syn1 and syn3. */
+
+/* PARRIS version of model files uses nonsynonymous distribution instead of synonymous distribution for 
+   single rate models (older non-PARRIS version is the other way around) */
+
+global	   R;
+global     AC;
+global 	   AT;
+global     CG;
+global	   CT;
+global     GT;
+
+R  = 1;
+AT = 1;
+CG = 1;
+CT = 1;
+GT = 1;
+AC = 1;
+
+nucModelString = "nucModelMatrix = {{*,AC*t,t,AT*t}{AC*t,*,CG*t,CT*t}{t,CG*t,*,GT*t}{AT*t,CT*t,GT*t,*}};";
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+/* Unused function: */
+
+function BuildMGCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+	}
+	return result*(1.0/PIStop);
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+/* Unused function for constraining codonFactor as a function of model params (for branch length conversion
+   from nucleotide to codon models). Instead of using this, codonFactor is normally kept as an optimisable parameter. */
+
+function SetCodonNorm (subWeights)
+{
+	nSAC = subWeights[0][0];
+	nSAG = subWeights[1][0];
+	nSAT = subWeights[2][0];
+	nSCG = subWeights[3][0];
+	nSCT = subWeights[4][0];
+	nSGT = subWeights[5][0];
+
+	nNAC = subWeights[0][1];
+	nNAG = subWeights[1][1];
+	nNAT = subWeights[2][1];
+	nNCG = subWeights[3][1];
+	nNCT = subWeights[4][1];
+	nNGT = subWeights[5][1];
+	
+	global 	codonFactor:=fudgeFactor__*(R*(AC*nNAC__+nNAG__+AT*nNAT__+CG*nNCG__+CT*nNCT__+GT*nNGT__)+
+						   (AC*nSAC__+nSAG__+AT*nSAT__+CG*nSCG__+CT*nSCT__+GT*nSGT__));
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+rateMultipliers 		= {{""   ,"AC*",""   ,"AT*"}
+						   {"AC*",""   ,"CG*","CT*"}
+						   {""   ,"CG*",""   ,"GT*"}
+						   {"AT*","CT*","GT*","" }
+						  };
+						  
+						  
+aaRateMultipliersGlobal = {21,21};
+aaRateMultipliersLocal  = {21,21};
+
+for (h=0; h<21;h=h+1)
+{
+	for (v=0; v<21; v=v+1)
+	{
+		aaRateMultipliersGlobal[h][v] = "R*";
+		aaRateMultipliersGlobal[v][h] = "R*";
+		aaRateMultipliersLocal[h][v]  = "r*";
+		aaRateMultipliersLocal[v][h]  = "r*";
+	}
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV, modelType)
+{
+    /* Count model matrix dimension if it hasn't been specified: */
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	
+	/* Initialise model matrix in variable provided: */
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+	
+	/* Execute relevant category definition code to define syn and nonsyn distributions: */
+	/* Also set CatRateMult strings to refer to the appropriate distribution. 
+	   For proportional and single rate models, only the model in categDef2 (using category variable d) is used
+	   (note difference from older non-PARRIS version); 
+	   for dual models, the synonymous distribution should be in categDef1 (using category variable c) 
+	   and the nonsynonymous distribution in categDef2 (using category variable d). */
+	synCatRateMult 	  = "";
+	nonsynCatRateMult = "";
+	if (modelType)
+	{
+		ExecuteCommands (categDef2);
+		nonsynCatRateMult = "d*";
+		if (modelType == 1)
+		{
+			synCatRateMult 	  = "d*";
+		}
+		else
+		{
+		        if (modelType>2)
+			{
+				ExecuteCommands (categDef1);
+				synCatRateMult 	  = "c*";
+				if (multiplicativeNonSynRate)
+				{
+				    nonsynCatRateMult = "c*d*";
+				}
+			}
+		}
+	}
+	
+	/* If a multi model has been specified, use it to assign aa rate multipliers, otherwise assign them as a 
+	   global (for normal models) or local (for lineage models) parameter which is independent of aa. */
+	if (Abs(userAARateMultipliers))
+	{
+		aaRateMultipliers = userAARateMultipliers;
+	}
+	else
+	{
+		if (modelType>=4)
+		{
+			aaRateMultipliers = aaRateMultipliersLocal;
+		}
+		else
+		{
+			aaRateMultipliers = aaRateMultipliersGlobal;		
+		}
+	}
+	
+	/* Prepare model definition string for concatenation: */
+	modelDefString = "";
+	modelDefString*16384;
+	
+	if (modelType > 0)
+	{
+		catCounterAL = {};
+	}
+	
+	/* Loop through upper triangle of (symmetrical) codon rate matrix (dimension is 64 minus nr of stop codons), 
+	   building model definition string: */
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			
+			/* Determine in which codon position we have a change (transition and transition2 
+			   are the from and to nucleotide identities at this position): */
+			/* h$4==v$4                  : 3rd position 
+			   (diff%4==0)&&(h$16==v$16) : 2nd position
+			   diff%16==0                : 1st position
+			   other cases require more than one nucleotide change so rates are set to zero */
+			nucPosInCodon = 3;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 1;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 2;
+					}
+				}
+				hs = Format(h-hshift,0,0);
+				vs = Format(v-vshift,0,0);
+				ts = Format(transition,0,0);
+				ts2= Format(transition2,0,0);
+				ps = Format(nucPosInCodon-1,0,0);
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				
+				if (nucSynVar && modelType>2) /* syn3 model */
+				{
+				    synCatRateMult 	  = "c"+nucPosInCodon+"*";
+				    if (nucSynVar > 1 && nucPosInCodon == 2) /* syn2 and 2nd pos change */
+				    {
+					synCatRateMult 	  = "(c1+c3)*0.5*";
+				    }
+				    if (multiplicativeNonSynRate)
+				    {
+					nonsynCatRateMult = synCatRateMult+"d*";
+				    }
+				}
+
+				if (aa1==aa2) /* synonymous substitution */ 
+				{
+				    if (MGGYChoice) /* GY model */
+				    {
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate;\n"+
+							"ModelMatrixName["+vs+"]["+hs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate;\n");
+				    }
+				    else /* MG model */
+				    {
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts+"]["+ps+"];\n"+				    
+							"ModelMatrixName["+vs+"]["+hs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts2+"]["+ps+"];\n");
+				    }
+				}
+				else /* nonsynonymous substitution */
+				{
+				    bt = aaRateMultipliers[aa1][aa2];
+				    if (MGGYChoice) /* GY model */
+				    {
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate;\n"+"ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate;\n");						
+				    }
+				    else /* MG model */
+				    {
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate*EFV__["+ts+"]["+ps+"];\n"+"ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate*EFV__["+ts2+"]["+ps+"];\n");
+				    }
+				}
+			}
+		}
+	}		
+
+	/* Finish off (close and execute the model definition string we've built up): */
+	modelDefString*0;
+	ExecuteCommands (modelDefString);
+
+	/* Return value of 0 (MG) indicates that rate matrix does not need to be multiplied by codon frequencies;
+	/* Return value of 1 (GY) indicates that rate matrix still needs to be multiplied by codon frequencies: */
+	return MGGYChoice;
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+

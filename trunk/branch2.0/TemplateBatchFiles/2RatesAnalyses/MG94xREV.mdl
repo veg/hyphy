@@ -1,0 +1,221 @@
+global		R;
+global     AC;
+global 	   AT;
+global     CG;
+global	   CT;
+global     GT;
+
+R  = 1;
+AT = 1;
+CG = 1;
+CT = 1;
+GT = 1;
+AC = 1;
+
+nucModelString = "nucModelMatrix = {{*,AC*t,t,AT*t}{AC*t,*,CG*t,CT*t}{t,CG*t,*,GT*t}{AT*t,CT*t,GT*t,*}};";
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function BuildMGCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+	}
+	return result*(1.0/PIStop);
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+function SetCodonNorm (subWeights)
+{
+	nSAC = subWeights[0][0];
+	nSAG = subWeights[1][0];
+	nSAT = subWeights[2][0];
+	nSCG = subWeights[3][0];
+	nSCT = subWeights[4][0];
+	nSGT = subWeights[5][0];
+
+	nNAC = subWeights[0][1];
+	nNAG = subWeights[1][1];
+	nNAT = subWeights[2][1];
+	nNCG = subWeights[3][1];
+	nNCT = subWeights[4][1];
+	nNGT = subWeights[5][1];
+	
+	global 	codonFactor:=fudgeFactor__*(R*(AC*nNAC__+nNAG__+AT*nNAT__+CG*nNCG__+CT*nNCT__+GT*nNGT__)+
+						   (AC*nSAC__+nSAG__+AT*nSAT__+CG*nSCG__+CT*nSCT__+GT*nSGT__));
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+rateMultipliers 		= {{""   ,"AC*",""   ,"AT*"}
+						   {"AC*",""   ,"CG*","CT*"}
+						   {""   ,"CG*",""   ,"GT*"}
+						   {"AT*","CT*","GT*","" }
+						  };
+						  
+						  
+aaRateMultipliersGlobal = {21,21};
+aaRateMultipliersLocal  = {21,21};
+
+for (h=0; h<21;h=h+1)
+{
+	for (v=0; v<21; v=v+1)
+	{
+		aaRateMultipliersGlobal[h][v] = "R*";
+		aaRateMultipliersGlobal[v][h] = "R*";
+		aaRateMultipliersLocal[h][v]  = "r*";
+		aaRateMultipliersLocal[v][h]  = "r*";
+	}
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV, modelType)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+	
+	synCatRateMult 	  = "";
+	nonsynCatRateMult = "";
+	if (modelType)
+	{
+		ExecuteCommands (categDef1);
+		nonsynCatRateMult = "c*";
+		if (modelType == 1)
+		{
+			synCatRateMult 	  = "c*";
+		}
+		else
+		{
+			if (modelType>2)
+			{
+				synCatRateMult 	  = "c*";
+				ExecuteCommands (categDef2);
+				nonsynCatRateMult = "d*";
+			}
+		}
+	}
+	
+	
+	if (Abs(userAARateMultipliers))
+	{
+		aaRateMultipliers = userAARateMultipliers;
+	}
+	else
+	{
+		if (modelType>=4)
+		{
+			aaRateMultipliers = aaRateMultipliersLocal;
+		}
+		else
+		{
+			aaRateMultipliers = aaRateMultipliersGlobal;		
+		}
+	}
+	
+	modelDefString = "";
+	modelDefString*16384;
+	
+	if (modelType > 0)
+	{
+		catCounterAL = {};
+	}
+	
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			nucPosInCodon = 2;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 0;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 1;
+					}
+				}
+				hs = Format(h-hshift,0,0);
+				vs = Format(v-vshift,0,0);
+				ts = Format(transition,0,0);
+				ts2= Format(transition2,0,0);
+				ps = Format(nucPosInCodon,0,0);
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				
+				if (aa1==aa2) 
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+synCatRateMult+rateMultipliers[transition][transition2]+"synRate*EFV__["+ts2+"]["+ps+"];\n");
+				}
+				else
+				{
+					bt = aaRateMultipliers[aa1][aa2];
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate*EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+rateMultipliers[transition][transition2]+bt+"synRate*EFV__["+ts2+"]["+ps+"];\n");						
+				}
+			}
+	    }
+    }		
+	modelDefString*0;
+	ExecuteCommands (modelDefString);
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+
+

@@ -1,0 +1,25 @@
+/* XPM */
+static char *4002-01-01[] =
+{
+/* width height ncolors chars_per_pixel */
+"12 12 5 1",
+/* colors */
+"A c #FFFFFFFFFFFF",
+"B c #0000DDDD0000",
+"C c #000022220000",
+"D c #000077770000",
+"E c #0000BBBB0000",
+/* pixels */
+"AAACCCCCCAAA",
+"AACCDDDDCCAA",
+"ACDDEEEEDDCA",
+"CCDEBBBBEDCC",
+"CDEBBBBBBEDC",
+"CDEBBBBBBEDC",
+"CDEBBBBBBEDC",
+"CDEBBBBBBEDC",
+"CCDEBBBBEDCC",
+"ACDDEEEEDDCA",
+"AACCDDDDCCAA",
+"AAACCCCCCAAA",
+};

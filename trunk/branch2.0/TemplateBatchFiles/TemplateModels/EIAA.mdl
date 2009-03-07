@@ -1,0 +1,74 @@
+/* This file defines the transition matrix for the equal input model for amino-acids.
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+   	#Short:EqualInput#
+   	#Desc:Dayfoff model for amino-acids#
+   	#Dimension:20#
+    #DataType:aminoacid#
+   	#FileName:EIAA.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+*/
+
+NICETY_LEVEL = 2;
+
+#include "modelParameters2.mdl";
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	if (modelType == 1)
+	{
+		#include "defineGamma.mdl";
+	}	
+	if (modelType == 2)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+
+	ModelMatrixName = {20,20};
+	
+	if (modelType==0)
+	{
+		for (counter1=0; counter1<19;counter1=counter1+1)
+		{
+			for (counter2=counter1+1; counter2<20; counter2=counter2+1)
+			{
+				ModelMatrixName[counter1][counter2]:=t;
+				ModelMatrixName[counter2][counter1]:=t;			
+			}
+		}
+	}
+	else
+	{
+		for (counter1=0; counter1<19;counter1=counter1+1)
+		{
+			for (counter2=counter1+1; counter2<20; counter2=counter2+1)
+			{
+				ModelMatrixName[counter1][counter2]:=c*t;
+				ModelMatrixName[counter2][counter1]:=c*t;			
+			}
+		}
+	}
+	
+	return 1;
+}
+
+EEAA = 0;
+
+HarvestFrequencies (vectorOfFrequencies,filteredData,1,1,0);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("EEAA",vectorOfFrequencies);
+
+Model EqualInputModel = (EEAA, vectorOfFrequencies);
+
+FREQUENCY_SENSITIVE = 1;

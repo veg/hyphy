@@ -1,0 +1,446 @@
+/*---------------------------------------------------------------------------------------------------------------------------------------------
+  SPAWN INITIAL POPULATION; IT IS STORED AS GENERATING MATRICES
+---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+resultProcessingContext = 0;
+compressedString 		= {};
+optimizeBLFlag 			= 1;
+
+if (currentBPC == startAtBreakpoint)
+{
+	for (individual=0; individual<(populationSize-1) && individual<Abs(predef); individual = individual + 1)
+	{
+		aChild = Transpose(MakeStringCanonical (predef[individual],rateClassesCount));
+		aaRateMultipliers = StringToMatrix(aChild);
+		sortedScores[individual+1][1] = individual+1;
+		currentPopulation[individual+1] = aChild;
+		cString = aChild;
+		RunASample (compressedString[rateClassesCount-1],individual+1);
+	}
+
+	optimizeBLFlag = 0;
+}
+
+hitCount = 0;
+
+for (individual=individual+1; individual<populationSize && (currentBPC == startAtBreakpoint || individual < populationSize $ 2); individual=individual+1)
+{
+	cString 						= IsChildViable (SpawnRandomString(rateClassesCount));
+	aaRateMultipliers 				= StringToMatrix(cString);
+	sortedScores[individual][1] 	= individual;
+	currentPopulation[individual] 	= cString;
+	RunASample (compressedString[rateClassesCount-1],individual);
+}
+
+CleanUpMPI (0);
+
+sortedScores = sortedScores%0;
+sampleProbs = {populationSize,1};
+
+doMutation = 0;
+
+lastImprovedGeneration   = 0;
+lastBestAIC		  		 = 1e100;
+lastBranchAIC		     = currentBEST_IC;
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------
+  RUNS THE CHC;
+---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+for (generation=0; generation<generationCount; generation=generation+1)
+{	
+	timeSoFar = Time(1)-startTimer;
+	timeLeft  = maxTimeAllowed - timeSoFar;
+	if (timeLeft < 0)
+	{
+		break;
+	}
+	
+	percDone = 100*(generation-lastImprovedGeneration)/stoppingCriterion$1;		  	
+
+	byBPImprovement [currentBPC] = currentBEST_IC+sortedScores[populationSize-1][0];
+	byBPSplits		[currentBPC] = ConvertToPart (currentPopulation[populationSize-1]);
+
+	fprintf (stdout, "\nGENERATION ", generation+2, " with ", currentBPC, " breakpoints (~",percDone,"% converged)\n");
+						   
+	fprintf (stdout, "Breakpoints    c-AIC  Delta c-AIC");
+	for (_lc = 0; _lc < currentBPC; _lc = _lc+1)
+	{
+		fprintf (stdout, " [BP ", Format (_lc+1, 6,0), "]");
+	}
+	fprintf (stdout, "\n");
+	
+	lastCAIC = byBPImprovement[0];
+	for (_partCount = 0; _partCount <Abs (byBPImprovement); _partCount = _partCount + 1)
+	{
+		if (_partCount)
+		{
+			fprintf (stdout, Format (_partCount, 11, 0)," ", Format (lastCAIC-byBPImprovement [_partCount],8,2), "  ", Format (byBPImprovement [_partCount],11,3) );
+			bpLocs2    = byBPSplits		 [_partCount];
+			for (_lc = 0; _lc < Rows(bpLocs2); _lc = _lc+1)
+			{
+				fprintf (stdout, "  ", Format (bppMap[bpLocs2[_lc]], 9,0), " ");
+			}
+			fprintf (stdout, "\n");
+			lastCAIC = lastCAIC-byBPImprovement [_partCount];
+		}
+		else
+		{
+			fprintf (stdout, Format (_partCount, 11, 0)," ", Format (byBPImprovement [_partCount],8,2), "\n");
+		}
+		
+	}
+
+	percDone = 100*(generation-lastImprovedGeneration)/stoppingCriterion$1;		  	
+			  	
+	fprintf (stdout, "GA has considered        ", Abs (MasterList)-current_BPP_done_counter, "/", Format(totalModelCounter,12,0), " (", Abs (MasterList) ," over all runs) unique models\n",
+					 "Total run time           ", timeSoFar$3600, " hrs ", timeSoFar%3600$60, " mins ", timeSoFar%60, " seconds\n",
+					 "Throughput               ", Format (Abs(MasterList)/timeSoFar, 5, 2), " models/second\n", 
+					 "Allocated time remaining ", timeLeft$3600, " hrs ", timeLeft%3600$60, " mins ", timeLeft%60, " seconds (approx. ", Abs(MasterList)/timeSoFar*timeLeft, " more models.)\n");
+	
+						  
+	if ((generation+1) % annealingPhase == 0)
+	{
+		mutationProb = Max(0.01,mutationProb*mutationProbDecrease);
+	}
+	doRepop = 1;
+	doLocalMutation = generation-lastImprovedGeneration;
+	doLocalMutation = doLocalMutation*((doLocalMutation % localMutationInterval) == 0);
+	if (doMutation || doLocalMutation)
+	{
+		resultProcessingContext = 0;
+		if (doLocalMutation)
+		{
+			mutProb = localMutationRate;
+		}
+		else
+		{
+			mutProb = mutationProb;
+		}
+		for (individual=populationSize-2; individual>=0; individual=individual-1)
+		{
+			goOn = 1;
+			hitCount = 0;
+			while (goOn)
+			{
+				mpos = 0;
+				goOn 	= 0;
+				if (!doLocalMutation)
+				{
+					cString = currentPopulation[individual];
+				}
+				else
+				{
+					cString = currentPopulation[populationSize-1];
+				}
+				for (h=0; h<stateVectorDimension; h=h+1)
+				{
+					if (Random(0,1)<mutProb)
+					{
+						 newVal = cString[h];
+						 while (newVal == cString[h])
+						 {
+						 	newVal = Random (0,rateClassesCount)$1;
+						 }
+						 cString[h] = newVal;
+						 mpos = mpos + 1;
+					}
+				}
+				for (v=0; v<populationSize; v=v+1)
+				{
+					if (Abs(cString-currentPopulation[v])==0)
+					{
+						if (hitCount < 20)
+						{
+							hitCount = hitCount+1;
+							goOn = 1;
+						}
+						else
+						{
+							hitCount = 0;
+							goOn = 0;
+						}
+						break;
+					}
+				}
+			}
+			if (verboseFlag)
+			{
+				fprintf (stdout, "Mutated ", Format (mpos, 4, 0), " position in individual ", individual+1, "\n");
+			}
+			cString = IsChildViable		  (MakeStringCanonical (cString,rateClassesCount));
+			aaRateMultipliers = StringToMatrix(cString);
+			sortedScores[individual][1] = individual;
+			currentPopulation[individual] = cString;
+			RunASample (compressedString[rateClassesCount-1],individual);
+		}		
+		CleanUpMPI (0);
+		doMutation = 0;
+		sortedScores = sortedScores%0;
+	}
+	/* compute selection probabilities */
+	/*ExportAMatrix (modelFile,StringToMatrix(currentPopulation[populationSize-1]),1);*/
+	resultProcessingContext = 1;
+	fitnessSum = 0;
+	intermediateProbs = {populationSize+produceOffspring,2};
+        
+    if (matingChoice == 3)
+    {
+		lmatingChoice = Random(0,2.9999999999999)$1;
+	}
+	else
+	{
+		lmatingChoice = matingChoice;
+	}
+	
+	for (individual=0; individual<populationSize; individual=individual+1)
+	{
+		if (lmatingChoice==0)
+		{
+			sampleProbs[individual] = Exp((sortedScores[individual][0]-sortedScores[populationSize-1][0])/2);
+		}
+		else
+		{
+			if (lmatingChoice == 1)
+			{
+				sampleProbs[individual] = 1;		
+			}
+			else
+			{
+				sampleProbs[individual] = 2*(individual+1);					
+			}
+		}
+		intermediateProbs[individual][0] = sortedScores[individual][0];
+		intermediateProbs[individual][1] = sortedScores[individual][1];
+		fitnessSum = fitnessSum + sampleProbs[individual];
+	}
+	
+	genBestAIC = -sortedScores[populationSize-1][0];
+	
+	if (verboseFlag)
+	{
+    	fprintf (stdout, "\n", lastBranchAIC, "\t", genBestAIC, "\n");
+	}
+	
+	if (genBestAIC + 0.001 < lastBestAIC)
+	{
+		if (lastBranchAIC-genBestAIC > 10)
+		{
+			UpdateBL (0);
+			lastBranchAIC = -sortedScores[populationSize-1][0];
+			intermediateProbs[populationSize-1][0] = -lastBranchAIC;
+			genBestAIC = lastBestAIC;
+		}
+		lastBestAIC = -sortedScores[populationSize-1][0];
+		lastImprovedGeneration = generation;
+	} 
+	else
+	{
+		if (generation-lastImprovedGeneration>=stoppingCriterion)
+		{
+			break;
+		}
+	}
+	
+	sampleProbs = sampleProbs*(1/fitnessSum);
+	
+	if (verboseFlag)
+	{
+		fprintf (stdout, "\nMating probabilities\n");
+		for (individual=0; individual<populationSize; individual=individual+1)
+		{
+			if (verboseFlag)
+			{
+				fprintf (stdout, "Individual ", Format(individual,3,0), ", sorted ", Format(sortedScores[individual][1],3,0), ". c-AIC: ", 
+								  Format (sortedScores[individual][0], 8, 3), ", mating prob ", Format (sampleProbs[individual],6,4), ".\n");
+			}
+		}
+	}
+	
+	children 	   = {};
+	pairwiseCounts = {populationSize,populationSize};
+
+	for (individual=0; individual<produceOffspring; individual=individual+1)
+	{
+		/* pick two individuals to produce offspring */
+		/* pick 1st parent */
+		h 			       = Random (0,1);
+		fitnessSum		   = sampleProbs[0];
+		v = 0;
+		while (fitnessSum < h)
+		{
+			v = v+1;
+			fitnessSum = fitnessSum + sampleProbs[v];
+		}
+
+		p1 			   = sortedScores[v][1];
+		ps1			   = currentPopulation[p1];
+		goOn 		   = 1;
+		
+		disallowedProbs 	= sampleProbs[v];
+		
+		for (sampleTry = 0; (sampleTry < maxSampleTries) && goOn; sampleTry = sampleTry + 1)
+		{
+			goOn 		   = 0;
+			if (disallowedProbs<1)
+			{
+				h 			   = Random (0,1-disallowedProbs);
+				if (v == 0)
+				{
+					fitnessSum	   = 0;			
+				}
+				else
+				{
+					fitnessSum	   = sampleProbs[0];
+				}
+				
+				v2 = 0;
+				while (fitnessSum < h)
+				{
+					v2 = v2 + 1;
+					if (v2 == populationSize)
+					{
+						while (v2==v)
+						{
+							v2 = Min(Random (0,populationSize)$1,populationSize-1);
+						}
+						break;
+					}
+					if (v2!=v)
+					{
+						fitnessSum = fitnessSum + sampleProbs[v2];
+					}
+				}	
+			}
+			else
+			{
+				v2 = v;
+				while (v2==v)
+				{
+					v2 = Min(Random (0,populationSize)$1,populationSize-1);
+				}
+			}
+			
+			if (v2 == populationSize)
+			{
+				goOn = 1;
+				continue;
+			}
+			
+			while (pairwiseCounts[v][v2] > familyControlSize)
+			{
+				v2 =  Min(Random (0,populationSize)$1,populationSize-1);
+			}
+			
+			p2 = sortedScores[v2][1];
+			ps2			   = currentPopulation[p2];
+			fitnessSum 	   = 0;
+			
+			for (h=0; h<stateVectorDimension; h=h+1)
+			{
+				if (ps1[h] != ps2[h])
+				{
+					fitnessSum = fitnessSum+1;
+					/*if (incestDistance<fitnessSum)
+					{
+						break;
+					}*/
+				}
+			}
+			if (incestDistance>=fitnessSum)
+			{
+				goOn = 1;
+			}
+			else
+			{
+				pairwiseCounts[v][v2] = pairwiseCounts[v][v2] + 1;
+				pairwiseCounts[v2][v] = pairwiseCounts[v2][v] + 1;
+			}
+		}
+		
+		if (sampleTry == maxSampleTries)
+		{
+			doMutation = 1;
+			generation = generation - 1;
+			CleanUpMPI (0);
+			doRepop = 0;
+			break;
+		}
+		else
+		{
+			if (verboseFlag)
+			{
+				fprintf (stdout, "Mating ", p1, " and ", p2, ". Difference of ", fitnessSum, " positions\n");
+			}
+			aChild = {stateVectorDimension,1};
+			for (h=0; h<stateVectorDimension; h=h+1)
+			{
+				if (ps1[h] == ps2[h])
+				{
+					aChild[h] = ps1[h];
+				}
+				else
+				{
+					if (Random(0,1)<0.5)
+					{
+						aChild[h] = ps1[h];
+					}
+					else
+					{
+						aChild[h] = ps2[h];					
+					}
+				}
+			}
+			aChild = MakeStringCanonical (aChild,rateClassesCount);
+			aChild = IsChildViable (aChild);
+			aaRateMultipliers = StringToMatrix(aChild);
+			intermediateProbs[populationSize+individual][1] = populationSize+individual;
+			children  [individual] = aChild;
+			cString = aChild;
+			RunASample (compressedString[rateClassesCount-1],populationSize+individual);
+		}
+	}
+	CleanUpMPI (0);
+	if (doRepop)
+	{
+		newPop = {};
+		intermediateProbs = intermediateProbs%0;
+		for (h=produceOffspring; h<populationSize+produceOffspring; h=h+1)
+		{
+			v = intermediateProbs[h][1];
+			sortedScores[h-produceOffspring][1] = h-produceOffspring;
+			sortedScores[h-produceOffspring][0] = intermediateProbs[h][0];		
+			if (v<populationSize)
+			{
+				newPop[h-produceOffspring] = currentPopulation[v];
+			}
+			else
+			{
+				newPop[h-produceOffspring] = children[v-populationSize];
+			}
+		}
+		for (h=0; h<populationSize; h=h+1)
+		{
+			currentPopulation[h] = newPop[h];
+		}
+		
+		h = Abs((sortedScores[populationSize-1][0]-sortedScores[0][0])/sortedScores[0][0]);
+		if (verboseFlag)
+		{
+			fprintf (stdout, "Diversity level: ", h, " (hypermutation threshold: ", mutationThreshhold, ")\n");	
+		}
+		if (h<mutationThreshhold)
+		{
+			if (verboseFlag)
+			{
+				fprintf (stdout, "\nTriggered hypermutation...\n");
+			}
+			doMutation = 1;
+			generation = generation - 1;
+		}
+	}
+	if (Abs(MasterList)-current_BPP_done_counter >= totalModelCounter)
+	{
+		break;
+	}
+}

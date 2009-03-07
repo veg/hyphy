@@ -1,0 +1,1 @@
+fprintf (stdout, "\nHTTP URL:");fscanf  (stdin,  "String", theURL);GetURL  (inCode,theURL);ExecuteCommands (inCode);inCode = 0;					  

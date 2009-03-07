@@ -1,0 +1,174 @@
+ModelMatrixDimension = 0;
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+	
+	modelDefString = "";
+	modelDefString*16384;
+	
+	catCounterAL = {};
+	
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			nucPosInCodon = 2;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 0;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 1;
+					}
+				}
+				hs = Format(h-hshift,0,0);
+				vs = Format(v-vshift,0,0);
+				ts = Format(transition,0,0);
+				ts2= Format(transition2,0,0);
+				ps = Format(nucPosInCodon,0,0);
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				if (aa1==aa2) 
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+"synRate*EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+"synRate*EFV__["+ts2+"]["+ps+"];\n");
+				}
+				else
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+"nonSynRate*EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+"nonSynRate*EFV__["+ts2+"]["+ps+"];\n");	
+				}
+			}
+	    }
+    }		
+	modelDefString*0;
+	ExecuteCommands (modelDefString);
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function FindBranchLengthExpression (dummy, rateMatrix&)
+{
+	/* first decide how many rate classes there are */
+	
+	synRate   	= 1;
+	nonSynRate	= 1;
+	hshift    	= 0;	
+	synWeight 	= 0;
+	nsWeight  	= 0;
+	
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				if (aa1==aa2)
+				{
+					synWeight = synWeight + rateMatrix[h-hshift][v-vshift]*vectorOfFrequencies[h-hshift]+rateMatrix[v-vshift][h-hshift]*vectorOfFrequencies[v-vshift];
+				}
+				else
+				{
+					nsWeight = nsWeight + rateMatrix[h-hshift][v-vshift]*vectorOfFrequencies[h-hshift]+rateMatrix[v-vshift][h-hshift]*vectorOfFrequencies[v-vshift];
+				}
+			}
+	    }
+    }	
+  	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function replicateBranchLengths (dummy)
+{
+	FindBranchLengthExpression(1,"MG94custom");
+	bNames  	 = BranchName(givenTree2,-1);
+	definedOrNot = {};
+	for (brCount = Columns(bNames)-2; brCount >= 0; brCount = brCount - 1)
+	{
+		tn 	= bNames[brCount];
+		cbc	= bClasses[brCount];
+		if (definedOrNot[cbc] == 0)
+		{
+			definedOrNot[cbc] = 0;
+			ExecuteCommands ("global NSR"+cbc+"=1;");
+		}
+		ctx = "givenTree2." + tn + ".synRate:=" + presetBranchParameters[brCount] + 
+				"/("+ synWeight + "+NSR" + cbc + "*" +nsWeight+ ");givenTree2." + tn + ".nonSynRate:=NSR"+cbc+"*givenTree2." + tn + ".synRate;";
+		ExecuteCommands (ctx);
+		
+	}
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function makeReturnValue (dummy)
+{
+	retVal = "lf_MLES = " + lf_MLES + ";lf_MLE_VALUES={};\n";
+	GetInformation (nsr_list, "^NSR");
+	for (brCount = 0; brCount < Columns (nsr_list); brCount = brCount + 1)
+	{
+		ExecuteCommands ("ns_val = " + nsr_list[brCount] + ";");
+		retVal = retVal + "lf_MLE_VALUES[\"" + nsr_list[brCount] + "\"] = " + ns_val + ";\n";
+	}
+	return retVal;
+}

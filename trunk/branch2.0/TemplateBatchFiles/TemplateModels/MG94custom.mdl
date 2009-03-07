@@ -1,0 +1,377 @@
+/* This file defines the transition matrix for the Muse-Gaut 94 model x an arbitrary 4x4 rate matrix
+   for nucleotide substituions.
+   
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+   	#Short:MG94custom#
+   	#Desc:Muse-Gaut 94 x an arbitrary 4x4 rate matrix and 9 (3x4) frequency parameters. Possible Gamma Variation.#
+   	#Dimension:*#
+    #DataType:codon#
+   	#FileName:MG94custom.mdl#
+   
+   04/18/2002  by Sergei L. Kosakovsky Pond
+*/
+
+ModelMatrixDimension = 0;
+
+_MG94GlobalSuffix    = "";
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+_nucBiasMultipliers     = {{""   ,"AC*",""   ,"AT*"}
+						   {"AC*",""   ,"CG*","CT*"}
+						   {""   ,"CG*",""   ,"GT*"}
+						   {"AT*","CT*","GT*","" }
+						  };
+
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function makeLocalRateMult (_nbm)
+{
+	_localNucBiasMult = _nbm;
+	
+	for (h=0; h<4; h=h+1)
+	{
+		for (v=h+1; v<4; v=v+1)
+		{
+			aa1 = _nucBiasMultipliers[h][v];
+			if (Abs(aa1))
+			{
+				_gv = aa1[0][Abs(aa1)-2]+_MG94GlobalSuffix;
+				ExecuteCommands ("global "+_gv+"=1;\n");
+				_localNucBiasMult [h][v] = _gv + "*";
+				_localNucBiasMult [v][h] = _gv + "*";
+			}
+		}
+	}
+	return _localNucBiasMult;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64 - (_Genetic_Code["_MATRIX_ELEMENT_VALUE_ == 10"]*Transpose(_Genetic_Code["1"]))[0];
+	}
+	
+	_localNucBiasMult = makeLocalRateMult(_nucBiasMultipliers);
+		
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+	
+	synCatRateMult 	  = "synRate*";
+	nonsynCatRateMult = "nonSynRate*";
+	if (modelType)
+	{
+		ExecuteCommands ("global R"+_MG94GlobalSuffix+"=1;");
+		nonsynCatRateMult = synCatRateMult + "R"+_MG94GlobalSuffix+"*";
+		if (modelType > 1)
+		{
+			synCatRateMult 	      = synCatRateMult    + "c"+_MG94GlobalSuffix+"*";
+			nonsynCatRateMult 	  = nonsynCatRateMult + "c"+_MG94GlobalSuffix+"*";
+		}
+	}
+		
+	modelDefString = "";
+	modelDefString*16384;
+	
+	hshift = 0;
+	
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			nucPosInCodon = 2;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 0;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 1;
+					}
+				}
+				hs = Format(h-hshift,0,0);
+				vs = Format(v-vshift,0,0);
+				ts = Format(transition,0,0);
+				ts2= Format(transition2,0,0);
+				ps = Format(nucPosInCodon,0,0);
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				
+				if (aa1==aa2) 
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+synCatRateMult+_localNucBiasMult[transition][transition2]+"EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+synCatRateMult+_localNucBiasMult[transition][transition2]+"EFV__["+ts2+"]["+ps+"];\n");
+				}
+				else
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+_localNucBiasMult[transition][transition2]+"EFV__["+ts+"]["+ps+"];\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+_localNucBiasMult[transition][transition2]+"EFV__["+ts2+"]["+ps+"];\n");						
+				}
+			}
+	    }
+    }		
+	modelDefString*0;
+	ExecuteCommands (modelDefString);
+
+	if (Abs(MGCustomModelConstraintString))
+	{
+		ExecuteCommands (MGCustomModelConstraintString);
+	}
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function GetBranchLengthExpression (ModelMatrixName&,EFV,vof)
+{	
+	_branchLengthExpression = {};
+	
+	_sTags  = {};
+	_nsTags = {};
+		
+	hshift = 0;
+	
+	_localNucBiasMult = makeLocalRateMult(_nucBiasMultipliers);
+
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			nucPosInCodon = 2;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 0;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 1;
+					}
+				}
+
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				
+				key 	= _localNucBiasMult[transition][transition2];
+				if (aa1==aa2) 
+				{
+					_sTags [key] = _sTags [key] + EFV[transition][nucPosInCodon]*vof[h-hshift]+
+												  EFV[transition2][nucPosInCodon]*vof[v-vshift];
+				
+				}
+				else
+				{
+					_nsTags [key] = _nsTags [key] + EFV[transition][nucPosInCodon]*vof[h-hshift]+
+												  EFV[transition2][nucPosInCodon]*vof[v-vshift];
+				}
+			}
+	    }
+    }		
+    
+    _branchLengthExpression["S"]  = "";
+    _branchLengthExpression["S"] * 128;
+    _branchLengthExpression["NS"] = "";
+    _branchLengthExpression["NS"] * 128;
+    
+    _keys = Rows (_sTags);
+    _branchLengthExpression["S"] * ("("+_keys[0]+_sTags[_keys[0]]);
+    for (h=1; h<Columns (_keys); h=h+1)
+    {
+    	_branchLengthExpression["S"] * ("+"+_keys[h]+_sTags[_keys[h]]);
+    }
+    _branchLengthExpression["S"] * ")";
+    _branchLengthExpression["S"] * 0;
+	
+    _keys = Rows (_nsTags);
+    _branchLengthExpression["NS"] * ("("+_keys[0]+_nsTags[_keys[0]]);
+    for (h=1; h<Columns (_keys); h=h+1)
+    {
+    	_branchLengthExpression["NS"] * ("+"+_keys[h]+_nsTags[_keys[h]]);
+    }
+    _branchLengthExpression["NS"] * ")";
+    _branchLengthExpression["NS"] * 0;
+
+	return _branchLengthExpression;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PrepAConstraint 	   (modelDesc)
+{
+	MGCustomModelConstraintString = "";
+	MGCustomModelConstraintString * 128;
+
+	for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
+	{
+		for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
+		{
+			if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
+			{
+				if (MGCustomRateBiasTerms[customLoopCounter2] == "1")
+				{
+					MGCustomModelConstraintString * (MGCustomRateBiasTerms[customLoopCounter]+_MG94GlobalSuffix+":="+MGCustomRateBiasTerms[customLoopCounter2]+";");
+				}
+				else
+				{
+					if (MGCustomRateBiasTerms[customLoopCounter] == "1")
+					{
+						MGCustomModelConstraintString * (MGCustomRateBiasTerms[customLoopCounter2]+_MG94GlobalSuffix+":="+MGCustomRateBiasTerms[customLoopCounter]+";");			
+					}
+					else
+					{
+						MGCustomModelConstraintString * (MGCustomRateBiasTerms[customLoopCounter2]+_MG94GlobalSuffix+":="+MGCustomRateBiasTerms[customLoopCounter]+_MG94GlobalSuffix+";");			
+					}
+					
+				}
+				break;
+			}
+		}
+	}	
+	
+	MGCustomModelConstraintString * 0;
+	
+	return 0;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function BuildCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+	}
+	return result*(1.0/PIStop);
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+categoriesUsed = 0;
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	#include "modelParameters.mdl";
+}
+
+sharedFlag = 1;
+
+if (modelType > 1)
+{
+	categoriesUsed = 1;
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	done = 0;
+	while (!done)
+	{
+		fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
+		fscanf  (stdin,"String", modelDesc);
+		if (Abs(modelDesc)==6)
+		{	
+			done = 1;
+		}
+	}	
+}		
+			
+MGCustomRateBiasTerms = {{"AC","1","AT","CG","CT","GT"}};
+
+PrepAConstraint	(modelDesc);
+
+if (!SKIP_HARVEST_FREQ)
+{
+	HarvestFrequencies (observedFreq,filteredData,3,1,1);
+}
+
+NICETY_LEVEL = 3;
+
+MG94custom = 0;
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94custom", observedFreq);
+
+FREQUENCY_SENSITIVE = 1;
+
+vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
+
+Model MG94customModel = (MG94custom,vectorOfFrequencies,0);
+
+USE_POSITION_SPECIFIC_FREQS = 1;

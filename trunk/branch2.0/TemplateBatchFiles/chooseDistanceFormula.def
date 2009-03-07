@@ -1,0 +1,89 @@
+nucDistanceChoices = 
+{{"JC69","Jukes-Cantor distance formula (equal character frequencies, all rates equal)."}
+ {"K2P", "Kimura 2 parameter (equal character frequencies, transition/trasversion bias correction)."}
+ {"K2P_RV", "Kimura 2 parameter and rate variation (equal character frequencies, transition/trasversion bias correction, gamma distributed rate variation from site to site)."}
+ {"p_Distance", "Number of observed substituions per site."}
+ {"T3P", "Tamura 3-parameter (correction for GC content bias and transition/trasversion bias)."},
+ {"TN84", "Tajima-Nei (84) distance (unequal character frequencies)."}
+ {"TN93", "Tamura-Nei (93) distance (unequal character frequencies, A->G, C->T and transversional bias corrections)."}
+ {"TN93_RV", "Tamura-Nei (93) distance and rate variation (unequal character frequencies, A->G, C->T and transversional bias corrections, gamma distributed rate variation from site to site)."}
+ {"Unaligned_LZ", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content."}
+ {"Unaligned_LZ_FR", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content using the best choice forward and reverse string orientations."}
+};
+
+aaDistanceChoices = 
+{{"PC","Poisson corrected distance (equal character frequencies, all rates equal)."}
+ {"PC_RV","Poisson corrected distance with rate variation (equal character frequencies, all rates equal, gamma distributed rate variation from site to site))."}
+ {"PC_MH","Distance corrected for mulitple hits used in Clustal-W."}
+ {"p_Distance_aa", "Number of observed substituions per site."}
+ {"Unaligned_LZ", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content."}
+ {"Unaligned_LZ_FR", "Distance measure for unaligned sequences based on Lempel Ziv measure of information content using the best choice forward and reverse string orientations."}
+};
+
+codonDistanceChoices = 
+{{"Nei_Gojobori","Nei and Gojobori (1986) method."}
+ {"Modified_Nei_Gojobori","Nei and Gojobori (1986) method with transversion/transition bias correction."}
+ {"p_Distance_codon","Substitution counts normalized by sequence length."}
+};
+
+binaryDistanceChoices = 
+{{"p_Distance_binary","Substitution counts normalized by sequence length."}
+};
+
+if (DISTANCE_PROMPTS)
+{
+	/* determine the size of the data set filter */
+	GetDataInfo (cInfo, filteredData, "CHARACTERS");
+	filterCharacters = Columns (cInfo);
+	
+	if (filterCharacters == 4)
+	{
+		ChoiceList (dfileChoice,"Nucleotide based distance formula.",1,SKIP_NONE,nucDistanceChoices);
+		if (dfileChoice < 0)
+		{
+			return 0;
+		}
+		ExecuteCommands ("#include\"Distances/"+nucDistanceChoices[dfileChoice][0]+"\";");
+	}
+	else
+	{
+		if (filterCharacters == 20)
+		{
+			ChoiceList (dfileChoice,"Amino-acid based distance formula.",1,SKIP_NONE,aaDistanceChoices);
+			if (dfileChoice < 0)
+			{
+				return 0;
+			}
+			ExecuteCommands ("#include\"Distances/"+aaDistanceChoices[dfileChoice][0]+"\";");		
+		}
+		else
+		{
+			if (filterCharacters == 2)
+			{
+				ChoiceList (dfileChoice,"Binary charcters based distance formula.",1,SKIP_NONE,binaryDistanceChoices);
+				if (dfileChoice < 0)
+				{
+					return 0;
+				}
+				ExecuteCommands ("#include\"Distances/"+binaryDistanceChoices[dfileChoice][0]+"\";");		
+			}
+			else
+			{
+				if (Abs (_Genetic_Code) > 0)
+				{
+					ChoiceList (dfileChoice,"Codon based distance formula.",1,SKIP_NONE,codonDistanceChoices);
+					if (dfileChoice < 0)
+					{
+						return 0;
+					}
+					ExecuteCommands ("#include\"Distances/"+codonDistanceChoices[dfileChoice][0]+"\";");					
+				}
+				else
+				{
+					fprintf (stdout, "\n\nNonstandard data type - no distance formulae are available\n\n");
+					return 1;
+				}
+			}
+		}
+	}
+}

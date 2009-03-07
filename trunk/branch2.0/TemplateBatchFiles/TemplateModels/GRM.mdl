@@ -1,0 +1,71 @@
+/* This file defines the transition matrix for the General Reversible model
+   The file should be used as follows:
+   
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:GRM#
+   	#Desc:General Reversible Model. Local or global parameters. Possible Gamma Variation.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:GRM.mdl#
+   
+   08/18/1999  by Sergei L. Kosakovsky Pond
+   Modified on 03/06/2000 to comply with the new Model syntax.
+*/
+
+#include "modelParameters.mdl";
+
+if (modelType >= 1)
+{
+	global AC = 1;
+	global AT = 1;
+	global CG = 1;
+	global CT = 1;
+	global GT = 1;
+	
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (modelType == 0)
+	{
+		ModelMatrixName = {{*,a,b,c}{a,*,d,e}{b,d,*,f}{c,e,f,*}};
+	}
+	else
+	{
+		if (modelType<2)
+		{
+			ModelMatrixName = {{*,AC*mu,mu,AT*mu}{AC*mu,*,CG*mu,CT*mu}{mu,CG*mu,*,GT*mu}{AT*mu,CT*mu,GT*mu,*}};
+		}
+		else
+		{
+			ModelMatrixName = {{*,AC*mu*c,mu*c,AT*mu*c}{AC*mu*c,*,CG*mu*c,CT*mu*c}{mu*c,CG*mu*c,*,GT*mu*c}{AT*mu*c,CT*mu*c,GT*mu*c,*}};
+		}
+	}
+	return 1;
+}
+
+GRM = 0;
+
+if (SKIP_HARVEST_FREQ == 0)
+{
+	HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+}
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("GRM",vectorOfFrequencies);
+
+Model GRMModel = (GRM, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 1;
