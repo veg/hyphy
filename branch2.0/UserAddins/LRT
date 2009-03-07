@@ -1,1 +1,0 @@
-fprintf (stdout, "Log-likelihood for the null model:");fscanf (stdin, "Number", L_0);fprintf (stdout, "Log-likelihood for the alternative model:");fscanf (stdin, "Number", L_A);fprintf (stdout, "Difference in degrees of freedom:");fscanf (stdin, "Number", df);fprintf (stdout, "\np=", 1-CChi2(2(L_A-L_0),df), "\n" );
