@@ -2577,7 +2577,10 @@ void	_HYDataPanel::SimulateDataSet (long option, bool ancestors)
 			if (!ancestors)
 				lf->Simulate (*target, emptyList);
 			else
-				lf->ReconstructAncestors (*target);
+			{
+				_SimpleList allP (lf->CountObjects(0), 0, 1);
+				lf->ReconstructAncestors (*target, allP, empty);
+			}
 				
 			if (option==1) // save to file
 			{

@@ -126,10 +126,13 @@ void	acknError (const char* theError)
 
 //_____________________________________________________________
 
-void	checkPointer (void* p)
+void*	checkPointer (void* p)
 {
-	if (!p)
-		warnError(-108);
+	if (p)
+		return p;
+	
+	warnError(-108);
+	return nil;
 }
 //_____________________________________________________________
 //EOF			

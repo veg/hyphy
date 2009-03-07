@@ -9935,175 +9935,6 @@ bool	 _TheTree::IntPopulateLeaves (_DataSetFilter* dsf, long index, long)
 }
 
 
-#ifndef _SLKP_LFENGINE_REWRITE_
-//_______________________________________________________________________________________________
-
-_List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf, long index, long lastIndex, _Parameter * supportVector)	
-// reconstruct ancestral states at site index
-// given that the previous site is 'lastindex' 
-// if 'supportVector' is not nil, store character weights at the root
-{
-
-	_CalcNode *travNode,
-			  *theChildNode;
-			  
-	long 	   nodeCount,
-			   f;
-			   			   			   
-	_Parameter* fastIndex,
-			  * stopper,
-			  myLikelihoodScaler = LIKELIHOOD_SCALER;
-			  
-	node<long>* nodeChild;
-	
-	if (IntPopulateLeaves (dsf, index,lastIndex))
-	// all gaps in this site
-	{
-		char gapC         = dsf->GetData()->GetTT()->GetGapChar();
-		_PMathObj		bc = BranchCount();
-		f = bc->Value()+1;
-		DeleteObject   (bc); 
-		_String			  allGaps (f,true);
-		while (f--)
-			allGaps << gapC;
-		
-		allGaps.Finalize();
-		_List* 		   res = new _List; checkPointer(res);
-		f				  = dsf->GetUnitLength();
-		while (f--)
-			(*res) && & allGaps;
-		return res;
-	}
-	
-	_Matrix			  cachedLiks    (flatTree.lLength, cBase, false, true);
-
-	bool		 underflowed = true;   
-	long		 passCount	 = 0;
-
-	for (nodeCount=0; nodeCount<flatTree.lLength; nodeCount++)
-	// allocate conditional probability storage
-		if (((node <long>*)(flatNodes.lData[nodeCount]))->parent)
-			((_CalcNode*)(((BaseRef*)flatTree.lData)[nodeCount]))->categoryVariables << (long)(cachedLiks.theData+cBase*nodeCount);
-	
-	while (underflowed && (passCount<ANCESTRAL_SCALING_MAX))
-	{
-		underflowed = false;
-		for (nodeCount=0; nodeCount<flatTree.lLength && (! underflowed || passCount == ANCESTRAL_SCALING_MAX-1); nodeCount++)
-		{
-			theChildNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[nodeCount]);
-			nodeChild = ((node <long>*)(flatNodes.lData[nodeCount]));
-			
-			node<long> * nodeParent = nodeChild->parent;
-			_Parameter * thisNodeMatrix = nil;
-			long 	     upTo;
-			
-			if (nodeParent)
-			{
-				thisNodeMatrix = theChildNode->compExp->theData;
-				upTo		   = cBase;
-				
-				//if (passCount == 0)
-				//	theChildNode->categoryVariables << (long)(cachedLiks.theData+cBase*nodeCount);
-			}
-			else
-				upTo = 1;
-
-			theChildNode->cBase = cBase;
-			
-			long		  underflowCount = 0;
-			
-			for (long parentState = 0; parentState < upTo; parentState++)
-			{
-				long 	   bestState = 0;
-				_Parameter maxValue = 0.0;
-				
-				
-				for (long myValue = 0; myValue<cBase; myValue++)
-				{
-					_Parameter curValue = myLikelihoodScaler;
-					
-					for (long k=0; k <nodeChild->nodes.length; k++)
-					{
-						travNode	=		((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->nodes.data[k]->in_object]);
-						fastIndex	=		travNode->compExp->theData;
-						f			=		travNode->lastState;
-						if (f<0)
-						{
-							if (nodeChild->nodes.data[k]->nodes.length)
-								curValue *= ((_Parameter*)(travNode->categoryVariables.lData[travNode->categoryVariables.lLength-1]))[myValue];
-							else
-							{
-								stopper		 = travNode->theProbs;
-								fastIndex	+= myValue*cBase;
-								_Parameter tmp = 0.;
-								for (long i=0; i<cBase;i++,fastIndex++,stopper++)
-									tmp += *fastIndex * *stopper;
-								curValue *= tmp;
-							}
-						}	
-						else // unambiguous node
-							curValue *= fastIndex[myValue*cBase+f];
-					}	
-					curValue *= nodeParent?thisNodeMatrix[parentState*cBase+myValue]:theProbs[myValue];
-					
-					if (supportVector && nodeParent == nil)
-						supportVector[myValue] = curValue;
-						
-					if (curValue>maxValue)
-					{
-						maxValue = curValue;
-						bestState = myValue;
-					}	
-				}
-				
-					
-				if (maxValue == 0.0)
-					underflowCount ++;
-
-				if (nodeParent)
-				{
-					theChildNode->theProbs[parentState] = bestState;
-					((_Parameter*)(theChildNode->categoryVariables.lData[theChildNode->categoryVariables.lLength-1]))[parentState] = maxValue;
-				}
-				else
-					theChildNode->cBase = bestState;
-			}
-			
-			if (underflowCount >= upTo)
-				underflowed = true;
-						
-			if (nodeParent)
-				((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeParent->in_object])->cBase = -1;
-		}
-		
-		if (underflowed)
-		{
-			if (passCount == ANCESTRAL_SCALING_MAX-1)
-				ReportWarning (_String("Bailing out after ")&(long)ANCESTRAL_SCALING_MAX&" rescaling attempts: ancestral states at site " & index & " may be unreliable.");			
-			else
-				ReportWarning (_String("Ancestral State Reconstructor underflowed at site ") & index & "node "& *theChildNode->GetName() &" with multiplicative factor " & myLikelihoodScaler & ". Adjusted the factor to " & (myLikelihoodScaler*=exp (691./ (flatTree.lLength+1))));
-
-		}
-		
-		passCount ++;
-	}
-	_List * resList = MapCBaseToCharacters (dsf);
-	
-	if (supportVector)
-	{	
-		_Parameter totalWeight = 0.0;
-		for (long si = 0; si < cBase; si++)
-			totalWeight += supportVector[si];
-		totalWeight = 1./totalWeight;
-		for (long si2 = 0; si2 < cBase; si2++)
-			supportVector[si2] *= totalWeight;
-	}
-	
-	return resList;
-}
-
-#endif
-
 //_______________________________________________________________________________________________
 
 void	 _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, long lastIndex, _Matrix& resultMatrix)	
@@ -10514,141 +10345,6 @@ void	 _TheTree::WeightedCharacterDifferences (_Parameter siteLikelihood, _Matrix
 }
 
 //_______________________________________________________________________________________________
-
-_List*	 _TheTree::SampleAncestors (_DataSetFilter* dsf, node<long>* aNode)	
-// assumes that everything has been releaved
-{	
-	/*if (cBase>512)
-	{
-		WarnError ("State spaces with more than 512 states are not supported in SampleAncestors");
-		return    new _List;
-	}
-		
-	_Parameter vec1[512],
-			   vec2[512],
-			   vec3[512];
-
-	for (long		leafCount=0; leafCount<flatLeaves.lLength; leafCount++)
-	{
-		node<long>* disLeaf = ((node <long>*)(flatLeaves.lData[leafCount]));
-		_CalcNode*  lNode   = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[disLeaf->in_object]);
-		if (lNode->lastState>=0)
-		{
-			lNode->cBase = lNode->lastState;
-			lNode->theValue = 1.;
-		}
-		else
-		{
-			_Parameter normFactor 	= 0.0,
-					  *stateVector  = lNode->theProbs,
-					  *stopper		= stateVector+cBase,
-					  *tFreq		= theProbs,
-					  sumSoFar 		= 0.0;
-					  					  
-			for (;stateVector!=stopper;stateVector++,tFreq++)
-				if (*stateVector)
-					normFactor += *tFreq;
-					
-			stateVector -= cBase;
-			lNode->cBase = 0;
-			
-			_Parameter	randVal 		= normFactor*(genrand_real2()); 
-			sumSoFar += stateVector[0];
-			
-			while (sumSoFar<randVal)
-				sumSoFar += stateVector[++lNode->cBase];
-			
-			lNode->theValue = stateVector[lNode->cBase]/normFactor;
-		}
-	}
-	
-		   
-	for (long	nodeCount=0; nodeCount<flatTree.lLength; nodeCount++)
-	{
-		node<long>* disNode = ((node <long>*)(flatNodes.lData[nodeCount]));
-		_CalcNode*  iNode   = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[disNode->in_object]);
-		
-		_Parameter normFactor 	= 0.0,
-				   sumSoFar 	= 0.0;
-
-		for (long meState = 0; meState < cBase; meState++)
-		{
-			for (long eraser = 0; eraser < cBase; eraser++)
-			{
-				vec1[eraser] = 0.;
-				vec2[eraser] = 0.;
-			}
-			normFactor += (vec3 [meState] =  ConditionalNodeLikelihood (disNode->parent, disNode, vec1, vec2, meState, -1));
-		}
-		
-		iNode->cBase = 0;
-				  					  
-		sumSoFar += vec3[iNode->cBase];
-		
-		_Parameter	randVal 		= normFactor*genrand_real2(); 
-		
-		while (sumSoFar<randVal)
-			sumSoFar += vec3[++iNode->cBase];
-
-		iNode->theValue = vec3[iNode->cBase]/normFactor;
-		
-	}*/
-	
-
-	_Parameter	randVal  = genrand_real2(),
-				totalSum = 0.;
-				
-	_CalcNode*  cNode	= (_CalcNode*)LocateVar (aNode->in_object);
-	if (aNode->parent)
-	{
-		_Parameter * tMx = cNode->compExp->theData + ((_CalcNode*)LocateVar (aNode->parent->in_object))->cBase*cBase;
-		for (long i = 0; i<cBase; i++)
-			totalSum += tMx[i]*cNode->theProbs[i];
-			
-		randVal *= totalSum;
-		_Parameter runningSum = 0.0;
-		long	   ms = -1;
-		while (runningSum < randVal)
-		{
-			ms ++;
-			runningSum += tMx[ms]*cNode->theProbs[ms];
-		}
-		cNode->cBase = ms;
-		for (ms = aNode->get_num_nodes(); ms; ms--)
-			SampleAncestors (dsf, aNode->go_down (ms));							 
-
-	
-		return nil;
-	}
-	else
-	{
-		for (long i = 0; i<cBase; i++)
-			totalSum += theProbs[i]*cNode->theProbs[i];
-			
-		if (totalSum == 0.0)
-		{
-			WarnError ("Numerical underflow - can't sample ancestral states.");
-			return    new _List;
-		}
-		else
-		{
-			randVal *= totalSum;
-			_Parameter runningSum = 0.0;
-			long	   ms = -1;
-			while (runningSum < randVal)
-			{
-				ms ++;
-				runningSum += theProbs[ms]*cNode->theProbs[ms];
-			}
-			cNode->cBase = ms;
-			for (ms = aNode->get_num_nodes(); ms; ms--)
-				SampleAncestors (dsf, aNode->go_down (ms));
-		}
-		return MapCBaseToCharacters (dsf,false);
-	}
-}
-
-//_______________________________________________________________________________________________
 _AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
 {
 	_SimpleList * nodes  = new _SimpleList,
@@ -10659,6 +10355,27 @@ _AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
 		result->Insert ((BaseRef)whichL->lData[pistolero], pistolero, false);
 	
 	return		  result;
+	
+}
+
+//_______________________________________________________________________________________________
+void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere)
+{
+	_AVLListX*			nodeMapper    = ConstructNodeToIndexMap (true);
+	_CalcNode*			traversalNode = StepWiseTraversal		(true);
+	
+	long				allNodeCount = 0;
+	storeHere.Populate (flatTree.lLength, 0, 0);
+	
+	while (traversalNode)
+	{
+		if (!IsCurrentNodeATip())
+			storeHere.lData[nodeMapper->GetXtra (nodeMapper->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
+		traversalNode = StepWiseTraversal(false);
+	}
+	
+	nodeMapper->DeleteAll(false);DeleteObject (nodeMapper);
+
 	
 }
 

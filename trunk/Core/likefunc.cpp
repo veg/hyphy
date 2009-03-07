@@ -1572,7 +1572,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 						{
 #ifdef _SLKP_LFENGINE_REWRITE_
 							ZeroSiteResults();
-							RecurseCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, 
+							RecurseCategory(i,  0, blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), 1., 
 											&scalerTabs, 1, result->theData+currentOffset);
 							
 #else
@@ -1712,17 +1712,14 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::AllocateSiteResults 		(void)
 {
-	long i, 
-		 hDim = 0;
+	long maxDim = 0;
 		 
-	for (i=0;i<theTrees.lLength;i++)
+	for (long i=0;i<theTrees.lLength;i++)
 	{
-		//if ((BlockLength(i)>hDim)&& blockDependancies (i))	/* mod 05/01/2003 */
 		long bl = BlockLength (i);
-		if (bl > hDim)
-			hDim = bl;
+		maxDim = MAX (maxDim, bl);
 	}
-	siteResults = new _Matrix (hDim,2,false,true);
+	siteResults = new _Matrix (maxDim,2,false,true);
 	checkPointer(siteResults);
 }
 
@@ -2056,11 +2053,8 @@ void	_LikelihoodFunction::PostCompute 		(void)
 		
 void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
 {
-	long 	blockWidth = bySiteResults->GetVDim();
-	_Parameter	 * resStore = bySiteResults->theData+i*blockWidth;
-#ifdef _SLKP_LFENGINE_REWRITE_
-	categID = -1;
-#endif
+	long		  blockWidth = bySiteResults->GetVDim();
+	_Parameter	 * resStore  = bySiteResults->theData+i*blockWidth;
 	ComputeBlock (i,resStore);
 #ifdef _SLKP_LFENGINE_REWRITE_
 	// multiply scaling factors into the expression
@@ -2069,10 +2063,7 @@ void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
 		long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[i]->lData,
 					upto			= ((_SimpleList**)siteCorrections.lData)[i]->lLength;
 		for (long s = 0; s < upto; s++)
-		{
-		//	printf ("%d\t%d\t%g\t%d\n", i, s, resStore[s], siteCorrectors[s]);
 			resStore[s] *= acquireScalerMultiplier(siteCorrectors[s]);
-		}
 	}
 #endif
 	if (f || !usedCachedResults)
@@ -2117,18 +2108,14 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 {
 		
 	_Parameter result = 0.;
-	long	   i;
 	
 	if (!PreCompute())
 		return -A_LARGE_NUMBER;
 	
 	if (!isInOptimize && hasBeenOptimized)
-		for (i=0;i<indexInd.lLength; i++)
+		for (long i=0;hasBeenOptimized && i<indexInd.lLength; i++)
 			if (LocateVar (indexInd.lData[i])->HasChanged())
-			{
 				hasBeenOptimized = false;
-				break;
-			}
 			
 	#ifdef __HYPHYMPI__
 		if (parallelOptimizerTasks.lLength)
@@ -2144,12 +2131,12 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		if (!siteResults)
 			AllocateSiteResults ();
 			
-		for (i=0; i<theTrees.lLength; i++)
+		for (long i=0; i<theTrees.lLength; i++)
 		{
 			if (HasBlockChanged(i))
 			{
 				_DataSetFilter	*df 			= ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]));
-				long 			blockWidth 		= df->GetFullLengthSpecies()/df->GetUnitLength();
+				long 			blockWidth 		= df->GetSiteCount();
 				
 				_Matrix 		*blockResult 	= nil;
 				_String 		mxName 			= siteWiseMatrix & (long)(i+1); 
@@ -2231,27 +2218,25 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			if (computingTemplate && templateKind)
 			{
 				categID = 0; /* mod 07/23/2004 - was = -1 */
-				for (i=0; i<theTrees.lLength; i++)
+				for (long i=0; i<theTrees.lLength; i++)
 					ComputeBlockForTemplate (i);
 			}
 			else
-				for (i=0; i<theTrees.lLength; i++)
+				for (long i=0; i<theTrees.lLength; i++)
 					result+=ComputeBlock (i);				
 		}
 		else
 		{
-			long hDim = 0;				 
-				 
 			if (!siteResults)
 				AllocateSiteResults ();
 			
-			hDim = siteResults->GetHDim();
+			long hDim = siteResults->GetHDim();
 			
 			_Parameter *sR = siteResults->fastIndex();
 
 			for (long j=0;j<theTrees.lLength;j++)
 			{
-				for (i=0;i<2*hDim;i++)
+				for (long i=0;i<2*hDim;i++)
 					sR[i] = 0.;
 				
 				categID = 0;
@@ -2259,6 +2244,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				long	blockLength = BlockLength(j);
 				
 				if (blockDependancies.lData[j])
+					// depends on some category variables
 				{
 					if ( computationalResults.lLength<=j || HasBlockChanged(j))
 					{
@@ -2272,38 +2258,28 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							long ff = HasHiddenMarkov(blockDependancies.lData[j],false);
 							if (ff<0)
 							{
-#ifdef _SLKP_LFENGINE_REWRITE_
-								_SimpleList	scalerTabs (blockLength, 0, 0);
-								long		cumulativeCorrection = 0;
-#endif
-								RecurseCategory (j,0,blockDependancies.lData[j],HighestBit(blockDependancies.lData[j]),1
-#ifdef _SLKP_LFENGINE_REWRITE_
-								,&scalerTabs
-#endif
-								);
-								
+								_SimpleList							scalerTabs (blockLength, 0, 0);
+								long								cumulativeCorrection = 0;
+								PopulateConditionalProbabilities	(j,2,siteResults->theData,scalerTabs); 
 								
 								if (computingTemplate && templateKind)
+									// this needs fixing for scaling
 									ComputeBlockForTemplate2 (j, bySiteResults->theData+j*bySiteResults->GetVDim(), sR, bySiteResults->GetVDim());
 								else
-									for (long s = 0; s < blockLength; s++)
+									for (long pattern = 0; pattern < blockLength; pattern++)
 									{
-										blockResult+=myLog(sR[s])*df->theFrequencies.lData[s];
-#ifdef _SLKP_LFENGINE_REWRITE_	
-										cumulativeCorrection += scalerTabs.lData[s];
-#endif
+										blockResult+=myLog(sR[pattern])*df->theFrequencies.lData[pattern];
+										cumulativeCorrection += scalerTabs.lData[pattern];
 									}
-#ifdef _SLKP_LFENGINE_REWRITE_
+								
 								blockResult -= cumulativeCorrection*_logLFScaler;
-								//printf ("[LFEVAL:] %d,%g\n", likeFuncEvalCallCount, blockResult);
-#endif
 								
 							}
 							else
 							// do constant on partition
 							{
 								long	mxDim = 1;
-								for (i=0; i<=ff; i++)
+								for (long i=0; i<=ff; i++)
 									if (CheckNthBit (blockDependancies.lData[j],i))
 									{
 										_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[i]);
@@ -2316,11 +2292,11 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 								
 								_Parameter maxValue = -1.e300;
 																	
-								for (i=0; i<mxDim; i++)
+								for (long i=0; i<mxDim; i++)
 									if (ccache.theData[i]>maxValue)
 										maxValue = ccache.theData[i];
 
-								for (i=0; i<mxDim; i++)
+								for (long i=0; i<mxDim; i++)
 									blockResult += exp (ccache.theData[i]-maxValue);
 									
 								blockResult = myLog (blockResult)+maxValue;
@@ -2351,7 +2327,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							_Parameter		   *p1 = hmc.fastIndex(),
 											   *p2;
 									
-							for (i=HighestBit(blockDependancies.lData[j]);i>=0;i--)
+							for (long i=HighestBit(blockDependancies.lData[j]);i>=0;i--)
 								if (CheckNthBit (blockDependancies.lData[j],i))
 								{
 									_CategoryVariable * aC = (_CategoryVariable*)LocateVar(indexCat.lData[i]);
@@ -2363,7 +2339,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							categID 	  = 0;
 							// SLKP mod: 20070301; fixed category indexing bug when HMM AND 
 								// another category is used
-							for (i=0; i<ni; i++)
+							for (long i=0; i<ni; i++)
 							{
 								categID		= hmmShifter * i;
 								thisC->SetIntervalValue (i,!i);
@@ -2416,7 +2392,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		{
 			long 	blockWidth = bySiteResults->GetVDim();
 			result = 0.0;
-			for (i=0; i<blockWidth; i++)
+			for (long i=0; i<blockWidth; i++)
 			{
 				for (long k=0; k<theTrees.lLength; k++)
 					varMxValue->theData[k] = bySiteResults->theData[k*blockWidth+i];
@@ -2434,17 +2410,14 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				_Matrix	  		  *hmm = thisC->ComputeHiddenMarkov(),
 								  *hmf = thisC->ComputeHiddenMarkovFreqs();
 								  
-				_SimpleList		  rm;
-				
-				for (i=0; i<bySiteResults->GetVDim(); i++)
-					rm << i;
+				_SimpleList		  rm (bySiteResults->GetVDim(), 0, 1);
 								  				
 				result 			  += SumUpHiddenMarkov (*bySiteResults, *hmm, *hmf, rm, bySiteResults->GetVDim());
 				
 			}
 			else
 			{
-				for (i=0; i<theTrees.lLength; i++)
+				for (long i=0; i<theTrees.lLength; i++)
 					blockValues.theData[i] = ((_Constant*)computationalResults(i))->Value();
 					
 				blockWiseVar->SetValue (&blockValues);
@@ -2552,9 +2525,10 @@ void	  _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long in
 		
 void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, _Parameter weight
 #ifdef _SLKP_LFENGINE_REWRITE_
-											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage
+											,_SimpleList* siteMultipliers, char runMode, _Parameter *runStorage, 
+											 long branchIndex,			   _SimpleList* branchValues
 #endif				
-	)
+											  )
 {
 	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
 	if (index<highestIndex)
@@ -2575,7 +2549,7 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 				thisC->SetIntervalValue(k);
 				RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
 #ifdef _SLKP_LFENGINE_REWRITE_
-								,siteMultipliers,runMode,runStorage 
+								,siteMultipliers,runMode,runStorage,branchIndex,branchValues
 #endif				
 				);
 				categID+=offsetCounter/nI;
@@ -2846,7 +2820,7 @@ void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long
 		for (long k = 0; k<nI; k++)
 		{
 			thisC->SetIntervalValue		(k,!k);
-			ComputeBlock (blockIndex,sR);		
+			ComputeBlock (blockIndex,sR,categID);		
 			long	     r3 = categID*vDim+matrixOffset;
 			
 			for (long r1 = 0; r1 < currentOffset; r1++,r3++)
@@ -4257,7 +4231,6 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	long 		i,
 		 		j, 
 		 		fnDim 		= MaximumDimension(), 
-		 		categCount  = 1,
 		 		evalsIn 	= likeFuncEvalCallCount;
 
 
@@ -4289,14 +4262,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	
 
 	for (i=0; i<theTrees.lLength; i++)
-	{
-		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-		
-		if (cT->CountTreeCategories() >categCount)
-			categCount = cT->categoryCount;
-	}
+		((_TheTree*)(LocateVar(theTrees(i))))->CountTreeCategories();
+	
 #ifdef _SLKP_LFENGINE_REWRITE_	
-	SetupLFCaches();
+	SetupLFCaches		();
+	SetupCategoryCaches ();
 #endif
 
 #ifdef __HYPHYMPI__
@@ -8350,28 +8320,27 @@ void	_LikelihoodFunction::ComputeBlockInt1 (long index, _Parameter& res, _TheTre
 
 //_______________________________________________________________________________________
 
-_Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
+_Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
 // compute likelihood over block index i
 {
 	blockComputed				= index;
-	// set up global matrix frequencies
-	_Matrix 			*glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
-	SetGlobalFrequencyMatrix (glFreqs);
 	
-	_SimpleList 		*sl = (_SimpleList*)optimalOrders.lData[index],
-						*ls = (_SimpleList*)leafSkips.lData[index];
+	// set up global matrix frequencies
+	_Matrix					  *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
+	SetGlobalFrequencyMatrix  (glFreqs);
+	
+	_SimpleList				  *sl = (_SimpleList*)optimalOrders.lData[index];
+						//*ls = (_SimpleList*)leafSkips.lData[index];
 						
-	_TheTree 			*t = ((_TheTree*)LocateVar(theTrees.lData[index]));
+	_TheTree				   *t = ((_TheTree*)LocateVar(theTrees.lData[index]));
 	t->InitializeTreeFrequencies (GlobalFrequenciesMatrix);
 	
 	_DataSetFilter		*df = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
 	
 	if (!forceRecomputation)
-	{
 		forceRecomputation = glFreqs->HasChanged();
 //		if ((!forceRecomputation)&&computingTemplate)
 //			forceRecomputation = computingTemplate->HasChanged();
-	}
 		
 	usedCachedResults = false;
 	
@@ -8392,10 +8361,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 		}
 	}
 	
-#ifdef _SLKP_LFENGINE_REWRITE_
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
-		long		catID			 = siteRes?categID:-1;
+		long		catID			 = siteRes?currentRateClass:-1;
 		
 		if (conditionalInternalNodeLikelihoodCaches[index])
 		// not a 2 sequence analysis
@@ -8405,29 +8373,29 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			
 			_SimpleList* tcc = (_SimpleList*)treeTraversalMasks(index);
 			
-			_Parameter*inc  = (categID<1)?conditionalInternalNodeLikelihoodCaches[index]:
-			conditionalInternalNodeLikelihoodCaches[index] + categID*df->GetDimension()*blockID,
-			*ssf  = (categID<1)?siteScalingFactors[index]: siteScalingFactors[index] + categID*blockID,
-			*bc   = (categID<1)?branchCaches[index]: (branchCaches[index] + categID*patternCnt*df->GetDimension()*2);
+			_Parameter			*inc  = (currentRateClass<1)?conditionalInternalNodeLikelihoodCaches[index]:
+										conditionalInternalNodeLikelihoodCaches[index] + currentRateClass*df->GetDimension()*blockID,
+								*ssf  = (currentRateClass<1)?siteScalingFactors[index]: siteScalingFactors[index] + currentRateClass*blockID,
+								*bc   = (currentRateClass<1)?branchCaches[index]: (branchCaches[index] + currentRateClass*patternCnt*df->GetDimension()*2);
 			
 			long *scc = nil,
-			*sccb = nil;
+				 *sccb = nil;
 			
 			if (siteRes)
 			{
-				sccb = ((_SimpleList*)siteCorrectionsBackup(index))->lData + ((categID<1)?0:patternCnt*categID);
-				scc =  ((_SimpleList*)siteCorrections(index))->lData       + ((categID<1)?0:patternCnt*categID);
+				sccb = ((_SimpleList*)siteCorrectionsBackup(index))->lData + ((currentRateClass<1)?0:patternCnt*currentRateClass);
+				scc =  ((_SimpleList*)siteCorrections(index))->lData       + ((currentRateClass<1)?0:patternCnt*currentRateClass);
 			}
 			
 			_SimpleList changedBranches, *branches;
 			_List		changedModels,   *matrices;
 			long		doCachedComp	 = 0,	  // whether or not to use a cached branch calculation when only one
 												  // local tree parameter is being adjusted at a time
-			
-						ciid			 = MAX(0,categID),
+						
+						ciid			 = MAX(0,currentRateClass),
 						*cbid			 = &(((_SimpleList*)cachedBranches(index))->lData[ciid]);
 			
-			if (computedLocalUpdatePolicy.lLength)
+			if (computedLocalUpdatePolicy.lLength && branchIndex < 0)
 			{
 				branches = (_SimpleList*)(*((_List*)localUpdatePolicy(index)))(ciid);
 				matrices = (_List*)      (*((_List*)matricesToExponentiate(index)))(ciid) ;
@@ -8456,9 +8424,6 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 					{
 						((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
 						doCachedComp = -snID-1;
-						//printf ("%d %s %s\n", likeFuncEvalCallCount, _String((_String*)cachedBranches(index)->toStr()).sData,
-						//		_String((_String*)branches->toStr()).sData);
-						//doCachedComp = 0;
 					}
 					else
 						((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
@@ -8469,7 +8434,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 			else
 			{
 				RestoreScalingFactors		(index, *cbid, patternCnt, scc, sccb);
-				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,*cbid);
+				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,branchIndex>=0?branchIndex+t->GetLeafCount():*cbid);
 				*cbid						= -1;
 				branches					= &changedBranches;
 				matrices					= &changedModels;
@@ -8528,7 +8493,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 													(1+blockID) * sitesPerP,
 													catID,
 													siteRes,
-													scc);
+													scc,
+													branchIndex,
+													branchIndex >= 0 ? branchValues->lData: nil);
 			}
 			
 			sum -= _logLFScaler * overallScalingFactors[index];
@@ -8585,771 +8552,51 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes)
 														siteRes);
 			}
 	}
-#endif	
-	
-	if (1)
+	else
 	{
-		long * siteList = sl->lData, 
-			 * leafList = ls->lData,				   
-			   filterUnit = df->GetUnitLength(),
-			   i;
-			   
-		#ifdef __MP__
-			#if !defined __UNIX__ || defined __HEADLESS__
-				bool	yieldTime = false;
-			#endif
-			long tstep = sl->lLength/systemCPUCount;
-			if ((t->HasCache())&&(systemCPUCount>1)&&(tstep>5))
-			{
-				theThreads = new pthread_t [systemCPUCount-1];
-				theTasks = new ThreadReleafTask [systemCPUCount-1];
-				for (long tc = 0; tc<systemCPUCount-1; tc++)
-				{
-					theTasks[tc].t = t;
-					theTasks[tc].siteList = siteList;
-					theTasks[tc].leafList = leafList;
-					theTasks[tc].startAt = tstep*(tc+1);
-					theTasks[tc].freqs = &df->theFrequencies;
-					theTasks[tc].endAt = tstep*(tc+2);
-					theTasks[tc].df = df;
-					if (tc == systemCPUCount-2)
-						theTasks[tc].endAt = sl->lLength;
-					theTasks[tc].threadIndex = tc+1;
-				}
-			}
-			else
-				theTasks = nil;
-		#endif
+/*
+		res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, false));
+		res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
+
+		 _Parameter accumulator = 1.0;
+		 for (i = 1; i<sl->lLength; i++,siteList++)
+		 {
+		 //res += myLog(t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList)) \
+		 //  *(_Parameter)df->theFrequencies.lData[*siteList];                                    \
+		 
+		 long thisSiteFreq = df->theFrequencies.lData[*siteList];
+		 _Parameter thisSiteScore = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList);
+		 if (thisSiteScore>0.0)
+		 for (; thisSiteFreq; thisSiteFreq--)
+		 {
+		 _Parameter testAcc = accumulator * thisSiteScore;
+		 if (testAcc>1.e-300)
+		 accumulator = testAcc;
+		 else
+		 {
+		 res += log (accumulator);
+		 accumulator = thisSiteScore;
+		 }
+		 }
+		 else
+		 res -= thisSiteFreq*1000000.;
+		 }
+		 res += log (accumulator);
+		 }	
+
+ // categs on 						
+		siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, false, categID);				
+		siteList++;
+		for (i = 1; i<sl->lLength; i++,siteList++)
+			siteRes[*siteList] = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList,categID);
+
+ */
 		
-		if (!siteRes)
-		{
-			_Parameter res = 0.0;
-			if ( filterUnit==1 && t->GetCodeBase()==4)
-			{
-				if (t->HasCache())
-				{
-					#ifdef __MP__
-					if (theTasks)
-					{
-						res = myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, true));
-																								 		
-						for (long tc = 0; tc<systemCPUCount-1; tc++)
-						{
-							#ifdef __MACHACKMP__
-							if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionNucHook,(void*)(theTasks+tc)))
-							#else
-							if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionNuc,(void*)(theTasks+tc)))							
-							#endif
-							{
-								FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-								exit(1);
-							}		
-						}
-												
-						res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-						
-						for (i = 1; i<tstep; i++,siteList++,leafList++)
-						{
-							#ifndef __UNIX__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									yieldTime = true;
-							#endif
-							res += myLog(t->ThreadReleafTreeChar4 (df, *siteList, 
-								   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-								   *(_Parameter)df->theFrequencies.lData[*siteList];
-						}
-					}
-					else
-					{
-					#endif					
-						if (mstCache&&(mstCache->resultCache.lLength>index)&&(mstCache->cacheSize.lData[index]>0))
-						{
-							ComputeBlockInt1 (index, res, t, df, 0);
-						}
-						else
-						{
-							res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, true));
-							
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									#ifdef __MP__
-										yieldTime = true;
-									#else
-										yieldCPUTime();
-									#endif
-								#endif
-								//res += myLog(t->ReleafTreeChar4 (df, *siteList, 
-								res += myLog(t->ThreadReleafTreeChar4 (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-						}
-							   
-					}
-					#ifdef __MP__
-					}
-					#endif
-				}
-				else // no cache
-					if (t->IsDegenerate())
-					{
-						res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, false));
-						res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-						for (i = 1; i<sl->lLength; i++,siteList++)
-						{
-							#if !defined __UNIX__ || defined __HEADLESS__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									yieldCPUTime();
-							#endif
-							res += myLog(t->ReleafTreeChar4Degenerate (df, *siteList))
-								   *(_Parameter)df->theFrequencies.lData[*siteList];
-						}											
-					}
-					else
-					{
-						res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, false));
-						res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-						if (df->IsNormalFilter())
-							for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								res += myLog(t->ReleafTreeChar4 (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}	
-						else
-						{
-                            _Parameter accumulator = 1.0;
-                            for (i = 1; i<sl->lLength; i++,siteList++)
-                            {
-								//res += myLog(t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList)) \
-								//  *(_Parameter)df->theFrequencies.lData[*siteList];                                    \
-                                                                                                                        
-                                long thisSiteFreq = df->theFrequencies.lData[*siteList];
-                                _Parameter thisSiteScore = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList);
-	                            if (thisSiteScore>0.0)
-									for (; thisSiteFreq; thisSiteFreq--)
-									{
-										_Parameter testAcc = accumulator * thisSiteScore;
-										if (testAcc>1.e-300)
-											accumulator = testAcc;
-										else
-										{
-											res += log (accumulator);
-											accumulator = thisSiteScore;
-										}
-									}
-	                             else
-                            		res -= thisSiteFreq*1000000.;
-                             }
-                           	 res += log (accumulator);
-                          }							
-					}
-			}
-			else
-			{
-				if (filterUnit>1)
-				{
-					if (t->HasCache())
-					{
-						#ifdef __MP__
-						if (theTasks)
-						{
-							res = myLog(t->ReleafTreeAndCheck (df, *siteList, true));
-							
-							for (long tc = 0; tc<systemCPUCount-1; tc++)
-							{
-								#ifdef __MACHACKMP__
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionCodonHook,(void*)(theTasks+tc)))
-								#else
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionCodon,(void*)(theTasks+tc)))
-								#endif
-								{
-									FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-									exit(1);
-								}		
-							}
-													
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							
-							for (i = 1; i<tstep; i++,siteList++,leafList++)
-							{
-								#ifndef __UNIX__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldTime = true;
-								#endif
-								res += myLog(t->ThreadReleafTreeCache (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}
-						}
-						else
-						{
-						#endif
-							if (mstCache&&(mstCache->resultCache.lLength>index)&&(mstCache->cacheSize.lData[index]>0))
-							{
-								ComputeBlockInt1 (index, res, t, df, 2);
-							}
-							else
-							{
-								res=myLog(t->ReleafTreeAndCheck (df, *siteList, true));
-								res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-								
-								for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-								{
-									#if !defined __UNIX__ || defined __HEADLESS__
-										siteEvalCount ++;
-										if (!(siteEvalCount%divideBy)) 
-											#ifdef __MP__
-												yieldTime = true;
-											#else
-												yieldCPUTime();
-											#endif
-										
-									#endif
-									//res += myLog(t->ReleafTreeCache (df, *siteList, 
-									res += myLog(t->ThreadReleafTreeCache (df, *siteList, 
-										   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-										   *(_Parameter)df->theFrequencies.lData[*siteList];
-									/*res += myLog(t->ReleafTree (df, *siteList, 
-										   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16))
-										   *(_Parameter)df->theFrequencies.lData[*siteList];*/
-										   
-										   
-								}
-							}
-						#ifdef __MP__
-						}
-						#endif
-					} // no cache
-					else
-						if (t->IsDegenerate())
-						{
-							res=myLog(t->ReleafTreeAndCheck (df, *siteList, false));
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<sl->lLength; i++,siteList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								res += myLog(t->ReleafTreeDegenerate (df, *siteList))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}											
-						}
-						else
-						{
-							res=myLog(t->ReleafTreeAndCheck (df, *siteList, false));
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								res += myLog(t->ReleafTree (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}	
-						}
-				}
-				else
-				{
-					if (t->HasCache())
-					{
-						#ifdef __MP__
-						long tstep = sl->lLength/systemCPUCount;
-						if (theTasks)
-						{
-							
-							res=myLog(t->ReleafTreeAndCheckChar (df, *siteList, true));
-							for (long tc = 0; tc<systemCPUCount-1; tc++)
-								#ifdef __MACHACKMP__
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionAAHook, (void*)(theTasks+tc)) ) 
-								#else
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionAA, (void*)(theTasks+tc)) ) 
-								#endif
-								{
-									FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-									exit(1);
-								}		
-													
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<tstep; i++,siteList++,leafList++)
-							{
-								#ifndef __UNIX__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldTime = true;
-								#endif
-								res += myLog(t->ThreadReleafTreeCharCache (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}
-						}
-						else
-						{
-						#endif
-							if (mstCache&&(mstCache->resultCache.lLength>index)&&(mstCache->cacheSize.lData[index]>0))
-							{
-								ComputeBlockInt1 (index, res, t, df, 1);
-							}
-							else
-							{
-								res=myLog(t->ReleafTreeAndCheckChar (df, *siteList, true));
-								res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-			   					for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-								{
-									#if !defined __UNIX__ || defined __HEADLESS__
-										siteEvalCount ++;
-										if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-											#ifdef __MP__
-												yieldTime = true;
-											#else
-												yieldCPUTime();
-											#endif
-
-									#endif
-									res += myLog(t->ThreadReleafTreeCharCache (df, *siteList, 
-										   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16,i))
-										   *(_Parameter)df->theFrequencies.lData[*siteList];
-								}
-							}
-							
-						#ifdef __MP__
-						}
-						#endif
-					}
-					else
-						if (t->IsDegenerate())
-						{
-							res=myLog(t->ReleafTreeAndCheck (df, *siteList, false));
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<sl->lLength; i++,siteList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								res += myLog(t->ReleafTreeCharDegenerate (df, *siteList))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}											
-						}
-						else
-						{
-							res=myLog(t->ReleafTreeAndCheckChar (df, *siteList, false));
-							res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-							for (i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								res += myLog(t->ReleafTreeChar (df, *siteList, 
-									   *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16))
-									   *(_Parameter)df->theFrequencies.lData[*siteList];
-							}					
-						}
-				}
-			}
-			#ifdef __MP__
-				if (theTasks)
-				{
-					for (long wc = 0; wc<systemCPUCount-1; wc++)
-					{
-						if ( pthread_join ( theThreads[wc], NULL ) ) 
-						{
-							FlagError("Failed to join POSIX threads in ComputeBlock()");
-							exit(1);
-						}
-						res += theTasks[wc].result;
-					}
-					delete theTasks;
-					delete theThreads;				
-				}
-			#endif 
-			
-			#if USE_SCALING_TO_FIX_UNDERFLOW
-				// add scaling corrections
-				_Parameter subTimes = t->GetLeafCount();
-				//_String    outString = _String("Likelihood evaluation ") & likeFuncEvalCallCount & ": before " & res;
-				//StringToConsole (outString);
-				for (i=0; i<df->theFrequencies.lLength; i++)
-				{
-					if (t->scalingForUnderflow->theData[i] < 0.)
-					{
-						_String errMsg = _String ("Failed to scale site ") & i & " at likelihood evaluation " & likeFuncEvalCallCount;
-						t->scalingForUnderflow->theData[i] = -t->scalingForUnderflow->theData[i];
-						ReportWarning (errMsg);
-						//StringToConsole(errMsg);
-						//NLToConsole();
-						res -= 1.e7;
-					}
-					else
-						if (t->scalingForUnderflow->theData[i] != 1.0)
-						{
-							//char buffer [2048];
-							//sprintf (buffer,"Scaled (LF Eval %d) at site %d scaling factor %g\n",likeFuncEvalCallCount, i, t->scalingForUnderflow->theData[i]);
-							//BufferToConsole (buffer);
-							res -= log (t->scalingForUnderflow->theData[i])*subTimes*df->theFrequencies.lData[i];
-						}
-
-				}
-				//outString = _String (". After :") & res;
-				//StringToConsole (outString); 
-				//NLToConsole();
-			#endif
-			
-			if (computationalResults.lLength>index)
-				((_Constant*)computationalResults.lData[index])->SetValue (res);
-			else
-			{
-				_Constant c_res (res);
-				computationalResults&&(&c_res);
-			}
-				#if (!defined __UNIX__ || defined __HEADLESS__) && defined __MP__
-				if (yieldTime)
-					yieldCPUTime();
-			#endif
-
-			return res;
-		}
-		else
-		// categories on
-		{
-			#ifdef __MP__
-				if (theTasks)
-					for (long tc = 0; tc<systemCPUCount-1; tc++)
-						theTasks[tc].resultsStorage = siteRes;
-			#endif
-			if (filterUnit==1 && t->GetCodeBase()==4) // nucleotide data
-			{
-				if (t->HasCache())
-				{
-					#ifdef __MP__
-					if (theTasks)
-					{
-						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, true, categID);				
-						for (long tc = 0; tc<systemCPUCount-1; tc++)
-							#ifdef __MACHACKMP__
-							if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMNucHook,(void*)(theTasks+tc)))
-							#else
-							if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMNuc,(void*)(theTasks+tc)))
-							#endif
-							{
-								FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-								exit(1);
-							}		
-												
-						siteList++;
-						for (i = 1; i<tstep; i++,siteList++,leafList++)
-						{
-							#if !defined __UNIX__ || defined __HEADLESS__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									yieldTime = true;
-							#endif
-							siteRes[*siteList]=t->ThreadReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, 
-																		i*t->categoryCount+categID);
-						}
-						for (long wc = 0; wc<systemCPUCount-1; wc++)
-							if ( pthread_join ( theThreads[wc], NULL ) ) 
-							{
-								FlagError("Failed to join POSIX threads in ComputeBlock()");
-								exit(1);
-							}
-						delete theTasks;
-						delete theThreads;	
-					}
-					else
-					{
-					#endif
-						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, true, categID);				
-						siteList++;
-						for (int i = 1; i<sl->lLength; i++,	siteList++,	leafList++)
-						{
-							#if !defined __UNIX__ || defined __HEADLESS__
-							siteEvalCount ++;
-							if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-								#ifdef __MP__
-								yieldTime = true;
-								#else
-								yieldCPUTime();
-								#endif
-							#endif
-							siteRes[*siteList]=t->ThreadReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, i*t->categoryCount+categID);
-						}
-					
-						
-					#ifdef __MP__
-					}
-					#endif
-				}
-				else
-				{
-					if (t->IsDegenerate())
-					{
-						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, false, categID);				
-						siteList++;
-						for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-						{
-							#if !defined __UNIX__ || defined __HEADLESS__
-								siteEvalCount ++;
-								if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									yieldCPUTime();
-							#endif
-							siteRes[*siteList]=t->ReleafTreeChar4Degenerate (df, *siteList);
-						}
-					}
-					else
-					{
-						siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, false, categID);				
-						siteList++;
-						if (df->IsNormalFilter())
-						{
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								siteRes[*siteList]=t->ReleafTreeChar4 (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16);
-							}
-						}
-						else
-						{
-							/*for (i = 0; i < 3; i++)
-							{
-								_Matrix *mp = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[t->theRoot->nodes.data[2]->in_object])->GetCompExp();
-								_String t ((long)mp);
-								StringToConsole (t);
-								NLToConsole ();
-							}*/
-							for (i = 1; i<sl->lLength; i++,siteList++)
-								siteRes[*siteList] = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList,categID);
-						}
-				
-					}
-				}
-			}
-			else
-			{
-				if (df->GetUnitLength()>1)
-				{
-					if (t->HasCache())
-					{
-						#ifdef __MP__
-						if (theTasks)
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheck (df, *siteList, true, categID);				
-							for (long tc = 0; tc<systemCPUCount-1; tc++)
-								#ifdef __MACHACKMP__
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMCodonHook,(void*)(theTasks+tc)))
-								#else
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMCodon,(void*)(theTasks+tc)))
-								#endif
-								{
-									FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-									exit(1);
-								}		
-													
-							siteList++;
-							for (i = 1; i<tstep; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldTime = true;
-								#endif
-
-								siteRes[*siteList]=t->ThreadReleafTreeCache (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, 
-																			i*t->categoryCount+categID);
-							}
-							for (long wc = 0; wc<systemCPUCount-1; wc++)
-								if ( pthread_join ( theThreads[wc], NULL ) ) 
-								{
-									FlagError("Failed to join POSIX threads in ComputeBlock()");
-									exit(1);
-								}
-							delete theTasks;
-							delete theThreads;				
-						}
-						else
-						{
-						#endif
-							siteRes[*siteList] = t->ReleafTreeAndCheck (df, *siteList, true, categID);								
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										#ifdef __MP__
-											yieldTime = true;
-										#else
-											yieldCPUTime();
-										#endif
-									
-								#endif
-								siteRes[*siteList]=t->ThreadReleafTreeCache (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, i*t->categoryCount+categID);
-							}
-						#ifdef __MP__
-						}
-						#endif
-					}
-					else
-					{
-						if (t->IsDegenerate())
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheck (df, *siteList, false, categID);				
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								siteRes[*siteList]=t->ReleafTreeDegenerate (df, *siteList);
-							}
-						}
-						else
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheck (df, *siteList, false, categID);				
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								siteRes[*siteList]=t->ReleafTree (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16);
-							}
-						}
-					}
-				}
-				else
-				{
-					if (t->HasCache())
-					{
-					#ifdef __MP__
-						if (theTasks)
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheckChar (df, *siteList, true, categID);				
-							for (long tc = 0; tc<systemCPUCount-1; tc++)
-								#ifdef __MACHACKMP__
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMAAHook,(void*)(theTasks+tc)))
-								#else
-								if ( pthread_create( theThreads+tc, NULL, ThreadReleafFunctionMAA,(void*)(theTasks+tc)))
-								#endif
-								{
-									FlagError("Failed to initialize a POSIX thread in ComputeBlock()");
-									exit(1);
-								}		
-													
-							siteList++;
-							for (i = 1; i<tstep; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldTime = true;
-								#endif
-								siteRes[*siteList]=t->ThreadReleafTreeCharCache (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, 
-																			i*t->categoryCount+categID);
-							}
-							for (long wc = 0; wc<systemCPUCount-1; wc++)
-								if ( pthread_join ( theThreads[wc], NULL ) ) 
-								{
-									FlagError("Failed to join POSIX threads in ComputeBlock()");
-									exit(1);
-								}
-							delete theTasks;
-							delete theThreads;				
-						}
-						else
-						{
-						#endif
-							siteRes[*siteList] = t->ReleafTreeAndCheckChar (df, *siteList, true, categID);				
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-									#ifdef __MP__
-											yieldTime = true;
-										#else
-											yieldCPUTime();
-										#endif
-										
-								#endif
-								siteRes[*siteList]=t->ThreadReleafTreeCharCache (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16, i*t->categoryCount+categID);
-							}
-						#ifdef __MP__
-						}
-						#endif
-					}
-					else
-					{
-						if (t->IsDegenerate())
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheckChar (df, *siteList, false, categID);				
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								siteRes[*siteList]=t->ReleafTreeCharDegenerate (df, *siteList);
-							}
-						}
-						else
-						{
-							siteRes[*siteList] = t->ReleafTreeAndCheckChar (df, *siteList, false, categID);				
-							siteList++;
-							for (int i = 1; i<sl->lLength; i++,siteList++,leafList++)
-							{
-								#if !defined __UNIX__ || defined __HEADLESS__
-									siteEvalCount ++;
-									if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-										yieldCPUTime();
-								#endif
-								siteRes[*siteList]=t->ReleafTreeChar (df, *siteList, *(siteList-1), (*leafList)&0x0000ffff, (*leafList)>>16);
-							}
-						}
-					}			
-				}
-			}
-			#if !defined __UNIX__ || defined __HEADLESS__
-				#ifdef __MP__
-					if (yieldTime)
-						yieldCPUTime();
-				#endif
-			#endif
-
-		}
+		WarnError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");
+		return 0.0;
 	}
+	
 	return 0.0;
-
 }
 
 //_______________________________________________________________________________________
@@ -9360,15 +8607,7 @@ long		_LikelihoodFunction::CostOfPath	 (_DataSetFilter* df, _TheTree* t, _Simple
 		res+=t->ComputeReleafingCost (df,sl.lData[i],sl.lData[i+1], tcc, i+1);
 	return res;
 }
-//_______________________________________________________________________________________
 
-/*void		_LikelihoodFunction::DumpingOrder	 (long index, _SimpleList& sl)
-{
-// 
-	_DataSetFilter* df = (_DataSetFilter*)(dataSetFilterList(theDataFilters (index)));
-	_TheTree		*t = (_TheTree*)LocateVar(theTrees(index));
-	t->DumpingOrder(df,sl);
-}*/
 			
 
 
@@ -10808,299 +10047,6 @@ BaseRef	_LikelihoodFunction::toStr (void)
 	return res.makeDynamic();
 	
 }
-	
-#ifndef _SLKP_LFENGINE_REWRITE_
-// a deprecated version goes here
-//_______________________________________________________________________________________
-	
-	void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, long branch, long segment)
-	{
-		long  i,
-		j,
-		k,
-		m,
-		n,
-		sc,
-		offset = 0,
-		offset2= 0;
-		
-		_DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(0));	
-		target.SetTranslationTable (dsf->GetData());	
-		
-		_SimpleList 	thisSite,
-		localExclusions;
-		
-		_TheTree    	*firstTree = (_TheTree*)LocateVar(theTrees(0));
-		
-		_Matrix			*rateAssignments = nil;
-		
-		_List			categoryVars;
-				
-		if  (indexCat.lLength>0)
-		{
-			// use Bayes' formula now to obtain posterior probabilities of rates at sites
-			// first, compute the probabilities for each class
-			rateAssignments = ConstructCategoryMatrix(false,false);
-			checkPointer (rateAssignments);
-			_Matrix		  probs (rateAssignments->GetHDim(),1,false,true);
-			for (i = 0; i<theTrees.lLength; i++)
-			{
-				unsigned    long p2 = 0x80000000; // set high bit
-				_SimpleList partitionClasses,
-				partitionVars;
-				
-				_List       partitionProbs;
-				
-				m = 1;
-				
-				for (j=31; j>=0; j--)
-				{
-					if (blockDependancies.lData[i] & p2)
-					{
-						_CategoryVariable * cV = ((_CategoryVariable*)LocateVar(indexCat.lData[j]));
-						
-						partitionVars    << indexCat.lData[j];
-						partitionClasses << (n=cV->GetNumberOfIntervals());
-						partitionProbs   && cV->GetWeights ();
-						m*=n;
-					}
-					p2 /= 2;
-				}
-				
-				categoryVars && &partitionVars;
-				
-				// now compute the probs 
-				
-				for (j=0; j<m; j++)
-				{
-					k = j;
-					
-					_Parameter theProb = 1.0;
-					
-					for (n=0; n<partitionClasses.lLength; n++)
-					{
-						theProb *= (*(_Matrix*)partitionProbs (n)) [k%partitionClasses.lData[n]];
-						k/=partitionClasses.lData[n];
-					}
-					
-					probs[j] = theProb;
-				}
-				
-				dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
-				
-				
-				for (j=offset; j<offset+dsf->theFrequencies.lLength; j++)
-				{
-					_Parameter maxProb  = 0.0;
-					
-					long 	   maxIndex = 0;
-					
-					for (k=0; k<m; k++)
-					{
-						_Parameter tProb = (*rateAssignments)(k,j)*probs[k];
-						if (tProb>maxProb)
-						{
-							maxProb  = tProb;
-							maxIndex = k;
-						}
-					}
-					
-					// now that we found that maximum index, unroll it and 
-					// put the data in the matrix
-					
-					rateAssignments->Store (0,j,maxIndex);
-				}
-				offset += dsf->theFrequencies.lLength;
-			}
-			offset = 0;
-		}
-		
-		PrepareToCompute();
-		
-		computationalResults.Clear();
-		Compute(); // set up all the matrices
-		
-		_Parameter			doRootSupportFlag = 0.0;
-		
-		checkParameter 		(storeRootSupportFlag, doRootSupportFlag, 0.0);
-		_AssociativeList *  supportAVL = nil;
-		
-		if (doRootSupportFlag > 0.5)
-			supportAVL = new _AssociativeList;
-		
-		for (i = 0; i<theTrees.lLength; i++)
-		{
-			_TheTree   *tree  = (_TheTree*)LocateVar(theTrees(i));
-			long	   treeNameL = tree->GetName()->sLength;
-			dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
-			
-			bool  doSetRates = (rateAssignments && ((_SimpleList*)categoryVars(i))->lLength);
-			if (i==0)
-			{
-				_CalcNode* travNode = tree->StepWiseTraversal (true);
-				while (travNode)
-				{
-					if (!tree->IsCurrentNodeATip ())
-					{
-						_String nodeName (*travNode->GetName(),treeNameL+1,-1);
-						target.GetNames() && & nodeName;
-					}
-					
-					travNode = tree->StepWiseTraversal (false);
-				}
-				sc = target.GetNames().lLength;
-			}
-			else
-				if (!tree->Equal(firstTree)) // incompatible likelihood function
-				{
-					ReportWarning ((_String("Ancestor reconstruction had to ignore part ")&_String(i+1)&" of the likelihood function since it has a different tree topology than the first part."));
-					continue;
-				}
-			
-			_List      	thisSet;
-			
-			_Parameter	verbLevel = VerbosityLevel();
-			
-			long		sitesDone = 0,
-			filterStates = dsf->GetDimension (true); 
-			
-			_Matrix*    rootSupportMatrix = supportAVL&&(!sample) ? new _Matrix (dsf->theFrequencies.lLength,filterStates,false,false) : nil;
-			
-			for (j = 0; j<dsf->theFrequencies.lLength; j++)
-			{
-				
-				if (doSetRates)
-					tree->SetCompMatrices ((*rateAssignments)(0,offset2+j));
-				
-				if (sample)
-				{
-					_List * recStrings = new _List;
-					checkPointer		(recStrings);
-					
-					tree->ReleafTree (dsf, j, -1, 0, tree->flatCLeaves.lLength-1);
-					
-					for (long jj = 0; jj<dsf->theFrequencies.lData[j]; jj++)
-					{
-						_List * recoveredStrings = tree->SampleAncestors (dsf, tree->theRoot);
-						(* recStrings) << recoveredStrings;
-						DeleteObject (recoveredStrings);
-						if (verbLevel > 9.999)
-						{	
-							char buffer[64];
-							sprintf (buffer,"Site %d/%d\n", sitesDone++, dsf->theMap.lLength/dsf->GetUnitLength());
-							BufferToConsole (buffer);		
-						}
-						
-					}
-					thisSet << recStrings;
-					DeleteObject (recStrings);
-				}
-				else
-				{
-					_List *  recoveredStrings = tree->RecoverAncestralSequences (dsf,j,j-1, rootSupportMatrix?rootSupportMatrix->theData+j*filterStates: nil);
-					for (m = 0; m<recoveredStrings->lLength;m++)
-						thisSet << (*recoveredStrings)(m);
-					
-					DeleteObject (recoveredStrings);
-				}
-			}
-			
-			m = dsf->GetUnitLength();
-			
-			if (sample)
-			{
-
-				_SimpleList patMatched (dsf->theFrequencies.lLength); 
-				
-				for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
-				{
-					k = dsf->duplicateMap.lData[j];
-					
-					_List*   thisList = (_List*)(*((_List*)thisSet(k)))(patMatched.lData[k]++);
-					
-					for (n = 0; n<m; n++)
-						target.AddSite (((_String*)(*thisList)(n))->sData[0]);
-					
-					for (long p = 1; p<sc; p++)
-						for (n = 0; n<m; n++)
-							target.Write2Site (offset+j*m+n,((_String*)thisList->lData[n])->sData[p]);	
-					
-					for (n = 0; n<m; n++)
-						target.Compact (offset+j*m+n);
-					
-					target.ResetIHelper();
-				}
-			}
-			else
-			{
-				
-				if (rootSupportMatrix)
-				{
-					long 	  k 				  = dsf->theOriginalOrder.lLength/m;
-					_Matrix * mappedSupportMatrix = new _Matrix (k, filterStates,false,true);
-					
-					for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
-					{
-						_Parameter * sourceVec = rootSupportMatrix->theData+dsf->duplicateMap.lData[j]*filterStates;
-						
-						for (long j2 = filterStates * j; j2 < filterStates * (j+1); j2++, sourceVec++)	
-							mappedSupportMatrix->theData[j2] = *sourceVec;
-						
-					}	
-					
-					DeleteObject (rootSupportMatrix);
-					_FString	 aKey;
-					*aKey.theString = i;
-					supportAVL->MStore (&aKey, mappedSupportMatrix, false);
-				}
-				
-				for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
-				{
-					k = dsf->duplicateMap.lData[j] * m;
-					for (n = 0; n<m; n++)
-						target.AddSite (((_String*)thisSet(k+n))->sData[0]);
-					
-				}
-				
-				for (long p = 1; p<sc; p++)
-					for (j = 0; j<dsf->theOriginalOrder.lLength/m; j++)
-					{
-						k = dsf->duplicateMap.lData[j] * m;
-						for (n = 0; n<m; n++)
-							target.Write2Site (offset+j*m+n,((_String*)(thisSet.lData[k+n]))->sData[p]);	
-					}
-			}
-			
-			offset  += dsf->theOriginalOrder.lLength;
-			offset2 += dsf->theFrequencies.lLength;
-		}
-		
-		if (supportAVL)
-		{
-			_Variable * vid = CheckReceptacle (&supportMatrixVariable, "Ancestral State Reconstruction", false);
-			if (vid)
-				vid->SetValue (supportAVL, false);
-			else
-				DeleteObject (supportAVL);
-		}
-		
-		for (i=0; i<theTrees.lLength; i++)
-		{
-			_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-			cT->CleanUpMatrices();
-		}
-		target.Finalize();
-		target.SetNoSpecies(target.GetNames().lLength);
-		
-		if (rateAssignments)
-			DeleteObject (rateAssignments);
-		
-		DoneComputing ();
-		
-	}
-	
-#endif
-	
 
 //_______________________________________________________________________________________
 
@@ -12490,9 +11436,10 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 		for (long i2=0; i2<theProbabilities.lLength; i2++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
 #ifdef _SLKP_LFENGINE_REWRITE_
-		SetupLFCaches	  ();
+		SetupCategoryCaches	  ();
+		SetupLFCaches		  ();
 #endif
-		SetReferenceNodes ();
+		SetReferenceNodes     ();
 		
 		if (disableClear)
 			hasBeenSetUp = 0x6FFFFFFF;
@@ -12528,6 +11475,9 @@ void	_LikelihoodFunction::DoneComputing (bool force)
 			((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeGeneral();
         }
 		DeleteCaches		(false);
+#ifdef _SLKP_LFENGINE_REWRITE_
+		categoryTraversalTemplate.Clear();
+#endif		
 		hasBeenSetUp 	   = 0;
 		siteArrayPopulated = false;
 	}

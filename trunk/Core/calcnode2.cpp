@@ -99,7 +99,15 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 	
 	if (addOne >= 0)
 		nodesToUpdate.lData[addOne] = 1;
-
+			
+	if (forceRecalculationOnTheseBranches.lLength)
+	{
+		for (long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++)
+			nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 1;
+		
+		forceRecalculationOnTheseBranches.Clear();
+	}
+	
 	for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
 	{
 		bool	isLeaf	   = nodeID < flatLeaves.lLength;
@@ -183,12 +191,11 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 		long	nodeCode   = updateNodes.lData [nodeID],
 				parentCode = flatParents.lData [nodeCode];
 		
-		bool	isLeaf	   = nodeCode < flatLeaves.lLength,
-				matchSet   = nodeCode == setBranch;
+		bool	isLeaf	   = nodeCode < flatLeaves.lLength;
 		
 		if (!isLeaf)
 			nodeCode -=  flatLeaves.lLength;
-				
+		
 		_Parameter * parentConditionals = iNodeCache +			  (siteFrom + parentCode  * siteCount) * alphabetDimension;
 		if (taggedInternals.lData[parentCode] == 0)
 		// mark the parent for update and clear its conditionals if needed
@@ -196,6 +203,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			taggedInternals.lData[parentCode]	  = 1;
 			_Parameter		_hprestrict_ *localScalingFactor	  = scalingAdjustments + parentCode*siteCount;
 			
+			bool	matchSet   = (parentCode == setBranch);
+
 			if (alphabetDimension == 4)
 			{
 				long k3		= 0;
@@ -206,7 +215,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						parentConditionals [k3+1] = 0.;
 						parentConditionals [k3+2] = 0.;
 						parentConditionals [k3+3] = 0.;
-						parentConditionals [k3+setBranchTo[k]] = localScalingFactor[k];
+						parentConditionals [k3+setBranchTo[siteOrdering.lData[k]]] = localScalingFactor[k];
 					}
 				else					
 					for (long k = siteFrom; k < siteTo; k++, k3+=4)
@@ -227,8 +236,9 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					{
 						for (long k2 = 0; k2 < alphabetDimension; k2++)
 							parentConditionals [k3+k2] = 0.;
-						parentConditionals[k3 + setBranchTo[k]] = localScalingFactor[k];
-						k3+=alphabetDimension;
+						
+						parentConditionals[k3 + setBranchTo[siteOrdering.lData[k]]] = localScalingFactor[k];
+						k3				   +=	alphabetDimension;
 					}					
 				}
 				else
@@ -519,8 +529,15 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 	for (long siteID = siteFrom; siteID < siteTo; siteID++)
 	{
 		_Parameter accumulator = 0.;
-		for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
-			accumulator += *rootConditionals * theProbs[p];
+		if (setBranch == flatTree.lLength-1)
+		{
+			long				rootState = setBranchTo[siteOrdering.lData[siteID]];
+			accumulator      += rootConditionals[rootState] * theProbs[rootState];
+			rootConditionals += alphabetDimension;
+		}
+		else
+			for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
+				accumulator += *rootConditionals * theProbs[p];
 							   		
 		if (storageVec)
 			storageVec [siteOrdering.lData[siteID]] = accumulator;
@@ -1162,7 +1179,7 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 
 //_______________________________________________________________________________________________
 
-_Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
+void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
 											      _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
 
 // must be called initially with the root node 
@@ -1181,7 +1198,6 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 
 {	
 	long					  childrenCount		= currentNode->get_num_nodes();
-	_Parameter				  myResult			= 0.;
 	
 	if (childrenCount)
 	{
@@ -1207,6 +1223,7 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 				long localCatID = catAssignments[siteOrdering.lData[pattern]];
 				if (parentStates)
 					transitionMatrix = currentTreeNode->GetCompExp(localCatID)->theData;
+					
 				conditionals	 = iNodeCache + localCatID*alphabetDimension*catBlockShifter + (pattern + nodeIndex  * siteCount) * alphabetDimension;
 			}
 			
@@ -1237,7 +1254,6 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 					totalSum += cache[sampledChar];
 				}
 				
-				myResult += log (matrixRow[sampledChar]);
 				sampledStates.lData[siteID] = sampledChar;
 			}
 			
@@ -1247,10 +1263,14 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 		
 		delete (cache);
 		
+		_SimpleList  conversion;
+		_AVLListXL	 conversionAVL (&conversion);
+
 		_String * sampledSequence = new _String (siteCount*unitLength, true);
+		_String  letterValue (unitLength,false);
 		for (long charIndexer = 0; charIndexer < sampledStates.lLength; charIndexer++)
 		{
-			_String  letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength);
+			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(sampledStates.lData[charIndexer]), unitLength, letterValue.sData, &conversionAVL);
 			(*sampledSequence) << letterValue;
 		}
 		sampledSequence->Finalize();
@@ -1258,13 +1278,8 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 		//printf ("%d: %s\n", nodeIndex, sampledSequence->sData);
 		
 		for (long child = 1; child <= childrenCount; child ++)
-			myResult += SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
+			SampleAncestorsBySequence (dsf, siteOrdering, currentNode->go_down(child), nodeToIndex, iNodeCache, result, &sampledStates, expandedSiteMap, catAssignments, catCount);
 	}
-	else
-	{
-			
-	}
-	return myResult;
 }
 
 
@@ -1273,14 +1288,12 @@ _Parameter	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleLis
 _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf, 
 											  _SimpleList& siteOrdering,  
 											  _List& expandedSiteMap, 
-											  _AVLListX* nodeToIndex, 
 											  _Parameter* iNodeCache, 
 											  _Parameter* catAssignments, 
 											  long catCount,
 											  long* lNodeFlags,
-											  _GrowingVector* lNodeResolutions,
-											  _GrowingVector* catValues,
-											  _Parameter& logScore)	
+											  _GrowingVector* lNodeResolutions
+											  )	
 
 
 // dsf:							the filter to sample from
@@ -1300,9 +1313,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 					siteCount						= dsf->GetSiteCount			(),
 					allNodeCount					= 0,
 					*stateCache						= new long [patternCount*(iNodeCount-1)*alphabetDimension],
-					*leafBuffer						= new long [alphabetDimension],
-					*correctionFactors				= new long [patternCount];
-	
+					*leafBuffer						= new long [alphabetDimension];	
 	
 					// a Patterns x Int-Nodes x CharStates integer table
 					// with the best character assignment for node i given that its parent state is j for a given site
@@ -1312,25 +1323,11 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	
 	checkPointer	(stateCache);
 	checkPointer	(leafBuffer);
-	checkPointer	(correctionFactors);
 	
 	_SimpleList		taggedInternals (iNodeCount, 0, 0),
-					postToIn		   (iNodeCount, 0, 0);
+					postToIn;
 	
-	_CalcNode*		traversalNode = StepWiseTraversal(true);
-	
-	allNodeCount = 0;
-	
-	while (traversalNode)
-	{
-		if (!IsCurrentNodeATip())
-			postToIn [nodeToIndex->GetXtra (nodeToIndex->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
-		traversalNode = StepWiseTraversal(false);
-	}
-	
-	for (long zeros = 0; zeros < patternCount; zeros ++)
-		correctionFactors[zeros] = 0.0;
-		
+	MapPostOrderToInOderTraversal (postToIn);
 	// all nodes except the root
 	
 	allNodeCount = iNodeCount + GetLeafCount () - 1;
@@ -1445,7 +1442,6 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 				{
 					for (long k = 0; k < alphabetDimension; k++)
 						buffer[k] *= _lfScalerUpwards;
-					correctionFactors[siteID] ++;
 				}
 				
 				tMatrix = transitionMatrix;
@@ -1501,12 +1497,6 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 				}
 			}
 		
-			_Parameter patternScore = (log (max_lik) - _logLFScaler*correctionFactors[siteID]);
-			if (catValues)
-				patternScore += (*catValues)[(long)catAssignments[siteOrdering.lData[siteID]]];
-				
-			logScore += patternScore*patternMap->lLength ;
-			
 			parentStates.lData[iNodeCount-1] = max_idx;
 			for  (long nodeID = iNodeCount-2; nodeID >=0 ; nodeID--)
 			{
@@ -1534,9 +1524,10 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		}
 	}
 		
-	delete stateCache; delete leafBuffer; delete correctionFactors;
+	delete stateCache; delete leafBuffer;
 	delete buffer;
 	return result;
 }
+
 
 #endif

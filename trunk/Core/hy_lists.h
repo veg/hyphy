@@ -93,6 +93,8 @@ virtual		void InsertElement 				(BaseRef br, long insertAt = -1, bool store = tr
 virtual 	long  Find 						(long, long startAt = 0);
  			// find the position of a search string in the list of strings (ONLY)
  			// -1 if not found
+virtual		void  FilterRange				(long, long);
+			// retain all those elements that are between (strictly) the 1st and the 2nd argument
 
 virtual 	long  FindStepping				(long, long, long = 0);
  			

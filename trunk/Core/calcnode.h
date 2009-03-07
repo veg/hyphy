@@ -39,13 +39,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ROOTED_RIGHT 					2
 
 
-#ifdef	USE_SCALING_TO_FIX_UNDERFLOW
-	#undef USE_SCALING_TO_FIX_UNDERFLOW
-#endif
-
-#define USE_SCALING_TO_FIX_UNDERFLOW	0
-#define	UNDERFLOW_SCALING_MAX			16
-
 
 
 
@@ -390,7 +383,7 @@ class _TheTree: public _TreeTopology {
 			_Parameter	PruneTreeChar4Cache 			(long categID = -1);
 			
 #ifdef		_SLKP_LFENGINE_REWRITE_
-			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _AVLListX*, _Parameter*, _Parameter*, long, long*, _GrowingVector*, _GrowingVector*, _Parameter&);
+			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*);
 #else
 			_List*		RecoverAncestralSequences 		(_DataSetFilter*, long, long, _Parameter* = nil);
 #endif	
@@ -483,14 +476,22 @@ class _TheTree: public _TreeTopology {
 						// makes an AVL of with keys storing memory addresses of node<long> tree nodes
 						// and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 	
+			void		MapPostOrderToInOderTraversal	(_SimpleList&);
+						// 20090306: SLKP
+						// construct a post-order -> in-order traveral map for internal nodes
 	
-		 #if USE_SCALING_TO_FIX_UNDERFLOW
-			void		AllocateUnderflowScalers		(long); 				
-			void		DeallocateUnderflowScalers		(void); 				
-		 #endif
+			void		AddBranchToForcedRecomputeList	(long idx)		{forceRecalculationOnTheseBranches << idx;}
+			void		ClearForcedRecomputeList		(void)			{forceRecalculationOnTheseBranches.Clear();}
+						// 20090306: SLKP
+						// the previous two functions are used to manipulate the list of 
+						// branches that are marked as 'dirty' for LF computation purposes
+						// because of external manipulations of the cache (e.g. computing the LF with one of the interior
+						// nodes set to 
+	
+	
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
-		_Parameter		SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
+		void			SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
 	
 		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
 		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1, long = -1);
@@ -547,9 +548,6 @@ class _TheTree: public _TreeTopology {
 
 	long		categoryCount;
 
- 	#if USE_SCALING_TO_FIX_UNDERFLOW
- 		_Matrix * scalingForUnderflow;
- 	#endif
  protected:
  
  				
@@ -576,7 +574,8 @@ class _TheTree: public _TreeTopology {
 				flatParents,
 				topLevelNodes,
  				topLevelLeftL,
- 				topLevelRightL;
+ 				topLevelRightL,
+				forceRecalculationOnTheseBranches;
  				
 };
 

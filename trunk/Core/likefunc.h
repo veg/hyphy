@@ -117,25 +117,25 @@ virtual
 		void		DoneComputing 	 (bool = false);
 virtual		
 		_Matrix*	Optimize ();
-		_Matrix* 	ConstructCategoryMatrix (bool complete = false, bool = true, _String* = nil);
-		_Parameter	SimplexMethod (_Parameter& precision);
-		void		Anneal (_Parameter& precision);
+		_Matrix* 	ConstructCategoryMatrix		(bool complete = false, bool = true, _String* = nil);
+		_Parameter	SimplexMethod				(_Parameter& precision);
+		void		Anneal						(_Parameter& precision);
 			
-		void		Simulate (_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
+		void		Simulate					(_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
 	
-		void		ReconstructAncestors (_DataSet &, bool = false, long = 0, long = -1);
-					// 20090211: added an argument to allow the sampling of an individual node 
-					// (third argument) from a given partition (fourth argument)
+		void		ReconstructAncestors		(_DataSet &, _SimpleList&, _String&, bool = false, bool = false);
+					// 20090224: added an argument to allow 
+					// the marginal state reconstruction
 	
-		long		MaximumDimension (void);
+		long		MaximumDimension			(void);
 		
-virtual	_PMathObj	CovarianceMatrix (_SimpleList* = nil);
+virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 		
 		// compute  covariance matrix  based on the Hessian
 		// optional list of parameters to estimate the conditional covariance for
 
 
-		void		RescanAllVariables (void);
+		void		RescanAllVariables		(void);
 													
 		long		DependOnTree	   		(_String&);
 		long		DependOnModel	   		(_String&);
@@ -194,7 +194,11 @@ virtual	void			ScanAllVariables 		(void);
 		void			OptimalOrder	 		(long, _SimpleList&);	
 							// determine the optimal order of compuation for a block
 		
-		_Parameter		ComputeBlock 			(long, _Parameter* siteResults = nil);	 
+		_Parameter		ComputeBlock 			(long, _Parameter* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
+		// 20090224: SLKP
+		// added the option to pass an interior branch (referenced by the 3rd argument in the same order as flatTree)
+		// and a set of values for each site pattern (indexed left to right) in the 4th argument
+	
 		void			SetReferenceNodes		(void); 
 							// compute likelihood over block index i
 		
@@ -230,9 +234,6 @@ virtual	void			ScanAllVariables 		(void);
 		void			PartitionCatVars	  (_SimpleList&, long);
 		// 20090210: extract variable indices for category variables in i-th partition 
 		// and append them to _SimpleList
-		void			PartitionCatVarsProbs (_GrowingVector&, long);
-		// 20090223: retrieve the probabilities of every category in a partition and
-		// append them to _GrowingVector
 	
 		
 static	void			RandomizeList			(_SimpleList&, long);		
@@ -254,7 +255,8 @@ static	void			CheckFibonacci			(_Parameter);
 		long		 	HasPrecisionBeenAchieved 	(_Parameter funcValue = 2.*A_LARGE_NUMBER, bool = false);
 		void		 	RecurseCategory				(long,long,long,long,_Parameter
 #ifdef _SLKP_LFENGINE_REWRITE_
-													,_SimpleList* = nil, char = 0, _Parameter* = nil
+													,_SimpleList* = nil, char = 0, _Parameter* = nil,
+													long = -1, _SimpleList* = nil
 #endif
 													 );
 		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);
@@ -272,6 +274,8 @@ static	void			CheckFibonacci			(_Parameter);
 													 ,_SimpleList* = nil  
 #endif
 													 );
+	
+		
 		void		 	SetNthBit 					(long&,char);
 		bool		 	CheckNthBit 				(long&,char);
 		void		 	BuildIncrements 			(long, _SimpleList&);
@@ -284,10 +288,26 @@ static	void			CheckFibonacci			(_Parameter);
 		void			ComputeBlockForTemplate2	(long, _Parameter*, _Parameter*, long);
 		void			DeleteCaches				(bool = true);
 #ifdef	_SLKP_LFENGINE_REWRITE_
+		void			PopulateConditionalProbabilities	
+													(long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
+		void			ComputeSiteLikelihoodsForABlock
+													(long, _Parameter*, _SimpleList&, long = -1, _SimpleList* = nil);
+	
+						// this function computes a list of site probabilities for the i-th block (1st parameter)
+						// stores them in pattern (left to right) order (2nd argument)
+						// and writes scaling factors for each site into the third argument
+						// arguments 4 (branch index) and 5 (pattern assignments)
+						// allows the calculation of the probability vector while setting a specific interior branch
+						// to a given sequence
+						
+	
+		_List*			RecoverAncestralSequencesMarginal
+													(long, _Matrix&,_List&);
 		void			DetermineLocalUpdatePolicy  (void);
 		void			FlushLocalUpdatePolicy		(void);
 		void			RestoreScalingFactors		(long, long, long, long*, long *);
 		void			SetupLFCaches				(void);
+		void			SetupCategoryCaches			(void);
 #endif		
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
@@ -300,7 +320,20 @@ static	void			CheckFibonacci			(_Parameter);
 					 	
 		_List			optimalOrders,
 						leafSkips,
-						computationalResults;
+						computationalResults,
+						categoryTraversalTemplate;
+						
+/*SLKP: 20090225 
+						This list contains as many entries (themselves of type _List) as there are partitions
+						The entry will be empty for a partition without category variables
+						For a partition with N category variables the entry will contain a
+							1). _List of references to category variables themselves in the order that 
+								they appear in the blockDependancies
+							2). _SimpleList of category counts for each variable C_1, C_2, ... C_N.
+							3). _SimpleList of incremental loop offsets for each variable, e.g. if the
+								_SimpleList in 2). is 2,3,4, then this _SimpleList is
+								12,4,1
+*/
 						
 		long		 	blockComputed,
 						templateKind,

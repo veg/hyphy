@@ -788,14 +788,16 @@ BaseRef	_CategoryVariable::toStr (void)
 }
 	
 //___________________________________________________________________________________________	
-void	_CategoryVariable::SetIntervalValue (long ival, bool recalc)
+_Parameter	_CategoryVariable::SetIntervalValue (long ival, bool recalc)
 {
-	_Constant newValue;
+	_Parameter newIntervalValue;
 	if (recalc)
-		newValue.SetValue (GetValues()->theData[ival]);
+		newIntervalValue  = GetValues()->theData[ival];
 	else
-		newValue.SetValue (((_Matrix*)values->RetrieveNumeric())->theData[ival]);
-	SetValue (&newValue);
+		newIntervalValue = ((_Matrix*)values->RetrieveNumeric())->theData[ival];
+	SetNumericValue (newIntervalValue);
+	//SetValue (new _Constant (newIntervalValue));
+	return newIntervalValue;
 }
 	
 //___________________________________________________________________________________________	
@@ -814,7 +816,6 @@ _Parameter	_CategoryVariable::GetIntervalWeight (long ival)
 	{
 		if (covariant >= 0 || intervalSplitter >= 0)
 			return GetWeights()->theData[ival];
-		
 		
 		if (weights->IsIndependent())
 			return ((_Matrix*)weights->ComputeNumeric())->theData[ival];

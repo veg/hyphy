@@ -31,6 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
+_String _hyMarginalSupportMatrix ("marginal_support_matrix"); 
+
 /*--------------------------------------------------------------------------------------------------*/
 
 void	_LikelihoodFunction::DetermineLocalUpdatePolicy (void)
@@ -74,47 +76,39 @@ void			_LikelihoodFunction::PartitionCatVars	  (_SimpleList& storage, long partI
 }
 
 //_______________________________________________________________________________________
-void			_LikelihoodFunction::PartitionCatVarsProbs	  (_GrowingVector& storage, long partIndex)
+void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 {
-	_SimpleList myCatVars;
-	PartitionCatVars (myCatVars, partIndex);
-	
-	if (myCatVars.lLength == 0)
-		return;
-	
-	_SimpleList myCatStates (myCatVars.lLength, 0, 0),
-				myCatCount;
-	
-	_List		weights;
-	
-	for (long k = 0; k < myCatVars.lLength; k++)
-	{
-		_CategoryVariable * acv = (_CategoryVariable*)LocateVar(myCatVars.lData[k]);
-		acv->Refresh();
-		myCatCount << acv->GetNumberOfIntervals();
-		weights	   << acv->GetWeights		   ();
-	}
-	myCatStates.lData[myCatVars.lLength-1] = -1;
-	long   currentCat = 0;
-	while (1)
-	{
-		while (currentCat < myCatVars.lLength - 1 && myCatStates.lData[currentCat] < myCatCount.lData[currentCat])
-			currentCat++;
-		myCatStates.lData[currentCat] ++;
-		while (currentCat > 0 && myCatStates.lData[currentCat] == myCatCount.lData[currentCat])
+	categoryTraversalTemplate.Clear();
+	for (long partIndex = 0; partIndex < theDataFilters.lLength; partIndex++)
+		if (blockDependancies.lData[partIndex] == 0)
+			categoryTraversalTemplate.AppendNewInstance (new _List);
+		else
 		{
-			myCatStates.lData[currentCat]   = 0;
-			myCatStates.lData[--currentCat] ++;
+			_SimpleList		  myCats;
+			PartitionCatVars  (myCats, partIndex);
+			_List*			  catVarReferences = new _List,
+				 *			  container		   = new _List;
+			
+			_SimpleList*	  catVarCounts	   = new _SimpleList,
+						*	  catVarOffsets	   = new _SimpleList (myCats.lLength,1,0);
+			
+			for (long varIndex = 0; varIndex < myCats.lLength; varIndex++)
+			{
+				_CategoryVariable * aCV = (_CategoryVariable *)LocateVar (myCats.lData[varIndex]);
+				(*catVarReferences) << aCV;
+				(*catVarCounts)		<< aCV->GetNumberOfIntervals();
+			}
+			
+			for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--)
+				catVarOffsets->lData[varIndex] *= catVarOffsets->lData[varIndex+1];
+			
+			container->AppendNewInstance (catVarReferences);
+			container->AppendNewInstance (catVarCounts);
+			container->AppendNewInstance (catVarOffsets);
+			
+			categoryTraversalTemplate.AppendNewInstance(container);
 		}
-		if (myCatStates.lData[0] >= myCatCount.lData[0])
-			break;
-		_Parameter thisCat = 1.;
-		for (long c = 0; c < myCatStates.lLength; c++)
-			thisCat *= (*(_Matrix*)weights(c))[myCatStates.lData[c]];
-		storage.Store(thisCat);
-	}
 }
-
 
 /*--------------------------------------------------------------------------------------------------*/
 
@@ -132,62 +126,39 @@ void	_LikelihoodFunction::RestoreScalingFactors (long index, long branchID, long
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, long segment, long branch)
+void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& doTheseOnes, _String& baseResultID,  bool sample, bool doMarginal)
 {
-	/*long  i,
-	 j,
-	 k,
-	 m,
-	 n,
-	 sc,
-	 offset = 0,
-	 offset2= 0;*/
-	
-	_DataSetFilter *dsf				= (_DataSetFilter*)dataSetFilterList (theDataFilters(0));	
-	_TheTree    	*firstTree		= (_TheTree*)LocateVar(theTrees(0));
-	_Parameter		logResult		= 0.;
+	_DataSetFilter *dsf				= (_DataSetFilter*)dataSetFilterList (theDataFilters(doTheseOnes.lData[0]));	
+	_TheTree    	*firstTree		= (_TheTree*)LocateVar(theTrees(doTheseOnes.lData[0]));
 	
 	target.SetTranslationTable		(dsf->GetData());	
-	target.ConvertRepresentations();
+	target.ConvertRepresentations(); 
 	
 	computationalResults.Clear();
 	PrepareToCompute();
 	Compute();				
-	
-	_AssociativeList *  supportAVL = nil;
-	// store conditional probabilities at the root
-	if (sample == false)
-	{
-		_Parameter			doRootSupportFlag = 0.0;
-		checkParameter 		(storeRootSupportFlag, doRootSupportFlag, 0.0);
-		if (doRootSupportFlag > 0.5)
-			supportAVL = new _AssociativeList;
-	}
-	
+		
 	// check if we need to deal with rate variation
 	_Matrix			*rateAssignments = nil;
 	if  (indexCat.lLength>0)
-	{
-		rateAssignments = ConstructCategoryMatrix(true,false);
-		checkPointer	 (rateAssignments);
-	}
+		rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(true,false));
 	
 	long siteOffset			= 0,
 		 patternOffset		= 0,
 		 sequenceCount		;
 	
-	for (long i = 0; i<theTrees.lLength; i++)
+	for (long i = 0; i<doTheseOnes.lLength; i++)
 	{
-		_TheTree   *tree		= (_TheTree*)LocateVar(theTrees(i));
-		
-		dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
+		long	   partIndex    = doTheseOnes.lData[i];
+		_TheTree   *tree		= (_TheTree*)LocateVar(theTrees(partIndex));
+		dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
 		
 		long    catCounter = 0;
 		
 		if (rateAssignments)
 		{
 			_SimpleList				pcats;
-			PartitionCatVars		(pcats,i);
+			PartitionCatVars		(pcats,partIndex);
 			catCounter			  = pcats.lLength;
 		}
 		
@@ -200,7 +171,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 		{
 			if (!tree->Equal(firstTree)) // incompatible likelihood function
 			{
-				ReportWarning ((_String("Ancestor reconstruction had to ignore part ")&_String(i+1)&" of the likelihood function since it has a different tree topology than the first part."));
+				ReportWarning ((_String("Ancestor reconstruction had to ignore partition ")&_String(partIndex+1)&" of the likelihood function since it has a different tree topology than the first part."));
 				continue;
 			}
 			_TranslationTable * mtt = target.GetTT()->MergeTables(dsf->GetData()->GetTT());
@@ -211,52 +182,48 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 			}
 			else
 			{
-				ReportWarning ((_String("Ancestor reconstruction had to ignore part ")&_String(i+1)&" of the likelihood function since it has a character alphabet incompatible with the first part."));
+				ReportWarning ((_String("Ancestor reconstruction had to ignore partition ")&_String(partIndex+1)&" of the likelihood function since it has a character alphabet incompatible with the first part."));
 				continue;
 			}
 		}
 		
-		_AVLListX   * nodeMapper	= tree->ConstructNodeToIndexMap(true);
 		_List		* expandedMap	= dsf->ComputePatternToSiteMap(),
-					*  thisSet;
+					* thisSet;
 		
 		if (sample)
 		{
+			_AVLListX   * nodeMapper	= tree->ConstructNodeToIndexMap(true);
 			thisSet = new _List;
-			logResult = tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[i], &tree->GetRoot(), nodeMapper, conditionalInternalNodeLikelihoodCaches[i],
+			tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[partIndex], &tree->GetRoot(), nodeMapper, conditionalInternalNodeLikelihoodCaches[partIndex],
 														 *thisSet, nil,*expandedMap,  catCounter?rateAssignments->theData+siteOffset:nil, catCounter);
 			
 			
+			nodeMapper->DeleteAll(false);DeleteObject (nodeMapper);
 			
 		}
 		else
 		{
-			_GrowingVector categoryWeights;
-			if (catCounter)
+			if (doMarginal)
 			{
-				PartitionCatVarsProbs (categoryWeights, i);
-				long catNumber = categoryWeights.GetSize();
-				for (long i = 0; i < catNumber; i++) categoryWeights.theData[i] = log (categoryWeights.theData[i]);
-			}
+				_Matrix  *marginals = new _Matrix;
+				_String  supportMxID = baseResultID & '.' & _hyMarginalSupportMatrix;
+				thisSet = RecoverAncestralSequencesMarginal (partIndex, *marginals, *expandedMap);
+				CheckReceptacleAndStore(&supportMxID, "ReconstructAncestors", true, marginals, false);
 				
-			
-			thisSet = tree->RecoverAncestralSequences (dsf, 
-														*(_SimpleList*)optimalOrders.lData[i],
-														*expandedMap,
-														nodeMapper,
-														conditionalInternalNodeLikelihoodCaches[i],
-														catCounter?rateAssignments->theData+siteOffset:nil, 
-														catCounter,
-														conditionalTerminalNodeStateFlag[i],
-														(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(i),
-													    catCounter?&categoryWeights:nil,
-												        logResult
-														);
-														
-														
+			}
+			else
+				thisSet = tree->RecoverAncestralSequences (dsf, 
+															*(_SimpleList*)optimalOrders.lData[partIndex],
+															*expandedMap,
+															conditionalInternalNodeLikelihoodCaches[partIndex],
+															catCounter?rateAssignments->theData+siteOffset:nil, 
+															catCounter,
+															conditionalTerminalNodeStateFlag[partIndex],
+															(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(partIndex)
+															);
+																												
 		}
 		
-		printf ("%g\n", logResult);
 		
 		_String * sampledString = (_String*)(*thisSet)(0);
 		
@@ -271,7 +238,6 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 		}
 		DeleteObject (thisSet);
 		DeleteObject (expandedMap);
-		nodeMapper->DeleteAll(false);DeleteObject (nodeMapper);
 		siteOffset	  += dsf->GetSiteCount();
 		patternOffset += dsf->GetSiteCount();
 	}
@@ -285,6 +251,358 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target, bool sample, l
 	
 	DoneComputing ();
 	
+}
+
+//_______________________________________________________________________________________________
+
+void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
+// this function computes site probabilties for each rate class (or something else that involves iterating over rate classes)
+// see run options below
+
+// run mode can be one of the following
+// 0 : simply   populate an M (number of rate classes) x S (number of site patterns) 
+//   : expected minimum dimension of buffer is M*S
+//	 : scalers will have M*S entries laid out as S for rate class 0, S for rate class 1, .... S for rate class M-1
+// 1 : simply   populate an M (number of rate classes) x S (number of site patterns) and scale to the lowest multiplier
+//   : expected minimum dimension of buffer is M*S
+//	 : scalers will have S entries
+// 2 : compute  a sum for each site using weighted by the probability of a given category
+//   : expected minimum dimension of buffer is 2*S
+//	 : scalers will have S entries
+// 3 : compute the category index of the maximum probability  
+//   : expected minimum dimension of buffer is 3*S -- the result goes into offset 0
+//	 : scalers will have S entries 
+// 4 : compute the weight of each rate class index 
+//   : expected minimum dimension of buffer is M
+//	 : scalers will have no entries
+{
+	_List				*traversalPattern		= (_List*)categoryTraversalTemplate(index),
+						*variables			    = (_List*)((*traversalPattern)(0)),
+						*catWeigths				= nil;
+
+	_SimpleList			*categoryCounts			= (_SimpleList*)((*traversalPattern)(1)),
+						*categoryOffsets		= (_SimpleList*)((*traversalPattern)(2)),
+						categoryValues			(categoryCounts->lLength,0,0);
+
+	long				totalSteps				= categoryOffsets->lData[0] * categoryCounts->lData[0],
+						catCount				= variables->lLength-1,
+						blockLength				= BlockLength(index),
+						arrayDim				= runMode==0?catCount*blockLength:(runMode<4?blockLength:0);
+	
+	_CategoryVariable   *catVariable;
+	
+	if (runMode == 2 || runMode == 4)
+		catWeigths = new _List;
+	else
+		if (runMode == 3)
+			for (long r = 0, r2 = 2*blockLength; r < blockLength; r++, r2++)
+			{
+				buffer[r] = 0.0; buffer[r2] = 0.0;
+			}
+	
+	for					(long currentCat		= 0; currentCat <= catCount; currentCat++)
+	{
+		(catVariable = ((_CategoryVariable**)(variables->lData))[currentCat])->Refresh();
+		catVariable->SetIntervalValue(0,true);
+		if (runMode == 2 || runMode == 4)
+			(*catWeigths) << catVariable->GetWeights();
+	}
+	
+		
+	scalers.Populate	(arrayDim,0,0);
+
+	for					(long currentRateCombo  = 0; currentRateCombo < totalSteps; currentRateCombo++)
+	{
+
+		// the next clause takes care of advancing the class count and 
+		// setting each category variable to its appropriate value 
+		
+		long remainder = currentRateCombo % categoryCounts->lData[catCount];
+		if (currentRateCombo && remainder  == 0)
+		{
+			categoryValues.lData[catCount] = 0;
+			(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(0);
+			for (long uptick = catCount-1; uptick >= 0; uptick --)
+			{
+				categoryValues.lData[uptick]++;
+				if (categoryValues.lData[uptick] == categoryCounts->lData[uptick])
+				{
+					categoryValues.lData[uptick] = 0;
+					(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(0);
+				}
+				else
+				{
+					(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(categoryValues.lData[uptick]);
+					break;
+				}
+			}
+		}
+		else
+		{
+			if (currentRateCombo)
+			{
+				categoryValues.lData[catCount]++;
+				(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(remainder);
+			}
+		}
+		
+		_Parameter		 currentRateWeight = 1.;
+		if (runMode == 2 || runMode == 4)
+		{
+			for					(long currentCat		= 0; currentCat <= catCount; currentCat++)
+				currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
+			if (runMode == 4)
+			{
+				buffer [currentRateCombo] = currentRateWeight;
+				continue;
+			}
+			else
+				if (currentRateWeight == 0.0) // nothing to do, eh?
+					continue;
+		}
+		
+	
+		// now that the categories are set we can proceed with the computing step
+		long			 indexShifter					= blockLength * currentRateCombo;
+		long			_hprestrict_	*siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[index]->lLength?
+														 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
+														 :nil;
+		
+		if (runMode == 0 || runMode == 1) // populate the matrix of conditionals and scaling factors
+		{
+			_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+			ComputeBlock	(index, bufferForThisCategory, currentRateCombo, branchIndex, branchValues);
+			
+			if (runMode == 0)
+				for (long p = 0; p < blockLength; p++)
+					scalers.lData[p+indexShifter] = siteCorrectors[p];
+			else
+			{
+				if (siteCorrectors)
+				{
+					for (long r1 = 0; r1 < blockLength; r1++)
+					{
+						long scv = *siteCorrectors;
+						if (scv > scalers.lData[r1]) 
+						// this class has a _bigger_ scaling factor than at least one other class
+						// hence it needs to be scaled down (unless it's the first class)
+						{
+							if (currentRateCombo==0) //(scalers.lData[r1] == -1)
+								scalers.lData[r1] = scv;
+							else
+								bufferForThisCategory[r1] *= acquireScalerMultiplier (scv-scalers.lData[r1]);
+						}
+						else
+						{
+							if (scv < scalers.lData[r1]) 
+							// this class is a smaller scaling factor, i.e. its the biggest among all those
+							// considered so far; all other classes need to be scaled down
+							{							
+								_Parameter scaled = acquireScalerMultiplier (scalers.lData[r1]-scv);
+								for (long z = indexShifter+r1-blockLength; z >= 0; z-=blockLength)
+									buffer[z] *= scaled;
+								
+								scalers.lData[r1] = scv;
+							}
+						}
+						siteCorrectors++;
+					}
+				}
+			}
+		} // run mode 0 or 1
+		else
+		{
+			if (runMode == 2 || runMode == 3) // normal expected value computation
+			{
+				ComputeBlock	(index, buffer + blockLength, currentRateCombo, branchIndex, branchValues);
+
+				if (runMode == 2)
+					for (long r1 = 0, r2 = blockLength; r1 < blockLength; r1++,r2++)
+					{
+						if (siteCorrectors)
+						{
+							long scv = *siteCorrectors;
+							
+							if (scv < scalers.lData[r1]) // this class has a _smaller_ scaling factor
+							{
+								buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+								scalers.lData[r1] = scv;
+							}
+							else
+							{
+								if (scv > scalers.lData[r1]) // this is a _larger_ scaling factor
+									buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);							
+								else // same scaling factors
+									buffer[r1] += currentRateWeight * buffer[r2];
+							}
+							
+							siteCorrectors++;
+						}
+						else
+							buffer[r1] += currentRateWeight * buffer[r2];
+						
+					}				
+					else // runMode = 3
+					{
+						for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
+						{
+							bool doChange = false;
+							if (siteCorrectors)
+							{
+								long scv = *siteCorrectors;
+								
+								if (scv < scalers.lData[r1]) // this has a _smaller_ scaling factor
+								{
+									_Parameter scaled = buffer[r1]*acquireScalerMultiplier (scalers.lData[r1] - scv);
+									if (buffer[r2] > scaled)
+										doChange = true;
+									else
+										buffer[r1] = scaled;
+									scalers.lData[r1] = scv;
+								}
+								else
+								{
+									if (scv > scalers.lData[r1]) // this is a _larger_ scaling factor
+										buffer[r2] *= acquireScalerMultiplier (scv - scalers.lData[r1]);		
+									doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
+								}
+								
+								siteCorrectors++;
+							}
+							else
+								doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
+							
+							if (doChange)
+							{
+								buffer[r1]		   = buffer[r2];
+								buffer[r3]         = currentRateWeight;
+							}
+						}						
+					}
+			}
+				
+		}
+	}
+	DeleteObject (catWeigths);
+}
+
+//_______________________________________________________________________________________________
+
+void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
+// assumes that results is at least blockLength slots long
+{
+	if (blockDependancies.lData[index])
+		PopulateConditionalProbabilities(index, 2, results, scalers, branchIndex, branchValues);	
+	else
+	{
+		ComputeBlock		(index, results, -1, branchIndex, branchValues);
+		scalers.Duplicate   (siteCorrections(index));
+	}
+}
+
+//_______________________________________________________________________________________________
+
+_List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Matrix & supportValues, _List& expandedSiteMap) 
+// index:			which part to process
+// supportValues:	for each internal node and site stores alphabetDimension values for the 
+//				:	relative support of each residue at a given site
+//				:   linearized 3D matrix
+//				:   1st - node index (same order as flatTree)
+//				:   2nd - site index (only unique patterns are stored)
+//				:   3rd - the character
+
+{	
+	
+	_DataSetFilter* dsf				= (_DataSetFilter*)dataSetFilterList (theDataFilters(index));
+	_TheTree		*blockTree		= (_TheTree*)LocateVar(theTrees.lData[index]);
+					 
+	long			patternCount					= dsf->NumberDistinctSites	(),
+					alphabetDimension				= dsf->GetDimension			(),
+					unitLength						= dsf->GetUnitLength		(),
+					iNodeCount						= blockTree->GetINodeCount	(),
+					siteCount						= dsf->GetSiteCount			(),
+					shiftForTheNode					= patternCount * alphabetDimension;
+	
+	_Parameter		*siteLikelihoods				= new _Parameter [2*patternCount],
+					*siteLikelihoodsSpecState		= new _Parameter [2*patternCount];
+	
+	_SimpleList		scalersBaseline, 
+					scalersSpecState,
+					branchValues,
+					postToIn;
+	
+	blockTree->MapPostOrderToInOderTraversal (postToIn);
+	supportValues.Clear				();
+	CreateMatrix					(&supportValues,iNodeCount,alphabetDimension*patternCount,false,true,false);
+
+	ComputeSiteLikelihoodsForABlock (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
+	
+	
+	for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
+	// the prob for the last char is clearly 1 - sum (probs other chars)
+	{
+		branchValues.Populate			(patternCount,currentChar,0);
+		for (long branchID = 0; branchID < iNodeCount; branchID ++)
+		{
+			ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
+			for (long siteID = 0; siteID < patternCount; siteID++)
+			{
+				long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
+				_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+				if (scaleDiff > 0)
+					ratio *= acquireScalerMultiplier(scaleDiff);
+				supportValues.theData[branchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
+			}
+			blockTree->AddBranchToForcedRecomputeList (branchID+blockTree->GetLeafCount());
+		}
+	}
+	
+	_SimpleList  conversion;
+	_AVLListXL	 conversionAVL (&conversion);
+	_String		 codeBuffer    (unitLength, false);
+	_List	     *result	   = new _List;
+	
+	for (long k = 0; k < iNodeCount; k++)
+		result->AppendNewInstance (new _String(siteCount*unitLength,false));
+	
+	for (long siteID = 0; siteID < patternCount; siteID++)
+	{
+		_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteID);
+				
+		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
+		{
+			_Parameter		max_lik     = 0.,	
+							sum			= 0.,
+							*scores		= supportValues.theData + shiftForTheNode*nodeID +  siteID*alphabetDimension;
+			long			max_idx     = 0;
+
+			for (long charID = 0; charID < alphabetDimension-1; charID ++)
+			{
+				sum+=scores[charID];
+				if (scores[charID] > max_lik)
+				{
+					max_idx = charID; max_lik = scores[charID];
+				}
+			}
+			scores[alphabetDimension-1] = 1.-sum;
+			
+			if (scores[alphabetDimension-1] > max_lik)
+				max_idx = alphabetDimension-1; 
+						
+			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(max_idx), unitLength, codeBuffer.sData, &conversionAVL);
+			_String  *sequence   = (_String*) (*result)(postToIn.lData[nodeID]);
+			
+			for (long site = 0; site < patternMap->lLength; site++)
+			{
+				char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
+				for (long charS = 0; charS < unitLength; charS ++)
+					storeHere[charS] = codeBuffer.sData[charS];
+			}
+		}
+	}
+	delete siteLikelihoods; 
+	delete siteLikelihoodsSpecState;
+	return result;
 }
 
 #endif

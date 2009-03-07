@@ -124,16 +124,9 @@ _SimpleList::_SimpleList (long l, long start, long step)
 void _SimpleList::Populate (long l, long start, long step)
 {
 	RequestSpace (l);
-	
-	long * lp  = lData,
-		 * lps = lData+l;
+	for (long k = 0; k < l; k++, start+=step)
+		lData[k] = start;
 
-	while (lp!=lps)
-	{
-		*lp = start;
-		start += step;
-		lp++;
-	}
 	lLength = l;
 }
 
@@ -1318,6 +1311,22 @@ long  _SimpleList::FindStepping (long s, long step, long startAt)
 
 //______________________________________________________________
 
+void  _SimpleList::FilterRange (long lb, long ub)
+{
+	if (ub <= lb)
+		Clear();
+	else
+	{
+		_SimpleList toDelete;
+		for (long k = 0; k < lLength; k++)
+			if (lData[k] <= lb || lData[k] >= ub)
+				toDelete << k;
+		DeleteList (toDelete);
+	}
+}	
+
+//______________________________________________________________
+
 long  _SimpleList::BinaryFind (long s, long startAt)
 {
 	long top	=	lLength-1, 
@@ -1743,7 +1752,7 @@ void  _SimpleList::TrimMemory (void)
 //______________________________________________________________
 
 void  _SimpleList::DeleteDuplicates (void)
-//delete item at index (>=0)
+// delete duplicates from a sorted list
 {
 	if (lLength>1)
 	{
@@ -1769,7 +1778,7 @@ void  _SimpleList::DeleteDuplicates (void)
 //______________________________________________________________
 
 void  _SimpleList::DeleteList (const _SimpleList& toDelete)
-//delete item at index (>=0)
+//delete items from a sorted list
 {
 	if (toDelete.lLength)
 	{

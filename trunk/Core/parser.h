@@ -747,7 +747,6 @@ bool	    CheckReceptacleAndStore
 
 void		FinishDeferredSF(void);
 							
-extern		_AVLList		*lookAside;
 void		SetupOperationLists (void);
 void		ExportIndVariables
 							(_String&, _String&, _SimpleList*);

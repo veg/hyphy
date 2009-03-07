@@ -204,6 +204,7 @@ _String
 			gdiDFAtomSize					("ATOM_SIZE"),
 			statusBarProgressValue			("STATUS_BAR_PROGRESS_VALUE"),
 			statusBarUpdateString			("STATUS_BAR_STATUS_STRING"),
+			marginalAncestors				("MARGINAL"),
 			dialogPrompt,
 			lastModelUsed,
 			baseDirectory,
@@ -416,6 +417,19 @@ _Parameter	ProcessNumericArgument (_String* data, _VariableContainer* theP)
 	numericalParameterSuccessFlag = false;	
 	return 0.0;
 }
+
+//____________________________________________________________________________________	
+
+_PMathObj	ProcessAnArgumentByType (_String* expression, _VariableContainer* theP, long objectType)
+{
+	_Formula  expressionProcessor (*expression, theP);
+	_PMathObj expressionResult = expressionProcessor.Compute();
+	if (expressionResult && expressionResult->ObjectClass()==objectType)
+		return (_PMathObj)expressionResult->makeDynamic();
+	
+	return nil;
+}
+
 
 //____________________________________________________________________________________	
 
@@ -3152,23 +3166,43 @@ void	  _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 		likef = &tempString;
 		
 	_String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
-	long	f	= FindLikeFuncName (name2lookup);
-	if (f >= 0)
+	long	objectID	= FindLikeFuncName (name2lookup);
+	if (objectID >= 0)
 	{
-		_DataSet * ds = new _DataSet;
-		checkPointer (ds);
+		_DataSet	 * ds				= (_DataSet*) checkPointer(new _DataSet);
+		_String		 * dsName			= new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
+		_LikelihoodFunction *lf			= ((_LikelihoodFunction*)likeFuncList(objectID));
 		
-		((_LikelihoodFunction*)likeFuncList(f))->ReconstructAncestors(*ds, sample);
-		_String		 * dsName = new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
+		long							partCount = lf->CountObjects(0);
+		_SimpleList						partsToDo (partCount, 0, 1);
+		if (parameters.lLength>2)
+		{
+			_String  secondArg = *(_String*)parameters(2);
+			_Matrix * partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
+			if (partitionList)
+			{
+				partitionList->ConvertToSimpleList (partsToDo);
+				DeleteObject (partitionList);
+				partsToDo.Sort();
+				partsToDo.FilterRange (-1, partCount);
+				if (partsToDo.lLength == 0)
+				{
+					errMsg =  "An invalid partition specification in call to ancestral reconstruction/sampling";
+					WarnError (errMsg);
+				}
+			}
+		}
+					
+		lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.lLength > 0);
 		StoreADataSet  (ds, dsName);
 		DeleteObject   (dsName);
     }
 	else 
 	{
-		f	=	FindSCFGName	   (name2lookup);
-		if (f>=0)
+		objectID	=	FindSCFGName	   (name2lookup);
+		if (objectID>=0)
 		/* reconstruct best parse tree for corpus using SCFG */
-			CheckReceptacleAndStore (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix)," ReconstructAncestors (SCFG)", true, new _FString( ((Scfg*)scfgList (f))->BestParseTree() ), false);
+			CheckReceptacleAndStore (&AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix)," ReconstructAncestors (SCFG)", true, new _FString( ((Scfg*)scfgList (objectID))->BestParseTree() ), false);
 		else
 		{
 			errMsg =  (((_String)("Likelihood Function/SCFG")&*likef&_String(" has not been initialized")));
@@ -7810,16 +7844,22 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 				{
 					_List pieces;
 					mark2 = ExtractConditions (source,mark1+1,pieces,',');
-					if ((pieces.lLength>2)||(pieces.lLength==0))
+					if (pieces.lLength>3 || pieces.lLength==0)
 					{
-						_String errMsg ("ReconstructAncestors and SampleAncestors expects 1 parameter: likelihood function ident.");
+						_String errMsg ("ReconstructAncestors and SampleAncestors expects 1-3 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and for ReconstructAncestors an optional MARGINAL flag.");
 						acknError (errMsg);
 						return false;
 					}
 					
-					dsc.code = (oper == _String("ReconstructAncestors"))?38:50;
-					dsc.parameters&&(&dsID);
-					dsc.parameters&&(pieces(0)); 
+					dsc.code					= (oper == _String("ReconstructAncestors"))?38:50;
+					dsc.parameters				&&(&dsID);
+					dsc.parameters				<< pieces(0); 
+					for (long optP = 1; optP < pieces.lLength; optP++)
+						if (((_String*)pieces(optP))->Equal(&marginalAncestors))
+							dsc.simpleParameters << -1;
+						else
+							dsc.parameters	<< pieces(optP);
+					
 					target&&(&dsc);
 					return true;
 				}

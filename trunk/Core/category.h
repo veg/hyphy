@@ -92,7 +92,8 @@ virtual
 	
 	char		GetRepresentationType () {return representation;}
 	
-	void		SetIntervalValue (long, bool recacl = true);
+	_Parameter	SetIntervalValue (long, bool recacl = true);
+				// set interval value is returned
 	
 	_Parameter	GetIntervalValue (long);
 

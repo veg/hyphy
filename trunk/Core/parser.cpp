@@ -2250,7 +2250,7 @@ void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a
 	varFlags |= HY_VARIABLE_CHANGED;
 	theValue = v;
 			
-	if ((theValue<lowerBound)||(theValue>upperBound))
+	if (theValue<lowerBound || theValue>upperBound)
 	{
 		if (theValue<=lowerBound+1e-50)
 			theValue = lowerBound;

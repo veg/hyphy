@@ -64,7 +64,7 @@ void	warnError (long);
 	// warns user of current error with a built in string
 	// writes to stderror
 	
-void	checkPointer  (void*);
+void*	checkPointer  (void*);
 
 #if !defined __UNIX__  && !defined __HEADLESS__
 	extern bool skipWarningMessages;
