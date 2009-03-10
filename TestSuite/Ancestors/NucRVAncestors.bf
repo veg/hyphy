@@ -102,8 +102,10 @@ expectedLL = -3286.0978773303;
 diffLL	   = Abs(expectedLL - res_SmallCodon_LF[1][0]);
 fprintf (stdout, SmallCodon_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n\n");
 
+/*
 fprintf (stdout, "Recovering category assignments and conditional probabilities for each category\n");
 ConstructCategoryMatrix (catMx, SmallCodon_LF);
+*/
 
 DataSet	 mlSequences      = ReconstructAncestors (SmallCodon_LF);
 DataSet	 sampledSequences = SampleAncestors 	 (SmallCodon_LF);

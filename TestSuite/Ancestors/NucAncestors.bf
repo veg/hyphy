@@ -86,7 +86,7 @@ for (k = 0; k < _AncestalFilter.species; k = k+1)
 
 fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
 
-_samplingIterates		= 5;
+_samplingIterates		= 100;
 
 _characterDimension 	= Columns (_AncestalFilterChars);
 
@@ -139,7 +139,7 @@ for (k = 0; k < _samplingIterates; k = k + 1)
 	{
 		for (_idx_2 = 0; _idx_2 < _sampledFilter.sites; _idx_2 = _idx_2 + 1)
 		{
-			GetDataInfo 			 (_charInfo, _sampledFilter, _idx_1, _sampledFilterSiteToPatternMap[_idx_2]);
+			GetDataInfo 			 	  (_charInfo, _sampledFilter, _idx_1, _sampledFilterSiteToPatternMap[_idx_2]);
 			_sampledInformation[_idx_3] = _sampledInformation[_idx_3]+_charInfo;
 			_idx_3 = _idx_3+1;
 		}
@@ -160,6 +160,41 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 	}
 
 }
+
+_outputCSV = ""; _outputCSV * 2048; 
+_outputCSV * "Sequence,Site,ML Joint";
+for (_idx_1 = 0; _idx_1 < _characterDimension; _idx_1 = _idx_1 + 1)
+{
+	_outputCSV * (",Sampled "+ _AncestalFilterChars[_idx_1]);
+}
+for (_idx_1 = 0; _idx_1 < _characterDimension; _idx_1 = _idx_1 + 1)
+{
+	_outputCSV * (",Marginal "+ _AncestalFilterChars[_idx_1]);
+}
+
+_idx_3 = 0;
+for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
+{
+	for (_idx_2 = 0; _idx_2 < _marginalAncestorsFilter.sites; _idx_2 = _idx_2 + 1)
+	{
+		_outputCSV * ("\n" + _AncestralNodeNames[_idx_1] + "," + (1+_idx_2) + "," + _AncestalFilterChars[_mlInformation[_idx_3]]);
+		
+		for (_idx_4 = 0; _idx_4 < _characterDimension; _idx_4 = _idx_4 + 1)
+		{
+			_outputCSV * ("," + (_sampledInformation[_idx_3])[_idx_4]/_samplingIterates);
+		}
+		for (_idx_4 = 0; _idx_4 < _characterDimension; _idx_4 = _idx_4 + 1)
+		{
+			_outputCSV * ("," + (_marginalInformation[_idx_3])[_idx_4]);
+		}
+		_idx_3 = _idx_3 + 1;
+	}
+}
+
+_outputCSV * 0;
+
+fprintf ("../spool/nuc_ancestors.csv", CLEAR_FILE, _outputCSV);
+
 return 0;
 
 END;
