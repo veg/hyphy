@@ -1196,6 +1196,7 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 // catAssignments:				a vector assigning a (partition specific) rate category to each site
 // catCount:					the number of rate classes
 
+// this needs to be updated to deal with traversal caches!
 {	
 	long					  childrenCount		= currentNode->get_num_nodes();
 	
@@ -1341,7 +1342,10 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		
 
 		if (!isLeaf)
+		{
 			nodeCode -=  flatLeaves.lLength;
+			AddBranchToForcedRecomputeList (nodeCode);
+		}
 		
 		_Parameter * parentConditionals = iNodeCache + parentCode * alphabetDimension * patternCount;
 		
@@ -1444,12 +1448,16 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 						buffer[k] *= _lfScalerUpwards;
 				}
 				
-				tMatrix = transitionMatrix;
-				for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)
+				// buffer[p] now contains the maximum likelihood of the tree 
+				// from this point forward given that parent state is p
+				// and stateBuffer[p] stores the maximimizing assignment 
+				// for this node
+				
+				for (long k = 0; k < alphabetDimension; k++)
 				{
 					long stateValue = stateBuffer[k];
 					if (stateValue >= 0)
-						parentConditionals[k] *= buffer[k] * tMatrix[stateValue]; 
+						parentConditionals[k] *= buffer[k]; 
 				}
 			}
 
@@ -1459,7 +1467,6 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 			childVector += alphabetDimension;
 		}
 	}
-	
 	
 	_List	   *result = new _List;
 	for (long k = 0; k < iNodeCount; k++)
@@ -1526,6 +1533,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		
 	delete stateCache; delete leafBuffer;
 	delete buffer;
+	
 	return result;
 }
 

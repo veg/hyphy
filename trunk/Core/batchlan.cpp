@@ -2544,15 +2544,13 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 				simpleParameters<<parseCode;
 				simpleParameters<<long (f.makeDynamic());
 				simpleParameters<<long (f2.makeDynamic());
-				_SimpleList		varList;
-				_AVLList		varListA (&varList);
-				
+				_SimpleList*		varList = new _SimpleList;
+				_AVLList			varListA (varList);
 				f.ScanFForVariables (varListA, true, true, true, true);
 				f2.ScanFForVariables(varListA, true, true);
-
 				varListA.ReorderList();
 				listOfCompiledFormulae<<(long)this;
-				compiledFormulaeParameters&& &varList;
+				compiledFormulaeParameters.AppendNewInstance(varList);
 			}
 			else
 			{
@@ -2568,9 +2566,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 	
 	if (terminateExecution)
 	{
-		_String err = "Problem occurred in line:";
-		err = err & *this;
-		WarnError (err);
+		WarnError (_String("Problem occurred in line:")&*this);
 		return;
 	}
 }

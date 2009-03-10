@@ -3577,6 +3577,12 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 	{
 		_Formula newF;
 		
+		if (f2->IsEmpty())
+		{
+			WarnError ("Empty RHS in an assignment");
+			return 0;
+		}
+		
 		if (code == -4)
 			newF.DuplicateReference(f2);
 		else

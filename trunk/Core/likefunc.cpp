@@ -1425,31 +1425,35 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 			if (HasHiddenMarkov(blockDependancies.lData[i])>=0)
 			{
 				df			=		(_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
-				vDim		+=		df->GetFullLengthSpecies()/df->GetUnitLength();
+				vDim		+=		df->GetSiteCount();
 			}
 			else
 				vDim+=BlockLength(i);
 			
-		_Matrix *result = new _Matrix (hDim,vDim,false,true);
+		_Matrix		 *result = new _Matrix (hDim,vDim,false,true);
 		checkPointer (result);
+		
 		// now proceed to compute each of the blocks
 		for (long i=0;i<theTrees.lLength;i++)
 		{
-			categID		  = 0;
-			offsetCounter = 1;
-			if (!blockDependancies.lData[i])
+			if (blockDependancies.lData[i] > 0)
+			// if a partition that does not depend on category variables
+			// then the matrix is already populated with zeros
 			{
-				long u = currentOffset+BlockLength(i);
-				for (long j=currentOffset; j<u; j++)
-					(*result)[j]=0.0;
-				currentOffset+=BlockLength(i);
-			}
-			else
-			{
-				long	hmmID = HasHiddenMarkov (blockDependancies.lData[i]);
+				long	hmmID	  = HasHiddenMarkov (blockDependancies.lData[i]),
+						blockSize = BlockLength (i);
+			
 				if (hmmID>=0)
+				// the partition depends on hidden Markov variables
+				// this will be a new feature for v2.0 -- multiple HMM can be handled
 				{
-						// do hidden markov
+						WarnError ("This feature has not yet been implemented in the new LF engine framework");
+						return result;
+					
+						// run the Viterbi algorithm to reconstruct the most likely
+						// HMM path; this is done by integrating out all other
+						// category variables
+					
 						df = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
 						_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[hmmID]);
 						thisC->Refresh();
@@ -1564,30 +1568,23 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 					}
 					else
 					{
-						long ff = HasHiddenMarkov(blockDependancies.lData[i],false);
-#ifdef _SLKP_LFENGINE_REWRITE_
-						_SimpleList	scalerTabs (BlockLength(i), 0, 0);
-#endif
-						if (ff<0)
+						long hasConstantOnPartition = HasHiddenMarkov(blockDependancies.lData[i],false);
+						if (hasConstantOnPartition<0)
 						{
-#ifdef _SLKP_LFENGINE_REWRITE_
-							ZeroSiteResults();
+							_SimpleList	scalerTabs (BlockLength(i), 0, 0);
 							RecurseCategory(i,  0, blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), 1., 
 											&scalerTabs, 1, result->theData+currentOffset);
-							
-#else
-							FindMaxCategory(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), currentOffset, *result);
-#endif		
-											
-
 						}
 						else
 						{
+							WarnError ("This feature has not yet been implemented in the new LF engine framework");
+							return result;
+
 							long	mxDim = 1,
 								    bl = BlockLength (i),
 								    j;
 
-							for (j=0; j<=ff; j++)
+							for (j=0; j<=hasConstantOnPartition; j++)
 								if (CheckNthBit (blockDependancies.lData[i],j))
 								{
 									_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[j]);
@@ -1597,7 +1594,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 							_Matrix ccache (mxDim,1,false,true);
 							
 							categID = 0;
-							RecurseConstantOnPartition    (i,0,blockDependancies.lData[j],ff,1,ccache);
+							RecurseConstantOnPartition    (i,0,blockDependancies.lData[j],hasConstantOnPartition,1,ccache);
 							categID = 0;
 							
 							/*
@@ -1615,7 +1612,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 								}
 								
 							mxDim = 1;
-							for (j=HighestBit (blockDependancies.lData[i]); j>ff; j--)
+							for (j=HighestBit (blockDependancies.lData[i]); j>hasConstantOnPartition; j--)
 								if (CheckNthBit (blockDependancies.lData[i],j))
 								{
 									_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[j]);
@@ -1643,6 +1640,9 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	}
 	else
 	{
+		WarnError ("This feature has not yet been implemented in the new LF engine framework");
+		return new _Matrix;
+
 		vDim = 0;
 		hDim = 1;
 		for (long i=0;i<theTrees.lLength;i++)

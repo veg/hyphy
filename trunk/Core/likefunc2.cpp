@@ -269,7 +269,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 // 2 : compute  a sum for each site using weighted by the probability of a given category
 //   : expected minimum dimension of buffer is 2*S
 //	 : scalers will have S entries
-// 3 : compute the category index of the maximum probability  
+// 3 : compute the category index of maximum probability  
 //   : expected minimum dimension of buffer is 3*S -- the result goes into offset 0
 //	 : scalers will have S entries 
 // 4 : compute the weight of each rate class index 
@@ -496,6 +496,7 @@ void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parame
 	else
 	{
 		ComputeBlock		(index, results, -1, branchIndex, branchValues);
+		scalers.Clear		();
 		scalers.Duplicate   (siteCorrections(index));
 	}
 }
