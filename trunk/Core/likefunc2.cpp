@@ -193,9 +193,23 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 		if (sample)
 		{
 			_AVLListX   * nodeMapper	= tree->ConstructNodeToIndexMap(true);
-			thisSet = new _List;
-			tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[partIndex], &tree->GetRoot(), nodeMapper, conditionalInternalNodeLikelihoodCaches[partIndex],
-														 *thisSet, nil,*expandedMap,  catCounter?rateAssignments->theData+siteOffset:nil, catCounter);
+			thisSet						= new _List;
+			_SimpleList* tcc			= (_SimpleList*)treeTraversalMasks(partIndex);
+			if (tcc)
+			{
+				long shifter = dsf->GetDimension()*dsf->NumberDistinctSites()*tree->GetINodeCount();
+				for (long cc = 0; cc <= catCounter; cc++)
+					tree->FillInConditionals(dsf, conditionalInternalNodeLikelihoodCaches[partIndex] + cc*shifter, tcc);
+			}
+			tree->SampleAncestorsBySequence (dsf, *(_SimpleList*)optimalOrders.lData[partIndex], 
+												 &tree->GetRoot(), 
+											     nodeMapper, 
+											     conditionalInternalNodeLikelihoodCaches[partIndex],
+												 *thisSet, 
+											     nil,
+											     *expandedMap,  
+											     catCounter?rateAssignments->theData+siteOffset:nil, 
+											     catCounter);
 			
 			
 			nodeMapper->DeleteAll(false);DeleteObject (nodeMapper);
@@ -534,7 +548,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 	
 	blockTree->MapPostOrderToInOderTraversal (postToIn);
 	supportValues.Clear				();
-	CreateMatrix					(&supportValues,iNodeCount,alphabetDimension*patternCount,false,true,false);
+	CreateMatrix					(&supportValues,iNodeCount,shiftForTheNode,false,true,false);
 
 	ComputeSiteLikelihoodsForABlock (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
 	
@@ -545,6 +559,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 		branchValues.Populate			(patternCount,currentChar,0);
 		for (long branchID = 0; branchID < iNodeCount; branchID ++)
 		{
+			long mappedBranchID = postToIn.lData[branchID];
 			ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
 			for (long siteID = 0; siteID < patternCount; siteID++)
 			{
@@ -552,7 +567,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 				_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
 				if (scaleDiff > 0)
 					ratio *= acquireScalerMultiplier(scaleDiff);
-				supportValues.theData[branchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
+				supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
 			}
 			blockTree->AddBranchToForcedRecomputeList (branchID+blockTree->GetLeafCount());
 		}
@@ -572,9 +587,10 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 				
 		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
 		{
+			long			mappedNodeID = postToIn.lData[nodeID];
 			_Parameter		max_lik     = 0.,	
 							sum			= 0.,
-							*scores		= supportValues.theData + shiftForTheNode*nodeID +  siteID*alphabetDimension;
+							*scores		= supportValues.theData + shiftForTheNode*mappedNodeID +  siteID*alphabetDimension;
 			long			max_idx     = 0;
 
 			for (long charID = 0; charID < alphabetDimension-1; charID ++)
@@ -591,7 +607,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 				max_idx = alphabetDimension-1; 
 						
 			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(max_idx), unitLength, codeBuffer.sData, &conversionAVL);
-			_String  *sequence   = (_String*) (*result)(postToIn.lData[nodeID]);
+			_String  *sequence   = (_String*) (*result)(mappedNodeID);
 			
 			for (long site = 0; site < patternMap->lLength; site++)
 			{

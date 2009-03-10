@@ -154,6 +154,44 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+void		_TheTree::FillInConditionals		(_DataSetFilter*		theFilter, _Parameter*	iNodeCache,  _SimpleList*	tcc)
+// this utility function will simply fill in all the conditional probability vectors for internal nodes,
+// including those that were skipped due to column sorting optimization
+// this is useful to avoid code duplication for other functions (e.g. ancestral sampling) that 
+// make use of conditional probability vectors, but would not benefit from subtree caching
+{
+	if (!tcc)
+		return;
+	
+	long			alphabetDimension	  =			theFilter->GetDimension(),
+					siteCount			  =			theFilter->NumberDistinctSites();
+
+	for  (long nodeID = 0; nodeID < flatTree.lLength; nodeID++)
+	{
+		_Parameter * conditionals		= iNodeCache +(nodeID  * siteCount) * alphabetDimension;
+		long		currentTCCIndex		= siteCount * nodeID,
+					currentTCCBit		= currentTCCIndex % _HY_BITMASK_WIDTH_;
+		
+		currentTCCIndex /= _HY_BITMASK_WIDTH_;
+		for (long siteID = 0; siteID < siteCount; siteID++, conditionals += alphabetDimension)
+		{
+			if (siteID  && (tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0)
+			{
+				for (long k = 0; k < alphabetDimension; k++)
+					conditionals[k] = conditionals[k-alphabetDimension];
+			}
+			if (++currentTCCBit == _HY_BITMASK_WIDTH_)
+			{
+				currentTCCBit   = 0;
+				currentTCCIndex ++;
+			}
+			
+		}
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering, 
 																		_SimpleList&		updateNodes, 
 																		_SimpleList*		tcc,
@@ -293,7 +331,6 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 					parentTCCIIndex ++;
 				}
 				
-
 				if (siteID > siteFrom && (tcc->lData[parentTCCIIndex] & bitMaskArray.masks[parentTCCIBit]) > 0)
 				{
 					if (!isLeaf)
@@ -1180,7 +1217,7 @@ _Parameter		_TheTree::ComputeTwoSequenceLikelihood
 //_______________________________________________________________________________________________
 
 void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& siteOrdering, node<long>* currentNode, _AVLListX* nodeToIndex, _Parameter* iNodeCache, 
-											      _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
+																   _List& result, _SimpleList* parentStates, _List& expandedSiteMap, _Parameter* catAssignments, long catCount)	
 
 // must be called initially with the root node 
 
@@ -1193,7 +1230,7 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 // results:						the list that will store sampled strings
 // parentStates:				sampled states for the parent of the current node
 // expandedSiteMap:				a list of simple lists giving site indices for each unique column pattern in the alignment
-// catAssignments:				a vector assigning a (partition specific) rate category to each site
+// catAssignments:				a vector assigning a (partition specific) rate category to each site (nil if no rate variation)
 // catCount:					the number of rate classes
 
 // this needs to be updated to deal with traversal caches!
@@ -1227,7 +1264,6 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 					
 				conditionals	 = iNodeCache + localCatID*alphabetDimension*catBlockShifter + (pattern + nodeIndex  * siteCount) * alphabetDimension;
 			}
-			
 			
 			for (long site = 0; site < patternMap->lLength; site++)
 			{
