@@ -659,4 +659,6 @@ for (k = 0; k < 100; k = k + 1)
 	DataSet	 sampledSequences = SampleAncestors (lf);
 }
 
+DataSet	 margAncestors = ReconstructAncestors (lf,MARGINAL);
+
 END;

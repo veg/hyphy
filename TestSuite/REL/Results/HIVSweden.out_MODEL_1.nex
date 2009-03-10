@@ -57,7 +57,7 @@ c.points[0][1]:=1;
 c.points[0][2]:=W_2;
 
 
-category c=(3,c.weights,MEAN,,c.points,-1e-150,1,);
+category c=(3,c.weights,MEAN,,c.points,0,1,);
 modelMatrix={61,61};
 modelMatrix[0][1]:=kappa*c*t;
 modelMatrix[0][2]:=t;
