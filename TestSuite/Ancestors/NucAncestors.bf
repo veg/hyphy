@@ -86,7 +86,7 @@ for (k = 0; k < _AncestalFilter.species; k = k+1)
 
 fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
 
-_samplingIterates		= 100;
+_samplingIterates		= 10;
 
 _characterDimension 	= Columns (_AncestalFilterChars);
 
@@ -148,13 +148,14 @@ for (k = 0; k < _samplingIterates; k = k + 1)
 
 DataSet	 		_marginalAncestors 			= ReconstructAncestors (_lf_ID,MARGINAL);
 DataSetFilter	_marginalAncestorsFilter	= CreateFilter 		   (_marginalAncestors, 1);
+GetDataInfo 	(_marginalFilterSiteToPatternMap, filteredData);
 
 _idx_3 = 0;
 for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 {
 	for (_idx_2 = 0; _idx_2 < _marginalAncestorsFilter.sites; _idx_2 = _idx_2 + 1)
 	{
-		_patternIndex 				 = _AncestalFilterSiteToPatternMap[_idx_2];
+		_patternIndex 				 = _marginalFilterSiteToPatternMap[_idx_2];
 		_marginalInformation[_idx_3] = _marginalAncestors.marginal_support_matrix[{{_idx_1,_patternIndex*_characterDimension}}][{{_idx_1,(1+_patternIndex)*_characterDimension-1}}];
 		_idx_3 						 = _idx_3+1;
 	}
@@ -179,15 +180,41 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 	{
 		_outputCSV * ("\n" + _AncestralNodeNames[_idx_1] + "," + (1+_idx_2) + "," + _AncestalFilterChars[_mlInformation[_idx_3]]);
 		
+		_maxValue = 0;
+		_maxIndex = 0;
+		
 		for (_idx_4 = 0; _idx_4 < _characterDimension; _idx_4 = _idx_4 + 1)
 		{
-			_outputCSV * ("," + (_sampledInformation[_idx_3])[_idx_4]/_samplingIterates);
+			_thisCharacter = (_sampledInformation[_idx_3])[_idx_4]/_samplingIterates;
+			_outputCSV * ("," + _thisCharacter);
+			if (_thisCharacter > _maxValue)
+			{
+				_maxValue = _thisCharacter;
+				_maxIndex = _idx_4;
+			}
 		}
+		_maxIndexSampled = _maxIndex;
+
+		_maxValue = 0;
+		_maxIndex = 0;
+
 		for (_idx_4 = 0; _idx_4 < _characterDimension; _idx_4 = _idx_4 + 1)
 		{
-			_outputCSV * ("," + (_marginalInformation[_idx_3])[_idx_4]);
+			_thisCharacter = (_marginalInformation[_idx_3])[_idx_4];
+			_outputCSV * ("," + _thisCharacter);
+			if (_thisCharacter > _maxValue)
+			{
+				_maxValue = _thisCharacter;
+				_maxIndex = _idx_4;
+			}
+		}
+		_maxIndexMarginal = _maxIndex;
+		if (_mlInformation[_idx_3] != _maxIndexMarginal || _maxIndexMarginal != _maxIndexSampled || _maxIndexSampled != _mlInformation[_idx_3])
+		{
+			fprintf (stdout, _idx_1, ":", _idx_2+1, " is discrepant\n");
 		}
 		_idx_3 = _idx_3 + 1;
+		
 	}
 }
 
