@@ -142,10 +142,10 @@ void	_LikelihoodFunction::RestoreScalingFactors (long index, long branchID, long
 
 /*--------------------------------------------------------------------------------------------------*/
 
-bool	_LikelihoodFunction::ProcessPartitionList (_SimpleList& storage, _Matrix* partitionList, _String caller)
+bool	_LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String caller)
 {	
 	long	partCount = CountObjects(0);
-	_SimpleList						partsToDo (partCount, 0, 1);
+	partsToDo.Populate (partCount, 0, 1);
 	if (partitionList)
 	{
 		partitionList->ConvertToSimpleList (partsToDo);
