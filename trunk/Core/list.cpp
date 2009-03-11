@@ -252,16 +252,39 @@ _List::~_List(void)
 
 //______________________________________________________________
 // element location functions (0,llength - 1)
+// negative indices return offsets from the end of the list
+
+long _SimpleList::Element (long index)
+{
+	if (index >= 0)
+	{
+		if (index < lLength)
+			return lData[index];
+	}
+	else
+	{
+		if (-index <= lLength)
+			return lData[(long)lLength+index];
+	}
+	return 0;
+}
+
+
+//______________________________________________________________
+// element location functions (0,llength - 1)
 
 long& _SimpleList::operator [] (long i)
 {
-	unsigned long in = (unsigned long)i;
-	if (lLength == 0) return ((long*)lData)[0];
-	if (in>lLength-1) in = lLength-1;
-	long* t = &(((long*)(lData))[in]);
+	if (lLength == 0) 
+		return lData[0];
 	
-	return *t;
+	unsigned long in = (unsigned long)i;
+	if (in>lLength-1) 
+		in = lLength-1;
+	
+	return lData[in];
 }
+
 //______________________________________________________________
 // element location functions (0,llength - 1)
 

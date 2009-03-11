@@ -305,9 +305,30 @@ void			  Convert2Formulas 		(void);		// converts a numeric matrix to formula-bas
 													
 void			  Resize				(long); 	// resize a dense numeric matrix to have more rows
 	
-	_Parameter 	*theData;							  // matrix elements
+_String*		  BranchLengthExpression(_Matrix*, bool);		
 	
-_String*		  BranchLengthExpression(_Matrix*, bool);			
+void			  CopyABlock						(_Matrix*, long, long);
+				  /* starting at element (row -- 2nd argument, column -- 3rd argument)
+				     copy the source matrix (1st argument) row by row
+				     e.g. if this matrix is 3x4 and the source matrix is 2x2
+				     then copying from element 2,2 (0 - based as always)
+				     will result in 
+				  
+					[[ x x x x] 
+				     [ x x x x]
+					 [ x x y y]] 
+				    
+				     where y is used to denote an element copied from the source
+				   
+					 Note that both matrices are ASSUMED to be numeric and dense
+				     NO ERROR CHECKING IS DONE!
+				   
+				   */
+/*---------------------------------------------------*/
+	
+	_Parameter 	 *theData;							  // matrix elements
+	
+
 protected:
 	
 	// data
@@ -432,8 +453,10 @@ virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic co
 			{
 				used = 0;
 			}
-
-			long   used;
+			
+			void	operator <<		(const _SimpleList&);
+	
+	long   used;
 
 };
 

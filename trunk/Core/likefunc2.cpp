@@ -76,6 +76,19 @@ void			_LikelihoodFunction::PartitionCatVars	  (_SimpleList& storage, long partI
 }
 
 //_______________________________________________________________________________________
+long			_LikelihoodFunction::TotalRateClassesForAPartition	  (long partIndex)
+{
+	if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength)
+	{
+		_List* myList = (_List*)categoryTraversalTemplate(partIndex);
+		if (myList->lLength)
+			return ((_SimpleList*)((*myList)(1)))->Element(-1);
+	}
+			
+	return 1;
+}
+
+//_______________________________________________________________________________________
 void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 {
 	categoryTraversalTemplate.Clear();
@@ -92,12 +105,16 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			_SimpleList*	  catVarCounts	   = new _SimpleList,
 						*	  catVarOffsets	   = new _SimpleList (myCats.lLength,1,0);
 			
+			long			  totalCatCount	   = 1;
 			for (long varIndex = 0; varIndex < myCats.lLength; varIndex++)
 			{
 				_CategoryVariable * aCV = (_CategoryVariable *)LocateVar (myCats.lData[varIndex]);
 				(*catVarReferences) << aCV;
-				(*catVarCounts)		<< aCV->GetNumberOfIntervals();
+				long				intervalCount = aCV->GetNumberOfIntervals();
+				(*catVarCounts)		<< intervalCount;
+				totalCatCount		*= intervalCount;
 			}
+			(*catVarCounts) << totalCatCount;
 			
 			for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--)
 				catVarOffsets->lData[varIndex] *= catVarOffsets->lData[varIndex+1];
@@ -123,10 +140,43 @@ void	_LikelihoodFunction::RestoreScalingFactors (long index, long branchID, long
 	}	
 }
 
+/*--------------------------------------------------------------------------------------------------*/
+
+bool	_LikelihoodFunction::ProcessPartitionList (_SimpleList& storage, _Matrix* partitionList, _String caller)
+{	
+	long	partCount = CountObjects(0);
+	_SimpleList						partsToDo (partCount, 0, 1);
+	if (partitionList)
+	{
+		partitionList->ConvertToSimpleList (partsToDo);
+		DeleteObject (partitionList);
+		partsToDo.Sort();
+		partsToDo.FilterRange (-1, partCount);
+		if (partsToDo.lLength == 0)
+		{
+			WarnError (_String("An invalid partition specification in call to ") & caller);
+			return nil;
+		}
+	}
+
+	return true;
+}
+
 
 //_______________________________________________________________________________________
 
 void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& doTheseOnes, _String& baseResultID,  bool sample, bool doMarginal)
+/*
+	Reconstruct ancestors for a likelihood function using 
+ 
+-- target      :	the _DataSet object that will receive the results
+-- doTheseOnes :	a _sorted_ array of partition indices to include in this operation; is assumed to contain valid indices (i.e. 0 -- number of partitions - 1)
+-- baseResultID:	the HBL identifier of the dataset that will receive the result; used as a prefix for .marginal_support_matrix support matrix (when doMarginal = true)
+-- sample	   :	if true, an ancestral sample (weighted by likelihood) is drawn, otherwise an ML (or maginal) reconstruction is carried out
+-- doMarginal  :	if sample == false, doMarginal determines how the ancestors are reconstructed; if true, the reconstruction is marginal (maximizes
+					the likelihood of each node while summing over the rest), otherwise it is joint.
+ 
+*/
 {
 	_DataSetFilter *dsf				= (_DataSetFilter*)dataSetFilterList (theDataFilters(doTheseOnes.lData[0]));	
 	_TheTree    	*firstTree		= (_TheTree*)LocateVar(theTrees(doTheseOnes.lData[0]));
@@ -141,7 +191,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 	// check if we need to deal with rate variation
 	_Matrix			*rateAssignments = nil;
 	if  (indexCat.lLength>0)
-		rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(true,false));
+		rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(doTheseOnes,true,false));
 	
 	long siteOffset			= 0,
 		 patternOffset		= 0,
@@ -274,19 +324,19 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 // see run options below
 
 // run mode can be one of the following
-// 0 : simply   populate an M (number of rate classes) x S (number of site patterns) 
+// _hyphyLFConditionProbsRawMatrixMode : simply   populate an M (number of rate classes) x S (number of site patterns) matrix of conditional likelihoods
 //   : expected minimum dimension of buffer is M*S
 //	 : scalers will have M*S entries laid out as S for rate class 0, S for rate class 1, .... S for rate class M-1
-// 1 : simply   populate an M (number of rate classes) x S (number of site patterns) and scale to the lowest multiplier
+// _hyphyLFConditionProbsScaledMatrixMode : simply   populate an M (number of rate classes) x S (number of site patterns) and scale to the lowest multiplier
 //   : expected minimum dimension of buffer is M*S
 //	 : scalers will have S entries
-// 2 : compute  a sum for each site using weighted by the probability of a given category
+// _hyphyLFConditionProbsWeightedSum : compute  a sum for each site using weighted by the probability of a given category
 //   : expected minimum dimension of buffer is 2*S
 //	 : scalers will have S entries
-// 3 : compute the category index of maximum probability  
+// _hyphyLFConditionProbsMaxProbClass : compute the category index of maximum probability  
 //   : expected minimum dimension of buffer is 3*S -- the result goes into offset 0
 //	 : scalers will have S entries 
-// 4 : compute the weight of each rate class index 
+// _hyphyLFConditionProbsClassWeights : compute the weight of each rate class index 
 //   : expected minimum dimension of buffer is M
 //	 : scalers will have no entries
 {
@@ -305,10 +355,10 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	
 	_CategoryVariable   *catVariable;
 	
-	if (runMode == 2 || runMode == 4)
+	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
 		catWeigths = new _List;
 	else
-		if (runMode == 3)
+		if (runMode == _hyphyLFConditionProbsMaxProbClass)
 			for (long r = 0, r2 = 2*blockLength; r < blockLength; r++, r2++)
 			{
 				buffer[r] = 0.0; buffer[r2] = 0.0;
@@ -318,7 +368,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	{
 		(catVariable = ((_CategoryVariable**)(variables->lData))[currentCat])->Refresh();
 		catVariable->SetIntervalValue(0,true);
-		if (runMode == 2 || runMode == 4)
+		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
 			(*catWeigths) << catVariable->GetWeights();
 	}
 	
@@ -361,11 +411,11 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 		}
 		
 		_Parameter		 currentRateWeight = 1.;
-		if (runMode == 2 || runMode == 4)
+		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
 		{
 			for					(long currentCat		= 0; currentCat <= catCount; currentCat++)
 				currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
-			if (runMode == 4)
+			if (runMode == _hyphyLFConditionProbsClassWeights)
 			{
 				buffer [currentRateCombo] = currentRateWeight;
 				continue;
@@ -382,12 +432,12 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 														 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
 														 :nil;
 		
-		if (runMode == 0 || runMode == 1) // populate the matrix of conditionals and scaling factors
+		if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode) // populate the matrix of conditionals and scaling factors
 		{
 			_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 			ComputeBlock	(index, bufferForThisCategory, currentRateCombo, branchIndex, branchValues);
 			
-			if (runMode == 0)
+			if (runMode == _hyphyLFConditionProbsRawMatrixMode)
 				for (long p = 0; p < blockLength; p++)
 					scalers.lData[p+indexShifter] = siteCorrectors[p];
 			else
@@ -426,11 +476,11 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 		} // run mode 0 or 1
 		else
 		{
-			if (runMode == 2 || runMode == 3) // normal expected value computation
+			if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass) // normal expected value computation
 			{
 				ComputeBlock	(index, buffer + blockLength, currentRateCombo, branchIndex, branchValues);
 
-				if (runMode == 2)
+				if (runMode == _hyphyLFConditionProbsWeightedSum)
 					for (long r1 = 0, r2 = blockLength; r1 < blockLength; r1++,r2++)
 					{
 						if (siteCorrectors)
@@ -456,7 +506,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 							buffer[r1] += currentRateWeight * buffer[r2];
 						
 					}				
-					else // runMode = 3
+					else // runMode = _hyphyLFConditionProbsMaxProbClass
 					{
 						for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
 						{
@@ -506,7 +556,7 @@ void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parame
 // assumes that results is at least blockLength slots long
 {
 	if (blockDependancies.lData[index])
-		PopulateConditionalProbabilities(index, 2, results, scalers, branchIndex, branchValues);	
+		PopulateConditionalProbabilities(index, _hyphyLFConditionProbsWeightedSum, results, scalers, branchIndex, branchValues);	
 	else
 	{
 		ComputeBlock		(index, results, -1, branchIndex, branchValues);

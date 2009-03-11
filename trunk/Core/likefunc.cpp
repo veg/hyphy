@@ -220,7 +220,9 @@ _String
 									// $5 for evals/second
 									// $6 for CPU load
 	optimizationStringStatus		("OPTIMIZATION_PROGRESS_STATUS"),
-	optimizationStringQuantum		("OPTIMIZATION_PROGRESS_QUANTUM");
+	optimizationStringQuantum		("OPTIMIZATION_PROGRESS_QUANTUM"),
+	categoryMatrixScalers			(".site_scalers"),
+	categoryLogMultiplier			(".log_scale_multiplier");
 	
 	
 
@@ -1270,46 +1272,42 @@ void	_LikelihoodFunction::SetIthDependent (long index, _Parameter p)
 }
 	
 //_______________________________________________________________________________________
-_Matrix*	_LikelihoodFunction::RemapMatrix(_Matrix* source)
+_Matrix*	_LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList& partsToDo)
 {
-	_DataSetFilter* df;
-	long hDim = source->GetHDim(), vDim = 0,i,offset=0,bigOffset=0;
-	for (i=0; i<theTrees.lLength;i++)
+	long hDim				=	source->GetHDim(), 
+		 vDim				=	0,
+		 offsetInSource		=	0,
+		 offsetInTarget		=	0;
+	
+	for (long i=0; i<partsToDo.lLength;i++)
+		vDim+=((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[partsToDo.lData[i]]))->GetSiteCount();
+
+	_Matrix* res = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
+
+	for (long aPart = 0; aPart<partsToDo.lLength; aPart++)
 	{
-		df = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]));
-		vDim+=df->GetFullLengthSpecies()/df->GetUnitLength();
-	}
-	_Matrix* res = new _Matrix (hDim,vDim,false,true);
-	checkPointer(res);
-	for (i=0; i<theTrees.lLength;i++)
-	{
-		df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-		long j,k,dl = df->GetFullLengthSpecies()/df->GetUnitLength();
-		if (HasHiddenMarkov(blockDependancies.lData[i])>=0)
+		long partIndex = partsToDo.lData[aPart];
+		_DataSetFilter  * dsf = ((_DataSetFilter*)dataSetFilterList(theDataFilters(partIndex)));
+		long filterSize = dsf->GetSiteCount();
+		
+		if (HasHiddenMarkov(blockDependancies.lData[partIndex])>=0)
+		// do nothing, just copy
 		{
-			for (j=bigOffset+dl-1;j>=bigOffset;j--)
-			{
-				for (long l=0; l<hDim; l++)
-					res->Store(l,j,(*source)(l,j+offset));
-			}
-			offset+=dl;
-			bigOffset+=dl;
+			for (long rowIndex = 0; rowIndex < hDim; rowIndex++)
+				for (long columnIndex = 0; columnIndex < filterSize; columnIndex++)
+					res->Store (rowIndex, columnIndex + offsetInTarget, (*source)(rowIndex, columnIndex + offsetInSource));
+					
+			offsetInSource	+=	filterSize;
 		}
 		else
 		{
-			for (j=bigOffset+dl-1;j>=bigOffset;j--)
-			{
-				k = df->duplicateMap.lData[j-bigOffset];
-				for (long l=0; l<hDim; l++)
-				{
-					_Parameter value = (*source)(l,k+offset);
-					if (value)
-						res->Store(l,j,value);
-				}
-			}
-			offset+=BlockLength(i);
-			bigOffset+=dl;
+			for (long rowIndex = 0; rowIndex < hDim; rowIndex++)
+					for (long columnIndex = 0; columnIndex < filterSize; columnIndex++)
+						 res->Store (rowIndex, columnIndex + offsetInTarget, (*source)(rowIndex, dsf->duplicateMap.lData[columnIndex] + offsetInSource));
+											
+			offsetInSource	+=	BlockLength(partIndex);
 		}
+		offsetInTarget  +=	filterSize;
 	}
 	res->AmISparse();
 	return res;
@@ -1402,11 +1400,11 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 
 									  
 //_______________________________________________________________________________________
-_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap, _String* storageID) 
+_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, bool maximumCatOnly, bool remap, _String* storageID) 
 // 
 {
-	long		 				hDim,
-				 				vDim,
+	long		 				hDim = 1,
+				 				vDim = 0,
 				 				currentOffset = 0;
 				 				
 	_DataSetFilter			    *df;
@@ -1415,27 +1413,25 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	if (!siteResults)
 		AllocateSiteResults ();
 	
-	if (complete) 
+	// compute the number of columns in the matrix 
+	for (long i=0;i<whichParts.lLength;i++)
+		if (maximumCatOnly && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
+			vDim	+=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]))->GetSiteCount();
+	// all sites
+		else
+			vDim	+=		BlockLength(i);
+	// only unique patterns for now
+
+	if (maximumCatOnly) 
 	// just return the maximum conditional likelihood category
 	{
-		vDim = 0;
-		hDim = 1;
-		// compute the horizontal dimension of the matrix 
-		for (long i=0;i<theTrees.lLength;i++)
-			if (HasHiddenMarkov(blockDependancies.lData[i])>=0)
-			{
-				df			=		(_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
-				vDim		+=		df->GetSiteCount();
-			}
-			else
-				vDim+=BlockLength(i);
-			
-		_Matrix		 *result = new _Matrix (hDim,vDim,false,true);
-		checkPointer (result);
+		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
 		
 		// now proceed to compute each of the blocks
-		for (long i=0;i<theTrees.lLength;i++)
+		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
+			long i = whichParts.lData[whichPart];
+			
 			if (blockDependancies.lData[i] > 0)
 			// if a partition that does not depend on category variables
 			// then the matrix is already populated with zeros
@@ -1571,9 +1567,16 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 						long hasConstantOnPartition = HasHiddenMarkov(blockDependancies.lData[i],false);
 						if (hasConstantOnPartition<0)
 						{
-							_SimpleList	scalerTabs (BlockLength(i), 0, 0);
-							RecurseCategory(i,  0, blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), 1., 
-											&scalerTabs, 1, result->theData+currentOffset);
+							_SimpleList	scalers (blockSize, 0, 0);
+							// allocate a vector of 3*blockSize
+							
+							_Parameter  * likelihoodBuffer = new _Parameter[3*blockSize];
+							PopulateConditionalProbabilities (i,_hyphyLFConditionProbsMaxProbClass,likelihoodBuffer,scalers);
+							
+							for (long i = 0; i < blockSize; i++)
+								result->theData[currentOffset+i] = likelihoodBuffer[i];
+							
+							delete		 (likelihoodBuffer);
 						}
 						else
 						{
@@ -1625,14 +1628,14 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 								result->theData[currentOffset+kk] += mxIndex;							
 							
 						}					
-						currentOffset+=BlockLength(i);
+						currentOffset+=blockSize;
 					}
 			}
 		}
 		DoneComputing();
 		if (remap)
 		{
-			_Matrix * retObj = RemapMatrix(result);
+			_Matrix * retObj = RemapMatrix(result, whichParts);
 			DeleteObject (result);
 			return retObj;
 		}
@@ -1640,71 +1643,56 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (bool complete, bool remap
 	}
 	else
 	{
-		WarnError ("This feature has not yet been implemented in the new LF engine framework");
-		return new _Matrix;
-
-		vDim = 0;
-		hDim = 1;
-		for (long i=0;i<theTrees.lLength;i++)
+		long maxPartSize = 0;
+		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
-			vDim+=BlockLength(i);
-			long dim = 1, checkByte = blockDependancies.lData[i],m;
-			for (m=sizeof(long)*4-1;m>=0;m--)
-				if (CheckNthBit(checkByte,m))
-					dim *= ((_CategoryVariable*)LocateVar(indexCat.lData[m]))-> GetNumberOfIntervals() ;
-			if (dim>hDim) hDim = dim;
+			long myCatCount = TotalRateClassesForAPartition (whichParts.lData[whichPart]);
+			if (myCatCount > hDim) 
+				hDim = myCatCount;
+			myCatCount			= BlockLength(whichParts.lData[whichPart]);
+			maxPartSize			= MAX (maxPartSize,myCatCount); 
 		}
-		//decide what the vertical dimension should be
-	
-		_Matrix result (hDim,vDim,false,true);
-		// now proceed to compute each of the blocks
-#ifdef _SLKP_LFENGINE_REWRITE_
-		_Matrix scalers (1, vDim, false, true);
-#endif
-		for (long i=0;i<theTrees.lLength;i++)
+		
+		_GrowingVector	allScalers;
+		_SimpleList		scalers; 
+		// allocate a buffer big enough to store the matrix for each block
+		
+		_Matrix			*result = new _Matrix (hDim,vDim,false,true),
+						*holder = new _Matrix (hDim, maxPartSize, false, true);
+		
+		maxPartSize = 0; // reused as a shift index			
+		
+		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
-			categID = 0;
-			offsetCounter = 1;
+			PopulateConditionalProbabilities (whichParts.lData[whichPart], 
+											  _hyphyLFConditionProbsScaledMatrixMode,
+											  holder->theData,
+											  scalers);
 			
-			if (!blockDependancies.lData[i])
-			{
-				categID = -1;
-				forceRecomputation = true;
-				ComputeBlock(i,result.fastIndex()+currentOffset);
-				// FIX: need to accommodate site scaling
-				forceRecomputation = false;
-			}
-			else
-#ifdef _SLKP_LFENGINE_REWRITE_
-			{
-				_SimpleList	scalerTabs (BlockLength(i), -1, 0);
-				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result, &scalerTabs);
-				for (long i2 = 0; i2 < scalerTabs.lLength; i2++)
-					scalers.theData[currentOffset + i2] = scalerTabs.lData[i2];
-			}
-#else
-				WriteAllCategories(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit(blockDependancies.lData[i]), currentOffset, result);
-#endif
-			currentOffset+=BlockLength(i);
+			allScalers << scalers;
+			result->CopyABlock (holder, maxPartSize, 0);
+			maxPartSize += BlockLength(whichParts.lData[whichPart]);	
 		}
-		DoneComputing();
-		//return (_Matrix*)result.makeDynamic();
+		DoneComputing   ();
+		DeleteObject    (holder);
+	
 		if (remap)
 		{
-#ifdef _SLKP_LFENGINE_REWRITE_
 			if (storageID)
 			{
-				_Matrix * remappedCorrections = RemapMatrix(&scalers);
-				_String   scalerID			  = (*storageID) & ".site_scalers";
+				_Matrix * remappedCorrections = RemapMatrix(&allScalers, whichParts);
+				_String   scalerID			  = (*storageID) & categoryMatrixScalers;
 				CheckReceptacleAndStore (&scalerID, empty, false, remappedCorrections, false);
-				scalerID = (*storageID) & ".log_scale_multiplier";
+				scalerID = (*storageID) & categoryLogMultiplier;
 				CheckReceptacleAndStore (&scalerID, empty, false, new _Constant(_logLFScaler), false);
 			}
-#endif
 			
-			return RemapMatrix(&result);
+			holder			= RemapMatrix(result, whichParts);
+			DeleteObject    (result); 
+			return			holder;
 		}
-		return (_Matrix*)result.makeDynamic();
+		else
+			return result;
 	}
 	return nil;
 }
@@ -2260,7 +2248,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							{
 								_SimpleList							scalerTabs (blockLength, 0, 0);
 								long								cumulativeCorrection = 0;
-								PopulateConditionalProbabilities	(j,2,siteResults->theData,scalerTabs); 
+								PopulateConditionalProbabilities	(j,_hyphyLFConditionProbsWeightedSum,siteResults->theData,scalerTabs); 
 								
 								if (computingTemplate && templateKind)
 									// this needs fixing for scaling

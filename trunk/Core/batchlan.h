@@ -541,7 +541,7 @@ void	RetrieveModelComponents		 (long, _Matrix*&, _VariableContainer*, _Matrix*&,
 bool	IsModelReversible			 (long);
 
 _PMathObj	
-		ProcessAnArgumentByType		(_String*, long);
+		ProcessAnArgumentByType		(_String*, _VariableContainer*, long);
 		
 
 

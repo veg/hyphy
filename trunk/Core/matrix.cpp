@@ -45,6 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //#include "profiler.h"
 
+#define	MEMORYERROR "Out of Memory"
+#define	ZEROOBJECT 	0.0
+#define	ZEROPOINTER nil 
 
 
 _String		MATRIX_AGREEMENT 			= "CONVERT_TO_POLYNOMIALS",
@@ -61,32 +64,8 @@ int	_Matrix::switchThreshold = 50;
 
 #ifndef     __HYALTIVEC__
 	_Parameter	_Matrix::truncPrecision = 1e-13;
-	//#ifndef     __MACHACKMP__
 		#define		MatrixMemAllocate(X) MemAllocate(X)
 		#define		MatrixMemFree(X)	 free(X)
-/*	#else
-		#include <mypthread.h>
-		pthread_mutex_t  matrixMemMutex = PTHREAD_MUTEX_INITIALIZER;
-		extern		bool				 threadSafe;
-		
-		Ptr			MatrixMemAllocate	 (long size)
-		{
-			if (threadSafe)
-				pthread_mutex_lock (&matrixMemMutex);
-			Ptr res = MemAllocate  (size);
-			if (threadSafe)
-				pthread_mutex_unlock (&matrixMemMutex);
-			return res;
-		}
-		Ptr			MatrixMemFree	 (void* X)
-		{
-			if (threadSafe)
-				pthread_mutex_lock (&matrixMemMutex);
-			free (X);
-			if (threadSafe)
-				pthread_mutex_unlock (&matrixMemMutex);
-		}
-	#endif*/
 #else
 	#define		MatrixMemAllocate(X) VecMemAllocate(X)
 	#define 	MatrixMemFree(X)	 vec_free(X)
@@ -95,18 +74,14 @@ int	_Matrix::switchThreshold = 50;
 #endif
 
 _Parameter	analMatrixTolerance = 1e-6,
-			zero = 0;
-
-_List    builtInMatrixFunctions;
-
-#define	MEMORYERROR "Out of Memory"
-#define	ZEROOBJECT 	0.0
-#define	ZEROPOINTER nil 
-
-_Parameter	ANALYTIC_COMPUTATION_FLAG = 0, 
+			zero = 0,
+			ANALYTIC_COMPUTATION_FLAG = 0, 
 			AUTO_PAD_DIAGONAL = 1,
 			toPolyOrNot=0.0,
 			toMorNot2M=1.0;
+
+
+_List    builtInMatrixFunctions;
 
 _Matrix		*GlobalFrequenciesMatrix;
 
@@ -159,9 +134,6 @@ inline 	bool	_Matrix::IsNonEmpty  (long logicalIndex)
 	return  (theIndex?theIndex [logicalIndex]!=-1:(storageType!=1?GetObject(logicalIndex)!=ZEROPOINTER:true));
 }
 
-//__________________________________________________________________________________
-
-//_String	MBinOps ("+-*MAccessMStoreMCoordLUSolveInverse"), MUnOps ("-,Exp,MAccess,Abs,Transpose,Rows,Columns,LUDecompose,");
 //__________________________________________________________________________________
 
 bool		_Matrix::HasChanged(void)
@@ -8435,6 +8407,25 @@ _Matrix* 	_Matrix::SimplexSolve (_Parameter desiredPrecision )
 }
 
 //_____________________________________________________________________________________________
+
+void	_Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn)
+{
+	long indexTarget = startRow*vDim + startColumn,
+		 indexSource = 0,
+		 maxRow		 = MIN (hDim, startRow+source->hDim),
+		 maxColumn   = MIN (vDim, startColumn + source->vDim); 
+	
+	for  (long r = startRow; r < maxRow; r++)
+	{
+		for (long c = startColumn, c2 = 0; c < maxColumn; c++, c2++)
+			theData[indexTarget+c2] = source->theData[indexSource+c2];
+		
+		indexSource += source->vDim;
+		indexTarget += vDim;
+	}	
+}
+
+//_____________________________________________________________________________________________
 // AssociativeList
 //_____________________________________________________________________________________________
 
@@ -8849,6 +8840,14 @@ long		_GrowingVector::Store (_Parameter toStore)
 		Resize (used + MAX (used/8,64));	// allocate another block of 64
 		return Store (toStore);
 	}
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+
+void		_GrowingVector::operator << (const _SimpleList& theSource)
+{
+	for (long k = 0; k < theSource.lLength; k++)
+		Store (theSource.lData[k]);
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/

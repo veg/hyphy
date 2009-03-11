@@ -42,6 +42,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  DEFAULTPARAMETERLBOUND  0.0
 #define   DEFAULTPARAMETERUBOUND  10000.0
 
+/* various run modes for PopulateConditionalProbabilities */
+
+#define	  _hyphyLFConditionProbsRawMatrixMode		0
+#define	  _hyphyLFConditionProbsScaledMatrixMode	1
+#define	  _hyphyLFConditionProbsWeightedSum			2
+#define	  _hyphyLFConditionProbsMaxProbClass		3
+#define	  _hyphyLFConditionProbsClassWeights		4
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -117,7 +125,7 @@ virtual
 		void		DoneComputing 	 (bool = false);
 virtual		
 		_Matrix*	Optimize ();
-		_Matrix* 	ConstructCategoryMatrix		(bool complete = false, bool = true, _String* = nil);
+		_Matrix* 	ConstructCategoryMatrix		(const _SimpleList&, bool, bool = true, _String* = nil);
 		_Parameter	SimplexMethod				(_Parameter& precision);
 		void		Anneal						(_Parameter& precision);
 			
@@ -172,6 +180,21 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 		long		GetThreadCount			  (void) { return 1;}
 	#endif
 #endif 
+
+		bool			ProcessPartitionList		(_SimpleList&, _Matrix*, _String);	
+						// given a matrix argument (argument 2; can be nil to include all)
+						// populate a sorted list (argument 1)
+						// of partitions indexed in the matrix (e.g. {{1,3}} would include the 2-nd and 4-th partitions
+						// the third argument is the ID of the calling function for error reporting
+						// returns true if at least one of the requested partitions is valid
+						// otherwise returns false
+	
+		long			TotalRateClassesForAPartition (long);
+						// given a partition index (assumping that category caches have been set up
+						// returns how many total rate classes there are for this partition
+		
+	
+	
 protected:
 	
 		_Matrix* 		PairwiseDistances 		(long index);
@@ -282,12 +305,16 @@ static	void			CheckFibonacci			(_Parameter);
 		char		 	HighestBit 					(long);
 		char			LowestBit  					(long);
 		long			HasHiddenMarkov				(long, bool hmm = true);
-		_Matrix*	 	RemapMatrix					(_Matrix*);
+		_Matrix*	 	RemapMatrix					(_Matrix*, const _SimpleList&);
+						/* given a matrix where each column corresponds to a site pattern
+						 and a list of partitions that are covered
+						 this function returns a new matrix where each pattern is mapped
+						 to the corresponding sites in the alignment
+						*/
 		void			CleanUpOptimize				(void);
 		void			ComputeBlockForTemplate		(long, bool = false);
 		void			ComputeBlockForTemplate2	(long, _Parameter*, _Parameter*, long);
 		void			DeleteCaches				(bool = true);
-#ifdef	_SLKP_LFENGINE_REWRITE_
 		void			PopulateConditionalProbabilities	
 													(long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
 		void			ComputeSiteLikelihoodsForABlock
@@ -308,7 +335,7 @@ static	void			CheckFibonacci			(_Parameter);
 		void			RestoreScalingFactors		(long, long, long, long*, long *);
 		void			SetupLFCaches				(void);
 		void			SetupCategoryCaches			(void);
-#endif		
+
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
 						theProbabilities, 
@@ -329,7 +356,8 @@ static	void			CheckFibonacci			(_Parameter);
 						For a partition with N category variables the entry will contain a
 							1). _List of references to category variables themselves in the order that 
 								they appear in the blockDependancies
-							2). _SimpleList of category counts for each variable C_1, C_2, ... C_N.
+							2). _SimpleList of category counts for each variable C_1, C_2, ... C_N + a final entry with
+								C_1 * C_2 * ... * C_N -- the total number of rate categories for this partition
 							3). _SimpleList of incremental loop offsets for each variable, e.g. if the
 								_SimpleList in 2). is 2,3,4, then this _SimpleList is
 								12,4,1

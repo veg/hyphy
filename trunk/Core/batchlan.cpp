@@ -3169,27 +3169,15 @@ void	  _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 		_String		 * dsName			= new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
 		_LikelihoodFunction *lf			= ((_LikelihoodFunction*)likeFuncList(objectID));
 		
-		long							partCount = lf->CountObjects(0);
-		_SimpleList						partsToDo (partCount, 0, 1);
+		_Matrix * partitionList			= nil;
 		if (parameters.lLength>2)
 		{
 			_String  secondArg = *(_String*)parameters(2);
-			_Matrix * partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
-			if (partitionList)
-			{
-				partitionList->ConvertToSimpleList (partsToDo);
-				DeleteObject (partitionList);
-				partsToDo.Sort();
-				partsToDo.FilterRange (-1, partCount);
-				if (partsToDo.lLength == 0)
-				{
-					errMsg =  "An invalid partition specification in call to ancestral reconstruction/sampling";
-					WarnError (errMsg);
-				}
-			}
+			partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
 		}
-					
-		lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.lLength > 0);
+		_SimpleList						partsToDo;
+		if (lf->ProcessPartitionList(partsToDo, partitionList, " ancestral reconstruction"))
+			lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.lLength > 0);
 		StoreADataSet  (ds, dsName);
 		DeleteObject   (dsName);
     }
@@ -8596,10 +8584,9 @@ bool	_ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&tar
 {
 	_List pieces;
 	ExtractConditions (source, blMPIReceive.sLength ,pieces,',');
-	if (pieces.lLength!=3)
+	if (pieces.lLength !=3 )
 	{
-		_String errMsg ("Expected: MPIReceive (can receive from node, received from node, receptacle for the string result).");
-		acknError (errMsg);
+		WarnError ("Expected: MPIReceive (can receive from node, received from node, receptacle for the string result).");
 		return false;
 	}
 										
@@ -8612,27 +8599,17 @@ bool	_ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&tar
 bool	_ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionList&target)
 // syntax: CategoryMatrix (receptacle, likelihood function, complete/short)
 {
-	
-	_List pieces;
-	ExtractConditions (source,24,pieces,',');
-	if (pieces.lLength<2)
-			
+	_List pieces;	
+	ExtractConditions (source,blConstructCM.sLength,pieces,',');
+	if (pieces.lLength<2)			
 	{
-		_String errMsg ("Expected: CategoryMatrix (receptacle, likelihood function, complete/short)");
-		acknError (errMsg);
+		WarnError ("Expected: CategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT [optional; default is SHORT], [optional matrix argument with partitions to include] (default is to include all)");
 		return false;
 	}
 										
-	_ElementaryCommand dsf;
-	dsf.code = 21;
-	
-	for (long i = 0; i<pieces.lLength; i++)
-	{
-		dsf.parameters<<pieces(i);
-	}
-	
-	target&&(&dsf);
-	return TRUE;
+	_ElementaryCommand * constuctCatMatrix = makeNewCommand(21);
+	constuctCatMatrix->addAndClean (target, &pieces, 0);
+	return true;
 }
 
 //____________________________________________________________________________________	
@@ -8662,13 +8639,11 @@ bool	_ElementaryCommand::ConstructImport (_String&source, _ExecutionList&target)
 	ExtractConditions (source,blImport.sLength,pieces,',');
 	if (pieces.lLength!=2)
 	{
-		_String errMsg ("Expected: Import (matrix ident,filename)");
-		acknError (errMsg);
+		WarnError ("Expected: Import (matrix ident,filename)");
 		return false;
 	}
 										
 	_ElementaryCommand * dsf = new _ElementaryCommand (18);
-	checkPointer 		(dsf);
 	dsf->addAndClean(target,&pieces,0);
 	return true;
 }

@@ -89,6 +89,10 @@ virtual 	void operator << 				(_SimpleList&);
 virtual		void InsertElement 				(BaseRef br, long insertAt = -1, bool store = true, bool pointer = true);
 
   			void Clear	 					(void);
+	
+			long Element					(long);
+			// much like [] and () except negative indices return offsets from the end
+			// invalid indices return 0
  				 				
 virtual 	long  Find 						(long, long startAt = 0);
  			// find the position of a search string in the list of strings (ONLY)
@@ -156,7 +160,7 @@ virtual		void  DeleteList 				(const _SimpleList&);
 																// increment by
 
 			void  Flip 						(void); //flip the order of list elements
-
+	
 virtual 	BaseRef toStr 					(void);
 
 void		RecursiveIndexSort 				(long from, long to, _SimpleList* index);

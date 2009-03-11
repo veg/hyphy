@@ -634,7 +634,18 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 	_PMathObj ob  		  = 	nil;
 	
 	if (objectID >=0) // likelihood function
-		ob = ((_LikelihoodFunction*)likeFuncList(objectID))->ConstructCategoryMatrix((parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false,true,&resultID);
+	{
+		_Matrix * partitionList			= nil;
+		if (parameters.lLength>3)
+		{
+			_String  secondArg = *(_String*)parameters(3);
+			partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
+		}
+		_SimpleList						partsToDo;
+		_LikelihoodFunction*			lf = (_LikelihoodFunction*)likeFuncList(objectID);
+		if (lf->ProcessPartitionList(partsToDo, partitionList, " ancestral reconstruction"))
+			ob = lf->ConstructCategoryMatrix(partsToDo,(parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false,true, &resultID);
+	}
 	else
 	{
 		_TheTree * testTree = (_TheTree*) FetchObjectFromVariableByType (&objectName, TREE);
