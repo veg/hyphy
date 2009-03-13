@@ -86,7 +86,7 @@ for (k = 0; k < _AncestalFilter.species; k = k+1)
 
 fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
 
-_samplingIterates		= 10;
+_samplingIterates		= 100;
 
 _characterDimension 	= Columns (_AncestalFilterChars);
 

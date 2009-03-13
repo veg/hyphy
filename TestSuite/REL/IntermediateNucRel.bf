@@ -439,7 +439,6 @@ timer2 = Time (1);
 
 fprintf (stdout, "\n", flu_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n");
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf ("Results/IntermediateNucExport.bf",CLEAR_FILE,flu_LF); 
 
 expected_partials = {
 {0.216283,0.179544,0.108331,0.0349219,0.000618225}
