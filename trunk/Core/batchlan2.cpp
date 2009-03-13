@@ -71,6 +71,8 @@ _String		sqlOpen 				("SQL_OPEN"),
 			completeFlag 			("COMPLETE"),
 			lastSetOfConstraints	("LAST_SET_OF_CONSTRAINTS"),
 			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
+			_hyStatusConditionProbsMatrix				
+									("Constructing Conditional Probabilities Matrix"),
 
 			isDynamicGraph			("BGM_DYNAMIC");
 			
@@ -621,8 +623,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
 
-	// construct the receptacle matrix
-	SetStatusLine ("Constructing Conditional Probabilities Matrix");
+	SetStatusLine (_hyStatusConditionProbsMatrix);
 	_String		errMsg;
 	
 	// check what the argument is
@@ -630,7 +631,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 	_String objectName 	  = 	chain.AddNameSpaceToID(*(_String*)parameters(1)),
 			resultID      =     chain.AddNameSpaceToID(*(_String*)parameters(0));
 
-	long objectID 		  = 	FindLikeFuncName (objectName);
+	long objectID 		  = 	FindLikeFuncName (objectName, true);
 	_PMathObj ob  		  = 	nil;
 	
 	if (objectID >=0) // likelihood function
@@ -643,7 +644,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 		}
 		_SimpleList						partsToDo;
 		_LikelihoodFunction*			lf = (_LikelihoodFunction*)likeFuncList(objectID);
-		if (lf->ProcessPartitionList(partsToDo, partitionList, " ancestral reconstruction"))
+		if (lf->ProcessPartitionList(partsToDo, partitionList, _hyStatusConditionProbsMatrix))
 			ob = lf->ConstructCategoryMatrix(partsToDo,(parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false,true, &resultID);
 	}
 	else
@@ -669,8 +670,6 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 									inodeNames;
 				
 				testTree->DepthWiseT(true);
-				
-				//long	cutAt = GetName()->sLength+1;
 				
 				while (testTree->currentNode)
 				{
@@ -700,15 +699,10 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 		}
 	}
 	
-	if (!ob)
-	{
-		errMsg =  objectName & " must be either a likelihood function or a tree variable tied to a likelihood function.";
-		ReportWarning(errMsg);		
-	}
-	else
-	{
+	if (ob)
 		CheckReceptacleAndStore (&resultID, blConstructCM, true, ob, false);
-	}
+	else
+		WarnError (objectName & " must be either a likelihood function or a tree variable tied to a likelihood function.");
 		
 }
 

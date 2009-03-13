@@ -396,17 +396,12 @@ _Parameter	ProcessNumericArgument (_String* data, _VariableContainer* theP)
 	_Formula  nameForm (*data,theP);
 	_PMathObj formRes = nameForm.Compute();
 	numericalParameterSuccessFlag = true;	
-	if (formRes&&(formRes->ObjectClass()==NUMBER))
+	if (formRes&& formRes->ObjectClass()==NUMBER)
 		return formRes->Value();
 	else
 	{
-		if (formRes&&(formRes->ObjectClass()==STRING))
-		{
-			_String* f = ((_String*)((_FString*)formRes)->toStr());
-			_Parameter res = f->toNum();
-			DeleteObject (f);
-			return res;
-		}
+		if (formRes&& formRes->ObjectClass()==STRING)
+			return _String((_String*)((_FString*)formRes)->toStr()).toNum();
 		else
 		{
 			_String errMsg (*data);
@@ -473,9 +468,15 @@ long	FindDataSetFilterName (_String&s)
 	return dataSetFilterNamesList.Find (&s);
 }
 //____________________________________________________________________________________	
-long	FindLikeFuncName (_String&s)
+long	FindLikeFuncName (_String&s, bool tryAsAString)
 {
-	return likeFuncNamesList.Find (&s);
+	long try1 = likeFuncNamesList.Find (&s);
+	if (try1 < 0 && tryAsAString)
+	{
+		_String s2 (ProcessLiteralArgument(&s, nil));
+		try1 = likeFuncNamesList.Find(&s2);
+	}
+	return try1;
 }
 
 //____________________________________________________________________________________	
@@ -1365,7 +1366,7 @@ _String	 _ExecutionList::TrimNameSpaceFromID (_String& theID)
  		  blDataSet 				("DataSet "),
  		  blDataSetFilter 			("DataSetFilter "),
  		  blHarvest 				("HarvestFrequencies"),
- 		  blConstructCM 			("ConstructCategoryMatrix"),
+ 		  blConstructCM 			("ConstructCategoryMatrix("),
  		  blTree 					("Tree "),
  		  blLF 						("LikelihoodFunction "),
  		  blLF3 					("LikelihoodFunction3 "),
@@ -8597,13 +8598,13 @@ bool	_ElementaryCommand::ConstructMPIReceive (_String&source, _ExecutionList&tar
 
 //____________________________________________________________________________________	
 bool	_ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionList&target)
-// syntax: CategoryMatrix (receptacle, likelihood function, complete/short)
+// syntax: ConstructCategoryMatrix (receptacle, likelihood function, [COMPLETE/SHORT, which partitions to include -- a matrix agrument] )
 {
 	_List pieces;	
 	ExtractConditions (source,blConstructCM.sLength,pieces,',');
 	if (pieces.lLength<2)			
 	{
-		WarnError ("Expected: CategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT [optional; default is SHORT], [optional matrix argument with partitions to include] (default is to include all)");
+		WarnError ("Expected: ConstructCategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT [optional; default is COMPLETE], [optional matrix argument with partitions to include; default is to include all]");
 		return false;
 	}
 										

@@ -23,12 +23,16 @@ _snsAVL	   = _computeSNSSites ("filteredData", _Genetic_Code, vectorOfFrequencie
 
 ExecuteAFile ("TreeTools.ibf");
 
+nonStopSites = sSites+nsSites;				 
+
 fprintf (stdout, "\nTotal nucleotide sites :", filteredData.sites*3,
+				 "\nTotal sense codon sites:", nonStopSites,
 				 "\nSynonymous  sites      :", sSites, 
 				 "\nNonsynonymous  sites   :", nsSites, "\n");
+
+sSites  = nonStopSites/sSites;
+nsSites = nonStopSites/nsSites;
 				 
-sSites  = 3*filteredData.sites/sSites;
-nsSites = 3*filteredData.sites/nsSites;
 
 for (h1=0; h1 < T-1; h1=h1+1)
 {

@@ -507,7 +507,7 @@ long	FindBFFunctionName 		 	 (_String&);
 long	FindBgmName					 (_String &);		
 									 // added by afyp, March 18, 2007
 
-long	FindLikeFuncName		 	 (_String&);
+long	FindLikeFuncName		 	 (_String&, bool = false);
 long	FindModelName			 	 (_String&);
 _String*ReturnCurrentCallStack		 (void);
 	

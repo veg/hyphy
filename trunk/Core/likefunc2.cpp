@@ -513,11 +513,12 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 							bool doChange = false;
 							if (siteCorrectors)
 							{
-								long scv = *siteCorrectors;
+								long scv  = *siteCorrectors,
+									 diff = scv - scalers.lData[r3];
 								
-								if (scv < scalers.lData[r1]) // this has a _smaller_ scaling factor
+								if (diff<0) // this has a _smaller_ scaling factor
 								{
-									_Parameter scaled = buffer[r1]*acquireScalerMultiplier (scalers.lData[r1] - scv);
+									_Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
 									if (buffer[r2] > scaled)
 										doChange = true;
 									else
@@ -526,8 +527,8 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 								}
 								else
 								{
-									if (scv > scalers.lData[r1]) // this is a _larger_ scaling factor
-										buffer[r2] *= acquireScalerMultiplier (scv - scalers.lData[r1]);		
+									if (diff>0) // this is a _larger_ scaling factor
+										buffer[r2] *= acquireScalerMultiplier (-diff);		
 									doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
 								}
 								
@@ -539,7 +540,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 							if (doChange)
 							{
 								buffer[r1]		   = buffer[r2];
-								buffer[r3]         = currentRateWeight;
+								buffer[r3]         = currentRateCombo;
 							}
 						}						
 					}

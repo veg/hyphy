@@ -590,7 +590,7 @@ void 	StringToConsole (_String & s)
 			{
 				char c=s.sData[k];
 				
-				if ((c=='\n')||(c=='\r')||(consoleBufferAdded>=CONSOLE_BUFFERING))
+				if ( c=='\n' || c=='\r' || consoleBufferAdded>=CONSOLE_BUFFERING)
 				{
 					*consoleBuffer << c;
 					consoleBufferAdded++;
