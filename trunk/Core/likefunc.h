@@ -125,7 +125,8 @@ virtual
 		void		DoneComputing 	 (bool = false);
 virtual		
 		_Matrix*	Optimize ();
-		_Matrix* 	ConstructCategoryMatrix		(const _SimpleList&, bool, bool = true, _String* = nil);
+		_Matrix* 	ConstructCategoryMatrix		(const _SimpleList&, char, bool = true, _String* = nil);
+		
 		_Parameter	SimplexMethod				(_Parameter& precision);
 		void		Anneal						(_Parameter& precision);
 			

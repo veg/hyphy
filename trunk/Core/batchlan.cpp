@@ -1288,6 +1288,18 @@ void		_ExecutionList::ResetFormulae		(void)		// run this execution list
 				compiledFormulaeParameters.Delete(k);
 			}
 		}
+		else
+		{
+			if (thisCommand->code==4)
+			{
+				if (thisCommand->parameters.lLength && thisCommand->simpleParameters.lLength == 3)
+				{
+					_Formula* f = (_Formula*)thisCommand->simpleParameters.lData[2];
+					if (f) delete f;
+					thisCommand->simpleParameters.Delete (2);
+				}
+			}
+		}
 		currentCommand++;
 	}
 }
@@ -2581,8 +2593,16 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 	{
 	
 	}
-	if (simpleParameters.lLength==3)
+	if (simpleParameters.lLength==3 || parameters.lLength)
 	{
+		if ( parameters.lLength && simpleParameters.lLength < 3)
+		{
+			_Formula f;
+			long status = Parse (&f, *(_String*)parameters(0), chain.nameSpacePrefix,nil);
+			if (status==-1)
+				simpleParameters<<long(f.makeDynamic());
+		}
+			
 		if (chain.cli)
 		{
 			if ( ((_Formula*)simpleParameters(2))->ComputeSimple(chain.cli->stack, chain.cli->values)==0.0)
@@ -2596,21 +2616,18 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 			_PMathObj result = ((_Formula*)simpleParameters(2))->Compute();
 			if (!result)
 			{
-				_String errMsg ("Condition Evaluation Failed");
-				WarnError (errMsg);
+				WarnError ("Condition Evaluation Failed");
 				return ;
 			}
 			
 			if (terminateExecution)
 			{
 				subNumericValues = 2;
-				_String *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
+				_String		  *s = (_String*)((_Formula*)simpleParameters(2))->toStr();
 				subNumericValues = 0;
-				_String *s2 = (_String*)((_Formula*)simpleParameters(2))->toStr();
-				_String	err = _String("Failed while evaluating: ") & *s2 & " - " & *s;
+				_String		err  = _String("Failed while evaluating: ") & _String((_String*)((_Formula*)simpleParameters(2))->toStr()) & " - " & *s;
 				DeleteObject (s);
-				DeleteObject (s2);
-				WarnError (err);
+				WarnError	 (err);
 				return;
 			}
 			
@@ -7568,16 +7585,10 @@ bool	_ElementaryCommand::BuildIfThenElse	(_String&source, _ExecutionList&target,
 	while (1)
 	{
 		if (pieces.lLength!=1)
-		{
-			_String errMsg ("'if' header makes no sense");
-			acknError (errMsg);
-		}
+			WarnError ("'if' header makes no sense");
+
 		source.Trim (upto,-1);
-		
-		_ElementaryCommand jump;
-				
-		target&&(&jump);
-		
+		target.AppendNewInstance (new _ElementaryCommand);
 		
 		_String	nextCommand (FindNextCommand(source));
 		success *= target.BuildList (nextCommand, bc, true);
@@ -8475,10 +8486,11 @@ bool	  _ElementaryCommand::MakeJumpCommand		(_String* source,	long branch1, long
 	simpleParameters<<branch2;
 	if (source)
 	{
-		_Formula f;
+		/*_Formula f;
 		long status = Parse (&f, *source, parentList.nameSpacePrefix,nil);
 		if (status==-1)
-			simpleParameters<<long(f.makeDynamic());
+			simpleParameters<<long(f.makeDynamic());*/
+		parameters && source;
 	}
 	else
 		if (oldFla) 
@@ -8604,7 +8616,7 @@ bool	_ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionList
 	ExtractConditions (source,blConstructCM.sLength,pieces,',');
 	if (pieces.lLength<2)			
 	{
-		WarnError ("Expected: ConstructCategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT [optional; default is COMPLETE], [optional matrix argument with partitions to include; default is to include all]");
+		WarnError ("Expected: ConstructCategoryMatrix (receptacle, likelihood function,COMPLETE/SHORT/WEIGHTS [optional; default is COMPLETE], [optional matrix argument with partitions to include; default is to include all]");
 		return false;
 	}
 										

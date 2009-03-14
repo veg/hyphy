@@ -69,6 +69,7 @@ _String		sqlOpen 				("SQL_OPEN"),
 			seqAlignGapAffine		("SEQ_ALIGN_AFFINE"),
 			seqAlignGapLinearSpace	("SEQ_ALIGN_LINEAR_SPACE"),
 			completeFlag 			("COMPLETE"),
+			conditionalWeights		("WEIGHTS"),
 			lastSetOfConstraints	("LAST_SET_OF_CONSTRAINTS"),
 			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
 			_hyStatusConditionProbsMatrix				
@@ -624,11 +625,8 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 	chain.currentCommand++;
 
 	SetStatusLine (_hyStatusConditionProbsMatrix);
-	_String		errMsg;
-	
-	// check what the argument is
-	
-	_String objectName 	  = 	chain.AddNameSpaceToID(*(_String*)parameters(1)),
+	_String	errMsg,
+			objectName 	  = 	chain.AddNameSpaceToID(*(_String*)parameters(1)),
 			resultID      =     chain.AddNameSpaceToID(*(_String*)parameters(0));
 
 	long objectID 		  = 	FindLikeFuncName (objectName, true);
@@ -645,7 +643,20 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 		_SimpleList						partsToDo;
 		_LikelihoodFunction*			lf = (_LikelihoodFunction*)likeFuncList(objectID);
 		if (lf->ProcessPartitionList(partsToDo, partitionList, _hyStatusConditionProbsMatrix))
-			ob = lf->ConstructCategoryMatrix(partsToDo,(parameters.lLength>2)?(!((_String*)parameters(2))->Equal(&completeFlag)):false,true, &resultID);
+		{
+			char runMode = 0;
+			if (parameters.lLength > 2)
+			{
+				if (((_String*)parameters(2))->Equal(&completeFlag))
+					runMode = 0;
+				else
+					if (((_String*)parameters(2))->Equal(&conditionalWeights))
+						runMode = 2;
+					else 
+						runMode = 1;
+			}
+			ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
+		}
 	}
 	else
 	{

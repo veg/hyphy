@@ -1400,8 +1400,7 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 
 									  
 //_______________________________________________________________________________________
-_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, bool maximumCatOnly, bool remap, _String* storageID) 
-// 
+_Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, char runMode, bool remap, _String* storageID) 
 {
 	long		 				hDim = 1,
 				 				vDim = 0,
@@ -1409,20 +1408,48 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 				 				
 	_DataSetFilter			    *df;
 	
+	
 	PrepareToCompute();
+	if (runMode == 2 || runMode == 0)
+	// just return the matrix with class weights
+	{
+		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
+		{
+			long myCatCount = TotalRateClassesForAPartition (whichParts.lData[whichPart]);
+			if (myCatCount > hDim) 
+				hDim = myCatCount;
+		}
+	}
+	if (runMode == 2)
+	{
+		_Matrix		* catWeights = new _Matrix (whichParts.lLength, hDim, false, true);
+		_SimpleList scalers;
+		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
+		{
+			PopulateConditionalProbabilities (whichParts.lData[whichPart], 
+											  _hyphyLFConditionProbsClassWeights,
+											  catWeights->theData + hDim*whichPart,
+											  scalers);
+			
+		}	
+		catWeights->Transpose();
+		DoneComputing();
+		return catWeights;
+	}
+	
 	if (!siteResults)
 		AllocateSiteResults ();
 	
 	// compute the number of columns in the matrix 
 	for (long i=0;i<whichParts.lLength;i++)
-		if (maximumCatOnly && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
+		if (runMode && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
 			vDim	+=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]))->GetSiteCount();
 	// all sites
 		else
 			vDim	+=		BlockLength(i);
 	// only unique patterns for now
 
-	if (maximumCatOnly) 
+	if (runMode == 1) 
 	// just return the maximum conditional likelihood category
 	{
 		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
@@ -1646,10 +1673,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 		long maxPartSize = 0;
 		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
-			long myCatCount = TotalRateClassesForAPartition (whichParts.lData[whichPart]);
-			if (myCatCount > hDim) 
-				hDim = myCatCount;
-			myCatCount			= BlockLength(whichParts.lData[whichPart]);
+			long myCatCount		= BlockLength(whichParts.lData[whichPart]);
 			maxPartSize			= MAX (maxPartSize,myCatCount); 
 		}
 		
