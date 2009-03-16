@@ -307,7 +307,11 @@ virtual	  void			Duplicate 			(BaseRef);
 		 					{return opCode;}
 virtual	 bool 			IsAVariable 		(bool = true) ;	// is this object a variable or not?	
 virtual	 bool			IsConstant			(void); 		// does this object depend on any independent variables or not?				 	
-										
+
+virtual	 long			UserFunctionID		(void) { return nOps < 0 ? : -nOps-1 : -1;};	
+						// return a non-neg number (function index) if this is a user function,
+						// otherwise, return -1
+
 virtual	 long    		GetAVariable 		(void) 		// return the index of the variable
 							{return theData>=-2?theData:-theData-3; } 
 									
@@ -383,10 +387,12 @@ virtual	void	  	Duplicate 			(BaseRef);
 		void	  	DuplicateReference 	(_Formula*); 
 virtual	BaseRef		makeDynamic			(void);
 virtual BaseRef 	toStr 				(_List*	matchNames = nil, bool = false);
+	
 virtual	long	  	ObjectClass 		(void) 
 						{ return (theStack.theStack.lLength?
 								 ((_PMathObj)theStack.theStack.lData[0])->ObjectClass():
 								Compute()->ObjectClass());}
+	
 virtual	void	  	ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
 virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		_List&	  	GetList 			(void) 
@@ -396,6 +402,18 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		bool		EqualFormula		(_Formula*);
 		bool	  	IsAConstant 		(void); //  does this formula include variables, or is it just a constant? 
 		bool	  	IsConstant 			(void); //  does this formula depend on something other that constants and fixed parameters? 
+		bool	  	DependsOnVariable 	(long); 
+					/*  
+						SLKP 20090315: added a missing utility function
+						given a variable index as an argument, returns true if
+						the formula depends on a it; false otherwise
+					*/
+		_Operation*	GetIthTerm			(long); 
+					/*  
+						SLKP 20090315: added a missing utility function
+						given an index (i) as the argument, the function retrieves
+						the i-th term of the formula
+					*/
 		void	  	Clear 				(void);
 		_PMathObj 	GetTheMatrix		(void);
 	

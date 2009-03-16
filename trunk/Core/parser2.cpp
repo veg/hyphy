@@ -2646,6 +2646,31 @@ void  _Formula::LocalizeFormula (_Formula& ref, _String& parentName, _SimpleList
 
 //__________________________________________________________________________________
 
+bool _Formula::DependsOnVariable (long idx) 
+{
+	for (long f = 0; f<theFormula.lLength; f++)
+	{
+		_Operation * anOp = ((_Operation**)theFormula.lData)[f];
+		if (anOp->IsAVariable() && anOp->GetAVariable() == idx)
+			return true;
+	}
+	
+	return false;
+}
+
+//__________________________________________________________________________________
+
+_Operation* _Formula::GetIthTerm (long idx) 
+{
+	if (idx >= 0 && idx < theFormula.lLength)
+		return ((_Operation**)theFormula.lData)[idx];
+	
+	return nil;
+}
+
+
+//__________________________________________________________________________________
+
 bool _Formula::IsAConstant (void) 
 {
 	for (int i = 0; i<theFormula.lLength; i++)

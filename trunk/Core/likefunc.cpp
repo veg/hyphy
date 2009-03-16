@@ -562,12 +562,11 @@ void _LikelihoodFunction::Init (void)
 	bySiteResults 		= nil;
 	hasBeenOptimized 	= false;
 	hasBeenSetUp 		= 0;
-	templateKind        = false;
+	templateKind        = _hyphyLFComputationalTemplateNone;
 	computingTemplate   = nil;
 	mstCache			= nil;
 	nonConstantDep      = nil;
 	
-#ifdef	_SLKP_LFENGINE_REWRITE_
 	conditionalInternalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;
 	siteScalingFactors						= nil;
@@ -575,7 +574,6 @@ void _LikelihoodFunction::Init (void)
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
-#endif	
 	
 }
 
@@ -817,7 +815,7 @@ void	 _LikelihoodFunction::Clear (void)
 	{
 		delete computingTemplate;
 		computingTemplate = nil;
-		templateKind	  = false;
+		templateKind	  = _hyphyLFComputationalTemplateNone;
 	}
 	if (mstCache)
 	{
@@ -825,161 +823,143 @@ void	 _LikelihoodFunction::Clear (void)
 		mstCache = nil;
 	}
 	
-#ifdef _SLKP_LFENGINE_REWRITE_	
 	treeTraversalMasks.Clear();
 	canUseReversibleSpeedups.Clear();
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
-#endif
 #endif
 }
 
 
 //_______________________________________________________________________________________
 
-bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) // from triplets
-//format: datasetfilter name, tree name, frequency matrix name; etc...
+bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) 
+/* SLKP v2.0 code cleanup 20090315 */
+
+/* modified the code to take arguments as a pre-partitioned list, 
+   instead of the string;
+   this will make building LFs from matrices of strings possible */
+
+// from triplets
+// format: datasetfilter name, tree name, frequency matrix name; etc...
 {	
 	
 	Clear ();
+	_List triplets(&s,';');
 	
-	_List Triplets(&s,';');
-	
-	for (int i=0; i<Triplets.lLength; i++)
+	for (int i=0; i< triplets.lLength; i++)
 	{
-		_List	TripletItems (Triplets(i),',');
-		if (TripletItems.lLength==3) // good triplet - continue
+		_List	tripletItems (triplets(i),',');
+		if (tripletItems.lLength==3) // good triplet - continue
 		{
-			_String* s;
-			long 	 f;
+			_String* objectName;
+			long 	 objectID;
 			
 			// add datasetfilter
-			s = (_String*)TripletItems(0);
-			f = FindDataSetFilterName(AppendContainerName(*s,theP));
-			if (f==-1)
+			objectName = (_String*)tripletItems(0);
+			objectID   = FindDataSetFilterName(AppendContainerName(*objectName,theP));
+			if (objectID == -1)
 			{
-				WarnError (_String("\nCould not locate a data filter named: ")&*s);
+				WarnError (_String("\nCould not locate a datafilter named: ")&*objectName);
 				return false;			
 			}
 			else
-				theDataFilters<<f;
+				theDataFilters<<objectID;
 
 			// add the tree
-			
-			s = (_String*)TripletItems(1);
-			f = LocateVarByName(AppendContainerName(*s,theP));
-			_Variable* theVar = FetchVar(f);
-			if (!theVar || theVar->ObjectClass()!=TREE)
+			_TheTree   * treeVar = (_TheTree*)FetchObjectFromVariableByType (&AppendContainerName(*(_String*)tripletItems(1),theP), TREE);
+			if (!treeVar)
 			{
-				WarnError (_String("\nCould not locate a tree variable named: ")&*s);
+				WarnError (_String("\nCould not locate a tree variable named: ")&*objectName);
 				return false;
 			}
 			else
-				theTrees<<variableNames.GetXtra(f);
+				theTrees<<treeVar->GetAVariable();
 			
 			// add the matrix of probabilities
-			s = (_String*)TripletItems(2);
-			f = LocateVarByName(AppendContainerName(*s,theP));
-			theVar = FetchVar(f);
-			if ( !theVar|| theVar->ObjectClass()!=MATRIX) 
+			objectName = (_String*)tripletItems(2);
+			objectID   = LocateVarByName(AppendContainerName(*objectName,theP));
+			_Matrix*   efv				= (_Matrix*)FetchObjectFromVariableByTypeIndex(objectID, MATRIX);
+			long	   efvDim;
+			if (!efv) 
 			{	
-				WarnError (_String("\nCould not locate a frequencies matrix named: ")&*s);
+				WarnError (_String("\nCould not locate a frequencies matrix named: ")&*objectName);
 				return false;
 			}
 			else
-				theProbabilities<<variableNames.GetXtra(f);
-				
+			{
+				efvDim = efv->GetHDim();
+				theProbabilities<<variableNames.GetXtra(objectID);
+			}
 			// at this stage also check to see whether tree tips match to species names in the dataset filter and
 			// if they do - then remap
-			_SimpleList remap;
-			_DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-			long dfDim = df->GetDimension(true),
-				 efvDim = ((_Matrix*)theVar->Compute())->GetHDim();
+			_SimpleList			remap;
+			_DataSetFilter*		df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
+			
+			long dfDim			= df->GetDimension(true);
+			
 			if ( efvDim!=dfDim)
 			{	
-				_String warnMsg ("The dimension of the equilibrium frequencies vector ");
-				warnMsg = warnMsg & *s & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ')';
-				&*(_String*)TripletItems(0);
-				acknError (warnMsg);
-				//theDataFilters.Delete(theDataFilters.lLength-1);
-				//theTrees.Delete(theTrees.lLength-1);
+				WarnError (_String("The dimension of the equilibrium frequencies vector ") &
+								   *(_String*)tripletItems(2) & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ") " &*(_String*)tripletItems(0));
 				return false;
 			}
 			// first - produce the list of tip node names
-			if (!MapTreeTipsToData (theProbabilities.lLength-1))	
+			if (!MapTreeTipsToData (theTrees.lLength-1))	
 				return false;
 		}
 		else
 		{
-			if ((i==Triplets.lLength-1)&&(TripletItems.lLength==1)&&theDataFilters.lLength) // formula spec
+			if ( i== triplets.lLength-1 && tripletItems.lLength==1 && theDataFilters.lLength) // formula spec
 			{
-				_String flaString (ProcessLiteralArgument((_String*)TripletItems(0),theP));
+				_String templateFormulaString (ProcessLiteralArgument((_String*)tripletItems(0),theP));
 				
-				if (flaString.sLength)
+				if (templateFormulaString.sLength)
 				{
 					siteWiseVar  = CheckReceptacle (&siteWiseMatrix,empty),
 					blockWiseVar = CheckReceptacle (&blockWiseMatrix,empty);
 							 
-					_String    flaString2 (flaString);
-					_Formula   theFla (flaString,theP);
+					_String    copyString		  (templateFormulaString);
+								// do this because _Formula constructor will consume the string parameter
+					_Formula   templateFormula	  (templateFormulaString,theP);
 					
 					
-					if (theFla.IsEmpty()|| terminateExecution)
+					if (templateFormula.IsEmpty()|| terminateExecution)
 					{
-						flaString = flaString2 & " is not a valid formula specification in call to LikelihoodFunction";
-						WarnError (flaString);
-						Clear ();
-						return false;
+						WarnError (copyString  & " is not a valid formula specification in call to LikelihoodFunction");
+						Clear	  ();
+						return	  false;
 					}
 					
-					bool  hasSiteMx = false,
-						  hasBlkMx  = false;
-						  
-					_List*fList		= &theFla.GetList ();
+					bool  hasSiteMx			= templateFormula.DependsOnVariable(siteWiseVar->GetAVariable()),
+						  hasBlkMx			= templateFormula.DependsOnVariable(blockWiseVar->GetAVariable());
 					
-					// check on proper variable dependence
+					templateKind = _hyphyLFComputationalTemplateNone;
+					long			templateFormulaOpCount = templateFormula.NumberOperations();
 					
-					for (long f = 0; f<fList->lLength; f++)
+					if ( hasBlkMx && hasSiteMx || !(hasBlkMx||hasSiteMx) )
 					{
-						_Operation * anOp = (_Operation*)(*fList)(f);
-						if (anOp->IsAVariable())
+						if (hasBlkMx||hasSiteMx == false)
 						{
-							long kk = anOp->GetAVariable();
-							if (kk == siteWiseVar->GetAVariable())
-								hasSiteMx = true;
-							else
-								if (kk == blockWiseVar->GetAVariable())
-									hasBlkMx = true;
-						}
-					}
-					
-					templateKind = 0;
-					
-					if ( hasBlkMx&&hasSiteMx || (!(hasBlkMx||hasSiteMx)) )
-					{
-						if (!(hasBlkMx||hasSiteMx))
-						{
-							if (theFla.NumberOperations()==1) // hidden Markov variable
+							if (templateFormulaOpCount==1) 
+								// potentially HMM
 							{
-								_Operation * firstOp = (_Operation*)(theFla.GetList())(0);
-								if (firstOp->IsAVariable()&& !firstOp->GetANumber())
+								_Operation * firstOp = templateFormula.GetIthTerm (0);
+								if (firstOp->IsAVariable(false))
 								{
-									_Variable * daVar = LocateVar(firstOp->GetAVariable());
-									if (daVar->IsCategory())
+									_Variable * hmmVar = LocateVar(firstOp->GetAVariable());
+									if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->IsHiddenMarkov())
 									{
-										if (((_CategoryVariable*)daVar)->IsHiddenMarkov())
-										{
-											templateKind = -daVar->GetAVariable()-1;
-											hasSiteMx = true;
-										}
+										templateKind = -hmmVar->GetAVariable()-1;
+										hasSiteMx    = true;
 									}
 								}
 							}
 							else
-								if (theFla.NumberOperations()>=2) // user function
+								if (templateFormulaOpCount>=2) // user function
 								{
-									_Operation * lastOp = (_Operation*)(theFla.GetList())(theFla.NumberOperations()-1);
-									long		 nOps = lastOp->GetNoTerms();
+									_Operation * lastOp = templateFormula.GetIthTerm (templateFormulaOpCount-1);
+									long		 nOps   = lastOp->GetNoTerms();
 									if (nOps<0) // user defined function
 									{
 										templateKind = -nOps+1;
@@ -987,10 +967,10 @@ bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) // fr
 									}
 								}
 						}
-						if (templateKind==0)
+						if (templateKind == _hyphyLFComputationalTemplateNone)
+							// error condition here
 						{
-							flaString = flaString2 & " must depend either on " & siteWiseMatrix & " or " & blockWiseMatrix & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." ;
-							WarnError (flaString);
+							WarnError ( copyString & " must depend either on " & siteWiseMatrix & " or " & blockWiseMatrix & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." );
 							Clear ();
 							return false;
 						}
@@ -1094,9 +1074,7 @@ bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) // fr
 			
 	
 	ScanAllVariables();
-	
 	Setup();
-	
 	return true;
 }
 
@@ -2138,7 +2116,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		{
 	#endif
 	
-	if (computingTemplate&& templateKind>1) // spawn a matrix of partial likelihoods (one for each partition - with appropriate dimensions)
+	if (computingTemplate && templateKind>1) 
+		
+	// spawn a matrix of partial likelihoods (one for each partition - with appropriate dimensions)
 	{
 		if (!siteResults)
 			AllocateSiteResults ();
@@ -2713,177 +2693,6 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			if (offsetCounter>1)
 				categID-=nI*offsetCounter;
 		}
-	}
-}
-
-//_______________________________________________________________________________________
-
-#ifndef _SLKP_LFENGINE_REWRITE_
-
-void	  _LikelihoodFunction::FindMaxCategory(long blockIndex, long index, long dependance, long lowestIndex, long matrixOffset, _Matrix&storage)
-{
-	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
-	
-	if (index>lowestIndex)
-	{
-		if (!CheckNthBit(dependance,index)) 
-			FindMaxCategory (blockIndex, index-1, dependance,lowestIndex,matrixOffset, storage);
-		
-		thisC->Refresh();
-		long nI = thisC->GetNumberOfIntervals ();
-		offsetCounter *= nI;
-		
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k);
-			FindMaxCategory(blockIndex,index-1,dependance, lowestIndex,matrixOffset,storage);
-			categID+=offsetCounter/nI;
-		}
-		
-		offsetCounter/=nI;
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
-	}
-	else
-	{
-		thisC->Refresh();
-		
-		long 	hDim 			= siteResults->GetHDim(),
-				nI 				= thisC->GetNumberOfIntervals (),
-			 	currentOffset 	= BlockLength(blockIndex);
-
-		_Parameter* sR = siteResults->fastIndex();
-
-		if (categID==0)
-			for (long i=0;i<currentOffset;i++)
-				sR[i] = 0.;
-		
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k);
-			ComputeBlock (blockIndex, sR+hDim);		
-			for (long i=0, l=hDim; i<currentOffset; i++,l++)
-				if (sR[l] > sR[i] && !CheckEqual (sR[l], sR[i]))
-				{
-					sR[i] = sR[l];
-					storage[matrixOffset+i] = categID;
-				}
-
-			
-			categID+=offsetCounter;
-		}
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
-	}
-}
-#endif
-	
-//_______________________________________________________________________________________
-		
-void	  _LikelihoodFunction::WriteAllCategories(long blockIndex, long index, long dependance, long lowestIndex, long matrixOffset, _Matrix&storage
-#ifdef _SLKP_LFENGINE_REWRITE_
-												  ,_SimpleList* siteMultipliers  
-#endif			
-												  )
-	
-{
-	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat(index));
-	if (index>lowestIndex)
-	{
-		if ((!CheckNthBit(dependance,index))||(thisC->IsHiddenMarkov()))
-			WriteAllCategories (blockIndex, index-1, dependance,lowestIndex,matrixOffset,storage
-#ifdef _SLKP_LFENGINE_REWRITE_
-								,siteMultipliers  
-#endif			
-			);
-		else
-		{
-			thisC->Refresh();
-			long nI = thisC->GetNumberOfIntervals ();
-			offsetCounter *= nI;
-			for (long k = 0; k<nI; k++)
-			{
-				thisC->SetIntervalValue(k);
-				WriteAllCategories(blockIndex,index-1,dependance, lowestIndex,matrixOffset,storage
-#ifdef _SLKP_LFENGINE_REWRITE_
-								   ,siteMultipliers  
-#endif			
-				);
-				categID+=offsetCounter/nI;
-			}
-			offsetCounter/=nI;
-			if (offsetCounter>1)
-				categID-=nI*offsetCounter;
-		}
-	}
-	else
-	{
-		thisC->Refresh();
-		long		vDim = storage.GetVDim(), 
-					nI = thisC->GetNumberOfIntervals (),
-					currentOffset = BlockLength(blockIndex);
-		_Parameter* sR = siteResults->theData;
-		
-#ifdef _SLKP_LFENGINE_REWRITE_
-		long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[blockIndex]->lLength?
-									  (((_SimpleList**)siteCorrections.lData)[blockIndex]->lData) + categID * currentOffset
-									  :nil;
-
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue		(k,!k);
-			ComputeBlock (blockIndex,sR,categID);		
-			long	     r3 = categID*vDim+matrixOffset;
-			
-			for (long r1 = 0; r1 < currentOffset; r1++,r3++)
-			{
-				if (siteCorrectors)
-				{
-					long scv = *siteCorrectors;
-					if (scv > siteMultipliers->lData[r1]) // this has a _smaller_ scaling factor
-					{
-						if (siteMultipliers->lData[r1] == -1)
-							siteMultipliers->lData[r1] = scv;
-						else
-							sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);
-					}
-					else
-					{
-						if (scv < siteMultipliers->lData[r1]) // this is a _larger_ scaling factor
-						{							
-							_Parameter scaled = acquireScalerMultiplier (siteMultipliers->lData[r1]-scv);
-							for (long z = r3-vDim; z >= 0; z-=vDim)
-								storage.theData[z] *= scaled;
-							
-							siteMultipliers->lData[r1] = scv;
-							//sR[r1] *= acquireScalerMultiplier (scv-siteMultipliers->lData[r1]);	
-						}
-					}
-					
-					siteCorrectors++;
-				}
-				storage.theData[r3] = sR[r1];
-			}
-			
-			if (siteCorrectors)
-				siteCorrectors += currentOffset * (offsetCounter-1);
-			categID+=offsetCounter;
-		}
-#else
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k);
-			ComputeBlock (blockIndex,sR);		
-			long j=currentOffset-1;
-			for (; j>=0;j--)
-			{
-				storage.theData[categID*vDim+matrixOffset+j]=sR[j];
-			}
-			categID+=offsetCounter;
-		}
-#endif	
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
 	}
 }
 

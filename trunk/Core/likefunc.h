@@ -50,6 +50,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFConditionProbsMaxProbClass		3
 #define	  _hyphyLFConditionProbsClassWeights		4
 
+/* computational template kinds for the likelihood function */
+
+#define	  _hyphyLFComputationalTemplateNone			0
+#define	  _hyphyLFComputationalTemplateBySite		1
+#define	  _hyphyLFComputationalTemplateByPartition  2
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -283,16 +289,7 @@ static	void			CheckFibonacci			(_Parameter);
 													long = -1, _SimpleList* = nil
 #endif
 													 );
-		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);
-#ifndef _SLKP_LFENGINE_REWRITE_
-		void		 	FindMaxCategory				(long,long,long,long,long,_Matrix&);
-#endif
-													 
-		void		 	WriteAllCategories			(long,long,long,long,long,_Matrix&
-#ifdef _SLKP_LFENGINE_REWRITE_
-													 ,_SimpleList* = nil  
-#endif
-													 );	
+		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);	
 		void			WriteAllCategoriesTemplate  (long, long, long, long, long, _Parameter*, long*
 #ifdef _SLKP_LFENGINE_REWRITE_
 													 ,_SimpleList* = nil  
@@ -366,7 +363,27 @@ static	void			CheckFibonacci			(_Parameter);
 						
 		long		 	blockComputed,
 						templateKind,
-						// 1 if template is per site, otherwise = 0. - variable index if it is hidden markov
+	
+						/* 
+							_hyphyLFComputationalTemplateNone: 
+								no computational template: simply return the summed up log-likelihood
+								for all partitions in the likelihood function
+						 
+							_hyphyLFComputationalTemplateBySite:
+								all partitons have the same number of sites
+								the template is in terms of SITE_LIKELIHOOD
+								meant to implement model/tree mixture constructs
+						 
+							_hyphyLFComputationalTemplateByPartition
+								the template is in terms of BLOCK_LIKELIHOOD
+								meant to implement random effects on the level of partitions 
+								models
+							
+							<0											: (-1-variable index) if a hidden markov process on site likelihoods
+							>_hyphyLFComputationalTemplateByPartition	: a _hyphyLFComputationalTemplateByPartition shifted index of a user
+																		  function that will assemble the likelihood
+																		  from site conditionals
+						*/
 						hasBeenSetUp;
 		
 		_Matrix			*siteResults,
