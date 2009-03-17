@@ -365,15 +365,9 @@ class _TheTree: public _TreeTopology {
 			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long,long);
 			_Parameter		ReleafTreeChar4Degenerate   (_DataSetFilter*,long);	
 
-#if USE_SCALING_TO_FIX_UNDERFLOW
-			_Parameter		ThreadReleafTreeChar4		(_DataSetFilter*,long,long,long,long,long,long offset = 0,long fixAttempt = 0, _Parameter = 690.);	
-			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long,long fixAttempt = 0, _Parameter = 690.);
-			_Parameter		doChar4Scaling				(_DataSetFilter*,long,long,long,long, _Parameter, bool, bool);
-			_Parameter		doChar4Scaling_nc			(_DataSetFilter*,long,long,_Parameter, bool, bool);
-#else
 			_Parameter		ThreadReleafTreeChar4		(_DataSetFilter*,long,long,long,long,long,long offset = 0);
 			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long);	
-#endif
+
 			_Parameter	Probij 							(long, long, _CalcNode*);
 			_Parameter	ReleafTreeCharNumFilter4Tree3	(_DataSetFilterNumeric*, long, long = 0);
 			_Parameter	PruneTree	  					(long categID = -1);
@@ -404,7 +398,7 @@ class _TheTree: public _TreeTopology {
 			long		GetLeafCount 					(void) 
 															{return flatLeaves.lLength;}
 							
-			long		GetINodeCount 				(void) 
+			long		GetINodeCount					(void) 
 															{return flatNodes.lLength	;}
 
 			void 		ScanForVariables 				(_AVLList& l, _AVLList& l2);

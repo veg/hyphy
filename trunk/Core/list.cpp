@@ -47,10 +47,7 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 
 _SimpleList::_SimpleList ()
 {
-	lLength = 0;
-	laLength = 0;
-	lData=nil;
-	//lData = MemAllocate (laLength * sizeof(Ptr));
+	Initialize(false);
 	
 }
 
@@ -63,23 +60,30 @@ _List::_List ()
 
 //______________________________________________________________
 
-void	_SimpleList::Initialize (void)
+void	_SimpleList::Initialize (bool doMemAlloc)
 {
 	BaseObj::Initialize();
 	lLength = 0;
-	laLength = MEMORYSTEP;
-	lData = (long*)MemAllocate (laLength * sizeof(Ptr));
-
+	if (doMemAlloc)
+	{
+		laLength = MEMORYSTEP;
+		lData = (long*)MemAllocate (laLength * sizeof(Ptr));
+	}
+	else
+	{
+		laLength = 0;
+		lData    = nil;
+	}
 }
 
 //______________________________________________________________
 
 void	_SimpleList::Duplicate (BaseRef theRef)
 {
-	_SimpleList* l = (_SimpleList*)theRef;
-	lLength = l->lLength;
-	laLength = l->laLength;
-	lData = l->lData;
+	_SimpleList* l	= (_SimpleList*)theRef;
+	lLength			= l->lLength;
+	laLength		= l->laLength;
+	lData			= l->lData;
 	if (lData) {
 		checkPointer (lData = (long*)MemAllocate (laLength*sizeof (Ptr)));
 		memcpy ((char*)lData, (char*)l->lData, lLength*sizeof (Ptr));
@@ -113,9 +117,8 @@ _SimpleList::_SimpleList (unsigned long l)
 
 _SimpleList::_SimpleList (long l, long start, long step)
 {
-	laLength = 0;
-	lData	 = nil;
-	Populate (l,start,step);
+	Initialize (false);
+	Populate   (l,start,step);
 }
 
 //______________________________________________________________
@@ -139,10 +142,21 @@ _List::_List (unsigned long l):_SimpleList(l)
 				
 //______________________________________________________________
 // stack copy contructor
-_List::_List (const _List& l)
+_List::_List (const _List& l, long from, long to)
 {
-	BaseRef	   br = (BaseRef)&l;
-	Duplicate (br);
+	if (from == 0 && to == -1) // copy the whole thing
+	{
+		BaseRef	  br = (BaseRef)&l;
+		Duplicate (br);
+	}
+	else
+	{
+		Initialize			 ();
+		NormalizeCoordinates (from, to, l.lLength);
+			
+		for (long i = from; i <= to; i++)
+			(*this) << ((BaseRef*)l.lData)[i];	
+	}	
 }
 
 //______________________________________________________________
@@ -170,11 +184,33 @@ _List::_List (BaseRef ss, char sep)
 	}
 }
 
+
+//______________________________________________________________
+// coordinate normalizer 
+void _SimpleList::NormalizeCoordinates (long& from, long& to, const unsigned long refLength)
+{
+	if (to < 0)
+		to = refLength+to;
+	else
+		to = to < refLength-1 ? to : refLength - 1;
+	if (from < 0)
+		from = refLength+from;
+}
+
 //______________________________________________________________
 // stack copy contructor
-_SimpleList::_SimpleList (_SimpleList& l)
+_SimpleList::_SimpleList (_SimpleList& l, long from, long to)
 {
-	Duplicate (&l);
+	if (from == 0 && to == -1) // copy the whole thing
+		Duplicate (&l);
+	else
+	{
+		Initialize			 ();
+		NormalizeCoordinates (from, to, l.lLength);
+		
+		for (long i = from; i < to; i++)
+			(*this) << l.lData[i];	
+	}
 }
 
 //______________________________________________________________

@@ -3446,4 +3446,3 @@ _String * ReturnCurrentCallStack (void)
 	}
 	return new _String ();
 }
-

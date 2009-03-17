@@ -82,11 +82,11 @@ class	_LikelihoodFunction: public BaseObj {
 		// constructors
 		
 		_LikelihoodFunction (void); // default - doesn't do much
-		_LikelihoodFunction (_String&); // from triplets
+		_LikelihoodFunction (_String&, _VariableContainer*); // from triplets
 		_LikelihoodFunction (_LikelihoodFunction&); // stack copy
 		void		Init	  (void);
 		
-		bool		Construct (_String&,_VariableContainer*);
+		bool		Construct (_List&,_VariableContainer*);
 		
 virtual ~_LikelihoodFunction (void) 
 					{Cleanup();} // destructor

@@ -308,7 +308,7 @@ virtual	  void			Duplicate 			(BaseRef);
 virtual	 bool 			IsAVariable 		(bool = true) ;	// is this object a variable or not?	
 virtual	 bool			IsConstant			(void); 		// does this object depend on any independent variables or not?				 	
 
-virtual	 long			UserFunctionID		(void) { return nOps < 0 ? : -nOps-1 : -1;};	
+virtual	 long			UserFunctionID		(void) { return numberOfTerms < 0 ? -numberOfTerms-1 : -1;};	
 						// return a non-neg number (function index) if this is a user function,
 						// otherwise, return -1
 

@@ -579,11 +579,16 @@ void _LikelihoodFunction::Init (void)
 
 //_______________________________________________________________________________________
 
-_LikelihoodFunction::_LikelihoodFunction (_String& s) // from triplets
+_LikelihoodFunction::_LikelihoodFunction (_String& s, _VariableContainer* p) 
+// from triplets
 //format: datasetfilter name, tree name, frequency matrix name; etc...
 {
-	Init();
-	Construct(s,nil);
+	Init	 ();
+	_List	 tripletsRaw (&s,';'),
+			 tripletsSplit;
+	for (long k = 0; k < tripletsRaw.lLength; k++)
+		tripletsSplit.AppendNewInstance (new _List(tripletsRaw(k),','));
+	Construct(tripletsSplit,p);
 }
 
 //_______________________________________________________________________________________
@@ -833,8 +838,8 @@ void	 _LikelihoodFunction::Clear (void)
 
 //_______________________________________________________________________________________
 
-bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP) 
-/* SLKP v2.0 code cleanup 20090315 */
+bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP) 
+/* SLKP v2.0 code cleanup 20090316 */
 
 /* modified the code to take arguments as a pre-partitioned list, 
    instead of the string;
@@ -845,217 +850,193 @@ bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP)
 {	
 	
 	Clear ();
-	_List triplets(&s,';');
-	
-	for (int i=0; i< triplets.lLength; i++)
+	long i = 0;
+	for (; i< (long)triplets.lLength-2; i+=3)
 	{
-		_List	tripletItems (triplets(i),',');
-		if (tripletItems.lLength==3) // good triplet - continue
+		_String* objectName;
+		long 	 objectID;
+		
+		// add datasetfilter
+		objectName = (_String*)triplets(i);
+		objectID   = FindDataSetFilterName(AppendContainerName(*objectName,theP));
+		if (objectID == -1)
 		{
-			_String* objectName;
-			long 	 objectID;
-			
-			// add datasetfilter
-			objectName = (_String*)tripletItems(0);
-			objectID   = FindDataSetFilterName(AppendContainerName(*objectName,theP));
-			if (objectID == -1)
-			{
-				WarnError (_String("\nCould not locate a datafilter named: ")&*objectName);
-				return false;			
-			}
-			else
-				theDataFilters<<objectID;
+			WarnError (_String("\nCould not locate a datafilter named: ")&*objectName);
+			return false;			
+		}
+		else
+			theDataFilters<<objectID;
 
-			// add the tree
-			_TheTree   * treeVar = (_TheTree*)FetchObjectFromVariableByType (&AppendContainerName(*(_String*)tripletItems(1),theP), TREE);
-			if (!treeVar)
-			{
-				WarnError (_String("\nCould not locate a tree variable named: ")&*objectName);
-				return false;
-			}
-			else
-				theTrees<<treeVar->GetAVariable();
-			
-			// add the matrix of probabilities
-			objectName = (_String*)tripletItems(2);
-			objectID   = LocateVarByName(AppendContainerName(*objectName,theP));
-			_Matrix*   efv				= (_Matrix*)FetchObjectFromVariableByTypeIndex(objectID, MATRIX);
-			long	   efvDim;
-			if (!efv) 
-			{	
-				WarnError (_String("\nCould not locate a frequencies matrix named: ")&*objectName);
-				return false;
-			}
-			else
-			{
-				efvDim = efv->GetHDim();
-				theProbabilities<<variableNames.GetXtra(objectID);
-			}
-			// at this stage also check to see whether tree tips match to species names in the dataset filter and
-			// if they do - then remap
-			_SimpleList			remap;
-			_DataSetFilter*		df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
-			
-			long dfDim			= df->GetDimension(true);
-			
-			if ( efvDim!=dfDim)
-			{	
-				WarnError (_String("The dimension of the equilibrium frequencies vector ") &
-								   *(_String*)tripletItems(2) & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ") " &*(_String*)tripletItems(0));
-				return false;
-			}
-			// first - produce the list of tip node names
-			if (!MapTreeTipsToData (theTrees.lLength-1))	
-				return false;
+		// add the tree
+		_TheTree   * treeVar = (_TheTree*)FetchObjectFromVariableByType (&AppendContainerName(*(_String*)triplets(i+1),theP), TREE);
+		if (!treeVar)
+		{
+			WarnError (_String("\nCould not locate a tree variable named: ")&*objectName);
+			return false;
+		}
+		else
+			theTrees<<treeVar->GetAVariable();
+		
+		// add the matrix of probabilities
+		objectName = (_String*)triplets(i+2);
+		objectID   = LocateVarByName(AppendContainerName(*objectName,theP));
+		_Matrix*   efv				= (_Matrix*)FetchObjectFromVariableByTypeIndex(objectID, MATRIX);
+		long	   efvDim;
+		if (!efv) 
+		{	
+			WarnError (_String("\nCould not locate a frequencies matrix named: ")&*objectName);
+			return false;
 		}
 		else
 		{
-			if ( i== triplets.lLength-1 && tripletItems.lLength==1 && theDataFilters.lLength) // formula spec
+			efvDim = efv->GetHDim();
+			theProbabilities<<variableNames.GetXtra(objectID);
+		}
+		// at this stage also check to see whether tree tips match to species names in the dataset filter and
+		// if they do - then remap
+		_SimpleList			remap;
+		_DataSetFilter*		df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(theDataFilters.lLength-1)));
+		
+		long dfDim			= df->GetDimension(true);
+		
+		if ( efvDim!=dfDim)
+		{	
+			WarnError (_String("The dimension of the equilibrium frequencies vector ") &
+							   *(_String*)triplets(i+2) & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ") " &*(_String*)triplets(i));
+			return false;
+		}
+		// first - produce the list of tip node names
+		if (!MapTreeTipsToData (theTrees.lLength-1))	
+			return false;
+	}
+	if (i && i == triplets.lLength-1)
+	{
+		_String templateFormulaString (ProcessLiteralArgument((_String*)triplets(i),theP));
+		
+		if (templateFormulaString.sLength)
+		{
+			siteWiseVar  = CheckReceptacle (&siteWiseMatrix,empty),
+			blockWiseVar = CheckReceptacle (&blockWiseMatrix,empty);
+					 
+			_String    copyString		  (templateFormulaString);
+						// do this because _Formula constructor will consume the string parameter
+			_Formula   templateFormula	  (templateFormulaString,theP);
+			
+			
+			if (templateFormula.IsEmpty()|| terminateExecution)
 			{
-				_String templateFormulaString (ProcessLiteralArgument((_String*)tripletItems(0),theP));
-				
-				if (templateFormulaString.sLength)
+				WarnError (copyString  & " is not a valid formula specification in call to LikelihoodFunction");
+				Clear	  ();
+				return	  false;
+			}
+			
+			bool  hasSiteMx			= templateFormula.DependsOnVariable(siteWiseVar->GetAVariable()),
+				  hasBlkMx			= templateFormula.DependsOnVariable(blockWiseVar->GetAVariable());
+			
+			templateKind = _hyphyLFComputationalTemplateNone;
+			long			templateFormulaOpCount = templateFormula.NumberOperations();
+			
+			if ( hasBlkMx && hasSiteMx || !(hasBlkMx||hasSiteMx) )
+			{
+				if (hasBlkMx||hasSiteMx == false)
 				{
-					siteWiseVar  = CheckReceptacle (&siteWiseMatrix,empty),
-					blockWiseVar = CheckReceptacle (&blockWiseMatrix,empty);
-							 
-					_String    copyString		  (templateFormulaString);
-								// do this because _Formula constructor will consume the string parameter
-					_Formula   templateFormula	  (templateFormulaString,theP);
-					
-					
-					if (templateFormula.IsEmpty()|| terminateExecution)
+					if (templateFormulaOpCount==1) 
+						// potentially an HMM
 					{
-						WarnError (copyString  & " is not a valid formula specification in call to LikelihoodFunction");
-						Clear	  ();
-						return	  false;
-					}
-					
-					bool  hasSiteMx			= templateFormula.DependsOnVariable(siteWiseVar->GetAVariable()),
-						  hasBlkMx			= templateFormula.DependsOnVariable(blockWiseVar->GetAVariable());
-					
-					templateKind = _hyphyLFComputationalTemplateNone;
-					long			templateFormulaOpCount = templateFormula.NumberOperations();
-					
-					if ( hasBlkMx && hasSiteMx || !(hasBlkMx||hasSiteMx) )
-					{
-						if (hasBlkMx||hasSiteMx == false)
+						_Operation * firstOp = templateFormula.GetIthTerm (0);
+						if (firstOp->IsAVariable(false))
 						{
-							if (templateFormulaOpCount==1) 
-								// potentially HMM
+							_Variable * hmmVar = LocateVar(firstOp->GetAVariable());
+							if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->IsHiddenMarkov())
 							{
-								_Operation * firstOp = templateFormula.GetIthTerm (0);
-								if (firstOp->IsAVariable(false))
-								{
-									_Variable * hmmVar = LocateVar(firstOp->GetAVariable());
-									if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->IsHiddenMarkov())
-									{
-										templateKind = -hmmVar->GetAVariable()-1;
-										hasSiteMx    = true;
-									}
-								}
-							}
-							else
-								if (templateFormulaOpCount>=2) // user function
-								{
-									_Operation * lastOp = templateFormula.GetIthTerm (templateFormulaOpCount-1);
-									long		 nOps   = lastOp->GetNoTerms();
-									if (nOps<0) // user defined function
-									{
-										templateKind = -nOps+1;
-										hasSiteMx = true;
-									}
-								}
-						}
-						if (templateKind == _hyphyLFComputationalTemplateNone)
-							// error condition here
-						{
-							WarnError ( copyString & " must depend either on " & siteWiseMatrix & " or " & blockWiseMatrix & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." );
-							Clear ();
-							return false;
-						}
-					}
-					
-					// verify appropriate data filter dimension for the "per-site" case
-					
-					_DataSetFilter*  firstFilter = (_DataSetFilter*)dataSetFilterList(theDataFilters(0));
-					long			 firstFilterSize = firstFilter->GetFullLengthSpecies()/firstFilter->GetUnitLength();
-					
-					if (hasSiteMx)
-					{
-						if (templateKind==0)
-							templateKind   = 1;
-						
-						for (long f=1; f<theDataFilters.lLength; f++)
-						{
-							_DataSetFilter* currentFilter     = (_DataSetFilter*)dataSetFilterList(theDataFilters(f));
-							long			currentFilterSize = currentFilter->GetFullLengthSpecies()/currentFilter->GetUnitLength();
-							
-							if (currentFilterSize > firstFilterSize)
-							{
-								firstFilterSize = currentFilterSize;
-								/*flaString = _String("For use of site-wise computational template all data filters in the likelihood function must have the same number of sites.")
-											& *(_String*)dataSetFilterNamesList (theDataFilters(0)) & " and " & *(_String*)dataSetFilterNamesList (theDataFilters(f)) & " did not.";
-								WarnError (flaString);
-								Clear ();
-								return false;*/
-								
+								templateKind = -hmmVar->GetAVariable()-1;
+								hasSiteMx    = true;
 							}
 						}
 					}
 					else
-						templateKind = 0;
-						
-					// now test evaluate the formula
-					
-					if (templateKind==1)
-					{
-						_Matrix			testMx (theTrees.lLength,1,false,true);
-						for (long testCount = 0; testCount<25; testCount++)
+						if (templateFormulaOpCount>=2) // user function
 						{
-							for (long di = 0; di < theTrees.lLength; di++)
-								testMx.theData[di] = genrand_int32 ()/(_Parameter)RAND_MAX_32;
-								
-							siteWiseVar->SetValue (&testMx);
-							blockWiseVar->SetValue (&testMx);
-							
-							_PMathObj    testResult = theFla.Compute();
-							flaString = empty;
-							
-							if ((!testResult)|| terminateExecution)
-								flaString = _String ("Failed to evaluate computation template formula (")& flaString2 & ")in LikelihoodFunction constructor.";
-							else
+							long		 nOps   =  templateFormula.GetIthTerm (templateFormulaOpCount-1)->UserFunctionID();
+							if (nOps>=0) // user defined function
 							{
-								if (testResult->ObjectClass() == NUMBER)
-								{
-									if (testResult->Value()>0.0)
-										flaString = _String ("Computation template formula (")& flaString2 & ")in LikelihoodFunction constructor evaluated to a positive value (as a log-likelihood - must be non-positive).";
-								}
-								else
-									flaString = _String ("Computation template formula (")& flaString2 & ")in LikelihoodFunction constructor evaluated to a non-scalar value.";
-							}
-							
-							if (flaString.sLength)
-							{
-								WarnError (flaString);
-								Clear ();
-								return false;
+								templateKind = _hyphyLFComputationalTemplateByPartition+1+nOps;
+								hasSiteMx	 = true;
 							}
 						}
-					}
-					
-					computingTemplate = (_Formula*)theFla.makeDynamic();
-					
-					if (templateKind && templateKind<2)
-					{
-						bySiteResults = new _Matrix (theTrees.lLength,firstFilterSize,false,true);
-						checkPointer (bySiteResults);
-					}
-					else
-						bySiteResults = nil;
-						
+				}
+				if (templateKind == _hyphyLFComputationalTemplateNone)
+					// error condition here
+				{
+					WarnError ( copyString & " must depend either on " & siteWiseMatrix & " or " & blockWiseMatrix & " (but not on both). Alternatively, it could be a reference to a HM category variable or a user defined BL function." );
+					Clear	  ();
+					return false;
 				}
 			}
+			
+			// determine the longest filter
+			
+			long			 maxFilterSize = 0;
+			
+			if (hasSiteMx)
+			{
+				templateKind = _hyphyLFComputationalTemplateBySite;
+				
+				for (long f=0; f<theDataFilters.lLength; f++)
+				{
+					long			currentFilterSize =  ((_DataSetFilter*)dataSetFilterList(theDataFilters(f)))->GetSiteCount();
+					
+					if (currentFilterSize > maxFilterSize)
+						maxFilterSize = currentFilterSize;
+				}
+			}
+			else
+				templateKind = _hyphyLFComputationalTemplateNone;
+				
+			// now test evaluate the formula
+			
+			if (templateKind==_hyphyLFComputationalTemplateBySite)
+			{
+				_Matrix			testMx (theTrees.lLength,1,false,true);
+				for (long testCount = 0; testCount<25; testCount++)
+				{
+					for (long di = 0; di < theTrees.lLength; di++)
+						testMx.theData[di] = genrand_int32 ()/(_Parameter)RAND_MAX_32;
+						
+					siteWiseVar->SetValue  (&testMx);
+					blockWiseVar->SetValue (&testMx);
+					
+					_PMathObj    testResult = templateFormula.Compute();
+					_String		errMessage;
+					if (!testResult || terminateExecution)
+						errMessage = _String ("Failed to evaluate computation template formula (")& copyString & ") in LikelihoodFunction constructor.";
+					else
+					{
+						if (testResult->ObjectClass() == NUMBER)
+						{
+							if (testResult->Value()>0.0)
+								errMessage = _String ("Computation template formula (")& copyString & ") in LikelihoodFunction constructor evaluated to a positive value (as a log-likelihood - must be non-positive).";
+						}
+						else
+							errMessage = _String ("Computation template formula (")& copyString & ") in LikelihoodFunction constructor evaluated to a non-scalar value.";
+					}
+					
+					if (errMessage.sLength)
+					{
+						WarnError (errMessage);
+						Clear ();
+						return false;
+					}
+				}
+			}
+			
+			computingTemplate = (_Formula*)templateFormula.makeDynamic();
+			
+			if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite)
+				bySiteResults = (_Matrix*)checkPointer(new _Matrix (theTrees.lLength,maxFilterSize,false,true));
+			else
+				bySiteResults = nil;
+				
 		}
 	}
 	
@@ -1066,8 +1047,8 @@ bool	 _LikelihoodFunction::Construct(_String& s, _VariableContainer* theP)
 		for (long i=1; i<checkDupTreeIDs.lLength; i++)
 			if (checkDupTreeIDs.lData[i] == checkDupTreeIDs.lData[i-1])
 			{
-				_String errMsg = _String("The same tree - ")&*LocateVar(checkDupTreeIDs.lData[i])->GetName() & " - can't be used in multiple partitions in the same likelihood function. You should create an independent tree for each partition, and constrain the parameters instead.";
-				WarnError (errMsg);
+				WarnError (_String("The same tree - ")&*LocateVar(checkDupTreeIDs.lData[i])->GetName() & 
+						   " - can't be used in multiple partitions in the same likelihood function. You should create an independent tree for each partition, and constrain the parameters instead.");
 				return false;
 			}
 	}
@@ -1651,8 +1632,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 		long maxPartSize = 0;
 		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
-			long myCatCount		= BlockLength(whichParts.lData[whichPart]);
-			maxPartSize			= MAX (maxPartSize,myCatCount); 
+			long myWidth		= BlockLength(whichParts.lData[whichPart]);
+			maxPartSize			= MAX (maxPartSize,myWidth); 
 		}
 		
 		_GrowingVector	allScalers;
@@ -1672,8 +1653,9 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 											  scalers);
 			
 			allScalers << scalers;
-			result->CopyABlock (holder, maxPartSize, 0);
-			maxPartSize += BlockLength(whichParts.lData[whichPart]);	
+			long		thisBlockSiteCount = BlockLength(whichParts.lData[whichPart]);
+			result->CopyABlock (holder, 0, maxPartSize, ((_SimpleList*)(*(_List*)categoryTraversalTemplate(whichParts.lData[whichPart]))(1))->Element(-1), thisBlockSiteCount);
+			maxPartSize += thisBlockSiteCount;	
 		}
 		DoneComputing   ();
 		DeleteObject    (holder);

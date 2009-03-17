@@ -720,6 +720,7 @@ long  AddDataSetToList (_String& theName,_DataSet* theDS)
 	return k;
 }
 
+
 //__________________________________________________________
 
 void KillDataFilterRecord (long dfID, bool addP)
@@ -927,7 +928,7 @@ void KillModelRecord (long mdID)
 		DeleteVariable (*LocateVar(mID)->GetName());
 		mID = modelFrequenciesIndices.lData[mdID];
 		modelFrequenciesIndices.lData[mdID] = -1;
-		if (mID>=0)
+		if (mID>=0 && modelFrequenciesIndices.Find(mID) < 0)
 			DeleteVariable (*LocateVar(mID)->GetName());
 		
 		modelMatrixIndices.Delete (modelMatrixIndices.lLength-1);
@@ -2895,20 +2896,56 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 //____________________________________________________________________________________	
 
 void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
+/* 
+ code cleanup SLKP 20090316
+*/
+
 {
 	chain.currentCommand++;
 	
 	_String	 parm,
 			 errMsg;
 
-	long	 i;
-	bool	 explicitFreqs = simpleParameters.lLength;
+	bool	 explicitFreqs = simpleParameters.lLength,
+			 // if false then the likelihood function will be of the form (filter1,tree1,filter2,tree2,...,filterN,treeN) 
+			 // if true then the likelihood function will be of the form  (filter1,tree1,freq1,filter2,tree2,freq2,...,filterN,treeN,freqN)
+			 assumeList	   = parameters.lLength > 2;
+			 // if there is only one parameter to the function constructor, it is assumed to be a string matrix
+		     // otherwise it is expected to be a collection of literals
 
-	for (i = 1; i<parameters.lLength-1; i+=(explicitFreqs?3:2))
+	_List	 * likelihoodFunctionSpec   = nil,
+			   passThisToLFConstructor;
+	
+	if (assumeList)
+		likelihoodFunctionSpec = new _List (parameters, 1, - 1);
+	else
 	{
-		_String		*dataset = (_String*)parameters(i), 
-					*tree	 = (_String*)parameters(i+1), 
-					*freq    = explicitFreqs?(_String*)parameters(i+2):nil;
+		_Matrix * matrixOfStrings = (_Matrix*)ProcessAnArgumentByType ((_String*)parameters(1), chain.nameSpacePrefix, MATRIX);
+		if (matrixOfStrings && matrixOfStrings->IsAStringMatrix())
+		{
+			likelihoodFunctionSpec = new _List;
+			matrixOfStrings->FillInList(*likelihoodFunctionSpec);
+			if (likelihoodFunctionSpec->lLength == 0)
+			{
+				DeleteObject (likelihoodFunctionSpec);
+				likelihoodFunctionSpec = nil;
+			}
+		}
+		if (likelihoodFunctionSpec == nil)
+		{
+			WarnError (_String("Not a valid string matrix object passed to a _LikelihoodFunction constructor: ") & *(_String*)parameters(1));
+			return;
+		}
+	}
+	
+	long i		 = 0,
+		 stepper = explicitFreqs?3:2;
+	
+	for (; i<=(long)likelihoodFunctionSpec->lLength-stepper; i+=stepper)
+	{
+		_String		*dataset = (_String*)(*likelihoodFunctionSpec)(i), 
+					*tree	 = (_String*)(*likelihoodFunctionSpec)(i+1), 
+					*freq    = explicitFreqs?(_String*)(*likelihoodFunctionSpec)(i+2):nil;
 					
 		if(FindDataSetFilterName(AppendContainerName(*dataset,chain.nameSpacePrefix))!=-1)
 		{	
@@ -2918,29 +2955,29 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 				_CalcNode*	thisNode = thisTree->DepthWiseTraversal(true);
 				if (!freq) // no explicit frequency parameter; grab one from the tree
 				{
-					long 		theFreqID = -1, theModelID = -1, finalFreqID = -1, temp;
+					long 		theFreqID		= -1, 
+								theModelID		= -1, 
+								finalFreqID		= -1;
 					bool		done = false;
 					
 					while (1)
 					{
-						theModelID  	= thisNode->GetModelIndex();
-						if (theModelID<0)
+						if ((theModelID  	= thisNode->GetModelIndex())<0) // this node has no model
 						{
 							done = false;
 							break;
 						}
 						theFreqID 	= modelFrequenciesIndices.lData[theModelID];
-						thisNode = thisTree->DepthWiseTraversal();
+						thisNode    = thisTree->DepthWiseTraversal();
 						while(thisNode)
 						{
 							theModelID  	= thisNode->GetModelIndex();
-							if (theModelID<0)
+							if (theModelID<0) // no model
 							{
 								done = false;
 								break;
 							}
-							temp = modelFrequenciesIndices.lData[theModelID];
-							if (temp!=theFreqID)
+							if (modelFrequenciesIndices.lData[theModelID]!=theFreqID)
 							{
 								done = true;
 								break;
@@ -2948,84 +2985,77 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 							if (thisTree->IsCurrentNodeTheRoot()) break;
 							thisNode = thisTree->DepthWiseTraversal();
 						}
-						finalFreqID = theFreqID;
-						if (finalFreqID<0)
-							finalFreqID = -finalFreqID-1;
+						if (theFreqID<0)
+							finalFreqID = -theFreqID-1;
+						else
+							finalFreqID = theFreqID;
 						break;
 					}
-					
 					
 					if (finalFreqID>=0)
 					{
 						_String freqID = chain.TrimNameSpaceFromID(*LocateVar(finalFreqID)->GetName());
-						parm = parm& * dataset&","& * tree&","& freqID;
-						if (i<parameters.lLength-3)
-							parm = parm&";";
+						passThisToLFConstructor &&  dataset;
+						passThisToLFConstructor &&  tree;
+						passThisToLFConstructor &&  freqID;
 						continue;
 					}
 					else
 					{
 						if (!done)
-						{
 							errMsg = (((_String)("LF: Not a well-defined tree/model combination: ")&*tree));
-							acknError (errMsg);
-							return;
-						}
 						else
-						{
 							errMsg = (((_String)("LF: All models in the tree: ")&*tree&_String(" must share the same frequencies vector")));
-							acknError (errMsg);
-							return;
-						}
 					}
 				}
 				else
 				{
 					if (FetchObjectFromVariableByType(&AppendContainerName(*freq,chain.nameSpacePrefix),MATRIX))
 					{
-						parm = parm& *dataset&","& *tree&","& *freq;
-						if (i<parameters.lLength-4)
-							parm = parm&";";
+						passThisToLFConstructor &&  dataset;
+						passThisToLFConstructor &&  tree;
+						passThisToLFConstructor &&  freq;
 						continue;					
 					}
 					errMsg = (((_String)("LF: Not a valid frequency matrix ID: ")& *freq));
-					acknError (errMsg);
-					return;
 				}
 			}
 			else
-			{
 				errMsg = (((_String)("LF: Not a valid tree ID: ")& *tree));
-				acknError (errMsg);
-				return;
-			}
 			
 		}
 		else
-		{
 			errMsg = (((_String)("LF: Not a valid dataset filter: ")& *dataset));
-			acknError (errMsg);
-			return;
+			
+		if (errMsg.sLength)
+		{
+			DeleteObject (likelihoodFunctionSpec);
+			WarnError	 (errMsg);
 		}
 	}
+		
+	if (i==likelihoodFunctionSpec->lLength-1) // computing template
+		passThisToLFConstructor && *(_String*)(*likelihoodFunctionSpec)(i);
 	
-	if (i==parameters.lLength-1) // computing template
-		parm = parm & ';' & *(_String*)parameters(i);
+
+	DeleteObject (likelihoodFunctionSpec);
 	
-	_String lfID  = chain.AddNameSpaceToID(*(_String*)parameters(0)); // the ID of the likelihood function
-	long f		  = FindLikeFuncName (lfID);
-	if (f==-1)
+	
+	_String lfID				  =	chain.AddNameSpaceToID(*(_String*)parameters(0)); // the ID of the likelihood function
+	long	likeFuncObjectID	  = FindLikeFuncName (lfID);
+	if (likeFuncObjectID==-1)
+		// not an existing LF ID
 	{
 		_LikelihoodFunction * lkf = new _LikelihoodFunction ();
-		if (lkf->Construct(parm,chain.nameSpacePrefix) == false)
+		if (! lkf->Construct(passThisToLFConstructor,chain.nameSpacePrefix))
+			// constructor failed
 			DeleteObject (lkf);
 		else
 		{
-			for (f=0; f<likeFuncNamesList.lLength; f++)
-				if (((_String*)likeFuncNamesList(f))->sLength==0)
-					break;
-					
-			if (f==likeFuncNamesList.lLength)
+			likeFuncObjectID = likeFuncNamesList.Find(&empty); 
+				// see if there are any vacated spots in the list
+
+			if (likeFuncObjectID < 0)
 			{
 				likeFuncList << lkf;
 				likeFuncNamesList&&(&lfID);
@@ -3033,16 +3063,16 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 			}
 			else
 			{
-				likeFuncNamesList.Replace(f,&lfID,true);
-				likeFuncList.lData[f] = (long)lkf;
+				likeFuncNamesList.Replace(likeFuncObjectID,&lfID,true);
+				likeFuncList.lData[likeFuncObjectID] = (long)lkf;
 			}
 		}
 	}
 	else
 	{
-		_LikelihoodFunction* lkf = (_LikelihoodFunction*)likeFuncList(f);
-		if (!lkf->Construct(parm,chain.nameSpacePrefix))
-			KillLFRecord (f,false);
+		_LikelihoodFunction* lkf = (_LikelihoodFunction*)likeFuncList(likeFuncObjectID);
+		if (!lkf->Construct(passThisToLFConstructor,chain.nameSpacePrefix))
+			KillLFRecord (likeFuncObjectID,false);
 	}
 		
 }	
@@ -6294,7 +6324,7 @@ void	  _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 											errMsg = *(_String*)dataSetFilterNamesList(filterID) & ',' & *spawningTree->GetName() & ',' & *freqVar->GetName();
 											
 											
-											_LikelihoodFunction lf (errMsg);
+											_LikelihoodFunction lf (errMsg, nil);
 											
 											if (terminateExecution)
 												return;

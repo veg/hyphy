@@ -45,7 +45,7 @@ class _SimpleList:public BaseObj{
 				//does nothing
 			_SimpleList 					(unsigned long);
 				//length constructor
-			_SimpleList 					(_SimpleList&);
+			_SimpleList 					(_SimpleList&, long = 0, long = -1);
 				// stack copy contructor
 			_SimpleList 					(long);
 				// data constructor (1 member list)
@@ -169,7 +169,7 @@ BaseRef		ListToPartitionString 			(void);
  				
 virtual		BaseRef	makeDynamic 			(void);
 
-virtual		void	Initialize 				(void);
+virtual		void	Initialize 				(bool = true);
 
 virtual		void	Duplicate 				(BaseRef);
 
@@ -182,6 +182,17 @@ long*		quickArrayAccess 				(void)
  				 			
 virtual		long	Compare					(long,long);
 virtual		long	Compare					(BaseRef,long);
+	
+static		void	NormalizeCoordinates    (long&, long&, const unsigned long);
+			/* SLKP: 20090316
+			 
+				
+			   given a range [from,to] and a given list,
+			   make the range conform to the list (e.g. resolve negative to and/or from coordinates)
+			   clip the range to fit the list etc
+			 
+               the third argument is the length of the list to normalize with respect to			 
+			*/
 
 			friend class _AVLList;
 
@@ -210,7 +221,7 @@ class _List:public _SimpleList {
 				//does nothing
 			_List (unsigned long);
 				//length constructor
-			_List (const _List&);
+			_List (const _List&, long = 0, long = -1);
 				// stack copy contructor
 			_List (BaseRef, char);
 				// construct a list of substrings from the original string separated by char

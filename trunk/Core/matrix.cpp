@@ -81,7 +81,7 @@ _Parameter	analMatrixTolerance = 1e-6,
 			toMorNot2M=1.0;
 
 
-_List    builtInMatrixFunctions;
+_List		builtInMatrixFunctions;
 
 _Matrix		*GlobalFrequenciesMatrix;
 
@@ -8408,19 +8408,21 @@ _Matrix* 	_Matrix::SimplexSolve (_Parameter desiredPrecision )
 
 //_____________________________________________________________________________________________
 
-void	_Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn)
+void	_Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn, long rowSpan, long colSpan)
 {
 	long indexTarget = startRow*vDim + startColumn,
 		 indexSource = 0,
-		 maxRow		 = MIN (hDim, startRow+source->hDim),
-		 maxColumn   = MIN (vDim, startColumn + source->vDim); 
+		 sourceHDim  = rowSpan<=0?source->hDim:rowSpan,
+		 sourceVDim	 = colSpan<=0?source->vDim:colSpan,
+		 maxRow		 = MIN (hDim, startRow    + sourceHDim),
+		 maxColumn   = MIN (vDim, startColumn + sourceVDim); 
 	
 	for  (long r = startRow; r < maxRow; r++)
 	{
 		for (long c = startColumn, c2 = 0; c < maxColumn; c++, c2++)
 			theData[indexTarget+c2] = source->theData[indexSource+c2];
 		
-		indexSource += source->vDim;
+		indexSource += sourceVDim;
 		indexTarget += vDim;
 	}	
 }
@@ -8447,36 +8449,6 @@ BaseRef _AssociativeList::makeDynamic (void)
 
 BaseRef _AssociativeList::toStr (void)
 {
-	/*_String* res = new _String (128L, true);
-	checkPointer (res);
-	
-	if (avl.countitems())
-	{
-		(*res) << "\nAssociative List\n";
-		
-		_SimpleList	 hist;
-		long		 t,
-					 s = avl.Traverser	 (hist,t, avl.root);
-					 
-		while (s>=0)
-		{
-			(*res) << "Key : ";
-			(*res) << (_String*)avl.Retrieve (s);
-			_String * objS = (_String*)avl.GetXtra  (s)->toStr();
-			(*res) << "\nValue : ";
-			(*res) << objS;
-			(*res) << "\n";
-			DeleteObject (objS);
-			s = avl.Traverser (hist,t);
-		}
-	}
-	else
-	{
-		(*res) << "{}";
-	}
-	
-	res->Finalize();
-	return res;*/
 	_String defName   ("_hyphyAssociativeArray");
 	return Serialize  (defName);
 }

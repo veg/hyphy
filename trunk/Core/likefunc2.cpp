@@ -94,7 +94,13 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 	categoryTraversalTemplate.Clear();
 	for (long partIndex = 0; partIndex < theDataFilters.lLength; partIndex++)
 		if (blockDependancies.lData[partIndex] == 0)
-			categoryTraversalTemplate.AppendNewInstance (new _List);
+		{
+			_List * noCatVarList = new _List;
+			noCatVarList->AppendNewInstance (new _List);
+			noCatVarList->AppendNewInstance (new _SimpleList((long)1));
+			noCatVarList->AppendNewInstance (new _SimpleList);
+			categoryTraversalTemplate.AppendNewInstance (noCatVarList);
+		}
 		else
 		{
 			_SimpleList		  myCats;

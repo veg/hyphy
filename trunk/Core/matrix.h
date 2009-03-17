@@ -88,7 +88,7 @@ class		_Matrix: public _MathObject {
 	
 	_Matrix ( _SimpleList &);					//make matrix from simple list
 
-	_Matrix ( _List &);							//make string matrix from simple list
+	_Matrix ( _List &);							//make string matrix from a list
 
 	~_Matrix (void);  							//destructor
 	
@@ -307,9 +307,10 @@ void			  Resize				(long); 	// resize a dense numeric matrix to have more rows
 	
 _String*		  BranchLengthExpression(_Matrix*, bool);		
 	
-void			  CopyABlock						(_Matrix*, long, long);
+void			  CopyABlock						(_Matrix*, long, long, long = 0, long = 0);
 				  /* starting at element (row -- 2nd argument, column -- 3rd argument)
 				     copy the source matrix (1st argument) row by row
+				   
 				     e.g. if this matrix is 3x4 and the source matrix is 2x2
 				     then copying from element 2,2 (0 - based as always)
 				     will result in 
@@ -319,8 +320,11 @@ void			  CopyABlock						(_Matrix*, long, long);
 					 [ x x y y]] 
 				    
 				     where y is used to denote an element copied from the source
+					 4th and 5th arguments override source.hDim and source.vDim, 
+				     respectively, if they are positive
 				   
 					 Note that both matrices are ASSUMED to be numeric and dense
+				   
 				     NO ERROR CHECKING IS DONE!
 				   
 				   */
@@ -560,6 +564,7 @@ class 			_AssociativeList: public _MathObject
 		_List	 		theData;
 };
 
+/*__________________________________________________________________________________________________________________________________________ */
 
 extern	_Matrix	*GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
