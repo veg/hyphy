@@ -36,7 +36,7 @@ cp trunk/Core/preferences.cpp $installDirectory/GUI
 cp trunk/HeadlessLink/*.{h,cpp} $installDirectory/Source/Link
 
 cp trunk/NewerFunctionality/*.{h,cpp} $installDirectory/Source/
-cp -R trunk/Library $installDirectory/Library/
+cp -R trunk/Library $installDirectory/
 cp SQLite/trunk/*.{c,h} $installDirectory/Source/SQLite/
 cp trunk/Scripts/*.sh $installDirectory/
 cp 'trunk/GUIElements/Shared Source/'*.cpp $installDirectory/GUI/
