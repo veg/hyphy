@@ -168,15 +168,12 @@ _String::_String (const _String& source, long from, long to)
 				warnError( -108);
 				
 			if (sLength > 32)
-				memcpy (sData,source.sData+from ,sLength+1);
+				memcpy (sData,source.sData+from ,sLength);
 			else
-			{
 				for (long k=0; k<sLength; k++)
 					sData[k] = source.sData[k+from];
 					
-				sData[sLength] = 0;
-			}
-			
+			sData[sLength] = 0;
 			return;
 		}
 	}

@@ -2943,7 +2943,7 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 	
 	for (; i<=(long)likelihoodFunctionSpec->lLength-stepper; i+=stepper)
 	{
-		_String		*dataset = (_String*)(*likelihoodFunctionSpec)(i), 
+			_String		*dataset = (_String*)(*likelihoodFunctionSpec)(i), 
 					*tree	 = (_String*)(*likelihoodFunctionSpec)(i+1), 
 					*freq    = explicitFreqs?(_String*)(*likelihoodFunctionSpec)(i+2):nil;
 					
@@ -3035,7 +3035,7 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 	}
 		
 	if (i==likelihoodFunctionSpec->lLength-1) // computing template
-		passThisToLFConstructor && *(_String*)(*likelihoodFunctionSpec)(i);
+		passThisToLFConstructor && *((_String*)(*likelihoodFunctionSpec)(i));
 	
 
 	DeleteObject (likelihoodFunctionSpec);
@@ -7461,11 +7461,8 @@ long _ElementaryCommand::ExtractConditions (_String& source, long startwith, _Li
 		{
 			if (parenLevel>1 || quote || curlyLevel) continue;
 			
-			_String *term = new _String (source,lastsemi,index-1);
-			if (term == nil) checkPointer (term);
-				
-			receptacle << term;
-			DeleteObject (term);
+			_String *term = (_String*)checkPointer(new _String (source,lastsemi,index-1));
+			receptacle.AppendNewInstance (term);
 			lastsemi = index+1;
 			continue;
 		}
@@ -8926,7 +8923,7 @@ bool	_ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 		return false;
 	}
 		
-	_String	dsID (source,mark1+1,mark2-1);
+	_String	lfID (source,mark1+1,mark2-1);
 	// now look for the opening paren
 	
 	_List pieces;
@@ -8936,15 +8933,12 @@ bool	_ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 	
 	if ( mark1==-1 || mark2==-1 || mark2<mark1 )
 	{
-		_String errMsg ("Expected: Likelihood Function ident = (tree1, datasetfilter1,...)");
-		acknError (errMsg);
+		WarnError ("Expected: Likelihood Function ident = (tree1, datasetfilter1,...)");
 		return false;
 	}
 	
-	_ElementaryCommand*  dsc = new _ElementaryCommand;
-	checkPointer (dsc);
-	dsc->code = 11;
-	dsc->parameters&&(&dsID);
+	_ElementaryCommand*  dsc = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (11));
+	dsc->parameters&&(&lfID);
 	
 	if (source.startswith(blLF3))
 		dsc->simpleParameters << 1;
