@@ -131,6 +131,9 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			
 			categoryTraversalTemplate.AppendNewInstance(container);
 		}
+	
+	if (indexCat.lLength)
+		AllocateSiteResults();
 }
 
 /*--------------------------------------------------------------------------------------------------*/
@@ -190,7 +193,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 	target.SetTranslationTable		(dsf->GetData());	
 	target.ConvertRepresentations(); 
 	
-	computationalResults.Clear();
+	computationalResults.ZeroUsed();
 	PrepareToCompute();
 	Compute();				
 		
@@ -362,7 +365,13 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	_CategoryVariable   *catVariable;
 	
 	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
+	{
+		if (runMode == _hyphyLFConditionProbsWeightedSum)
+			for (long r = 0; r < blockLength; r++)
+				buffer[r] = 0.;
+	
 		catWeigths = new _List;
+	}
 	else
 		if (runMode == _hyphyLFConditionProbsMaxProbClass)
 			for (long r = 0, r2 = 2*blockLength; r < blockLength; r++, r2++)
@@ -438,7 +447,8 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 														 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
 														 :nil;
 		
-		if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode) // populate the matrix of conditionals and scaling factors
+		if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode) 
+			// populate the matrix of conditionals and scaling factors
 		{
 			_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 			ComputeBlock	(index, bufferForThisCategory, currentRateCombo, branchIndex, branchValues);
@@ -479,10 +489,10 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 					}
 				}
 			}
-		} // run mode 0 or 1
+		} 
 		else
 		{
-			if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass) // normal expected value computation
+			if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass) 
 			{
 				ComputeBlock	(index, buffer + blockLength, currentRateCombo, branchIndex, branchValues);
 
@@ -551,7 +561,6 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 						}						
 					}
 			}
-				
 		}
 	}
 	DeleteObject (catWeigths);
@@ -677,6 +686,50 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 	delete siteLikelihoods; 
 	delete siteLikelihoodsSpecState;
 	return result;
+}
+
+//_______________________________________________________________________________________________
+
+_Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Parameter * patternLikelihoods, const _SimpleList& patternScalers) 
+/* 
+ compute the likelihood of a partition (index), corrected for scaling, 
+ by summing pattern likelihoods from patternLikelihoods, weighted by pattern frequencies
+ and corrected for scaling factors from patternScalers
+*/
+{
+	_SimpleList		* patternFrequencies = &((_DataSetFilter*)dataSetFilterList (theDataFilters(index)))->theFrequencies;
+	
+	_Parameter		 logL			  = 0.;
+	long			 cumulativeScaler = 0;
+	
+	for				 (long patternID = 0; patternID < patternFrequencies->lLength; patternID++)
+	{
+		long patternFrequency = patternFrequencies->lData[patternID];
+		if (patternFrequency > 1)
+		{
+			logL			 += myLog(patternLikelihoods[patternID])*patternFrequency;
+			cumulativeScaler += patternScalers.lData[patternID]*patternFrequency;
+		}
+		else
+		// all this to avoid a double*long multiplication
+		{
+			logL			 += myLog(patternLikelihoods[patternID]);
+			cumulativeScaler += patternScalers.lData[patternID];			
+		}
+	}
+	
+	return logL - cumulativeScaler * _logLFScaler;
+		
+}
+
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value) 
+{
+	if (computationalResults.GetUsed()>index)
+		computationalResults.theData[index] = new_value;
+	else
+		computationalResults.Store(new_value);
 }
 
 #endif

@@ -158,7 +158,7 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 		bool		DependOnDF	       		(long ID) {return theDataFilters.Find(ID)>=0;}
 		bool		MapTreeTipsToData  		(long, bool leafScan = false);
 		bool		UpdateFilterSize   		(long);
-		void		VoidOldResults 	   		(void) {computationalResults.Clear();}
+		void		VoidOldResults 	   		(void) {computationalResults.ZeroUsed();}
 		_CategoryVariable*		
 					FindCategoryVar	  		(long);
 					// return the category variable for a given partition 
@@ -266,8 +266,21 @@ virtual	void			ScanAllVariables 		(void);
 		// and append them to _SimpleList
 	
 		
-static	void			RandomizeList			(_SimpleList&, long);		
-static	void			CheckFibonacci			(_Parameter);
+static	void			RandomizeList				(_SimpleList&, long);		
+static	void			CheckFibonacci				(_Parameter);
+	
+		long			PartitionLengths		    (char = 0);
+						/* 
+							SLKP: 20090317 
+							
+							argument = 0 
+								return the length (sites) of the longest part in this
+								likelihood function
+						    argument = 1
+								return the cumulative length (sites) of all parts in this
+								likelihood function
+						 
+						*/
 
 		
 	private: 	
@@ -325,6 +338,26 @@ static	void			CheckFibonacci			(_Parameter);
 						// allows the calculation of the probability vector while setting a specific interior branch
 						// to a given sequence
 						
+		_Parameter		SumUpSiteLikelihoods		(long, const _Parameter*, const _SimpleList&);
+					    /* 
+							SLKP 20090318 
+							
+							given a partition index (argument 1),
+							a vector of _pattern_ likelihoods (argument 2) and	
+							a list of pattern scaling factors (argument 3)
+						 
+							compute the log likelihood of the partition
+						 
+						 */
+	
+		void			UpdateBlockResult			(long, _Parameter);
+						/*
+							SLKP 20090318 
+						 
+							update cached log-likelihood value for a given 
+							partition
+						*/
+	
 	
 		_List*			RecoverAncestralSequencesMarginal
 													(long, _Matrix&,_List&);
@@ -342,10 +375,11 @@ static	void			CheckFibonacci			(_Parameter);
 						indexCat,
 						*nonConstantDep,
 					 	blockDependancies;
-					 	
+
+		_GrowingVector  computationalResults;
+	
 		_List			optimalOrders,
 						leafSkips,
-						computationalResults,
 						categoryTraversalTemplate;
 						
 /*SLKP: 20090225 
@@ -361,8 +395,7 @@ static	void			CheckFibonacci			(_Parameter);
 								12,4,1
 */
 						
-		long		 	blockComputed,
-						templateKind,
+		long		 	templateKind,
 	
 						/* 
 							_hyphyLFComputationalTemplateNone: 
@@ -382,7 +415,8 @@ static	void			CheckFibonacci			(_Parameter);
 							<0											: (-1-variable index) if a hidden markov process on site likelihoods
 							>_hyphyLFComputationalTemplateByPartition	: a _hyphyLFComputationalTemplateByPartition shifted index of a user
 																		  function that will assemble the likelihood
-																		  from site conditionals
+																		  from site conditionals, written into matrices
+																		  SITE_LIKELIHOODS_0, SITE_LIKELIHOODS_1, .. 
 						*/
 						hasBeenSetUp;
 		
@@ -436,9 +470,12 @@ static	void			CheckFibonacci			(_Parameter);
 							// and branch caching are used, otherwise scaling done by ComputeBranchCaches
 							// will fubar the scaling for ComputeTreeBlockByBranch depending on site
 							// patterns
-							canUseReversibleSpeedups; 
+							canUseReversibleSpeedups,
 							// a partition will be tagged with '1' if its tree has only
 							// time-reversible models
+							siteScalerBuffer;
+							// used for LF with category variables to 
+							// store site-by-site scaling factors
 		 
 		_List				localUpdatePolicy, 
 							matricesToExponentiate,
@@ -446,8 +483,12 @@ static	void			CheckFibonacci			(_Parameter);
 							computedLocalUpdatePolicy,
 							siteCorrections,
 							siteCorrectionsBackup,
-							cachedBranches;
+							cachedBranches,
 							// for models with categories, a list of site by site scaling operation counts
+							partScalingCache
+							// used to store site by site scalers in computations that are performed
+							// on a site-by-site basis
+							;
 	
 #ifdef	_OPENMP
 		long				lfThreadCount;
@@ -535,7 +576,6 @@ void	StateCounterResultHandler 	(_Formula&, _SimpleList*,long&,long&,long,_Matri
 
 _LikelihoodFunction*
 		FindLikeFuncByName		 	 (_String&);
-#ifdef	_SLKP_LFENGINE_REWRITE_
 extern _Parameter			_lfScalerUpwards,
 							_lfScalingFactorThreshold,
 							_logLFScaler;	
@@ -544,7 +584,8 @@ extern	_GrowingVector		_scalerMultipliers,
 							_scalerDividers;
 
 _Parameter					acquireScalerMultiplier (long);
-#endif
+_Parameter					myLog (_Parameter);
+
 #endif
 		
 		

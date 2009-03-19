@@ -3057,13 +3057,9 @@ void	_Matrix::Clear (void)
 		
 	DeleteObject (theValue);
 	if (storageType == 2) // has formulas in it - must delete
-	{
 		ClearFormulae();
-	}
 	if (storageType == 0) // has objects in it - must delete
-	{
 		ClearObjects();
-	}
 	if (theIndex) 
 	{
 		MatrixMemFree (theIndex);
@@ -3088,12 +3084,14 @@ void	_Matrix::Resize (long newH)
 		hDim = newH;
 		lDim = newH*vDim;
 		
-		theData = (_Parameter*) MemReallocate ((Ptr)theData,sizeof (_Parameter)*lDim);
+		if (theData)
+			theData = (_Parameter*) MemReallocate ((Ptr)theData,sizeof (_Parameter)*lDim);
+		else
+			theData = (_Parameter*) MemAllocate (sizeof (_Parameter)*lDim);
+			
 	}
 }
 	
-
-
 //_____________________________________________________________________________________________
 
 _Matrix::~_Matrix (void)

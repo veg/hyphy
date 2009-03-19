@@ -78,23 +78,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#else
 		#include "mypthread.h"
 	#endif
-	struct	 ThreadReleafTask {
-		_TheTree 	*    t;
-		
-		 long		*siteList,
-					*leafList;
-		_SimpleList	*freqs;
-					
-		_DataSetFilter*
-					df;
-					
-		long		startAt,
-					endAt,
-					threadIndex;
-					
-		_Parameter  result,
-				  * resultsStorage;
-	};
 	
 	struct	 WancReleafTask {
 		_TheTree 	*tree;
@@ -114,11 +97,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 										
 	};
 
-	pthread_mutex_t wancMutex = PTHREAD_MUTEX_INITIALIZER;
 
-	pthread_t*		theThreads = nil;
-	ThreadReleafTask* theTasks = nil;
-	void*			ThreadReleafFunctionAA (void*);
 #endif
 
 #ifdef	__HYPHYMPI__
@@ -230,7 +209,6 @@ extern _String useNexusFileData,
 			   VerbosityLevelString;
 
 
-void		StashMSTStuff 			 (_Parameter**, long **, char **, long, long);
 void		countingTraverse 		 (node<long>*, long&, long, long&, bool);
 void		countingTraverseArbRoot  (node<long>*, node<long>*, long&, long, long&);
 long		findAvailableSlot 		 (_SimpleList&, long&);
@@ -811,6 +789,7 @@ void	 _LikelihoodFunction::Clear (void)
 	indexCat.Clear();
 	blockDependancies.Clear();
 	computationalResults.Clear();
+	partScalingCache.Clear();
 	
 	optimalOrders.Clear();
 	leafSkips.Clear();
@@ -1033,7 +1012,10 @@ bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
 			computingTemplate = (_Formula*)templateFormula.makeDynamic();
 			
 			if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite)
+			{
 				bySiteResults = (_Matrix*)checkPointer(new _Matrix (theTrees.lLength,maxFilterSize,false,true));
+				partScalingCache.AppendNewInstance (new _SimpleList(maxFilterSize, 0,0));
+			}
 			else
 				bySiteResults = nil;
 				
@@ -1283,11 +1265,8 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 {
 	#ifdef __HYPHYMPI__
 		long i, 
-			 hDim = 0;
+			 hDim = PartitionLengths (1);
 			 
-		for (i=0;i<theTrees.lLength;i++)
-			hDim += BlockLength (i);
-		
 		if (!partMode)
 		{
 			siteResults = new _Matrix   (1,hDim,false,true);	
@@ -1682,17 +1661,27 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 }
 
 //_______________________________________________________________________________________
-void	_LikelihoodFunction::AllocateSiteResults 		(void)
+long	_LikelihoodFunction::PartitionLengths 		(char runMode)
 {
 	long maxDim = 0;
-		 
 	for (long i=0;i<theTrees.lLength;i++)
 	{
 		long bl = BlockLength (i);
-		maxDim = MAX (maxDim, bl);
+		if (runMode == 0)
+			maxDim = MAX (maxDim, bl);
+		else
+			maxDim += bl;
 	}
-	siteResults = new _Matrix (maxDim,2,false,true);
-	checkPointer(siteResults);
+	return maxDim;
+}
+
+
+//_______________________________________________________________________________________
+void	_LikelihoodFunction::AllocateSiteResults 		(void)
+{
+	long dim			= PartitionLengths(0);
+	siteResults			= (_Matrix*)checkPointer(new _Matrix (dim,2,false,true));
+	siteScalerBuffer.Populate (dim,0,0);
 }
 
 //_______________________________________________________________________________________
@@ -1703,6 +1692,7 @@ void	_LikelihoodFunction::ZeroSiteResults 		(void)
 		long upperLimit = siteResults->GetSize();
 		for (long k=0; k<upperLimit; k++)
 			siteResults->theData[k] = 0;
+		siteScalerBuffer.Populate (upperLimit,0,0);
 	}
 }
 
@@ -1962,7 +1952,6 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 			}			
 		}
 
-		blockComputed = -1;
 		likeFuncEvalCallCount++;
 	 #endif
 	 
@@ -2023,13 +2012,12 @@ void	_LikelihoodFunction::PostCompute 		(void)
 
 //_______________________________________________________________________________________
 		
-void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
+void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool force)
 {
 	long		  blockWidth = bySiteResults->GetVDim();
 	_Parameter	 * resStore  = bySiteResults->theData+i*blockWidth;
-	ComputeBlock (i,resStore);
-#ifdef _SLKP_LFENGINE_REWRITE_
-	// multiply scaling factors into the expression
+	
+	ComputeSiteLikelihoodsForABlock (i,bySiteResults->theData+i*blockWidth,*(_SimpleList*)partScalingCache(i));
 	if (! usedCachedResults)
 	{
 		long	*   siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[i]->lData,
@@ -2037,8 +2025,8 @@ void	_LikelihoodFunction::ComputeBlockForTemplate 		(long i, bool f)
 		for (long s = 0; s < upto; s++)
 			resStore[s] *= acquireScalerMultiplier(siteCorrectors[s]);
 	}
-#endif
-	if (f || !usedCachedResults)
+
+	if (force || !usedCachedResults)
 	// remap compressed sites to full length
 		ComputeBlockForTemplate2 (i, resStore, resStore, blockWidth);
 }
@@ -2077,6 +2065,15 @@ void	_LikelihoodFunction::ComputeBlockForTemplate2 		(long i, _Parameter* resTo,
 //_______________________________________________________________________________________
 		
 _Parameter	_LikelihoodFunction::Compute 		(void)
+/* 
+	code cleanup SLKP: 20090317
+ 
+	todo: need to ensure that partitions that are changed between calls
+		  are properly identified
+ 
+		  in prepare to compute calls, perhaps set up a map of
+		  independent variable ID -> partition/class pair 
+*/
 {
 		
 	_Parameter result = 0.;
@@ -2084,27 +2081,98 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	if (!PreCompute())
 		return -A_LARGE_NUMBER;
 	
+	/* GUI flag to verify whether MLEs have been altered 
+	   after last optimization
+	 */
+	
 	if (!isInOptimize && hasBeenOptimized)
-		for (long i=0;hasBeenOptimized && i<indexInd.lLength; i++)
+		for (long i=0; i<indexInd.lLength; i++)
 			if (LocateVar (indexInd.lData[i])->HasChanged())
+			{
 				hasBeenOptimized = false;
-			
+				break;
+			}
+	
+	/*	compute modes: 
+	 
+			0. need only log-likelihood values for each partition; the likelihood function itself
+			  is computed by summing individual partition log-likelihoods
+	 
+			1. need likelihoods by pattern; for each partition a vector of likelihoods and 
+			  a vector of scaling parameters is returned
+	 
+			2. need conditional likelihoods by pattern; for each partition a matrix of conditional
+			  likelihoods (site/rate class pairing) is returned along with a vector of scaling 
+			  factors
+	 
+			3. need log-likelihoods by block: for each partition, the log-likelihood value is 
+			  returned
+	 
+			4. MPI compute mode: same as 2, except site likelihoods are summed up following 
+			   the compute phase using category variable weights
+	*/
+	
+	
+	char	   computeMode = 0;
+	if		  (computingTemplate)
+	{
+		if (templateKind > _hyphyLFComputationalTemplateByPartition) 
+			computeMode = 2;
+		else
+			if (templateKind == _hyphyLFComputationalTemplateByPartition)
+				computeMode = 3;
+			else
+				computeMode = 1;
+		
+		/*
+		 write out matrices of conditional likelihoods for each partition 
+		 (into SITE_LIKELIHOODS_0, SITE_LIKELIHOODS_1 etc)
+		 as well as site scaling factors
+		 (into SITE_LIKELIHOODS_0.scalers, SITE_LIKELIHOODS_1.scalers ...)
+		 */ 
+		
+	}
+	
+
+	if (computeMode == 0)
+	{
+		for (long partID=0; partID<theTrees.lLength; partID++)
+		{
+			if (blockDependancies.lData[partID])
+			{
+				if ( computationalResults.GetUsed()<=partID || HasBlockChanged(partID))
+					// first time computing or partition requires updating
+					// add HMM and constant on partition test
+				{
+					PopulateConditionalProbabilities (partID, _hyphyLFConditionProbsWeightedSum, 
+															  siteResults->theData,
+															  siteScalerBuffer);
+					
+					_Parameter						 blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
+					result += blockResult;																			
+				}
+			}
+			else
+				result+=ComputeBlock (partID);				
+		}
+		likeFuncEvalCallCount ++;
+		PostCompute ();
+		return result;
+	}
+	
+	WarnError ("Sorry; this likelihood feature has not yet been ported to the new LF engine in HyPhy");
+	return -A_LARGE_NUMBER;
+	
+	
 	#ifdef __HYPHYMPI__
 		if (parallelOptimizerTasks.lLength)
-		{
 			return ComputeMasterMPI ();
-		}
-		else
-		{
 	#endif
+	 
 	
-	if (computingTemplate && templateKind>1) 
-		
-	// spawn a matrix of partial likelihoods (one for each partition - with appropriate dimensions)
+	
+	if (computingTemplate && templateKind > _hyphyLFComputationalTemplateByPartition) 
 	{
-		if (!siteResults)
-			AllocateSiteResults ();
-			
 		for (long i=0; i<theTrees.lLength; i++)
 		{
 			if (HasBlockChanged(i))
@@ -2177,11 +2245,11 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			}
 		}
 		
-		blockComputed = -1;
 		likeFuncEvalCallCount++;
 		if (terminateExecution)
 			return -1e100;
-		result = computingTemplate->Compute()->Value(); // mod 20060125 added the PostCompute call here
+		result = computingTemplate->Compute()->Value(); 
+		// mod 20060125 added the PostCompute call here
 		PostCompute();
 		return result;
 	}
@@ -2189,23 +2257,16 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	{
 		if (indexCat.lLength==0)
 		{
-			if (computingTemplate && templateKind)
-			{
-				categID = 0; /* mod 07/23/2004 - was = -1 */
+			if (computingTemplate && templateKind != _hyphyLFComputationalTemplateByPartition)
 				for (long i=0; i<theTrees.lLength; i++)
 					ComputeBlockForTemplate (i);
-			}
 			else
 				for (long i=0; i<theTrees.lLength; i++)
 					result+=ComputeBlock (i);				
 		}
 		else
 		{
-			if (!siteResults)
-				AllocateSiteResults ();
-			
-			long hDim = siteResults->GetHDim();
-			
+			long hDim	   = siteResults->GetHDim();
 			_Parameter *sR = siteResults->fastIndex();
 
 			for (long j=0;j<theTrees.lLength;j++)
@@ -2213,14 +2274,12 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				for (long i=0;i<2*hDim;i++)
 					sR[i] = 0.;
 				
-				categID = 0;
-				
 				long	blockLength = BlockLength(j);
 				
 				if (blockDependancies.lData[j])
 					// depends on some category variables
 				{
-					if ( computationalResults.lLength<=j || HasBlockChanged(j))
+					if ( computationalResults.GetUsed() <= j || HasBlockChanged(j))
 					{
 						offsetCounter = HasHiddenMarkov(blockDependancies.lData[j]);
 						_DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(j)));
@@ -2276,10 +2335,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 								blockResult = myLog (blockResult)+maxValue;
 							}
 							
-							if (computationalResults.lLength>j)
-								((_Constant*)computationalResults(j))->SetValue (blockResult);
-							else
-								computationalResults.AppendNewInstance(new _Constant(blockResult));
+							UpdateBlockResult (j, blockResult);
+							
+						
 
 							result  += blockResult;
 							categID  = 0;
@@ -2327,7 +2385,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 						}
 					}
 					else
-						result+=((_Constant*)computationalResults(j))->Value();
+						result+= computationalResults.theData[j];
 				}
 				else
 				{ 
@@ -2342,12 +2400,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			}
 		}
 	}
-	#ifdef __HYPHYMPI__
-	}
-	#endif
+
 
 	PostCompute ();
-	blockComputed = -1;
 	likeFuncEvalCallCount++;
 	
 	if (terminateExecution)
@@ -2362,7 +2417,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		
 		_Matrix* varMxValue = (_Matrix*)siteWiseVar->GetValue();
 		
-		if (templateKind>0)
+		if (templateKind == _hyphyLFComputationalTemplateBySite)
 		{
 			long 	blockWidth = bySiteResults->GetVDim();
 			result = 0.0;
@@ -2390,9 +2445,10 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				
 			}
 			else
+			// _hyphyLFComputationalTemplateByPartition
 			{
 				for (long i=0; i<theTrees.lLength; i++)
-					blockValues.theData[i] = ((_Constant*)computationalResults(i))->Value();
+					blockValues.theData[i] = computationalResults.theData[i];
 					
 				blockWiseVar->SetValue (&blockValues);
 				return 	   computingTemplate->Compute()->Value();
@@ -4067,10 +4123,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	for (i=0; i<theTrees.lLength; i++)
 		((_TheTree*)(LocateVar(theTrees(i))))->CountTreeCategories();
 	
-#ifdef _SLKP_LFENGINE_REWRITE_	
 	SetupLFCaches		();
 	SetupCategoryCaches ();
-#endif
 
 #ifdef __HYPHYMPI__
 	InitMPIOptimizer ();
@@ -4999,9 +5053,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 		cT->KillTopLevelCache();
 	}
 
-#ifdef	_SLKP_LFENGINE_REWRITE_
-		DeleteCaches (false);
-#endif		
+	DeleteCaches (false);
 		
 #ifdef __HYPHYMPI__
 	}
@@ -7723,11 +7775,11 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 		DeleteObject (bySiteResults); bySiteResults = nil;
 	}
 	
-#ifdef	_SLKP_LFENGINE_REWRITE_
 	conditionalTerminalNodeLikelihoodCaches.Clear();
 	cachedBranches.Clear();
 	siteCorrections.Clear();
 	siteCorrectionsBackup.Clear();
+	siteScalerBuffer.Clear();
 	
 //	computedLocalUpdatePolicy.Clear();
 //	treeTraversalMasks.Clear();
@@ -7763,7 +7815,6 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 		delete (siteScalingFactors);
 		siteScalingFactors = nil;
 	}
-	#endif
 }
 	
 
@@ -7772,7 +7823,6 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 void	_LikelihoodFunction::Setup (void)
 {
 	_Parameter kp		= 0.0;
-	blockComputed		= -1;
 	//RankVariables();
 	checkParameter		(useFullMST,kp,0.0);
 	
@@ -7810,13 +7860,11 @@ void	_LikelihoodFunction::Setup (void)
 			
 	optimalOrders.Clear();
 	leafSkips.Clear();
-	
-#ifdef	_SLKP_LFENGINE_REWRITE_
+
 	treeTraversalMasks.Clear();
 	canUseReversibleSpeedups.Clear();
 	_SimpleList alreadyDoneModelsL;
 	_AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
-#endif
 	
 	for (long i=0; i<theTrees.lLength; i++)
 	{
@@ -7827,15 +7875,12 @@ void	_LikelihoodFunction::Setup (void)
 		_SimpleList		   *s = new _SimpleList,
 						   *l = new _SimpleList;
 		
-#ifdef	_SLKP_LFENGINE_REWRITE_
 		treeTraversalMasks.AppendNewInstance(new _SimpleList (t->GetINodeCount() * df->NumberDistinctSites() / _HY_BITMASK_WIDTH_ + 1,0,0));			
-#endif
-		
 		OptimalOrder	  (i,*s);
 		df->MatchStartNEnd(*s,*l);
 		optimalOrders.AppendNewInstance(s);
 		leafSkips.AppendNewInstance(l);
-#ifdef	_SLKP_LFENGINE_REWRITE_
+
 		_SimpleList treeModels;
 		t->CompileListOfModels (treeModels);
 		bool isReversiblePartition = true;
@@ -7854,271 +7899,8 @@ void	_LikelihoodFunction::Setup (void)
 		ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
 		canUseReversibleSpeedups << isReversiblePartition;
 		
-#endif
 	}
 	
-}
-
-//_______________________________________________________________________________________
-
-#ifdef 		__MP__
-	void*	ThreadReleafFunctionAA (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->result =  myLog(theTask->t->ThreadReleafTreeCharCache (theTask->df, *(theTask->siteList), -1, 0, 
-							   theTask->t->GetLeafCount()-1,theTask->startAt,theTask->threadIndex));
-							
-		theTask->result*=(_Parameter)theTask->freqs->lData[*(theTask->siteList++)];
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->result += myLog(theTask->t->ThreadReleafTreeCharCache (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,i,theTask->threadIndex))
-				   *(_Parameter)theTask->freqs->lData[*(theTask->siteList)];
-		return nil;
-	}
-	
-	void*	ThreadReleafFunctionCodon (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->result =  myLog(theTask->t->ThreadReleafTreeCache (theTask->df, *(theTask->siteList), -1, 0, 
-							   theTask->t->GetLeafCount()-1,theTask->startAt,theTask->threadIndex));
-							
-		theTask->result*=(_Parameter)theTask->freqs->lData[*(theTask->siteList++)];
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->result += myLog(theTask->t->ThreadReleafTreeCache (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,i,theTask->threadIndex))
-				   *(_Parameter)theTask->freqs->lData[*(theTask->siteList)];
-		return nil;
-	}
-
-	void*	ThreadReleafFunctionNuc (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->result =  myLog(theTask->t->ThreadReleafTreeChar4 (theTask->df, *(theTask->siteList), -1, 0, 
-							   theTask->t->GetLeafCount()-1,theTask->startAt,theTask->threadIndex));
-							
-		theTask->result*=(_Parameter)theTask->freqs->lData[*(theTask->siteList++)];
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->result += myLog(theTask->t->ThreadReleafTreeChar4 (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,i,theTask->threadIndex))
-				   *(_Parameter)theTask->freqs->lData[*(theTask->siteList)];
-		return nil;
-	}
-
-	void*	ThreadReleafFunctionMNuc (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->resultsStorage[*(theTask->siteList)] =  theTask->t->ThreadReleafTreeChar4 (theTask->df, *(theTask->siteList), -1, 0, 
-							         theTask->t->GetLeafCount()-1,theTask->startAt*theTask->t->categoryCount+categID,theTask->threadIndex);
-							
-		theTask->siteList++;
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->resultsStorage[*(theTask->siteList)] = theTask->t->ThreadReleafTreeChar4 (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,
-				   i*theTask->t->categoryCount+categID,theTask->threadIndex);
-		return nil;
-	}
-
-	void*	ThreadReleafFunctionMAA (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->resultsStorage[*(theTask->siteList)] =  theTask->t->ThreadReleafTreeCharCache (theTask->df, *(theTask->siteList), -1, 0, 
-							         theTask->t->GetLeafCount()-1,theTask->startAt*theTask->t->categoryCount+categID,theTask->threadIndex);
-							
-		theTask->siteList++;
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->resultsStorage[*(theTask->siteList)] = theTask->t->ThreadReleafTreeCharCache (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,
-				   i*theTask->t->categoryCount+categID,theTask->threadIndex);
-		return nil;
-	}
-
-	void*	ThreadReleafFunctionMCodon (void* arg)
-	{
-		ThreadReleafTask * theTask = (ThreadReleafTask *)arg;
-		
-		theTask->siteList += theTask->startAt;
-		theTask->leafList += theTask->startAt;
-		
-		theTask->resultsStorage[*(theTask->siteList)] =  theTask->t->ThreadReleafTreeCache (theTask->df, *(theTask->siteList), -1, 0, 
-							         theTask->t->GetLeafCount()-1,theTask->startAt*theTask->t->categoryCount+categID,theTask->threadIndex);
-							
-		theTask->siteList++;
-		for (long i = theTask->startAt+1; i<theTask->endAt; i++,theTask->siteList++,theTask->leafList++)
-			theTask->resultsStorage[*(theTask->siteList)] = theTask->t->ThreadReleafTreeCache (theTask->df, *theTask->siteList, 
-				   *(theTask->siteList-1), (*(theTask->leafList))&0x0000ffff, (*(theTask->leafList))>>16,
-				   i*theTask->t->categoryCount+categID,theTask->threadIndex);
-		return nil;
-	}
-
-#endif
-
-
-//_______________________________________________________________________________________
-
-void	StashMSTStuff (_Parameter** mstCI, long **mstSI, char ** mstNI, long index, long index2)
-{
-	_Parameter* temp = mstCI[index];
-	mstCI[index] = mstCI[index2];
-	mstCI[index2] = temp;
-	
-	long	  * t2   = mstSI[index];
-	mstSI[index] = mstSI[index2];
-	mstSI[index2] = t2;
-
-	char	  * t3   = mstNI[index];
-	mstNI[index] = mstNI[index2];
-	mstNI[index2] = t3;
-}
-
-//_______________________________________________________________________________________
-
-void	_LikelihoodFunction::ComputeBlockInt1 (long index, _Parameter& res, _TheTree* t, _DataSetFilter* df, char type)
-{
-	long i;
-
-	_SimpleList	*sl = (_SimpleList*)optimalOrders.lData[index],
-				*ls = (_SimpleList*)leafSkips.lData[index];
-
-	_SimpleList* co = (_SimpleList*)mstCache->computingOrder.lData[index],
-			   * so = (_SimpleList*)mstCache->storageOrder.lData[index],
-			   * ro = (_SimpleList*)mstCache->referenceOrder.lData[index],
-			   * po = (_SimpleList*)mstCache->parentOrder.lData[index];
-			   
-	_Parameter*  stashMLC = t->marginalLikelihoodCache,
-			  ** mstMLC	  = (_Parameter**)mstCache->resultCache.lData[index];
-			  
-	long	  ** mstNC	  = (long **)mstCache->statesCache.lData[index];
-	char	  ** mstNMC	  = (char **)mstCache->statesNCache.lData[index];
-			  
-			   
-	long		copySize2  = t->GetLeafCount()+t->GetINodeCount(),
-				copySize1  = copySize2 * t->GetCodeBase() * sizeof (_Parameter),
-				copySize3  = t->GetINodeCount(),
-				soI	   	   = so->lData[0],
-				cS		   = mstCache->cacheSize.lData[index],
-			 	* leafList = ls->lData;				   
-				
-	
-	copySize2 *= sizeof (long);
-
-	
-	if (type==0)
-		res =  myLog(t->ReleafTreeAndCheckChar4 (df, co->lData[0], true));
-	else
-		if (type == 1)
-			res =  myLog(t->ReleafTreeAndCheckChar (df, co->lData[0], true));		
-		else
-			res =  myLog(t->ReleafTreeAndCheck (df, co->lData[0], true));
-
-	res *= (_Parameter)df->theFrequencies.lData[co->lData[0]];
-	
-	mstMLC [cS] = t->marginalLikelihoodCache;
-	mstNC  [cS] = t->nodeStates;
-	mstNMC [cS] = t->nodeMarkers;
-
-	if (soI>=0)
-		StashMSTStuff (mstMLC, mstNC, mstNMC, soI, cS);																
-											
-	for (i = 1; i<sl->lLength; i++, leafList++)
-	{
-		#if !defined __UNIX__ || defined __HEADLESS__
-			siteEvalCount ++;
-			if (divideBy && (siteEvalCount%divideBy == 0) || siteEvalCount%1000 == 0)
-				yieldCPUTime();
-		#endif
-		
-		soI = ro->lData[i];
-		if (soI>=0)
-		{
-			if (soI!=so->lData[i])
-			{
-				t->marginalLikelihoodCache = mstMLC [cS];
-				t->nodeStates			   = mstNC  [cS];
-				t->nodeMarkers			   = mstNMC [cS];
-				
-				_Parameter *p0 = t->marginalLikelihoodCache,
-						   *p1 = mstMLC[soI],
-						   *pS = t->marginalLikelihoodCache+copySize1/sizeof (_Parameter);
-						   
-				for (;p0!=pS;)
-					*(p0++)=*(p1++);
-
-				long	   *l0 = t->nodeStates,
-						   *l1 = mstNC[soI],
-						   *lS = t->nodeStates+copySize2/sizeof (long);
-						   
-				for (;l0!=lS;)
-					*(l0++)=*(l1++);
-						   
-				char	   *c0 = t->nodeMarkers,
-						   *c1 = mstNMC[soI],
-						   *cS = t->nodeMarkers+copySize3;
-						   
-				for (;c0!=cS;)
-					*(c0++)=*(c1++);
-
-				//memcpy (t->marginalLikelihoodCache,mstMLC[soI],copySize1);
-				//memcpy (t->nodeStates, mstNC[soI], copySize2);
-				//memcpy (t->nodeMarkers,mstNMC[soI], copySize3);
-			}
-			else
-			{
-				t->marginalLikelihoodCache = mstMLC [soI];
-				t->nodeStates			   = mstNC  [soI];
-				t->nodeMarkers			   = mstNMC [soI];										
-			}
-		}
-		
-		if (type==0)
-			res += myLog(t->ThreadReleafTreeChar4 (df, co->lData[i], 
-				   po->lData[i], (*leafList)&0x0000ffff, (*leafList)>>16,i))
-				   *(_Parameter)df->theFrequencies.lData[co->lData[i]];
-		else
-			if (type == 1)
-				res += myLog(t->ThreadReleafTreeCharCache (df, co->lData[i], 
-					   po->lData[i], (*leafList)&0x0000ffff, (*leafList)>>16,i))
-					   *(_Parameter)df->theFrequencies.lData[co->lData[i]];
-			else
-				res += myLog(t->ThreadReleafTreeCache (df, co->lData[i], 
-					   po->lData[i], (*leafList)&0x0000ffff, (*leafList)>>16,i))
-					   *(_Parameter)df->theFrequencies.lData[co->lData[i]];
-			   
-			   
-		if ((soI!=so->lData[i])&&(so->lData[i]>=0))
-			StashMSTStuff (mstMLC, mstNC, mstNMC, so->lData[i], cS);							
-	}		
-	
-	for (i = 0; i<cS; i++)
-		if (mstMLC[i] == stashMLC)
-			break;
-			
-	if (i<cS)
-	{
-		StashMSTStuff (mstMLC, mstNC, mstNMC, i, cS);							
-		t->marginalLikelihoodCache = mstMLC [cS];
-		t->nodeStates			   = mstNC  [cS];
-		t->nodeMarkers			   = mstNMC [cS];
-	}
 }
 
 //_______________________________________________________________________________________
@@ -8126,7 +7908,6 @@ void	_LikelihoodFunction::ComputeBlockInt1 (long index, _Parameter& res, _TheTre
 _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
 // compute likelihood over block index i
 {
-	blockComputed				= index;
 	
 	// set up global matrix frequencies
 	_Matrix					  *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
@@ -8157,10 +7938,10 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	}
 	else
 	{
-		if ((!forceRecomputation)&&computationalResults.lLength&&(computationalResults.lLength==optimalOrders.lLength)&&(siteRes)&&(!t->HasChanged()))
+		if ((!forceRecomputation) && computationalResults.GetUsed() && computationalResults.GetUsed()==optimalOrders.lLength && siteRes && !t->HasChanged())
 		{		
 			usedCachedResults = true;
-			return ((_Constant*)computationalResults.lData[index])->Value();
+			return computationalResults.theData[index];
 		}
 	}
 	
@@ -9863,12 +9644,12 @@ BaseRef	_LikelihoodFunction::toStr (void)
 		for (long sites = theTask->startAt; sites < theTask->endAt; sites++)
 		{
 			_Parameter siteLikelihood = theTask->tree->ThreadReleafTreeCache (theTask->dsf, sites, ((sites>theTask->startAt)?sites-1:-1), 0, theTask->tree->flatCLeaves.lLength-1,sites,theTask->threadIndex);
-			pthread_mutex_lock(&wancMutex);
+			//pthread_mutex_lock(&wancMutex);
 			
 			_Matrix	 res1(theTask->tree->GetCodeBase() , theTask->tree->GetCodeBase(), false, true),
 					 res2(theTask->tree->GetCodeBase(),  theTask->tree->GetCodeBase(), false, true);
 
-			pthread_mutex_unlock(&wancMutex);	
+			//pthread_mutex_unlock(&wancMutex);	
 			
 			if (vls>9.99)
 			{
@@ -9892,8 +9673,8 @@ BaseRef	_LikelihoodFunction::toStr (void)
 void	StateCounterResultHandler (_Formula& fla, _SimpleList* dSites, long & doneSites, long & lastDone, long totalUniqueSites, _Matrix& res1, _Matrix& res2)
 {
 	#ifdef __MP__
-		if (systemCPUCount>1)
-			pthread_mutex_lock(&wancMutex);
+		//if (systemCPUCount>1)
+		//	pthread_mutex_lock(&wancMutex);
 	#endif
 
 	setParameter (stateCountMatrix,  &res1);
@@ -9926,8 +9707,8 @@ void	StateCounterResultHandler (_Formula& fla, _SimpleList* dSites, long & doneS
 
 
 	#ifdef __MP__
-		if (systemCPUCount>1)
-			pthread_mutex_unlock(&wancMutex);
+		//if (systemCPUCount>1)
+		//	pthread_mutex_unlock(&wancMutex);
 	#endif
 }
 
@@ -10105,11 +9886,11 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 
 				for (long sites = 1; sites < 1+tstep; sites++)
 				{
-					pthread_mutex_lock(&wancMutex);
+					//pthread_mutex_lock(&wancMutex);
 					_Matrix	 res1(tree->GetCodeBase() , tree->GetCodeBase(), false, true),
 							 res2(tree->GetCodeBase(),  tree->GetCodeBase(), false, true);
 							 
-					pthread_mutex_unlock(&wancMutex);
+					//pthread_mutex_unlock(&wancMutex);
 
 					dSites = (_SimpleList*)duplicateMatches(sites);					
 					siteLikelihood = tree->ThreadReleafTreeCache (dsf, sites, sites-1, 0, tree->flatCLeaves.lLength-1,sites);									
@@ -11221,6 +11002,7 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 	if (hasBeenSetUp == 0)
 	{
 		long categCount = 1;
+		
 								
 		for (long i=0; i<theTrees.lLength; i++)
 		{
@@ -11238,10 +11020,9 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 		
 		for (long i2=0; i2<theProbabilities.lLength; i2++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i2])->GetValue())->MakeMeSimple();
-#ifdef _SLKP_LFENGINE_REWRITE_
+
 		SetupCategoryCaches	  ();
 		SetupLFCaches		  ();
-#endif
 		SetReferenceNodes     ();
 		
 		if (disableClear)
@@ -11249,6 +11030,7 @@ void	_LikelihoodFunction::PrepareToCompute (bool disableClear)
 		else
 			hasBeenSetUp ++;
 		siteArrayPopulated = false;
+		
 	}	
 	else
 		hasBeenSetUp++;
@@ -11264,23 +11046,20 @@ void	_LikelihoodFunction::DoneComputing (bool force)
 		{
 			_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
 			cT->CleanUpMatrices();
-			#if USE_SCALING_TO_FIX_UNDERFLOW
-				cT->DeallocateUnderflowScalers ();
-			#endif
 		}
 		if (mstCache)
 		{
 			mstCache->resultCache.Clear();
 			mstCache->statesCache.Clear();
 		}
-		{
 		for (long i=0; i<theProbabilities.lLength; i++)
 			((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeGeneral();
-        }
+
+		DeleteObject (siteResults);
+		siteResults = 0;
+		
 		DeleteCaches		(false);
-#ifdef _SLKP_LFENGINE_REWRITE_
 		categoryTraversalTemplate.Clear();
-#endif		
 		hasBeenSetUp 	   = 0;
 		siteArrayPopulated = false;
 	}
