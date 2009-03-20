@@ -23,6 +23,7 @@ for aDir in dirFiles:
 		
 #sourceFiles.append (path.normpath(path.join(currentWDir,"../Mains/hyphyunixutils.cpp")))
 sourceFiles.append (path.normpath(path.join(currentWDir,"SWIGWrappers/THyPhy_python.cpp")))
+sourceFiles.append (path.normpath(path.join(currentWDir,"../GUI/preferences.cpp")))
 
 setup(name='HyPhy',
       version='0.1',
