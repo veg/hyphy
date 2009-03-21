@@ -7938,7 +7938,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	}
 	else
 	{
-		if ((!forceRecomputation) && computationalResults.GetUsed() && computationalResults.GetUsed()==optimalOrders.lLength && siteRes && !t->HasChanged())
+		if ((!forceRecomputation) && computationalResults.GetUsed() && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !t->HasChanged())
 		{		
 			usedCachedResults = true;
 			return computationalResults.theData[index];

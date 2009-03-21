@@ -360,9 +360,21 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	long				totalSteps				= categoryOffsets->lData[0] * categoryCounts->lData[0],
 						catCount				= variables->lLength-1,
 						blockLength				= BlockLength(index),
-						arrayDim				= runMode==0?catCount*blockLength:(runMode<4?blockLength:0);
+						arrayDim				;
 	
 	_CategoryVariable   *catVariable;
+	
+	switch (runMode)
+	{
+		case _hyphyLFConditionProbsRawMatrixMode:
+			arrayDim = catCount*blockLength;
+			break;
+		case _hyphyLFConditionProbsClassWeights:
+			arrayDim = 0;
+			break;
+		default:
+			arrayDim = blockLength;
+	}
 	
 	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
 	{
@@ -522,44 +534,44 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 							buffer[r1] += currentRateWeight * buffer[r2];
 						
 					}				
-					else // runMode = _hyphyLFConditionProbsMaxProbClass
+				else // runMode = _hyphyLFConditionProbsMaxProbClass
+				{
+					for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
 					{
-						for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
+						bool doChange = false;
+						if (siteCorrectors)
 						{
-							bool doChange = false;
-							if (siteCorrectors)
+							long scv  = *siteCorrectors,
+								 diff = scv - scalers.lData[r3];
+							
+							if (diff<0) // this has a _smaller_ scaling factor
 							{
-								long scv  = *siteCorrectors,
-									 diff = scv - scalers.lData[r3];
-								
-								if (diff<0) // this has a _smaller_ scaling factor
-								{
-									_Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
-									if (buffer[r2] > scaled)
-										doChange = true;
-									else
-										buffer[r1] = scaled;
-									scalers.lData[r1] = scv;
-								}
+								_Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
+								if (buffer[r2] > scaled)
+									doChange = true;
 								else
-								{
-									if (diff>0) // this is a _larger_ scaling factor
-										buffer[r2] *= acquireScalerMultiplier (-diff);		
-									doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
-								}
-								
-								siteCorrectors++;
+									buffer[r1] = scaled;
+								scalers.lData[r1] = scv;
 							}
 							else
-								doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
-							
-							if (doChange)
 							{
-								buffer[r1]		   = buffer[r2];
-								buffer[r3]         = currentRateCombo;
+								if (diff>0) // this is a _larger_ scaling factor
+									buffer[r2] *= acquireScalerMultiplier (-diff);		
+								doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
 							}
-						}						
-					}
+							
+							siteCorrectors++;
+						}
+						else
+							doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
+						
+						if (doChange)
+						{
+							buffer[r1]		   = buffer[r2];
+							buffer[r3]         = currentRateCombo;
+						}
+					}						
+				}
 			}
 		}
 	}
@@ -601,6 +613,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 					alphabetDimension				= dsf->GetDimension			(),
 					unitLength						= dsf->GetUnitLength		(),
 					iNodeCount						= blockTree->GetINodeCount	(),
+					leafCount						= blockTree->GetLeafCount   (),
 					siteCount						= dsf->GetSiteCount			(),
 					shiftForTheNode					= patternCount * alphabetDimension;
 	
@@ -617,10 +630,9 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 	CreateMatrix					(&supportValues,iNodeCount,shiftForTheNode,false,true,false);
 
 	ComputeSiteLikelihoodsForABlock (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
-	
-	
+		
 	for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
-	// the prob for the last char is clearly 1 - sum (probs other chars)
+	// the prob for the last char is  (1 - sum (probs other chars))
 	{
 		branchValues.Populate			(patternCount,currentChar,0);
 		for (long branchID = 0; branchID < iNodeCount; branchID ++)
@@ -635,8 +647,8 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 					ratio *= acquireScalerMultiplier(scaleDiff);
 				supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
 			}
-			blockTree->AddBranchToForcedRecomputeList (branchID+blockTree->GetLeafCount());
-		}
+			blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
+		}			
 	}
 	
 	_SimpleList  conversion;
@@ -667,7 +679,11 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 					max_idx = charID; max_lik = scores[charID];
 				}
 			}
-			scores[alphabetDimension-1] = 1.-sum;
+			
+			scores[alphabetDimension-1] = 1. - sum;
+				   
+			//if (fabs(scores[alphabetDimension-1]+sum-1.) > 0.1)
+			//	WarnError (_String("Bad monkey!") & scores[alphabetDimension-1] & ":" & (1.-sum) );
 			
 			if (scores[alphabetDimension-1] > max_lik)
 				max_idx = alphabetDimension-1; 
@@ -681,6 +697,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 				for (long charS = 0; charS < unitLength; charS ++)
 					storeHere[charS] = codeBuffer.sData[charS];
 			}
+			
 		}
 	}
 	delete siteLikelihoods; 
