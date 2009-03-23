@@ -260,7 +260,7 @@ class		_Matrix: public _MathObject {
 	virtual		bool		HasChanged (void);
 							// have any variables which are referenced by the elements changed?
 							
-	long		GetHDim 					(void)	
+	virtual		long		GetHDim 					(void)	
 												{return hDim;}
 	long		GetVDim 					(void)	
 												{return vDim;}
@@ -448,6 +448,10 @@ virtual		~_GrowingVector	(void) {};
 
 virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic copy
 
+virtual		long		GetHDim 					(void)	
+			{
+				return GetUsed();
+			}
 			long   Store			(_Parameter);
 			long   GetUsed			(void) 
 			{

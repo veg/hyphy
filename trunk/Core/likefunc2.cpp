@@ -123,7 +123,7 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			(*catVarCounts) << totalCatCount;
 			
 			for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--)
-				catVarOffsets->lData[varIndex] *= catVarOffsets->lData[varIndex+1];
+				catVarOffsets->lData[varIndex] *= catVarCounts->lData[varIndex+1];
 			
 			container->AppendNewInstance (catVarReferences);
 			container->AppendNewInstance (catVarCounts);
@@ -473,23 +473,25 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 				{
 					for (long r1 = 0; r1 < blockLength; r1++)
 					{
-						long scv = *siteCorrectors;
-						if (scv > scalers.lData[r1]) 
+						long scv			  = *siteCorrectors,
+							 scalerDifference = scv-scalers.lData[r1];
+						
+						if (scalerDifference > 0) 
 						// this class has a _bigger_ scaling factor than at least one other class
 						// hence it needs to be scaled down (unless it's the first class)
 						{
 							if (currentRateCombo==0) //(scalers.lData[r1] == -1)
 								scalers.lData[r1] = scv;
 							else
-								bufferForThisCategory[r1] *= acquireScalerMultiplier (scv-scalers.lData[r1]);
+								bufferForThisCategory[r1] *= acquireScalerMultiplier (scalerDifference);
 						}
 						else
 						{
-							if (scv < scalers.lData[r1]) 
+							if (scalerDifference < 0) 
 							// this class is a smaller scaling factor, i.e. its the biggest among all those
 							// considered so far; all other classes need to be scaled down
 							{							
-								_Parameter scaled = acquireScalerMultiplier (scalers.lData[r1]-scv);
+								_Parameter scaled = acquireScalerMultiplier (-scalerDifference);
 								for (long z = indexShifter+r1-blockLength; z >= 0; z-=blockLength)
 									buffer[z] *= scaled;
 								
