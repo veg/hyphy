@@ -790,9 +790,10 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 			if (compExp) DeleteObject (compExp);
 		
 	
-	if ((GetModelMatrix()->MatrixType()!=_POLYNOMIAL_TYPE)&&(explicitFormMatrixExponential<0.5))
+	_Matrix * myModelMatrix = GetModelMatrix();
+	if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE && explicitFormMatrixExponential<0.5)
 	{
-		_Matrix *temp = (_Matrix*)GetModelMatrix()->MultByFreqs(theModel);
+		_Matrix *temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
 			
 		if (dVariables)
 			for (i=0; i<dVariables->lLength; i+=2)
@@ -840,7 +841,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 			if (matrixTasks)
 				pthread_mutex_unlock(&matrixMutex);
 		#endif
-		compExp = (_Matrix*)GetModelMatrix()->Evaluate(false);
+		compExp = (_Matrix*)myModelMatrix->Evaluate(false);
 	}
 }
 

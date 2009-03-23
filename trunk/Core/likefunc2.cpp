@@ -195,11 +195,10 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 	
 	computationalResults.ZeroUsed();
 	PrepareToCompute();
-	Compute();				
 		
 	// check if we need to deal with rate variation
 	_Matrix			*rateAssignments = nil;
-	if  (indexCat.lLength>0)
+	if  (!doMarginal && indexCat.lLength>0)
 		rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(doTheseOnes,true,false));
 	
 	long siteOffset			= 0,
@@ -551,7 +550,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 									doChange = true;
 								else
 									buffer[r1] = scaled;
-								scalers.lData[r1] = scv;
+								scalers.lData[r3] = scv;
 							}
 							else
 							{
@@ -628,8 +627,8 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 	blockTree->MapPostOrderToInOderTraversal (postToIn);
 	supportValues.Clear				();
 	CreateMatrix					(&supportValues,iNodeCount,shiftForTheNode,false,true,false);
-
-	ComputeSiteLikelihoodsForABlock (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
+	
+	ComputeSiteLikelihoodsForABlock	   (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
 		
 	for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
 	// the prob for the last char is  (1 - sum (probs other chars))

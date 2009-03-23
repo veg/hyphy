@@ -1375,9 +1375,6 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 		return catWeights;
 	}
 	
-	if (!siteResults)
-		AllocateSiteResults ();
-	
 	// compute the number of columns in the matrix 
 	for (long i=0;i<whichParts.lLength;i++)
 		if (runMode && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
@@ -2144,9 +2141,10 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					// first time computing or partition requires updating
 					// add HMM and constant on partition test
 				{
-					PopulateConditionalProbabilities (partID, _hyphyLFConditionProbsWeightedSum, 
+					/*PopulateConditionalProbabilities (partID, _hyphyLFConditionProbsWeightedSum, 
 															  siteResults->theData,
-															  siteScalerBuffer);
+															  siteScalerBuffer);*/
+					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 					
 					_Parameter						 blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
 					result += blockResult;																			
@@ -7955,11 +7953,13 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 			long blockID    = df->NumberDistinctSites()*t->GetINodeCount(),
 				 patternCnt = df->NumberDistinctSites();
 			
-			_SimpleList* tcc = (_SimpleList*)treeTraversalMasks(index);
+			_SimpleList			*tcc  = (_SimpleList*)treeTraversalMasks(index);
 			
 			_Parameter			*inc  = (currentRateClass<1)?conditionalInternalNodeLikelihoodCaches[index]:
 										conditionalInternalNodeLikelihoodCaches[index] + currentRateClass*df->GetDimension()*blockID,
+			
 								*ssf  = (currentRateClass<1)?siteScalingFactors[index]: siteScalingFactors[index] + currentRateClass*blockID,
+			
 								*bc   = (currentRateClass<1)?branchCaches[index]: (branchCaches[index] + currentRateClass*patternCnt*df->GetDimension()*2);
 			
 			long *scc = nil,

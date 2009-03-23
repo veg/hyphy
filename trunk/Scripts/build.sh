@@ -99,6 +99,8 @@ fi
 
 # END MODIFY
 
+COMPILER_FLAGS=COMPILER_FLAGS" -D _SLKP_LFENGINE_REWRITE_ ";
+
 echo "Checking for curl";
 
 rm -rf curl_check*
@@ -171,16 +173,6 @@ then
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
 	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ "
-fi
-
-if [ $1 = "DEV" ] 
-then
-	TARGET_NAME="HYPHYMP_DEV";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -fopenmp -lm -lpthread ";
-	echo "+-----------------------------------------------------------+"
-	echo "|Building a OpenMP/speedups developmental version of HyPhy  |"
-	echo "+-----------------------------------------------------------+"
-	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -fopenmp "
 fi
 
 if [ $1 = "PS3" ] 
