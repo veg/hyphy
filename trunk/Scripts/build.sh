@@ -172,7 +172,7 @@ then
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
-	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ "
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -fopenmp "
 fi
 
 if [ $1 = "PS3" ] 
