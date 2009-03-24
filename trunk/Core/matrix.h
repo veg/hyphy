@@ -574,7 +574,6 @@ extern	_Matrix	*GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
 extern	_Parameter	ANALYTIC_COMPUTATION_FLAG;
 
-void	   SetGlobalFrequencyMatrix (_Matrix* theM = nil);
 void	   InsertStringListIntoAVL  (_AssociativeList* , _String, _SimpleList&, _List&);
 void	   InsertVarIDsInList		(_AssociativeList* , _String, _SimpleList&);
 #endif

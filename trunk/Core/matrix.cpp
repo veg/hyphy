@@ -96,7 +96,6 @@ extern  	_String			printDigitsSpec;
 
 int 		fexact_			 		(long , long , double *, double , double , double , double *, double *);
 void		MatrixIndexError 		(long, long, long, long);
-_Matrix* 	GetGlobalFrequencyMatrix(void);
 
 
 
@@ -110,16 +109,7 @@ void	MatrixIndexError (long hPos, long vPos, long hDim, long vDim)
 		WarnError (errMsg); 
 }
 
-//__________________________________________________________________________________
-void	SetGlobalFrequencyMatrix (_Matrix * theM)
-{
-	GlobalFrequenciesMatrix = (_Matrix*) theM->ComputeNumeric();
-}
-//__________________________________________________________________________________
-_Matrix* GetGlobalFrequencyMatrix(void)
-{
-	return GlobalFrequenciesMatrix;
-}
+
 //__________________________________________________________________________________
 
 bool _Matrix::IsDefined	(_String&)  // is this operation defined for the type
@@ -3070,6 +3060,7 @@ void	_Matrix::Clear (void)
 	{
 		MatrixMemFree (theData);
 		memReleased+=lDim*storageType==1?sizeof(_Parameter):sizeof(Ptr);
+		hDim = vDim = 0;
 		theData = nil;
 	}
 

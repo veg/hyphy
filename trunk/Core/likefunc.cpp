@@ -2139,19 +2139,20 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			{
 				if ( computationalResults.GetUsed()<=partID || HasBlockChanged(partID))
 					// first time computing or partition requires updating
-					// add HMM and constant on partition test
+					// TODO: add HMM and constant on partition test
 				{
-					/*PopulateConditionalProbabilities (partID, _hyphyLFConditionProbsWeightedSum, 
-															  siteResults->theData,
-															  siteScalerBuffer);*/
 					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 					
 					_Parameter						 blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
-					result += blockResult;																			
+					UpdateBlockResult				(partID, blockResult);
+					result += blockResult;			
 				}
+				else
+					result += computationalResults.theData[partID];
 			}
 			else
-				result+=ComputeBlock (partID);				
+				result+=ComputeBlock (partID);		
+			
 		}
 		likeFuncEvalCallCount ++;
 		PostCompute ();
@@ -7905,26 +7906,27 @@ void	_LikelihoodFunction::Setup (void)
 
 _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
 // compute likelihood over block index i
+/* 
+	to optimize
+		-no need to recurse the entire tree to decide if it had changed; should cache variable->block dependancies 
+		 for rapid lookup
+	
+*/
 {
 	
 	// set up global matrix frequencies
-	_Matrix					  *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
-	SetGlobalFrequencyMatrix  (glFreqs);
 	
 	_SimpleList				  *sl = (_SimpleList*)optimalOrders.lData[index];
 						//*ls = (_SimpleList*)leafSkips.lData[index];
 						
-	_TheTree				   *t = ((_TheTree*)LocateVar(theTrees.lData[index]));
-	t->InitializeTreeFrequencies (GlobalFrequenciesMatrix);
+	_Matrix					  *glFreqs  = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
+	_DataSetFilter			  *df		= ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
+	_TheTree				   *t		= ((_TheTree*)LocateVar(theTrees.lData[index]));
 	
-	_DataSetFilter		*df = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
-	
-	if (!forceRecomputation)
-		forceRecomputation = glFreqs->HasChanged();
-//		if ((!forceRecomputation)&&computingTemplate)
-//			forceRecomputation = computingTemplate->HasChanged();
+	t->InitializeTreeFrequencies		  ((_Matrix*)glFreqs->ComputeNumeric());
 		
-	usedCachedResults = false;
+	forceRecomputation					= forceRecomputation||glFreqs->HasChanged();
+	usedCachedResults					= false;
 	
 	if (computingTemplate&&templateKind)
 	{
@@ -9746,9 +9748,8 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 		_DataSetFilter * dsf  = (_DataSetFilter*)dataSetFilterList (theDataFilters(i));
 		
 		_Matrix 			*glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
-		SetGlobalFrequencyMatrix (glFreqs);
 	
-		tree->InitializeTreeFrequencies (GlobalFrequenciesMatrix);
+		tree->InitializeTreeFrequencies ((_Matrix*)glFreqs->ComputeNumeric());
 	
 		_List		   duplicateMatches;
 		
