@@ -168,7 +168,7 @@ fi
 if [ $1 = "MP2" ] 
 then
 	TARGET_NAME="HYPHYMP";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread -fopenmp ";
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
