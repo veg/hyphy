@@ -37,6 +37,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "batchlan.h"
 #include "category.h"
 
+//#define _UBER_VERBOSE_LF_DEBUG
+
 
 #ifdef __WINDOZE__
 	#include     "windows.h"
@@ -1772,6 +1774,9 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 	 
 	 #ifdef __HYPHYMPI__
 		
+#ifdef _SLKP_LFENGINE_REWRITE_
+	WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
+#else
 		if (mpiPartitionOptimizer)
 		{
 			//printf ("In ComputeMasterMPI\n");
@@ -1951,7 +1956,7 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 
 		likeFuncEvalCallCount++;
 	 #endif
-	 
+#endif
 	 return res;
 }
 
@@ -2130,7 +2135,15 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		
 	}
 	
-
+#ifdef _UBER_VERBOSE_LF_DEBUG
+	printf ("Likelihood function evaluation %d\n", likeFuncEvalCallCount+1);
+	for (long i=0;i<indexInd.lLength; i++)
+	{
+		_Variable *v = LocateVar (indexInd.lData[i]);
+		if (v->HasChanged())
+			printf ("%s changed\n", v->GetName()->sData);
+	}
+#endif
 	if (computeMode == 0)
 	{
 		for (long partID=0; partID<theTrees.lLength; partID++)
@@ -2142,7 +2155,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					// TODO: add HMM and constant on partition test
 				{
 					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
-					
+#ifdef _UBER_VERBOSE_LF_DEBUG
+					printf ("Did compute\n", result);
+#endif						
 					_Parameter						 blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
 					UpdateBlockResult				(partID, blockResult);
 					result += blockResult;			
@@ -2156,6 +2171,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		}
 		likeFuncEvalCallCount ++;
 		PostCompute ();
+#ifdef _UBER_VERBOSE_LF_DEBUG
+		printf ("%g\n", result);
+#endif		
 		return result;
 	}
 	
@@ -8026,6 +8044,11 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 				matrices					= &changedModels;
 			}
 			
+#ifdef _UBER_VERBOSE_LF_DEBUG
+			printf ("%d matrices, %d branches marked for rate class %d\n", matrices->lLength, branches->lLength, catID);
+			if (matrices->lLength == 0)
+				printf ("Hmm\n");
+#endif
 			if (matrices->lLength)
 				t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
 		
@@ -10428,6 +10451,8 @@ void	_LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Mat
 //_______________________________________________________________________________________
 
 void	_LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long* baseVector, long& vecSize, _DataSet& target, _TheTree* curTree, long& leafCount, bool isRoot, long baseLength, _DataSetFilter* dsf, long DSOffset, _DataSet* intNodes)
+/* SLKP TODO check that this works with the new category spec route */
+	
 {
 	long* curVector = nil,
 		  i,
