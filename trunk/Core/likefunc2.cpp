@@ -454,7 +454,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	
 		// now that the categories are set we can proceed with the computing step
 		long			 indexShifter					= blockLength * currentRateCombo;
-		long			_hprestrict_	*siteCorrectors	= ((_SimpleList**)siteCorrections.lData)[index]->lLength?
+		long			 *siteCorrectors				= ((_SimpleList**)siteCorrections.lData)[index]->lLength?
 														 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
 														 :nil;
 		
