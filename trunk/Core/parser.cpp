@@ -2922,12 +2922,11 @@ bool _VariableContainer::NeedToExponentiate (bool ignoreCats)
 		for (long i = 0; i<gVariables->lLength; i++)
 			if (LocateVar (gVariables->lData[i])->HasChanged(ignoreCats)) 
 				return true;
-	
 	if (dVariables)
 		for (long i = 0; i<dVariables->lLength && dVariables->lData[i+1] >= 0; i+=2)
 			if (LocateVar (dVariables->lData[i])->HasChanged(ignoreCats)) 
 				return true;
-
+	
 	return false;
 }
 

@@ -92,7 +92,7 @@ class		_Matrix: public _MathObject {
 
 	~_Matrix (void);  							//destructor
 	
-	void	Clear (void);						//deletes all the entries w/o destroying the matrix
+	virtual	void	Clear (void);				//deletes all the entries w/o destroying the matrix
 	
 	void	Initialize (void);					// zeros all matrix structures
 	
@@ -447,6 +447,8 @@ public:
 virtual		~_GrowingVector	(void) {};
 
 virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic copy
+
+virtual		void		Clear (void);
 
 virtual		long		GetHDim 					(void)	
 			{

@@ -1015,8 +1015,9 @@ bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
 			
 			if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite)
 			{
-				bySiteResults = (_Matrix*)checkPointer(new _Matrix (theTrees.lLength,maxFilterSize,false,true));
-				partScalingCache.AppendNewInstance (new _SimpleList(maxFilterSize, 0,0));
+				bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+1,maxFilterSize,false,true));
+				for (long k = 0; k <= theTrees.lLength; k++)
+					partScalingCache.AppendNewInstance    (new _SimpleList(maxFilterSize, 0,0));
 			}
 			else
 				bySiteResults = nil;
@@ -2135,6 +2136,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		
 	}
 	
+	bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
 	printf ("Likelihood function evaluation %d\n", likeFuncEvalCallCount+1);
 	for (long i=0;i<indexInd.lLength; i++)
@@ -2152,8 +2154,10 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			{
 				if ( computationalResults.GetUsed()<=partID || HasBlockChanged(partID))
 					// first time computing or partition requires updating
-					// TODO: add HMM and constant on partition test
 				{
+					/* TODO: add HMM and constant on partition test
+					   Roll into ComputeSiteLikelihoodsForABlock and SumUpSiteLikelihoods?
+					*/
 					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 #ifdef _UBER_VERBOSE_LF_DEBUG
 					printf ("Did compute\n", result);
@@ -2169,15 +2173,67 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				result+=ComputeBlock (partID);		
 			
 		}
-		likeFuncEvalCallCount ++;
-		PostCompute ();
-#ifdef _UBER_VERBOSE_LF_DEBUG
-		printf ("%g\n", result);
-#endif		
-		return result;
+		done = true;
 	}
 	
-	WarnError ("Sorry; this likelihood feature has not yet been ported to the new LF engine in HyPhy");
+	if (computeMode == 1)
+	// handle _hyphyLFComputationalTemplateBySite
+	{
+		long 	blockWidth = bySiteResults->GetVDim();
+		
+		for (long partID=0; partID<theTrees.lLength; partID++)
+		{
+			ComputeSiteLikelihoodsForABlock (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength));
+			_DataSetFilter * thisBlockFilter = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
+			thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0);
+			thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1);
+		}
+		
+		// no need to remap; just process directly based on partiton indices
+		
+		siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
+		_SimpleList scalerCache    (theTrees.lLength,0,0);
+		_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
+
+		for (long siteID = 0; siteID < blockWidth; siteID++)
+		{
+			// pass one to determine scaling factors
+			long minScalingFactor = ((_SimpleList*)partScalingCache(0))->lData[siteID];
+			scalerCache.lData [0] = minScalingFactor;
+			for (long partID=1; partID<theTrees.lLength; partID++)
+			{
+				scalerCache.lData [partID] = ((_SimpleList*)partScalingCache(partID))->lData[siteID]; 
+				if (minScalingFactor > scalerCache.lData [partID])
+					minScalingFactor = scalerCache.lData [partID];
+			}
+			for (long partID=0; partID<theTrees.lLength; partID++)
+			{
+				siteMatrix->theData[partID] = bySiteResults->theData[partID*blockWidth+siteID];
+				long diff = scalerCache.lData[partID]-minScalingFactor;
+				if (diff)
+					siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
+			}
+			
+			
+			result += computingTemplate->Compute()->Value();
+			if (minScalingFactor)
+				result-=_logLFScaler*minScalingFactor;
+		}
+		done = true;
+		
+	}
+	
+	if (done)
+	{
+		likeFuncEvalCallCount ++;
+		PostCompute ();
+	#ifdef _UBER_VERBOSE_LF_DEBUG
+		printf ("%g\n", result);
+	#endif		
+		return result;
+	}
+
+	WarnError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
 	return -A_LARGE_NUMBER;
 	
 	
@@ -2227,7 +2283,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 						checkPointer	(blockResult);
 					}
 					
-					WriteAllCategoriesTemplate(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), blockWidth,blockResult->theData,df->duplicateMap.lData);
+					//WriteAllCategoriesTemplate(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), blockWidth,blockResult->theData,df->duplicateMap.lData);
 				}
 				else
 				{
@@ -2748,60 +2804,6 @@ void	  _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long de
 			if (offsetCounter>1)
 				categID-=nI*offsetCounter;
 		}
-	}
-}
-
-//_______________________________________________________________________________________
-		
-void	  _LikelihoodFunction::WriteAllCategoriesTemplate (long blockIndex, long index, long dependance, long lowestIndex, long vDim, _Parameter* storage, long* dupMap
-#ifdef _SLKP_LFENGINE_REWRITE_
-														   ,_SimpleList* siteMultipliers  
-#endif			
-														   )
-	
-{
-	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat(index));
-	if (index>lowestIndex)
-	{
-		if ((!CheckNthBit(dependance,index))||(thisC->IsHiddenMarkov()))
-			WriteAllCategoriesTemplate (blockIndex, index-1, dependance,lowestIndex,vDim,storage,dupMap);
-		else
-		{
-			thisC->Refresh();
-			long nI = thisC->GetNumberOfIntervals ();
-			offsetCounter *= nI;
-			for (long k = 0; k<nI; k++)
-			{
-				thisC->SetIntervalValue(k);
-				WriteAllCategoriesTemplate(blockIndex,index-1,dependance, lowestIndex,vDim,storage,dupMap);
-				categID+=offsetCounter/nI;
-			}
-			offsetCounter/=nI;
-			if (offsetCounter>1)
-				categID-=nI*offsetCounter;
-		}
-	}
-	else
-	{
-		thisC->Refresh();
-		long nI            = thisC->GetNumberOfIntervals ();
-			 
-		_Parameter* sR = siteResults->fastIndex();
-				  
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k);
-			ComputeBlock (blockIndex,sR);	
-			
-			_Parameter * rR = storage+categID*vDim;
-
-			for (long k1 = 0; k1 < vDim; k1++)
-				rR[k1] = sR[dupMap[k1]];
-
-			categID+=offsetCounter;
-		}
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
 	}
 }
 
@@ -7501,6 +7503,9 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 	/* mod 10/28/2005; Need to make two passes on trees; one to check for all category variables defined on the tree
 	   and second to lay out dependency bits (after all the category variables have been concatenated) */
 
+	bool haveHMM				 = false,
+		 haveConstantOnPartition = false;
+	
 	for (i=0; i<theTrees.lLength; i++)
 	{
 		_SimpleList localCategVars;
@@ -7513,6 +7518,8 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		for (long i2 = 0; i2 < localCategVars.lLength; i2++)
 		{
 			_CategoryVariable * cvRef = (_CategoryVariable*)LocateVar (localCategVars.lData[i2]);
+			haveHMM						= haveHMM || cvRef->IsHiddenMarkov();
+			haveConstantOnPartition		= haveConstantOnPartition || cvRef->IsConstantOnPartition();
 			if (cvRef->IsUncorrelated())
 			{
 				if (cvRef->IsConstantOnPartition())
@@ -7525,6 +7532,13 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		}
 	}
 
+	
+	if ((haveHMM || haveConstantOnPartition) && templateKind != _hyphyLFComputationalTemplateNone && templateKind != _hyphyLFComputationalTemplateByPartition)
+	{
+		WarnError ("Non-partition based computational templates in likelihood functions cannot be combined with dependence on HMM or constant-on-partition random variables.");
+		return;
+	}
+	
 	indexCat << cpCat;
 	indexCat << covCat;
 

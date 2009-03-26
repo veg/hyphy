@@ -64,7 +64,7 @@ _CategoryVariable::_CategoryVariable (_String& name, _List* parms, _VariableCont
 { 
 	values = intervalEnds = weights = conditionalWeights = nil;
 	hiddenMarkovModel = -1;
-	flags = 0;
+	flags			  = 0;
 	covariant 		 = -1;
 	intervalSplitter = -1;
 	Construct (*parms, theP); 
@@ -795,8 +795,7 @@ _Parameter	_CategoryVariable::SetIntervalValue (long ival, bool recalc)
 		newIntervalValue  = GetValues()->theData[ival];
 	else
 		newIntervalValue = ((_Matrix*)values->RetrieveNumeric())->theData[ival];
-	SetNumericValue (newIntervalValue);
-	//SetValue (new _Constant (newIntervalValue));
+	SetValue (new _Constant(newIntervalValue),false);
 	return newIntervalValue;
 }
 	
@@ -958,9 +957,8 @@ bool	_CategoryVariable::HaveParametersChanged (long catID)
 	for (long i=0; i<parameterList.lLength; i++)
 	{
 		_Variable * p = LocateVar(parameterList.lData[i]);
-		//printf ("%i %s %d\n", i, p->GetName()->sData, p->HasChanged());
 		if (p->HasChanged())
-			if (catID < 0 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID])
+			if (catID == -1 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID])
 				return true;
 	}
 	return false;

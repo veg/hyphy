@@ -134,7 +134,19 @@ class		_CalcNode: public _VariableContainer {
 										{referenceNode = rn;slaveNodes = 0;}	
 			void		AddRefNode		(void)									
 										{referenceNode --;}
-							
+	
+	virtual	void		ClearCategoryMap(void)
+										{remapMyCategories.Clear();}
+
+	virtual	void		SetupCategoryMap(_List&, _SimpleList&, _SimpleList&);
+						/* 20090324: SLKP
+								This function will take a list of category variables (assumed to be a superset of categoryVariables)
+								and the number of categories in each (second argument) 
+								and the multipliers for each category in the composite category
+								and populate remapMyCategories
+								(see comments)
+						 */
+
 	friend	class 	    _TheTree;
 	
 	public:
@@ -144,7 +156,29 @@ class		_CalcNode: public _VariableContainer {
 	protected:
 	
 		_SimpleList  	categoryVariables, 
-						categoryIndexVars;
+						categoryIndexVars,
+						remapMyCategories;
+	
+						/* 
+							20090324: SLKP 
+								because this calcnode may be a part of a likelihood
+								function partition with more category variables,
+								this mapper object takes the composite category ID 
+								from the container (likelihood function) and maps it
+								to a category ID understood by this node; a composite
+								ID is mapped to an N+1 tuplet (N is the number of 
+								category variables that this node depends on):
+						 
+								composite ID inside this _CalcNode
+								classes of each category variable in the same order
+								as they appear in categoryVariables
+						 
+								Hence the list will have (N+1)*(Container classes) 
+								entries.
+						 
+								This list is populated using the SetupCategoryMap
+								and cleared using ClearCategoryMap
+						 */
 		
 
 		_Matrix	  *  	compExp;	  	// matrix exponential computed previously
@@ -482,7 +516,11 @@ class _TheTree: public _TreeTopology {
 						// because of external manipulations of the cache (e.g. computing the LF with one of the interior
 						// nodes set to 
 	
-	
+			void		SetupCategoryMapsForNodes		(_List& , _SimpleList&, _SimpleList& );
+						/* 20090325: SLKP
+						   a wrapper function to set up category variable maps for nodes;
+					       see comments for remapMyCategories in _CalcNode
+						 */
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		void			SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);

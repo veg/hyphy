@@ -279,6 +279,10 @@ virtual 	long  Find (BaseRef, long startat = 0);
  			// find the position of a search string in the list of strings (ONLY)
  			// -1 if not found
 
+virtual 	long  FindPointer (BaseRef b, long startat = 0)
+			{
+				return _SimpleList::Find ((long)b, startat);
+			}
 virtual 	long  FindString 		  (BaseRef, long startat = 0, bool caseSensitive = true, long upTo = -1);
  			// find the position of a search string in the list of strings (ONLY)
  			// -1 if not found

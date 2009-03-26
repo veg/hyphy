@@ -395,7 +395,7 @@ void	_CalcNode::SetCodeBase (int codeBase)
 //_______________________________________________________________________________________________
 void	_CalcNode::SetCompMatrix (long categID)
 {
-	compExp = matrixCache?matrixCache[categID]:compExp;
+	compExp = GetCompExp (categID);
 }	
 			
 //_______________________________________________________________________________________________
@@ -702,7 +702,7 @@ bool		_CalcNode::NeedToExponentiate(long catID)
 			return true;
 		
 		for (long i = 0; i<categoryVariables.lLength; i++)
-			if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged(catID)) 
+			if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged(remapMyCategories.lData[catID*(categoryVariables.lLength+1)+i+1])) 
 				return true;
 	}
 	return false;
@@ -785,7 +785,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 	
 	if (!storeRateMatrix)
 		if (totalCategs>1)
-			DeleteObject(matrixCache[categID]);
+			DeleteObject(GetCompExp(categID));
 		else
 			if (compExp) DeleteObject (compExp);
 		
@@ -850,7 +850,11 @@ void		_CalcNode::SetCompExp  (_Matrix* m, long catID)
 {
 	compExp = m;
 	if (catID >= 0 && matrixCache)
+	{
+		if (remapMyCategories.lLength)
+			catID = remapMyCategories.lData[catID*(categoryVariables.lLength+1)];
 		matrixCache[catID] = compExp;
+	}
 }
 //_______________________________________________________________________________________________
 _Matrix*		_CalcNode::ComputeModelMatrix  (bool)	
@@ -897,7 +901,12 @@ _Matrix*    _CalcNode::GetCompExp 		(long catID)
 	if (catID==-1) 
 		return compExp; 
   	else 
+	{
+		if (remapMyCategories.lLength)
+			catID = remapMyCategories.lData[catID * (categoryVariables.lLength+1)];
+			
   		return matrixCache?matrixCache[catID]:compExp; 
+	}
 }
 	
 //_______________________________________________________________________________________________

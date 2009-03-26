@@ -6158,6 +6158,18 @@ BaseRef	_DataSetFilter::toStr (void)
 
 //_________________________________________________________
 
+void	_DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode)
+{
+	for (long site = 0; site < duplicateMap.lLength; site++)
+		if (mode == 0)
+			((_Parameter*)target)[site] = ((_Parameter*)source)[duplicateMap.lData[site]];
+		else
+			((long*)target)[site] = ((long*)source)[duplicateMap.lData[site]];
+}
+
+
+//_________________________________________________________
+
 long	_DataSetFilter::GetOriginalToShortMap(long index)
 {
 	long pos1=theData->theMap.lData[theOriginalOrder.lData[index]],pos2;

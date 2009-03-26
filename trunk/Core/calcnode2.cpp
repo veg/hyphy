@@ -1572,6 +1572,90 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	
 	return result;
 }
+//_______________________________________________________________________________________________
+
+void	 _TheTree::SetupCategoryMapsForNodes (_List& containerVariables, _SimpleList& classCounter, _SimpleList& multipliers)
+{
+	_CalcNode* iterator = DepthWiseTraversal (true);
+	while (iterator)
+	{
+		iterator->SetupCategoryMap (containerVariables,classCounter,multipliers);
+		iterator = DepthWiseTraversal(false);
+	}
+}
+//_______________________________________________________________________________________________
+
+void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& classCounter, _SimpleList& multipliers)
+{
+	
+	long	totalCategories = classCounter.Element(-1),
+			localCategories = 1,
+			catCount		= categoryVariables.lLength-1,
+			entriesPerCat   = 2+catCount; 
+
+	//for (long k = 0; k<containerVariables.lLength;k++)
+	//	printf ("%d %s\n", k, ((_Variable*)containerVariables(k))->GetName()->sData);
+
+	if (catCount<0)
+		remapMyCategories.Clear();
+	else
+	{
+		
+		remapMyCategories.Populate (totalCategories*entriesPerCat,0,0);
+		
+		_SimpleList		remappedIDs,
+						rateMultiplers (categoryVariables.lLength,1,0),
+						categoryValues (categoryVariables.lLength,0,0);
+		
+		for (long myCatID = 0; myCatID <= catCount; myCatID++)
+		{
+			long coordinate = containerVariables.FindPointer(LocateVar(categoryVariables.lData[myCatID]));
+			if (coordinate < 0)
+				WarnError ("Internal error in SetupCategoryMap. Please report to spond@ucsd.edu");
+			localCategories *= classCounter.lData[coordinate];
+			//printf ("%d %s\n", myCatID, LocateVar(categoryVariables.lData[myCatID])->GetName()->sData);
+			remappedIDs << coordinate;
+		}
+		
+		for (long myCatID = catCount-1; myCatID >= 0; myCatID--)
+			rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID-1]*classCounter.lData[remappedIDs.lData[myCatID+1]];
+		
+		for	(long currentRateCombo  = 0; currentRateCombo < localCategories; currentRateCombo++)
+		{
+			long remainder = currentRateCombo % classCounter.lData[remappedIDs.lData[catCount]];
+			if (currentRateCombo && remainder  == 0)
+			{
+				categoryValues.lData[catCount] = 0;
+				for (long uptick = catCount-1; uptick >= 0; uptick --)
+				{
+					categoryValues.lData[uptick]++;
+					if (categoryValues.lData[uptick] == classCounter.lData[remappedIDs.lData[uptick]])
+						categoryValues.lData[uptick] = 0;
+					else
+						break;
+				}
+			}
+			else
+			{
+				if (currentRateCombo)			
+					categoryValues.lData[catCount]++;
+			}
+			
+			long externalCatID = 0;
+			for (long myCatID = 0; myCatID <= catCount; myCatID++)
+				externalCatID += multipliers.lData[remappedIDs.lData[myCatID]] * categoryValues.lData[myCatID];
+			
+			externalCatID *= entriesPerCat;
+			remapMyCategories.lData[externalCatID] = currentRateCombo;
+			for (long indexer = 0; indexer < entriesPerCat-1; indexer++)
+				remapMyCategories.lData[externalCatID+1+indexer] = categoryValues.lData[indexer];
+				
+		}
+	}
+	
+	//printf ("Node remap at %s yielded %s\n", GetName()->sData, _String((_String*)remapMyCategories.toStr()).sData);
+	
+}
 
 
 #endif

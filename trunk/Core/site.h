@@ -447,7 +447,15 @@ class _DataSetFilter:public BaseObj {
 	// 20090206: SLKP
 	// a utility function to return a _List of simplelists (one per unique site pattern) that provides an ordered list of 
 	//			 the indices of all sites that have the same pattern in the original alignment
-	
+
+	void							PatternToSiteMapper			(void*, void*, char);
+	/* 
+		20090325: SLKP
+		a function that takes per pattern values (source, argument 1)
+	    and maps them ontp sites into target (argument 2)
+		the last argument is 0 to treat the pointers as _Parameter*
+		and 1 to treat them as long*
+	 */
 	
 	_SimpleList     
 			 theFrequencies, 

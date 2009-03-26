@@ -303,11 +303,7 @@ static	void			CheckFibonacci				(_Parameter);
 #endif
 													 );
 		void	  		RecurseConstantOnPartition  (long, long, long, long, _Parameter, _Matrix&);	
-		void			WriteAllCategoriesTemplate  (long, long, long, long, long, _Parameter*, long*
-#ifdef _SLKP_LFENGINE_REWRITE_
-													 ,_SimpleList* = nil  
-#endif
-													 );
+
 	
 		
 		void		 	SetNthBit 					(long&,char);
@@ -487,7 +483,7 @@ static	void			CheckFibonacci				(_Parameter);
 							// for models with categories, a list of site by site scaling operation counts
 							partScalingCache
 							// used to store site by site scalers in computations that are performed
-							// on a site-by-site basis
+							// on a site-by-site basis; includes scratch cache for remapping
 							;
 	
 #ifdef	_OPENMP

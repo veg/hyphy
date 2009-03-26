@@ -128,6 +128,8 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			container->AppendNewInstance (catVarReferences);
 			container->AppendNewInstance (catVarCounts);
 			container->AppendNewInstance (catVarOffsets);
+
+			((_TheTree*)LocateVar(theTrees(partIndex)))->SetupCategoryMapsForNodes(*catVarReferences,*catVarCounts,*catVarOffsets);
 			
 			categoryTraversalTemplate.AppendNewInstance(container);
 		}
