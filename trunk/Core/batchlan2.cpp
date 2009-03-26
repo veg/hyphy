@@ -28,7 +28,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include 	  "likefunc.h"
 #include	  "scfg.h"
+
+#if defined __AFYP_REWRITE_BGM__
+#include	  "bayesgraph.h"
+#else
 #include 	  "bgm.h"
+#endif
 
 #if defined		  __UNIX__ && !defined __HEADLESS__ && !defined __HYPHY_NO_SQLITE__
 	#include "SQLite/sqlite.h"
@@ -718,7 +723,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 }
 
 //____________________________________________________________________________________	
-
+//	GetString
 void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
@@ -824,7 +829,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 				return;
 			}
 		}
-		else
+		else	// not a data set
 		{
 			f = FindDataSetFilterName (nmspaced);
 			if (f>=0)
@@ -842,15 +847,34 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 				}
 				
 			}
-			else
+			else // not a data set filter
 			{
 				f = likeFuncNamesList.Find (&nmspaced);
 				long g = -1;
 					 
-				if (f<0)
+				if (f<0) // not a regular likelihood function
 				{
+#if defined __AFYP_REWRITE_BGM__
+					f = bgmNamesList.Find (&nmspaced);
+					if (f >= 0)	// it's a BGM, export node score cache
+					{
+						_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
+						_AssociativeList		* cache_export	= new _AssociativeList;
+						
+						this_bgm -> ExportCache (cache_export);
+						theReceptacle -> SetValue (cache_export, false);
+						ReportWarning ("Exiting from GetString()");
+						return;
+					}
+					else
+					{
+						g = FindSCFGName (nmspaced);
+						f = g;
+					}
+#else
 					g = FindSCFGName (nmspaced);
 					f = g;
+#endif
 				}
 				if (f>=0)
 				{
@@ -2308,9 +2332,29 @@ void	  _ElementaryCommand::ExecuteCase63 (_ExecutionList& chain)
 void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
+#if defined __AFYP_REWRITE_BGM__
+	_PMathObj	avl1	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+				//avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 	
+	if (! (avl1))
+	{
+		WarnError (_String ("Argument (") & *(_String*)parameters(1) & " in call to BGM = ... must evaluate to associative array");
+	}
+	else
+	{
+		// is this a dynamic Bayesian network?
+		//_Parameter		dynamicArg;
+		//checkParameter (isDynamicGraph, dynamicArg, 0.);
+		//	bool is_dynamic_graph = (dynamicArg > 0) ? TRUE : FALSE;
+		
+		_BayesianGraphicalModel		* bgm;	// pointer to base class
+		
+		//if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		//else					
+		bgm = new _BayesianGraphicalModel ((_AssociativeList*)avl1);
+#else
 	_PMathObj	avl1	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-				avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+	avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 	
 	if (! (avl1 && avl2))
 	{
@@ -2328,7 +2372,7 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 		
 		if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
 		else					bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-		
+#endif
 		_String bgmName	    = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
 		long	bgmIndex	= FindBgmName (bgmName);
 		
@@ -2460,11 +2504,19 @@ bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 	if (mark1 >= 0)
 		ExtractConditions (source,mark1+1,pieces,',');
 	
+#if defined __AFYP_REWRITE_BGM__
+	if (pieces.lLength != 1)
+	{
+		WarnError ("Expected: BGM ident = (<nodes>)");
+		return false;
+	}
+#else
 	if (pieces.lLength < 2)
 	{
 		WarnError ("Expected: BGM ident = (<discrete nodes>, <continuous nodes>)");
 		return false;
 	}
+#endif
 	
 	_ElementaryCommand * bgm = new _ElementaryCommand (64);
 	bgm->parameters	&& (&bgmID);
@@ -3446,3 +3498,4 @@ _String * ReturnCurrentCallStack (void)
 	}
 	return new _String ();
 }
+ 
