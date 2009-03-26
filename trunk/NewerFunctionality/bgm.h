@@ -6,6 +6,7 @@
  *  Copyright 2007 __MyCompanyName__. All rights reserved.
  *
  */
+#if !defined __AFYP_BGM_REWRITE__
 
 #include "hy_lists.h"
 #include "classes.h"
@@ -211,6 +212,6 @@ private:
 
 
 
-
+#endif
 
 

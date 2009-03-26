@@ -38,6 +38,8 @@
  *
  */
 
+#if not defined __AFYP_REWRITE_BGM__
+
 #define		__AFYP_DEVELOPMENT__
 #define		__MISSING_DATA__
 
@@ -2540,6 +2542,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 				{
 					for (long offset=row*num_nodes, col = 0; col < num_nodes; col++)
 					{
+						// row = parent, col = child
 						result->Store (offset+col, 1, (*result)(offset+col,1) + current_graph(row, col));
 					}
 				}
@@ -3422,3 +3425,4 @@ void	Bgm::SerializeBgm (_String & rec)
 
 
 
+#endif
