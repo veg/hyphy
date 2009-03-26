@@ -33,8 +33,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "polynoml.h"
 #include "time.h"
 #include "scfg.h"
-#include "bgm.h"
 #include "HYNetInterface.h"
+
+#if defined __AFYP_REWRITE_BGM__ 
+#include "bayesgraph.h"
+#else
+#include "bgm.h"
+#endif
+
+
 
 //#include "profiler.h"
 #ifndef __HEADLESS__
@@ -192,12 +199,17 @@ _String
 			scfgCorpus						("SCFG_STRING_CORPUS"),
 
 			bgmData							("BGM_DATA_MATRIX"),
-			bgmWeights						("BGM_WEIGHT_MATRIX"),
 			bgmScores						("BGM_SCORE_CACHE"),
 			bgmGraph						("BGM_GRAPH_MATRIX"),
 			bgmNodeOrder					("BGM_NODE_ORDER"),
+#if defined __AFYP_REWRITE_BGM__
+			bgmConstraintMx					("BGM_CONSTRAINT_MATRIX"),
+			bgmParameters					("BGM_NETWORK_PARAMETERS"),
+#else
+			bgmWeights						("BGM_WEIGHT_MATRIX"),
 			bgmBanMx						("BGM_BAN_MATRIX"),
 			bgmEnforceMx					("BGM_ENFORCE_MATRIX"),
+#endif
 			
 			pathToCurrentBF					("PATH_TO_CURRENT_BF"),
 			hfCountGap						("COUNT_GAPS_IN_FREQUENCIES"),
@@ -5069,6 +5081,175 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 		
 		if (f<0 && g<0) // BGM Branch
 		{
+#if defined __AFYP_REWRITE_BGM__
+			_BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) bgmList (bgm_index);
+			
+			// set data matrix
+			if (currentArgument->Equal (&bgmData))
+			{
+				_Matrix		* dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
+				if (dataMx)
+				{
+					long	num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+					
+					if (dataMx->GetVDim() == num_nodes)
+					{
+						((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
+					}
+					else
+					{
+						errMsg = _String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").";
+						acknError (errMsg);
+						return;
+					}
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
+					acknError (errMsg);
+					return;
+				}
+				
+			}
+			
+			// restore node score cache
+			else if (currentArgument->Equal (&bgmScores))
+			{
+				_PMathObj inAVL = FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+				if (inAVL)
+				{
+					_AssociativeList * cacheAVL = (_AssociativeList*)inAVL;
+					((_BayesianGraphicalModel *)lkf)->ImportCache (cacheAVL);
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid associative list variable";
+					acknError (errMsg);
+					return;
+				}
+			}
+			
+			// set structure to user-specified adjacency matrix
+			else if (currentArgument->Equal (&bgmGraph))
+			{
+				_Matrix		* graphMx	= (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
+				
+				if (graphMx)
+				{
+					long	num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+					
+					if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes)
+					{
+						((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
+					}
+					else
+					{
+						errMsg = _String("Dimension of graph does not match current graph.");
+						acknError (errMsg);
+						return;
+					}
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
+					acknError (errMsg);
+					return;
+				}
+			}
+			
+			// set constraint matrix
+			else if (currentArgument->Equal (&bgmConstraintMx))	
+			{
+				_Matrix		* constraintMx	= (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
+				
+				if (constraintMx)
+				{
+					long	num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+					
+					if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes)
+					{
+						((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
+					}
+					else
+					{
+						errMsg = _String("Dimensions of constraint matrix does not match current graph.");
+						acknError (errMsg);
+						return;
+					}
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
+					acknError (errMsg);
+					return;
+				}
+			}
+			
+			// set node order
+			else if (currentArgument->Equal (&bgmNodeOrder))
+			{
+				_Matrix		* orderMx	= (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
+				
+				if (orderMx)
+				{
+					// UNDER DEVELOPMENT  April 17, 2008 afyp
+					long	num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+					
+					_SimpleList		* orderList = new _SimpleList();
+					
+					orderList->Populate (num_nodes, 0, 0);
+					
+					if (orderMx->GetVDim() == num_nodes)
+					{
+						for (long i = 0; i < num_nodes; i++)
+						{
+							orderList->lData[i] = (long) ((*orderMx) (0, i));
+						}
+						
+						((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
+					}
+					else
+					{
+						errMsg = _String("Length of order vector doesn't match number of nodes in graph.");
+						acknError (errMsg);
+						return;
+					}
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
+					acknError (errMsg);
+					return;
+				}
+			}
+			
+			
+			// set network parameters
+			else if (currentArgument->Equal (&bgmParameters))
+			{
+				_PMathObj inAVL = FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+				if (inAVL)
+				{
+					_AssociativeList * paramAVL = (_AssociativeList*)inAVL;
+					((_BayesianGraphicalModel *)lkf)->ImportCache (paramAVL);
+				}
+				else
+				{
+					errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid associative list variable";
+					acknError (errMsg);
+					return;
+				}
+			}
+			
+			
+			// anything else
+			else
+			{
+				errMsg = *currentArgument & " is not a valid BGM parameter in call to SetParameter";
+				WarnError (errMsg);
+				return;
+			}
+#else
 			Bgm * lkf = (Bgm *) bgmList (bgm_index);
 			if (currentArgument->Equal (&bgmData))
 			{
@@ -5098,7 +5279,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					acknError (errMsg);
 					return;
 				}
-
+				
 #ifdef __NEVER_DEFINED__
 				// read data matrix from comma-delimited file at path specified in 2nd argument
 				_Matrix	* data	 = new _Matrix;
@@ -5310,11 +5491,14 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 				errMsg = *currentArgument & " is not a valid BGM parameter in call to SetParameter";
 				WarnError (errMsg);
 				return;
-			}		
+			}	
+#endif
 		}
+		
 		else
-			if (f<0)
+		{
 			// SCFG Branch
+			if (f<0)
 			{
 				if (currentArgument->Equal (&scfgCorpus))
 					((Scfg*)scfgList(g))->SetStringCorpus ((_String*)parameters(2));
@@ -5333,8 +5517,9 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					lkf->SetIthIndependent (g,val);	
 				}
 			}
-			else
+			
 			// LF Branch
+			else
 			{
 				_LikelihoodFunction * lkf = (_LikelihoodFunction *) likeFuncList (f);
 				f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
@@ -5348,6 +5533,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 				_Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
 				lkf->SetIthIndependent (f,val);			
 			}
+		}
 	}
 	else
 	{
@@ -5616,9 +5802,15 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 				f = bgmNamesList.Find (&objectNameID);
 				if (f >= 0)		// then hey, it's a BGM!
 				{
+#if defined __AFYP_REWRITE_BGM__
+					_BayesianGraphicalModel * lf = (_BayesianGraphicalModel *) bgmList (f);
+					_AssociativeList * outAVL = lf->ExportModel();
+#else
 					Bgm * lf = (Bgm *) bgmList (f);
 					// result = lf->ExportNodeScores();
 					result = lf->ExportGraph();
+#endif
+					
 				}
 				else
 				{
@@ -6739,6 +6931,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 								break;
 							}
 						}
+#if not defined __AFYP_REWRITE_BGM__
 						else			// BGM::CovarianceMatrix, i.e. MCMC
 						{
 							lkf    = (_LikelihoodFunction*)bgmList  (ff);
@@ -6764,12 +6957,12 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 							}
 							*/
 							_SimpleList	*	first_order = nil;
-							
+							/*
 							if (last_order.lLength > 0)
 							{
 								checkPointer (first_order = new _SimpleList ((_SimpleList &) last_order));	// duplucate
 							}
-							
+							*/
 							optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
 							
 							// _SimpleList pointer will be deleted in CovarianceMatrix()
@@ -6780,6 +6973,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 														
 							break;
 						}
+#endif
 					}
 				}
 				else
