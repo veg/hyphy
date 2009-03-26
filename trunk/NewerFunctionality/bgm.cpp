@@ -303,9 +303,9 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
 				if (mp->Value() > max_max_parents)
 					max_max_parents = (long) mp->Value();
 				
-				prior_sample_size.Store (node_index, 0, (long) size->Value());
-				prior_mean.Store (node_index, 0, (long) mean->Value());
-				prior_precision.Store (node_index, 0, (long) precision->Value());
+				prior_sample_size.Store (node_index, 0, (_Parameter) size->Value());
+				prior_mean.Store (node_index, 0, (_Parameter) mean->Value());
+				prior_precision.Store (node_index, 0, (_Parameter) precision->Value());
 				
 			}
 			else
@@ -403,7 +403,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
 				{
 					obs = (*obsData)(row, node);
 					
-					if (has_missing[node] == 0 && obs < 0)	// use negative integer values to annotate missing data
+					if (has_missing.lData[node] == 0 && obs < 0)	// use negative integer values to annotate missing data
 					{
 						has_missing.lData[node] = 1;
 						continue;	// skip next step to check levels
