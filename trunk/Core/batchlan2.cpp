@@ -2334,7 +2334,6 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 	chain.currentCommand++;
 #if defined __AFYP_REWRITE_BGM__
 	_PMathObj	avl1	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-				//avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 	
 	if (! (avl1))
 	{
@@ -2342,19 +2341,11 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 	}
 	else
 	{
-		// is this a dynamic Bayesian network?
-		//_Parameter		dynamicArg;
-		//checkParameter (isDynamicGraph, dynamicArg, 0.);
-		//	bool is_dynamic_graph = (dynamicArg > 0) ? TRUE : FALSE;
+		_BayesianGraphicalModel	* bgm	= new _BayesianGraphicalModel ((_AssociativeList *) avl1);
 		
-		_BayesianGraphicalModel		* bgm;	// pointer to base class
-		
-		//if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-		//else					
-		bgm = new _BayesianGraphicalModel ((_AssociativeList*)avl1);
 #else
 	_PMathObj	avl1	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-	avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
+				avl2	= FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 	
 	if (! (avl1 && avl2))
 	{

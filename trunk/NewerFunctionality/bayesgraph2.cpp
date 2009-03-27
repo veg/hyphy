@@ -48,11 +48,12 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList *)
 //___________________________________________________________________________________________
 void _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 {
-	ReportWarning (_String("ExportCache()"));
+	
 	
 	// Export an associative list containing node_score_cache contents to HBL
 	//	entries are indexed by key string referring to child node and number of parents, 
 	//		e.g. "N0P2" refers to scores associated with child node 0 and two parents
+	_String			keyString;
 	
 	_List			* this_list;
 	_Constant		* orphan_score;
@@ -61,16 +62,18 @@ void _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 	
 	if (scores_cached)
 	{
+		ReportWarning (_String("Exporting cache with ") & num_nodes & " nodes");
+		
 		for (long node = 0; node < num_nodes; node++)
 		{
 			this_list = (_List *) node_score_cache.lData[node];
 			
-			for (long npar = 0; npar < max_parents.lData[node]; npar++)
+			for (long npar = 0; npar <= max_parents.lData[node]; npar++)
 			{
-				_String		keyString;
 				keyString = _String ("N") & node & "P" & npar;
-				
 				_FString	aKey (keyString, false);
+				
+				ReportWarning (_String("Inserting with key ") & keyString);
 				
 				if (npar == 0)
 				{
@@ -87,8 +90,6 @@ void _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 					family_scores = (_NTupleStorage *) this_list->lData[npar];
 					cache_export->MStore (&aKey, family_scores, true);	// make a dynamic copy					
 				}
-				
-				
 			}
 		}
 	}
@@ -149,6 +150,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 	//						(Kohn, Smith, and Chan, 2001 Stat Comput 11: 313-322)
 	
 	_Parameter		log_score = 0.;
+	
 	long			num_parent_combos = 1,	// i.e. 'q'
 					k;						// current number of continuous parents
 	_Matrix			n_ij,
@@ -177,6 +179,14 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 	k = c_parents.lLength;
 	
 	
+	// how many combinations of parental states are there?
+	for (long par = 0; par < d_parents.lLength; par++)
+	{
+		num_parent_combos *= num_levels.lData[d_parents.lData[par]];
+		multipliers << num_parent_combos;
+	}
+	
+	
 	// set location hyperparameter for Gaussian prior
 	CreateMatrix (&mu, k+1, 1, false, true, false);
 	mu.Store (0, 0, prior_mean (node_id, 0));				// prior intercept
@@ -186,28 +196,22 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 	}
 	
 	
-	
-	// how many combinations of parental states are there?
-	for (long par = 0; par < d_parents.lLength; par++)
-	{
-		num_parent_combos *= num_levels.lData[d_parents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	
 	// set prior degrees of freedom (for inverse gamma / scaled inverse chi-square)
 	_Parameter		rho	= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
 	
 	
+	
 	// set precision hyperparameter for Gaussian prior
 	CreateMatrix (&tau, k+1, k+1, false, true, false);
-	for (long row = 0; row < tau.GetHDim(); row++)
+	for (long row = 0; row < k+1; row++)
 	{
-		for (long col = 0; col < tau.GetVDim(); col++)
+		for (long col = 0; col < k+1; col++)
 		{
-			if (row == col) tau.Store (row, col, rho);
+			if (row == col) tau.Store (row, col, rho);	// set diagonal entries to rho
 			else tau.Store (row, col, 0.);	// zero off-diagonal entries
 		}
 	}
+	
 	
 	
 	// count up number of data points per parent combination
@@ -217,8 +221,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 	for (long obs = 0; obs < theData->GetHDim(); obs++)
 	{
 		long	index		= 0,
-		multiplier	= 1,
-		child_state = (*theData)(obs, node_id);
+				multiplier	= 1;
 		
 		for (long par = 0; par < d_parents.lLength; par++)
 		{
@@ -240,8 +243,8 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 		_Parameter	pa_log_score = 0.;
 		
 		_Matrix		zbpa (n_ij(pa, 0), k+1, false, true),
-		yb (n_ij(pa, 0), 1, false, true),
-		scale;
+					yb (n_ij(pa, 0), 1, false, true),
+					scale;
 		
 		long		count_n		= 0;	
 		// number of data points with this parent combination.
@@ -257,7 +260,9 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 				zbpa.Store (count_n, 0, 1);		// intercept
 				
 				for (long parent = 0; parent < k; parent++)
+				{
 					zbpa.Store (count_n, parent+1, (*theData)(obs, c_parents.lData[parent]));
+				}
 				
 				// state vector for this continuous node
 				yb.Store (count_n, 0, (*theData)(obs, node_id));
@@ -266,12 +271,15 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 			}
 		}
 		
+		
+		ReportWarning (_String ("before matrix inverse"));
+		
 		// calculate scale parameter for non-central t distribution
 		// from S. Bottcher (2001) p.25
 		scale = zbpa;
-		scale *=  * (_Matrix *) tau.Inverse();
-		zbpa.Transpose();
-		scale *= zbpa;
+		scale *=  * (_Matrix *) tau.Inverse();	// n_ij x k+1
+		zbpa.Transpose();	// k+1 x n_ij
+		scale *= zbpa;		// n_ij x n_ij
 		zbpa.Transpose();
 		for (long row = 0; row < scale.GetHDim(); row++)	// add identity matrix
 		{
@@ -279,6 +287,8 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 		}
 		scale *= (_Parameter) (prior_precision (node_id, 0) / rho);
 		
+		
+		ReportWarning (_String ("before matrix determinant"));
 		
 		// calculate the determinant of scale parameter matrix
 		_Matrix			temp_mat (scale);
@@ -302,12 +312,18 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 		
 		// calculate second term of score
 		_Matrix		next_mat;
-		zbpa *= mu;
-		yb -= zbpa;
+		ReportWarning (_String ("before zbpa * mu"));
+		zbpa *= mu;		// n_ij x (k+1)  *  (k+1) x 1  --> n_ij x 1
+		ReportWarning (_String ("before yb - zbpa"));
+		yb -= zbpa;		// n_ij x 1
 		temp_mat = yb;
 		next_mat = temp_mat;
-		next_mat *= * (_Matrix *) scale.Inverse();
+		ReportWarning (_String ("before yb * scale-1"));
+		next_mat *= * (_Matrix *) scale.Inverse();	// incompatible matrix dimensions  n_ij x 1  * n_ij x n_ij
+		ReportWarning (_String ("scale dimensions: ") & scale.GetHDim() & " x " & scale.GetVDim());
+		ReportWarning (_String ("next_mat dimensions: ") & next_mat.GetHDim() & " x " & next_mat.GetVDim());
 		temp_mat.Transpose();
+		ReportWarning (_String ("before yb * scale-1 * yb^T"));
 		next_mat *= temp_mat;
 		next_mat *= (_Parameter) (1./prior_precision (node_id, 0));	// should be a 1-element matrix
 		
@@ -315,6 +331,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 		log_score += pa_log_score;
 	}
 	
+	ReportWarning (_String ("returning from ComputeContinuousScore()"));
 	
 	return log_score;
 }

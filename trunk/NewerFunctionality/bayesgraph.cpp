@@ -1216,24 +1216,28 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		{
 			_Matrix		single_parent_scores (num_nodes, 1, false, true);
 			
+			parents << 0;	// allocate space for one parent
+			
 			for (long par = 0; par < num_nodes; par++)
 			{
 				if (par == node_id)		// child cannot be its own parent, except in Kansas
 					continue;
 				
-				parents << par;
+				parents.lData[0] = par;
 				
 				if (data_type.lData[node_id] == 0)
 				{
-					score = ComputeDiscreteScore (node_id, parents);
+					if (data_type.lData[par] == 0)	// discrete child cannot have continuous parent
+					{
+						score = ComputeDiscreteScore (node_id, parents);
+					}
 				}
-				else 
+				else	// child is continuous
 				{
 					score = ComputeContinuousScore (node_id, parents);
 				}
 				
 				single_parent_scores.Store (par, 0, score);
-				parents.Clear();
 			}
 			(*this_list) && (&single_parent_scores);
 		}
