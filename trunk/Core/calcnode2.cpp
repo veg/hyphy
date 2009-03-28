@@ -1657,5 +1657,67 @@ void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& class
 	
 }
 
+//_______________________________________________________________________________________________
+
+_Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, long catID)	
+{
+	
+	_Parameter *l0 =  dsf->probabilityVectors.theData + 
+					  dsf->categoryShifter * catID + dsf->theNodeMap.lData[0]*dsf->shifter,
+				*l1 = dsf->probabilityVectors.theData + 
+					  dsf->categoryShifter * catID + dsf->theNodeMap.lData[1]*dsf->shifter,
+				*l2 = dsf->probabilityVectors.theData + 
+					  dsf->categoryShifter * catID + dsf->theNodeMap.lData[2]*dsf->shifter,
+				* matrix0 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[0]->in_object])->GetCompExp(catID)->theData,
+				* matrix1 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[1]->in_object])->GetCompExp(catID)->theData,
+				* matrix2 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[2]->in_object])->GetCompExp(catID)->theData,
+				  overallResult = 0.;
+	
+	long		siteCount =  dsf->GetSiteCount();
+	
+	for (long siteIndex = 0; siteIndex < siteCount; siteIndex ++, l0+=4, l1+=4, l2+=4)
+	{
+		_Parameter rp0 = l0[0] * matrix0[0]+ l0[1]  * matrix0[1]  + l0[2] * matrix0[2]  + l0[3] * matrix0[3];
+		_Parameter rp1 = l0[0] * matrix0[4]+ l0[1]  * matrix0[5]  + l0[2] * matrix0[6]  + l0[3] * matrix0[7];
+		_Parameter rp2 = l0[0] * matrix0[8]+ l0[1]  * matrix0[9]  + l0[2] * matrix0[10] + l0[3] * matrix0[11];
+		_Parameter rp3 = l0[0] * matrix0[12]+ l0[1] * matrix0[13] + l0[2] * matrix0[14] + l0[3] * matrix0[15];
+		
+		rp0 *= l1[0] * matrix1[0]+ l1[1] * matrix1[1] + l1[2] * matrix1[2] + l1[3] * matrix1[3];
+		rp1 *= l1[0] * matrix1[4]+ l1[1] * matrix1[5] + l1[2] * matrix1[6] + l1[3] * matrix1[7];
+		rp2 *= l1[0] * matrix1[8]+ l1[1] * matrix1[9] + l1[2] * matrix1[10] + l1[3] * matrix1[11];
+		rp3 *= l1[0] * matrix1[12]+ l1[1] * matrix1[13] + l1[2] * matrix1[14] + l1[3] * matrix1[15];
+		
+		rp0 *= l2[0] * matrix2[0]+ l2[1] * matrix2[1] + l2[2] * matrix2[2] + l2[3] * matrix2[3];
+		rp1 *= l2[0] * matrix2[4]+ l2[1] * matrix2[5] + l2[2] * matrix2[6] + l2[3] * matrix2[7];
+		rp2 *= l2[0] * matrix2[8]+ l2[1] * matrix2[9] + l2[2] * matrix2[10] + l2[3] * matrix2[11];
+		rp3 *= l2[0] * matrix2[12]+ l2[1] * matrix2[13] + l2[2] * matrix2[14] + l2[3] * matrix2[15];
+	
+		_Parameter 	result = theProbs[0]*rp0+
+							 theProbs[1]*rp1+
+							 theProbs[2]*rp2+
+							 theProbs[3]*rp3;
+	
+	
+		if (result<=0.0) 
+		{
+			printf ("%d %g\n", siteIndex, result);
+			for (long k = 0; k < 4; k++)
+			{
+				printf ("%d %g %g %g\n", k, l0[k], l1[k],l2[k]);
+			}
+			for (long k = 0; k < 16; k++)
+			{
+				printf ("%d %g %g %g\n", k, matrix0[k], matrix1[k],matrix2[k]);
+			}
+			WarnError ("BARF!");
+			return -A_LARGE_NUMBER;
+		}
+		
+		overallResult += myLog (result);
+	}
+	return overallResult;
+}
+
+
 
 #endif

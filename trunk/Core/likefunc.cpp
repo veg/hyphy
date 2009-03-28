@@ -293,9 +293,9 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 		lastDone		= 0;
 		userTimeStart	= clock();
 		checkParameter	 (optimizationStringQuantum, update_quantum, 0.0);
-		t = FetchObjectFromVariableByType (&optimizationStringTemplate,STRING);
+		t = (_FString*)FetchObjectFromVariableByType (&optimizationStringTemplate,STRING);
 		userReportString = t?*t->theString:empty;
-		t = FetchObjectFromVariableByType (&optimizationStringStatus,STRING);
+		t = (_FString*)FetchObjectFromVariableByType (&optimizationStringStatus,STRING);
 		userStatusString = t?*t->theString:empty;
 		elapsed_time	 = 0.0;
 	}
@@ -3947,8 +3947,7 @@ void	_LikelihoodFunction::CleanupMPIOptimizer (void)
 	#endif
 }
 	
-	//_______________________________________________________________________________________
-#ifdef _SLKP_LFENGINE_REWRITE_
+//_______________________________________________________________________________________
 void			_LikelihoodFunction::SetupLFCaches				(void)
 {
 	// need to decide which data represenation to use, 
@@ -4056,8 +4055,6 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 		delete columnBlock; delete translationCache;
 	}
 }
-	
-#endif
 
 //extern long marginalLFEvals, marginalLFEvalsAmb;
 
@@ -8155,7 +8152,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 			return sum;
 		}
 		else
-			if (conditionalTerminalNodeStateFlag[index])
+			if (conditionalTerminalNodeStateFlag[index] || !df->IsNormalFilter())
 			// two sequence analysis
 			{
 				_SimpleList branches;
@@ -8164,8 +8161,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 				t->DetermineNodesForUpdate		   (branches, &matrices,catID);
 				if (matrices.lLength)
 					t->ExponentiateMatrices(matrices, GetThreadCount(),catID);
-
-				return t->ComputeTwoSequenceLikelihood (*sl,
+				
+				if (df->IsNormalFilter())
+					return t->ComputeTwoSequenceLikelihood (*sl,
 														df,
 														conditionalTerminalNodeStateFlag[index],
 														(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
@@ -8173,6 +8171,11 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 														df->NumberDistinctSites (),
 														catID,
 														siteRes);
+			   else
+			   {
+				   return t->Process3TaxonNumericFilter ((_DataSetFilterNumeric*)df);
+			   }
+				   
 			}
 	}
 	else
@@ -8216,7 +8219,6 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
  */
 		
 		WarnError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");
-		return 0.0;
 	}
 	
 	return 0.0;

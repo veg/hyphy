@@ -9132,48 +9132,6 @@ _Parameter	 _TheTree::ReleafTreeChar4 (_DataSetFilter* dsf, long index, long las
 	return result;
 }
 
-//_______________________________________________________________________________________________
-
-_Parameter	 _TheTree::ReleafTreeCharNumFilter4Tree3 (_DataSetFilterNumeric* dsf, long index, long catID)	
-{
-
-	_Parameter *l0 = dsf->probabilityVectors.theData + dsf->categoryShifter * catID + dsf->theNodeMap.lData[0]*dsf->shifter + index*4,
-			   rp0, rp1, rp2, rp3,
-			   * fastIndex;
-			   
-	
-	fastIndex = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[0]->in_object])->compExp->theData;
-
-	rp0 = l0[0] * fastIndex[0]+ l0[1]  * fastIndex[1]  + l0[2] * fastIndex[2]  + l0[3] * fastIndex[3];
-	rp1 = l0[0] * fastIndex[4]+ l0[1]  * fastIndex[5]  + l0[2] * fastIndex[6]  + l0[3] * fastIndex[7];
-	rp2 = l0[0] * fastIndex[8]+ l0[1]  * fastIndex[9]  + l0[2] * fastIndex[10] + l0[3] * fastIndex[11];
-	rp3 = l0[0] * fastIndex[12]+ l0[1] * fastIndex[13] + l0[2] * fastIndex[14] + l0[3] * fastIndex[15];
-					
-	l0 = dsf->probabilityVectors.theData + dsf->categoryShifter * catID + dsf->theNodeMap.lData[1]*dsf->shifter + index*4;
-	fastIndex = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[1]->in_object])->compExp->theData;
-
-	rp0 *= l0[0] * fastIndex[0]+ l0[1] * fastIndex[1] + l0[2] * fastIndex[2] + l0[3] * fastIndex[3];
-	rp1 *= l0[0] * fastIndex[4]+ l0[1] * fastIndex[5] + l0[2] * fastIndex[6] + l0[3] * fastIndex[7];
-	rp2 *= l0[0] * fastIndex[8]+ l0[1] * fastIndex[9] + l0[2] * fastIndex[10] + l0[3] * fastIndex[11];
-	rp3 *= l0[0] * fastIndex[12]+ l0[1] * fastIndex[13] + l0[2] * fastIndex[14] + l0[3] * fastIndex[15];
-
-	l0 = dsf->probabilityVectors.theData  + dsf->categoryShifter * catID + dsf->theNodeMap.lData[2]*dsf->shifter + index*4;
-	fastIndex = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[2]->in_object])->compExp->theData;
-
-	rp0 *= l0[0] * fastIndex[0]+ l0[1] * fastIndex[1] + l0[2] * fastIndex[2] + l0[3] * fastIndex[3];
-	rp1 *= l0[0] * fastIndex[4]+ l0[1] * fastIndex[5] + l0[2] * fastIndex[6] + l0[3] * fastIndex[7];
-	rp2 *= l0[0] * fastIndex[8]+ l0[1] * fastIndex[9] + l0[2] * fastIndex[10] + l0[3] * fastIndex[11];
-	rp3 *= l0[0] * fastIndex[12]+ l0[1] * fastIndex[13] + l0[2] * fastIndex[14] + l0[3] * fastIndex[15];
-
-	_Parameter 	result = theProbs[0]*rp0+
-						 theProbs[1]*rp1+
-						 theProbs[2]*rp2+
-						 theProbs[3]*rp3;
-	
-		
-	if (result<=0.0) return ALMOST_ZERO;
-	return result;
-}
 
 
 //_______________________________________________________________________________________________

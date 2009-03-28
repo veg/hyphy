@@ -388,6 +388,9 @@ class _TheTree: public _TreeTopology {
 			_Parameter		ThreadReleafTreeCache		(_DataSetFilter*,long,long,long,long,long,long offset = 0);
 #endif
 
+			_Parameter		Process3TaxonNumericFilter	(_DataSetFilterNumeric*, long = 0);
+
+	
 			void			ThreadMatrixUpdate			(long, bool);
 			void			SerialMatrixUpdate			(long, bool);
 			void			MatrixCacheUpdate			(void);
@@ -403,18 +406,13 @@ class _TheTree: public _TreeTopology {
 			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long);	
 
 			_Parameter	Probij 							(long, long, _CalcNode*);
-			_Parameter	ReleafTreeCharNumFilter4Tree3	(_DataSetFilterNumeric*, long, long = 0);
 			_Parameter	PruneTree	  					(long categID = -1);
 			_Parameter	PruneTreeChar 					(long categID = -1);
 			_Parameter	PruneTreeCharCache 				(long categID = -1);
 			_Parameter	PruneTreeChar4					(long categID = -1);
 			_Parameter	PruneTreeChar4Cache 			(long categID = -1);
 			
-#ifdef		_SLKP_LFENGINE_REWRITE_
 			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*);
-#else
-			_List*		RecoverAncestralSequences 		(_DataSetFilter*, long, long, _Parameter* = nil);
-#endif	
 			void		RecoverNodeSupportStates 		(_DataSetFilter*, long, long, _Matrix&);
 			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*,long);
 			_List*		SampleAncestors 				(_DataSetFilter*, node<long>*);
