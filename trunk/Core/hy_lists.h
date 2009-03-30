@@ -88,7 +88,7 @@ virtual 	void operator << 				(_SimpleList&);
  			
 virtual		void InsertElement 				(BaseRef br, long insertAt = -1, bool store = true, bool pointer = true);
 
-  			void Clear	 					(void);
+  			void Clear	 					(bool = true);
 	
 			long Element					(long);
 			// much like [] and () except negative indices return offsets from the end
@@ -270,7 +270,7 @@ virtual 	long	 FreeUpMemory (long);
 
  			void bumpNInst (void);
  				
-virtual 	void Clear	   (void);
+virtual 	void Clear	   (bool = true);
 
  			_List operator & (BaseRef);
  				// append operator

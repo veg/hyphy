@@ -1646,31 +1646,13 @@ long  _List::FreeUpMemory (long requestedBytes)
 
 //______________________________________________________________
 
-void  _List::Clear (void)
+void  _List::Clear (bool completeClear)
 {
 	if (nInstances<=1)
 	{
 		for (unsigned long i = 0; i<lLength; i++)
 			DeleteObject (((BaseRef*)lData)[i]);
-		/*{
-			BaseRef t = ((BaseRef*)lData)[i];
-			if (t)
-			{
-				if (t->nInstances<=1)
-					DeleteObject(t);
-				else 
-					t->nInstances--;
-			}
-		}*
-		/*lLength = 0;
-		if (laLength != MEMORYSTEP)
-		{
-			laLength = MEMORYSTEP;
-			if (lData)
-				free (lData);
-			lData = (long*)MemAllocate (laLength*sizeof(Ptr));
-		}*/
-		_SimpleList::Clear();
+		_SimpleList::Clear(completeClear);
 			
 	}
 	else
@@ -1679,15 +1661,18 @@ void  _List::Clear (void)
 
 //______________________________________________________________
 
-void  _SimpleList::Clear (void)
+void  _SimpleList::Clear (bool completeClear)
 {
 	if (nInstances<=1)
 	{
 		lLength = 0;
-		laLength = 0;
-		if (lData)
-			free (lData);
-		lData = nil;
+		if (completeClear)
+		{
+			laLength = 0;
+			if (lData)
+				free (lData);
+			lData = nil;
+		}
 	}
 	else
 		nInstances--;	

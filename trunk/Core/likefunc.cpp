@@ -792,6 +792,7 @@ void	 _LikelihoodFunction::Clear (void)
 	blockDependancies.Clear();
 	computationalResults.Clear();
 	partScalingCache.Clear();
+
 	
 	optimalOrders.Clear();
 	leafSkips.Clear();
@@ -885,6 +886,17 @@ bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
 			WarnError (_String("The dimension of the equilibrium frequencies vector ") &
 							   *(_String*)triplets(i+2) & " (" & efvDim & ") doesn't match the number of states in the dataset filter (" & dfDim & ") " &*(_String*)triplets(i));
 			return false;
+		}
+		
+		if (df->IsNormalFilter() == false)
+		// do checks for the numeric filter
+		{
+			if (df->NumberSpecies() != 3 || df->GetDimension () != 4)
+			{
+				WarnError ("Datafilters with numerical probability vectors must contain exactly three sequences and contain nucleotide data");
+			
+				return false;
+			}
 		}
 		// first - produce the list of tip node names
 		if (!MapTreeTipsToData (theTrees.lLength-1))	
@@ -3960,6 +3972,7 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 	checkPointer(conditionalTerminalNodeStateFlag		 = new long*		 [theTrees.lLength]);
 	overallScalingFactors.Populate						  (theTrees.lLength, 0,0);
 	overallScalingFactorsBackup.Populate				  (theTrees.lLength, 0,0);
+	matricesToExponentiate.Clear();
 
 	for (long i=0; i<theTrees.lLength; i++)
 	{
@@ -8154,14 +8167,15 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 		else
 			if (conditionalTerminalNodeStateFlag[index] || !df->IsNormalFilter())
 			// two sequence analysis
-			{
-				_SimpleList branches;
-				_List		matrices;
-
-				t->DetermineNodesForUpdate		   (branches, &matrices,catID);
-				if (matrices.lLength)
-					t->ExponentiateMatrices(matrices, GetThreadCount(),catID);
+			{	
+				_SimpleList bc;
+				_List		mc;
+				t->DetermineNodesForUpdate		   (bc, &mc);
+				if (mc.lLength)
+					t->ExponentiateMatrices(mc, GetThreadCount(),catID);
 				
+				//branchedGlobalCache.Clear(false);
+				//matricesGlobalCache.Clear(false);
 				if (df->IsNormalFilter())
 					return t->ComputeTwoSequenceLikelihood (*sl,
 														df,
@@ -8172,52 +8186,12 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 														catID,
 														siteRes);
 			   else
-			   {
 				   return t->Process3TaxonNumericFilter ((_DataSetFilterNumeric*)df);
-			   }
 				   
 			}
 	}
 	else
-	{
-/*
-		res=myLog(t->ReleafTreeAndCheckChar4 (df, *siteList, false));
-		res*=(_Parameter)df->theFrequencies.lData[*(siteList++)];
-
-		 _Parameter accumulator = 1.0;
-		 for (i = 1; i<sl->lLength; i++,siteList++)
-		 {
-		 //res += myLog(t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList)) \
-		 //  *(_Parameter)df->theFrequencies.lData[*siteList];                                    \
-		 
-		 long thisSiteFreq = df->theFrequencies.lData[*siteList];
-		 _Parameter thisSiteScore = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList);
-		 if (thisSiteScore>0.0)
-		 for (; thisSiteFreq; thisSiteFreq--)
-		 {
-		 _Parameter testAcc = accumulator * thisSiteScore;
-		 if (testAcc>1.e-300)
-		 accumulator = testAcc;
-		 else
-		 {
-		 res += log (accumulator);
-		 accumulator = thisSiteScore;
-		 }
-		 }
-		 else
-		 res -= thisSiteFreq*1000000.;
-		 }
-		 res += log (accumulator);
-		 }	
-
- // categs on 						
-		siteRes[*siteList] = t->ReleafTreeAndCheckChar4 (df, *siteList, false, categID);				
-		siteList++;
-		for (i = 1; i<sl->lLength; i++,siteList++)
-			siteRes[*siteList] = t->ReleafTreeCharNumFilter4Tree3 ((_DataSetFilterNumeric*)df, *siteList,categID);
-
- */
-		
+	{		
 		WarnError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");
 	}
 	

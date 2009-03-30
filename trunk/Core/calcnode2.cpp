@@ -90,7 +90,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 
 long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNodes, long catID, long addOne)
 {
-	_SimpleList		nodesToUpdate (flatLeaves.lLength + flatTree.lLength - 1, 0, 0); 
+	nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength - 1, 0, 0); 
 	_CalcNode		*currentTreeNode;
 	long			lastNodeID = -1;
 
@@ -1668,14 +1668,16 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 					  dsf->categoryShifter * catID + dsf->theNodeMap.lData[1]*dsf->shifter,
 				*l2 = dsf->probabilityVectors.theData + 
 					  dsf->categoryShifter * catID + dsf->theNodeMap.lData[2]*dsf->shifter,
-				* matrix0 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[0]->in_object])->GetCompExp(catID)->theData,
-				* matrix1 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[1]->in_object])->GetCompExp(catID)->theData,
-				* matrix2 = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[theRoot->nodes.data[2]->in_object])->GetCompExp(catID)->theData,
+				* matrix0 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[0]->in_object)))->GetCompExp(catID)->theData,
+				* matrix1 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[1]->in_object)))->GetCompExp(catID)->theData,
+				* matrix2 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[2]->in_object)))->GetCompExp(catID)->theData,
 				  overallResult = 0.;
 	
-	long		siteCount =  dsf->GetSiteCount();
+	long		patternCount =  dsf->NumberDistinctSites();
 	
-	for (long siteIndex = 0; siteIndex < siteCount; siteIndex ++, l0+=4, l1+=4, l2+=4)
+	_Parameter  currentAccumulator = 1.;
+	
+	for (long patternIndex = 0; patternIndex < patternCount; patternIndex ++, l0+=4, l1+=4, l2+=4)
 	{
 		_Parameter rp0 = l0[0] * matrix0[0]+ l0[1]  * matrix0[1]  + l0[2] * matrix0[2]  + l0[3] * matrix0[3];
 		_Parameter rp1 = l0[0] * matrix0[4]+ l0[1]  * matrix0[5]  + l0[2] * matrix0[6]  + l0[3] * matrix0[7];
@@ -1700,7 +1702,7 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 	
 		if (result<=0.0) 
 		{
-			printf ("%d %g\n", siteIndex, result);
+			/*printf ("%d %g\n", siteIndex, result);
 			for (long k = 0; k < 4; k++)
 			{
 				printf ("%d %g %g %g\n", k, l0[k], l1[k],l2[k]);
@@ -1709,13 +1711,24 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 			{
 				printf ("%d %g %g %g\n", k, matrix0[k], matrix1[k],matrix2[k]);
 			}
-			WarnError ("BARF!");
+			WarnError ("BARF!");*/
 			return -A_LARGE_NUMBER;
 		}
 		
-		overallResult += myLog (result);
+		long patternFreq = dsf->theFrequencies[patternIndex];
+		for  (long freqIterator = 0; freqIterator < patternFreq; freqIterator++)
+		{
+			_Parameter tryMultiplication = currentAccumulator*result;
+			if (tryMultiplication > 1.e-300)
+				currentAccumulator = tryMultiplication;
+			else
+			{
+				overallResult += myLog (currentAccumulator);
+				currentAccumulator = result;
+			}
+		}
 	}
-	return overallResult;
+	return overallResult + myLog (currentAccumulator);
 }
 
 

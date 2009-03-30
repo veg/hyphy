@@ -607,7 +607,8 @@ class _TheTree: public _TreeTopology {
 				topLevelNodes,
  				topLevelLeftL,
  				topLevelRightL,
-				forceRecalculationOnTheseBranches;
+				forceRecalculationOnTheseBranches,
+				nodesToUpdate;
  				
 };
 
