@@ -1589,6 +1589,7 @@ void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& class
 {
 	
 	long	totalCategories = classCounter.Element(-1),
+			globalCatCount  = containerVariables.lLength-1,
 			localCategories = 1,
 			catCount		= categoryVariables.lLength-1,
 			entriesPerCat   = 2+catCount; 
@@ -1605,7 +1606,7 @@ void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& class
 		
 		_SimpleList		remappedIDs,
 						rateMultiplers (categoryVariables.lLength,1,0),
-						categoryValues (categoryVariables.lLength,0,0);
+						categoryValues (globalCatCount+1,0,0);
 		
 		for (long myCatID = 0; myCatID <= catCount; myCatID++)
 		{
@@ -1618,38 +1619,30 @@ void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& class
 		}
 		
 		for (long myCatID = catCount-1; myCatID >= 0; myCatID--)
-			rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID-1]*classCounter.lData[remappedIDs.lData[myCatID+1]];
+			rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID]*classCounter.lData[remappedIDs.lData[myCatID+1]];
 		
-		for	(long currentRateCombo  = 0; currentRateCombo < localCategories; currentRateCombo++)
+		for	(long currentRateCombo  = 0; currentRateCombo < totalCategories; currentRateCombo++)
 		{
-			long remainder = currentRateCombo % classCounter.lData[remappedIDs.lData[catCount]];
-			if (currentRateCombo && remainder  == 0)
+			long copyRateCombo = currentRateCombo;
+			for (long variableID = 0; variableID <= globalCatCount; variableID++)
 			{
-				categoryValues.lData[catCount] = 0;
-				for (long uptick = catCount-1; uptick >= 0; uptick --)
-				{
-					categoryValues.lData[uptick]++;
-					if (categoryValues.lData[uptick] == classCounter.lData[remappedIDs.lData[uptick]])
-						categoryValues.lData[uptick] = 0;
-					else
-						break;
-				}
-			}
-			else
-			{
-				if (currentRateCombo)			
-					categoryValues.lData[catCount]++;
+				categoryValues.lData[variableID] = copyRateCombo / multipliers.lData[variableID];
+				copyRateCombo = copyRateCombo%multipliers.lData[variableID];
+				//printf ("%d %d %d %d\n", currentRateCombo, variableID, multipliers.lData[variableID], categoryValues.lData[variableID]);
 			}
 			
-			long externalCatID = 0;
-			for (long myCatID = 0; myCatID <= catCount; myCatID++)
-				externalCatID += multipliers.lData[remappedIDs.lData[myCatID]] * categoryValues.lData[myCatID];
+			long localCatID = 0;
 			
-			externalCatID *= entriesPerCat;
-			remapMyCategories.lData[externalCatID] = currentRateCombo;
-			for (long indexer = 0; indexer < entriesPerCat-1; indexer++)
-				remapMyCategories.lData[externalCatID+1+indexer] = categoryValues.lData[indexer];
-				
+			for  (long localVariableID = 0; localVariableID<=catCount; localVariableID++)
+				localCatID += rateMultiplers.lData[localVariableID] * categoryValues.lData[remappedIDs.lData[localVariableID]];
+			
+			long offset = currentRateCombo * entriesPerCat;
+			remapMyCategories.lData[offset] = localCatID;
+
+			offset++;
+			for  (long localVariableID = 0; localVariableID<=catCount; localVariableID++)
+				remapMyCategories[offset++] = categoryValues.lData[remappedIDs.lData[localVariableID]];
+
 		}
 	}
 	
@@ -1684,14 +1677,14 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 		_Parameter rp2 = l0[0] * matrix0[8]+ l0[1]  * matrix0[9]  + l0[2] * matrix0[10] + l0[3] * matrix0[11];
 		_Parameter rp3 = l0[0] * matrix0[12]+ l0[1] * matrix0[13] + l0[2] * matrix0[14] + l0[3] * matrix0[15];
 		
-		rp0 *= l1[0] * matrix1[0]+ l1[1] * matrix1[1] + l1[2] * matrix1[2] + l1[3] * matrix1[3];
-		rp1 *= l1[0] * matrix1[4]+ l1[1] * matrix1[5] + l1[2] * matrix1[6] + l1[3] * matrix1[7];
-		rp2 *= l1[0] * matrix1[8]+ l1[1] * matrix1[9] + l1[2] * matrix1[10] + l1[3] * matrix1[11];
+		rp0 *= l1[0] * matrix1[0] + l1[1] * matrix1[1]  + l1[2] * matrix1[2]  + l1[3] * matrix1[3];
+		rp1 *= l1[0] * matrix1[4] + l1[1] * matrix1[5]  + l1[2] * matrix1[6]  + l1[3] * matrix1[7];
+		rp2 *= l1[0] * matrix1[8] + l1[1] * matrix1[9]  + l1[2] * matrix1[10] + l1[3] * matrix1[11];
 		rp3 *= l1[0] * matrix1[12]+ l1[1] * matrix1[13] + l1[2] * matrix1[14] + l1[3] * matrix1[15];
 		
-		rp0 *= l2[0] * matrix2[0]+ l2[1] * matrix2[1] + l2[2] * matrix2[2] + l2[3] * matrix2[3];
-		rp1 *= l2[0] * matrix2[4]+ l2[1] * matrix2[5] + l2[2] * matrix2[6] + l2[3] * matrix2[7];
-		rp2 *= l2[0] * matrix2[8]+ l2[1] * matrix2[9] + l2[2] * matrix2[10] + l2[3] * matrix2[11];
+		rp0 *= l2[0] * matrix2[0] + l2[1] * matrix2[1]  + l2[2] * matrix2[2]  + l2[3] * matrix2[3];
+		rp1 *= l2[0] * matrix2[4] + l2[1] * matrix2[5]  + l2[2] * matrix2[6]  + l2[3] * matrix2[7];
+		rp2 *= l2[0] * matrix2[8] + l2[1] * matrix2[9]  + l2[2] * matrix2[10] + l2[3] * matrix2[11];
 		rp3 *= l2[0] * matrix2[12]+ l2[1] * matrix2[13] + l2[2] * matrix2[14] + l2[3] * matrix2[15];
 	
 		_Parameter 	result = theProbs[0]*rp0+
@@ -1702,16 +1695,6 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 	
 		if (result<=0.0) 
 		{
-			/*printf ("%d %g\n", siteIndex, result);
-			for (long k = 0; k < 4; k++)
-			{
-				printf ("%d %g %g %g\n", k, l0[k], l1[k],l2[k]);
-			}
-			for (long k = 0; k < 16; k++)
-			{
-				printf ("%d %g %g %g\n", k, matrix0[k], matrix1[k],matrix2[k]);
-			}
-			WarnError ("BARF!");*/
 			return -A_LARGE_NUMBER;
 		}
 		
