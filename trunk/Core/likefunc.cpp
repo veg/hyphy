@@ -546,6 +546,7 @@ void _LikelihoodFunction::Init (void)
 	computingTemplate   = nil;
 	mstCache			= nil;
 	nonConstantDep      = nil;
+	evalsSinceLastSetup = 0;
 	
 	conditionalInternalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;
@@ -1363,7 +1364,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 	
 	
 	PrepareToCompute();
-	if (runMode == 2 || runMode == 0)
+	if (runMode == _hyphyLFConstructCategoryMatrixConditionals || runMode == _hyphyLFConstructCategoryMatrixWeights)
 	// just return the matrix with class weights
 	{
 		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
@@ -1373,7 +1374,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 				hDim = myCatCount;
 		}
 	}
-	if (runMode == 2)
+	if (runMode == _hyphyLFConstructCategoryMatrixWeights)
 	{
 		_Matrix		* catWeights = new _Matrix (whichParts.lLength, hDim, false, true);
 		_SimpleList scalers;
@@ -1392,14 +1393,14 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 	
 	// compute the number of columns in the matrix 
 	for (long i=0;i<whichParts.lLength;i++)
-		if (runMode && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
+		if (runMode != _hyphyLFConstructCategoryMatrixConditionals && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
 			vDim	+=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]))->GetSiteCount();
 	// all sites
 		else
 			vDim	+=		BlockLength(i);
 	// only unique patterns for now
 
-	if (runMode == 1) 
+	if (runMode == _hyphyLFConstructCategoryMatrixClasses) 
 	// just return the maximum conditional likelihood category
 	{
 		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
@@ -2238,6 +2239,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	if (done)
 	{
 		likeFuncEvalCallCount ++;
+		evalsSinceLastSetup   ++;
 		PostCompute ();
 	#ifdef _UBER_VERBOSE_LF_DEBUG
 		printf ("%g\n", result);
@@ -3974,6 +3976,8 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 	overallScalingFactorsBackup.Populate				  (theTrees.lLength, 0,0);
 	matricesToExponentiate.Clear();
 
+	evalsSinceLastSetup = 0;
+	
 	for (long i=0; i<theTrees.lLength; i++)
 	{
 		_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
@@ -8067,6 +8071,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 				branches					= &changedBranches;
 				matrices					= &changedModels;
 			}
+			
+			if (evalsSinceLastSetup == 0)
+				branches->Populate (t->GetINodeCount()+t->GetLeafCount()-1,0,1);
 			
 #ifdef _UBER_VERBOSE_LF_DEBUG
 			printf ("%d matrices, %d branches marked for rate class %d\n", matrices->lLength, branches->lLength, catID);

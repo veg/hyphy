@@ -2959,7 +2959,7 @@ void	_HYParameterTable::HandleCategories(void)
 		_LikelihoodFunction* lf = (_LikelihoodFunction*)likeFuncList  (lfID);
 		_SimpleList* cv 		= &lf->GetCategoryVars ();
 		_SimpleList allParts (lf->CountObjects(0),0,1);
-		_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, false, true);
+		_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixConditionals, true);
 		if (cv->lLength)
 		{
 			_String		windowTitle = _String ("Category Display for ") & *(_String*)likeFuncNamesList (lfID),
@@ -3005,7 +3005,7 @@ void	_HYParameterTable::HandleCategories(void)
 				tryMe = windowTitle & '_' & k++;
 			
 			_SimpleList allParts (lf->CountObjects(0),0,1);
-			_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, false, true);
+			_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixClasses, true);
 			_List       colHeaders;
 			windowTitle = "Log-likelihood";
 			colHeaders && & windowTitle;

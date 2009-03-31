@@ -56,6 +56,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFComputationalTemplateBySite		1
 #define	  _hyphyLFComputationalTemplateByPartition  2
 
+/* conditional likelihood matrix reconstruction modes */
+
+#define	  _hyphyLFConstructCategoryMatrixConditionals	0
+#define	  _hyphyLFConstructCategoryMatrixClasses		1
+#define	  _hyphyLFConstructCategoryMatrixWeights		2
+#define	  _hyphyLFConstructCategoryMatrixPosteriors		3
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -391,7 +398,10 @@ static	void			CheckFibonacci				(_Parameter);
 								12,4,1
 */
 						
-		long		 	templateKind,
+		long		 	evalsSinceLastSetup,
+						// this is necessary to force internal caches to be filled in at least once
+						// for trees where branches have different numbers of rate categories 
+						templateKind,
 	
 						/* 
 							_hyphyLFComputationalTemplateNone: 

@@ -653,12 +653,12 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 			if (parameters.lLength > 2)
 			{
 				if (((_String*)parameters(2))->Equal(&completeFlag))
-					runMode = 0;
+					runMode = _hyphyLFConstructCategoryMatrixConditionals;
 				else
 					if (((_String*)parameters(2))->Equal(&conditionalWeights))
-						runMode = 2;
+						runMode = _hyphyLFConstructCategoryMatrixWeights;
 					else 
-						runMode = 1;
+						runMode = _hyphyLFConstructCategoryMatrixClasses;
 			}
 			ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
 		}

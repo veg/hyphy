@@ -128,7 +128,7 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 				
 			nodesToUpdate.lData[nodeID] = 1;
 		}
-		
+				
 		if (nodesToUpdate.lData[nodeID])
 			nodesToUpdate.lData[flatParents.lData[nodeID]+flatLeaves.lLength] = 1;
 	}
