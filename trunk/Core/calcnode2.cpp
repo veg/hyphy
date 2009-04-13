@@ -424,7 +424,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
 					_Parameter tryScale									= scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
-					if (tryScale < HUGE_VALL)
+					if (tryScale < HUGE_VAL)
 					{
 						parentConditionals [0]							   *= _lfScalerUpwards;
 						parentConditionals [1]							   *= _lfScalerUpwards;
@@ -490,7 +490,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
 					_Parameter tryScale									= scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
-					if (tryScale < HUGE_VALL)
+					if (tryScale < HUGE_VAL)
 					{
 						scalingAdjustments [parentCode*siteCount + siteID] = tryScale;
 						for (long c = 0; c < alphabetDimension; c++) 
@@ -891,7 +891,7 @@ void			_TheTree::ComputeBranchCache	(
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
 						_Parameter tryScale									= scalingAdjustments [nodeCode*siteCount + siteID] * _lfScalerUpwards;
-						if (tryScale < HUGE_VALL)
+						if (tryScale < HUGE_VAL)
 						{
 								parentConditionals[0]							  *= _lfScalerUpwards;
 								parentConditionals[1]							  *= _lfScalerUpwards;
@@ -941,7 +941,7 @@ void			_TheTree::ComputeBranchCache	(
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
 					{
 						_Parameter tryScale									= scalingAdjustments [nodeCode*siteCount + siteID] * _lfScalerUpwards;
-						if (tryScale < HUGE_VALL)
+						if (tryScale < HUGE_VAL)
 						{
 							for (long c = 0; c < alphabetDimension; c++) 
 								parentConditionals [c] *= _lfScalerUpwards;

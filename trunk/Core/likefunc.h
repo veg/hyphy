@@ -479,7 +479,7 @@ static	void			CheckFibonacci				(_Parameter);
 							canUseReversibleSpeedups,
 							// a partition will be tagged with '1' if its tree has only
 							// time-reversible models
-							siteScalerBuffer,
+							siteScalerBuffer
 							// used for LF with category variables to 
 							// store site-by-site scaling factors
 							;
@@ -492,7 +492,7 @@ static	void			CheckFibonacci				(_Parameter);
 							siteCorrectionsBackup,
 							cachedBranches,
 							// for models with categories, a list of site by site scaling operation counts
-							partScalingCache,
+							partScalingCache
 							// used to store site by site scalers in computations that are performed
 							// on a site-by-site basis; includes scratch cache for remapping
 							;
