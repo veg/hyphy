@@ -202,6 +202,8 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 	_Matrix			*rateAssignments = nil;
 	if  (!doMarginal && indexCat.lLength>0)
 		rateAssignments = (_Matrix*)checkPointer(ConstructCategoryMatrix(doTheseOnes,_hyphyLFConstructCategoryMatrixConditionals,false));
+	else
+		Compute(); // need to do this to populate rate matrices
 	
 	long siteOffset			= 0,
 		 patternOffset		= 0,
