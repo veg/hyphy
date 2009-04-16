@@ -19,6 +19,7 @@ _String		_HYBgm_NODE_INDEX	("NodeID"),
 			_HYBgm_PRIOR_SIZE	("PriorSize"),
 			_HYBgm_PRIOR_MEAN	("PriorMean"),		/* for continuous (Gaussian) nodes */
 			_HYBgm_PRIOR_PRECISION	("PriorPrecision"),
+			_HYBgm_PRIOR_SCALE	("PriorScale"),
 
 			/*SLKP 20070926; add string constants for progress report updates */
 			_HYBgm_STATUS_LINE_MCMC			("Running Bgm MCMC"),
@@ -130,9 +131,10 @@ _Parameter	LnGamma(_Parameter theValue)
 											27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842};
 	
 	// use look-up table for small integer values
-	if (theValue <= 20 && (theValue - (long)theValue) > 0.)	
+	if (theValue <= 20 && (theValue - (long)theValue) == 0.)
+	{
 		return (lookUpTable [(long) theValue - 1]);
-	
+	}
 	
 	// else do it the hard way
 	_Parameter	x, y, tmp, ser;
@@ -220,6 +222,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 	CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);
 	CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
 	CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
+	CreateMatrix (&prior_scale, num_nodes, 1, false, true, false);
 	
 	CreateMatrix (&constraint_graph, num_nodes, num_nodes, false, true, false);
 	
@@ -238,8 +241,10 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		//										"NodeType"		- 0 = discrete, 1 = continuous (Gaussian)
 		//										"MaxParents"	- maximum number of parents
 		//										"PriorSize"		- hyperparameter for discrete node (BDe)
+		//														- also used for degrees of freedom hyperparameter for Gaussian node
 		//										"PriorMean"		- hyperparameter for Gaussian node
 		//										"PriorPrecision" - hyperparameter for Gaussian node
+		//										"PriorScale"	- fourth hyperparameter for Gaussian node
 		
 		// node type (0 = discrete, 1 = continuous)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER)))
@@ -293,10 +298,22 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))
 		{
 			prior_precision.Store (node, 0, (_Parameter) (avl_val->Value()));
+			ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
 		}
 		else if (!avl_val && data_type.lData[node] == 1)
 		{
 			errorMessage = _String ("Missing PriorPrecision in associative array for node ") & node;
+			break;
+		}
+		
+		// prior scale (Gaussian)
+		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))
+		{
+			prior_scale.Store (node, 0, (_Parameter) (avl_val->Value()));
+		}
+		else if (!avl_val && data_type.lData[node] == 1)
+		{
+			errorMessage = _String ("Missing PriorScale in associative array for node ") & node;
 			break;
 		}
 	}
@@ -1252,6 +1269,8 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			{
 				_NTupleStorage	family_scores (num_nodes-1, np);
 				
+				parents << 0;	// allocate space for one additional parent
+				
 				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
 				{
 					bool	remaining;
@@ -1263,7 +1282,8 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 						{
 							long par = nk_tuple.lData[par_idx];
 							if (par >= node_id) par++;
-							parents << par;
+							parents.lData[par_idx] = par;
+							// parents << par;
 						}
 						
 						if (data_type.lData[node_id] == 0)

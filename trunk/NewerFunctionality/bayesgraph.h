@@ -146,7 +146,8 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		_Matrix			prior_sample_size,
 						prior_mean,			// for continuous (Gaussian) nodes
-						prior_precision;
+						prior_precision,
+						prior_scale;
 		
 		/* ------------------------------------------- */
 		
