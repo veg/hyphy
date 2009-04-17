@@ -464,14 +464,14 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 		}
 		
 		
-		// is new structure compatible with node_order?
-		if (!GraphObeysOrder (theStructure, node_order))
+		// is new structure compatible with node order set in HBL?
+		if (!GraphObeysOrder (theStructure, node_order_arg))
 		{
 			// need to reset node_order
 			_SimpleList * templist;
 			
 			templist = GetOrderFromGraph (theStructure);
-			node_order = (_SimpleList &) (*templist);
+			node_order_arg = (_SimpleList &) (*templist);
 			DeleteObject (templist);
 		}
 		
@@ -494,12 +494,14 @@ bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
 	{
 		if (GraphObeysOrder (theStructure, (_SimpleList &) *order))
 		{
-			node_order.Populate(num_nodes, 0, 0);	// reset member variable
+			node_order_arg.Populate(num_nodes, 0, 0);	// reset member variable
 			
 			for (long i = 0; i < num_nodes; i++)
 			{
-				node_order.lData[i] = order->lData[i];
+				node_order_arg.lData[i] = order->lData[i];
 			}
+			
+			ReportWarning (_String("BGM node order arg set to ") & (_String *) node_order_arg.toStr());
 			
 			return (TRUE);
 		}
@@ -530,7 +532,7 @@ _Parameter _BayesianGraphicalModel::Compute (void)
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
-		log_score += data_type.lData[node_id] ? ComputeDiscreteScore (node_id) : ComputeContinuousScore (node_id);
+		log_score += data_type.lData[node_id] ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
 	}
 	
 	return log_score;
@@ -546,9 +548,9 @@ _Parameter _BayesianGraphicalModel::Compute (_Matrix & g)
 	
 	_Parameter	log_score = 0.;
 	
-	for (long node_id = 0; node_id < num_nodes; node_id++)
-		log_score += data_type.lData[node_id] ? ComputeDiscreteScore (node_id, g) : ComputeContinuousScore (node_id, g);
-	
+	for (long node_id = 0; node_id < num_nodes; node_id++)		// discrete nodes are 0 (FALSE)
+		log_score += data_type.lData[node_id] ? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
+																
 	return log_score;
 }
 
@@ -691,7 +693,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
 	
 	for (long par = 0; par < num_nodes; par++)
 	{
-		if (theStructure(par, node_id) == 1 && data_type.lData[par] == 1)
+		if (theStructure(par, node_id) == 1 && data_type.lData[par] == 0)
 			parents << par;
 	}
 	
@@ -706,7 +708,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix 
 	
 	for (long par = 0; par < num_nodes; par++)
 	{
-		if ( g(par, node_id) == 1 && data_type.lData[par] == 1)
+		if ( g(par, node_id) == 1 && data_type.lData[par] == 0)
 			parents << par;
 	}
 	
@@ -721,11 +723,8 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 	//		via wrapper functions (above) and/or constraint matrix.
 	//	---------------------------------------------------------------------------------
 	
+	
 	// use cached node scores if available
-	
-	ReportWarning (_String ("Called ComputeDiscreteScore with ") & node_id);
-	
-	
 	if (scores_cached)
 	{
 		_List *		scores	= (_List *) node_score_cache.lData[node_id];
@@ -756,6 +755,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 	}
 	
 	
+	ReportWarning (_String ("Non-cached call of ComputeDiscreteScore with ") & node_id & " <- " & (_String *) parents.toStr());
 	
 	// impute score if missing data
 	if (has_missing.lData[node_id])
@@ -877,6 +877,12 @@ _Parameter _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Mat
 //___________________________________________________________________________________________
 void	_BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
 {
+	/* ------------------------------------------------------------------------------------
+		InitMarginalVectors()
+		Allocate storage of node and edge marginal posterior probabilities accumulated during
+		order-MCMC.  Off-diagonals correspond to entries of an adjacency matrix (edges), 
+		whereas diagonal entries are used to store node marginals.
+	   ------------------------------------------------------------------------------------ */
 	_GrowingVector * newstore;
 	checkPointer (newstore = new _GrowingVector);
 	
@@ -903,6 +909,22 @@ void	_BayesianGraphicalModel::DumpMarginalVectors (_List * compute_list)
 //___________________________________________________________________________________________
 void	_BayesianGraphicalModel::CacheNodeScores (void)
 {
+	/*	-----------------------------------------------------------------------------------
+		CacheNodeScores() loops through nodes in the network and calls compute functions
+		to calculate local network scores given the number and identity of parents for that node.
+		
+		The node scores are cached in a custom data structure that comprises a _List object
+		that stores pointers to the following objects:
+		
+			0 parents	_Constant		a single float for node score without parents
+			1			_Matrix			a vector where i-th entry holds score with parent i
+			2 or more	_NTupleStorage	a vector indexed by combinadics, i.e., a (n,k) tuple 
+										mapped to integer space
+		
+		Each of these _List object are in turn stored in a _List object that is a class member 
+		variable [node_score_cache].
+		-----------------------------------------------------------------------------------	*/
+	
 	ReportWarning (_String ("Entered CacheNodeScores()"));
 	
 	if (scores_cached)
@@ -980,8 +1002,8 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		for (long node_id = 0; node_id < num_nodes; node_id++)
 		{
 			long		maxp			= max_parents.lData[node_id],
-			ntuple_receipt,
-			this_node;
+						ntuple_receipt,
+						this_node;
 			
 			bool		remaining;
 			
@@ -1506,9 +1528,11 @@ void _BayesianGraphicalModel::SerializeBgm (_String & rec)
 //_________________________________________________________________________________________________________
 _Matrix *	_BayesianGraphicalModel::Optimize (void)
 {
-	//	Wrapper function to access various optimization methods (K2, structural MCMC, order MCMC)
-	//		and implement MPI functionality.
-	
+	/* ---------------------------------------------------------------------------------------------
+		OPTIMIZE()
+		Wrapper function to access various optimization methods (K2, structural MCMC, order MCMC)
+			and implement MPI functionality.
+	   --------------------------------------------------------------------------------------------- */
 	if (!scores_cached) 
 	{
 		CacheNodeScores();
@@ -1521,7 +1545,9 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 									// 3 = structural MCMC
 									// 4 = order MCMC
 	
-	_Matrix *	output_matrix;
+	_Matrix *	output_matrix;		// for order-MCMC and graph-MCMC has 4 columns:	(1) chain trace;
+									//	(2) edge marginal posteriors; (3) best state (node ordering or graph);
+									//	(4) last state visited in chain
 	
 	
 	checkParameter (_HYBgm_METHOD_KEY, optMethod, 0.);
@@ -1546,24 +1572,18 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 		
 		// acquisition of HBL arguments with a few sanity checks
 		checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0);
-		if (mcmc_steps <= 0)
-		{
-			oops = _String ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
-			WarnError (oops);
-		}
+		if (mcmc_steps <= 0)	oops = _String ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
 		
 		checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0);
-		if (mcmc_burnin < 0)
-		{
-			oops = _String("You can't have a negative burn-in (_HYBgm_MCMC_BURNIN)!\n");
-			WarnError (oops);
-		}
+		if (mcmc_burnin < 0)	oops = _String("You can't have a negative burn-in (_HYBgm_MCMC_BURNIN)!\n");
 		
 		checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0);
-		if (mcmc_samples < 0)
+		if (mcmc_samples < 0)	oops = _String ("You can't have a negative sample size!");
+		
+		if (oops.sLength > 0)
 		{
-			oops = _String ("You can't have a negative sample size!");
 			WarnError (oops);
+			return nil;
 		}
 		
 #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
@@ -1637,7 +1657,18 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 			}
 			else
 			{
-				OrderMetropolis (mcmc_burnin, mcmc_steps, mcmc_samples, 1., output_matrix);
+				if (mcmc_burnin > 0)
+				{
+					ReportWarning (_String("Executing order-MCMC for burn-in period of ") & mcmc_burnin & " steps");
+					OrderMetropolis (FALSE, mcmc_burnin, mcmc_samples, 1., output_matrix);
+					
+					ReportWarning (_String("Automatically reset node_order_arg to best order visited in order-MCMC burn-in: "));
+					if (node_order_arg.lLength == 0)	 node_order_arg.Populate (num_nodes, 0, 0);
+					for (long i = 0; i < num_nodes; i++) node_order_arg.lData[i] = (*output_matrix) (i,3);
+					ReportWarning    (_String((_String*)node_order_arg.toStr()));	
+				}
+				ReportWarning (_String("Executing order-MCMC for ") & mcmc_steps & " steps, sample size " & mcmc_samples);
+				OrderMetropolis (TRUE, mcmc_steps, mcmc_samples, 1., output_matrix);
 			}
 			
 #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
@@ -1823,8 +1854,12 @@ bool	_BayesianGraphicalModel::GraphObeysOrder (_Matrix & graph, _SimpleList & or
 //_______________________________________________________________________________________________________________________
 _SimpleList *	_BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
 {
-	//  To quickly generate a node order based on graph argument.
-	//	Loop through nodes in graph and rank according to parentage.
+	/* ---------------------------------------------------------------------------------
+		GetOrderFromGraph()
+			To quickly generate a node order based on graph argument.
+			Loop through nodes in graph and insert into list according to parentage.
+			For an empty graph, this should return (0,1,2,...,num_nodes-1)
+	 ----------------------------------------------------------------------------------- */
 	
 	_SimpleList	*	new_order  = new _SimpleList (1, 0, 0);	// initialize with single entry, [0]
 	
@@ -1854,13 +1889,18 @@ _SimpleList *	_BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
 void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burnin, long mcmc_steps, long mcmc_samples, 
 												  _Parameter chain_t, _Matrix * result)
 {
-	//	Performs MCMC over structures.  Initialize chain using class member [theStructure] (accessible by HBL).
-	//		If [fixed_order]=TRUE, only explores the subset of graphs compatible with [node_order].
-	//	Returns pointer to matrix containing:	(1) vector of posterior probabiities
-	//											(2) linearized matrix of edge marginal posteriors
-	//											(3)		"		"	for best graph
-	//											(4)		"		"	for last graph visited in chain
-	
+	/* --------------------------------------------------------------------------------------------------------
+		GraphMetropolis()
+	 
+		Performs MCMC over structures.  Initialize chain using class member [theStructure] (accessible by HBL).
+			If theStructure is empty graph, initialize order with random permutation.
+			If [fixed_order]=TRUE, only explores the subset of graphs compatible with [node_order_arg] if specified.
+		
+		Returns pointer to matrix containing:	(1) vector of posterior probabiities
+												(2) linearized matrix of edge marginal posteriors
+												(3)		"		"	for best graph
+												(4)		"		"	for last graph visited in chain
+	   --------------------------------------------------------------------------------------------------------- */
 	
 	_Matrix		*	proposed_graph	= new _Matrix (num_nodes, num_nodes, false, true);
 	
@@ -1869,7 +1909,7 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 	
 	_Parameter		current_score, proposed_score, best_score,
 					lk_ratio,
-					prob_swap;
+					prob_swap, param_max_fails;
 	
 	long			sampling_interval = mcmc_steps / mcmc_samples,
 					max_fails;
@@ -1882,31 +1922,59 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 	checkParameter (_HYBgm_MCMC_PROBSWAP, prob_swap, 0);
 	if (prob_swap < 0 || prob_swap > 1.)
 	{
-		_String oops ("Bgm_PROB_SWAP must be assigned a value between 0 and 1.  Exiting.\n");
+		_String oops ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
 		WarnError (oops);
+		return;
 	}
 	
-	
-	
-	
-	if (fixed_order && node_order.lLength == 0)
+	checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 0);
+	if (param_max_fails <= 0.) 
 	{
-		_String	oops ("ERROR: Missing node order when attempting structural-MCMC with fixed order argument.");
-		WarnError (oops);
-	}
-	
-	
-	// initialize state
-	if (GraphObeysOrder (theStructure, node_order))
-	{
-		(*proposed_graph) = (_Matrix &) theStructure;
-		(*proposed_order) = (_SimpleList &) node_order;
+		WarnError ("BGM_MCMC_MAXFAILS must be assigned a value greater than 0");
+		return;
 	}
 	else
 	{
-		_String	oops ("ERROR: Structure does not match order, aborting GraphMetropolis().");
-		WarnError (oops);
+		max_fails = (long) param_max_fails;
 	}
+	
+	
+	
+	
+	// initialize chain state
+	if (node_order_arg.lLength == 0)	
+	{
+		if (fixed_order)
+		{
+			_String	oops ("ERROR: Missing node order when attempting structural-MCMC with fixed order argument.");
+			WarnError (oops);
+		}
+		else	// node order argument has not been set by user
+		{
+			(*proposed_graph)	= (_Matrix &) theStructure;
+			proposed_order		= GetOrderFromGraph (theStructure);
+			ReportWarning (_String("Starting GraphMetropolis() without node_order_arg, extracted ") & (_String *) proposed_order->toStr() & " from theStructure");
+		}
+	}
+	else	// set to user arguments
+	{
+		if (GraphObeysOrder (theStructure, node_order_arg))
+		{
+			(*proposed_graph) = (_Matrix &) theStructure;
+			(*proposed_order) = (_SimpleList &) node_order_arg;
+			
+			ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg ") & (_String *) node_order_arg.toStr());
+		}
+		else
+		{
+			_String	oops ("ERROR: Structure does not match order, aborting GraphMetropolis().");
+			WarnError (oops);
+			
+			return;
+		}
+	}
+	
+	
 	
 	
 	// status line
@@ -1932,9 +2000,13 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 	// main loop
 	for (long step = 0; step < mcmc_steps + mcmc_burnin; step++)
 	{
+		//ReportWarning (_String ("current graph (") & current_score & "): \n" & (_String *) current_graph.toStr());
+		
 		RandomizeGraph (proposed_graph, proposed_order, prob_swap, 1, max_fails, fixed_order);
 		
+		
 		proposed_score = Compute((_Matrix &) *proposed_graph);
+		//ReportWarning (_String ("propose graph: (") & proposed_score & "):\n" & (_String *) proposed_graph->toStr());
 		
 		lk_ratio = exp(proposed_score - current_score);
 		
@@ -2007,13 +2079,14 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 	
 	}
 	
-	// convert edge tallies to frequencies, and report best graph
+	// convert edge tallies to frequencies, and report best and last graph
 	for (long row = 0; row < num_nodes; row++)
 	{
 		for (long offset=row*num_nodes, col = 0; col < num_nodes; col++)
 		{
 			result->Store (offset+col, 1, (*result)(offset+col,1)/mcmc_samples);
-			result->Store (offset+col, 2, best_graph(row, col));
+			result->Store (offset+col, 2, (_Parameter) best_graph(row, col));
+			result->Store (offset+col, 3, (_Parameter) current_graph(row,col));
 		}
 	}
 	
@@ -2035,6 +2108,22 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 			child, parent, 
 			child_idx, parent_idx;
 	
+	/*
+	char debug [255];
+	
+	sprintf (debug, "fixed_order %d, graph:\n", fixed_order);
+	BufferToConsole (debug);
+	for (long row = 0; row < graph->GetHDim(); row++)
+	{
+		for (long col = 0; col < graph->GetVDim(); col++)
+		{
+			sprintf (debug, "%d ", (long) (*graph)(row,col));
+			BufferToConsole (debug);
+		}
+		NLToConsole ();
+	}
+	NLToConsole();
+	*/
 	
 	// convert order into matrix format of edge permissions
 	_Matrix order_matrix (num_nodes, num_nodes, false, true);
@@ -2080,8 +2169,7 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		// a fail-safe to avoid infinite loops
 		if (fail > max_fails)
 		{
-			_String oops ("Failed to modify the graph in GraphMCMC() after max_fails attempts.");
-			WarnError (oops);
+			WarnError (_String ("Failed to modify the graph in GraphMCMC() after ") & max_fails & " attempts.");
 			break;
 		}
 		
@@ -2099,29 +2187,24 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 			{
 				if (num_parents.lData[child] == max_parents.lData[child])
 				{
-					// move an edge from an existing parent to target parent
-					long	deadbeat_dad	= genrand_int32() % max_parents.lData[child];
-					long	social_worker	= 0;
+					// generate a list of current parents that can be removed
+					_SimpleList		deadbeat_dads;
 					
-					for (; social_worker < num_nodes; social_worker++)
+					for (long par = 0; par < num_nodes; par++)
 					{
-						if ( (*graph)(social_worker,child) == 1)
+						if ((*graph)(par,child) == 1 && constraint_graph(par, child) <= 0)	// not an enforced edge
 						{
-							if (deadbeat_dad)
-							{
-								deadbeat_dad--;
-							}
-							else
-							{
-								break;
-							}
+							deadbeat_dads << par;
 						}
 					}
 					
-					if (constraint_graph(social_worker, child) <= 0)	// not an enforced edge
+					if (deadbeat_dads.lLength > 0)
 					{
-						graph->Store (social_worker, child, 0.);
-						num_parents.lData[child]--;
+						graph->Store (deadbeat_dads.lData[genrand_int32() % deadbeat_dads.lLength], child, 0.);
+						graph->Store (parent, child, 1.);
+						step++;
+						
+						//ReportWarning (_String("switch parents"));
 					}
 					else
 					{
@@ -2133,6 +2216,8 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 					graph->Store (parent, child, 1.);
 					num_parents.lData[child]++;
 					step++;
+					
+					//ReportWarning (_String("add an edge"));
 				}
 			}
 			else if ( (*graph)(parent,child) == 1 && constraint_graph(parent,child) <= 0)		// delete an edge
@@ -2140,6 +2225,8 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 				graph->Store (parent, child, 0.);
 				num_parents.lData[child]--;
 				step++;
+				
+				//ReportWarning (_String("delete an edge"));
 			}
 			else
 			{
@@ -2173,6 +2260,8 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 					graph->Store (child,parent,1);
 					num_parents.lData[child]--;
 					num_parents.lData[parent]++;
+					
+					//ReportWarning ("edge flip");
 				}
 				
 				// flip the other edges affected by node swap
@@ -2227,14 +2316,221 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		}
 	}
 	while (step < num_steps);
+	
+	/*
+	sprintf (debug, " | \n V \n");
+	BufferToConsole (debug);
+	for (long row = 0; row < graph->GetHDim(); row++)
+	{
+		for (long col = 0; col < graph->GetVDim(); col++)
+		{
+			sprintf (debug, "%d ", (long) (*graph)(row,col));
+			BufferToConsole (debug);
+		}
+		NLToConsole ();
+	}
+	 */
 }
 
 
 
 //_______________________________________________________________________________________________________________________
-void	_BayesianGraphicalModel::OrderMetropolis (long burn_in, long n_steps, long sample_size, _Parameter chain_t, 
+void	_BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, long sample_size, _Parameter chain_t, 
 												  _Matrix * result)
 {
+	/* ----------------------------------------------------------------------------------------
+		OrderMetropolis()
+		
+		Execute Metropolis sampler using a swap of two nodes in an ordered sequence				
+		as a proposal function.  The posterior probabilities of edges in the network are 
+		stored as a member matrix [edge_posteriors].  Note that the total number of 
+		possible orderings (i.e. permutations of a sequence of length N) is factorial(N), 
+		and can possibly be computed exactly for N < 8.
+	   ---------------------------------------------------------------------------------------- */
+	long			first_node, second_node,
+					sample_lag = n_steps / sample_size;
+	
+	_Parameter		lk_ratio,
+					prob_current_order, prob_proposed_order, best_prob,
+					denom;
+	
+	_SimpleList		current_order, proposed_order, best_node_order,
+					* ptr_to_order;
+	
+	_List			* marginals			= new _List ();
+	
+	_GrowingVector	* gv;
+	
+	
+	InitMarginalVectors (marginals);	// allocate storage
+	
+	
+	
+	/* SLKP 20070926 
+	 Add user feedback via the console window status bar
+	 */
+	VerbosityLevel();
+	long howManyTimesUpdated = 0; // how many times has the line been updated; is the same as the # of seconds
+	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+#ifdef __HEADLESS__
+	SetStatusLine (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")));
+#else
+#ifndef __UNIX__
+	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), empty ,0,HY_SL_TASK|HY_SL_PERCENT);
+#else
+	_String			* progressReportFile = NULL;
+	_Variable 	    * progressFile = CheckReceptacle (&optimizationStatusFile, empty, false);
+	
+	if (progressFile->ObjectClass () == STRING)
+		progressReportFile = ((_FString*)progressFile->Compute())->theString;
+	ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), -1., progressReportFile);
+#endif
+#endif
+	
+	/* SLKP */
+	
+	
+	
+	// initialize node ordering
+	if (node_order_arg.lLength > 0)
+	{
+		current_order = node_order_arg;
+	}
+	else
+	{
+		ptr_to_order = GetOrderFromGraph (theStructure);
+		current_order.Duplicate(ptr_to_order);
+		DeleteObject (ptr_to_order);
+	}
+	
+	best_prob = prob_current_order = Compute (current_order, marginals);
+	best_node_order = current_order;
+	
+	proposed_order.Populate (num_nodes, 0, 1);
+	
+	// chain
+	for (long step = 0; step < n_steps; step++)
+	{
+		// copy over current order to proposed order
+		for (long i = 0; i < proposed_order.lLength; i++)
+		{
+			proposed_order.lData[i] = current_order.lData[i];
+		}
+		
+		
+		// swap random nodes in ordered sequence
+		first_node	= genrand_int32() % num_nodes;
+		second_node = genrand_int32() % num_nodes;
+		
+		while (first_node == second_node) second_node = genrand_int32() % num_nodes;
+		
+		proposed_order.Swap (first_node, second_node);
+		
+		
+		// compute likelihood ratio of proposed : current orders
+		prob_proposed_order = Compute (proposed_order, marginals);
+		lk_ratio			= exp(prob_proposed_order - prob_current_order);
+		
+		if (lk_ratio > 1. || genrand_real2() < lk_ratio)	// then set current to proposed order
+		{
+			current_order = proposed_order;
+			prob_current_order = prob_proposed_order;
+			
+			if (prob_proposed_order > best_prob)
+			{
+				best_prob = prob_proposed_order;		// update best node ordering
+				best_node_order = proposed_order;
+			}
+		}
+		
+		
+		// if past burn-in period and at sampling step, record trace and marginals
+		if (do_sampling)
+		{
+			if (step % sample_lag == 0)
+			{
+				result->Store (step / sample_lag, 0, prob_current_order);
+				
+				for (long child = 0; child < num_nodes; child++)
+				{
+					// retrieve information from Compute()
+					gv		= (_GrowingVector *) marginals->lData[child * num_nodes + child];
+					denom	= (*gv)(0, 0);	// first entry holds node marginal post pr
+					
+					for (long edge, parent = 0; parent < num_nodes; parent++)
+					{
+						if (parent == child)
+							continue;
+						
+						edge	= child * num_nodes + parent;
+						gv		= (_GrowingVector *) marginals->lData[edge];
+						
+						// not all _GrowingVector entries in marginals are being used, 
+						//		i.e., edges incompatible with order
+						if (gv->GetUsed() > 0)
+						{
+							result->Store (edge, 1, (*result)(edge, 1) + exp (LogSumExpo(gv) - denom));
+						}
+					}
+				}
+			}
+		}
+		
+		
+		/*SLKP 20070926; include progress report updates */
+		if (TimerDifferenceFunction(true)>1.0) // time to update
+		{
+			howManyTimesUpdated ++;
+			_String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")) & " " & (step+1) & "/" & n_steps 
+			& " steps (" & (1.0+step)/howManyTimesUpdated & "/second)";
+#if  defined __HEADLESS__
+			SetStatusLine (statusLine);
+#else
+#if !defined __UNIX__
+			SetStatusLine 	  (empty,statusLine,empty,100*step/(n_steps),HY_SL_TASK|HY_SL_PERCENT);
+			yieldCPUTime(); // let the GUI handle user actions
+			if (terminateExecution) // user wants to cancel the analysis
+				break;
+#endif
+#if defined __UNIX__ && ! defined __HEADLESS__
+			ConsoleBGMStatus (statusLine, 100.*step/(n_steps), progressReportFile);
+#endif
+#endif
+			
+			TimerDifferenceFunction(false); // reset timer for the next second
+		}
+		/* SLKP */
+		
+	}
+	// chain terminates
+	
+	
+	// convert sums of edge posterior probs. in container to means
+	for (long edge = 0; edge < num_nodes * num_nodes; edge++)
+	{
+		result->Store (edge, 1, (*result)(edge,1) / sample_size);
+	}
+	
+	
+	// export node ordering info
+	for (long node = 0; node < num_nodes; node++)
+	{
+		result->Store (node, 2, (_Parameter) (best_node_order.lData[node]));
+		result->Store (node, 3, (_Parameter) (current_order.lData[node]));
+	}
+	
+	
+	DumpMarginalVectors (marginals);
+	
+	
+	/*SLKP 20070926; include progress report updates */
+#if !defined __UNIX__ || defined __HEADLESS__
+	SetStatusLine 	  (_HYBgm_STATUS_LINE_MCMC_DONE);
+#endif
+#if defined __UNIX__ && ! defined __HEADLESS__
+	ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC_DONE, -1.0, progressReportFile);
+#endif
+	/* SLKP */
 	
 }
 
