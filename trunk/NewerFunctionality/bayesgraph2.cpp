@@ -178,7 +178,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 		some access functions so that these can be changed.)
 	*/
 	
-	ReportWarning (_String ("ComputeContinuousScore ") & node_id);
+	ReportWarning (_String ("Called ComputeContinuousScore with ") & node_id & " <- " & (_String *) parents.toStr());
 	
 #ifdef _DEBUG_CCS_
 	char debug [255];

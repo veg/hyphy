@@ -84,7 +84,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		virtual _Matrix *		Optimize ();
 		
 		void			GraphMetropolis (bool, long, long, long, _Parameter, _Matrix *),
-						OrderMetropolis (long, long, long, _Parameter, _Matrix *),
+						OrderMetropolis (bool, long, long, _Parameter, _Matrix *),
 						K2Search (bool, long, long, _Matrix *);
 		
 		
@@ -158,7 +158,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		_List			node_score_cache;
 		bool			scores_cached;
 		
-		_SimpleList		node_order;
+		_SimpleList		node_order_arg;		// provides access to node ordering functionality as HBL argument
 		
 		/* ------------------------------------------- */
 		
