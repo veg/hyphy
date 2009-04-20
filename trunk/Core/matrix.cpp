@@ -7829,6 +7829,8 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 			_String err ("Invalid distance matrix passed to NeighborJoin. Matrix written onto messages.log"),
 					invalidMx ((_String*)toStr());
 			ReportWarning (invalidMx);
+			ReportWarning (_String((_String*)netDivergence.toStr()));
+			ReportWarning (_String((_String*)useColumn.toStr()));
 			WarnError (err);
 			DeleteObject (res);
 			return new _Matrix;
