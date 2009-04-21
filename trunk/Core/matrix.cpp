@@ -7760,6 +7760,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 			
 			netDivergence.theData[k] += d;
 			netDivergence.theData[j] += d;
+			
 		}
 		res->theData[k*3+2] = 1;
 	}
@@ -7775,6 +7776,8 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 						minIndexR = -1,
 						minIndexC = -1,
 						k = specCount-1-cladesMade;
+		
+		_Parameter	    recRemaining = 1./k;
 		
 		if (cladesMade == specCount-1)
 		{
@@ -7811,7 +7814,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 				//if (c2>=c1)
 					//break;
 					
-				_Parameter d = theData[c2*specCount+c1]-(netDivergence.theData[c1]+netDivergence.theData[c2])/k;
+				_Parameter d = theData[c2*specCount+c1]-(netDivergence.theData[c1]+netDivergence.theData[c2])*recRemaining;
 				
 				if (d<min)
 				{
@@ -7826,7 +7829,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 		
 		if (minIndex < 0 || minIndex2 < 0 || minIndexR < 0 || minIndexC < 0)
 		{
-			_String err ("Invalid distance matrix passed to NeighborJoin. Matrix written onto messages.log"),
+			_String err ("Invalid distance matrix passed to NeighborJoin. Matrices written onto messages.log"),
 					invalidMx ((_String*)toStr());
 			ReportWarning (invalidMx);
 			ReportWarning (_String((_String*)netDivergence.toStr()));
@@ -7837,7 +7840,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 		}
 		
 		_Parameter		D  = theData[minIndex*specCount+minIndex2],
-						d  = (D - (netDivergence.theData[minIndex2]-netDivergence.theData[minIndex])/k)/2,
+						d  = (D - (netDivergence.theData[minIndex2]-netDivergence.theData[minIndex])*recRemaining)*0.5,
 						d2 = D - d;
 		
 		if (methodIndex)
@@ -7894,6 +7897,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 			netDivergence.theData  [k2] 			  += t-d2;
 			theData [k2*specCount+minIndex] 		   = t;
 			netDivergence.theData[minIndex] 		  += t;
+
 		}
 		
 		for (;k<useColumn.lLength;k++)
@@ -7912,6 +7916,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 			netDivergence.theData [k2] 					+= t-d2;
 			theData[minIndex*specCount+k2] 	 			 = t;
 			netDivergence.theData[minIndex] 			+= t;
+
 		}
 		
 		//for (k=minIndex2+1;k<ds.species; k=k+1)
