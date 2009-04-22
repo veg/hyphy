@@ -8786,11 +8786,10 @@ _GrowingVector::_GrowingVector (void) : _Matrix (64,1,false,true)
 
 BaseRef 	_GrowingVector::makeDynamic (void) 
 {
-	_GrowingVector * result = new _GrowingVector;
-	checkPointer (result);
-	result->Clear();
+	_GrowingVector * result = (_GrowingVector*)checkPointer(new _GrowingVector);
 	result->_Matrix::Duplicate (this);
 	result->used = used;
+	result->vDim = 1;
 	return result;
 }
 
@@ -8824,7 +8823,16 @@ void		_GrowingVector::Clear (void)
 {
 	_Matrix::Clear();
 	ZeroUsed();
+	vDim = 1;
 }
+
+//_____________________________________________________________________________________________
+void _GrowingVector::Duplicate (BaseRef obj)
+{
+	_Matrix::Duplicate (obj);
+	used = ((_GrowingVector*)obj)->used;
+}
+
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 // _NTupleStorage

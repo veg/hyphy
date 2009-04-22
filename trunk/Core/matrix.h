@@ -447,6 +447,7 @@ public:
 virtual		~_GrowingVector	(void) {};
 
 virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic copy
+virtual		void		Duplicate   (BaseRef); // duplicate an object from reference
 
 virtual		void		Clear (void);
 
