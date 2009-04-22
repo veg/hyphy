@@ -31,6 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "scfg.h"
 #include <math.h>
 
+#ifdef 	  __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
+
 extern	long likeFuncEvalCallCount;
 
 #ifdef	_SLKP_LFENGINE_REWRITE_

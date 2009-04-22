@@ -10,7 +10,7 @@ if [ $# -ne 1 -a $# -ne 2 ]
 then
 	TARGET_NAME="HELP";
 else
-	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" -a $1 != "PS3" ] 
+	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" -a $1 != "PS3" -a $1 != "DMALLOC" ] 
 	then
 		$TARGET_NAME = "HELP"
 	else
@@ -219,6 +219,16 @@ then
     echo "|Building a debug version HYPHYDebug    |"
     echo "+---------------------------------------+"
     COMPILER_FLAGS=" -w -c -g -ftest-coverage -fprofile-arcs -fpermissive -D __UNIX__ ";
+fi
+
+if [ $1 = "DMALLOC" ]
+then
+    TARGET_NAME="HYPHYDmalloc";
+    LINKER_FLAGS=$CURL_LINKER_LIBS" -g -lm -ldmalloc ";
+    echo "+---------------------------------------+"
+    echo "|Building a debug version HYPHYDebug    |"
+    echo "+---------------------------------------+"
+    COMPILER_FLAGS=" -w -c -g -fsigned-char -D__HYPHYDMALLOC__ -fpermissive -D __UNIX__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long ";
 fi
 
 if [ $1 = "LIBRARY" ] 

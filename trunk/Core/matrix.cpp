@@ -4354,7 +4354,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 		
 		if (max == 0.0)
 		{
-			free   (stash);
+			delete stash;
 			return result;
 		}
 		

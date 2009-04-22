@@ -29,6 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "likefunc.h"
 #include <math.h>
 
+#ifdef 	  __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
+
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
 _String _hyMarginalSupportMatrix ("marginal_support_matrix"); 

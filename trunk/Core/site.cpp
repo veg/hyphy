@@ -2508,8 +2508,7 @@ void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 		}
 		else
 		{
-			_Parameter   *store_vec = new _Parameter [GetDimension(false)];
-			checkPointer (store_vec);
+			_Parameter   *store_vec = (_Parameter*)checkPointer(new _Parameter [GetDimension(false)]);
 			
 			for (long i=0; i<theFrequencies.lLength;i++)
 			{
@@ -2705,10 +2704,9 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 		return;
 		
 	_List *tokens 		= theList->Tokenize(',');	
-	_Parameter	 *store = new _Parameter[GetDimension (false)];
-	checkPointer(store);
-
+	_Parameter	 *store = (_Parameter*)checkPointer(new _Parameter[GetDimension (false)]);
 	_SimpleList hack;
+
 	for (long k = 0; k < tokens->lLength; k++)
 	{
 		long posMarker = Translate2Frequencies(*(_String*)((*tokens)(k)),store,true);
@@ -4496,7 +4494,9 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 		if (count>1)
 			theData->constructFreq (store, &out, 1, 0, count, unitLength-1 , 1, 0);
 		else
-			out.theData[index] = count;
+			if (count == 1)
+				out.theData[index] = count;
+				
 			
 		if (count==1)
 		{
