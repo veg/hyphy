@@ -74,6 +74,7 @@ else
 	#include "queryTree.bf"; 	/*Is this part doing something or just indicating use this class*/
 	
 	global rateX = 1;
+	ClearConstraints ( givenTree );
 	ReplicateConstraint ("this1.?.?:=rateX*this2.?.?__",givenTree,givenTree);
 
 	LikelihoodFunction lf = (filteredData,givenTree);
@@ -122,11 +123,8 @@ else
  					 "\nScaling factor: ", scalingFactor, "\n");
  	
 	
-	for (siteCount = 0; siteCount < resNull[1][2]; siteCount = siteCount+1) /*the third is the number of global(shared) parameters that were optimized([1][2])*/
-	{
-		GetString (globalVarName,lf,siteCount);
-		ExecuteCommands (globalVarName+":="+globalVarName+"__;");
-	}
+	ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
+	fixGlobalParameters  ("lf");
 	
 	labels = {{"Rate","Log[L]"}};
 	
@@ -264,9 +262,12 @@ else
 		}
 	}					
 
+	
 	for (siteCount = 0; siteCount < resNull[1][2]; siteCount = siteCount+1)
 	{
 		GetString (globalVarName,lf,siteCount);
 		ExecuteCommands (globalVarName+"="+globalVarName+";");
 	}
+	
+		
 }

@@ -83,12 +83,9 @@ else
 	
 	ReplicateConstraint ("this1.?.?:=siteRate*this2.?.?__",siteTree,givenTree);
 	
-	for (siteCount = 0; siteCount < resNull[1][2]; siteCount = siteCount+1)
-	{
-		GetString (globalVarName,lf,siteCount);
-		ExecuteCommands (globalVarName+":="+globalVarName+"__;");
-	}
-	
+	ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
+	fixGlobalParameters  ("lf");
+		
 	labels = {{"Rate","Log[L]"}};
 	
 	if (MPI_NODE_COUNT<=1)
@@ -225,4 +222,5 @@ else
 		GetString (globalVarName,lf,siteCount);
 		ExecuteCommands (globalVarName+"="+globalVarName+";");
 	}
+	
 }
