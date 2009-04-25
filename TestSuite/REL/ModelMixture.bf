@@ -58,8 +58,8 @@ BEGIN HYPHY;
 /* end test preamble */
 
 
-global codonFactor=0.8735806460210299;
-global S_0=0.8360627905951414;
+global codonFactor=1;
+global S_0=0.5;
 S_0:>1e-07;
 global S_1=1.342438557686713;
 global S_2=1.462721607130293;
@@ -3053,5 +3053,14 @@ tree_1_4.NODE21.synRate:=tree_1_0.NODE21.synRate;
 DataSet ds_1 = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter filteredData_1 = CreateFilter(ds_1,3,"0-401","9,3,0-2,4-8,24,16,23,22,21,17,10-15,18,20,19","TAA,TAG,TGA");
 LikelihoodFunction lf = (filteredData_1,tree_1_0,filteredData_1,tree_1_1,filteredData_1,tree_1_2,filteredData_1,tree_1_3,filteredData_1,tree_1_4,"Log(P_1*SITE_LIKELIHOOD[0]+(1-P_1)*P_2*SITE_LIKELIHOOD[1]+(1-P_1)*(1-P_2)*P_3*SITE_LIKELIHOOD[2]+(1-P_1)*(1-P_2)*(1-P_3)*P_4*SITE_LIKELIHOOD[3]+(1-P_1)*(1-P_2)*(1-P_3)*(1-P_4)*SITE_LIKELIHOOD[4])");
+Optimize (res, lf);
+/* test epilogue */
+	timeMatrix = endTestTimer 				  (_testDescription);
+	if (logTestResult (Abs (res[1][0] - _expectedLL) < 0.01))
+	{
+		return timeMatrix;
+	}
+	return 0;
+/* end test epilogue */
 
 END;
