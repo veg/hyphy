@@ -1,1 +1,0 @@
-#define OS_WIN 1
