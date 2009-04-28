@@ -568,7 +568,10 @@ _LikelihoodFunction::_LikelihoodFunction (_String& s, _VariableContainer* p)
 	_List	 tripletsRaw (&s,';'),
 			 tripletsSplit;
 	for (long k = 0; k < tripletsRaw.lLength; k++)
-		tripletsSplit.AppendNewInstance (new _List(tripletsRaw(k),','));
+	{
+		_List thisTriplet (tripletsRaw(k),',');
+		tripletsSplit << thisTriplet;
+	}
 	Construct(tripletsSplit,p);
 }
 
@@ -1049,6 +1052,16 @@ bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
 						   " - can't be used in multiple partitions in the same likelihood function. You should create an independent tree for each partition, and constrain the parameters instead.");
 				return false;
 			}
+	}
+	else
+	{
+		if (theTrees.lLength == 0)
+		{
+			WarnError ("Too few arguments in call to _LikelihoodFunction::Construct");
+			Clear ();
+			return false;
+			
+		}
 	}
 			
 	

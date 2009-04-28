@@ -170,17 +170,13 @@ _List::_List (BaseRef ss, char sep)
 		while ((cpp = s->Find(sep,cp,-1))!=-1)
 		{
 			if (cpp>cp)
-			{	
-				_String ss (s->Cut(cp,cpp-1));
-				(*this)&&(&ss);
-			}
+				AppendNewInstance (new _String(*s,cp,cpp-1));
 			else
-				(*this)&&(&empty);
+				AppendNewInstance (new _String);
 			cp=cpp+1;
 		}
 		
-		_String ss (s->Cut(cp,-1));
-		(*this)&&(&ss);
+		AppendNewInstance (new _String(*s,cp,-1));
 	}
 }
 
