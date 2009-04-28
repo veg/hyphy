@@ -8,12 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
+		8514AFA40FA7770E00A0B10D /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 8514AFA30FA7770E00A0B10D /* sqlite3.c */; };
 		8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
 		8529BBD70E2D543E001B4F53 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BBD60E2D543E001B4F53 /* Carbon.framework */; };
 		858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917B0E2BC5C90070B4AE /* likefunc2.cpp */; };
 		858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917C0E2BC5C90070B4AE /* calcnode2.cpp */; settings = {COMPILER_FLAGS = "-fstrict-aliasing -funroll-loops"; }; };
 		8593AB7B0DE7883E008384A0 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
+		8599DC720F7C367900958ED8 /* bayesgraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8599DC700F7C367900958ED8 /* bayesgraph.cpp */; };
+		8599DC730F7C367900958ED8 /* bayesgraph2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8599DC710F7C367900958ED8 /* bayesgraph2.cpp */; };
 		85A2BCA40DE4E80E00682547 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
 		85A2BCA50DE4E80E00682547 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
 		85A2BCA60DE4E80E00682547 /* batchlan2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC930DE4E80E00682547 /* batchlan2.cpp */; };
@@ -83,34 +86,6 @@
 		85A2BD270DE4EAA700682547 /* HYPlatformPWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1C0DE4EAA600682547 /* HYPlatformPWindow.cpp */; };
 		85A2BD280DE4EAA700682547 /* HYPlatformTreePanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1D0DE4EAA600682547 /* HYPlatformTreePanel.cpp */; };
 		85A2BD290DE4EAA700682547 /* HYPlatformTWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1E0DE4EAA600682547 /* HYPlatformTWindow.cpp */; };
-		85A2BD4C0DE4EAD800682547 /* attach.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD2C0DE4EAD700682547 /* attach.c */; };
-		85A2BD4D0DE4EAD800682547 /* auth.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD2D0DE4EAD700682547 /* auth.c */; };
-		85A2BD4E0DE4EAD800682547 /* btree.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD2E0DE4EAD700682547 /* btree.c */; };
-		85A2BD4F0DE4EAD800682547 /* btree_rb.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD2F0DE4EAD700682547 /* btree_rb.c */; };
-		85A2BD500DE4EAD800682547 /* build.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD300DE4EAD700682547 /* build.c */; };
-		85A2BD510DE4EAD800682547 /* copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD310DE4EAD700682547 /* copy.c */; };
-		85A2BD520DE4EAD800682547 /* delete.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD320DE4EAD700682547 /* delete.c */; };
-		85A2BD530DE4EAD800682547 /* expr.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD330DE4EAD700682547 /* expr.c */; };
-		85A2BD540DE4EAD800682547 /* func.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD340DE4EAD700682547 /* func.c */; };
-		85A2BD550DE4EAD800682547 /* hash.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD350DE4EAD700682547 /* hash.c */; };
-		85A2BD560DE4EAD800682547 /* insert.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD370DE4EAD700682547 /* insert.c */; };
-		85A2BD570DE4EAD800682547 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD380DE4EAD700682547 /* main.c */; };
-		85A2BD580DE4EAD800682547 /* opcodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD390DE4EAD700682547 /* opcodes.c */; };
-		85A2BD590DE4EAD800682547 /* os.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3A0DE4EAD700682547 /* os.c */; };
-		85A2BD5A0DE4EAD800682547 /* pager.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3B0DE4EAD700682547 /* pager.c */; };
-		85A2BD5B0DE4EAD800682547 /* parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3C0DE4EAD700682547 /* parse.c */; };
-		85A2BD5C0DE4EAD800682547 /* pragma.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3D0DE4EAD700682547 /* pragma.c */; };
-		85A2BD5D0DE4EAD800682547 /* printf.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3E0DE4EAD700682547 /* printf.c */; };
-		85A2BD5E0DE4EAD800682547 /* random.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD3F0DE4EAD700682547 /* random.c */; };
-		85A2BD5F0DE4EAD800682547 /* select.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD400DE4EAD700682547 /* select.c */; };
-		85A2BD600DE4EAD800682547 /* table.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD430DE4EAD700682547 /* table.c */; };
-		85A2BD610DE4EAD800682547 /* tokenize.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD440DE4EAD700682547 /* tokenize.c */; };
-		85A2BD620DE4EAD800682547 /* trigger.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD450DE4EAD700682547 /* trigger.c */; };
-		85A2BD630DE4EAD800682547 /* update.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD460DE4EAD700682547 /* update.c */; };
-		85A2BD640DE4EAD800682547 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD470DE4EAD700682547 /* util.c */; };
-		85A2BD650DE4EAD800682547 /* vacuum.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD480DE4EAD700682547 /* vacuum.c */; };
-		85A2BD660DE4EAD800682547 /* vdbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD490DE4EAD700682547 /* vdbe.c */; };
-		85A2BD670DE4EAD800682547 /* where.c in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD4B0DE4EAD700682547 /* where.c */; };
 		85A2BD6C0DE4EC4900682547 /* Docs.icns in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD680DE4EC4900682547 /* Docs.icns */; };
 		85A2BD6D0DE4EC4900682547 /* HYPHYMP.icns in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD690DE4EC4900682547 /* HYPHYMP.icns */; };
 		85A2BD6E0DE4EC4900682547 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD6A0DE4EC4900682547 /* Info.plist */; };
@@ -152,11 +127,14 @@
 
 /* Begin PBXFileReference section */
 		0E63E81D0E7C6A00002AC53B /* bgm2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bgm2.cpp; path = ../trunk/NewerFunctionality/bgm2.cpp; sourceTree = SOURCE_ROOT; };
+		8514AFA30FA7770E00A0B10D /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = ../SQLite/trunk/sqlite3.c; sourceTree = SOURCE_ROOT; };
 		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
 		8529BBD60E2D543E001B4F53 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		858A917B0E2BC5C90070B4AE /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = likefunc2.cpp; path = ../trunk/Core/likefunc2.cpp; sourceTree = SOURCE_ROOT; };
 		858A917C0E2BC5C90070B4AE /* calcnode2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = calcnode2.cpp; path = ../trunk/Core/calcnode2.cpp; sourceTree = SOURCE_ROOT; };
 		8593AB720DE7883B008384A0 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Help; path = ../trunk/Help; sourceTree = SOURCE_ROOT; };
+		8599DC700F7C367900958ED8 /* bayesgraph.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bayesgraph.cpp; path = ../trunk/NewerFunctionality/bayesgraph.cpp; sourceTree = SOURCE_ROOT; };
+		8599DC710F7C367900958ED8 /* bayesgraph2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bayesgraph2.cpp; path = ../trunk/NewerFunctionality/bayesgraph2.cpp; sourceTree = SOURCE_ROOT; };
 		859FCF250E09C2E70007B356 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = ../trunk/Library; sourceTree = SOURCE_ROOT; };
 		85A2BC910DE4E80E00682547 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = baseobj.cpp; path = ../trunk/Core/baseobj.cpp; sourceTree = SOURCE_ROOT; };
 		85A2BC920DE4E80E00682547 /* batchlan.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = batchlan.cpp; path = ../trunk/Core/batchlan.cpp; sourceTree = SOURCE_ROOT; };
@@ -228,34 +206,6 @@
 		85A2BD1C0DE4EAA600682547 /* HYPlatformPWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HYPlatformPWindow.cpp; path = "../trunk/GUIElements/Platform Source/MacOS/WindowClasses/HYPlatformPWindow.cpp"; sourceTree = SOURCE_ROOT; };
 		85A2BD1D0DE4EAA600682547 /* HYPlatformTreePanel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HYPlatformTreePanel.cpp; path = "../trunk/GUIElements/Platform Source/MacOS/WindowClasses/HYPlatformTreePanel.cpp"; sourceTree = SOURCE_ROOT; };
 		85A2BD1E0DE4EAA600682547 /* HYPlatformTWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HYPlatformTWindow.cpp; path = "../trunk/GUIElements/Platform Source/MacOS/WindowClasses/HYPlatformTWindow.cpp"; sourceTree = SOURCE_ROOT; };
-		85A2BD2C0DE4EAD700682547 /* attach.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = attach.c; path = ../SQLite/trunk/attach.c; sourceTree = SOURCE_ROOT; };
-		85A2BD2D0DE4EAD700682547 /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = ../SQLite/trunk/auth.c; sourceTree = SOURCE_ROOT; };
-		85A2BD2E0DE4EAD700682547 /* btree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btree.c; path = ../SQLite/trunk/btree.c; sourceTree = SOURCE_ROOT; };
-		85A2BD2F0DE4EAD700682547 /* btree_rb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btree_rb.c; path = ../SQLite/trunk/btree_rb.c; sourceTree = SOURCE_ROOT; };
-		85A2BD300DE4EAD700682547 /* build.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = build.c; path = ../SQLite/trunk/build.c; sourceTree = SOURCE_ROOT; };
-		85A2BD310DE4EAD700682547 /* copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = copy.c; path = ../SQLite/trunk/copy.c; sourceTree = SOURCE_ROOT; };
-		85A2BD320DE4EAD700682547 /* delete.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = delete.c; path = ../SQLite/trunk/delete.c; sourceTree = SOURCE_ROOT; };
-		85A2BD330DE4EAD700682547 /* expr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = expr.c; path = ../SQLite/trunk/expr.c; sourceTree = SOURCE_ROOT; };
-		85A2BD340DE4EAD700682547 /* func.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = func.c; path = ../SQLite/trunk/func.c; sourceTree = SOURCE_ROOT; };
-		85A2BD350DE4EAD700682547 /* hash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hash.c; path = ../SQLite/trunk/hash.c; sourceTree = SOURCE_ROOT; };
-		85A2BD370DE4EAD700682547 /* insert.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = insert.c; path = ../SQLite/trunk/insert.c; sourceTree = SOURCE_ROOT; };
-		85A2BD380DE4EAD700682547 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../SQLite/trunk/main.c; sourceTree = SOURCE_ROOT; };
-		85A2BD390DE4EAD700682547 /* opcodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = opcodes.c; path = ../SQLite/trunk/opcodes.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3A0DE4EAD700682547 /* os.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = os.c; path = ../SQLite/trunk/os.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3B0DE4EAD700682547 /* pager.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pager.c; path = ../SQLite/trunk/pager.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3C0DE4EAD700682547 /* parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = parse.c; path = ../SQLite/trunk/parse.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3D0DE4EAD700682547 /* pragma.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pragma.c; path = ../SQLite/trunk/pragma.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3E0DE4EAD700682547 /* printf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = printf.c; path = ../SQLite/trunk/printf.c; sourceTree = SOURCE_ROOT; };
-		85A2BD3F0DE4EAD700682547 /* random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = random.c; path = ../SQLite/trunk/random.c; sourceTree = SOURCE_ROOT; };
-		85A2BD400DE4EAD700682547 /* select.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = select.c; path = ../SQLite/trunk/select.c; sourceTree = SOURCE_ROOT; };
-		85A2BD430DE4EAD700682547 /* table.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = table.c; path = ../SQLite/trunk/table.c; sourceTree = SOURCE_ROOT; };
-		85A2BD440DE4EAD700682547 /* tokenize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = tokenize.c; path = ../SQLite/trunk/tokenize.c; sourceTree = SOURCE_ROOT; };
-		85A2BD450DE4EAD700682547 /* trigger.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = trigger.c; path = ../SQLite/trunk/trigger.c; sourceTree = SOURCE_ROOT; };
-		85A2BD460DE4EAD700682547 /* update.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = update.c; path = ../SQLite/trunk/update.c; sourceTree = SOURCE_ROOT; };
-		85A2BD470DE4EAD700682547 /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = util.c; path = ../SQLite/trunk/util.c; sourceTree = SOURCE_ROOT; };
-		85A2BD480DE4EAD700682547 /* vacuum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vacuum.c; path = ../SQLite/trunk/vacuum.c; sourceTree = SOURCE_ROOT; };
-		85A2BD490DE4EAD700682547 /* vdbe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vdbe.c; path = ../SQLite/trunk/vdbe.c; sourceTree = SOURCE_ROOT; };
-		85A2BD4B0DE4EAD700682547 /* where.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = where.c; path = ../SQLite/trunk/where.c; sourceTree = SOURCE_ROOT; };
 		85A2BD680DE4EC4900682547 /* Docs.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Docs.icns; path = "../trunk/GUIElements/Platform Source/MacOS/Docs.icns"; sourceTree = SOURCE_ROOT; };
 		85A2BD690DE4EC4900682547 /* HYPHYMP.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = HYPHYMP.icns; path = "../trunk/GUIElements/Platform Source/MacOS/HYPHYMP.icns"; sourceTree = SOURCE_ROOT; };
 		85A2BD6A0DE4EC4900682547 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = "../trunk/GUIElements/Platform Source/MacOS/Info.plist"; sourceTree = SOURCE_ROOT; };
@@ -380,6 +330,8 @@
 		85A2BCBA0DE4E84800682547 /* MachineLearningComponents */ = {
 			isa = PBXGroup;
 			children = (
+				8599DC700F7C367900958ED8 /* bayesgraph.cpp */,
+				8599DC710F7C367900958ED8 /* bayesgraph2.cpp */,
 				85A2BCBB0DE4E87D00682547 /* bgm.cpp */,
 				0E63E81D0E7C6A00002AC53B /* bgm2.cpp */,
 				85A2BCBC0DE4E87D00682547 /* HYNetInterface.cpp */,
@@ -494,34 +446,7 @@
 		85A2BD2B0DE4EABF00682547 /* SQLite */ = {
 			isa = PBXGroup;
 			children = (
-				85A2BD2C0DE4EAD700682547 /* attach.c */,
-				85A2BD2D0DE4EAD700682547 /* auth.c */,
-				85A2BD2E0DE4EAD700682547 /* btree.c */,
-				85A2BD2F0DE4EAD700682547 /* btree_rb.c */,
-				85A2BD300DE4EAD700682547 /* build.c */,
-				85A2BD310DE4EAD700682547 /* copy.c */,
-				85A2BD320DE4EAD700682547 /* delete.c */,
-				85A2BD330DE4EAD700682547 /* expr.c */,
-				85A2BD340DE4EAD700682547 /* func.c */,
-				85A2BD350DE4EAD700682547 /* hash.c */,
-				85A2BD370DE4EAD700682547 /* insert.c */,
-				85A2BD380DE4EAD700682547 /* main.c */,
-				85A2BD390DE4EAD700682547 /* opcodes.c */,
-				85A2BD3A0DE4EAD700682547 /* os.c */,
-				85A2BD3B0DE4EAD700682547 /* pager.c */,
-				85A2BD3C0DE4EAD700682547 /* parse.c */,
-				85A2BD3D0DE4EAD700682547 /* pragma.c */,
-				85A2BD3E0DE4EAD700682547 /* printf.c */,
-				85A2BD3F0DE4EAD700682547 /* random.c */,
-				85A2BD400DE4EAD700682547 /* select.c */,
-				85A2BD430DE4EAD700682547 /* table.c */,
-				85A2BD440DE4EAD700682547 /* tokenize.c */,
-				85A2BD450DE4EAD700682547 /* trigger.c */,
-				85A2BD460DE4EAD700682547 /* update.c */,
-				85A2BD470DE4EAD700682547 /* util.c */,
-				85A2BD480DE4EAD700682547 /* vacuum.c */,
-				85A2BD490DE4EAD700682547 /* vdbe.c */,
-				85A2BD4B0DE4EAD700682547 /* where.c */,
+				8514AFA30FA7770E00A0B10D /* sqlite3.c */,
 			);
 			name = SQLite;
 			sourceTree = "<group>";
@@ -680,40 +605,15 @@
 				85A2BD270DE4EAA700682547 /* HYPlatformPWindow.cpp in Sources */,
 				85A2BD280DE4EAA700682547 /* HYPlatformTreePanel.cpp in Sources */,
 				85A2BD290DE4EAA700682547 /* HYPlatformTWindow.cpp in Sources */,
-				85A2BD4C0DE4EAD800682547 /* attach.c in Sources */,
-				85A2BD4D0DE4EAD800682547 /* auth.c in Sources */,
-				85A2BD4E0DE4EAD800682547 /* btree.c in Sources */,
-				85A2BD4F0DE4EAD800682547 /* btree_rb.c in Sources */,
-				85A2BD500DE4EAD800682547 /* build.c in Sources */,
-				85A2BD510DE4EAD800682547 /* copy.c in Sources */,
-				85A2BD520DE4EAD800682547 /* delete.c in Sources */,
-				85A2BD530DE4EAD800682547 /* expr.c in Sources */,
-				85A2BD540DE4EAD800682547 /* func.c in Sources */,
-				85A2BD550DE4EAD800682547 /* hash.c in Sources */,
-				85A2BD560DE4EAD800682547 /* insert.c in Sources */,
-				85A2BD570DE4EAD800682547 /* main.c in Sources */,
-				85A2BD580DE4EAD800682547 /* opcodes.c in Sources */,
-				85A2BD590DE4EAD800682547 /* os.c in Sources */,
-				85A2BD5A0DE4EAD800682547 /* pager.c in Sources */,
-				85A2BD5B0DE4EAD800682547 /* parse.c in Sources */,
-				85A2BD5C0DE4EAD800682547 /* pragma.c in Sources */,
-				85A2BD5D0DE4EAD800682547 /* printf.c in Sources */,
-				85A2BD5E0DE4EAD800682547 /* random.c in Sources */,
-				85A2BD5F0DE4EAD800682547 /* select.c in Sources */,
-				85A2BD600DE4EAD800682547 /* table.c in Sources */,
-				85A2BD610DE4EAD800682547 /* tokenize.c in Sources */,
-				85A2BD620DE4EAD800682547 /* trigger.c in Sources */,
-				85A2BD630DE4EAD800682547 /* update.c in Sources */,
-				85A2BD640DE4EAD800682547 /* util.c in Sources */,
-				85A2BD650DE4EAD800682547 /* vacuum.c in Sources */,
-				85A2BD660DE4EAD800682547 /* vdbe.c in Sources */,
-				85A2BD670DE4EAD800682547 /* where.c in Sources */,
 				85A2BD700DE4EC6200682547 /* hydialogs.cpp in Sources */,
 				85A2BD770DE4EC9B00682547 /* main-mac.cpp in Sources */,
 				858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */,
 				858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */,
 				8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */,
 				0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */,
+				8599DC720F7C367900958ED8 /* bayesgraph.cpp in Sources */,
+				8599DC730F7C367900958ED8 /* bayesgraph2.cpp in Sources */,
+				8514AFA40FA7770E00A0B10D /* sqlite3.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
