@@ -632,7 +632,7 @@ modelSpawnPrefix * 0;
 fprintf						  (stdout, "\nModel string for nucleotide biases:");
 fscanf						  (stdin,"String",modelDesc);
 
-sampleCount 				 = totalCharCount;
+sampleCount 				 = totalCharCount*icSampleSizeMultiplier;
 fprintf						  (stdout, "Using ", totalCharCount, " as a sample count.\n");
 
 
@@ -761,6 +761,8 @@ modelSpawnSuffix *  0;
 
 ExecuteCommands(constructLF ("lf","filteredData","codon_tree",dataPartsRead));
 
+icSampleSizeMultiplier = 1.0;
+
 ChoiceList (whichIC, "Which IC to use for scoring?",1,SKIP_NONE,
 			"c-AIC","Small sample AIC.",
 			"BIC", "BIC.");
@@ -769,6 +771,10 @@ if (whichIC<0)
 {
 	return 0;
 }
+
+ExecuteAFile("Utility/GrabBag.bf");
+icSampleSizeMultiplier = prompt_for_a_value ("Select the sample size multiplier (x the number of characters)", 1, 0.1, 2.0, 0);
+
 
 ChoiceList (matingChoice, "Mating Weights",1,SKIP_NONE,
 			"Akaike Weights","Individuals are chosen to reproduce with based on their Akaike weights.",

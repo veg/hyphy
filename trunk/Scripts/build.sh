@@ -194,7 +194,7 @@ then
 		COMPILER_FLAGS=$COMPILER_FLAGS" -D _SLKP_LFENGINE_REWRITE_ "
 		LINKER_FLAGS=$CURL_LINKER_LIBS" -lm ";
 	else
-		LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lmpich ";	
+		LINKER_FLAGS=$CURL_LINKER_LIBS" -lpthread -lm -lmpich ";	
 	fi 
 	
 	if [ $sysName == "AIX" ]
