@@ -633,7 +633,7 @@ fprintf						  (stdout, "\nModel string for nucleotide biases:");
 fscanf						  (stdin,"String",modelDesc);
 
 sampleCount 				 = totalCharCount*icSampleSizeMultiplier;
-fprintf						  (stdout, "Using ", totalCharCount, " as a sample count.\n");
+fprintf						  (stdout, "Using ", sampleCount, " as a sample count.\n");
 
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
