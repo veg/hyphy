@@ -602,7 +602,7 @@ bool	_HYDBWindow::LoadTable (long tableIndex, _String* code)
 		char  * errMsg         = nil;
 		long    recordCount[2] = {0,0};
 		
-		sqlite_exec((sqlite*)sqlDatabases.lData[dbID], getTables.sData, _HYDBWTableCellCounter, (Ptr)recordCount, &errMsg);
+		sqlite3_exec((sqlite3*)sqlDatabases.lData[dbID], getTables.sData, _HYDBWTableCellCounter, (Ptr)recordCount, &errMsg);
 		
 		if (recordCount [0])
 		{
@@ -632,7 +632,7 @@ bool	_HYDBWindow::LoadTable (long tableIndex, _String* code)
 			
 			tmain -> RequestSpace (recordCount[0], recordCount[1]);
 			tleft -> RequestSpace (recordCount[0], 1);
-			sqlite_exec((sqlite*)sqlDatabases.lData[dbID], getTables.sData, _HYDBWTablePopulatorCallBack, (Ptr)this, &errMsg);
+			sqlite3_exec((sqlite3*)sqlDatabases.lData[dbID], getTables.sData, _HYDBWTablePopulatorCallBack, (Ptr)this, &errMsg);
 			
 		}
 		else
@@ -662,7 +662,7 @@ bool	_HYDBWindow::LoadTable (long tableIndex, _String* code)
 		if (errMsg)
 		{
 			_String   		errStr (errMsg);
-			free (errMsg);
+			sqlite3_free    (errMsg);
 			ProblemReport   (errStr, (Ptr)this);
 		}
 		else
@@ -682,11 +682,11 @@ _List*	_HYDBWindow::ExecuteSQLBlurb (_String& theBlurb)
 	if (dbID >= 0)
 	{
 		char  * errMsg = nil;
-		if (sqlite_exec((sqlite*)sqlDatabases.lData[dbID], theBlurb.sData, _HYDBWCallBack, (Ptr)outList, &errMsg) != SQLITE_OK)
+		if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbID], theBlurb.sData, _HYDBWCallBack, (Ptr)outList, &errMsg) != SQLITE_OK)
 		{
 			_String errStr = _String("SQL Error:") & errMsg;
 			ProblemReport (errStr, (Ptr)this);
-			free (errMsg);
+			sqlite3_free (errMsg);
 			outList->Clear();
 			return outList;							
 		}
@@ -794,11 +794,11 @@ _List*	_HYDBWindow::RetrieveRecord (long row, _String& columns, bool report, _St
 					replaceString.Finalize();
 		
 					char  * errMsg = nil;
-					if (sqlite_exec((sqlite*)sqlDatabases.lData[dbID], replaceString.sData, NULL, NULL, &errMsg) != SQLITE_OK)
+					if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbID], replaceString.sData, NULL, NULL, &errMsg) != SQLITE_OK)
 					{
 						_String errStr = _String("SQL Error:") & errMsg;
 						ProblemReport (errStr, (Ptr)this);
-						free (errMsg);
+						sqlite3_free (errMsg);
 						return ml;					
 					}
 					(*ml) && & empty;

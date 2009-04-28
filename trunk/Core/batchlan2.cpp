@@ -36,13 +36,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #if defined		  __UNIX__ && !defined __HEADLESS__ && !defined __HYPHY_NO_SQLITE__
-	#include "SQLite/sqlite.h"
+	#include "SQLite/sqlite3.h"
 #else
 	#if defined  __HEADLESS__ && !defined __HYPHY_NO_SQLITE__
-		#include 	  "sqlite.h"	
+		#include 	  "sqlite3.h"	
 	#else
 		#ifndef __HYPHY_NO_SQLITE__
-			#include 	  "sqlite.h"
+			#include 	  "sqlite3.h"
 		#endif
 		#if !defined		  __UNIX__  && !defined __HEADLESS__
 			#include 	  "HYUtils.h"
@@ -343,54 +343,44 @@ int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
 	_ExecutionList * exList = (_ExecutionList *)exL;
 	
 	if (!terminateExecution)
-	if (exList && cc && exList->lLength)
-	{	
-		_List	  rowData,
-				  columnNames;
-				  
-		for (long cnt = 0; cnt < cc; cnt++)
-		{
-			if (rd[cnt])
+		if (exList && cc && exList->lLength)
+		{	
+			_List	  rowData,
+					  columnNames;
+					  
+			for (long cnt = 0; cnt < cc; cnt++)
 			{
-				_String * colData = new _String (rd[cnt]);
-				rowData << colData;
-				DeleteObject (colData);
-			}
-			else
-				rowData && & empty;
+				if (rd[cnt])
+					rowData.AppendNewInstance (new _String (rd[cnt]));
+				else
+					rowData.AppendNewInstance (new _String);
 
-			if (cn[cnt])
+				if (cn[cnt])
+					columnNames.AppendNewInstance (new _String (cn[cnt]));
+				else
+					columnNames.AppendNewInstance (new _String);
+			}
+					  
+					  
+			_Matrix * rowDataM    = new _Matrix (rowData),
+					* columnNamesM = new _Matrix (columnNames);
+					
+			if (rowDataM && columnNamesM)
 			{
-				_String * colData = new _String (cn[cnt]);
-				columnNames << colData;
-				DeleteObject (colData);
+				
 			}
 			else
-				columnNames && & empty;
-		}
-				  
-				  
-		_Matrix * rowDataM    = new _Matrix (rowData),
-			    * columnNamesM = new _Matrix (columnNames);
-			    
-		if (rowDataM && columnNamesM)
-		{
+				checkPointer (nil);
+			
+			_Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),
+					 * cnv = CheckReceptacle (&sqlColNames, blDoSQL,false);
+					 
+			rdv->SetValue (rowDataM,false);
+			cnv->SetValue (columnNamesM,false);
+			
+			exList->Execute();
 			
 		}
-		else
-		{
-			checkPointer (nil);
-		}
-		
-		_Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),
-				 * cnv = CheckReceptacle (&sqlColNames, blDoSQL,false);
-				 
-		rdv->SetValue (rowDataM,false);
-		cnv->SetValue (columnNamesM,false);
-		
-		exList->Execute();
-		
-	}
 	return 0; 
 }
 
@@ -1132,15 +1122,16 @@ void	  _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 		{
 			_String arg2 (*(_String*)parameters(1));
 			arg2.ProcessFileName(true,true,(Ptr)chain.nameSpacePrefix);
+			int errCode  = SQLITE_OK;
+			sqlite3 *aDB = nil;
 			#ifdef __HYPHYXCODE__
-				sqlite * aDB = sqlite_open (DoMacToPOSIX(arg2).getStr(),0,&errMsg);
+				errCode = sqlite3_open (DoMacToPOSIX(arg2).getStr(),&aDB);
 			#else
-				sqlite * aDB = sqlite_open (arg2.sData,0,&errMsg);
+				errCode = sqlite3_open (arg2.sData,&aDB);
 			#endif
-			if (aDB == nil)
+			if (errCode != SQLITE_OK)
 			{
-				WarnError (errMsg);
-				free (errMsg);
+				WarnError (sqlite3_errmsg(aDB));
 				return;
 			}
 			else
@@ -1172,7 +1163,7 @@ void	  _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 		{
 			if (doClose)
 			{
-				sqlite_close ((sqlite*)sqlDatabases.lData[dbIdx]);
+				sqlite3_close ((sqlite3*)sqlDatabases.lData[dbIdx]);
 				sqlDatabases.lData[dbIdx] = 0;
 			}
 			else
@@ -1184,10 +1175,9 @@ void	  _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 				{
 					_String arg2 (ProcessLiteralArgument ((_String*)parameters(1),chain.nameSpacePrefix));
 					
-					if (sqlite_exec((sqlite*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (Ptr)&sqlProcessor, &errMsg) != SQLITE_OK)
+					if (sqlite3_exec((sqlite3*)sqlDatabases.lData[dbIdx], arg2.sData, _HYSQLCallBack, (Ptr)&sqlProcessor, &errMsg) != SQLITE_OK)
 					{
-						WarnError (errMsg);
-						free (errMsg);
+						WarnError (sqlite3_errmsg((sqlite3*)sqlDatabases.lData[dbIdx]));
 						return;							
 					}
 				}
