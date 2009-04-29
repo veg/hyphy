@@ -1492,19 +1492,31 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 							
 							if (rcp && crp)
 							{
-								_PMathObj     tr = nil, tc = nil;
+								_PMathObj     tr = nil, 
+											  tc = nil;
+								
 								if (freqs->storageType == 2)
 								{
 									if (freqs->GetFormula(r,0))
 									{
 										tr = freqs->GetFormula(r,0)->ConstructPolynomial();
-										tr->nInstances++;
+										if (tr)
+											tr->nInstances++;
+										else
+											return false;
 									}
 									if (freqs->GetFormula(c,0))
 									{
 										tc = freqs->GetFormula(c,0)->ConstructPolynomial();
-										tc->nInstances++;
+										if (tc)
+											tc->nInstances++;
+										else
+										{
+											DeleteObject (tr);
+											return false;
+										}
 									}
+									
 								}
 								else
 								{

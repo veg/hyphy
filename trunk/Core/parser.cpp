@@ -3948,34 +3948,28 @@ void		_Operation::StackDepth (long& depth)
 
 bool		_Operation::ExecutePolynomial (_Stack& theScrap)
 {
-	if (theNumber)
-	{
-		_Polynomial*p=new _Polynomial(theNumber->Value());
-		checkPointer(p);
-		theScrap.Push(p);
-		DeleteObject(p);
-		return true;
-	} 
-	if (theData>-1)
-	{
-		_Polynomial*p=new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
-		checkPointer(p);
-		theScrap.Push(p);
-		DeleteObject(p);
-		return true;
-	}		
-	if (theData<=-2)
+	if (theData<=-2 || numberOfTerms < 0)
 		return false;
+
+	_Polynomial*p = nil;
+	if (theNumber)
+		p= (_Polynomial*)checkPointer(new _Polynomial(theNumber->Value()));
+	
+	if (theData>-1)
+		p= (_Polynomial*)checkPointer(new _Polynomial(*LocateVar(theData>-1?theData:-theData-2)));
+	
+	if (p)
+	{
+		theScrap.Push(p);
+		DeleteObject(p);
+		return true;
+	}
 		
 	if (theScrap.StackDepth()<numberOfTerms) 
 	{
-		_String *s,errMsg;
-		s = (_String*)toStr();
-		errMsg = *s;
-		DeleteObject(s);
-		errMsg = errMsg&
-				" needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given.";
-		WarnError (errMsg);
+		_String s((_String*)toStr());
+		WarnError (s&
+				   " needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given.");
 		return 	  false;
 	}
 	
