@@ -221,9 +221,6 @@ for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
 			fprintf				(stdout, "\n\nFitting tree ", pc2+1, " to partition ", pccounter+1, "\n");
 			Optimize			(aRes, aLF);	
 			fprintf				(stdout, aLF);
-			LIKELIHOOD_FUNCTION_OUTPUT = 7;
-			outputFile = "/Users/sergei/Desktop/GARD_test/" + (pc2+1) + "_" + (pccounter+1) + ".bf";
-			fprintf (outputFile, CLEAR_FILE, aLF);
 			LIKELIHOOD_FUNCTION_OUTPUT = 2;
 			GetInformation		(cI,c);
 			cI					= cI[1][-1];
