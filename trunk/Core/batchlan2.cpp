@@ -362,14 +362,10 @@ int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
 			}
 					  
 					  
-			_Matrix * rowDataM    = new _Matrix (rowData),
+			_Matrix * rowDataM     = new _Matrix (rowData),
 					* columnNamesM = new _Matrix (columnNames);
 					
-			if (rowDataM && columnNamesM)
-			{
-				
-			}
-			else
+			if (!(rowDataM && columnNamesM))
 				checkPointer (nil);
 			
 			_Variable* rdv = CheckReceptacle (&sqlRowData, blDoSQL,false),

@@ -8492,9 +8492,8 @@ _PMathObj _AssociativeList::MAccess (_PMathObj p)
 		f = avl.Find (((_FString*)p)->theString);
 	else
 	{
-		_String * s = (_String*)p->toStr();
-		f = avl.Find (s);
-		DeleteObject (s);
+		_String s ((_String*)p->toStr());
+		f = avl.Find (&s);
 	}
 	if (f>=0)
 	{

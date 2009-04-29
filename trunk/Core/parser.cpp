@@ -138,8 +138,13 @@ BaseRef		parameterToString (_Parameter value)
 {
 	char dump [255];
 	long digs = printDigits;
-	if ((digs<=0)||(digs>15))
-		sprintf (dump,PRINTF_FORMAT_STRING,value);
+	if (digs<=0 || digs>15)
+	{
+		if (round(value) == value)
+			sprintf (dump,"%Ld",lrint (value));
+		else
+			sprintf (dump,PRINTF_FORMAT_STRING,value);
+	}
 	else
 	{
 		_String format("%-");
