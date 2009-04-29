@@ -1128,10 +1128,13 @@ void	  _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 				errCode = sqlite3_open (DoMacToPOSIX(arg2).getStr(),&aDB);
 			#else
 				errCode = sqlite3_open (arg2.sData,&aDB);
-			#endif
+			#endif			
+			if (errCode == SQLITE_OK)
+				errCode = sqlite3_exec(aDB, "SELECT COUNT(*) FROM sqlite_master", _HYSQLCallBack, nil, nil);
 			if (errCode != SQLITE_OK)
 			{
 				WarnError (sqlite3_errmsg(aDB));
+				sqlite3_close(aDB);
 				return;
 			}
 			else
