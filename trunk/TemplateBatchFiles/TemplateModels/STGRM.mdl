@@ -1,0 +1,75 @@
+/* This file defines the transition matix for a strand GTR model.
+
+ie.
+GT := CA, and not GT := CA as in the standard GTR 
+CA := GT
+GA := CT
+GC := CG
+TA := AT
+TC := AG
+TG := AC
+
+The file should be used as follows:
+
+   1) Read Data File and create datafilter filteredData
+   2) #include this file (or use SelectTemplateModel(filteredData);)
+   3) Define the tree
+   4) Proceed with the likelihood function using 'vectorOfFrequencies' as the vector to pass to the constructor.
+   
+   This model has the following signature:
+    #Short:STGRM#
+   	#Desc:Strand General Reversible Model. Local or global parameters. Possible Gamma Variation.#
+   	#Dimension:4#
+    #DataType:nucleotide#
+   	#FileName:STGRM.mdl#
+   
+   04/28/2009  by Wayne Delport
+*/
+
+#include "modelParameters.mdl";
+if ( modelType >= 1 ) {
+	global AC = 1;
+	global AT = 1;
+	global CG = 1;
+	global CT = 1;
+	global GT = 1;
+	
+	if (modelType == 2)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+
+function PopulateModelMatrix ( ModelMatrixName& )
+{
+	if (modelType == 0)
+	{
+		ModelMatrixName = {{*,a,b,c}{f,*,d,e}{e,d,*,f}{c,b,a,*}};
+	}
+	else
+	{
+		if (modelType<2)
+		{
+			ModelMatrixName = {{*,AC*mu,mu,AT*mu}{GT*mu,*,CG*mu,CT*mu}{CT*mu,CG*mu,*,GT*mu}{AT*mu,mu,AC*mu,*}};
+		}
+		else
+		{
+			ModelMatrixName = {{*,AC*mu*c,mu*c,AT*mu*c}{GT*mu*c,*,CG*mu*c,CT*mu*c}{CT*mu*c,CG*mu*c,*,GT*mu*c}{AT*mu*c,mu*c,AC*mu*c,*}};
+		}
+	}
+	return 1;
+}
+
+STGRM = 0;
+HarvestFrequencies (vectorOfFrequencies, filteredData,1,1,0);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("STGRM");
+
+Model STGRMModel = (STGRM, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 1;
