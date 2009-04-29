@@ -129,7 +129,15 @@ _String*	StringFromConsole	(bool)
 	#ifndef __HEADLESS__
 		int		  readAChar;
 		while 	 ((readAChar = getc(stdin)) != '\n')
+		{
+			if (readAChar == EOF)
+			{
+				if (returnme->sLength == 0)
+					WarnError ("Ran out of standard input\n");
+				break;
+			}
 			*returnme << readAChar;
+		}
 	#else
 		WarnError ("Unhandled standard input interaction in StringFromConsolel for headless HyPhy");
 		return;
