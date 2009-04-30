@@ -97,6 +97,13 @@ Optimize ( res_NRM, lf_NRM );
 ll_NRM = res_NRM [ 1 ][ 0 ];
 aic_NRM = -2*ll_NRM + 2*(res_NRM [ 1 ][ 1 ] + totalBranchCount + 3);
 
+if ( modelType >= 1 ) {
+	fprintf ( stdout, "\nstrand specific General reversible model optimised parameters\n" );
+	fprintf ( stdout, "---------------------------------------------------------------\n" );
+	printModelDescription ( modelType, vectorOfFrequencies, 1 );
+	fprintf ( stdout, "\n" );
+}
+
 fprintf ( stdout, "Model comparison\n" );
 fprintf ( stdout, "--------------------\n" );
 fprintf ( stdout, "stGRM: logLk = ", ll_STGRM, "; AIC = ", aic_STGRM, "; Parameters = ", res_STGRM [ 1 ][ 1 ] + totalBranchCount + 3, "\n" );
