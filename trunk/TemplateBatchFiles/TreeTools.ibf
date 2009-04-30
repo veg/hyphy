@@ -156,6 +156,10 @@ function PostOrderAVL2StringDistances (theAVL, distAVL)
 function KillInternalZeroBranchLengths (treeAVL)
 {
 	treeSize   = Abs(treeAVL);
+	if (treeSize == 3)
+	{
+		return "(" + (treeAVL[0])["Name"] + "," + (treeAVL[1])["Name"] + ")";
+	}
 	newTreeAVL = {};
 	oldIndexMap= {treeSize,1};
 	index2	   = {treeSize,1};
