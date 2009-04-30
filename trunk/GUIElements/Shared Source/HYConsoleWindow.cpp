@@ -245,7 +245,9 @@ bool	_HYConsoleWindow::ProcessEvent (_HYEvent* e)
 						
 						int h,v;
 						bb->GetButtonLoc(k,h,v,true);
-						_String userAction = HandlePullDown (menuChoices,h,v,0);
+						_String userAction  = HandlePullDown (menuChoices,h,v,0),
+								justTheName = userAction;
+						
 						bb->_UnpushButton();
 						i = menuChoices.Find (&userAction);
 						if (i>=0)
@@ -261,6 +263,7 @@ bool	_HYConsoleWindow::ProcessEvent (_HYEvent* e)
 							h = PushFilePath  (userAction);
 							ReadBatchFile (userAction, uxl);
 							
+							SetStatusLine ( justTheName, "Loading", "00:00:00", -1);
 							if (k==1)
 							{
 								_String addin;
@@ -302,6 +305,7 @@ bool	_HYConsoleWindow::ProcessEvent (_HYEvent* e)
 								userAction = userAction & " could not be found. Perhaps the file was recently moved or deleted.";
 								ProblemReport (userAction, (Ptr)this);
 							}*/
+							SetStatusLine 	  (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
 						}
 					}
 					break;
