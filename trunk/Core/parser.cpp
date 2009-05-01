@@ -1210,14 +1210,7 @@ void _Constant::Duplicate (BaseRef c)
 
 BaseRef _Constant::makeDynamic (void)
 {
-	_Constant * res = new _Constant;
-	checkPointer(res);
-	memcpy ((char*)res, (char*)this, sizeof (_Constant));
-	if (!res)
-	{
-		isError(0);
-		return nil;
-	}
+	_Constant * res = (_Constant*)checkPointer(new _Constant);
 	res->Duplicate(this);
 	return res;
 }

@@ -1676,6 +1676,7 @@ int main (void)
 	
 	pickUpCursor 	= GetCCursor (128);
 	dropOffCursor 	= GetCCursor (129);	
+		
 	
 	char buffer[4096];
 	#ifdef __HYPHYXCODE__
