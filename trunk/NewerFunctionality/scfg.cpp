@@ -968,9 +968,8 @@ _Parameter 		Scfg::Compute (void)
 		_Parameter	temp = ComputeInsideProb (0,((_String*)corpusChar(stringID))->sLength-1,stringID,startSymbol, first);
 		if (temp == 0.)
 		{
-			sprintf (buf, "String %d underflowed.  Bad initial parameter values?", stringID);
-			_String oops (buf);
-			WarnError (oops);
+			ReportWarning (_String("Underflow detected for string ") & stringID & ". Spiking optimizer to avoid this region of parameter space.");
+			return (-A_LARGE_NUMBER);
 		}
 		
 		ip = log (temp);
@@ -1242,8 +1241,6 @@ _Parameter 	 Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 	// static long insideCalls = 0;
 	insideCalls ++;
 	
-
-	
 	
 	/* quickly handle extreme cases */
 	if (to > from) // more than a single terminal in the substring
@@ -1328,24 +1325,26 @@ _Parameter 	 Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 			}
 		}
 		
-		_SimpleList * myNTNTRules = ((_SimpleList**)byNT3.lData)[ntIndex];
+		_SimpleList		* myNTNTRules = ((_SimpleList**)byNT3.lData)[ntIndex];
+		
 		for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) // loop over all NT-> NT NT rules
 		{
 			long		  currentRuleIndex = myNTNTRules->lData[ruleIdx];
 			_Parameter 	  ruleProb = LookUpRuleProbability(currentRuleIndex);
+			
 			if (ruleProb > 0.0)
 			{
 				_SimpleList * currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];
 				long		  nt1		  = currentRule->lData[1],
 							  nt2 		  = currentRule->lData[2],
 							  halfway 	  = from+(to-from)/2+1;
+				
 				{
 				for (long bp = from+1; bp <= halfway; bp++) // now loop over all breakpoints
 				{
 					_Parameter t = ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass);
 					if (t>0.0)
 					{
-						
 						insideProbValue += t*
 										   ComputeInsideProb (bp,to,stringIndex,nt2,firstPass)*
 										   ruleProb;
@@ -1358,13 +1357,15 @@ _Parameter 	 Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 					}
 				}
 				}
+				
+				
 				for (long bp = halfway+1; bp <= to; bp++) // now loop over all breakpoints
 				{
 					_Parameter t = ComputeInsideProb (bp,to,stringIndex,nt2,firstPass);
-					if (t>0.0)
+					if (t > 0.0)
 					{
 						
-						insideProbValue += t*
+						insideProbValue += t *
 										   ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass)*
 										   ruleProb;
 						/*
@@ -1405,6 +1406,7 @@ _Parameter 	 Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 		else // update values
 			((_GrowingVector*)(storedInsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,insideProbValue);
 	}
+	
 	
 	
 	if (firstPass)
@@ -2160,15 +2162,14 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 /*	Implementation of CYK algorithm by AFYP		2006-07-12																		  */
 /*--------------------------------------------------------------------------------------------------------------------------------*/
-
 _String *	Scfg::BestParseTree(void)
 {
-	long	countNT		= byNT2.lLength;
-	bool	firstPass	= computeFlagsI.lLength;
+	long			countNT			= byNT2.lLength;
+	bool			firstPass		= computeFlagsI.lLength;
 	
-	_String	*		parseTreeString = new _String(128,TRUE);
+	_String	*		parseTreeString = new _String();
+	//char			buf [4096];
 	
-	char buf [256];
 	
 	for (long stringIndex = 0; stringIndex < corpusChar.lLength; stringIndex++)
 	{
@@ -2274,11 +2275,9 @@ _String *	Scfg::BestParseTree(void)
 		}
 		
 		// apply stack to reconstructing best parse
-		CykTraceback (0,stringL-1,0,stringL,theAVL,&argMaxYZK,theMatrix,parseTreeString);
+		CykTraceback (0,stringL-1,0,stringIndex,theAVL,&argMaxYZK,theMatrix,parseTreeString);
 		
-		sprintf (buf, "\n");		// separate strings in corpus
-		*parseTreeString << (const char * ) buf;
-		
+		(*parseTreeString) = (*parseTreeString) & "\n";	// separate tree strings
 	}
 	
 	
@@ -2290,53 +2289,87 @@ _String *	Scfg::BestParseTree(void)
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*  Converts stack of best-parse productions into a tree string.- AFYP															*/
-void	Scfg::CykTraceback (long i, long j, long v, long stringL, _AVLListX * theAVL, _SimpleList * theYZKs, _GrowingVector * theMatrix, _String * theString)
+void	Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX * theAVL, _SimpleList * theYZKs, _GrowingVector * theMatrix, _String * parseTreeString)
 {
+	//	for sub-string (i,j) and non-terminal (v), string of length (stringL)
+	
 	char	buf [256];
 	char	nodename [256];
-	long	tripletIndex	= scfgIndexIntoAnArray(i,j,v,stringL),
+	long	stringL			= ((_String**)corpusChar.lData)[stringIndex]->sLength,
+			tripletIndex	= scfgIndexIntoAnArray(i,j,v,stringL),
 			avlIndex		= theAVL -> Find ((BaseRef)tripletIndex);
 	
+	_String	* corpusString	= ((_String**)corpusChar.lData)[stringIndex];
 	
 	if (avlIndex < 0)	// value not in tree
 	{
-		sprintf(buf, "ERROR: Unknown triplet encountered in CYK traceback: (%d,%d,%d)\n", i,j,v);
-		BufferToConsole(buf);
+		ReportWarning (_String("ERROR: Unknown triplet encountered in CYK traceback: (") & i & "," & j & "," & v & ")");
 	}
 	else
 	{
 		long		matrixIndex	= theAVL->GetXtra (avlIndex),
 					y			= theYZKs->lData[matrixIndex * 3],
 					z			= theYZKs->lData[matrixIndex * 3 + 1],
-					k			= theYZKs->lData[matrixIndex * 3 + 2];
-		
+					k			= theYZKs->lData[matrixIndex * 3 + 2];	
+#ifdef __NEVER_DEFINED__
 		if (y == 0 && z == 0 && k == 0)	// node terminates
 		{
 			sprintf(buf, "%d:%d", i, v);
 			// BufferToConsole(buf);
-			(*theString) << (const char *) buf;
+			(*parseString) << (const char *) buf;
 		}
 		else							// node spawns two children
 		{
 			
 			sprintf(buf, "(");
 			// BufferToConsole(buf);
-			(*theString) << (const char *) buf;
+			(*parseString) << (const char *) buf;
 			
-			CykTraceback(i,k,y,stringL,theAVL,theYZKs,theMatrix,theString);
+			CykTraceback(i,k,y,stringIndex,theAVL,theYZKs,theMatrix,parseString);
 			
 			sprintf(buf, ",");
 			// BufferToConsole(buf);
-			(*theString) << (const char *) buf;
+			(*parseString) << (const char *) buf;
 			
-			CykTraceback(k+1,j,z,stringL,theAVL,theYZKs,theMatrix,theString);
+			CykTraceback(k+1,j,z,stringIndex,theAVL,theYZKs,theMatrix,parseString);
 			
 			sprintf(nodename, "Node%d", tripletIndex);
 			sprintf(buf, ")%s:%d", nodename, v);
 			// BufferToConsole(buf);
-			(*theString) << (const char *) buf;
+			(*parseString) << (const char *) buf;
 			
 		}
+#else
+		if (y==0 && z==0 && k==0)	// node terminates
+		{
+			(*parseTreeString) = (*parseTreeString) & "(" & v & " " & corpusString->sData[i] & ")";
+			/*
+			sprintf (buf, "(%d %s)", v, corpusString->sData[i]);
+			(*parseString) << (const char *) buf;
+			 */
+		}
+		else
+		{
+			(*parseTreeString) = (*parseTreeString) & "(" & v & " ";
+			/*
+			sprintf (buf, "(%d ", v);
+			(*parseString) << (const char *) buf;
+			*/
+			
+			CykTraceback(i,k,y,stringIndex,theAVL,theYZKs,theMatrix,parseTreeString);
+			
+			//(*parseTreeString) = (*parseTreeString) & " ";
+			
+			CykTraceback(k+1,j,z,stringIndex,theAVL,theYZKs,theMatrix,parseTreeString);
+			
+			(*parseTreeString) = (*parseTreeString) & ")";
+			
+			/*
+			sprintf (buf, ")");
+			(*parseString) << (const char *) buf;
+			 */
+		}
+#endif
 	}
 }
 
