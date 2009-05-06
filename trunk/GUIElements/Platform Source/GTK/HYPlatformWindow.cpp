@@ -23,7 +23,7 @@ extern		_String		objectInspectorTitle;
 
 //__________________________________________________________________
 
-static void hyphy_menu_item_callback(gpointer  data, guint menuItem, GtkWidget *widget)
+void hyphy_menu_item_callback(gpointer  data, guint menuItem, GtkWidget *widget)
 {
 	_HYWindow * parentWindow = (_HYWindow*)(data);
 	parentWindow->_ProcessMenuSelection (menuItem);
