@@ -22,7 +22,7 @@ then
 	COMPILER_LINK_FLAGS=" -w -fsigned-char -D __HYPHY_GTK__ -D GDK_PIXBUF_ENABLE_BACKEND ";
 else
 	COMPILER_LINK_FLAGS=" -w -fsigned-char ";
-	COMPILER_FLAGS=" -w -c -O3 -D INTPTR_TYPE=long -fsigned-char -fpermissive -I`pwd`/GUI -I`pwd`/Source -I`pwd`/Source/SQLite `pkg-config gtk+-2.0 --cflags`  -D GDK_PIXBUF_ENABLE_BACKEND -D __HYPHY_GTK__ ";
+	COMPILER_FLAGS=" -w -c -O3 -D INTPTR_TYPE=long -fsigned-char -fpermissive -I`pwd`/GUI -I`pwd`/Source -I`pwd`/Source/SQLite `pkg-config gtk+-2.0 --cflags`  -D GDK_PIXBUF_ENABLE_BACKEND -D __HYPHY_GTK__ -D _SLKP_LFENGINE_REWRITE_ ";
 fi
 
 echo "Checking for curl";
@@ -114,11 +114,11 @@ fi
 if [ $1 = "MP2" ] 
 then
 	TARGET_NAME="HYPHYMP_GTK";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread -fopenmp ";
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
-	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ "
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -fopenmp "
 fi
 
 if [ $1 = "MPI" ] 
