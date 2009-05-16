@@ -37,6 +37,7 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
 #ifdef 	  __HYPHYDMALLOC__
 	#include "dmalloc.h"
 #endif
@@ -398,11 +399,8 @@ bool _SimpleList::Equal(_SimpleList& l2)
 	if (lLength!=l2.lLength) 
 		return false;
 		
-	long* 		data1 = (long*)lData, 
-		*		data2 = (long*)l2.lData;
-		
-	for (long i=0;i<lLength; i++, data1++, data2++)
-		if (*data1!=*data2) 
+	for (long i=0;i<lLength; i++)
+		if (lData[i] != l2.lData[i]) 
 			return false;
 			
 	return true;
@@ -1318,6 +1316,67 @@ long  _List::BinaryInsert (BaseRef s)
 	InsertElement (s,pos,true);
 	return pos>=lLength?lLength-1:pos;
 }
+
+//______________________________________________________________
+
+long		  _SimpleList::Min			(void)
+{
+	long res = LONG_MAX;
+	for  (long e = 0; e < lLength; e++)
+		if (lData[e] < res)
+			res = lData[e];
+	return res;
+}
+
+//______________________________________________________________
+
+long		  _SimpleList::Max			(void)
+{
+	long res = LONG_MIN;
+	for  (long e = 0; e < lLength; e++)
+		if (lData[e] > res)
+			res = lData[e];
+	return res;
+}
+
+
+//______________________________________________________________
+
+_SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
+{
+	if (ordering)
+		ordering->Clear();
+	
+	if (lLength)
+	{
+		if (upperBound < 0)
+			upperBound = Max()+1;
+
+		_SimpleList buffer      (upperBound, 0, 0),
+				  * result    =  new _SimpleList (lLength);
+		for (long pass1 = 0; pass1 < lLength; pass1 ++)
+			buffer.lData[lData[pass1]] ++;
+		for (long pass2 = 1; pass2 < upperBound; pass2 ++)
+			buffer.lData[pass2] += buffer.lData[pass2-1];
+		if (ordering)
+		{
+			ordering->Populate (lLength, 0, 0);
+			for (long pass3 = lLength-1; pass3 >=0; pass3--)
+			{
+				result->lData[--buffer.lData[lData[pass3]]] = lData[pass3];
+				ordering->lData[buffer.lData[lData[pass3]]] = pass3;
+			}
+		}	
+		else
+			for (long pass3 = lLength-1; pass3 >=0; pass3--)
+				result->lData[--buffer.lData[lData[pass3]]] = lData[pass3];
+		result->lLength = lLength;
+
+		return result;
+	}
+	return new _SimpleList;
+}
+
 
 //______________________________________________________________
 

@@ -3649,17 +3649,16 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							_Parameter  value							= theData[k];
 							_Parameter	_hprestrict_ *res				= storage.theData    + (m-i);
 							_Parameter	_hprestrict_ *secArg			= secondArg.theData  + i*vDim;
-							
-							for (i = 0; i < loopBound; i+=4)
+										
+							for (long i = 0; i < loopBound; i+=4)
 							{
-								res[i]   += value * secArg[i];
+								res[i] += value * secArg[i];
 								res[i+1] += value * secArg[i+1];
 								res[i+2] += value * secArg[i+2];
 								res[i+3] += value * secArg[i+3];
 							}
-							
-							for (; i < vDim; i++)
-								res[i]   += value * secArg[i];
+							for (long j = loopBound; j < vDim; j++)
+								res[j]   += value * secArg[j];
 						}
 					}	
 				}
@@ -4278,8 +4277,10 @@ void	_Matrix::CompressSparseMatrix (bool transpose, _Parameter * stash)
 					; 
 		
 		
-		long blockChunk = 8,
-		blockShift = hDim / blockChunk + 1;
+		long blockChunk = 32,
+			 blockShift = hDim / blockChunk + 1,
+			 max		= 0;
+
 		
 		for (long i2=0; i2<lDim; i2++)
 		{
@@ -4288,17 +4289,25 @@ void	_Matrix::CompressSparseMatrix (bool transpose, _Parameter * stash)
 			{
 				long r = transpose?(k/vDim):(k%vDim), 
 					 c = transpose?(k%vDim):(k/vDim),
-					 r2 = c / blockChunk * blockShift + r / blockChunk;
+					 r2 = c / blockChunk * blockShift + r / blockChunk,
+					 r3 = r2 * lDim + r * vDim + c;
 				
 				sortedIndex  << (c*vDim + r);
-				sortedIndex3 << r2 * lDim + r * vDim + c;
+				sortedIndex3 << r3;
 				stash[sortedIndex.lLength-1] = theData[i2];
+				if (r3 > max)
+					max = r3;
 			}
 		}
 		
-		sortedIndex2.Populate(sortedIndex.lLength,0,1);
-		SortLists(&sortedIndex3,&sortedIndex2);
-		
+		if (max > (lDim<<4))
+		{
+			sortedIndex2. Populate(sortedIndex.lLength,0,1);
+			SortLists(&sortedIndex3,&sortedIndex2);
+		}
+		else
+			DeleteObject (sortedIndex3.CountingSort(-1, &sortedIndex2));
+			
 		for (long i=0; i<sortedIndex.lLength; i++)
 		{
 			theIndex[i] = sortedIndex.lData[sortedIndex2.lData[i]];

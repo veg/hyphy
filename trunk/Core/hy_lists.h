@@ -174,6 +174,29 @@ virtual		void	Initialize 				(bool = true);
 virtual		void	Duplicate 				(BaseRef);
 
 void				Sort 					(bool ascending = true);
+	
+	
+long				Min						(void);
+long				Max						(void);
+	/* SLKP: 20090508
+		return the maximum 
+		or the minimum	   
+		value in the list
+	 */
+_SimpleList*		CountingSort			(long, _SimpleList* = nil);
+	/* SLKP: 20090508
+	 
+	 implements a counting sort procedure, ASSUMING that all 
+	 list values are in [0, upperBound-1]; if the 1st argument is <0, it is automatically
+	 determined
+	 
+	 returns a pointer to the sorted list
+	 if the second argument is not nil, then
+	 the new_order->old_order mapping is returned in the array pointed to
+	 
+	 */
+	
+	
 void				BubbleSort 				(void);
 void				QuickSort 				(long, long);
  				
