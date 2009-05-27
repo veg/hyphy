@@ -26,8 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "math.h"
-#include "float.h"
+#include <math.h>
+#include <float.h>
+#include <limits.h>
+
 #include "likefunc.h"
 #include "parser.h"
 #include "matrix.h"
@@ -120,7 +122,8 @@ _Parameter	 	gammaCoeff [7] = {
 					0.1208650973866179e-2,
 					-0.5395239384953e-5},
 				
-				pi_const = 3.141592653589793;
+				pi_const = 3.141592653589793,
+				long_max = (_Parameter)LONG_MAX;
 
 //__________________________________________________________________________________
 BaseRef			parameterToString 		(_Parameter);
@@ -140,7 +143,7 @@ BaseRef		parameterToString (_Parameter value)
 	long digs = printDigits;
 	if (digs<=0 || digs>15)
 	{
-		if (round(value) == value)
+		if (round(value) == value && fabs (value) < long_max)
 			sprintf (dump,"%Ld",lrint (value));
 		else
 			sprintf (dump,PRINTF_FORMAT_STRING,value);
