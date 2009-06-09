@@ -1387,6 +1387,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 				hDim = myCatCount;
 		}
 	}
+
+	
 	if (runMode == _hyphyLFConstructCategoryMatrixWeights)
 	{
 		_Matrix		* catWeights = new _Matrix (whichParts.lLength, hDim, false, true);
@@ -1413,15 +1415,34 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 			vDim	+=		BlockLength(i);
 	// only unique patterns for now
 
-	if (runMode == _hyphyLFConstructCategoryMatrixClasses) 
+	
+	
+	if (runMode == _hyphyLFConstructCategoryMatrixClasses || runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) 
 	// just return the maximum conditional likelihood category
-	{
+	{		
 		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
 		
 		// now proceed to compute each of the blocks
 		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 		{
 			long i = whichParts.lData[whichPart];
+			
+			if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
+			{
+				long partititonSpan				= BlockLength (i);
+				_SimpleList						scalers (partititonSpan);
+				ComputeSiteLikelihoodsForABlock (i, result->theData+currentOffset, scalers);
+				for (long c = 0; c < partititonSpan; c++)
+				{
+					result->theData[currentOffset+c] = log(result->theData[currentOffset+c]);
+					if (scalers.lData[c])
+						result->theData[currentOffset+c] -= scalers.lData[c]*_logLFScaler;
+					
+					
+				}
+				currentOffset				   += partititonSpan;
+				continue;
+			}
 			
 			if (blockDependancies.lData[i] > 0)
 			// if a partition that does not depend on category variables
@@ -1641,7 +1662,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 			maxPartSize			= MAX (maxPartSize,myWidth); 
 		}
 		
-		_GrowingVector	allScalers;
+		_GrowingVector	allScalers (false);
 		_SimpleList		scalers; 
 		// allocate a buffer big enough to store the matrix for each block
 		

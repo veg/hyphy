@@ -443,7 +443,7 @@ class	_GrowingVector: public _Matrix
 {
 
 public:
-			_GrowingVector 	(void);
+			_GrowingVector 	(bool = true);
 virtual		~_GrowingVector	(void) {};
 
 virtual		BaseRef		makeDynamic (void); // duplicate this object into a dynamic copy
@@ -453,9 +453,17 @@ virtual		void		Clear (void);
 
 virtual		long		GetHDim 					(void)	
 			{
-				return GetUsed();
+				if (isColumn)
+					return GetUsed();
+				return 1;
 			}
-			long   Store			(_Parameter);
+virtual		long		GetVDim 					(void)	
+			{
+				if (!isColumn)
+					return GetUsed();
+				return 1;
+			}			
+		long   Store			(_Parameter);
 			long   GetUsed			(void) 
 			{
 				return used;
@@ -468,7 +476,7 @@ virtual		long		GetHDim 					(void)
 			void	operator <<		(const _SimpleList&);
 	
 	long   used;
-
+	bool   isColumn;
 };
 
 /*__________________________________________________________________________________________________________________________________________ */

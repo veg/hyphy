@@ -102,7 +102,7 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			_List * noCatVarList = new _List;
 			noCatVarList->AppendNewInstance (new _List);
 			noCatVarList->AppendNewInstance (new _SimpleList((long)1));
-			noCatVarList->AppendNewInstance (new _SimpleList);
+			noCatVarList->AppendNewInstance (new _SimpleList((long)1));
 			categoryTraversalTemplate.AppendNewInstance (noCatVarList);
 		}
 		else
@@ -363,13 +363,16 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	_SimpleList			*categoryCounts			= (_SimpleList*)((*traversalPattern)(1)),
 						*categoryOffsets		= (_SimpleList*)((*traversalPattern)(2)),
 						categoryValues			(categoryCounts->lLength,0,0);
-
+	
 	long				totalSteps				= categoryOffsets->lData[0] * categoryCounts->lData[0],
 						catCount				= variables->lLength-1,
 						blockLength				= BlockLength(index),
 						arrayDim				;
 	
+	bool				isTrivial				= variables->lLength == 0;
+	
 	_CategoryVariable   *catVariable;
+	
 	
 	switch (runMode)
 	{
@@ -382,6 +385,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 		default:
 			arrayDim = blockLength;
 	}
+	
 	
 	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
 	{
@@ -415,32 +419,35 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 		// the next clause takes care of advancing the class count and 
 		// setting each category variable to its appropriate value 
 		
-		long remainder = currentRateCombo % categoryCounts->lData[catCount];
-		if (currentRateCombo && remainder  == 0)
+		if (!isTrivial)
 		{
-			categoryValues.lData[catCount] = 0;
-			(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(0);
-			for (long uptick = catCount-1; uptick >= 0; uptick --)
+			long remainder = currentRateCombo % categoryCounts->lData[catCount];
+			if (currentRateCombo && remainder  == 0)
 			{
-				categoryValues.lData[uptick]++;
-				if (categoryValues.lData[uptick] == categoryCounts->lData[uptick])
+				categoryValues.lData[catCount] = 0;
+				(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(0);
+				for (long uptick = catCount-1; uptick >= 0; uptick --)
 				{
-					categoryValues.lData[uptick] = 0;
-					(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(0);
-				}
-				else
-				{
-					(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(categoryValues.lData[uptick]);
-					break;
+					categoryValues.lData[uptick]++;
+					if (categoryValues.lData[uptick] == categoryCounts->lData[uptick])
+					{
+						categoryValues.lData[uptick] = 0;
+						(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(0);
+					}
+					else
+					{
+						(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(categoryValues.lData[uptick]);
+						break;
+					}
 				}
 			}
-		}
-		else
-		{
-			if (currentRateCombo)
+			else
 			{
-				categoryValues.lData[catCount]++;
-				(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(remainder);
+				if (currentRateCombo)
+				{
+					categoryValues.lData[catCount]++;
+					(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(remainder);
+				}
 			}
 		}
 		

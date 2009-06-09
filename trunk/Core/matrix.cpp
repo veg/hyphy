@@ -8797,9 +8797,10 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 // Growing Vector
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_GrowingVector::_GrowingVector (void) : _Matrix (64,1,false,true)
+_GrowingVector::_GrowingVector (bool iscol) : _Matrix (64,1,false,true)
 {
 	used = 0;
+	isColumn = iscol;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
@@ -8810,6 +8811,7 @@ BaseRef 	_GrowingVector::makeDynamic (void)
 	result->_Matrix::Duplicate (this);
 	result->used = used;
 	result->vDim = 1;
+	result->isColumn = isColumn;
 	return result;
 }
 
@@ -8851,6 +8853,7 @@ void _GrowingVector::Duplicate (BaseRef obj)
 {
 	_Matrix::Duplicate (obj);
 	used = ((_GrowingVector*)obj)->used;
+	isColumn = ((_GrowingVector*)obj)->isColumn;
 }
 
 

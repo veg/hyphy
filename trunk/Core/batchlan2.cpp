@@ -75,6 +75,7 @@ _String		sqlOpen 				("SQL_OPEN"),
 			seqAlignGapLinearSpace	("SEQ_ALIGN_LINEAR_SPACE"),
 			completeFlag 			("COMPLETE"),
 			conditionalWeights		("WEIGHTS"),
+			siteProbabilities		("SITE_LOG_LIKELIHOODS"),
 			lastSetOfConstraints	("LAST_SET_OF_CONSTRAINTS"),
 			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
 			_hyStatusConditionProbsMatrix				
@@ -644,7 +645,10 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 					if (((_String*)parameters(2))->Equal(&conditionalWeights))
 						runMode = _hyphyLFConstructCategoryMatrixWeights;
 					else 
-						runMode = _hyphyLFConstructCategoryMatrixClasses;
+						if (((_String*)parameters(2))->Equal(&siteProbabilities))
+							runMode = _hyphyLFConstructCategoryMatrixSiteProbabilities;
+						else
+							runMode = _hyphyLFConstructCategoryMatrixClasses;
 			}
 			ob = lf->ConstructCategoryMatrix(partsToDo,runMode,true, &resultID);
 		}

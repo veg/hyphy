@@ -62,7 +62,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFConstructCategoryMatrixClasses		1
 #define	  _hyphyLFConstructCategoryMatrixWeights		2
 #define	  _hyphyLFConstructCategoryMatrixPosteriors		3
-
+#define	  _hyphyLFConstructCategoryMatrixSiteProbabilities		4
 //_______________________________________________________________________________________
 
 struct	MSTCache
