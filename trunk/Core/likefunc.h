@@ -276,7 +276,7 @@ virtual	void			ScanAllVariables 		(void);
 static	void			RandomizeList				(_SimpleList&, long);		
 static	void			CheckFibonacci				(_Parameter);
 	
-		long			PartitionLengths		    (char = 0);
+		long			PartitionLengths		    (char = 0,  _SimpleList const* = nil);
 						/* 
 							SLKP: 20090317 
 							
@@ -287,6 +287,10 @@ static	void			CheckFibonacci				(_Parameter);
 								return the cumulative length (sites) of all parts in this
 								likelihood function
 						 
+							SLKP: 20090608
+						 
+								argument 2 provides an optional subcollection of partititons to operate on;
+									the default is to operate on all
 						*/
 
 		

@@ -1420,7 +1420,16 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 	if (runMode == _hyphyLFConstructCategoryMatrixClasses || runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) 
 	// just return the maximum conditional likelihood category
 	{		
-		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true));
+		_Matrix		 *result = (_Matrix*)checkPointer(new _Matrix (hDim,vDim,false,true)),
+					 *cache	 = nil;
+		_SimpleList  *scalerCache = nil;
+		
+		if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
+		{
+			long bufferL = PartitionLengths (0, &whichParts);
+			cache		 = (_Matrix*)checkPointer (new _Matrix (bufferL,2,false,true));
+			scalerCache  = (_SimpleList*)checkPointer (new _SimpleList (bufferL,0,0));
+		}
 		
 		// now proceed to compute each of the blocks
 		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
@@ -1430,13 +1439,12 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 			if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
 			{
 				long partititonSpan				= BlockLength (i);
-				_SimpleList						scalers (partititonSpan);
-				ComputeSiteLikelihoodsForABlock (i, result->theData+currentOffset, scalers);
+				ComputeSiteLikelihoodsForABlock (i, cache->theData, *scalerCache);
 				for (long c = 0; c < partititonSpan; c++)
 				{
-					result->theData[currentOffset+c] = log(result->theData[currentOffset+c]);
-					if (scalers.lData[c])
-						result->theData[currentOffset+c] -= scalers.lData[c]*_logLFScaler;
+					result->theData[currentOffset+c] = log(cache->theData[c]);
+					if (scalerCache->lData[c])
+						result->theData[currentOffset+c] -= scalerCache->lData[c]*_logLFScaler;
 					
 					
 				}
@@ -1645,6 +1653,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 			}
 		}
 		DoneComputing();
+		DeleteObject (cache);
+		DeleteObject (scalerCache);
 		if (remap)
 		{
 			_Matrix * retObj = RemapMatrix(result, whichParts);
@@ -1708,17 +1718,19 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 }
 
 //_______________________________________________________________________________________
-long	_LikelihoodFunction::PartitionLengths 		(char runMode)
+long	_LikelihoodFunction::PartitionLengths 		(char runMode,  _SimpleList const * filter)
 {
 	long maxDim = 0;
-	for (long i=0;i<theTrees.lLength;i++)
+	
+	for (long i=0;i<(filter?filter->lLength:theTrees.lLength);i++)
 	{
-		long bl = BlockLength (i);
+		long bl = BlockLength (filter?filter->lData[i]:i);
 		if (runMode == 0)
 			maxDim = MAX (maxDim, bl);
 		else
 			maxDim += bl;
 	}
+	
 	return maxDim;
 }
 
