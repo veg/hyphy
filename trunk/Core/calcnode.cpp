@@ -2511,6 +2511,10 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 		}
 		break;
 		
+		case 7: // T1-T2; splits defined by tree T1 that are found in T2
+			return SplitsIdentity (p);
+			break;
+
 		case 10: // MatchPattern (<=)
 		{
 			if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY))
@@ -3064,6 +3068,25 @@ bool	 _TreeTopology::Equal (_PMathObj p)
 		_TheTree * t = (_TheTree*)p;
 		return 	 !CompareTrees (t).beginswith("Unequal ");
 	}
+}
+
+//__________________________________________________________________________________
+
+_Matrix*	 _TreeTopology::SplitsIdentity (_PMathObj p)
+// compare tree topologies
+{
+	_Matrix * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
+	_Constant * bc = (_Constant*) BranchCount ();
+	result->theData[0] = bc->Value();
+	result->theData[1] = -1;
+	
+	if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE))
+	{
+		
+	}
+	
+	DeleteObject (bc);
+	return result;
 }
 
 //__________________________________________________________________________________

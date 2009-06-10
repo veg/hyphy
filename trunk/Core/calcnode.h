@@ -310,6 +310,16 @@ class _TreeTopology: public _CalcNode {
 				_List*			SplitTreeIntoClusters 				(unsigned long, unsigned long);
 				void			SetLeafName						    (long, _String*);
 				_String			DetermineBranchLengthMappingMode	(_String*, char&);
+				_Matrix*		SplitsIdentity						(_PMathObj);
+				/* 20090609: SLKP
+					given a tree agrument (p), the function returns a 2x1 matrix.
+					The first cell contains the number of splits in *this
+					The second cell contains the number of splits in the argument that are present in *this
+					
+					This entry will contain -1 if the argument is invalid (nil or not a tree) 
+					and if the set of leaves differs between two trees
+				 
+				*/
 };
 
 #if USE_SCALING_TO_FIX_UNDERFLOW
