@@ -175,6 +175,11 @@ virtual		void	Duplicate 				(BaseRef);
 
 void				Sort 					(bool ascending = true);
 	
+void				DebugVarList			(void);
+	/* SLKP: 20090611
+		print the names of variables whose indices are 
+	    contained in the list
+	 */
 	
 long				Min						(void);
 long				Max						(void);

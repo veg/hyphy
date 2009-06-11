@@ -6301,6 +6301,8 @@ void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2)
 	}
 }
 
+
+
 //__________________________________________________________________________________
 				
 void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld)

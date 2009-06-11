@@ -978,6 +978,7 @@ bool	_CategoryVariable::IsGlobal (void)
 {
 	return true;
 }
+
 //___________________________________________________________________________________________	
 void	  _CategoryVariable::ScanForVariables (_AVLList& l, bool globals)
 {
@@ -995,6 +996,7 @@ void	  _CategoryVariable::ScanForVariables (_AVLList& l, bool globals)
 	
 	if (globals)
 		l.Delete ((BaseRef)(_x_->GetAVariable()));
+
 }
 
 //___________________________________________________________________________________________	

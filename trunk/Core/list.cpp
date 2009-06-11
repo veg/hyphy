@@ -32,6 +32,7 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include "hy_strings.h"
 #include "errorfns.h"
 #include "hy_lists.h"
+#include "parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -1337,6 +1338,26 @@ long		  _SimpleList::Max			(void)
 		if (lData[e] > res)
 			res = lData[e];
 	return res;
+}
+
+//______________________________________________________________
+
+void		  _SimpleList::DebugVarList			(void)
+{
+	printf ("\nVariable list dump:\n");
+	for  (long e = 0; e < lLength; e++)
+	{
+		if (lData[e] >= 0)
+		{
+			_Variable * theV = LocateVar (lData[e]);
+			if (theV)
+			{
+				printf ("[%s]\n", theV->GetName()->getStr());
+				continue;
+			}
+		}		
+		printf ("[Empty]\n");
+	}
 }
 
 

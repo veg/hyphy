@@ -2219,6 +2219,7 @@ _Matrix::_Matrix (_List& sl)
 	else
 		Initialize();
 } 	
+
 //_____________________________________________________________________________________________
 
 void	_Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG)
@@ -2309,6 +2310,7 @@ void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long model
 		}
 		
 		_Formula ** theFormulas = (_Formula**)theData;
+		
 		if (theIndex)
 		{
 			for (long i = 0; i<lDim; i++)
@@ -2317,8 +2319,10 @@ void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long model
 		}
 		else
 			for (long i = 0; i<lDim; i++)
+			{
 				if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
-					theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat);			
+					theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat);	
+			}
 	}
 	else
 		if (storageType == 0) // a polynomial based matrix, there is stuff to do
@@ -2337,6 +2341,7 @@ void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long model
 						thePoly[i]->ScanForVariables (theReceptacle,inclG);
 				}
 		}
+
 }
 
 //_____________________________________________________________________________________________

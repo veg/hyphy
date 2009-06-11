@@ -7495,6 +7495,7 @@ _CategoryVariable*	_LikelihoodFunction::FindCategoryVar (long index)
 	return res;
 }
 
+	
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::ScanAllVariables (void)
 {
@@ -7560,6 +7561,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		iid.ReorderList ();
 	}
 
+	
 	/* mod 10/28/2005; Need to make two passes on trees; one to check for all category variables defined on the tree
 	   and second to lay out dependency bits (after all the category variables have been concatenated) */
 
