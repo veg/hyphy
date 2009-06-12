@@ -1717,7 +1717,35 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 	}
 	return overallResult + myLog (currentAccumulator);
 }
+//__________________________________________________________________________________
 
+//__________________________________________________________________________________
+
+void		 _treePSWRepresentation (node<long>* aNode, Ptr extraData)
+{
+	
+}
+
+//__________________________________________________________________________________
+
+_Matrix*	 _TreeTopology::SplitsIdentity (_PMathObj p)
+// compare tree topologies
+{
+	_Matrix * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
+	_Constant * bc = (_Constant*) BranchCount ();
+	result->theData[0] = bc->Value();
+	result->theData[1] = -1;
+	
+	if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE))
+	{
+		DepthWiseT (true, _treePSWRepresentation, nil);
+		while (currentNode)
+			DepthWiseT (true, _treePSWRepresentation, nil);
+	}
+	
+	DeleteObject (bc);
+	return result;
+}
 
 
 #endif

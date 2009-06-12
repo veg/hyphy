@@ -1649,12 +1649,16 @@ _CalcNode* _TheTree::DepthWiseTraversal (bool init)
 
 //_______________________________________________________________________________________________
 
-void _TreeTopology::DepthWiseT (bool init)
+void _TreeTopology::DepthWiseT (bool init, _HYTopologyTraversalFunction* handler, Ptr extra)
 {
 	if (init) 
 	 	currentNode =  DepthWiseStepTraverser (theRoot);
 	else
 	    currentNode =(DepthWiseStepTraverser((node<long>*)nil));	
+	
+	if (handler)
+		(*handler)(currentNode, extra);
+	
 }
 
 //_______________________________________________________________________________________________
@@ -1716,12 +1720,15 @@ _CalcNode* _TheTree::StepWiseTraversal (bool init)
 
 //_______________________________________________________________________________________________
 
-void _TreeTopology::StepWiseT (bool init)
+void _TreeTopology::StepWiseT (bool init,_HYTopologyTraversalFunction* handler, Ptr extra)
 {
 	if (init) 
 		currentNode =  StepWiseTraverser (theRoot);
 	else
 	   currentNode =(StepWiseTraverser((node<long>*)nil));	
+
+	if (handler)
+		(*handler)(currentNode, extra);
 }
 
 //_______________________________________________________________________________________________
@@ -3070,24 +3077,6 @@ bool	 _TreeTopology::Equal (_PMathObj p)
 	}
 }
 
-//__________________________________________________________________________________
-
-_Matrix*	 _TreeTopology::SplitsIdentity (_PMathObj p)
-// compare tree topologies
-{
-	_Matrix * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
-	_Constant * bc = (_Constant*) BranchCount ();
-	result->theData[0] = bc->Value();
-	result->theData[1] = -1;
-	
-	if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE))
-	{
-		
-	}
-	
-	DeleteObject (bc);
-	return result;
-}
 
 //__________________________________________________________________________________
 

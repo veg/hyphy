@@ -217,8 +217,14 @@ struct		nodeCoord {
 }; // used for tree imaging
 
 //_______________________________________________________________________________________________
+
+typedef	void _HYTopologyTraversalFunction (node<long>*, Ptr);
+
+//_______________________________________________________________________________________________
  
 class _TheTree; // forward declaration for xlc
+
+
 
 //_______________________________________________________________________________________________
 
@@ -279,10 +285,10 @@ class _TreeTopology: public _CalcNode {
 		virtual _AssociativeList*	
 								FindCOT								(_PMathObj);
 
-				void			DepthWiseT							(bool = false); 
+				void			DepthWiseT							(bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil); 
 				void	 		DepthWiseTRight 					(bool = false); 
 				void			DepthWiseTLevel 					(long& level, bool = false);
-				void		 	StepWiseT 							(bool = false); 
+				void		 	StepWiseT 							(bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil); 
 				void		 	StepWiseTLevel  					(long&, bool = false); 
 				void		 	LeafWiseT 							(bool = false); 
 		
