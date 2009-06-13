@@ -86,7 +86,10 @@ class		_Matrix: public _MathObject {
 										
 	_Matrix ( _Matrix &);						//duplicator
 	
-	_Matrix ( _SimpleList &);					//make matrix from simple list
+	_Matrix ( _SimpleList &, long = -1);		// make matrix from simple list
+												// the optional argument C (if > 0) tells HyPhy 
+												// to make a matrix with C elements per row
+												// if <= 0 - a row matrix is returned
 
 	_Matrix ( _List &);							//make string matrix from a list
 

@@ -1657,7 +1657,8 @@ void _TreeTopology::DepthWiseT (bool init, _HYTopologyTraversalFunction* handler
 	    currentNode =(DepthWiseStepTraverser((node<long>*)nil));	
 	
 	if (handler)
-		(*handler)(currentNode, extra);
+		if (!(*handler)(currentNode, extra))
+			currentNode = nil;
 	
 }
 
@@ -1728,7 +1729,8 @@ void _TreeTopology::StepWiseT (bool init,_HYTopologyTraversalFunction* handler, 
 	   currentNode =(StepWiseTraverser((node<long>*)nil));	
 
 	if (handler)
-		(*handler)(currentNode, extra);
+		if (!(*handler)(currentNode, extra))
+			currentNode = nil;
 }
 
 //_______________________________________________________________________________________________
@@ -2518,7 +2520,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 		}
 		break;
 		
-		case 7: // T1-T2; splits defined by tree T1 that are found in T2
+		case 5: // compute the strict consensus between T1 and T2
 			return SplitsIdentity (p);
 			break;
 

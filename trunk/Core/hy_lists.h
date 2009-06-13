@@ -93,7 +93,10 @@ virtual		void InsertElement 				(BaseRef br, long insertAt = -1, bool store = tr
 			long Element					(long);
 			// much like [] and () except negative indices return offsets from the end
 			// invalid indices return 0
- 				 				
+
+			long Pop						();
+			// retrive the last value and shorted the list by 1
+	
 virtual 	long  Find 						(long, long startAt = 0);
  			// find the position of a search string in the list of strings (ONLY)
  			// -1 if not found

@@ -2186,11 +2186,14 @@ _Matrix::_Matrix (_Matrix& m)
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_SimpleList& sl)
+_Matrix::_Matrix (_SimpleList& sl, long colArg)
 {	
 	if (sl.lLength)
 	{
-		CreateMatrix (this, 1, sl.lLength, 	false, true, false);
+		if (colArg > 0 && colArg < sl.lLength)
+			CreateMatrix (this, sl.lLength/colArg + colArg*(sl.lLength%colArg > 0), colArg, 	false, true, false);
+		else
+			CreateMatrix (this, 1, sl.lLength, 	false, true, false);
 		for (long k=0; k<sl.lLength; k++)
 			theData[k] = sl.lData[k];
 	}

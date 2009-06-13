@@ -303,6 +303,20 @@ long _SimpleList::Element (long index)
 	return 0;
 }
 
+//______________________________________________________________
+
+long _SimpleList::Pop (void)
+{
+	if (lLength > 0)
+	{
+		lLength --;
+		return lData[lLength];
+	}
+		
+	return 0;
+}
+
+
 
 //______________________________________________________________
 // element location functions (0,llength - 1)

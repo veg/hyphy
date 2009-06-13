@@ -1717,34 +1717,261 @@ _Parameter	 _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, lo
 	}
 	return overallResult + myLog (currentAccumulator);
 }
-//__________________________________________________________________________________
 
 //__________________________________________________________________________________
+// Tree cluster comparison functions
+//__________________________________________________________________________________
 
-void		 _treePSWRepresentation (node<long>* aNode, Ptr extraData)
+void		_TreeTopology::ComputeClusterTable (_SimpleList& result, _SimpleList& pswRepresentation)
 {
+	long			leafCount = pswRepresentation.Element(-2),
+					leafCode  = 0,
+					L,R;
 	
+	result.Clear    ();
+	result.Populate (3*leafCount,-1,0);
+	
+	for (long k = 0; k < pswRepresentation.lLength-2; k+=2)
+	{
+		if (pswRepresentation.lData[k] < leafCount) // is a leaf
+			R = leafCode++;
+		else
+		{
+			long row;
+			L = pswRepresentation.lData[k-2*pswRepresentation.lData[k+1]];
+			if (k == pswRepresentation.lLength-4 /* root */
+					|| pswRepresentation.lData[k+3] == 0)
+				row = R;
+			else
+				row = L;
+			
+			result.lData[row*3] = L;
+			result.lData[row*3+1] = R;
+		}
+	}
+}
+//__________________________________________________________________________________
+_String*		_TreeTopology::ConvertFromPSW						(_AVLListX& nodeMap,_SimpleList& pswRepresentation)
+{
+	_String * result = new _String (128L, true);
+	if (pswRepresentation.lLength > 4)
+	{
+		long leafCount = pswRepresentation.Element (-2);
+		// traverse backwards
+		bool lastLeaf = false;
+		_SimpleList		bounds;
+		
+		for (long k = pswRepresentation.lLength-4; k>=0; k-=2)
+		{
+			if (lastLeaf)
+				(*result) << ',';
+			if (pswRepresentation.lData[k] >= leafCount) //
+			{
+				(*result) << ')';
+				lastLeaf = false;
+				bounds   << k-2*pswRepresentation.lData[k+1];
+
+			}
+			else
+			{
+				_String nodeName (*(_String*)nodeMap.Retrieve(pswRepresentation.lData[k]));
+				nodeName.Flip();
+				(*result) << nodeName;
+				while (bounds.Element(-1) == k && bounds.lLength)
+				{
+					(*result) << '(';
+					bounds.Pop();
+				}
+				lastLeaf = true;
+			}
+		}
+	}
+	result->Finalize();
+	result->Flip();
+	return result;
 }
 
 //__________________________________________________________________________________
+bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _SimpleList& pswRepresentation, bool reference)
+{
+	if (reference == false)
+		nodeMap.Clear();
+	
+	pswRepresentation.Clear();
+	
+	long	leafIndex  = 0;
+	long	iNodeCount = -1;
+	long	level	   = 0;
+	
+	_String nodeName;
+	
+	DepthWiseTLevel	(level,&GetRoot());
+	_SimpleList levelBuffer;
+	
+	while (currentNode)
+	{
+		GetNodeName (currentNode,nodeName,false);
+		
+		
+		while (levelBuffer.countitems() <= level)
+			levelBuffer << 0;
+			
+		if (IsCurrentNodeATip())
+		{
+			
+			pswRepresentation << leafIndex;
+			pswRepresentation << 0;
+			if (reference)
+			{
+				long remapped = nodeMap.Find(&nodeName);
+				if (remapped < 0)
+					return false;
+				else
+					pswRepresentation << nodeMap.GetXtra (remapped);
+				leafIndex++;
+			}
+			else
+				nodeMap.Insert(nodeName.makeDynamic(), leafIndex++, false);
+		}
+		else
+		{
+			pswRepresentation << iNodeCount;
+			pswRepresentation << levelBuffer.lData[level];
+			if (reference)
+				pswRepresentation << 0;
+			iNodeCount--;
+		}
+		if (level)
+			levelBuffer.lData[level-1] += levelBuffer.lData[level]+1;
+		levelBuffer.lData[level]   = 0;
+		DepthWiseTLevel  (level,nil);
+	}
+	
+	for (long k = 0; k < pswRepresentation.lLength; k+=(reference?3:2))
+		if (pswRepresentation.lData[k] < 0)
+			pswRepresentation.lData[k] = leafIndex-pswRepresentation.lData[k]-1;
+	
+	pswRepresentation << leafIndex;
+	pswRepresentation << (-iNodeCount-1);
+	
+	return true;
+}
 
-_Matrix*	 _TreeTopology::SplitsIdentity (_PMathObj p)
+
+//__________________________________________________________________________________
+
+_AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 // compare tree topologies
 {
-	_Matrix * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
+	_Matrix  * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
+	_FString * treeR  = new _FString();
+	
 	_Constant * bc = (_Constant*) BranchCount ();
 	result->theData[0] = bc->Value();
 	result->theData[1] = -1;
 	
+	
 	if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE))
 	{
-		DepthWiseT (true, _treePSWRepresentation, nil);
-		while (currentNode)
-			DepthWiseT (true, _treePSWRepresentation, nil);
+		_List			avlSupport;
+		
+		_AVLListX		nameMap  (&avlSupport);
+		_SimpleList		psw, psw2, clusters;		
+		
+		
+		ConvertToPSW			(nameMap, psw);
+		ComputeClusterTable		(clusters, psw);
+		if (((_TreeTopology*)p)->ConvertToPSW			(nameMap, psw2, true))
+		{
+			_SimpleList	          workSpace;		
+			long leafCount      = psw.Element (-2);
+			
+			for (long k = 0; k < psw2.lLength-3; k+=3)
+			{
+				
+				if (psw2.lData[k] < leafCount)
+				{
+					workSpace << 1;
+					workSpace << 1;
+					workSpace << psw2.lData[k+2];
+					workSpace << psw2.lData[k+2];
+				}
+				else
+				{
+					_SimpleList quad; quad << leafCount+1; quad << 0; quad << 0; quad << 1;
+					
+					long  w = psw2.lData[k+1];
+					while (w > 0)
+					{
+						_SimpleList quad2; 
+						quad2 << workSpace.Pop();  quad2 << workSpace.Pop();   
+						quad2 << workSpace.Pop();  quad2 << workSpace.Pop();   
+						w -= quad2.lData[3];
+						quad.lData[0] = MIN(quad2.lData[0],quad.lData[0]);
+						quad.lData[1] = MAX(quad2.lData[1],quad.lData[1]);
+						quad.lData[2] += quad2.lData[2];
+						quad.lData[3] += quad2.lData[3];
+					}
+					
+					if (quad.lData[2] == quad.lData[1] - quad.lData[0] + 1)
+					{
+						if (clusters.lData[3*quad.lData[0]] == quad.lData[0] && clusters.lData[3*quad.lData[0]+1] == quad.lData[1])
+							clusters.lData[3*quad.lData[0]+2] = 1;
+						else
+							if (clusters.lData[3*quad.lData[1]] == quad.lData[0] && clusters.lData[3*quad.lData[1]+1] == quad.lData[1])
+								clusters.lData[3*quad.lData[1]+2] = 1;
+					}
+					quad.Flip();
+					workSpace << quad;
+				}
+			}
+			
+			psw2.Clear();
+			long matchCount = 0,
+				 iNodeCount = 0;
+			
+			long L, R;
+			for (long k = 0; k < psw.lLength; k+=2)
+			{
+				if (psw.lData[k] < leafCount)
+				{
+					R = psw.lData[k];
+					psw2 << R;
+					psw2 << (psw2.lLength>>1)+1;
+				}
+				else
+				{
+					long ll = k-2*psw.lData[k+1];
+					L = psw.lData[ll];
+					if ((clusters.lData[3*L] == L && clusters.lData[3*L+1] == R && clusters.lData[3*L+2] > 0)
+						|| (clusters.lData[3*R] == L && clusters.lData[3*R+1] == R && clusters.lData[3*R+2] > 0))
+					{
+						L = (psw2.lLength>>1) - psw2.lData[2*L+1] + 1;
+						psw2 << leafCount+iNodeCount++;
+						psw2 << L;
+					}
+				}
+			}
+			
+			for (long k = 0; k < psw2.lLength; k+=2)
+				if (psw2.lData[k] < leafCount)
+					psw2.lData[k+1] = 0;	
+			
+			psw2 << leafCount;
+			psw2 << iNodeCount;
+			
+			result->theData[1] = matchCount;
+			
+			*treeR->theString   = ConvertFromPSW (nameMap, psw2);
+		}
 	}
 	
 	DeleteObject (bc);
-	return result;
+	
+	_AssociativeList * resultList = new _AssociativeList;
+	resultList->MStore ("CLUSTERS", result, false);
+	resultList->MStore ("CONSENSUS", treeR, false);
+	return resultList;
 }
 
 

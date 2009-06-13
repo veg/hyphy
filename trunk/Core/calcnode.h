@@ -218,7 +218,7 @@ struct		nodeCoord {
 
 //_______________________________________________________________________________________________
 
-typedef	void _HYTopologyTraversalFunction (node<long>*, Ptr);
+typedef	bool _HYTopologyTraversalFunction (node<long>*, Ptr);
 
 //_______________________________________________________________________________________________
  
@@ -316,16 +316,64 @@ class _TreeTopology: public _CalcNode {
 				_List*			SplitTreeIntoClusters 				(unsigned long, unsigned long);
 				void			SetLeafName						    (long, _String*);
 				_String			DetermineBranchLengthMappingMode	(_String*, char&);
-				_Matrix*		SplitsIdentity						(_PMathObj);
+				_AssociativeList*
+								SplitsIdentity						(_PMathObj);
 				/* 20090609: SLKP
-					given a tree agrument (p), the function returns a 2x1 matrix.
+					given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
+					and a string (key "CONSENSUS");
 					The first cell contains the number of splits in *this
 					The second cell contains the number of splits in the argument that are present in *this
 					
 					This entry will contain -1 if the argument is invalid (nil or not a tree) 
 					and if the set of leaves differs between two trees
 				 
+				    The string will be empty (incomparable trees or another exception) or the Newick String 
+					with the consensus string
+				 
 				*/
+		bool			ConvertToPSW						(_AVLListX&,_SimpleList&,bool = false);
+			/* 20090612: SLKP
+				covert the topology into the post-order with weights representation
+				The first argument maps node names to their internal indices in the traversal order 
+			    (note that leaves are numbered 1..leaves-1 and internal indices as leaves-1...leaves+inodes-1)
+			    The second argument stores doubles for each node; the index in the array itself (mod 2), 
+				corresponds to the appropriate step in the post-order traversal;
+			 
+				<node index, number of nodes in the subtree below>
+			 
+				(((A,B)N1,C)N2,(D,E)N3)N0 will result in 
+			 
+				A->0; B->1; N1->5; C->2; N2->6; D->3; E->4; N3->7; N0->8
+				<0,0>,<1,0>,<5,2>,<2,0>,<6,4>,<3,0>,<4,0>,<7,2>,<8,8>, <5,4>
+			 
+				The last two entries store the number of leaves and internal nodes
+				
+			 
+				if the third argument is TRUE, then each LEAF in the tree must be found in the reference
+				dictionary supplied by the FIRST argument; false will be returned if this is not the case.
+			*/
+	
+		_String*		ConvertFromPSW						(_AVLListX&,_SimpleList&);
+			/* 20090612: SLKP
+					given a PSW tree traversal order and a labeling legend,
+					return the Newick string for the tree */
+
+		void			ComputeClusterTable					(_SimpleList&, _SimpleList&);
+			/* given the PSW traversal representation (arg 2) 
+			   compute the cluster table (as defined in William HE Day "Optimal Algorithms for Comparing Trees With Labels", 
+			   Page 16) and store in arg 1
+					the list a is a flat representation for an Nx3 (N = number of leaves) table
+					clusters spanning L<->R leaves will be stored in either row L or row R
+					i-th entry
+					<L = leftmost cluster leaf (in traversal order),
+					 R = rightmost cluster leaf (in traversal order),
+					 F = a binary toggle (set to 0 by this procedure)
+			 */
+			 
+			  
+			
+				
+				
 };
 
 #if USE_SCALING_TO_FIX_UNDERFLOW
