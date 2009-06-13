@@ -1953,9 +1953,13 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 				}
 			}
 			
+			
+			
 			for (long k = 0; k < psw2.lLength; k+=2)
 				if (psw2.lData[k] < leafCount)
 					psw2.lData[k+1] = 0;	
+				else
+					matchCount++;
 			
 			psw2 << leafCount;
 			psw2 << iNodeCount;
