@@ -1964,6 +1964,7 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 			psw2 << leafCount;
 			psw2 << iNodeCount;
 			
+			result->theData[0] = psw.Element (-1);
 			result->theData[1] = matchCount;
 			
 			*treeR->theString   = ConvertFromPSW (nameMap, psw2);
