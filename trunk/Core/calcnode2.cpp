@@ -1770,7 +1770,6 @@ _String*		_TreeTopology::ConvertFromPSW						(_AVLListX& nodeMap,_SimpleList& ps
 				(*result) << ')';
 				lastLeaf = false;
 				bounds   << k-2*pswRepresentation.lData[k+1];
-
 			}
 			else
 			{
@@ -1931,30 +1930,32 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 				 iNodeCount = 0;
 			
 			long L, R;
+			
+			_SimpleList leafSpans (leafCount,0,0);
+			
 			for (long k = 0; k < psw.lLength; k+=2)
 			{
 				if (psw.lData[k] < leafCount)
 				{
 					R = psw.lData[k];
 					psw2 << R;
-					psw2 << (psw2.lLength>>1)+1;
+					psw2 << 0;
+					leafSpans.lData[R] = (psw2.lLength>>1);
 				}
 				else
 				{
 					long ll = k-2*psw.lData[k+1];
-					L = psw.lData[ll];
+					L       = psw.lData[ll];
 					if ((clusters.lData[3*L] == L && clusters.lData[3*L+1] == R && clusters.lData[3*L+2] > 0)
 						|| (clusters.lData[3*R] == L && clusters.lData[3*R+1] == R && clusters.lData[3*R+2] > 0))
 					{
-						L = (psw2.lLength>>1) - psw2.lData[2*L+1] + 1;
+						L = (psw2.lLength>>1) - leafSpans.lData[L] + 1;
 						psw2 << leafCount+iNodeCount++;
 						psw2 << L;
 					}
 				}
 			}
-			
-			
-			
+						
 			for (long k = 0; k < psw2.lLength; k+=2)
 				if (psw2.lData[k] < leafCount)
 					psw2.lData[k+1] = 0;	
@@ -1967,7 +1968,7 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 			result->theData[0] = psw.Element (-1);
 			result->theData[1] = matchCount;
 			
-			*treeR->theString   = ConvertFromPSW (nameMap, psw2);
+			*treeR->theString  = ConvertFromPSW (nameMap, psw2);
 		}
 	}
 	
