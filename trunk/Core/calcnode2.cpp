@@ -1933,7 +1933,7 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 			
 			_SimpleList leafSpans (leafCount,0,0);
 			
-			for (long k = 0; k < psw.lLength; k+=2)
+			for (long k = 0; k < psw.lLength-2; k+=2)
 			{
 				if (psw.lData[k] < leafCount)
 				{
