@@ -8016,6 +8016,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	_Matrix					  *glFreqs  = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
 	_DataSetFilter			  *df		= ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
 	_TheTree				   *t		= ((_TheTree*)LocateVar(theTrees.lData[index]));
+	bool					   canClear = true;
+	if (currentRateClass >=0 && t->HasForcedRecomputeList())
+		canClear = TotalRateClassesForAPartition(index) == currentRateClass+1;
 	
 	t->InitializeTreeFrequencies		  ((_Matrix*)glFreqs->ComputeNumeric());
 		
@@ -8092,11 +8095,11 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 							branches->Clear();
 							matrices->Clear();
 							
-							snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);			
+							snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid,canClear);			
 						}
 					}
 					else
-						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid);
+						snID = t->DetermineNodesForUpdate		   (*branches, matrices,catID,*cbid,canClear);
 					
 					RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
 					*cbid = -1;
@@ -8114,7 +8117,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 			else
 			{
 				RestoreScalingFactors		(index, *cbid, patternCnt, scc, sccb);
-				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,branchIndex>=0?branchIndex+t->GetLeafCount():*cbid);
+				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,(branchIndex>=0)?(branchIndex+t->GetLeafCount()):*cbid,canClear);
 				*cbid						= -1;
 				branches					= &changedBranches;
 				matrices					= &changedModels;

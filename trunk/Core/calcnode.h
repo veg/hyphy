@@ -572,6 +572,7 @@ class _TheTree: public _TreeTopology {
 	
 			void		AddBranchToForcedRecomputeList	(long idx)		{forceRecalculationOnTheseBranches << idx;}
 			void		ClearForcedRecomputeList		(void)			{forceRecalculationOnTheseBranches.Clear();}
+			bool		HasForcedRecomputeList			(void)			{return forceRecalculationOnTheseBranches.lLength;}
 						// 20090306: SLKP
 						// the previous two functions are used to manipulate the list of 
 						// branches that are marked as 'dirty' for LF computation purposes
@@ -588,7 +589,7 @@ class _TheTree: public _TreeTopology {
 		void			SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
 		
 		_Parameter		ComputeTreeBlockByBranch		(_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter*, _Parameter*, long*, _Parameter*, _GrowingVector*, long&, long, long, long = -1, _Parameter* = nil, long* = nil, long = -1, long * = nil);
-		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1, long = -1);
+		long			DetermineNodesForUpdate			(_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
 		void			ExponentiateMatrices			(_List&, long, long = -1);
 		void			FillInConditionals				(_DataSetFilter*, _Parameter*,  _SimpleList*);
 

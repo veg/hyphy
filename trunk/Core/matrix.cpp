@@ -3912,7 +3912,7 @@ _Parameter	_Matrix::MaxElement  (void)
 				long k = theIndex[i];
 				if (k!=-1)
 				{
-					temp = theData[k];
+					temp = theData[i];
 					if (temp<0.0)
 						temp = -temp;
 					if (temp>max) max = temp;
