@@ -477,6 +477,7 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 			// populate the matrix of conditionals and scaling factors
 		{
 			_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+
 			ComputeBlock	(index, bufferForThisCategory, currentRateCombo, branchIndex, branchValues);
 			
 			if (runMode == _hyphyLFConditionProbsRawMatrixMode)
@@ -522,6 +523,8 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 		{
 			if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass) 
 			{
+				//if (branchIndex>=0)
+				//	((_TheTree*)LocateVar(theTrees.lData[index]))->AddBranchToForcedRecomputeList (branchIndex+((_TheTree*)LocateVar(theTrees.lData[index]))->GetLeafCount());
 				ComputeBlock	(index, buffer + blockLength, currentRateCombo, branchIndex, branchValues);
 
 				if (runMode == _hyphyLFConditionProbsWeightedSum)
@@ -696,11 +699,12 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 				}
 			}
 			
-			scores[alphabetDimension-1] = 1. - sum;
 				   
 			//if (fabs(scores[alphabetDimension-1]+sum-1.) > 0.1)
 			//	WarnError (_String("Bad monkey!") & scores[alphabetDimension-1] & ":" & (1.-sum) );
 			
+			scores[alphabetDimension-1] = 1. - sum;
+
 			if (scores[alphabetDimension-1] > max_lik)
 				max_idx = alphabetDimension-1; 
 						
