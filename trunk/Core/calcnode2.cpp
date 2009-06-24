@@ -92,7 +92,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNodes, long catID, long addOne)
+long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNodes, long catID, long addOne, bool canClear)
 {
 	nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength - 1, 0, 0); 
 	_CalcNode		*currentTreeNode;
@@ -109,7 +109,8 @@ long		_TheTree::DetermineNodesForUpdate	(_SimpleList& updateNodes, _List* expNod
 		for (long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++)
 			nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 1;
 		
-		forceRecalculationOnTheseBranches.Clear();
+		if (canClear)
+			forceRecalculationOnTheseBranches.Clear();
 	}
 	
 	for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
