@@ -121,7 +121,7 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputDash		  = "TREE_OUTPUT_BRANCH_DASH",
 			treeOutputOLabel	  = "TREE_OUTPUT_OVER_BRANCH",
 			treeOutputSymbols	  = "TREE_OUTPUT_SYMBOLS",
-			treeOutputSymLegend	  = "TREE_OUTPUT_PLOTLEGEND",
+			treeOutputExtraPS	  = "TREE_OUTPUT_EXTRA_POSTSCRIPT",
 			treeOutputLayout	  = "TREE_OUTPUT_LAYOUT",
 			treeOutputNNPlaceH	  = "__NODE_NAME__",
 			treeOutputFSPlaceH	  = "__FONT_SIZE__",
@@ -4975,9 +4975,10 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			node<nodeCoord>* newRoot,
 						   *currentNd;
 			
-			bool	doEmbed = false;
-			bool	doSymbol = false;
-			bool	plotLegend = false;
+			bool	 doEmbed = false;
+			bool	 doSymbol = false;
+			_FString *extraPS = nil;
+			
 			
 			_AssociativeList * toptions  = (_AssociativeList*)FetchObjectFromVariableByType (&treeOutputAVL,ASSOCIATIVE_LIST);
 			
@@ -4993,9 +4994,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				if ( lc )
 					doSymbol = lc->Value();
 				
-				lc = toptions->GetByKey(treeOutputSymLegend, NUMBER);
+				lc = toptions->GetByKey(treeOutputExtraPS, STRING);
 				if ( lc )
-					plotLegend - lc->Value();
+					extraPS = (_FString*)lc->Compute();
 			}
 
 			_String*		theParam = (_String*) p->toStr(), 
@@ -5117,11 +5118,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) <<  "} def\n";
 				}
 				
-				if ( plotLegend ) {
-					
-					
-				}
-				
+
 				_Constant* fontSizeIn = (_Constant*)(toptions)->GetByKey (treeOutputFSPlaceH, NUMBER);
 				if (fontSizeIn)
 					fontSize = fontSizeIn->Value();
@@ -5382,6 +5379,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			
 			newRoot->delete_tree ();
 			delete  newRoot;
+			
+			if (extraPS)
+				(*res) << extraPS->theString->Replace (treeOutputFSPlaceH, _String(fontSize), true);
 			
 			if (!doEmbed)
 			{
