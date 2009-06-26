@@ -121,6 +121,7 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputDash		  = "TREE_OUTPUT_BRANCH_DASH",
 			treeOutputOLabel	  = "TREE_OUTPUT_OVER_BRANCH",
 			treeOutputSymbols	  = "TREE_OUTPUT_SYMBOLS",
+			treeOutputSymbolSize  = "TREE_OUTPUT_SYMBOL_SIZE",
 			treeOutputExtraPS	  = "TREE_OUTPUT_EXTRA_POSTSCRIPT",
 			treeOutputLayout	  = "TREE_OUTPUT_LAYOUT",
 			treeOutputNNPlaceH	  = "__NODE_NAME__",
@@ -4978,6 +4979,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			bool	 doEmbed = false;
 			bool	 doSymbol = false;
 			_FString *extraPS = nil;
+			long	symbolsize = 3;
 			
 			
 			_AssociativeList * toptions  = (_AssociativeList*)FetchObjectFromVariableByType (&treeOutputAVL,ASSOCIATIVE_LIST);
@@ -4997,6 +4999,10 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				lc = toptions->GetByKey(treeOutputExtraPS, STRING);
 				if ( lc )
 					extraPS = (_FString*)lc->Compute();
+				
+				lc = toptions->GetByKey(treeOutputSymbolSize, NUMBER);
+				if ( lc )
+					symbolsize = lc->Value();
 			}
 
 			_String*		theParam = (_String*) p->toStr(), 
@@ -5093,7 +5099,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				
 				if ( doSymbol ) {
 					/*add some symbol drawing postscript functions */
-					(*res) << "/size 3 def\n";
+					(*res) << "/size ";
+					(*res) << _String(symbolsize);
+					(*res) << " def\n";
 					(*res) << "/box { 1 size mul 0 size mul rlineto\n";
 					(*res) << "0 size mul 1 size mul rlineto\n";
 					(*res) << "-1 size mul 0 size mul rlineto\n";
