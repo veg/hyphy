@@ -120,6 +120,8 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputColor		  = "TREE_OUTPUT_BRANCH_COLOR",
 			treeOutputDash		  = "TREE_OUTPUT_BRANCH_DASH",
 			treeOutputOLabel	  = "TREE_OUTPUT_OVER_BRANCH",
+			treeOutputSymbols	  = "TREE_OUTPUT_SYMBOLS",
+			treeOutputSymLegend	  = "TREE_OUTPUT_PLOTLEGEND",
 			treeOutputLayout	  = "TREE_OUTPUT_LAYOUT",
 			treeOutputNNPlaceH	  = "__NODE_NAME__",
 			treeOutputFSPlaceH	  = "__FONT_SIZE__",
@@ -4974,6 +4976,8 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 						   *currentNd;
 			
 			bool	doEmbed = false;
+			bool	doSymbol = false;
+			bool	plotLegend = false;
 			
 			_AssociativeList * toptions  = (_AssociativeList*)FetchObjectFromVariableByType (&treeOutputAVL,ASSOCIATIVE_LIST);
 			
@@ -4985,6 +4989,13 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				lc = toptions->GetByKey (treeOutputEmbed, NUMBER);
 				if (lc)
 					doEmbed = lc->Value();
+				lc = toptions->GetByKey(treeOutputSymbols, NUMBER);
+				if ( lc )
+					doSymbol = lc->Value();
+				
+				lc = toptions->GetByKey(treeOutputSymLegend, NUMBER);
+				if ( lc )
+					plotLegend - lc->Value();
 			}
 
 			_String*		theParam = (_String*) p->toStr(), 
@@ -5050,9 +5061,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			{
 				(*res)<<"<< /PageSize [";
 				
-				(*res)<<_String(treeWidth);
+				(*res)<<_String(treeWidth+15); /*wayne added 15 to make trees sit inside the page */
 				(*res)<<' ';
-				(*res)<<_String(treeHeight);
+				(*res)<<_String(treeHeight+15);
 				
 				(*res)<<"] >> setpagedevice\n";
 			}
@@ -5078,6 +5089,38 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << " 0 lineto\n";
 					(*res) << "closepath\nfill\n0 0 0 setrgbcolor\n";
 				}	
+				
+				if ( doSymbol ) {
+					/*add some symbol drawing postscript functions */
+					(*res) << "/size 3 def\n";
+					(*res) << "/box { 1 size mul 0 size mul rlineto\n";
+					(*res) << "0 size mul 1 size mul rlineto\n";
+					(*res) << "-1 size mul 0 size mul rlineto\n";
+					(*res) << "closepath\n";
+					(*res) << "} def\n";
+					
+					(*res) << "/triangle { 	1 size mul size 0 mul rlineto\n";
+					(*res) << "-0.5 size mul size 1 mul rlineto\n";
+					(*res) << "closepath\n";
+					(*res) << "} def\n";
+					
+					(*res) << "/circle {	0.5 size mul 0 360 arc\n";
+					(*res) << "closepath\n";
+					(*res) << "} def\n";
+					
+					(*res) << "/diamond { 45 rotate\n";
+					(*res) <<  "1 size mul 0 size mul rlineto\n";
+					(*res) <<  "0 size mul 1 size mul rlineto\n";
+					(*res) <<  "-1 size mul 0 size mul rlineto\n";				
+					(*res) <<  "-45 rotate\n";
+					(*res) <<  "closepath\n";
+					(*res) <<  "} def\n";
+				}
+				
+				if ( plotLegend ) {
+					
+					
+				}
 				
 				_Constant* fontSizeIn = (_Constant*)(toptions)->GetByKey (treeOutputFSPlaceH, NUMBER);
 				if (fontSizeIn)
