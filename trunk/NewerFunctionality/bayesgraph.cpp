@@ -15,6 +15,7 @@
 
 _String		_HYBgm_NODE_INDEX	("NodeID"),
 			_HYBgm_NODETYPE		("NodeType"),
+			_HYBgm_NUM_LEVELS	("NumLevels"),
 			_HYBgm_MAX_PARENT	("MaxParents"),
 			_HYBgm_PRIOR_SIZE	("PriorSize"),
 			_HYBgm_PRIOR_MEAN	("PriorMean"),		/* for continuous (Gaussian) nodes */
@@ -44,7 +45,9 @@ _String		_HYBgm_NODE_INDEX	("NodeID"),
 
 			_HYBgm_IMPUTE_MAXSTEPS	("BGM_IMPUTE_MAXSTEPS"),
 			_HYBgm_IMPUTE_BURNIN	("BGM_IMPUTE_BURNIN"),
-			_HYBgm_IMPUTE_SAMPLES	("BGM_IMPUTE_SAMPLES");
+			_HYBgm_IMPUTE_SAMPLES	("BGM_IMPUTE_SAMPLES"),
+			
+			_HYBgm_CONTINUOUS_MISSING_VALUE ("BGM_CONTINUOUS_MISSING_VALUE");
 
 
 //__________________________________________________________________________________________________________
@@ -239,6 +242,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		
 		// AVL should include following items:	"NodeID"		- variable name
 		//										"NodeType"		- 0 = discrete, 1 = continuous (Gaussian)
+		//										"NLevels"		- (discrete only)
 		//										"MaxParents"	- maximum number of parents
 		//										"PriorSize"		- hyperparameter for discrete node (BDe)
 		//														- also used for degrees of freedom hyperparameter for Gaussian node
@@ -246,10 +250,16 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		//										"PriorPrecision" - hyperparameter for Gaussian node
 		//										"PriorScale"	- fourth hyperparameter for Gaussian node
 		
+		
 		// node type (0 = discrete, 1 = continuous)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER)))
 		{
 			data_type.lData[node] = (long)(avl_val->Value());
+			if (data_type.lData[node] < 0 || data_type.lData[node] > 2)
+			{
+				errorMessage = _String("Unsupported NodeType ") & data_type.lData[node] & " for node " & node;
+				break;
+			}
 		}
 		else
 		{
@@ -257,13 +267,42 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			break;
 		}
 		
+		
+		// number of levels	(discrete nodes)
+		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NUM_LEVELS, NUMBER)))
+		{
+			num_levels.lData[node] = (long)(avl_val->Value());
+			
+			if (num_levels.lData[node] <= 1)
+			{
+				errorMessage = _String("NLevels must be greater than 1, received ") & num_levels.lData[node] & " for node " & node;
+				break;
+			}
+		}
+		else
+		{
+			if (!avl_val && data_type.lData[node] == 0)
+			{
+				errorMessage = _String ("Missing NumLevels in associative array for node ") & node;
+				break;
+			}
+		}
+		
+		
 		// max parents
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_MAX_PARENT, NUMBER)))
 		{
 			max_parents.lData[node] = (long)(avl_val->Value());
+			
 			if (max_parents.lData[node] > global_max_parents)
 			{
 				global_max_parents = max_parents.lData[node];
+			}
+			
+			if (max_parents.lData[node] <= 0)
+			{
+				errorMessage = _String ("MaxParents must be greater than zero, received ") & max_parents.lData[node] & " for node " & node;
+				break;
 			}
 		}
 		else
@@ -272,16 +311,24 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			break;
 		}
 		
+		
 		// prior sample size
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SIZE, NUMBER)))
 		{
 			prior_sample_size.Store (node, 0, (_Parameter) (avl_val->Value()));
+			
+			if (prior_sample_size(node,0) < 0)
+			{
+				errorMessage = _String ("PriorSampleSize must be at least zero, received ") & prior_sample_size(node,0) & " for node " & node;
+				break;
+			}
 		}
 		else
 		{
 			errorMessage = _String ("Missing PriorSize in associative array for node ") & node;
 			break;
 		}
+		
 		
 		// prior mean (Gaussian)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_MEAN, NUMBER)))
@@ -294,11 +341,18 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			break;
 		}
 		
+		
 		// prior precision (Gaussian)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))
 		{
 			prior_precision.Store (node, 0, (_Parameter) (avl_val->Value()));
-			ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
+			
+			if (avl_val <= 0)
+			{
+				errorMessage = _String ("PriorPrecision must be greater than zero, received ") & prior_precision(node,0) & " for node " & node;
+				break;
+			}
+			// ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
 		}
 		else if (!avl_val && data_type.lData[node] == 1)
 		{
@@ -306,10 +360,17 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			break;
 		}
 		
+		
 		// prior scale (Gaussian)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))
 		{
 			prior_scale.Store (node, 0, (_Parameter) (avl_val->Value()));
+			
+			if (avl_val <= 0)
+			{
+				errorMessage = _String ("PriorScale must be greater than zero, received ") & prior_scale(node,0) & " for node " & node;
+				break;
+			}
 		}
 		else if (!avl_val && data_type.lData[node] == 1)
 		{
@@ -343,7 +404,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 //__________________________________________________________________________________________________________
 _BayesianGraphicalModel::~_BayesianGraphicalModel (void)
 {
-	
+	/* destructor */
 }
 
 
@@ -352,7 +413,23 @@ _BayesianGraphicalModel::~_BayesianGraphicalModel (void)
 //__________________________________________________________________________________________________________
 bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 {
-	ReportWarning (_String ("Entered SetDataMatrix()."));
+	/* ------------------------------------------------------------------------------------------------
+		SetDataMatrix()
+			Takes a matrix pointer passed from HBL and assign it to class member variable.
+			Checks that number of levels for discrete nodes agrees with value set at construction.
+			Checks for missing values in each column and annotate the [has_missing] list accordingly.
+			Missing values for discrete nodes are flagged by any negative integer.
+			Missing values for continuous nodes are flagged by a value set by the user; otherwise,
+			it defaults to a fun value I picked arbitrarily.
+	   ------------------------------------------------------------------------------------------------ */
+	
+	
+	//ReportWarning (_String ("Entered SetDataMatrix()."));
+	_SimpleList	data_nlevels;
+	
+	/* check for user assignment of continuous missing value indicator */
+	checkParameter (_HYBgm_CONTINUOUS_MISSING_VALUE, continuous_missing_value, -666.0);
+	data_nlevels.Populate (num_nodes, 1, 0);
 	
 	if (data->GetVDim() == num_nodes)
 	{
@@ -369,7 +446,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 			// if discrete node, compute number of levels and missingness
 			if (data_type.lData[node] == 0)
 			{
-				num_levels.lData[node] = 1;
+				data_nlevels.lData[node] = 1;
 				
 				for (long val, row = 0; row < nrows; row++)
 				{
@@ -383,8 +460,17 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 					
 					if (val + 1 > num_levels.lData[node])
 					{
-						num_levels.lData[node]++;
+						data_nlevels.lData[node]++;
 					}
+				}
+				
+				if (data_nlevels.lData[node] != num_levels.lData[node])
+				{
+					WarnError (_String ("ERROR: Number of levels in data (") & data_nlevels.lData[node] & ") for discrete node " 
+							   & node & " is not compatible with node setting (" & num_levels.lData[node] 
+							   & ".  Check your data or reset the BGM.");
+					
+					return (FALSE);
 				}
 			}
 			
@@ -393,7 +479,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 			{
 				for (long val, row = 0; row < nrows; row++)
 				{
-					if (val == MISSING_CONTINUOUS_VALUE && has_missing.lData[node] == 0)
+					if (val == continuous_missing_value && has_missing.lData[node] == 0)
 					{
 						has_missing.lData[node] = 1;
 						break;
@@ -401,17 +487,20 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 				}
 			}
 		}
+		
+		ReportWarning (_String ("Set data matrix."));
 	}
 	else
 	{
-		_String errorMsg ("ERROR: Number of variables in data does not match number of nodes in graph.");
-		WarnError (errorMsg);
+		WarnError (_String("ERROR: Number of variables in data (") & data->GetVDim() & ") does not match number of nodes in graph (" & num_nodes & ")");
 		return (FALSE);
 	}
 	
+	
+	// compute node scores and store in cache
 	CacheNodeScores();
 	
-	ReportWarning (_String ("Set data matrix."));
+	
 	return (TRUE);
 }
 
@@ -420,6 +509,15 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 //__________________________________________________________________________________________________________
 bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
 {
+	/* -----------------------------------------------------------------
+		SetConstraints()
+			Assign pointer to _Matrix object passed from batchlan.cpp
+			A constraint matrix is N x N where N is the number of nodes
+			in the network.
+			1 entry indicates an enforced edge (always in network)
+			-1 entry indicates a banned edge (never in network)
+			0 entry indicates no constraint
+	   ----------------------------------------------------------------- */
 	if (constraints->GetHDim() == num_nodes)
 	{
 		constraint_graph = (_Matrix &) (*constraints);
@@ -436,8 +534,15 @@ bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
 //__________________________________________________________________________________________________________
 bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 {
-	//	Set [theStructure] to matrix argument from HBL SetParameter().
-	//	-------------------------------------------------------------
+	/* -------------------------------------------------------------------
+		SetStructure()
+			Assign pointer to _Matrix object from batchlan:SetParameter() 
+			that specificies a network structure.
+			Check the structure against constraint matrix and node 
+			ordering if the latter is set.
+			If node order is incompatible, reset the node order.
+	   ------------------------------------------------------------------- */
+	
 	if (structure->GetHDim() == num_nodes)
 	{
 		// check graph against constraint matrix
@@ -473,6 +578,8 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 			templist = GetOrderFromGraph (theStructure);
 			node_order_arg = (_SimpleList &) (*templist);
 			DeleteObject (templist);
+			
+			ReportWarning (_String ("Structure is incompatible with existing node order, resetting order."));
 		}
 		
 		theStructure = (_Matrix &) (*structure);
@@ -485,11 +592,15 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 }
 
 
+
 //__________________________________________________________________________________________________________
 bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
 {
-	//	Set node ordering to vector argument from HBL SetParameter().
-	//	-------------------------------------------------------------
+	/* -----------------------------------------------------------------
+		SetNodeOrder()
+			Set node ordering to vector argument from HBL SetParameter().
+	   ----------------------------------------------------------------- */
+	
 	if (order->lLength == num_nodes)
 	{
 		if (GraphObeysOrder (theStructure, (_SimpleList &) *order))
@@ -525,8 +636,11 @@ bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
 //__________________________________________________________________________________________________________
 _Parameter _BayesianGraphicalModel::Compute (void)
 {
-	//	Return posterior probability of current network structure.
-	//	-------------------------------------------------------------
+	/* --------------------------------------------------------------
+		Compute()	[POLYMORPHIC]
+			Return posterior probability of [CURRENT] network 
+			structure.
+	   -------------------------------------------------------------- */
 	
 	_Parameter	log_score = 0.;
 	
@@ -543,8 +657,11 @@ _Parameter _BayesianGraphicalModel::Compute (void)
 //__________________________________________________________________________________________________________
 _Parameter _BayesianGraphicalModel::Compute (_Matrix & g)
 {
-	//	Return posterior probability of given network structure.
-	//	-------------------------------------------------------------
+	/* --------------------------------------------------------------
+		Compute()	[POLYMORPHIC]
+			Return posterior probability of [GIVEN] network 
+			structure argument.
+	   -------------------------------------------------------------- */
 	
 	_Parameter	log_score = 0.;
 	
@@ -559,9 +676,12 @@ _Parameter _BayesianGraphicalModel::Compute (_Matrix & g)
 //__________________________________________________________________________________________________________
 _Parameter	_BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * marginals)
 {
-	//	Return posterior probability of given node order by integrating over all compatible
-	//		structures; also return marginal posterior probabilities for edges.
-	//	-------------------------------------------------------------
+	/* --------------------------------------------------------------
+		Compute()	[POLYMORPHIC]
+			Return posterior probability of given node order by 
+			integrating over all compatible structures.
+			Also return marginal posterior probabilities for edges.
+	   -------------------------------------------------------------- */
 	
 	_Parameter			log_likel	= 0.;
 	_GrowingVector		*gv1, *gv2;
@@ -719,9 +839,12 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix 
 //__________________________________________________________________________________________________________
 _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
-	//	Currently, discrete nodes may only have discrete parents, this should be enforced 
-	//		via wrapper functions (above) and/or constraint matrix.
-	//	---------------------------------------------------------------------------------
+	/* --------------------------------------------------------------------
+		ComputeDiscreteScore()
+			Returns posterior probability of local network structure 
+			centered at discrete child node.
+			Only discrete nodes may be parents of a discrete child node.
+	   -------------------------------------------------------------------- */
 	
 	
 	// use cached node scores if available
@@ -760,7 +883,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 	// impute score if missing data
 	if (has_missing.lData[node_id])
 	{
-		return (GibbsImputeScore (node_id, parents));
+		return (ImputeNodeScore (node_id, parents));
 	}
 	else
 	{
@@ -768,7 +891,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 		{
 			if (has_missing.lData[parents.lData[par]])
 			{
-				return (GibbsImputeScore (node_id, parents));
+				return (ImputeNodeScore (node_id, parents));
 			}
 		}
 	}
@@ -879,10 +1002,11 @@ void	_BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
 {
 	/* ------------------------------------------------------------------------------------
 		InitMarginalVectors()
-		Allocate storage of node and edge marginal posterior probabilities accumulated during
-		order-MCMC.  Off-diagonals correspond to entries of an adjacency matrix (edges), 
-		whereas diagonal entries are used to store node marginals.
+			Allocate storage of node and edge marginal posterior probabilities accumulated 
+			during order-MCMC.  Off-diagonals correspond to entries of an adjacency matrix 
+			(edges), whereas diagonal entries are used to store node marginals.
 	   ------------------------------------------------------------------------------------ */
+	
 	_GrowingVector * newstore;
 	checkPointer (newstore = new _GrowingVector);
 	
@@ -932,6 +1056,11 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 	
 	
 #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+	
+	/*********************************/
+	/*  THIS IS TOTALLY BUSTED  :-/  */
+	/*********************************/
+	
 	// MPI_Init() is called in main()
 	int			size,
 				rank;

@@ -54,7 +54,6 @@
 
 
 #define		DIRICHLET_FLATTENING_CONST	0.5
-#define		MISSING_CONTINUOUS_VALUE	-99999.0
 
 
 class _BayesianGraphicalModel : public _LikelihoodFunction
@@ -102,7 +101,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 						ComputeContinuousScore (long, _SimpleList &);
 		
 		
-		_Parameter		GibbsImputeScore (long, _SimpleList &);	// need to expand this to handle continuous nodes
+		_Parameter		ImputeNodeScore (long, _SimpleList &);
 		
 		void			ComputeParameters (void);
 		
@@ -111,7 +110,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		/* input/output */
 		_AssociativeList *	ExportModel (void);
-		void				ExportCache (_AssociativeList *);
+		bool				ExportCache (_AssociativeList *);
 		bool				ImportCache (_AssociativeList *);
 		
 		
@@ -126,7 +125,8 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		bool			GraphObeysOrder (_Matrix &, _SimpleList &);
 		
 		_Parameter		K2Score (long, _Matrix &, _Matrix &),
-						BDeScore (long,	_Matrix &, _Matrix &);
+						BDeScore (long,	_Matrix &, _Matrix &),
+						BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
 		
 		long			GetNumNodes (void)	{ return num_nodes; }
 		long			GetNumCases (void)	{ return theData->GetVDim(); }
@@ -148,6 +148,8 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 						prior_mean,			// for continuous (Gaussian) nodes
 						prior_precision,
 						prior_scale;
+		
+		_Parameter		continuous_missing_value;		// some arbitrary value set in HBL to indicate just that
 		
 		/* ------------------------------------------- */
 		
