@@ -1519,10 +1519,13 @@ void	WarnError (_String st)
 #ifndef __WINDOZE__
 #ifndef __HYPHY_GTK__
 	#ifdef __HYPHYMPI__
-	  	int 	rank;
+		int     rank;
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-		_String mpiErrorSend = _String("Error on MPI Node:") & rank & st;	
-		MPISendString 
+		_String mpiErrorSend = _String("Received an error state from MPI Node:") & (long)rank & '\n' & st;
+		if (rank > 0)
+			MPISendString (mpiErrorSend,0,true);
+		else
+			printf ("Master node received an error:%s\n", st.sData);
 	#else
 		printf("Error:\n%s\n", st.getStr());
 	#endif
