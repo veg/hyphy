@@ -1601,13 +1601,13 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 
 //_____________________________________________________________________________________________
 
-void	_Matrix::CheckIfSparseEnough(bool force = false)
+void	_Matrix::CheckIfSparseEnough(bool force)
 
 // check if matrix is sparse enough to justify compressed storage
 {
 	long i;
 	
-	if (((lDim>hDim*vDim*switchThreshold/100)&&(theIndex))||(force&&theIndex))
+	if (theIndex && (force || lDim>hDim*vDim*switchThreshold/100))
 	// switch to normal matrix storage - more than half elements are non-zero
 	{
 		// -= allocationBlock;
@@ -4974,10 +4974,9 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
+void _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
 {
-	long ind1 = -1, 
-		 ind2 = -1;
+	ind1 = -1; ind2 = -1;
 	
 	if (!p)
 	{
@@ -5002,8 +5001,13 @@ void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
 	
 	if (ind2<0) // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
 	{
-		ind2 = ind1%vDim;
-		ind1/= vDim;
+		if (vDim > 1)
+		{
+			ind2 = ind1%vDim;
+			ind1/= vDim;
+		}
+		else
+			ind2 = 0;
 	}
 	
 	if (ind1<0 || ind1>=hDim || ind2>=vDim) 
@@ -5011,8 +5015,11 @@ void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
 		MatrixIndexError (ind1,ind2, hDim, vDim);
 		return;
 	}
-	
+}
 
+//_____________________________________________________________________________________________
+void _Matrix::MStore (long ind1, long ind2, _Formula& f)
+{
 	if (ind2>=0) // element storage
 	{
 		if (storageType == 2) // formulas
@@ -5034,41 +5041,24 @@ void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
 }
 
 //_____________________________________________________________________________________________
+void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
+{
+	long	  ind1, ind2;
+	MResolve (p,p2, ind1,ind2);
+	MStore   (ind1,ind2,f);
+}
+
+//_____________________________________________________________________________________________
 void _Matrix::MStore (_PMathObj p, _PMathObj p2, _PMathObj poly)
 {
-	long ind1 = -1, ind2 = -1;
-	if (!p)
-	{
-		warnError(-106);
-		return;
-	}
-	ind1 = p->Value();
-	if (p2)
-		ind2 = p2->Value();
-		
-		
-	if (hDim == 1)
-	{
-		if (ind2<0)
-			ind2 = ind1; 
-		ind1=0;
-	}
-		
-	if (vDim == 1)
-	{
-		ind2 = 0;
-	}
+	long	  ind1, ind2;
+	MResolve (p,p2, ind1,ind2);
+	MStore   (ind1,ind2,poly);
 	
-	if (ind2<0) // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
-		ind2 = ind1%vDim;
-	
-	if ((ind1<0)||(ind1>=hDim)||(ind2>=vDim)) 
-	{
-		MatrixIndexError (ind1,ind2, hDim, vDim);
-		return;
-	}
-	
-
+}
+//_____________________________________________________________________________________________
+void _Matrix::MStore (long ind1, long ind2, _PMathObj poly)
+{
 	if (ind2>=0) // element storage
 	{
 		if (storageType == 0) // formulas
@@ -5119,13 +5109,21 @@ _Parameter&		_Matrix::operator [] (long i)
 void		_Matrix::Store (long i, long j, _Parameter value)
 {
 	if (storageType!=1) return;
+
+	long lIndex;
 	
-	long lIndex = Hash (i, j);
-	if (lIndex == -1) 
+	if (theIndex)
 	{
-		IncreaseStorage();
 		lIndex = Hash (i, j);
+
+		if (lIndex == -1) 
+		{
+			IncreaseStorage();
+			lIndex = Hash (i, j);
+		}
 	}
+	else
+		lIndex = i*vDim + j;
 	
 	if (lIndex<0)
 	{

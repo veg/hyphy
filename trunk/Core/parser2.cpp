@@ -3662,37 +3662,36 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 		{
 			_PMathObj coordMx = f->Compute(last0);
 			
-			if (!coordMx||(coordMx->ObjectClass()!=MATRIX))
+			if (!coordMx|| coordMx->ObjectClass() != MATRIX)
 			{
-				_String errMsg ("Matrix expected but not supplied.");
-				WarnError (errMsg);
+				WarnError (_String("Matrix expected but not supplied."));
 				return 0;
 			}
 			
 			_Matrix * mcoord = (_Matrix*)coordMx;
 			
-			_Constant hC (mcoord->theData[0]), 
-					  vC (mcoord->theData[1]);
+			long hC = mcoord->theData[0], 
+				 vC = mcoord->theData[1];
 					  
 			if (!ANALYTIC_COMPUTATION_FLAG)
-				mmx->MStore (&hC, &vC, newF);
+				mmx->MStore (hC, vC, newF);
 			else
 			{
 				_PMathObj newP = newF.ConstructPolynomial();
 				if (!newP)
 					warnError (_String("Can't assign non-polynomial entries to polynomial matrices."));
 				else
-					mmx->MStore (&hC,&vC, newP);
+					mmx->MStore (hC,vC, newP);
 			}
+			mmx->CheckIfSparseEnough();
 		}
 		else
 			if (mma)
 			{
 				_PMathObj coordMx = f->Compute(last0);
-				if (!coordMx||(coordMx->ObjectClass()!=STRING))
+				if (!coordMx|| coordMx->ObjectClass() != STRING)
 				{
-					_String errMsg ("Incorrect list index type.");
-					WarnError (errMsg);
+					WarnError (_String ("List keys must be strings."));
 					return 0;
 				}
 				

@@ -115,9 +115,14 @@ class		_Matrix: public _MathObject {
 			_PMathObj	MCoord (_PMathObj, _PMathObj);
 												// implements the M[i][j] operation for formulas
 
+			void		MResolve (_PMathObj, _PMathObj, long&, long&);
+												// resolve coordiates from two Number arguments
+			
+			void		MStore (long, long, _Formula&);
 			void		MStore (_PMathObj, _PMathObj, _Formula&);
 												// implements the M[i][j]= operation for formulas
 
+			void		MStore (long, long, _PMathObj);
 			void		MStore (_PMathObj, _PMathObj, _PMathObj);
 												// implements the M[i][j]= operation for objects
 	virtual	_PMathObj	Compute (void);			// returns the numeric value of this matrix
@@ -302,7 +307,7 @@ _Parameter*		  fastIndex(void)	{return (!theIndex)&&(storageType==1)?(_Parameter
 inline			  _Parameter&		  directIndex(long k)	{return theData[k];}
 long			  MatrixType (void) { return storageType;}	
 bool			  SparseDataStructure (void) {return theIndex;}
-void			  CheckIfSparseEnough (bool);		// check if matrix is sparse enough to justify
+void			  CheckIfSparseEnough (bool = false);		// check if matrix is sparse enough to justify
 void			  Convert2Formulas 		(void);		// converts a numeric matrix to formula-based mx
 													// sparse storage
 													

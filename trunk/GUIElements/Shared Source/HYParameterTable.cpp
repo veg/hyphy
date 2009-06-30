@@ -2959,7 +2959,7 @@ void	_HYParameterTable::HandleCategories(void)
 		_LikelihoodFunction* lf = (_LikelihoodFunction*)likeFuncList  (lfID);
 		_SimpleList* cv 		= &lf->GetCategoryVars ();
 		_SimpleList allParts (lf->CountObjects(0),0,1);
-		_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixConditionals, true);
+		_Matrix* 	marginals   = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixConditionals, true);
 		if (cv->lLength)
 		{
 			_String		windowTitle = _String ("Category Display for ") & *(_String*)likeFuncNamesList (lfID),
@@ -3005,17 +3005,12 @@ void	_HYParameterTable::HandleCategories(void)
 				tryMe = windowTitle & '_' & k++;
 			
 			_SimpleList allParts (lf->CountObjects(0),0,1);
-			_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixClasses, true);
+			_Matrix* 	marginals           = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixSiteProbabilities, true);
 			_List       colHeaders;
-			windowTitle = "Log-likelihood";
-			colHeaders && & windowTitle;
+			colHeaders.AppendNewInstance (new _String ("Log-likelihood"));
 			
 			marginals->Transpose();
-			_Matrix *om = marginals;
-			marginals = (_Matrix*)marginals->Log();
-			DeleteObject (om);
-			_HYChartWindow* ncw = new _HYChartWindow (tryMe,colHeaders,*marginals);
-			checkPointer (ncw);
+			_HYChartWindow* ncw = (_HYChartWindow*)checkPointer(new _HYChartWindow (tryMe,colHeaders,*marginals));
 			ncw->BringToFront();
 		}
 		DeleteObject (marginals);

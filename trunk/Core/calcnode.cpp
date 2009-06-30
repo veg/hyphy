@@ -2494,16 +2494,14 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 							sortedList << (_String*)(*thisList)(0);
 							_FString  *choiceString = new _FString (*(_String*)(*thisList)(0));
 							_Formula  sf (choiceString);
-							_Constant hi (0), vi (k);
-							selMatrix.MStore(&hi,&vi,sf);
+							selMatrix.MStore(0,k,sf);
 						}
 						sortedList.Sort();
 						for (long m = 0; m < sortedList.lLength; m++)
 						{
 							_FString  *choiceString = new _FString (*(_String*)sortedList(m));
 							_Formula  sf (choiceString);
-							_Constant hi (0), vi (m);
-							selMatrix.MStore(&hi,&vi,sf);
+							selMatrix.MStore(0,m,sf);
 						}
 						
 						CheckReceptacle (&splitNodeNames, empty, false)->SetValue (&selMatrix);

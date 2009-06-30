@@ -1453,9 +1453,14 @@ void	FlagError (_String st)
 		}
 	#if !defined __MAC__ && !defined __WINDOZE__
 		#ifdef __HYPHYMPI__
-		  	int 	rank;
+			int     rank;
 			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-			printf("Error:\nMPI Node:%d",rank);	
+			_String mpiErrorSend = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+			
+			if (rank > 0)
+				MPISendString (mpiErrorSend,0,true);
+			else
+				printf ("Master node received an error:%s\n", st.sData);
 		#else
 			printf("Error:");
 		#endif
@@ -1521,7 +1526,7 @@ void	WarnError (_String st)
 	#ifdef __HYPHYMPI__
 		int     rank;
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-		_String mpiErrorSend = _String("Received an error state from MPI Node:") & (long)rank & '\n' & st;
+		_String mpiErrorSend = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 		if (rank > 0)
 			MPISendString (mpiErrorSend,0,true);
 		else
