@@ -1479,7 +1479,7 @@ void	FlagError (_String st)
 	#endif
 	
 	#ifdef __HYPHYMPI__
-		if (rank>0)
+		if (rank==0)
 			MPI_Abort (MPI_COMM_WORLD,1);
 	#endif
 	
@@ -1521,11 +1521,11 @@ void	WarnError (_String st)
 	#ifdef __HYPHYMPI__
 	  	int 	rank;
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-		printf("Error:MPI Node:%d",rank);	
+		_String mpiErrorSend = _String("Error on MPI Node:") & rank & st;	
+		MPISendString 
 	#else
-		printf("Error:");
+		printf("Error:\n%s\n", st.getStr());
 	#endif
-	printf("\n%s\n", st.getStr());
 #endif
 #endif
 #endif
@@ -1602,13 +1602,14 @@ void	WarnError (_String st)
 	}
 	return;
 #endif
-/*#ifdef __HYPHYMPI__
-	MPI_Abort (MPI_COMM_WORLD,1);
-#endif*/
-	#ifdef __UNIX__
-		if (dropIntoDebugMode)
-			while (ExpressionCalculator()) ;
-	#endif
+#ifdef __UNIX__
+	if (dropIntoDebugMode)
+		while (ExpressionCalculator()) ;
+#endif
+#ifdef __HYPHYMPI__
+	if (rank==0)
+		MPI_Abort (MPI_COMM_WORLD,1);
+#endif
 	GlobalShutdown();
 	exit(1);
 #endif

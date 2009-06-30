@@ -376,7 +376,7 @@ _ElementaryCommand				 * makeNewCommand		(long);
 	
 	
 	void	 ReportMPIError	    	(int, bool);
-	void	 MPISendString			(_String&,long);
+	void	 MPISendString			(_String&,long,bool=false);
 	_String* MPIRecvString			(long,long&);
 	
 #endif									   

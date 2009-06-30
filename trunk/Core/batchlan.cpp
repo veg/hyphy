@@ -285,23 +285,31 @@ void	ReportMPIError	    (int code, bool send)
 	}	
 }
 
+#define MPI_SEND_CHUNK 0x7fffffL
+
 //____________________________________________________________________________________	
 
-void	MPISendString		(_String& theMessage, long destID)
+void	MPISendString		(_String& theMessage, long destID, bool isError)
 {
 
 	long    messageLength = theMessage.sLength,
 			transferCount = 0;
+	
+	if (isError)
+		messageLength = -messageLength;
 			
 	ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD),true);
 	
-	if (theMessage.sLength == 0)
+	if (messageLength == 0)
 		return;
 		
-	while (messageLength-transferCount>0x7fff)
+	if (isError)
+		messageLength = -messageLength;
+
+	while (messageLength-transferCount>MPI_SEND_CHUNK)
 	{
-  		ReportMPIError(MPI_Send(theMessage.sData+transferCount, 0x7fff, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
-  		transferCount += 0x7fff;
+  		ReportMPIError(MPI_Send(theMessage.sData+transferCount, MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
+  		transferCount += MPI_SEND_CHUNK;
 	}
 	
 	if (messageLength-transferCount)
@@ -320,12 +328,12 @@ void	MPISendString		(_String& theMessage, long destID)
 //____________________________________________________________________________________	
 _String*	MPIRecvString		(long senderT, long& senderID)
 {
-
 	_String*    theMessage = nil;
 	long    	messageLength = 0, 
 				transferCount = 0;
 				
 	int			actualReceived = 0;
+	bool		isError		  = false;
 				
 	if	(senderT<0)
 		senderT = MPI_ANY_SOURCE;
@@ -333,6 +341,12 @@ _String*	MPIRecvString		(long senderT, long& senderID)
 	MPI_Status	status;
 			
 	ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD,&status),false);
+	
+	if (messageLength < 0)
+	{
+		isError = true;
+		messageLength = -messageLength;
+	}
 	
   	//MPI_Get_count (&status,MPI_CHAR,&actualReceived);
 
@@ -343,14 +357,14 @@ _String*	MPIRecvString		(long senderT, long& senderID)
 		
 	senderT = senderID = status.MPI_SOURCE;
 		
-	while (messageLength-transferCount>0x7fff)
+	while (messageLength-transferCount>MPI_SEND_CHUNK)
 	{
   		ReportMPIError(MPI_Recv(theMessage->sData+transferCount, 0x7fff, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
   		MPI_Get_count (&status,MPI_CHAR,&actualReceived);
-  		if (actualReceived!=0x7fff)
+  		if (actualReceived!=MPI_SEND_CHUNK)
   			WarnError ("Failed in MPIRecvString - some data was not properly received\n");
   			//return    nil;
-  		transferCount += 0x7fff;
+  		transferCount += MPI_SEND_CHUNK;
 	}
 	
 	if (messageLength-transferCount)
@@ -363,6 +377,8 @@ _String*	MPIRecvString		(long senderT, long& senderID)
 	}
 	//ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
 	
+	if (isError)
+		FlagError (theMessage);
 	return theMessage;
 }
 #endif	
