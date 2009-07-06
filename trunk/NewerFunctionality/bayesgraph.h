@@ -103,15 +103,18 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		_Parameter		ImputeNodeScore (long, _SimpleList &);
 		
-		void			ComputeParameters (void);
+		void			ComputeParameters (void),
+						ComputeParameters (_Matrix *);
 		
 		
 		
 		
 		/* input/output */
-		_AssociativeList *	ExportModel (void);
-		bool				ExportCache (_AssociativeList *);
-		bool				ImportCache (_AssociativeList *);
+		bool				ExportModel (_AssociativeList *),
+							ImportModel (_AssociativeList *),
+		
+							ExportCache (_AssociativeList *),
+							ImportCache (_AssociativeList *);
 		
 		
 		/* utility */
@@ -164,7 +167,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		/* ------------------------------------------- */
 		
-		_List			theParameters;
+		_AssociativeList	theParameters;	// container for _Matrix objects holding formulas for posterior distribution on parameters
 		
 	};
 

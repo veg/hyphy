@@ -33,49 +33,21 @@ extern _String		_HYBgm_IMPUTE_MAXSTEPS,
 					_HYBgm_IMPUTE_BURNIN,
 					_HYBgm_IMPUTE_SAMPLES;
 
-extern _Parameter	LnGamma (_Parameter),
+extern _Parameter	lnGamma (_Parameter),
+					gaussDeviate (void),
 					LogSumExpo (_GrowingVector *);
 
-//___________________________________________________________________________________________
-_Parameter	gaussianDeviate (void)
-{
-	/* 
-		Use Box-Muller transform to generate random deviates from Gaussian distribution with
-		zero mean and unit variance (Numerical Recipes).
-	 */
-	
-	static int		iset = 0;
-	static double	gset;
-	double			fac, rsq, v1, v2;
-	
-	if (iset == 0)
-	{
-		do
-		{
-			v1 = 2.0 * genrand_real2() - 1.0;	// uniform random number on (0,1), i.e. no endpoints
-			v2 = 2.0 * genrand_real2() - 1.0;
-			rsq = v1*v1 + v2*v2;
-		} 
-		while (rsq >= 1.0 || rsq == 0.0);
-		
-		fac = sqrt(-2.0 * log(rsq)/rsq);
-		gset = v1 * fac;
-		iset = 1;			// set flag to indicate second deviate available
-		
-		return (_Parameter) (v2 * fac);
-	} 
-	else
-	{
-		iset = 0;
-		return (_Parameter) gset;		// use second deviate
-	}
-}
+
 
 
 //___________________________________________________________________________________________
-_AssociativeList *	_BayesianGraphicalModel::ExportModel (void)
+bool _BayesianGraphicalModel::ExportModel (_AssociativeList * model_export)
 {
-	return nil;
+	/* --------------------------------------------------------------------
+		ExportModel()
+			Export the network structure and parameters.
+	   -------------------------------------------------------------------- */
+	return 0;
 }
 
 
@@ -89,8 +61,6 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
 //___________________________________________________________________________________________
 bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 {
-	
-	
 	// Export an associative list containing node_score_cache contents to HBL
 	//	entries are indexed by key string referring to child node and number of parents, 
 	//		e.g. "N0P2" refers to scores associated with child node 0 and two parents
@@ -557,15 +527,15 @@ _Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa,
 	
 	// calculate first term of score
 	
-	pa_log_score += LnGamma((rho + batch_size)/2.);
-	pa_log_score -= LnGamma(rho/2.) + 0.5 * log(det);
+	pa_log_score += lnGamma((rho + batch_size)/2.);
+	pa_log_score -= lnGamma(rho/2.) + 0.5 * log(det);
 	
 #ifdef _DEBUG_CCS_
 	sprintf (debug, "\tdet: %1.3f\n", det);
 	BufferToConsole (debug);
 	sprintf (debug, "pa_log_score: %1.3f -> ", pa_log_score);
 	BufferToConsole (debug);
-	sprintf (debug, "%1.3f %1.3f %1.3f ", pa_log_score, LnGamma(rho/2.), log(det));
+	sprintf (debug, "%1.3f %1.3f %1.3f ", pa_log_score, lnGamma(rho/2.), log(det));
 	BufferToConsole (debug);
 	sprintf (debug, "%1.3f\n", pa_log_score);
 	BufferToConsole (debug);
@@ -922,7 +892,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 		}
 		else								// continuous node
 		{
-			data_deep_copy.Store (row, col, gaussianDeviate() + observed_values(col,1) * observed_values(col,2));
+			data_deep_copy.Store (row, col, gaussDeviate() + observed_values(col,1) * observed_values(col,2));
 		}
 	}
 	
@@ -1064,7 +1034,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 			// end loop over missing values	
 			
 			// record current log score
-			if (iter > impute_burnin && ((iter-impute_burnin) % sampling_interval == 0))
+			if (iter > impute_burnin && ((long)(iter-impute_burnin) % sampling_interval == 0))
 			{
 				vector_of_scores->Store (log_score);
 			}
@@ -1080,7 +1050,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 						next_log_score;		// log-likelihood of the proposed step
 		
 		_Matrix			log_scores_by_pa (num_parent_combos, 1, false, true),	// track separately to make updating easier
-						next_log_score_by_pa, num_parent_combos, 1, false, true);
+						next_log_score_by_pa (num_parent_combos, 1, false, true);
 		
 		
 		
@@ -1177,7 +1147,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 				{
 					// random draw from Gaussian distribution centered at previous value
 					child_state = data_deep_copy (row, col);
-					data_deep_copy.Store (row, col, observed_values(0,2) * (gaussianDeviate() + data_deep_copy(row,col)) );
+					data_deep_copy.Store (row, col, observed_values(0,2) * (gaussDeviate() + data_deep_copy(row,col)) );
 					
 					
 					// re-calculate summary stats
@@ -1276,7 +1246,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 							
 							if (urn < observed_values(col, lev))
 							{
-								deep_data_copy.Store (row, col, lev);
+								data_deep_copy.Store (row, col, lev);
 								pa_index += (lev - parent_state) * multipliers.lData[parents_by_nodetype.lData[col-1]];
 								
 								
@@ -1341,7 +1311,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 					else
 					{
 						// random draw from Gaussian distribution centered at previous value
-						data_deep_copy.Store (row, col, (gaussianDeviate() + data_deep_copy(row,col)) * observed_values(0,2));
+						data_deep_copy.Store (row, col, (gaussDeviate() + data_deep_copy(row,col)) * observed_values(0,2));
 						
 						CreateMatrix (&zbpa, n_ij(pa_index,0), k_i+1, false, true, false);
 						CreateMatrix (&yb, n_ij(pa_index,0), 1, false, true, false);
@@ -1367,7 +1337,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 						}
 						
 						next_log_score_by_pa.Store (pa_index, 0, BottcherScore (yb,zbpa,mu,tau,rho,phi, (long)n_ij(pa_index,0)));
-						next_log_score = log_score - log_scores_by_pa(pa_index,0) + next_log_scores_by_pa(pa_index,0);
+						next_log_score = log_score - log_scores_by_pa(pa_index,0) + next_log_score_by_pa(pa_index,0);
 						
 						lk_ratio = exp(log_score - next_log_score);
 						
@@ -1388,9 +1358,9 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 			}
 			// end loop over missing entries
 			
-			if (iter > impute_burnin && ((iter - impute_burnin) % sampling_interval))
+			if (iter > impute_burnin && ((long)(iter - impute_burnin) % sampling_interval))
 			{
-				vector_of_scores.Store (log_score);
+				vector_of_scores->Store (log_score);
 			}
 		}
 		// end sampler
@@ -1405,6 +1375,155 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	
 	return (log_score);
 }
+
+
+
+
+#ifdef __NEVER_DEFINED__
+// __________________________________________________________________________________________
+void _BayesianGraphicalModel::ComputeParameters(_Matrix * structure)
+{
+	/* -----------------------------------------------------------------------
+		ComputeParameters()
+	 
+			Store _Formula objects into _AssociativeArray, each represents
+			a posterior probability distribution over network parameters for 
+			each node in the network, given network structure.  
+	 
+			These distributions are defined by hyperparameters that in turn 
+			are defined by prior assumptions and data.  
+			
+			Discrete node has conditional probability table (π):
+				π_ijk ~ Dirichlet(n_ijk + a_ijk)
+	 
+			where n_ijk is from data and a_ijk is prior.
+	 
+			Continuous node has intercept (m) and k-vector of regression 
+			coefficients (ß), where k is number of continuous parents:
+				(m,ß) ~ k-Gauss(mu', sigma/tau')
+				sigma ~ Inv-Gamma(rho'/2, phi'/2)
+	 
+			
+	   ----------------------------------------------------------------------- */
+	
+	_Matrix		n_ijk, n_ij,
+				params;
+	
+	_Formula	* aFormula;
+	
+	// empty _AssociativeList of prior contents
+	theParameters.Clear();
+	
+	
+	// loop through nodes in the network
+	for (long node = 0; node < num_nodes; node++)
+	{
+		long			r_i			= num_levels.lData[node];
+		
+		_SimpleList		parents;
+		
+		
+		// find parents in graph
+		for (long other_node = 0; other_node < num_nodes; node++)
+		{
+			if (other_node == node) continue;
+			
+			if (theStructure(other_node, node) == 1)
+			{
+				parents << other_node;
+			}
+		}
+		
+		
+		// this is a root node without parents
+		if (parents.lLength == 0)
+		{
+			if (data_type.lData[node] == 0)	/* discrete node */
+			{
+				long			a_ijk	= (prior_sample_size(node,0) == 0) ? 1 : prior_sample_size(node,0);
+				_Parameter		n_i		= 0;
+				
+				
+				// tally Dirichlet hyperparameters
+				CreateMatrix (&n_ijk, 1, r_i, false, true, false);
+				
+				for (long k, obs = 0; obs < theData->GetHDim(); obs++)
+				{
+					k = (*theData)(obs, node);	// child state
+					n_ijk.Store (0, k, n_ijk(0,k) + a_ijk);
+					n_i += n_ijk(0,k);
+				}
+				
+				
+				// store posterior distribution
+				CreateMatrix (&params, 1, r_i, false, true, false);
+				params.Convert2Formulas();
+				
+				for (long k = 0; k < r_i; k++)
+				{
+					checkPointer (aFormula = new _Formula (new _Constant (n_ijk(0,k)/n_i), false));
+					params.StoreFormula(0, k, *aFormula);
+				}
+			}
+			else if (data_type.lData[node] == 1)
+			{
+				
+			}
+			else
+			{
+				WarnError (_String ("Unsupported data type detected for node ") & node & " in ComputeParameters()");
+			}
+		}
+		
+		else
+		{
+			long	num_parent_combos	= 1,
+					pa_index;
+			
+			_SimpleList	multipliers ((long)1);
+			
+			// tabulate parent combinations
+			for (long par = 0; par < parents.lLength; par++)
+			{
+				num_parent_combos *= num_levels.lData[parents.lData[par]];
+				multipliers << num_parent_combos;
+			}
+			
+			CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
+			CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
+			
+			
+			// tally N_ijk and N_ij's
+			for (long child_state, obs = 0; obs < theData->GetHDim(); obs++)
+			{
+				child_state	=  (*theData)(obs, node);
+				pa_index	= 0;
+				
+				for (long par = 0; par < parents.lLength; par++)
+					pa_index += (*theData)(obs, parents.lData[par]) * multipliers.lData[par];
+				
+				n_ijk.Store (pa_index, child_state, n_ijk(pa_index, child_state) + 1);
+				n_ij.Store (pa_index, 0, n_ij(pa_index,0) + 1);
+			}
+			
+			
+			if (data_type.lData[node] == 0)
+			{
+				// that's enough information to compute parameters on discrete nodes
+				
+			}
+			else if (data_type.lData[node] == 1)
+			{
+				
+			}
+			else
+			{
+				WarnError (_String ("Unsupported data type detected for node ") & node & " in ComputeParameters()");
+			}
+		}
+	}
+}
+#endif
 
 #endif
 

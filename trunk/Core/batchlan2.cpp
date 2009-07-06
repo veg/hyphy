@@ -851,8 +851,11 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 						_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
 						_AssociativeList		* cache_export	= new _AssociativeList;
 						
-						this_bgm -> ExportCache (cache_export);
-						theReceptacle -> SetValue (cache_export, false);
+						if (this_bgm -> ExportCache (cache_export))
+						{
+							theReceptacle -> SetValue (cache_export, false);
+						}
+						
 						ReportWarning ("Exiting from GetString()");
 						return;
 					}
