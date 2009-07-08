@@ -115,14 +115,10 @@ class		_Matrix: public _MathObject {
 			_PMathObj	MCoord (_PMathObj, _PMathObj);
 												// implements the M[i][j] operation for formulas
 	
-			void		MResolve (_PMathObj, _PMathObj, long&, long&);
-												// resolve coordiates from two Number arguments
-	
 			void		MStore (long, long, _Formula&);
 			void		MResolve (_PMathObj, _PMathObj, long&, long&);
 												// resolve coordiates from two Number arguments
 			
-			void		MStore (long, long, _Formula&);
 			void		MStore (_PMathObj, _PMathObj, _Formula&);
 												// implements the M[i][j]= operation for formulas
 
@@ -296,7 +292,8 @@ class		_Matrix: public _MathObject {
 	_PMathObj	DirichletDeviate			(void);			// this matrix used for alpha hyperparameters
 	_PMathObj	GaussianDeviate				(_Matrix &);	//  "	"	"	"		mean hyperparameter, additional argument for variance
 	_PMathObj	InverseWishartDeviate		(_Matrix &);	//  "	"	"	"		rho hyperparameter, additional for phi matrix
-	_PMathObj	WishartDeviate				(_Matrix &, _Matrix &);
+	_PMathObj	WishartDeviate				(_Matrix &, _Matrix &),
+				WishartDeviate				(_Matrix &);
 	
 	bool		IsReversible				(_Matrix* = nil);
 	// check if the matrix is reversible

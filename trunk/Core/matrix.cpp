@@ -6453,6 +6453,119 @@ _Parameter		_Matrix::computePFDR (_Parameter lambda, _Parameter gamma)
 }
 
 //_____________________________________________________________________________________________
+#if defined __AFYP_REWRITE_BGM__
+_PMathObj		_Matrix::Random (_PMathObj kind)
+{
+	_String		errMsg;
+	
+	if (kind->ObjectClass() == NUMBER)
+	{
+		bool	resample = (kind->Compute()->Value()>0);
+		
+		long myVDim = GetVDim(),
+		myHDim = GetHDim();
+		
+		_SimpleList 	remapped (myVDim,0,1);
+		
+		if (resample)
+			remapped.PermuteWithReplacement(1);
+		else
+			remapped.Permute(1);
+		
+		
+		if (storageType==1)	// numeric matrix
+		{
+			_Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,true);
+			checkPointer (res);
+			
+			if (!theIndex)
+				for (long vv = 0; vv<lDim; vv+=myVDim)
+					for (long k2=0; k2<remapped.lLength; k2++)
+						res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
+			else
+			{
+				for (long vv = 0; vv<myHDim; vv++)
+					for (long k=0; k<remapped.lLength; k++)
+					{
+						long ki = remapped.lData[k];
+						if ((ki = Hash (vv,ki)) >= 0)
+							res->Store (vv,k,theData[ki]);
+					}
+			}
+			return res;
+		} 
+		else				// formula matrix
+		{
+			if (storageType==2)
+			{
+				_Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
+				checkPointer (res);
+				
+				for (long vv = 0; vv<myHDim; vv++)
+					for (long k=0; k<remapped.lLength; k++)
+					{
+						long ki = remapped.lData[k];
+						_Formula * ff = GetFormula (vv,ki);
+						if (ff)
+							res->StoreFormula (vv, k, *ff);
+					}
+				return res;
+			}
+		}
+	}
+	
+	else if (kind->ObjectClass() == ASSOCIATIVE_LIST)
+	{
+		// Associative list should contain following arguments:
+		//	"PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
+		//  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
+		_AssociativeList	* pdfArgs	= (_AssociativeList *)kind->GetValue();
+		_List				* keys		= pdfArgs->GetKeys();
+		
+		if (keys->lData[0] == "PDF")
+		{
+			_String		pdf ((_String *) (pdfArgs->GetByKey(keys.lData[0],STRING))->toStr());
+			
+			if (pdf == "Dirichlet")
+			{
+				return (_Matrix *) DirichletDeviate();
+			}
+			else if (pdf == "Gaussian")
+			{
+				_Matrix	* cov	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				return (_Matrix *) GaussianDeviate ((_Matrix &) *cov);
+			}
+			else if (pdf == "Wishart")
+			{
+				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				return (_Matrix *) WishartDeviate ((_Matrix &) *df);
+			}
+			else if (pdf == "InverseWishart")
+			{
+				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				return (_Matrix *) InverseWishartDeviate ((_Matrix &) *df);
+			}
+			else
+			{
+				errMsg = "String argument passed to Random not a supported PDF:" & pdf;
+			}
+		}
+		else
+		{
+			errMsg = _String("Expecting PDF key in associative list argument passed to Random():") & _String((_String*)kind->toStr());
+		}
+	}
+	
+	else
+	{
+		errMsg = _String ("Invalid argument passes to matrix Random (should be a number or associative list):") & _String((_String*)kind->toStr());
+	}
+	
+	// error handling
+	WarnError (errMsg);
+	return new _Matrix (1,1);
+}
+#else
 _PMathObj		_Matrix::Random (_PMathObj kind)
 {
 	_String 		errMsg;
@@ -6521,6 +6634,7 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 	
 	return new _Matrix (1,1);	
 }
+#endif
 
 //_____________________________________________________________________________________________
 _PMathObj		_Matrix::K_Means (_PMathObj classes)
@@ -8864,6 +8978,13 @@ _PMathObj	_Matrix::InverseWishartDeviate (_Matrix & df)
 }
 
 //_____________________________________________________________________________________________
+_PMathObj	_Matrix::WishartDeviate (_Matrix & df)
+{
+	_Matrix		diag;	// calls default constructor
+	return WishartDeviate (df, diag);
+}
+
+
 _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
 {
 	/* ---------------------------------------------------
@@ -8878,8 +8999,6 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
 			covariance matrix, overrides this matrix.
 	 --------------------------------------------------- */
 	
-	_String		errMsg;
-	
 	long		n			= GetHDim();
 	
 	_Matrix		rdeviates (n, n, false, true),
@@ -8889,7 +9008,8 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
 	{
 		if (storageType != 1 || GetHDim() != GetVDim())
 		{
-			errMsg = "ERROR in _Matrix::WishartDeviate(), ";
+			WarnError (_String ("ERROR in _Matrix::WishartDeviate(), expecting square numeric matrix."));
+			return new _Matrix (1,1,false,true);
 		}
 		else
 		{
