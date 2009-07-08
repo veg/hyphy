@@ -5819,8 +5819,9 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 				if (f >= 0)		// then hey, it's a BGM!
 				{
 #if defined __AFYP_REWRITE_BGM__
-					_BayesianGraphicalModel * lf = (_BayesianGraphicalModel *) bgmList (f);
-					_AssociativeList * outAVL = lf->ExportModel();
+					_BayesianGraphicalModel		* lf		= (_BayesianGraphicalModel *) bgmList (f);
+					_AssociativeList			* outAVL	= new _AssociativeList;
+					lf->ExportModel(outAVL);
 #else
 					Bgm * lf = (Bgm *) bgmList (f);
 					// result = lf->ExportNodeScores();
