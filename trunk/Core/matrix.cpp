@@ -98,6 +98,199 @@ int 		fexact_			 		(long , long , double *, double , double , double , double *,
 void		MatrixIndexError 		(long, long, long, long);
 
 
+#if defined __AFYP_REWRITE_BGM__
+// function prototypes
+_Parameter	lnGamma (_Parameter),
+			gammaDeviate (double, double = 1.);
+
+
+//__________________________________________________________________________________________________________
+_Parameter	lnGamma(_Parameter theValue)
+{
+	//	Returns Log(gamma(x))
+	if (theValue <= 0)
+	{
+		_String oops ("ERROR (matrix.cpp): Requested lnGamma(x) for x <= 0.");
+		WarnError (oops);
+		
+		return 0;
+	}
+	
+	static _Parameter lngammaCoeff [6] = {	 76.18009172947146,
+											-86.50532032941677,
+											 24.01409824083091,
+											 -1.231739572450155,
+											  0.1208650973866179e-2,
+											 -0.5395239384953e-5};
+	
+	static _Parameter lookUpTable [20] = {	 0.       ,  0.       ,  0.6931472,  1.7917595,  3.1780538,
+											 4.7874917,  6.5792512,  8.5251614, 10.6046029, 12.8018275, 
+											15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
+											27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842};
+	
+	// use look-up table for small integer values
+	if (theValue <= 20 && (theValue - (long)theValue) == 0.)
+	{
+		return (lookUpTable [(long) theValue - 1]);
+	}
+	
+	// else do it the hard way
+	_Parameter	x, y, tmp, ser;
+	
+	y = x = theValue;
+	tmp = x + 5.5;
+	tmp -= (x+0.5) * log(tmp);
+	ser = 1.000000000190015;
+	
+	for (long j = 0; j <= 5; j++) ser += lngammaCoeff[j] / ++y;
+	
+	return (-tmp + log(2.506628274631005*ser/x));
+}
+
+
+//___________________________________________________________________________________________
+_Parameter	gaussDeviate (void)
+{
+	/* 
+	 Use Box-Muller transform to generate random deviates from Gaussian distribution with
+	 zero mean and unit variance (Numerical Recipes).
+	 */
+	
+	static int		iset = 0;
+	static double	gset;
+	double			fac, rsq, v1, v2;
+	
+	if (iset == 0)
+	{
+		do
+		{
+			v1 = 2.0 * genrand_real2() - 1.0;	// uniform random number on (0,1), i.e. no endpoints
+			v2 = 2.0 * genrand_real2() - 1.0;
+			rsq = v1*v1 + v2*v2;
+		} 
+		while (rsq >= 1.0 || rsq == 0.0);
+		
+		fac = sqrt(-2.0 * log(rsq)/rsq);
+		gset = v1 * fac;
+		iset = 1;			// set flag to indicate second deviate available
+		
+		return (_Parameter) (v2 * fac);
+	} 
+	else
+	{
+		iset = 0;
+		return (_Parameter) gset;		// use second deviate
+	}
+}
+
+
+//__________________________________________________________________________________________________________
+_Parameter	exponDeviate (void)
+{
+	return -log(1.0-genrand_real2());	// uniform random number on interval (0,1]
+}
+
+
+
+//__________________________________________________________________________________________________________
+_Parameter	gammaDeviate (double a, double scale)
+{
+	/* -----------------------------------------
+	 GS algorithm from GNU GPL rgamma.c
+	 *  Mathlib : A C Library of Special Functions
+	 *  Copyright (C) 1998 Ross Ihaka
+	 *  Copyright (C) 2000--2008 The R Development Core Team
+	
+	 * Ziggurat algorithm from Marsaglia and Tsang (2000) "A Simple Method
+	 *	for Generating Gamma Variables" ACM Trans Math Soft 26(3) 363-372
+	 ----------------------------------------- */
+	
+	const static double exp_m1 = 0.36787944117144232159;	/* exp(-1) = 1/e */
+	
+	double				e, x, p;
+	
+	if (a < 0.0)
+	{
+		ReportWarning ("NaN in gammaDeviate()");
+		return 0.;
+	}
+	else if (a == 0.0)
+	{
+		return 0.;
+	}	
+	else if (a < 1.0)	// GS algorithm for parameters 0 < a < 1
+	{
+		if(a == 0)
+			return 0.;
+		
+		e = 1.0 + exp_m1 * a;
+		
+		while (1) 
+		{
+			p = e * genrand_real2();	// should be uniform random number on open interval (0,1)
+										// but genrand_real3 scoping (baseobj.cpp) is insufficient
+			if (p >= 1.0) {
+				x = -log((e - p) / a);
+				if (exponDeviate() >= (1.0 - a) * log(x))
+					break;
+			} else {
+				x = exp(log(p) / a);
+				if (exponDeviate() >= x)
+					break;
+			}
+		}
+		
+		return x*scale;
+	}
+	
+	else if (a == 1.0)
+	{
+		return exponDeviate() * scale;
+	}
+	
+	else	// a > 1., Ziggurat algorithm
+	{
+		double	x, v, u,
+				d	= a - 1./3.,
+				c	= 1. / sqrt(9.*d);
+		
+		for (;;)
+		{
+			do
+			{
+				x = gaussDeviate();
+				v = 1. + c * x;
+			}
+			while (v <= 0.);
+			
+			v = v * v * v;
+			u = genrand_real2();
+			
+			if (u < 1. - 0.0331 * (x*x)*(x*x) )
+				return (d * v * scale);
+			
+			if ( log(u) < 0.5*x*x + d*(1.-v+log(v)) )
+				return (d * v * scale);
+		}
+	}
+}
+
+
+
+//__________________________________________________________________________________
+_Parameter	chisqDeviate (double df)
+{
+	if (df < 0.0)
+	{
+		WarnError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
+		return 0;
+	}
+	
+	return gammaDeviate(df/2.0, 2.0);	// chi-square distribution is special case of gamma
+}
+
+#endif
+
 
 //__________________________________________________________________________________
 
@@ -920,6 +1113,75 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
 	return new _Matrix(1,1,false,true);
 
 }
+
+
+
+#if defined __AFYP_REWRITE_BGM__
+//__________________________________________________________________________________
+_PMathObj	_Matrix::CholeskyDecompose (void)
+{
+	/* ---------------------------------------------------
+		CholeskyDecompose()
+			Constrcts lower triangular matrix L such that
+			its own transpose can serve as upper part in
+			LU decomposition.
+			Requires that matrix is symmetric and positive
+			definite.
+		* algorithm based on Numerical Recipes
+	   --------------------------------------------------- */
+	
+	if (storageType!=1 || hDim!=vDim || hDim==0) // only works for numerical square matrices at this stage
+	{
+		_String errorMsg ("CholeskyDecompose only works with numerical non-empty square matrices");
+		WarnError (errorMsg);
+		return	  new _Matrix();
+	}
+	
+	long		n			= GetHDim();
+	_Parameter	sum;
+	_Matrix	*	lowerTri	= new _Matrix ((_Matrix &)*this);	// duplication constructor
+	
+	for (long i = 0; i < n; i++)
+	{
+		for (long j = i; j < n; j++)
+		{
+			sum = (*lowerTri)(i,j);
+			
+			for (long k = i-1; k >= 0; k--)
+				sum -= (*lowerTri)(i,k) * (*lowerTri)(j,k);
+			
+			if (i==j)
+			{
+				if (sum <= 0.0)	// matrix is not positive-definite
+				{
+					WarnError(_String("In CholeskyDecompose(): matrix not positive definite, (row ") & i & ')');
+					return nil;
+				}
+				
+				lowerTri->Store (i, i, sqrt(sum));
+			}
+			
+			else
+			{
+				lowerTri->Store (j, i, sum / ((*lowerTri)(i,i)));
+			}
+		}
+	}
+	
+	for (long i = 0; i < n; i++)
+	{
+		for (long j = 0; j < n; j++)
+		{
+			lowerTri->Store (j, i, 0.);
+		}
+	}
+	
+	return lowerTri;
+}
+#endif
+
+
+
 //__________________________________________________________________________________
 _PMathObj	_Matrix::Log (void)
 {
@@ -1254,6 +1516,10 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			break;
 		case 56: // ^ (Poisson log-likelihood)
 			return  PoissonLL (p);
+		
+#if defined __AFYP_REWRITE_BGM__
+		// new cases here
+#endif
 	}
 	
 	_String errMsg ("Operation ");
@@ -5085,7 +5351,7 @@ void _Matrix::MStore (long ind1, long ind2, _PMathObj poly)
 		}
 	}
 }
-						
+
 		
 //_____________________________________________________________________________________________
 _Parameter&		_Matrix::operator [] (long i)
@@ -5115,7 +5381,7 @@ void		_Matrix::Store (long i, long j, _Parameter value)
 	if (theIndex)
 	{
 		lIndex = Hash (i, j);
-
+		
 		if (lIndex == -1) 
 		{
 			IncreaseStorage();
@@ -5132,7 +5398,7 @@ void		_Matrix::Store (long i, long j, _Parameter value)
 	}
 	else
 		((_Parameter*)theData)[lIndex] = value;
-
+	
 }
 
 //_____________________________________________________________________________________________
@@ -8449,6 +8715,218 @@ void	_Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn, lon
 		indexTarget += vDim;
 	}	
 }
+
+
+#if defined __AFYP_REWRITE_BGM__
+//_____________________________________________________________________________________________
+_PMathObj	_Matrix::DirichletDeviate (void)
+{
+	/* -----------------------------------------------------------
+		DirichletDeviate()
+			Generate vector of random deviates from the Dirichlet
+			distribution defined by contents of this matrix as 
+			hyperparameters (a > 0).
+	   ----------------------------------------------------------- */
+	
+	_String		errMsg;
+	
+	long		dim;
+	
+	_Parameter	denom	= 0.;
+	_Matrix		* res	= new _Matrix(1, dim = GetHDim()*GetVDim(), false, true);	// row vector
+	
+	checkPointer (res);
+	
+	if (storageType != 1)
+		errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
+	
+	if (IsAVector())
+	{
+		// generate a random deviate from gamma distribution for each hyperparameter
+		for (long i = 0; i < dim; i++)
+		{
+			if (theData[i] < 0)
+			{
+				WarnError (_String("Dirichlet not defined for negative parameter values."));
+				return res;
+			}
+			
+			res->Store (0, i, gammaDeviate(theData[i]));
+			denom += (*res)(0,i);
+		}
+		
+		// normalize by sum
+		for (long i = 0; i < dim; i++)
+			res->Store (0, i, (*res)(0,i)/denom);
+		
+		return res;
+	}
+	else
+	{
+		errMsg = "Argument must be a row- or column-vector.";
+	}
+	
+	WarnError (errMsg);
+	return res;
+}
+
+
+
+//_____________________________________________________________________________________________
+_PMathObj	_Matrix::GaussianDeviate (_Matrix & cov)
+{
+	/* ------------------------------------------------------
+		GaussianDeviate()
+			Generate vector of random deviates from k-
+			dimensional Gaussian distribution given contents
+			of this matrix as mean parameters, and argument
+			as covariance matrix.
+	 
+			Use algorithm described in Numerical Recipes 
+			3rd ed., p.379
+	   ------------------------------------------------------ */
+	
+	_String		errMsg;
+	
+	if (storageType != 1 || GetVDim() > 1)
+	{
+		WarnError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix."));
+		return new _Matrix;
+	}
+	
+	
+	long		n			= GetHDim();
+	
+	_Matrix		gaussvec (n, 1, false, true);
+	_Matrix		* cov_cd	= (_Matrix *) cov.CholeskyDecompose();
+	
+	// fill column vector with independent standard normal deviates
+	for (long i = 0; i < n; i++)
+		gaussvec.Store (i, 0, gaussDeviate());
+	
+	
+	// left multiply vector by Cholesky decomposition of covariance matrix
+	gaussvec *= (_Matrix &) (*cov_cd);
+	
+	// shift mean
+	for (long i = 0; i < n; i++)	
+		gaussvec.Store (i, 0, gaussvec(i,0) + theData[i]);
+	
+	
+	return new _Matrix (gaussvec);
+}
+
+
+
+//_____________________________________________________________________________________________
+_PMathObj	_Matrix::InverseWishartDeviate (_Matrix & df)
+{
+	/* ---------------------------------------------------
+		InverseWishartDeviate()
+			Generates a random matrix whose inverse
+			has the Wishart distribution with this matrix
+			supplying the covariance matrix parameter and
+			a degrees of freedom vector argument.
+	   --------------------------------------------------- */
+	
+	_String		errMsg;
+	long		n		= GetHDim();
+	
+	
+	if (storageType != 1 || GetHDim() != GetVDim())
+	{
+		errMsg = "expecting numerical symmetric matrix.";
+	}
+	
+	else if (df.MatrixType() != 1 || df.GetHDim() != n || df.GetVDim() > 1)
+	{
+		errMsg = "expecting numerical row vector for second argument (degrees of freedom).";
+	}
+	else
+	{
+		// compute Cholesky factor for this matrix inverse, extract the diagonal
+		_Matrix * inv		= (_Matrix *) Inverse();
+		_Matrix	* invCD		= (_Matrix *) (inv->CholeskyDecompose());
+		
+		_Matrix	invCD_diag (n, 1, false, true);
+		
+		for (long i = 0; i < n; i++)
+			invCD_diag.Store(i, 0, (*invCD)(i,i));
+		
+		// Smith and Hocking algorithm AS 53 (1972) J Roy Stat Soc C 21(3)
+		
+	}
+	
+	
+	
+	WarnError (_String ("ERROR in _Matrix::InverseWishartDeviate, ") & errMsg);
+	return new _Matrix;
+}
+
+//_____________________________________________________________________________________________
+_PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
+{
+	/* ---------------------------------------------------
+	 WishartDeviate()
+		Generates a random matrix following the Wishart 
+		distribution with this matrix supplying the 
+		covariance matrix parameter.
+	 
+		First argument: degrees of freedom vector.
+		Second argument (optional):
+			Diagonal of Cholesky decomposition of
+			covariance matrix, overrides this matrix.
+	 --------------------------------------------------- */
+	
+	_String		errMsg;
+	
+	long		n			= GetHDim();
+	
+	_Matrix		rdeviates (n, n, false, true),
+				rd_transpose;
+	
+	if (diag.GetHDim() == 0)	// no second argument, perform Cholesky decomposition
+	{
+		if (storageType != 1 || GetHDim() != GetVDim())
+		{
+			errMsg = "ERROR in _Matrix::WishartDeviate(), ";
+		}
+		else
+		{
+			_Matrix		* cholesky = (_Matrix *) CholeskyDecompose();
+			
+			// extract diagonal
+			CreateMatrix (&diag, n, 1, false, true, false);
+			for (long i = 0; i < n; i++)
+				diag.Store(i, 0, (*cholesky)(i,i));
+		}
+	}
+	
+	// populate diagonal with square root of i.i.d. chi-square random deviates
+	for (long i = 0; i < n; i++)
+	{
+		rdeviates.Store (i, i, sqrt(chisqDeviate(df(i,0)-i+1)) );
+		
+		// populate upper triagonal with i.i.d. standard normal N(0,1) deviates
+		for (long j = i+1; j < n; j++)
+			rdeviates.Store (i, j, gaussDeviate());
+	}
+	
+	
+	// result is obtained from D^T B D, where B = A^T A, ^T is matrix transpose
+	rd_transpose = (_Matrix &) rdeviates;
+	rd_transpose.Transpose();
+	rd_transpose *= (_Matrix &) rdeviates;	// A^T A
+	rd_transpose *= (_Matrix &) diag;	// A^T A D
+	diag.Transpose();
+	diag *= (_Matrix &) rd_transpose;	// D^T A^T A D
+	
+	return new _Matrix ((_Matrix &) diag);
+}
+
+#endif
+
+
 
 //_____________________________________________________________________________________________
 // AssociativeList

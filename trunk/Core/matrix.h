@@ -114,7 +114,11 @@ class		_Matrix: public _MathObject {
 												// implements the M[i][j] operation for formulas
 			_PMathObj	MCoord (_PMathObj, _PMathObj);
 												// implements the M[i][j] operation for formulas
-
+	
+			void		MResolve (_PMathObj, _PMathObj, long&, long&);
+												// resolve coordiates from two Number arguments
+	
+			void		MStore (long, long, _Formula&);
 			void		MResolve (_PMathObj, _PMathObj, long&, long&);
 												// resolve coordiates from two Number arguments
 			
@@ -194,6 +198,9 @@ class		_Matrix: public _MathObject {
 	void	 	Transpose (void);					// transpose a matrix
 	_Matrix	 	Gauss	(void);						// Gaussian Triangularization process
 	_PMathObj	LUDecompose (void);
+#if defined __AFYP_REWRITE_BGM__
+	_PMathObj	CholeskyDecompose (void);	// added by afyp July 6, 2009
+#endif
 	_PMathObj	Eigensystem (void);
 	_PMathObj	LUSolve (_PMathObj);
 	_PMathObj	Inverse (void);
@@ -284,6 +291,12 @@ class		_Matrix: public _MathObject {
 	_PMathObj	pFDR			 			(_PMathObj);	// positive false discovery rate
 	_PMathObj	PoissonLL			 		(_PMathObj);	// log likelihood of a vector of poisson samples given a parameter value
 	
+	
+						// added by afyp, July 1, 2009
+	_PMathObj	DirichletDeviate			(void);			// this matrix used for alpha hyperparameters
+	_PMathObj	GaussianDeviate				(_Matrix &);	//  "	"	"	"		mean hyperparameter, additional argument for variance
+	_PMathObj	InverseWishartDeviate		(_Matrix &);	//  "	"	"	"		rho hyperparameter, additional for phi matrix
+	_PMathObj	WishartDeviate				(_Matrix &, _Matrix &);
 	
 	bool		IsReversible				(_Matrix* = nil);
 	// check if the matrix is reversible
