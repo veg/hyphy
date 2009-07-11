@@ -1119,3 +1119,154 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	psDensityPlot * 0;
 	return psDensityPlot;
 }
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+function ScaledDensityPlot	 (xy&, 			/* Nx3 matrix with x,y,p value points to plot */
+							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
+							  				   will be adjusted to cover the data in xy if needed*/
+							  fontFace, 	/* font to use for plotting */
+							  plotDim, 		/* 1x4 matrix {{width, height,font_size, max_radius}} of the plot in points 
+							  				   max_radius is the maximal radius for a mass (i.e. if it had prob = 1)
+										    */
+							  colors, 		/* if not 0 or "", then must be an ID of a two-parameter (real-valued) function 
+											   that takes a value in 0-1 and returns and 1x3 (or 3x1) RGB color
+											 */
+							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
+							  doWrappers,    /* should PS prefix and suffix be included */
+							  enforceSym	 /* enforce the same x-y scale and dimensions; draw diagonal */
+							  )
+{
+	
+	
+	psDensityPlot = ""; psDensityPlot*1024;
+	
+	plotHeight = Max (100, plotDim[1]);
+	plotWidth  = Max (100, plotDim[0]);
+	
+	if (enforceSym)
+	{
+		plotHeight = Max(plotHeight,plotWidth);
+		plotWidth  = plotHeight;
+	}
+	
+	plotOriginX = 4.5*plotDim[2];
+	plotOriginY = 3.5*plotDim[2];
+	
+	xMin		= xyranges[0][0];
+	xMax		= xyranges[0][1];
+	yMin		= xyranges[1][0];
+	yMax		= xyranges[1][1];
+	
+	plotSpanX    = plotWidth + 5*plotDim[2];
+	plotSpanY	 = plotHeight + 4*plotDim[2];
+	circleRadius = Max(Min(plotDim[3],Min(plotSpanX,plotSpanY)/4),1);
+	
+	if (doWrappers)
+	{
+		psDensityPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Density Plot");
+		psDensityPlot * "\n";
+		psDensityPlot * _HYPSTextCommands(0);
+	}
+	
+	psDensityPlot * _HYPSSetFont (fontFace, plotDim[2]);
+	psDensityPlot * "\n";
+	
+	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
+	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
+	
+	/* adjust data ranges if necessary */
+	
+	_x = Rows (xy);
+
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		xMin = Min(xMin,xy[_dataPoint][0]);
+		xMax = Max(xMax,xy[_dataPoint][0]);
+		yMin = Min(yMin,xy[_dataPoint][1]);
+		yMax = Max(yMax,xy[_dataPoint][1]);
+	}
+	
+	xMin = boost(xMin,0,1.1);
+	yMin = boost(yMin,0,1.1);
+	xMax = boost(xMax,1,1.1);
+	yMax = boost(yMax,1,1.1);
+	
+	
+	diff = (yMax-yMin) - (xMax-xMin);
+	if (diff > 0)
+	{
+		xMin = xMin - diff/2;
+		xMax = xMax + diff/2;
+	}
+	else
+	{
+		yMin = yMin + diff/2;
+		yMax = yMax - diff/2;
+	}
+	
+	if (enforceSym)
+	{
+		xMin = Min (xMin, yMin); yMin = xMin;
+		xMax = Max (xMax, yMax); yMax = xMax;
+		psDensityPlot * ("\n [2] 0 setdash 0.5 0.5 0.5 setrgbcolor " + plotOriginX + " " + plotOriginY + " moveto " + plotWidth + " " + plotHeight + " rlineto stroke [] 0 setdash 0 0 0 setrgbcolor \n");
+	}
+	
+	px = plotWidth /(xMax-xMin);
+	py = plotHeight/(yMax-yMin);
+	
+
+	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+	{
+		if (Abs(colors))
+		{
+			ExecuteCommands ("myColor = " + colors + "(" + xy[_dataPoint][0] + "," + xy[_dataPoint][1] + ")");
+			psDensityPlot * (""+ myColor[0] + " " + myColor[1] + " " + myColor[2] + " setrgbcolor\n");
+		}
+		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
+		myY_coord = plotOriginY+(xy[_dataPoint][1]-yMin)*py;
+		myRadius  = Max(xy[_dataPoint][2] * circleRadius, 0.5);
+		psDensityPlot * ("newpath " + (myX_coord) + " " 
+									+ (myY_coord) + " " 
+									+ myRadius + " 0 360 arc fill\n");
+									
+	}	
+
+	if (Abs(colors))
+	{
+		psDensityPlot * ("0 0 0 setrgbcolor\n");
+	}
+	
+	xscaler = determineCoordinateTicks (xMin,xMax);
+	_x	= ((xMin/xscaler)$1)*xscaler;
+	psDensityPlot * ("0 0 0 setrgbcolor\n");
+	while (_x < xMax)
+	{
+		xStep = (plotOriginX + px*(_x-xMin));
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,4,2) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
+							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
+		_x = _x + xscaler;
+	}
+	
+	yscaler = determineCoordinateTicks (yMin,yMax);
+	_y	= ((yMin/yscaler)$1)*yscaler;
+	while (_y < yMax)
+	{
+		yStep = (plotOriginY + py*(_y-yMin));
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,4,2) + ") righttext\n");  
+		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
+		_y = _y + yscaler;
+	}
+
+	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
+	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
+	psDensityPlot * 0;
+	
+	if (doWrappers)
+	{
+		psDensityPlot * "\nshowpage\n";
+	}
+	return psDensityPlot;
+}
