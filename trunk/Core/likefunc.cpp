@@ -1311,6 +1311,7 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 	
 		long  loopie = 0;
 		while (variableStash.theData[0]>=-1e100)
+			// variableStash.theData[0] < -1e100 terminates the computation
 		{
 			//ReportWarning (_String("In at step  ") & loopie);
 			bool	doSomething = false;
@@ -1834,11 +1835,11 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 	 
 	 #ifdef __HYPHYMPI__
 		
-#ifdef _SLKP_LFENGINE_REWRITE_
-	WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
-#else
 		if (mpiPartitionOptimizer)
 		{
+#ifdef _SLKP_LFENGINE_REWRITE_
+			WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
+#endif
 			//printf ("In ComputeMasterMPI\n");
 			long	totalSent = 0;
 			
@@ -1892,7 +1893,6 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 		}
 		else
 		{
-			categID = 0;
 		 	RecurseCategoryMPI (indexCat.lLength-1,0,1.0);
 		 	
 		 	for (long k=resTransferMatrix.GetVDim(); k<2*resTransferMatrix.GetVDim(); k++)
@@ -1900,6 +1900,9 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 
 			if (computingTemplate&& templateKind>1)
 			{
+#ifdef _SLKP_LFENGINE_REWRITE_
+				WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
+#endif
 				_Matrix ** receptacles = new _Matrix* [theTrees.lLength];
 				checkPointer (receptacles);
 				
@@ -2015,7 +2018,6 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 		}
 
 		likeFuncEvalCallCount++;
-	 #endif
 #endif
 	 return res;
 }
@@ -2174,7 +2176,6 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			   the compute phase using category variable weights
 	*/
 	
-	
 	char	   computeMode = 0;
 	if		  (computingTemplate)
 	{
@@ -2194,6 +2195,10 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		 */ 
 		
 	}
+#ifdef __HYPHYMPI__
+	if (parallelOptimizerTasks.lLength)
+		return ComputeMasterMPI ();
+#endif
 	
 	bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
@@ -2302,8 +2307,6 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			return ComputeMasterMPI ();
 	#endif
 	 
-	
-	
 	if (computingTemplate && templateKind > _hyphyLFComputationalTemplateByPartition) 
 	{
 		for (long i=0; i<theTrees.lLength; i++)
@@ -3638,38 +3641,22 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 		  if (mpiParallelOptimizer)
 		  {
 			  parallelOptimizerTasks.Clear();
-			  int 	size;	   			   			 
-			  MPI_Comm_size(MPI_COMM_WORLD, &size);
-			  MPICategoryCount = 1;
+			 
+			  int		  	   size;	   			   			 
+			  MPI_Comm_size    (MPI_COMM_WORLD, &size);
+			  MPICategoryCount = TotalRateClassesForAPartition(-1);
 			  
-			  long		cacheSize  = 0;
+			  long		cacheSize  = PartitionLengths (1);
 			  transferrableVars    = 0;
 			  
-			  _SimpleList cVarList;
-			  {
-			  	  _AVLList cAVL (&cVarList);
-				  for (long i=0; i<theTrees.lLength; i++)
-				  {
-					  _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-					   cT->ScanForCVariables (cAVL);
-					   cacheSize += BlockLength (i);
-				  }
-				  cAVL.ReorderList ();
-			  }
-			  
-			  
-			  for (long j=0; j<cVarList.lLength; j++)
-				   MPICategoryCount *= ((_CategoryVariable*)LocateVar(cVarList (j)))->GetNumberOfIntervals();
-			  
-			  if ((MPICategoryCount>1)&&(size>MPICategoryCount))
+			  if (MPICategoryCount > 1&& size>MPICategoryCount)
 			  {
 				    if (computingTemplate)
 				    {
 				    	if (templateKind>1)
 				    	{
 							  for (long i=1; i<theTrees.lLength; i++)
-								   if (((_TheTree*)(LocateVar(theTrees(i))))->categoryCount !=
-								   	   ((_TheTree*)(LocateVar(theTrees(i-1))))->categoryCount)
+								   if (TotalRateClassesForAPartition(i-1) != TotalRateClassesForAPartition (i))
 								   {
 					  	   				WarnError ("MPI Parallel Optimizer does not presently work with functional computational templates for partitions with unequal number of rate classes");
 					  	   				return;
@@ -3693,24 +3680,22 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 				    }
 
 			  		ReportWarning    (_String ("InitMPIOptimizer with:") & MPICategoryCount & " categories on " & (long)size & " MPI nodes");
+				  
 			  		_String	  		 sLF (8192L, true),	
 			  						 errMsg;
 			  						 
 					SerializeLF		 (sLF,4);
 					sLF.Finalize 	 ();
 					
-									
 					long			 senderID = 0;
 					
+					// sets up a de-categorized LF on each compute node
 					for (long i = 1; i<=MPICategoryCount; i++)
 						MPISendString (sLF,i);
 						
 					for (long i = 1; i<=MPICategoryCount; i++)
 					{
 						_String 	*mapString  = MPIRecvString (i,senderID);
-						
-						//ReportWarning	 (_String("Got:\n")& *mapString & "\n from node " & (long)senderID);
-						
 						_List 		*varNames	= mapString->Tokenize (";");
 						_SimpleList varMap;
 						
@@ -3734,7 +3719,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 							_String * searchTerm = LocateVar(indexInd.lData[vi])->GetName();
 							
 							long f = varNames->Find (searchTerm);
-							if ((f<0)&&(!LocateVar(indexInd.lData[vi])->IsGlobal()))
+							if (f<0 && !LocateVar(indexInd.lData[vi])->IsGlobal())
 							{
 								errMsg = _String ("InitMPIOptimizer: Failed to map independent. var ") & *searchTerm & " for MPI node " & i &". Had variable string:" & *mapString;
 								FlagError (errMsg);
@@ -4212,9 +4197,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		
 #endif
 	
-	checkParameter (cacheSubtrees,precision,1);
+	checkParameter    (cacheSubtrees,precision,1);
 	SetReferenceNodes ();
-	checkParameter (useFullMST,intermediateP,0.0);
+	checkParameter     (useFullMST,intermediateP,0.0);
 	
 	for (i=0; i<theTrees.lLength; i++)
 	{

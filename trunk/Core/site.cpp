@@ -1763,12 +1763,12 @@ void	_DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert, l
 	
 	for (long i=0; i<limit; i++)
 	{
-		_Constant  c ((_Parameter)i);
-		v->SetValue (&c);
+		v->SetValue (new _Constant(i), nil); 
 		_PMathObj res = f.Compute();
 		if (res && !CheckEqual(res->Value(),0.0))
 			receptacle<<i;
 	}	
+	v->SetValue (new _Constant(0.0), nil); 
 } 
 
 //_________________________________________________________
@@ -2789,7 +2789,7 @@ void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool is
 			return;
 		}
 		_PMathObj	fV = fmla.Compute();
-		if (fV && (fV->ObjectClass()==STRING))
+		if (fV && fV->ObjectClass()==STRING)
 		{
 			_String newSpec (128L, true);
 			newSpec << '"';

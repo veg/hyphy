@@ -88,7 +88,14 @@ long			_LikelihoodFunction::TotalRateClassesForAPartition	  (long partIndex)
 		if (myList->lLength)
 			return ((_SimpleList*)((*myList)(1)))->Element(-1);
 	}
-			
+	else
+		if (partIndex < 0)
+		{
+			long catCount = 1;
+			for (long k = 0; k < indexCat.lLength; k++)
+				catCount *= ((_CategoryVariable*)LocateVar (indexCat.lData[k]))->GetNumberOfIntervals();
+			return catCount;
+		}
 	return 1;
 }
 

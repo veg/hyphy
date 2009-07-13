@@ -204,8 +204,9 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 						// otherwise returns false
 	
 		long			TotalRateClassesForAPartition (long);
-						// given a partition index (assumping that category caches have been set up
+						// given a partition index (assuming that category caches have been set up)
 						// returns how many total rate classes there are for this partition
+						// if the index is < 0, return the total number of categories for the LF as a whole
 		
 	
 	

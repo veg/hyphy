@@ -2187,10 +2187,10 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 				{
 					_VariableContainer* theVC = (_VariableContainer*)theV;
 					if (!theVC->RemoveDependance (theIndex))
-				    {
-				       ReportWarning ((_String("Can't make variable ")&*GetName()&" independent in the context of "&*theVC->GetName()&" because its template variable is not independent."));
-				       continue;
-				    }   
+					{
+					   ReportWarning ((_String("Can't make variable ")&*GetName()&" independent in the context of "&*theVC->GetName()&" because its template variable is not independent."));
+					   continue;
+					}   
 				}
 			}
 			for (i = 0; i<likeFuncList.lLength; i++)
