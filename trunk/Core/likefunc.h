@@ -209,6 +209,7 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 						// if the index is < 0, return the total number of categories for the LF as a whole
 		
 	
+		bool			HasBeenSetup				(void) {return hasBeenSetUp > 0;}
 	
 protected:
 	
@@ -276,6 +277,7 @@ virtual	void			ScanAllVariables 		(void);
 		
 static	void			RandomizeList				(_SimpleList&, long);		
 static	void			CheckFibonacci				(_Parameter);
+	
 	
 		long			PartitionLengths		    (char = 0,  _SimpleList const* = nil);
 						/* 

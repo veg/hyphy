@@ -6301,9 +6301,14 @@ void	  _ElementaryCommand::ExecuteCase49 (_ExecutionList& chain)
 				lf->DoneComputing (true);
 			else
 			{
-				_Variable* rec = CheckReceptacle(&AppendContainerName(*arg2,chain.nameSpacePrefix), blLFCompute, true);
-				if (!rec) return;
-				rec->SetValue(new _Constant (lf->Compute()),false);
+				if (!lf->HasBeenSetup())
+					errMsg = _String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function";
+				else
+				{
+					_Variable* rec = CheckReceptacle(&AppendContainerName(*arg2,chain.nameSpacePrefix), blLFCompute, true);
+					if (!rec) return;
+					rec->SetValue(new _Constant (lf->Compute()),false);
+				}
 			}
 	}
 	

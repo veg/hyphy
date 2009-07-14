@@ -476,7 +476,10 @@ if (runType == 0)
 	Optimize (nuc_res, nuc_lf);
 
 	computeExpSubWeights (0);
-	global codonFactor = 0.33;
+	if (branchLengths)
+	{
+		ExecuteCommands("global codonFactor = 0.33;");
+	}
 
 	lfParts	= "";
 	lfParts * 128;
