@@ -1122,6 +1122,15 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
+function _dNdSDensityPlot	(alpha,beta)
+{
+	ratio = Exp (0.69*(beta-alpha))/2;
+	ratio = Min (ratio,1);
+	return {{ratio__,0,1-ratio__}};
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 
 function ScaledDensityPlot	 (xy&, 			/* Nx3 matrix with x,y,p value points to plot */
 							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
@@ -1226,7 +1235,7 @@ function ScaledDensityPlot	 (xy&, 			/* Nx3 matrix with x,y,p value points to pl
 		}
 		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
 		myY_coord = plotOriginY+(xy[_dataPoint][1]-yMin)*py;
-		myRadius  = Max(xy[_dataPoint][2] * circleRadius, 0.5);
+		myRadius  = Max(xy[_dataPoint][2] * circleRadius, 1.5);
 		psDensityPlot * ("newpath " + (myX_coord) + " " 
 									+ (myY_coord) + " " 
 									+ myRadius + " 0 360 arc fill\n");

@@ -1,3 +1,5 @@
+ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PS_Plotters.bf");
+
 distributionM1 		= {{0}};
 distributionM2 		= {{0}};
 distributionSynM3   = {{0}};
@@ -911,7 +913,7 @@ function ComputeCDF (modelID)
 		distribMXS	   = distributionSynM4;
 		distribMXN	   = distributionNSM4;
 	}
-		
+	
 	if (modelID<=2)
 	{
 		rateAssignmentMatrix = {Columns(distribMX)+1,2};
@@ -940,6 +942,9 @@ function ComputeCDF (modelID)
 		D1 = Columns(distribMXN);
 		D2 = Columns(distribMXS);
 			
+		rateMatrixValues = {D1*D2,3};
+		epsilon			 = Exp(-4);
+		
 		distribMXR = {2,D1*D2};
 		
 		for (k=0; k<D1; k=k+1)
@@ -949,6 +954,9 @@ function ComputeCDF (modelID)
 			{
 				distribMXR [0][E+k2] = distribMXN[0][k]/distribMXS[0][k2];
 				distribMXR [1][E+k2] = distribMXN[1][k]*distribMXS[1][k2];
+				rateMatrixValues [E+k2][0] = Min(4,Log (epsilon + distribMXS[0][k2]));
+				rateMatrixValues [E+k2][1] = Min(4,Log (epsilon + distribMXN[0][k]));
+				rateMatrixValues [E+k2][2] = distribMXR [1][E+k2];
 			}
 		}
 		
@@ -1113,6 +1121,15 @@ function ComputeCDF (modelID)
 		}
 		
 	}
+	if (outputChoice == 3)
+	{
+		psCode = ScaledDensityPlot ("rateMatrixValues", {{-4,4}{-4,4}}, "Courier", {{400,400,14,40}},
+										"_dNdSDensityPlot",
+										{{"","log (alpha)", "log (beta)"}}, 1, 1);
+
+		SetDialogPrompt ("Write the PostScript plot to:");
+		fprintf (PROMPT_FOR_FILE, CLEAR_FILE, psCode);
+	}
 	return 1;
 }
 
@@ -1234,7 +1251,7 @@ if (actionChoice<0)
 	return;
 }
 
-if ((actionChoice==3)||(actionChoice==6))
+if (actionChoice==3 || actionChoice==6)
 {
 	ChoiceList (psChoice, 					  	  "Detection method",1,SKIP_NONE,
 				"Absolute threshold",		 	  "Use the absolute value for posterior P{N/S>=1}.",
@@ -1246,7 +1263,7 @@ if ((actionChoice==3)||(actionChoice==6))
 	}
 }
 
-if ((actionChoice!=3)&&(actionChoice!=5)&&(actionChoice!=6))
+if (actionChoice!=3 && actionChoice!=5 && actionChoice!=6)
 {
 	ChoiceList (modelChoice,"Rate Variation Models",1,SKIP_NONE,
 				"Proportional","Proportional Variable Rates Model: dS and dN vary along the sequence, but dN = R*dS for every site",
@@ -1293,10 +1310,21 @@ else
 	}	
 }
 
-ChoiceList (outputChoice, "Output Options",1,SKIP_NONE,
-			"ASCII Table",	 "Output is printed to the console as an ASCII table.",
-			"Export to File","Output is spooled to a tab separated file.",
-			"Chart","A HYPHY chart window is displayed (GUI versions only).");
+if (actionChoice == 4 && modelChoice == 2)
+{
+	ChoiceList (outputChoice, "Output Options",1,SKIP_NONE,
+				"ASCII Table",	 "Output is printed to the console as an ASCII table.",
+				"Export to File","Output is spooled to a tab separated file.",
+				"Chart","A HYPHY chart window is displayed (GUI versions only).",
+				"PostScript","Render a PostScript density plot into a file.");
+}
+else
+{
+	ChoiceList (outputChoice, "Output Options",1,SKIP_NONE,
+				"ASCII Table",	 "Output is printed to the console as an ASCII table.",
+				"Export to File","Output is spooled to a tab separated file.",
+				"Chart","A HYPHY chart window is displayed (GUI versions only).");
+}
 
 if (outputChoice<0)
 {
@@ -1305,36 +1333,36 @@ if (outputChoice<0)
 			
 if (actionChoice < 2)
 {
-	dummy = ComputeRateClasses 		(modelChoice+1,actionChoice);
+	ComputeRateClasses 		(modelChoice+1,actionChoice);
 	return;
 }
 
 if (actionChoice == 2)
 {
-	dummy = ComputePosteriorRates 	(modelChoice+1);
+	ComputePosteriorRates 	(modelChoice+1);
 	return;
 }
 
 if (actionChoice == 3)
 {
-	dummy = ComputePositiveSelection(modelChoice+1,0);
+	ComputePositiveSelection(modelChoice+1,0);
 	return;
 }
 
 if (actionChoice == 4)
 {
-	dummy = ComputeCDF				(modelChoice+1);
+	ComputeCDF				(modelChoice+1);
 	return;
 }
 
 if (actionChoice == 5)
 {
-	dummy = ComputePRatio			(modelChoice+1);
+	ComputePRatio			(modelChoice+1);
 	return;
 }
 
 if (actionChoice == 6)
 {
-	dummy = ComputePositiveSelection(modelChoice+1,1);
+	ComputePositiveSelection(modelChoice+1,1);
 	return;
 }
