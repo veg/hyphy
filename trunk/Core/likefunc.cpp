@@ -192,6 +192,7 @@ _String
 	supportMatrixVariable			("SUPPORT_MATRIX_LIST"),
 	optimizationStatusFile			("SAVE_OPT_STATUS_TO"),
 	autoParalellizeLF				("AUTO_PARALLELIZE_OPTIMIZE"),
+	lfExtraLFExportCode 			("LF_NEXUS_EXPORT_EXTRA"),
 	optimizationStringTemplate	    ("OPTIMIZATION_PROGRESS_TEMPLATE"),
 									// use 
 									// $1 for status
@@ -1839,8 +1840,7 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 		{
 #ifdef _SLKP_LFENGINE_REWRITE_
 			WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
-#endif
-			//printf ("In ComputeMasterMPI\n");
+#else			//printf ("In ComputeMasterMPI\n");
 			long	totalSent = 0;
 			
 			for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++)
@@ -1890,6 +1890,7 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 				((_Constant*)computationalResults(index-1))->SetValue (blockRes);
 				totalSent--;
 		 	}
+#endif
 		}
 		else
 		{
@@ -9370,7 +9371,11 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		}
 		else
 			rec << ");";
-		
+	
+	_FString * haveExtra = (_FString*)FetchObjectFromVariableByType(&lfExtraLFExportCode, STRING);
+	if (haveExtra)
+		rec << *(haveExtra->theString); 
+
 	rec << "\n\nEND;";
 	
 	if (partitionList)

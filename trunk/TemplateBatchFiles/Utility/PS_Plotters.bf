@@ -642,7 +642,9 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 							  colors, 		/* 2x3 matrix {{R_base,G_base,B_base}{R_max,G_max,R_max
 							  			 		the colors are linearly interpolated from base (min intensity)*/
 							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
-							  circles	    /* Nx3 matrix (N could be 0) with coordinates/radii of circles to place on the map */
+							  circles	    /* Nx3/4 matrix (N could be 0) with coordinates/radii of circles to place on the map
+							                   if N = 4, then plot an ellipse
+											*/
 							  )
 {
 	
@@ -771,7 +773,14 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 	{
 		xStep = circles[_y][0]*px + plotOriginX;
 		yStep = circles[_y][1]*py + plotOriginY;
-		psDensityPlot * ("newpath " + xStep + " " + yStep + " " + circles[_y][2] + " 0 360 arc stroke\n");
+		if (Columns (circles) == 4)
+		{
+			psDensityPlot * ("gsave "+ xStep + " " + yStep + " translate 1 " + circles[_y][3]/circles[_y][2] + " scale newpath 0 0 " + circles[_y][2] + " 0 360 arc stroke grestore\n");
+		}
+		else
+		{
+			psDensityPlot * ("newpath " + xStep + " " + yStep + " " + circles[_y][2] + " 0 360 arc stroke\n");
+		}
 	}
 	
 	psDensityPlot * "\nshowpage\n";

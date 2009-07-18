@@ -3729,51 +3729,50 @@ bool		_Operation::Execute (_Stack& theScrap)
 				long functionID = -numberOfTerms-1;
 				if (functionID >= batchLanguageFunctionParameters.lLength)
 				{
-					_String errMsg ("Attempted to call an undefined user function.");
-					WarnError (errMsg);
+					WarnError ("Attempted to call an undefined user function.");
 					return false;					
 				}
 				long numb = batchLanguageFunctionParameters(functionID);
 				if (theScrap.StackDepth()<numb) 
 				{
-					_String errMsg ("User Defined Function:");
+					_String errMsg ("User-defined function:");
 					errMsg = errMsg&*(_String*)batchLanguageFunctionNames(functionID)
-							&" needs "&_String(numb)& " parameters. Only "&_String(theScrap.StackDepth())&" were given.";
+							&" needs "&_String(numb)& " parameters, but only "&_String(theScrap.StackDepth())&" were supplied.";
 					WarnError (errMsg);
 					return false;
 				}
 				_List 		displacedVars, 
 						   *funcVarList = (_List*)batchLanguageFunctionParameterLists(functionID), 
-						    displacedValues;
+						    displacedValues,
+							referenceArgs;
 						    
 				_SimpleList existingIVars,
 							existingDVars, 
 							displacedReferences;
 				
-				_List		referenceArgs;
-							
 				_String		*argNameString;
 				long		i;
 				bool		purgeFlas = false;
 				
 				for (long k=numb-1; k>=0; k--)
 				{
-					bool		 isRefVar = false;
+					bool			isRefVar = false;
 					argNameString = (_String*)(*funcVarList)(k);
 					if (argNameString->sData[argNameString->sLength-1]=='&')
 					{
 						argNameString->Trim(0,argNameString->sLength-2);
-						isRefVar = true;
+						isRefVar  = true;
 						purgeFlas = true;
 					}
+					
 					long 	  f = LocateVarByName (*argNameString);
+					
 					_PMathObj nthterm = theScrap.Pop();
 					
 					if (isRefVar && nthterm->ObjectClass()!=STRING)
 					{
 						_FString * type = (_FString*)nthterm->Type();
-						
-						_String errMsg = _String ("User Defined Function '")
+						_String errMsg = _String ("User-defined function '")
 										 &*(_String*)batchLanguageFunctionNames(-numberOfTerms-1)
 								         &"' expected a string for the reference variable '" 
 										 & *argNameString 
@@ -3781,7 +3780,7 @@ bool		_Operation::Execute (_Stack& theScrap)
 										 & " with the value of " & _String((_String*)nthterm->toStr());
 						
 						DeleteObject (type);
-						WarnError (errMsg);
+						WarnError    (errMsg);
 						return false;
 					}
 					
@@ -3803,6 +3802,14 @@ bool		_Operation::Execute (_Stack& theScrap)
 								theV->Compute();
 							displacedValues<<theV->varValue;
 							theV->varFlags |= HY_VARIABLE_CHANGED;
+							/*if (*theV->GetName() == _String("gbdd1"))
+							{
+								 printf ("Setting argument value of %s to %s\n", 
+								 theV->GetName()->sData, 
+								 _String((_String*)nthterm->toStr()).sData
+							 );
+							}*/
+							
 							theV->varValue = nthterm;
 							existingIVars<<theV->GetAVariable();
 						}
@@ -3857,19 +3864,32 @@ bool		_Operation::Execute (_Stack& theScrap)
 				
 				if (ret) 
 					theScrap.Push (ret);
-					
-				for (i= referenceArgs.lLength-1; i>=0; i--)
-					variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(i)),displacedReferences.lData[i]);				
 				
-				for (i= displacedVars.lLength-1; i>=0; i--)
-					variablePtrs.Replace (existingDVars(i),(_PMathObj)displacedVars(i));
+				for (long di = 0; di < referenceArgs.lLength; di++)
+					variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.lData[di]);				
+					
+				//for (i= referenceArgs.lLength-1; i>=0; i--)
+				//	variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(i)),displacedReferences.lData[i]);				
+				
+				for (long dv = 0; dv < displacedVars.lLength; dv++)
+					variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv));				
 
-				for (i= displacedValues.lLength-1; i>=0; i--)
+				//for (i= displacedVars.lLength-1; i>=0; i--)
+				//	variablePtrs.Replace (existingDVars(i),(_PMathObj)displacedVars(i));
+					
+				for (long dv2 = 0; dv2 < displacedValues.lLength; dv2++)
 				{
-					_Variable* theV = LocateVar (existingIVars(i));
+					_Variable* theV = LocateVar (existingIVars.lData[dv2]);
 					DeleteObject(theV->varValue);
-					theV->varValue = ((_PMathObj)displacedValues(i));
-				}			
+					theV->varValue = ((_PMathObj)displacedValues(dv2));
+				}
+					
+				//for (i= displacedValues.lLength-1; i>=0; i--)
+				//{
+				//	_Variable* theV = LocateVar (existingIVars(i));
+				//	DeleteObject(theV->varValue);
+				//	theV->varValue = ((_PMathObj)displacedValues(i));
+				//}			
 
 		
 			}		
