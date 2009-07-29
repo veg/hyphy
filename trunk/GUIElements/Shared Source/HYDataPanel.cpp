@@ -4208,11 +4208,8 @@ bool	_HYDataPanel::SaveDataPanel (bool saveAs, _String* saveFile, _String* dsPat
 			 	horPart = (_String*)theDF->theOriginalOrder.ListToPartitionString();
 			 	
 			_String			exclusions (empty);
-			if ((theDF->GetUnitLength()==3)&&theDF->theExclusions.lLength)
-			{
+			if (theDF->GetUnitLength()==3 &&theDF->theExclusions.lLength)
 				DFExclusionsToString	  (theDF,exclusions);
-				exclusions = _String(",\"")&exclusions&'"';
-			}
 
 			fprintf (dsout, "DataSetFilter %s = CreateFilter (%s,%d,\"%s\",\"%s\",\"%s\");\n", 
 					 ((_String*)dataSetFilterNamesList(dataPartitions.lData[k]))->getStr(),							

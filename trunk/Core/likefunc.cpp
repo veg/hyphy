@@ -11128,7 +11128,8 @@ void	_LikelihoodFunction::DoneComputing (bool force)
 		siteArrayPopulated = false;
 	}
 	else
-		hasBeenSetUp --;
+		if (hasBeenSetUp)
+			hasBeenSetUp --;
 }
 
 //_______________________________________________________________________________________

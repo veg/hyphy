@@ -3875,11 +3875,14 @@ void	_HYParameterTable::UndoCommand (void)
 
 _HYGuiObject*	_HYParameterTable::RetrieveParentDataPanel (void)
 {
-	_String panelTitle (GetTitle());
-	panelTitle = _String("DataSet ") & panelTitle.Cut (panelTitle.FindBackwards (' ',0,-1)+1,-1);
-	long pWindow = FindWindowByName (panelTitle);
-	if (pWindow>=0)
-		return (_HYGuiObject*)windowObjectRefs.lData[pWindow];
+	
+	for (long i=0; i<windowObjects.lLength; i++)
+	{
+		_HYWindow* thisWindow = (_HYWindow*)windowObjectRefs(i);
+		if (thisWindow->WindowKind () == HY_WINDOW_KIND_DATAPANEL)
+			if (((_HYDataPanel*)thisWindow)->GetLFID() == lfID)
+				return (_HYGuiObject*)windowObjectRefs.lData[i];
+	}
 	return nil;
 }
 
