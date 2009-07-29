@@ -251,7 +251,6 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	yMin		= xyranges[1][0];
 	yMax		= xyranges[1][1];
 	
-	
 	_yColumns     		 = Columns (xy)-1-(lastLabelSP>0);
 
 	legendWidth		   = 0;
@@ -326,13 +325,14 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 		yMin = yMin + diff/2;
 		yMax = yMax - diff/2;
 	}*/
-	
+
 	plotWidth 	= plotWidth  - 2;
 	plotHeight  = plotHeight - 2;
 	px 			= plotWidth /(xMax - xMin + barWidth);
-	py 			= plotHeight/(yMax - yMin + 2);
+	py 			= plotHeight/(yMax - yMin);
 	barWidth 	= barWidth * px;
 	xShift		= 1;	
+	
 	
 	if (Rows(colors) == 0)
 	{
@@ -377,14 +377,15 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 
 
 	xscaler = determineCoordinateTicks (xMin,xMax);
-	_x	= ((xMin/xscaler)$1)*xscaler;
+	_x	= Max(xMin,((xMin/xscaler)$1)*xscaler);
 	psDensityPlot * ("0 0 0 setrgbcolor\n");
 	plottedZero = (_x == 0);
 	
+
 	while (_x < xMax)
 	{
 		xStep = (plotOriginX + px*(_x-xMin));
-		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,0) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,2) + ") centertext\n");  
 		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
 							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
 		_x = _x + xscaler;
@@ -401,7 +402,7 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	while (_y < yMax)
 	{
 		yStep = (plotOriginY + py*(_y-yMin));
-		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,0) + ") righttext\n");  
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,2) + ") righttext\n");  
 		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
 		_y = _y + yscaler;
 	}
@@ -411,9 +412,8 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 
 	if (legendWitdh)
 	{
-		_x   = _x - legendWidth;
 		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
-		xLoc = plotOriginX + _x*px      + 0.5*plotDim[2];
+		xLoc = plotOriginX + plotWidth  + 0.5*plotDim[2];
 		
 		for (_segment = 0; _segment < _yColumns; _segment = _segment + 1)
 		{
@@ -1067,17 +1067,27 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		}
 	}
 	
+	if (Columns(plotDim)>3)
+	{
+		_decimalPlaces = plotDim[3];
+	}
+	else
+	{
+		_decimalPlaces = 2;
+	}
+
 	xscaler = determineCoordinateTicks (xMin,xMax);
 	_x	= ((xMin/xscaler)$1)*xscaler;
 	psDensityPlot * ("0 0 0 setrgbcolor\n");
 	while (_x < xMax)
 	{
 		xStep = (plotOriginX + px*(_x-xMin));
-		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,0) + ") centertext\n");  
+		psDensityPlot * ("" +  xStep + " " + (2.5*plotDim[2]) + " (" + Format(_x,0,_decimalPlaces) + ") centertext\n");  
 		psDensityPlot * ("" +  xStep + " " + (plotOriginY+0.25*plotDim[2]) + " moveto 0 "
 							+ (-0.25*plotDim[2]) +" rlineto stroke\n");  
 		_x = _x + xscaler;
 	}
+	
 	
 	
 	yscaler = determineCoordinateTicks (yMin,yMax);
@@ -1085,7 +1095,7 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	while (_y < yMax)
 	{
 		yStep = (plotOriginY + py*(_y-yMin));
-		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,0) + ") righttext\n");  
+		psDensityPlot * ("" +  (4*plotDim[2]) + " " + yStep + " (" + Format(_y,0,_decimalPlaces) + ") righttext\n");  
 		psDensityPlot * ("" +  plotOriginX    + " " + yStep + " moveto "+(0.25*plotDim[2]) +" 0 rlineto stroke\n");  
 		_y = _y + yscaler;
 	}
@@ -1244,7 +1254,7 @@ function ScaledDensityPlot	 (xy&, 			/* Nx3 matrix with x,y,p value points to pl
 		}
 		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
 		myY_coord = plotOriginY+(xy[_dataPoint][1]-yMin)*py;
-		myRadius  = Max(xy[_dataPoint][2] * circleRadius, 1.5);
+		myRadius  = Max(Sqrt(xy[_dataPoint][2]) * circleRadius, 1.5);
 		psDensityPlot * ("newpath " + (myX_coord) + " " 
 									+ (myY_coord) + " " 
 									+ myRadius + " 0 360 arc fill\n");
