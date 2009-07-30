@@ -6124,11 +6124,16 @@ void	  _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
 							
 						}
 						else
-						{
-							long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-							if (seqID>=0 && seqID < dsf->NumberSpecies())
-								stVar->SetValue (new _FString (dsf->GetSequenceCharacters(seqID)),false);
-						}
+							if (checker == _String ("CONSENSUS"))
+							{
+								stVar->SetValue (new _FString (new _String(dsf->GenerateConsensusString())), false);
+							}
+							else
+							{
+								long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
+								if (seqID>=0 && seqID < dsf->NumberSpecies())
+									stVar->SetValue (new _FString (dsf->GetSequenceCharacters(seqID)),false);
+							}
 				}
 				else
 				{
