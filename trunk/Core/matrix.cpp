@@ -1141,6 +1141,8 @@ _PMathObj	_Matrix::CholeskyDecompose (void)
 	_Parameter	sum;
 	_Matrix	*	lowerTri	= new _Matrix ((_Matrix &)*this);	// duplication constructor
 	
+	checkPointer (lowerTri);
+	
 	for (long i = 0; i < n; i++)
 	{
 		for (long j = i; j < n; j++)
@@ -1168,13 +1170,16 @@ _PMathObj	_Matrix::CholeskyDecompose (void)
 		}
 	}
 	
+	/* zero upper triagonal entries */
 	for (long i = 0; i < n; i++)
 	{
-		for (long j = 0; j < n; j++)
+		for (long j = i+1; j < n; j++)
 		{
-			lowerTri->Store (j, i, 0.);
+			lowerTri->Store (i, j, 0.);
 		}
 	}
+	
+	ReportWarning (_String("_Matrix::CholeskyDecompose returning with ") & (_String *) lowerTri->toStr());
 	
 	return lowerTri;
 }
@@ -1516,10 +1521,6 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			break;
 		case 56: // ^ (Poisson log-likelihood)
 			return  PoissonLL (p);
-		
-#if defined __AFYP_REWRITE_BGM__
-		// new cases here
-#endif
 	}
 	
 	_String errMsg ("Operation ");
@@ -6516,44 +6517,51 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 	
 	else if (kind->ObjectClass() == ASSOCIATIVE_LIST)
 	{
+		ReportWarning (_String("_Matrix::Random() with associative list as first argument."));
+		
 		// Associative list should contain following arguments:
 		//	"PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
 		//  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
-		_AssociativeList	* pdfArgs	= (_AssociativeList *)kind->GetValue();
+		_AssociativeList	* pdfArgs	= (_AssociativeList *)kind;
 		_List				* keys		= pdfArgs->GetKeys();
+		_String				* pdfkey	= new _String("PDF"),
+							* arg0		= (_String *)(*keys)(0);
 		
-		if (keys->lData[0] == "PDF")
+		if (arg0->Equal(pdfkey))
 		{
-			_String		pdf ((_String *) (pdfArgs->GetByKey(keys.lData[0],STRING))->toStr());
+			_String		pdf ((_String *) (pdfArgs->GetByKey(*(_String*)(*keys)(0),STRING))->toStr());
+			DeleteObject (pdfkey);
 			
-			if (pdf == "Dirichlet")
+			if (pdf == _String("Dirichlet"))
 			{
 				return (_Matrix *) DirichletDeviate();
 			}
-			else if (pdf == "Gaussian")
+			else if (pdf == _String("Gaussian"))
 			{
-				_Matrix	* cov	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				_Matrix	* cov	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
 				return (_Matrix *) GaussianDeviate ((_Matrix &) *cov);
 			}
-			else if (pdf == "Wishart")
+			else if (pdf == _String("Wishart"))
 			{
-				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
 				return (_Matrix *) WishartDeviate ((_Matrix &) *df);
 			}
-			else if (pdf == "InverseWishart")
+			else if (pdf == _String("InverseWishart"))
 			{
-				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (keys.lData[1], MATRIX);
+				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
 				return (_Matrix *) InverseWishartDeviate ((_Matrix &) *df);
 			}
 			else
 			{
-				errMsg = "String argument passed to Random not a supported PDF:" & pdf;
+				errMsg = _String("String argument passed to Random not a supported PDF:") & pdf;
 			}
 		}
 		else
 		{
-			errMsg = _String("Expecting PDF key in associative list argument passed to Random():") & _String((_String*)kind->toStr());
+			errMsg = _String("Expecting \"PDF\" key in associative list argument passed to Random(), received: ") & ((_String *)(*keys)(0))->getStr();
 		}
+		
+		DeleteObject (pdfkey);
 	}
 	
 	else
@@ -8847,9 +8855,9 @@ _PMathObj	_Matrix::DirichletDeviate (void)
 	long		dim;
 	
 	_Parameter	denom	= 0.;
-	_Matrix		* res	= new _Matrix(1, dim = GetHDim()*GetVDim(), false, true);	// row vector
 	
-	checkPointer (res);
+	_Matrix		res (1, dim = GetHDim()*GetVDim(), false, true);	// row vector
+	
 	
 	if (storageType != 1)
 		errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
@@ -8862,18 +8870,18 @@ _PMathObj	_Matrix::DirichletDeviate (void)
 			if (theData[i] < 0)
 			{
 				WarnError (_String("Dirichlet not defined for negative parameter values."));
-				return res;
+				return new _Matrix (1,1,false,true);
 			}
 			
-			res->Store (0, i, gammaDeviate(theData[i]));
-			denom += (*res)(0,i);
+			res.Store (0, i, gammaDeviate(theData[i]));
+			denom += res(0,i);
 		}
 		
 		// normalize by sum
 		for (long i = 0; i < dim; i++)
-			res->Store (0, i, (*res)(0,i)/denom);
+			res.Store (0, i, res(0,i)/denom);
 		
-		return res;
+		return (_PMathObj) res.makeDynamic();
 	}
 	else
 	{
@@ -8881,7 +8889,7 @@ _PMathObj	_Matrix::DirichletDeviate (void)
 	}
 	
 	WarnError (errMsg);
-	return res;
+	return new _Matrix (1,1,false,true);
 }
 
 
@@ -8900,34 +8908,44 @@ _PMathObj	_Matrix::GaussianDeviate (_Matrix & cov)
 			3rd ed., p.379
 	   ------------------------------------------------------ */
 	
+	ReportWarning (_String("Entered _Matrix::GaussianDeviate() with cov = ") & (_String *)(cov.toStr()));
+	
 	_String		errMsg;
 	
-	if (storageType != 1 || GetVDim() > 1)
+	if (storageType != 1 || GetHDim() > 1)
 	{
-		WarnError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix."));
+		WarnError (_String("ERROR in _Matrix::GaussianDeviate(), expecting to be called on numeric row vector matrix, current dimensions: ") & GetHDim() & "x" & GetVDim());
 		return new _Matrix;
 	}
 	
+	long		kdim		= GetVDim();	// number of entries in this _Matrix object as vector of means
 	
-	long		n			= GetHDim();
+	if (cov.GetHDim() == kdim && cov.GetVDim() == kdim)
+	{
+		_Matrix		* cov_cd	= (_Matrix *) cov.CholeskyDecompose();
+		_Matrix		gaussvec (1, kdim, false, true);
+		
+		ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
+		
+		// fill column vector with independent standard normal deviates
+		for (long i = 0; i < kdim; i++)
+			gaussvec.Store (0, i, gaussDeviate());
+		
+		ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *) gaussvec.toStr());
+		
+		// left multiply vector by Cholesky decomposition of covariance matrix
+		gaussvec *= (_Matrix &) (*cov_cd);
+		
+		// shift mean
+		for (long i = 0; i < kdim; i++)	
+			gaussvec.Store (0, i, gaussvec(0,i) + theData[i]);
+		
+		DeleteObject (cov_cd);
+		return (_PMathObj) gaussvec.makeDynamic();
+	}
 	
-	_Matrix		gaussvec (n, 1, false, true);
-	_Matrix		* cov_cd	= (_Matrix *) cov.CholeskyDecompose();
-	
-	// fill column vector with independent standard normal deviates
-	for (long i = 0; i < n; i++)
-		gaussvec.Store (i, 0, gaussDeviate());
-	
-	
-	// left multiply vector by Cholesky decomposition of covariance matrix
-	gaussvec *= (_Matrix &) (*cov_cd);
-	
-	// shift mean
-	for (long i = 0; i < n; i++)	
-		gaussvec.Store (i, 0, gaussvec(i,0) + theData[i]);
-	
-	
-	return new _Matrix (gaussvec);
+	WarnError (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
+	return new _Matrix;
 }
 
 
@@ -8962,13 +8980,11 @@ _PMathObj	_Matrix::InverseWishartDeviate (_Matrix & df)
 		_Matrix * inv		= (_Matrix *) Inverse();
 		_Matrix	* invCD		= (_Matrix *) (inv->CholeskyDecompose());
 		
-		_Matrix	invCD_diag (n, 1, false, true);
+		_Matrix	decomp ((_Matrix &) *invCD);	// duplication constructor
 		
-		for (long i = 0; i < n; i++)
-			invCD_diag.Store(i, 0, (*invCD)(i,i));
+		DeleteObject (invCD);
 		
-		// Smith and Hocking algorithm AS 53 (1972) J Roy Stat Soc C 21(3)
-		
+		return WishartDeviate (df, decomp);
 	}
 	
 	
@@ -8985,7 +9001,7 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df)
 }
 
 
-_PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
+_PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 {
 	/* ---------------------------------------------------
 	 WishartDeviate()
@@ -8999,12 +9015,29 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
 			covariance matrix, overrides this matrix.
 	 --------------------------------------------------- */
 	
-	long		n			= GetHDim();
+	
+	// debugging
+	ReportWarning (_String("Entered _Matrix::WishartDeviate() with this matrix: ") & (_String *) this->toStr() & " and df vector " & (_String *) df.toStr());
+	
+	
+	long		n	= GetHDim();
 	
 	_Matrix		rdeviates (n, n, false, true),
 				rd_transpose;
 	
-	if (diag.GetHDim() == 0)	// no second argument, perform Cholesky decomposition
+	
+	if (!df.IsAVector(0))
+	{
+		WarnError (_String ("ERROR in _Matrix::WishartDeviate(), expecting row vector for degrees of freedom argument."));
+		return new _Matrix (1,1,false,true);
+	}
+	else if (df.IsAVector(1))
+	{
+		df.Transpose();	// convert column vector to row vector
+	}
+	
+	
+	if (decomp.GetHDim() == 0)	// no second argument, perform Cholesky decomposition
 	{
 		if (storageType != 1 || GetHDim() != GetVDim())
 		{
@@ -9015,33 +9048,58 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & diag)
 		{
 			_Matrix		* cholesky = (_Matrix *) CholeskyDecompose();
 			
-			// extract diagonal
-			CreateMatrix (&diag, n, 1, false, true, false);
-			for (long i = 0; i < n; i++)
-				diag.Store(i, 0, (*cholesky)(i,i));
+			if (cholesky->GetHDim() > 0)
+			{
+				// duplicate
+				CreateMatrix (&decomp, cholesky->GetHDim(), cholesky->GetVDim(), false, true, false);
+				
+				for (long i = 0; i < cholesky->GetHDim(); i++)
+				{
+					for (long j = 0; j < cholesky->GetVDim(); j++)
+					{
+						decomp.Store(i, j, (*cholesky)(i,j));
+					}
+				}
+				
+				DeleteObject (cholesky);
+			}
+			else
+			{
+				return (cholesky);	// empty _Matrix from error in CholeskyDecompose()
+			}
 		}
 	}
+	
+	ReportWarning (_String("diag=") & (_String *)decomp.toStr());	// column vector
+	
 	
 	// populate diagonal with square root of i.i.d. chi-square random deviates
 	for (long i = 0; i < n; i++)
 	{
-		rdeviates.Store (i, i, sqrt(chisqDeviate(df(i,0)-i+1)) );
+		rdeviates.Store (i, i, sqrt(chisqDeviate(df(0,i)-i+1)) );
 		
 		// populate upper triagonal with i.i.d. standard normal N(0,1) deviates
 		for (long j = i+1; j < n; j++)
 			rdeviates.Store (i, j, gaussDeviate());
 	}
 	
+	ReportWarning (_String("rdeviates(A)=") & (_String *)rdeviates.toStr());
+	
 	
 	// result is obtained from D^T B D, where B = A^T A, ^T is matrix transpose
 	rd_transpose = (_Matrix &) rdeviates;
 	rd_transpose.Transpose();
+	ReportWarning (_String("transpose(A)=") & (_String *)rd_transpose.toStr());
 	rd_transpose *= (_Matrix &) rdeviates;	// A^T A
-	rd_transpose *= (_Matrix &) diag;	// A^T A D
-	diag.Transpose();
-	diag *= (_Matrix &) rd_transpose;	// D^T A^T A D
+	ReportWarning (_String("A^T A=") & (_String *)rd_transpose.toStr());
+	rd_transpose *= (_Matrix &) decomp;	// A^T A D
+	ReportWarning (_String("A^T A D=") & (_String *)rd_transpose.toStr());
 	
-	return new _Matrix ((_Matrix &) diag);
+	decomp.Transpose();
+	decomp *= (_Matrix &) rd_transpose;	// D^T A^T A D
+	ReportWarning (_String("D^T A^T A D=") & (_String *)decomp.toStr());
+	
+	return (_PMathObj) decomp.makeDynamic();
 }
 
 #endif
