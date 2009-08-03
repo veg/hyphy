@@ -2218,12 +2218,10 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 			hPos = 0, 
 			vPos = 0;
 
-	if ((j>i)&&(s.sLength>4)) // non-empty string
+	if (j>i && s.sLength>4) // non-empty string
 	{
-		
 		_String term;
-		
-		if ((s.sData[i]=='{')&&(s.sData[j]=='{')) // first type
+		if (s.sData[i]=='{' && s.sData[j]=='{') // first type
 		{
 			i = j+1;
 			// read the dimensions first
@@ -2231,7 +2229,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 			{
 				cc = s.sData[i];
 				
-				if ((cc=='}') && (!quoting))
+				if (cc=='}' && !quoting)
 					break;
 					
 				if (cc=='"')
@@ -2250,11 +2248,11 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 				if (cc=='"')
 					quoting = !quoting;
 				else
-					if ((cc == '}')&&(!quoting)) 
+					if (cc == '}' && !quoting) 
 						hDim ++;
 			}
 			
-			if ((hDim<=0)||(vDim<=0))
+			if ( hDim<=0 || vDim<=0)
 				return;
 				
 			if (isNumeric)
@@ -2277,7 +2275,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 							if (cc == '"')
 								quoting = !quoting;
 								
-							if ((!quoting)&&((cc==',')||(cc=='}')))
+							if (!quoting && (cc==',') || (cc=='}'))
 								break;
 						}
 						
@@ -2285,14 +2283,14 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 						
 						if (isNumeric)
 						{
-							if ((lterm.sLength == 1)&&(lterm.sData[0]=='*')) 
+							if (lterm.sLength == 1 && lterm.sData[0]=='*') 
 								lterm = empty; // dummy element in probability matrix
 															
 							theData[vDim*hPos+vPos] = lterm.toNum();
 						}
 						else
 						{
-							if ((lterm.sLength == 1)&&(lterm.sData[0]=='*')) 
+							if (lterm.sLength == 1 && lterm.sData[0]=='*') 
 								lterm = empty; // dummy element in probability matrix
 								
 							_Formula*  theTerm = new _Formula (lterm, theP);
@@ -2337,20 +2335,21 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 		}
 		else // second type of input
 		{
-			for (i=j,j=0;(s.sData[i]!='{')&&(s.sData[i]!='}')&&(i<s.sLength);i++)
+			for (i=j,j=0; s.sData[i]!='{' && s.sData[i]!='}' && i<s.sLength;i++)
 			{
-				if (s.sData[i]==',') // both hDim and vDim specified
+				if (s.sData[i]==',') // neither hDim nore vDim have been specified
 				{
 					term = s.Cut(1,i-1);
 					hDim = ProcessNumericArgument (&term,theP);
-					j = i+1;
+					j    = i+1;
 				}
 			}
+			
 			if (j) // both hDim and vDim specified
 			{
 				term = s.Cut(j,i-1);
 				vDim = ProcessNumericArgument (&term,theP);
-			} 
+			}
 			else // only one dim specified, matrix assumed to be square
 			{
 				term = s.Cut(1,i-1);
@@ -2358,7 +2357,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 				vDim = hDim;
 			}
 			
-			if ((hDim<=0)||(vDim<=0))
+			if (hDim<=0 || vDim<=0)
 				return;
 				
 			if (isNumeric)
@@ -2374,7 +2373,8 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 				{
 					hPos = -1;
 					vPos = -1;
-					k = i+1;
+					k	 = i+1;
+					
 					for (j=i+1; j<s.sLength && s.sData[j]!='}'; j++)
 					{
 						if (s.sData[j]==',')
@@ -2389,7 +2389,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 							k = j+1;
 						}
 					}
-					if ((hPos <0)||(vPos<0)||(hPos>=hDim)||(vPos>=vDim))
+					if (hPos <0 || vPos<0 || hPos>=hDim || vPos>=vDim)
 					// bad index
 					{
 						MatrixIndexError (hPos,vPos,hDim,vDim);
@@ -9123,6 +9123,41 @@ BaseRef _AssociativeList::makeDynamic (void)
 	return newAL;
 }
 
+//_____________________________________________________________________________________________
+
+bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool doErrors, _VariableContainer* theP)
+{
+	_List			    splitKeys;
+	_ElementaryCommand::ExtractConditions (serializedForm, 0, splitKeys, ',' , false);	
+	for (long k = 0; k < splitKeys.lLength; k = k + 1)
+	{
+		_List aPair;
+		_ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, aPair, ':' , false);	
+		if (aPair.lLength == 2)
+		{
+			_String  key		(ProcessLiteralArgument((_String*)aPair(0),theP));
+			_Formula value		(*(_String*)aPair(1),theP, doErrors);
+			
+			_PMathObj	valueC  = value.Compute();
+			if (valueC)
+				MStore (key, valueC, true);
+			else
+			{
+				if (doErrors)
+					WarnError (*(_String*)aPair(1) & " could not be evaluated");
+				return false;
+				
+			}
+		}
+		else
+		{
+			if (doErrors)
+				WarnError (*(_String*)serializedForm(k) & " does not appear to specify a valid key:value pair");
+			return false;
+		}
+	}
+	return true;
+}
 
 //_____________________________________________________________________________________________
 
@@ -9349,7 +9384,7 @@ _String* _AssociativeList::Serialize (_String& avlName)
 	_String * outString = new _String (1024L,true);
 	checkPointer (outString);
 	
-	(*outString) << avlName;
+	/*(*outString) << avlName;
 	(*outString) << "={};\n";
 	
 	_List * meKeys = GetKeys();
@@ -9386,7 +9421,32 @@ _String* _AssociativeList::Serialize (_String& avlName)
 				DeleteObject (serializedObj);
 			}			
 		}
+	}*/
+	
+	(*outString) << "{";
+	bool		doComma = false;
+	_List * meKeys = GetKeys();
+	for (long k = 0; k < meKeys->lLength; k=k+1)
+	{
+		_String   *thisKey  = (_String*)(*meKeys)(k);
+		if (thisKey)
+		{
+			if (doComma)
+				(*outString) << ',';	
+			
+			(*outString) << '"';	
+			outString->EscapeAndAppend(*thisKey, false);
+			(*outString) << '"';	
+			
+			_PMathObj anObject = GetByKey (*thisKey);
+
+			(*outString) << ':';	
+			(*outString) << _String ((_String*)anObject->toStr());	
+
+			doComma = true;
+		}
 	}
+	(*outString) << "}";
 	outString->Finalize ();
 	return outString;
 }

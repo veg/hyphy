@@ -562,6 +562,18 @@ class 			_AssociativeList: public _MathObject
 	public: 
 		_AssociativeList 		  			(void);
 		virtual ~_AssociativeList 			(void) {}
+	
+		bool	ParseStringRepresentation	(_String&, bool = true, _VariableContainer* = nil);
+			/* SLKP 20090803
+				
+				Parse the list represented as
+					{"key": value, ...}
+			 
+				the boolean argument is supplied to request reporting/suppression of error messages
+			 
+				returns true on successful parse
+			 
+			 */
 		
 		virtual	BaseRef		toStr 			(void); 		
 		virtual _PMathObj 	Execute 		(long opCode, _PMathObj = nil, _PMathObj = nil);   

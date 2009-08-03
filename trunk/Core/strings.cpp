@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020090608beta");
+_String	  __KERNEL__VERSION__ ("2.0020090803beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__
@@ -2283,6 +2283,50 @@ _String*	_String::Sort (_SimpleList* index)
 	}
 	
 	return new _String;
+}
+
+//_______________________________________________________________________
+
+long		_String::ExtractEnclosedExpression (long& from, char open, char close, bool respectQuote, bool respectEscape)
+{
+	long   currentPosition = from,
+		   currentLevel	   = 0;
+	
+	bool   isQuote = false,
+		   doEscape = false;
+
+	while (currentPosition < sLength)
+	{
+		char thisChar = sData[currentPosition];
+		if (!doEscape)
+		{
+			if (thisChar == '"' && respectQuote && !doEscape)
+				isQuote = !isQuote;
+			else
+				if (thisChar == open && !isQuote)
+				{
+					currentLevel++;
+					if (currentLevel == 1)
+						from = currentPosition;
+				}
+				else
+					if (thisChar == close && !isQuote)
+					{
+						currentLevel--;
+						if (currentLevel == 0 && from < currentPosition)
+							return currentPosition;
+					}
+					else
+						if (thisChar == '\\' && respectEscape && isQuote && !doEscape)
+							doEscape = true;
+		}
+		else
+			doEscape = false;
+		
+		currentPosition++;
+	}
+	
+	return -1;
 }
 
 //EOF

@@ -3797,12 +3797,12 @@ _String		alpha 	("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
 
 long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f2, bool flagErrors)
 // returns: 
-// -2 - failed formula
-// -1 - valid formula - no variable assignment
-// -3 - regular '=' with formula receptacle
-// -4 = ":=" with formula receptacle
-// <-4 = ":=" with variable receptacle
-// >=0 "=" with variable receptacle
+// -2		- failed formula
+// -1		- valid formula - no variable assignment
+// -3		- regular '=' with formula receptacle
+// -4		= ":=" with formula receptacle
+// <-4		= ":=" with variable receptacle
+// >=0	   "=" with variable receptacle
 
 {
 	static bool inAssignment = false;
@@ -3842,7 +3842,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 	levelOps  = (_List*)(operations(level));
 	levelData = (_List*)(operands(level));
 	
-	for (int i = 0; i<=s.sLength; i++)
+	for (long i = 0; i<=s.sLength; i++)
 	{
 		storage = 0; // no implied ops by default 
 		
@@ -4199,33 +4199,37 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			
 				
 		if (s.getChar(i) == '{') // a matrix
+		/* 20090803 SLKP:
+			 fixed the code to deal with 
+		*/
 		{
 			if (flagErrors)
 			{
-				int j = i+1, mLevel = 1;
-				
-				while ((mLevel)&&(j<s.sLength))
+				int		j	    = s.ExtractEnclosedExpression (i,'{','}',true,true); 
+					
+				if (j<0)
 				{
-					if (s.getChar(j)=='{') mLevel++;
-					else
-					if (s.getChar(j)=='}') mLevel--;
-					j++;
-				}
-				
-				if ((j==s.sLength)&&mLevel)
-				{
-					WarnError (_String("Poorly formed matrix constant:")&s.Cut(i,-1));
+					if (flagErrors) WarnError (_String("Poorly formed matrix/associative array construct:")&s.Cut(i,-1));
 					return -2;
 				}
 					
-				_String matrixDef   (s,i,j-1);
+				_String matrixDef   (s,i,j);
 				
-				if (matrixDef.sLength == 2)
+				if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"')
 				{
 					_AssociativeList *theList = new _AssociativeList ();
 					if (!theList)
 						checkPointer (theList);
-						
+					if (matrixDef.sLength > 2)
+					{
+						matrixDef.Trim (1,matrixDef.sLength-2);
+						if (!theList->ParseStringRepresentation (matrixDef,flagErrors, theParent))
+						{
+							if (flagErrors) WarnError (_String("Poorly formed associative array construct:")&s.Cut(i,-1));
+							return -2;
+						}
+					}
+					
 					levelData->AppendNewInstance (new _Operation (theList));
 				}
 				else
@@ -4236,7 +4240,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					levelData->AppendNewInstance (new _Operation (theMatrix));
 				}
 				
-				i = j-1;
+				i = j;
 				continue;
 			}
 			else 
@@ -4312,12 +4316,11 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		if (s.getChar(i) == '(') // opening (
 		{
 			level++;
-			curOp = "";
-			_List dumb;
-			operations&&(&dumb);
-			operands && (&dumb);
-			levelOps = 	(_List*)(operations(level));
-			levelData = (_List*)(operands(level));
+			operations.AppendNewInstance (new _List);
+			operands.AppendNewInstance   (new _List);
+			levelOps	= 	(_List*)(operations(level));
+			levelData	=   (_List*)(operands(level));
+			curOp		=	empty;
 			continue;
 		}
 		

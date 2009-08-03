@@ -225,6 +225,7 @@ virtual		operator const char* (void);
  				// upcase the string
  			
  			_List*  Tokenize (_String);
+	
  			
  			void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil);
  			
@@ -263,7 +264,21 @@ virtual		operator const char* (void);
 _Parameter		toNum (void);
  			
 			void	SetLength (unsigned long nl) {sLength=nl;}
-			
+	
+			long	ExtractEnclosedExpression (long&, char, char, bool, bool);
+			/* SLKP 20090803
+					starting at index [argument 1],
+					find a span that encloses an expression (nested) delimited by char[argument 2]
+					and char[argument 3] (e.g. {}, ()) respecting quotes (argument 4), and allowing
+					escaped characters (argument 5)
+			 
+					the starting position of the segment will be stored in argument 1 and the
+					ending position will be returned. 
+			 
+					-1 is returned if the starting character could not be found or the expression 
+					did not terminate before the end of the string
+			*/
+	
  			
  			// data fields
  			unsigned	  long sLength;

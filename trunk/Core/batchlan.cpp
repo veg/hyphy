@@ -7435,18 +7435,20 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 	
 	_String result (128L,true);
 	
-	char lastChar = 0;
+	char	lastChar = 0;
 	
 	index = input.Length();
+
 	if (!index) 
 	{
 		result.Finalize();
 		return empty;
 	}
 			
-	while ((index>=0)&&(!isprint(input[--index]))) ;	
+	// non printable characters at the end ?
+	while (index>=0 && !isprint(input[--index])) ;	
 	input.Trim (0,index);
-
+	
 	for (index = 0; index<input.Length(); index++)
 	{
 		char c = input.sData[index];
@@ -7460,7 +7462,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 			if ( c=='/' && input.sData[index-1]=='*' ) 
 			{
 				isComment = false;
-				lastChar = 0;
+				lastChar  = 0;
 				continue;
 			}
 			lastChar = 0;
@@ -7468,11 +7470,11 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 		}
 		else
 		{
-			if ((!isString) && c=='/' && input.getChar(index+1)=='*' )
+			if (!isString && c=='/' && input.getChar(index+1)=='*' )
 			{
 				isComment = true;
+				lastChar  = 0;
 				index++;
-				lastChar = 0;
 				continue;
 			}
 		}
@@ -7494,7 +7496,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 			continue;
 		}
 		
-		if (skipping&&(isalpha(c)||(c=='_'))&&((isalnum(lastChar))||(lastChar=='_')))
+		if (skipping&&(isalpha(c) || c=='_') && ((isalnum(lastChar))||(lastChar=='_')))
 			result<<' ';
 		
 		skipping = false;
