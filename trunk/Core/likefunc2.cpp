@@ -146,7 +146,11 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 		}
 	
 	if (indexCat.lLength)
+	{
+		if (siteResults)
+			DeleteObject (siteResults);
 		AllocateSiteResults();
+	}
 }
 
 /*--------------------------------------------------------------------------------------------------*/
