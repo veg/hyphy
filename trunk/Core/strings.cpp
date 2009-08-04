@@ -550,8 +550,8 @@ void _String::EscapeAndAppend (const char c, char mode)
 			case '\'':
 				(*this) << c; 
 				(*this) << c;
-				return;
 		}
+		return;
 	}
 	else
 	{
