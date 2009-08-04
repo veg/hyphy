@@ -95,11 +95,14 @@ virtual 	char& operator [] (long);
  			virtual void operator << (const char);
  				// append into operator
 				
-			virtual void EscapeAndAppend (const char, bool);
+			virtual void EscapeAndAppend (const char, char);
 				// escape a character and append to this string
 
-			virtual void EscapeAndAppend (const _String &, bool isPostscript = false);
+			virtual void EscapeAndAppend (const _String &, char mode = 0);
 				// escape all characters in a string and append to this string
+				// mode = 0 : normal "text" escaping
+				// mode = 1: PostScript escaping
+				// mode = 2: SQLite escaping
 
  			virtual void operator << (const char*);
  				// append into operator
