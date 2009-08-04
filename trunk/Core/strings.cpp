@@ -548,8 +548,7 @@ void _String::EscapeAndAppend (const char c, char mode)
 		switch (c)
 		{
 			case '\'':
-			case '%':
-				(*this) << '\\'; 
+				(*this) << c; 
 				(*this) << c;
 				return;
 		}
