@@ -168,7 +168,7 @@ function _InsertRecord (DB_ID,tableName, fieldData)
 		}
 		_fieldList * 0;
 		_valueList * 0;
-		sqlCode = "INSERT INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ")";
+		sqlCode = "INSERT OR REPLACE INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ")";
 		DoSQL (DB_ID,sqlCode ,"");		
 	}
 	return 0;
@@ -205,7 +205,7 @@ function _InsertMultipleRecords (DB_ID,tableName, recordData)
 			}
 			_fieldList * 0;
 			_valueList * 0;
-			sqlCode * ("\nINSERT INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ");");
+			sqlCode * ("\nINSERT OR REPLACE INTO  " + tableName  + "("+_fieldList + ") VALUES (" + _valueList + ");");
 		}
 	}
 	sqlCode * "END TRANSACTION;\n";
