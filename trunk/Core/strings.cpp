@@ -541,17 +541,31 @@ void _String::operator << (const char c)
 
 //_______________________________________________________________________
 // append operator
-void _String::EscapeAndAppend (const char c, bool isPostscript)
+void _String::EscapeAndAppend (const char c, char mode)
 {
-	if (isPostscript)
+	if (mode == 2)
 	{
 		switch (c)
 		{
-			case '(':
-			case ')':
+			case '\'':
 			case '%':
-				(*this) << '\\'; (*this) << c;
+				(*this) << '\\'; 
+				(*this) << c;
 				return;
+		}
+	}
+	else
+	{
+		if (mode == 1)
+		{
+			switch (c)
+			{
+				case '(':
+				case ')':
+				case '%':
+					(*this) << '\\'; (*this) << c;
+					return;
+			}
 		}
 	}
 	switch (c)
@@ -579,10 +593,10 @@ void _String::EscapeAndAppend (const char c, bool isPostscript)
 
 //_______________________________________________________________________
 // append operator
-void _String::EscapeAndAppend (const _String & s, bool isPostscript)
+void _String::EscapeAndAppend (const _String & s, char mode)
 {
 	for (long i=0; i<s.sLength;  i++)
-		EscapeAndAppend (s.sData[i], isPostscript);
+		EscapeAndAppend (s.sData[i], mode);
 }
 
 
