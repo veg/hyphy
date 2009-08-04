@@ -545,11 +545,11 @@ void _String::EscapeAndAppend (const char c, char mode)
 {
 	if (mode == 2)
 	{
+		(*this) << c;
 		switch (c)
 		{
 			case '\'':
 				(*this) << c; 
-				(*this) << c;
 		}
 		return;
 	}
