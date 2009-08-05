@@ -2281,6 +2281,8 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 
 						_String lterm (s,s.FirstNonSpaceIndex(i,j-1,1),j-1); // store the term in a string
 						
+						//printf ("%s\n", lterm.sData);
+						
 						if (isNumeric)
 						{
 							if (lterm.sLength == 1 && lterm.sData[0]=='*') 

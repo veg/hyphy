@@ -2361,7 +2361,7 @@ long		_String::FindTerminator (long from, _String& terminators)
 		char thisChar = sData[currentPosition];
 		if (!doEscape)
 		{
-			if (thisChar == '"' && doEscape)
+			if (thisChar == '"' && !doEscape)
 				isQuote = !isQuote;
 			else
 			{
