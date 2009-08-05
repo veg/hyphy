@@ -2772,6 +2772,22 @@ _PMathObj _Formula::GetTheMatrix (void)
 	}
 	return nil;
 }
+
+//__________________________________________________________________________________
+
+long _Formula::ObjectClass (void) 
+{	
+	if (theStack.theStack.lLength)
+		return ((_PMathObj)theStack.theStack.lData[0])->ObjectClass();
+	
+	_PMathObj res =	  Compute();
+	
+	if (res)
+		return res->ObjectClass();
+	
+	return UNDEFINED;
+}
+
 //__________________________________________________________________________________
 
 _FString::_FString (void)

@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "classes.h"
 
 
+#define  UNDEFINED 			0x00
 #define  NUMBER 			0x01
 #define	 MATRIX 			0x04
 #define	 CONTAINER			0x08
@@ -388,10 +389,8 @@ virtual	void	  	Duplicate 			(BaseRef);
 virtual	BaseRef		makeDynamic			(void);
 virtual BaseRef 	toStr 				(_List*	matchNames = nil, bool = false);
 	
-virtual	long	  	ObjectClass 		(void) 
-						{ return (theStack.theStack.lLength?
-								 ((_PMathObj)theStack.theStack.lData[0])->ObjectClass():
-								Compute()->ObjectClass());}
+virtual	long	  	ObjectClass 		(void);
+					
 	
 virtual	void	  	ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
 virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
