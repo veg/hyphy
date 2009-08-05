@@ -148,9 +148,17 @@ for (rate_enumerator = 0; rate_enumerator < rateCount; rate_enumerator = rate_en
 for (site_enumerator = 0; site_enumerator < site_count; site_enumerator = site_enumerator + 1)
 {
 	sum = 0; 
+	
+	smallestScaler = 1e100;
+	
 	for (rate_enumerator = 0; rate_enumerator < rateCount; rate_enumerator = rate_enumerator + 1)
 	{
-		v = cm[rate_enumerator*site_count+site_enumerator] * rateInfo[rate_enumerator][0];
+		smallestScaler = Min(smallestScaler,cm.site_scalers[rate_enumerator*site_count+site_enumerator]);
+	}
+	
+	for (rate_enumerator = 0; rate_enumerator < rateCount; rate_enumerator = rate_enumerator + 1)
+	{
+		v = cm[rate_enumerator*site_count+site_enumerator] * rateInfo[rate_enumerator][0] * Exp(cm.log_scale_multiplier*(smallestScaler-cm.site_scalers[rate_enumerator*site_count+site_enumerator]));
 		posteriorProbs[site_enumerator] [rate_enumerator]= v;
 		sum = sum + v;
 	}
