@@ -3674,18 +3674,21 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 			
 			long hC = mcoord->theData[0], 
 				 vC = mcoord->theData[1];
-					  
-			if (!ANALYTIC_COMPUTATION_FLAG)
-				mmx->MStore (hC, vC, newF);
-			else
+			
+			if (mmx->CheckCoordinates (hC,vC))
 			{
-				_PMathObj newP = newF.ConstructPolynomial();
-				if (!newP)
-					warnError (_String("Can't assign non-polynomial entries to polynomial matrices."));
+				if (!ANALYTIC_COMPUTATION_FLAG)
+					mmx->MStore (hC, vC, newF);
 				else
-					mmx->MStore (hC,vC, newP);
+				{
+					_PMathObj newP = newF.ConstructPolynomial();
+					if (!newP)
+						warnError (_String("Can't assign non-polynomial entries to polynomial matrices."));
+					else
+						mmx->MStore (hC,vC, newP);
+				}
+				mmx->CheckIfSparseEnough();
 			}
-			mmx->CheckIfSparseEnough();
 		}
 		else
 			if (mma)

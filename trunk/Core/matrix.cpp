@@ -5241,21 +5241,27 @@ _PMathObj _Matrix::MCoord (_PMathObj p, _PMathObj p2)
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
+bool _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
 {
 	ind1 = -1; ind2 = -1;
 	
 	if (!p)
 	{
 		warnError(-106);
-		return;
+		return false;
 	}
 	
 	ind1 = p->Value();
 	if (p2)
 		ind2 = p2->Value();
 	
-	
+	return CheckCoordinates (ind1,ind2);
+}
+
+//_____________________________________________________________________________________________
+
+bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
+{
 	if (hDim == 1)
 	{
 		if (ind2<0)
@@ -5280,9 +5286,11 @@ void _Matrix::MResolve (_PMathObj p, _PMathObj p2, long& ind1, long& ind2)
 	if (ind1<0 || ind1>=hDim || ind2>=vDim) 
 	{
 		MatrixIndexError (ind1,ind2, hDim, vDim);
-		return;
-	}
+		return false;
+	}	
+	return true;
 }
+								
 
 //_____________________________________________________________________________________________
 void _Matrix::MStore (long ind1, long ind2, _Formula& f)
@@ -5311,16 +5319,16 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f)
 void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
 {
 	long	  ind1, ind2;
-	MResolve (p,p2, ind1,ind2);
-	MStore   (ind1,ind2,f);
+	if (MResolve (p,p2, ind1,ind2))
+		MStore   (ind1,ind2,f);
 }
 
 //_____________________________________________________________________________________________
 void _Matrix::MStore (_PMathObj p, _PMathObj p2, _PMathObj poly)
 {
 	long	  ind1, ind2;
-	MResolve (p,p2, ind1,ind2);
-	MStore   (ind1,ind2,poly);
+	if (MResolve (p,p2, ind1,ind2))
+		MStore   (ind1,ind2,poly);
 	
 }
 //_____________________________________________________________________________________________

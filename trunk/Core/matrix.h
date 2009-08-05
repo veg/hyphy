@@ -116,9 +116,12 @@ class		_Matrix: public _MathObject {
 												// implements the M[i][j] operation for formulas
 	
 			void		MStore (long, long, _Formula&);
-			void		MResolve (_PMathObj, _PMathObj, long&, long&);
+			bool		MResolve (_PMathObj, _PMathObj, long&, long&);
 												// resolve coordiates from two Number arguments
 			
+			bool		CheckCoordinates ( long&, long&);
+												// validate matrix coordinates
+
 			void		MStore (_PMathObj, _PMathObj, _Formula&);
 												// implements the M[i][j]= operation for formulas
 
