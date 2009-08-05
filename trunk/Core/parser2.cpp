@@ -4202,7 +4202,6 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		}
 			
 			
-				
 		if (s.getChar(i) == '{') // a matrix
 		/* 20090803 SLKP:
 			 fixed the code to deal with 

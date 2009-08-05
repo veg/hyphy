@@ -281,6 +281,16 @@ _Parameter		toNum (void);
 					-1 is returned if the starting character could not be found or the expression 
 					did not terminate before the end of the string
 			*/
+
+			long	FindTerminator			(long, _String&);
+			/* SLKP 20090805
+			 starting at index [argument 1],
+			 find a span that terminates in one of the characters in [argument 2], while
+			 respecting (), [], {}, "" and escapes
+			 
+			 -1 is returned if the starting character could not be found or the expression 
+			 did not terminate before the end of the string
+			 */
 	
  			
  			// data fields

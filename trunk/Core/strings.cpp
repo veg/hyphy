@@ -2328,6 +2328,8 @@ long		_String::ExtractEnclosedExpression (long& from, char open, char close, boo
 						currentLevel--;
 						if (currentLevel == 0 && from < currentPosition)
 							return currentPosition;
+						if (currentLevel < 0)
+							return -1;
 					}
 					else
 						if (thisChar == '\\' && respectEscape && isQuote && !doEscape)
@@ -2341,6 +2343,68 @@ long		_String::ExtractEnclosedExpression (long& from, char open, char close, boo
 	
 	return -1;
 }
+
+//_______________________________________________________________________
+
+long		_String::FindTerminator (long from, _String& terminators)
+{
+	long   currentPosition  = from,
+		   currentCurly     = 0,
+		   currentSquare    = 0,
+			currentParen	= 0;
+	
+	bool   isQuote = false,
+		  doEscape = false;
+		
+	while (currentPosition < sLength)
+	{
+		char thisChar = sData[currentPosition];
+		if (!doEscape)
+		{
+			if (thisChar == '"' && doEscape)
+				isQuote = !isQuote;
+			else
+			{
+				if (!isQuote)
+				{
+					if (thisChar == '{')
+						currentCurly ++;
+					else
+					if (thisChar == '[')
+						currentSquare ++;
+					else
+					if (thisChar == '(')
+						currentParen ++;
+					if (currentCurly > 0 && thisChar == '}')
+						currentCurly --;
+					else
+					if (currentSquare > 0 && thisChar == ']')
+						currentSquare --;
+					else
+					if (currentParen > 0 && thisChar == ')')
+						currentParen --;
+					else
+					if (currentParen == 0 && currentSquare == 0 && currentCurly == 0)
+						for (long s = 0; s < terminators.sLength; s++)
+							if (thisChar == terminators.sData[s])
+								return currentPosition;
+				}
+				else
+				{
+					if (thisChar == '\\' && isQuote && !doEscape)
+						doEscape = true;
+				}
+			}
+		}
+		else
+			doEscape = false;
+		
+		currentPosition++;
+	}
+	
+	return -1;
+}
+
 
 //EOF
 		

@@ -2206,9 +2206,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 	// decide which input type is being presented
 	Initialize();
 	
-	bool	isAConstant = true, // is this a matrix of numbers, or formulas
-			quoting 	= false;
-			
+	bool	isAConstant = true; // is this a matrix of numbers, or formulas			
 	char    cc;
 	
 		
@@ -2217,6 +2215,8 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 			k=0, 
 			hPos = 0, 
 			vPos = 0;
+	
+	_String terminators (",}");
 
 	if (j>i && s.sLength>4) // non-empty string
 	{
@@ -2225,31 +2225,33 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 		{
 			i = j+1;
 			// read the dimensions first
+			
 			while (i<s.sLength)
 			{
+				i = s.FindTerminator (i, terminators);
+				if (i < 0)
+				{
+					WarnError ("Unterminated matrix definition");
+					return;
+				}
 				cc = s.sData[i];
 				
-				if (cc=='}' && !quoting)
-					break;
-					
-				if (cc=='"')
-					quoting = !quoting;
-					
-				if (!quoting)
-					if (cc==',') vDim++;
+				if (cc=='}')
+					break;		
+				
+				if (cc==',') vDim++;
 				i++;
 			}
+			
 			vDim++;
+			hDim = 1;
 			
-			
-			for (;i<s.sLength-1; i++)
+			for (i = i + 1;i<s.sLength-1; i++)
 			{
-				cc = s.sData[i];
-				if (cc=='"')
-					quoting = !quoting;
-				else
-					if (cc == '}' && !quoting) 
-						hDim ++;
+				i = s.ExtractEnclosedExpression (i,'{','}',true, true);
+				if (i < 0)
+					break;
+				hDim ++;
 			}
 			
 			if ( hDim<=0 || vDim<=0)
@@ -2269,16 +2271,14 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 					while (s.sData[i]!='}')
 					{
 						i++;
-						for (j=i; j< s.sLength ; j++) 
+						j = s.FindTerminator (i, terminators);
+
+						if (j<0)			
 						{
-							cc = s.sData[j];
-							if (cc == '"')
-								quoting = !quoting;
-								
-							if (!quoting && (cc==',') || (cc=='}'))
-								break;
+							WarnError ("Unterminated matrix definition");
+							return;
 						}
-						
+
 						_String lterm (s,s.FirstNonSpaceIndex(i,j-1,1),j-1); // store the term in a string
 						
 						if (isNumeric)
@@ -2297,7 +2297,10 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 							checkPointer (theTerm);
 							
 							if (isAConstant) // there is hope that this matrix is of numbers
-								isAConstant = theTerm->IsAConstant();
+								if (theTerm->ObjectClass() == NUMBER)
+									isAConstant = theTerm->IsAConstant();
+								else
+									isAConstant = false;
 
 							((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
 						}
@@ -2305,9 +2308,10 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 						vPos++;
 						if (vPos>vDim) 
 						{
-							warnError(-104);
+							WarnError ("Rows of unequal lengths in matrix definition");
 							return;
 						}
+						
 						i=j;
 					}
 				}
@@ -2339,6 +2343,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 			{
 				if (s.sData[i]==',') // neither hDim nore vDim have been specified
 				{
+					if (j > 0) break;
 					term = s.Cut(1,i-1);
 					hDim = ProcessNumericArgument (&term,theP);
 					j    = i+1;
@@ -2377,6 +2382,14 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 					
 					for (j=i+1; j<s.sLength && s.sData[j]!='}'; j++)
 					{
+						j = s.FindTerminator (j, terminators);
+						
+						if (j<0)			
+						{
+							WarnError ("Unterminated matrix definition");
+							return;
+						}
+						
 						if (s.sData[j]==',')
 						{
 							term = s.Cut (s.FirstNonSpaceIndex(k,j-1,1),j-1);
@@ -2388,7 +2401,10 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 								vPos = coordV;
 							k = j+1;
 						}
+						else
+							j--;
 					}
+					
 					if (hPos <0 || vPos<0 || hPos>=hDim || vPos>=vDim)
 					// bad index
 					{
@@ -9440,7 +9456,10 @@ _String* _AssociativeList::Serialize (_String& avlName)
 		if (thisKey)
 		{
 			if (doComma)
+			{
 				(*outString) << ',';	
+				(*outString) << '\n';	
+			}
 			
 			(*outString) << '"';	
 			outString->EscapeAndAppend(*thisKey, false);
@@ -9449,8 +9468,16 @@ _String* _AssociativeList::Serialize (_String& avlName)
 			_PMathObj anObject = GetByKey (*thisKey);
 
 			(*outString) << ':';	
-			(*outString) << _String ((_String*)anObject->toStr());	
-
+			if (anObject->ObjectClass() == STRING)
+			{
+				(*outString) << '"';	
+				outString->EscapeAndAppend(_String ((_String*)anObject->toStr()),0);					
+				(*outString) << '"';	
+			}
+			else
+			{
+				(*outString) << _String ((_String*)anObject->toStr());	
+			}
 			doComma = true;
 		}
 	}
