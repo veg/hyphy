@@ -1,0 +1,66 @@
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function BuildCodonFrequencies (obsF, freqMx&)
+{
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+	normString = "1";
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			normString = normString + "-" + obsF[first][0] + "*" + obsF[second][1]+ "*" +obsF[third][2];
+			continue; 
+		}
+		result[h-hshift]=obsF[first][0] + "*" + obsF[second][1]+ "*" +obsF[third][2];
+	}
+	
+	freqMx = {ModelMatrixDimension,1};
+	
+	hshift = 0;
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+		}
+		else
+		{
+			ExecuteCommands ("freqMx[h-hshift]:="+result[h-hshift]+"/("+normString+")");
+		}
+	}
+	return 0;
+}
+
+global A1:<1;
+global A2:<1;
+global A3:<1;
+global C1:<1;
+global C2:<1;
+global C3:<1;
+global G1:<1;
+global G2:<1;
+global G3:<1;
+A1 = observedFreq[0][0];
+A2 = observedFreq[0][1];
+A3 = observedFreq[0][2];
+C1 = observedFreq[1][0]/(1-A1);
+C2 = observedFreq[1][1]/(1-A2);
+C3 = observedFreq[1][2]/(1-A3);
+G1 = observedFreq[2][0]/(1-A1)/(1-C1);
+G2 = observedFreq[2][1]/(1-A2)/(1-C2);
+G3 = observedFreq[2][2]/(1-A3)/(1-C3);
+
+paramFreqs = {{"A1","A2","A3"}
+		     {"(1-A1)*C1","(1-A2)*C2","(1-A3)*C3"}
+		     {"(1-A1)*(1-C1)*G1","(1-A2)*(1-C2)*G2","(1-A3)*(1-C3)*G3"}
+		     {"(1-A1)*(1-C1)*(1-G1)","(1-A2)*(1-C2)*(1-G2)","(1-A3)*(1-C3)*(1-G3)"}};

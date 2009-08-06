@@ -1,0 +1,241 @@
+/* This file defines the transition matrix for the Muse-Gaut 94 model x an arbitrary 4x4 rate matrix
+   for nucleotide substituions and multiple non-syn rates for various types of A.A. substitutions.
+   
+   02/05/2004  by Sergei L. Kosakovsky Pond
+*/
+
+ModelMatrixDimension = 0;
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (!ModelMatrixDimension)
+	{
+		ModelMatrixDimension = 64;
+		for (h = 0 ;h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10)
+			{
+				ModelMatrixDimension = ModelMatrixDimension-1;
+			}
+		}
+	}
+	
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+
+	hshift = 0;
+	
+	modelDefString = "";
+	modelDefString*16384;
+	
+	if (modelType > 0)
+	{
+		catCounterAL = {};
+		if (_AA_RM_NUMERIC > 1)
+		{
+			ExecuteCommands ("global NS_Scaler = 1;");
+		}
+	}
+	
+	for (h=0; h<64; h=h+1)
+	{
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			continue; 
+		}
+		vshift = hshift;
+		for (v = h+1; v<64; v=v+1)
+		{
+			diff = v-h;
+			if (_Genetic_Code[v]==10) 
+			{
+				vshift = vshift+1;
+				continue; 
+			}
+			nucPosInCodon = 2;
+			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			{
+				if (h$4==v$4)
+				{
+					transition = v%4;
+					transition2= h%4;
+				}
+				else
+				{
+					if(diff%16==0)
+					{
+						transition = v$16;
+						transition2= h$16;
+						nucPosInCodon = 0;
+					}
+					else
+					{
+						transition = v%16$4;
+						transition2= h%16$4;
+						nucPosInCodon = 1;
+					}
+				}
+				hs = Format(h-hshift,0,0);
+				vs = Format(v-vshift,0,0);
+				ts = Format(transition,0,0);
+				ts2= Format(transition2,0,0);
+				ps = Format(nucPosInCodon,0,0);
+				aa1 = _Genetic_Code[0][h];
+				aa2 = _Genetic_Code[0][v];
+				if (aa1==aa2) 
+				{
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+"synRate*"+EFV[transition][nucPosInCodon]+";\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+"synRate*"+EFV[transition2][nucPosInCodon]+";\n");
+				}
+				else
+				{
+					if (modelType > 0)
+					{
+						if (_AA_RM_NUMERIC)
+						{
+							if (_AA_RM_NUMERIC > 1)
+							{
+								bt = "NS_Scaler*" + aaRateMultipliers[aa1][aa2];
+							}
+							else
+							{
+								bt = aaRateMultipliers[aa1][aa2];
+							}
+						}
+						else
+						{
+							bt = aaRateMultipliers[aa1][aa2];
+							if (catCounterAL[bt] == 0)
+							{
+								catCounterAL[bt] = 1;
+								modelDefString*("\nglobal NSClass"+bt+"=1;\n");
+							}
+							bt = "NSClass"+bt;
+						}
+						
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate*"+EFV[transition][nucPosInCodon]+";\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate*"+EFV[transition2][nucPosInCodon]+";\n");
+					}
+					else
+					{
+						bt = "nsClass"+aaRateMultipliers[aa1][aa2];
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate*"+EFV[transition][nucPosInCodon]+";\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate*"+EFV[transition2][nucPosInCodon]+";\n");				
+					}			
+				}
+			}
+	    }
+    }		
+	modelDefString*0;
+	ExecuteCommands (modelDefString);
+	return 0;
+}
+
+
+
+#include "MGwAA.ibf";
+
+categoriesUsed = 0;
+
+#include "modelParameters.mdl";
+
+global AC = 1;
+global AT = 1;
+global CG = 1;
+global CT = 1;
+global GT = 1;
+
+if (modelType >0)
+{
+	sharedFlag = 1;
+	if (modelType == 2)
+	{
+		categoriesUsed = 1;
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 3)
+	{
+		categoriesUsed = 1;
+		#include "defineHM.mdl";
+	}
+}
+
+if (modelType > 1)
+{
+	MGCustomRateBiasTerms = {{"AC*c*","c*","AT*c*","CG*c*","CT*c*","GT*c*"}};
+}
+else
+{
+	MGCustomRateBiasTerms = {{"AC*","","AT*","CG*","CT*","GT*"}};	
+}
+
+
+done = 0;
+while (!done)
+{
+	fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
+	fscanf  (stdin,"String", modelDesc);
+	if (Abs(modelDesc)==6)
+	{	
+		done = 1;
+	}
+}			
+
+		
+paramCount	  = 0;
+_nucBiasTerms = {4,4};
+_nucBiasTerms[0][0] = "";
+
+
+if (modelDesc[0]==modelDesc[1])
+{
+	MGCustomRateBiasTerms[0] = MGCustomRateBiasTerms[1];
+}
+
+_nucBiasTerms[1][0] = MGCustomRateBiasTerms[0];
+_nucBiasTerms[0][1] = MGCustomRateBiasTerms[0];
+_nucBiasTerms[2][0] = MGCustomRateBiasTerms[1];
+_nucBiasTerms[0][2] = MGCustomRateBiasTerms[1];
+
+h = 0;
+v = 3;
+
+for (customLoopCounter2=2; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
+{
+	for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
+	{
+		if (modelDesc[customLoopCounter]==modelDesc[customLoopCounter2])
+		{
+			_nucBiasTerms[h][v] = MGCustomRateBiasTerms[customLoopCounter];
+			_nucBiasTerms[v][h] = MGCustomRateBiasTerms[customLoopCounter];
+			break;
+		}
+	}
+	if (customLoopCounter == customLoopCounter2)
+	{
+		_nucBiasTerms[h][v] = MGCustomRateBiasTerms[customLoopCounter2];
+		_nucBiasTerms[v][h] = MGCustomRateBiasTerms[customLoopCounter2];
+	}
+	
+	v = v+1;
+	if (v==4)
+	{
+		h=h+1;
+		v=h+1;
+	}
+}
+
+
+HarvestFrequencies (observedFreq,filteredData,3,1,1);
+
+#include "MGFreqsEstimator.ibf";
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94custom", paramFreqs);
+
+FREQUENCY_SENSITIVE = 1;
+BuildCodonFrequencies (paramFreqs,"vectorOfFrequencies");
+Model MG94customModel = (MG94custom,vectorOfFrequencies,0);
+
+USE_POSITION_SPECIFIC_FREQS = 1;
