@@ -2,6 +2,30 @@ ModelMatrixDimension = 0;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
+function BuildCodonFrequencies (obsF)
+{
+	PIStop = 1.0;
+	result = {ModelMatrixDimension,1};
+	hshift = 0;
+
+	for (h=0; h<64; h=h+1)
+	{
+		first = h$16;
+		second = h%16$4;
+		third = h%4;
+		if (_Genetic_Code[h]==10) 
+		{
+			hshift = hshift+1;
+			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+			continue; 
+		}
+		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+	}
+	return result*(1.0/PIStop);
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
 function PopulateModelMatrix (ModelMatrixName&, EFV)
 {
 	if (!ModelMatrixDimension)
