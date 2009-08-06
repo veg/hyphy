@@ -175,6 +175,9 @@ function ReceiveJobs (sendOrNot, ji)
 		if (sendOrNot)
 		{
 			MPISend (fromNode,msg2Send);
+			
+			fprintf ("last.in", CLEAR_FILE, msg2Send);
+		
 			MPINodeState[fromNode-1][1] = ji;			
 			MPINodeState[fromNode-1][2] = modelDF;			
 		}
@@ -339,30 +342,7 @@ function RunASample (modelDF, jobIndex)
 }
 
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-
-function BuildCodonFrequencies (obsF)
-{
-	PIStop = 1.0;
-	result = {ModelMatrixDimension,1};
-	hshift = 0;
-
-	for (h=0; h<64; h=h+1)
-	{
-		first = h$16;
-		second = h%16$4;
-		third = h%4;
-		if (_Genetic_Code[h]==10) 
-		{
-			hshift = hshift+1;
-			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
-			continue; 
-		}
-		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
-	}
-	return result*(1.0/PIStop);
-}
 
 
 
@@ -549,21 +529,19 @@ function UpdateBL (dummy)
 	CT=CT;
 	GT=GT;
 	
-	
-	
 	populateTrees ("codon_tree", dataPartsRead);
 	for (k=1; k<=dataPartsRead; k=k+1)
 	{
 		ExecuteCommands("ReplicateConstraint (\"this1.?.synRate:=3*this2.?.t\", codon_tree_"+k+", nuc_tree_"+k+");ClearConstraints(codon_tree_"+k+");");
 	}
 	ExecuteCommands(constructLF("lf","filteredData","codon_tree",dataPartsRead));
-	AUTO_PARALLELIZE_OPTIMIZE		= 1;
+	/*AUTO_PARALLELIZE_OPTIMIZE		= 1;*/
 	if (verboseFlag)
 	{
 		VERBOSITY_LEVEL 			= 1;
 	}
 	Optimize 						(res,lf);
-	AUTO_PARALLELIZE_OPTIMIZE		= 0;	
+	/*AUTO_PARALLELIZE_OPTIMIZE		= 0;	*/
 	VERBOSITY_LEVEL 				= 0;
 	
 	AC:=AC__;
@@ -735,35 +713,6 @@ fprintf (detailsOutputFile,CLEAR_FILE,KEEP_OPEN,orderString,"\n");
 
 aaRateMultipliers = {21,21};
 
-MULTIPLY_BY_FREQS 				= PopulateModelMatrix ("MG94plain", positionFrequencies);
-vectorOfFrequencies 			= BuildCodonFrequencies (positionFrequencies);
-modelSpawnPrefix 				* ("observedFreq = " + positionFrequencies + ";\n");
-modelSpawnPrefix 				* ("vectorOfFrequencies = " + vectorOfFrequencies + ";\n");
-modelSpawnPrefix				* ("global AC = 1; global AT = 1; global CG = 1; global CT = 1; global GT = 1;\n");
-modelSpawnPrefix				* 0;
-
-
-
-Model MG94plainmodel	 		= (MG94plain,vectorOfFrequencies,0);
-
-populateTrees ("codon_tree", dataPartsRead);
-
-modelSpawnSuffix *	("MULTIPLY_BY_FREQS = PopulateModelMatrix (\"MG94custom\", observedFreq);\n");
-modelSpawnSuffix *  ("Model MG94customModel = (MG94custom,vectorOfFrequencies,0);\n");
-
-global 		   		 codonBranchScaler = 1;
-
-for (k=1; k<=dataPartsRead; k=k+1)
-{
-	ExecuteCommands("ReplicateConstraint (\"this1.?.synRate:=3*this2.?.t\", codon_tree_"+k+", nuc_tree_"+k+");ClearConstraints(codon_tree_"+k+");");
-	modelSpawnSuffix *	("Tree codon_tree_"+k+" = " + treeStrings[k] + ";\n");
-	modelSpawnSuffix *	("replicateBranchLengths ("+k+");");
-}
-modelSpawnSuffix *	("\nExecuteCommands(constructLF(\"lf\",\"filteredData\",\"codon_tree\","+dataPartsRead+"));\nOptimize (lf_MLES,lf);\nreturn makeReturnValue(0);\n");
-modelSpawnSuffix *  0;
-
-
-ExecuteCommands(constructLF ("lf","filteredData","codon_tree",dataPartsRead));
 
 icSampleSizeMultiplier = 1.0;
 
@@ -829,27 +778,77 @@ if (seedChoice == 1)
 	}
 }
 
+
+
+
+observedFreq = positionFrequencies;
+
+SKIP_HARVEST_FREQ         = 1;
+SKIP_MODEL_PARAMETER_LIST = 1;
+modelType				  = 1;
+ExecuteAFile			("TemplateModels/MG94customFreqs.mdl");
+global					 codonBranchScaler = 1;
+populateTrees			("codon_tree", dataPartsRead);
+
+for (k=1; k<=dataPartsRead; k=k+1)
+{
+	ExecuteCommands("ReplicateConstraint (\"this1.?.synRate:=3*this2.?.t\", codon_tree_"+k+", nuc_tree_"+k+");ClearConstraints(codon_tree_"+k+");");
+}
+
+ExecuteCommands(constructLF ("lf","filteredData","codon_tree",dataPartsRead));
+
 currentPopulation  = {};
 USE_LAST_RESULTS=1;
 if (verboseFlag)
 {
 	VERBOSITY_LEVEL 				= 1;
 }
-
-/*
-AUTO_PARALLELIZE_OPTIMIZE = 1;
-*/
-
+VERBOSITY_LEVEL 				= 0;
 Optimize (res,lf);
+
+fprintf (stdout, lf);
+
+for (k = 0; k < 4; k = k+1)
+{
+	for (p = 0; p < 3; p=p+1)
+	{
+		ExecuteCommands ("positionFrequencies[k][p] = " + paramFreqs[k][p]);
+	}
+}	
+mgPlainFactor = FindBranchLengthExpression(0,"MG94custom");
+
+fprintf			  (stdout, positionFrequencies, "\n", mgPlainFactor,"\n");
+ExecuteCommands   (_cmsShared);
+
+MULTIPLY_BY_FREQS                       = PopulateModelMatrix ("MG94plain", positionFrequencies);
+vectorOfFrequencies                     = BuildCodonFrequencies (positionFrequencies);
 /*
 AUTO_PARALLELIZE_OPTIMIZE = 0;
 */
+
+
+
+modelSpawnPrefix 				* ("observedFreq = " + positionFrequencies + ";\n");
+modelSpawnPrefix 				* ("vectorOfFrequencies = " + vectorOfFrequencies + ";\n");
+modelSpawnPrefix				* ("global AC = 1; global AT = 1; global CG = 1; global CT = 1; global GT = 1;\n");
+modelSpawnPrefix				* 0;
+modelSpawnSuffix				*	("MULTIPLY_BY_FREQS = PopulateModelMatrix (\"MG94custom\", observedFreq);\n");
+modelSpawnSuffix				*  ("Model MG94customModel = (MG94custom,vectorOfFrequencies,0);\n");
+
+for (k=1; k<=dataPartsRead; k=k+1)
+{
+	modelSpawnSuffix *	("Tree codon_tree_"+k+" = " + treeStrings[k] + ";\n");
+	modelSpawnSuffix *	("replicateBranchLengths ("+k+");");
+}
+modelSpawnSuffix *	("\nExecuteCommands(constructLF(\"lf\",\"filteredData\",\"codon_tree\","+dataPartsRead+"));\nOptimize (lf_MLES,lf);\nreturn makeReturnValue(0);\n");
+modelSpawnSuffix *  0;
+
 
 VERBOSITY_LEVEL = 0;
 USE_LAST_RESULTS=0;
 
 
-baseParams 		   = res[1][1]+9;
+baseParams 		   = res[1][1];
 fprintf 			(stdout, "\nBase model has ", baseParams, " parameters\n", lf);
 crapAIC			   = returnIC (res[1][0], baseParams, sampleCount);
 
@@ -860,7 +859,7 @@ currentPopulation [0] = {stateVectorDimension,1};
 
 ExportAMatrix (detailsOutputFile,StringToMatrix(currentPopulation[0]),0,0);
 fprintf		  (detailsOutputFile,"\n{{",res[1][0],",",baseParams,",",crapAIC);
-ExecuteCommands ("fprintf(detailsOutputFile,\",\",NSR0);");
+ExecuteCommands ("fprintf(detailsOutputFile,\",\",R);");
 fprintf (detailsOutputFile,"}}\n");
 
 
@@ -870,7 +869,8 @@ CG:=CG__;
 CT:=CT__;
 GT:=GT__;
 
-mgPlainFactor = FindBranchLengthExpression(0,"MG94plain");
+
+
 
 /* INCLUDE THE CHC CORE */
 
@@ -943,4 +943,5 @@ fpath = modelFile+".bestAIC";
 
 fprintf (fpath, CLEAR_FILE, -sortedScores[populationSize-1][0]);
 fprintf (detailsOutputFile,CLOSE_FILE);
+
 
