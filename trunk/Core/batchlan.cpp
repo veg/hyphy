@@ -217,6 +217,7 @@ _String
 			statusBarProgressValue			("STATUS_BAR_PROGRESS_VALUE"),
 			statusBarUpdateString			("STATUS_BAR_STATUS_STRING"),
 			marginalAncestors				("MARGINAL"),
+			blScanfRewind					("REWIND"),
 			dialogPrompt,
 			lastModelUsed,
 			baseDirectory,
@@ -4131,13 +4132,11 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 			 	r,
 			 	q,
 			 	v,
-			 	t;
+			 	t,
+				shifter = simpleParameters.lData[0] < 0;
 			 	
-	_Variable*  iseof;
-	
 	bool		skipDataDelete = false;
-	
-	iseof = CheckReceptacle (&hasEndBeenReached,empty,false);
+	_Variable*  iseof		   = CheckReceptacle (&hasEndBeenReached,empty,false);
 	
 	if (currentParameter==_String("stdin")) // 
 	{
@@ -4163,7 +4162,7 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 			if (iseof->Compute()->Value() > 0.)
 				scanfLastFilePath = empty;
 
-			if (!currentParameter.Equal (&scanfLastFilePath))
+			if (!currentParameter.Equal (&scanfLastFilePath) || shifter)
 			{
 				scanfLastFilePath 	  = currentParameter;
 				p = scanfLastReadPosition = 0;
@@ -4192,27 +4191,27 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 				WarnError		  (currentParameter& " could not be opened for reading by fscanf. Path stack: " & _String((_String*)pathNames.toStr()));
 				return;
 			}
+			
 			if (iseof->Compute()->Value()>0)
 				scanfLastFilePath = empty;
 
-			if (!currentParameter.Equal (&scanfLastFilePath))
+			if (!currentParameter.Equal (&scanfLastFilePath) || shifter)
 			{
 				scanfLastFilePath = currentParameter;
 				scanfLastReadPosition = 0;
 			}
 			
 			fseek (inputBuffer,0,SEEK_END);
-			p = ftell (inputBuffer);
-			p -= scanfLastReadPosition;
+			p	 = ftell (inputBuffer);
+			p   -= scanfLastReadPosition;
+			
 			if (p<=0)
 			{
-				_Constant cs (1.0);
-				iseof->SetValue (&cs);
+				iseof->SetValue (new _Constant (1.0), false);
 				return;
 			}
 			
-			data = new _String ((unsigned long)p);
-			checkPointer (data);
+			data = (_String*)checkPointer(new _String ((unsigned long)p));
 			rewind (inputBuffer);
 			fseek (inputBuffer, scanfLastReadPosition, SEEK_SET);
 			fread (data->sData, 1, p, inputBuffer);
@@ -4223,10 +4222,10 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 	if (!skipDataDelete)
 		p = 0; // will be used to keep track of the position in the string
 	q = 0;
-	r = 0;
+	r = shifter;
 	while ((r<simpleParameters.lLength)&&(p<data->sLength))
 	{
-		_String *currentParameter = ProcessCommandArgument((_String*)parameters(r+1)); // name of the receptacle
+		_String *currentParameter = ProcessCommandArgument((_String*)parameters(r+1-shifter)); // name of the receptacle
 		if (!currentParameter)
 		{
 			DeleteObject (data);
@@ -4618,7 +4617,7 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 	holder = CheckReceptacle (&AppendContainerName(*(_String*)parameters (0),chain.nameSpacePrefix), "Choice List", true);
 	holder->SetBounds (-2.0, holder->GetUpperBound());
 	
-	bool	validChoices = true;
+	bool	validChoices = simpleParameters.lData[0] == 0;
 	
 	if (simpleParameters.lData[0])
 	// some data structure present - process accordingly
@@ -8641,64 +8640,65 @@ bool	_ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&target)
 		allowedFormats&& &format;
 	}
 
-	_String				errMsg;
-	_ElementaryCommand 	fscan;
+	_ElementaryCommand 	*fscan = new _ElementaryCommand (source.startswith (blsscanf)?56:25);
 	_List				arguments, argDesc;
-	long				f,p;
+	long				f,p, shifter = 0;
 
 
-	
-	fscan.code = source.startswith (blsscanf)?56:25;
 	ExtractConditions	(source,7,arguments,',');
 	if (arguments.lLength<3)
 	{
-		errMsg = _String("Too few arguments in call to fscanf or sscanf");
-		WarnError (errMsg);
-		return 0;
+		WarnError (_String("Too few arguments in call to fscanf or sscanf"));
+		DeleteObject (fscan);
+		return false;
 	}
-	//((_String*)arguments(0))->StripQuotes();
-	fscan.parameters<<arguments(0);
+	fscan->parameters<<arguments(0);
 	
-	((_String*)arguments(1))->StripQuotes();
-	ExtractConditions	(*((_String*)arguments(1)),0,argDesc,',');
+	
+	if (((_String*)arguments(1))->Equal (&blScanfRewind))
+	{
+		fscan->simpleParameters << -1;
+		shifter = 1;
+	}
+	
+	((_String*)arguments(1+shifter))->StripQuotes();
+	ExtractConditions	(*((_String*)arguments(1+shifter)),0,argDesc,',');
+	
 	for (f = 0; f<argDesc.lLength; f++)
 	{
 		p = allowedFormats.Find(argDesc(f));
 		if (p==-1)
 		{
-			_String*s	= (_String*)allowedFormats.toStr();
-			errMsg = *((_String*)argDesc(f))&" is not a valid descriptor for fscanf. Allowed ones are:"&*s;
-			DeleteObject(s);
-			WarnError (errMsg);
+			WarnError ( *((_String*)argDesc(f))&" is not a valid type descriptor for fscanf. Allowed ones are:"& _String((_String*)allowedFormats.toStr()));
+			DeleteObject (fscan);
 			return false;
 		}
 		else
-			fscan.simpleParameters<<p;
+			fscan->simpleParameters<<p;
 	}
 	
-	if (arguments.lLength!=fscan.simpleParameters.lLength+2)
+	if (arguments.lLength!=fscan->simpleParameters.lLength+2)
 	{
-		errMsg = _String("fscanf passed ")&_String((long)(fscan.simpleParameters.lLength))&" parameter descriptors and "
-				  &_String((long)(arguments.lLength-2))& " actual arguments";
-		WarnError (errMsg);
+		WarnError (_String("fscanf passed ")&_String((long)(fscan->simpleParameters.lLength-shifter))&" parameter type descriptors and "
+				   &_String((long)(arguments.lLength-2-shifter))& " actual arguments");
+		DeleteObject (fscan);
 		return false;
 	}
 	
-	for (f = 2; f<arguments.lLength; f++)
+	for (f = 2+shifter; f<arguments.lLength; f++)
 	{
 		_String* thisArg = (_String*)arguments(f);
-		if (!thisArg->IsValidIdentifier())
-			if (!thisArg->IsValidRefIdentifier())
-			{
-				errMsg = _String("fscanf passed an invalid variable identifier: ")&*thisArg;
-				WarnError (errMsg);
-				return false;
-			}
-
-		fscan.parameters<< thisArg;
+		if (thisArg->IsValidIdentifier())
+			fscan->parameters<< thisArg;
+		else
+		{
+			WarnError (_String("fscanf passed an invalid variable identifier: ")&*thisArg);
+			DeleteObject (fscan);
+			return false;
+		}
 	}
 	
-	target&&(&fscan);
+	fscan->addAndClean(target,nil,0);
 	return true;
 }
 			

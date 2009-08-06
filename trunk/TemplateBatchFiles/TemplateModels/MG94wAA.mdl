@@ -162,7 +162,11 @@ function BuildCodonFrequencies (obsF)
 
 categoriesUsed = 0;
 
-#include "modelParameters.mdl";
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	#include "modelParameters.mdl";
+}
 
 global AC = 1;
 global AT = 1;
@@ -194,17 +198,19 @@ else
 	MGCustomRateBiasTerms = {{"AC*","","AT*","CG*","CT*","GT*"}};	
 }
 
-
-done = 0;
-while (!done)
+if (!SKIP_MODEL_PARAMETER_LIST)
 {
-	fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
-	fscanf  (stdin,"String", modelDesc);
-	if (Abs(modelDesc)==6)
-	{	
-		done = 1;
-	}
-}			
+	done = 0;
+	while (!done)
+	{
+		fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
+		fscanf  (stdin,"String", modelDesc);
+		if (Abs(modelDesc)==6)
+		{	
+			done = 1;
+		}
+	}	
+}					
 
 		
 paramCount	  = 0;
@@ -251,12 +257,10 @@ for (customLoopCounter2=2; customLoopCounter2<6; customLoopCounter2=customLoopCo
 }
 
 
-HarvestFrequencies (observedFreq,filteredData,3,1,1);
-
-
-NICETY_LEVEL = 3;
-
-MG94custom = 0;
+if (!SKIP_HARVEST_FREQ)
+{
+	HarvestFrequencies (observedFreq,filteredData,3,1,1);
+}
 
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94custom", observedFreq);
 
