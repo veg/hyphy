@@ -48,13 +48,39 @@ predef[1] = {{ 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1,
 predef[2] = {{ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 predef   = {};
 
+modelComplexityPenalty = 0;
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function StirlingNumberOf2ndKind (N,k)
+{
+	SN  :< 1e300;
+	kF	:< 1e300;
+	CF  :< 1e300;
+	
+	SN  = 0;
+	kF  = 1;
+	m1t = 1;
+	CF	= 1;
+	
+	for (i=0; i<k; i=i+1)
+	{
+		SN = SN + m1t*CF*(k-i)^N;
+		m1t = -m1t;
+		CF	= CF * (k-i)/(i+1);
+		kF = kF*(i+1);
+	}
+	
+	return SN/kF;
+}
+
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
 function returnIC (logL, df, sampleCount)
 {
 	if (whichIC)
 	{
-		return -2*logL + Log(sampleCount) * df;
+		return -2*logL + Log(sampleCount) * df + modelComplexityPenalty;
 	}
 	return -2*logL + 2*df * (sampleCount/(sampleCount-df-1));
 }
@@ -894,6 +920,8 @@ for (currentBPC = startWithRateClasses; currentBPC < maxRateClasses; currentBPC 
 	rateClassesCount 		= currentBPC;
 	fprintf (stdout, "\n\nStarting GA with ", rateClassesCount, " rate classes\n");
 	addOnLine = " with " + rateClassesCount + " rate classes.";
+	
+	modelComplexityPenalty = Log(StirlingNumberOf2ndKind (stateVectorDimension, currentBPC);
 	
 	if (currentBPC > startWithRateClasses)
 	{
