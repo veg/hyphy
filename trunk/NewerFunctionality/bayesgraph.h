@@ -91,7 +91,6 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		void			MPIReceiveScores (_Matrix *, bool, long);
 		void			ReleaseCache (void);
 		
-		
 		_Parameter		ComputeDiscreteScore (long node_id),	
 						ComputeDiscreteScore (long, _Matrix &),
 						ComputeDiscreteScore (long, _SimpleList &),
@@ -110,8 +109,8 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		
 		/* input/output */
-		bool				ExportModel (_AssociativeList *),
-							ImportModel (_AssociativeList *),
+		void				SerializeBGM (_String &);
+		bool				ImportModel (_AssociativeList *),
 		
 							ExportCache (_AssociativeList *),
 							ImportCache (_AssociativeList *);
@@ -121,15 +120,17 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		void			InitMarginalVectors (_List *);
 		void			DumpMarginalVectors (_List *);
 		
-		void			SerializeBgm (_String &, _SimpleList &);
+		void			SerializeBGMtoMPI (_String &);
 		
 		void			RandomizeGraph (_Matrix *, _SimpleList *, _Parameter, long, long, bool);
 		_SimpleList *	GetOrderFromGraph (_Matrix &);
 		bool			GraphObeysOrder (_Matrix &, _SimpleList &);
 		
+		void			UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
+		
 		_Parameter		K2Score (long, _Matrix &, _Matrix &),
 						BDeScore (long,	_Matrix &, _Matrix &),
-						BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
+						BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Matrix &, long);
 		
 		long			GetNumNodes (void)	{ return num_nodes; }
 		long			GetNumCases (void)	{ return theData->GetVDim(); }

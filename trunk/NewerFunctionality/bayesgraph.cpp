@@ -204,7 +204,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		//										"NodeType"		- 0 = discrete, 1 = continuous (Gaussian)
 		//										"NLevels"		- (discrete only)
 		//										"MaxParents"	- maximum number of parents
-		//										"PriorSize"		- hyperparameter for discrete node (BDe)
+		//										"PriorSize"		- hyperparameter for multinomial-Dirichlet
 		//														- also used for degrees of freedom hyperparameter for Gaussian node
 		//										"PriorMean"		- hyperparameter for Gaussian node
 		//										"PriorPrecision" - hyperparameter for Gaussian node
@@ -838,7 +838,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 	}
 	
 	
-	ReportWarning (_String ("Non-cached call of ComputeDiscreteScore with ") & node_id & " <- " & (_String *) parents.toStr());
+	//ReportWarning (_String ("Non-cached call of ComputeDiscreteScore with ") & node_id & " <- " & (_String *) parents.toStr());
 	
 	// impute score if missing data
 	if (has_missing.lData[node_id])
@@ -856,60 +856,69 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 		}
 	}
 	
-	
-	
-	// compute score for complete data
-	_SimpleList		multipliers ((long)1);
-	
 	_Matrix			n_ijk,
 					n_ij;		// [i] indexes child nodes, 
 								// [j] indexes combinations of values for parents of i-th node, 
 								// [k] indexes values of i-th node
 	
-	long			num_parent_combos	= 1,					// i.e. 'q'
-					r_i					= num_levels.lData[node_id];
-	
-	
-	
-	
-	// how many combinations of parental states are there?
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		num_parent_combos *= num_levels.lData[parents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	
-	
-	
-	// count observations by parent combination, using direct indexing
-	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
-	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
-	
-	
-	for (long obs = 0; obs < theData->GetHDim(); obs++)
-	{
-		long	index			= 0,
-				child_state		= (*theData)(obs, node_id);
-		
-		for (long par = 0; par < parents.lLength; par++)
-		{
-			long	this_parent			= parents.lData[par],
-					this_parent_state	= (*theData)(obs, this_parent);
-			
-			index += this_parent_state * multipliers.lData[par];
-		}
-		
-		n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
-		n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
-	}
-	
-	
+	UpdateDirichletHyperparameters (node_id, parents, &n_ij, &n_ijk);
 	
 	return ( (prior_sample_size (node_id, 0) == 0) ? 
 				K2Score (node_id, n_ij, n_ijk) : 
 				BDeScore (node_id, n_ij, n_ijk) );
 }
 
+
+//_______________________________________________________________
+void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _SimpleList &dparents, _Matrix * n_ij, _Matrix * n_ijk)
+{
+	if (data_type.lData[dnode] > 0)
+		ReportWarning ("ERROR: UpdateDirichletHyperparameters() called on non-discrete node!  That sucks!");
+	
+	
+	_SimpleList		multipliers ((long)1);
+	long			num_parent_combos	= 1;
+	
+	for (long par = 0; par < dparents.lLength; par++)
+	{
+		num_parent_combos *= num_levels.lData[dparents.lData[par]];
+		multipliers << num_parent_combos;
+	}
+	
+	CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
+	CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
+	
+	
+	// initialize matrices with prior hyperparameters (a_ijk) -- if using K2, entries will remain zero
+	for (long j = 0; j < num_parent_combos; j++)
+	{
+		n_ij->Store (j, 0, prior_sample_size(dnode,0) / num_parent_combos);
+		
+		for (long k = 0; k < num_levels.lData[dnode]; k++)
+		{
+			n_ijk->Store (j, k, (*n_ij)(j,0) / num_levels.lData[dnode]);
+		}
+	}
+	
+	
+	// update hyperparameters with data
+	for (long obs = 0; obs < theData->GetHDim(); obs++)
+	{
+		long	index			= 0,
+				child_state		= (*theData)(obs, dnode);
+		
+		for (long par = 0; par < dparents.lLength; par++)
+		{
+			long	this_parent			= dparents.lData[par],
+					this_parent_state	= (*theData)(obs, this_parent);
+			
+			index += this_parent_state * multipliers.lData[par];
+		}
+		
+		n_ijk->Store ((long) index, child_state, (*n_ijk)(index, child_state) + 1);
+		n_ij->Store ((long) index, 0, (*n_ij)(index, 0) + 1);
+	}
+}
 
 
 
@@ -938,17 +947,18 @@ _Parameter _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matr
 //___________________________________________________________________________________________
 _Parameter _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
 {
+	// note that n_ij and n_ijk already contain prior counts, updated by data
 	_Parameter	n_prior_ij		= prior_sample_size (node_id, 0) / n_ij.GetHDim(),
 				n_prior_ijk		= n_prior_ij / num_levels.lData[node_id],
 				log_score		= 0.;
 	
 	for (long j = 0; j < n_ij.GetHDim(); j++)
 	{
-		log_score += lnGamma(n_prior_ij) - lnGamma(n_prior_ij + n_ij(j,0));
+		log_score += lnGamma(n_prior_ij) - lnGamma(n_ij(j,0));
 		
 		for (long k = 0; k < num_levels.lData[node_id]; k++)
 		{
-			log_score += lnGamma(n_prior_ijk + n_ijk(j,k)) - lnGamma(n_prior_ijk);
+			log_score += lnGamma(n_ijk(j,k)) - lnGamma(n_prior_ijk);
 		}
 	}
 	
@@ -1052,7 +1062,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		
 		_List	*	this_list;
 		
-		SerializeBgm (bgmStr);
+		SerializeBGMtoMPI (bgmStr);
 		
 		_Matrix		* mpi_node_status = new _Matrix ((long)size, 2, false, true);
 		long		senderID;
@@ -1535,7 +1545,7 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 }
 
 
-void _BayesianGraphicalModel::SerializeBgm (_String & rec)
+void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 {
 	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 	_String		dataStr,

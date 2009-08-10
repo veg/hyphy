@@ -41,14 +41,368 @@ extern _Parameter	lnGamma (_Parameter),
 
 
 //___________________________________________________________________________________________
-bool _BayesianGraphicalModel::ExportModel (_AssociativeList * model_export)
+void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 {
 	/* --------------------------------------------------------------------
 		ExportModel()
-			Export the network structure and parameters.
+			Export the network structure and parameters as an associative 
+			array.
 	   -------------------------------------------------------------------- */
-	return 0;
+	
+	ReportWarning (_String("Entered _BayesianGraphicalModel::ExportModel()"));
+	
+	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
+	_String		nodeKey;
+	
+	rec << *bgmName;
+	rec << "={};\n";
+	
+	for (long node = 0; node < num_nodes; node++)
+	{
+		nodeKey = *bgmName & "[\"Node" & node & "\"]";
+		
+		rec << nodeKey;
+		rec << " = {};\n";
+		
+		// record node type
+		rec << '(';
+		rec << nodeKey;
+		rec << ")[\"NodeType\"] = ";
+		rec << _String(data_type.lData[node]);
+		rec << ";\n";
+		
+		// record parents as _Matrix object
+		_SimpleList	parents,
+					d_parents, c_parents;
+		
+		for (long pnode = 0; pnode < num_nodes; pnode++)
+		{
+			if (pnode == node)
+				continue;
+			if (theStructure(pnode,node) == 1)
+			{
+				parents << pnode;
+				
+				if (data_type.lData[pnode] == 0)
+					d_parents << pnode;
+				else
+					c_parents << pnode;
+			}
+		}
+		
+		rec << '(';
+		rec << nodeKey;
+		rec << ")[\"Parents\"] = {";
+		rec << _String((_String *)parents.toStr());
+		rec << "};\n";
+		
+		// record network parameters as conditional probability density functions
+		rec << '(';
+		rec << nodeKey;
+		rec << ")[\"CPDFs\"] = {{";
+		
+		
+		// posterior probability density functions (PDFs) conditional on child node state (indexed by i)
+		if (data_type.lData[node] == 0)	
+		{
+			// discrete child node, compute Dirichlet hyperparameters
+			_Matrix		n_ij, n_ijk;
+			
+			
+			// tally cases by discrete parent combination and child state
+			UpdateDirichletHyperparameters (node, d_parents, &n_ij, &n_ijk);
+			
+			
+			// report posterior Dirichlet PDFs
+			for (long j = 0; j < n_ij.GetHDim(); j++)
+			{
+				rec << "\"Random({{";
+				for (long k = 0; k < num_levels.lData[node]; k++)	// k indexes child node states
+				{
+					rec << _String(n_ijk(j,k));
+					if (k < num_levels.lData[node]-1)
+						rec << ',';
+				}
+				rec << "}},{\"PDF\":\"Dirichlet\"})\"";
+				if (j < n_ij.GetHDim()-1)
+					rec << ',';
+			}
+		}
+		
+		else if (data_type.lData[node] == 1)	// CG child node
+		{
+			long	k = c_parents.lLength;		// a useful short-hand
+			
+			if (d_parents.lLength > 0)	// a mixed case
+			{				
+				// index cases by discrete parent configurations
+				long			num_parent_combos = 1;
+				_SimpleList		multipliers ((long)1);
+				
+				for (long par = 0; par < d_parents.lLength; par++)
+				{
+					num_parent_combos *= num_levels.lData[d_parents.lData[par]];
+					multipliers << num_parent_combos;
+				}
+				
+				_SimpleList		n_ij, pa_indexing;
+				
+				n_ij.Populate (num_parent_combos, 0, 0);
+				pa_indexing.Populate (theData->GetHDim(), 0, 0);
+				
+				for (long obs = 0; obs < theData->GetHDim(); obs++)
+				{
+					long	index		= 0,
+							multiplier	= 1;
+					
+					for (long par = 0; par < d_parents.lLength; par++)
+					{
+						long	this_parent		= parents.lData[par];
+						
+						index += (*theData)(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
+						multiplier *= num_levels.lData[this_parent];
+					}
+					
+					pa_indexing.lData[obs] = index;
+					n_ij.lData[index] += 1;
+				}
+				
+				
+				// set CG hyperparameter priors (independent of discrete parent config)
+				_Matrix		tau_prior (k+1, k+1, false, true);
+				_Matrix		phi_prior (k+1, k+1, false, true);
+				
+				for (long row = 0; row < k+1; row++)
+				{
+					for (long col = 0; col < k+1; col++)
+					{
+						if (row == col)		// set diagonal entries
+						{
+							if (row == 0)
+							{
+								tau_prior.Store (0, 0, prior_precision (node, 0));
+								phi_prior.Store (0, 0, prior_scale (node, 0));
+							}
+							else
+							{
+								tau_prior.Store (row, col, prior_precision (c_parents.lData[row],0));
+								phi_prior.Store (row, col, prior_scale (c_parents.lData[row],0));
+							}
+						}
+						else 
+							tau_prior.Store (row, col, 0.);	// zero off-diagonal entries
+					}
+				}
+				
+				
+				_Matrix		mu_prior (k+1, 1, false, true);
+				
+				mu_prior.Store (0, 0, prior_mean (node, 0));				// prior intercept
+				for (long i = 1; i < k+1; i++)
+					mu_prior.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
+				
+				
+				_Parameter	rho_prior	= prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0;
+				
+				
+				// for every discrete parent config (on which CG marginal distribution is conditioned)
+				for (long pa = 0; pa < num_parent_combos; pa++)
+				{
+					// compute summary statistics
+					_Matrix		zbpa (n_ij.lData[pa], k+1, false, true),
+								yb (n_ij.lData[pa], 1, false, true);
+					
+					for (long count_n = 0, obs = 0; obs < theData->GetHDim(); obs++)
+					{
+						if (pa_indexing.lData[obs] == pa)
+						{
+							zbpa.Store (count_n, 0, 1);
+							for (long cpar = 0; cpar < k; cpar++)
+								zbpa.Store (count_n, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+							
+							yb.Store (count_n, 0, (*theData)(obs, node));
+							
+							count_n++;
+						}
+					}
+					
+					
+					// update CG hyperparameters with summary statistics (y_b, Z_bpa, n_ij)
+					_Matrix		t_zbpa = zbpa;
+					t_zbpa.Transpose();
+					t_zbpa *= zbpa;		// Z^T x Z
+					
+					_Matrix		tau (tau_prior);	// duplicator
+					tau += t_zbpa;
+					
+					_Matrix		temp (tau);
+					temp *= mu_prior;
+					_Matrix		mu (temp);
+					temp = t_zbpa;
+					temp *= yb;
+					mu += temp;
+					
+					_Matrix		* tauinv = (_Matrix *) tau.Inverse();
+					temp = *tauinv;
+					temp *= mu;
+					mu = temp;
+					
+					_Parameter	rho = rho_prior + n_ij.lData[pa];
+					
+					_Matrix		phi = phi_prior;
+					
+					temp = zbpa;
+					temp *= mu;
+					temp *= -1;
+					temp += yb;
+					temp.Transpose();
+					temp *= yb;
+					phi += temp;
+					
+					temp = mu_prior;
+					temp -= mu;
+					temp.Transpose();
+					temp *= tau_prior;
+					temp *= mu_prior;
+					
+					phi += temp;
+					
+					
+					// report CG posterior distributions to output string
+					rec << "\"Random(";
+					rec << _String((_String *)mu.toStr());
+					rec << ",{\"PDF\":\"Gaussian\",\"ARG0\":\"Random(\"";
+					rec << _String((_String *)phi.toStr());
+					rec << "\",{\"PDF\":\"InverseWishart\",\"ARG0\":\"";
+					rec << _String(rho);
+					rec << "\"})*";
+					rec << _String((_String*)tau.Inverse()->toStr());
+					rec << "\"})";
+					
+					if (pa < num_parent_combos-1)
+						rec << ',';
+				}
+			}
+			
+			// if there are no discrete parents we have a straight-forward Bayesian regression
+			else
+			{
+				// set CG hyperparameter priors
+				_Matrix		tau_prior (k+1, k+1, false, true),
+							phi_prior (k+1, k+1, false, true);
+				
+				for (long row = 0; row < k+1; row++)
+				{
+					for (long col = 0; col < k+1; col++)
+					{
+						if (row == col)		// set diagonal entries
+						{
+							if (row == 0)
+							{
+								tau_prior.Store (0, 0, prior_precision (node, 0));
+								phi_prior.Store (0, 0, prior_scale (node, 0));
+							}
+							else
+							{
+								tau_prior.Store (row, col, prior_precision (c_parents.lData[row-1],0));
+								phi_prior.Store (row, col, prior_scale (c_parents.lData[row-1],0));
+							}
+						}
+						else
+						{
+							tau_prior.Store (row, col, 0.);	// zero off-diagonal entries
+							phi_prior.Store (row, col, 0.);
+						}
+					}
+				}
+				
+				
+				_Matrix		mu_prior (k+1, 1, false, true);
+				
+				mu_prior.Store (0, 0, prior_mean (node, 0));				// prior intercept
+				for (long i = 1; i < mu_prior.GetHDim(); i++)
+					mu_prior.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
+				
+				
+				_Parameter	rho_prior		= prior_sample_size (node, 0) > 0 ? prior_sample_size (node, 0) : 1.0;
+				
+				
+				_Matrix		zbpa (theData->GetHDim(), k+1, false, true),
+							yb (theData->GetHDim(), 1, false, true);
+				
+				for (long obs = 0; obs < theData->GetHDim(); obs++)
+				{
+					zbpa.Store (obs, 0, 1);
+					for (long cpar = 0; cpar < k; cpar++)
+						zbpa.Store (obs, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+					
+					yb.Store (obs, 0, (*theData)(obs, node));
+				}
+				
+				_Matrix		t_zbpa = zbpa;
+				t_zbpa.Transpose();
+				t_zbpa *= zbpa;		// Z^T x Z
+				
+				_Matrix		tau (tau_prior);	// duplicator
+				tau += t_zbpa;
+				
+				_Matrix		temp (tau);
+				temp *= mu_prior;
+				_Matrix		mu (temp);
+				temp = t_zbpa;
+				temp *= yb;
+				mu += temp;
+				
+				_Matrix		* tauinv = (_Matrix *) tau.Inverse();
+				temp = *tauinv;
+				temp *= mu;
+				mu = temp;
+				
+				_Parameter	rho = rho_prior + theData->GetHDim();
+				
+				_Matrix		phi = phi_prior;
+				
+				temp = zbpa;
+				temp *= mu;
+				temp *= -1;
+				temp += yb;
+				temp.Transpose();
+				temp *= yb;
+				phi += temp;
+				
+				temp = mu_prior;
+				temp -= mu;
+				temp.Transpose();
+				temp *= tau_prior;
+				temp *= mu_prior;
+				
+				phi += temp;
+				
+				
+				// report CG posterior distributions to output string
+				rec << "\"Random(";
+				rec << _String((_String *)mu.toStr());
+				rec << ",{\"PDF\":\"Gaussian\",\"ARG0\":\"Random(\"";
+				rec << _String((_String *)phi.toStr());
+				rec << "\",{\"PDF\":\"InverseWishart\",\"ARG0\":\"";
+				rec << _String(rho);
+				rec << "\"})*";
+				rec << _String((_String*)tau.Inverse()->toStr());
+				rec << "\"})";
+			}
+		}
+		else
+		{
+			
+		}
+		
+		rec << "}};\n";	// end matrix entry of conditional PDFs.
+		
+		
+	}
 }
+
+
 
 
 //___________________________________________________________________________________________
@@ -81,7 +435,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
 			
 			for (long npar = 0; npar <= max_parents.lData[node]; npar++)
 			{
-				keyString = _String ("N") & node & "P" & npar;
+				keyString = _String ("Node") & node & "NumParents" & npar;
 				_FString	aKey (keyString, false);
 				
 				ReportWarning (_String("Inserting with key ") & keyString);
@@ -157,298 +511,183 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 {
 	/* ---------------------------------------------------------------------------
 		ComputeContinuousScore()
-	 
-			Compute the conditional Gaussian network score of node [c] according to 
-			S. Bottcher's formulation.
-			
-			Let [y] denote the set of other continuous nodes.
-			Let [i] denote the set of discrete nodes.
-			Let [pa] define a subset of continuous or discrete nodes on [c]
-			
-			Assume local probability distribution is Gaussian local regression on 
-			continuous parents, with parameters conditional on discrete parent 
-			configuration [pa_i].  This has parameters:
-			
-				beta (c | pa_i(c)) = vector of regression coefficients over pa_y (continuous parents)
-				m (c | pa_i(c)) = regression intercept
-				sigma^2 (c | pa_i(c)) = variance conditional on discrete parent configuration
-		 
-			Hence, for a case {y_1, y_2, ..., y_c-1, y_c+1, ..., y_m, i_1, i_2, ..., i_n},
-				(y_c | pa_i(c) ~ Gaussian(m + beta_1 y_1 + ... + beta_m y_m, sigma^2)
-			
-			We need conjugate priors for these parameters, which are given by:
-				(m, beta | sigma^2) ~ Gaussian (mu, sigma^2 tau^-1)
-				(sigma^2) ~ Inverse-Gamma ( rho_{y|pa_i(y)} / 2, phi_{y|pa_i(y)} / 2)
-			
-			In other words, the intercept and regression coefficients of continuous 
-			node (c) on continuous parents pa_y(c) given discrete parent configuration pa_i(y) 
-		 
-			We integrate over these priors given the hyperparameters:
-				mu		- prior mean vector (intercept, regression coefficients...)
-				tau		- prior precision
-				rho		- degrees of freedom for inverse gamma conjugate prior
-				phi		- scale parameter for inverse gamma conjugate prior
-		 
-			Typically, [rho] and [phi] are given small values (0.001) that are meant 
-			to render an uninformative prior (flatter).  However, Gelman asserts that 
-			this practice is not optimal.
-		 
-			[tau] is a precision matrix whose off-diagonal entries are usually zeroed 
-			out.  Hence, the values set by an AVL upon constructing the BGM fill the 
-			diagonal.  (I should probably implement some access functions so that
-			these can be changed.)
+			Returns the network score based on Bottcher's formulation.
+			Note, does not update posterior distributions of hyperparameters,
+			this requires a separate albeit highly similar function.
 	   ----------------------------------------------------------------------------- */
 	
-	ReportWarning (_String ("Called ComputeContinuousScore with ") & node_id & " <- " & (_String *) parents.toStr());
+	// ReportWarning (_String ("Called ComputeContinuousScore with ") & node_id & " <- " & (_String *) parents.toStr());
 	
-#ifdef _DEBUG_CCS_
-	char debug [255];
-	sprintf (debug, "\nComputeContinuousScore (%d,[", node_id);
-	BufferToConsole (debug);
 	
-	for (long i = 0; i < parents.lLength; i++)
-	{
-		sprintf (debug, "%d,", parents.lData[i]);
-		BufferToConsole (debug);
-	}
-	sprintf (debug, "])\n");
-	BufferToConsole (debug);
-	
-	sprintf (debug, "prior precision: ");
-	BufferToConsole (debug);
-	for (long i = 0; i < num_nodes; i++)
-	{
-		sprintf (debug, "%1.3f ", prior_precision (i,0));
-		BufferToConsole (debug);
-	}
-	NLToConsole ();
-#endif
-	
-	/* WARNING, untested function! */
-	/* --------------------------- */
-	
-	// mm = prior estimate of unconditional mean at continuous node (i.e. intercept)
-	// phi = scale parameter of inverse gamma prior for variance, uninformative at low values 
-	//						(Kohn, Smith, and Chan, 2001 Stat Comput 11: 313-322)
-	
+	long			k;
 	_Parameter		log_score = 0.;
-	
-	long			num_parent_combos = 1,	// i.e. 'q'
-					k;						// current number of continuous parents
-				
-	_Matrix			mu,
-					tau;
-	
-	_SimpleList		multipliers ((long)1),
-					c_parents,
-					d_parents;
+	_SimpleList		c_parents, d_parents;
 	
 	
 	// partition parent list into discrete and continuous
 	for (long p = 0; p < parents.lLength; p++)
 	{
 		if (data_type.lData[parents.lData[p]] == 0)	// discrete
-		{
 			d_parents << parents.lData[p];
-		}
 		else
-		{
 			c_parents << parents.lData[p];
-		}
 	}
-	
 	k = c_parents.lLength;
 	
 	
-	// how many combinations of parental states are there?
-	for (long par = 0; par < d_parents.lLength; par++)
+	// if there are discrete parents then integrate over marginal posteriors conditioned on discrete parent states
+	if (d_parents.lLength > 0)
 	{
-		num_parent_combos *= num_levels.lData[d_parents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	
-	
-	// set location hyperparameter for Gaussian prior
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tlocation hyperparameter (mu): ");
-	BufferToConsole (debug);
-#endif
-	CreateMatrix (&mu, k+1, 1, false, true, false);
-	mu.Store (0, 0, prior_mean (node_id, 0));				// prior intercept
-	for (long i = 1; i < mu.GetHDim(); i++)
-	{
-		mu.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
-	}
-#ifdef _DEBUG_CCS_
-	for (long i = 0; i < mu.GetHDim(); i++)
-	{
-		sprintf (debug, "%1.3f ", mu(i,0));
-		BufferToConsole (debug);
-	}
-	NLToConsole ();
-#endif
-	
-	// set prior degrees of freedom (for inverse gamma / scaled inverse chi-square)
-	//	and scale of variance prior
-	_Parameter		rho	= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
-	_Parameter		phi = prior_scale (node_id, 0);
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\trho = %1.3f\n", rho);
-	BufferToConsole (debug);
-#endif
-	
-	// set precision hyperparameter for Gaussian prior
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\ttau (precision):\n\t\t");
-	BufferToConsole (debug);
-#endif
-	CreateMatrix (&tau, k+1, k+1, false, true, false);		// for continuous nodes only, including child
-	for (long row = 0; row < k+1; row++)
-	{
-		for (long col = 0; col < k+1; col++)
-		{
-			if (row == col)		// set diagonal entries
-			{
-				if (row == 0)
-				{
-					tau.Store (0, 0, prior_precision (node_id, 0));
-				}
-				else
-				{
-					tau.Store (row, col, prior_precision (c_parents.lData[row],0));
-				}
-			}
-			
-			else tau.Store (row, col, 0.);	// zero off-diagonal entries
-#ifdef _DEBUG_CCS_		
-			sprintf (debug, "%1.3f ", tau(row,col));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole (debug);
-	}
-	NLToConsole ();
-#else
-		}
-	}
-#endif
-	
-
-
-	// count up number of data points per parent combination
-	_SimpleList		n_ij,				// CAVEAT: other functions use _Matrix for this object
-					pa_indexing;		// track discrete parent combinations per observation
-	
-	n_ij.Populate (num_parent_combos, 0, 0);
-	pa_indexing.Populate (theData->GetHDim(), 0, 0);
-	/*
-	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);		// why use matrices?  _SimpleList would be fine.. -afyp
-	CreateMatrix (&pa_indexing, theData->GetHDim(), 1, false, true, false);
-	*/
-
-	for (long obs = 0; obs < theData->GetHDim(); obs++)
-	{
-		long	index		= 0,
-				multiplier	= 1;
+		long			num_parent_combos = 1;
+		_SimpleList		multipliers ((long)1);
 		
+		
+		// how many combinations of parental states are there?
 		for (long par = 0; par < d_parents.lLength; par++)
 		{
-			long	this_parent		= parents.lData[par];
-			// max index = sum (parent * levels(parent))
-			index += (*theData)(obs, this_parent) * multiplier;
-			multiplier *= num_levels.lData[this_parent];
+			num_parent_combos *= num_levels.lData[d_parents.lData[par]];
+			multipliers << num_parent_combos;
 		}
 		
-		pa_indexing.lData[obs] = index;
-		n_ij.lData[index] += 1;
-	}
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tn_ij: ");
-	BufferToConsole (debug);
-	for (long i = 0; i < n_ij.lLength; i++)
-	{
-		sprintf (debug, "%d ", n_ij.lData[i]);
-		BufferToConsole (debug);
-	}
-	NLToConsole ();
-	
-	sprintf (debug, "\tpa_indexing: ");
-	BufferToConsole (debug);
-	for (long i = 0; i < pa_indexing.lLength; i++)
-	{
-		sprintf (debug, "%d ", pa_indexing.lData[i]);
-		BufferToConsole (debug);
-	}
-	NLToConsole ();
-#endif
-	
-	// for every parent combination, calculate contribution to score
-	for (long count_n, pa = 0; pa < num_parent_combos; pa++)
-	{
-#ifdef _DEBUG_CCS_
-		sprintf (debug, "parent combo %d of %d\n", pa, num_parent_combos);
-		BufferToConsole (debug);
-#endif
-		
-		_Matrix		zbpa (n_ij.lData[pa], k+1, false, true),
-					yb (n_ij.lData[pa], 1, false, true);
-		
-		count_n		= 0;	
-		// number of data points with this parent combination.
 		
 		
-		// populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
+		// count up number of data points per discrete parent combination
+		_SimpleList		n_ij,				// CAVEAT: other functions use _Matrix for this object
+						pa_indexing;		// track discrete parent combinations per observation
+		
+		n_ij.Populate (num_parent_combos, 0, 0);
+		pa_indexing.Populate (theData->GetHDim(), 0, 0);
+		
 		for (long obs = 0; obs < theData->GetHDim(); obs++)
 		{
-			if (pa_indexing.lData[obs] == pa)		// this observation has the current parent combo
-			{									// load observed states at continuous parents into matrix
-				//   I'm sure there's a faster way to do this! - afyp
-				
-				zbpa.Store (count_n, 0, 1);		// intercept
-				
-				for (long parent = 0; parent < k; parent++)
-				{
-					zbpa.Store (count_n, parent+1, (*theData)(obs, c_parents.lData[parent]));
-				}
-				
-				// state vector for this continuous node
-				yb.Store (count_n, 0, (*theData)(obs, node_id));
-				
-				count_n++;
-			}
-		}
-		
-#ifdef _DEBUG_CCS_	
-		sprintf (debug, "\tzbpa:\n\t\t");
-		BufferToConsole (debug);
-		for (long i = 0; i < zbpa.GetHDim(); i++)
-		{
-			for (long j = 0; j < zbpa.GetVDim(); j++)
-			{
-				sprintf (debug, "%1.3f ", zbpa(i,j));
-				BufferToConsole (debug);
-			}
-			sprintf (debug, "\n\t\t");
-			BufferToConsole(debug);
-		}
-		NLToConsole();
-		
-		sprintf (debug, "\tyb: ");
-		BufferToConsole (debug);
-		for (long i = 0; i < yb.GetHDim(); i++)
-		{
-			sprintf (debug, "%1.3f ", yb(i,0));
-			BufferToConsole (debug);
-		}
-		NLToConsole();
-#endif
-		
+			long	index		= 0,
+					multiplier	= 1;
 			
-		log_score += BottcherScore (yb, zbpa, mu, tau, rho, phi, n_ij.lData[pa]);
-
+			for (long par = 0; par < d_parents.lLength; par++)
+			{
+				long	this_parent		= parents.lData[par];
+				
+				index += (*theData)(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
+				multiplier *= num_levels.lData[this_parent];
+			}
+			
+			pa_indexing.lData[obs] = index;
+			n_ij.lData[index] += 1;
+		}
+		
+		
+		// set hyperparameter priors -- they will not be modified on pass to BottcherScore() so keep outside loop
+		_Matrix		tau (k+1, k+1, false, true), 
+					mu (k+1, 1, false, true),
+					phi (k+1, k+1, false, true);
+		
+		_Parameter	rho		= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
+		
+		for (long row = 0; row < k+1; row++)
+		{
+			for (long col = 0; col < k+1; col++)
+			{
+				if (row == col)		// set diagonal entries
+				{
+					if (row == 0)
+					{
+						tau.Store (0, 0, prior_precision (node_id, 0));
+						phi.Store (0, 0, prior_scale (node_id,0));
+					}
+					else
+					{
+						tau.Store (row, col, prior_precision (c_parents.lData[row-1],0));
+						phi.Store (row, col, prior_scale (c_parents.lData[row-1],0));
+					}
+				}
+				else 
+					tau.Store (row, col, 0.);	// zero off-diagonal entries
+			}
+		}
+		
+		mu.Store (0, 0, prior_mean (node_id, 0));				// prior intercept
+		for (long i = 1; i < mu.GetHDim(); i++)
+			mu.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
+		
+		
+		// for every discrete parent combination (on which Gaussian node state is conditioned)
+		for (long pa = 0; pa < num_parent_combos; pa++)
+		{
+			// collect cases into a batch defined by discrete parent states
+			_Matrix		zbpa (n_ij.lData[pa], k+1, false, true),
+						yb (n_ij.lData[pa], 1, false, true);
+			
+			for (long count_n = 0, obs = 0; obs < theData->GetHDim(); obs++)
+			{
+				if (pa_indexing.lData[obs] == pa)
+				{
+					// populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
+					zbpa.Store (count_n, 0, 1);
+					for (long cpar = 0; cpar < k; cpar++)
+						zbpa.Store (count_n, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+					
+					yb.Store (count_n, 0, (*theData)(obs, node_id));
+					
+					count_n++;
+				}
+			}
+			
+			log_score += BottcherScore (yb, zbpa, tau, mu, rho, phi, n_ij.lData[pa]);
+		}
 	}
+	
+	// if there are no discrete parents we have a straight-forward Bayesian regression
+	else
+	{
+		// set CG hyperparameter priors
+		_Matrix		tau (k+1, k+1, false, true), 
+					mu (k+1, 1, false, true),
+					phi (k+1, k+1, false, true);
+		
+		_Parameter	rho		= prior_sample_size (node_id, 0) > 0 ? prior_sample_size (node_id, 0) : 1.0;
+		
+		for (long row = 0; row < k+1; row++)
+		{
+			for (long col = 0; col < k+1; col++)
+			{
+				if (row == col)		// set diagonal entries
+				{
+					if (row == 0)
+					{
+						tau.Store (0, 0, prior_precision (node_id, 0));
+						phi.Store (0, 0, prior_scale (node_id,0));
+					}
+					else
+					{
+						tau.Store (row, col, prior_precision (c_parents.lData[row-1],0));
+						phi.Store (row, col, prior_scale (c_parents.lData[row-1],0));
+					}
+				}
+				else 
+					tau.Store (row, col, 0.);	// zero off-diagonal entries
+			}
+		}
+		
+		mu.Store (0, 0, prior_mean (node_id, 0));				// prior intercept
+		for (long i = 1; i < mu.GetHDim(); i++)
+			mu.Store (i, 0, 0);		// set prior expectation of regression coefficients to zero
+		
+		
+		_Matrix		zbpa (theData->GetHDim(), k+1, false, true),
+					yb (theData->GetHDim(), 1, false, true);
+		
+		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		{
+			zbpa.Store (obs, 0, 1);
+			for (long cpar = 0; cpar < k; cpar++)
+				zbpa.Store (obs, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+			
+			yb.Store (obs, 0, (*theData)(obs, node_id));
+		}
+		
+		log_score = BottcherScore (yb, zbpa, tau, mu, rho, phi, theData->GetHDim());
+	}
+	
 	
 	return log_score;
 }
@@ -457,11 +696,45 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 
 //___________________________________________________________________________________________________
 
-_Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & mu, _Matrix & tau, _Parameter rho, _Parameter phi, long batch_size)
+_Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa, _Matrix & tau, _Matrix & mu, _Parameter rho, _Matrix & phi, long batch_size)
 {
+	/* -------------------------------------------------------------------------------
+	 Compute the conditional Gaussian network score of node [c] according to 
+	 S. Bottcher's formulation.
+	 
+	 Let [y] denote the set of other continuous nodes.
+	 Let [i] denote the set of discrete nodes.
+	 Let [pa] define a subset of continuous or discrete nodes on [c]
+	 
+	 Assume local probability distribution is Gaussian local regression on 
+	 continuous parents, with parameters conditional on discrete parent 
+	 configuration [pa_i].  This has parameters:
+	 
+	 beta (c | pa_i(c)) = vector of regression coefficients over pa_y (continuous parents)
+	 m (c | pa_i(c)) = regression intercept
+	 sigma^2 (c | pa_i(c)) = variance conditional on discrete parent configuration
+	 
+	 Hence, for a case {y_1, y_2, ..., y_c-1, y_c+1, ..., y_m, i_1, i_2, ..., i_n},
+	 (y_c | pa_i(c) ~ Gaussian(m + beta_1 y_1 + ... + beta_m y_m, sigma^2)
+	 
+	 but conditional variance (sigma^2) is unknown.
+	 
+	 Posterior distributions are:
+		(m, beta | sigma^2) ~ Gaussian (mu, sigma^2 tau^-1)
+		(sigma^2) ~ Inverse-Wishart ( rho_{y|pa_i(y)} / 2, phi_{y|pa_i(y)} / 2)
+	 
+	 given the hyperparameters:
+	 mu		- mean vector (intercept, regression coefficients...)
+	 tau	- precision
+	 rho	- degrees of freedom for inverse Wishart conjugate prior
+	 phi	- scale matrix for inverse Wishart conjugate prior
+	--------------------------------------------------------------------------------- */
+	
+	
+	
 	// calculate scale parameter for non-central t distribution
 	// from S. Bottcher (2001) p.25
-	_Parameter	pa_log_score = 0.;
+	
 	_Matrix		scale;
 	
 	scale = zbpa;
@@ -469,34 +742,17 @@ _Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa,
 	zbpa.Transpose();	// k+1 x n_ij
 	scale *= zbpa;		// n_ij x n_ij
 	zbpa.Transpose();
+	
 	for (long row = 0; row < scale.GetHDim(); row++)	// add identity matrix
-	{
 		scale.Store (row, row, scale(row, row)+(_Parameter)1.);
-	}
-	scale *= (_Parameter) (phi / rho);
 	
-	
-#ifdef _DEBUG_CCS_
-	char debug [255];
-	
-	sprintf (debug, "\tscale:\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < scale.GetHDim(); i++)
-	{
-		for (long j = 0; j < scale.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", scale(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
+	_Matrix		temp_mat (phi);
+	temp_mat *= (_Parameter )1./rho;
+	temp_mat *= scale;
+	scale = temp_mat;
 	
 	
 	// calculate the determinant of scale parameter matrix
-	_Matrix			temp_mat (scale);
 	_Parameter		pi_const = 3.141592653589793;
 	
 	temp_mat *= (_Parameter) (pi_const * rho);
@@ -505,148 +761,35 @@ _Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa,
 	_Matrix *			eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
 	_Parameter			det			= 1.;
 	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\teigenvalues: ");
-	BufferToConsole (debug);
-	for (long i = 0; i < eigenvalues->GetHDim(); i++)
-	{
-		sprintf (debug, "%1.3f ", (*eigenvalues)(i,0));
-		BufferToConsole (debug);
-	}
-	NLToConsole();
-#endif
 	
 	// determinant is product of eigenvalues (should be > 0 for positive definite matrices)
 	for (long i = 0; i < eigenvalues->GetHDim(); i++)
-	{
 		det *= (_Parameter)(*eigenvalues) (i,0);
-	}
-	
-	
 	
 	
 	// calculate first term of score
+	_Parameter	pa_log_score = 0.;
 	
 	pa_log_score += lnGamma((rho + batch_size)/2.);
 	pa_log_score -= lnGamma(rho/2.) + 0.5 * log(det);
 	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tdet: %1.3f\n", det);
-	BufferToConsole (debug);
-	sprintf (debug, "pa_log_score: %1.3f -> ", pa_log_score);
-	BufferToConsole (debug);
-	sprintf (debug, "%1.3f %1.3f %1.3f ", pa_log_score, lnGamma(rho/2.), log(det));
-	BufferToConsole (debug);
-	sprintf (debug, "%1.3f\n", pa_log_score);
-	BufferToConsole (debug);
-#endif
 	
 	// calculate second term of score
 	_Matrix		next_mat;
 	
 	zbpa *= mu;		// n_ij x (k+1)  *  (k+1) x 1  --> n_ij x 1
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tzbpa*mu:\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < zbpa.GetHDim(); i++)
-	{
-		for (long j = 0; j < zbpa.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", zbpa(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
-	
 	yb -= zbpa;		// n_ij x 1
 	next_mat = yb;
-	
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\t(yb-zbpa):\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < next_mat.GetHDim(); i++)
-	{
-		for (long j = 0; j < next_mat.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", next_mat(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
-	
-	
 	temp_mat = * (_Matrix *) scale.Inverse();
 	temp_mat *= next_mat;						// left multiply by (yb-zbpa)
 	next_mat = temp_mat;
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tnext_mat = scale^(-1) (yb-zbpa)^T :\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < next_mat.GetHDim(); i++)
-	{
-		for (long j = 0; j < next_mat.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", next_mat(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
-	
 	yb.Transpose();
 	yb *= next_mat;
 	next_mat = yb;
-	
-#ifdef _DEBUG_CCS_	
-	sprintf (debug, "\tnext_mat = (yb-zbpa) scale^(-1) (yb_zbpa)^T:\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < next_mat.GetHDim(); i++)
-	{
-		for (long j = 0; j < next_mat.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", next_mat(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
-	
 	next_mat *= (_Parameter) (1./rho);	// should be a 1-element matrix
-	
-#ifdef _DEBUG_CCS_
-	sprintf (debug, "\tnext_mat = (yb-zbpa) scale^(-1) (yb_zbpa)^T  / rho:\n\t\t");
-	BufferToConsole (debug);
-	for (long i = 0; i < next_mat.GetHDim(); i++)
-	{
-		for (long j = 0; j < next_mat.GetVDim(); j++)
-		{
-			sprintf (debug, "%1.3f ", next_mat(i,j));
-			BufferToConsole (debug);
-		}
-		sprintf (debug, "\n\t\t");
-		BufferToConsole(debug);
-	}
-	NLToConsole();
-#endif
 	
 	pa_log_score += -(rho + batch_size)/2. * (next_mat(0,0) + 1.);
 	
-#ifdef _DEBUG_CSS_
-	sprintf (debug, "pa_log_score = %f\n", pa_log_score);
-	BufferToConsole (debug);
-#endif
 	
 	return pa_log_score;
 }
@@ -688,7 +831,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	_Matrix			n_ijk, n_ij,		// summary statistics for discrete nodes
 	
 					yb, zbpa,			// summary statistics for Gaussian nodes
-					mu, tau,			// prior hyperparameters for CG nodes
+					mu, tau, phi,			// prior hyperparameters for CG nodes
 	
 					data_deep_copy,		// make a deep copy of the relevant columns of the data matrix
 					observed_values;
@@ -705,8 +848,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 					denom,
 					this_prob,
 														// prior hyperparameters for CG nodes
-					rho	= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0,
-					phi = prior_scale (node_id, 0);
+					rho	= prior_sample_size (node_id, 0) > 0 ? (prior_sample_size (node_id, 0) / num_parent_combos) : 1.0;
 	
 	
 	double			urn;			// uniform random number
@@ -1043,7 +1185,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	
 	else		// child node is CG
 	{
-		long			k_i			= cparents.lLength,
+		long			k			= cparents.lLength,
 						pa_index;
 		
 		_Parameter		lk_ratio, 
@@ -1055,19 +1197,26 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 		
 		
 		// set mean intercept/regression coeff. hyperparameter vector for CG prior
-		CreateMatrix (&mu, k_i+1, 1, false, true, false);
+		CreateMatrix (&mu, k+1, 1, false, true, false);
 		
-		mu.Store (0, 0, prior_mean (node_id, 0));
-		for (long i = 1; i < k_i+1; i++) 
+		mu.Store (0, 0, prior_mean (node_id, 0));	// intercept
+		for (long i = 1; i < k+1; i++) 
 			mu.Store (i,0,0);	// set prior expectation of regression coeffs. to 0
 		
 		
 		// set precision hyperparameter for CG prior
-		CreateMatrix (&tau, k_i+1, k_i+1, false, true, false);
+		CreateMatrix (&tau, k+1, k+1, false, true, false);
 		
 		tau.Store (0, 0, prior_precision (node_id, 0));
-		for (long i = 1; i < k_i+1; i++)
-			tau.Store (i, i, prior_precision(cparents.lData[i],0));
+		for (long i = 1; i < k+1; i++)
+			tau.Store (i, i, prior_precision(cparents.lData[i-1],0));
+		
+		
+		// set scale hyperparameter
+		CreateMatrix (&phi, k+1, k+1, false, true, false);
+		phi.Store (0, 0, prior_scale(0,0));
+		for (long i = 1; i < k+1; i++)
+			phi.Store (i, i, prior_scale(cparents.lData[i-1],0));
 		
 		
 		// partition data set by discrete parent state combination
@@ -1095,7 +1244,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 		for (long batch_count, pa = 0; pa < num_parent_combos; pa++)
 		{
 			// these are single-use matrices, reset with every loop
-			CreateMatrix (&zbpa, n_ij(pa,0), k_i+1, false, true, false);	// (1, CG parent node values) in batch
+			CreateMatrix (&zbpa, n_ij(pa,0), k+1, false, true, false);	// (1, CG parent node values) in batch
 			CreateMatrix (&yb, n_ij(pa,0), 1, false, true, false);			// CG child node values in batch
 			
 			batch_count = 0;	// number of cases with this parent combo
@@ -1151,7 +1300,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 					
 					
 					// re-calculate summary stats
-					CreateMatrix (&zbpa, n_ij(pa_index,0), k_i+1, false, true, false);
+					CreateMatrix (&zbpa, n_ij(pa_index,0), k+1, false, true, false);
 					CreateMatrix (&yb, n_ij(pa_index,0), 1, false, true, false);			
 					
 					batch_count = 0;
@@ -1208,7 +1357,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 						
 						// first compute the likelihood of the original batch minus this case
 						n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
-						CreateMatrix (&zbpa, n_ij(pa_index,0), k_i+1, false, true, false);
+						CreateMatrix (&zbpa, n_ij(pa_index,0), k+1, false, true, false);
 						CreateMatrix (&yb, n_ij(pa_index,0), 1, false, true, false);
 						
 						for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++)
@@ -1253,7 +1402,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 								// compute summary stats
 								n_ij.Store  (pa_index, 0, n_ij(pa_index,0) + 1);
 								batch_count = 0;
-								CreateMatrix (&zbpa, n_ij(pa_index,0), k_i+1, false, true, false);
+								CreateMatrix (&zbpa, n_ij(pa_index,0), k+1, false, true, false);
 								CreateMatrix (&yb, n_ij(pa_index,0), 1, false, true, false);
 								
 								for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++)
@@ -1313,7 +1462,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 						// random draw from Gaussian distribution centered at previous value
 						data_deep_copy.Store (row, col, (gaussDeviate() + data_deep_copy(row,col)) * observed_values(0,2));
 						
-						CreateMatrix (&zbpa, n_ij(pa_index,0), k_i+1, false, true, false);
+						CreateMatrix (&zbpa, n_ij(pa_index,0), k+1, false, true, false);
 						CreateMatrix (&yb, n_ij(pa_index,0), 1, false, true, false);
 						
 						for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++)
