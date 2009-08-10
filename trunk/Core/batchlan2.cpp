@@ -849,15 +849,28 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 					if (f >= 0)	// it's a BGM, export node score cache
 					{
 						_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
-						_AssociativeList		* cache_export	= new _AssociativeList;
 						
-						if (this_bgm -> ExportCache (cache_export))
+						
+						if (sID == 0)
 						{
-							theReceptacle -> SetValue (cache_export, false);
+							_AssociativeList		* export_alist	= new _AssociativeList;
+							
+							if (this_bgm -> ExportCache (export_alist))
+							{
+								theReceptacle -> SetValue (export_alist, false);
+							}
+							else
+							{
+								errMsg = _String("Failed to export node score cache.");
+								ReportWarning (errMsg);
+							}
+							
+							return;
 						}
-						
-						ReportWarning ("Exiting from GetString()");
-						return;
+						else
+						{
+							this_bgm -> SerializeBGM (result);
+						}
 					}
 					else
 					{
