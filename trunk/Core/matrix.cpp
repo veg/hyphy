@@ -9178,7 +9178,7 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
 		else
 		{
 			if (doErrors)
-				WarnError (*(_String*)serializedForm(k) & " does not appear to specify a valid key:value pair");
+				WarnError (*(_String*)splitKeys(k) & " does not appear to specify a valid key:value pair");
 			return false;
 		}
 	}
