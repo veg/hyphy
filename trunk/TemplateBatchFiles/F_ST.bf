@@ -408,6 +408,8 @@ if (resample)
 		basePartition2[k] = p2vector[k]; 
 	} 
 	 
+	maxSampleCount =  10*sampleCount;
+	 
 	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1) 
 	{ 
 		 /* repeat the following code for each replicate */ 
@@ -454,8 +456,23 @@ if (resample)
 			} 
 		} 
 
+		if (Abs(distanceMatrix) == 0)
+		{
+			if (maxSampleCount)
+			{
+				maxSampleCount = maxSampleCount - 1;
+				sampleID = sampleID-1;
+				continue;
+			}
+			else
+			{
+				fprintf (stdout, "[ERROR: TOO MANY IDENTICAL SEQUENCES; CAN'T RESAMPLE WITHOUT OBTAINING ZERO DISTANCE MATRICES IN THE ALLOCATED NUMBER OF TRIES]\n");
+			}
+		}
+	
 		resMx = computeCompartmentValues (basePartition1,basePartition2); 
 		pi_D = resMx[2]-resMx[1]; 
+	
 		F_ST_1[sampleID] = pi_D/(resMx[1]+pi_D); 
 		F_ST_2[sampleID] = pi_D/(resMx[1]+resMx[2]); 
 		F_ST_3[sampleID] = 1-resMx[1]/resMx[0]; 
@@ -465,6 +482,8 @@ if (resample)
 		{ 
 			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n"); 
 		} 
+		
+		maxSampleCount = maxSampleCount - 1;
 	} 
 
 	ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + 

@@ -921,7 +921,9 @@ for (currentBPC = startWithRateClasses; currentBPC < maxRateClasses; currentBPC 
 	fprintf (stdout, "\n\nStarting GA with ", rateClassesCount, " rate classes\n");
 	addOnLine = " with " + rateClassesCount + " rate classes.";
 	
-	modelComplexityPenalty = Log(StirlingNumberOf2ndKind (stateVectorDimension, currentBPC) );
+	modelComplexityPenalty = Log(StirlingNumberOf2ndKind (stateVectorDimension, currentBPC));
+	
+	fprintf (stdout, "[INFO: MODEL COMPLEXITY PENALTY TERM SET TO ", modelComplexityPenalty, "]\n");
 	
 	if (currentBPC > startWithRateClasses)
 	{
