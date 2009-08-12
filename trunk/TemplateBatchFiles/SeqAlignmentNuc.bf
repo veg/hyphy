@@ -4,12 +4,17 @@ alignOptions = {};
 
 alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]="ACGT";
 
-scoreMatrix = {
-{5,-4,-4,-4}
-{-4,5,-4,-4}
-{-4,-4,5,-4}
-{-4,-4,-4,5}
-};
+if (!_HY_NUC_ALIGN_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="MATRIX" || Rows (scoreMatrix) != 4)
+{
+	scoreMatrix = {
+	{5,-4,-4,-4}
+	{-4,5,-4,-4}
+	{-4,-4,5,-4}
+	{-4,-4,-4,5}
+	};
+}
+
+
 
 
 alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;

@@ -2625,6 +2625,7 @@ void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix&
 {
 	long 		  myIndex 	  = addressToIndexMap2.GetXtra(addressToIndexMap2.Find((BaseRef)aNode)),
 				  leafCount   = distances.GetVDim();
+	//bool		  isRoot	  = parentIndex < 0;
 				  
 	_SimpleList * childLeaves = (_SimpleList*)childLists(myIndex);
 	
@@ -2635,6 +2636,8 @@ void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix&
 	
 	long ci2 = 0;
 	
+	_Parameter myLength = branchLengths.theData [myIndex];
+
 	for (long ci = 0; ci < leafCount; ci++)
 	{
 		if (ci == childLeaves->lData[ci2])
@@ -2643,10 +2646,9 @@ void _TreeTopology::FindCOTHelper (node<long>* aNode, long parentIndex, _Matrix&
 				ci2++;
 		}
 		else
-			distances.Store (myIndex, ci, d + (*lookup)(parentIndex,ci));
+			distances.Store (myIndex, ci, (*lookup)(parentIndex,ci) + myLength);
 	}
 	
-	_Parameter myLength = branchLengths.theData [myIndex];
 	
 	for (long ci3 = aNode->get_num_nodes(); ci3; ci3--)
 		FindCOTHelper (aNode->go_down (ci3), myIndex, distances, rootDistances, branchLengths, childLists, addressToIndexMap2, myLength);
@@ -2734,14 +2736,15 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 				 branchSpans		(branchCount+leafCount+1,2,false,true);
 
 				 
-	_List		 childLists; 
+	_List		 childLists;
+				// leafNames;
 
 	_String		 nodeName;
 
 	// pass 1: fill up the nodes up to the root (i.e. below any internal node)
 
 	DepthWiseT 		  (true);
-	tIndex = 0;
+	tIndex            = 0;
 
 	while (currentNode->parent)
 	{
@@ -2750,7 +2753,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 		
 		_Parameter	     	myLength;
 		GetBranchLength 	(currentNode, myLength);
-		nodeName = totalTreeLength;
+		nodeName			 = totalTreeLength;
 		totalTreeLength 	+= myLength;
 		lengthToIndexMap.Insert (nodeName.makeDynamic(), tIndex);
 		
@@ -2758,7 +2761,10 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 		listOfNodes << (long)currentNode;
 
 		if (IsCurrentNodeATip ())
+		{
 			(*childIndices) << addressToIndexMap.GetXtra(addressToIndexMap.Find((BaseRef)currentNode));
+			//leafNames<<LocateVar(currentNode->in_object)->GetName();
+		}
 		else
 		{
 			long		   myIndex = addressToIndexMap2.GetXtra(addressToIndexMap2.Find((BaseRef)currentNode));
@@ -2784,8 +2790,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 					(*childIndices) << ci2;
 		}
 		
-		childLists << childIndices;
-		DeleteObject (childIndices);
+		childLists.AppendNewInstance(childIndices);
 		DepthWiseT (false);
 	}
 	
@@ -2803,8 +2808,10 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 		{
 			tIndex = childLeaves->lData[ci2];
 			rootDistances.Store (0, tIndex, distances (childIndex, tIndex) + myLength);
+			//printf ("root->%s = %g\n", ((_String*)leafNames(tIndex))->sData, distances (childIndex, tIndex) + myLength);
 		}
 	} 
+	
 
 	// pass 3: fill in the "other site" branch lengths
 	
@@ -2813,7 +2820,9 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 	
 	//nodeName = "COT_DM2";
 	//setParameter (nodeName, &distances);
+	
 
+	
 	// now traverse the tree and look for the maximum
 
 	tIndex 				   		   = 0; 		// stores the index of current min
@@ -2822,13 +2831,18 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 				currentBranchSplit = 0;
 				
 	
-	{ // extra {} for Borland C++
 	for (long ci = distances.GetHDim()-1; ci>=0; ci--)
 	{
-		_Parameter    T 		= branchLengths.theData[ci];
+		_Parameter    T 		  = branchLengths.theData[ci];
 		_SimpleList * childLeaves = (_SimpleList*)childLists(ci);
-		long		  ci2 = 0;
+		long		  ci2         = 0;
 		
+		/*_String			ttt2;
+		node <long>* 	cotBranch = (node<long>*)listOfNodes.lData[ci];
+		GetNodeName		(cotBranch,ttt2);*/
+		
+		//printf ("%s\n", ((_String*)childLeaves->toStr())->sData);
+
 		if (CheckEqual (power,2.0))
 		{
 			_Parameter    sumbT  = 0.,
@@ -2837,9 +2851,15 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 						  suma2	 = 0.;
 						  
 			
+		
 			for (long ci3 = 0; ci3 < leafCount; ci3++)	
 			{
 				_Parameter tt = distances(ci,ci3);
+				
+				/*
+				printf ("%s->%s = %g\n", ttt2.sData, ((_String*)leafNames(ci3))->sData, tt);
+				*/
+				
 				if (ci3 == childLeaves->lData[ci2])
 				{
 					if (ci2 < childLeaves->lLength-1)
@@ -2847,31 +2867,37 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 						
 					suma   += tt;
 					suma2  += tt*tt;
-					//sumaT2 += (tt+T)*(tt+T);
 				}
 				else
 				{
-					sumbT += tt+T;
-					sumbT2 += (tt+T)*(tt+T);
-					//sumb2 += tt*tt;
+					sumbT  += tt;
+					sumbT2 += tt*tt;
 				}
 			}
 			
-			_Parameter tt = (sumbT-suma)/leafCount;
 			
+			_Parameter tt = (sumbT-suma)/leafCount;/*(sumbT-suma)/leafCount*/;
 			if (tt < 0.0)
 				tt = 0.;
 			else
 				if (tt > T)
 					tt = T;
 			
+			//node <long>* 	cotBranch = (node<long>*)listOfNodes.lData[ci];
+			//GetNodeName		(cotBranch,nodeName);
+			//printf ("%s: %g[%g]/%g[%g] = %g (%g:%g/%g)\n", nodeName.sData, suma2, suma, sumbT2, sumbT, tt*tt*leafCount + 2*tt*(suma-sumbT) + suma2 + sumbT2, tt, (sumbT-suma)/leafCount, T);
 			sumbT = tt*tt*leafCount + 2*tt*(suma-sumbT) + suma2 + sumbT2;
-
+		
+	
+			/*node <long>* 	cotBranch = (node<long>*)listOfNodes.lData[ci];
+			GetNodeName		(cotBranch,nodeName);
+			printf ("%s: %g/%g (%g)\n", nodeName.sData, sumbT, tt, currentMin);*/
+			
 			if (sumbT < currentMin)
 			{
-				tIndex = ci;
+				tIndex			   = ci;
 				currentBranchSplit = tt;
-				currentMin = sumbT;
+				currentMin         = sumbT;
 			}
 		}
 		else
@@ -2896,18 +2922,18 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 						dTT   += pow(tt+currentT,power);
 					}
 					else
-						dTT   += pow(tt+T-currentT,power);
+						dTT   += pow(tt-currentT,power);
 				}
+				
 				if (dTT < currentMin)
 				{
-					tIndex = ci;
+					tIndex             = ci;
 					currentBranchSplit = currentT;
-					currentMin = dTT;
+					currentMin         = dTT;
 				}
 				currentT += step;
 			}					
 		}
-	}
 	}
 	
 	node <long>* 	cotBranch = (node<long>*)listOfNodes.lData[tIndex];
