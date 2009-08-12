@@ -83,7 +83,7 @@ _String		_HYBgm_BAN_PARENT_KEY	("BanParent"),
 
 #ifdef 		__UNIX__
 
-void		ConsoleBGMStatus (_String, _Parameter, _String * fileName = nil);
+void		ConsoleBGMStatus (_String, _Parameter, _String * fileName);
 
 //__________________________________________________________________________________
 
