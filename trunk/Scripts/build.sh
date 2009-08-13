@@ -149,7 +149,7 @@ makedir $OBJ_DIR_NAME
 if [ $1 = "SP" ] 
 then
 	TARGET_NAME="HYPHY";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -ldl ";
 	echo "+--------------------------------------+"
 	echo "|Building a single threaded HYPHYKernel|"
 	echo "+--------------------------------------+"

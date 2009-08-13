@@ -145,7 +145,7 @@ makedir $OBJ_DIR_NAME
 
 if [ $1 = "LIBRARY" ] 
 then
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -ldl -lm -lpthread ";
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a multi-threaded HYPHY library version            |"
 	echo "+-----------------------------------------------------------+"

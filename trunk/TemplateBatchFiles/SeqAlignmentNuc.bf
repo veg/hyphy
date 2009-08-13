@@ -1,28 +1,28 @@
 /* START ALIGNMENT SETTINGS */
 
-alignOptions = {};
 
-alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]="ACGT";
 
-if (!_HY_NUC_ALIGN_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="MATRIX" || Rows (scoreMatrix) != 4)
+if (!_HY_NUC_ALIGN_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (scoreMatrix) != 4)
 {
+	alignOptions = {};
 	scoreMatrix = {
 	{5,-4,-4,-4}
 	{-4,5,-4,-4}
 	{-4,-4,5,-4}
 	{-4,-4,-4,5}
 	};
+	alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
+	alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	10;
+	alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	5;
+	alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
+	alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
+	alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
 }
 
+alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]="ACGT";
 
 
 
-alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
-alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	10;
-alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	5;
-alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
-alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
-alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
 
 ChoiceList (refSeq,"Prefix/Suffix Indels",1,SKIP_NONE,"No penalty","Do not penalize prefix and suffix Indels","Normal penalty","Treat prefix and suffix indels as any other indels");
 if (refSeq < 0)
