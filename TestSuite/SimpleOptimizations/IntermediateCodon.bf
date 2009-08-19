@@ -616,7 +616,10 @@ Tree LargeNuc_tree				=	DATAFILE_TREE;
 
 
 DataSetFilter LargeNuc_part = CreateFilter(flu,3,"","","TAA,TAG,TGA");
+VERBOSITY_LEVEL = 1;
 LikelihoodFunction LargeNuc_LF = (LargeNuc_part,LargeNuc_tree);
+AUTO_PARALLELIZE_OPTIMIZE = 1;
+OPTIMIZATION_PRECISION    = 0.001;
 Optimize(res_LargeNuc_LF,LargeNuc_LF);
 
 /* test epilogue */

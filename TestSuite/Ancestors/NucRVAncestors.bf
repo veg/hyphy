@@ -108,6 +108,7 @@ ConstructCategoryMatrix (catMx, SmallCodon_LF);
 */
 
 DataSet	 mlSequences      = ReconstructAncestors (SmallCodon_LF);
+DataSet	 margSequences      = ReconstructAncestors (SmallCodon_LF,MARGINAL);
 DataSet	 sampledSequences = SampleAncestors 	 (SmallCodon_LF);
 
 END;
