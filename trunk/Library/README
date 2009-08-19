@@ -5,7 +5,11 @@ Python and R.
 
 This has been tested on a Mac OS X.5 with Python 2.5.1 and R 2.6.2, but it 
 should work with slightly older versions and on Linux as well. Both Python 
-and R are supposed to be in the PATH variable
+and R are expected to be in the PATH variable
+
+Prior to running these scripts, please execute the buildFromSVN.sh script 
+(inside the Scripts directory), then cd to ../../HYPHY/Library directory (relative
+to the Scripts directory).
 
 Python:
 -------
