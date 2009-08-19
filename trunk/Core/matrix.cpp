@@ -3349,7 +3349,6 @@ void	_Matrix::ClearObjects (void)
 
 void	_Matrix::Clear (void)
 {
-		
 	DeleteObject (theValue);
 	if (storageType == 2) // has formulas in it - must delete
 		ClearFormulae();
@@ -3358,13 +3357,11 @@ void	_Matrix::Clear (void)
 	if (theIndex) 
 	{
 		MatrixMemFree (theIndex);
-		memReleased+=lDim*sizeof(long);
 		theIndex = nil;
 	}
 	if (theData)  
 	{
 		MatrixMemFree (theData);
-		memReleased+=lDim*storageType==1?sizeof(_Parameter):sizeof(Ptr);
 		hDim = vDim = 0;
 		theData = nil;
 	}
@@ -7050,6 +7047,14 @@ _PMathObj		_Matrix::ProfileMeanFit (_PMathObj classes)
 	res->theData[3*weightClasses] = logLikelihood;
 	return res;
 }	
+
+//_____________________________________________________________________________________________
+void			_Matrix::PopulateConstantMatrix (const _Parameter v)
+{
+	if (storageType == 1)
+		for (long r=0; r<lDim; r++)
+			theData[r] =v;
+}
 
 //_____________________________________________________________________________________________
 _PMathObj		_Matrix::AddObj (_PMathObj mp)

@@ -78,6 +78,7 @@ _String	  __KERNEL__VERSION__ ("2.0020090803beta");
 
 
 _String 	empty(""),
+			emptyAssociativeList ("{}"),
 			hyphyCiteString 
 			("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
@@ -1464,16 +1465,19 @@ void	FlagError (_String st)
 			fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
 			fflush(globalErrorFile);
 		}
+#ifdef __HYPHYMPI__
+	int     rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	
 	#if !defined __MAC__ && !defined __WINDOZE__
 		#ifdef __HYPHYMPI__
-			int     rank;
-			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 			_String mpiErrorSend = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 			
 			if (rank > 0)
 				MPISendString (mpiErrorSend,0,true);
 			else
-				printf ("Master node received an error:%s\n", st.sData);
+				printf ("\nMaster node received an error:\n%s\n", st.sData);
 		#else
 			printf("Error:");
 		#endif
@@ -1531,19 +1535,22 @@ void	WarnError (_String st)
 		fflush(globalErrorFile);
 	}
 	
+#ifdef __HYPHYMPI__
+	int     rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	
 	if (globalMessageFile)
 		fprintf (globalMessageFile, "%s\n", st.sData);
 #ifndef __MAC__
 #ifndef __WINDOZE__
 #ifndef __HYPHY_GTK__
 	#ifdef __HYPHYMPI__
-		int     rank;
-		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-		_String mpiErrorSend = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+		_String mpiErrorSend = _String("\nReceived an error state from MPI node ") & (long)rank & '\n' & st;
 		if (rank > 0)
 			MPISendString (mpiErrorSend,0,true);
 		else
-			printf ("Master node received an error:%s\n", st.sData);
+			printf ("\n[ERROR @ Master node] \n%s\n", st.sData);
 	#else
 		printf("Error:\n%s\n", st.getStr());
 	#endif
@@ -2404,6 +2411,61 @@ long		_String::FindTerminator (long from, _String& terminators)
 	
 	return -1;
 }
+
+//_______________________________________________________________________
+
+void		_String::AppendAnAssignmentToBuffer (_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
+{
+	(*this) << id;
+	if (doBind)
+		(*this) << ':';
+	(*this) << '=';
+	if (doQuotes)
+		(*this) << '"';
+	(*this) << value;
+	if (doQuotes)
+		(*this) << '"';
+	(*this) << ";\n";
+	if (doFree)
+		DeleteObject (value);
+}
+
+//_______________________________________________________________________
+
+void		_String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
+{
+	for (long k=0; k<varNumbers.lLength; k++)
+	{
+		_Variable *tiv = LocateVar(varNumbers.lData[k]);
+		if (tiv)
+		{
+			(*this) << id;
+			(*this) << "[\"";
+			(*this) << tiv->GetName();
+			(*this) << "\"]=";
+			_PMathObj varValue = tiv->Compute();
+			switch (varValue->ObjectClass())
+			{
+				case NUMBER:
+					(*this) << _String (varValue->Value());
+					break;
+				case STRING:
+					(*this) << '"';
+					EscapeAndAppend (*((_FString*)varValue)->theString);
+					(*this) << '"';
+					break;
+				default:
+					_String * serializedValue = (_String*)(varValue->toStr());
+					(*this) << serializedValue;
+					DeleteObject (serializedValue);
+					break;
+				
+			}
+			(*this) << ";\n";	
+		}
+	}
+}
+
 
 
 //EOF

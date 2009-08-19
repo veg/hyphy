@@ -198,7 +198,8 @@ class		_Matrix: public _MathObject {
 	_Matrix	 	Gauss	(void);						// Gaussian Triangularization process
 	_PMathObj	LUDecompose (void);
 #if defined __AFYP_REWRITE_BGM__
-	_PMathObj	CholeskyDecompose (void);	// added by afyp July 6, 2009
+	_PMathObj	CholeskyDecompose (void);			
+				// added by afyp July 6, 2009
 #endif
 	_PMathObj	Eigensystem (void);
 	_PMathObj	LUSolve (_PMathObj);
@@ -213,17 +214,16 @@ class		_Matrix: public _MathObject {
 	_Parameter 	operator () (long, long);		// read access to an element in a matrix
 	_Parameter& operator [] (long);				// read/write access to an element in a matrix
 
-	void		Store			(long, long, _Parameter);						// write access to an element in a matrix
-	void	 	StoreObject 	(long, long, _MathObject*, bool dup = false);
-	void	 	StoreObject 	(long,  _MathObject*,bool dup = false);		
-	void	 	StoreFormula 	(long, long, _Formula&, bool = true, bool = true);
+	void		Store				(long, long, _Parameter);						// write access to an element in a matrix
+	void	 	StoreObject			(long, long, _MathObject*, bool dup = false);
+	void	 	StoreObject			(long,  _MathObject*,bool dup = false);		
+	void	 	StoreFormula		(long, long, _Formula&, bool = true, bool = true);
 
-	void		UpdateDiag  	(long ,long , _MathObject*);
+	void		UpdateDiag			(long ,long , _MathObject*);
 
-	void	    Swap  			(_Matrix&);			// fast swap matrix data
-	friend		void			SetIncrement (int);	// storage parameter access
-	friend		void			CreateMatrix	(_Matrix*, long, long, bool, bool, bool);				
-													
+	void	    Swap				(_Matrix&);			// fast swap matrix data
+	friend		void				SetIncrement (int);	// storage parameter access
+	friend		void				CreateMatrix	(_Matrix*, long, long, bool, bool, bool);				
 													// an auxiliary function which creates an empty 
 													// matrix of given dimensions and storage class (normal/sparse)
 													// and storage type (pointer/array)
@@ -274,7 +274,8 @@ class		_Matrix: public _MathObject {
 	virtual		bool		HasChanged (void);
 							// have any variables which are referenced by the elements changed?
 							
-	virtual		long		GetHDim 					(void)	
+	virtual		long		
+				GetHDim						(void)	
 												{return hDim;}
 	long		GetVDim 					(void)	
 												{return vDim;}
@@ -282,6 +283,13 @@ class		_Matrix: public _MathObject {
 												{return lDim;}
 	long		GetMySize					(void)  
 												{return sizeof(_Matrix)+lDim*(storageType==1?sizeof(_Parameter):sizeof(Ptr));}
+	
+	void		PopulateConstantMatrix      (const _Parameter);
+		/* SLKP 20090818
+				fill out a numeric matrix with a fixed value
+				if the matrix is sparse, only will out the non-void entries
+		 */
+	
 	_Formula* 	GetFormula 					(long, long);	
 	_PMathObj	MultByFreqs 				(long);
 	_PMathObj	EvaluateSimple 				(void);

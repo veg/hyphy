@@ -2785,7 +2785,7 @@ long _Formula::ObjectClass (void)
 	if (res)
 		return res->ObjectClass();
 	
-	return UNDEFINED;
+	return HY_UNDEFINED;
 }
 
 //__________________________________________________________________________________

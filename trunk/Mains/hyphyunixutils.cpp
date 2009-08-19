@@ -244,11 +244,9 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 				}
 				else
 				{
-					long		f = LocateVarByName (lf2SendBack);
-					if (f>=0)
-						lfName = FetchVar(f);
-											
-					if (!(lfName&&(lfName->ObjectClass()==STRING)))
+					_FString		*lfID = (_FString*)FetchObjectFromVariableByType (&lf2SendBack, STRING);
+	
+					if (!lfID)
 					{
 						_String errMsg ("Malformed MPI likelihood function optimization request - missing LF name to return.\n\n\n");
 						errMsg = errMsg & msgCopy;
@@ -256,7 +254,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 						break;
 					}
 					
-					f = likeFuncNamesList.Find (((_FString*)lfName->Compute())->theString);
+					long f = likeFuncNamesList.Find (lfID->theString);
 					if (f<0)
 					{
 						_String errMsg ("Malformed MPI likelihood function optimization request - invalid LF name to return.\n\n\n");
@@ -264,11 +262,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 						FlagError (errMsg);
 						break;				
 					}
-					_Parameter pv;
+					_Parameter	    pv;
 					checkParameter (shortMPIReturn, pv ,0);
-					resStr = new _String (1024L,true);
+					resStr			= new _String (1024L,true);
 					checkPointer (resStr);
-					((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?5:2);
+					((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
 					resStr->Finalize();
 				}
 			}

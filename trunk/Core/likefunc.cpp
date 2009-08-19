@@ -107,9 +107,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	_List			parallelOptimizerTasks;
 	
 	_Matrix			varTransferMatrix,
-					resTransferMatrix,
-					catFreqMatrix;
-				
+					resTransferMatrix;
+
 	long			MPICategoryCount,
 					transferrableVars;
 					
@@ -1294,14 +1293,9 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 #endif
 {
 	#ifdef __HYPHYMPI__
-		long i, 
-			 hDim = PartitionLengths (1);
 			 
 		if (!partMode)
-		{
-			siteResults = new _Matrix   (1,hDim,false,true);	
-			checkPointer(siteResults);			
-		}
+			AllocateSiteResults ();	
 		
 		_Matrix		  variableStash (indexInd.lLength,1,false,true);
 		_Parameter	  siteLL = 0.0;
@@ -1310,13 +1304,12 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 		//ReportWarning (_String ("Waiting on:") & (long) indexInd.lLength & " MPI_DOUBLES");
 		ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,&status),false);
 	
-		long  loopie = 0;
 		while (variableStash.theData[0]>=-1e100)
 			// variableStash.theData[0] < -1e100 terminates the computation
 		{
 			//ReportWarning (_String("In at step  ") & loopie);
 			bool	doSomething = false;
-			for (i = 0; i<indexInd.lLength; i++)
+			for (long i = 0; i<indexInd.lLength; i++)
 			{
 				_Variable *anInd = LocateVar(indexInd.lData[i]);
 				//ReportWarning (*anInd->GetName() & " = " & variableStash.theData[i]);
@@ -1332,38 +1325,33 @@ void		_LikelihoodFunction::MPI_LF_Compute (long, bool)
 					siteLL = Compute();
 				else
 				{
-					categID = -1;
-					long    shifter = 0;
 					
-					for (i=0; i<theTrees.lLength; i++)
+					if (PreCompute())
 					{
-						ComputeBlock (i,siteResults->theData+shifter);
-						shifter += BlockLength (i);
+						//ReportWarning ("Computing...");
+						ComputeSiteLikelihoodsForABlock (0,siteResults->theData, siteScalerBuffer);
+						PostCompute();
+						for (long k = 0; k < siteScalerBuffer.lLength; k++)
+							siteResults->theData[siteScalerBuffer.lLength+k] = siteScalerBuffer.lData[k];
 					}
-						
-					for (i=0;i<indexDep.lLength; i++)
-						LocateVar (indexDep.lData[i])->Compute();
-						
-					for (i=0;i<indexInd.lLength; i++)
-						LocateVar (indexInd.lData[i])->MarkDone();					
+					else
+						// dependant condition failed
+					{
+						siteResults->PopulateConstantMatrix (1e-100);
+						siteScalerBuffer.Populate (siteScalerBuffer.lLength,10,0);
+					}
 				}
 		 	}	
 					
 			if (partMode)
 				ReportMPIError(MPI_Send(&siteLL, 1, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);				
 			else
-				ReportMPIError(MPI_Send(siteResults->theData, hDim, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);
-			//ReportWarning (_String("Sent at step  ") & loopie++ & " " & siteLL);
-			//ReportWarning (_String("Sent Back... step  ") & loopie++);
+				// need to send both 
+				ReportMPIError(MPI_Send(siteResults->theData, siteResults->GetSize(), MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);
 			ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,&status),false);
 		}
 		//ReportWarning (_String("Exiting slave loop after step  ") & loopie);
-		if (!partMode)
-		{
-			DeleteObject (siteResults);
-			siteResults = nil;			
-		}
-	#endif
+		#endif
 }
 
 
@@ -1765,68 +1753,27 @@ void	  _LikelihoodFunction::SendOffToMPI		  (long)
 {
 #else
 void	  _LikelihoodFunction::SendOffToMPI		  (long index)
+	// dispatch an MPI task to node 'index+1'
 {
 	long 			vi  = 0;
 	_SimpleList*	vim = (_SimpleList*)parallelOptimizerTasks (index);
 	
 	for (long k=0; k<indexCat.lLength; k++,vi++)
 		varTransferMatrix.theData[vim->lData[vi]] = LocateVar(indexCat.lData[k])->Value();
+	
 	for (long k=0; k<indexInd.lLength; k++,vi++)
 	{
 		long idx = vim->lData[vi];
 		if (idx>=0)
 			varTransferMatrix.theData[idx] = LocateVar(indexInd.lData[k])->Value();
 	}
+
+	//printf ("Send to node %d (%d)\n%s\n", index+1, transferrableVars, _String((_String*)varTransferMatrix.toStr()).sData);
+	
 	ReportMPIError(MPI_Send(varTransferMatrix.theData, transferrableVars, MPI_DOUBLE, index+1 , HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
 #endif //__HYPHYMPI__
 }
 
-//_______________________________________________________________________________________
-		
-#ifdef __HYPHYMPI__
-void	  _LikelihoodFunction::RecurseCategoryMPI (long index, long lowestIndex, _Parameter weight)
-#else
-void	  _LikelihoodFunction::RecurseCategoryMPI (long, long, _Parameter)
-#endif
-{
-	 #ifdef __HYPHYMPI__
-	_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
-	if (index>lowestIndex)
-	{
-		thisC->Refresh();
-		long nI = thisC->GetNumberOfIntervals ();
-		offsetCounter *= nI;
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k);
-			RecurseCategoryMPI (index-1,lowestIndex,weight*thisC->GetIntervalWeight(k));
-			categID+=offsetCounter/nI;
-		}
-		offsetCounter/=nI;
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
-	}
-	else
-	{
-		//ReportWarning (_String("RecurseCategoryMPI: In ") & categID);
-		long 		nI = thisC->GetNumberOfIntervals ();
-							
-		thisC->Refresh();
-
-		_Matrix*	cws= thisC->GetWeights();
-		for (long k = 0; k<nI; k++)
-		{
-			thisC->SetIntervalValue(k,!k);
-			catFreqMatrix.theData[categID] = cws->theData[k]*weight ;
-			SendOffToMPI (categID);
-			categID+=offsetCounter;
-		}
-		if (offsetCounter>1)
-			categID-=nI*offsetCounter;
-		//ReportWarning (_String("RecurseCategoryMPI: Out ") & categID);
-	}
-	#endif
-}
 
 //_______________________________________________________________________________________
 		
@@ -1894,17 +1841,15 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 		}
 		else
 		{
-		 	RecurseCategoryMPI (indexCat.lLength-1,0,1.0);
-		 	
-		 	for (long k=resTransferMatrix.GetVDim(); k<2*resTransferMatrix.GetVDim(); k++)
-		 		resTransferMatrix.theData[k] = 0.0;
+		 	//RecurseCategoryMPI (indexCat.lLength-1,0,1.0);
+			
 
 			if (computingTemplate&& templateKind>1)
 			{
 #ifdef _SLKP_LFENGINE_REWRITE_
 				WarnError ("Sorry; this feature is not yet implemented in the v2.0 rewrite");
 #endif
-				_Matrix ** receptacles = new _Matrix* [theTrees.lLength];
+				/*_Matrix ** receptacles = new _Matrix* [theTrees.lLength];
 				checkPointer (receptacles);
 				
 				for (long i=0; i<theTrees.lLength; i++)
@@ -1985,11 +1930,11 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 				delete receptacles;
 				if (terminateExecution)
 					return -1e100;
-				res = computingTemplate->Compute()->Value();
+				res = computingTemplate->Compute()->Value();*/
 			}
 			else
 			{
-			 	for (long k=0; k<MPICategoryCount; k++)
+			 	/*for (long k=0; k<MPICategoryCount; k++)
 			 	{
 			 		long index = 0;
 			 		MPI_Status	status;
@@ -2014,7 +1959,7 @@ _Parameter	_LikelihoodFunction::ComputeMasterMPI (void)
 					for (long i=BlockLength(j)-1;i>=0;i--,sR--)
 						res+=myLog(*sR)*df->theFrequencies.lData[i];
 
-				}
+				}*/
 			}			
 		}
 
@@ -2173,8 +2118,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			3. need log-likelihoods by block: for each partition, the log-likelihood value is 
 			  returned
 	 
-			4. MPI compute mode: same as 2, except site likelihoods are summed up following 
-			   the compute phase using category variable weights
+			4. MPI compute mode: independent partitions
 	*/
 	
 	char	   computeMode = 0;
@@ -2196,9 +2140,15 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		 */ 
 		
 	}
+	
+	char haveMPI = 0;
 #ifdef __HYPHYMPI__
 	if (parallelOptimizerTasks.lLength)
-		return ComputeMasterMPI ();
+	{
+		haveMPI = 1+mpiPartitionOptimizer;
+		if (mpiPartitionOptimizer)
+			computeMode = 4;
+	}
 #endif
 	
 	bool done = false;
@@ -2223,7 +2173,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					/* TODO: add HMM and constant on partition test
 					   Roll into ComputeSiteLikelihoodsForABlock and SumUpSiteLikelihoods?
 					*/
-					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
+					ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer, -1, nil, haveMPI == 1);
 #ifdef _UBER_VERBOSE_LF_DEBUG
 					printf ("Did compute\n", result);
 #endif						
@@ -2240,53 +2190,96 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		}
 		done = true;
 	}
-	
-	if (computeMode == 1)
-	// handle _hyphyLFComputationalTemplateBySite
-	{
-		long 	blockWidth = bySiteResults->GetVDim();
-		
-		for (long partID=0; partID<theTrees.lLength; partID++)
+	else
+		if (computeMode == 1)
+		// handle _hyphyLFComputationalTemplateBySite
 		{
-			ComputeSiteLikelihoodsForABlock (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength));
-			_DataSetFilter * thisBlockFilter = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
-			thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0);
-			thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1);
-		}
-		
-		// no need to remap; just process directly based on partiton indices
-		
-		siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
-		_SimpleList scalerCache    (theTrees.lLength,0,0);
-		_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
-
-		for (long siteID = 0; siteID < blockWidth; siteID++)
-		{
-			// pass one to determine scaling factors
-			long minScalingFactor = ((_SimpleList*)partScalingCache(0))->lData[siteID];
-			scalerCache.lData [0] = minScalingFactor;
-			for (long partID=1; partID<theTrees.lLength; partID++)
-			{
-				scalerCache.lData [partID] = ((_SimpleList*)partScalingCache(partID))->lData[siteID]; 
-				if (minScalingFactor > scalerCache.lData [partID])
-					minScalingFactor = scalerCache.lData [partID];
-			}
+			long 	blockWidth = bySiteResults->GetVDim();
+			
 			for (long partID=0; partID<theTrees.lLength; partID++)
 			{
-				siteMatrix->theData[partID] = bySiteResults->theData[partID*blockWidth+siteID];
-				long diff = scalerCache.lData[partID]-minScalingFactor;
-				if (diff)
-					siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
+				ComputeSiteLikelihoodsForABlock (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength),-1, nil, haveMPI == 1);
+				_DataSetFilter * thisBlockFilter = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
+				thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0);
+				thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1);
 			}
 			
+			// no need to remap; just process directly based on partiton indices
 			
-			result += computingTemplate->Compute()->Value();
-			if (minScalingFactor)
-				result-=_logLFScaler*minScalingFactor;
+			siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
+			_SimpleList scalerCache    (theTrees.lLength,0,0);
+			_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
+
+			for (long siteID = 0; siteID < blockWidth; siteID++)
+			{
+				// pass one to determine scaling factors
+				long minScalingFactor = ((_SimpleList*)partScalingCache(0))->lData[siteID];
+				scalerCache.lData [0] = minScalingFactor;
+				for (long partID=1; partID<theTrees.lLength; partID++)
+				{
+					scalerCache.lData [partID] = ((_SimpleList*)partScalingCache(partID))->lData[siteID]; 
+					if (minScalingFactor > scalerCache.lData [partID])
+						minScalingFactor = scalerCache.lData [partID];
+				}
+				for (long partID=0; partID<theTrees.lLength; partID++)
+				{
+					siteMatrix->theData[partID] = bySiteResults->theData[partID*blockWidth+siteID];
+					long diff = scalerCache.lData[partID]-minScalingFactor;
+					if (diff)
+						siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
+				}
+				
+				
+				result += computingTemplate->Compute()->Value();
+				if (minScalingFactor)
+					result-=_logLFScaler*minScalingFactor;
+			}
+			done = true;
 		}
-		done = true;
-		
-	}
+		else
+		{
+			if (computeMode == 4)
+			{
+#ifdef __HYPHYMPI__
+				long	totalSent = 0;
+				for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++)
+				{
+					bool sendToSlave = (computationalResults.GetSize() < parallelOptimizerTasks.lLength);
+					_SimpleList * slaveParams = (_SimpleList*)parallelOptimizerTasks(blockID);
+					
+					for (long varID = 0; varID < slaveParams->lLength; varID++)
+					{
+						_Variable * aVar = LocateVar (slaveParams->lData[varID]);
+						varTransferMatrix.theData[varID] = aVar->Value();
+						sendToSlave = sendToSlave || aVar->HasChanged();
+					}
+					//printf ("Block %d with %d parameters (send flag %d)\n", blockID, slaveParams->lLength, sendToSlave);
+					if (sendToSlave)
+					{
+						ReportMPIError(MPI_Send(varTransferMatrix.theData, slaveParams->lLength, MPI_DOUBLE, blockID+1 , HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
+						totalSent++;
+					}
+					else
+						result += computationalResults[blockID];
+				}
+				
+				
+				while (totalSent)
+				{
+					MPI_Status		status;
+					_Parameter		blockRes;
+					ReportMPIError(MPI_Recv (&blockRes, 1, MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);
+					//printf ("Got %g from block %d \n", blockRes, index);
+					
+					result			  += blockRes;
+					UpdateBlockResult (status.MPI_SOURCE-1, blockRes);
+					totalSent--;
+				}	
+				
+				done = true;
+#endif				
+			}
+		}
 	
 	if (done)
 	{
@@ -3638,324 +3631,329 @@ void		_LikelihoodFunction::SetReferenceNodes (void)
 
 void	_LikelihoodFunction::InitMPIOptimizer (void)
 {
-	#ifdef __HYPHYMPI__
-		  if (mpiParallelOptimizer)
-		  {
-			  parallelOptimizerTasks.Clear();
-			 
-			  int		  	   size;	   			   			 
-			  MPI_Comm_size    (MPI_COMM_WORLD, &size);
-			  MPICategoryCount = TotalRateClassesForAPartition(-1);
-			  
-			  long		cacheSize  = PartitionLengths (1);
-			  transferrableVars    = 0;
-			  
-			  if (MPICategoryCount > 1&& size>MPICategoryCount)
-			  {
-				    if (computingTemplate)
-				    {
-				    	if (templateKind>1)
-				    	{
-							  for (long i=1; i<theTrees.lLength; i++)
-								   if (TotalRateClassesForAPartition(i-1) != TotalRateClassesForAPartition (i))
-								   {
-					  	   				WarnError ("MPI Parallel Optimizer does not presently work with functional computational templates for partitions with unequal number of rate classes");
-					  	   				return;
-					  	   		   }
-				    	}
-				    	else
-				  	    {
-					  	   	WarnError ("MPI Parallel Optimizer does not presently work with inline or HM computational templates");
-					  	   	return;
-					    }
-				    }
-				    
-				    for (long i=0; i<indexCat.lLength; i++)
-				    {
-				  	   _CategoryVariable* thisCV = (_CategoryVariable*) LocateVar (indexCat.lData[i]);
-				  	   if (thisCV->IsHiddenMarkov()||thisCV->IsConstantOnPartition())
-				  	   {
-					  	   	WarnError ("MPI Parallel Optimizer does not presently work with Hidden Markov or Constant on Partition category variables");
-					  	   	return;
-					   }
-				    }
+#ifdef __HYPHYMPI__
+	int		  	     totalNodeCount;	   	
+	MPI_Comm_size    (MPI_COMM_WORLD, &totalNodeCount);
 
-			  		ReportWarning    (_String ("InitMPIOptimizer with:") & MPICategoryCount & " categories on " & (long)size & " MPI nodes");
-				  
-			  		_String	  		 sLF (8192L, true),	
-			  						 errMsg;
-			  						 
-					SerializeLF		 (sLF,4);
-					sLF.Finalize 	 ();
-					
-					long			 senderID = 0;
-					
-					// sets up a de-categorized LF on each compute node
-					for (long i = 1; i<=MPICategoryCount; i++)
-						MPISendString (sLF,i);
-						
-					for (long i = 1; i<=MPICategoryCount; i++)
-					{
-						_String 	*mapString  = MPIRecvString (i,senderID);
-						_List 		*varNames	= mapString->Tokenize (";");
-						_SimpleList varMap;
-						
-						long		mappedVars = indexCat.lLength;
-														
-						for (long vi = 0; vi < indexCat.lLength; vi++)
-						{
-							_String * searchTerm = LocateVar(indexCat.lData[vi])->GetName();
-							
-							long f = varNames->Find (searchTerm);
-							if (f<0)
-							{
-								errMsg = _String ("InitMPIOptimizer: Failed to map cat. var ") & *searchTerm & " for MPI node " & i &". Had variable string:" & *mapString;
-								FlagError (errMsg);
-							}
-							varMap << f;
-						}
+	parallelOptimizerTasks.Clear();
+	if (mpiParallelOptimizer)
+		// this is the branch to deal with multiple rate categories
+	{
+		MPICategoryCount = TotalRateClassesForAPartition(-1);
 
-						for (long vi = 0; vi < indexInd.lLength; vi++)
-						{
-							_String * searchTerm = LocateVar(indexInd.lData[vi])->GetName();
-							
-							long f = varNames->Find (searchTerm);
-							if (f<0 && !LocateVar(indexInd.lData[vi])->IsGlobal())
-							{
-								errMsg = _String ("InitMPIOptimizer: Failed to map independent. var ") & *searchTerm & " for MPI node " & i &". Had variable string:" & *mapString;
-								FlagError (errMsg);
-							}
-							varMap << f;
-							if (f>=0)
-								mappedVars ++;
-						}
-						
-						parallelOptimizerTasks && & varMap;
-						
-						if (transferrableVars > 0)
-						{
-							if (transferrableVars != mappedVars)
-							{
-								errMsg = _String ("InitMPIOptimizer: Inconsistent variable counts between spawned instances.");
-								FlagError (errMsg);
-							}
-						}
-						else
-							transferrableVars = mappedVars;
-						
-						DeleteObject (varNames);
-						DeleteObject (mapString);
-						
-						//ReportWarning (((_String*)parallelOptimizerTasks.toStr())->getStr());
-					}
-					
-					CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
-					CreateMatrix (&resTransferMatrix, 2, cacheSize, false, true, false);
-					CreateMatrix (&catFreqMatrix,1,MPICategoryCount,false,true, false);
-					
-					ReportWarning(_String("InitMPIOptimizer:Finished with the setup. ") & transferrableVars & " transferrable parameters, " & cacheSize & " sites to be cached.");
-			  }
-		}
-		else
+		long		cacheSize  = PartitionLengths (1);
+		transferrableVars      = 0;
+
+		if (MPICategoryCount > 1 && totalNodeCount>MPICategoryCount)
+		// can implement category parallelization
 		{
-		  int 	size,
-		  		slaveNodes;
-		  			   			   			 
-		  MPI_Comm_size(MPI_COMM_WORLD, &size);
-		  slaveNodes = size-1;
-
-		  _Parameter 	  aplf = 0.0;
-		  checkParameter (autoParalellizeLF,aplf,0.0);
-		  
-		  if (theDataFilters.lLength != 1 || ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]))->NumberDistinctSites() < size)
-		  	  aplf = 0.0;
-		  
-		  if (mpiPartitionOptimizer || aplf > 0.5)
-		  {
-		  	  
-			  parallelOptimizerTasks.Clear();
-			  
-		  	  if (!mpiPartitionOptimizer)
-		  	  {
-		  	  	  _String css ("_CONTEXT_SWITCH_MPIPARTITIONS_");
-		  	  	  // send a context switch signal
-		  	  	  for (long ni = 1; ni < size; ni++)
-		  	  	  	  MPISendString (css, ni);
-		  	  	  // receive confirmation of successful switch
-		  	  	  for (long ni = 1; ni < size; ni++)
-		  	  	  {
-		  	  	  	  long fromNode = ni;
-		  	  	  	  
-		  	  	  	  _String t (MPIRecvString (ni,fromNode));
-		  	  	  	  if (!t.Equal (&css))
-		  	  	  	  {
-					  	 WarnError (_String("Failed to confirm MPI mode switch at node ") & ni);
-					  	 return;
-		  	  	  	  }
-		  	  	  	  else
-		  	  	  	  	 ReportWarning (_String("Successful mode switch to MPI partition optimizer confirmed from node ") & ni);
-		  	  	  }
-		  	  	  	
-		  	  	  	  
-		  	  	  lfAutoMPI = true;
-		  	  	  mpiPartitionOptimizer = true;
-		  	  }
-
-			  if (theDataFilters.lLength>1 && slaveNodes<=theDataFilters.lLength || lfAutoMPI)
-			  {
-				    if (computingTemplate)
-				    {
-					  	 WarnError ("MPI Partition Parallel Optimizer does not presently work with computational templates");
-					  	 return;
-				    }
-				    
-					long			 senderID = 0,
-									 fromPart = 0,
-									 toPart   = 0;
-					
-					_String	  		 errMsg;
-					
-			  						 
-					transferrableVars = 0;		 
-
-
-			 		_SimpleList	 	  copiedIvars 	(indexInd);
-			  		copiedIvars.Sort();				   									 
-
-					if (lfAutoMPI)
-					{
-						_SimpleList    * optimalOrder = (_SimpleList*)(optimalOrders (0));
-						_DataSetFilter * aDSF 	      = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]);
-						
-						long 		  sitesPerNode	=  optimalOrder->lLength / slaveNodes,
-									  overFlow 		=  optimalOrder->lLength % slaveNodes,
-									  unitLength	=  aDSF->GetUnitLength();
-						
-						_SimpleList * dfMap  	= &aDSF->theMap,
-									* dupMap 	= &aDSF->duplicateMap,
-									* orOrder	= &aDSF->theOriginalOrder;
-
-						if (overFlow)
-							overFlow = slaveNodes/overFlow;
-							
-				  		ReportWarning    (_String ("InitMPIOptimizer (autoLF) with:") & (long)optimalOrder->lLength & " site patterns on " & (long)slaveNodes 
-				  						   									 & " MPI computational nodes. " & sitesPerNode & " site patterns per node (+1 every " 
-				  						   									 & overFlow & "-th node)");
-	
-						for (long i = 1; i<size; i++)
+			if (theTrees.lLength > 1)
+			{
+				WarnError ("MPI rate category parallel optimizer does not presently work with multiple partition analyses");
+				return;	
+			}
+			
+			if (computingTemplate != _hyphyLFComputationalTemplateNone)
+			// have a custom computing template
+			{
+				if (templateKind == _hyphyLFComputationalTemplateByPartition)
+				{
+					long rateCountFor1stPart = TotalRateClassesForAPartition (0);
+					for (long i=1; i<theTrees.lLength; i++)
+						if (rateCountFor1stPart != TotalRateClassesForAPartition (i))
 						{
-							toPart = sitesPerNode;
-							if (overFlow && i%overFlow == 0)
-								toPart++;
-							
-							if (fromPart+toPart > optimalOrder->lLength || i == size-1)
-								toPart = optimalOrder->lLength-fromPart;
-							
-							_SimpleList		map		(optimalOrder->lLength, 0, 0),
-											subset;
-							
-							for (long i2 = 0; i2 < toPart; i2++)
-								map.lData[optimalOrder->lData[fromPart+i2]] = 1;
-								
-							//ReportWarning    (_String((_String*)map.toStr()));
-
-							for (long i2 = 0; i2 < dupMap->lLength; i2++)
-								if (map.lData[dupMap->lData[i2]])
-									for (long cp = 0; cp < unitLength; cp++ )
-										subset << orOrder->lData[i2*unitLength+cp];
-							
-							ReportWarning (_String((_String*)subset.toStr()));
-							fromPart += toPart;
-							
-							_String	  		 sLF (8192L, true);				  						 
-							SerializeLF		 (sLF,0,nil,&subset);
-							sLF.Finalize 	 ();
-							
-							//ReportWarning (sLF);
-							
-							MPISendString (sLF,i);
-							_SimpleList 	  dummy;
-							parallelOptimizerTasks && &dummy; 
+							WarnError ("MPI Parallel Optimizer does not presently work with functional computational templates for partitions with unequal number of rate classes");
+							return;
 						}
+				}
+				else
+				{
+					WarnError ("MPI Parallel Optimizer does not presently work a by-site inline or hidden markov computational templates");
+					return;
+				}
+			}
+
+			for (long i=0; i<indexCat.lLength; i++)
+			{
+				_CategoryVariable* thisCV = (_CategoryVariable*) LocateVar (indexCat.lData[i]);
+				if (thisCV->IsHiddenMarkov()||thisCV->IsConstantOnPartition())
+				{
+					WarnError ("MPI Parallel Optimizer does not presently work with Hidden Markov or Constant on Partition category variables");
+					return;
+				}
+			}
+
+			ReportWarning    (_String ("[InitMPIOptimizer] with:") & MPICategoryCount & " categories on " & (long)totalNodeCount & " MPI nodes");
+
+			_String	  		 sLF (8192L, true),	
+							 errMsg;
+			 
+			SerializeLF		 (sLF,_hyphyLFSerializeModeCategoryAsGlobal);
+				// code 4 is used to replace references to category variables with references to global variables
+			sLF.Finalize 	 ();
+
+			long			 senderID = 0;
+
+			// sets up a de-categorized LF on each compute node
+			for (long i = 1; i<=MPICategoryCount; i++)
+				MPISendString (sLF,i);
+
+			for (long i = 1; i<=MPICategoryCount; i++)
+			{
+				_String 	*mapString  = MPIRecvString (i,senderID);
+				
+				// this will return the ';' separated string of partition variable names
+				_List 		*varNames	        = mapString->Tokenize (";"), 
+												slaveNodeMapL;
+				_AVLListX	 slaveNodeMap		(&slaveNodeMapL);
+				slaveNodeMap.PopulateFromList	(*varNames);
+				_SimpleList varMap;
+
+				long		mappedVars = indexCat.lLength;
+								
+				for (long vi = 0; vi < indexCat.lLength; vi++)
+				{
+					_String * searchTerm = LocateVar(indexCat.lData[vi])->GetName();
+					long f = slaveNodeMap.Find (searchTerm);
+					if (f<0)
+						FlagError (_String ("[InitMPIOptimizer] Failed to map category var ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
+					varMap << slaveNodeMap.GetXtra(f);
+					//printf ("%s->%d\n", searchTerm->sData, slaveNodeMap.GetXtra(f));
+				}
+				
+
+				for (long vi = 0; vi < indexInd.lLength; vi++)
+				{
+					_Variable * indepVar  = LocateVar(indexInd.lData[vi]);
+					_String  *  searchTerm = indepVar->GetName();
+					long    f = slaveNodeMap.Find (searchTerm);
+					if (f<0 && !indepVar->IsGlobal())
+						FlagError (_String ("[InitMPIOptimizer] Failed to map independent variable ") & *searchTerm & " for MPI node " & i &".\nHad the following variables\n" & _String((_String*)slaveNodeMap.toStr()));
+					else
+						if (f>0)
+							f = slaveNodeMap.GetXtra(f);
+						
+					varMap << f;
+					//printf ("%s->%d\n", searchTerm->sData, f);
+					if (f>=0)
+						mappedVars ++;
+				}
+
+					
+				parallelOptimizerTasks && & varMap;
+
+				if (transferrableVars > 0)
+				{
+					if (transferrableVars != mappedVars)
+						FlagError (_String ("[InitMPIOptimizer]: Inconsistent variable counts between spawned instances."));
+				}
+				else
+					transferrableVars = mappedVars;
+
+				DeleteObject (varNames);
+				DeleteObject (mapString);
+
+				//ReportWarning (((_String*)parallelOptimizerTasks.toStr())->getStr());
+			}
+
+			CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
+			CreateMatrix (&resTransferMatrix, 2, cacheSize, false, true, false);
+			ReportWarning(_String("[InitMPIOptimizer]:Finished with the setup. ") & transferrableVars & " transferrable parameters, " & cacheSize & " sites to be cached.");
+		}
+	}
+	else
+		// this is the branch to deal with multiple PARTITION categories
+	{
+		int 	slaveNodes = totalNodeCount-1;
+		
+		if (slaveNodes < 2)
+		{
+			return;
+		}
+
+		_Parameter 	  aplf = 0.0;
+		checkParameter (autoParalellizeLF,aplf,0.0);
+
+		if (theDataFilters.lLength != 1 || PartitionLengths (0) < slaveNodes)
+			aplf = 0.0;
+
+		if (mpiPartitionOptimizer || aplf > 0.5)
+		{
+			parallelOptimizerTasks.Clear();
+
+			if (!mpiPartitionOptimizer)
+			{
+				_String css ("_CONTEXT_SWITCH_MPIPARTITIONS_");
+				// send a context switch signal
+				for (long ni = 1; ni < totalNodeCount; ni++)
+					MPISendString (css, ni);
+				// receive confirmation of successful switch
+				for (long ni = 1; ni < totalNodeCount; ni++)
+				{
+					long fromNode = ni;
+					_String t (MPIRecvString (ni,fromNode));
+					if (!t.Equal (&css))
+					{
+						WarnError (_String("Failed to confirm MPI mode switch at node ") & ni);
+						return;
 					}
 					else
-					{
-						long	 perNode		=  theDataFilters.lLength / slaveNodes, 
-								 overFlow   	=  theDataFilters.lLength % slaveNodes;
-								 
-								 
-						if (overFlow)
-							overFlow = slaveNodes/overFlow;
-							
-				  		ReportWarning    (_String ("InitMPIOptimizer with:") & theDataFilters.lLength & " partitions on " & (long)slaveNodes 
-				  						   									 & " MPI computational nodes. " & perNode & " partitions per node (+1 every " 
-				  						   									 & overFlow & "-th node)");
-				  						   									 
-				  						   									 
-						for (long i = 1; i<size; i++)
-						{
-							toPart = perNode;
-							if (overFlow && i%overFlow == 0)
-								toPart++;
-							
-							if (fromPart+toPart > theDataFilters.lLength || i == size-1)
-								toPart = theDataFilters.lLength-fromPart;
-							
-							_SimpleList		subset (toPart,fromPart,1);
-							
-							_String pStr ((_String*)subset.toStr());
-							ReportWarning (pStr);
-							fromPart += toPart;
-							
-							_String	  		 sLF (8192L, true);				  						 
-							SerializeLF		 (sLF,0,&subset);
-							sLF.Finalize 	 ();
-							
-							MPISendString (sLF,i);
-							_SimpleList 	  dummy;
-							parallelOptimizerTasks && &dummy; 
-						}
-					}
-					
-					for (long i = 1; i<size; i++)
-					{						
-						_String 		*mapString  	= 	MPIRecvString (-1,senderID);
-						_List 			*varNames		= 	mapString->Tokenize (";");
-						_SimpleList*	indexedSlaveV   = 	(_SimpleList*)parallelOptimizerTasks(senderID-1);
-						
-						for (long i2 = 0; i2 < varNames->lLength; i2++)
-						{
-							_Variable   *aVar = FetchVar(LocateVarByName (*(_String*)(*varNames)(i2)));
-							long vi2	= (aVar?copiedIvars.BinaryFind (aVar->GetAVariable()):-1);
-								 
-							if (aVar == nil || vi2 < 0)
-							{
-								errMsg = _String ("InitMPIOptimizer: Failed to map independent. var ") 
-												& *(_String*)(*varNames)(i2) 
-												& " for MPI node " & senderID &". Had variable string:" 
-												& *mapString;
-												
-								FlagError (errMsg);
-							}
-							
-							
-							(*indexedSlaveV) << aVar->GetAVariable();
-						}
-														
-						if (indexedSlaveV->lLength > transferrableVars)
-							transferrableVars = indexedSlaveV->lLength;
-						
-						DeleteObject (varNames);
-						DeleteObject (mapString);
-						
-					}
-					
-					CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
-					ReportWarning(_String("InitMPIOptimizer:Finished with the setup. Maximum of ") & transferrableVars & " transferrable parameters.");
-			  }
-		  }
+						ReportWarning (_String("Successful mode switch to MPI partition optimizer confirmed from node ") & ni);
+			}
+			lfAutoMPI = true;
+			mpiPartitionOptimizer = true;
 		}
-	#endif //__HYPHYMPI__
+
+		if (theDataFilters.lLength>1 && slaveNodes<=theDataFilters.lLength || lfAutoMPI)
+		{
+			if (computingTemplate != _hyphyLFComputationalTemplateNone)
+			{
+				WarnError ("MPI Partition Parallel Optimizer does not presently work with computational templates");
+				return;
+			}
+
+			long			 senderID = 0,
+							 fromPart = 0,
+							 toPart   = 0;
+
+			_String	  		 errMsg;
+
+			transferrableVars = 0;		 
+			_SimpleList	 	  copiedIvars 	(indexInd);
+			copiedIvars.Sort();				   									 
+
+			if (lfAutoMPI)
+			{
+				_SimpleList    * optimalOrder = (_SimpleList*)(optimalOrders (0));
+				_DataSetFilter * aDSF 	      = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]);
+
+				long 		  sitesPerNode	=  optimalOrder->lLength / slaveNodes,
+							  overFlow 		=  optimalOrder->lLength % slaveNodes,
+							  unitLength	=  aDSF->GetUnitLength();
+
+				_SimpleList * dupMap 	= &aDSF->duplicateMap,
+							* orOrder	= &aDSF->theOriginalOrder;
+
+				if (overFlow)
+					overFlow = slaveNodes/overFlow;
+	
+				ReportWarning    (_String ("InitMPIOptimizer (autoLF) with:") & (long)optimalOrder->lLength & " site patterns on " & (long)slaveNodes 
+													 & " MPI computational nodes. " & sitesPerNode & " site patterns per node (+1 every " 
+													 & overFlow & "-th node)");
+
+				for (long i = 1; i<totalNodeCount; i++)
+				{
+					toPart = sitesPerNode;
+					if (overFlow && i%overFlow == 0) 
+						// add an extra site when needed
+						toPart++;
+	
+					if (fromPart+toPart > optimalOrder->lLength || i == slaveNodes)
+						// ensure that all remaining sites are added to the final block
+						toPart = optimalOrder->lLength-fromPart;
+	
+					_SimpleList		map		(optimalOrder->lLength, 0, 0),
+									subset;
+	
+					for (long i2 = 0; i2 < toPart; i2++)
+						// lay the sites out in optimal order
+						map.lData[optimalOrder->lData[fromPart+i2]] = 1;
+		
+					//ReportWarning    (_String((_String*)map.toStr()));
+
+					for (long i2 = 0; i2 < dupMap->lLength; i2++)
+						if (map.lData[dupMap->lData[i2]])
+							for (long cp = 0; cp < unitLength; cp++ )
+								subset << orOrder->lData[i2*unitLength+cp];
+	
+					ReportWarning (_String((_String*)subset.toStr()));
+					fromPart += toPart;
+	
+					_String	  		 sLF (8192L, true);				  						 
+					SerializeLF		 (sLF,_hyphyLFSerializeModeVanilla,nil,&subset);
+					sLF.Finalize 	 ();
+	
+					MPISendString (sLF,i);
+					parallelOptimizerTasks.AppendNewInstance (new _SimpleList); 
+				}
+			}
+			// no autoParallelize
+			else
+			{
+				long	 perNode		=  theDataFilters.lLength / slaveNodes, 
+				overFlow   	=  theDataFilters.lLength % slaveNodes;
+		 
+		 
+				if (overFlow)
+					overFlow = slaveNodes/overFlow;
+	
+				ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes 
+													 & " MPI computational nodes. " & perNode & " partitions per node (+1 every " 
+													 & overFlow & "-th node)");
+													 
+													 
+				for (long i = 1; i<totalNodeCount; i++)
+				{
+					toPart = perNode;
+					if (overFlow && i%overFlow == 0)
+						toPart++;
+					
+					if (fromPart+toPart > theDataFilters.lLength || i == slaveNodes)
+						toPart = theDataFilters.lLength-fromPart;
+					
+					_SimpleList		subset (toPart,fromPart,1);
+					
+						ReportWarning (_String((_String*)subset.toStr()));
+					fromPart += toPart;
+					
+					_String	  		 sLF (8192L, true);				  						 
+					SerializeLF		 (sLF,_hyphyLFSerializeModeVanilla,&subset);
+					sLF.Finalize 	 ();
+					
+					MPISendString (sLF,i);
+					_SimpleList 	  dummy;
+					parallelOptimizerTasks && &dummy; 
+				}
+			}
+
+			for (long i = 1; i<totalNodeCount; i++)
+			{						
+				_String 		*mapString  	= 	MPIRecvString (-1,senderID);
+				_List 			*varNames		= 	mapString->Tokenize (";");
+				_SimpleList*	indexedSlaveV   = 	(_SimpleList*)parallelOptimizerTasks(senderID-1);
+
+				for (long i2 = 0; i2 < varNames->lLength; i2++)
+				{
+					_Variable   *aVar = FetchVar(LocateVarByName (*(_String*)(*varNames)(i2)));
+					long vi2	= (aVar?copiedIvars.BinaryFind (aVar->GetAVariable()):-1);
+						 
+					if (aVar == nil || vi2 < 0)
+					{
+						errMsg = _String ("InitMPIOptimizer: Failed to map independent. var ") 
+										& *(_String*)(*varNames)(i2) 
+										& " for MPI node " & senderID &". Had variable string:" 
+										& *mapString;
+										
+						FlagError (errMsg);
+					}
+	
+	
+					(*indexedSlaveV) << aVar->GetAVariable();
+				}
+								
+				if (indexedSlaveV->lLength > transferrableVars)
+					transferrableVars = indexedSlaveV->lLength;
+
+				DeleteObject (varNames);
+				DeleteObject (mapString);
+			}
+
+			CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
+			ReportWarning(_String("InitMPIOptimizer:Finished with the setup. Maximum of ") & transferrableVars & " transferrable parameters.");
+		}
+	}
+}
+#endif //__HYPHYMPI__
 }
 
 //_______________________________________________________________________________________
@@ -3975,7 +3973,6 @@ void	_LikelihoodFunction::CleanupMPIOptimizer (void)
 					 ReportMPIError(MPI_Send(varTransferMatrix.theData, varTransferMatrix.GetVDim(), MPI_DOUBLE, i+1, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
 					 
 				 resTransferMatrix.Clear();
-				 catFreqMatrix.Clear();			 	
 			 }
 			 varTransferMatrix.Clear();
 			 parallelOptimizerTasks.Clear();
@@ -8899,46 +8896,19 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	
 	_String *lfName = (_String*)likeFuncNamesList (likeFuncList._SimpleList::Find((long)this));
 
-	if (opt == 5)
+	if (opt == _hyphyLFSerializeModeShortMPI)
 	{
-		_String resVarName = *lfName & "_MLES";
+		_String	   resVarName = *lfName & "_MLES";
 		_Variable* resVar = FetchVar(LocateVarByName (resVarName));
 		if (resVar)
-		{
-			rec << & resVarName;
-			rec << '=';
-			_String* resVarVal = (_String*)resVar->Compute()->toStr();
-			rec << resVarVal; 
-			rec << ";\n";
-			DeleteObject (resVarVal);
-		}
+			rec.AppendAnAssignmentToBuffer (&resVarName, (_String*)resVar->Compute()->toStr());
 		
 		resVarName = *lfName & "_MLE_VALUES";
-		rec << & resVarName;
-		rec << "={};\n";
+		rec.AppendAnAssignmentToBuffer (&resVarName, &emptyAssociativeList, false);
 		
-		for (long k=0; k<indexInd.lLength; k++)
-		{
-			_Variable *tiv = LocateVar(indexInd.lData[k]);
-			rec << &resVarName;
-			rec << "[\"";
-			rec << *tiv->GetName();
-			rec << "\"]=";
-			rec << _String(tiv->Compute()->Value());
-			rec << ";\n";
-		}
-		{
-		for (long k=0; k<indexDep.lLength; k++)
-		{
-			_Variable *tiv = LocateVar(indexDep.lData[k]);
-			rec << &resVarName;
-			rec << "[\"";
-			rec << tiv->GetName();
-			rec << "\"]=";
-			rec << _String(tiv->Compute()->Value());
-			rec << ";\n";
-		}
-        }
+		rec.AppendVariableValueAVL (&resVarName,indexInd);
+		rec.AppendVariableValueAVL (&resVarName,indexDep);
+		
 		return;
 	}
 
@@ -9077,7 +9047,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	if (indexedDataSets.lLength == 1)
 		rec << "\n\nBEGIN HYPHY;\n\n";
 	
-	if (opt==1)
+	if (opt==_hyphyLFSerializeModeOptimize)
 	{
 		_Parameter     p1,p2;
 		checkParameter (useLastResults,p1,0.0);
@@ -9089,14 +9059,10 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 			
 			GetInitialValues();	
 		}
-		long	f = LocateVarByName (mpiPrefixCommand);
 		
-		if (f>=0)
-		{
-			_PMathObj iv = FetchVar (f)->Compute();
-			if (iv->ObjectClass () == STRING)
-				rec << *((_FString*)iv)->theString;
-		}	
+		_FString *mpiPrefix = (_FString*)FetchObjectFromVariableByType (&mpiPrefixCommand, STRING);
+		if (mpiPrefix)
+			rec << mpiPrefix->theString;
 	}
 		
 	// write out all globals
@@ -9116,7 +9082,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		depVarList 		= new _SimpleList;
 		catVarList 		= new _SimpleList;
 		
-		checkPointer ((Ptr)(indepVarList && depVarList && catVarList));
+		checkPointer				((Ptr)(indepVarList && depVarList && catVarList));
 		ScanAllVariablesOnPartition (*partitionList, *indepVarList, *depVarList, *catVarList);
 	}
 	else
@@ -9136,7 +9102,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	
 	// write out all categs
 	
-	if (opt == 4)
+	if (opt == _hyphyLFSerializeModeCategoryAsGlobal)
 		for (long idx = 0; idx < catVarList->lLength; idx++)
 		{
 			_CategoryVariable* theC = (_CategoryVariable*)LocateVar(catVarList->lData[idx]);
@@ -9144,9 +9110,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 			rec<<str;			
 		}
 	else
-	{
 		ExportCatVariables (rec, catVarList);
-	}
 	
 	//write out all the models
 
@@ -9165,7 +9129,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	}
 	else
 		redirectorT = &theTrees;
-	{
+
 	for (long idx = 0; idx < redirectorT->lLength; idx++)
 	{
 		_SimpleList dT;
@@ -9178,7 +9142,6 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 			
 		dH.Union (dU,dT);
 		dU.Duplicate (&dH);
-	}
 	}
 	
 	{
@@ -9232,7 +9195,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	
 	dU.Clear();
 	_AVLList writtenDF (&dU);
-	{
+
 	for (long idx = 0; idx < redirector->lLength; idx++)
 	{
 		if (writtenDF.Insert ((BaseRef)redirector->lData[idx])>=0)
@@ -9285,7 +9248,6 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 			 rec << ");\n";	
 		}
 	}
-	}
 	
 	rec << "LikelihoodFunction ";
 	rec << *lfName;
@@ -9312,15 +9274,12 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		rec << '"';
 	}
 
-	if (opt==1)
+	if (opt==_hyphyLFSerializeModeOptimize)
 	{
-		_Parameter pv;
 		rec << ");\n";
-		rec << optimizationPrecision;
+		_Parameter pv;
 		checkParameter (optimizationPrecision, pv ,0.001);
-		rec << '=';
-		rec << _String(pv);
-		rec << ";\n";
+		rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String (pv));
 		/*rec << optimizationMethod;
 		checkParameter (optimizationMethod, pv ,7);
 		rec << '=';
@@ -9344,30 +9303,18 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		rec << lfName;
 		rec << "\";\n";
 		checkParameter (shortMPIReturn, pv ,0);
-		rec << shortMPIReturn;
-		rec << '=';
-		rec << _String(pv);
-		rec << ";\n";
+		rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String (pv));
 	}
 	else
-		if (opt==2)
+		if (opt==_hyphyLFSerializeModeLongMPI)
 		{
-			rec << ");\n";
-			rec << mpiMLELFValue;
-			rec << '=';
-			rec << _String(FetchVar(LocateVarByName(mpiMLELFValue))->Compute()->Value());
-			rec << ";\n";
-			_String resVarName = *lfName & "_MLES";
+			rec <<     ");\n";
+			rec.AppendAnAssignmentToBuffer(&mpiMLELFValue, new _String(FetchVar(LocateVarByName(mpiMLELFValue))->Compute()->Value()));
+
+			_String	   resVarName = *lfName & "_MLES";
 			_Variable* resVar = FetchVar(LocateVarByName (resVarName));
 			if (resVar)
-			{
-				rec << resVarName;
-				rec << '=';
-				_String* resVarVal = (_String*)resVar->Compute()->toStr();
-				rec << *resVarVal; 
-				rec << ";\n";
-				DeleteObject (resVarVal);
-			}
+				rec.AppendAnAssignmentToBuffer(&resVarName,(_String*)resVar->Compute()->toStr());
 		}
 		else
 			rec << ");";

@@ -415,6 +415,10 @@ virtual		~_AVLListX	(void) {}
 			 void		SetXtra				(long,long);
 	virtual  void		Clear				(bool = false);
 	virtual  void		DeleteXtra			(long);
+	virtual  void		PopulateFromList	(_List&);
+	/* SLKP: 20090817 
+		add key: index values from the list of strings
+	 */
 				 
 	_SimpleList			xtraD;
 	

@@ -158,7 +158,7 @@ fi
 if [ $1 = "MP" ] 
 then
 	TARGET_NAME="HYPHYMP";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread -ldl ";
 	echo "+---------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP|"
 	echo "+---------------------------------------+"
@@ -168,7 +168,7 @@ fi
 if [ $1 = "MP2" ] 
 then
 	TARGET_NAME="HYPHYMP";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread -fopenmp ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -lpthread -fopenmp -ldl ";
 	echo "+-----------------------------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP with setconcurrency|"
 	echo "+-----------------------------------------------------------+"
@@ -192,9 +192,9 @@ then
 		COMPILER="mpic++";
 		COMPILERC="mpicc";
 		COMPILER_FLAGS=$COMPILER_FLAGS" -D _SLKP_LFENGINE_REWRITE_ "
-		LINKER_FLAGS=$CURL_LINKER_LIBS" -lm ";
+		LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -ldl ";
 	else
-		LINKER_FLAGS=$CURL_LINKER_LIBS" -lpthread -lm -lmpich ";	
+		LINKER_FLAGS=$CURL_LINKER_LIBS" -lpthread -lm -lmpich -ldl ";	
 	fi 
 	
 	if [ $sysName == "AIX" ]

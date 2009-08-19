@@ -226,11 +226,27 @@ virtual		operator const char* (void);
  			
  			void 	LoCase (void);
  				// upcase the string
- 			
- 			_List*  Tokenize (_String);
 	
- 			
- 			void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil);
+			void	AppendAnAssignmentToBuffer (_String*, _String*, bool = true, bool = false, bool = false);
+			/* SLKP 20090817
+				a utility function to append a statement of the form 
+				id = value; to the current string assumed to be in the buffer form
+				bool flags have the following meanings:
+					3rd: free the 2nd string argument when done
+					4th: put quotes around the value
+					5th: use := instead of =
+ 			*/
+
+			void	AppendVariableValueAVL (_String*, _SimpleList&);
+			/* SLKP 20090817
+				a utility function to append a statement of the form 
+				id["varname"] = varvalue; for each variable in the SimpleList arguments
+					for String valued variables, their values are properly quoted
+			*/
+
+			_List*  Tokenize (_String);
+	
+  			void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil);
  			
   			void    ProcessParameter (void);
   			
@@ -306,6 +322,7 @@ _Parameter		toNum (void);
 
 
 extern _String empty,
+			   emptyAssociativeList,
 			   hyphyCiteString;
 			   
 #ifdef  __MAC__

@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "classes.h"
 
 
-#define  UNDEFINED 			0x00
+#define  HY_UNDEFINED 		0x00
 #define  NUMBER 			0x01
 #define	 MATRIX 			0x04
 #define	 CONTAINER			0x08

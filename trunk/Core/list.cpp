@@ -3086,6 +3086,16 @@ void _AVLListX::DeleteXtra (long i)
 
 //______________________________________________________________
 
+void _AVLListX::PopulateFromList (_List& src)
+{
+	Clear(true);
+	for (long k = 0; k < src.lLength; k++)
+		Insert (src(k)->makeDynamic(),k,false);
+}
+
+
+//______________________________________________________________
+
 long  _AVLList::Insert (BaseRef b, long xtra,bool cp)
 {
 	if (dataList->lLength-emptySlots.lLength)

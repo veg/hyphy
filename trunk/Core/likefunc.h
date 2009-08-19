@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFConditionProbsWeightedSum			2
 #define	  _hyphyLFConditionProbsMaxProbClass		3
 #define	  _hyphyLFConditionProbsClassWeights		4
+#define	  _hyphyLFConditionMPIIterate				5
 
 /* computational template kinds for the likelihood function */
 
@@ -63,6 +64,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFConstructCategoryMatrixWeights		2
 #define	  _hyphyLFConstructCategoryMatrixPosteriors		3
 #define	  _hyphyLFConstructCategoryMatrixSiteProbabilities		4
+
+/* likelihood seialization model */
+
+#define	  _hyphyLFSerializeModeVanilla					0
+#define	  _hyphyLFSerializeModeOptimize					1
+#define	  _hyphyLFSerializeModeLongMPI					2
+#define	  _hyphyLFSerializeModeCategoryAsGlobal			4
+#define	  _hyphyLFSerializeModeShortMPI					5
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -300,7 +309,6 @@ static	void			CheckFibonacci				(_Parameter);
 	private: 	
 	
 		void	  		SendOffToMPI		  		(long);
-		void			RecurseCategoryMPI 			(long,  long, _Parameter);
 		_Parameter		ComputeMasterMPI			(void);
 		void			InitMPIOptimizer			(void);
 		void			CleanupMPIOptimizer			(void);
@@ -339,7 +347,7 @@ static	void			CheckFibonacci				(_Parameter);
 		void			PopulateConditionalProbabilities	
 													(long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
 		void			ComputeSiteLikelihoodsForABlock
-													(long, _Parameter*, _SimpleList&, long = -1, _SimpleList* = nil);
+													(long, _Parameter*, _SimpleList&, long = -1, _SimpleList* = nil,  bool = false);
 	
 						// this function computes a list of site probabilities for the i-th block (1st parameter)
 						// stores them in pattern (left to right) order (2nd argument)
@@ -599,6 +607,10 @@ extern	_GrowingVector		_scalerMultipliers,
 
 _Parameter					acquireScalerMultiplier (long);
 _Parameter					myLog (_Parameter);
+
+#ifdef	__HYPHYMPI__
+	extern					_Matrix		resTransferMatrix;
+#endif	
 
 #endif
 		

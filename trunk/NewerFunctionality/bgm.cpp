@@ -1418,9 +1418,10 @@ void Bgm::CacheNodeScores (void)
 		}
 		
 		
+		long node_id;
 		
 		// farm out jobs to idle nodes until none are left
-		for (long node_id = 0; node_id < num_nodes; node_id++)
+		for ( node_id = 0; node_id < num_nodes; node_id++)
 		{
 			long		maxp			= max_parents.lData[node_id],
 						ntuple_receipt,

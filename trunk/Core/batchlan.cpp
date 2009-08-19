@@ -6004,7 +6004,7 @@ void	  _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
 			if ((g=FindLikeFuncName(AppendContainerName(*arg2,chain.nameSpacePrefix)))>=0)
 			{
 				checkPointer (theMessage = new _String(1024L,true));
-				((_LikelihoodFunction*)likeFuncList(g))->SerializeLF(*theMessage,1);
+				((_LikelihoodFunction*)likeFuncList(g))->SerializeLF(*theMessage,_hyphyLFSerializeModeOptimize);
 				theMessage->Finalize();
 			}
 			else

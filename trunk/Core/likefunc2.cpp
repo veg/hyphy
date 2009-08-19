@@ -366,6 +366,8 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 // _hyphyLFConditionProbsClassWeights : compute the weight of each rate class index 
 //   : expected minimum dimension of buffer is M
 //	 : scalers will have no entries
+// _hyphyLFConditionMPIIterate : compute conditional likelihoods of the partition using MPI
+//	 : run mode effectively the same as _hyphyLFConditionProbsWeightedSum
 {
 	_List				*traversalPattern		= (_List*)categoryTraversalTemplate(index),
 						*variables			    = (_List*)((*traversalPattern)(0)),
@@ -397,10 +399,9 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 			arrayDim = blockLength;
 	}
 	
-	
-	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
+	if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights)
 	{
-		if (runMode == _hyphyLFConditionProbsWeightedSum)
+		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate)
 			for (long r = 0; r < blockLength; r++)
 				buffer[r] = 0.;
 	
@@ -417,192 +418,253 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 	{
 		(catVariable = ((_CategoryVariable**)(variables->lData))[currentCat])->Refresh();
 		catVariable->SetIntervalValue(0,true);
-		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
+		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights)
 			(*catWeigths) << catVariable->GetWeights();
 	}
 	
 		
 	scalers.Populate	(arrayDim,0,0);
-
-	for					(long currentRateCombo  = 0; currentRateCombo < totalSteps; currentRateCombo++)
+	
+#ifdef __HYPHYMPI__
+	_GrowingVector * computedWeights = nil;
+	if (runMode == _hyphyLFConditionMPIIterate)
 	{
-
-		// the next clause takes care of advancing the class count and 
-		// setting each category variable to its appropriate value 
-		
-		if (!isTrivial)
+		computedWeights = new _GrowingVector;
+	}
+#endif	
+	
+	long				mpiTasksSent = 0;
+	for					(long pass = 0; pass < 1+(runMode == _hyphyLFConditionMPIIterate); pass++)
+	{
+		for					(long currentRateCombo  = 0; currentRateCombo < totalSteps; currentRateCombo++)
 		{
-			long remainder = currentRateCombo % categoryCounts->lData[catCount];
-			if (currentRateCombo && remainder  == 0)
+
+			// setting each category variable to its appropriate value 
+			
+			_Parameter		 currentRateWeight = 1.;
+			if (pass == 0)
 			{
-				categoryValues.lData[catCount] = 0;
-				(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(0);
-				for (long uptick = catCount-1; uptick >= 0; uptick --)
+				if (!isTrivial)
 				{
-					categoryValues.lData[uptick]++;
-					if (categoryValues.lData[uptick] == categoryCounts->lData[uptick])
+					long remainder = currentRateCombo % categoryCounts->lData[catCount];
+					if (currentRateCombo && remainder  == 0)
 					{
-						categoryValues.lData[uptick] = 0;
-						(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(0);
+						categoryValues.lData[catCount] = 0;
+						(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(0);
+						for (long uptick = catCount-1; uptick >= 0; uptick --)
+						{
+							categoryValues.lData[uptick]++;
+							if (categoryValues.lData[uptick] == categoryCounts->lData[uptick])
+							{
+								categoryValues.lData[uptick] = 0;
+								(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(0);
+							}
+							else
+							{
+								(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(categoryValues.lData[uptick]);
+								break;
+							}
+						}
 					}
 					else
 					{
-						(((_CategoryVariable**)(variables->lData))[uptick])->SetIntervalValue(categoryValues.lData[uptick]);
-						break;
+						if (currentRateCombo)
+						{
+							categoryValues.lData[catCount]++;
+							(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(remainder);
+						}
 					}
 				}
-			}
-			else
-			{
-				if (currentRateCombo)
-				{
-					categoryValues.lData[catCount]++;
-					(((_CategoryVariable**)(variables->lData))[catCount])->SetIntervalValue(remainder);
-				}
-			}
-		}
-		
-		_Parameter		 currentRateWeight = 1.;
-		if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights)
-		{
-			for					(long currentCat		= 0; currentCat <= catCount; currentCat++)
-				currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
-			if (runMode == _hyphyLFConditionProbsClassWeights)
-			{
-				buffer [currentRateCombo] = currentRateWeight;
-				continue;
-			}
-			else
-				if (currentRateWeight == 0.0) // nothing to do, eh?
-					continue;
-		}
-		
-	
-		// now that the categories are set we can proceed with the computing step
-		long			 indexShifter					= blockLength * currentRateCombo;
-		long			 *siteCorrectors				= ((_SimpleList**)siteCorrections.lData)[index]->lLength?
-														 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
-														 :nil;
-		
-		if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode) 
-			// populate the matrix of conditionals and scaling factors
-		{
-			_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
-
-			ComputeBlock	(index, bufferForThisCategory, currentRateCombo, branchIndex, branchValues);
 			
-			if (runMode == _hyphyLFConditionProbsRawMatrixMode)
-				for (long p = 0; p < blockLength; p++)
-					scalers.lData[p+indexShifter] = siteCorrectors[p];
-			else
-			{
-				if (siteCorrectors)
+				if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights || runMode == _hyphyLFConditionMPIIterate)
 				{
-					for (long r1 = 0; r1 < blockLength; r1++)
+					for					(long currentCat		= 0; currentCat <= catCount; currentCat++)
+						currentRateWeight *= ((_Matrix**)catWeigths->lData)[currentCat]->theData[categoryValues.lData[currentCat]];
+					
+	#ifdef __HYPHYMPI__
+					if (runMode == _hyphyLFConditionMPIIterate && pass == 0)
+						computedWeights->Store(currentRateWeight);
+	#endif				
+					if (runMode == _hyphyLFConditionProbsClassWeights)
 					{
-						long scv			  = *siteCorrectors,
-							 scalerDifference = scv-scalers.lData[r1];
-						
-						if (scalerDifference > 0) 
-						// this class has a _bigger_ scaling factor than at least one other class
-						// hence it needs to be scaled down (unless it's the first class)
-						{
-							if (currentRateCombo==0) //(scalers.lData[r1] == -1)
-								scalers.lData[r1] = scv;
-							else
-								bufferForThisCategory[r1] *= acquireScalerMultiplier (scalerDifference);
-						}
+						buffer [currentRateCombo] = currentRateWeight;
+						continue;
+					}
+					else
+						if (currentRateWeight == 0.0) // nothing to do, eh?
+							continue;
+	#ifdef __HYPHYMPI__
 						else
 						{
-							if (scalerDifference < 0) 
-							// this class is a smaller scaling factor, i.e. its the biggest among all those
-							// considered so far; all other classes need to be scaled down
-							{							
-								_Parameter scaled = acquireScalerMultiplier (-scalerDifference);
-								for (long z = indexShifter+r1-blockLength; z >= 0; z-=blockLength)
-									buffer[z] *= scaled;
-								
-								scalers.lData[r1] = scv;
+							if (runMode == _hyphyLFConditionMPIIterate)
+							{
+								SendOffToMPI (currentRateCombo);
+								mpiTasksSent ++;
+								continue;
 							}
 						}
-						siteCorrectors++;
+	#endif						
+				}
+			}
+			
+			long useThisPartitonIndex = currentRateCombo;
+			
+#ifdef __HYPHYMPI__
+			if (runMode == _hyphyLFConditionMPIIterate)
+			{
+				MPI_Status	   status;
+				ReportMPIError(MPI_Recv (resTransferMatrix.theData, resTransferMatrix.GetSize(), MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);				
+				useThisPartitonIndex = status.MPI_SOURCE-1;
+				currentRateWeight    = computedWeights->theData[useThisPartitonIndex];
+			}
+#endif						
+			
+			// now that the categories are set we can proceed with the computing step
+			long			 indexShifter					= blockLength * useThisPartitonIndex;
+			long			 *siteCorrectors				= ((_SimpleList**)siteCorrections.lData)[index]->lLength?
+															 (((_SimpleList**)siteCorrections.lData)[index]->lData) + indexShifter
+															 :nil;
+			
+
+			if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode) 
+				// populate the matrix of conditionals and scaling factors
+			{
+				_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+
+				ComputeBlock	(index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+				
+				if (runMode == _hyphyLFConditionProbsRawMatrixMode)
+					for (long p = 0; p < blockLength; p++)
+						scalers.lData[p+indexShifter] = siteCorrectors[p];
+				else
+				{
+					if (siteCorrectors)
+					{
+						for (long r1 = 0; r1 < blockLength; r1++)
+						{
+							long scv			  = *siteCorrectors,
+								 scalerDifference = scv-scalers.lData[r1];
+							
+							if (scalerDifference > 0) 
+							// this class has a _bigger_ scaling factor than at least one other class
+							// hence it needs to be scaled down (unless it's the first class)
+							{
+								if (useThisPartitonIndex==0) //(scalers.lData[r1] == -1)
+									scalers.lData[r1] = scv;
+								else
+									bufferForThisCategory[r1] *= acquireScalerMultiplier (scalerDifference);
+							}
+							else
+							{
+								if (scalerDifference < 0) 
+								// this class is a smaller scaling factor, i.e. its the biggest among all those
+								// considered so far; all other classes need to be scaled down
+								{							
+									_Parameter scaled = acquireScalerMultiplier (-scalerDifference);
+									for (long z = indexShifter+r1-blockLength; z >= 0; z-=blockLength)
+										buffer[z] *= scaled;
+									
+									scalers.lData[r1] = scv;
+								}
+							}
+							siteCorrectors++;
+						}
+					}
+				}
+			} 
+			else
+			{
+				if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass || runMode == _hyphyLFConditionMPIIterate) 
+				{
+					//if (branchIndex>=0)
+					//	((_TheTree*)LocateVar(theTrees.lData[index]))->AddBranchToForcedRecomputeList (branchIndex+((_TheTree*)LocateVar(theTrees.lData[index]))->GetLeafCount());
+					
+	#ifdef			__HYPHYMPI__
+					if (runMode == _hyphyLFConditionMPIIterate)
+					{
+						long offset = resTransferMatrix.GetVDim();
+
+						for (long k = 0; k < blockLength; k++)
+						{
+							buffer[blockLength+k] = resTransferMatrix.theData[k];
+							siteCorrectors[k]     = resTransferMatrix.theData[k+offset];
+						}
+					}
+					else
+#endif
+					
+					ComputeBlock	(index, buffer + blockLength, useThisPartitonIndex, branchIndex, branchValues);
+
+					if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate)
+						for (long r1 = 0, r2 = blockLength; r1 < blockLength; r1++,r2++)
+						{
+							if (siteCorrectors)
+							{
+								long scv = *siteCorrectors;
+								
+								if (scv < scalers.lData[r1]) // this class has a _smaller_ scaling factor
+								{
+									buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
+									scalers.lData[r1] = scv;
+								}
+								else
+								{
+									if (scv > scalers.lData[r1]) // this is a _larger_ scaling factor
+										buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);							
+									else // same scaling factors
+										buffer[r1] += currentRateWeight * buffer[r2];
+								}
+								
+								siteCorrectors++;
+							}
+							else
+								buffer[r1] += currentRateWeight * buffer[r2];
+							
+						}				
+					else // runMode = _hyphyLFConditionProbsMaxProbClass
+					{
+						for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
+						{
+							bool doChange = false;
+							if (siteCorrectors)
+							{
+								long scv  = *siteCorrectors,
+									 diff = scv - scalers.lData[r3];
+								
+								if (diff<0) // this has a _smaller_ scaling factor
+								{
+									_Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
+									if (buffer[r2] > scaled)
+										doChange = true;
+									else
+										buffer[r1] = scaled;
+									scalers.lData[r3] = scv;
+								}
+								else
+								{
+									if (diff>0) // this is a _larger_ scaling factor
+										buffer[r2] *= acquireScalerMultiplier (-diff);		
+									doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
+								}
+								
+								siteCorrectors++;
+							}
+							else
+								doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
+							
+							if (doChange)
+							{
+								buffer[r1]		   = buffer[r2];
+								buffer[r3]         = useThisPartitonIndex;
+							}
+						}						
 					}
 				}
 			}
-		} 
-		else
-		{
-			if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass) 
-			{
-				//if (branchIndex>=0)
-				//	((_TheTree*)LocateVar(theTrees.lData[index]))->AddBranchToForcedRecomputeList (branchIndex+((_TheTree*)LocateVar(theTrees.lData[index]))->GetLeafCount());
-				ComputeBlock	(index, buffer + blockLength, currentRateCombo, branchIndex, branchValues);
-
-				if (runMode == _hyphyLFConditionProbsWeightedSum)
-					for (long r1 = 0, r2 = blockLength; r1 < blockLength; r1++,r2++)
-					{
-						if (siteCorrectors)
-						{
-							long scv = *siteCorrectors;
-							
-							if (scv < scalers.lData[r1]) // this class has a _smaller_ scaling factor
-							{
-								buffer[r1] = currentRateWeight * buffer[r2] + buffer[r1] * acquireScalerMultiplier (scalers.lData[r1] - scv);
-								scalers.lData[r1] = scv;
-							}
-							else
-							{
-								if (scv > scalers.lData[r1]) // this is a _larger_ scaling factor
-									buffer[r1] += currentRateWeight * buffer[r2] * acquireScalerMultiplier (scv - scalers.lData[r1]);							
-								else // same scaling factors
-									buffer[r1] += currentRateWeight * buffer[r2];
-							}
-							
-							siteCorrectors++;
-						}
-						else
-							buffer[r1] += currentRateWeight * buffer[r2];
-						
-					}				
-				else // runMode = _hyphyLFConditionProbsMaxProbClass
-				{
-					for (long r1 = blockLength*2, r2 = blockLength, r3 = 0; r3 < blockLength; r1++,r2++,r3++)
-					{
-						bool doChange = false;
-						if (siteCorrectors)
-						{
-							long scv  = *siteCorrectors,
-								 diff = scv - scalers.lData[r3];
-							
-							if (diff<0) // this has a _smaller_ scaling factor
-							{
-								_Parameter scaled = buffer[r1]*acquireScalerMultiplier (diff);
-								if (buffer[r2] > scaled)
-									doChange = true;
-								else
-									buffer[r1] = scaled;
-								scalers.lData[r3] = scv;
-							}
-							else
-							{
-								if (diff>0) // this is a _larger_ scaling factor
-									buffer[r2] *= acquireScalerMultiplier (-diff);		
-								doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
-							}
-							
-							siteCorrectors++;
-						}
-						else
-							doChange = buffer[r2] > buffer[r1] && ! CheckEqual (buffer[r2],buffer[r1]);
-						
-						if (doChange)
-						{
-							buffer[r1]		   = buffer[r2];
-							buffer[r3]         = currentRateCombo;
-						}
-					}						
-				}
-			}
+#ifdef __HYPHYMPI__
+			if (--mpiTasksSent == 0)
+				break;
+#endif	
 		}
 	}
 	DeleteObject (catWeigths);
@@ -610,11 +672,11 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 
 //_______________________________________________________________________________________________
 
-void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues)
+void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues, bool mpiRunMode)
 // assumes that results is at least blockLength slots long
 {
 	if (blockDependancies.lData[index])
-		PopulateConditionalProbabilities(index, _hyphyLFConditionProbsWeightedSum, results, scalers, branchIndex, branchValues);	
+		PopulateConditionalProbabilities(index, mpiRunMode?_hyphyLFConditionMPIIterate:_hyphyLFConditionProbsWeightedSum, results, scalers, branchIndex, branchValues);	
 	else
 	{
 		ComputeBlock		(index, results, -1, branchIndex, branchValues);
