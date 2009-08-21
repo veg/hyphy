@@ -1,0 +1,44 @@
+_codonModelTableDefinitions = 
+{
+
+"DATASET": {"ID":					"INTEGER PRIMARY KEY UNIQUE", 
+			  "IMPORT_PATH":		"TEXT",
+			  "SEQUENCES":			"INTEGER",
+			  "SITES":				"INTEGER",
+			  "PARTITIONS":			"INTEGER",
+			  "GENETIC_CODE":		"INTEGER",
+			  "CHECKSUM":			"INTEGER",
+			  "DESCRIPTION":		"TEXT"
+			 },
+
+"PARTITIONS": {"ID":				"INTEGER",
+			   "PARTITION_INDEX":	"INTEGER",
+			   "ALIGNMENT":			"TEXT",
+			   "TREE":				"TEXT"},
+			   
+"MODEL_STATS": {"ID":				"INTEGER",
+				"TOTAL" :			"INTEGER",
+				"CREDIBLE":			"INTEGER",
+				"CLOUD10" :			"INTEGER",
+				"CLOUD5":			"INTEGER",
+				"CLOUD1":			"INTEGER",
+				"TWO":				"INTEGER",
+				"THREE":			"INTEGER",
+				"FOUR":				"INTEGER",
+				"FIVE":				"INTEGER",
+				"SIX":				"INTEGER",
+				"SEVEN":			"INTEGER",
+				"EIGHT":			"INTEGER",
+				"NINE":				"INTEGER",
+				"TENPLUS":			"INTEGER"},
+			   
+"BEST_MODELS": {"ID":				"INTEGER",
+				"RESIDUE1":			"CHAR",
+				"RESIDUE2":			"CHAR",
+				"BEST_CLASS":		"INTEGER",
+				"AVERAGED_CLASS":	"REAL",
+			 	"BINNED_CLASS":		"INTEGER",
+				"CONSENSUS_CLASS":  "INTEGER"	
+			   }
+			   
+};
