@@ -363,9 +363,6 @@ _ElementaryCommand				 * makeNewCommand		(long);
 	extern	 _String 				mpiNodeID,
 									mpiNodeCount;
 																		
-	extern	 bool					mpiParallelOptimizer,
-									mpiPartitionOptimizer;
-										
 	#define	 HYPHY_MPI_SIZE_TAG		111
 	#define	 HYPHY_MPI_STRING_TAG	112
 	#define	 HYPHY_MPI_DONE_TAG		113

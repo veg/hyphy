@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef   __HYPHYMPI__
 	#include "likefunc.h"
+	extern int _hy_mpi_node_rank;
 #endif
 
 #if defined   __UNIX__ || defined __HYPHY_GTK__
@@ -172,9 +173,7 @@ bool	GlobalStartup (void)
 				fileName = baseDirectory & fileName;
 			#endif
 		#else
-			_Parameter nodeID;
-			checkParameter (mpiNodeID,nodeID,0.0);
-			_String fileName = errorFileName & ".mpinode" & _String((long)nodeID);
+			_String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
 		#endif
 		
 		globalErrorFile = doFileOpen (fileName.sData,"w+");
@@ -196,7 +195,7 @@ bool	GlobalStartup (void)
 				fileName = baseDirectory & fileName;
 			#endif
 		#else
-			fileName = messageFileName & ".mpinode" & _String((long)nodeID);
+			fileName = messageFileName & ".mpinode" & (long)_hy_mpi_node_rank;
 		#endif
 		
 		globalMessageFile = doFileOpen (fileName.getStr(),"w+");
@@ -220,30 +219,19 @@ bool	GlobalStartup (void)
 //____________________________________________________________________________________	
 bool	GlobalShutdown (void)
 {
-	bool res = true;
+		bool res = true;
 
 #ifdef  __HYPHYMPI__
-	  	int 	rank, 
-			  	size;
+	  	int 	size;
 			  			   			   			 
-		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-		if (rank == 0)
+		PurgeAll (true); 
+			// force manual clear to help debuggin 'exit' crashes
+	    ReportWarning ("PurgeAll was successful");
+		if (_hy_mpi_node_rank == 0)
 		{
-			_String scm ("SHUTDOWN_CONFIRM");
 			for (long count = 1; count < size; count++)
-			{
-				/*long		 sender;*/
 				MPISendString(empty,count);
-				/*_String * conf = MPIRecvString (count, sender);
-				if (conf->Equal (&scm))
-				{
-					_String 	  cs = _String ("Node ") & count & " has confirmed shutdown.";
-					ReportWarning (cs);
-				}
-				DeleteObject (conf);*/
-			}
 		}
 #endif
  	
@@ -302,7 +290,6 @@ bool	GlobalShutdown (void)
 		 MPI_Finalize();
 	 #endif 
 #endif
- 
  	return res;
 }
 
@@ -332,12 +319,14 @@ void	PurgeAll (bool all)
 		variablePtrs.Clear();
 		freeSlots.Clear();
 		lastMatrixDeclared = -1;
-		#ifdef USE_AVL_NAMES
-			variableNames.Clear(true);
-		#else
-			variableNames.Clear();
-			variableReindex.Clear();
-		#endif
+		/*if (_hy_mpi_node_rank == 0)
+		{
+			for (
+		}
+		else*/
+		{
+			variableNames.Clear(true);			
+		}
 		_x_ = nil;
 		_n_ = nil;
 		pathNames.Clear();
@@ -347,12 +336,10 @@ void	PurgeAll (bool all)
     isInFunction		= false;
 	isDefiningATree		= false;
 #if defined __HYPHYMPI__ && defined __HYPHY_GTK__
-	int 		   rank, 
-	  			   size;
+	int 		   size;
 	  			   			   			 
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	setParameter    (mpiNodeID, (_Parameter)rank);
+	MPI_Comm_size   (MPI_COMM_WORLD, &size);
+	setParameter    (mpiNodeID, (_Parameter)_hy_mpi_node_rank);
 	setParameter	(mpiNodeCount, (_Parameter)size);
 #endif
 }

@@ -72,6 +72,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFSerializeModeLongMPI					2
 #define	  _hyphyLFSerializeModeCategoryAsGlobal			4
 #define	  _hyphyLFSerializeModeShortMPI					5
+
+/* likelihood function parallelize mode */
+
+#define	  _hyphyLFMPIModeNone							0
+#define	  _hyphyLFMPIModePartitions						1
+#define	  _hyphyLFMPIModeSiteTemplate					2
+#define	  _hyphyLFMPIModeREL							3
+#define	  _hyphyLFMPIModeAuto							4
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -124,6 +133,7 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 												   // 1 - global variables
 												   // 2 - local independents
 												   // 3 - dependents
+												   // 4 - category variables
 		
 		
 		_Parameter	GetIthIndependent (long); 	// get the value of i-th independent variable 
@@ -308,8 +318,7 @@ static	void			CheckFibonacci				(_Parameter);
 		
 	private: 	
 	
-		void	  		SendOffToMPI		  		(long);
-		_Parameter		ComputeMasterMPI			(void);
+		bool	  		SendOffToMPI		  		(long);
 		void			InitMPIOptimizer			(void);
 		void			CleanupMPIOptimizer			(void);
 		void			ComputeBlockInt1 			(long,_Parameter&,_TheTree*,_DataSetFilter*, char);
@@ -347,7 +356,7 @@ static	void			CheckFibonacci				(_Parameter);
 		void			PopulateConditionalProbabilities	
 													(long index, char runMode, _Parameter* buffer, _SimpleList& scalers, long = -1, _SimpleList* = nil);
 		void			ComputeSiteLikelihoodsForABlock
-													(long, _Parameter*, _SimpleList&, long = -1, _SimpleList* = nil,  bool = false);
+													(long, _Parameter*, _SimpleList&, long = -1, _SimpleList* = nil,  char = 0);
 	
 						// this function computes a list of site probabilities for the i-th block (1st parameter)
 						// stores them in pattern (left to right) order (2nd argument)
@@ -610,6 +619,16 @@ _Parameter					myLog (_Parameter);
 
 #ifdef	__HYPHYMPI__
 	extern					_Matrix		resTransferMatrix;
+	extern					long		hyphyMPIOptimizerMode;
+	extern					_String		mpiLoopSwitchToOptimize,
+										mpiLoopSwitchToBGM;
+
+	extern					_SimpleList	mpiNodesThatCantSwitch;
+
+	long					RetrieveMPICount			(char);
+	void					MPISwitchNodesToMPIMode		(long);
+
+
 #endif	
 
 #endif

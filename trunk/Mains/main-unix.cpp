@@ -88,10 +88,7 @@ bool	usePostProcessors = false,
 		
 char	prefFileName[] = ".hyphyinit";
 
-#ifdef	__HYPHYMPI__
-	  extern bool 		mpiParallelOptimizer,
-	  	     			mpiPartitionOptimizer;
-	  	     			
+#ifdef	__HYPHYMPI__	  	     			
 	  extern int  		_hy_mpi_node_rank;
 	  
 void 			mpiNormalLoop    (int, int, _String &);
@@ -455,14 +452,21 @@ int main (int argc, char* argv[])
 		  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 		  MPI_Comm_size(MPI_COMM_WORLD, &size);
 		  
-		  setParameter  (mpiNodeID, (_Parameter)rank);
+		  setParameter  (mpiNodeID,    (_Parameter)rank);
 		  setParameter	(mpiNodeCount, (_Parameter)size);
 		  _hy_mpi_node_rank = rank;
 		  
 		  if (rank == 0)
 		  {
-		  	
-	#endif
+			  mpiNodesThatCantSwitch.Populate (size,1,0);		  	
+			/* {
+				  char hostname[256];
+				  gethostname(hostname, sizeof(hostname));
+				  printf("PID %d on %s ready for attach\n", getpid(), hostname);
+				  fflush(stdout);
+				  //getchar ();
+			  }	*/	
+#endif
 	
 	
 	//for (long k=0; k<NSIG; k++)
@@ -530,26 +534,10 @@ int main (int argc, char* argv[])
 						systemCPUCount = cpus.toNum();
 						if (systemCPUCount<1)
 							systemCPUCount = 1;
-						#ifdef __MP2__
-							pthread_setconcurrency (systemCPUCount+1);
-						#endif
+						pthread_setconcurrency (systemCPUCount+1);
 					}
 					else
 					#endif
-					#ifdef __HYPHYMPI__
-					if (thisArg == _String("MPIOPTIMIZER"))
-					{
-						mpiParallelOptimizer = true;
-			  		    setParameter	(mpiNodeCount, 0.0);
-			  		}
-					else
-						if (thisArg == _String("MPIPARTITIONS"))
-						{
-							mpiPartitionOptimizer = true;
-				  		    setParameter	(mpiNodeCount, 0.0);
-				  		}
-				  		else
-					#endif				
 				argFile = thisArg;
 	}
 	
@@ -591,10 +579,10 @@ int main (int argc, char* argv[])
 	#ifdef __HYPHYMPI__
 		if (rank>0)
 		{
-			if (mpiParallelOptimizer || mpiPartitionOptimizer)
-				mpiOptimizerLoop (rank, size);
-			else
-				mpiNormalLoop (rank, size, baseDir);
+			//if (mpiParallelOptimizer || mpiPartitionOptimizer)
+			//	mpiOptimizerLoop (rank, size);
+			//else
+			mpiNormalLoop (rank, size, baseDir);
 			/*argFile = "SHUTDOWN_CONFIRM";
 			MPISendString (argFile, senderID);*/
 		}
@@ -685,11 +673,9 @@ int main (int argc, char* argv[])
 	}
 	#ifdef __HYPHYMPI__
 	}
-	argFile = _String ("Node ") & (long)rank & " is shutting down\n"; 
-	ReportWarning (argFile);
+	ReportWarning				(_String ("Node ") & (long)rank & " is shutting down\n");
 	#endif
-	batchLanguageFunctions.Clear();
-	GlobalShutdown();
+	GlobalShutdown				();
 	
 	#ifdef __HYPHYMPI__
 		if (rank == 0)

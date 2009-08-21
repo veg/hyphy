@@ -87,8 +87,7 @@ virtual 	char& operator [] (long);
  				// string length
  			
  			_String operator & (_String);
- 				// append operator
- 			
+  			
  			virtual void operator << (const _String*);
  				// append into operator
 

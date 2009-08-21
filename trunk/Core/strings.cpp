@@ -121,6 +121,11 @@ _String::_String (void)
 	sLength = 0;
 	sData = nil;
 }
+
+/*extern int _hy_mpi_node_rank;
+long  loopCount      = 3;
+char* addrBreak      = 0x583088;*/
+
 //_______________________________________________________________________
 //length constructor
 _String::_String (unsigned long sL, bool flag) {
@@ -141,7 +146,15 @@ _String::_String (unsigned long sL, bool flag) {
 	{
 		sLength = sL;
 		sData = (char*)MemAllocate (sL+1);
-	    if (sData)
+		/* if (sData == addrBreak && _hy_mpi_node_rank == 1)
+		 {
+			 printf ("Here %d %d\n", sLength, getpid());
+			 sleep (10);
+			 loopCount--;
+			 assert (loopCount > 0);
+		 }*/
+		
+		if (sData)
 			memset (sData,0,sL+1);
 		else 
 		{
@@ -191,12 +204,9 @@ _String::_String (long sL) {
 	
 	char s [32];
 	sprintf (s,"%ld", sL);
-	
 	for(sLength=0;s[sLength];sLength++) ;
-	
 	checkPointer (sData = (char*)MemAllocate(sLength+1));
-	
-	memcpy (sData, s, sLength+1);
+	memcpy		 (sData, s, sLength+1);
 }
 
 //_______________________________________________________________________
@@ -434,7 +444,7 @@ _String _String::operator & (_String s)
 	if (sLength+s.sLength == 0) 
 		return empty;
 	
-	_String res (sLength+s.sLength);
+	_String res (sLength+s.sLength,false);
 	
 	if (sLength)
 		memcpy((res.sData),sData,sLength);
@@ -599,13 +609,13 @@ void _String::EscapeAndAppend (const _String & s, char mode)
 		EscapeAndAppend (s.sData[i], mode);
 }
 
-
 //_______________________________________________________________________
 // finalize buffer string
 void _String::Finalize (void)
 {
 	if (!(sData = MemReallocate (sData, sLength+1)))
 		warnError (-108);
+	
 	
 	sData[sLength]  = 0;
 	nInstances		= 1;

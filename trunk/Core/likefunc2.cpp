@@ -667,16 +667,19 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 #endif	
 		}
 	}
+#ifdef __HYPHYMPI__
+	DeleteObject (computedWeights);
+#endif	
 	DeleteObject (catWeigths);
 }
 
 //_______________________________________________________________________________________________
 
-void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues, bool mpiRunMode)
+void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parameter* results, _SimpleList& scalers, long branchIndex, _SimpleList* branchValues, char mpiRunMode)
 // assumes that results is at least blockLength slots long
 {
 	if (blockDependancies.lData[index])
-		PopulateConditionalProbabilities(index, mpiRunMode?_hyphyLFConditionMPIIterate:_hyphyLFConditionProbsWeightedSum, results, scalers, branchIndex, branchValues);	
+		PopulateConditionalProbabilities(index, mpiRunMode == _hyphyLFMPIModeREL ?_hyphyLFConditionMPIIterate:_hyphyLFConditionProbsWeightedSum, results, scalers, branchIndex, branchValues);	
 	else
 	{
 		ComputeBlock		(index, results, -1, branchIndex, branchValues);
@@ -842,4 +845,36 @@ void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value)
 		computationalResults.Store(new_value);
 }
 
+//_______________________________________________________________________________________________
+#ifdef __HYPHYMPI__
+	long RetrieveMPICount (char)
+	{
+		int size;
+		MPI_Comm_size(MPI_COMM_WORLD, &size);
+		return size;
+	}
+
+	void MPISwitchNodesToMPIMode (long totalNodeCount)
+	{
+		_String message = mpiLoopSwitchToOptimize & hyphyMPIOptimizerMode;
+		
+			// send a context switch signal
+		for (long ni = 1; ni <= totalNodeCount; ni++)
+			MPISendString (message, ni);
+		// receive confirmation of successful switch
+		for (long ni = 1; ni <= totalNodeCount; ni++)
+		{
+			long fromNode = ni;
+			_String t (MPIRecvString (ni,fromNode));
+			if (!t.Equal (&mpiLoopSwitchToOptimize))
+			{
+				WarnError (_String("[MPI] Failed to confirm MPI mode switch at node ") & ni);
+				return;
+			}
+			else
+				ReportWarning (_String("[MPI] Successful mode switch to mode ") & hyphyMPIOptimizerMode & " confirmed from node " & ni);	
+		}
+	}
+
+#endif
 #endif

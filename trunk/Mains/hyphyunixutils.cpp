@@ -12,18 +12,16 @@
 #endif	
 
 #ifdef			__HYPHYMPI__
-_String			preserveSlaveNodeState ("PRESERVE_SLAVE_NODE_STATE"),
-				MPI_NEXUS_FILE_RETURN  ("MPI_NEXUS_FILE_RETURN");
+	_String			preserveSlaveNodeState ("PRESERVE_SLAVE_NODE_STATE"),
+					MPI_NEXUS_FILE_RETURN  ("MPI_NEXUS_FILE_RETURN");
 
-bool 			mpiParallelOptimizer 	= false,
-   				mpiPartitionOptimizer 	= false;
-int  			_hy_mpi_node_rank;
+	int  			_hy_mpi_node_rank;
 
-void 			mpiNormalLoop    (int, int, _String &);
-void			mpiOptimizerLoop (int, int);
+	void 			mpiNormalLoop    (int, int, _String &);
+	void			mpiOptimizerLoop (int, int);
 
-void			mpiBgmLoop (int, int);
-
+	void			mpiBgmLoop (int, int);
+	_SimpleList		mpiNodesThatCantSwitch;
 #endif
 
 
@@ -197,75 +195,69 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 {
 	long		 senderID = 0;
 	
-	ReportWarning ("Entered mpiNormalLoop");
+	ReportWarning ("[MPI] Entered mpiNormalLoop");
 
-	_String* theMessage = MPIRecvString (-1,senderID),	// listen for messages from any node
-			* resStr	= nil,
-			_bgmSwitch ("_BGM_SWITCH_"),
-			css("_CONTEXT_SWITCH_MPIPARTITIONS_");
+	_String* theMessage		= MPIRecvString (-1,senderID),	// listen for messages from any node
+			* resStr		= nil;
 				
 	while (theMessage->sLength)
 	{
-		setParameter    (mpiNodeID, (_Parameter)rank);
+		setParameter    (mpiNodeID,    (_Parameter)rank);
 		setParameter	(mpiNodeCount, (_Parameter)size);
+		
 		//ReportWarning (*theMessage);
 		DeleteObject (resStr);
-		resStr = nil;
-		if (theMessage->Equal (&css) )
+		resStr		 = nil;
+		if (theMessage->startswith (mpiLoopSwitchToOptimize) )
 		{
-			mpiPartitionOptimizer = true;
-			ReportWarning ("Switched to mpiOptimizer loop");
-			MPISendString(css,senderID);
-			mpiOptimizerLoop (rank,size);
-			ReportWarning ("Returned from mpiOptimizer loop");
-			mpiPartitionOptimizer = false;
-			pathNames && & baseDir;
+			hyphyMPIOptimizerMode	= theMessage->Cut(mpiLoopSwitchToOptimize.sLength,-1).toNum();
+			
+			ReportWarning			(_String("[MPI] Switched to mpiOptimizer loop with mode ") & hyphyMPIOptimizerMode);
+			MPISendString			(mpiLoopSwitchToOptimize,senderID);
+			mpiOptimizerLoop		(rank,size);
+			ReportWarning			("[MPI] Returned from mpiOptimizer loop");
+			hyphyMPIOptimizerMode	= _hyphyLFMPIModeNone;
+			pathNames				&& & baseDir;
 		}
-		else if ( theMessage->Equal (&_bgmSwitch) )
+		else if ( theMessage->Equal (&mpiLoopSwitchToBGM) )
 		{
-			ReportWarning ("Received signal to switch to mpiBgmLoop");
-			MPISendString (_bgmSwitch, senderID);	// feedback to source to confirm receipt of message
-			mpiBgmLoop (rank, size);
-			ReportWarning ("Returned from mpiBgmLoop");
+			ReportWarning		("[MPI] Received signal to switch to mpiBgmLoop");
+			MPISendString		(mpiLoopSwitchToBGM, senderID);	// feedback to source to confirm receipt of message
+			mpiBgmLoop			(rank, size);
+			ReportWarning		("[MPI] Returned from mpiBgmLoop");
 		}
 		else
 		{
 			if (theMessage->beginswith ("#NEXUS"))
 			{
-				_String		msgCopy (*theMessage);
-				ReportWarning ("Received a function to optimize");
-				ReadDataSetFile (nil,true,theMessage);
-				ReportWarning ("Done with the optimization");
-				_Variable*  lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
+				_String				msgCopy (*theMessage);
+				ReportWarning		("[MPI] Received a function to optimize");
+				ReadDataSetFile		(nil,true,theMessage);
+				ReportWarning		("[MPI] Done with the optimization");
+				_Variable*			lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
 				
 				if (lfName)
-				{
 					resStr = (_String*)(lfName->Compute()->toStr());
-				}
 				else
 				{
 					_FString		*lfID = (_FString*)FetchObjectFromVariableByType (&lf2SendBack, STRING);
 	
 					if (!lfID)
 					{
-						_String errMsg ("Malformed MPI likelihood function optimization request - missing LF name to return.\n\n\n");
-						errMsg = errMsg & msgCopy;
-						FlagError (errMsg);
+						FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - did not specify the LF name to return in variable") & lf2SendBack & ".\n\n\n" );
 						break;
 					}
 					
 					long f = likeFuncNamesList.Find (lfID->theString);
+					
 					if (f<0)
 					{
-						_String errMsg ("Malformed MPI likelihood function optimization request - invalid LF name to return.\n\n\n");
-						errMsg = errMsg & msgCopy;
-						FlagError (errMsg);
+						FlagError ("[MPI] Malformed MPI likelihood function optimization request - LF name to return did not refer to a well-defined likelihood function.\n\n\n");
 						break;				
 					}
 					_Parameter	    pv;
 					checkParameter (shortMPIReturn, pv ,0);
-					resStr			= new _String (1024L,true);
-					checkPointer (resStr);
+					resStr		 = (_String*)checkPointer(new _String (1024L,true));
 					((_LikelihoodFunction*)likeFuncList (f))->SerializeLF(*resStr,pv>0.5?_hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
 					resStr->Finalize();
 				}
@@ -273,13 +265,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 			else
 			{
 				_ExecutionList exL (*theMessage);
-				/*printf ("Received:\n %s\n", ((_String*)exL.toStr())->sData);*/
 				_PMathObj res = exL.Execute();
 				resStr = res?(_String*)res->toStr():new _String ("0");
 			}
 				
 			checkPointer (resStr);
-			DeleteObject (theMessage);
 			MPISendString(*resStr,senderID);
 
 			_Parameter 	   	keepState = 0.0;
@@ -291,6 +281,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 				pathNames && & baseDir;		
 			}
 		}
+		DeleteObject (theMessage);
 		theMessage = MPIRecvString (-1,senderID);		
 	}
 	/*MPISendString(empty,senderID);*/
@@ -303,10 +294,10 @@ void mpiOptimizerLoop (int rank, int size)
 {
 	long		 senderID = 0;
 			
-	ReportWarning (_String ("MPI Node:") & (long)rank & " is ready for MPIParallelOptimizer tasks");
+	ReportWarning (_String ("[MPI] Node:") & (long)rank & " is ready for MPIParallelOptimizer tasks");
 				
-	if (mpiPartitionOptimizer)
-		ReportWarning (_String("MPI Partitions mode"));
+	if (hyphyMPIOptimizerMode == _hyphyLFMPIModePartitions)
+		ReportWarning ("[MPI] MPI Partitions mode");
 	
 	//printf ("Node %d waiting for a string\n", rank);
 	_String* theMessage = MPIRecvString (-1,senderID);
@@ -314,27 +305,24 @@ void mpiOptimizerLoop (int rank, int size)
 	{
 		if (theMessage->beginswith ("#NEXUS"))
 		{
+			//ReportWarning (*theMessage);
 			ReadDataSetFile (nil,true,theMessage);
 			if (likeFuncNamesList.lLength!=1)
 			{
-				_String errMsg ("Malformed MPI likelihood function paraller optimizer startup command. No valid LF has been defined.n\n\n");
-				FlagError (errMsg);
+				FlagError ("[MPI] Malformed MPI likelihood function paraller optimizer startup command. Exactly ONE valid LF must be defined.n\n\n");
 				break;						
 			}
 			
 			// send back the list of independent variables
 			
 			_LikelihoodFunction * theLF = (_LikelihoodFunction*)likeFuncList (0);
-			
-			if (mpiParallelOptimizer && theLF->GetCategoryVars().lLength)
+			if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL && theLF->CountObjects (4))
 			{
-				_String errMsg ("Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n");
-				FlagError (errMsg);
+				FlagError (_String("[MPI] Likelihood functions spawned off to slave MPI nodes can't have category variables.n\n\n"));
 				break;						
 			}
 			
 			_SimpleList* ivl = & theLF->GetIndependentVars();
-			
 			_String		 variableSpec (128L, true);
 			
 			(variableSpec) << LocateVar(ivl->lData[0])->GetName();
@@ -344,11 +332,12 @@ void mpiOptimizerLoop (int rank, int size)
 				(variableSpec) << ';';
 				(variableSpec) << LocateVar(ivl->lData[kk])->GetName();	
 			}
-			
-			ReportWarning 		  (variableSpec);
+			variableSpec.Finalize();
+			ReportWarning 		  (_String("[MPI] Sending back the following variable list\n") & variableSpec);
 			MPISendString		  (variableSpec,senderID);
 			theLF->PrepareToCompute();
-			theLF->MPI_LF_Compute (senderID, mpiPartitionOptimizer);
+			theLF->MPI_LF_Compute (senderID, !(hyphyMPIOptimizerMode == _hyphyLFMPIModeREL || 
+											hyphyMPIOptimizerMode  == _hyphyLFMPIModeSiteTemplate));
 			theLF->DoneComputing();
 			PurgeAll (true);
 		}

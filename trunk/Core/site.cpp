@@ -6164,7 +6164,11 @@ void	_DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode)
 		if (mode == 0)
 			((_Parameter*)target)[site] = ((_Parameter*)source)[duplicateMap.lData[site]];
 		else
-			((long*)target)[site] = ((long*)source)[duplicateMap.lData[site]];
+			if (mode == 1)
+				((long*)target)[site] = ((long*)source)[duplicateMap.lData[site]];
+			else
+				if (mode == 2)
+					((long*)target)[site] = ((_Parameter*)source)[duplicateMap.lData[site]];
 }
 
 
