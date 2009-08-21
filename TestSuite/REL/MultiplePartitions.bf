@@ -198,14 +198,8 @@ expectedConditionalProbabilities =
 
 expectedConditionalProbabilities = Transpose(expectedConditionalProbabilities);
 
-/*_lfSpec = {8,1};
-for (k = 0; k < 4; k=k+1)
-{
-	_lfSpec[2*k]   = "part_" + k;
-	_lfSpec[2*k+1] = "tree_" + k;
-}
 
-LikelihoodFunction multiPart = (_lfSpec);*/
+AUTO_PARALLELIZE_OPTIMIZE = 1;
 
 LikelihoodFunction multiPart = (part_0, tree_0, part_1, tree_1, part_2, tree_2, part_3, tree_3);
 

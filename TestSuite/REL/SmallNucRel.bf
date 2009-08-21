@@ -98,7 +98,8 @@ DataSet SmallCodon = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter SmallCodon_part = CreateFilter(SmallCodon,1,"","4,5,7,6,1,0,2,3");
 LikelihoodFunction SmallCodon_LF = (SmallCodon_part,SmallCodon_tree);
 
-
+AUTO_PARALLELIZE_OPTIMIZE = 3;
+OPTIMIZATION_PRECISION    = 0.001;
 
 Optimize(res_SmallCodon_LF,SmallCodon_LF);
 

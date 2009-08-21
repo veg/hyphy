@@ -1492,6 +1492,8 @@ LikelihoodFunction IntermediateCodon_AA_LF = (IntermediateCodon_AA_part,Intermed
 
 
 OPTIMIZATION_PRECISION    = 0.001;
+VERBOSITY_LEVEL			  = 1;
+
 Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
 
 /* test epilogue */
