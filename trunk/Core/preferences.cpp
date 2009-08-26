@@ -92,6 +92,7 @@ _String				_hyPreferencesFontFace 		("Font Face"),
 					_hyPreferencesTreeDisplay	("Tree Display"),
 					_hyPreferencesOptProgress	("Optimization Progress"),
 					_hyPreferencesStartupDialog	("Startup Dialog"),
+					_hyPreferencesGapFreqs		("Include Gaps in Frequency Counts"),
 					_hyPreferencesAutomoveC		("Automove console"),
 					_hyPreferencesMP			("CPUs to Load");
 //____________________________________________________________________________________________
@@ -171,6 +172,11 @@ void  ReadPreferences (void)
 	AddItemToPreferences (0,PREFITEM_TEXTBOX,_hyPreferencesGapWidth,"This options sets how many characters will be printed per cluster (clusters are separated by spaces) for data filters output to files via fprintf. Only affects interleaved non-NEXUS formats.",
 						 "10",nil,globalPreferencesList,false);	
 
+	optionList = "Yes,No";
+	_hyPreferencesKeys.Insert(_hyPreferencesGapFreqs.makeDynamic(),((_List*)globalPreferencesList.lData[4])->lLength);
+	AddItemToPreferences (0,PREFITEM_POPUP,_hyPreferencesGapFreqs,"Include gaps (as fully unresolved characters) in frequency counts","Yes",
+						  optionList.Tokenize (comma), globalPreferencesList,true);	
+		
 	AddItemToPreferences (1|8,-1,"Simulation Options","Options affecting bootstrapping algorithms.","",nil,globalPreferencesList,false);
 	optionList = "Discrete Distribution,Continuous Distribution";
 	_hyPreferencesKeys.Insert(_hyPreferencesHetSimulation.makeDynamic(),((_List*)globalPreferencesList.lData[4])->lLength);
@@ -571,6 +577,9 @@ void  ApplyPreferences (void)
 
 	setParameter (categorySimulationMethod, (_Parameter)((*((_String*)pfValues->lData[_hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesHetSimulation))])
 											!=_String("Discrete Distribution")))+1.0);
+
+	setParameter (hfCountGap, (_Parameter)((*((_String*)pfValues->lData[_hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesGapFreqs))])
+														  !=_String("No"))));
 
 	f = ((_String*)pfValues->lData[_hyPreferencesKeys.GetXtra(_hyPreferencesKeys.Find(&_hyPreferencesRandomSeed))])->toNum();
 	if (f>=0)
