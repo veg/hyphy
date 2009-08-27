@@ -130,10 +130,14 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		_Parameter		K2Score (long, _Matrix &, _Matrix &),
 						BDeScore (long,	_Matrix &, _Matrix &),
-						BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Matrix &, long);
+						BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
 		
 		long			GetNumNodes (void)	{ return num_nodes; }
 		long			GetNumCases (void)	{ return theData->GetVDim(); }
+		
+		void			GetNodeOrder (_Matrix * order);
+		void			GetStructure (_Matrix * graph);
+		void			GetConstraints (_Matrix * graph) { graph = (_Matrix *) constraint_graph.makeDynamic(); }
 		
 	protected:
 		
@@ -143,7 +147,7 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		
 		_Matrix	*		theData;
 		
-		_SimpleList		data_type,		// boolean, 0 = discrete, 1 = continuous
+		_SimpleList		node_type,		// boolean, 0 = discrete, 1 = continuous
 						num_levels,		// integer, if discrete, number of levels
 						max_parents,	// integer, maximum number of parents
 						has_missing;	// boolean, 0 = complete data, 1 = missing, (2 = latent, i.e., all missing)
@@ -167,8 +171,6 @@ class _BayesianGraphicalModel : public _LikelihoodFunction
 		_SimpleList		node_order_arg;		// provides access to node ordering functionality as HBL argument
 		
 		/* ------------------------------------------- */
-		
-		_AssociativeList	theParameters;	// container for _Matrix objects holding formulas for posterior distribution on parameters
 		
 	};
 
