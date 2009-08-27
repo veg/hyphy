@@ -190,7 +190,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 	CreateMatrix (&constraint_graph, num_nodes, num_nodes, false, true, false);
 	
 	// allocate space for _SimpleList objects
-	data_type.Populate (num_nodes, 0, 0);
+	node_type.Populate (num_nodes, 0, 0);
 	max_parents.Populate (num_nodes, 0, 0);
 	num_levels.Populate(num_nodes, 0, 0);
 	has_missing.Populate(num_nodes, 0, 0);
@@ -214,10 +214,10 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		// node type (0 = discrete, 1 = continuous)
 		if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER)))
 		{
-			data_type.lData[node] = (long)(avl_val->Value());
-			if (data_type.lData[node] < 0 || data_type.lData[node] > 2)
+			node_type.lData[node] = (long)(avl_val->Value());
+			if (node_type.lData[node] < 0 || node_type.lData[node] > 2)
 			{
-				errorMessage = _String("Unsupported NodeType ") & data_type.lData[node] & " for node " & node;
+				errorMessage = _String("Unsupported NodeType ") & node_type.lData[node] & " for node " & node;
 				break;
 			}
 		}
@@ -241,7 +241,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		}
 		else
 		{
-			if (!avl_val && data_type.lData[node] == 0)
+			if (!avl_val && node_type.lData[node] == 0)
 			{
 				errorMessage = _String ("Missing NumLevels in associative array for node ") & node;
 				break;
@@ -262,6 +262,12 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			if (max_parents.lData[node] <= 0)
 			{
 				errorMessage = _String ("MaxParents must be greater than zero, received ") & max_parents.lData[node] & " for node " & node;
+				break;
+			}
+			
+			if (max_parents.lData[node] >= num_nodes)
+			{
+				errorMessage = _String ("MaxParents cannot equal or exceed the number of nodes in the network, see node ") & node;
 				break;
 			}
 		}
@@ -295,7 +301,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		{
 			prior_mean.Store (node, 0, (_Parameter) (avl_val->Value()));
 		}
-		else if (!avl_val && data_type.lData[node] == 1)
+		else if (!avl_val && node_type.lData[node] == 1)
 		{
 			errorMessage = _String ("Missing PriorMean in associative array for node ") & node;
 			break;
@@ -314,7 +320,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 			}
 			// ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
 		}
-		else if (!avl_val && data_type.lData[node] == 1)
+		else if (!avl_val && node_type.lData[node] == 1)
 		{
 			errorMessage = _String ("Missing PriorPrecision in associative array for node ") & node;
 			break;
@@ -332,7 +338,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 				break;
 			}
 		}
-		else if (!avl_val && data_type.lData[node] == 1)
+		else if (!avl_val && node_type.lData[node] == 1)
 		{
 			errorMessage = _String ("Missing PriorScale in associative array for node ") & node;
 			break;
@@ -404,7 +410,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 		for (long nrows = theData->GetHDim(), node = 0; node < num_nodes; node++)
 		{
 			// if discrete node, compute number of levels and missingness
-			if (data_type.lData[node] == 0)
+			if (node_type.lData[node] == 0)
 			{
 				data_nlevels.lData[node] = 1;
 				
@@ -418,9 +424,9 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 						continue;
 					}
 					
-					if (val + 1 > num_levels.lData[node])
+					if (val + 1 > data_nlevels.lData[node])
 					{
-						data_nlevels.lData[node]++;
+						data_nlevels.lData[node] = data_nlevels.lData[node] + 1;
 					}
 				}
 				
@@ -428,14 +434,14 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 				{
 					WarnError (_String ("ERROR: Number of levels in data (") & data_nlevels.lData[node] & ") for discrete node " 
 							   & node & " is not compatible with node setting (" & num_levels.lData[node] 
-							   & ".  Check your data or reset the BGM.");
+							   & ").  Check your data or reset the BGM.");
 					
 					return (FALSE);
 				}
 			}
 			
 			// continuous
-			else if (data_type.lData[node] == 1)
+			else if (node_type.lData[node] == 1)
 			{
 				for (long val, row = 0; row < nrows; row++)
 				{
@@ -530,7 +536,7 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 		
 		
 		// is new structure compatible with node order set in HBL?
-		if (!GraphObeysOrder (theStructure, node_order_arg))
+		if (node_order_arg.lLength == num_nodes && !GraphObeysOrder (theStructure, node_order_arg))
 		{
 			// need to reset node_order
 			_SimpleList * templist;
@@ -552,6 +558,14 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
 }
 
 
+void _BayesianGraphicalModel::GetStructure (_Matrix * graph)
+{
+	for (long row = 0; row < num_nodes; row++)
+		for (long col = 0; col < num_nodes; col++)
+			graph->Store (row, col, theStructure(row, col));
+	
+	ReportWarning (_String("GetStructure() copied graph ") & (_String *) graph->toStr());
+}
 
 //__________________________________________________________________________________________________________
 bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
@@ -592,6 +606,15 @@ bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
 }
 
 
+void _BayesianGraphicalModel::GetNodeOrder (_Matrix * receptacle)
+{
+	if (node_order_arg.lLength == num_nodes)
+	{
+		for (long node = 0; node < num_nodes; node++)
+			receptacle->Store (0, node, node_order_arg.lData[node]);
+	}
+}
+
 
 //__________________________________________________________________________________________________________
 _Parameter _BayesianGraphicalModel::Compute (void)
@@ -606,7 +629,7 @@ _Parameter _BayesianGraphicalModel::Compute (void)
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
-		log_score += data_type.lData[node_id] ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
+		log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
 	}
 	
 	return log_score;
@@ -626,7 +649,7 @@ _Parameter _BayesianGraphicalModel::Compute (_Matrix & g)
 	_Parameter	log_score = 0.;
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)		// discrete nodes are 0 (FALSE)
-		log_score += data_type.lData[node_id] ? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
+		log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
 																
 	return log_score;
 }
@@ -773,7 +796,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
 	
 	for (long par = 0; par < num_nodes; par++)
 	{
-		if (theStructure(par, node_id) == 1 && data_type.lData[par] == 0)
+		if (theStructure(par, node_id) == 1 && node_type.lData[par] == 0)
 			parents << par;
 	}
 	
@@ -788,7 +811,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix 
 	
 	for (long par = 0; par < num_nodes; par++)
 	{
-		if ( g(par, node_id) == 1 && data_type.lData[par] == 0)
+		if ( g(par, node_id) == 1 && node_type.lData[par] == 0)
 			parents << par;
 	}
 	
@@ -872,7 +895,7 @@ _Parameter	_BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleL
 //_______________________________________________________________
 void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _SimpleList &dparents, _Matrix * n_ij, _Matrix * n_ijk)
 {
-	if (data_type.lData[dnode] > 0)
+	if (node_type.lData[dnode] > 0)
 		ReportWarning ("ERROR: UpdateDirichletHyperparameters() called on non-discrete node!  That sucks!");
 	
 	
@@ -1115,7 +1138,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			// [_SimpleList parents] should always be empty here
 			_Parameter	score;
 			
-			if (data_type.lData[node_id] == 0)
+			if (node_type.lData[node_id] == 0)
 			{
 				ComputeDiscreteScore (node_id, parents);
 			}
@@ -1238,7 +1261,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 				else
 				{
 					parents.lData[0] = par;
-					single_parent_scores.Store (par, 0, data_type.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
+					single_parent_scores.Store (par, 0, node_type.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
 												ComputeContinuousScore (node_id, parents));
 				}
 			}
@@ -1275,7 +1298,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 							parents.lData[par_idx] = par;
 						}
 						
-						score = data_type.lData[node_id] ?	ComputeDiscreteScore (node_id, parents) : 
+						score = node_type.lData[node_id] ?	ComputeDiscreteScore (node_id, parents) : 
 															ComputeContinuousScore (node_id, parents);
 						
 						tuple_scores.Store (tuple_index, 0, (double)score);
@@ -1334,14 +1357,15 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		_SimpleList	parents;
 		_Parameter	score;
 		
-		if (data_type.lData[node_id] == 0)
+		if (node_type.lData[node_id] == 0)	// child node is discrete (multinomial)
 		{
 			score = ComputeDiscreteScore (node_id, parents);
 		}
-		else 
+		else								// child node is continuous (conditional Gaussian)
 		{
 			score = ComputeContinuousScore (node_id, parents);
 		}
+		
 		
 		_Constant	orphan_score (score);	// score computed with no parents (initialized empty list)
 		(*this_list) && (&orphan_score);
@@ -1358,22 +1382,16 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			
 			for (long par = 0; par < num_nodes; par++)
 			{
-				if (par == node_id)		// child cannot be its own parent, except in Kansas
+				if (par == node_id)		// child cannot be its own parent, except morally-challenged time travellers
 					continue;
 				
 				parents.lData[0] = par;
 				
-				if (data_type.lData[node_id] == 0)
-				{
-					if (data_type.lData[par] == 0)	// discrete child cannot have continuous parent
-					{
-						score = ComputeDiscreteScore (node_id, parents);
-					}
-				}
-				else	// child is continuous
-				{
+				// discrete child cannot have continuous parent
+				if (node_type.lData[node_id] == 0)
+					score = (node_type.lData[par] == 0)	? ComputeDiscreteScore (node_id, parents) : 0;
+				else
 					score = ComputeContinuousScore (node_id, parents);
-				}
 				
 				single_parent_scores.Store (par, 0, score);
 			}
@@ -1394,30 +1412,50 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 				
 				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
 				{
-					bool	remaining;
+					bool	remaining, family_is_discrete;
 					long	res;
 					do 
 					{
 						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-						for (long par_idx = 0; par_idx < np; par_idx++)
-						{
-							long par = nk_tuple.lData[par_idx];
-							if (par >= node_id) par++;
-							parents.lData[par_idx] = par;
-							// parents << par;
-						}
 						
-						if (data_type.lData[node_id] == 0)
+						
+						if (node_type.lData[node_id] == 0)
 						{
-							score = ComputeDiscreteScore (node_id, parents);
+							family_is_discrete = TRUE;
+							for (long par_idx = 0; par_idx < np; par_idx++)
+							{
+								long par = nk_tuple.lData[par_idx];
+								if (par >= node_id) 
+									par++;
+								
+								if (node_type.lData[par] != 0)	// all parents must be discrete
+								{
+									family_is_discrete = FALSE;
+									break;
+								}
+								
+								parents.lData[par_idx] = par;
+							}
+							
+							if (family_is_discrete)
+								score = ComputeDiscreteScore (node_id, parents);
+							else
+								score = 0.;
 						}
 						else 
 						{
+							for (long par_idx = 0; par_idx < np; par_idx++)
+							{
+								long par = nk_tuple.lData[par_idx];
+								if (par >= node_id) 
+									par++;
+								parents.lData[par_idx] = par;
+							}
+							
 							score = ComputeContinuousScore (node_id, parents);
 						}
 						
 						res = family_scores.Store (score, nk_tuple);
-						parents.Clear();
 					} 
 					while (remaining);
 				} else {
@@ -1632,6 +1670,8 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 		Wrapper function to access various optimization methods (K2, structural MCMC, order MCMC)
 			and implement MPI functionality.
 	   --------------------------------------------------------------------------------------------- */
+	ReportWarning (_String("Entered _BayesianGraphicalModel::Optimize()"));
+	
 	if (!scores_cached) 
 	{
 		CacheNodeScores();
@@ -1651,8 +1691,12 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 	
 	checkParameter (_HYBgm_METHOD_KEY, optMethod, 0.);
 	
+	ReportWarning (_String("... optimization method set to ") & optMethod);
+	
 	if (optMethod < 2)
 	{
+		ReportWarning (_String("... starting K2 algorithm"));
+		
 		_Parameter	num_restarts,			// HBL settings
 					num_randomize;
 		
@@ -1752,10 +1796,12 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 			
 			if (optMethod < 4)
 			{
+				ReportWarning (_String("... starting graph-mcmc"));
 				GraphMetropolis ( (optMethod == 2), mcmc_burnin, mcmc_steps, mcmc_samples, 1., output_matrix);
 			}
 			else
 			{
+				ReportWarning (_String("... starting order-mcmc"));
 				if (mcmc_burnin > 0)
 				{
 					ReportWarning (_String("Executing order-MCMC for burn-in period of ") & mcmc_burnin & " steps");
@@ -1775,6 +1821,7 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 #endif
 		
 	}
+	
 	
 	return (_Matrix *) (output_matrix->makeDynamic());
 }
@@ -2047,6 +2094,7 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 		{
 			_String	oops ("ERROR: Missing node order when attempting structural-MCMC with fixed order argument.");
 			WarnError (oops);
+			return;
 		}
 		else	// node order argument has not been set by user
 		{
@@ -2189,6 +2237,10 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 		}
 	}
 	
+	
+	// update theStructure with last graph visited by chain
+	theStructure = (_Matrix &) current_graph;
+	ReportWarning (_String("On exiting GraphMetropolic() assigned last state to theStructure: ") & (_String *) theStructure.toStr());
 	
 	// release memory
 	delete (proposed_graph);
@@ -2631,6 +2683,9 @@ void	_BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, l
 #endif
 	/* SLKP */
 	
+	
+	// update node order 
+	node_order_arg = current_order;
 }
 
 
