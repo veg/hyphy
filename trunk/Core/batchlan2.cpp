@@ -850,27 +850,40 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 					{
 						_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
 						
+						switch (sID)
+						{
+							case 0:		// return associative list containing node score cache
+							{
+								_AssociativeList		* export_alist	= new _AssociativeList;
+								
+								if (this_bgm -> ExportCache (export_alist))
+								{
+									theReceptacle -> SetValue (export_alist, false);
+								}
+								else
+								{
+									errMsg = _String("Failed to export node score cache.");
+									ReportWarning (errMsg);
+								}
+								
+								return;
+							}
+							case 1:		// return associative list with network structure and parameters
+							{
+								this_bgm -> SerializeBGM (result);
+								_FString * resObj = new _FString (result);
+								checkPointer (resObj);
+								theReceptacle->SetValue (resObj,false);
+								return;
+							}	
+							default:
+							{
+								errMsg = _String ("Unrecognized index ") & sID & "in call to GetString on BGM object";
+								WarnError (errMsg);
+								return;
+							}
+						}
 						
-						if (sID == 0)
-						{
-							_AssociativeList		* export_alist	= new _AssociativeList;
-							
-							if (this_bgm -> ExportCache (export_alist))
-							{
-								theReceptacle -> SetValue (export_alist, false);
-							}
-							else
-							{
-								errMsg = _String("Failed to export node score cache.");
-								ReportWarning (errMsg);
-							}
-							
-							return;
-						}
-						else
-						{
-							this_bgm -> SerializeBGM (result);
-						}
 					}
 					else
 					{
