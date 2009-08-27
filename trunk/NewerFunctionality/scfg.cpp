@@ -253,7 +253,10 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 							ruleString = ruleString & _String (nt_index);
 							long			seenMe	   = alreadySeen.Insert (ruleString.makeDynamic());
 							if (seenMe < 0) // already seen
-								errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
+							{
+								//errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
+								errorMessage = _String ("Duplicate production rule: ") & tc & " : " & ruleString;
+							}
 							else
 							{
 								rules 	  && & goodNTRule; // append the new rule to the list of existing rules 
