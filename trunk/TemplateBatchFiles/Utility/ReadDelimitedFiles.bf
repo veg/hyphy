@@ -80,6 +80,28 @@ function ReadMatchRegExp (fileName, regExp)
 	return _tempMatrix;
 }
 
+/*----------------------------------------------------------------*/
+
+function ReadSplitOnRegExp (fileName, regExp)
+{
+	if (Abs(fileName) == 0)
+	{
+		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+	}
+	else
+	{
+		fscanf (fileName, "Lines", inData);		
+	}
+	
+	linesRead = Columns(inData);
+	_tempMatrix = {};
+	
+	for (lineID = 0; lineID < linesRead; lineID = lineID + 1)
+	{
+		_tempMatrix[lineID] = splitOnRegExp (inData[lineID], regExp);
+	}
+	return _tempMatrix;
+}
 
 /*----------------------------------------------------------------*/
 
