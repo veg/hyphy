@@ -936,11 +936,11 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 	
 	
 	
-	sprintf (buf, "Node %d, parents(%d): ", node_id, parents.lLength);
+	sprintf (buf, "Node %ld, parents(%ld): ", node_id, parents.lLength);
 	BufferToConsole (buf);
 	for (long par = 0; par < parents.lLength; par++)
 	{
-		sprintf (buf, " %d", parents.lData[par]);
+		sprintf (buf, " %ld", parents.lData[par]);
 		BufferToConsole (buf);
 	}
 	
@@ -1069,8 +1069,8 @@ _Parameter Bgm::ComputeContinuousScore (long node_id, _SimpleList & parents, _Si
 	for (long obs = 0; obs < obsData->GetHDim(); obs++)
 	{
 		long	index		= 0,
-		multiplier	= 1,
-		child_state = (*obsData)(obs, node_id);
+				multiplier	= 1;
+		//child_state = (*obsData)(obs, node_id);
 		
 		for (long par = 0; par < parents.lLength; par++)
 		{
@@ -1571,7 +1571,7 @@ void	_DynamicBgm::CollapseDynamicGraph (void)
 //#define __DEBUG_GADS2__
 _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & parents)
 {
-	char			buf [255];
+	//char			buf [255];
 	
 	long			num_parent_combos	= 1,
 					r_i					= num_levels.lData[node_id],

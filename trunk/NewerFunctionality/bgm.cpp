@@ -550,7 +550,7 @@ void Bgm::PrintGraph (_Matrix * g)
 		{
 			for (long col = 0; col < g->GetVDim(); col++)
 			{
-				sprintf (buf, "%d ", (long) (*g)(row,col));
+				sprintf (buf, "%ld ", (long) (*g)(row,col));
 				BufferToConsole (buf);
 			}
 			sprintf (buf, "\n");
@@ -563,7 +563,7 @@ void Bgm::PrintGraph (_Matrix * g)
 		{
 			for (long col = 0; col < dag.GetVDim(); col++)
 			{
-				sprintf (buf, "%d ", (long)dag(row,col));
+				sprintf (buf, "%ld ", (long)dag(row,col));
 				BufferToConsole (buf);
 			}
 			sprintf (buf, "\n");
@@ -1036,7 +1036,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
 //#define BGM_DEBUG_CDS
 _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 {
-	char			buf [255];
+	//char			buf [255];
 	
 	// use cached node scores if possible
 	if (scores_cached)
@@ -3381,14 +3381,14 @@ void	Bgm::SerializeBgm (_String & rec)
 		if (is_discrete.lData[node_id])
 		{
 			rec << "dnodes[Abs(dnodes)]=make_dnode(";
-			sprintf (buf, "%d,%d,%d", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
+			sprintf (buf, "%ld,%ld,%ld", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
 			rec << buf;
 			rec << ");\n";
 		}
 		else
 		{
 			rec << "cnodes[Abs(cnodes)]=make_cnode(";
-			sprintf (buf, "%d,%d,%d,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
+			sprintf (buf, "%ld,%ld,%ld,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
 											prior_mean(node_id,0), prior_precision(node_id,0));
 			rec << buf;
 			rec << ");\n";
