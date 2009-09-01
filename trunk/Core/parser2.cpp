@@ -4615,8 +4615,9 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			
 			if (!levelOps->countitems())
 			{
-				_Operation theVar (curOp,2);
-				(*levelOps) && (&theVar);
+				levelOps->AppendNewInstance (new _Operation (curOp,2));
+				if (terminateExecution)
+					return -2;
 				continue;
 			}
 			
@@ -4635,10 +4636,11 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			
 				
 			
-			if ((g>h)&&(h!=-1)) // store the op, don't do it yet!
+			if (g>h && h!=-1) // store the op, don't do it yet!
 			{
-				_Operation theVar (curOp,2);
-				(*levelOps) && (&theVar);
+				levelOps->AppendNewInstance (new _Operation (curOp,2));
+				if (terminateExecution)
+					return -2;
 				continue;
 			}
 			
@@ -4657,8 +4659,9 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				f->theFormula&&((*levelOps)(j));
 				levelOps->Delete((*levelOps).lLength-1);
 			}
-			_Operation theVar (curOp,2);
-			(*levelOps) && (&theVar);
+			levelOps->AppendNewInstance (new _Operation (curOp,2));
+			if (terminateExecution)
+				return -2;
 			continue;
 		}
 		else
