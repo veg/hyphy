@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 44;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -506,7 +506,7 @@
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */;
-			compatibilityVersion = "Xcode 3.0";
+			compatibilityVersion = "Xcode 3.1";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* HyPhyXCode */;
 			projectDirPath = "";
@@ -695,7 +695,7 @@
 				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = macosx10.5;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Debug;
@@ -703,10 +703,7 @@
 		C0E91ACB08A95435008D54AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CURRENT_PROJECT_VERSION = 1.00beta;
 				ENABLE_OPENMP_SUPPORT = YES;
 				GCC_AUTO_VECTORIZATION = YES;
@@ -736,9 +733,10 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.3;
+				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
 				PRODUCT_NAME = HYPHY;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = macosx10.5;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Release;

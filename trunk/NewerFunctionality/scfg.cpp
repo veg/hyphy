@@ -848,9 +848,10 @@ _String*	Scfg::TokenizeString	(_String& inString, _SimpleList& outTokens)
 			currentTreeNode = nil; // reset to the root
 		}
 	}
+	
 	// check error conditions
 	if (currentTreeNode) // stuck in the middle of the tree
-		return new _String ("Premature sting end: incomplete terminal");
+		return new _String ("Premature string end: incomplete terminal");
 	
 	if (stringIndex < inString.sLength)
 		return new _String (_String("Invalid terminal symbol in the input string between '") & inString.Cut (stringIndex-10, stringIndex-1) & "' and '" 
@@ -2122,7 +2123,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 		DeleteObject (storageString);
 		return backString;
 	}
-					
+	
 	_Parameter 		randomValue = genrand_real2 (),
 					sum			= 0.;
 					
@@ -2130,9 +2131,10 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 	_SimpleList*	aList		= (_SimpleList*)byNT2(ntIndex),
 			   *	aRule;
 	
+	// loop through terminal rules (X->x) and sum probabilities
 	for (;ruleIndex<aList->lLength && sum < randomValue ;ruleIndex++)
 		sum += LookUpRuleProbability (aList->lData[ruleIndex]);
-		
+	
 	if (sum >= randomValue)
 	{
 		aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
@@ -2140,10 +2142,11 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 		return nil;
 	}
 	
+	ruleIndex = 0;
 	aList		= (_SimpleList*)byNT3(ntIndex);
 	for (;ruleIndex<aList->lLength && sum < randomValue ;ruleIndex++)
 		sum += LookUpRuleProbability (aList->lData[ruleIndex]);
-					
+	
 	if (sum >= randomValue)
 	{
 		aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
@@ -2152,7 +2155,9 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
 	}
 	else
 	{
-		_String oops ("Internal Error in Scfg::SpawnRandomString\n");
+		_String oops ("SCFG::SpawnRandomString() randomValue ");
+		oops = oops & randomValue & " exceeded sum " & sum;
+		oops = oops & ": nt=" & ntIndex & " stor=" & (_String *) storageString->toStr();
 		WarnError (oops);
 	}
 	
