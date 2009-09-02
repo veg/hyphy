@@ -80,7 +80,7 @@ function returnIC (logL, df, sampleCount)
 {
 	if (whichIC)
 	{
-		return -2*logL + Log(sampleCount) * df + modelComplexityPenalty;
+		return -2*logL + 2 * Log(sampleCount) * df + modelComplexityPenalty;
 	}
 	return -2*logL + 2*df * (sampleCount/(sampleCount-df-1));
 }
