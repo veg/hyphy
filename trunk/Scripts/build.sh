@@ -50,6 +50,7 @@ fi
 
 # MODIFY THESE BASED ON YOUR SYSTEM
 # DEFAULT SETTINGS ARE FOR GCC
+# NEEDS gcc, g++ 4 and > for fopemp flags on DEV version
 	
 COMPILER="g++";
 COMPILERC="gcc";
@@ -162,7 +163,7 @@ then
 	echo "+---------------------------------------+"
 	echo "|Building a multi-threaded HYPHYKernelMP|"
 	echo "+---------------------------------------+"
-	COMPILER_FLAGS=$COMPILER_FLAGS"- D __MP__"
+	COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__"
 fi
 
 if [ $1 = "MP2" ] 
