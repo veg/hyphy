@@ -5990,9 +5990,12 @@ void	  _ElementaryCommand::ExecuteCase44 (_ExecutionList& chain)
 			theMessage = new _String (256L, true);
 			checkPointer (theMessage);
 			_String arrayID ("_HYPHY_MPI_INPUT_ARRAY_");
+			(*theMessage) << arrayID;
+			(*theMessage) << '=';
 			arg3 = ar->Serialize (arrayID);
 			(*theMessage) << arg3;
 			DeleteObject (arg3);
+			(*theMessage) << ';';
 			arrayID = *arg2;
 			arrayID.ProcessFileName(false,true,(Ptr)chain.nameSpacePrefix);
 			(*theMessage) << "\nExecuteAFile (\"";
