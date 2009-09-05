@@ -2992,6 +2992,7 @@ void	_HYDataPanel::InferTopologies (bool useConstr)
 			
 			SetLockState 		(true);
 						
+			VerbosityLevel ();
 			ToggleAnalysisMenu 	(true);
 			StartBarTimer 		();
 			infL.ExecuteAndClean(g);

@@ -204,6 +204,7 @@ _String
 									// $6 for CPU load
 	optimizationStringStatus		("OPTIMIZATION_PROGRESS_STATUS"),
 	optimizationStringQuantum		("OPTIMIZATION_PROGRESS_QUANTUM"),
+	assumeReversible				("ASSUME_REVERSIBLE_MODELS"),
 	categoryMatrixScalers			(".site_scalers"),
 	categoryLogMultiplier			(".log_scale_multiplier");
 	
@@ -4561,21 +4562,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		_List		*stepHistory = nil;
 		
 		checkParameter (useAdaptiveVariableStep, useAdaptiveStep, 0.0);
+		
 		if (useAdaptiveStep>0.5)
 		{		
 			stepHistory = new _List;
 			for (j=0; j<indexInd.lLength; j++)
 			{
-				_List 		*varHistory = new _List;
-				_Constant 	*aVal = new _Constant;
-				aVal->theValue = fabs (variableValues[j])*0.1;
-				if (aVal->theValue < 0.0001) 
-					aVal->theValue = 0.0001;
-					
-				(*varHistory) << aVal;
-				DeleteObject (aVal);
-				(*stepHistory) << varHistory;
-				DeleteObject (varHistory);
+				_GrowingVector 		*varHistory = new _GrowingVector;
+				varHistory->Store(variableValues[j]);
+				stepHistory->AppendNewInstance(varHistory);
 			}
 		}
 		
@@ -4622,9 +4617,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		{				
 			if (likeFuncEvalCallCount-lfCount>maxItersPerVar)
 			{
-				_String warningMsg ("Optimization routines returning before requested precision goal met. The maximum iteration number specified by MAXIMUM_ITERATIONS_PER_VARIABLE has been reached");
-				ReportWarning (warningMsg);
-				DeleteObject (stepHistory);
+				ReportWarning ("Optimization routines returning before requested precision goal met. The maximum iteration number specified by MAXIMUM_ITERATIONS_PER_VARIABLE has been reached");
+				DeleteObject  (stepHistory);
 				break;
 			}
 			if (averageChange <1e-20)
@@ -4679,6 +4673,17 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				shuffledOrder.Flip();
 			}
 			
+			_Parameter stepScale = 1.;
+			
+			if (useAdaptiveStep > 0.5)
+			{
+				stepScale = MIN(0.75,pow(4.,-(_Parameter)loopCounter/indexInd.lLength));
+				if (verbosityLevel>50)
+				{
+					sprintf (buffer,"\n[BRACKET SHRINKAGE: %g]", stepScale);
+					BufferToConsole (buffer);
+				}
+			}
 			for (jjj=forward?0:indexInd.lLength-1; forward?(jjj<indexInd.lLength):jjj>=0; forward?jjj++:jjj--)
 			{
 				if (doShuffle > 0.1)
@@ -4707,32 +4712,54 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					continue;
 				}
 				
-				_List	   *vH = nil;
-				_Parameter brackStep;
+				_GrowingVector	   *vH = nil;
+				_Parameter         brackStep;
 				
 				if (useAdaptiveStep>0.5)
 				{
-					vH  = (_List*)(*stepHistory)(j);
+					vH  = (_GrowingVector*)(*stepHistory)(j);
 					//_Parameter	suggestedPrecision	= currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
 
-					if (vH->lLength>1)
+					long stepsSoFar = vH->GetUsed();
+					
+					if (stepsSoFar>1)
 					{
-						_Parameter	lastParameterValue			= ((_Constant*)(*vH)(vH->lLength-1))->theValue,
-									previousParameterValue		= ((_Constant*)(*vH)(vH->lLength-2))->theValue;		
+						_Parameter	lastParameterValue			= vH->theData[stepsSoFar-1],
+									previousParameterValue		= vH->theData[stepsSoFar-2];
+						
 																		
-						brackStep = fabs((lastParameterValue-previousParameterValue)/MAX(previousParameterValue,1.e-5));
+						brackStep = fabs(lastParameterValue-previousParameterValue)*stepScale;
 						
-						if (brackStep > 0.25) 
-							brackStep = 0.25;
+						/*if (stepsSoFar>2)
+						{
+							lastParameterValue			= fabs(vH->theData[stepsSoFar-3]-previousParameterValue);
+							if (lastParameterValue > brackStep && brackStep > 0.)
+								brackStep *= (brackStep/lastParameterValue);
+						}
 						else
-							if (brackStep < 0.05)
-								brackStep = 0.05;
+							brackStep *= 0.5;	*/						
 						
-						brackStep *= lastParameterValue;
+						if (brackStep == 0.0)
+							brackStep = lastParameterValue*precision;
+						
+						if (verbosityLevel>50)
+						{
+							sprintf (buffer,"\n[BRACKET STEP: %g:%g (%g)/%g]", lastParameterValue, previousParameterValue, lastParameterValue - previousParameterValue, brackStep);
+							BufferToConsole (buffer);
+						}
+					
+						/*if (brackStep > 0.5) 
+							brackStep = 0.5;
+						else
+							if (brackStep < 0.1)
+								brackStep = 0.1;
+						
+						
+						brackStep *= lastParameterValue;*/
 						
 					}
 					else
-						brackStep = ((_Constant*)(*vH)(vH->lLength-1))->theValue*0.25;
+						brackStep = vH->theData[0]/stdFactor;
 						
 					if (brackStep < 1e-6)
 						brackStep = 1e-6;
@@ -4740,7 +4767,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				else
 				{
 					if (amIGlobal)
-						brackStep = pow(currentPrecision/**(bestVal>1.?pow(e,long(log(bestVal))):1.)*/,.5+loopCounter/(indexInd.lLength*(loopCounter/indexInd.lLength+1)));
+						brackStep = pow(currentPrecision/**(bestVal>1.?pow(e,long(log(bestVal))):1.)*/,
+										.5+loopCounter/(indexInd.lLength*(loopCounter/indexInd.lLength+1)));
 					else
 						brackStep = currentPrecision;
 				}
@@ -4754,16 +4782,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				averageChange2 += cj;
 					
 				if (vH)
-				{
-					_Constant tc;
-					
-					if (ch > 1.e-7)
-						tc.theValue = ch;
-					else
-						tc.theValue = brackStep*0.5;
-						
-					(*vH) && & tc;
-				}
+					vH->Store(cj);
 
 				if (ch<currentPrecision/indexInd.lLength)
 					nc2 << j;
@@ -4887,7 +4906,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				
 			lastMaxValue = maxSoFar;
 			
-			if (!skipCG&&loopCounter&&(indexInd.lLength>1)&&((((long)loopCounter)%indexInd.lLength)==0))
+			if (!skipCG && loopCounter&& indexInd.lLength>1 && (((long)loopCounter)%indexInd.lLength)==0 )
 			{
 				_Matrix bestMSoFar (indexInd.lLength,1,false,true);
 				for (i=0; i<indexInd.lLength; i++)	
@@ -7794,6 +7813,9 @@ void	_LikelihoodFunction::Setup (void)
 	_SimpleList alreadyDoneModelsL;
 	_AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
 	
+	_Parameter assumeRev = 0.;
+	checkParameter (assumeReversible,assumeRev,0.0);
+	
 	for (long i=0; i<theTrees.lLength; i++)
 	{
 		_Matrix			*glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
@@ -7812,19 +7834,26 @@ void	_LikelihoodFunction::Setup (void)
 		_SimpleList treeModels;
 		t->CompileListOfModels (treeModels);
 		bool isReversiblePartition = true;
-		for (long m = 0; m < treeModels.lLength && isReversiblePartition; m++)
+		if (assumeRev > 0.5)
 		{
-			long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
-			if (alreadyDone>=0)
-				alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
-			else
-			{
-				alreadyDone = IsModelReversible (treeModels.lData[m]);
-				alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
-			}
-			isReversiblePartition = isReversiblePartition && alreadyDone;
+			ReportWarning (_String ("Partition ") & i & " is ASSUMED to have a reversible model");
 		}
-		ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
+		else
+		{
+			for (long m = 0; m < treeModels.lLength && isReversiblePartition; m++)
+			{
+				long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
+				if (alreadyDone>=0)
+					alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
+				else
+				{
+					alreadyDone = IsModelReversible (treeModels.lData[m]);
+					alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
+				}
+				isReversiblePartition = isReversiblePartition && alreadyDone;
+			}
+			ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
+		}
 		canUseReversibleSpeedups << isReversiblePartition;
 		
 	}
