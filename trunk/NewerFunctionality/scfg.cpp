@@ -1456,9 +1456,9 @@ void		Scfg::AddSCFGInfo (_AssociativeList* theList)
 				   p01	   = ((_GrowingVector*)storedInsideP(k))->GetUsed();
 				   
 		_Parameter totalPR = strL*(strL+1.)*0.5*byNT2.lLength;
-		stats->Store (k,0,totalPR);
-		stats->Store (k,1,pNot0-p01);
-		stats->Store (k,2,p01);
+		stats->Store (k,0,totalPR);	// total number of tuples (i,j,v)
+		stats->Store (k,1,pNot0-p01);	// number of tuples with probability = 1
+		stats->Store (k,2,p01);		// number of tuples with probability in interval (0,1)
 	}
 	{
 		_FString aKey (_addSCFGInfoStats,false);
