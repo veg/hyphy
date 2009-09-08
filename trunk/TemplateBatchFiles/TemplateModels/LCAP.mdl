@@ -169,7 +169,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 					ExecuteCommands ( propMultiString );
 					if ( aaprop == 0 ) {
 						if ( Cparm == 0 ) {
-							aapropMultiplier * ("Exp( alpha_" + aaprop + "*" + propMulti + "" );
+							aapropMultiplier * ("Exp( C + alpha_" + aaprop + "*" + propMulti + "" );
 						}
 						else {
 							aapropMultiplier * ("Exp( alpha_" + aaprop + "*" + propMulti + "" );
