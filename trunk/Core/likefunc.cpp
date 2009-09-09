@@ -132,7 +132,7 @@ long	  likeFuncEvalCallCount = 0,
 		  lockedLFID	 		= -1;
 
 #ifndef  __HYALTIVEC__
-#define	 STD_GRAD_STEP 1.0e-7
+#define	 STD_GRAD_STEP 1.0e-5
 #else
 #define	 STD_GRAD_STEP 5.0e-6
 #endif
@@ -1219,6 +1219,14 @@ void	_LikelihoodFunction::SetIthIndependent (long index, _Parameter p)
 	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
 	v->SetValue (new _Constant (p), false);
 }
+
+//_______________________________________________________________________________________
+bool	_LikelihoodFunction::IsIthParameterGlobal (long index) 
+{
+	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
+	return v->IsGlobal();
+}
+
 
 //_______________________________________________________________________________________
 bool	_LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p) 
@@ -4677,7 +4685,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			
 			if (useAdaptiveStep > 0.5)
 			{
-				stepScale = MIN(0.75,pow(4.,-(_Parameter)loopCounter/indexInd.lLength));
+				/*if ((4*loopCounter)/indexInd.lLength < 1)
+					stepScale = 0.75;
+				else
+					stepScale = 0.5;*/
+				
+				stepScale = MAX(precision,MIN(0.5,pow(8.,-(_Parameter)loopCounter/indexInd.lLength)));
+				/*stepScale = 1/divFactor;*/
 				if (verbosityLevel>50)
 				{
 					sprintf (buffer,"\n[BRACKET SHRINKAGE: %g]", stepScale);
@@ -4713,7 +4727,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				}
 				
 				_GrowingVector	   *vH = nil;
-				_Parameter         brackStep;
+				_Parameter         precisionStep,
+								   brackStep;
+									
 				
 				if (useAdaptiveStep>0.5)
 				{
@@ -4727,8 +4743,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						_Parameter	lastParameterValue			= vH->theData[stepsSoFar-1],
 									previousParameterValue		= vH->theData[stepsSoFar-2];
 						
-																		
-						brackStep = fabs(lastParameterValue-previousParameterValue)*stepScale;
+						
+						brackStep	  = fabs(lastParameterValue-previousParameterValue);
+						precisionStep = brackStep*stepScale;
+						brackStep	 *= 0.5;
 						
 						/*if (stepsSoFar>2)
 						{
@@ -4739,8 +4757,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						else
 							brackStep *= 0.5;	*/						
 						
-						if (brackStep == 0.0)
-							brackStep = lastParameterValue*precision;
+						if (precisionStep == 0.0)
+						{
+							precisionStep = precision;
+							brackStep     = lastParameterValue * precision;
+						}
 						
 						if (verbosityLevel>50)
 						{
@@ -4759,10 +4780,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						
 					}
 					else
-						brackStep = vH->theData[0]/stdFactor;
+					{
+						brackStep     = vH->theData[0];
+						precisionStep = brackStep * 0.25;
+					}
 						
 					if (brackStep < 1e-6)
 						brackStep = 1e-6;
+					if (precisionStep < 1e-6)
+						precisionStep = 1e-6;
 				}
 				else
 				{
@@ -4773,7 +4799,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						brackStep = currentPrecision;
 				}
 				
-				LocateTheBump (j,brackStep, maxSoFar, bestVal);
+				if (useAdaptiveStep>0.5)
+					LocateTheBump (j,precisionStep, maxSoFar, bestVal, brackStep);
+				else	
+					LocateTheBump (j,brackStep, maxSoFar, bestVal);
 				
 				_Parameter  cj = GetIthIndependent(j),
 							ch = fabs(bestVal-cj);
@@ -4906,12 +4935,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				
 			lastMaxValue = maxSoFar;
 			
-			if (!skipCG && loopCounter&& indexInd.lLength>1 && (((long)loopCounter)%indexInd.lLength)==0 )
+			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%10)==0 )
 			{
 				_Matrix bestMSoFar (indexInd.lLength,1,false,true);
 				for (i=0; i<indexInd.lLength; i++)	
 					bestMSoFar[i]=GetIthIndependent(i);
-				ConjugateGradientDescent (currentPrecision, bestMSoFar);
+				ConjugateGradientDescent (useAdaptiveStep>0.5?precision:currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
 			}			
 		}
 		
@@ -6188,41 +6217,37 @@ void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Pa
 		CheckStep (gradientStep,nG,&values);
 	}
 	if (gradientStep==0)
-	{
 		return;
-	}
-	#ifndef __HYALTIVEC__
+
 	if (order==1)
 	{
 		funcValue = Compute();
 		for (index=0;index<indexInd.lLength;index++)
 		{
 			if (freeze.Find(index)!=-1)
+				gradient[index]=0.;
+			else
 			{
-				gradient[index]=0;
-				continue;
+				SetIthIndependent(index,GetIthIndependent(index)+gradientStep);
+				gradient[index]=(Compute()-funcValue)/gradientStep;
+				SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
 			}
-			SetIthIndependent(index,GetIthIndependent(index)+gradientStep);
-			gradient[index]=(Compute()-funcValue)/gradientStep;
-			SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
 		}
 	}
 	else
-	#endif
 	{
 		for (index=0;index<indexInd.lLength;index++)
 		{
 			if (freeze.Find(index)!=-1)
+				gradient[index]=0.;
+			else
 			{
-				gradient[index]=0;
-				continue;
-			
+				SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
+				_Parameter temp = Compute();
+				SetIthIndependent(index,GetIthIndependent(index)+2*gradientStep);
+				gradient[index]=(Compute()-temp)/gradientStep/2;
+				SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
 			}
-			SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
-			_Parameter temp = Compute();
-			SetIthIndependent(index,GetIthIndependent(index)+2*gradientStep);
-			gradient[index]=(Compute()-temp)/gradientStep/2;
-			SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
 		}
 	
 	}
@@ -6300,35 +6325,40 @@ bool	_LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar, _
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal)
+void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly)
 {
 
 	_Parameter  gradientStep	 = STD_GRAD_STEP, 
 				temp, 
 				maxSoFar 		 = Compute(), 
-				currentPrecision = .01;
+				currentPrecision = localOnly?precision:.01;
 				
 	_SimpleList	freeze;
-	_Matrix 	unit (bestVal), 
+	
+	/*if (localOnly)
+		for (long k = 0; k < indexInd.lLength; k++)
+			if (IsIthParameterGlobal(k))
+				freeze << k;*/
+	
+	_Matrix 	unit     (bestVal), 
 				gradient (bestVal);
 	
 	long		vl = verbosityLevel, 
 				index;
 	
-	char	buffer[256];
+	char		buffer[256];
 	
-	for (index=0; index<unit.GetHDim(); index++)
-		unit[index]=1;
-		
+	unit.PopulateConstantMatrix (1.);
+			
 	if (vl>1)
 	{
-		sprintf (buffer,"\nConjugate Gradient Pass %d, max so far %g\n",0,maxSoFar);
+		sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, max so far %g\n",0,precision,maxSoFar);
 		BufferToConsole (buffer);
 	}
 	
 	_Matrix 	G (bestVal), 
 				H (bestVal), 
-				S(bestVal);
+				S (bestVal);
 				
 	_Parameter  gradL, 
 				hL, 
@@ -6355,13 +6385,19 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 		if (currentPrecision < 0.00001)
 			currentPrecision = 0.00001;
 		
-		GradientLocateTheBump(currentPrecision, maxSoFar, bestVal, gradient);
+		GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, gradient);
 		if (vl>1)
 		{
-			sprintf (buffer,"Conjugate Gradient Pass %d, max so far %g\n",index+1,maxSoFar);
+			sprintf (buffer,"Conjugate Gradient Pass %ld, max so far %g\n",index+1,maxSoFar);
 			BufferToConsole (buffer);		
 		}
-		if (fabs((maxSoFar-temp)/maxSoFar)<=precision)
+		if (localOnly)
+		{
+			if (fabs((maxSoFar-temp))<=precision)
+				break;
+		}
+		else
+			if (fabs((maxSoFar-temp)/maxSoFar)<=precision)
 				break;
 		
 		ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
@@ -6720,7 +6756,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Parameter& maxSoFar, _Parameter& bestVal)
+void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Parameter& maxSoFar, _Parameter& bestVal, _Parameter bracketSetting)
 {
 	_Parameter left, 
 			   right, 
@@ -6728,7 +6764,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			   leftValue, 
 			   middleValue, 
 			   rightValue,  
-			   bp = 2.*gPrecision,
+			   bp = bracketSetting>0.0?bracketSetting:2.*gPrecision,
 			   gRatio = (3.0-sqrt(5.0))*.5;
 	
 #ifdef _SLKP_LFENGINE_REWRITE_

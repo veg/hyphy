@@ -142,6 +142,7 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 		void		SetIthIndependent (long, _Parameter); 	// set the value of i-th independent variable 
 		bool		CheckAndSetIthIndependent (long, _Parameter); 	// sget the value of i-th independent variable 
 		void		SetIthDependent (long, _Parameter); 	// set the value of i-th dependent variable 
+		bool		IsIthParameterGlobal (long);
 		
 		void		UpdateIndependent (long,bool);
 		void		UpdateDependent (long);
@@ -275,11 +276,11 @@ virtual	void			ScanAllVariables 		(void);
 												_Parameter& , _Parameter& , _Parameter& , _Parameter&);
 		long 			GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  _Parameter& ,
 											 	_Parameter&, _Parameter&, _Parameter&, bool retry = false);
-		void			LocateTheBump 		  (long,_Parameter , _Parameter& , _Parameter&);
+		void			LocateTheBump 		  (long,_Parameter , _Parameter& , _Parameter&, _Parameter = -1.);
 		void			GradientLocateTheBump (_Parameter, _Parameter&, _Matrix&, _Matrix&);
 		void			GradientDescent 	  (_Parameter& , _Matrix& );
 		void			ConjugateGradientDescent 
-											  (_Parameter , _Matrix& );
+											  (_Parameter , _Matrix& , bool localOnly = false);
 
 		long			CostOfPath	 		  (_DataSetFilter*, _TheTree* , _SimpleList&, _SimpleList* = nil);
 
