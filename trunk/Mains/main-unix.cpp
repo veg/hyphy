@@ -675,6 +675,8 @@ int main (int argc, char* argv[])
 	}
 	ReportWarning				(_String ("Node ") & (long)rank & " is shutting down\n");
 	#endif
+	
+	PurgeAll					(true);
 	GlobalShutdown				();
 	
 	#ifdef __HYPHYMPI__

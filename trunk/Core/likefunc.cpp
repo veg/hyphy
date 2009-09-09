@@ -4686,12 +4686,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			if (useAdaptiveStep > 0.5)
 			{
 				/*if ((4*loopCounter)/indexInd.lLength < 1)
-					stepScale = 0.75;
+					stepScale = 0.5;
 				else
-					stepScale = 0.5;*/
+					stepScale = 0.1;*/
 				
-				stepScale = MAX(precision,MIN(0.5,pow(8.,-(_Parameter)loopCounter/indexInd.lLength)));
-				/*stepScale = 1/divFactor;*/
+				
+				//stepScale = MAX(precision,MIN(0.5,pow(8.,-(_Parameter)loopCounter/indexInd.lLength)));
+				stepScale = 1/divFactor;
 				if (verbosityLevel>50)
 				{
 					sprintf (buffer,"\n[BRACKET SHRINKAGE: %g]", stepScale);

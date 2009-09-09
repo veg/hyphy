@@ -144,7 +144,7 @@ BaseRef		parameterToString (_Parameter value)
 	if (digs<=0 || digs>15)
 	{
 		if (round(value) == value && fabs (value) < long_max)
-			sprintf (dump,"%Ld",lrint (value));
+			sprintf (dump,"%ld",lrint (value));
 		else
 			sprintf (dump,PRINTF_FORMAT_STRING,value);
 	}

@@ -5,6 +5,7 @@ NICETY_LEVEL = 3;
 
 SetDialogPrompt ("Please specify a codon data file:");
 
+
 DataSet 	  ds 		   = ReadDataFile (PROMPT_FOR_FILE);
 DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 
@@ -18,10 +19,9 @@ _DO_TREE_REBALANCE_ = 1;
 if (modelType)
 {
 	ChoiceList (branchLengths, "Branch Lengths", 1, SKIP_NONE,
-				 				  "Estimate", "Estimate branch lengths by ML",
-				 				  "Proportional to input tree", "Branch lengths are proportional to those in input tree");
+							   "Estimate", "Estimate branch lengths by ML",
+							   "Proportional to input tree", "Branch lengths are proportional to those in input tree");
 				 				  
-
 	if (branchLengths < 0)
 	{
 		return;
@@ -36,7 +36,7 @@ if (modelType)
 
 LikelihoodFunction lf = (filteredData,givenTree);
 
-Optimize (res,lf);
+Optimize	(res,lf);
 
 fprintf (stdout, "\n______________RESULTS______________\n",lf);
 

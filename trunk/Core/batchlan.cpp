@@ -1304,6 +1304,7 @@ void		_ExecutionList::ResetFormulae		(void)		// run this execution list
 		{
 			if (thisCommand->simpleParameters.lLength)
 			{
+				//printf ("[ResetFormulae] %s\n", thisCommand->sData);
 				_Formula* f = (_Formula*)
 						  thisCommand->simpleParameters.lData[1],
 					  	*f2 = (_Formula*)
@@ -1315,7 +1316,9 @@ void		_ExecutionList::ResetFormulae		(void)		// run this execution list
 				thisCommand->simpleParameters.Clear();
 				long k = listOfCompiledFormulae.Find((long)thisCommand);
 				listOfCompiledFormulae.Delete(k);
+				//printf ("[ResetFormulae:listOfCompiledFormulae%d]\n",k);
 				compiledFormulaeParameters.Delete(k);
+				//printf ("[ResetFormulae:compiledFormulaeParameters%d]\n",k);
 			}
 		}
 		else

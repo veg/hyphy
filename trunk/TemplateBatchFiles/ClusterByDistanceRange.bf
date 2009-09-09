@@ -291,9 +291,11 @@ if (clumpingL>=0)
 }
 else
 {
-	maxSteps = 100;
+	maxSteps = 500;
 	
-	size 	 = mDim*(mDim-1)/2;
+	distanceMx = {maxSteps,2} ["(_MATRIX_ELEMENT_COLUMN_==0)*(_MATRIX_ELEMENT_ROW_)*max/maxSteps"];
+	
+	/*size 	 = mDim*(mDim-1)/2;
 	sizeStep = size$maxSteps;
 	
 	if (sizeStep<1)
@@ -318,7 +320,7 @@ else
 				k = k+1;
 			}
 		}
-	}
+	}*/
 	
 	lastTime = Time (0);
 	outString * "Cutoff, Cluster Count";

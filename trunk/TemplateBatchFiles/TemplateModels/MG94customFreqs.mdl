@@ -340,12 +340,12 @@ if (!SKIP_HARVEST_FREQ)
 }
 
 
-#include "MGFreqsEstimator.ibf";
+#include 				  "MGFreqsEstimator.ibf";
 
-MULTIPLY_BY_FREQS 		= PopulateModelMatrix ("MG94custom", paramFreqs);
+MULTIPLY_BY_FREQS 		= PopulateModelMatrix ("MG94customMLEFreqs", paramFreqs);
 FREQUENCY_SENSITIVE 	= 1;
 
 BuildCodonFrequencies (paramFreqs,"vectorOfFrequencies");
-Model MG94customModel 	= (MG94custom,vectorOfFrequencies,0);
+Model MG94CustomModelMLEFreqs = (MG94customMLEFreqs,vectorOfFrequencies,0);
 
 USE_POSITION_SPECIFIC_FREQS = 1;

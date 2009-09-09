@@ -199,7 +199,7 @@ function stashGlobalParameters (_lfName)
 	_paramStash = {};
 	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx = _gb_idx + 1)
 	{
-		ExecuteCommands ("_paramStash[\""+_lfInfo[_gb_idx]+"\"] :=" + _lfInfo[_gb_idx] + ";");
+		ExecuteCommands ("_paramStash[\""+_lfInfo[_gb_idx]+"\"] =" + _lfInfo[_gb_idx] + ";");
 	} 	
 	return _paramStash;
 }
