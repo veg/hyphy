@@ -40,7 +40,7 @@
 
 #if not defined __AFYP_REWRITE_BGM__
 
-#define		__AFYP_DEVELOPMENT__
+//#define		__AFYP_DEVELOPMENT__
 #define		__MISSING_DATA__
 
 
