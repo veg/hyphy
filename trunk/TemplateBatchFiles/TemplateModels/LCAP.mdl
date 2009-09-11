@@ -81,14 +81,8 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
 	
 	synCatRateMult 	  = "synRate*";
-	if ( Cparm == 0 ) {
-		nonsynCatRateMult = "synRate*";
-		global C = 0.5; C :> -10000;
-	}
-	else {
-		nonsynCatRateMult = "synRate*C*";
-		global C = 0.5; 
-	}
+	nonsynCatRateMult = "synRate*";
+	global C = 0.5; C :> -10000;
 	
 	modelDefString = "";
 	modelDefString*16384;
@@ -169,12 +163,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 					propMultiString*0;
 					ExecuteCommands ( propMultiString );
 					if ( aaprop == 0 ) {
-						if ( Cparm == 0 ) {
-							aapropMultiplier * ("Exp( C + alpha_" + aaprop + "*" + propMulti + "" );
-						}
-						else {
-							aapropMultiplier * ("Exp( alpha_" + aaprop + "*" + propMulti + "" );
-						}
+						aapropMultiplier * ("Exp( C + alpha_" + aaprop + "*" + propMulti + "" );
 					}
 					else {
 						aapropMultiplier * ("+ alpha_" + aaprop + "*" + propMulti + "" );
@@ -225,11 +214,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 	}
 }
 
-ChoiceList ( Cparm, "How should non-synonymous rate parameter be incorporated into the model?",1,SKIP_NONE,
-			"exp", "Part of the exponential of amino acid properties (as in Conant et al. 2006)",
-			"multi", "As a multiplier on rates in the standard framework and thus > 1.");
- 
-ChoiceList (freqType,"Choose a frequency parameterisation",1,SKIP_NONE,
+ ChoiceList (freqType,"Choose a frequency parameterisation",1,SKIP_NONE,
 			"F1x4","Empirical nucleotide frequencies",
 			"F3x4","Empirical position specific nucleotide frequencies",
 			"F61","Empirical codon frequencies.");
