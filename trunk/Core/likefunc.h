@@ -127,8 +127,7 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 		_SimpleList&GetCategoryVars	   (void); // get all category variables
 		void		GetGlobalVars	   (_SimpleList&);
 
-		long		CountObjects 	   (char);
-												   // return object count
+		long		CountObjects 	   (char);	   // return object count
 												   // 0 - partitions
 												   // 1 - global variables
 												   // 2 - local independents
@@ -136,13 +135,19 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 												   // 4 - category variables
 		
 		
-		_Parameter	GetIthIndependent (long); 	// get the value of i-th independent variable 
-		_Parameter	GetIthDependent   (long); 	// get the value of i-th dependent variable
+		_Parameter	GetIthIndependent (long);		// get the value of i-th independent variable 
+		_Parameter	GetIthDependent   (long);		// get the value of i-th dependent variable
+		void		GetAllIndependent  (_Matrix&);  // store all indepenent values in a matrix
+		_Variable*	GetIthIndependentVar (long); 	// get the variable object of i-th independent variable 
+		_Variable*	GetIthDependentVar   (long); 	// get the variable object of i-th dependent variable
 		
 		void		SetIthIndependent (long, _Parameter); 	// set the value of i-th independent variable 
 		bool		CheckAndSetIthIndependent (long, _Parameter); 	// sget the value of i-th independent variable 
-		void		SetIthDependent (long, _Parameter); 	// set the value of i-th dependent variable 
-		bool		IsIthParameterGlobal (long);
+		void		SetIthDependent		      (long, _Parameter); 	// set the value of i-th dependent variable 
+		bool		IsIthParameterGlobal	  (long);
+	
+		void		SetAllIndependent		  (_Matrix*);
+
 		
 		void		UpdateIndependent (long,bool);
 		void		UpdateDependent (long);
@@ -272,15 +277,18 @@ virtual	void			ScanAllVariables 		(void);
 		void			Clear					(void);
 		
 
-		long 			BracketOneVar 		  (long , _Parameter& , _Parameter& , _Parameter& ,  
-												_Parameter& , _Parameter& , _Parameter& , _Parameter&);
-		long 			GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  _Parameter& ,
-											 	_Parameter&, _Parameter&, _Parameter&, bool retry = false);
+		long 			Bracket					(long , _Parameter& , _Parameter& , _Parameter& ,  
+												_Parameter& , _Parameter& , _Parameter& , _Parameter&, _Matrix* = nil);
+		//long 			GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  _Parameter& ,
+		//									 	_Parameter&, _Parameter&, _Parameter&, bool retry = false);
 		void			LocateTheBump 		  (long,_Parameter , _Parameter& , _Parameter&, _Parameter = -1.);
 		void			GradientLocateTheBump (_Parameter, _Parameter&, _Matrix&, _Matrix&);
 		void			GradientDescent 	  (_Parameter& , _Matrix& );
 		void			ConjugateGradientDescent 
 											  (_Parameter , _Matrix& , bool localOnly = false);
+	
+		_Parameter		SetParametersAndCompute
+											  (long, _Parameter, _Matrix* = nil, _Matrix* = nil);
 
 		long			CostOfPath	 		  (_DataSetFilter*, _TheTree* , _SimpleList&, _SimpleList* = nil);
 
@@ -324,6 +332,7 @@ static	void			CheckFibonacci				(_Parameter);
 		void			CleanupMPIOptimizer			(void);
 		void			ComputeBlockInt1 			(long,_Parameter&,_TheTree*,_DataSetFilter*, char);
 		void		 	CheckStep 					(_Parameter&, _Matrix, _Matrix* selection = nil);
+		void			GetGradientStepBound 		(_Matrix&, _Parameter &, _Parameter &);
 		void		 	ComputeGradient 			(_Matrix&, _Matrix&,  _Parameter&, _Matrix&, _SimpleList&, 
 										 			long, bool normalize = true);
 		bool		 	SniffAround 				(_Matrix& , _Parameter& , _Parameter&);

@@ -174,6 +174,8 @@ class		_Matrix: public _MathObject {
 	void	 	operator *= (_Matrix&);			// multiply/store operation on matrices
 	
 	void	 	operator *= (_Parameter);		// multiply by a #/store operation on matrices
+	
+	void		AplusBx  (_Matrix&, _Parameter); // A = A + B*x (scalar)
 
 	void	 	Sqr			(_Parameter* _hprestrict_);				
 												// square the matrix; takes a scratch vector 

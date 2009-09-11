@@ -135,7 +135,7 @@ long	  likeFuncEvalCallCount = 0,
 		  lockedLFID	 		= -1;
 
 #ifndef  __HYALTIVEC__
-#define	 STD_GRAD_STEP 1.0e-5
+#define	 STD_GRAD_STEP 1.0e-6
 #else
 #define	 STD_GRAD_STEP 5.0e-6
 #endif
@@ -1210,12 +1210,24 @@ _Parameter	_LikelihoodFunction::GetIthIndependent (long index)
 	return ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
 }
 
+
+
 //_______________________________________________________________________________________
 _Parameter	_LikelihoodFunction::GetIthDependent (long index) 
 {
 	return ((_Constant*) LocateVar (indexDep.lData[index])->Compute())->Value();
 }
 
+//_______________________________________________________________________________________
+_Variable*	_LikelihoodFunction::GetIthIndependentVar (long index) 
+{
+	return LocateVar (indexInd.lData[index]);
+}
+//_______________________________________________________________________________________
+_Variable*	_LikelihoodFunction::GetIthDependentVar (long index) 
+{
+	return LocateVar (indexDep.lData[index]);
+}
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::SetIthIndependent (long index, _Parameter p) 
 {
@@ -1243,10 +1255,7 @@ bool	_LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p)
 		set = fabs(v->Value()-p)>machineEps;
 
 	if (set)
-	{
-		_Constant c(p);
-		v->SetValue (&c);
-	}
+		v->SetValue (new _Constant (p), false);
 	
 	return set;
 }
@@ -1257,6 +1266,15 @@ void	_LikelihoodFunction::SetIthDependent (long index, _Parameter p)
 	_Variable * v =(_Variable*) LocateVar (indexDep.lData[index]);
 	_Constant c(p);
 	v->SetValue (&c);
+}
+
+//_______________________________________________________________________________________
+void	_LikelihoodFunction::SetAllIndependent (_Matrix* v) 
+{
+	long upto = v->GetSize();
+	upto = MIN (upto, indexInd.lLength);
+	for (long k = 0; k < upto; k++)
+		CheckAndSetIthIndependent (k, v->theData[k]);
 }
 	
 //_______________________________________________________________________________________
@@ -4335,7 +4353,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				}
 				if (verbosityLevel>=5)
 				{
-			 	 	sprintf (buffer,"\nPowell's direction %d current Max = %g\n", i, maxSoFar);
+			 	 	sprintf (buffer,"\nPowell's direction %ld current Max = %g\n", i, maxSoFar);
 			 	 	BufferToConsole (buffer);
 			 	}
 
@@ -4391,11 +4409,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkParameter (bracketingPersistence,bP,2.5);
 	else
 		checkParameter (bracketingPersistence,bP,3);
-	if ((optMethod == 4)||(optMethod == 6)||(optMethod == 7)) // gradient descent
+	if (optMethod == 4 || optMethod == 6 || optMethod == 7) // gradient descent
 	{
-		_Matrix bestSoFar (indexInd.lLength,1,false,true);
-		for (i=0; i<indexInd.lLength; i++)	
-			bestSoFar.theData[i]=GetIthIndependent(i);
+		_Matrix bestSoFar;
+		GetAllIndependent (bestSoFar);
+		
 		if (fnDim<21)
 			checkParameter (intermediatePrecision,intermediateP,.1);
 		else
@@ -4408,9 +4426,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		}
 
 		if (optMethod!=7)
-			ConjugateGradientDescent (0.05, bestSoFar);
+			ConjugateGradientDescent (0.01, bestSoFar);
 		else
-			ConjugateGradientDescent(machineEps, bestSoFar);	
+			ConjugateGradientDescent(precision, bestSoFar, true);	
 		#if !defined __UNIX__ || defined __HEADLESS__
 			#ifdef __HYPHYMPI__
 				if (_hy_mpi_node_rank == 0)
@@ -4630,6 +4648,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			{
 				ReportWarning ("Optimization routines returning before requested precision goal met. The maximum iteration number specified by MAXIMUM_ITERATIONS_PER_VARIABLE has been reached");
 				DeleteObject  (stepHistory);
+				stepHistory = nil;
 				break;
 			}
 			if (averageChange <1e-20)
@@ -4758,6 +4777,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						_Parameter	lastParameterValue			= vH->theData[stepsSoFar-1],
 									previousParameterValue		= vH->theData[stepsSoFar-2];
 						
+						//stepScale	  = 0.25;
 						
 						brackStep	  = fabs(lastParameterValue-previousParameterValue); 
 						precisionStep = MIN(brackStep*stepScale,lastParameterValue*0.1);
@@ -4765,7 +4785,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						
 						if (inCount)
 						    precisionStep = lastParameterValue*precision;
-												
+										
+					    precisionStep = MAX(precisionStep,lastParameterValue*precision);
 						
 						//brackStep = precisionStep;
 						
@@ -4832,7 +4853,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				{
 					if (cj != 0.)
 						averageChange += fabs (ch/cj);
-					if (ch < precisionStep*.1)
+					if (ch < precisionStep*0.5)
 						nc2 << j;
 				}
 				else
@@ -4967,12 +4988,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			lastMaxValue = maxSoFar;
 			
 			
-			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%indexInd.lLength)==0 )
+			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%(MAX(10,indexInd.lLength/10)))==0 )
 			{
 				_Matrix bestMSoFar (indexInd.lLength,1,false,true);
 				for (i=0; i<indexInd.lLength; i++)	
 					bestMSoFar[i]=GetIthIndependent(i);
-				ConjugateGradientDescent (useAdaptiveStep>0.5?(loopCounter>indexInd.lLength?precision:MAX(0.01,precision)):currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
+				ConjugateGradientDescent (useAdaptiveStep>0.5?MAX(0.001,precision):currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
 			}			
 		}
 		
@@ -5150,46 +5171,103 @@ bool CheckEqual (_Parameter a, _Parameter b)
 	}
 	return (b<=machineEps)&&(b>=-machineEps);
 }
+	
+//_______________________________________________________________________________________
+_Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter value, _Matrix* baseLine, _Matrix* direction)
+{
+	if (index >= 0)
+		SetIthIndependent (index,value);
+	else
+	{
+		if (value < 0)
+		{
+			WarnError ("Internal error in gradient bracket function\n");
+			return -A_LARGE_NUMBER;
+		}
+		_Matrix newValue (*baseLine);
+		newValue.AplusBx (*direction, value);
+		SetAllIndependent (&newValue);
+		
+	}
+		
+	_Parameter logL = Compute();
+	//if (index < 0)
+	//	printf ("[SetParametersAndCompute %g = %g]\n", value, logL);
+	
+	return logL;
+	
+	//return Compute();
+}
+	
+//_______________________________________________________________________________________
+void _LikelihoodFunction::GetAllIndependent (_Matrix & storage)
+{
+	storage.Clear();
+	CreateMatrix (&storage, indexInd.lLength,1,false,true, false);
+	for (long i=0; i<indexInd.lLength; i++)	
+		storage.theData[i]=GetIthIndependent(i);
+	
+}
+	
 
 //_______________________________________________________________________________________
-long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Parameter& middle, _Parameter& right,  _Parameter& leftValue, _Parameter& middleValue, _Parameter& rightValue, _Parameter& initialStep)
+long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& middle, _Parameter& right,  _Parameter& leftValue, _Parameter& middleValue, _Parameter& rightValue, _Parameter& initialStep, _Matrix* gradient)
 {
-	_Variable* curVar = LocateVar (indexInd (index));
+	_Variable* curVar = index >= 0 ? GetIthIndependentVar (index) : nil;
+	
 	bool	   movingLeft = false, 
 			   first = true;
-	_Parameter lowerBound = curVar->GetLowerBound(), 
-			   upperBound = curVar->GetUpperBound(), 
-			   practicalUB = upperBound>DEFAULTPARAMETERUBOUND?DEFAULTPARAMETERUBOUND:upperBound,
+	
+	
+	_Parameter lowerBound = curVar?curVar->GetLowerBound():0., 
+			   upperBound = curVar?curVar->GetUpperBound():0., 
+			   practicalUB,
 			   magR = 1.61803,
 			   //r,q,u,d,
-			   leftStep = initialStep*.5, 
+			   leftStep  = initialStep*.5, 
 			   rightStep = initialStep*.5, 
 			   lastLStep = -1.0, 
 			   lastRStep = -1.0,
-			   saveL = -1.,
-			   saveM = -1.,
-			   saveR = -1.,
-			   saveLV = 0.0,
-			   saveMV = 0.0,
-			   saveRV = 0.0;
+			   saveL     = -1.,
+			   saveM     = -1.,
+			   saveR     = -1.,
+			   saveLV    = 0.0,
+			   saveMV    = 0.0,
+			   saveRV    = 0.0;
 	
-	long	   funcCounts = likeFuncEvalCallCount;
 	
+	
+	_Matrix			   currentValues;
+	if (index < 0)
+	{
+		GetAllIndependent					   (currentValues);
+		GetGradientStepBound				   (*gradient, lowerBound, upperBound);
+		lowerBound							   = 0.;
+	}
+	
+	practicalUB = upperBound>DEFAULTPARAMETERUBOUND?DEFAULTPARAMETERUBOUND:upperBound;
+	long			   funcCounts = likeFuncEvalCallCount;
+
+
 	//if (index==0)
 	//{
 		//printf ("Index 0\n");
 	//}
 	
-	middle  =  GetIthIndependent (index);
+	if (index >= 0)
+		middle  =  GetIthIndependent (index);
 	
-	if ((lowerBound>middle)||(upperBound<middle))
-		middle = (lowerBound+practicalUB)/2;
+	if (lowerBound>middle || upperBound<middle)
+		middle = (lowerBound+practicalUB) * .5;
 	
-	if (middle==lowerBound)
-		middle = lowerBound+initialStep/5;
+	if (middle == lowerBound)
+		middle = lowerBound+initialStep * .2;
 	
-	if (middle==upperBound)
-		middle = upperBound-initialStep/5;
+	if (middle == upperBound)
+		middle = upperBound-initialStep * .2;
+
+	//if (index < 0)
+	//	printf								   ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
 
 	while (1)
 	{
@@ -5197,40 +5275,43 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 		while ((middle-leftStep)<lowerBound)
 		{
 			leftStep*=.125;
-			if (leftStep<initialStep*.1) 
+			if (leftStep<initialStep*.1 && index >0 || index < 0 && leftStep < STD_GRAD_STEP) 
 			{
 				if (!first)
 				{
 					if (go2Bound>.1)
 					{
 						middle=lowerBound==0.0?PERTURBATION_OF_ZERO:lowerBound;
-						SetIthIndependent (index,middle);
-						middleValue=Compute();
+						middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
 					}
+					//printf ("[FAIL lowerBound -2 %g]\n", middle);
 					return -2;
 				}
 				else
-					middle=lowerBound+initialStep/10;
+				{
+					middle=MIN(lowerBound+initialStep*.1,upperBound-rightStep);
+					first = false;
+				}
 			}
 		}
 			
 		while ((rightStep+middle)>upperBound)
 		{
 			rightStep*=.125;
-			if (rightStep<initialStep*.1) 
+			if (rightStep<initialStep*.1 && index >0 || index < 0 && rightStep < STD_GRAD_STEP) 
 			{
 				if (!first)
 				{
 					if (go2Bound>.1)
-					{
-						middle=upperBound;
-						SetIthIndependent (index,upperBound);
-						middleValue=Compute();
-					}
+						middleValue = SetParametersAndCompute (index, middle=upperBound, &currentValues, gradient);
+					//printf ("[FAIL upperBound -2 %g]\n", middle);
 					return -2;
 				}
 				else
-					middle=upperBound-initialStep/10;
+				{
+					middle=MAX(upperBound-initialStep*.1,lowerBound+leftStep);
+					first = false;
+				}
 			}
 
 		}
@@ -5246,10 +5327,7 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			if (CheckEqual(left,saveM))
 				leftValue = saveMV;
 			else
-			{
-				SetIthIndependent (index,left);
-				leftValue = Compute();
-			}
+				leftValue = SetParametersAndCompute (index, left, &currentValues, gradient);
 			
 		if (CheckEqual(middle,saveL))
 			middleValue = saveLV;
@@ -5260,10 +5338,7 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			if (CheckEqual(middle,saveM))
 				middleValue = saveMV;
 			else
-			{
-				CheckAndSetIthIndependent (index,middle);
-				middleValue = Compute();
-			}
+				middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
 		
 		right = middle+rightStep;
 		if (CheckEqual(right,saveL))
@@ -5275,10 +5350,7 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			if (CheckEqual(right,saveM))
 				rightValue = saveMV;
 			else
-			{
-				SetIthIndependent (index,right);
-				rightValue = Compute();
-			}
+				rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
 		
 		saveL = left;
 		saveM = middle;
@@ -5329,20 +5401,24 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 						
 		if (middle>=practicalUB)
 		{
-			middle = practicalUB;
-			SetIthIndependent (index, middle);
-			middleValue = Compute();
+			middleValue			= SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
 			break;
 		}
 		first = false;
 		
 	}	
 	
-	if (!CheckEqual(GetIthIndependent (index),middle))
+	if (curVar)
 	{
-		SetIthIndependent (index, middle);
-		middleValue = Compute();
+		if (CheckAndSetIthIndependent(index,middle))
+			middleValue = Compute();
 	}
+	else
+	{
+		middleValue			= SetParametersAndCompute (index, middle, &currentValues, gradient);
+	}
+	
+	//printf ("[BRACKET: %g (%g) - %g (%g) - %g (%g)]\n", left, leftValue, middle, middleValue, right, rightValue);
 	
 	if (verbosityLevel > 100)
 	{
@@ -5364,7 +5440,8 @@ void	_LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix*
 	{
 		_Variable*  curVar = LocateVar (indexInd.lData[index]);
 		
-		_Parameter  Bound ,currentValue,
+		_Parameter  Bound,
+					currentValue,
 					locValue = vect.theData[index];
 		
 		if (fabs(locValue)<1e-14)
@@ -5411,272 +5488,7 @@ void	_LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix*
 		}
 	}
 }
-
-//_______________________________________________________________________________________
-long 	_LikelihoodFunction::GradientBracketOneVar (_Matrix& gradient, _Matrix& left, _Matrix& middle, _Matrix& right,  _Parameter& leftValue, _Parameter& middleValue, _Parameter& rightValue, _Parameter& initialStep, bool retry)
-{
-	_Parameter  leftStep 	= initialStep/1.75, 
-			  	rightStep 	= initialStep/1.75, 
-				lastLStep 	= -1.0,
-				lastRStep 	= -1.0;
-
-	bool	    movingLeft = false, 
-				first = true;
-		
-	_Matrix     unit (middle);
 	
-	long	    index;
-	
-	for			(index=0; index<indexInd.lLength; index++)
-	{
-		_Variable*  thisVar = LocateVar(indexInd.lData[index]);
-		if ((thisVar->Value()-thisVar->GetLowerBound()<1e-8)||(thisVar->GetUpperBound()-thisVar->Value()<1e-8))
-			gradient.theData[index] = 0.;
-		else
-			first = false;
-	}
-	
-	if (first) return -1;
-	
-	first = true;
-	// now try to obtain a bracket
-	while (1)
-	{
-		
-		_Matrix	  negGrad (gradient);
-		negGrad *= -1.;
-		CheckStep (leftStep, negGrad, nil);
-		CheckStep (rightStep, gradient, nil);
-		if ((!leftStep)||(!rightStep)) 
-		{
-			if (!retry)
-				if (!leftStep)
-				{
-					//left = right;
-					//middle = right;
-					left = gradient;
-					left *= rightStep;
-					middle += left;
-					return GradientBracketOneVar (gradient, left,middle,right,leftValue,middleValue,rightValue, initialStep, true);
-				}
-				else
-				{
-					if (!rightStep)
-					{
-						//right = left;
-						left = gradient;
-						left *= leftStep;
-						middle -= left;
-						return GradientBracketOneVar (gradient, left,middle,right,leftValue,middleValue,rightValue, initialStep, true);
-					}
-					else 
-						return -1;
-			}
-				
-			return -1;
-		}
-		else
-		 	if (leftStep+rightStep<initialStep*.5)
-		 		return -2;
-		
-		
-		if ((lastLStep==leftStep)&&(lastRStep == rightStep))
-		{
-			if (movingLeft)
-			{
-				right = gradient;
-				right*=(leftStep+rightStep);
-				right += left;
-				rightValue=middleValue;
-				middleValue = leftValue;
-				left = gradient;
-				left*=(-leftStep);
-				left += middle;
-				for (index=0;index<indexInd.lLength; index++)
-					SetIthIndependent (index, left.theData[index]);
-				leftValue = Compute();
-			}
-			else
-			{
-			    left = gradient;
-			    left*=-(leftValue+rightStep);
-				left += right;
-				leftValue=middleValue;
-				middleValue = rightValue;
-				right = gradient;
-				right*=rightStep;
-				right += middle;
-				for (index=0;index<indexInd.lLength; index++)
-					SetIthIndependent (index, right.theData[index]);
-				rightValue = Compute();
-			}
-		}
-		else
-		{
-			if (lastLStep==leftStep)
-			{	
-				if(movingLeft)
-				{
-					middleValue = leftValue;
-					left = gradient;
-					left*=(-leftStep);
-					left += middle;
-					for (index=0;index<indexInd.lLength; index++)
-						SetIthIndependent (index, left.theData[index]);
-					leftValue = Compute();	
-		 
-				}
-				else
-				{
-					_Matrix dummy;
-					dummy = gradient;
-					dummy*=leftStep;
-					left += dummy;
-					leftValue = middleValue;
-					middleValue = rightValue;
-				}
-				
-	 			right = gradient;
-	 			right*=rightStep;
-	 			right += middle;
-				for (index=0;index<indexInd.lLength; index++)
-					SetIthIndependent (index, right.theData[index]);
-				rightValue = Compute();
-			}
-			else
-				if (lastRStep == rightStep)
-				{	
-					if(movingLeft)
-					{
-						rightValue = middleValue;
-						_Matrix dummy;
-						dummy =  gradient;
-						dummy*=(-rightStep);
-						right += dummy;
-						middleValue = leftValue;
-					}
-					else
-					{
-						middleValue = rightValue;
-						right = gradient;
-						right*=rightStep;
-						right += middle;
-						for (index=0;index<indexInd.lLength; index++)
-							SetIthIndependent (index, right.theData[index]);
-						rightValue = Compute();	
-					}
-					left = gradient;
-					left*=(-leftStep);
-					left += middle;
-					for (index=0;index<indexInd.lLength; index++)
-						SetIthIndependent (index, left.theData[index]);
-					leftValue = Compute();	
-				}
-				else
-				{
-					for (index=0;index<indexInd.lLength; index++)
-						SetIthIndependent (index, middle.theData[index]);
-					middleValue = Compute();
-					
-					left = gradient;
-					left*=(-leftStep);
-					left += middle;
-					for (index=0;index<indexInd.lLength; index++)
-						SetIthIndependent (index, (left.theData)[index]);
-					leftValue = Compute();	
-					
-		 			right = gradient;
-		 			right*=rightStep;
-		 			right += middle;
-					for (index=0;index<indexInd.lLength; index++)
-						SetIthIndependent (index, right.theData[index]);
-					rightValue = Compute();
-					
-				}
-		}
-
-
-		lastLStep = leftStep;
-		lastRStep = rightStep;
-		
-		if (verbosityLevel>1)
-		{
-			char    buffer[128];
-			sprintf (buffer,"%12.8g(%10.5g)\t%12.8g\t%12.8g(%10.5g)\n",leftValue,leftStep,middleValue,rightValue,rightStep);
-			BufferToConsole (buffer);
-		}
-		#if defined  __UNIX__ && !defined __HEADLESS__
-			else
-				if (verbosityLevel==1)
-					UpdateOptimizationStatus (middleValue,-1,1,true,progressFileString);
-		#endif
-
-	
-		if ((rightValue<=middleValue)&&(leftValue<=middleValue))
-		{
-			break;
-		}
-		
-		// case 1: /
-		
-		if ((rightValue>=middleValue)&&(middleValue>=leftValue))
-		{
-			if (movingLeft) rightStep/=4;
-			middle = right;
-			if (!movingLeft) 
-			{
-				leftStep = rightStep;
-				lastLStep = leftStep;
-				rightStep*=4;
-			}
-			movingLeft = false;
-		}
-		else // case 2
-		
-			if ((rightValue<=middleValue)&&(middleValue<=leftValue))
-			{
-				if ((!movingLeft)&&(!first)) 
-				{
-					leftStep/=4;
-				}
-				middle = left;
-				if (movingLeft) 
-				{
-					rightStep = leftStep;
-					lastRStep = rightStep;
-					leftStep*=4;
-				}
-				movingLeft = true;
-			}
-			else // non-parabolic behavior!
-				{
-					// try to skip the point in the direction that we were moving
-					middle = movingLeft?left:right;
-				}
-						
-		first = false;
-		
-	}	
-	
-	bool taint = false;
-	for (index=0; index<indexInd.lLength; index++)
-		if (!CheckEqual(GetIthIndependent (index),middle.theData[index]))
-		{
-			taint = true;
-			SetIthIndependent (index, middle.theData[index]);
-		}
-	if (taint) 			
-		middleValue = Compute();
-	
-	if (verbosityLevel>1)
-	{
-		char 	buffer[64];
-		sprintf (buffer,"%12.8g\n",middleValue);
-		BufferToConsole (buffer);
-	}
-
-	return 0;	
-}
 //_______________________________________________________________________________________
 
 _PMathObj	_LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
@@ -6118,39 +5930,105 @@ _PMathObj	_LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
 //_______________________________________________________________________________________
 
+void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& left, _Parameter& right)
+{
+	left = right = DEFAULTPARAMETERUBOUND;
+	
+	for (long i = 0; i < indexInd.lLength; i++)
+	{
+		_Parameter directionalStep = gradient.theData[i];
+		if (directionalStep)
+		{
+			_Variable  *cv			= GetIthIndependentVar (i);
+			_Parameter currentValue = cv->Compute()->Value(),
+			ub						= cv->GetUpperBound    ()-currentValue,
+			lb						= currentValue-cv->GetLowerBound();
+			
+			if (directionalStep > 0.0)
+			{
+				ub /= directionalStep;
+				lb /= directionalStep;
+			}
+			else
+			{
+				currentValue = -lb/directionalStep;
+				lb = -ub/directionalStep;
+				ub = currentValue;
+			}
+			left  = MIN(left, lb);
+			right = MIN(right, ub);
+		}
+	}
+	
+	if (left < 1.-8)  left = 0.;
+	if (right < 1.-8) right = 0.;
+	
+	left = -left;
+}
+
+//_______________________________________________________________________________________
+
 void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Parameter& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize)
 {
-	long index;
 	_Parameter funcValue;
 	
-	CheckStep (gradientStep,unit,&values);
-	if (order>1) 
+	//CheckStep     (gradientStep,unit,&values);
+	/*if (order>1) 
 	{
 		_Matrix nG (unit);
 		nG*=-1;
 		CheckStep (gradientStep,nG,&values);
 	}
 	if (gradientStep==0)
-		return;
+		return;*/
 
 	if (order==1)
 	{
 		funcValue = Compute();
-		for (index=0;index<indexInd.lLength;index++)
+		for (long index=0;index<indexInd.lLength;index++)
 		{
 			if (freeze.Find(index)!=-1)
 				gradient[index]=0.;
 			else
 			{
-				SetIthIndependent(index,GetIthIndependent(index)+gradientStep);
-				gradient[index]=(Compute()-funcValue)/gradientStep;
-				SetIthIndependent(index,GetIthIndependent(index)-gradientStep);
+				_Variable  *cv			= GetIthIndependentVar (index);
+				_Parameter currentValue = GetIthIndependent(index),
+							ub			= cv->GetUpperBound()-currentValue,
+							lb			= currentValue-cv->GetLowerBound(),
+						    testStep    = MAX(currentValue * gradientStep,gradientStep);
+				
+				if (testStep >= ub)
+					if (testStep < lb)
+						testStep = -testStep;
+					else
+						if (ub > lb)
+							testStep = ub;
+						else
+							if (lb >= ub)
+								if (lb == 0.)  
+									testStep = 0.;
+								else
+									testStep = -lb;
+				
+				if (testStep)
+				{
+					SetIthIndependent(index,currentValue+testStep);
+					gradient[index]=(Compute()-funcValue)/testStep;
+					SetIthIndependent(index,currentValue);
+				}
+				else
+					gradient[index]= 0.;
+				
+				/*if (verbosityLevel > 50)
+				{
+					printf ("[GRADIENT @ %s, [%g-%g-%g], %g. der = %g]\n", cv->GetName()->sData, lb, currentValue, ub, testStep, gradient[index]);
+				}*/
 			}
 		}
 	}
 	else
 	{
-		for (index=0;index<indexInd.lLength;index++)
+		for (long index=0;index<indexInd.lLength;index++)
 		{
 			if (freeze.Find(index)!=-1)
 				gradient[index]=0.;
@@ -6171,15 +6049,12 @@ void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Pa
 	if (normalize)
 	{
 		funcValue = 0;
-		for (index=0;index<indexInd.lLength;index++)
-		{
+		for (long index=0;index<indexInd.lLength;index++)
 			funcValue+=gradient.theData[index]*gradient.theData[index];
-		}
-		funcValue = sqrt(funcValue);
-		for (index=0;index<indexInd.lLength;index++)
-		{
-			gradient[index]/=funcValue;
-		}	
+		
+		funcValue = 1/sqrt(funcValue);
+		for (long index=0;index<indexInd.lLength;index++)
+			gradient[index]*=funcValue;
 	}
 }
 //_______________________________________________________________________________________
@@ -6477,7 +6352,7 @@ void	_LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& best
 						SortLists(&leastChange, &countLC);
 						if (vl>=5)
 						{
-							sprintf (buffer,"\nFreezing Variable %d",leastChange(leastChange.lLength-1));
+							sprintf (buffer,"\nFreezing Variable %ld",leastChange(leastChange.lLength-1));
 							BufferToConsole (buffer);
 						}
 						freeze<<leastChange(leastChange.lLength-1);
@@ -6506,22 +6381,53 @@ void	_LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& best
 
 void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Parameter& maxSoFar, _Matrix& bestVal, _Matrix& gradient)
 {
-	_Parameter  leftValue = maxSoFar, middleValue = maxSoFar, rightValue = maxSoFar, bp = gPrecision*2.0;
-	_Matrix	    left (indexInd.lLength,1,false,true), 
-				right (indexInd.lLength,1,false,true), middle(indexInd.lLength,1,false,true),
-				newMiddle(indexInd.lLength,1,false,true);
-	_Parameter  gRatio = (3.0-sqrt(5.0))*.5;
+	_Parameter  leftValue   = maxSoFar, 
+				middleValue = maxSoFar, 
+				rightValue  = maxSoFar, 
+				bp			= gPrecision*10.0,
+				ls = 0., rs = 0., ms = bp;
+	
+	_Matrix						left		;
+	GetAllIndependent			(left);
+	_Matrix	    right			(left),
+				middle			(left),
+				newMiddle		(left);
+			
+
 	long		index;
+	
 							   
 	middle = bestVal;
 	
-	int  outcome = GradientBracketOneVar(gradient, left,middle,right,leftValue, middleValue, rightValue,bp);
+	int  outcome = Bracket(-1, ls,ms,rs,leftValue, middleValue, rightValue,bp, &gradient);
+	
+	//printf ("[GRADIENT BRACKET %g/%g, %g/%g, %g/%g"
+	
+	left.AplusBx   (gradient, ls);
+	middle.AplusBx (gradient, ms);
+	right.AplusBx  (gradient, rs);
 	
 	bool reset = false;
 
 	if (outcome!=-1) // successfull bracket
 	{
 		// set up left, right, middle
+		
+		if (outcome == -2)
+		{
+			if (middleValue>maxSoFar)
+			{
+				maxSoFar = middleValue;
+				bestVal  = middle;
+				SetAllIndependent (&middle);
+			}
+			else
+				SetAllIndependent (&newMiddle);
+
+			return;	
+		}
+
+		
 		_Parameter lV, rV;
 		for (outcome = 0; outcome<indexInd.lLength; outcome++)
 		{
@@ -6539,7 +6445,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 			_Parameter U,V,W,X=0.0,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
 			W = .0;
 			V = .0;
-			FX = middleValue;
+			FX = -middleValue;
 			FV = FX;
 			FW = FX;
 			outcome = 0;
@@ -6548,7 +6454,11 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 			{
 				pFitGood = false;
 				XM = .5*(lV+rV);
-				if (fabs(X-XM)<gPrecision*2) break;
+				
+				_Parameter tol1 = fabs (X) * gPrecision + 1.e-10,
+				tol2 = 2.*tol1;
+				if (fabs(X-XM) <= tol2-0.5*(lV-rV)) break;
+				
 				if (fabs(E)>machineEps)
 				{
 					R = (X-W)*(FX-FV);
@@ -6569,16 +6479,16 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				}
 				if (!pFitGood)
 				{
-						if (X<XM)
+						if (X>=XM)
 							E = lV-X;
 						else
 							E = rV - X;
-						D = gRatio*E;
+						D = GOLDEN_RATIO_C*E;
 				}
 				U = X+D;
 				for (index = 0; index < indexInd.lLength; index++)
 					SetIthIndependent (index,middle.theData[index]+U*gradient.theData[index]);
-				FU = Compute();
+				FU = -Compute();
 				
 				if (FU>=FX)
 				{
@@ -6620,7 +6530,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 			
 			}
 			
-			middleValue = FX;
+			middleValue = -FX;
 			for (outcome = 0; outcome < indexInd.lLength; outcome++)
 			{
 				middle.theData[outcome] += X*gradient.theData[outcome];
@@ -6685,7 +6595,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 	//printf ("%s\n", LocateVar (indexInd.lData[index])->GetName()->sData);
 #endif	
 	
-	int outcome = BracketOneVar(index,left,middle,right,leftValue, middleValue, rightValue,bp);
+	int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
 	long		fCount = likeFuncEvalCallCount;
 	if (outcome!=-1) // successfull bracket
 	{
@@ -8697,7 +8607,7 @@ void		_LikelihoodFunction::OptimalOrder	 (long index, _SimpleList& sl)
 		if (memOverhead)
 		{
 			memOverhead *= (t->GetINodeCount()*(sizeof(_Parameter)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(_Parameter)+sizeof(long)))/1024;
-			sprintf (buffer,"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %d KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
+			sprintf (buffer,"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
 			ReportWarning (buffer);
 			if (vLevel>5)
 				BufferToConsole (buffer);		
@@ -9347,7 +9257,7 @@ BaseRef	_LikelihoodFunction::toStr (void)
 		res<<str;
 		for (long i=0;i<indexInd.lLength;i++)
 		{
-			sprintf (str, "\n  Parameter %4d : %s", i+1, LocateVar(indexInd.lData[i])->GetName()->getStr());
+			sprintf (str, "\n  Parameter %4ld : %s", i+1, LocateVar(indexInd.lData[i])->GetName()->getStr());
 			res<<str;
 		}
 		if (indexDep.lLength>0)
@@ -9356,7 +9266,7 @@ BaseRef	_LikelihoodFunction::toStr (void)
 			res<<str;
 			for (long i=0;i<indexDep.lLength;i++)
 			{
-				sprintf (str, "\n  Parameter %4d : %s", i+1, LocateVar(indexDep.lData[i])->GetName()->getStr());
+				sprintf (str, "\n  Parameter %4ld : %s", i+1, LocateVar(indexDep.lData[i])->GetName()->getStr());
 				res<<str;
 				res<<'=';
 				_String* s = LocateVar(indexDep.lData[i])->GetFormulaString();
@@ -9578,7 +9488,7 @@ BaseRef	_LikelihoodFunction::toStr (void)
 			if (vls>9.99)
 			{
 				char     buffer[64];
-				sprintf (buffer,"WeightedCharacterDifferences at site %d\n", sites);
+				sprintf (buffer,"WeightedCharacterDifferences at site %ld\n", sites);
 				BufferToConsole (buffer);		
 			}
 				
@@ -9820,7 +9730,7 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 					if (vls>9.99)
 					{
 						char   buffer[64];
-						sprintf (buffer,"WeightedCharacterDifferences at site %d\n", sites);
+						sprintf (buffer,"WeightedCharacterDifferences at site %ld\n", sites);
 						BufferToConsole (buffer);		
 					}
 					tree->WeightedCharacterDifferences (siteLikelihood, &res1, &res2,0);								

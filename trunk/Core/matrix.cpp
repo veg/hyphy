@@ -5708,6 +5708,13 @@ void		_Matrix::SqrStrassen (void)
 */
 
 //_____________________________________________________________________________________________
+
+void		_Matrix::AplusBx (_Matrix& B, _Parameter x)
+{
+	_Matrix temp (B); temp *= x; *this+=temp;
+}
+
+//_____________________________________________________________________________________________
 void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 {
 	if (hDim!=vDim) return;
