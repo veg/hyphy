@@ -9,6 +9,7 @@
 
 */
 
+
 numProps = 5; /* number of amino acid property matrices included in the LCAP file */
 
 incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + DIRECTORY_SEPARATOR + "LCAP";
@@ -316,10 +317,6 @@ else {
 
 LCAP = "";
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("LCAP", observedFreq, freqType);
-if ( freqType < 2 ) {
-	Model LCAPModel = (LCAP,vectorOfFrequencies,MULTIPLY_BY_FREQS);
-}
-else {
-	Model LCAPModel = (LCAP,vectorOfFrequencies,MULTIPLY_BY_FREQS);
-}
+Model LCAPModel = (LCAP,vectorOfFrequencies,MULTIPLY_BY_FREQS);
+
 
