@@ -122,8 +122,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern	_Parameter  machineEps;
 
-#define SQR(A) (A)*(A)
-#define GOLDEN_RATIO 1.618034
+#define		SQR(A) (A)*(A)
+#define		GOLDEN_RATIO 1.618034
+#define		GOLDEN_RATIO_R  0.61803399
+#define		GOLDEN_RATIO_C  (1-GOLDEN_RATIO_R)
+
 
 #define	  PERTURBATION_OF_ZERO 	  0.0
 
@@ -4636,10 +4639,21 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					averageChange = 1e-8;
 			}
 
-			if (oldAverage<0.0 || stdFactor*averageChange>oldAverage)
-				divFactor = stdFactor;
+			
+			if (useAdaptiveStep > 0.5)
+			{
+				if (oldAverage<0.0)
+					divFactor = stdFactor;
+				else
+					divFactor = MAX(stdFactor,oldAverage/averageChange);
+			}
 			else
-				divFactor = oldAverage/averageChange;
+			{
+				if (oldAverage<0.0 || stdFactor*averageChange>oldAverage)
+					divFactor = stdFactor;
+				else
+					divFactor = oldAverage/averageChange;
+			}
 			
 			oldAverage = averageChange;
 
@@ -4728,7 +4742,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				}
 				
 				_GrowingVector	   *vH = nil;
-				_Parameter         precisionStep,
+				_Parameter         precisionStep = 0.,
 								   brackStep;
 									
 				
@@ -4745,9 +4759,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 									previousParameterValue		= vH->theData[stepsSoFar-2];
 						
 						
-						brackStep	  = fabs(lastParameterValue-previousParameterValue);
-						precisionStep = brackStep*stepScale;
-						brackStep	 *= 0.5;
+						brackStep	  = fabs(lastParameterValue-previousParameterValue); 
+						precisionStep = MIN(brackStep*stepScale,lastParameterValue*0.1);
+
+						
+						if (inCount)
+						    precisionStep = lastParameterValue*precision;
+												
+						
+						//brackStep = precisionStep;
 						
 						/*if (stepsSoFar>2)
 						{
@@ -4756,38 +4776,36 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 								brackStep *= (brackStep/lastParameterValue);
 						}
 						else
-							brackStep *= 0.5;	*/						
+							brackStep *= 0.5;	*/			
+						
+						//if (loopCounter < indexInd.lLength)
+						//	precisionStep = MAX(precisionStep,lastParameterValue*0.05);
+							
 						
 						if (precisionStep == 0.0)
 						{
 							precisionStep = precision;
-							brackStep     = lastParameterValue * precision;
+							brackStep     = MAX(0.001,lastParameterValue * 0.1);
 						}
 						
+						//if (IsIthParameterGlobal (j))
+						//	precisionStep *= 2.0;
+
 						if (verbosityLevel>50)
 						{
-							sprintf (buffer,"\n[BRACKET STEP: %g:%g (%g)/%g]", lastParameterValue, previousParameterValue, lastParameterValue - previousParameterValue, brackStep);
+							sprintf (buffer,"\n[BRACKET STEP: current = value %g: previous value = %g (diff = %g). brack step = %g, precision = %g]", lastParameterValue, previousParameterValue, lastParameterValue - previousParameterValue, brackStep, precisionStep);
 							BufferToConsole (buffer);
 						}
-					
-						/*if (brackStep > 0.5) 
-							brackStep = 0.5;
-						else
-							if (brackStep < 0.1)
-								brackStep = 0.1;
-						
-						
-						brackStep *= lastParameterValue;*/
 						
 					}
 					else
 					{
 						brackStep     = vH->theData[0];
-						precisionStep = brackStep * 0.25;
+						precisionStep = MAX(0.001,brackStep * 0.1);
 					}
 						
-					if (brackStep < 1e-6)
-						brackStep = 1e-6;
+					if (brackStep < 1e-4)
+						brackStep = 1e-4;
 					if (precisionStep < 1e-6)
 						precisionStep = 1e-6;
 				}
@@ -4808,20 +4826,32 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				_Parameter  cj = GetIthIndependent(j),
 							ch = fabs(bestVal-cj);
 	
-				averageChange  += ch;
-				averageChange2 += cj;
+				
+				
+				if (useAdaptiveStep>0.5)
+				{
+					if (cj != 0.)
+						averageChange += fabs (ch/cj);
+					if (ch < precisionStep*.1)
+						nc2 << j;
+				}
+				else
+				{
+					averageChange  += ch;
+					averageChange2 += cj;
+					if (ch<currentPrecision/indexInd.lLength)
+						nc2 << j;
+				}
+				
 					
 				if (vH)
 					vH->Store(cj);
-
-				if (ch<currentPrecision/indexInd.lLength)
-					nc2 << j;
 					
 				variableValues[j] = ch;
 				
 				if (verbosityLevel>1)
 				{
-					sprintf (buffer,"\n%ld\t%14.10g\t%10.6g (%10.6g, %10.6g) ", j, maxSoFar, cj,  ch, brackStep);
+				  sprintf (buffer,"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) ", j, maxSoFar, cj,  ch, brackStep, precisionStep );
 					BufferToConsole (buffer);
 					StringToConsole (*LocateVar(indexInd.lData[j])->GetName());
 				}
@@ -4936,12 +4966,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				
 			lastMaxValue = maxSoFar;
 			
-			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%10)==0 )
+			
+			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%indexInd.lLength)==0 )
 			{
 				_Matrix bestMSoFar (indexInd.lLength,1,false,true);
 				for (i=0; i<indexInd.lLength; i++)	
 					bestMSoFar[i]=GetIthIndependent(i);
-				ConjugateGradientDescent (useAdaptiveStep>0.5?precision:currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
+				ConjugateGradientDescent (useAdaptiveStep>0.5?(loopCounter>indexInd.lLength?precision:MAX(0.01,precision)):currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
 			}			
 		}
 		
@@ -5165,8 +5196,8 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 		
 		while ((middle-leftStep)<lowerBound)
 		{
-			leftStep/=8;
-			if (leftStep<initialStep/10) 
+			leftStep*=.125;
+			if (leftStep<initialStep*.1) 
 			{
 				if (!first)
 				{
@@ -5185,8 +5216,8 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			
 		while ((rightStep+middle)>upperBound)
 		{
-			rightStep/=8;
-			if (rightStep<initialStep/10) 
+			rightStep*=.125;
+			if (rightStep<initialStep*.1) 
 			{
 				if (!first)
 				{
@@ -5203,86 +5234,7 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			}
 
 		}
-		/*if ((lastLStep==leftStep)&&(lastRStep == rightStep))
-		{
-			if (movingLeft)
-			{
-				right = left+leftStep+rightStep;
-				rightValue=middleValue;
-				middleValue = leftValue;
-				left = middle-leftStep;
-				SetIthIndependent (index, left);
-				leftValue = Compute();
-			}
-			else
-			{
-				left = right-leftStep-rightStep;
-				leftValue=middleValue;
-				middleValue = rightValue;
-				right = middle+rightStep;
-				SetIthIndependent (index, right);
-				rightValue = Compute();
-			}
-		}
-		else
-		{
-			if (lastLStep==leftStep)
-			{	
-				if(movingLeft)
-				{
-					middleValue = leftValue;
-					left = middle-leftStep;
-					SetIthIndependent (index, left);
-					leftValue = Compute();	
-		 
-				}
-				else
-				{
-					left += leftStep;
-					leftValue = middleValue;
-					middleValue = rightValue;
-				}
-				
-	 			right = middle+rightStep;
-				SetIthIndependent (index, right);
-				rightValue = Compute();
-			}
-			else
-				if (lastRStep == rightStep)
-				{	
-					if(movingLeft)
-					{
-						rightValue = middleValue;
-						right -= rightStep;
-						middleValue = leftValue;
-					}
-					else
-					{
-						middleValue = rightValue;
-						right = middle+rightStep;
-						SetIthIndependent (index, right);
-						rightValue = Compute();	
-					}
-					
-					left = middle-leftStep;
-					SetIthIndependent (index, left);
-					leftValue = Compute();	
-				}
-				else
-				{
-					CheckAndSetIthIndependent (index, middle);
-					middleValue = Compute();
-					
-					left = middle-leftStep;
-					SetIthIndependent (index, left);
-					leftValue = Compute();	
-					
-		 			right = middle+rightStep;
-					SetIthIndependent (index, right);
-					rightValue = Compute();
-					
-				}
-		}*/
+	
 		
 		left = middle-leftStep;
 		if (CheckEqual(left,saveL))
@@ -5349,35 +5301,12 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 			else 
 			{
 				leftStep = rightStep;
-				/*r = (middle-left)*(middleValue-rightValue);
-				q = (middle-right)*(middleValue-leftValue);
-				if (fabs(q-r)<1e-20)
-					d = q<r?-1e-20:1e-20;
-				else
-					d = q-r;
-				u = middle - ((middle-right)*q-(middle-left)*r)/(2.*d);
-				if (u>right)
-				{
-					if ((u-right)/rightStep<8)
-						rightStep=u-right;
-					else
-						rightStep*=magR*magR;
-				}
-				else
-					if ((u>left)&&(u<right))
-					{
-						leftStep = u-left;
-						rightStep = right-u;
-						right = u;
-					}
-					else*/
 				rightStep*=magR;
 			}
 			middle = right;
 			movingLeft = false;
 		}
 		else // case 2
-		
 			if ((rightValue<=middleValue)&&(middleValue<=leftValue))
 			{
 				if ((!movingLeft)&&(!first)) 
@@ -5385,28 +5314,6 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 				else
 				{
 					rightStep = leftStep;
-					/*q = (middle-left)*(middleValue-rightValue);
-					r = (middle-right)*(middleValue-leftValue);
-					if (fabs(q-r)<1e-20)
-						d = q<r?-1e-20:1e-20;
-					else
-						d = q-r;
-					u = middle - ((middle-left)*q-(middle-right)*r)/(2.*d);
-					if (u<left)
-					{
-						if ((left-u)/leftStep<8)
-							leftStep=left-u;
-						else
-							leftStep*=magR*magR;
-					}
-					else
-						if ((u>left)&&(u<right))
-						{
-							leftStep = u-left;
-							rightStep = right-u;
-							left = u;
-						}
-						else*/
 					leftStep*=magR;
 				}
 				middle = left;						
@@ -5437,6 +5344,12 @@ long 	_LikelihoodFunction::BracketOneVar (long index, _Parameter& left, _Paramet
 		middleValue = Compute();
 	}
 	
+	if (verbosityLevel > 100)
+	{
+		char buf [256];
+		sprintf (buf, "\n[BRACKET SUCCESSFUL: %g - %g -% g. steps, L=%g, R=%g]", left,middle,right, leftStep, rightStep);
+		BufferToConsole (buf);
+	}
 	
 	
 	bracketFCount+=likeFuncEvalCallCount-funcCounts;
@@ -6765,8 +6678,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			   leftValue, 
 			   middleValue, 
 			   rightValue,  
-			   bp = bracketSetting>0.0?bracketSetting:2.*gPrecision,
-			   gRatio = (3.0-sqrt(5.0))*.5;
+			   bp = bracketSetting>0.0?bracketSetting:2.*gPrecision;
 	
 #ifdef _SLKP_LFENGINE_REWRITE_
 	DetermineLocalUpdatePolicy			 ();
@@ -6793,12 +6705,67 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 #endif		
 			return;	
 		}
-			
+		
+		/*if (right-left > gPrecision)
 		{
+			_Parameter x0 = left,
+					   x1,
+					   x2,
+					   x3 = right,
+					   ax = left,
+					   bx = middle,
+					   cx = right,
+					   f1,
+					   f2;
+			
+			if (fabs(cx-bx) > fabs (bx-ax))
+			{
+				x1 = bx; x2 = bx + GOLDEN_RATIO_C*(cx-bx);
+			}
+			else
+			{
+				x2 = bx; x1 = bx - GOLDEN_RATIO_C*(bx-ax);
+			}
+			
+			SetIthIndependent (index,x1);
+			f1 = -Compute();
+			SetIthIndependent (index,x2);
+			f2 = -Compute();
+			
+			while (fabs(x3-x0) > gPrecision)
+			{
+				if (f2<f1)
+				{
+					x0 = x1; x1 = x2; x2 = GOLDEN_RATIO_R*x2 + GOLDEN_RATIO_C*x3;
+					SetIthIndependent (index,x2);
+					f1 = f2; f2 = -Compute();
+				}
+				else
+				{
+					x3 = x2; x2 = x1; x1 = GOLDEN_RATIO_R*x1 + GOLDEN_RATIO_C*x0;
+					SetIthIndependent (index,x1);
+					f2 = f1; f1 = -Compute();
+				}
+			}
+			
+			if (f1 < f2)
+			{
+				middle      = x1;
+				middleValue = -f1;
+			}
+			else
+			{
+				middle		= x2;
+				middleValue = -f2;
+				
+			}
+			
+		}*/
+		
 			_Parameter U,V,W,X=middle,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
 			W = middle;
 			V = middle;
-			FX = middleValue;
+			FX = -middleValue;
 			FV = FX;
 			FW = FX;
 			outcome = 0;
@@ -6807,14 +6774,26 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			{
 				pFitGood = false;
 				XM = .5*(left+right);
-				if (fabs(X-XM)<gPrecision*2.) break;
+
+				if (verbosityLevel > 50)
+				{
+					char buf [256];
+					sprintf (buf, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g %g %g]", left, XM, right, right-left);
+					BufferToConsole (buf);
+				}
+				
+				_Parameter tol1 = fabs (X) * gPrecision + 1.e-10,
+						   tol2 = 2.*tol1;
+				
+				if (fabs(X-XM) <= tol2-0.5*(right-left)) break;
+				
 				if (fabs(E)>1.0e-10)
 				{
 					R = (X-W)*(FX-FV);
 					Q = (X-V)*(FX-FW);
 					P = (X-V)*Q-(X-W)*R;
 					Q = 2.0 * (Q-R);
-					if (Q>0)
+					if (Q>0.)
 						P = -P;
 					Q = fabs(Q);
 					ETEMP = E;
@@ -6828,17 +6807,25 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 				}
 				if (!pFitGood)
 				{
-					if (X<XM)
+					if (X>=XM)
 						E = left-X;
 					else
 						E = right - X;
-					D = gRatio*E;
+					D = GOLDEN_RATIO_C*E;
 				}
 				U = X+D;
 				SetIthIndependent (index,U);
-				FU = Compute();
+				FU = -Compute();
 				
-				if (FU>=FX)
+				if (verbosityLevel > 50)
+				{
+					char buf [256];
+					sprintf (buf, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
+					BufferToConsole (buf);
+				}
+				
+				
+				if (FU<=FX)
 				{
 					if (U>=X)
 						left = X;
@@ -6853,11 +6840,11 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 				}
 				else
 				{
-					if (U<=X)
+					if (U < X)
 						left = U;
 					else
 						right = U;
-					if ((FU>=FW)||(W==X))
+					if ((FU<=FW)||(W==X))
 					{
 						V = W;
 						FV = FW;
@@ -6878,9 +6865,16 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			
 			}
 		
-			middleValue = FX;
+			middleValue = -FX;
 			middle = X;
+		
+		if (verbosityLevel > 50)
+		{
+			char buf [256];
+			sprintf (buf, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g]", gPrecision, bestVal, middle);
+			BufferToConsole (buf);
 		}
+		
 		
 		//printf ("/nMax at (%g,%g)", X, FX);
 		if (middleValue<maxSoFar)
