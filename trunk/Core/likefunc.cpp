@@ -135,7 +135,7 @@ long	  likeFuncEvalCallCount = 0,
 		  lockedLFID	 		= -1;
 
 #ifndef  __HYALTIVEC__
-#define	 STD_GRAD_STEP 1.0e-6
+#define	 STD_GRAD_STEP 1.0e-8
 #else
 #define	 STD_GRAD_STEP 5.0e-6
 #endif
@@ -6175,7 +6175,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 			
 	if (vl>1)
 	{
-		sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, max so far %g\n",0,precision,maxSoFar);
+		sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, max so far %15.12g\n",0,precision,maxSoFar);
 		BufferToConsole (buffer);
 	}
 	
@@ -6211,7 +6211,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 		GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, gradient);
 		if (vl>1)
 		{
-			sprintf (buffer,"Conjugate Gradient Pass %ld, max so far %g\n",index+1,maxSoFar);
+			sprintf (buffer,"Conjugate Gradient Pass %ld, max so far %15.12g\n",index+1,maxSoFar);
 			BufferToConsole (buffer);		
 		}
 		if (localOnly)
@@ -6419,7 +6419,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				middleValue = maxSoFar, 
 				rightValue  = maxSoFar, 
 				bp			= gPrecision*10.0,
-				ls = 0., rs = 0., ms = 0.;
+				lV = 0., rV = 0., ms = 0.;
 	
 	_Matrix						left		;
 	GetAllIndependent			(left);
@@ -6428,18 +6428,16 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				newMiddle		(left);
 			
 
-	long		index;
-	
 							   
 	middle = bestVal;
 	
-	int  outcome = Bracket(-1, ls,ms,rs,leftValue, middleValue, rightValue,bp, &gradient);
+	int  outcome = Bracket(-1, lV,ms,rV,leftValue, middleValue, rightValue,bp, &gradient);
 	
-	//printf ("[GRADIENT BRACKET %g/%g, %g/%g, %g/%g"
+	//printf ("[GRADIENT BRACKET %g/%g, %g/%g, %g/%g; %d]\n",lV,leftValue,ms,middleValue,rV,rightValue, outcome);
 	
-	left.AplusBx   (gradient, ls);
+	left.AplusBx   (gradient, lV);
 	middle.AplusBx (gradient, ms);
-	right.AplusBx  (gradient, rs);
+	right.AplusBx  (gradient, rV);
 	
 	bool reset = false;
 
@@ -6462,21 +6460,12 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 		}
 
 		
-		_Parameter lV, rV;
-		for (outcome = 0; outcome<indexInd.lLength; outcome++)
-		{
-			if (fabs(gradient.theData[outcome])>machineEps)
-			{
-				lV = (left.theData[outcome]-middle.theData[outcome])/gradient.theData[outcome];
-				rV = (right.theData[outcome]-middle.theData[outcome])/gradient.theData[outcome];
-				break;
-			}
-		}
+		
 		if (outcome == indexInd.lLength)
 			reset = true;
 		else
 		{
-			_Parameter U,V,W,X=0.0,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
+			_Parameter U,V,W,X=ms,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
 			W = .0;
 			V = .0;
 			FX = -middleValue;
@@ -6491,7 +6480,11 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				
 				_Parameter tol1 = fabs (X) * gPrecision + 1.e-10,
 				tol2 = 2.*tol1;
-				if (fabs(X-XM) <= tol2-0.5*(lV-rV)) break;
+				
+				if (fabs(X-XM) <= tol2-0.5*(rV-lV)) 
+				{
+					break;
+				}
 				
 				if (fabs(E)>machineEps)
 				{
@@ -6523,8 +6516,9 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				//for (index = 0; index < indexInd.lLength; index++)
 				//	SetIthIndependent (index,middle.theData[index]+U*gradient.theData[index]);
 				FU = -SetParametersAndCompute (-1,U,&newMiddle,&gradient);
+				//printf ("\n%g\n", FU);
 				
-				if (FU>=FX)
+				if (FU<=FX)
 				{
 					if (U>=X)
 						lV = X;
@@ -6543,7 +6537,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 						lV = U;
 					else
 						rV = U;
-					if ((FU>=FW)||(W==X))
+					if ((FU<=FW)||(W==X))
 					{
 						V = W;
 						FV = FW;
@@ -6552,7 +6546,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 					}
 					else
 					{
-						if ((FU>=FV)||(V==X)||(V==W))
+						if ((FU<=FV)||(V==X)||(V==W))
 						{
 							V = U;
 							FV = FU;
@@ -6794,7 +6788,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 					}
 					else
 					{
-						if ((FU>=FV)||(V==X)||(V==W))
+						if ((FU<=FV)||(V==X)||(V==W))
 						{
 							V = U;
 							FV = FU;
