@@ -9,6 +9,7 @@
 
 */
 
+USE_ADAPTIVE_VARIABLE_STEP = 1;
 
 numProps = 5; /* number of amino acid property matrices included in the LCAP file */
 
@@ -296,7 +297,7 @@ else {
 	else { /* F61 */
  		COUNT_GAPS_IN_FREQUENCIES = 0;
 		HarvestFrequencies (observedFreq,filteredData,3,3,1);
-		vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]);
+		vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]); /* cough, cough, cough ... HACK! */
 	}
 }
 
