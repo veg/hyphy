@@ -332,7 +332,7 @@ static	void			CheckFibonacci				(_Parameter);
 		void			CleanupMPIOptimizer			(void);
 		void			ComputeBlockInt1 			(long,_Parameter&,_TheTree*,_DataSetFilter*, char);
 		void		 	CheckStep 					(_Parameter&, _Matrix, _Matrix* selection = nil);
-		void			GetGradientStepBound 		(_Matrix&, _Parameter &, _Parameter &);
+		void			GetGradientStepBound 		(_Matrix&, _Parameter &, _Parameter &, long* = nil);
 		void		 	ComputeGradient 			(_Matrix&, _Matrix&,  _Parameter&, _Matrix&, _SimpleList&, 
 										 			long, bool normalize = true);
 		bool		 	SniffAround 				(_Matrix& , _Parameter& , _Parameter&);

@@ -4990,10 +4990,16 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			
 			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%(MAX(10,indexInd.lLength/10)))==0 )
 			{
-				_Matrix bestMSoFar (indexInd.lLength,1,false,true);
-				for (i=0; i<indexInd.lLength; i++)	
-					bestMSoFar[i]=GetIthIndependent(i);
-				ConjugateGradientDescent (useAdaptiveStep>0.5?MAX(0.001,precision):currentPrecision, bestMSoFar,useAdaptiveStep>0.5);
+				_Matrix bestMSoFar;
+				GetAllIndependent(bestMSoFar);
+				if (useAdaptiveStep > 0.5)
+				{
+					ConjugateGradientDescent (MAX(0.001,precision), bestMSoFar,true);
+				}
+				else
+				{
+					ConjugateGradientDescent (currentPrecision, bestMSoFar);
+				}
 			}			
 		}
 		
@@ -5216,7 +5222,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 	_Variable* curVar = index >= 0 ? GetIthIndependentVar (index) : nil;
 	
 	bool	   movingLeft = false, 
-			   first = true;
+			   first	  = true;
 	
 	
 	_Parameter lowerBound = curVar?curVar->GetLowerBound():0., 
@@ -5242,6 +5248,15 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 	{
 		GetAllIndependent					   (currentValues);
 		GetGradientStepBound				   (*gradient, lowerBound, upperBound);
+		if (upperBound < 1e-10)
+		{
+			long freezeCount = 0;
+			GetGradientStepBound				   (*gradient, lowerBound, upperBound, &freezeCount);
+			//printf ("[FREEZE %ld/%g]\n", freezeCount, upperBound);
+			if (freezeCount == 0 || freezeCount == indexInd.lLength || upperBound < 1e-10)
+				return -2;
+		}
+			
 		lowerBound							   = 0.;
 	}
 	
@@ -5266,8 +5281,14 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 	if (middle == upperBound)
 		middle = upperBound-initialStep * .2;
 
-	//if (index < 0)
-	//	printf								   ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
+	/*if (index < 0)
+	{
+		printf								   ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
+		for (long i = 0; i < indexInd.lLength; i++)
+		{
+			printf ("%s = %g\n", GetIthIndependentVar(i)->GetName()->sData, gradient->theData[i]);
+		}
+	}*/
 
 	while (1)
 	{
@@ -5930,9 +5951,12 @@ _PMathObj	_LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& left, _Parameter& right)
+void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& left, _Parameter& right, long * freezeCount)
 {
 	left = right = DEFAULTPARAMETERUBOUND;
+	
+	if (freezeCount)
+		*freezeCount = 0;
 	
 	for (long i = 0; i < indexInd.lLength; i++)
 	{
@@ -5943,6 +5967,9 @@ void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& le
 			_Parameter currentValue = cv->Compute()->Value(),
 			ub						= cv->GetUpperBound    ()-currentValue,
 			lb						= currentValue-cv->GetLowerBound();
+			
+			//if (ub < 1e-10 || lb < 1e-10)
+			//	printf ("[HIT BOUNDARY AT %s; %g, %g]\n", cv->GetName()->sData, lb, ub);
 			
 			if (directionalStep > 0.0)
 			{
@@ -5955,8 +5982,15 @@ void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& le
 				lb = -ub/directionalStep;
 				ub = currentValue;
 			}
+			
 			left  = MIN(left, lb);
-			right = MIN(right, ub);
+			if (ub < 1e-6 && freezeCount)
+			{
+				(*freezeCount) ++;
+				gradient.theData[i] = 0.;
+			}
+			else
+				right = MIN(right, ub);
 		}
 	}
 	
@@ -6124,10 +6158,10 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 				
 	_SimpleList	freeze;
 	
-	/*if (localOnly)
+	if (localOnly)
 		for (long k = 0; k < indexInd.lLength; k++)
 			if (IsIthParameterGlobal(k))
-				freeze << k;*/
+				freeze << k;
 	
 	_Matrix 	unit     (bestVal), 
 				gradient (bestVal);
@@ -6385,7 +6419,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 				middleValue = maxSoFar, 
 				rightValue  = maxSoFar, 
 				bp			= gPrecision*10.0,
-				ls = 0., rs = 0., ms = bp;
+				ls = 0., rs = 0., ms = 0.;
 	
 	_Matrix						left		;
 	GetAllIndependent			(left);
@@ -6486,9 +6520,9 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 						D = GOLDEN_RATIO_C*E;
 				}
 				U = X+D;
-				for (index = 0; index < indexInd.lLength; index++)
-					SetIthIndependent (index,middle.theData[index]+U*gradient.theData[index]);
-				FU = -Compute();
+				//for (index = 0; index < indexInd.lLength; index++)
+				//	SetIthIndependent (index,middle.theData[index]+U*gradient.theData[index]);
+				FU = -SetParametersAndCompute (-1,U,&newMiddle,&gradient);
 				
 				if (FU>=FX)
 				{
@@ -6530,15 +6564,12 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 			
 			}
 			
-			middleValue = -FX;
-			for (outcome = 0; outcome < indexInd.lLength; outcome++)
-			{
-				middle.theData[outcome] += X*gradient.theData[outcome];
-				if (!CheckEqual(GetIthIndependent(outcome),middle.theData[outcome]))
-					SetIthIndependent (outcome,middle.theData[outcome]);
-			}
-			bestVal = middle;
-			maxSoFar = middleValue;
+			maxSoFar	= SetParametersAndCompute (-1,X,&newMiddle,&gradient);
+			bestVal		= newMiddle;
+			bestVal.AplusBx (gradient, X);
+			
+			//bestVal = middle;
+			//maxSoFar = middleValue;
 		}
 		//middle = X;
 	}
