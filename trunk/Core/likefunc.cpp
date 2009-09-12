@@ -4994,7 +4994,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				GetAllIndependent(bestMSoFar);
 				if (useAdaptiveStep > 0.5)
 				{
-					ConjugateGradientDescent (MAX(0.001,precision), bestMSoFar,true);
+					ConjugateGradientDescent (MAX(0.01,precision), bestMSoFar,true);
 				}
 				else
 				{
@@ -6158,11 +6158,11 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 				
 	_SimpleList	freeze;
 	
-	if (localOnly)
+	/*if (localOnly)
 		for (long k = 0; k < indexInd.lLength; k++)
 			if (IsIthParameterGlobal(k))
 				freeze << k;
-	
+	*/
 	_Matrix 	unit     (bestVal), 
 				gradient (bestVal);
 	
