@@ -3411,35 +3411,41 @@ void	_Matrix::operator = (_Matrix* m)
 {
 	Clear();
 	DuplicateMatrix (this, m);
-} 	
+} 
+
+
+//_____________________________________________________________________________________________
+_Parameter _Matrix::AbsValue (void)
+{
+	if (storageType == 1 && (hDim==1 || vDim == 1))
+	{
+		_Parameter norm = 0.;
+		if (theIndex)
+		{
+			for (long k = 0; k<lDim; k++)
+				if (long i = theIndex[k] >= 0)
+					norm += theData[i]*theData[i];
+			
+			norm = sqrt(norm);			
+		}
+		else
+		{
+			for (long k = 0; k<lDim; k++)
+				norm += theData[k]*theData[k];
+			norm = sqrt(norm);
+		}
+		return norm;
+	}
+	
+	return 0.;
+}
+
 //_____________________________________________________________________________________________
 _PMathObj _Matrix::Abs (void)
 {
-	_Parameter result = 0.0, cell;
-	if (hDim==1)
-	{
-		for (long k=0; k<vDim; k++)
-		{
-			cell = (*this)(0,k);
-			result+=cell*cell;
-		}
-		result=sqrt(result);
-	}
-	else
-	{
-		if (vDim==1)
-		{
-			for (long k=0; k<hDim; k++)
-			{
-				cell = (*this)(k,0);
-				result+=cell*cell;
-			}
-			result=sqrt(result);
-		}
-		else
-			result = MaxElement();
-	}
-	return (_PMathObj)_Constant(result).makeDynamic();
+	if (storageType == 1 && (hDim==1 || vDim == 1))
+		return new _Constant (AbsValue());
+	return new _Constant(MaxElement());
 
 }
 

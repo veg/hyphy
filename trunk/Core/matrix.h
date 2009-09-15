@@ -210,6 +210,7 @@ class		_Matrix: public _MathObject {
 												// if it is a vector - returns the Euclidean length
 												// otherwise returns the largest element
 
+	_Parameter	AbsValue						(void);		
 	virtual		_PMathObj Log 					(void);
 												// return the matrix of logs of every matrix element
 
@@ -494,7 +495,7 @@ virtual		long		GetVDim 					(void)
 					return GetUsed();
 				return 1;
 			}			
-		long   Store			(_Parameter);
+			long   Store			(_Parameter);
 			long   GetUsed			(void) 
 			{
 				return used;

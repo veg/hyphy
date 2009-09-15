@@ -4226,7 +4226,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	checkParameter  (globalStartingPoint,precision,0.1);
 	_Constant 	  c (precision);
 
-	if ((long)keepStartingPoint==0)
+	if (fabs(keepStartingPoint) < 0.5)
 	{
 		if ((long)wobble==0)
 		{
@@ -4588,7 +4588,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					glVars, 
 					shuffledOrder;
 					
-		_List		*stepHistory = nil;
+		_List				*stepHistory = nil;
+		_GrowingVector		logLHistory;
+		
+		logLHistory.Store(maxSoFar);
 		
 		checkParameter (useAdaptiveVariableStep, useAdaptiveStep, 0.0);
 		
@@ -4642,6 +4645,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			if (LocateVar (indexInd.lData[j])->IsGlobal())
 				glVars << j;
  
+		
 		while (inCount<termFactor)
 		{				
 			if (likeFuncEvalCallCount-lfCount>maxItersPerVar)
@@ -4657,14 +4661,81 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				if (averageChange<1e-20)
 					averageChange = 1e-8;
 			}
-
+			
+			_Parameter diffs [5];
+			char convergenceMode = 0;
+				/* 0, normal
+				 * 1, accelerated (last cycle obtained a bigger LL drop than the one before)
+				 * 2, slow convergence (last three cycles within a factor of 2 LL drop of each other)
+				 * 3, really slow convergence (last five cycles within a factor of 2 LL drop of each other)
+				*/
+ 			
 			
 			if (useAdaptiveStep > 0.5)
 			{
+				convergenceMode = 0;
 				if (oldAverage<0.0)
 					divFactor = stdFactor;
 				else
-					divFactor = MAX(stdFactor,oldAverage/averageChange);
+				{
+					divFactor			= MAX(stdFactor,oldAverage/averageChange);
+					
+					long	   steps    = logLHistory.GetUsed();
+					for (long k = 1; k <= MIN(5, steps-1); k++)
+					{
+						diffs[k-1] = logLHistory.theData[steps-k] - logLHistory.theData[steps-k-1];
+						//printf ("%ld : %g\n", k, diffs[k-1]);
+					}	
+					if (steps > 2 && diffs[0] >= diffs[1])
+						convergenceMode = 1;
+					
+					if (diffs[0] == 0.)
+						convergenceMode = 2;
+					
+					if (convergenceMode == 0)
+					{
+						if (steps > 3)
+						{
+							if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.)
+							{
+								if (diffs[0] / diffs[1] >= 0.5 && diffs[1] / diffs[0] <= 2.0 &&
+									diffs[1] / diffs[2] >= 0.5 && diffs[1] / diffs[2] <= 2.0)
+								{
+									convergenceMode = 2;
+									if (steps > 5)
+									{
+										if (diffs [3] > 0. && diffs [4] > 0.)
+										{
+											if (diffs[2] / diffs[3] >= 0.5 && diffs[2] / diffs[3] <= 2.0 &&
+												diffs[3] / diffs[4] >= 0.5 && diffs[3] / diffs[4] <= 2.0)
+												convergenceMode = 3;
+										}
+										else
+											convergenceMode = 3;
+									}
+								}
+							}
+							else {
+								convergenceMode = 2;
+							}
+						}
+
+					}
+					
+					switch (convergenceMode)
+					{
+						case 1: 
+							divFactor = 1.;
+							break;
+						case 2:
+							divFactor = 10.;
+							break;
+						case 3:
+							divFactor = 50.;
+							break;
+					}
+
+				}
 			}
 			else
 			{
@@ -4718,17 +4789,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			
 			if (useAdaptiveStep > 0.5)
 			{
-				/*if ((4*loopCounter)/indexInd.lLength < 1)
-					stepScale = 0.5;
-				else
-					stepScale = 0.1;*/
-				
-				
-				//stepScale = MAX(precision,MIN(0.5,pow(8.,-(_Parameter)loopCounter/indexInd.lLength)));
 				stepScale = 1/divFactor;
-				if (verbosityLevel>50)
+				if (verbosityLevel>5)
 				{
 					sprintf (buffer,"\n[BRACKET SHRINKAGE: %g]", stepScale);
+					BufferToConsole (buffer);
+					sprintf (buffer,"\n[Convergence mode = %d]", convergenceMode);
 					BufferToConsole (buffer);
 				}
 			}
@@ -4780,8 +4846,22 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						//stepScale	  = 0.25;
 						
 						brackStep	  = fabs(lastParameterValue-previousParameterValue); 
+						if (brackStep == 0.0)
+							for (long k = stepsSoFar-3; k>=0 && brackStep == 0.0; k--)
+							{
+								previousParameterValue			= vH->theData[k],
+								lastParameterValue				= vH->theData[k+1];	
+								brackStep	  = fabs(lastParameterValue-previousParameterValue); 
+							}
+								
+						/*long	   steps    = logLHistory.GetUsed();
+						if (steps > 1 && logLHistory.theData[steps-1] - logLHistory.theData[steps-2] > 1.)
+						{
+							precisionStep = MAX(brackStep*stepScale,lastParameterValue*0.05);
+							brackStep     = MAX(brackStep,precisionStep * 2.);
+						}
+						else*/
 						precisionStep = MIN(brackStep*stepScale,lastParameterValue*0.1);
-
 						
 						if (inCount)
 						    precisionStep = lastParameterValue*precision;
@@ -4804,17 +4884,22 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 							
 						
 						if (precisionStep == 0.0)
-						{
 							precisionStep = precision;
-							brackStep     = MAX(0.001,lastParameterValue * 0.1);
-						}
+						
+						brackStep = MAX (precisionStep,lastParameterValue*precision);
 						
 						//if (IsIthParameterGlobal (j))
 						//	precisionStep *= 2.0;
 
 						if (verbosityLevel>50)
 						{
-							sprintf (buffer,"\n[BRACKET STEP: current = value %g: previous value = %g (diff = %g). brack step = %g, precision = %g]", lastParameterValue, previousParameterValue, lastParameterValue - previousParameterValue, brackStep, precisionStep);
+							sprintf (buffer,"\n[BRACKET STEP: current = %g: previous = %g (diff = %g). bracket = %g, prec = %g]", 
+												lastParameterValue, 
+												previousParameterValue, 
+												lastParameterValue - previousParameterValue, 
+												brackStep, 
+												precisionStep);
+							
 							BufferToConsole (buffer);
 						}
 						
@@ -4839,6 +4924,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						brackStep = currentPrecision;
 				}
 				
+				long brackStepSave = bracketFCount,
+					 oneDStepSave  = oneDFCount;
+					 
 				if (useAdaptiveStep>0.5)
 					LocateTheBump (j,precisionStep, maxSoFar, bestVal, brackStep);
 				else	
@@ -4872,7 +4960,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				
 				if (verbosityLevel>1)
 				{
-				  sprintf (buffer,"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) ", j, maxSoFar, cj,  ch, brackStep, precisionStep );
+					sprintf (buffer,"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: %ld (BRACKET), %ld (BRENT) ", 
+									j, 
+									maxSoFar, 
+									cj,  
+									ch, 
+									brackStep, 
+									precisionStep, 
+									bracketFCount-brackStepSave,
+									oneDFCount - oneDStepSave);
 					BufferToConsole (buffer);
 					StringToConsole (*LocateVar(indexInd.lData[j])->GetName());
 				}
@@ -4965,11 +5061,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						UpdateOptimizationStatus (maxSoFar,percentDone,1,true,progressFileString);
 				#endif
 			}
+			logLHistory.Store(maxSoFar);
 			
 			if (verbosityLevel>5)
 			{
 				sprintf (buffer,"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
 				BufferToConsole (buffer);
+					
 			}
 				
 			currentPrecision = averageChange/divFactor;
@@ -4988,17 +5086,25 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			lastMaxValue = maxSoFar;
 			
 			
-			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5 && (((long)loopCounter)%(MAX(10,indexInd.lLength/10)))==0 )
+			if (!skipCG && loopCounter&& indexInd.lLength>1 && ( (((long)loopCounter)%indexInd.lLength)==0 )||  useAdaptiveStep > 0.5)
 			{
-				_Matrix bestMSoFar;
-				GetAllIndependent(bestMSoFar);
+				_Matrix				bestMSoFar;
+				GetAllIndependent	(bestMSoFar);
 				if (useAdaptiveStep > 0.5)
 				{
-					ConjugateGradientDescent (MAX(0.01,precision), bestMSoFar,true);
+					if (convergenceMode > 2)
+					{
+						_Parameter prec = MIN (diffs[0], diffs[1]);
+						prec = MAX (prec*0.1, precision);
+						prec = MIN (prec, 0.1);
+						ConjugateGradientDescent (prec, bestMSoFar,true);		
+						logLHistory.Store(maxSoFar);
+					}
 				}
 				else
 				{
 					ConjugateGradientDescent (currentPrecision, bestMSoFar);
+					logLHistory.Store(maxSoFar);
 				}
 			}			
 		}
@@ -5290,6 +5396,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		}
 	}*/
 
+	//printf ("\n[INITIAL BRACKET %g %g %g]", middle-leftStep, middle, middle+rightStep); 
 	while (1)
 	{
 		
@@ -5315,6 +5422,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 				}
 			}
 		}
+		
 			
 		while ((rightStep+middle)>upperBound)
 		{
@@ -5373,6 +5481,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			else
 				rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
 		
+		//printf ("\n[BRACKET %g (%g) %g (%g) %g (%g)]", left, leftValue, middle,middleValue, right, rightValue); 
 		saveL = left;
 		saveM = middle;
 		saveR = right;
@@ -5383,7 +5492,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		lastLStep = leftStep;
 		lastRStep = rightStep;
 
-		if ((rightValue<=middleValue)&&(leftValue<=middleValue))
+		if (rightValue<=middleValue && leftValue<=middleValue)
 			break;
 
 		// case 1: /
@@ -6166,8 +6275,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 	_Matrix 	unit     (bestVal), 
 				gradient (bestVal);
 	
-	long		vl = verbosityLevel, 
-				index;
+	long		vl = verbosityLevel;
 	
 	char		buffer[256];
 	
@@ -6175,7 +6283,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 			
 	if (vl>1)
 	{
-		sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, max so far %15.12g\n",0,precision,maxSoFar);
+		sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,precision,gradientStep,maxSoFar);
 		BufferToConsole (buffer);
 	}
 	
@@ -6183,86 +6291,89 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 				H (bestVal), 
 				S (bestVal);
 				
-	_Parameter  gradL, 
-				hL, 
-				stepL;
+	_Parameter  gradL;
 				
-	ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
+	ComputeGradient     (gradient, unit, gradientStep, bestVal, freeze, 1, false);
 	
-	G.Duplicate(&gradient);
-	H.Duplicate(&gradient);
-	_Constant* absV;
+	gradL = gradient.AbsValue ();
 	
-	for (index = 0; index<200; index++, currentPrecision/=4)
+	if (gradL != 0.0)
 	{
-		temp = maxSoFar;
-		absV = (_Constant*)gradient.Abs();
-		gradL = absV->Value();
-		DeleteObject(absV);
 	
-		if (CheckEqual(gradL,0.0))
-			break;
+		gradient			*= -1.;
+		G.Duplicate			(&gradient);
+		H.Duplicate			(&gradient);
 		
-		gradient *= 1.0/gradL;
+		for (long index = 0; index<200; index++, currentPrecision/=4)
+		{
+			temp = maxSoFar;
 			
-		if (currentPrecision < 0.00001)
-			currentPrecision = 0.00001;
-		
-		GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, gradient);
-		if (vl>1)
-		{
-			sprintf (buffer,"Conjugate Gradient Pass %ld, max so far %15.12g\n",index+1,maxSoFar);
-			BufferToConsole (buffer);		
-		}
-		if (localOnly)
-		{
-			if (fabs((maxSoFar-temp))<=precision)
-				break;
-		}
-		else
-			if (fabs((maxSoFar-temp)/maxSoFar)<=precision)
-				break;
-		
-		ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
-		absV = (_Constant*)G.Abs();
-		gradL = absV->Value();
-		DeleteObject(absV);
-		if (gradL==0.0) 
-			break;
+			if (currentPrecision < 0.00001)
+				currentPrecision = 0.00001;
 			
-		//absV = (_Constant*)gradient.Abs();
-		//hL = absV->Value();
-		//DeleteObject(absV);
-		//stepL = hL/gradL;
+			S	   = gradient;
+			S	  *= -1./gradient.AbsValue();
+			GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, S);
+			
+			if (vl>1)
+			{
+				sprintf (buffer,"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
+				BufferToConsole (buffer);		
+			}
+			if (localOnly)
+			{
+				if (fabs((maxSoFar-temp))<=precision)
+					break;
+			}
+			else
+				if (fabs((maxSoFar-temp)/maxSoFar)<=precision)
+					break;
+			
+			ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
+			S	   = gradient;
+			//gradL  = S.AbsValue();
+			//S	  *= 1.;
+			
+			_Parameter	    gg  = 0., 
+							dgg = 0.;
+			
+			for (long k = 0; k < indexInd.lLength; k++)
+			{
+				gg  += G.theData[k]*G.theData[k];
+				dgg += (S.theData[k] + G.theData[k])*S.theData[k];
+			}
+			
+			if (gg == 0.)
+				break;
+			
+			dgg /= gg;
+			
+			
+			for (long k = 0; k < indexInd.lLength; k++)
+			{
+				G.theData[k] = -S.theData[k];
+				gradient.theData[k] = H.theData[k] = G.theData[k] + dgg * H.theData[k];
+			}
+			//printf ("%s %s\n", _String((_String*)S.toStr()).sData, _String((_String*)gradient.toStr()).sData);
 		
-		hL = 0.;
-		for (long j=0; j<indexInd.lLength; j++)
-		{
-			stepL = gradient.theData[j];
-			hL+=(stepL-G.theData[j])*stepL;
+			
+			if (terminateExecution)
+				return;
+			#if !defined __UNIX__ && !defined __HEADLESS__
+				if (feedbackTreePanel)
+					if (windowObjectRefs.Find ((long)feedbackTreePanel) >= 0)
+					{
+						feedbackTreePanel->BuildTree (true);
+						feedbackTreePanel->RenderTree();
+					}
+					else
+						feedbackTreePanel = nil;
+			#endif		
 		}
-		stepL = hL/(gradL*gradL);
-		//stepL = SQR(stepL);
-		G.Duplicate(&gradient);
-		H*=stepL;
-		H+=G;
-		gradient.Duplicate(&H);
-		if (terminateExecution)
-			return;
-		
-		#if !defined __UNIX__ && !defined __HEADLESS__
-			if (feedbackTreePanel)
-				if (windowObjectRefs.Find ((long)feedbackTreePanel) >= 0)
-				{
-					feedbackTreePanel->BuildTree (true);
-					feedbackTreePanel->RenderTree();
-				}
-				else
-					feedbackTreePanel = nil;
-		#endif		
 	}
-	for (index=0;index<indexInd.lLength;index++)
-		SetIthIndependent(index,bestVal(0,index));
+	
+	SetAllIndependent (&bestVal);
+	
 	if (vl>1)
 		BufferToConsole("\n");
 	
