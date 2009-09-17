@@ -3404,25 +3404,31 @@ void		_LikelihoodFunction::GetInitialValues (void)
 				{
 					cornholio = LocateVar(history.lData[0]);
 					if (!cornholio->HasChanged())
-						cornholio->CheckAndSet (c3*.66667);
-				}
-				else
-				if (history.lLength>=2)
-				{
-					cornholio = LocateVar(history.lData[0]);
-					if (!cornholio->HasChanged())
-						cornholio->CheckAndSet (c1);
-					cornholio = LocateVar(history.lData[1]);
-					if (!cornholio->HasChanged())
-						cornholio->CheckAndSet (c2);
-					c1 = (c1+c2)/2;
-					for (i=2; i<history.lLength;i++)
 					{
-						cornholio = LocateVar(history.lData[i]);
-						if (!cornholio->HasChanged())
-							cornholio->CheckAndSet (c1);
+						ReportWarning(_String("Initial guess for ") & cornholio->GetName()->getStr() & " is " & (c3*.66667));
+						cornholio->CheckAndSet (c3*.66667, true);
 					}
 				}
+				else
+					if (history.lLength>=2)
+					{
+						cornholio = LocateVar(history.lData[0]);
+						if (!cornholio->HasChanged())
+							cornholio->CheckAndSet (c1, true);
+						cornholio = LocateVar(history.lData[1]);
+						if (!cornholio->HasChanged())
+							cornholio->CheckAndSet (c2, true);
+						c1 = (c1+c2)/2;
+						for (i=2; i<history.lLength;i++)
+						{
+							cornholio = LocateVar(history.lData[i]);
+							if (!cornholio->HasChanged())
+							{
+								ReportWarning(_String("Initial guess for ") & cornholio->GetName()->getStr() & " is " & (c3*.66667));
+								cornholio->CheckAndSet (c1, true);
+							}
+						}
+					}
 				dumpkopf = t->StepWiseTraversal(false);
 			}
 				

@@ -2269,14 +2269,17 @@ void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a
 		
 //__________________________________________________________________________________
 
-void  _Variable::CheckAndSet (_Parameter c) // set the value of the var
+void  _Variable::CheckAndSet (_Parameter c, bool oob) // set the value of the var
 {
 	//hasBeenChanged = true;
 	varFlags |= HY_VARIABLE_CHANGED;
 	_Parameter l = lowerBound+1.0e-30,
 			   u = upperBound-1.0e-30;
-	if ((c<l)||(c>u))
+	if (c<l || c>u )
 	{
+		if (oob)
+			return;
+			
 		if (c<l)
 		{
 			theValue = l;

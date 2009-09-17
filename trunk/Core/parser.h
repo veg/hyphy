@@ -489,7 +489,10 @@ class _Variable : public _Constant {
 	virtual		bool	   IsConstant (void);
 				void	   SetValue (_PMathObj, bool = true); // set the value of the variable
 				void	   SetNumericValue (_Parameter);
-				void	   CheckAndSet (_Parameter); // set the value of the variable
+				void	   CheckAndSet (_Parameter, bool = false); 
+									// set the value of the variable
+									// bool flag is used to indicate that out of bounds values should be rejected
+	
 				_PMathObj  GetValue (void) {return varValue;} // get the value of the variable
 				void	   SetFormula (_Formula&); // set the variable to a new formula
 	
