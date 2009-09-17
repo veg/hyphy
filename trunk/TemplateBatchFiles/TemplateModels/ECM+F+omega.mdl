@@ -97,6 +97,7 @@ else {
 	incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECM";
 }
 
+fscanf ( incFileName, "Matrix,NMatrix,NMatrix", KHG_codonOrder, KHG_RateMatrix, KHG_vof );
 
 ModelMatrixDimension = 0;
 for ( i = 0; i < 64; i = i + 1 ) {
