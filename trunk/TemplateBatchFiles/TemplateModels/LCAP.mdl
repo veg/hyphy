@@ -221,7 +221,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 			"F61","Empirical codon frequencies.");
 
 
-fprintf						  (stdout, "\nModel string for nucleotide biases:");
+fprintf						  (stdout, "\nModel string for nucleotide biases: (eg: 010010 for HKY85)");
 fscanf						  (stdin,"String",modelDesc);
 
 
