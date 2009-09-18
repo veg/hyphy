@@ -305,4 +305,4 @@ LCAP = "";
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("LCAP", observedFreq, freqType);
 Model LCAPModel = (LCAP,vectorOfFrequencies,MULTIPLY_BY_FREQS);
 
-
+fprintf ( stdout, "alpha parameters in order (0-4) are Chemical Composition, Polarity, Volume, Iso-electric point, Hydropathy\n" );
