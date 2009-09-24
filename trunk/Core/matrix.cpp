@@ -4024,7 +4024,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							_Parameter c = secondArg.theData[k];
 							
 							for (long cell = m%secondArg.vDim, secondCell = m/secondArg.vDim; cell < lDim; cell += vDim, secondCell += vDim)
-								theData[cell] += c * secondArg.theData[secondCell];
+								storage.theData[cell] += c * theData[secondCell];
 							
 						}
 					}
