@@ -13,12 +13,13 @@ SelectTemplateModel(filteredData);
 
 _DO_TREE_REBALANCE_ = 1;
 
+
 #include "queryTree.bf";
 
 LikelihoodFunction lf = (filteredData,givenTree);
 
 timer = Time(0);
-USE_ADAPTIVE_VARIABLE_STEP = 0;
+
 
 Optimize (res,lf);
 timer = Time(0)-timer;

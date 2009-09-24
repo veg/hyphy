@@ -202,8 +202,10 @@ function ReceiveJobs (sendOrNot, ji)
 		{
 			MPISend (fromNode,msg2Send);
 			
+			/*
 			fprintf ("lastm.in", CLEAR_FILE, msg2Send);
-		
+			*/
+			
 			MPINodeState[fromNode-1][1] = ji;			
 			MPINodeState[fromNode-1][2] = modelDF;			
 		}
