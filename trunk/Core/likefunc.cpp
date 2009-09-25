@@ -1249,10 +1249,13 @@ bool	_LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p)
 	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
 
 	bool set;
+	
+	_Parameter oldValue = v->Value();
+	
 	if (p!=0.0)
-		set = (fabs(v->Value()-p)/p)>machineEps;
+		set = (fabs((oldValue-p)/p))>machineEps;
 	else
-		set = fabs(v->Value()-p)>machineEps;
+		set = fabs(oldValue-p)>machineEps;
 
 	if (set)
 		v->SetValue (new _Constant (p), false);
@@ -1264,8 +1267,7 @@ bool	_LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p)
 void	_LikelihoodFunction::SetIthDependent (long index, _Parameter p) 
 {
 	_Variable * v =(_Variable*) LocateVar (indexDep.lData[index]);
-	_Constant c(p);
-	v->SetValue (&c);
+	v->SetValue (new _Constant (p),false);
 }
 
 //_______________________________________________________________________________________
@@ -2049,7 +2051,11 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					result += computationalResults.theData[partID];
 			}
 			else
-				result+=ComputeBlock (partID);		
+			{
+				_Parameter	blockResult =  ComputeBlock (partID);
+				result				   +=  blockResult;		
+				UpdateBlockResult		(partID, blockResult);
+			}
 			
 		}
 		done = true;
@@ -4733,10 +4739,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 							divFactor = 1.;
 							break;
 						case 2:
-							divFactor = 10.;
+							divFactor = 4.;
 							break;
 						case 3:
-							divFactor = 50.;
+							divFactor = 16.;
 							break;
 						//default:
 						//	divFactor = 4.;
@@ -4763,6 +4769,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			{
 				sprintf (buffer,"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
 				BufferToConsole (buffer);
+				if (useAdaptiveStep > 0.5 && logLHistory.GetUsed() > 2)
+				{
+					sprintf (buffer, "\nLast cycle logL change = %g\n", diffs[0], "\n");
+					BufferToConsole (buffer);
+				}
 			}
 			#if defined __UNIX__ && ! defined __HEADLESS__
 			else
@@ -4813,7 +4824,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					prec = MAX (prec*0.01, precision*0.1);
 					prec = MIN (prec, 0.1);
 					
-					ConjugateGradientDescent (prec, bestMSoFar,true);	
+					ConjugateGradientDescent (prec, bestMSoFar,true,10);	
 					GetAllIndependent	(bestMSoFar);
 					for (long k = 0; k < indexInd.lLength; k++)
 						((_GrowingVector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
@@ -4888,12 +4899,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 							
 						
 						if (precisionStep == 0.0)
+						{
 							precisionStep = precision;
-						//else
-						//	precisionStep = lastParameterValue*precision;
-						
-						brackStep = 2*precisionStep;
-						
+							brackStep = 2.*precisionStep;
+						}
+						else
+							brackStep = 2.*brackStep;
 						//if (IsIthParameterGlobal (j))
 						//	precisionStep *= 2.0;
 
@@ -4952,7 +4963,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				{
 					if (cj != 0.)
 						averageChange += fabs (ch/cj);
-					if (ch < precisionStep*0.1 && inCount == 0)
+					if (ch < precisionStep*0.25 && inCount == 0)
 						nc2 << j;
 				}
 				else
@@ -5300,7 +5311,7 @@ _Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter 
 	}
 		
 	_Parameter logL = Compute();
-	//if (index < 0)
+	//if (index >=0)
 	//	printf ("[SetParametersAndCompute %g = %g]\n", value, logL);
 	
 	return logL;
@@ -5443,7 +5454,19 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		}
 	
 		
+		if (CheckEqual(middle,saveL))
+			middleValue = saveLV;
+		else
+			if (CheckEqual(middle,saveR))
+				middleValue = saveRV;
+			else
+				if (CheckEqual(middle,saveM))
+					middleValue = saveMV;
+				else
+					middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+
 		left = middle-leftStep;
+
 		if (CheckEqual(left,saveL))
 			leftValue = saveLV;
 		else
@@ -5455,16 +5478,6 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			else
 				leftValue = SetParametersAndCompute (index, left, &currentValues, gradient);
 			
-		if (CheckEqual(middle,saveL))
-			middleValue = saveLV;
-		else
-			if (CheckEqual(middle,saveR))
-				middleValue = saveRV;
-			else
-			if (CheckEqual(middle,saveM))
-				middleValue = saveMV;
-			else
-				middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
 		
 		right = middle+rightStep;
 		if (CheckEqual(right,saveL))
@@ -5478,7 +5491,8 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			else
 				rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
 		
-		//printf ("\n[BRACKET %g (%g) %g (%g) %g (%g)]", left, leftValue, middle,middleValue, right, rightValue); 
+		//printf ("\n[BRACKET: %g (%g) - %g (%g) - %g (%g)]", left, leftValue, middle, middleValue, right, rightValue);
+
 		saveL = left;
 		saveM = middle;
 		saveR = right;
@@ -5545,7 +5559,6 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		middleValue			= SetParametersAndCompute (index, middle, &currentValues, gradient);
 	}
 	
-	//printf ("[BRACKET: %g (%g) - %g (%g) - %g (%g)]\n", left, leftValue, middle, middleValue, right, rightValue);
 	
 	if (verbosityLevel > 100)
 	{
@@ -6254,7 +6267,7 @@ bool	_LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar, _
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly)
+void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit)
 {
 
 	_Parameter  gradientStep	 = STD_GRAD_STEP, 
@@ -6301,7 +6314,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 		G.Duplicate			(&gradient);
 		H.Duplicate			(&gradient);
 		
-		for (long index = 0; index<200; index++, currentPrecision/=4)
+		for (long index = 0; index<200 && index < iterationLimit; index++, currentPrecision/=4)
 		{
 			temp = maxSoFar;
 			
@@ -7970,7 +7983,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	
 	if (computingTemplate&&templateKind)
 	{
-		if (!(forceRecomputation||t->HasChanged()||(!siteArrayPopulated)))
+		if (!(forceRecomputation||t->HasChanged()||!siteArrayPopulated))
 		{		
 			usedCachedResults = true;
 			return			  -1e300;
@@ -7978,9 +7991,10 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	}
 	else
 	{
-		if ((!forceRecomputation) && computationalResults.GetUsed() && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !t->HasChanged())
+		if (!forceRecomputation && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !t->HasChanged())
 		{		
 			usedCachedResults = true;
+			//printf ("\n[CACHED]\n");
 			return computationalResults.theData[index];
 		}
 	}
