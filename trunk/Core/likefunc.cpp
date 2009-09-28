@@ -2096,9 +2096,9 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					//printf ("[RECEIVE]: %d\n", partID, "\n");
 					
 					_DataSetFilter * thisBlockFilter      = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
-					thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0);
+					thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0,blockWidth);
 					_SimpleList* blockScalers = ((_SimpleList*)partScalingCache(partID));
-					thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, 2);
+					thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, 2,blockWidth);
 					totalSent--;
 				}	
 			}
