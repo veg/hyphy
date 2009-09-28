@@ -6158,7 +6158,7 @@ BaseRef	_DataSetFilter::toStr (void)
 
 //_________________________________________________________
 
-void	_DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode)
+void	_DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode, long padup)
 {
 	for (long site = 0; site < duplicateMap.lLength; site++)
 		if (mode == 0)
@@ -6169,6 +6169,14 @@ void	_DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode)
 			else
 				if (mode == 2)
 					((long*)target)[site] = ((_Parameter*)source)[duplicateMap.lData[site]];
+	
+
+	for (long site = duplicateMap.lLength; site < padup; site++)
+		if (mode == 0)
+			((_Parameter*)target)[site] = 1.;
+		else
+			if (mode == 1)
+				((long*)target)[site] = 0;
 }
 
 

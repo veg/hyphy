@@ -2107,13 +2107,17 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 				for (long partID=0; partID<theTrees.lLength; partID++)
 				{
 					ComputeSiteLikelihoodsForABlock      (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength));
-					_DataSetFilter * thisBlockFilter      = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
-					thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0);
-					thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1);
+					if (usedCachedResults == false)
+					{
+						_DataSetFilter * thisBlockFilter      = (_DataSetFilter*)dataSetFilterList (theDataFilters.lData[partID]);
+						thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0, blockWidth);
+						thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1, blockWidth);
+					}
 				}
 			
 			// no need to remap; just process directly based on partiton indices
 			
+			siteArrayPopulated		   = true;
 			siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
 			_SimpleList scalerCache    (theTrees.lLength,0,0);
 			_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
@@ -4438,7 +4442,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		}
 
 		if (optMethod!=7)
-			ConjugateGradientDescent (0.01, bestSoFar);
+			ConjugateGradientDescent (1, bestSoFar, true, 10);
 		else
 			ConjugateGradientDescent(precision, bestSoFar, true);	
 		#if !defined __UNIX__ || defined __HEADLESS__
@@ -4739,10 +4743,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 							divFactor = 1.;
 							break;
 						case 2:
-							divFactor = 4.;
+							divFactor = 8.;
 							break;
 						case 3:
-							divFactor = 16.;
+							divFactor = 32.;
 							break;
 						//default:
 						//	divFactor = 4.;
@@ -5352,7 +5356,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			   saveM     = -1.,
 			   saveR     = -1.,
 			   saveLV    = 0.0,
-			   saveMV    = 0.0,
+			   saveMV    = middleValue,
 			   saveRV    = 0.0;
 	
 	
@@ -6732,7 +6736,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			   right, 
 			   middle,
 			   leftValue, 
-			   middleValue, 
+			   middleValue = maxSoFar, 
 			   rightValue,  
 			   bp = 2.*gPrecision;
 	
@@ -7986,6 +7990,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 		if (!(forceRecomputation||t->HasChanged()||!siteArrayPopulated))
 		{		
 			usedCachedResults = true;
+			//printf ("\n[CACHED]\n");
 			return			  -1e300;
 		}	
 	}

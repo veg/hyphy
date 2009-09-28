@@ -448,13 +448,18 @@ class _DataSetFilter:public BaseObj {
 	// a utility function to return a _List of simplelists (one per unique site pattern) that provides an ordered list of 
 	//			 the indices of all sites that have the same pattern in the original alignment
 
-	void							PatternToSiteMapper			(void*, void*, char);
+	void							PatternToSiteMapper			(void*, void*, char, long);
 	/* 
 		20090325: SLKP
 		a function that takes per pattern values (source, argument 1)
 	    and maps them ontp sites into target (argument 2)
-		the last argument is 0 to treat the pointers as _Parameter*
-		and 1 to treat them as long*
+		the third argument is 0 to treat the pointers as _Parameter*
+		1 to treat them as long*
+		2 and to treat them as _Parameter and long, respetively
+		20090929: SLKP
+		the fourth argument is used to speficy a padding-size, 
+			all values from the filter size up to that value are set to 1 (for mode 0) and 0 (for mode 1)
+			this is needed to handle uneven data filters in SITE_LIKELIHOOD constructs
 	 */
 	
 	_SimpleList     

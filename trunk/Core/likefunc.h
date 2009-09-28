@@ -617,6 +617,9 @@ void	StateCounterResultHandler 	(_Formula&, _SimpleList*,long&,long&,long,_Matri
 
 _LikelihoodFunction*
 		FindLikeFuncByName		 	 (_String&);
+
+extern	bool				usedCachedResults;
+
 extern _Parameter			_lfScalerUpwards,
 							_lfScalingFactorThreshold,
 							_logLFScaler;	
