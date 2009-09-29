@@ -35,7 +35,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "dmalloc.h"
 #endif
 
-extern	long likeFuncEvalCallCount;
+extern	long likeFuncEvalCallCount,
+			 matrixExpCount;
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
@@ -83,6 +84,7 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 	
 #ifdef _OPENMP
 	long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
+	matrixExpCount += matrixQueue.lLength;
 #endif
 	
 #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
