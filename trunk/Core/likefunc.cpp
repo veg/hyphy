@@ -3016,92 +3016,90 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 		// and attempt to move them back in.
 		for (index = badIndices.lLength-1; index>-1;index--) 
 		{
-			_Parameter temp = GetIthDependent(badIndices(index));
+			long	   badVarIndex		= badIndices.lData[index];
+			_Parameter temp				= GetIthDependent(badVarIndex);
 			
-			currentValues[badIndices(index)]=temp;
+			currentValues[badVarIndex]	= temp;
 			
-			if (temp<lowerBounds[badIndices(index)]) // too low
+			bool			  tooLow = temp<lowerBounds[badVarIndex];
+			
+			// look for an independent which will increase (if tooLow) or decrease (too high) this variable 
+			// w/o decreasing the others
+			// this is equivalent to searching for the matrix of dependancies for a column w/o negative
+			// entries,such that row "index" has "1" in it
+			
+			_Parameter correlation = 0.;
+			
+			for (j = indexInd.lLength-1; j>-1; j--)
 			{
-				// look for an independent which will increase this variable w/o decreasing the others
-				// this is equivalent to searching for the matrix of dependancies for a column w/o negative
-				// entries,such that row "index" has "1" in it
-				for (j = indexInd.lLength-1; j>-1; j--)
+				if (correlation = dependancies(badVarIndex,j)) 
 				{
-					if (dependancies(badIndices(index),j)==1.0) 
+					for (i=0; i<badIndices.lLength;i++)
 					{
-						for (i=indexDep.lLength-1; i>-1;i--)
-						{
-							if (dependancies(i,j)<0) break;
-						}
-						if (i==-1) break; //match found
+						_Parameter depIJ = dependancies(badIndices.lData[i],j);
+						if (depIJ && depIJ != correlation) 
+							break;
 					}
+					if (i==indexInd.lLength) break; //match found
 				}
-				if (j==-1) // no suitable variable found - try random permutations
-					break;
-				// now nudge the found variable (indexed by "j") upward, until var "index" is within limits again
-				// try this by a trivial bisection
-				cornholio = LocateVar (indexInd(j));
-				_Parameter left = cornholio->Value(), right = cornholio->GetUpperBound(), 
-						   middle, lb = cornholio->GetLowerBound();
-				temp=right-left>0.001?0.00001:(right-left)/1000.0;
-				while (right-left>temp)
-				{
-					middle = (left+right)/2.0;
-					SetIthIndependent(j,middle);
-					if (GetIthDependent  (badIndices(index))>lb) // in range
-					{
-						right = middle;
-					}
-					else
-					{
-						left = middle;
-					}
-				}
-				// take "right" as the new value for the ind
-				SetIthIndependent(j,right);
+				
 			}
-			else
-			if (temp>upperBounds[badIndices(index)]) // too high
-			{
-				// look for an independent which will increase this variable w/o decreasing the others
-				// this is equivalent to searching for the matrix of dependancies for a column w/o negative
-				// entries,such that row "index" has "1" in it
-				for (j = indexInd.lLength-1; j>-1; j--)
-				{
-					if (dependancies(badIndices(index),j)==-1.0) 
-					{
-						for (i=indexDep.lLength-1; i>-1;i--)
-						{
-							if (dependancies(i,j)>0) break;
-						}
-						if (i==-1) break; //match found
-					}
-				}
-				if (j==-1) // no suitable variable found - try random permutations
-					break;
-				// now nudge the found variable (indexed by "j") upward, until var "index" is within limits again
-				// try this by a trivial bisection
-				cornholio = LocateVar (indexInd(j));
-				_Parameter left = cornholio->Value(), right = cornholio->GetUpperBound(), 
-						   middle, ub = cornholio->GetUpperBound();
-				temp=right-left>0.001?0.00001:(right-left)/1000.0;
-				while (right-left>temp)
-				{
-					middle = (left+right)/2.0;
-					SetIthIndependent(j,middle);
-					if (GetIthDependent  (badIndices(index))<ub) // in range
-					{
-						right = middle;
-					}
-					else
-					{
-						left = middle;
-					}
-				}
-				// take "right" as the new value for the ind
-				SetIthIndependent(j,right);
-			}
+			
+			if (j==-1) // no suitable variable found - try random permutations
+				break;
+			
+			// now nudge the independent variable (indexed by "j") upward (or downward), 
+			// until var badVarIndex is within limits again
+			// try this by a trivial bisection
+			
+			cornholio = GetIthIndependentVar(j);
 
+			_Parameter left			, 
+					   right		, 
+					   middle,	
+					   lb			= tooLow?lowerBounds[badVarIndex]:upperBounds[badVarIndex];
+			
+			bool	decrement = (correlation < 0. && tooLow) || (correlation > 0. && !tooLow);
+			
+			if (decrement) // need to decrement "j"
+			{
+				left  = cornholio->GetLowerBound();
+				right = cornholio->Value();
+			}
+			else // need to increment "j"
+			{
+				right = cornholio->GetUpperBound();
+				left  = cornholio->Value();
+			}
+				
+			
+			temp=right-left>0.001?
+							0.00001:
+							(right-left)*0.0001;
+			
+			while (right-left>temp)
+			{
+				middle					= (left+right)/2.0;
+				SetIthIndependent		  (j,middle);
+				_Parameter				  adjusted = GetIthDependent		  (badVarIndex);
+				if ((tooLow && adjusted > lb) || (!tooLow && adjusted < lb)) // in range
+				{
+					if (decrement)
+						left = middle;
+					else
+						right = middle;
+						
+				}
+				else
+				{
+					if (decrement)
+						right = middle;
+					else
+						left = middle;
+				}
+			}
+			// take "right" as the new value for the ind
+			SetIthIndependent(j,decrement?left:right);
 		}
 		
 		// now we check to see whether all is well
@@ -3112,12 +3110,10 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 			for (index = indexDep.lLength-1; index>-1;index--) 
 			// check whether any of the dependent variables are out of bounds
 			{
-				cornholio = LocateVar(indexDep(index));
+				cornholio = GetIthDependentVar(index);
 				currentValues[index]=cornholio->Compute()->Value();
-				if ((currentValues[index]<lowerBounds[index])||(currentValues[index]>upperBounds[index]))
-				{	
+				if (currentValues[index]<lowerBounds[index] || currentValues[index]>upperBounds[index])
 					break;
-				}		
 			}	
 			if (index == -1) // we did it!
 				return;
