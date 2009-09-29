@@ -825,7 +825,6 @@ BaseRef	_Site::makeDynamic(void)
 {
 	_Site * r = new _Site;
 	checkPointer(r);
-	memAlloc += sizeof (_Site);
 	
 	memcpy ((char*)r, (char*)this, sizeof (_Site));
 	r->nInstances = 1;
@@ -1722,7 +1721,7 @@ _Matrix	* _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
 		}
 	}				
 	
-	delete store;
+	delete[] store;
 	//scale the matrix now
 	
 	hD = out.GetHDim();

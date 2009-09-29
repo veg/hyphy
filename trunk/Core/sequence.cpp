@@ -122,11 +122,6 @@ _CString::_CString (unsigned long sL, bool flag)
 //_________________________________________________________
 _CString::~_CString(void) 
 {
-	if (isReleasing)
-	{
-		memReleased+=sizeof(_CString);
-		isReleasing--;
-	}
 }
 //_________________________________________________________
 long 	_CString::FreeUpMemory(long)
@@ -209,7 +204,6 @@ BaseRef	  _CString::makeDynamic (void)
 {
 	_CString* res = (_CString*)new _CString;
 	checkPointer(res);
-	memAlloc+=sizeof(_CString);
 
 	_String::Duplicate (res);
 	

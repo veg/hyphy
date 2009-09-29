@@ -319,17 +319,12 @@ _String::_String (FILE* F)
 			
 _String::~_String(void)
 {
-	if (isReleasing)
-	{
-		memReleased+=sizeof(_String);
-		isReleasing--;
-	}
+
 
 	if (nInstances<=1){
 		if (sData) 
 		{
 			free (sData);
-			memReleased+=sLength+1;
 			sData = nil;
 		}
 		sLength = 0;
@@ -345,7 +340,6 @@ BaseRef _String::makeDynamic (void)
 	_String * r = new _String;
 	if (!r)
 		checkPointer(r);
-	//memAlloc += sizeof (_String);
 	//memcpy ((char*)r, (char*)this, sizeof (_String));
 	//r->nInstances = 1;
 	r->Duplicate(this);
@@ -398,7 +392,6 @@ void	_String::DuplicateErasing (BaseRef ref) {
 	if (sData) 
 	{
 		free (sData);
-		memReleased += sLength+1;
 	}	
 	_String * s = (_String*)ref;
 	sLength = s->sLength;
@@ -417,7 +410,6 @@ void _String::operator = (_String s)
 	if (sData) 
 	{
 		free (sData);
-		memReleased += sLength+1;
 	}
 
 	sLength = s.sLength;

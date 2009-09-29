@@ -2807,7 +2807,7 @@ long	 _LikelihoodFunction::HasPrecisionBeenAchieved (_Parameter funcVal, bool cl
 		lastValue = 0;
 		callcount = likeFuncEvalCallCount;
 		if (oldVarValues)
-			delete oldVarValues;
+			delete [] oldVarValues;
 		oldVarValues = nil;
 		return 0;
 	}
@@ -3990,7 +3990,7 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 			}
 		}
 		conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
-		delete columnBlock; delete translationCache;
+		delete [] columnBlock; delete [] translationCache;
 	}
 }
 
@@ -7829,29 +7829,29 @@ void	_LikelihoodFunction::DeleteCaches (bool all)
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			if (conditionalInternalNodeLikelihoodCaches[k]) delete (conditionalInternalNodeLikelihoodCaches[k]);
-		delete (conditionalInternalNodeLikelihoodCaches);
+			if (conditionalInternalNodeLikelihoodCaches[k]) delete [] (conditionalInternalNodeLikelihoodCaches[k]);
+		delete [] conditionalInternalNodeLikelihoodCaches ;
 		conditionalInternalNodeLikelihoodCaches = nil;
 	}
 	if (branchCaches)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			if (branchCaches[k]) delete (branchCaches[k]);
-		delete (branchCaches);
+			if (branchCaches[k]) delete [] branchCaches[k];
+		delete [] branchCaches;
 		branchCaches = nil;
 	}
 	if (conditionalTerminalNodeStateFlag)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			if (conditionalTerminalNodeStateFlag[k]) delete (conditionalTerminalNodeStateFlag[k]);
-		delete (conditionalTerminalNodeStateFlag);
+			if (conditionalTerminalNodeStateFlag[k]) delete [] conditionalTerminalNodeStateFlag[k];
+		delete [] conditionalTerminalNodeStateFlag;
 		conditionalTerminalNodeStateFlag = nil;
 	}
 	if (siteScalingFactors)
 	{
 		for (long k = 0; k < theTrees.lLength; k++)
-			if (siteScalingFactors[k]) delete (siteScalingFactors[k]);
-		delete (siteScalingFactors);
+			if (siteScalingFactors[k]) delete [] siteScalingFactors[k];
+		delete [] siteScalingFactors;
 		siteScalingFactors = nil;
 	}
 }

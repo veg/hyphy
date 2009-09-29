@@ -51,7 +51,7 @@ public:
   					{data = NULL;length = 0;}         
   									//default constructor
   				~ptr_array				()                
-  					{if (data) delete data;}         
+  					{if (data) delete [] data;}         
   					 				//default destructor
   void 			add					(array_data);                                     
   									//adds a node to the end of the array

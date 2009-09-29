@@ -1056,7 +1056,7 @@ _PMathObj	_Matrix::LUDecompose (void)
 				result->theData[i*perRow+j]*=cell;
 		}	
 	}
-	delete scalings;
+	delete [] scalings;
 	return result;
 }
 //__________________________________________________________________________________
@@ -1899,7 +1899,6 @@ void	_Matrix::CheckIfSparseEnough(bool force)
 					}
 				}
 				MatrixMemFree (theData);
-				memReleased+=lDim*sizeof(Ptr);
 				theData = (_Parameter*)tempData;
 			}
 		}
@@ -1922,13 +1921,11 @@ void	_Matrix::CheckIfSparseEnough(bool force)
 						tempData [k] = ((_Parameter*)theData) [i];
 				}
 				MatrixMemFree( theData);
-				memReleased+=lDim*sizeof(_Parameter);
 				theData = tempData;
 			}
 		
 		}
 		MatrixMemFree (theIndex);
-		memReleased+=lDim*sizeof(long);
 		theIndex = nil;
 		bufferPerRow = overflowBuffer = allocationBlock = 0;
 		lDim = vDim*hDim;
@@ -1950,7 +1947,6 @@ bool 	_Matrix::IncreaseStorage	(void)
 	{
 		memcpy (tempIndex, theIndex, (lDim-allocationBlock)*sizeof(long));
 		MatrixMemFree( theIndex);
-		memReleased+=(lDim-allocationBlock)*sizeof(long);
 
 		for (i = lDim-1; i>=lDim-allocationBlock; i--)
 			tempIndex [i] = -1;
@@ -1969,7 +1965,6 @@ bool 	_Matrix::IncreaseStorage	(void)
 		{
 			memcpy (tempData, theData, (lDim-allocationBlock)*sizeof(void*));
 			MatrixMemFree (theData);
-			memReleased+=(lDim-allocationBlock)*sizeof(void*);
 			for (i = lDim-1; i>=lDim-allocationBlock; i--)
 				tempData [i] = ZEROPOINTER;
 			theData = (_Parameter*)tempData;
@@ -1990,7 +1985,6 @@ bool 	_Matrix::IncreaseStorage	(void)
 			for (;i>=0;i--)
 				tempData [i] = ((_Parameter*)theData) [i];
 			MatrixMemFree( theData);
-			memReleased+=(lDim-allocationBlock)*sizeof(_Parameter);
 			theData = tempData;
 		}
 	}
@@ -2938,7 +2932,7 @@ void		_Matrix::MakeMeGeneral (void)
 		for (long k = 0; k < cmd->formulasToEval.lLength; k++)
 			((_Formula*)cmd->formulasToEval.lData[k])->ConvertFromSimple(cmd->varIndex);
 
-		delete (cmd->formulaValues);
+		delete [] cmd->formulaValues;
 		free   (cmd->formulaRefs);
 		
 		MatrixMemFree 	(cmd->theStack);
@@ -3390,11 +3384,6 @@ void	_Matrix::Resize (long newH)
 _Matrix::~_Matrix (void)
 {
 	Clear();
-	if (isReleasing)
-	{
-		memReleased+=sizeof(_Matrix);
-		isReleasing--;
-	}
 } 	
 
 //_____________________________________________________________________________________________
@@ -4673,7 +4662,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 		
 		if (max == 0.0)
 		{
-			delete stash;
+			delete [] stash;
 			return result;
 		}
 		
@@ -4765,7 +4754,7 @@ _Matrix*	_Matrix::Exponentiate (void)
 	
 		for (long s = 0; s<power2; s++, squaringsCount++)
 			result->Sqr(stash);
-		delete (stash);
+		delete [] stash;
 					
 		return result;	
 }	

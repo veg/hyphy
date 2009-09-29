@@ -407,7 +407,7 @@ _CalcNode::~_CalcNode (void) {
 	
 	#ifndef __HYALTIVEC__
 		if (theProbs) 
-			delete theProbs;
+			delete [] theProbs;
 	#else
 		if (theProbs) 
 			vec_free(theProbs);

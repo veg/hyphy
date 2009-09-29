@@ -245,18 +245,10 @@ _SimpleList::_SimpleList (long br)
 _SimpleList::~_SimpleList(void)
 //destructor
 {
-	if (isReleasing)
-	{
-		memReleased+=sizeof(_SimpleList);
-		isReleasing++;
-	}
 	if (nInstances<=1)
 	{
 		if (lData) 
-		{
-			memReleased+=laLength*sizeof(Ptr);
 			free (lData);
-		}
 	}
 	else
 		nInstances--;	
@@ -919,11 +911,10 @@ void _List::operator << (BaseRef br)
 		
 		laLength+=incBy;
 		
-		memAlloc += sizeof(Ptr)*incBy;
 		if (lData)
-			isError(long(lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*))));
+			checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
 		else
-			isError(long(lData = (long*)MemAllocate(laLength*sizeof(void*))));
+			checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
 	}
 	((BaseRef*)lData)[lLength-1]=br;
 	br->nInstances++;
@@ -957,11 +948,10 @@ void _List::Place (BaseRef br)
 	if (lLength>laLength)
 	{
 		laLength+=MEMORYSTEP;
-		memAlloc += sizeof(Ptr)*MEMORYSTEP;
 		if (lData)
-			isError(long(lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*))));
+			checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
 		else
-			isError(long(lData = (long*)MemAllocate(laLength*sizeof(void*))));
+			checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
 	}
 	((BaseRef*)lData)[lLength-1]=br;
 }
@@ -1092,9 +1082,9 @@ void _SimpleList::RequestSpace (long slots)
 	{
 		laLength=(slots/MEMORYSTEP+1)*MEMORYSTEP;
 		if (lData)
-			isError(long(lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*))));
+			checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
 		else
-			isError(long(lData = (long*)MemAllocate(laLength*sizeof(void*))));		
+			checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
 	}
 }
 //______________________________________________________________
@@ -1194,7 +1184,6 @@ BaseRef _List::makeDynamic(void)
 	_List * Res = new _List;
 	checkPointer(Res);
 	//lData = nil;
-	memAlloc+=sizeof(_List);
 	memcpy ((char*)Res, (char*)this, sizeof (_List));
 	Res->nInstances = 1;
 	Res->lData = nil;
@@ -1208,7 +1197,6 @@ BaseRef _SimpleList::makeDynamic(void)
 {
 	_SimpleList * Res = new _SimpleList;
 	checkPointer(Res);
-	memAlloc+=sizeof(_SimpleList);
 	memcpy ((char*)Res, (char*)this, sizeof (_SimpleList));
 	Res->nInstances = 1;
 	Res->lData = nil;
@@ -1839,7 +1827,7 @@ void  _SimpleList::Delete (long index, bool compact)
 	{
 		lLength--;
 		if (lLength-index)
-			memcpy ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+			memmove ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
 	}
 	if (compact && laLength-lLength>MEMORYSTEP)
 	{	
@@ -2484,20 +2472,20 @@ void	_SimpleList::Subtract (_SimpleList& l1, _SimpleList& l2)
 	long  c1 = 0,
 		  c2 = 0;
 		  
-	while ((c1<l1.lLength)&&(c2<l2.lLength))
+	while (c1<l1.lLength && c2<l2.lLength)
 	{
-		while ((l1.lData[c1]<l2.lData[c2])&&(c1<l1.lLength)) 
+		while (c1<l1.lLength && l1.lData[c1]<l2.lData[c2]) 
 			(*this) << l1.lData[c1++];
 		if (c1==l1.lLength)
 			break;
-		while ((l1.lData[c1]==l2.lData[c2])&&(c1<l1.lLength)&&(c2<l2.lLength)) 
+		while ( c1<l1.lLength && c2<l2.lLength  && l1.lData[c1]==l2.lData[c2] ) 
 		{
 			c1++;
 			c2++;
 		}
-		if ((c1==l1.lLength)||(c2==l2.lLength))
+		if (c1==l1.lLength || c2==l2.lLength)
 			break;
-		while ((l2.lData[c2]<l1.lData[c1])&&(c2<l2.lLength)) 
+		while (c2<l2.lLength && l2.lData[c2]<l1.lData[c1]) 
 			c2++;
 	}
 	

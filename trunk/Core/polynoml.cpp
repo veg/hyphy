@@ -2223,11 +2223,11 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 						}
 					}
 				}
-				delete scratch1;
+				delete [] scratch1;
 				if (do1)
-					delete scratch2;
+					delete [] scratch2;
 				if (do2)
-					delete scratch3;
+					delete [] scratch3;
 			}
 
 		}
@@ -2274,7 +2274,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 					}
 				}
 			
-				delete newTerm;
+				delete []newTerm;
 			}
 			else
 			{
@@ -2336,11 +2336,11 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
 						}
 					}
 				}			
-				delete scratch1;
+				delete []scratch1;
 				if (do1)
-					delete scratch2;
+					delete []scratch2;
 				if (do2)
-					delete scratch3;
+					delete []scratch3;
 			}
 			free (onOff);
 		}

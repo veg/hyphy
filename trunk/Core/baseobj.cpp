@@ -73,10 +73,8 @@ extern 	  _SimpleList	freeSlots;
 
 //____________________________________________________________________________________	
 
-int  			isReleasing 		= 	0;
-long 			memReleased,
-	 			globalRandSeed,
-	 			memAlloc;
+long 			globalRandSeed;
+
 //____________________________________________________________________________________	
 
 _String			errorFileName   ("errors.log"),
@@ -358,7 +356,6 @@ void	DeleteObject (BaseRef theObject)
 #ifdef __HYALTIVEC__
 	char* VecMemAllocate (long chunk)
 	{
-		memAlloc += chunk;
 		char* result = (char*)vec_malloc (chunk);
 		if (!result)
 			warnError(-108);
@@ -370,7 +367,6 @@ void	DeleteObject (BaseRef theObject)
 //____________________________________________________________________________________	
 char* MemAllocate (long chunk)
 {
-	memAlloc += chunk;
 	char* result = (char*)malloc (chunk);
 	if (!result)
 	{

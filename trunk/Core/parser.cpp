@@ -1153,11 +1153,6 @@ void	_Stack::Duplicate (BaseRef s)
 
 _Stack::~_Stack (void)
 {
-	if (isReleasing) 
-	{
-		memReleased+=sizeof(_Stack);
-		isReleasing--;
-	}
 }
 
 //__________________________________________________________________________________
@@ -2085,11 +2080,6 @@ _Variable::_Variable (_String&s, _String&f, bool isG)//:  _Formula (f)
 _Variable::~_Variable (void)
 {
 	nInstances++;
-	if (isReleasing) 
-	{
-		memReleased+=sizeof(_Variable);
-		isReleasing--;
-	}
 	if (varValue)
 	{
 		DeleteObject (varValue);

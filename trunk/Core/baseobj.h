@@ -91,9 +91,6 @@ typedef BaseObj*  BaseRef;
 
 extern	void	  DeleteObject (BaseRef); // delete a dynamic object
 
-extern	long memAlloc;
-extern  long memReleased;
-extern	int	 isReleasing;
 
 #ifdef  __HYPHYDMALLOC__
 	#define MemAllocate(X) 		malloc(X)

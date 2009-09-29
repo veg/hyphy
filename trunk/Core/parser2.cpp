@@ -217,11 +217,7 @@ BaseRef _Formula::makeDynamic (void)
 //__________________________________________________________________________________
 
 _Formula::~_Formula (void) {
-	if (isReleasing) 
-	{
-		memReleased+=sizeof(_Formula);
-		isReleasing--;
-	}
+
 	Clear();
 }
 
