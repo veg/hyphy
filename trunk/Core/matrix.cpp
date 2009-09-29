@@ -4623,7 +4623,9 @@ _Matrix*	_Matrix::Exponentiate (void)
 		long i, 
 			 power2 = 0;
 			 
+#ifndef _OPENMP
 		matrixExpCount++;
+#endif
 		
 		_Parameter max	   = 1.0,
 				   *stash  = new _Parameter[hDim*(1+vDim)];
