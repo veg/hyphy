@@ -5342,7 +5342,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 	_Parameter lowerBound = curVar?curVar->GetLowerBound():0., 
 			   upperBound = curVar?curVar->GetUpperBound():0., 
 			   practicalUB,
-			   magR = 1.61803,
+			   magR = 2.,//1.61803,
 			   //r,q,u,d,
 			   leftStep  = initialStep*.5, 
 			   rightStep = initialStep*.5, 
@@ -6818,7 +6818,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 			
 		}*/
 		
-			//if (bracketSetting == 0. || MAX(rightValue-middleValue, middleValue - leftValue) < bracketSetting)
+			//if (bracketSetting == 0. || rightValue-leftValue < bracketSetting)
 			{
 		
 				_Parameter U,V,W,X=middle,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
