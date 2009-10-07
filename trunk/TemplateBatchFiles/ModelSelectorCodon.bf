@@ -802,6 +802,7 @@ if (seedChoice == 1)
 {
 	SetDialogPrompt ("File with partition specifications:");
 	END_OF_FILE = 0;
+	k = Abs(predef);
 	fscanf (PROMPT_FOR_FILE,"NMatrix",seeds);
 	predef[Abs(predef)] = seeds;
 	while (!END_OF_FILE)
@@ -812,6 +813,7 @@ if (seedChoice == 1)
 			predef[Abs(predef)] = seeds;
 		}
 	}
+	fprintf (stdout, "Loaded ", Abs(predef) - k, " model definitions");
 }
 
 

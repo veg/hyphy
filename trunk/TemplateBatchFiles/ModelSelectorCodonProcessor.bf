@@ -352,6 +352,16 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		}
 	}
 	fprintf (LAST_FILE_PATH,CLOSE_FILE);
+	
+	DEFAULT_FILE_SAVE_NAME = file_name + "_init.models";
+	SetDialogPrompt ("Save the top-N models in a format suitable for seeding another GA run:");
+	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN);
+	for (k3=0; k3<topNCount; k3=k3+1)
+	{
+		fprintf (LAST_FILE_PATH,ConvertMatrixToStateVector(classMatrices[topNList[k3][1]]),"\n");
+	}
+	fprintf (LAST_FILE_PATH,CLOSE_FILE);
+
 
 	/*-----------------------------------------------------------------------------*/
 
@@ -411,7 +421,7 @@ _closeCacheDB (resultsDatabase);
 /*-----------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------*/
 
-function ExportAMatrix (theMatrix&, fileName, theprompt)
+function ExportAMatrix				(theMatrix&, fileName, theprompt)
 {
 	if (Abs(fileName) == 0)
 	{
@@ -427,4 +437,20 @@ function ExportAMatrix (theMatrix&, fileName, theprompt)
 	fprintf (fileName, aminoacidOrdering, "\n", theMatrix, CLOSE_FILE);
 	return 0;
 	
+}
+
+function ConvertMatrixToStateVector (theMatrix)
+{
+	vector = {1,stateVectorDimension};
+	for (k = 0; k < 20; k=k+1)
+	{
+		for (k2 = k+1; k2<20; k2=k2+1)
+		{
+			if (matrixToVectorMap[k][k2]>=0)
+			{
+				vector[matrixToVectorMap[k][k2]] = theMatrix[k][k2];
+			}
+		}
+	}
+	return vector;
 }
