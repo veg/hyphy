@@ -813,7 +813,7 @@ if (seedChoice == 1)
 			predef[Abs(predef)] = seeds;
 		}
 	}
-	fprintf (stdout, "Loaded ", Abs(predef) - k, " model definitions");
+	fprintf (stdout, "Loaded ", Abs(predef) - k, " model definitions\n");
 }
 
 

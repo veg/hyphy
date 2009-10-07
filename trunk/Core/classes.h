@@ -96,6 +96,9 @@ public:
 											thenode.set_parent(*this);
 											nodes.add(&thenode);
 									  }
+	
+  void				replace_node	(node* existingNode, node* newNode);
+									 
   void 				prepend_node	(node &thenode)               
 									  {
 									  	thenode.set_parent(*this);
@@ -109,7 +112,6 @@ public:
   									  { return parent;}
   int 				get_child_num	(void);
 
-public:  
   node<node_data>* 	go_up			(void);              
   node<node_data>*  go_next			(void);         
   node<node_data>*  go_previous		(void);

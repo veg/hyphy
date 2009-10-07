@@ -243,6 +243,19 @@ class _TreeTopology: public _CalcNode {
 		virtual	_PMathObj 		FlatRepresentation  				(void);
 				void			FindCOTHelper 						(node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, _Parameter);
 				void 			FindCOTHelper2 						(node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, _Parameter);
+				void			AddANode							(_PMathObj);
+				/*
+				 
+				 20091006: SLKP
+				 
+				 given an AVL with at least three key -> string pairs
+					"NAME" -> string (not a currently used node name)
+					"WHERE" -> string (an existing node)
+					"PARENT" -> string (not a currently used node name)
+					
+					
+				 
+				 */
 
 	public:
 
@@ -285,6 +298,16 @@ class _TreeTopology: public _CalcNode {
 		virtual _AssociativeList*	
 								FindCOT								(_PMathObj);
 
+				node<long>		*FindNodeByName						(_String*); 
+				/*
+				 
+				 20091006: SLKP
+				 
+				 return the node with the name supplied by the argument 
+				 or nil if no such node exists
+				 
+				 */
+	
 				void			DepthWiseT							(bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil); 
 				void	 		DepthWiseTRight 					(bool = false); 
 				void			DepthWiseTLevel 					(long& level, bool = false);

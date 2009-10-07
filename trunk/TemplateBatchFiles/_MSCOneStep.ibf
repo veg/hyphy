@@ -6,6 +6,7 @@ defaultAAOrdering 	= "FLIMVSPTAYHQNKDECWRG";
 hshift      		= 0;
 mapUpTo2121 		= {};
 isOneStepSub 		= {21,21};
+matrixToVectorMap	= {20,20}["-1"];
 
 for (h=0; h<64; h=h+1)
 {
@@ -48,6 +49,8 @@ for (h=0; h<64; h=h+1)
 				{
 					mapUpTo2121[idx_mx] = Abs(mapUpTo2121)+1;
 					map_idx = Abs(mapUpTo2121);
+					matrixToVectorMap[aa1c][aa2c] = map_idx-1;
+					matrixToVectorMap[aa2c][aa1c] = map_idx-1;
 				}
 			}	
 		}

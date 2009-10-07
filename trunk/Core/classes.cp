@@ -461,7 +461,19 @@ node<node_data>* NodeTraverser  (node<node_data>* root)
 	laststep = curstep;
 	return curstep;
 }
+//-----------------------------------Set Number 1----------------
 
+
+template <class node_data> void node<node_data>::replace_node(node<node_data>* existing, node<node_data>* newNode){
+	for (long j = 0; nodes.length; j++)
+	{
+		if (nodes.data[j] == existing)
+		{
+			nodes.data[j] = newNode;
+			break;
+		}
+	}	
+}
 
 //-----------------------------------Set Number 1----------------
 template <class node_data> int node<node_data>::get_child_num()

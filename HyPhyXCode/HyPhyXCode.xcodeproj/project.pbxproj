@@ -3,11 +3,105 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 45;
+	objectVersion = 44;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
+		850513B51028C532009668C9 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
+		850513B61028C532009668C9 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
+		850513B71028C532009668C9 /* batchlan2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC930DE4E80E00682547 /* batchlan2.cpp */; };
+		850513B81028C532009668C9 /* calcnode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC940DE4E80E00682547 /* calcnode.cpp */; };
+		850513B91028C532009668C9 /* category.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC950DE4E80E00682547 /* category.cpp */; };
+		850513BA1028C532009668C9 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC960DE4E80E00682547 /* error.cpp */; };
+		850513BB1028C532009668C9 /* fisher_exact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC970DE4E80E00682547 /* fisher_exact.cpp */; };
+		850513BC1028C532009668C9 /* likefunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC980DE4E80E00682547 /* likefunc.cpp */; };
+		850513BD1028C532009668C9 /* list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC990DE4E80E00682547 /* list.cpp */; };
+		850513BE1028C532009668C9 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9A0DE4E80E00682547 /* matrix.cpp */; };
+		850513BF1028C532009668C9 /* nexus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9B0DE4E80E00682547 /* nexus.cpp */; };
+		850513C01028C532009668C9 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9C0DE4E80E00682547 /* parser.cpp */; };
+		850513C11028C532009668C9 /* parser2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9D0DE4E80E00682547 /* parser2.cpp */; };
+		850513C21028C532009668C9 /* polynoml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9E0DE4E80E00682547 /* polynoml.cpp */; };
+		850513C31028C532009668C9 /* preferences.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC9F0DE4E80E00682547 /* preferences.cpp */; };
+		850513C41028C532009668C9 /* regex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA00DE4E80E00682547 /* regex.cpp */; };
+		850513C51028C532009668C9 /* sequence.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA10DE4E80E00682547 /* sequence.cpp */; };
+		850513C61028C532009668C9 /* site.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA20DE4E80E00682547 /* site.cpp */; };
+		850513C71028C532009668C9 /* HYNetInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBC0DE4E87D00682547 /* HYNetInterface.cpp */; };
+		850513C81028C532009668C9 /* Net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBD0DE4E87D00682547 /* Net.cpp */; };
+		850513C91028C532009668C9 /* scfg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBE0DE4E87D00682547 /* scfg.cpp */; };
+		850513CA1028C532009668C9 /* HYBaseGUI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC40DE4E8C800682547 /* HYBaseGUI.cpp */; };
+		850513CB1028C532009668C9 /* HYChartWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC50DE4E8C800682547 /* HYChartWindow.cpp */; };
+		850513CC1028C532009668C9 /* HYComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC60DE4E8C800682547 /* HYComponent.cpp */; };
+		850513CD1028C532009668C9 /* HYConsoleWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC70DE4E8C800682547 /* HYConsoleWindow.cpp */; };
+		850513CE1028C532009668C9 /* HYDataPanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC80DE4E8C800682547 /* HYDataPanel.cpp */; };
+		850513CF1028C532009668C9 /* HYDBWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCC90DE4E8C800682547 /* HYDBWindow.cpp */; };
+		850513D01028C532009668C9 /* HYDialogDefs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCA0DE4E8C800682547 /* HYDialogDefs.cpp */; };
+		850513D11028C532009668C9 /* HYEventTypes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCB0DE4E8C800682547 /* HYEventTypes.cpp */; };
+		850513D21028C532009668C9 /* HYGraphicPane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCC0DE4E8C800682547 /* HYGraphicPane.cpp */; };
+		850513D31028C532009668C9 /* HYModelWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCD0DE4E8C800682547 /* HYModelWindow.cpp */; };
+		850513D41028C532009668C9 /* HYObjectInspector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCE0DE4E8C800682547 /* HYObjectInspector.cpp */; };
+		850513D51028C532009668C9 /* HYParameterTable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCCF0DE4E8C800682547 /* HYParameterTable.cpp */; };
+		850513D61028C532009668C9 /* HYSharedMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCD00DE4E8C800682547 /* HYSharedMain.cpp */; };
+		850513D71028C532009668C9 /* HYTreePanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCD10DE4E8C800682547 /* HYTreePanel.cpp */; };
+		850513D81028C532009668C9 /* HYWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCD20DE4E8C800682547 /* HYWindow.cpp */; };
+		850513D91028C532009668C9 /* HYButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE30DE4E9A000682547 /* HYButton.cpp */; };
+		850513DA1028C532009668C9 /* HYButtonBar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE40DE4E9A000682547 /* HYButtonBar.cpp */; };
+		850513DB1028C532009668C9 /* HYCheckBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE50DE4E9A000682547 /* HYCheckBox.cpp */; };
+		850513DC1028C532009668C9 /* HYLabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE60DE4E9A000682547 /* HYLabel.cpp */; };
+		850513DD1028C532009668C9 /* HYPullDown.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE70DE4E9A000682547 /* HYPullDown.cpp */; };
+		850513DE1028C532009668C9 /* HYSequencePanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE80DE4E9A000682547 /* HYSequencePanel.cpp */; };
+		850513DF1028C532009668C9 /* HYTable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCE90DE4E9A000682547 /* HYTable.cpp */; };
+		850513E01028C532009668C9 /* HYTextBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCEA0DE4E9A000682547 /* HYTextBox.cpp */; };
+		850513E11028C532009668C9 /* HYPlatformComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCF50DE4EA2100682547 /* HYPlatformComponent.cpp */; };
+		850513E21028C532009668C9 /* HYPlatformGraphicPane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCF60DE4EA2100682547 /* HYPlatformGraphicPane.cpp */; };
+		850513E31028C532009668C9 /* HYPlatformUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCF70DE4EA2100682547 /* HYPlatformUtils.cpp */; };
+		850513E41028C532009668C9 /* HYPlatformWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCF80DE4EA2100682547 /* HYPlatformWindow.cpp */; };
+		850513E51028C532009668C9 /* HYPlatformButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD020DE4EA8600682547 /* HYPlatformButton.cpp */; };
+		850513E61028C532009668C9 /* HYPlatformButtonBar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD030DE4EA8600682547 /* HYPlatformButtonBar.cpp */; };
+		850513E71028C532009668C9 /* HYPlatformCheckBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD040DE4EA8600682547 /* HYPlatformCheckBox.cpp */; };
+		850513E81028C532009668C9 /* HYPlatformLabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD050DE4EA8600682547 /* HYPlatformLabel.cpp */; };
+		850513E91028C532009668C9 /* HYPlatformList.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD060DE4EA8600682547 /* HYPlatformList.cpp */; };
+		850513EA1028C532009668C9 /* HYPlatformPullDown.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD070DE4EA8600682547 /* HYPlatformPullDown.cpp */; };
+		850513EB1028C532009668C9 /* HYPlatformSequencePane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD080DE4EA8600682547 /* HYPlatformSequencePane.cpp */; };
+		850513EC1028C532009668C9 /* HYPlatformTable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD090DE4EA8600682547 /* HYPlatformTable.cpp */; };
+		850513ED1028C532009668C9 /* HYPlatformTextBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD0A0DE4EA8600682547 /* HYPlatformTextBox.cpp */; };
+		850513EE1028C532009668C9 /* HYPlatformBootsrapWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD140DE4EAA600682547 /* HYPlatformBootsrapWindow.cpp */; };
+		850513EF1028C532009668C9 /* HYPlatformChartWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD150DE4EAA600682547 /* HYPlatformChartWindow.cpp */; };
+		850513F01028C532009668C9 /* HYPlatformConsoleWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD160DE4EAA600682547 /* HYPlatformConsoleWindow.cpp */; };
+		850513F11028C532009668C9 /* HYPlatformDataPanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD170DE4EAA600682547 /* HYPlatformDataPanel.cpp */; };
+		850513F21028C532009668C9 /* HYPlatformDBWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD180DE4EAA600682547 /* HYPlatformDBWindow.cpp */; };
+		850513F31028C532009668C9 /* HYPlatformGWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD190DE4EAA600682547 /* HYPlatformGWindow.cpp */; };
+		850513F41028C532009668C9 /* HYPlatformModelWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1A0DE4EAA600682547 /* HYPlatformModelWindow.cpp */; };
+		850513F51028C532009668C9 /* HYPlatformParameterTable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1B0DE4EAA600682547 /* HYPlatformParameterTable.cpp */; };
+		850513F61028C532009668C9 /* HYPlatformPWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1C0DE4EAA600682547 /* HYPlatformPWindow.cpp */; };
+		850513F71028C532009668C9 /* HYPlatformTreePanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1D0DE4EAA600682547 /* HYPlatformTreePanel.cpp */; };
+		850513F81028C532009668C9 /* HYPlatformTWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1E0DE4EAA600682547 /* HYPlatformTWindow.cpp */; };
+		850513F91028C532009668C9 /* hydialogs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD6F0DE4EC6200682547 /* hydialogs.cpp */; };
+		850513FA1028C532009668C9 /* main-mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD760DE4EC9B00682547 /* main-mac.cpp */; };
+		850513FB1028C532009668C9 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917B0E2BC5C90070B4AE /* likefunc2.cpp */; };
+		850513FC1028C532009668C9 /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917C0E2BC5C90070B4AE /* calcnode2.cpp */; settings = {COMPILER_FLAGS = "-fstrict-aliasing -funroll-loops"; }; };
+		850513FD1028C532009668C9 /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
+		850513FE1028C532009668C9 /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
+		850513FF1028C532009668C9 /* bayesgraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8599DC700F7C367900958ED8 /* bayesgraph.cpp */; };
+		850514001028C532009668C9 /* bayesgraph2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8599DC710F7C367900958ED8 /* bayesgraph2.cpp */; };
+		850514011028C532009668C9 /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 8514AFA30FA7770E00A0B10D /* sqlite3.c */; };
+		850514021028C532009668C9 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
+		850514041028C532009668C9 /* Docs.icns in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD680DE4EC4900682547 /* Docs.icns */; };
+		850514051028C532009668C9 /* HYPHYMP.icns in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD690DE4EC4900682547 /* HYPHYMP.icns */; };
+		850514061028C532009668C9 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD6A0DE4EC4900682547 /* Info.plist */; };
+		850514071028C532009668C9 /* HyPhy.rsrc in Resources */ = {isa = PBXBuildFile; fileRef = 85A2BD720DE4EC8100682547 /* HyPhy.rsrc */; };
+		850514091028C532009668C9 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
+		8505140A1028C532009668C9 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BBD60E2D543E001B4F53 /* Carbon.framework */; };
+		8505140C1028C532009668C9 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
+		8505140D1028C532009668C9 /* DatapanelAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFF00DE5066D00682547 /* DatapanelAddIns */; };
+		8505140E1028C532009668C9 /* GeneticCodes in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFFC0DE5066D00682547 /* GeneticCodes */; };
+		8505140F1028C532009668C9 /* SubstitutionClasses in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C00A0DE5066D00682547 /* SubstitutionClasses */; };
+		850514101028C532009668C9 /* SubstitutionModels in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C02C0DE5066D00682547 /* SubstitutionModels */; };
+		850514111028C532009668C9 /* TemplateBatchFiles in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C0590DE5066D00682547 /* TemplateBatchFiles */; };
+		850514121028C532009668C9 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
+		850514131028C532009668C9 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
+		850514141028C532009668C9 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
+		850514151028C532009668C9 /* ChartAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2BFB90DE505FA00682547 /* ChartAddIns */; };
 		8514AFA40FA7770E00A0B10D /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 8514AFA30FA7770E00A0B10D /* sqlite3.c */; };
 		8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
@@ -35,7 +129,6 @@
 		85A2BCB30DE4E80E00682547 /* regex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA00DE4E80E00682547 /* regex.cpp */; };
 		85A2BCB40DE4E80E00682547 /* sequence.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA10DE4E80E00682547 /* sequence.cpp */; };
 		85A2BCB50DE4E80E00682547 /* site.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA20DE4E80E00682547 /* site.cpp */; };
-		85A2BCB60DE4E80E00682547 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
 		85A2BCC00DE4E87D00682547 /* HYNetInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBC0DE4E87D00682547 /* HYNetInterface.cpp */; };
 		85A2BCC10DE4E87D00682547 /* Net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBD0DE4E87D00682547 /* Net.cpp */; };
 		85A2BCC20DE4E87D00682547 /* scfg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBE0DE4E87D00682547 /* scfg.cpp */; };
@@ -101,9 +194,29 @@
 		85A2C1DC0DE5066E00682547 /* TopologyInference in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C19D0DE5066E00682547 /* TopologyInference */; };
 		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
 		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
+		85A942AA0FE0AA28009F1FB1 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8505140B1028C532009668C9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				8505140C1028C532009668C9 /* Help in CopyFiles */,
+				8505140D1028C532009668C9 /* DatapanelAddIns in CopyFiles */,
+				8505140E1028C532009668C9 /* GeneticCodes in CopyFiles */,
+				8505140F1028C532009668C9 /* SubstitutionClasses in CopyFiles */,
+				850514101028C532009668C9 /* SubstitutionModels in CopyFiles */,
+				850514111028C532009668C9 /* TemplateBatchFiles in CopyFiles */,
+				850514121028C532009668C9 /* TopologyInference in CopyFiles */,
+				850514131028C532009668C9 /* TreeAddIns in CopyFiles */,
+				850514141028C532009668C9 /* UserAddins in CopyFiles */,
+				850514151028C532009668C9 /* ChartAddIns in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		85A2BF8A0DE504AF00682547 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -127,6 +240,7 @@
 
 /* Begin PBXFileReference section */
 		0E63E81D0E7C6A00002AC53B /* bgm2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bgm2.cpp; path = ../trunk/NewerFunctionality/bgm2.cpp; sourceTree = SOURCE_ROOT; };
+		8505141A1028C532009668C9 /* HyPhy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8514AFA30FA7770E00A0B10D /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = ../SQLite/trunk/sqlite3.c; sourceTree = SOURCE_ROOT; };
 		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
 		8529BBD60E2D543E001B4F53 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -230,6 +344,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		850514081028C532009668C9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				850514091028C532009668C9 /* QuickTime.framework in Frameworks */,
+				8505140A1028C532009668C9 /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D0C4E910486CD37000505A6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -246,6 +369,7 @@
 			isa = PBXGroup;
 			children = (
 				85A2BD9E0DE4F61400682547 /* HyPhy.app */,
+				8505141A1028C532009668C9 /* HyPhy.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -481,6 +605,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		850513B31028C532009668C9 /* HyPhyXCodeAndInstall */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 850514171028C532009668C9 /* Build configuration list for PBXNativeTarget "HyPhyXCodeAndInstall" */;
+			buildPhases = (
+				850513B41028C532009668C9 /* Sources */,
+				850514031028C532009668C9 /* Resources */,
+				850514081028C532009668C9 /* Frameworks */,
+				8505140B1028C532009668C9 /* CopyFiles */,
+				850514161028C532009668C9 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HyPhyXCodeAndInstall;
+			productInstallPath = "$(HOME)/Applications";
+			productName = HyPhyXCode;
+			productReference = 8505141A1028C532009668C9 /* HyPhy.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8D0C4E890486CD37000505A6 /* HyPhyXCode */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C0E91AC508A95435008D54AB /* Build configuration list for PBXNativeTarget "HyPhyXCode" */;
@@ -506,18 +650,30 @@
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */;
-			compatibilityVersion = "Xcode 3.1";
+			compatibilityVersion = "Xcode 3.0";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* HyPhyXCode */;
 			projectDirPath = "";
 			projectRoot = ..;
 			targets = (
 				8D0C4E890486CD37000505A6 /* HyPhyXCode */,
+				850513B31028C532009668C9 /* HyPhyXCodeAndInstall */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		850514031028C532009668C9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				850514041028C532009668C9 /* Docs.icns in Resources */,
+				850514051028C532009668C9 /* HYPHYMP.icns in Resources */,
+				850514061028C532009668C9 /* Info.plist in Resources */,
+				850514071028C532009668C9 /* HyPhy.rsrc in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D0C4E8C0486CD37000505A6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -531,7 +687,108 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		850514161028C532009668C9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 8;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "rm -rf /Users/sergei/hyphy/HYPHY/HYPHYOSX/*.log\nditto -rsrc /Users/sergei/hyphy/HYPHY/HYPHYOSX /tmp/HYPHY2.0/HYPHY2.0\nhdiutil create -fs HFS+ -volname HYPHY_OSX -srcfolder /tmp/HYPHY2.0/  -ov /Users/sergei/Desktop/hyphy.dmg\nrm -rf /tmp/HYPHY2.0/HYPHY2.0\nmv /Users/sergei/Desktop/hyphy.dmg /Volumes/sergeilkp/Sites/HYPHY_Distro/ ";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		850513B41028C532009668C9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				850513B51028C532009668C9 /* baseobj.cpp in Sources */,
+				850513B61028C532009668C9 /* batchlan.cpp in Sources */,
+				850513B71028C532009668C9 /* batchlan2.cpp in Sources */,
+				850513B81028C532009668C9 /* calcnode.cpp in Sources */,
+				850513B91028C532009668C9 /* category.cpp in Sources */,
+				850513BA1028C532009668C9 /* error.cpp in Sources */,
+				850513BB1028C532009668C9 /* fisher_exact.cpp in Sources */,
+				850513BC1028C532009668C9 /* likefunc.cpp in Sources */,
+				850513BD1028C532009668C9 /* list.cpp in Sources */,
+				850513BE1028C532009668C9 /* matrix.cpp in Sources */,
+				850513BF1028C532009668C9 /* nexus.cpp in Sources */,
+				850513C01028C532009668C9 /* parser.cpp in Sources */,
+				850513C11028C532009668C9 /* parser2.cpp in Sources */,
+				850513C21028C532009668C9 /* polynoml.cpp in Sources */,
+				850513C31028C532009668C9 /* preferences.cpp in Sources */,
+				850513C41028C532009668C9 /* regex.cpp in Sources */,
+				850513C51028C532009668C9 /* sequence.cpp in Sources */,
+				850513C61028C532009668C9 /* site.cpp in Sources */,
+				850513C71028C532009668C9 /* HYNetInterface.cpp in Sources */,
+				850513C81028C532009668C9 /* Net.cpp in Sources */,
+				850513C91028C532009668C9 /* scfg.cpp in Sources */,
+				850513CA1028C532009668C9 /* HYBaseGUI.cpp in Sources */,
+				850513CB1028C532009668C9 /* HYChartWindow.cpp in Sources */,
+				850513CC1028C532009668C9 /* HYComponent.cpp in Sources */,
+				850513CD1028C532009668C9 /* HYConsoleWindow.cpp in Sources */,
+				850513CE1028C532009668C9 /* HYDataPanel.cpp in Sources */,
+				850513CF1028C532009668C9 /* HYDBWindow.cpp in Sources */,
+				850513D01028C532009668C9 /* HYDialogDefs.cpp in Sources */,
+				850513D11028C532009668C9 /* HYEventTypes.cpp in Sources */,
+				850513D21028C532009668C9 /* HYGraphicPane.cpp in Sources */,
+				850513D31028C532009668C9 /* HYModelWindow.cpp in Sources */,
+				850513D41028C532009668C9 /* HYObjectInspector.cpp in Sources */,
+				850513D51028C532009668C9 /* HYParameterTable.cpp in Sources */,
+				850513D61028C532009668C9 /* HYSharedMain.cpp in Sources */,
+				850513D71028C532009668C9 /* HYTreePanel.cpp in Sources */,
+				850513D81028C532009668C9 /* HYWindow.cpp in Sources */,
+				850513D91028C532009668C9 /* HYButton.cpp in Sources */,
+				850513DA1028C532009668C9 /* HYButtonBar.cpp in Sources */,
+				850513DB1028C532009668C9 /* HYCheckBox.cpp in Sources */,
+				850513DC1028C532009668C9 /* HYLabel.cpp in Sources */,
+				850513DD1028C532009668C9 /* HYPullDown.cpp in Sources */,
+				850513DE1028C532009668C9 /* HYSequencePanel.cpp in Sources */,
+				850513DF1028C532009668C9 /* HYTable.cpp in Sources */,
+				850513E01028C532009668C9 /* HYTextBox.cpp in Sources */,
+				850513E11028C532009668C9 /* HYPlatformComponent.cpp in Sources */,
+				850513E21028C532009668C9 /* HYPlatformGraphicPane.cpp in Sources */,
+				850513E31028C532009668C9 /* HYPlatformUtils.cpp in Sources */,
+				850513E41028C532009668C9 /* HYPlatformWindow.cpp in Sources */,
+				850513E51028C532009668C9 /* HYPlatformButton.cpp in Sources */,
+				850513E61028C532009668C9 /* HYPlatformButtonBar.cpp in Sources */,
+				850513E71028C532009668C9 /* HYPlatformCheckBox.cpp in Sources */,
+				850513E81028C532009668C9 /* HYPlatformLabel.cpp in Sources */,
+				850513E91028C532009668C9 /* HYPlatformList.cpp in Sources */,
+				850513EA1028C532009668C9 /* HYPlatformPullDown.cpp in Sources */,
+				850513EB1028C532009668C9 /* HYPlatformSequencePane.cpp in Sources */,
+				850513EC1028C532009668C9 /* HYPlatformTable.cpp in Sources */,
+				850513ED1028C532009668C9 /* HYPlatformTextBox.cpp in Sources */,
+				850513EE1028C532009668C9 /* HYPlatformBootsrapWindow.cpp in Sources */,
+				850513EF1028C532009668C9 /* HYPlatformChartWindow.cpp in Sources */,
+				850513F01028C532009668C9 /* HYPlatformConsoleWindow.cpp in Sources */,
+				850513F11028C532009668C9 /* HYPlatformDataPanel.cpp in Sources */,
+				850513F21028C532009668C9 /* HYPlatformDBWindow.cpp in Sources */,
+				850513F31028C532009668C9 /* HYPlatformGWindow.cpp in Sources */,
+				850513F41028C532009668C9 /* HYPlatformModelWindow.cpp in Sources */,
+				850513F51028C532009668C9 /* HYPlatformParameterTable.cpp in Sources */,
+				850513F61028C532009668C9 /* HYPlatformPWindow.cpp in Sources */,
+				850513F71028C532009668C9 /* HYPlatformTreePanel.cpp in Sources */,
+				850513F81028C532009668C9 /* HYPlatformTWindow.cpp in Sources */,
+				850513F91028C532009668C9 /* hydialogs.cpp in Sources */,
+				850513FA1028C532009668C9 /* main-mac.cpp in Sources */,
+				850513FB1028C532009668C9 /* likefunc2.cpp in Sources */,
+				850513FC1028C532009668C9 /* calcnode2.cpp in Sources */,
+				850513FD1028C532009668C9 /* bgm.cpp in Sources */,
+				850513FE1028C532009668C9 /* bgm2.cpp in Sources */,
+				850513FF1028C532009668C9 /* bayesgraph.cpp in Sources */,
+				850514001028C532009668C9 /* bayesgraph2.cpp in Sources */,
+				850514011028C532009668C9 /* sqlite3.c in Sources */,
+				850514021028C532009668C9 /* strings.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D0C4E8F0486CD37000505A6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -554,7 +811,6 @@
 				85A2BCB30DE4E80E00682547 /* regex.cpp in Sources */,
 				85A2BCB40DE4E80E00682547 /* sequence.cpp in Sources */,
 				85A2BCB50DE4E80E00682547 /* site.cpp in Sources */,
-				85A2BCB60DE4E80E00682547 /* strings.cpp in Sources */,
 				85A2BCC00DE4E87D00682547 /* HYNetInterface.cpp in Sources */,
 				85A2BCC10DE4E87D00682547 /* Net.cpp in Sources */,
 				85A2BCC20DE4E87D00682547 /* scfg.cpp in Sources */,
@@ -614,12 +870,128 @@
 				8599DC720F7C367900958ED8 /* bayesgraph.cpp in Sources */,
 				8599DC730F7C367900958ED8 /* bayesgraph2.cpp in Sources */,
 				8514AFA40FA7770E00A0B10D /* sqlite3.c in Sources */,
+				85A942AA0FE0AA28009F1FB1 /* strings.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		850514181028C532009668C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INFOPLIST_FILE = "/Volumes/TeraMonkey/Users/sergei/hyphy/HyPhyXCode/../trunk/GUIElements/Platform Source/MacOS/Info copy.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhy;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		850514191028C532009668C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/HYPHYOSX";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				HEADER_SEARCH_PATHS = (
+					/Developer/Headers/FlatCarbon,
+					"$(HEADER_SEARCH_PATHS)",
+				);
+				INFOPLIST_FILE = "/Volumes/TeraMonkey/Users/sergei/hyphy/HyPhyXCode/../trunk/GUIElements/Platform Source/MacOS/Info copy.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhy;
+				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		85ED8D19103A12A400DFE4EE /* Debug MPI */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1.00beta;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_OPENMP_SUPPORT = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = "";
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					__HYPHYXCODE__,
+					__MAC__,
+					__HYPHYMPI__,
+					_SLKP_LFENGINE_REWRITE_,
+				);
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/Developer/Headers/FlatCarbon,
+					"$(HEADER_SEARCH_PATHS)",
+				);
+				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.3;
+				OTHER_LDFLAGS = "-lmpi";
+				PREBINDING = NO;
+				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
+				PRODUCT_NAME = HyPhyDebug;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
+			};
+			name = "Debug MPI";
+		};
+		85ED8D1A103A12A400DFE4EE /* Debug MPI */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform Source/MacOS/Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhy;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = "Debug MPI";
+		};
+		85ED8D1B103A12A400DFE4EE /* Debug MPI */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INFOPLIST_FILE = "/Volumes/TeraMonkey/Users/sergei/hyphy/HyPhyXCode/../trunk/GUIElements/Platform Source/MacOS/Info copy.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = HyPhy;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = "Debug MPI";
+		};
 		C0E91AC608A95435008D54AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -695,7 +1067,7 @@
 				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = macosx10.5;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Debug;
@@ -703,15 +1075,21 @@
 		C0E91ACB08A95435008D54AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 1.00beta;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				CURRENT_PROJECT_VERSION = 2.00beta;
+				DEAD_CODE_STRIPPING = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_OPENMP_SUPPORT = YES;
 				GCC_AUTO_VECTORIZATION = YES;
-				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_ENABLE_SSE41_EXTENSIONS = YES;
+				GCC_ENABLE_SSE42_EXTENSIONS = YES;
+				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -719,24 +1097,19 @@
 					_SLKP_LFENGINE_REWRITE_,
 					__HYPHYXCODE__,
 					__MAC__,
-					"ACCESSOR_CALLS_ARE_FUNCTIONS=1",
-					"OPAQUE_TOOLBOX_STRUCTS=1",
-					"TARGET_API_MAC_CARBON=1",
 					__MP__,
-					"SQLITE_PTR_SZ=4",
 				);
 				GCC_STRICT_ALIASING = NO;
 				GCC_UNROLL_LOOPS = YES;
-				GCC_VERSION = 4.2;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.3;
-				ONLY_ACTIVE_ARCH = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				PREBINDING = NO;
 				PRODUCT_NAME = HYPHY;
-				SDKROOT = macosx10.5;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Release;
@@ -744,10 +1117,21 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		850514171028C532009668C9 /* Build configuration list for PBXNativeTarget "HyPhyXCodeAndInstall" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				850514181028C532009668C9 /* Debug */,
+				85ED8D1B103A12A400DFE4EE /* Debug MPI */,
+				850514191028C532009668C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C0E91AC508A95435008D54AB /* Build configuration list for PBXNativeTarget "HyPhyXCode" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0E91AC608A95435008D54AB /* Debug */,
+				85ED8D1A103A12A400DFE4EE /* Debug MPI */,
 				C0E91AC708A95435008D54AB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -757,6 +1141,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0E91ACA08A95435008D54AB /* Debug */,
+				85ED8D19103A12A400DFE4EE /* Debug MPI */,
 				C0E91ACB08A95435008D54AB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;

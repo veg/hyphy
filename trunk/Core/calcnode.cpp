@@ -128,6 +128,9 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputFSPlaceH	  = "__FONT_SIZE__",
 			largeMatrixBranchLength 
 								  = "LARGE_MATRIX_BRANCH_LENGTH_MODIFIER",
+			newNodeGraftName	  = "NAME",
+			newNodeGraftWhere	  = "WHERE",
+			newNodeGraftParent	  = "PARENT",
 			iNodePrefix;
 						
 _Parameter  _timesCharWidths[256]= // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
@@ -1614,7 +1617,6 @@ bool	_TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeName,
 
 //_______________________________________________________________________________________________
 
-
 bool	_TreeTopology::FinalizeNode (node<long>* nodie, long number , _String& nodeName, _String& nodeParameters, _String& nodeValue)
 {
 	if (!nodeName.sLength)
@@ -1637,6 +1639,79 @@ bool	_TreeTopology::FinalizeNode (node<long>* nodie, long number , _String& node
 
 	return true;
 }
+
+//_______________________________________________________________________________________________
+
+node<long>*	_TreeTopology::FindNodeByName (_String* match)
+{
+	DepthWiseT(true);
+	
+	_String		  nn; 	
+	while (currentNode)
+	{
+		GetNodeName  (currentNode, nn);
+		if (match->Equal(&nn))
+			return currentNode;
+		DepthWiseT();
+	}	
+	
+	return nil;
+	
+}
+
+//_______________________________________________________________________________________________
+
+void	_TreeTopology::AddANode (_PMathObj newNode)
+{
+	if (newNode->ObjectClass () == ASSOCIATIVE_LIST)
+	{
+		_AssociativeList * newNodeSpec = (_AssociativeList*)newNode;
+		_FString		 * newName     = (_FString*)newNodeSpec->GetByKey (newNodeGraftName, STRING),
+						 * newLocation = (_FString*)newNodeSpec->GetByKey (newNodeGraftWhere, STRING),
+						 * newParent   = (_FString*)newNodeSpec->GetByKey (newNodeGraftParent, STRING);
+		
+		
+		if (!newName)
+		{
+			WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftName&"\") in call to _TreeTopology::AddANode");
+			return;
+		}
+		if (!newLocation)
+		{
+			WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftWhere&"\") in call to _TreeTopology::AddANode");
+			return;
+		}
+		if (!newParent)
+		{
+			WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftParent&"\") in call to _TreeTopology::AddANode");
+			return;
+		}
+		
+		node<long>* graftAt = FindNodeByName (newLocation->theString);
+		if (!graftAt || graftAt->get_parent() == nil)
+		{
+			WarnError ("Attachment node must be an exiting non-root node in call to _TreeTopology::AddANode");
+			return;
+		}
+		
+		node<long>* newp = (node<long>*) checkPointer(new node<long>),
+				  * newt = (node<long>*) checkPointer(new node<long>),
+				  * curp = graftAt->get_parent();
+		
+		newp->set_parent(*curp);
+		newp->add_node(*newt);
+		newp->add_node(*graftAt);
+		curp->replace_node(graftAt,newp);
+		
+		FinalizeNode (newp, 0, *newParent->theString, empty, empty);
+		FinalizeNode (newt, 0, *newName->theString, empty, empty);
+		
+	}
+	else
+		WarnError ("An invalid argument (not an associative array) supplied to _TreeTopology::AddANode");
+	
+}
+
 
 //_______________________________________________________________________________________________
 
@@ -2524,7 +2599,12 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 		case 5: // compute the strict consensus between T1 and T2
 			return SplitsIdentity (p);
 			break;
-
+		
+		case 6: // +
+			AddANode (p);
+			return new _Constant (0.0);
+			break;
+			
 		case 10: // MatchPattern (<=)
 		{
 			if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY))
