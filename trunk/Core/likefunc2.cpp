@@ -191,7 +191,7 @@ bool	_LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix*
 
 //_______________________________________________________________________________________
 
-void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& doTheseOnes, _String& baseResultID,  bool sample, bool doMarginal)
+void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& doTheseOnes, _String& baseResultID,  bool sample, bool doMarginal, bool doLeaves)
 /*
 	Reconstruct ancestors for a likelihood function using 
  
@@ -201,6 +201,8 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 -- sample	   :	if true, an ancestral sample (weighted by likelihood) is drawn, otherwise an ML (or maginal) reconstruction is carried out
 -- doMarginal  :	if sample == false, doMarginal determines how the ancestors are reconstructed; if true, the reconstruction is marginal (maximizes
 					the likelihood of each node while summing over the rest), otherwise it is joint.
+-- doLeaves	   :	if sample == false and doMarginal == false (for now) and doLeaves == true, then the procedure will also
+					reconstruct (joint ML) the best assignment of leaves
  
 */
 {
@@ -241,7 +243,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 		
 		if (i==0)
 		{
-			tree->AddNodeNamesToDS (&target,false,true,false); // store internal node names in the dataset
+			tree->AddNodeNamesToDS (&target,doMarginal == false && sample == false && doLeaves,true,2*(doMarginal == false && sample == false && doLeaves)); // store internal node names in the dataset
 			sequenceCount = target.GetNames().lLength;
 		}
 		else
@@ -310,7 +312,8 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 															catCounter?rateAssignments->theData+siteOffset:nil, 
 															catCounter,
 															conditionalTerminalNodeStateFlag[partIndex],
-															(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(partIndex)
+															(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(partIndex),
+															doLeaves
 															);
 																												
 		}

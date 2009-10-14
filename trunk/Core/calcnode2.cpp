@@ -1336,28 +1336,30 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 											  _Parameter* catAssignments, 
 											  long catCount,
 											  long* lNodeFlags,
-											  _GrowingVector* lNodeResolutions
+											  _GrowingVector* lNodeResolutions,
+											  bool			  alsoDoLeaves
 											  )	
 
 
 // dsf:							the filter to sample from
 // siteOrdering:				the map from cache ordering to actual pattern ordering
-// nodeToIndex:					an AVL that maps the address of an internal node pointed to by node<long> to its order in the tree postorder traversal
 // expandedSiteMap:				a list of simple lists giving site indices for each unique column pattern in the alignment
 // iNodeCache:					internal node likelihood caches
 // catAssignments:				a vector assigning a (partition specific) rate category to each site
 // catCount:					the number of rate classes
+// alsoDoLeaves:				if true, also return ML reconstruction of observed (or partially observed) sequences
 
-{	
-	
+{
 	long			patternCount					= dsf->NumberDistinctSites	(),
 					alphabetDimension				= dsf->GetDimension			(),
 					unitLength						= dsf->GetUnitLength		(),
 					iNodeCount						= GetINodeCount				(),
+					leafCount						= GetLeafCount				(),
 					siteCount						= dsf->GetSiteCount			(),
 					allNodeCount					= 0,
+					stateCacheDim					= (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount)),
 					*stateCache						= new long [patternCount*(iNodeCount-1)*alphabetDimension],
-					*leafBuffer						= new long [alphabetDimension];	
+					*leafBuffer						= new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];	
 	
 					// a Patterns x Int-Nodes x CharStates integer table
 					// with the best character assignment for node i given that its parent state is j for a given site
@@ -1374,7 +1376,7 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	MapPostOrderToInOderTraversal (postToIn);
 	// all nodes except the root
 	
-	allNodeCount = iNodeCount + GetLeafCount () - 1;
+	allNodeCount = iNodeCount + leafCount - 1;
 	
 	for  (long nodeID = 0; nodeID < allNodeCount; nodeID++)
 	{
@@ -1427,6 +1429,13 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 					tMatrix  +=  siteState;
 					for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension)  
 						parentConditionals[k] *= *tMatrix;
+					if (alsoDoLeaves)
+					{
+						for (long k = 0; k < alphabetDimension; k++)  
+							leafBuffer[k] = siteState;
+						leafBuffer += alphabetDimension;
+					}
+					
 					continue;
 				}
 				else
@@ -1504,7 +1513,12 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 				}
 			}
 
-			if (!isLeaf)
+			if (isLeaf)
+			{
+				if (alsoDoLeaves)
+					leafBuffer += alphabetDimension;
+			}
+			else
 				stateCache += alphabetDimension;
 			
 			childVector += alphabetDimension;
@@ -1512,14 +1526,16 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 	}
 	
 	_List	   *result = new _List;
-	for (long k = 0; k < iNodeCount; k++)
+	for (long k = 0; k < stateCacheDim; k++)
 		result->AppendNewInstance (new _String(siteCount*unitLength,false));
 	
-	_Parameter _hprestrict_	* rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
-	_SimpleList  parentStates (iNodeCount,0,0),
+	_Parameter   _hprestrict_ * rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
+	_SimpleList  parentStates (stateCacheDim,0,0),
 				 conversion;
 	
 	stateCache -= patternCount*(iNodeCount-1)*alphabetDimension;
+	if (alsoDoLeaves)
+		leafBuffer -= patternCount*leafCount*alphabetDimension;
 	
 	_AVLListXL	  conversionAVL (&conversion);
 	_String		  codeBuffer	(unitLength, false);
@@ -1556,14 +1572,23 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 				else
 					parentStates.lData[nodeID] = stateCache[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
 			}
+			if (alsoDoLeaves)
+				for  (long nodeID = 0; nodeID <leafCount ; nodeID++)
+				{
+					long parentState = parentStates.lData[flatParents.lData [nodeID]];
+					if (parentState == -1)
+						parentStates.lData[nodeID+iNodeCount] = -1;
+					else
+						parentStates.lData[nodeID+iNodeCount] = leafBuffer[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
+				}
 		}
 		else
-			parentStates.Populate(iNodeCount,-1,0);
+			parentStates.Populate(stateCacheDim,-1,0);
 		
-		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
+		for  (long nodeID = 0; nodeID < stateCacheDim ; nodeID++)
 		{
 			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.lData[nodeID]), unitLength, codeBuffer.sData, &conversionAVL);
-			_String  *sequence   = (_String*) (*result)(postToIn.lData[nodeID]);
+			_String  *sequence   = (_String*) (*result)(nodeID<iNodeCount?postToIn.lData[nodeID]:nodeID);
 			
 			for (long site = 0; site < patternMap->lLength; site++)
 			{
@@ -1574,8 +1599,9 @@ _List*	 _TheTree::RecoverAncestralSequences (_DataSetFilter* dsf,
 		}
 	}
 		
-	delete stateCache; delete leafBuffer;
-	delete buffer;
+	delete [] stateCache; 
+	delete [] leafBuffer;
+	delete [] buffer;
 	
 	return result;
 }

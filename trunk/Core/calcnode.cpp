@@ -12086,11 +12086,19 @@ _String	_TreeTopology::MatchTreePattern (_TreeTopology* compareTo)
 
 //_______________________________________________________________________________________________
 
-void	 _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals, bool dOrS)
+void	 _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals, char dOrS)
 {
+	if (dOrS == 2 && doTips && doInternals)
+	{
+		AddNodeNamesToDS (ds, false, true, 0);
+		AddNodeNamesToDS (ds, true, false, 0);		
+		return;
+	}
+	
 	_CalcNode*iNodeTraverser = dOrS?DepthWiseTraversal (true) :StepWiseTraversal (true);
 		
 	long j = GetName()->sLength+1;
+	
 		
 	while (iNodeTraverser)
 	{

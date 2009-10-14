@@ -499,7 +499,7 @@ class _TheTree: public _TreeTopology {
 			_Parameter	PruneTreeChar4					(long categID = -1);
 			_Parameter	PruneTreeChar4Cache 			(long categID = -1);
 			
-			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*);
+			_List*		RecoverAncestralSequences 		(_DataSetFilter*, _SimpleList&, _List&, _Parameter*, _Parameter*, long, long*, _GrowingVector*, bool = false);
 			void		RecoverNodeSupportStates 		(_DataSetFilter*, long, long, _Matrix&);
 			void		RecoverNodeSupportStates2 		(node<long>*,_Parameter*,_Parameter*,long);
 			_List*		SampleAncestors 				(_DataSetFilter*, node<long>*);
@@ -578,7 +578,8 @@ class _TheTree: public _TreeTopology {
 		 	_String		CompareSubTrees					(_TheTree*, node<long>*);
 		 	_String		FindMaxCommonSubTree			(_TheTree*, long&, _List*);
 			void		WeightedCharacterDifferences	(_Parameter, _Matrix*, _Matrix*, long = -1);
-			void		AddNodeNamesToDS				(_DataSet*, bool, bool, bool);
+			void		AddNodeNamesToDS				(_DataSet*, bool, bool, char);
+						// if the 
 			_Parameter	PSStringWidth					(_String&);
 
 			_Parameter	DetermineBranchLengthGivenScalingParameter 
@@ -592,7 +593,7 @@ class _TheTree: public _TreeTopology {
 			void		MapPostOrderToInOderTraversal	(_SimpleList&);
 						// 20090306: SLKP
 						// construct a post-order -> in-order traveral map for internal nodes
-	
+		
 			void		AddBranchToForcedRecomputeList	(long idx)		{forceRecalculationOnTheseBranches << idx;}
 			void		ClearForcedRecomputeList		(void)			{forceRecalculationOnTheseBranches.Clear();}
 			bool		HasForcedRecomputeList			(void)			{return forceRecalculationOnTheseBranches.lLength;}

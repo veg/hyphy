@@ -10055,7 +10055,7 @@ void	_LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Mat
 	if (storeIntermediates && storeIntermediates->sLength == 0)
 	{
 		_TheTree *datree = (_TheTree*)LocateVar(theTrees(0));
-		datree->AddNodeNamesToDS (&target,false,true,false);
+		datree->AddNodeNamesToDS (&target,false,true,0);
 		countIntermediates = target.GetNames().lLength - countIntermediates;
 	}
 	else
@@ -10366,7 +10366,7 @@ void	_LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Mat
 				{
 					intermediates = new _DataSet (iff);
 					_TheTree *datree = (_TheTree*)LocateVar(theTrees(0));
-					datree->AddNodeNamesToDS (intermediates,false,true,false);
+					datree->AddNodeNamesToDS (intermediates,false,true,0);
 				}
 			}	
 			else

@@ -170,9 +170,11 @@ virtual
 			
 		void		Simulate					(_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
 	
-		void		ReconstructAncestors		(_DataSet &, _SimpleList&, _String&, bool = false, bool = false);
+		void		ReconstructAncestors		(_DataSet &, _SimpleList&, _String&, bool = false, bool = false, bool = false);
 					// 20090224: added an argument to allow 
 					// the marginal state reconstruction
+					// 20091009: added an argument to allow
+					// the reconstruction of leaves
 	
 		long		MaximumDimension			(void);
 		

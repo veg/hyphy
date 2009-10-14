@@ -217,6 +217,7 @@ _String
 			statusBarProgressValue			("STATUS_BAR_PROGRESS_VALUE"),
 			statusBarUpdateString			("STATUS_BAR_STATUS_STRING"),
 			marginalAncestors				("MARGINAL"),
+			doLeavesAncestors				("DOLEAVES"),
 			blScanfRewind					("REWIND"),
 			dialogPrompt,
 			lastModelUsed,
@@ -3257,7 +3258,7 @@ void	  _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 		}
 		_SimpleList						partsToDo;
 		if (lf->ProcessPartitionList(partsToDo, partitionList, " ancestral reconstruction"))
-			lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.lLength > 0);
+			lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.Find(-1) >= 0, simpleParameters.Find(-2) >= 0 );
 		StoreADataSet  (ds, dsName);
 		DeleteObject   (dsName);
     }
@@ -6466,9 +6467,9 @@ void	  _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 										_DataSet * ds = new _DataSet;
 										checkPointer (ds);
 										if (baseSet != _String("ACGT"))
-											ds->SetTranslationTable (&newTT); // mod 20060113 to properly deal with non-stanard alphabets
+											ds->SetTranslationTable (&newTT); // mod 20060113 to properly deal with non-standard alphabets
 										// make a dummy 
-										spawningTree->AddNodeNamesToDS (ds,true,false,true);
+										spawningTree->AddNodeNamesToDS (ds,true,false,1);
 										
 										char 	c = baseSet.sData[0];
 										long	s = ds->GetNames().lLength;
@@ -8093,7 +8094,7 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 					mark2 = ExtractConditions (source,mark1+1,pieces,',');
 					if (pieces.lLength>3 || pieces.lLength==0)
 					{
-						_String errMsg ("ReconstructAncestors and SampleAncestors expects 1-3 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and for ReconstructAncestors an optional MARGINAL flag.");
+						_String errMsg ("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.");
 						acknError (errMsg);
 						return false;
 					}
@@ -8105,7 +8106,10 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 						if (((_String*)pieces(optP))->Equal(&marginalAncestors))
 							dsc.simpleParameters << -1;
 						else
-							dsc.parameters	<< pieces(optP);
+							if (((_String*)pieces(optP))->Equal(&doLeavesAncestors))
+								dsc.simpleParameters << -2;
+							else
+								dsc.parameters	<< pieces(optP);
 					
 					target&&(&dsc);
 					return true;
