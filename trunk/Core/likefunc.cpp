@@ -4824,7 +4824,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					prec = MAX (prec*0.01, precision*0.1);
 					prec = MIN (prec, 0.1);
 					
-					ConjugateGradientDescent (prec, bestMSoFar,true,10);	
+					ConjugateGradientDescent (prec, bestMSoFar,true,5);	
 					GetAllIndependent	(bestMSoFar);
 					for (long k = 0; k < indexInd.lLength; k++)
 						((_GrowingVector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
@@ -5349,7 +5349,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			   lastLStep = -1.0, 
 			   lastRStep = -1.0,
 			   saveL     = -1.,
-			   saveM     = -1.,
+			   saveM     = index<0?-1.:middle,
 			   saveR     = -1.,
 			   saveLV    = 0.0,
 			   saveMV    = middleValue,
@@ -5370,7 +5370,6 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			if (freezeCount == 0 || freezeCount == indexInd.lLength || upperBound < 1e-10)
 				return -2;
 		}
-			
 		lowerBound							   = 0.;
 	}
 	
@@ -5385,15 +5384,27 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 	
 	if (index >= 0)
 		middle  =  GetIthIndependent (index);
+	else	
+		middle  = initialStep;
 	
 	if (lowerBound>middle || upperBound<middle)
 		middle = (lowerBound+practicalUB) * .5;
 	
 	if (middle == lowerBound)
-		middle = lowerBound+initialStep * .2;
+	{
+		leftStep = initialStep * .2;
+		saveL	 = lowerBound;
+		middle   = lowerBound+leftStep;
+		
+	}
 	
 	if (middle == upperBound)
-		middle = upperBound-initialStep * .2;
+	{
+		rightStep = initialStep*2;
+		middle    = upperBound-rightStep;
+		saveR     = upperBound;
+	}
+
 
 	/*if (index < 0)
 	{
@@ -6539,7 +6550,7 @@ void	_LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Paramet
 	_Parameter  leftValue   = maxSoFar, 
 				middleValue = maxSoFar, 
 				rightValue  = maxSoFar, 
-				bp			= gPrecision*10.0,
+				bp			= gPrecision*0.1,
 				lV = 0., rV = 0., ms = 0.;
 	
 	_Matrix						left		;
