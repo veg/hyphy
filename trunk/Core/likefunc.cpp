@@ -8126,7 +8126,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 													df->NumberDistinctSites (),
 													catID,
 													siteRes)
-													-	_logLFScaler * overallScalingFactors[index];
+													-	_logLFScaler * overallScalingFactors.lData[index];
 				return sum;
 			}
 
@@ -8148,7 +8148,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 													conditionalTerminalNodeStateFlag[index],
 													ssf,
 													(_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-													overallScalingFactors[index],
+													overallScalingFactors.lData[index],
 													blockID * sitesPerP,
 													(1+blockID) * sitesPerP,
 													catID,
@@ -8158,7 +8158,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 													branchIndex >= 0 ? branchValues->lData: nil);
 			}
 			
-			sum -= _logLFScaler * overallScalingFactors[index];
+			sum -= _logLFScaler * overallScalingFactors.lData[index];
 
 
 			if (doCachedComp < 0)
@@ -8168,7 +8168,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 				//printf ("Set up %d\n", doCachedComp);
 				*cbid = doCachedComp;
 					
-				overallScalingFactorsBackup[index] = overallScalingFactors[index];
+				overallScalingFactorsBackup.lData[index] = overallScalingFactors.lData[index];
 				if (sccb)
 					for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++)
 						sccb[recoverIndex] = scc[recoverIndex];
@@ -8181,7 +8181,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 										   ssf, 
 										   scc,
 										   (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-										   overallScalingFactors[index],
+										   overallScalingFactors.lData[index],
 										   blockID * sitesPerP,
 										   (1+blockID) * sitesPerP,
 										   catID,tcc,siteRes);
