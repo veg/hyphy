@@ -5348,11 +5348,11 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			   rightStep = initialStep*.5, 
 			   lastLStep = -1.0, 
 			   lastRStep = -1.0,
-			   saveL     = -1.,
+			   saveL     = index<0?middle:-1.,
 			   saveM     = index<0?-1.:middle,
 			   saveR     = -1.,
-			   saveLV    = 0.0,
-			   saveMV    = middleValue,
+			   saveLV    = index<0?middleValue:0.0,
+			   saveMV    = index<0?0.0:middleValue,
 			   saveRV    = 0.0;
 	
 	
@@ -5395,7 +5395,6 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		leftStep = initialStep * .2;
 		saveL	 = lowerBound;
 		middle   = lowerBound+leftStep;
-		
 	}
 	
 	if (middle == upperBound)
@@ -5404,6 +5403,9 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		middle    = upperBound-rightStep;
 		saveR     = upperBound;
 	}
+	
+	if (index < 0)
+		leftStep = middle;
 
 
 	/*if (index < 0)
@@ -5504,15 +5506,17 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		
 		//printf ("\n[BRACKET: %g (%g) - %g (%g) - %g (%g)]", left, leftValue, middle, middleValue, right, rightValue);
 
-		saveL = left;
-		saveM = middle;
-		saveR = right;
-		saveLV = leftValue;
-		saveMV = middleValue;
-		saveRV = rightValue;
+		saveL		= left;
+		saveLV		= leftValue;
 
-		lastLStep = leftStep;
-		lastRStep = rightStep;
+		saveM		= middle;
+		saveMV		= middleValue;
+		
+		saveR		= right;
+		saveRV		= rightValue;
+
+		lastLStep	= leftStep;
+		lastRStep	= rightStep;
 
 		if (rightValue<=middleValue && leftValue<=middleValue)
 			break;
@@ -5527,7 +5531,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 				leftStep = rightStep;
 				rightStep*=magR;
 			}
-			middle = right;
+			middle	   = right;
 			movingLeft = false;
 		}
 		else // case 2
@@ -5540,7 +5544,19 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 					rightStep = leftStep;
 					leftStep*=magR;
 				}
-				middle = left;						
+				if (index < 0)
+				{
+					if (CheckEqual (left, lowerBound))
+					{
+						middle    = (middle-lowerBound)*0.5;
+						leftStep  = middle;
+						rightStep = middle;
+					}
+					else
+						middle	   = left;		
+				}
+				else
+					middle	   = left;		
 				movingLeft = true;
 			}
 			else 
