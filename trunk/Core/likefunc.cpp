@@ -4439,7 +4439,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		}
 
 		if (optMethod!=7)
-			ConjugateGradientDescent (1, bestSoFar, true, 10);
+			ConjugateGradientDescent (0.1, bestSoFar, true, 10);
 		else
 			ConjugateGradientDescent(precision, bestSoFar, true);	
 		#if !defined __UNIX__ || defined __HEADLESS__
@@ -4658,6 +4658,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			if (LocateVar (indexInd.lData[j])->IsGlobal())
 				glVars << j;
  
+#define	_HY_SLOW_CONVERGENCE_RATIO 2.
+#define	_HY_SLOW_CONVERGENCE_RATIO_INV 1./_HY_SLOW_CONVERGENCE_RATIO
+		
 		
 		while (inCount<termFactor)
 		{				
@@ -4691,7 +4694,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					divFactor = stdFactor;
 				else
 				{
-					divFactor			= MIN(100.,MAX(stdFactor,oldAverage/averageChange));
+					divFactor			= MIN(16,MAX(stdFactor,oldAverage/averageChange));
 					
 					long	   steps    = logLHistory.GetUsed();
 					for (long k = 1; k <= MIN(5, steps-1); k++)
@@ -4711,15 +4714,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						{
 							if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.)
 							{
-								if (diffs[0] / diffs[1] >= 0.5 && diffs[0] / diffs[1] <= 2. &&
-									diffs[1] / diffs[2] >= 0.5 && diffs[1] / diffs[2] <= 2.)
+								if (diffs[0] / diffs[1] >= _HY_SLOW_CONVERGENCE_RATIO_INV && diffs[0] / diffs[1] <= _HY_SLOW_CONVERGENCE_RATIO &&
+									diffs[1] / diffs[2] >= _HY_SLOW_CONVERGENCE_RATIO_INV && diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)
 								{
 									convergenceMode = 2;
 									if (steps > 4)
 									{
 										if (diffs [3] > 0.)
 										{
-											if (diffs[2] / diffs[3] >= 0.5 && diffs[2] / diffs[3] <= 2.)
+											if (diffs[2] / diffs[3] >= _HY_SLOW_CONVERGENCE_RATIO_INV && diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO)
 												convergenceMode = 3;
 										}
 										else
@@ -4740,10 +4743,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 							divFactor = 1.;
 							break;
 						case 2:
-							divFactor = 8.;
+							divFactor = 4.;
 							break;
 						case 3:
-							divFactor = 32.;
+							divFactor = 10.;
 							break;
 						//default:
 						//	divFactor = 4.;
@@ -4815,7 +4818,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					BufferToConsole (buffer);
 					sprintf (buffer,"\n[Convergence mode = %d]", convergenceMode);
 					BufferToConsole (buffer);
-					sprintf (buffer,"\n[Unchanged variables = %d]", noChange.lLength);
+					sprintf (buffer,"\n[Unchanged variables = %ld]", noChange.lLength);
 					BufferToConsole (buffer);
 				}
 				if (convergenceMode > 2)
@@ -4887,14 +4890,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						brackStep	  = fabs(lastParameterValue-previousParameterValue); 
 						if (brackStep == 0.0)
 						{
-							for (long k = stepsSoFar-3; k && brackStep == 0.0; k--)
+							long k = stepsSoFar-3;
+							for (; k && brackStep == 0.0; k--)
 							{
 								previousParameterValue			= vH->theData[k],
 								lastParameterValue				= vH->theData[k+1];	
 								brackStep						= fabs(lastParameterValue-previousParameterValue); 
 							}
 							if (k == 0)
-								brackStep = precision*0.001;
+								brackStep = MIN(0.001,precision*0.001);
 						}
 								
 						precisionStep = brackStep*stepScale;
@@ -6887,8 +6891,8 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 					XM = .5*(left+right);
 
 					
-					_Parameter tol1 = fabs (X) * brentPrec + 1.e-10,
-							   tol2 = 2.*tol1;
+					//_Parameter tol1 = fabs (X) * brentPrec + 1.e-10,
+					//		   tol2 = 2.*tol1;
 					
 					if (verbosityLevel > 50)
 					{
