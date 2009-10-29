@@ -4974,7 +4974,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				{
 					if (cj != 0.)
 						averageChange += fabs (ch/cj);
-					if (ch < precisionStep && inCount == 0)
+					if (ch < precisionStep*0.1 && inCount == 0)
 						nc2 << j;
 				}
 				else
