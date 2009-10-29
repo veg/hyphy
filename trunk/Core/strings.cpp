@@ -1511,7 +1511,7 @@ void	FlagError (_String st)
 		if (dropIntoDebugMode)
 			while (ExpressionCalculator()) ;
 	#endif
-		GlobalShutdown();
+		//GlobalShutdown();
 		exit(1);
 #endif
 }
@@ -1640,7 +1640,7 @@ void	WarnError (_String st)
 	if (rank==0)
 		MPI_Abort (MPI_COMM_WORLD,1);
 #endif
-	GlobalShutdown();
+	//GlobalShutdown();
 	exit(1);
 #endif
 }
