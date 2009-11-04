@@ -251,8 +251,11 @@ protected:
 		_Parameter		replaceAPoint 			(_Matrix&m, long row, _Matrix&p, _Parameter& nV, _Matrix& fv);
 		
 		void			ScanAllVariablesOnPartition 
-												(_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);  
+												(_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&, bool = false);  
 							// internal function to scan all the on a set of partitions variables in
+							// 20091103: SLKP
+							// the boolean flag (if true), requests that only tree-associated variables
+							// (no templates or frequencies) be scanned
 
 virtual	void			ScanAllVariables 		(void);  
 							// internal function to scan all the variables in
@@ -405,6 +408,7 @@ static	void			CheckFibonacci				(_Parameter);
 		void			RestoreScalingFactors		(long, long, long, long*, long *);
 		void			SetupLFCaches				(void);
 		void			SetupCategoryCaches			(void);
+		bool			HasPartitionChanged			(long);
 
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
@@ -419,7 +423,8 @@ static	void			CheckFibonacci				(_Parameter);
 	
 		_List			optimalOrders,
 						leafSkips,
-						categoryTraversalTemplate;
+						categoryTraversalTemplate,
+						indVarsByPartition;
 						
 /*SLKP: 20090225 
 						This list contains as many entries (themselves of type _List) as there are partitions

@@ -7444,10 +7444,11 @@ void	_LikelihoodFunction::Anneal (_Parameter&)
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::RescanAllVariables (void)
 {
-	indexCat.Clear();
-	indexDep.Clear();
-	indexInd.Clear();
+	indexCat.Clear ();
+	indexDep.Clear ();
+	indexInd.Clear ();
 	computationalResults.Clear();
+	indVarsByPartition.Clear  ();
 	ScanAllVariables();
 }
 
@@ -7508,14 +7509,14 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 	_SimpleList	  allVariables,
 				  covCat,
 				  cpCat;
-				  
+	
 	long		  i;
 	
 	{
 		_AVLList avl (&allVariables);
-		
 		for (i=0; i<theProbabilities.lLength; i++)
 			(LocateVar(theProbabilities(i)))->ScanForVariables (avl,true);
+		
 			
 		if (computingTemplate)
 			computingTemplate->ScanFForVariables (avl,true,false,true);
@@ -7681,7 +7682,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 			   
 	for (i=0;i<indexInd.lLength;i++)
 	{
-		_Variable *_cv = LocateVar(indexInd(i));
+		_Variable *_cv = GetIthIndependentVar(i);
 		if (_cv->GetLowerBound()<=l)
 			_cv->SetBounds(DEFAULTPARAMETERLBOUND,_cv->GetUpperBound());
 		if (_cv->GetUpperBound()>=u)
@@ -7689,21 +7690,32 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 	}
 	for (i=0;i<indexDep.lLength;i++)
 	{
-		_Variable *_cv = LocateVar(indexDep(i));
+		_Variable *_cv = GetIthDependentVar(i);
 		if (_cv->GetLowerBound()<=l)
 			_cv->SetBounds(DEFAULTPARAMETERLBOUND,_cv->GetUpperBound());
 		if (_cv->GetUpperBound()>=u)
 			_cv->SetBounds(_cv->GetLowerBound(),DEFAULTPARAMETERUBOUND);
 	}
+	
+	_SimpleList pidx (1,0,0);
+	for (long p = 0; p < theTrees.lLength; p++)
+	{
+		pidx.lData[0] = p;
+		_SimpleList iv,dv,cv;
+		ScanAllVariablesOnPartition (pidx, iv, dv, cv, true);
+		indVarsByPartition && & iv;
+	}
 }
 
 //_______________________________________________________________________________________
-void	_LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _SimpleList& iind, _SimpleList& idep, _SimpleList &icat)
+void	_LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _SimpleList& iind, _SimpleList& idep, _SimpleList &icat, bool treeOnly)
 {
 	_SimpleList	  allVariables,
 				  covCat,
 				  cpCat;
-				  
+	
+	
+	if (!treeOnly)			  
 	{
 		_AVLList avl (&allVariables);
 		for (long i = 0; i < pidx.lLength; i++)
@@ -7715,37 +7727,40 @@ void	_LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _Simpl
 		avl.ReorderList();
 	}
 
-	if (templateKind<0)
+	if (treeOnly == false && templateKind<0)
 		allVariables.Delete (allVariables.Find(-templateKind-1));
 		
 	{
 		_AVLList iia (&iind),
 				 iid (&idep);
 	
-		for (long i=0; i<allVariables.lLength; i++)
+		if (treeOnly == false)
 		{
-			_Variable* theV = ((_Variable*)LocateVar(allVariables(i)));
-			if (theV->IsCategory())
+			for (long i=0; i<allVariables.lLength; i++)
 			{
-				if (((_CategoryVariable*)theV)->IsUncorrelated())
+				_Variable* theV = ((_Variable*)LocateVar(allVariables(i)));
+				if (theV->IsCategory())
 				{
-					if (((_CategoryVariable*)theV)->IsConstantOnPartition())
-						icat << allVariables(i);
+					if (((_CategoryVariable*)theV)->IsUncorrelated())
+					{
+						if (((_CategoryVariable*)theV)->IsConstantOnPartition())
+							icat << allVariables(i);
+						else
+							cpCat << allVariables(i);
+					}
 					else
-						cpCat << allVariables(i);
+						covCat<<allVariables(i);
+					continue;
 				}
+				if (theV->IsIndependent())
+					iia.Insert ((BaseRef)allVariables(i));
 				else
-					covCat<<allVariables(i);
-				continue;
+					iid.Insert ((BaseRef)allVariables(i));
 			}
-			if (theV->IsIndependent())
-				iia.Insert ((BaseRef)allVariables(i));
-			else
-				iid.Insert ((BaseRef)allVariables(i));
+			
+			indexCat << cpCat;
+			indexCat << covCat;
 		}
-		
-		indexCat << cpCat;
-		indexCat << covCat;
 				
 		for (long i2=0; i2<pidx.lLength; i2++)
 		{
@@ -8013,6 +8028,21 @@ void	_LikelihoodFunction::Setup (void)
 }
 
 //_______________________________________________________________________________________
+	
+bool	_LikelihoodFunction::HasPartitionChanged (long index)
+{
+	//return ((_TheTree*)LocateVar(theTrees.lData[index]))->HasChanged();
+	
+	_SimpleList * idepList = (_SimpleList*)indVarsByPartition(index);
+	
+	for (long i = 0; i < idepList->lLength; i++)
+		if (LocateVar(idepList->lData[i])->HasChanged())
+			return true;
+	
+	return false;
+}
+	
+//_______________________________________________________________________________________
 
 _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, long currentRateClass, long branchIndex, _SimpleList * branchValues)
 // compute likelihood over block index i
@@ -8043,7 +8073,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	
 	if (computingTemplate&&templateKind)
 	{
-		if (!(forceRecomputation||t->HasChanged()||!siteArrayPopulated))
+		if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)))
 		{		
 			usedCachedResults = true;
 			//printf ("\n[CACHED]\n");
@@ -8052,7 +8082,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	}
 	else
 	{
-		if (!forceRecomputation && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !t->HasChanged())
+		if (!forceRecomputation && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !HasPartitionChanged(index))
 		{		
 			usedCachedResults = true;
 			//printf ("\n[CACHED]\n");
