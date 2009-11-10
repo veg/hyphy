@@ -8197,6 +8197,9 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 			_Parameter sum  = 0.;
 			if (doCachedComp >= 3)
 			{
+#ifdef _UBER_VERBOSE_LF_DEBUG
+				printf ("CACHE compute branch %d\n",doCachedComp-3);
+#endif
 				sum = t->ComputeLLWithBranchCache (*sl,
 													doCachedComp-3,
 													bc,

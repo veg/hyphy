@@ -143,8 +143,9 @@ void	ReadInTemplateFiles(void)
 //__________________________________________________________________________________
 void	ReadInPostFiles(void)
 {
-	if (!likeFuncList.lLength)
-		return;
+	//if (!likeFuncList.lLength)
+	//	return;
+	
 	_String fileIndex;
 	FILE* modelList = fopen (fileIndex.getStr(),"r");
 	fileIndex = baseArgDir &"TemplateBatchFiles/postprocessors.lst";
@@ -338,29 +339,31 @@ long	DisplayListOfChoices (void)
 //__________________________________________________________________________________
 long	DisplayListOfPostChoices (void)
 {
-	if (!availablePostProcessors.lLength) return -1;
 	long choice = -1;
-	_String fileAbbr;
-	printf ("\033[2J\033[H\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
-	while (choice == -1)
+	if (availablePostProcessors.lLength) 
 	{
-		for (choice = 0; choice<availablePostProcessors.lLength; choice++)
+		_String fileAbbr;
+		printf ("\033[2J\033[H\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
+		while (choice == -1)
 		{
-			printf ("\n\t(%d):%s",choice+1,
-								  ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
-		}
-		printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
-		fileAbbr = *StringFromConsole();
-		fileAbbr.UpCase();
-		if (logInputMode)
-			loggedUserInputs && & fileAbbr;
-		if (!fileAbbr.sLength||((fileAbbr.sLength==1)&&(fileAbbr.sData[0]=='Q'))) return -1;
-		choice = fileAbbr.toNum();
-		
-		if (choice<=0 || choice>availablePostProcessors.lLength) 
-			choice = -1;
-	}	
-	return choice;
+			for (choice = 0; choice<availablePostProcessors.lLength; choice++)
+			{
+				printf ("\n\t(%d):%s",choice+1,
+									  ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
+			}
+			printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
+			fileAbbr = *StringFromConsole();
+			fileAbbr.UpCase();
+			if (logInputMode)
+				loggedUserInputs && & fileAbbr;
+			if (!fileAbbr.sLength||((fileAbbr.sLength==1)&&(fileAbbr.sData[0]=='Q'))) return -1;
+			choice = fileAbbr.toNum();
+			
+			if (choice<=0 || choice>availablePostProcessors.lLength) 
+				choice = -1;
+		}	
+		return choice;
+	}
 }
 
 
@@ -648,7 +651,7 @@ int main (int argc, char* argv[])
 		if (logInputMode)
 			loggedUserInputs && & c_str;
 
-		if (c_str.sData[0]!='n' && c_str.sData[0]!='N' )
+		if (c_str.getChar(0) !='n' && c_str.getChar(0)!='N' )
 		{
 			long choice = DisplayListOfPostChoices();
 			while (choice != -1)
@@ -661,11 +664,12 @@ int main (int argc, char* argv[])
 				PopFilePath ();
 				printf ("\n\n**********Continue with result processing (y/n)?");
 
-				_String c_str (StringFromConsole());
+				c_str = StringFromConsole();
 				if (logInputMode)
 					loggedUserInputs && & c_str;
 
-				if (c_str.sData[0]=='n' || c_str.sData[0]=='N' ) break;
+				if (c_str.getChar(0)=='n' || c_str.getChar(0)=='N' ) 
+					break;
 				
 				choice = DisplayListOfPostChoices();				
 			}
