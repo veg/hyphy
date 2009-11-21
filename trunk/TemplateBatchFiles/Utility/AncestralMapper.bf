@@ -27,9 +27,9 @@ function _buildAncestralCache (_lfID, _lfComponentID)
 	return _buildAncestralCacheInternal (_lfID, _lfComponentID, 0);
 }
 
-function _buildAncestralCacheSample (_lfID, _lfComponentID,1)
+function _buildAncestralCacheSample (_lfID, _lfComponentID)
 {
-	return _buildAncestralCacheInternal (_lfID, _lfComponentID, 0);
+	return _buildAncestralCacheInternal (_lfID, _lfComponentID, 1);
 }
 
 /*******************************************
