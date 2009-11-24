@@ -803,7 +803,7 @@ void	 _LikelihoodFunction::Clear (void)
 	blockDependancies.Clear();
 	computationalResults.Clear();
 	partScalingCache.Clear();
-
+	indVarsByPartition.Clear();
 	
 	optimalOrders.Clear();
 	leafSkips.Clear();
@@ -7704,6 +7704,12 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		_SimpleList iv,dv,cv;
 		ScanAllVariablesOnPartition (pidx, iv, dv, cv, true);
 		indVarsByPartition && & iv;
+		/*for (long v = 0; v < iv.lLength; v++)
+		{
+			_Variable * vv = LocateVar (iv.lData[v]);
+			if (vv)
+				printf ("%d : %s\n", v, vv->GetName()->sData);
+		}*/
 	}
 }
 
@@ -8048,9 +8054,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 // compute likelihood over block index i
 /* 
 	to optimize
-		-no need to recurse the entire tree to decide if it had changed; should cache variable->block dependancies 
-		 for rapid lookup
-	
+		-no need to recurse the entire tree to decide if it had changed; 
+		 should cache variable->block dependancies for rapid lookup
 */
 {
 	
