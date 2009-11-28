@@ -5693,13 +5693,19 @@ void	  _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 
 
 //____________________________________________________________________________________	
-
+// GetInformation()
 void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
 	
 	_String matrixName = chain.AddNameSpaceToID(*(_String*)parameters(0)), 
 			*objectName = (_String*)parameters(1);
+	
+#if defined __AFYP_REWRITE_BGM__
+	long	sID;
+	if (parameters.lLength > 2)
+		sID = ProcessNumericArgument ((_String*)parameters(2), chain.nameSpacePrefix);
+#endif
 			
 	_Matrix *result = nil;
 	
@@ -5824,7 +5830,14 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 #if not defined __AFYP_REWRITE_BGM__
 					Bgm * lf = (Bgm *) bgmList (f);
 					// result = lf->ExportNodeScores();
-					result = lf->ExportGraph();
+					if (sID == 0)
+						result = lf->GetStructure();
+					else if (sID == 1)
+						result = lf->GetNodeOrder();
+					else
+					{
+						WarnError (_String("Integer argument (") & sID & "in GetInformation() has no assigned return value, returning NULL\n");
+					}
 #endif
 					
 				}
@@ -9114,12 +9127,21 @@ bool	_ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionList
 	
 	_List pieces;
 	ExtractConditions (source,blGetInformation.sLength,pieces,',');
+#if defined __AFYP_REWRITE_BGM__
+	if (pieces.lLength < 2)
+	{
+		_String errMsg ("Expected at least 2 arguments: GetInformation(object,receptacle,...);");
+		WarnError (errMsg);
+		return false;
+	}
+#else
 	if (pieces.lLength!=2)
 	{
 		_String errMsg ("Expected syntax: GetInformation(object,receptacle);");
 		WarnError (errMsg);
 		return false;
 	}
+#endif
 	else
 	{
 		_String *s0 = (_String*)pieces(0),
@@ -9131,7 +9153,7 @@ bool	_ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionList
 			return 	   false;
 		}
 	}
-										
+	
 	_ElementaryCommand * sp = makeNewCommand(37);
 	sp->addAndClean (target, &pieces, 0);
 	return true;
