@@ -5817,7 +5817,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 				f = bgmNamesList.Find (&objectNameID);
 				if (f >= 0)		// then hey, it's a BGM!
 				{
-#if not defined __AFYP_REWRITE_BGM__
+#if defined __AFYP_REWRITE_BGM__
 					Bgm * lf = (Bgm *) bgmList (f);
 					// result = lf->ExportNodeScores();
 					if (sID == 0)
