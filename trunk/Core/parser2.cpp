@@ -2,13 +2,9 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
-Primary Development:
-  Sergei L Kosakovsky Pond (sergeilkp@mac.com)
-Significant contributions from:
-  Spencer V Muse (muse@stat.ncsu.edu)
-  Simon DW Frost (sdfrost@ucsd.edu)
-  Art FY Poon    (apoon@biomail.ucsd.edu)
+Copyright (C) 1997-2009
+  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Art FY Poon    		   (apoon@cfenet.ubc.ca)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -241,10 +237,8 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
 {
 	ConvertToTree();
 	
-	_String	* result = new _String((unsigned long)16,true);
-	if (!result)
-		checkPointer (result);
-	
+	_String	* result = (_String*)checkPointer(new _String((unsigned long)16,true));
+
 	long		  savepd = printDigits;
 	printDigits 		 = 0;
 	

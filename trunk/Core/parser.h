@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	 ASSOCIATIVE_LIST 	0x80
 #define	 TOPOLOGY			0x100
 #define	 POLYNOMIAL			0x200
+#define  HY_ANY_OBJECT		0xFFFF
 
 #define	 DEFAULTLOWERBOUND 	-1e26 
 #define	 DEFAULTUPPERBOUND	1e26
@@ -147,7 +148,7 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 	virtual	bool		 IsDefined	(_String&);  // is this operation defined for the type
 											
 	virtual	bool		 IsIndependent (void) 		{ return true; } 
-	virtual	long		 ObjectClass (void) 		{ return 0; } 
+	virtual	long		 ObjectClass (void) 		{ return HY_UNDEFINED; } 
 			// returns a unique ID for this object
 			// 0 - undefined
 			// 1 - number

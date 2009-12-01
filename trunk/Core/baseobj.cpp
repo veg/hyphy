@@ -157,6 +157,8 @@ bool	GlobalStartup (void)
 	_hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
 	_hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
 	
+	_HBL_Init_Const_Arrays	();
+	
 	#ifdef __HYPHYMPI__
 		_hyApplicationGlobals.Insert(new _String (mpiNodeID));
 		_hyApplicationGlobals.Insert(new _String (mpiNodeCount));

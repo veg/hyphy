@@ -539,6 +539,8 @@ bool	IsModelReversible			 (long);
 
 _PMathObj	
 		ProcessAnArgumentByType		(_String*, _VariableContainer*, long);
+
+void	_HBL_Init_Const_Arrays		(void);
 		
 
 

@@ -2,13 +2,9 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
-Primary Development:
-  Sergei L Kosakovsky Pond (sergeilkp@mac.com)
-Significant contributions from:
-  Spencer V Muse (muse@stat.ncsu.edu)
-  Simon DW Frost (sdfrost@ucsd.edu)
-  Art FY Poon    (apoon@biomail.ucsd.edu)
+Copyright (C) 1997-2009
+  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Art FY Poon    		   (apoon@cfenet.ubc.ca)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -5752,11 +5748,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 			if (theObject->ObjectClass()==STRING)
 			{
 				objectNameID = _String((_String*)theObject->Compute()->toStr());
-				f = LocateVarByName (objectNameID);
-				if (f>=0)
-					theObject = FetchVar(f);
-				else	
-					theObject = nil;
+				theObject	 = FetchVar (LocateVarByName (objectNameID));
 			}
 			if (theObject)
 			{
@@ -5773,7 +5765,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 					
 					for (long k = 0; k<f; k++)
 					{
-						result->theData[k] = values->theData[k];
+						result->theData[k]   = values->theData[k];
 						result->theData[f+k] = weights->theData[k];
 					}
 				}
@@ -5784,16 +5776,14 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 						_CalcNode* theNode = (_CalcNode*)theObject;
 						if (theNode->GetModelMatrix())
 						{
-							result	= new _Matrix;
-							checkPointer (result);
+							checkPointer(result	= new _Matrix);
 							theNode->RecomputeMatrix (0,1,result);	
 						}
 					}
 
 					if ((!result)&& theObject->ObjectClass()==NUMBER)
 					{
-						result = new _Matrix (1,3,false,true);
-						checkPointer (result);
+						checkPointer(result = new _Matrix (1,3,false,true));
 						result->theData[0]=theObject->Compute()->Value();
 						result->theData[1]=theObject->GetLowerBound();
 						result->theData[2]=theObject->GetUpperBound();

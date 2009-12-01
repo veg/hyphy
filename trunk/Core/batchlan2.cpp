@@ -2,13 +2,9 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
-Primary Development:
-  Sergei L Kosakovsky Pond (sergeilkp@mac.com)
-Significant contributions from:
-  Spencer V Muse (muse@stat.ncsu.edu)
-  Simon DW Frost (sdfrost@ucsd.edu)
-  Art FY Poon    (apoon@biomail.ucsd.edu)
+Copyright (C) 1997-2009
+  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Art FY Poon    		   (apoon@cfenet.ubc.ca)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -100,7 +96,12 @@ _SimpleList sqlDatabases;
 _List		scfgList,
 			scfgNamesList,
 			bgmList,
-			bgmNamesList;
+			bgmNamesList,
+			_HY_GetStringGlobalTypesAux;
+
+_AVLListX	 _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
+
+
 
 //____________________________________________________________________________________	
 
@@ -113,6 +114,18 @@ void 		 MismatchScore						(_String*, _String*, long, long, _SimpleList&, _Matri
 _String		 ProcessStringArgument				(_String*);
 bool		 RecurseDownTheTree					(_SimpleList&, _List&, _List&, _List&, _SimpleList&);
 
+//____________________________________________________________________________________	
+
+void		_HBL_Init_Const_Arrays  (void)
+{
+		// init GetString lookups
+		_HY_GetStringGlobalTypes.Insert(new _String("LikelihoodFunction"), 0);
+		_HY_GetStringGlobalTypes.Insert(new _String("DataSet"), 1);
+		_HY_GetStringGlobalTypes.Insert(new _String("DataSetFilter"), 2);
+		_HY_GetStringGlobalTypes.Insert(new _String("UserFunction"), 3);
+		_HY_GetStringGlobalTypes.Insert(new _String("Tree"), 4);
+		_HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
+}
 
 //____________________________________________________________________________________	
 void		 InsertVarIDsInList		(_AssociativeList* theList , _String theKey, _SimpleList& varIDs)
@@ -742,382 +755,387 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 	
 	if (temp.sLength)
 		currentArgument = &temp;
+	
+	f = _HY_GetStringGlobalTypes.Find(currentArgument);
+	if (f >=0 ) f = _HY_GetStringGlobalTypes.GetXtra (f);
+	
+	switch (f)
+	{
 		
-	// check for predefined constants (Likelihood Funcion, etc)
-	if ((*currentArgument)==_String("LikelihoodFunction"))
-	{
-		if (sID<likeFuncNamesList.lLength)
-			result = *(_String*)likeFuncNamesList(sID);
-	}
-	else
-	if ((*currentArgument)==_String("DataSet"))
-	{
-		if (sID<dataSetNamesList.lLength)
-			result = *(_String*)dataSetNamesList(sID);
-	}
-	else
-	if ((*currentArgument)==_String("DataSetFilter"))
-	{
-		if (sID<dataSetFilterNamesList.lLength)
-			result = *(_String*)dataSetFilterNamesList(sID);
-	}
-	else
-	if ((*currentArgument)==_String("UserFunction"))
-	{
-		if (sID<batchLanguageFunctions.lLength)
-		{
-			_AssociativeList * resAVL = new _AssociativeList;
-			checkPointer (resAVL);
-			_FString		 daKey;
-			*daKey.theString = "ID";
-			resAVL->MStore (&daKey, new _FString (*(_String*)batchLanguageFunctionNames(sID)), false); 
-			*daKey.theString = "Arguments";
-			resAVL->MStore (&daKey, new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false); 
-			theReceptacle->SetValue (resAVL,false);
-			return;
-		}
-	}
-	else
-	if ((*currentArgument)==_String("Tree"))
-	{
-		long tc = 0;
-		_SimpleList nts;
-		long		rt,
-					vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
-		
-		for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
-			if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == TREE)
+		case 0: // LikelihoodFunction
+			if (sID<likeFuncNamesList.lLength)
+				result = *(_String*)likeFuncNamesList(sID);
+			break;
+		case 1: // DataSet
+			if (sID<dataSetNamesList.lLength)
+				result = *(_String*)dataSetNamesList(sID);
+			break;
+		case 2: // DataSetFilter
+			if (sID<dataSetFilterNamesList.lLength)
+				result = *(_String*)dataSetFilterNamesList(sID);
+			break;
+		case 3: // UserFunction
+			if (sID<batchLanguageFunctions.lLength)
 			{
-				if (tc==sID)
-				{
-					result = *(_String*)variableNames.Retrieve(vi);
-					break;
-				}
-				else	
-					tc++;
-			}
-	}
-	else
-	if ((*currentArgument)==_String("SCFG"))
-	{
-		if (sID<scfgNamesList.lLength)
-			result = *(_String*)scfgNamesList(sID);
-	}
-	else
-	{
-		// decide what kind of object current argument represents
-		_String nmspaced = AppendContainerName(*currentArgument,chain.nameSpacePrefix);
-		f = FindDataSetName (nmspaced);
-		if (f>=0)
-		{
-			_DataSet* dataSetObject = (_DataSet*)dataSetList(f);
-			if (sID>=0 && sID<dataSetObject->NoOfSpecies())
-				result = *(_String*)(dataSetObject->GetNames())(sID);
-			else
-			{
-				theReceptacle->SetValue (new _Matrix (dataSetObject->GetNames()), false);
+				_AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+				resAVL->MStore ("ID", new _FString (*(_String*)batchLanguageFunctionNames(sID)), false); 
+				resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false); 
+				theReceptacle->SetValue (resAVL,false);
 				return;
 			}
-		}
-		else	// not a data set
-		{
-			f = FindDataSetFilterName (nmspaced);
-			if (f>=0)
+		case 4: // Tree
 			{
-				_DataSetFilter* dataSetFilterObject = (_DataSetFilter*)dataSetFilterList(f);
-				if (sID >=0 && sID<dataSetFilterObject->NumberSpecies())
-					result = *(_String*)(dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(sID));
+				long tc = 0;
+				_SimpleList nts;
+				long		rt,
+				vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
+				
+				for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
+					if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == TREE)
+					{
+						if (tc==sID)
+						{
+							result = *(_String*)variableNames.Retrieve(vi);
+							break;
+						}
+						else	
+							tc++;
+					}
+			
+				break;
+			}
+		case 5: // SCFG
+			if (sID<scfgNamesList.lLength)
+				result = *(_String*)scfgNamesList(sID);
+			break;
+		default: // everything else...
+		{
+			// decide what kind of object current argument represents
+			_String nmspaced = AppendContainerName(*currentArgument,chain.nameSpacePrefix);
+			f = FindDataSetName (nmspaced);
+			if (f>=0) // DataSet variable
+			{
+				_DataSet* dataSetObject = (_DataSet*)dataSetList(f);
+				if (sID>=0 && sID<dataSetObject->NoOfSpecies())
+					result = *(_String*)(dataSetObject->GetNames())(sID);
 				else
 				{
-					_List filterSeqNames;
-					for (f=0; f<dataSetFilterObject->NumberSpecies(); f++)
-						filterSeqNames << (dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(f));
-					theReceptacle->SetValue (new _Matrix (filterSeqNames), false);
+					theReceptacle->SetValue (new _Matrix (dataSetObject->GetNames()), false);
 					return;
 				}
-				
 			}
-			else // not a data set filter
+			else
 			{
-				f = likeFuncNamesList.Find (&nmspaced);
-				long g = -1;
-					 
-				if (f<0) // not a regular likelihood function
+				f = FindDataSetFilterName (nmspaced);
+				if (f>=0) // DateSetFilter variable
 				{
-#if defined __AFYP_REWRITE_BGM__
-					f = bgmNamesList.Find (&nmspaced);
-					if (f >= 0)	// it's a BGM, export node score cache
-					{
-						_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
-						
-						switch (sID)
-						{
-							case 0:		// return associative list containing node score cache
-							{
-								_AssociativeList		* export_alist	= new _AssociativeList;
-								
-								if (this_bgm -> ExportCache (export_alist))
-								{
-									theReceptacle -> SetValue (export_alist, false);
-								}
-								else
-								{
-									errMsg = _String("Failed to export node score cache.");
-									ReportWarning (errMsg);
-								}
-								
-								return;
-							}
-							case 1:		// return associative list with network structure and parameters
-							{
-								this_bgm -> SerializeBGM (result);
-								_FString * resObj = new _FString (result);
-								checkPointer (resObj);
-								theReceptacle->SetValue (resObj,false);
-								return;
-							}	
-							default:
-							{
-								errMsg = _String ("Unrecognized index ") & sID & "in call to GetString on BGM object";
-								WarnError (errMsg);
-								return;
-							}
-						}
-						
-					}
+					_DataSetFilter* dataSetFilterObject = (_DataSetFilter*)dataSetFilterList(f);
+					if (sID >=0 && sID<dataSetFilterObject->NumberSpecies())
+						result = *(_String*)(dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(sID));
 					else
 					{
-						g = FindSCFGName (nmspaced);
-						f = g;
-					}
-#else
-					g = FindSCFGName (nmspaced);
-					f = g;
-#endif
-				}
-				if (f>=0)
-				{
-					_LikelihoodFunction *lf = (_LikelihoodFunction*)(g>=0?scfgList(f):likeFuncList(f));
-					if (sID>=0)
-					{
-						if (sID<lf->GetIndependentVars().lLength)
-							result = *(LocateVar(lf->GetIndependentVars().lData[sID])->GetName());
-						else
-						{
-							if (sID<lf->GetIndependentVars().lLength+lf->GetDependentVars().lLength)
-								result = *(LocateVar(lf->GetDependentVars().lData[sID-lf->GetIndependentVars().lLength])->GetName());
-							else
-							{
-								errMsg = _String(sID) & " is too high an index in call to GetString for likelihood function ";
-								errMsg = errMsg&*(_String*)likeFuncNamesList(f);
-								ReportWarning(errMsg);
-							}
-						}
-					}
-					else
-					// return the AVL with parameters
-					// AVL will have 8 entries 
-						// "Categories"
-						// "Global Independent"
-						// "Global Constrained"
-						// "Local Independent"
-						// "Local Constrained"
-						// "Trees"
-						// "Models"
-						// "Base frequencies"
-						// "Datafilters"
-						// "Compute Template"
-					{
-						_AssociativeList * resList = new _AssociativeList;
-						
-						_SimpleList		    *vl,
-											v1,
-											v2,
-											v3,
-											v4,
-											v5,
-											v6;
-						_List				modelList;
-											
-						InsertVarIDsInList (resList, "Categories", lf->GetCategoryVars ());
-						
-						vl = &lf->GetIndependentVars ();
-						for (long k=0; k<vl->lLength; k++)
-							if (LocateVar (vl->lData[k])->IsGlobal())
-								v1 << vl->lData[k];
-							else
-								v3 << vl->lData[k];
-						
-						vl = &lf->GetDependentVars ();
-						for (long m=0; m<vl->lLength; m++)
-							if (LocateVar (vl->lData[m])->IsGlobal())
-								v2 << vl->lData[m];
-							else
-								v4 << vl->lData[m];
-							
-							
-						vl = &lf->GetTheTrees ();
-						for (long n=0; n<vl->lLength; n++)
-						{
-							v5 << vl->lData[n];
-							_SimpleList partModels;
-							((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
-							if (partModels.lLength == 1)
-								modelList << modelNames (partModels.lData[0]);
-							else
-								modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
-						}
-						
-
-						vl = &lf->GetTheFilters ();
-						for (long p=0; p<vl->lLength; p++)
-							v6 << vl->lData[p];
-
-						InsertVarIDsInList (resList, "Global Independent", v1);
-						InsertVarIDsInList (resList, "Global Constrained", v2);
-						InsertVarIDsInList (resList, "Local Independent", v3);
-						InsertVarIDsInList (resList, "Local Constrained", v4);
-						InsertVarIDsInList (resList, "Trees", v5);
-						InsertVarIDsInList (resList, "Base frequencies", lf->GetBaseFreqs());
-						InsertStringListIntoAVL (resList, "Datafilters", v6, dataSetFilterNamesList);
-						{
-							_SimpleList indexer (modelList.lLength,0,1);
-							InsertStringListIntoAVL		(resList, "Models", indexer, modelList);
-						}
-						
-						_FString		aKey,
-										ct;
-						_Formula		*computeT = lf->HasComputingTemplate();
-						*ct.theString = computeT?(_String*)computeT->toStr():new _String;
-						*aKey.theString = "Compute Template";
-						resList->MStore (&aKey,&ct,true);
-						if (g>=0)
-							((Scfg*)lf)->AddSCFGInfo (resList);
-						
-						theReceptacle->SetValue (resList,false);
+						_List filterSeqNames;
+						for (f=0; f<dataSetFilterObject->NumberSpecies(); f++)
+							filterSeqNames << (dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(f));
+						theReceptacle->SetValue (new _Matrix (filterSeqNames), false);
 						return;
 					}
+					
 				}
-				else
+				else // not a data set filter
 				{
-					f = currentArgument->Equal(&lastModelParameterList)?lastMatrixDeclared:modelNames.Find(&nmspaced);
-
-					if (f>=0)
+					f = likeFuncNamesList.Find (&nmspaced);
+					long g = -1;
+						 
+					if (f<0) // not a regular likelihood function
 					{
-						if (sID>=0)
+	#if defined __AFYP_REWRITE_BGM__
+						f = bgmNamesList.Find (&nmspaced);
+						if (f >= 0)	// it's a BGM, export node score cache
 						{
-							_Variable*		theMx = LocateVar (modelMatrixIndices.lData[f]);
+							_BayesianGraphicalModel	* this_bgm		= (_BayesianGraphicalModel *) bgmList (f);
 							
-							if (sID2 < 0) // get the sID's parameter name
+							switch (sID)
 							{
-								_SimpleList		modelP;
-								_AVLList		modelPA (&modelP);
-								theMx->ScanForVariables(modelPA,false);
-								modelPA.ReorderList();
-								if (sID<modelP.lLength)
-									result = *LocateVar(modelP.lData[sID])->GetName();
-								else
+								case 0:		// return associative list containing node score cache
 								{
-									errMsg = _String(sID) & " is too high a parameter index in call to GetString for model ";
-									errMsg = errMsg&*(_String*)modelNames(f);
-									ReportWarning(errMsg);
-								}		
+									_AssociativeList		* export_alist	= new _AssociativeList;
+									
+									if (this_bgm -> ExportCache (export_alist))
+									{
+										theReceptacle -> SetValue (export_alist, false);
+									}
+									else
+									{
+										errMsg = _String("Failed to export node score cache.");
+										ReportWarning (errMsg);
+									}
+									
+									return;
+								}
+								case 1:		// return associative list with network structure and parameters
+								{
+									this_bgm -> SerializeBGM (result);
+									_FString * resObj = new _FString (result);
+									checkPointer (resObj);
+									theReceptacle->SetValue (resObj,false);
+									return;
+								}	
+								default:
+								{
+									errMsg = _String ("Unrecognized index ") & sID & "in call to GetString on BGM object";
+									WarnError (errMsg);
+									return;
+								}
 							}
-							else // get the formula for cell (sID, sID2)
-							{
-								_Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
-								if (cellFla)
-									result.CopyDynamicString ((_String*)cellFla->toStr(),true);
-							}
-
+							
 						}
 						else
 						{
-							_Variable	* tV  = LocateVar(modelMatrixIndices.lData[f]),
-							* tV2;
-							
-							bool		 mByF = true;
-							
-							long freqID = modelFrequenciesIndices.lData[f];
-							
-							if (freqID>=0)
-								tV2 = LocateVar(freqID);
+							g = FindSCFGName (nmspaced);
+							f = g;
+						}
+	#else
+						g = FindSCFGName (nmspaced);
+						f = g;
+	#endif
+					}
+					if (f>=0) // LikelihoodFunction
+					{
+						_LikelihoodFunction *lf = (_LikelihoodFunction*)(g>=0?scfgList(f):likeFuncList(f));
+						if (sID>=0)
+						{
+							if (sID<lf->GetIndependentVars().lLength)
+								result = *(LocateVar(lf->GetIndependentVars().lData[sID])->GetName());
 							else
 							{
-								mByF = false;
-								tV2 = LocateVar(-freqID-1);
+								if (sID<lf->GetIndependentVars().lLength+lf->GetDependentVars().lLength)
+									result = *(LocateVar(lf->GetDependentVars().lData[sID-lf->GetIndependentVars().lLength])->GetName());
+								else
+								{
+									errMsg = _String(sID) & " is too high an index in call to GetString for likelihood function ";
+									errMsg = errMsg&*(_String*)likeFuncNamesList(f);
+									ReportWarning(errMsg);
+								}
 							}
-							if (sID == -1) // branch length expression
-								result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
-							else 
-							/* 
-								returns an AVL with keys
-								"RATE_MATRIX" - the ID of the rate matrix
-								"EQ_FREQS"	  - the ID of eq. freq. vector
-								"MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
-							*/
+						}
+						else
+						// return the AVL with parameters
+						// AVL will have 8 entries 
+							// "Categories"
+							// "Global Independent"
+							// "Global Constrained"
+							// "Local Independent"
+							// "Local Constrained"
+							// "Trees"
+							// "Models"
+							// "Base frequencies"
+							// "Datafilters"
+							// "Compute Template"
+						{
+							_AssociativeList * resList = new _AssociativeList;
+							
+							_SimpleList		    *vl,
+												v1,
+												v2,
+												v3,
+												v4,
+												v5,
+												v6;
+							_List				modelList;
+												
+							InsertVarIDsInList (resList, "Categories", lf->GetCategoryVars ());
+							
+							vl = &lf->GetIndependentVars ();
+							for (long k=0; k<vl->lLength; k++)
+								if (LocateVar (vl->lData[k])->IsGlobal())
+									v1 << vl->lData[k];
+								else
+									v3 << vl->lData[k];
+							
+							vl = &lf->GetDependentVars ();
+							for (long m=0; m<vl->lLength; m++)
+								if (LocateVar (vl->lData[m])->IsGlobal())
+									v2 << vl->lData[m];
+								else
+									v4 << vl->lData[m];
+								
+								
+							vl = &lf->GetTheTrees ();
+							for (long n=0; n<vl->lLength; n++)
 							{
-								_AssociativeList * resList = new _AssociativeList;
-								resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
-								resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
-								resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
-								theReceptacle->SetValue (resList,false);
-								return;
+								v5 << vl->lData[n];
+								_SimpleList partModels;
+								((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
+								if (partModels.lLength == 1)
+									modelList << modelNames (partModels.lData[0]);
+								else
+									modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
 							}
+							
+
+							vl = &lf->GetTheFilters ();
+							for (long p=0; p<vl->lLength; p++)
+								v6 << vl->lData[p];
+
+							InsertVarIDsInList (resList, "Global Independent", v1);
+							InsertVarIDsInList (resList, "Global Constrained", v2);
+							InsertVarIDsInList (resList, "Local Independent", v3);
+							InsertVarIDsInList (resList, "Local Constrained", v4);
+							InsertVarIDsInList (resList, "Trees", v5);
+							InsertVarIDsInList (resList, "Base frequencies", lf->GetBaseFreqs());
+							InsertStringListIntoAVL (resList, "Datafilters", v6, dataSetFilterNamesList);
+							{
+								_SimpleList indexer (modelList.lLength,0,1);
+								InsertStringListIntoAVL		(resList, "Models", indexer, modelList);
+							}
+							
+							_FString		aKey,
+											ct;
+							_Formula		*computeT = lf->HasComputingTemplate();
+							*ct.theString = computeT?(_String*)computeT->toStr():new _String;
+							*aKey.theString = "Compute Template";
+							resList->MStore (&aKey,&ct,true);
+							if (g>=0)
+								((Scfg*)lf)->AddSCFGInfo (resList);
+							
+							theReceptacle->SetValue (resList,false);
+							return;
 						}
 					}
 					else
 					{
-						if (currentArgument->Equal(&versionString))
+						f = currentArgument->Equal(&lastModelParameterList)?lastMatrixDeclared:modelNames.Find(&nmspaced);
+
+						if (f>=0)
+							// a model
 						{
-							if (sID > 1.5)
-							#ifdef __HEADLESS__
-								result = _String ("Library version ") & __KERNEL__VERSION__;
-							#else
-								#ifdef __MAC__
-									result = _String("Macintosh ") & __KERNEL__VERSION__;
-								#else
-									#ifdef __WINDOZE__
-										result = _String("Windows ") & __KERNEL__VERSION__;
-									#else
-										result = _String("Source ") & __KERNEL__VERSION__;
-									#endif
-								#endif
-							#endif
+							if (sID>=0)
+							{
+								_Variable*		theMx = LocateVar (modelMatrixIndices.lData[f]);
+								
+								if (sID2 < 0) // get the sID's parameter name
+								{
+									_SimpleList		modelP;
+									_AVLList		modelPA (&modelP);
+									theMx->ScanForVariables(modelPA,false);
+									modelPA.ReorderList();
+									if (sID<modelP.lLength)
+										result = *LocateVar(modelP.lData[sID])->GetName();
 									else
-										if (sID > 0.5)
-											result = GetVersionString();
-										else
-											result = __KERNEL__VERSION__;
-						}
-						else
-							if (currentArgument->Equal(&timeStamp))
-								result = GetTimeStamp(sID < 0.5);
+									{
+										errMsg = _String(sID) & " is too high a parameter index in call to GetString for model ";
+										errMsg = errMsg&*(_String*)modelNames(f);
+										ReportWarning(errMsg);
+									}		
+								}
+								else // get the formula for cell (sID, sID2)
+								{
+									_Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
+									if (cellFla)
+										result.CopyDynamicString ((_String*)cellFla->toStr(),true);
+								}
+
+							}
 							else
 							{
-								f = LocateVarByName (*currentArgument);
-								if (f>=0)
-								{
-									f = variableNames.GetXtra(f);									
-									
-									_Variable* theVar = LocateVar (f);
-									
-									_String* theStr;
-									if (theVar->IsIndependent())
-										theStr = (_String*)theVar->toStr();
-									else
-										theStr = (_String*)theVar->GetFormulaString ();
-										
-									result = *theStr;
-									DeleteObject (theStr);
-								}
+								_Variable	* tV  = LocateVar(modelMatrixIndices.lData[f]),
+								* tV2;
+								
+								bool		 mByF = true;
+								
+								long freqID = modelFrequenciesIndices.lData[f];
+								
+								if (freqID>=0)
+									tV2 = LocateVar(freqID);
 								else
 								{
-									errMsg = *currentArgument & " is not a validly defined object in call to GetString";
-									ReportWarning (errMsg);
+									mByF = false;
+									tV2 = LocateVar(-freqID-1);
+								}
+								if (sID == -1) // branch length expression
+									result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
+								else 
+								/* 
+									returns an AVL with keys
+									"RATE_MATRIX" - the ID of the rate matrix
+									"EQ_FREQS"	  - the ID of eq. freq. vector
+									"MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+								*/
+								{
+									_AssociativeList * resList = new _AssociativeList;
+									resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
+									resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
+									resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
+									theReceptacle->SetValue (resList,false);
+									return;
 								}
 							}
-					}				
+						}
+						else
+						{
+							if (currentArgument->Equal(&versionString))
+							{
+								if (sID > 1.5)
+								#ifdef __HEADLESS__
+									result = _String ("Library version ") & __KERNEL__VERSION__;
+								#else
+									#ifdef __MAC__
+										result = _String("Macintosh ") & __KERNEL__VERSION__;
+									#else
+										#ifdef __WINDOZE__
+											result = _String("Windows ") & __KERNEL__VERSION__;
+										#else
+											result = _String("Source ") & __KERNEL__VERSION__;
+										#endif
+									#endif
+								#endif
+										else
+											if (sID > 0.5)
+												result = GetVersionString();
+											else
+												result = __KERNEL__VERSION__;
+							}
+							else
+								if (currentArgument->Equal(&timeStamp))
+									result = GetTimeStamp(sID < 0.5);
+								else
+								{
+									_Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
+									if (theVar)
+									{
+										_String* theStr = nil;
+										if (theVar->IsIndependent())
+											theStr = (_String*)theVar->toStr();
+										else
+										{
+											if (sID < -1.)
+												// list of variables
+											{
+												_SimpleList vL; 
+												_AVLList	vAVL (&vL);
+												theVar->ScanForVariables (vAVL, sID > -2.5);
+												vAVL.ReorderList();
+												_AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
+												InsertVarIDsInList (resL, "DEPENDANCIES", vL);
+												theReceptacle->SetValue (resL,false);
+												return;
+											}
+																								
+											else	// formula string
+												theStr = (_String*)theVar->GetFormulaString ();
+										}
+											
+										result.CopyDynamicString(theStr, true);
+									}
+									else
+									{
+										errMsg = *currentArgument & " is not a validly defined object in call to GetString";
+										ReportWarning (errMsg);
+									}
+								}
+						}				
+					}
 				}
 			}
 		}
