@@ -223,11 +223,85 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 
 /*--------------------------------------------------------------------------------------------------------------------------*/
 
+function PSHistogram			(x,				 /* the observations to histogram */
+								bins,			/* how many bins? <=1 to auto-detect; FreedmanÐDiaconis */
+								mode,			/* if 0, plot bin counts; if 1, plot bin weights */
+								fontFace,		/* use this font */
+								plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points 
+											*/
+								colors, 		/* a 1x3 matrix of RGB colors to plot each bar with */
+								labels,  		/* 3x1 matrix of strings: plot-label, x-axis label, y-axis label*/
+							 	doWrappers,   /* should PS prefix and suffix be included */
+							)
+{
+	observationCount = Rows (x) * Columns (x);
+	if (observationCount > 0)
+	{
+		if (Columns (x) != 1)
+		{
+			bins = {observationCount,1};
+			for (_x = 0; _x < observationCount; _x = _x+1)
+			{
+				bins [_x] = x [_x]; 
+			}
+			x = bins;
+		}
+		x = x % 0;
+		
+		x_min   = x[0];
+		x_range = x[observationCount-1]-x_min;
+		if (bins < 1)
+		{
+			x_step = 2*(x[Min(observationCount*3$4+1,observationCount-1)]-x[observationCount$4])/observationCount^(1/3);
+			bins = x_range/x_step$1+1;
+		}
+		if (bins < 1)
+		{
+			bins = 1;
+		}
+				
+		x_step	= x_range/bins;
+		
+		if (x_step == 0.)
+		{
+			x_step = 1;
+		}
+		
+		binnedData = {bins,2};
+		
+		for (_x = 0; _x < observationCount; _x = _x+1)
+		{
+			_y = ((x[_x] - x_min)/x_step)$1;
+			_y = Min(_y,bins-1);
+			
+			binnedData [_y][1] = binnedData[_y][1] + 1;
+		}
+
+		if (mode == 1)
+		{
+			binnedData = binnedData * (1/observationCount);
+		}
+
+		for (_x = 0; _x < bins; _x = _x+1)
+		{	
+			binnedData [_x][0] = x_step*(_x);
+		}
+		
+		localPD = {1,4};
+		localPD[0] = plotDim[0]; localPD[1] = plotDim[1]; localPD[2] = plotDim[2]; localPD[3] = x_step;
+
+		return StackedBarPlot ("binnedData", {{0,0}{0,0}}, fontFace, localPD, colors, labels, {}, doWrappers, 0);
+	}
+	return 0;
+}
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
 function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
 							  				   will be adjusted to cover the data in xy if needed*/
 							  fontFace,		/* use this font */
-							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points 
+							  plotDim, 		/* 1x3/4 matrix {{width, height,font_size,solid_border}} of the plot in points 
 							  			    */
 							  colors, 		/* Kx3 matrix of RGB colors to plot each point with */
 							  labels,  		/* 3x1 matrix of strings: plot-label, x-axis label, y-axis label*/
@@ -251,6 +325,8 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	yMin		= xyranges[1][0];
 	yMax		= xyranges[1][1];
 	
+	doSolidPlots = (Columns (plotDim) == 4);
+	
 	_yColumns     		 = Columns (xy)-1-(lastLabelSP>0);
 
 	legendWidth		   = 0;
@@ -270,8 +346,8 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 
 	plotSpanX	= plotWidth;
 	plotSpanY   = plotHeight;
-	plotWidth   = plotWidth  - 5*plotDim[2]-legendWitdh;
-	plotHeight	= plotHeight - 4*plotDim[2];
+	plotWidth   = plotWidth  - 5.5*plotDim[2]-legendWitdh;
+	plotHeight	= plotHeight - 4.5*plotDim[2];
 	
 	if (doWrappers)
 	{
@@ -285,7 +361,6 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 	
 	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
 	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
-	
 	
 	_x 		      		 = Rows (xy);
 	_yTotalHeight 		 = {1,_x};
@@ -313,6 +388,11 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 			yMax = Max(yMax,xy[_dataPoint][_yIterator]);	
 		}
 	}
+
+	if (doSolidPlots)
+	{
+		xMax = xMax + plotDim[3];
+	}
 		
 	/*diff = (yMax-yMin) - (xMax-xMin);
 	if (diff > 0)
@@ -326,13 +406,12 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 		yMax = yMax - diff/2;
 	}*/
 
-	plotWidth 	= plotWidth  - 2;
-	plotHeight  = plotHeight - 2;
-	px 			= plotWidth /(xMax - xMin + barWidth);
+	plotWidth 	= plotWidth  - 2*(doSolidPlots==0);
+	plotHeight  = plotHeight - 2*(doSolidPlots==0);
+	px 			= plotWidth /(xMax - xMin + barWidth*(doSolidPlots==0));
 	py 			= plotHeight/(yMax - yMin);
 	barWidth 	= barWidth * px;
-	xShift		= 1;	
-	
+	xShift		= doSolidPlots==0;
 	
 	if (Rows(colors) == 0)
 	{
@@ -347,16 +426,30 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 		myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px+xShift;
 		myY_coord = plotOriginY;
 		
+		
 		for (_yIterator = 0; _yIterator < _yColumns; _yIterator = _yIterator + 1)
 		{	
 			_rectHeight = xy[_dataPoint][_yIterator+1]*py;
 			if (_rectHeight > 0)
 			{
 				psDensityPlot * (""+ colors[_yIterator][0] + " " + colors[_yIterator][1] + " " + colors[_yIterator][2] + " setrgbcolor\n");
-				psDensityPlot * (""+ myX_coord + " " + myY_coord + " " + barWidth*1.5 + " " + _rectHeight + " rectfill\n");
+				if (doSolidPlots)
+				{
+					psDensityPlot * (""+ myX_coord + " " + myY_coord + " " + barWidth + " " + _rectHeight + " rectfill\n");
+				}
+				else
+				{
+					psDensityPlot * (""+ myX_coord + " " + myY_coord + " " + barWidth * 1.5 + " " + _rectHeight + " rectfill\n");
+				}
 				myY_coord = myY_coord + _rectHeight;
 			}
-		}									
+		}		
+		
+		if (doSolidPlots)
+		{
+			psDensityPlot * (""+ colors[_yColumns][0] + " " + colors[_yColumns][1] + " " + colors[_yColumns][2] + " setrgbcolor\n");
+			psDensityPlot * (""+ myX_coord + " " + plotOriginY + " " + barWidth  + " " + (myY_coord - plotOriginY) + " rectstroke\n");
+		}
 	}	
 	
 	if (lastLabelSP)
@@ -948,11 +1041,28 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
 							  				   will be adjusted to cover the data in xy if needed*/
 							  fontFace, 	/* font to use for plotting */
-							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points */
+							  plotDim, 		/* 1x3 matrix {{width, height,font_size,[optional dot size]}} of the plot in points */
 							  colors, 		/* Kx3 matrix of RGB colors to plot each point with; pass an empty matrix to use defaults */
 							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
 							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode (Impulse to connect to the x-axis; dots otherwise */,
 							  doWrappers    /* should PS prefix and suffix be included */
+							  )
+{
+	return SimpleGraph2 ("xy", xyranges, fontFace, plotDim, colors, labels, seriesLabels, doWrappers,0);
+}
+							  
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
+function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
+							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
+							  				   will be adjusted to cover the data in xy if needed*/
+							  fontFace, 	/* font to use for plotting */
+							  plotDim, 		/* 1x3 matrix {{width, height,font_size,[optional dot size]}} of the plot in points */
+							  colors, 		/* Kx3 matrix of RGB colors to plot each point with; pass an empty matrix to use defaults */
+							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
+							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode (Impulse to connect to the x-axis; dots otherwise */,
+							  doWrappers    /* should PS prefix and suffix be included */,
+							  enforceSym	/* enforce the same x-y scale and dimensions; draw diagonal */
 							  )
 {
 	
@@ -989,10 +1099,17 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		legendWitdh = legendWitdh + 2*plotDim[2];
 	}
 	
+	if (enforceSym)
+	{
+		plotHeight = Max(plotHeight,plotWidth);
+		plotWidth  = plotHeight;
+	}
+
 	plotSpanX	= plotWidth;
 	plotSpanY   = plotHeight;
 	plotWidth   = plotWidth  - 5*plotDim[2]-legendWitdh;
 	plotHeight	= plotHeight - 4*plotDim[2];
+
 
 	if (doWrappers)
 	{
@@ -1036,6 +1153,7 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		psDensityPlot * (""+ colors[_seriesCount-1][0] + " " + colors[_seriesCount-1][1] + " " + colors[_seriesCount-1][2] + " setrgbcolor\n");		
 		
 		_doImpulse 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "IMPULSE");
+		_doDots 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "DOTS");
 		
 		
 		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
@@ -1054,12 +1172,23 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 			}
 			else
 			{
-				if (_dataPoint)
+				if (_doDots)
 				{
+					
 					psDensityPlot * ("newpath " + (myX_coord) + " " 
-												+ (myY_coord) + " moveto " 
-												+ (last_myX_coord) + " " 
-												+ (last_myY_coord) + " lineto stroke\n" );	
+												+ (myY_coord) + " " 
+												+ plotDim[3] + " " 
+												+ " 0 360 arc stroke\n");
+				}
+				else
+				{
+					if (_dataPoint)
+					{
+						psDensityPlot * ("newpath " + (myX_coord) + " " 
+													+ (myY_coord) + " moveto " 
+													+ (last_myX_coord) + " " 
+													+ (last_myY_coord) + " lineto stroke\n" );	
+					}
 				}
 				last_myX_coord = myX_coord;
 				last_myY_coord = myY_coord;
@@ -1091,7 +1220,15 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	
 	
 	yscaler = determineCoordinateTicks (yMin,yMax);
+	
+	
 	_y	= ((yMin/yscaler)$1)*yscaler;
+
+	if (xMin == yMin)
+	{
+		_y = _y + yscaler;	
+	}
+
 	while (_y < yMax)
 	{
 		yStep = (plotOriginY + py*(_y-yMin));
@@ -1126,6 +1263,13 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 			yLoc = yLoc - plotDim[2] * 1.5;
 			
 		}
+	}
+
+	if (enforceSym)
+	{
+		xMin = Min (xMin, yMin); yMin = xMin;
+		xMax = Max (xMax, yMax); yMax = xMax;
+		psDensityPlot * ("\n [2] 0 setdash 0.5 0.5 0.5 setrgbcolor " + plotOriginX + " " + plotOriginY + " moveto " + plotWidth + " " + plotHeight + " rlineto stroke [] 0 setdash 0 0 0 setrgbcolor \n");
 	}
 
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");

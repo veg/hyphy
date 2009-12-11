@@ -253,7 +253,7 @@ function ReceiveJobs (sendOrNot, ji)
 			MasterList [sortedBP] = myAIC;
 		}
 		
-		fprintf (detailsOutputFile,"\n{{",myLFScore,",",myDF,",",-myAIC);
+		fprintf (detailsOutputFile,"\n{{",Format(myLFScore,20,15),",",myDF,",",Format(-myAIC,20,15));
 		if (MPI_NODE_COUNT > 1)
 		{
 			for (spoolC = 0; spoolC < lf_MLES[1][1]; spoolC = spoolC + 1)
@@ -891,7 +891,7 @@ sortedScores[0][1] = 0;
 currentPopulation [0] = {stateVectorDimension,1};
 
 ExportAMatrix (detailsOutputFile,StringToMatrix(currentPopulation[0]),0,0);
-fprintf		  (detailsOutputFile,"\n{{",res[1][0],",",baseParams,",",crapAIC);
+fprintf		  (detailsOutputFile,"\n{{",Format(res[1][0],20,15),",",baseParams,",",Format(crapAIC,20,15));
 ExecuteCommands ("fprintf(detailsOutputFile,\",\",R);");
 fprintf (detailsOutputFile,"}}\n");
 
