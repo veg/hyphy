@@ -253,7 +253,7 @@ function ReceiveJobs (sendOrNot, ji)
 			MasterList [sortedBP] = myAIC;
 		}
 		
-		fprintf (detailsOutputFile,"\n{{",Format(myLFScore,20,15),",",myDF,",",Format(-myAIC,20,15));
+		fprintf (detailsOutputFile,"\n{{",Format(myLFScore,25,10),",",myDF,",",Format(-myAIC,25,10));
 		if (MPI_NODE_COUNT > 1)
 		{
 			for (spoolC = 0; spoolC < lf_MLES[1][1]; spoolC = spoolC + 1)
@@ -587,12 +587,24 @@ function UpdateBL (dummy)
 	vectorOfFrequencies                     = BuildCodonFrequencies (positionFrequencies);
 	modelFreqSpec							= "observedFreq = " + positionFrequencies + ";\nvectorOfFrequencies = " + vectorOfFrequencies + ";\n";
 	global									 mgPlainFactor = FindBranchLengthExpression(0,"MG94MLEFREQS");
+	
+	myLFScore								 = res[1][0];
 	myDF									 = res[1][1];	
 	myAIC 	  								 = -returnIC(res[1][0],myDF,sampleCount);
-	fprintf									 (stdout, "\nUpdated BLs\nDelta IC = ", Format(myAIC-sortedScores[populationSize-1][0],20,5), "\n", lf, "\n", positionFrequencies, "\n", mgPlainFactor, "\n");
+	
+	fprintf									 (stdout, "\nUpdated BLs\nDF=", myDF,"\nDelta IC = ", Format(myAIC-sortedScores[populationSize-1][0],20,5), "\n", lf, "\n", positionFrequencies, "\n", mgPlainFactor, "\n");
 	sortedScores[populationSize-1][0] 		 = myAIC;
 	MasterList[sampleString] 				 = myAIC;
-	
+			
+	ExportAMatrix (detailsOutputFile,StringToMatrix(currentPopulation[bestInd]),0,0);	
+	fprintf (detailsOutputFile,"\n{{",Format(myLFScore,25,10),",",myDF,",",Format(-myAIC,25,10));
+
+	for (spoolC = 0; spoolC <= myDF-baseParams; spoolC = spoolC + 1)
+	{
+		execCommand = "fprintf(detailsOutputFile,\",\",NSR"+spoolC+");";
+		ExecuteCommands (execCommand);
+	}
+	fprintf (detailsOutputFile,"}}\n");	
 
 	return 0;
 }
@@ -891,8 +903,8 @@ sortedScores[0][1] = 0;
 currentPopulation [0] = {stateVectorDimension,1};
 
 ExportAMatrix (detailsOutputFile,StringToMatrix(currentPopulation[0]),0,0);
-fprintf		  (detailsOutputFile,"\n{{",Format(res[1][0],20,15),",",baseParams,",",Format(crapAIC,20,15));
-ExecuteCommands ("fprintf(detailsOutputFile,\",\",R);");
+fprintf		  (detailsOutputFile,"\n{{",Format(res[1][0],25,10),",",baseParams,",",Format(crapAIC,25,10));
+ExecuteCommands ("fprintf(detailsOutputFile,\",\",NSR0);");
 fprintf (detailsOutputFile,"}}\n");
 
 

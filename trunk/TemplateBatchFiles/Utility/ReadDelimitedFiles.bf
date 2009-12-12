@@ -229,9 +229,19 @@ function extractAllExpressions (_string, _splitter, _subexpression)
 	_splitBits = {};
 	if (_matched [0] >= 0)
 	{
-		for (_mc = 0; _mc < Rows (_matched); _mc = _mc+2)
+		if (Abs(_subexpression))
 		{
-			_splitBits [Abs(_splitBits)] = extractSubexpressions(_string[_matched[_mc]][_matched[_mc+1]],_subexpression,1,"");
+			for (_mc = 0; _mc < Rows (_matched); _mc = _mc+2)
+			{
+				_splitBits [Abs(_splitBits)] = extractSubexpressions(_string[_matched[_mc]][_matched[_mc+1]],_subexpression,1,"");
+			}
+		}
+		else
+		{
+			for (_mc = 0; _mc < Rows (_matched); _mc = _mc+2)
+			{
+				_splitBits [Abs(_splitBits)] = _string[_matched[_mc]][_matched[_mc+1]];
+			}		
 		}
 	}
 	return _splitBits;

@@ -16,6 +16,7 @@ ExecuteAFile ("ModelSelectorCodon.ibf");
 
 /****************************************************/
 
+autoSave = 1; /* do not prompt the user for file names */
 
 ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "DBTools.ibf");
 /* need this include to generate output tables file paths */
@@ -72,6 +73,8 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	/* first pass to determine the best AIC score
 	   and to identify the criterion for inclusion in the credible set of models
 	*/
+	
+	byRateBestIC = {};
 
 	while (!END_OF_FILE)
 	{
@@ -86,6 +89,14 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		
 		modelAIC				   = rateInfo[2];
 		modelRates				   = Columns(rateInfo)-3;
+		if (byRateBestIC[modelRates] == 0)
+		{
+			byRateBestIC[modelRates] = rateInfo[0];
+		}
+		else
+		{
+			byRateBestIC[modelRates] = Max(rateInfo[0],byRateBestIC[modelRates]);
+		}
 		byRateClass [modelRates]   = byRateClass[modelRates] + 1;
 		
 		if (modelAIC < bestScore)
@@ -102,7 +113,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	ratesRead   = avlKeysToMatrix (byRateClass);
 	scoreCutoff = bestScore-2*Log(evidenceRCut);
 	fprintf (stdout, "\tRead ", modelCount, " models\n",
-					 "\tBest score = ", bestScore," achieved with ", bestRates, " rates\n",
+					 "\tBest score = ", Format(bestScore,15,4), " achieved with ", bestRates, " rates\n",
 					 "\tScore cutoff of ", scoreCutoff, " to be included in the credible set at ", evidenceRCut, " level \n",
 					 "\t", Abs (byRateClass), " different rate counts\n"
 					 );
@@ -111,11 +122,8 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	{
 		fprintf (stdout, "\t", Format(byRateClass[ratesRead[k]],8,0), " models with ", Format(ratesRead[k],4,0), " rate classes\n");
 	}
-
-	/* hack to reset END_OF_FILE */
-
-	sscanf (aminoacidOrdering,"String",k);
-	sscanf (detailedFile, "String", k); 
+	
+	sscanf (detailedFile, REWIND, "String", k); 
 
 	/*-----------------------------------------------------------------------------*/
 
@@ -184,6 +192,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 				{
 					bestModelByRate [compressedM[k]] = bestModelByRate [compressedM[k]] + 1;
 				}
+				
 			}
 
 			classMatrices[modelCount]   			= classMatrix;
@@ -199,6 +208,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	for (k=0; k<Abs(byRateClass); k=k+1)
 	{
 		fprintf (stdout, "\t", Format(byRateClass[ratesRead[k]],8,0), " models with ", Format(ratesRead[k],4,0), " rate classes\n");
+		fprintf (stdout, "\t Best model score in this class: ", byRateBestIC[ratesRead[k]], "\n");
 	}
 
 	fprintf (stdout, "\tThe best model has the following rate class assignments\n");
@@ -207,10 +217,11 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		fprintf (stdout, "\tRate ", Format(bestNRates[k+3],8,4), " with ", Format(bestModelByRate[bestNRates[k+3]],4,0), " substitutions\n");
 	}
 
-	bestMatrix 	  = classMatrices[bestModelID];
+	bestClassMatrix 	  = classMatrices[bestModelID];
+	bestRateMatrix		  = rateMatrices [bestModelID];
 
 	DEFAULT_FILE_SAVE_NAME = file_name + ".best_matrix";
-	ExportAMatrix ("bestMatrix","","Save the best-scoring matrix to:");
+	ExportAMatrix ("bestClassMatrix","","Save the best-scoring matrix to:");
 
 	/*-----------------------------------------------------------------------------*/
 
@@ -239,8 +250,16 @@ if (_TableExists (resultsDatabase,"DATASET"))
 
 	DEFAULT_FILE_SAVE_NAME = file_name + "_reliability.csv";
 	SerDialogPrompt ("Save the top-N model .csv to:");
-	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Mean,Median,2.5%,97.5%,Variance,COV,Unreliable\n");
-
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Mean,Median,2.5%,97.5%,Variance,COV,Unreliable\n");	
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Mean,Median,2.5%,97.5%,Variance,COV,Unreliable\n");
+		fileName = LAST_FILE_PATH;
+	}
 	for (aa1=0;aa1<20;aa1=aa1+1)
 	{
 		for (aa2=aa1+1;aa2<20;aa2=aa2+1)
@@ -253,7 +272,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 					rateInfo[k] = (rateMatrices[k])[aa1][aa2];
 				}
 				stats = GatherDescriptiveStats (rateInfo);
-				fprintf (LAST_FILE_PATH,"\n",aminoacidOrdering[aa1],",",
+				fprintf (fileName,"\n",aminoacidOrdering[aa1],",",
 											 aminoacidOrdering[aa2],",",
 											 stats["Mean"],",",
 											 stats["Median"],",",
@@ -267,7 +286,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		}
 	}
 
-	fprintf (LAST_FILE_PATH,CLOSE_FILE);
+	fprintf (fileName,CLOSE_FILE);
 
 
 	/*-----------------------------------------------------------------------------*/
@@ -336,8 +355,16 @@ if (_TableExists (resultsDatabase,"DATASET"))
 
 	DEFAULT_FILE_SAVE_NAME = file_name + "_topModels.csv";
 	SetDialogPrompt ("Save the top-N model .csv to:");
-	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Rate,Model_Rank\n");
-
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Rate,Model_Rank\n");
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Rate,Model_Rank\n");
+		fileName = LAST_FILE_PATH;
+	}
 	for (aa1=0;aa1<20;aa1=aa1+1)
 	{
 		for (aa2=aa1+1;aa2<20;aa2=aa2+1)
@@ -346,21 +373,30 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			{
 				for (k=0; k<topNCount; k=k+1)
 				{
-					fprintf (LAST_FILE_PATH,"\n",aminoacidOrdering[aa1],",",aminoacidOrdering[aa2],",",(rateMatrices[topNList[k][1]])[aa1][aa2],",",k+1);
+					fprintf (fileName,"\n",aminoacidOrdering[aa1],",",aminoacidOrdering[aa2],",",(rateMatrices[topNList[k][1]])[aa1][aa2],",",k+1);
 				}
 			}
 		}
 	}
-	fprintf (LAST_FILE_PATH,CLOSE_FILE);
+	fprintf (fileName,CLOSE_FILE);
 	
 	DEFAULT_FILE_SAVE_NAME = file_name + "_init.models";
 	SetDialogPrompt ("Save the top-N models in a format suitable for seeding another GA run:");
-	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN);
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE,KEEP_OPEN);
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN);	
+		fileName = LAST_FILE_PATH;
+	}
 	for (k3=0; k3<topNCount; k3=k3+1)
 	{
-		fprintf (LAST_FILE_PATH,ConvertMatrixToStateVector(classMatrices[topNList[k3][1]]),"\n");
+		fprintf (fileName,ConvertMatrixToStateVector(classMatrices[topNList[k3][1]]),"\n");
 	}
-	fprintf (LAST_FILE_PATH,CLOSE_FILE);
+	fprintf (fileName,CLOSE_FILE);
 
 
 	/*-----------------------------------------------------------------------------*/
@@ -380,6 +416,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		/*matchCount 	   = ({1,stateVectorDimension}["1"]*(consensusStructure*{stateVectorDimension,1}["1"]))[0];
 		matchCount 	   = (matchCount-stateVectorDimension)/2;
 		fprintf (stdout, k, ":", matchCount, "\n");*/
+		
 		if (k!=bestModelID)
 		{
 			akaikeWeight       = Exp((bestScore-AICScores[k])*0.5);
@@ -388,25 +425,78 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		}
 	}
 
-	/*cntr = 0;
 
-	graphString = ""; graphString * 128; graphString * "graph G{\n";
-
-	for (aa1=0;aa1<stateVectorDimension;aa1=aa1+1)
+	
+		
+	
+	graphs = {};
+	for (k = 0; k < bestRates; k = k+1)
 	{
-		for (aa2=aa1+1;aa2<stateVectorDimension;aa2=aa2+1)
+		graphs[k] = ""; graphs[k] * 128; graphs[k] * ("graph G"+k+"{size = \"4,4\" ;\n subgraph cluster_0 {color = \"#AAAAAA\"; label = \"Rate  = " + bestNRates[k+3]+ "\" fontsize = \"24\"");
+	}
+
+	/*for (k=0; k<20; k=k+1)
+	{
+		graphString * ("\nsubgraph cluster_"+k+"{\n\""+aminoacidOrdering[k]+"\"[ shape = \"record\" label = \" <r0> ");
+		for (k2 = 1; k2 < bestRates; k2=k2+1)
 		{
-			if (consensusStructure[aa1][aa2] >= 0.95)
+			graphString * ("| <r" + k2 + ">");
+		}
+		graphString * ( "\"]; label = \""+aminoacidOrdering[k]+"\";} \n");	
+	}
+	
+	for (k=0; k<20; k=k+1)
+	{	
+		for (k2=k+1; k2<20; k2 = k2+1)
+		{
+			ratePlug = bestClassMatrix[k][k2];
+			if (ratePlug >=0)
 			{
-				graphString * (shortToLong[aa1]+"--"+shortToLong[aa2]+"\n");
+				graphString * ( aminoacidOrdering[k] + ": r" + ratePlug  +" -- " + aminoacidOrdering[k2] + ": r"+ratePlug + ";\n");
+			}
+		}
+	}*/
+
+	
+	for (k=0; k<20; k=k+1)
+	{	
+		for (k2=k+1; k2<20; k2 = k2+1)
+		{
+			ratePlug = bestClassMatrix[k][k2];
+			if (ratePlug >=0)
+			{
+				graphs[ratePlug] * ( aminoacidOrdering[k]  +" -- " + aminoacidOrdering[k2] + ";\n");
 			}
 		}
 	}
-	graphString * "\n}\n";
+	
+	for (k = 0; k < bestRates; k = k+1)
+	{
+		graphs[k] * "}\n\n}\n"; graphs[k] * 0; 
+	}
 
-	DEFAULT_FILE_SAVE_NAME = file_name + ".dot";
 	SetDialogPrompt ("Save the GraphViz .dot file to:");
-	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,graphString); */
+	DEFAULT_FILE_SAVE_NAME = file_name + ".dot";
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE,KEEP_OPEN);
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN);	
+		fileName = LAST_FILE_PATH;
+	}
+	
+	
+	for (k = 0; k < bestRates; k = k+1)
+	{
+		fprintf (fileName, graphs[k],"\n"); 
+	}
+	
+	fprintf (fileName, CLOSE_FILE);
+
+
 /*}
 
 else
@@ -425,9 +515,16 @@ function ExportAMatrix				(theMatrix&, fileName, theprompt)
 {
 	if (Abs(fileName) == 0)
 	{
-		SetDialogPrompt (theprompt);
-		fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
-		fileName = LAST_FILE_PATH;
+		if (autoSave)
+		{
+			fileName = dir_prefix+DEFAULT_FILE_SAVE_NAME;
+		}
+		else
+		{
+			SetDialogPrompt (theprompt);
+			fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
+			fileName = LAST_FILE_PATH;
+		}
 	}
 	else
 	{
