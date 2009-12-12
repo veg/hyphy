@@ -76,6 +76,8 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	
 	byRateBestIC = {};
 
+	ScoreProfile = {};
+	
 	while (!END_OF_FILE)
 	{
 		sscanf (detailedFile, "NMatrix,NMatrix",classMatrix, rateInfo);
@@ -106,9 +108,12 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			bestRates	= modelRates;
 		}
 		
+		ScoreProfile[modelCount]   = modelAIC;
 		modelCount 				   = modelCount + 1;
 		
 	}
+	
+	ScoreProfileM = avlToMatrix ("ScoreProfile"); ScoreProfile = 0;
 
 	ratesRead   = avlKeysToMatrix (byRateClass);
 	scoreCutoff = bestScore-2*Log(evidenceRCut);
@@ -117,6 +122,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 					 "\tScore cutoff of ", scoreCutoff, " to be included in the credible set at ", evidenceRCut, " level \n",
 					 "\t", Abs (byRateClass), " different rate counts\n"
 					 );
+					 
 					 
 	for (k=0; k<Abs(byRateClass); k=k+1)
 	{
