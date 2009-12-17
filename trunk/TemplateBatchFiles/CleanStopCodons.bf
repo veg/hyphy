@@ -143,7 +143,7 @@ haveInfoAtSites	  = {};
 
 for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceIndex+1)
 {
-	fprintf (stdout, "\nSequence ", sequenceNames[sequenceIndex], ":"); 
+
 	stopCodonCount     = 0;
 	sitesWithDeletions = {1,all64.unique_sites};
 	
@@ -171,7 +171,9 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 	
 	if (stopCodonCount > 0)
 	{
+		fprintf (stdout, "\nSequence ", sequenceNames[sequenceIndex], ":"); 
 		fprintf (stdout, "\n\t", Format(stopCodonCount,8,0), " stop codons found.");
+		
 		doSomething 		= 1;
 		cleanedString 		= "";
 		seqString 			= sequenceData[sequenceIndex];
@@ -191,10 +193,6 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 		}
 		cleanedString * 0;
 		sequenceData[sequenceIndex] = cleanedString;
-	}
-	else
-	{
-		fprintf (stdout, "\n\tNo stop codons found.");
 	}
 	
 	if (filteringOption >= 2)

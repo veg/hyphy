@@ -42,7 +42,7 @@ function 	  doTheMapping (dummy)
 		{
 			codon = aSeq[seqPos][seqPos+2];
 			
-			gap_count = codon$"-";
+			gap_count = codon$"[N-]";
 			if (gap_count[0] >= 0)
 			{	
 				/* handle cases where codon contains one or two gap characters - this was yielding 'F' in original script */

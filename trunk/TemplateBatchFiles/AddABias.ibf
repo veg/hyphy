@@ -45,14 +45,14 @@ function AddABiasREL (ModelMatrixName&, ModelMatrixName2&, biasedBase)
 {
 	ModelMatrixName2 = {20,20};
 	
-	t = 1;
-	c = 1;
+	t = 1;	/* branch length, local parameter */
+	c = 1;	/* rate variation */
 	_numericRateMatrix = ModelMatrixName;
 	
-	global	  P_bias = 0.1;
-	P_bias 			 :< 0.5;
+	/* the probability that site is undergoing biased substitution rates */
+	global	  P_bias = 0.1;  P_bias :< 0.5;
 	
-
+	
 	category catVar = (2,{{1-P_bias,P_bias}},MEAN,,{{0,1}},0,1);
 	
 	for (ri = 0; ri < 20; ri = ri+1)
@@ -71,7 +71,7 @@ function AddABiasREL (ModelMatrixName&, ModelMatrixName2&, biasedBase)
 		global rateBiasFrom	 := 1/rateBiasTo;
 			
 		rateBiasTo    :>1;
-		relBias       :>1;
+		relBias       :>1;	/* UNUSED ?!? */
 		for (ri = 0; ri < 20; ri = ri+1)
 		{
 			if (ri != biasedBase)
@@ -220,6 +220,7 @@ function promptModel (dummy)
 
 	if (pickAModel < 5)
 	{
+		/* estimate base frequencies as model parameters */
 		modelSTDINoverload["1"]	= "ML Estimates";
 		modelPath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "Custom_AA_empirical.mdl";
 	}
