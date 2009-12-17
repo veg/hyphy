@@ -41,33 +41,43 @@ function 	  doTheMapping (dummy)
 		for (seqPos = 0; seqPos < seqLen; seqPos = seqPos+3)
 		{
 			codon = aSeq[seqPos][seqPos+2];
-			prot = codonToAAMap[codon];
-			if (Abs(prot) == 0)
+			
+			gap_count = codon$"-";
+			if (gap_count[0] >= 0)
+			{	
+				/* handle cases where codon contains one or two gap characters - this was yielding 'F' in original script */
+				prot = "?";
+			}
+			else
 			{
-				/* 
-					see if we can map this presumed ambiguitiy to a single 
-					amino-acid
-				*/
-				GetDataInfo 			(mappedToCodon, _converterfilteredDataC, seqCounter, siteToPatternMap[seqPos$3]);
-				resolutionMapping 	  = {21,1};
-				for (resID = 0; resID < 64; resID = resID + 1)
+				prot = codonToAAMap[codon];
+				if (Abs(prot) == 0)
 				{
-					if (mappedToCodon[resID])
+					/* 
+						see if we can map this presumed ambiguitiy to a single 
+						amino-acid
+					*/
+					GetDataInfo 			(mappedToCodon, _converterfilteredDataC, seqCounter, siteToPatternMap[seqPos$3]);
+					resolutionMapping 	  = {21,1};
+					for (resID = 0; resID < 64; resID = resID + 1)
 					{
-						resolutionMapping[_Genetic_Code[resID]] = 1;
+						if (mappedToCodon[resID])
+						{
+							resolutionMapping[_Genetic_Code[resID]] = 1;
+						}
 					}
+					
+					if ((resolutionMapping*((Transpose(resolutionMapping))["1"]))[0] == 1)
+					{
+						prot = codeToAA[((Transpose(resolutionMapping))["_MATRIX_ELEMENT_COLUMN_"])[0]];
+					}
+					else
+					{
+						prot = "?";
+					}
+					
+					codonToAAMap[codon] = prot; 
 				}
-				
-				if ((resolutionMapping*((Transpose(resolutionMapping))["1"]))[0] == 1)
-				{
-					prot = codeToAA[((Transpose(resolutionMapping))["_MATRIX_ELEMENT_COLUMN_"])[0]];
-				}
-				else
-				{
-					prot = "?";
-				}
-				
-				codonToAAMap[codon] = prot; 
 			}
 			freqCount[codon] = freqCount[codon]+1;
 			translString * prot;
