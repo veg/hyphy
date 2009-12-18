@@ -1041,10 +1041,15 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
 							  				   will be adjusted to cover the data in xy if needed*/
 							  fontFace, 	/* font to use for plotting */
+<<<<<<< .mine
+							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points, add a 4th column for options, such as enforcesym */
+=======
 							  plotDim, 		/* 1x3 matrix {{width, height,font_size,[optional dot size]}} of the plot in points */
+>>>>>>> .r709
 							  colors, 		/* Kx3 matrix of RGB colors to plot each point with; pass an empty matrix to use defaults */
 							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
-							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode (Impulse to connect to the x-axis; dots otherwise */,
+							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode 
+							  					(Impulse to connect to the x-axis; Dot to skip connection; connected dots otherwise */,
 							  doWrappers    /* should PS prefix and suffix be included */
 							  )
 {
@@ -1079,7 +1084,7 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	xMax		= xyranges[0][1];
 	yMin		= xyranges[1][0];
 	yMax		= xyranges[1][1];
-	
+		
 	
 	_x 				= Rows (xy);
 	_series			= Columns(xy)-1;
@@ -1155,7 +1160,6 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		_doImpulse 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "IMPULSE");
 		_doDots 	  = ((seriesLabels[_seriesCount-1][1]&&1) == "DOTS");
 		
-		
 		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
 		{
 			myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
@@ -1196,6 +1200,14 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 		}
 	}
 	
+	enforceSym = Columns (plotDim) > 3;	
+	if (enforceSym)
+	{
+		xMin = Min (xMin, yMin); yMin = xMin;
+		xMax = Max (xMax, yMax); yMax = xMax;
+		psDensityPlot * ("\n [2] 0 setdash 0.5 0.5 0.5 setrgbcolor " + plotOriginX + " " + plotOriginY + " moveto " + plotWidth + " " + plotHeight + " rlineto stroke [] 0 setdash 0 0 0 setrgbcolor \n");
+	}
+	
 	if (Columns(plotDim)>3)
 	{
 		_decimalPlaces = plotDim[3];
@@ -1208,6 +1220,9 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	xscaler = determineCoordinateTicks (xMin,xMax);
 	_x	= ((xMin/xscaler)$1)*xscaler;
 	psDensityPlot * ("0 0 0 setrgbcolor\n");
+	plottedZero = (_x == 0);
+	
+	
 	while (_x < xMax)
 	{
 		xStep = (plotOriginX + px*(_x-xMin));
@@ -1223,7 +1238,6 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	
 	
 	_y	= ((yMin/yscaler)$1)*yscaler;
-
 	if (xMin == yMin)
 	{
 		_y = _y + yscaler;	
@@ -1275,6 +1289,10 @@ function SimpleGraph2		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
 	psDensityPlot * ("\n 0 0 0 setrgbcolor " + plotOriginX + " " + plotOriginY + " " + (plotWidth+1) + " " + (plotHeight+1) + " rectstroke\n");
+	
+
+
+
 	if (doWrappers==1)
 	{
 		psDensityPlot * "\nshowpage\n";

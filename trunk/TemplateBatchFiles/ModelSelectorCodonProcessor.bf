@@ -29,6 +29,11 @@ ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR 
 ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "_MSCOneStep.ibf");
 /* need this include to determine all 1-to-1 substitutions */
 
+ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PostScript.bf");
+	
+lcapFile = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"EmpiricalAA" + DIRECTORY_SEPARATOR+"LCAP";
+fscanf (lcapFile,"NMatrix,NMatrix,NMatrix,NMatrix,NMatrix", lcap1,lcap2,lcap3,lcap4,lcap5);
+
 
 /*SetDialogPrompt   ("Locate the database file to create/add to:");
 resultsDatabase = _openCacheDB ("");
@@ -193,7 +198,23 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			
 			if (modelAIC == bestScore)
 			{
-				bestModelByRate = {};
+				bestModelByRate     = {};
+				bestCompressedMR    = {stateVectorDimension,1};
+				
+				k3 = 0;
+				for (k=0; k<20; k=k+1)
+				{
+					for (k2=k+1; k2<20; k2=k2+1)
+					{
+						if (isOneStepSub[k][k2])
+						{
+							bestCompressedMR[k3] = classMatrix[k][k2];
+							k3 = k3+1;
+						}
+						qMatrix[k2][k] = qMatrix[k][k2];
+					}
+				}
+					
 				for (k=0; k<stateVectorDimension; k=k+1)
 				{
 					bestModelByRate [compressedM[k]] = bestModelByRate [compressedM[k]] + 1;
@@ -250,9 +271,83 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	DEFAULT_FILE_SAVE_NAME = file_name + ".ma_matrix";
 	ExportAMatrix ("modelAveragedM","","Save the numerical model-averaged rate matrix to:");
 
+	DEFAULT_FILE_SAVE_NAME = file_name + ".ma_matrix.ps";
+	SerDialogPrompt ("Save the PS plot for the model-averaged rate matrixto:");
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE);	
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
+		fileName = LAST_FILE_PATH;
+	}
+	
+	fprintf (fileName, rateMatrixToPS (aminoacidOrdering, modelAveragedM, "model-averaged model"));
+
+
 	/*-----------------------------------------------------------------------------*/
 
-	fprintf (stdout, "[PHASE 4.] Computing variability in rate assignments\n");
+	polarity = {};
+	charge   = {};
+	stanfel	 = {};
+	
+	storeProfile ("charge","RHK",1);
+	storeProfile ("charge","DE",-1);
+	storeProfile ("charge","ANCQGILMFPSTWYV",0);
+	
+	storeProfile ("polarity","RNDCQEGHKSTY",1);
+	storeProfile ("polarity","AILMFPWV",0);
+	
+	storeProfile ("stanfel","ACGILMPSTV",1);
+	storeProfile ("stanfel","DENQ",2);
+	storeProfile ("stanfel","FWY",3);
+	storeProfile ("stanfel","HKR",4);
+
+	fprintf (stdout, "[PHASE 4.] Computing rates vs structure assignments\n");
+
+	DEFAULT_FILE_SAVE_NAME = file_name + "_reliability.csv";
+	SerDialogPrompt ("Save the top-N model .csv to:");
+	if (autoSave)
+	{
+		fileName = dir_prefix + DEFAULT_FILE_SAVE_NAME;
+		fprintf (fileName,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Structural,Averaged,StanfelChange,PolarityChange,ChargeChange,ChemicalComposition,Polarity,Volume,IsoelectricPoint,Hydropathy");	
+	}
+	else
+	{
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE,KEEP_OPEN,"AA1,AA2,Structural,Averaged,StanfelChange,PolarityChange,ChargeChange,ChemicalComposition,Polarity,Volume,IsoelectricPoint,Hydropathy");
+		fileName = LAST_FILE_PATH;
+	}
+	for (aa1=0;aa1<20;aa1=aa1+1)
+	{
+		for (aa2=aa1+1;aa2<20;aa2=aa2+1)
+		{
+			if (isOneStepSub[aa1][aa2])
+			{
+				stats = GatherDescriptiveStats (rateInfo);
+				aal1 = aminoacidOrdering[aa1];
+				aal2 = aminoacidOrdering[aa2];
+				fprintf (fileName,"\n",aal1,",",
+											 aal2,",",
+											 bestRateMatrix[aa1][aa2],",",
+											 modelAveragedM[aa1][aa2],",",
+											 stanfel[aal1] == stanfel[aal2],",",
+											 polarity[aal1] == polarity[aal2],",",
+											 charge[aal1] == charge[aal2],",",										 
+											 Abs(lcap1[aa1][aa2]),",",
+											 Abs(lcap2[aa1][aa2]),",",
+											 Abs(lcap3[aa1][aa2]),",",
+											 Abs(lcap4[aa1][aa2]),",",
+											 Abs(lcap5[aa1][aa2])
+											 );
+			}
+		}
+	}
+
+	fprintf (fileName,CLOSE_FILE);
+
+	/*fprintf (stdout, "[PHASE 4.] Computing variability in rate assignments\n");
 
 	DEFAULT_FILE_SAVE_NAME = file_name + "_reliability.csv";
 	SerDialogPrompt ("Save the top-N model .csv to:");
@@ -292,7 +387,7 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		}
 	}
 
-	fprintf (fileName,CLOSE_FILE);
+	fprintf (fileName,CLOSE_FILE);*/
 
 
 	/*-----------------------------------------------------------------------------*/
@@ -430,15 +525,34 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			consensusStructure = consensusStructure + (consensusStructure["bestMatrix[_MATRIX_ELEMENT_ROW_]==bestMatrix[_MATRIX_ELEMENT_COLUMN_]"])*akaikeWeights  [k];
 		}
 	}
-
+	
+	clusterSupport = {stateVectorDimension,1};
+	
+	for (k = 0; k < stateVectorDimension; k=k+1)
+	{
+		myRate = bestCompressedMR[k];
+		for (k2 = 0; k2 < stateVectorDimension; k2 = k2 + 1)
+		{
+			if (k2 != k && myRate == bestCompressedMR[k2])
+			{
+				clusterSupport[k] = clusterSupport[k] + consensusStructure[k][k2];
+			}
+		}
+		bmr = (bestModelByRate[bestNRates[myRate+3]]);
+		if (bmr>1)
+		{
+			clusterSupport[k] = clusterSupport[k]/(bestModelByRate[bestNRates[myRate+3]]-1);
+		}
+	}
 
 	
-		
-	
+
 	graphs = {};
+	aaByNode ={};
 	for (k = 0; k < bestRates; k = k+1)
 	{
-		graphs[k] = ""; graphs[k] * 128; graphs[k] * ("graph G"+k+"{size = \"4,4\" ;\n subgraph cluster_0 {color = \"#AAAAAA\"; label = \"Rate  = " + bestNRates[k+3]+ "\" fontsize = \"24\"");
+		graphs[k] = ""; graphs[k] * 128; graphs[k] * ("subgraph cluster_G"+k+"{label = \"Rate = " + bestNRates[k+3]+ "\" fontsize = \"24\" penwidth=\"0\"; \n\n");
+		aaByNode[k] = {};
 	}
 
 	/*for (k=0; k<20; k=k+1)
@@ -462,8 +576,9 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			}
 		}
 	}*/
-
 	
+	
+	k3 = 0;
 	for (k=0; k<20; k=k+1)
 	{	
 		for (k2=k+1; k2<20; k2 = k2+1)
@@ -471,14 +586,59 @@ if (_TableExists (resultsDatabase,"DATASET"))
 			ratePlug = bestClassMatrix[k][k2];
 			if (ratePlug >=0)
 			{
-				graphs[ratePlug] * ( aminoacidOrdering[k]  +" -- " + aminoacidOrdering[k2] + ";\n");
+				if ((aaByNode[ratePlug])[k] == 0)
+				{
+					(aaByNode[ratePlug])[k] = 1; 
+					graphs[ratePlug] * ("" + aminoacidOrdering[k] + ratePlug + 
+						"[label = \"" + 
+						aminoacidOrdering[k] + 
+						"\"" +
+						residueStyle(stanfel[aminoacidOrdering[k]],polarity[aminoacidOrdering[k]],charge[aminoacidOrdering[k]]) +
+						"];");
+				}
+				if ((aaByNode[ratePlug])[k2] == 0)
+				{
+					(aaByNode[ratePlug])[k2] = 1; 
+					graphs[ratePlug] * ("" + aminoacidOrdering[k2] + ratePlug + 
+						"[label = \"" + 
+						aminoacidOrdering[k2] + 
+						"\"" +
+						residueStyle(stanfel[aminoacidOrdering[k2]],polarity[aminoacidOrdering[k2]],charge[aminoacidOrdering[k2]]) +
+						"];");
+				}
+				if (clusterSupport[k3] < 0.5)
+				{
+					style = "dotted";
+				}
+				else
+				{
+					if (clusterSupport[k3] < .9)
+					{
+						style = "dashed";
+					}				
+					else
+					{
+						style = "solid";
+					}
+				}
+				
+				graphs[ratePlug] * ( aminoacidOrdering[k]  + ratePlug + " -- " + aminoacidOrdering[k2] + ratePlug+ " [style = \""+style+"\" label = \""+Format(modelAveragedM[k][k2],5,2)+"\"];\n");
+				
+				k3 = k3+1;
 			}
 		}
 	}
 	
+	sortBestRates = {bestRates,2}["_MATRIX_ELEMENT_ROW_"];
+	for (k=0; k<bestRates; k=k+1)
+	{
+		sortBestRates[k][1]=bestNRates[k+3];
+	}
+	sortBestRates = sortBestRates % 1;
+	
 	for (k = 0; k < bestRates; k = k+1)
 	{
-		graphs[k] * "}\n\n}\n"; graphs[k] * 0; 
+		graphs[k] * "}\n\n"; graphs[k] * 0; 
 	}
 
 	SetDialogPrompt ("Save the GraphViz .dot file to:");
@@ -494,13 +654,14 @@ if (_TableExists (resultsDatabase,"DATASET"))
 		fileName = LAST_FILE_PATH;
 	}
 	
+	fprintf (fileName, "graph G{remincross = \"true\" rankdir=\"LR\" size = \"12,12\";\nnode [fontsize=14,width=".4", height=".4", margin=0];graph[fontsize=14];");
 	
 	for (k = 0; k < bestRates; k = k+1)
 	{
-		fprintf (fileName, graphs[k],"\n"); 
+		fprintf (fileName, graphs[sortBestRates[k][0]],"\n"); 
 	}
 	
-	fprintf (fileName, CLOSE_FILE);
+	fprintf (fileName, "\n}", CLOSE_FILE);
 
 
 /*}
@@ -557,3 +718,190 @@ function ConvertMatrixToStateVector (theMatrix)
 	}
 	return vector;
 }
+
+function 	storeProfile (recp&, string, value)
+{
+	for (h=0; h<Abs(string); h=h+1)
+	{
+		recp[string[h]] = value;
+	}
+	return 0;
+}
+
+function 	residueStyle (s,p,c)
+{
+	if (s == 1)
+	{
+		 color = "#B03060";
+		 labelcolor = "#FFFFFF";
+	}
+	if (s == 2)
+	{
+		 color = "#00A86B";
+		 labelcolor = "#000000";
+	}
+	if (s == 3)
+	{
+		 color = "#FF8C00";
+		 labelcolor = "#000000";
+	}
+	if (s == 4)
+	{
+		 color = "#4B0082";
+		 labelcolor = "#FFFFFF";
+	}
+	
+	if (p == 0)
+	{
+		if (c == 0)
+		{
+			shape = "rect";
+		}
+		else
+		{
+			if (c == 1)
+			{
+				shape = "trapezium";
+			}
+			else
+			{
+				shape = "invtrapezium";
+			}
+		}
+	}
+	else
+	{
+		if (c == 0)
+		{
+			shape = "diamond";
+		}
+		else
+		{
+			if (c == 1)
+			{
+				shape = "triangle";
+			}
+			else
+			{
+				shape = "invtriangle";
+			}
+		}	
+	}
+	
+	return " style=\"filled\" color=\"" + color + "\" fontcolor=\"" + labelcolor + "\" shape=\"" + shape + "\"";
+}
+
+
+function rateMatrixToPS (chars,rateMatrix, title)
+{
+	
+	codon_order = "FLIMVSPTAYHQNKDECWRG";
+	codon_idx   = {};
+	
+	for (k=0; k<=20; k=k+1)
+	{
+		codon_idx[codon_order[k]] = k;
+	}
+	
+	psFigure = "";
+	psFigure * 8192;
+
+	psFigure * _HYPSPageHeader (445,500, "Protein Rate Matrix Plot");
+	psFigure * "\n";
+	psFigure * _HYPSSetFont ("Times-Roman", 12);
+	psFigure * "\n";
+	psFigure * _HYPSTextCommands(0);
+
+	psFigure * "/box {\n0 20 rlineto \n20 0 rlineto \n0 -20 rlineto \nclosepath } def\n 0 30 translate\n";
+	
+	offset = 24;
+	
+	maxVal = Max(rateMatrix,0);
+	
+	
+	
+	charsToCodonOrder 	= {};
+	
+	for (k=0; k<=20; k=k+1)
+	{
+		charsToCodonOrder[k] = codon_idx[chars[k]];
+	}
+	
+	reordering = {};
+	reordering["A"] = 0;
+	reordering["C"] = 1;
+	reordering["G"] = 2;
+	reordering["I"] = 3;
+	reordering["L"] = 4;
+	reordering["M"] = 5;
+	reordering["P"] = 6;
+	reordering["S"] = 7;
+	reordering["T"] = 8;
+	reordering["V"] = 9;
+	reordering["D"] = 10;
+	reordering["E"] = 11;
+	reordering["N"] = 12;
+	reordering["Q"] = 13;
+	reordering["F"] = 14;
+	reordering["W"] = 15;
+	reordering["Y"] = 16;
+	reordering["H"] = 17;
+	reordering["K"] = 18;
+	reordering["R"] = 19;
+	
+	rk = Rows (reordering);
+	
+	for (h=0; h<20; h=h+1)
+	{
+		h2 = reordering[chars[h]];
+		label = rk[h];
+		psFigure * ("0 setgray\n10 "+(offset+(19-h)*20+6)+" \n("+label+") centertext\n");
+		psFigure * ("0 setgray\n"+(offset+410)+" "+(offset+(19-h)*20+6)+" ("+label+") centertext\n");
+		psFigure * ("0 setgray\n"+(offset+h*20+10)+" 10 ("+label+") centertext\n");
+		psFigure * ("0 setgray\n"+(offset+h*20+10)+" "+(405+offset)+" ("+label+") centertext\n");
+		for (v=0; v<20; v=v+1)
+		{
+			if (h!=v)
+			{
+				v2 = reordering[chars[v]];
+				label2 = chars[v];
+				psFigure * ("newpath\n"+(offset+v2*20)+" "+(offset+(19-h2)*20)+" moveto\n");
+				greyColor = 1-rateMatrix[h][v]/maxVal;
+				psFigure * (""+greyColor+" setgray\nbox fill\n");
+				if (isOneStepSub[charsToCodonOrder[h]][charsToCodonOrder[v]])
+				{
+					if (greyColor>0.5)
+					{
+						psFigure * ("0 setgray\n");
+					}
+					else
+					{
+						psFigure * ("1 setgray\n");				
+					}
+					psFigure * ("\nnewpath\n"+(offset+v2*20+10)+" "+(offset+(19-h2)*20+10)+" 5 0 360 arc\n\nstroke\nclosepath\n");
+				}
+			}
+		}
+	}
+	
+	psFigure * ("\n"+offset+" "+offset+" translate\n0 setgray\nnewpath\n0 0 moveto\n0 400 lineto\n400 400 lineto\n400 0 lineto\n0 0 lineto\nstroke\nclosepath");
+	
+	psFigure * ("\n\nnewpath\n0 200 moveto\n200 200 lineto\n200 400 lineto\nstroke");
+	psFigure * ("\n\nnewpath\n200 120 moveto\n200 200 lineto\n280 200 lineto\n280 120 lineto\nclosepath stroke");
+	psFigure * ("\n\nnewpath\n280 120 moveto\n340 120 lineto\n340 60 lineto\n280 60 lineto\nclosepath stroke");
+	psFigure * ("\n\nnewpath\n340 60 moveto\n400 60 lineto\n400 0 lineto\n340 0 lineto\nclosepath stroke");
+	psFigure * ("\n0 -30 translate\n 225.5 460 (Rate matrix plot for " + title + ") centertext\n 0 -20 translate\n");
+	tableText = {3,1};
+	tableText [0] = "Shading indicates relative substitution rates (black = max, white = 0)";
+	tableText [1] = "Circles show residue pairs that can be exchanged with one nucleotide substitution";
+	tableText [2] = "Amino-acids are grouped into 4 Stanfel classification clusters";
+	psFigure * _HYPSTextTable (400,30,12,tableText,tableText["0"]);
+	psFigure * ("\nshowpage");
+	psFigure * 0;
+	return psFigure;
+}
+
+
+/*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------*/
