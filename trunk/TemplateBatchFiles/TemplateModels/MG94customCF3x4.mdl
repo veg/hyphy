@@ -293,8 +293,6 @@ function PrepAConstraint 	   (modelDesc)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-#include "CF3x4.bf";
-
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
 categoriesUsed = 0;
@@ -341,15 +339,13 @@ PrepAConstraint	(modelDesc);
 
 if (!SKIP_HARVEST_FREQ)
 {
+	#include "CF3x4.bf";
 	HarvestFrequencies (observedFreq,filteredData,3,1,1);
+	observedFreq   		= CF3x4 (observedFreq,GeneticCodeExclusions);
 }
-
-MG94custom = 0;
-
 
 FREQUENCY_SENSITIVE = 1;
 
-observedFreq   		= CF3x4 (observedFreq,GeneticCodeExclusions);
 MULTIPLY_BY_FREQS 	= PopulateModelMatrix ("MG94custom", observedFreq);
 vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
 

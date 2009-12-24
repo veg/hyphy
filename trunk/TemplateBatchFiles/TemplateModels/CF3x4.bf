@@ -109,7 +109,7 @@ function CF3x4 (observed3x4,stopCodons)
 	
 	Optimize (res, _CF3x4_minimizer(p11,p12,p13,p21,p22,p23,p31,p32,p33));
 	
-	return {{n1A,n2A,n3A}{n1C,n2C,n3C}{n1G,n2G,n3G}{n1T,n2T,n3T}};
+	return {{n1A__,n2A__,n3A__}{n1C__,n2C__,n3C__}{n1G__,n2G__,n3G__}{n1T__,n2T__,n3T__}};
 }
 
 function _CF3x4_minimizer (p11,p12,p13,p21,p22,p23,p31,p32,p33)
