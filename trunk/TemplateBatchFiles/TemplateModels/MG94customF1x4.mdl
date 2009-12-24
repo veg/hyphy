@@ -319,7 +319,6 @@ function BuildCodonFrequencies (obsF)
 
 categoriesUsed = 0;
 COUNT_GAPS_IN_FREQUENCIES = 0;
-VERBOSITY_LEVEL = 10;
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {

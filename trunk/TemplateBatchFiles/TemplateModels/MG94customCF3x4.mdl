@@ -346,11 +346,11 @@ if (!SKIP_HARVEST_FREQ)
 
 MG94custom = 0;
 
-MULTIPLY_BY_FREQS = PopulateModelMatrix ("MG94custom", observedFreq);
 
 FREQUENCY_SENSITIVE = 1;
 
-observedFreq   = CF3x4 (observedFreq,GeneticCodeExclusions);
+observedFreq   		= CF3x4 (observedFreq,GeneticCodeExclusions);
+MULTIPLY_BY_FREQS 	= PopulateModelMatrix ("MG94custom", observedFreq);
 vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
 
 Model MG94customModel = (MG94custom,vectorOfFrequencies,0);
