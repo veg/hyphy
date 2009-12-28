@@ -1,0 +1,9 @@
+result = {vecSize,1};
+j = 0;
+for (r = fromRow; r <= toRow; r = r + 1)
+{
+	for (c = r+1; c < ds.species; c = c + 1)
+	{
+		result [j] = ComputeDistanceFormula (r,c);
+	}
+}

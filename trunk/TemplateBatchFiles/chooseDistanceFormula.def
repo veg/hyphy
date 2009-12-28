@@ -36,6 +36,8 @@ if (DISTANCE_PROMPTS)
 	GetDataInfo (cInfo, filteredData, "CHARACTERS");
 	filterCharacters = Columns (cInfo);
 	
+	_distanceFilePath = "";
+	
 	if (filterCharacters == 4)
 	{
 		ChoiceList (dfileChoice,"Nucleotide based distance formula.",1,SKIP_NONE,nucDistanceChoices);
@@ -43,7 +45,8 @@ if (DISTANCE_PROMPTS)
 		{
 			return 0;
 		}
-		ExecuteCommands ("#include\"Distances/"+nucDistanceChoices[dfileChoice][0]+"\";");
+		_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + nucDistanceChoices[dfileChoice][0];
+		ExecuteCommands (_distanceFilePath);
 	}
 	else
 	{
@@ -54,7 +57,8 @@ if (DISTANCE_PROMPTS)
 			{
 				return 0;
 			}
-			ExecuteCommands ("#include\"Distances/"+aaDistanceChoices[dfileChoice][0]+"\";");		
+			_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + aaDistanceChoices[dfileChoice][0];
+			ExecuteCommands (_distanceFilePath);
 		}
 		else
 		{
@@ -65,7 +69,8 @@ if (DISTANCE_PROMPTS)
 				{
 					return 0;
 				}
-				ExecuteCommands ("#include\"Distances/"+binaryDistanceChoices[dfileChoice][0]+"\";");		
+				_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + binaryDistanceChoices[dfileChoice][0];
+				ExecuteCommands (_distanceFilePath);
 			}
 			else
 			{
@@ -76,7 +81,8 @@ if (DISTANCE_PROMPTS)
 					{
 						return 0;
 					}
-					ExecuteCommands ("#include\"Distances/"+codonDistanceChoices[dfileChoice][0]+"\";");					
+					_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + codonDistanceChoices[dfileChoice][0];
+					ExecuteCommands (_distanceFilePath);
 				}
 				else
 				{

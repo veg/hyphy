@@ -262,6 +262,21 @@ function avlToMatrix (_theList&)
 }
 
 /*---------------------------------------------------------*/
+/* take an avl indexed by 0..N-1 and convert to a choice list matrix */
+   
+function avlToChoiceMatrix (_theList&)
+{
+	_gb_dim = Abs(_theList);
+	_gb_ret = {_gb_dim,2};
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_gb_ret [_gb_idx][0] = _theList[_gb_idx];
+		_gb_ret [_gb_idx][1] = _theList[_gb_idx];
+	} 	
+	return _gb_ret;
+}
+
+/*---------------------------------------------------------*/
 /* swap the roles of integer keys (+1) and string values in an avl */
    
 function swapKeysAndValues (_theList&)

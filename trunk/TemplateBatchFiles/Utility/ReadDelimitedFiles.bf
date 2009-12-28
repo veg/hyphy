@@ -84,6 +84,13 @@ function ReadMatchRegExp (fileName, regExp)
 
 function ReadSplitOnRegExp (fileName, regExp)
 {
+	return ReadSplitOnRegExpCallback (fileName, regExp, "");	
+}
+
+/*----------------------------------------------------------------*/
+
+function ReadSplitOnRegExpCallback (fileName, regExp,func)
+{
 	if (Abs(fileName) == 0)
 	{
 		fscanf (PROMPT_FOR_FILE, "Lines", inData);
@@ -94,13 +101,31 @@ function ReadSplitOnRegExp (fileName, regExp)
 	}
 	
 	linesRead = Columns(inData);
-	_tempMatrix = {};
+	if (Abs(func) == 0)
+	{
+		_tempMatrix = {};
+	}
 	
 	for (lineID = 0; lineID < linesRead; lineID = lineID + 1)
 	{
-		_tempMatrix[lineID] = splitOnRegExp (inData[lineID], regExp);
+		if (Abs(func))
+		{
+			ExecuteCommands ("_lineStatus = " + func + "(splitOnRegExp (inData[lineID], regExp),lineID)"); 
+			if (_lineStatus < 0)
+			{
+				return 1;
+			}
+		}
+		else
+		{
+			_tempMatrix[lineID] = splitOnRegExp (inData[lineID], regExp);
+		}
 	}
-	return _tempMatrix;
+	if (Abs(func) == 0)
+	{
+		return _tempMatrix;
+	}
+	return 0;
 }
 
 /*----------------------------------------------------------------*/

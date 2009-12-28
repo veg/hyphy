@@ -62,8 +62,7 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 	   
 	ExecuteCommands ("_bac_tree_avl = " + _bac_treeID + "^0;"+
-					 "LikelihoodFunction _bac_tree_LF = (" + _bac_filterID + "," + _bac_treeID+");"+
-					 "DataSet _bac_ancDS = " + _ancestorCall + " (_bac_tree_LF);"+
+					 "DataSet _bac_ancDS = " + _ancestorCall + " ("+_lfID+",{{"+_lfComponentID+"}});"+
 					 "GetString (_bacSequenceNames,"+ _bac_filterID +",-1);");
 					 
 /* 3; obtain ID->string mapping for the datafilter;
