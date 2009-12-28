@@ -46,7 +46,7 @@ if (DISTANCE_PROMPTS)
 			return 0;
 		}
 		_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + nucDistanceChoices[dfileChoice][0];
-		ExecuteCommands (_distanceFilePath);
+		ExecuteAFile (_distanceFilePath);
 	}
 	else
 	{
@@ -58,7 +58,7 @@ if (DISTANCE_PROMPTS)
 				return 0;
 			}
 			_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + aaDistanceChoices[dfileChoice][0];
-			ExecuteCommands (_distanceFilePath);
+			ExecuteAFile (_distanceFilePath);
 		}
 		else
 		{
@@ -70,7 +70,7 @@ if (DISTANCE_PROMPTS)
 					return 0;
 				}
 				_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + binaryDistanceChoices[dfileChoice][0];
-				ExecuteCommands (_distanceFilePath);
+				ExecuteAFile (_distanceFilePath);
 			}
 			else
 			{
@@ -82,7 +82,7 @@ if (DISTANCE_PROMPTS)
 						return 0;
 					}
 					_distanceFilePath = PATH_TO_CURRENT_BF + "Distances"+ DIRECTORY_SEPARATOR + codonDistanceChoices[dfileChoice][0];
-					ExecuteCommands (_distanceFilePath);
+					ExecuteAFile (_distanceFilePath);
 				}
 				else
 				{
