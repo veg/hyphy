@@ -126,16 +126,19 @@ else
 		
 		for (i = 0; i < ds.species-1; i = i + 1)
 		{
-			accumulator = accumulator + (i-1);
-			if (accumulator >= perNodeFile || i == ds.species-1)
+			accumulator = accumulator + (ds.species-1-i);
+			
+			if (accumulator >= perNodeFile || i == ds.species-2)
 			{
 				fprintf (stdout, "[SENT MATRIX ROWS ", lastRowSent, "-", i, " to MPI node ", totalSent + 1,"]\n");
 				MPI_NODE_INFO[totalSent][0] = lastRowSent;
 				MPI_NODE_INFO[totalSent][1] = i;
-				MPISend (totalSent+1, mpiPrefix + "vecSize = " + accumulator + ";" +
+				toSend	= mpiPrefix + "vecSize = " + accumulator + ";" +
 												  "fromRow = " + lastRowSent + ";" + 
 												  "toRow   = " + i + ";" +
-												  "ExecuteAFile (HYPHY_BASE_DIRECTORY + \"TemplateBatchFiles\" + DIRECTORY_SEPARATOR + \"pairwiseDistanceEstimatorCounter.ibf\"); return distanceVector");
+												  "ExecuteAFile (HYPHY_BASE_DIRECTORY + \"TemplateBatchFiles\" + DIRECTORY_SEPARATOR + \"pairwiseDistanceEstimatorCounter.ibf\"); return result;";
+												  
+				MPISend (totalSent+1, toSend);
 				
 				accumulator = 0;
 				lastRowSent	= i+1;
@@ -143,7 +146,7 @@ else
 			}
 		}
 		
-		for (i = 0; i < MPI_NODE_COUNT-1; i = i+1)
+		for (i = 0; i < totalSent; i = i+1)
 		{
 			MPIReceive		(-1,fromNode,theVector);
 			fromNode		= fromNode - 1;
@@ -156,42 +159,13 @@ else
 			{
 				for (c = r+1; c < ds.species; c = c + 1)
 				{
-					distanceMatrix [r][c] = theVector[j];
-					distanceMatrix [c][r] = theVector[j];
+					distanceMatrix [r][c] = partialVector[j];
+					distanceMatrix [c][r] = partialVector[j];
 					j = j+1;
 				}
 			}
 		}
-
-		if (distanceFormat == 1)
-		{
-			fprintf (LAST_FILE_PATH, CLEAR_FILE, "{\n");
-			for (i = 0; i<ds.species; i=i+1)
-			{
-				outRow = "";
-				outRow * 256;
-				outRow * "{0";
-				for (j = 0; j<i; j = j+1)
-				{
-					outRow * ",0";
-				}
-				for (j = i+1; j<ds.species; j = j+1)
-				{
-					k = distanceMatrix[i][j];
-					outRow * (","+k);
-				}
-				outRow * 0;
-				fprintf (LAST_FILE_PATH, outRow, "}\n");
-				tdc = tdc+(ds.species-i-1);
-				tdp = (tdc/togo * 100)$1;
-				if (tdp>ldp)
-				{
-					ldp = tdp;
-					fprintf (stdout, ldp, "% done\n");
-				}
-			}	
-			fprintf (LAST_FILE_PATH, "}\n");
-		}
+		
 	}
 	else
 	{
@@ -242,6 +216,7 @@ else
 				}
 			}	
 			fprintf (LAST_FILE_PATH, "}\n");
+			return 0;
 		}
 	}
 
@@ -291,7 +266,7 @@ if (distanceFormat != 1)
 }
 else
 {
-	if (distanceChoice)
+	if (distanceChoice || MPI_NODE_COUNT)
 	{
 		fprintf (LAST_FILE_PATH,CLEAR_FILE,distanceMatrix);
 	}
