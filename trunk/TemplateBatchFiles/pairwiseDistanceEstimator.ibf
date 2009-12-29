@@ -94,7 +94,7 @@ if (Abs(DATAFILE_TREE))
 			ChoiceList (_paramOption,	"Global parameters",1,SKIP_NONE,
 						"Estimated",	"Estimate global model parameters using a provided tree",
 						"Manual",		"Enter parameter values by hand");
-	_					
+					
 			if (_paramOption < 0)
 			{
 				return 0;
