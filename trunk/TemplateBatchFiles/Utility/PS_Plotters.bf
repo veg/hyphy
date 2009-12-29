@@ -1041,11 +1041,7 @@ function SimpleGraph		 (xy&, 			/* Nx(K+1) matrix with x,y points to plot */
 							  xyranges, 	/* 2x2 matrix {{x_min, x_max}{y_min, y_max} 
 							  				   will be adjusted to cover the data in xy if needed*/
 							  fontFace, 	/* font to use for plotting */
-<<<<<<< .mine
 							  plotDim, 		/* 1x3 matrix {{width, height,font_size}} of the plot in points, add a 4th column for options, such as enforcesym */
-=======
-							  plotDim, 		/* 1x3 matrix {{width, height,font_size,[optional dot size]}} of the plot in points */
->>>>>>> .r709
 							  colors, 		/* Kx3 matrix of RGB colors to plot each point with; pass an empty matrix to use defaults */
 							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
 							  seriesLabels	/* Kx2 matrix of strings with labels for every point and a plotting mode 
