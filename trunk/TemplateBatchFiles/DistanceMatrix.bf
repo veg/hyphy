@@ -113,12 +113,13 @@ else
 	fprintf (stdout,"\nHYPHY is computing pairwise distance estimates. A total of ", Format(togo,0,0),
 				    " estimations will be performed.\n");
 	
+	distanceMatrix = {ds.species,ds.species};
+	
 	if (MPI_NODE_COUNT > 1)
 	{
 		MPI_NODE_INFO  = {MPI_NODE_COUNT-1,2};
 		perNodeFile    = togo / (MPI_NODE_COUNT-1);
 		
-		distanceMatrix = {ds.species,ds.species};
 		
 		accumulator = 0;
 		lastRowSent = 0;
@@ -169,54 +170,21 @@ else
 	}
 	else
 	{
-		if (distanceFormat != 1)
+		for (i = 0; i<ds.species-1; i=i+1)
 		{
-			for (i = 0; i<ds.species-1; i=i+1)
+			for (j = 0; j<=i; j = j+1)
 			{
-				for (j = 0; j<=i; j = j+1)
-				{
-					k = ComputeDistanceFormula (i+1,j);
-					distanceMatrix[j][i+1] = k;
-					distanceMatrix[i+1][j] = k;
-				}
-				tdc = tdc+i+1;
-				tdp = (tdc/togo * 100)$1;
-				if (tdp>ldp)
-				{
-					ldp = tdp;
-					fprintf (stdout, ldp, "% done\n");
-				}
+				k = ComputeDistanceFormula (i+1,j);
+				distanceMatrix[j][i+1] = k;
+				distanceMatrix[i+1][j] = k;
 			}
-		}
-		else
-		{
-			fprintf (LAST_FILE_PATH, CLEAR_FILE, "{\n");
-			for (i = 0; i<ds.species; i=i+1)
+			tdc = tdc+i+1;
+			tdp = (tdc/togo * 100)$1;
+			if (tdp>ldp)
 			{
-				outRow = "";
-				outRow * 256;
-				outRow * "{0";
-				for (j = 0; j<i; j = j+1)
-				{
-					outRow * ",0";
-				}
-				for (j = i+1; j<ds.species; j = j+1)
-				{
-					k = ComputeDistanceFormula (i,j);
-					outRow * (","+k);
-				}
-				outRow * 0;
-				fprintf (LAST_FILE_PATH, outRow, "}\n");
-				tdc = tdc+(ds.species-i-1);
-				tdp = (tdc/togo * 100)$1;
-				if (tdp>ldp)
-				{
-					ldp = tdp;
-					fprintf (stdout, ldp, "% done\n");
-				}
-			}	
-			fprintf (LAST_FILE_PATH, "}\n");
-			return 0;
+				ldp = tdp;
+				fprintf (stdout, ldp, "% done\n");
+			}
 		}
 	}
 
@@ -266,10 +234,7 @@ if (distanceFormat != 1)
 }
 else
 {
-	if (distanceChoice || MPI_NODE_COUNT)
-	{
-		fprintf (LAST_FILE_PATH,CLEAR_FILE,distanceMatrix);
-	}
+	fprintf (LAST_FILE_PATH,CLEAR_FILE,distanceMatrix);
 }
 	
 fprintf (LAST_FILE_PATH, CLOSE_FILE);
