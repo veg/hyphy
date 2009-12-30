@@ -1,4 +1,6 @@
+ExecuteAFile ("Utility/GrabBag.bf");
 #include "SequentialAddition.ibf";
+
 
 /*___________________________________________________________________________________________________________*/
 
@@ -133,7 +135,7 @@ else
 }
 
 SetDialogPrompt 	("Load a distance matrix:");
-fscanf 				(PROMPT_FOR_FILE,"Matrix",distanceMatrix);
+fscanf 				(PROMPT_FOR_FILE,"NMatrix",distanceMatrix);
 
 /* compute some matrix statistics */
 
@@ -145,72 +147,104 @@ min  = 1e100;
 mDim = Rows (distanceMatrix);
 dDim = mDim*(mDim-1)/2;
 
-for (r=0; r< mDim; r=r+1)
+ChoiceList (doHist,"Histogram",1,SKIP_NONE,"Generate","Compute and report distribution statistics of pairwise distances.",
+				     "Skip","Skip this step");
+	
+if (doHist<0)
 {
-	for (c=r+1; c<mDim; c=c+1)
+	return 0;
+}
+
+if (doHist == 0)
+{
+	vec  = {dDim,1};
+
+	k	  = 0;
+	for (r=0; r< mDim; r=r+1)
 	{
-		t = distanceMatrix[r][c];
-		if (t < 0)
+		for (c=r+1; c<mDim; c=c+1)
 		{
-			distanceMatrix[r][c] = 0;
-			distanceMatrix[c][r] = 0;
-			t = 0;
-		}	
-		else
-		{
-			distanceMatrix[c][r] = distanceMatrix[r][c];
+			t                    = Max(distanceMatrix[r][c],0);
+			distanceMatrix[c][r] = t;
+			distanceMatrix[r][c] = t;
+			vec[k]				 = t;
+			k					 = k+1;
+			sum				     = sum+t;
 		}
-		
-		min = Min(min,t);
-		max = Max(max,t);
-		sum  = sum  + t;
 	}
-}
 
-sum = sum/dDim;
-r   = (max-min)/25;
+	vec		 = vec%0;
+	min		 = vec[0];
+	max		 = vec[dDim-1];
+	sum      = sum/dDim;
 
-histogramTable = {25,4};
-histogramTable[0][1] = r;
 
-for (c=1; c<25;c=c+1)
-{
-	histogramTable[c][0] = histogramTable[c-1][1];
-	histogramTable[c][1] = histogramTable[c-1][1] + r;
-}
+	IQR = vec[3*dDim$4] - vec[dDim$4];
 
-histogramTable[c-1][1] = max;
+	h    = 2*IQR/dDim^(1/3);
+	b25	 = vec[25*dDim$1000];
+	t975 = vec[975*dDim$1000];
+	span = t975 - b25;
+	bins = (span/h+0.5)$1;
+	h	 = span/bins;
 
-for (r=0; r< mDim; r=r+1)
-{
-	for (c=r+1; c<mDim; c=c+1)
+
+	histogramTable		 = {bins,4};
+	histogramTable[0][0] = min;
+	histogramTable[0][1] = b25+h;
+
+	for (c=1; c<bins;c=c+1)
 	{
-		t = distanceMatrix[r][c];
-		sum2  = sum2+(t-sum)*(t-sum);
-		t = t-min;
-		k = 0;
-		while (histogramTable[k][1]<t)
-		{
-			k=k+1;
-		}
-		histogramTable[k][2] = histogramTable[k][2] + 1;
+		histogramTable[c][0] = histogramTable[c-1][1];
+		histogramTable[c][1] = histogramTable[c-1][1] + h;
 	}
-}
 
-for (c=0; c<25;c=c+1)
+	histogramTable[c-1][1] = max;
+	bm1				       = bins-1;
+
+	for (r=0; r< mDim; r=r+1)
+	{
+		for (c=r+1; c<mDim; c=c+1)
+		{
+			t     = distanceMatrix[r][c];
+			sum2  = sum2+(t-sum)^2;
+			t	  = Max(0,Min(((t-b25)/h$1),bm1));
+			
+			
+			histogramTable[t][2] = histogramTable[t][2] + 1;
+		}
+	}
+
+	for (c=0; c<25;c=c+1)
+	{
+		histogramTable[c][3] = histogramTable[c][2]/dDim;
+	}
+
+	fprintf (stdout, "\nDistance matrix info:\n",
+					 "Mean        : ", sum, "\n",
+					 "Variance    : ", sum2/(dDim-1), "\n",
+					 "IQR         : ", IQR, "\n",
+					 "Minimum     : ", min, "\n",
+					 "Maximum     : ", max, "\n");
+
+	labels = {{"Bin","From","To", "Count", "Proportion"}};
+
+	PrintASCIITable (histogramTable, labels);
+}
+else
 {
-	histogramTable[c][3] = histogramTable[c][2]/dDim;
+	for (r=0; r< mDim; r=r+1)
+	{
+		for (c=r+1; c<mDim; c=c+1)
+		{
+			t                    = Max(distanceMatrix[r][c],0);
+			distanceMatrix[c][r] = t;
+			distanceMatrix[r][c] = t;
+		}
+	}
+	max = Max(distanceMatrix,0);
+
 }
-
-fprintf (stdout, "\nDistance matrix info:\n",
-				 "Mean        : ", sum, "\n",
-				 "Variance    : ", sum2/(dDim-1), "\n",
-				 "Minimum     : ", min, "\n",
-				 "Maximum     : ", max, "\n");
-
-labels = {{"Bin","From","To", "Count", "Proportion"}};
-
-dummy = PrintASCIITable (histogramTable, labels);
 
 clumpingL = -1;
 
@@ -236,15 +270,9 @@ while (clumpingL < 0)
 
 if (clumpingL>=0)
 {
-	clumpingU = -1;
-
-	while (clumpingU <= clumpingL)
-	{
-		fprintf (stdout, "Please enter the upper distance bound (>=",clumpingL,"):");
-		fscanf  (stdin,"Number",clumpingU);
-	}
-
+	clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
 	clusterCount = doClustering (clumpingL, clumpingU);
+	
 	fprintf (stdout, "\nFound ", clusterCount, " clusters\n");
 	
 	sortedCluster = {mDim,2};
@@ -258,15 +286,61 @@ if (clumpingL>=0)
 	sortedCluster = sortedCluster % 0;
 	
 	stringLabel = "";
-	outString * "Sequence, Cluster ID";
+	
+	graphVizSt = ""; graphVizSt * 128;
+	
+	outString  * ("SequenceID,ClusterID_"+clumpingL+"_"+clumpingU);
+	
+	lastClusterID = 1;
+	clusterSpan	  = 0;
+	clusterSizes  = {};
 	
 	for (k=0; k<mDim; k=k+1)
 	{
-		visited [k] = sortedCluster[k][0];
-		GetString (seqName, ds,sortedCluster[k][1]);
-		stringLabel = stringLabel + ";" + seqName;
-		outString * ("\n"+seqName+","+visited[k]);
+		clusterID		= sortedCluster[k][0];
+		visited [k]		= clusterID;
+		GetString		(seqName, ds,sortedCluster[k][1]);
+		stringLabel		= stringLabel + ";" + seqName;
+		outString	    * ("\n"+seqName+","+clusterID);
+		
+		if (lastClusterID != clusterID || k == mDim - 1)
+		{
+			clusterSize	= k-clusterSpan;
+			if (k == mDim - 1)
+			{
+				clusterSize = clusterSize + 1;
+			}
+			
+			clusterSizes[clusterSize] = clusterSizes[clusterSize] + 1;
+			
+			for (n1 = 0; n1 < clusterSize; n1=n1+1)
+			{
+				id1  = sortedCluster[clusterSpan + n1][1];
+				GetString		(seqName, ds,id1); 
+				for (n2 = n1 + 1; n2 < clusterSize; n2 = n2+1)
+				{
+					id2 = sortedCluster[clusterSpan + n2][1];
+					d = distanceMatrix[id1][id2];
+					if (d <= clumpingU && d>= clumpingL)
+					{
+						GetString		(seqName2, ds,id2); 
+						graphVizSt * ("\"" + seqName + "\" -- \"" + seqName2 + "\";\n");
+					}
+				}
+			}
+			clusterSpan = k+1;
+			lastClusterID = clusterID;
+		}
 	}
+	
+	fprintf (stdout, "\nCluster size distribution\n");
+	
+	_printAnAVL (clusterSizes, ".");
+	
+	graphVizSt * 0;
+	
+	SetDialogPrompt ("Save GraphViz file to:");
+	fprintf			(PROMPT_FOR_FILE, CLEAR_FILE, "graph G{\n", graphVizSt, "\n};");
 	
 	columnHeaders = {{"Cluster ID",  stringLabel}};
 
