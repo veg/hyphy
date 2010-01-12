@@ -7,9 +7,8 @@ LIBRARY_BINDINGS="NONE"
 	
 COMPILER="g++.exe";
 COMPILERC="gcc.exe";
-RC_COMPILER="windres.exe"
 
-COMPILER_FLAGS=" -D __WINDOZE__ -w -c -fsigned-char -O3 -fpermissive -I`pwd`/Source -I`pwd`/Source/SQLite -I`pwd`/Win32GUI -D INTPTR_TYPE=long "	
+COMPILER_FLAGS=" -D __UNIX__ -w -c -fsigned-char -O3 -fpermissive -I`pwd`/Source -I`pwd`/Source/SQLite "	
 
 echo "Checking for curl";
 
@@ -57,22 +56,20 @@ fi
 makedir $OBJ_DIR_NAME
 
 
-TARGET_NAME="HYPHYMP_MEGA_CLEAN.exe";
+TARGET_NAME="HYPHYMP_MEGA.exe";
 LINKER_FLAGS=$CURL_LINKER_LIBS" -D WINVER=0x0500 -lgomp -lpthread -lcomctl32 -lwinspool -lwininet -lmsimg32 ";
 echo "+-----------------------------------------------------------+"
 echo "|Building an OpenMP/MigGW/MEGA link dev.  version of HyPhy  |"
 echo "+-----------------------------------------------------------+"
-COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -fopenmp -D WINVER=0x0500-D _MINGW32_MEGA_ "
+COMPILER_FLAGS=$COMPILER_FLAGS" -D __MP__ -D __MP2__ -D _SLKP_LFENGINE_REWRITE_ -fopenmp -D WINVER=0x0500 -D _MINGW32_MEGA_ "
 
 echo "COMPILER_FLAGS = "$COMPILER_FLAGS
 echo "LINKER_FLAGS   = "$LINKER_FLAGS
 
 cd Source 
 
-for fileName in *.cpp main-win.cxx
+for fileName in *.cpp main-unix.cxx
 do
-  if [ ${fileName} != "hyphyunixutils.cpp" ]
-  then
 	  obj_file=../$OBJ_DIR_NAME/${fileName}.o;
 	  if [ $obj_file -nt $fileName ]
 	  then
@@ -87,7 +84,6 @@ do
 				exit 1;
 		   fi
 	  fi
-  fi
 done
 
 cd SQLite
@@ -109,47 +105,6 @@ do
 	   fi
   fi
 done
-
-cd ../../Win32GUI
-
-for fileName in *.cpp
-do
-  obj_file=../$OBJ_DIR_NAME/${fileName}.o;
-  if [ $obj_file -nt $fileName ]
-  then
-	echo File "$fileName" is up to date
-  else
-	  echo Building "$fileName";
-	  if `$COMPILER -o $obj_file $COMPILER_FLAGS $fileName `
-	   then
-		 echo Complete
-	   else
-			echo Error during compilation;
-			exit 1;
-	   fi
-  fi
-done
-
-cd Windows
-
-for fileName in *.rc
-do
-  obj_file=../../$OBJ_DIR_NAME/${fileName}.o;
-  if [ $obj_file -nt $fileName ]
-  then
-	echo File "$fileName" is up to date
-  else
-	  echo Building "$fileName";
-	  if `$RC_COMPILER -o $obj_file $fileName `
-	   then
-		 echo Complete
-	   else
-			echo Error during compilation;
-			exit 1;
-	   fi
-  fi
-done
-
 
 cd ../../
 
