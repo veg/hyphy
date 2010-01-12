@@ -445,13 +445,18 @@ void	SetStatusBarValue 		    (long,_Parameter,_Parameter)
 void	SetStatusLine 			    (_String s)
 {
 #ifdef	_MINGW32_MEGA_
-	if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE && s.sLength)
+	if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE)
 	{
 		DWORD bytesWritten = 0;
 		if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.sLength,bytesWritten,NULL) == FALSE || bytesWritten != s.sLength)
 		{
-			StringToConsole ("Failed to write the entire status update to a named MEGA pipe");
+			_String errMsg ("Failed to write the entire status update to a named MEGA pipe");
+			StringToConsole (errMsg);
 		}
+	}
+	else
+	{
+		StringToConsole (s);
 	}
 #endif
 	
@@ -526,7 +531,17 @@ int main (int argc, char* argv[])
 		printf ("Pipe name = %s\n", pipeName.sData);
 		if ((_HY_MEGA_Pipe = CreateFile(pipeName.sData, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)) == INVALID_HANDLE_VALUE)
 		{
-			FlagError (_String("Failed to create a pipe named '") & pipeName & "' to send data from HyPhy to MEGA");
+			char* lpMsgBuf;
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+				FORMAT_MESSAGE_FROM_SYSTEM |
+				FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL,
+				GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPTSTR) &lpMsgBuf,
+				0, NULL );
+			FlagError (_String("Failed to create a pipe named '") & pipeName & "' to send data from HyPhy to MEGA. Error: "&lpMsgBuf);
 		}
 	}
 #endif	
