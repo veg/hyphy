@@ -1469,17 +1469,23 @@ void	FlagError (_String st)
 #endif
 	
 	#if !defined __MAC__ && !defined __WINDOZE__
+		_String errMsg;
 		#ifdef __HYPHYMPI__
-			_String mpiErrorSend = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+			errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 			
 			if (rank > 0)
-				MPISendString (mpiErrorSend,0,true);
+				MPISendString (errMsg,0,true);
 			else
-				printf ("\nMaster node received an error:\n%s\n", st.sData);
+				errMsg = _String ("\nMaster node received an error:") ;
 		#else
-			printf("Error:");
+			errMsg = _String("Error:");
 		#endif
-		printf("\n%s\n", st.getStr());
+		errMsg = errMsg & _String("\n") & st & "\n";
+		#ifdef	_MINGW32_MEGA_
+			SetStatusLine  (errMsg);
+		#else
+			StringToConsole(errMsg);
+		#endif
 	#endif
 	
 	#ifdef __MAC__
@@ -1508,7 +1514,7 @@ void	FlagError (_String st)
 			while (ExpressionCalculator()) ;
 	#endif
 		//GlobalShutdown();
-		exit(1);
+		abort();
 #endif
 }
 
@@ -1540,21 +1546,26 @@ void	WarnError (_String st)
 	
 	if (globalMessageFile)
 		fprintf (globalMessageFile, "%s\n", st.sData);
-#ifndef __MAC__
-#ifndef __WINDOZE__
-#ifndef __HYPHY_GTK__
-	#ifdef __HYPHYMPI__
-		_String mpiErrorSend = _String("\nReceived an error state from MPI node ") & (long)rank & '\n' & st;
-		if (rank > 0)
-			MPISendString (mpiErrorSend,0,true);
-		else
-			printf ("\n[ERROR @ Master node] \n%s\n", st.sData);
-	#else
-		printf("Error:\n%s\n", st.getStr());
+	#if !defined __MAC__ && !defined __WINDOZE__
+		_String errMsg;
+		#ifdef __HYPHYMPI__
+			errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+			
+			if (rank > 0)
+				MPISendString (errMsg,0,true);
+			else
+				errMsg = _String ("\nMaster node received an error:") ;
+		#else
+			errMsg = _String("Error:");
+		#endif
+		errMsg = errMsg & _String("\n") & st & "\n";
+		#ifdef	_MINGW32_MEGA_
+			SetStatusLine  (errMsg);
+		#else
+			StringToConsole(errMsg);
+		#endif
 	#endif
-#endif
-#endif
-#endif
+	
 #ifdef __MAC__
 	if (!skipWarningMessages)
 	{
@@ -1637,7 +1648,7 @@ void	WarnError (_String st)
 		MPI_Abort (MPI_COMM_WORLD,1);
 #endif
 	//GlobalShutdown();
-	exit(1);
+	abort();
 #endif
 }
 //_______________________________________________________________________

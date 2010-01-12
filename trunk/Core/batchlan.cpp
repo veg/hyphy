@@ -5075,12 +5075,11 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 	if (currentArgument->Equal (&statusBarUpdateString))
 	{
 		_String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
-#if !defined __UNIX__ || defined __HEADLESS__ 
-#if !defined __HEADLESS__
-		SetStatusLine 	  (empty,sbar_value, empty, 0, HY_SL_TASK);
-#else
+		
+#if defined __UNIX__
 		SetStatusLine 	  (sbar_value);
-#endif	
+#else
+		SetStatusLine 	  (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif 
 		return;
 	}

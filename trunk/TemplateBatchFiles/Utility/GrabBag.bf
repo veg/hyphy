@@ -447,10 +447,43 @@ key[_sepChar]+: number (%)
 function _printAnAVL (_theList, _sepChar)
 {
 	_gb_keys 		= _sortStrings(Rows (_theList));
+	
+	_printAnAVLInt (_theList, _gb_keys, _sepChar);
+		
+	return 0;
+}
+
+/*---------------------------------------------
+take an AVL of the form [number] = number
+and print it as:
+
+key[_sepChar]+: number (%)
+
+---------------------------------------------*/
+	
+function _printAnAVLNumeric (_theList, _sepChar)
+{
+	_gb_dim   		= Abs(_theList);
+	num_keys		= avlKeysToMatrix (_theList)%0;
+	_gb_keys 		= {_gb_dim,1};
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_gb_keys[_gb_idx] = ""+num_keys[_gb_idx];
+	}
+	
+	_printAnAVLInt (_theList, _gb_keys, _sepChar);
+		
+	return 0;
+}
+
+/*---------------------------------------------*/
+
+function _printAnAVLInt (_theList, _gb_keys, _sepChar)
+{	
 	_gb_dim   		= Abs(_theList);
 	_gb_total 		= 0;
 	_gb_max_key_len = 0;
-	
+
 	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
 	{
 		_gb_key 		= _gb_keys[_gb_idx];

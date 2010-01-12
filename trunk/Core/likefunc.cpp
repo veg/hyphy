@@ -292,7 +292,9 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 	{
 		lCount			= likeFuncEvalCallCount;
 		TimerDifferenceFunction (false);
+#ifndef _MINGW32_MEGA_
 		setvbuf			  (stdout,nil, _IONBF,1);
+#endif
 		lastDone		= 0;
 		userTimeStart	= clock();
 		checkParameter	 (optimizationStringQuantum, update_quantum, 0.0);
@@ -353,10 +355,15 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 				if (outFile)
 					fprintf (outFile,"%s", reportString.sData);			
 				else
+#ifndef _MINGW32_MEGA_
 					printf ("\015%s", reportString.sData);
+#else	
+					SetStatusLine (reportString);
+#endif
 			}
 			else
 			{
+				char buffer [1024];
 				if (optimization)
 				{
 					if (outFile)
@@ -364,14 +371,20 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 								 (likeFuncEvalCallCount-lCount)/elapsed_time);			
 					else
 					{
-						printf ("\015 Current Max: %-14.8g (%d %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
+						long written = snprintf (buffer,1024,"Current Max: %-14.8g (%d %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
 			
 						if (elapsed_time)
-							printf ("CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*elapsed_time));
+							snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*elapsed_time));
 					}
 				}
 				else
-					printf ("\015 Sites done: %g (%d %% done)", (double)max, pdone);	
+					snprintf (buffer, 1024, "Sites done: %g (%d %% done)", (double)max, pdone);	
+				
+#ifndef _MINGW32_MEGA_
+				printf ("\015%s", buffer);
+#else	
+				SetStatusLine (_String(buffer));
+#endif
 			}
 			
 
@@ -382,8 +395,10 @@ void		UpdateOptimizationStatus (_Parameter max, long pdone, char init, bool opti
 				fprintf (outFile,"DONE");
 			else
 			{
+#ifndef _MINGW32_MEGA_
 				printf ("\033\015 ");
 				setvbuf (stdout,nil,_IOLBF,1024);
+#endif
 			}	
 		}
 	if (outFile)

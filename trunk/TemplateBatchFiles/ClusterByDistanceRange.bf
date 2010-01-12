@@ -137,6 +137,7 @@ else
 SetDialogPrompt 	("Load a distance matrix:");
 fscanf 				(PROMPT_FOR_FILE,"NMatrix",distanceMatrix);
 
+
 /* compute some matrix statistics */
 
 sum  = 0;
@@ -145,6 +146,13 @@ max	 = 0;
 min  = 1e100;
 
 mDim = Rows (distanceMatrix);
+
+if (mDim != ds.species)
+{
+	fprintf (stdout, "[ERROR] Read ", ds.species, " but the distance matrix had an incompatible dimension: ", mDim, "\n");
+	return 0;
+}
+
 dDim = mDim*(mDim-1)/2;
 
 ChoiceList (doHist,"Histogram",1,SKIP_NONE,"Generate","Compute and report distribution statistics of pairwise distances.",
@@ -233,30 +241,23 @@ if (doHist == 0)
 }
 else
 {
-	for (r=0; r< mDim; r=r+1)
+	/*for (r=0; r< mDim; r=r+1)
 	{
 		for (c=r+1; c<mDim; c=c+1)
 		{
-			t                    = Max(distanceMatrix[r][c],0);
+			t = Max(distanceMatrix[r][c], 0);
 			distanceMatrix[c][r] = t;
 			distanceMatrix[r][c] = t;
 		}
-	}
+	}*/	
+	
 	max = Max(distanceMatrix,0);
 
 }
 
 clumpingL = -1;
 
-SetDialogPrompt ("Set comma separated results to:");
 
-DEFAULT_FILE_SAVE_NAME = "Clustering.csv";
-
-fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
-
-outFile = LAST_FILE_PATH;
-outString = "";
-outString * 8192;
 
 while (clumpingL < 0)
 {
@@ -270,77 +271,92 @@ while (clumpingL < 0)
 
 if (clumpingL>=0)
 {
-	clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
-	clusterCount = doClustering (clumpingL, clumpingU);
-	
-	fprintf (stdout, "\nFound ", clusterCount, " clusters\n");
-	
-	sortedCluster = {mDim,2};
-	
-	for (k=0; k<mDim; k=k+1)
+	do
 	{
-		sortedCluster[k][0] = visited[k];
-		sortedCluster[k][1] = k;
-	}	
-	
-	sortedCluster = sortedCluster % 0;
-	
-	stringLabel = "";
-	
-	graphVizSt = ""; graphVizSt * 128;
-	
-	outString  * ("SequenceID,ClusterID_"+clumpingL+"_"+clumpingU);
-	
-	lastClusterID = 1;
-	clusterSpan	  = 0;
-	clusterSizes  = {};
-	
-	for (k=0; k<mDim; k=k+1)
-	{
-		clusterID		= sortedCluster[k][0];
-		visited [k]		= clusterID;
-		GetString		(seqName, ds,sortedCluster[k][1]);
-		stringLabel		= stringLabel + ";" + seqName;
-		outString	    * ("\n"+seqName+","+clusterID);
+		SetDialogPrompt ("Set comma separated results to:");
+		DEFAULT_FILE_SAVE_NAME = "Clustering.csv";	
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);	
+		outFile = LAST_FILE_PATH;
+		outString = "";
+		outString * 8192;
+		clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
+		clusterCount = doClustering (clumpingL, clumpingU);
 		
-		if (lastClusterID != clusterID || k == mDim - 1)
+		fprintf (stdout, "\nFound ", clusterCount, " clusters\n");
+		
+		sortedCluster = {mDim,2};
+		
+		for (k=0; k<mDim; k=k+1)
 		{
-			clusterSize	= k-clusterSpan;
-			if (k == mDim - 1)
-			{
-				clusterSize = clusterSize + 1;
-			}
+			sortedCluster[k][0] = visited[k];
+			sortedCluster[k][1] = k;
+		}	
+		
+		sortedCluster = sortedCluster % 0;
+		
+		stringLabel = "";
+		
+		graphVizSt = ""; graphVizSt * 128;
+		
+		outString  * ("SequenceID,ClusterID_"+clumpingL+"_"+clumpingU);
+		
+		lastClusterID = 1;
+		clusterSpan	  = 0;
+		clusterSizes  = {};
+		
+		for (k=0; k<mDim; k=k+1)
+		{
+			clusterID		= sortedCluster[k][0];
+			visited [k]		= clusterID;
+			GetString		(seqName, ds,sortedCluster[k][1]);
+			stringLabel		= stringLabel + ";" + seqName;
+			outString	    * ("\n"+seqName+","+clusterID);
 			
-			clusterSizes[clusterSize] = clusterSizes[clusterSize] + 1;
-			
-			for (n1 = 0; n1 < clusterSize; n1=n1+1)
+			if (lastClusterID != clusterID || k == mDim - 1)
 			{
-				id1  = sortedCluster[clusterSpan + n1][1];
-				GetString		(seqName, ds,id1); 
-				for (n2 = n1 + 1; n2 < clusterSize; n2 = n2+1)
+				clusterSize	= k-clusterSpan+1;
+
+				clusterSizes[clusterSize] = clusterSizes[clusterSize] + 1;
+				
+				graphVizSt * ("\n\n/* cluster " + clusterID + "*/\n\n");
+				
+				for (n1 = 0; n1 < clusterSize; n1=n1+1)
 				{
-					id2 = sortedCluster[clusterSpan + n2][1];
-					d = distanceMatrix[id1][id2];
-					if (d <= clumpingU && d>= clumpingL)
+					id1  = sortedCluster[clusterSpan + n1][1];
+					GetString		(seqName, ds,id1); 
+					for (n2 = n1 + 1; n2 < clusterSize; n2 = n2+1)
 					{
-						GetString		(seqName2, ds,id2); 
-						graphVizSt * ("\"" + seqName + "\" -- \"" + seqName2 + "\";\n");
+						id2 = sortedCluster[clusterSpan + n2][1];
+						d = distanceMatrix[id1][id2];
+						if (d <= clumpingU && d>= clumpingL)
+						{
+							GetString		(seqName2, ds,id2); 
+							graphVizSt * ("\"" + seqName + "\" -- \"" + seqName2 + "\";\n");
+						}
 					}
 				}
+				clusterSpan = k+1;
+				lastClusterID = clusterID;
 			}
-			clusterSpan = k+1;
-			lastClusterID = clusterID;
 		}
+		
+		fprintf (stdout, "\nCluster size distribution\n");
+		
+		_printAnAVLNumeric (clusterSizes, ".");
+		
+		graphVizSt * 0;
+		
+		SetDialogPrompt ("Save GraphViz file to:");
+		fprintf			(PROMPT_FOR_FILE, CLEAR_FILE, "graph G{\n", graphVizSt, "\n};");
+		
+		outString * 0;
+	
+		fprintf (outFile, outString);
+		
+		fprintf (stdout, "Continue with another threshold (y/n)?");
+		fscanf  (stdin,"String", shouldCont);
 	}
-	
-	fprintf (stdout, "\nCluster size distribution\n");
-	
-	_printAnAVL (clusterSizes, ".");
-	
-	graphVizSt * 0;
-	
-	SetDialogPrompt ("Save GraphViz file to:");
-	fprintf			(PROMPT_FOR_FILE, CLEAR_FILE, "graph G{\n", graphVizSt, "\n};");
+	while (shouldCont[0] != "n" && shouldCont[0] != "N");
 	
 	columnHeaders = {{"Cluster ID",  stringLabel}};
 
@@ -365,6 +381,16 @@ if (clumpingL>=0)
 }
 else
 {
+	SetDialogPrompt ("Set comma separated results to:");
+
+	DEFAULT_FILE_SAVE_NAME = "Clustering.csv";
+
+	fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
+
+	outFile = LAST_FILE_PATH;
+	outString = "";
+	outString * 8192;
+
 	maxSteps = 500;
 	
 	distanceMx = {maxSteps,2} ["(_MATRIX_ELEMENT_COLUMN_==0)*(_MATRIX_ELEMENT_ROW_)*max/maxSteps"];
@@ -487,12 +513,6 @@ function 	doAVertex (vertexID, currentNeighbor)
 		if (visited[currentNeighbor]==0 && gatedDistances[vertexID][currentNeighbor])
 		{
 			visited[currentNeighbor] = clusterCount;
-			if (clusterCount == 20)
-			{
-				GetString (seqName1, ds, vertexID);
-				GetString (seqName2, ds, currentNeighbor);
-				fprintf (stdout, seqName1, "=>", seqName2, "\n");
-			}
 			ExecuteCommands("doAVertex ("+currentNeighbor+", 0);");
 		}
 	}

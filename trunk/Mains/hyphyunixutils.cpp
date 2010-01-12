@@ -124,7 +124,7 @@ bool	Get_a_URL (_String& urls, _String* fileName)
 _String*	StringFromConsole	(bool)
 {
 	_String * returnme = new _String (32L, true);
-	#ifndef __HEADLESS__
+	#if not defined __HEADLESS__ && not defined _MINGW32_MEGA_
 		int		  readAChar;
 		while 	 ((readAChar = getc(stdin)) != '\n')
 		{
@@ -137,7 +137,7 @@ _String*	StringFromConsole	(bool)
 			*returnme << readAChar;
 		}
 	#else
-		WarnError ("Unhandled standard input interaction in StringFromConsolel for headless HyPhy");
+		WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
 		return;
 	#endif
 	returnme->Finalize ();
@@ -148,18 +148,9 @@ _String*	StringFromConsole	(bool)
 
 void	StringToConsole (_String & s)
 {
-#ifdef __HYPHYMPI__
-	if (_hy_mpi_node_rank == 0)
-#endif
-	{
-	#ifdef __HEADLESS__
-		if (globalInterfaceInstance)
-			globalInterfaceInstance->PushOutString(&s);
-	#else
-		printf ("%s",s.getStr());
-	#endif
-	}
+	BufferToConsole ((const char*)s.sData);
 }
+
 
 //__________________________________________________________________________________
 

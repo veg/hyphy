@@ -29,6 +29,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #if !defined __MINGW32__
 	#include <termios.h>
 #endif
+
+#ifdef _MINGW32_MEGA_
+	#include <Windows.h>
+	HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
+#endif
+
 //#include <signal.h>
 #if defined   __MP2__ || defined __MP__
 	#include <pthread.h>
@@ -436,8 +442,18 @@ void	SetStatusBarValue 		    (long,_Parameter,_Parameter)
 	
 }
 //__________________________________________________________________________________
-void	SetStatusLine 			    (_String)
+void	SetStatusLine 			    (_String s)
 {
+#ifdef	_MINGW32_MEGA_
+	if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE && s.sLength)
+	{
+		DWORD bytesWritten = 0;
+		if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.sLength,bytesWritten,NULL) == FALSE || bytesWritten != s.sLength)
+		{
+			StringToConsole ("Failed to write the entire status update to a named MEGA pipe");
+		}
+	}
+#endif
 	
 }
 
@@ -500,6 +516,20 @@ int main (int argc, char* argv[])
 #ifdef _OPENMP
 	systemCPUCount = omp_get_max_threads();
 #endif
+	
+#ifdef _MINGW32_MEGA_
+	{
+		char pid[16];
+		snprintf (pid,16,"%ul", GetCurrentProcessId());
+		
+		_String pipeName = _String("\\\\.\\pipe\\MEGAPipe") & pid;
+		printf ("Pipe name = %s\n", pipeName.sData);
+		if ((_HY_MEGA_Pipe = CreateFile(pipeName.sData, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)) == INVALID_HANDLE_VALUE)
+		{
+			FlagError (_String("Failed to create a pipe named '") & pipeName & "' to send data from HyPhy to MEGA");
+		}
+	}
+#endif	
 
 	for (long i=1; i<argc;i++)
 	{
@@ -679,6 +709,12 @@ int main (int argc, char* argv[])
 	}
 	ReportWarning				(_String ("Node ") & (long)rank & " is shutting down\n");
 	#endif
+	
+	
+#ifdef _MINGW32_MEGA_
+	if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE)
+		CloseHandle (_HY_MEGA_Pipe);
+#endif
 	
 	PurgeAll					(true);
 	GlobalShutdown				();
