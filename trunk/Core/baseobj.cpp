@@ -231,11 +231,25 @@ bool	GlobalShutdown (void)
 		if (_hy_mpi_node_rank == 0)
 		{
 			for (long count = 1; count < size; count++)
+			{
+				ReportWarning (_String ("Sending shutdown command to node " & count & '.');
 				MPISendString(empty,count);
+			}
 		}
 #endif
  	
- 	if (globalErrorFile)
+ #ifdef  __HYPHYMPI__
+	// MPI_Barrier (MPI_COMM_WORLD);
+	ReportWarning ("Calling MPI_Finalize");
+	 #ifdef __USE_ABORT_HACK__
+		 MPI_Abort(MPI_COMM_WORLD,0);	 
+	 #else 
+		 MPI_Finalize();
+	 #endif 
+	ReportWarning ("Returned from MPI_Finalize");
+#endif
+
+	if (globalErrorFile)
 	{
 		fflush (globalErrorFile);
 		fseek(globalErrorFile,0,SEEK_END);
@@ -282,14 +296,6 @@ bool	GlobalShutdown (void)
 		}
 	}
 	
-#ifdef  __HYPHYMPI__
-	// MPI_Barrier (MPI_COMM_WORLD);
-	 #ifdef __USE_ABORT_HACK__
-		 MPI_Abort(MPI_COMM_WORLD,0);	 
-	 #else 
-		 MPI_Finalize();
-	 #endif 
-#endif
  	return res;
 }
 

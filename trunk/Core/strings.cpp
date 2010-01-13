@@ -1514,7 +1514,11 @@ void	FlagError (_String st)
 			while (ExpressionCalculator()) ;
 	#endif
 		//GlobalShutdown();
-		abort();
+	#ifdef _HY_ABORT_ON_ERROR
+		abort ();
+	#else
+		exit(1);
+	#endif	
 #endif
 }
 
@@ -1648,7 +1652,13 @@ void	WarnError (_String st)
 		MPI_Abort (MPI_COMM_WORLD,1);
 #endif
 	//GlobalShutdown();
-	abort();
+
+#ifdef _HY_ABORT_ON_ERROR
+	abort ();
+#else
+	exit(1);
+#endif	
+	
 #endif
 }
 //_______________________________________________________________________

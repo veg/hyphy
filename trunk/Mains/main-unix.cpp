@@ -525,7 +525,7 @@ int main (int argc, char* argv[])
 #ifdef _MINGW32_MEGA_
 	{
 		char pid[16];
-		snprintf (pid,16,"%ul", GetCurrentProcessId());
+		snprintf (pid,16,"%u", GetCurrentProcessId());
 		
 		_String pipeName = _String("\\\\.\\pipe\\MEGAPipe") & pid;
 		printf ("Pipe name = %s\n", pipeName.sData);
