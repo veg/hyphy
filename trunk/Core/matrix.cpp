@@ -4705,7 +4705,9 @@ _Matrix*	_Matrix::Exponentiate (void)
 				temp	  *= 1.0/i;
 				(*result) += temp;
 				i		  ++;
+#ifndef _OPENMP
 				taylorTermsCount++;
+#endif
 			}
 			while (temp.IsMaxElement(tMax*truncPrecision*i));
 			
