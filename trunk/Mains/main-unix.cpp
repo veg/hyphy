@@ -448,11 +448,12 @@ void	SetStatusLine 			    (_String s)
 	if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE)
 	{
 		DWORD bytesWritten = 0;
-		if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.sLength,bytesWritten,NULL) == FALSE || bytesWritten != s.sLength)
+		if (WriteFile (_HY_MEGA_Pipe,(LPCVOID)s.sData,s.sLength,&bytesWritten,NULL) == FALSE || bytesWritten != s.sLength)
 		{
 			_String errMsg ("Failed to write the entire status update to a named MEGA pipe");
 			StringToConsole (errMsg);
 		}
+		FlushFileBuffers(_HY_MEGA_Pipe);
 	}
 	else
 	{
