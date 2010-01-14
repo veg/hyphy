@@ -1305,7 +1305,7 @@ void	 _TheTree::SampleAncestorsBySequence (_DataSetFilter* dsf, _SimpleList& sit
 				conditionals += alphabetDimension;
 		}
 		
-		delete (cache);
+		delete [] cache;
 		
 		_SimpleList  conversion;
 		_AVLListXL	 conversionAVL (&conversion);

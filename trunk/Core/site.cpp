@@ -2518,7 +2518,7 @@ void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 				}
 			}
 			
-			delete (store_vec);
+			delete [] store_vec;
 		}
 		
 		if (sitesWithDeletions.lLength==theFrequencies.lLength)
@@ -2712,7 +2712,7 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 			hack<<posMarker;
 	}
 	
-	delete		  store;
+	delete		 []  store;
 	DeleteObject (tokens);
 	
 	hack.Sort(true);
@@ -4249,12 +4249,12 @@ void 	_DataSetFilter::XferwCorrection (_Matrix& source, _Parameter* target, long
 	{	
 		for (long i = 0; i<_length; i++)
 		{	
-			if (i==theExclusions.lData[k] && k<theExclusions.lLength)
+			if (k<theExclusions.lLength && i==theExclusions.lData[k])
 			{
 				k++;
 				continue;
 			}
-			target[i-k] = (mxdata[i]!=0);
+			target[i-k] = (mxdata[i] != 0.);
 		}
 	}
 }	
@@ -4501,7 +4501,7 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 			{	
 				for (n = 0; n<undimension; n++, fl++)
 				{	
-					if (n==theExclusions.lData[m] && m <theExclusions.lLength)
+					if (m <theExclusions.lLength && n==theExclusions.lData[m])
 					{
 						m++;
 						continue;
@@ -5042,7 +5042,7 @@ void 	_DataSetFilter::SetupConversion (void)
 				conversionCache << tcache[i];
 			
 			//delete vcache;
-			delete tcache;
+			delete [] tcache;
 		}			
 	}
 }

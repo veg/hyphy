@@ -261,7 +261,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 								{
 									long f = variableDependanceAllocations.Find ((BaseRef)probVars.lData[v]);
 									if (f < 0)
-										f = variableDependanceAllocations.Insert ((BaseRef)probVars.lData[v], (long)(new _SimpleList (intervals,0,0)));
+										f = variableDependanceAllocations.Insert ((BaseRef)probVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
 									((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
 								}
 							}
@@ -516,7 +516,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 							{
 								long f = variableDependanceAllocations.Find ((BaseRef)densityVars.lData[v]);
 								if (f < 0)
-									f = variableDependanceAllocations.Insert ((BaseRef)densityVars.lData[v], (long)(new _SimpleList (intervals,0,0)));
+									f = variableDependanceAllocations.Insert ((BaseRef)densityVars.lData[v], (long)(new _SimpleList (intervals,0,0)),false);
 								((_SimpleList*) variableDependanceAllocations.GetXtra (f))->lData[k] = 1;
 							}
 							

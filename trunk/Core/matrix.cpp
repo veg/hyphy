@@ -1308,7 +1308,7 @@ _PMathObj	_Matrix::MultByFreqs (long freqID)
 			for (long j=0; j<hDim; j++)
 				vm->Store (j,j,-tempDiags[j]);
 				
-			delete (tempDiags);
+			delete [] tempDiags;
 		}
 		else
 		{
@@ -3242,7 +3242,7 @@ _PMathObj 	_Matrix::EvaluateSimple (void)
 			for (long i = 0; i<hDim; i++)
 				(*result)[i*hDim+i] = diagStorage[i];
 			}
-			delete (diagStorage);
+			delete [] diagStorage;
 		}
 	}
 	else
@@ -4750,8 +4750,13 @@ _Matrix*	_Matrix::Exponentiate (void)
 		}
 		
 	
-		for (long s = 0; s<power2; s++, squaringsCount++)
+		for (long s = 0; s<power2; s++)
+		{
+#ifndef _OPENMP
+			squaringsCount++;
+#endif
 			result->Sqr(stash);
+		}
 		delete [] stash;
 					
 		return result;	
@@ -5036,8 +5041,8 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 						
 						f.ConvertFromSimple (vIndex);
 						
-						delete  stack;
-						delete  varValues;
+						delete  [] stack;
+						delete  [] varValues;
 					}
 					else
 					{
@@ -8052,7 +8057,7 @@ _Parameter	_Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf)
 		for (long k=0; k<hDim; k++)
 			result += diags[k]*nf->theData[k];
 		}	
-		delete diags;
+		delete [] diags;
 	}
 	else
 	{

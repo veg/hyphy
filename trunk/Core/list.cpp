@@ -1763,7 +1763,9 @@ void  _List::Delete (long index)
 		DeleteObject (theObj);
 		lLength--;
 		if (lLength-index)
-			memcpy ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+			for (unsigned long i = index; i < lLength; i++)
+				lData[i] = lData[i+1];
+			//memcpy ((Ptr)lData+sizeof(BaseRef)*(index),(Ptr)lData+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
 	}
 	if (laLength-lLength>MEMORYSTEP)
 	{	
@@ -2296,21 +2298,35 @@ void	_SimpleList::Union (_SimpleList& l1, _SimpleList& l2)
 	long  c1 = 0,
 		  c2 = 0;
 		  
-	while ((c1<l1.lLength)&&(c2<l2.lLength))
+	while (c1<l1.lLength && c2<l2.lLength)
 	{
-		while ((l1.lData[c1]<l2.lData[c2])&&(c1<l1.lLength)) 
+		while (l1.lData[c1]<l2.lData[c2])
+		{
 			(*this) << l1.lData[c1++];
+			if (c1==l1.lLength)
+				break;
+		}
+		
 		if (c1==l1.lLength)
 			break;
-		while ((l1.lData[c1]==l2.lData[c2])&&(c1<l1.lLength)&&(c2<l2.lLength)) 
+		
+		while (l1.lData[c1]==l2.lData[c2]) 
 		{
 			(*this) << l1.lData[c1++];
 			c2++;
+			if (c1==l1.lLength || c2==l2.lLength)
+				break;
 		}
-		if ((c1==l1.lLength)||(c2==l2.lLength))
+		
+		if (c1==l1.lLength || c2==l2.lLength)
 			break;
-		while ((l2.lData[c2]<l1.lData[c1])&&(c2<l2.lLength)) 
+		
+		while (l2.lData[c2]<l1.lData[c1])
+		{
 			(*this) << l2.lData[c2++];
+			if (c2==l2.lLength)
+				break;
+		}
 	}
 	
 	while (c1<l1.lLength)
@@ -2331,21 +2347,32 @@ void	_SimpleList::Intersect (_SimpleList& l1, _SimpleList& l2)
 	long  c1 = 0,
 		  c2 = 0;
 		  
-	while ((c1<l1.lLength)&&(c2<l2.lLength))
+	while (c1<l1.lLength && c2<l2.lLength)
 	{
-		while ((l1.lData[c1]<l2.lData[c2])&&(c1<l1.lLength)) 
+		while (l1.lData[c1]<l2.lData[c2]) 
+		{
 			c1++;
+			if (c1==l1.lLength)
+				break;
+		}
 		if (c1==l1.lLength)
 			break;
-		while ((l1.lData[c1]==l2.lData[c2])&&(c1<l1.lLength)&&(c2<l2.lLength)) 
+		
+		while (l1.lData[c1]==l2.lData[c2]) 
 		{
 			(*this) << l1.lData[c1++];
 			c2++;
+			if (c1==l1.lLength || c2==l2.lLength)
+				break;
 		}
-		if ((c1==l1.lLength)||(c2==l2.lLength))
+		if (c1==l1.lLength || c2==l2.lLength)
 			break;
-		while ((l2.lData[c2]<l1.lData[c1])&&(c2<l2.lLength)) 
+		while (l2.lData[c2]<l1.lData[c1])
+		{
 			c2++;
+			if (c2==l2.lLength)
+				break;
+		}
 	}
 }
 
@@ -2358,33 +2385,40 @@ long	_SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
 		  c2 	= 0,
 		  res 	= 0;
 		  
-	while ((c1<l1.lLength)&&(c2<lLength))
+	
+	while (c1<l1.lLength && c2<lLength)
 	{
-		while ((l1.lData[c1]<lData[c2])&&(c1<l1.lLength)) 
+		while (l1.lData[c1]<lData[c2]) 
+		{
 			c1++;
+			if (c1==l1.lLength)
+				break;
+		}
 		if (c1==l1.lLength)
 			break;
-			
-		while ((l1.lData[c1]==lData[c2])&&(c1<l1.lLength)&&(c2<lLength)) 
+		
+		while (l1.lData[c1]==lData[c2]) 
 		{
-			(*this) << l1.lData[c1++];
 			c2++;
 			if (yesNo)
 				return 1;
 			else
 				res++;
+			if (c1==l1.lLength || c2==lLength)
+				break;
 		}
-		
-		if ((c1==l1.lLength)||(c2==lLength))
+		if (c1==l1.lLength || c2==lLength)
 			break;
-		while ((lData[c2]<l1.lData[c1])&&(c2<lLength)) 
+		while (lData[c2]<l1.lData[c1])
+		{
 			c2++;
+			if (c2==lLength)
+				break;
+		}
 	}
-	
+
 	return res;
 }
-
-
 
 //______________________________________________________________
 
@@ -2398,13 +2432,14 @@ void	_List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2
 	long  c1 = 0,
 		  c2 = 0;
 		  
-	while ((c1<l1.lLength)&&(c2<l2.lLength))
+	while (c1<l1.lLength && c2<l2.lLength)
 	{
-		while ((c1<l1.lLength)&&(((_String*)l1(c1))->Compare((_String*)l2(c2))<0)) 
+		while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2))<0) 
 			c1++;
 		if (c1==l1.lLength)
 			break;
-		while ((c1<l1.lLength)&&(c2<l2.lLength)&&((_String*)l1(c1))->Equal((_String*)l2(c2))) 
+		
+		while (c1<l1.lLength && c2<l2.lLength &&((_String*)l1(c1))->Equal((_String*)l2(c2))) 
 		{
 			if (idx)
 				(*idx) << c1;
@@ -2414,9 +2449,9 @@ void	_List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2
 			(*this) << l1(c1++);
 			c2++;
 		}
-		if ((c1==l1.lLength)||(c2==l2.lLength))
+		if (c1==l1.lLength || c2==l2.lLength)
 			break;
-		while ((c2<l2.lLength)&&(((_String*)l2(c2))->Compare((_String*)l1(c1))<0)) 
+		while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1))<0)
 			c2++;
 	}
 }
@@ -2435,18 +2470,19 @@ void	_SimpleList::XOR (_SimpleList& l1, _SimpleList& l2)
 		  
 	while ((c1<l1.lLength)&&(c2<l2.lLength))
 	{
-		while ((l1.lData[c1]<l2.lData[c2])&&(c1<l1.lLength)) 
+		while (c1<l1.lLength && l1.lData[c1]<l2.lData[c2])
 			(*this) << l1.lData[c1++];
 		if (c1==l1.lLength)
 			break;
-		while ((l1.lData[c1]==l2.lData[c2])&&(c1<l1.lLength)&&(c2<l2.lLength)) 
+		while (c1<l1.lLength && c2<l2.lLength && l1.lData[c1]==l2.lData[c2] ) 
 		{
 			c1++;
 			c2++;
 		}
-		if ((c1==l1.lLength)||(c2==l2.lLength))
+		if (c1==l1.lLength||c2==l2.lLength)
 			break;
-		while ((l2.lData[c2]<l1.lData[c1])&&(c2<l2.lLength)) 
+		
+		while (c2<l2.lLength && l2.lData[c2]<l1.lData[c1]) 
 			(*this) << l2.lData[c2++];
 	}
 	

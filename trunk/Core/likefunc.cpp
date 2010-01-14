@@ -1649,7 +1649,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 							for (long i = 0; i < blockSize; i++)
 								result->theData[currentOffset+i] = likelihoodBuffer[i];
 							
-							delete		 (likelihoodBuffer);
+							delete		 [] likelihoodBuffer;
 						}
 						else
 						{
@@ -4689,7 +4689,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					averageChange = 1e-8;
 			}
 			
-			_Parameter diffs [5];
+			_Parameter diffs [5] = {0.,0.,0.,0.,0.};
 			char convergenceMode = 0;
 				/* 0, normal
 				 * 1, accelerated (last cycle obtained a bigger LL drop than the one before)
@@ -6795,7 +6795,7 @@ void	_LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _Para
 {
 	_Parameter left, 
 			   right, 
-			   middle,
+			   middle			= bestVal,
 			   leftValue, 
 			   middleValue		= maxSoFar, 
 			   rightValue,  

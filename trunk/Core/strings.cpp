@@ -2165,7 +2165,7 @@ void		_String::RegExpMatch (Ptr pattern, _SimpleList& matchedPairs)
 				matchedPairs << matches[k].rm_eo-1;
 			}
 		}
-		delete			matches;		 		
+		delete		[]	matches;		 		
 	}
 }
 
