@@ -215,6 +215,8 @@ _String
 			marginalAncestors				("MARGINAL"),
 			doLeavesAncestors				("DOLEAVES"),
 			blScanfRewind					("REWIND"),
+			blFprintfRedirect				("GLOBAL_FPRINTF_REDIRECT"),
+			blFprintfDevNull				("/dev/null"),
 			dialogPrompt,
 			lastModelUsed,
 			baseDirectory,
@@ -2753,8 +2755,10 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
 	
+	
 	_String* targetName = (_String*)parameters(0), 
 			 fnm;
+
 			 
 	FILE* dest = nil;
 	
@@ -2762,7 +2766,18 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 	bool	doClose = true;
 	
 	if (targetName->Equal(&stdoutDestination))
-		out2=1;
+	{
+		_FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
+		if (redirect && redirect->theString->sLength)
+		{
+			if (redirect->theString->Equal (&blFprintfDevNull))
+				return;
+			else
+				targetName = redirect->theString;
+		}
+		else
+			out2=1;
+	}
 	
 	checkParameter (printDigitsSpec,printDigits,0);
 	
