@@ -565,6 +565,7 @@ void _LikelihoodFunction::Init (void)
 	mstCache			= nil;
 	nonConstantDep      = nil;
 	evalsSinceLastSetup = 0;
+	siteArrayPopulated  = false;
 	
 	conditionalInternalNodeLikelihoodCaches = nil;
 	conditionalTerminalNodeStateFlag		= nil;

@@ -232,7 +232,7 @@ bool	GlobalShutdown (void)
 		{
 			for (long count = 1; count < size; count++)
 			{
-				ReportWarning (_String ("Sending shutdown command to node " & count & '.');
+				ReportWarning (_String ("Sending shutdown command to node ") & count & '.');
 				MPISendString(empty,count);
 			}
 		}

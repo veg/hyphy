@@ -12,5 +12,5 @@ DEFAULT_FILE_SAVE_NAME = "Bootstrap.out";
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
 
 MESSAGE_LOGGING = 0;
-dumb = BootStrapFunction(nOfI,LAST_FILE_PATH,0);
+BootStrapFunction(nOfI,LAST_FILE_PATH,0);
 MESSAGE_LOGGING = 1;
