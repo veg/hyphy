@@ -2216,7 +2216,7 @@ long	 _Formula::NumberOperations(void)
 
 //__________________________________________________________________________________
 
-_PMathObj _Formula::Compute (long startAt) // compute the value of the formula
+_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace) // compute the value of the formula
 {
 	if (theFormula.lLength == 0) 
 		return nil;
@@ -2226,7 +2226,7 @@ _PMathObj _Formula::Compute (long startAt) // compute the value of the formula
 		theStack.theStack.Clear();
 
 	for (long i=startAt; i<theFormula.lLength; i++)
-		if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack))
+		if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace))
 		{
 			wellDone = false;
 			break;
@@ -3583,11 +3583,11 @@ _PMathObj	_FString::CountGlobalObjects (void)
 
 //__________________________________________________________________________________
 
-long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
+long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, _VariableContainer* nameSpace)
 {
 	if (code>=-1)
 	{
-		_PMathObj  formulaValue = f->Compute();
+		_PMathObj  formulaValue = f->Compute(0, nameSpace);
 		if (!formulaValue)
 			return 0;
 		
@@ -3612,14 +3612,14 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 		
 		if (f2->IsEmpty())
 		{
-			WarnError ("Empty RHS in an assignment");
+			WarnError ("Empty RHS in an assignment.");
 			return 0;
 		}
 		
 		if (code == -4)
 			newF.DuplicateReference(f2);
 		else
-			newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute()->makeDynamic()));
+			newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute(0, nameSpace)->makeDynamic()));
 
 		long stackD = -1,
 			 last0	= 0;
@@ -3640,7 +3640,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 		{
 			stackD = f->theFormula.lLength;
 			f->theFormula.lLength		= last0+1;
-			_PMathObj	lvalue  = f->Compute();
+			_PMathObj	lvalue  = f->Compute(0, nameSpace);
 			f->theFormula.lLength = stackD;
 			if (lvalue->ObjectClass () == MATRIX)
 				mmx = (_Matrix*)lvalue;
@@ -3716,64 +3716,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code)
 			WarnError (errMsg);
 			return 0;
 		}
-		/*_Variable* mmo = LocateVar(((_Operation*)f->theFormula(0))->GetAVariable());
 		
-		if (!mmo||((mmo->ObjectClass()!=MATRIX)&&(mmo->ObjectClass()!=ASSOCIATIVE_LIST)))
-		{
-			_String errMsg ("Matrix/List expected but not supplied.");
-			if (mmo)
-				errMsg = *mmo->GetName() & ": "& errMsg;
-				
-			WarnError (errMsg);
-			return 0;
-		}
-		
-		if (mmo->ObjectClass()==MATRIX)
-		{
-			_Matrix*mm = (_Matrix*)(mmo->GetValue()), *mcoord;
-			
-			
-			((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-			_PMathObj coordMx = f->Compute();
-			if (!coordMx||(coordMx->ObjectClass()!=MATRIX))
-			{
-				_String errMsg ("Matrix expected but not supplied.");
-				WarnError (errMsg);
-				return 0;
-			}
-			
-			mcoord = (_Matrix*)coordMx;
-			_Constant hC (mcoord->theData[0]), vC (mcoord->theData[1]);
-			if (!ANALYTIC_COMPUTATION_FLAG)
-			{
-				mm->MStore (&hC, &vC, newF);
-			}
-			else
-			{
-				_PMathObj newP = newF.ConstructPolynomial();
-				if (!newP)
-				{
-					warnError (_String("Can't assign non-polynomial entries to polynomial matrices."));
-				}
-				else
-					mm->MStore (&hC,&vC, newP);
-			}
-		}
-		else
-		{
-			_AssociativeList *mm = (_AssociativeList*)(mmo->GetValue());
-
-			((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-			_PMathObj coordMx = f->Compute();
-			if (!coordMx||(coordMx->ObjectClass()!=STRING))
-			{
-				_String errMsg ("Incorrect list index type.");
-				WarnError (errMsg);
-				return 0;
-			}
-			
-			mm->MStore (coordMx, newF.Compute());
-		}*/
 		return 1;	
 	}
 	return 0;

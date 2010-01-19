@@ -3694,7 +3694,7 @@ bool		_Operation::EqualOp (_Operation* otherOp)
 
 //__________________________________________________________________________________
 	
-bool		_Operation::Execute (_Stack& theScrap)
+bool		_Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace)
 {
 		if (theNumber)
 		{
@@ -3730,6 +3730,7 @@ bool		_Operation::Execute (_Stack& theScrap)
 					WarnError (errMsg);
 					return false;
 				}
+				
 				_List 		displacedVars, 
 						   *funcVarList = (_List*)batchLanguageFunctionParameterLists(functionID), 
 						    displacedValues,
@@ -3747,6 +3748,7 @@ bool		_Operation::Execute (_Stack& theScrap)
 				{
 					bool			isRefVar = false;
 					argNameString = (_String*)(*funcVarList)(k);
+					
 					if (argNameString->sData[argNameString->sLength-1]=='&')
 					{
 						argNameString->Trim(0,argNameString->sLength-2);
@@ -3818,6 +3820,10 @@ bool		_Operation::Execute (_Stack& theScrap)
 						displacedReferences<<theV->GetAVariable();
 						 
 						_String * refArgName = ((_FString*)nthterm)->theString;
+						
+						if (nameSpace)
+							*refArgName = AppendContainerName (*refArgName, nameSpace);
+
 						i = LocateVarByName (*refArgName);
 						
 						if (i<0)

@@ -4024,22 +4024,41 @@ _PMathObj _TreeTopology::TipName (_PMathObj p)
 {	
 	_String resString;
 	
-	if (p&&(p->ObjectClass()==NUMBER))
+	if (p&& p->ObjectClass()==NUMBER)
 	{
 		long res 		= p->Value(), 
 			 count 		= 0;
-			 
+		
+		_List			* allLeaves = nil;
+		
+		if (res < 0)
+			allLeaves = (_List*)checkPointer(new _List);
+
 		LeafWiseT(true);
+		
 		while (currentNode)
 		{
-			if (res==count)
+			if (res < 0)
 			{
-				//resString = travNode->GetName()->Cut(travNode->GetName()->Find ('.')+1,-1);
 				GetNodeName (currentNode,resString);
-				break;
+				(*allLeaves) && & resString; 
 			}
+			else
+				if (res==count)
+				{
+					//resString = travNode->GetName()->Cut(travNode->GetName()->Find ('.')+1,-1);
+					GetNodeName (currentNode,resString);
+					break;
+				}
 			count++;
 			LeafWiseT(false);
+		}
+		
+		if (res < 0)
+		{
+			_Matrix * res = new _Matrix (*allLeaves);
+			DeleteObject (allLeaves);
+			return res;
 		}
 	}
 	

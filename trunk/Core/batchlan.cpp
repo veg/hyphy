@@ -2211,11 +2211,11 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 				converted = (_String*)parameters(0);
 				result = _String ("Define the model ")&*converted;
 				converted = (_String*)parameters(1);
-				result = result& _String (" using transition matrix ")&*converted;
+				result = result& _String (" using transition matrix '")&*converted&"'";
 				if (parameters.lLength>2)
 				{
 					converted = (_String*)parameters(2);
-					result = result& _String (" and equilibrium frequencies.")&*converted;
+					result = result& _String (" and equilibrium frequencies '")&*converted&"'";
 				}
 				converted = nil;
 				break;
@@ -2301,17 +2301,18 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 			{
 				converted = (_String*)parameters(0)->toStr();
 				if (code == 39)
-					result = _String("ExecuteCommands in string ")&(*converted);
+					result = _String("ExecuteCommands in string ");
 				else
-					result = _String("ExecuteAFile from file ")&(*converted);
+					result = _String("ExecuteAFile from file ");
+				result = result & *converted & _String(" using basepath ") & ((_String*)parameters(1)->toStr()) & '.';
 				if (simpleParameters.lLength)
 					result = result & "\nCompiled.";
 				else
-					if (parameters.lLength>1)
+					if (parameters.lLength>2)
 					{
-						result = result & " reading input from " & _String ((_String*)parameters(1)->toStr());
-						if (parameters.lLength > 2)
-							result = result & " using name space prefix " & _String ((_String*)parameters(2)->toStr());
+						result = result & " reading input from " & _String ((_String*)parameters(2)->toStr());
+						if (parameters.lLength > 3)
+							result = result & " using name space prefix " & _String ((_String*)parameters(3)->toStr());
 					}
 				break;
 			}
@@ -2597,7 +2598,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 			}
 			else
 			{
-				ExecuteFormula(&f,&f2,parseCode);
+				ExecuteFormula(&f,&f2,parseCode,chain.nameSpacePrefix);
 				return;
 			}
 		}
@@ -2605,7 +2606,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 			return;
 	}
 
-	ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0]);
+	ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],chain.nameSpacePrefix);
 	
 	if (terminateExecution)
 	{
@@ -2628,7 +2629,12 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 		if ( parameters.lLength && simpleParameters.lLength < 3)
 		{
 			_Formula f;
+			//printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+			
 			long status = Parse (&f, *(_String*)parameters(0), chain.nameSpacePrefix,nil);
+		
+			//printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+			
 			if (status==-1)
 				simpleParameters<<long(f.makeDynamic());
 		}
@@ -4238,6 +4244,7 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 			return;
 		}
 		_String namespacedParameter (chain.AddNameSpaceToID(*currentParameter));
+		
 		v = LocateVarByName (namespacedParameter);
 		if (v<0)
 		{
@@ -7836,7 +7843,6 @@ bool	_ElementaryCommand::BuildIfThenElse	(_String&source, _ExecutionList&target,
 			intIfs = target.lastif.lLength;
 	
 
-	while (1)
 	{
 		if (pieces.lLength!=1)
 			WarnError ("'if' header makes no sense");
@@ -7847,9 +7853,8 @@ bool	_ElementaryCommand::BuildIfThenElse	(_String&source, _ExecutionList&target,
 		_String	nextCommand (FindNextCommand(source));
 		success *= target.BuildList (nextCommand, bc, true);
 		
-		break;
-		
-	}
+	}	
+	
 	if (!success) // clean up
 	{
 		for (long index = beginning; index<target.lLength; index++)
@@ -7922,7 +7927,7 @@ bool	_ElementaryCommand::BuildDoWhile			(_String&source, _ExecutionList&target)
 bool	_ElementaryCommand::ProcessInclude		(_String&source, _ExecutionList&target)
 {
 	
-	_String fileName (source,blInclude.sLength,source.sLength-2); 
+	_String			fileName (source,blInclude.sLength,source.sLength-2); 
 	fileName = ProcessLiteralArgument (&fileName,target.nameSpacePrefix);
 	if (fileName.sLength == 0)
 	{
@@ -7931,10 +7936,11 @@ bool	_ElementaryCommand::ProcessInclude		(_String&source, _ExecutionList&target)
 	}
 	fileName.ProcessFileName(false,false,(Ptr)target.nameSpacePrefix);
 	if (terminateExecution) return false;
+	
 	PushFilePath  (fileName);
 	ReadBatchFile (fileName, target);
 	PopFilePath   ();	
-	
+
 	return true;
 }	
 
@@ -8732,8 +8738,7 @@ bool	  _ElementaryCommand::MakeJumpCommand		(_String* source,	long branch1, long
 	{
 		if (simpleParameters.lLength == 0)
 		{
-			_String errMsg ("An if-then-else scoping error. Check opening and closing brackets and double else's.");
-			acknError (errMsg);
+			WarnError ("An if-then-else scoping error. Check opening and closing brackets and double else's.");
 			return false;
 		}
 		branch1 = simpleParameters[0];

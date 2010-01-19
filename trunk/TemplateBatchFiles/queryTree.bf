@@ -56,7 +56,7 @@ else
 	{
 		SetDialogPrompt ("Please select a tree file for the data:");
 
-		fscanf (PROMPT_FOR_FILE, "Raw", treeString);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Raw", treeString);
 		
 		treeStringPattern = treeString$"^#NEXUS";
 		if (treeStringPattern[0]>=0)

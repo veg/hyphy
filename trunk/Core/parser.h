@@ -295,7 +295,8 @@ class	_Operation : public BaseObj {
 	
 virtual	  BaseObj*		makeDynamic 		(void);
 	
-		  bool			Execute 			(_Stack&); //execute this operation
+		  bool			Execute 			(_Stack&, _VariableContainer* = nil); //execute this operation
+		// see the commend for _Formula::ExecuteFormula for the second argument
 virtual   void			StackDepth			(long&);
 		  								
 		  bool			ExecutePolynomial 	(_Stack&);	
@@ -373,13 +374,33 @@ class 	_Formula { // a computational formula
 	
 			~_Formula (void);
 	
-		_PMathObj 	Compute 			(long = 0); // compute the value of the formula
+		_PMathObj 	Compute 			(long = 0, _VariableContainer* = nil); 
+					// compute the value of the formula
+					// 1st argument : execute from this instruction onwards 
+					// see the commend for ExecuteFormula for the second argument
 	
 		bool	 	IsEmpty				(void); // is there anything in the formula
 		long	 	NumberOperations 	(void); // how many ops in the formula?
 	
 friend	long	  	Parse 				(_Formula*, _String&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
-friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long); // the execution block for "compiled formulae
+friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long, _VariableContainer* = nil); 
+										// the execution block for "compiled formulae
+	/*  
+	 SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference" 
+					arguments when calling ExecuteAFile within a namespace.
+	 
+					e.g. in  
+	 
+					function foo (var&)
+				    {
+						...
+					}
+	 
+					foo ("varID");
+					
+					varID may need to be prefixed by a namespace ID.
+	 */
+	
 		bool		CheckFormula 		(void); // check to see if this formula is valid and compute the obj class
 	
 		_MathObject*ConstructPolynomial (void);
