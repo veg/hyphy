@@ -434,6 +434,7 @@ public:
 virtual		~_AVLListXL	(void) {}
 
 
+	virtual  BaseRef	toStr				(void);
 	virtual	 long	 	InsertData			(BaseRef, long,bool);
 			 BaseRef	GetXtra				(long);
 			 void		SetXtra				(long,BaseRef,bool);

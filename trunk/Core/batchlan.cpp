@@ -1373,6 +1373,16 @@ void	 _ExecutionList::SetNameSpace (_String nID)
 
 //____________________________________________________________________________________	
 
+_String*	 _ExecutionList::GetNameSpace ()
+{
+	if (nameSpacePrefix) {
+		return nameSpacePrefix->GetName();
+	}
+	return nil;
+}
+
+//____________________________________________________________________________________	
+
 _String	 _ExecutionList::AddNameSpaceToID (_String& theID)
 {
 	if (nameSpacePrefix) {
@@ -3339,8 +3349,11 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 	if (code == 39 && ((_String*)parameters(1))->sLength)
 		pathNames << (_String*)parameters(1);
 	
+	_AVLListXL * inArg    = nil;
+	_List	   * inArgAux = nil;
+	
 	if (parameters.lLength >= 3)
-	// stdin redirect (and name space prefix)
+	// stdin redirect (and/or name space prefix)
 	{
 		_String stdinOverloadNspc (chain.AddNameSpaceToID(*(_String*)parameters(2)));
 		_PMathObj inAVL = FetchObjectFromVariableByType (&stdinOverloadNspc, ASSOCIATIVE_LIST);
@@ -3356,8 +3369,8 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		{
 			_AssociativeList * stdinRedirect = (_AssociativeList*)inAVL;
 			
-			checkPointer (chain.stdinRedirectAux = new _List);
-			checkPointer (chain.stdinRedirect    = new _AVLListXL (chain.stdinRedirectAux));
+			checkPointer (inArgAux = new _List);
+			checkPointer (inArg    = new _AVLListXL (inArgAux));
 			
 			_List		 *stdKeys = stdinRedirect->GetKeys();
 			
@@ -3370,9 +3383,7 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 					WarnError (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
 					return;
 				}		
-				_String  * dS = new _String (*aString->theString);
-				chain.stdinRedirect -> Insert (aKey->makeDynamic(),(long)dS);
-				DeleteObject (dS);
+				inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
 			}
 		}
 		if (parameters.lLength > 3)
@@ -3394,9 +3405,14 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		ReadDataSetFile (nil,1,&theCommand,nil,namespc);
 	else
 	{
+		//if (chain.stdinRedirect)
+		//	printf ("(%s) BEFORE:\n%s\n", ((_String*)parameters(0))->sData,_String((_String*)chain.stdinRedirect->toStr()).sData);
+	
 		_ExecutionList exc (theCommand,namespc);
-		exc.stdinRedirectAux = chain.stdinRedirectAux;
-		exc.stdinRedirect    = chain.stdinRedirect;
+		
+		exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
+		exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+		
 		if (simpleParameters.lLength && exc.TryToMakeSimple())
 		{
 			ReportWarning ("Successfully compiled an execution list.");
@@ -3405,6 +3421,9 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		else
 			exc.Execute();
 		
+		//if (chain.stdinRedirect)
+		//	printf ("(%s) AFTER:\n%s\n", ((_String*)parameters(0))->sData, _String((_String*)chain.stdinRedirect->toStr()).sData);
+	
 		exc.stdinRedirectAux = nil;
 		exc.stdinRedirect    = nil;
 		if (exc.result)
@@ -3415,12 +3434,12 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		}
 	}
 	
-	if (parameters.lLength == 3 && chain.stdinRedirect)
+	if (inArg)
 	{
-		DeleteObject 			(chain.stdinRedirect);
-		DeleteObject 			(chain.stdinRedirectAux);
-		chain.stdinRedirect 	= nil;
-		chain.stdinRedirectAux  = nil;
+		DeleteObject 			(inArg);
+		DeleteObject 			(inArgAux);
+		//chain.stdinRedirect 	= nil;
+		//chain.stdinRedirectAux  = nil;
 	}
 	
 	DeleteObject (namespc);
@@ -9208,7 +9227,7 @@ bool	_ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 }
 
 //____________________________________________________________________________________	
-bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
+bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)
 // syntax: function <ident> (comma separated list of parameters) {body}
 {
 	if (isInFunction)
@@ -9259,7 +9278,9 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList&)
 	}
 		
 	_String			sfunctionBody (source, upto+1,source.Length()-2);
-	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody);
+	
+	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace());
+	
 	//  take care of all the return statements
 	while (returnlist.lLength)
 	{

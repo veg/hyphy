@@ -156,6 +156,7 @@ bool	GlobalStartup (void)
 	_hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
 	_hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
 	_hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
+	_hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
 	
 	_HBL_Init_Const_Arrays	();
 	

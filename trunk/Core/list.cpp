@@ -2985,6 +2985,38 @@ BaseRef _AVLListX::toStr (void)
 
 //______________________________________________________________
 
+BaseRef _AVLListXL::toStr (void)
+{
+	_String * str = new _String (128L, true);
+	checkPointer (str);
+	
+	if (countitems() == 0)
+		(*str) << "Empty Associative List";
+	else
+	{
+		_SimpleList	 hist;
+		long		 ls, cn;
+		
+		cn = Traverser (hist,ls,root);
+		
+		while (cn>=0)
+		{
+			_String * keyVal = (_String*)Retrieve (cn);
+			(*str) << keyVal;
+			(*str) << " : ";
+			(*str) << (_String*)GetXtra (cn);
+			(*str) << '\n';
+			cn = Traverser (hist,ls);
+		}
+	}
+	
+	str->Finalize();
+	return str;
+}
+
+
+//______________________________________________________________
+
 void _AVLListXL::Clear (bool cL)
 {
 	xtraD.Clear();
