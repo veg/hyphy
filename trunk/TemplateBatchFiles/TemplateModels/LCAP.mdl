@@ -173,7 +173,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 				}
 				aapropMultiplier * ( ")" );
 				
-				if ( freqs < 2 ) {
+				if ( freqs != 2 ) {
 					if ( freqs == 0 ) {
 						ps = 0;
 					}
@@ -207,7 +207,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 	modelDefString*0;
 	ExecuteCommands (modelDefString);
 	
-	if ( freqs < 2 ) {
+	if ( freqs != 2 ) {
 		return 0;
 	}
 	else {
@@ -218,7 +218,8 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
  ChoiceList (freqType,"Choose a frequency parameterisation",1,SKIP_NONE,
 			"F1x4","Empirical nucleotide frequencies",
 			"F3x4","Empirical position specific nucleotide frequencies",
-			"F61","Empirical codon frequencies.");
+			"F61","Empirical codon frequencies",
+			"ML3x4","Maximum likelihood estimated position specific frequencies");
 
 
 fprintf						  (stdout, "\nModel string for nucleotide biases: (eg: 010010 for HKY85)");
@@ -294,10 +295,16 @@ else {
 		HarvestFrequencies ( observedFreq, filteredData, 3,1,1);
 		vectorOfFrequencies = BuildCodonFrequencies3x4 (observedFreq);
 	}
-	else { /* F61 */
+	if ( freqType == 2 ) /* F61 */
  		COUNT_GAPS_IN_FREQUENCIES = 0;
 		HarvestFrequencies (observedFreq,filteredData,3,3,1);
 		vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]); /* cough, cough, cough ... HACK! */
+	}
+	if ( freqType == 3 ) {
+		#include "MGFreqsEstimator.ibf";
+		FREQUENCY_SENSITIVE = 1;
+		BuildCodonFrequencies (paramFreqs,"vectorOfFrequencies");
+		USE_POSITION_SPECIFIC_FREQS = 1;
 	}
 }
 
