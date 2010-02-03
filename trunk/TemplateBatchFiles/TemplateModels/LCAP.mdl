@@ -18,7 +18,7 @@ fscanf ( incFileName, "NMatrix,NMatrix,NMatrix,NMatrix,NMatrix", prop_0, prop_1,
 
 /* order as in LCAP file from Gavin Conant : Chemical Composition, Polarity, Volume, Iso-electric point, Hydropathy */
 
-function BuildCodonFrequencies (obsF)
+function BuildCodonFrequencies1x4 (obsF)
 {
 	if (!ModelMatrixDimension)
 	{
@@ -173,7 +173,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 				}
 				aapropMultiplier * ( ")" );
 				
-				if ( freqs != 2 ) {
+				if ( freqs < 2 ) {
 					if ( freqs == 0 ) {
 						ps = 0;
 					}
@@ -197,17 +197,18 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 					}
 					else
 					{
-						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+_nucBiasTerms[transition][transition2]+aapropMultiplier + "1;\n"+
-													 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+_nucBiasTerms[transition][transition2]+aapropMultiplier + "1;\n");						
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nonsynCatRateMult+_nucBiasTerms[transition][transition2]+aapropMultiplier + "*1;\n"+
+													 "ModelMatrixName["+vs+"]["+hs+"] := "+nonsynCatRateMult+_nucBiasTerms[transition][transition2]+aapropMultiplier + "*1;\n");						
 					}
 				}
 			}
 	    }
     }		
 	modelDefString*0;
+	/*fprintf ( stdout, modelDefString );*/
 	ExecuteCommands (modelDefString);
 	
-	if ( freqs != 2 ) {
+	if ( freqs < 2 ) {
 		return 0;
 	}
 	else {
@@ -288,28 +289,32 @@ for ( i = 0; i < Columns ( _nucBiasTerms ); i = i + 1 ) {
 
 if ( freqType < 1 ) {
 	HarvestFrequencies (observedFreq,filteredData,1,1,1);
-	vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
+	vectorOfFrequencies = BuildCodonFrequencies1x4 (observedFreq);
 }
 else {
 	if ( freqType == 1 ) { /* F3x4*/
 		HarvestFrequencies ( observedFreq, filteredData, 3,1,1);
 		vectorOfFrequencies = BuildCodonFrequencies3x4 (observedFreq);
 	}
-	if ( freqType == 2 ) /* F61 */
+	if ( freqType == 2 ) { /* F61 */
  		COUNT_GAPS_IN_FREQUENCIES = 0;
 		HarvestFrequencies (observedFreq,filteredData,3,3,1);
 		vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]); /* cough, cough, cough ... HACK! */
 	}
-	if ( freqType == 3 ) {
+	if ( freqType == 3 ) { /*MLF3x4*/
+		if (!ModelMatrixDimension)
+		{
+			ModelMatrixDimension = 64 - (_Genetic_Code["_MATRIX_ELEMENT_VALUE_ == 10"]*Transpose(_Genetic_Code["1"]))[0];
+		}
+		HarvestFrequencies ( observedFreq, filteredData, 3,1,1);
 		#include "MGFreqsEstimator.ibf";
-		FREQUENCY_SENSITIVE = 1;
 		BuildCodonFrequencies (paramFreqs,"vectorOfFrequencies");
-		USE_POSITION_SPECIFIC_FREQS = 1;
 	}
 }
 
-LCAP = "";
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("LCAP", observedFreq, freqType);
 Model LCAPModel = (LCAP,vectorOfFrequencies,MULTIPLY_BY_FREQS);
+Export ( modelString, LCAPModel );
+fprintf ( stdout, modelString, "\n" );
 
 fprintf ( stdout, "alpha parameters in order (0-4) are Chemical Composition, Polarity, Volume, Iso-electric point, Hydropathy\n" );
