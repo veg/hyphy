@@ -9270,15 +9270,18 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 	
 	long upto = ExtractConditions (source,mark2+1,pieces,',',false);
 	
+	
 	if (upto==source.sLength || source[upto]!='{' || source[source.sLength-1]!='}')
 	{
 		WarnError (_String("Function declaration is missing a valid function body."));
 		isInFunction= false;
 		return false;
 	}
-		
-	_String			sfunctionBody (source, upto+1,source.Length()-2);
-	
+
+	for (long k = 0; k < pieces.lLength; k++)
+		pieces.Replace (k,&chain.AddNameSpaceToID (*(_String*)pieces(k)),true);
+
+	_String			 sfunctionBody (source, upto+1,source.Length()-2);
 	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace());
 	
 	//  take care of all the return statements

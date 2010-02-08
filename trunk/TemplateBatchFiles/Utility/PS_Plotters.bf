@@ -250,11 +250,22 @@ function PSHistogram			(x,				 /* the observations to histogram */
 		
 		x_min   = x[0];
 		x_range = x[observationCount-1]-x_min;
+		
 		if (bins < 1)
 		{
 			x_step = 2*(x[Min(observationCount*3$4+1,observationCount-1)]-x[observationCount$4])/observationCount^(1/3);
-			bins = x_range/x_step$1+1;
+			if (x_step == 0)
+			{
+				/* use Sturges' formula */
+				bins = (Log(observationCount)/Log(2)+1)$1
+			}
+			else
+			{
+				bins = x_range/x_step$1+1;
+			}
+			
 		}
+		
 		if (bins < 1)
 		{
 			bins = 1;
@@ -284,7 +295,7 @@ function PSHistogram			(x,				 /* the observations to histogram */
 
 		for (_x = 0; _x < bins; _x = _x+1)
 		{	
-			binnedData [_x][0] = x_step*(_x);
+			binnedData [_x][0] = x_min + x_step*(_x);
 		}
 		
 		localPD = {1,4};
