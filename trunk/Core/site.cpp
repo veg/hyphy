@@ -3839,7 +3839,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 			}
 		}
 			 
-		if ((s1>=0)&&(s2>=0))
+		if (s1>=0 && s2>=0)
 		// one to one
 			res->theData[s1*mxDim+s2] += theFrequencies.lData[k];
 		else
@@ -3881,9 +3881,9 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 				// one to many
 				{
 					if (unitLength>1)
-						Translate2Frequencies (state2,sm1,true);				
+						Translate2Frequencies (state2,sm1,false);				
 					else
-						Translate2Frequencies (c2,sm1,true);
+						Translate2Frequencies (c2,sm1,false);
 						
 					if (freqsAtSite)
 					{
@@ -3960,9 +3960,9 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 					// many to one
 					{
 						if (unitLength>1)
-							Translate2Frequencies (state1,sm1,true);				
+							Translate2Frequencies (state1,sm1,false);				
 						else
-							Translate2Frequencies (c1,sm1,true);
+							Translate2Frequencies (c1,sm1,false);
 							
 						if (freqsAtSite)
 						{
@@ -4029,13 +4029,13 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 					{
 						if (unitLength>1)
 						{
-							Translate2Frequencies (state1,sm1,true);				
-							Translate2Frequencies (state2,sm2,true);				
+							Translate2Frequencies (state1,sm1,false);				
+							Translate2Frequencies (state2,sm2,false);				
 						}	
 						else
 						{
-							Translate2Frequencies (c1,sm1,true);
-							Translate2Frequencies (c2,sm2,true);
+							Translate2Frequencies (c1,sm1,false);
+							Translate2Frequencies (c2,sm2,false);
 						}
 						
 						if (freqsAtSite)
@@ -4420,7 +4420,7 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 		
 	if (unitLength == 1)
 	{
-		theData->theTT->TokenCode (str.sData[0],store);
+		theData->theTT->TokenCode (str.sData[0],store,smear);
 		if (theExclusions.lLength==0)
 		{
 				for (long i = 0; i<undimension; i++)
@@ -4684,7 +4684,7 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 		
 	if (unitLength == 1)
 	{
-		theData->theTT->TokenCode (str[0],store);
+		theData->theTT->TokenCode (str[0],store, smear);
 		if (theExclusions.lLength==0)
 		{
 			for (long i = 0; i<undimension; i++)
@@ -4727,7 +4727,7 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 
 		count = 1;
 		for (m = 0; m<unitLength; m++ )
-			theData->theTT->TokenCode (str[m], store+theData->theTT->baseLength*m);
+			theData->theTT->TokenCode (str[m], store+theData->theTT->baseLength*m, smear);
 		
 		for (m = unitLength-1; m>=0; m--)
 		{
@@ -4839,7 +4839,7 @@ long 	_DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool s
 	
 	long 	 i,k=0,count =0;
 		
-	theData->theTT->TokenCode (s,store);
+	theData->theTT->TokenCode (s,store, smear);
 	
 	if (theExclusions.lLength)
 	{

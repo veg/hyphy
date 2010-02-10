@@ -3988,7 +3988,7 @@ void			_LikelihoodFunction::SetupLFCaches				(void)
 				translation = foundCharacters.Find (&aState);
 				if (translation < 0)
 				{
-					translation = theFilter->Translate2Frequencies (aState, translationCache);
+					translation = theFilter->Translate2Frequencies (aState, translationCache, true);
 					if (translation < 0)
 					{
 						for (long j = 0; j < stateSpaceDim; j++)
