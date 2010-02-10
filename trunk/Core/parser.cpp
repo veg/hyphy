@@ -185,7 +185,6 @@ long LocateVarByName (_String& name)
 }
 
 
-
 //__________________________________________________________________________________
 _Variable* FetchVar (long index)
 {

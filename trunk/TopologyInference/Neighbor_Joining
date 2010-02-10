@@ -78,11 +78,10 @@ if (methodIndex < 0)
 
 distanceMatrix = {_NUMBER_OF_SEQUENCES,_NUMBER_OF_SEQUENCES};
 
-DISTANCE_PROMPTS = 1;
-incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def";
-ExecuteCommands  ("#include \""+incFileName+"\";");
-InitializeDistances (0);
-DISTANCE_PROMPTS = 0;
+DISTANCE_PROMPTS		= 1;
+ExecuteAFile			(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def");
+InitializeDistances		(0);
+DISTANCE_PROMPTS		= 0;
 
 for (i = 0; i<_NUMBER_OF_SEQUENCES; i=i+1)
 {
