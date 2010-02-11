@@ -5858,6 +5858,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 				if (f >= 0)		// then hey, it's a BGM!
 				{
 #if !defined __AFYP_REWRITE_BGM__
+					/*
 					Bgm * lf = (Bgm *) bgmList (f);
 					// result = lf->ExportNodeScores();
 					if (sID == 0)
@@ -5868,6 +5869,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 					{
 						WarnError (_String("Integer argument (") & sID & "in GetInformation() has no assigned return value, returning NULL\n");
 					}
+					 */
 #endif
 					
 				}
