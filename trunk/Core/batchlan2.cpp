@@ -2401,8 +2401,18 @@ void	_ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 		
 		Bgm		* bgm;	// pointer to base class
 		
-		if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-		else					bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		long	num_nodes	= ((_Matrix *) avl1)->GetSize() + ((_Matrix *) avl2)->GetSize();
+		
+		if (num_nodes < 2)
+		{
+			WarnError (_String("Cannot construct a Bgm object on less than 2 nodes, received ") & num_nodes);
+			return;
+		}
+		else
+		{
+			if (is_dynamic_graph)	bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+			else					bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
+		}
 #endif
 		_String bgmName	    = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
 		long	bgmIndex	= FindBgmName (bgmName);
