@@ -1,5 +1,5 @@
 /*
- 
+  
  HyPhy - Hypothesis Testing Using Phylogenies.
  
  Copyright (C) 1997-2006  
@@ -521,6 +521,8 @@ void	Bgm::SetGraphMatrix (_Matrix *graph)
 void	Bgm::SetBanMatrix (_Matrix *banMx)
 {
 	banned_edges = (_Matrix &) (*banMx);
+	
+	ReportWarning (_String("Set ban matrix to ") & (_String *) banned_edges.toStr() );
 }
 
 void	Bgm::SetEnforceMatrix (_Matrix *enforceMx)
@@ -847,9 +849,13 @@ void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps
 			}
 			
 			if ( buzz == 0 && 
-				 ( (*graphMx)(parent,child) == 0
-				|| ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child) && num_parents.lData[parent] < max_parents.lData[parent] )
-				))
+				 ( !banned_edges(child,parent) && 
+				  ( (*graphMx)(parent,child) == 0 
+				  || 
+				  ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child) && num_parents.lData[parent] < max_parents.lData[parent] )
+				  )
+				 )
+			   )
 			{
 				// flip the target edge
 				if ( (*graphMx)(parent,child) == 1)
@@ -1076,6 +1082,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	if (has_missing.lData[node_id])
 	{
 		//return (ImputeDiscreteScore (node_id, parents));
+		ReportWarning (_String("Imputing missing values for node ") & node_id);
 		return (GibbsApproximateDiscreteScore (node_id, parents));
 	}
 	else
@@ -1084,6 +1091,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		{
 			if (has_missing.lData[parents.lData[par]])
 			{
+				ReportWarning (_String("Imputing missing values for parent node ") & parents.lData[par] & " of node " & node_id);
 				// return (ImputeDiscreteScore (node_id, parents));
 				return (GibbsApproximateDiscreteScore (node_id, parents));
 			}
