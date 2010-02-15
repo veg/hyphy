@@ -1619,10 +1619,11 @@ void Bgm::CacheNodeScores (void)
 			
 			// wait for master node to issue node ID to compute
 			ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
-			ReportWarning (_String("Node") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE);
+			ReportWarning (_String("Node ") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE & "\n");
 			
 			if (node_id < 0)
 			{
+				ReportWarning (_String("Node") & (long)rank & " recognizes shutdown signal.\n");
 				break;	// received shutdown message (-1)
 			}
 			
@@ -1703,7 +1704,7 @@ void Bgm::CacheNodeScores (void)
 			// send results to master node
 			
 			ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
-
+			
 #ifdef __DEBUG_CNS__
 			mxName = _String ("single_parent_scores");
 			single_parent_scores.Serialize(mxString, mxName);		// DEBUGGING
@@ -3521,7 +3522,7 @@ void	Bgm::SerializeBgm (_String & rec)
 	rec << (_String *)banned_edges.toStr();
 	rec << ";\n";
 	rec << "SetParameter(";
-	rec << banName;
+	rec << bgmName;
 	rec << ",BGM_BAN_MATRIX,ban_matrix);\n";
 	
 	//ReportWarning (_String("Serialized BGM:\n") & rec & "\n");
