@@ -1572,6 +1572,7 @@ void	_DynamicBgm::CollapseDynamicGraph (void)
 _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & parents)
 {
 	//char			buf [255];
+	ReportWarning (_String("Imputing missing values for node ") & node_id & " with parents " & (_String *) parents.toStr());
 	
 	long			num_parent_combos	= 1,
 					r_i					= num_levels.lData[node_id],

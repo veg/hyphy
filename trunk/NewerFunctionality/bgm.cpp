@@ -678,156 +678,137 @@ bool	Bgm::IsCyclic (void)
 //___________________________________________________________________________________________
 void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps, bool fixed_order)
 {
+	long	step = 0, fail = 0;
+	
+	
+	// convert order into matrix format of edge permissions for more rapid look-up later  /* DEBUGGING ONLY */
 #ifdef __DEBUG_RG__
-	char	bug [255];
-#endif
-	long	step = 0, fail = 0, 
-			child, parent, 
-			child_idx, parent_idx;
-	
-	
-	// convert order into matrix format of edge permissions
+	long	mode = 0;
 	_Matrix orderMx (num_nodes, num_nodes, false, true);
 	
-	for (long p_index = 0; p_index < num_nodes; p_index++)
+	for (long p_rank = 0; p_rank < num_nodes; p_rank++)
 	{
-		for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
+		for (long c_rank = 0; c_rank < num_nodes; c_rank++)
 		{
-			orderMx.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
+			// use actual node id's to index into matrix - 1 indicates a permitted edge
+			orderMx.Store (order->lData[p_rank], order->lData[c_rank], p_rank > c_rank ? 1 : 0);
 		}
 	}
-	
+#endif
 	
 	
 	// before we do anything, make sure that graph complies with order /* DEBUGGING */
-	for (long parent = 0; parent < num_nodes; parent++)
-	{
-		for (long child = 0; child < num_nodes; child++)
-		{
-			if ( (*graphMx)(parent, child)==1 && orderMx(parent, child)==0 )
-			{
-				PrintGraph (&orderMx);
-				PrintGraph (graphMx);
-				
-				_String oops ("Order-network discrepancy at start of RandomizeGraph(), exiting..");
-				WarnError (oops);
-				break;
-			}
-		}
-	}
-	
-	
 	// calculate number of parents for each child for rapid access later
 	_SimpleList		num_parents;
-	// long			graph_density = 0;
 	
 	num_parents.Populate (num_nodes, 0, 0);
 	
-	for (child = 0; child < num_nodes; child++)
+	for (long child = 0; child < num_nodes; child++)
 	{
-		for (parent = 0; parent < num_nodes; parent++)
+		for (long parent = 0; parent < num_nodes; parent++)
 		{
+#ifdef __DEBUG_RG__
+			if ((*graphMx)(parent,child) > 0 && banned_edges(parent,child) > 0)
+			{
+				WarnError (_String("BEFORE RandomizeGraph() there is a banned edge: ") & parent & "->" & child & " mode " & mode);
+				break;
+			}
+			if ((*graphMx)(parent,child) == 0 && enforced_edges(parent,child) > 0)
+			{
+				WarnError (_String("BEFORE RandomizeGraph() there is a missing enforced edge: ") & parent & "->" & child);
+				break;
+			}
+			
+			if ( (*graphMx)(parent, child)==1 && orderMx(parent, child)==0 )
+			{
+				WarnError (_String ("Order-network discrepancy at start of RandomizeGraph() at edge ") & parent & "->" & child);
+				break;
+			}
+#endif
+			
 			if ( (*graphMx)(parent, child) > 0)
 			{
 				num_parents.lData[child]++;
-				// graph_density++;
 			}
 		}
+		// end for
 		
 		if (num_parents.lData[child] > max_parents.lData[child])
 		{
-			_String oops ("Number of parents exceeds maximum BEFORE randomization of graph.");
-			WarnError (oops);
+			WarnError (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.lData[child] & " > " & max_parents.lData[child] & ")\n" );
 			break;
 		}
 	}
 	
 	
 	
+	
 	// randomize graph
+	long	p_rank, c_rank, parent, child;
+	
 	do
 	{
 		// a fail-safe to avoid infinite loops
 		if (fail > MAX_FAIL_RANDOMIZE)
 		{
-			PrintGraph (graphMx);
-			PrintGraph (&orderMx);
-			
-			_String oops ("Failed to modify the graph in GraphMCMC() after MAX_FAIL_RANDOMIZE attempts.");
-			WarnError (oops);
+			WarnError(_String("Bgm::RandomizeGraph() failed to modify the graph in GraphMCMC() after MAX_FAIL_RANDOMIZE (") & (long)MAX_FAIL_RANDOMIZE & ") attempts.\n");
 			break;
 		}
 		
-		// pick a random edge
-		parent_idx	= (genrand_int32() % (num_nodes-1)) + 1;	// shift right to not include lowest node in order
-		child_idx	= genrand_int32() % parent_idx;
+		// pick a random edge permitted under ordering
+		p_rank	= (genrand_int32() % (num_nodes-1)) + 1;	// shift right to not include lowest node in order
+		c_rank	= genrand_int32() % p_rank;
 		
-		child = order->lData[child_idx];
-		parent = order->lData[parent_idx];
+		child = order->lData[c_rank];
+		parent = order->lData[p_rank];
 		
-#ifdef __DEBUG_RG__
-		sprintf (bug, "Try edge %d-->%d\n", parent, child);
-		BufferToConsole (bug);
-#endif
 		
-		if (fixed_order || genrand_real2() > RANDOMIZE_PROB_SWAP)
+		if (fixed_order || genrand_real2() > RANDOMIZE_PROB_SWAP)	// attempt an add or delete
 		{
 			if ( (*graphMx)(parent,child) == 0 && !banned_edges(parent,child))		// add an edge
 			{
-				if (num_parents.lData[child] == max_parents.lData[child])
+#ifdef __DEBUG_RG__
+				mode = 0;
+#endif
+				if (num_parents.lData[child] == max_parents.lData[child])	// child cannot accept any additional edges
 				{
 					// move an edge from an existing parent to target parent
-					long	deadbeat_dad	= genrand_int32() % max_parents.lData[child];
-					long	social_worker	= 0;
-					for (; social_worker < num_nodes; social_worker++)
-					{
-						if ( (*graphMx)(social_worker,child) == 1)
-						{
-							if (deadbeat_dad)
-							{
-								deadbeat_dad--;
-							}
-							else
-							{
-								break;
-							}
-						}
-					}
+					_SimpleList		removeable_edges;
 					
-					if ( !enforced_edges(social_worker, child) )
+					// build a list of current parents
+					for (long par = 0; par < num_nodes; par++)
+						if ((*graphMx)(par,child) && !enforced_edges(par,child)) removeable_edges << par;
+					
+					if (removeable_edges.lLength > 0)
 					{
-						graphMx->Store (social_worker, child, 0.);
-						num_parents.lData[child]--;
-#ifdef __DEBUG_RG__
-						sprintf (bug, "Remove and ");
-						BufferToConsole (bug);
-#endif
+						// shuffle the list and remove the first parent
+						removeable_edges.Permute(1);
+						graphMx->Store (removeable_edges.lData[0], child, 0.);
+						graphMx->Store (parent, child, 1.);
+						step++;
 					}
 					else
 					{
+						// none of the edges can be removed
 						fail++;
 					}
 				}
 				else
 				{
+					// child can accept another edge
 					graphMx->Store (parent, child, 1.);
 					num_parents.lData[child]++;
 					step++;
-#ifdef __DEBUG_RG__
-					sprintf (bug, "Add\n");
-					BufferToConsole(bug);
-#endif
 				}
 			}
 			else if ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child))		// delete an edge
 			{
+#ifdef __DEBUG_RG__
+				mode = 1;
+#endif
 				graphMx->Store (parent, child, 0.);
 				num_parents.lData[child]--;
 				step++;
-#ifdef __DEBUG_RG__
-				sprintf (bug, "Remove\n");
-				BufferToConsole (bug);
-#endif
 			}
 			else
 			{
@@ -836,49 +817,101 @@ void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps
 		}
 		else	// swap nodes in ordering and flip edge if present
 		{
-			long	buzz = 0;
+			long	ok_to_go = 1;
+#ifdef __DEBUG_RG__ 
+			mode = 2;
+#endif	
+			// edge cannot be flipped
+			if ( (*graphMx)(parent,child) == 1  &&  ( banned_edges(child,parent) || enforced_edges(parent,child) )  )
+				ok_to_go = 0;
 			
-			for (long bystander, i=child_idx+1; i < parent_idx; i++)
+			
+			// check all other nodes affected by the swap
+			if (ok_to_go)
 			{
-				bystander = order->lData[i];
-				if (enforced_edges (parent, bystander) || enforced_edges (bystander, child))
+				for (long bystander, i=c_rank+1; i < p_rank; i++)
 				{
-					fail++;
-					buzz = 1;
+					bystander = order->lData[i];	// retrieve node id
+					
+					if ( 
+						( (*graphMx)(parent,bystander)==1 && enforced_edges (parent, bystander) )  || 
+						( (*graphMx)(bystander,child)==1 && enforced_edges (bystander, child) )  ||
+						banned_edges (bystander,parent)  ||  banned_edges (child,bystander) 
+					) {
+						// by flipping the parent->child edge, we would screw up ordering for
+						// an enforced edge:  C < B < P   becomes  P < B < C  where B->C or P->B is enforced
+						
+						// also, a banned edge implies a node ordering constraint
+						ok_to_go = 0;
+						break;
+					}
 				}
 			}
 			
-			if ( buzz == 0 && 
-				 ( !banned_edges(child,parent) && 
-				  ( (*graphMx)(parent,child) == 0 
-				  || 
-				  ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child) && num_parents.lData[parent] < max_parents.lData[parent] )
-				  )
-				 )
-			   )
+			
+			// if everything checks out OK
+			if ( ok_to_go )
 			{
 				// flip the target edge
-				if ( (*graphMx)(parent,child) == 1)
+				if ( (*graphMx)(parent,child) == 1 && !banned_edges(child,parent) )
 				{
-					graphMx->Store (parent,child, 0);
-					graphMx->Store (child,parent,1);
+					graphMx->Store (parent, child, 0);
+					graphMx->Store (child, parent, 1);
 					num_parents.lData[child]--;
 					num_parents.lData[parent]++;
+					
+					if (num_parents.lData[parent] >= max_parents.lData[parent])
+					{
+						// parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
+						_SimpleList		removeable_edges;
+						
+						for (long par = 0; par < num_nodes; par++)
+							if (  (*graphMx)(par, parent)  &&  !enforced_edges(par, parent)  ) 
+								removeable_edges << par;
+						
+						removeable_edges.Permute(1);
+						graphMx->Store (removeable_edges.lData[0], parent, 0.);
+						num_parents.lData[parent]--;
+					}
+					
+					step++;
 				}
+				// if number of parents for parent node will exceed maximum, then the edge is deleted instead of flipped
+				
+				// swap nodes in order
+				order->lData[p_rank] = child;
+				order->lData[c_rank] = parent;	// remember to update order matrix also!
+				
 				
 				// flip the other edges affected by node swap
-				for (long bystander, i = child_idx+1; i < parent_idx; i++)
+				//  child <-  N   ...   N <- parent                   _________________,
+				//                                    becomes        |                 v
+				//                                                 parent    N         N    child
+				//                                                           ^                |
+				//                                                           `----------------+
+				for (long bystander, i = c_rank+1; i < p_rank; i++)
 				{
 					bystander = order->lData[i];
-					if ( (*graphMx)(bystander, child) == 1)
+					
+					if ( (*graphMx)(bystander, child) == 1 )
 					{
 						graphMx->Store (bystander, child, 0);
 						num_parents.lData[child]--;
 						
-						if (num_parents.lData[bystander] < max_parents.lData[bystander])
+						graphMx->Store (child, bystander, 1);
+						num_parents.lData[bystander]++;
+						
+						if (num_parents.lData[bystander] >= max_parents.lData[bystander])
 						{
-							graphMx->Store (child, bystander, 1);
-							num_parents.lData[bystander]++;
+							_SimpleList		removeable_edges;
+							
+							for (long par = 0; par < num_nodes; par++)
+								if (  (*graphMx)(par, bystander)  &&  !enforced_edges(par, bystander)  ) 
+									removeable_edges << par;
+							
+							removeable_edges.Permute(1);
+							graphMx->Store (removeable_edges.lData[0], bystander, 0.);
+							num_parents.lData[bystander]--;
 						}
 					}
 					
@@ -887,29 +920,34 @@ void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps
 						graphMx->Store (parent, bystander, 0);
 						num_parents.lData[bystander]--;
 						
-						if (num_parents.lData[parent] < max_parents.lData[parent])
+						graphMx->Store (bystander, parent, 1);
+						num_parents.lData[parent]++;
+						
+						if (num_parents.lData[parent] >= max_parents.lData[parent])
 						{
-							graphMx->Store (bystander, parent, 1);
-							num_parents.lData[parent]++;
+							_SimpleList		removeable_edges;
+							
+							for (long par = 0; par < num_nodes; par++)
+								if (  (*graphMx)(par, parent)  &&  !enforced_edges(par, parent)  ) 
+									removeable_edges << par;
+							
+							removeable_edges.Permute(1);
+							graphMx->Store (removeable_edges.lData[0], parent, 0.);
+							num_parents.lData[parent]--;
 						}
 					}
 				}
-				
-				// swap nodes in order
-				order->lData[parent_idx] = child;
-				order->lData[child_idx] = parent;
-				
+#ifdef __DEBUG_RG__
 				// refresh order matrix
-				for (long p_index = 0; p_index < num_nodes; p_index++)
+				for (long p_rank = 0; p_rank < num_nodes; p_rank++)
 				{
-					for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
+					for (long c_rank = 0; c_rank < p_rank; c_rank++)
 					{
-						orderMx.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
+						orderMx.Store (order->lData[p_rank], order->lData[c_rank], 1);
 					}
 				}
-				
+#endif
 				step++;
-				
 			}
 			else
 			{
@@ -919,6 +957,44 @@ void	Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_steps
 	}
 	while (step < num_steps);
 	
+	
+	// a final check to make sure we haven't screwed up!
+#ifdef __DEBUG_RG__
+	num_parents.Populate (num_nodes, 0, 0);
+	
+	for (long child = 0; child < num_nodes; child++)
+	{
+		for (long parent = 0; parent < num_nodes; parent++)
+		{
+			if ((*graphMx)(parent,child) > 0 && banned_edges(parent,child) > 0)
+			{
+				WarnError (_String("Aw crap!  RandomizeGraph() introduced a banned edge: ") & parent & "->" & child & " mode " & mode);
+				break;
+			}
+			if ((*graphMx)(parent,child) == 0 && enforced_edges(parent,child) > 0)
+			{
+				WarnError (_String("Aw crap!  RandomizeGraph() deleted an enforced edge: ") & parent & "->" & child);
+				break;
+			}
+			if ( (*graphMx)(parent, child)==1 && orderMx(parent, child)==0 )
+			{
+				WarnError (_String ("Order-network discrepancy at end of RandomizeGraph(), mode ") & mode);
+				break;
+			}
+			
+			if ( (*graphMx)(parent, child) > 0)
+			{
+				num_parents.lData[child]++;
+			}
+		}
+		
+		if (num_parents.lData[child] > max_parents.lData[child])
+		{
+			WarnError (_String ("Exceeded acceptable number of parents for node ") & child &  ", mode " & mode);
+			break;
+		}
+	}
+#endif
 }
 
 
@@ -1077,12 +1153,21 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 	
 	
 #ifdef __MISSING_DATA__
+	//  Are any of the edges banned?
+	for (long par = 0; par < parents.lLength; par++)
+	{
+		if (banned_edges(parents.lData[par], node_id) > 0)
+		{
+			// score should never be used
+			return -A_LARGE_NUMBER;
+		}
+	}
+	
 	
 	//	Is node with missing data in Markov blanket of focal node?
 	if (has_missing.lData[node_id])
 	{
 		//return (ImputeDiscreteScore (node_id, parents));
-		ReportWarning (_String("Imputing missing values for node ") & node_id);
 		return (GibbsApproximateDiscreteScore (node_id, parents));
 	}
 	else
@@ -1091,7 +1176,6 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 		{
 			if (has_missing.lData[parents.lData[par]])
 			{
-				ReportWarning (_String("Imputing missing values for parent node ") & parents.lData[par] & " of node " & node_id);
 				// return (ImputeDiscreteScore (node_id, parents));
 				return (GibbsApproximateDiscreteScore (node_id, parents));
 			}
@@ -1340,6 +1424,7 @@ _Parameter	Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 //___________________________________________________________________________________________
+//#define __DEBUG_CNS__
 void Bgm::CacheNodeScores (void)
 {
 	if (scores_cached)
@@ -1352,7 +1437,7 @@ void Bgm::CacheNodeScores (void)
 	*/
 	
 	
-#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+#if defined __HYPHYMPI__
 
 #ifdef __DEBUG_CNS__
 	char buf [255];
@@ -1500,7 +1585,7 @@ void Bgm::CacheNodeScores (void)
 			
 			if (mpi_node < size)	// at least one node is busy
 			{
-				MPIReceiveScores (mpi_node_status, false, node_id);
+				MPIReceiveScores (mpi_node_status, false, 0);
 			}
 			else
 			{
@@ -1825,7 +1910,7 @@ void Bgm::CacheNodeScores (void)
 
 
 //___________________________________________________________________________________________
-#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+#if defined __HYPHYMPI__
 void	Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long node_id)
 {
 	_Matrix		single_parent_scores (num_nodes, 1, false, true);
@@ -2370,6 +2455,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 		}
 		proposed_order->Populate (num_nodes, 0, 1);
 		proposed_order->Permute (1);
+		ReportWarning (_String("Initializing node order to random permutation: ") & (_String *) proposed_order->toStr());
 	}
 	else
 	{
@@ -2379,6 +2465,8 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 		{
 			proposed_order->lData[i] = best_node_order.lData[i];
 		}
+		
+		ReportWarning (_String("Transferring best node order to proposal: ") & (_String *)proposed_order->toStr());
 	}
 	
 	
@@ -3349,13 +3437,15 @@ long		Bgm::PredictNode (long node_id, _Matrix * assignments)
 
 
 //___________________________________________________________________________________________
-#ifdef __AFYP_DEVELOPMENT__
+#if defined __HYPHYMPI__
 void	Bgm::SerializeBgm (_String & rec)
 {
 	char		buf [255];
 	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 	_String		dataStr,
-				dataName ("bgmData");
+				dataName ("bgmData"),
+				banStr,
+				banName ("ban_matrix");
 	
 	_Parameter	mcem_max_steps, mcem_burnin, mcem_sample_size;
 	
@@ -3409,20 +3499,32 @@ void	Bgm::SerializeBgm (_String & rec)
 	rec << "=(dnodes,cnodes);\n";
 	
 	// missing data imputation settings
-	rec << "BGM_MCEM_MAXSTEPS = ";
-	rec << (long) mcem_max_steps;
-	rec << ";\nBGM_MCEM_BURNIN = ";
-	rec << (long) mcem_burnin;
-	rec << ";\nBGM_MCEM_SAMPLES = ";
-	rec << ";\n";
+	sprintf (buf, "BGM_MCEM_MAXSTEPS = %d;\n", (long)mcem_max_steps);
+	rec << buf;
+	sprintf (buf, "BGM_MCEM_BURNIN = %d;\n", (long)mcem_burnin);
+	rec << buf;
+	sprintf (buf, "BGM_MCEM_SAMPLES = %d;\n", (long)mcem_sample_size);
+	rec << buf;
 	
 	// serialize data matrix and assign to BGM
-	obsData->Serialize (dataStr, dataName);
-	rec << dataStr;
-	rec << "\n";
+	//obsData->Serialize (dataStr, dataName);
+	rec << "bgmData=";
+	rec << (_String *)obsData->toStr();
+	rec << ";\n";
 	rec << "SetParameter(";
 	rec << bgmName;
 	rec << ",BGM_DATA_MATRIX,bgmData);\n";
+	
+	
+	//banned_edges.Serialize (banStr, banName);
+	rec << "ban_matrix=";
+	rec << (_String *)banned_edges.toStr();
+	rec << ";\n";
+	rec << "SetParameter(";
+	rec << banName;
+	rec << ",BGM_BAN_MATRIX,ban_matrix);\n";
+	
+	//ReportWarning (_String("Serialized BGM:\n") & rec & "\n");
 }
 #endif
 
