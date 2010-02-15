@@ -24,7 +24,7 @@ function CF3x4 (observed3x4,stopCodons)
 	p21 = observed3x4[0][1];
 	n2C : = (1-p21)*p22;
 	p22 = observed3x4[1][1]/(1-p21);
-	n2G : = (1-p21)*(1-p22)*p13;
+	n2G : = (1-p21)*(1-p22)*p23;
 	p23 = observed3x4[2][1]/(1-p21)/(1-p22);
 	n2T : = (1-p21)*(1-p22)*(1-p23);
 
