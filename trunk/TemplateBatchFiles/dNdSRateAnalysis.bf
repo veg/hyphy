@@ -436,67 +436,74 @@ else
 
 modelNamesShort = {{"Constant","Proportional","Nonsynonymous","Dual","LineageDual"}};
 
-
-ChoiceList (modelChoice, "Distribution Option",1,SKIP_NONE,
-			"Syn:Gamma, Non-syn:Gamma",	 "Both syn and non-syn rates are drawn from the gamma distributions for all models.",
-			"Syn:Gamma, Non-syn:Inv+Gamma","Syn and non-syn rates are drawn from the gamma distributions for Proportional and Nonsynonymous. For Dual and Local Dual, syn rates are drawn from the gamma distribution, and non-syn rates - from Inv+Gamma.",
-			"Independent Discrete", "Independent General Discrete Distributions (Recommended setting)",
-			"Correlated Discrete", "Correlated General Discrete Distributions",
-			"Non-positive Discrete", "General Discrete Distribution for dS, and dN, but constrained so that dN<=dS. Useful to perform a LRT for presence of selection in an alignment");
-			
-			
-if (modelChoice < 0)
-{
-	return;
-}
-
-ChoiceList (randomizeInitValues, "Initial Value Options",1,SKIP_NONE,
-			"Default",	 "Use default inital values for rate distribution parameters.",
-			"Randomized",	 "Select initial values for rate distribution parameters at random.");
-
-
-if (randomizeInitValues < 0)
-{
-	return;
-}
-
-resp  = 0;
-resp2 = 0;
+resp  = 1;
+resp2 = 1;
 
 ExecuteAFile ("Utility/GrabBag.bf");
 
-resp = prompt_for_a_value ("Number of synonymous (and single variable rate modles) rate classes",3,2,32,1);
-
-if (chosenModelList[3]+chosenModelList[4])
+if (chosenModelList[3]+chosenModelList[4]+chosenModelList[1]+chosenModelList[2])
 {
-	resp2 = prompt_for_a_value ("Number of non-synonymous rate classes",3,1,32,1);
-}
-			
-fudgeFactor = 1.0;
-
-if (modelChoice<2)
-{
-	ExecuteAFile ("2RatesAnalyses/gamma1.def");
-
-	if (modelChoice == 0)
+	ChoiceList (modelChoice, "Distribution Option",1,SKIP_NONE,
+				"Syn:Gamma, Non-syn:Gamma",	 "Both syn and non-syn rates are drawn from the gamma distributions for all models.",
+				"Syn:Gamma, Non-syn:Inv+Gamma","Syn and non-syn rates are drawn from the gamma distributions for Proportional and Nonsynonymous. For Dual and Local Dual, syn rates are drawn from the gamma distribution, and non-syn rates - from Inv+Gamma.",
+				"Independent Discrete", "Independent General Discrete Distributions (Recommended setting)",
+				"Correlated Discrete", "Correlated General Discrete Distributions",
+				"Non-positive Discrete", "General Discrete Distribution for dS, and dN, but constrained so that dN<=dS. Useful to perform a LRT for presence of selection in an alignment");
+				
+				
+	if (modelChoice < 0)
 	{
-		ExecuteAFile ("2RatesAnalyses/gamma2.def");
+		return;
+	}
+
+	ChoiceList (randomizeInitValues, "Initial Value Options",1,SKIP_NONE,
+				"Default",	 "Use default inital values for rate distribution parameters.",
+				"Randomized",	 "Select initial values for rate distribution parameters at random.");
+
+
+	if (randomizeInitValues < 0)
+	{
+		return;
+	}
+
+
+	resp = prompt_for_a_value ("Number of synonymous (and single variable rate modles) rate classes",3,2,32,1);
+
+	if (chosenModelList[3]+chosenModelList[4])
+	{
+		resp2 = prompt_for_a_value ("Number of non-synonymous rate classes",3,1,32,1);
 	}
 	else
 	{
-		ExecuteAFile ("2RatesAnalyses/gamma2+Inv.def");
+		resp2 = 1;
 	}
-}
-else
-{
-	if (modelChoice < 4)
+				
+	fudgeFactor = 1.0;
+
+	if (modelChoice<2)
 	{
-		correlationOn = (modelChoice>2);
-		ExecuteAFile ("2RatesAnalyses/discreteGenerator.bf");
+		ExecuteAFile ("2RatesAnalyses/gamma1.def");
+
+		if (modelChoice == 0)
+		{
+			ExecuteAFile ("2RatesAnalyses/gamma2.def");
+		}
+		else
+		{
+			ExecuteAFile ("2RatesAnalyses/gamma2+Inv.def");
+		}
 	}
 	else
 	{
-		ExecuteAFile ("2RatesAnalyses/discreteGeneratorNoPS.bf");
+		if (modelChoice < 4)
+		{
+			correlationOn = (modelChoice>2);
+			ExecuteAFile ("2RatesAnalyses/discreteGenerator.bf");
+		}
+		else
+		{
+			ExecuteAFile ("2RatesAnalyses/discreteGeneratorNoPS.bf");
+		}
 	}
 }
 
