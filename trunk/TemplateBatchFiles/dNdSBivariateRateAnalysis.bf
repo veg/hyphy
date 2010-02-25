@@ -12,29 +12,10 @@ if (runType < 0)
 
 randomizeInitValues  = 0;
 ModelMatrixDimension = 0;
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-function BuildCodonFrequencies (obsF)
-{
-	PIStop = 1.0;
-	result = {ModelMatrixDimension,1};
-	hshift = 0;
-
-	for (h=0; h<64; h=h+1)
-	{
-		first = h$16;
-		second = h%16$4;
-		third = h%4;
-		if (_Genetic_Code[h]==10) 
-		{
-			hshift = hshift+1;
-			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
-			continue; 
-		}
-		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
-	}
-	return result*(1.0/PIStop);
-}
+/*
+VERBOSITY_LEVEL = 10;
+*/
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -104,12 +85,17 @@ if (runType == 0)
 	
 	observedFreq       = {4,3};
 	observedFreqSingle = {4,1};
+	
+	
 	for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	{
 		ExecuteCommands 	  ("HarvestFrequencies (tp, filteredData_"+fileID+",3,1,1);HarvestFrequencies (ts, filteredData_"+fileID+",1,1,1);cfs = filteredData_"+fileID+".sites;");
 		observedFreq 		= observedFreq 		 + tp*(cfs/totalCodonCount);
 		observedFreqSingle  = observedFreqSingle + ts*(cfs/totalCodonCount);
 	}
+	
+	ExecuteAFile ("TemplateModels/CF3x4.bf");
+	observedFreq = CF3x4 (observedFreq, GeneticCodeExclusions);
 	
 	done = 0;
 	while (!done)
@@ -153,8 +139,7 @@ if (runType == 0)
 		}
 	}	
 
-	marginalOutFile = "2RatesAnalyses/MG94xREVxBivariate.mdl";
-	ExecuteCommands ("#include \""+marginalOutFile+"\";");
+	ExecuteAFile ("2RatesAnalyses/MG94xREVxBivariate_Multirate.mdl");
 
 	if (Abs(modelConstraintString))
 	{
@@ -446,9 +431,9 @@ if (runType == 0)
 		resToPath = LAST_FILE_PATH;	
 	}
 	
-
-	vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
-
+	ExecuteAFile		  ("TemplateModels/MGFreqsEstimator.ibf");
+	BuildCodonFrequencies (paramFreqs, "vectorOfFrequencies");
+	
 	ExecuteCommands (nucModelString+"\nModel nucModel = (nucModelMatrix,observedFreqSingle);");
 	
 	if (randomizeInitValues == 2)
@@ -491,7 +476,7 @@ if (runType == 0)
 		{
 			if (fileID == 1)
 			{
-				ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_"+part+"\",observedFreq,\"S_"+part+"/c_scale\",\"NS_"+part+"/c_scale\");");
+				ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_"+part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"NS_"+part+"/c_scale\",aaRateMultipliers);");
 				ExecuteCommands ("Model MG94model_"+part+"= (rate_matrix_"+part+",vectorOfFrequencies,0);");
 			}
 			else

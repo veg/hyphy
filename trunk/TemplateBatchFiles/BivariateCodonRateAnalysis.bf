@@ -14,7 +14,9 @@ ExecuteAFile (HYPHY_BASE_DIRECTORY +
 _genCodeID = _geneticCodeOptionMatrix [modelType][0];
 
 fprintf (stdout, "Model string:");
-fscanf  (stdin,"String",mstring);
+fscanf  (stdin,  "String",mstring);
+
+ExecuteAFile ("TemplateModels/MGwAA.ibf");
 
 currentLFSpool = _bivariateFilePath + ".fit.1";
 
