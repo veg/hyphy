@@ -487,6 +487,7 @@ bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
 	if (constraints->GetHDim() == num_nodes)
 	{
 		constraint_graph = (_Matrix &) (*constraints);
+		ReportWarning (_String("Assigned constraint matrix:\n ") & (_String*) constraint_graph.toStr() );
 		return (TRUE);
 	}
 	
@@ -899,47 +900,90 @@ void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Simpl
 		ReportWarning ("ERROR: UpdateDirichletHyperparameters() called on non-discrete node!  That sucks!");
 	
 	
-	_SimpleList		multipliers ((long)1);
-	long			num_parent_combos	= 1;
-	
-	for (long par = 0; par < dparents.lLength; par++)
+	if (dparents.lLength > 0)
 	{
-		num_parent_combos *= num_levels.lData[dparents.lData[par]];
-		multipliers << num_parent_combos;
-	}
-	
-	CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
-	CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
-	
-	
-	// initialize matrices with prior hyperparameters (a_ijk) -- if using K2, entries will remain zero
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		n_ij->Store (j, 0, prior_sample_size(dnode,0) / num_parent_combos);
-		
-		for (long k = 0; k < num_levels.lData[dnode]; k++)
-		{
-			n_ijk->Store (j, k, (*n_ij)(j,0) / num_levels.lData[dnode]);
-		}
-	}
-	
-	
-	// update hyperparameters with data
-	for (long obs = 0; obs < theData->GetHDim(); obs++)
-	{
-		long	index			= 0,
-				child_state		= (*theData)(obs, dnode);
+		_SimpleList		multipliers ((long)1);
+		long			num_parent_combos	= 1;
 		
 		for (long par = 0; par < dparents.lLength; par++)
 		{
-			long	this_parent			= dparents.lData[par],
-					this_parent_state	= (*theData)(obs, this_parent);
-			
-			index += this_parent_state * multipliers.lData[par];
+			num_parent_combos *= num_levels.lData[dparents.lData[par]];
+			multipliers << num_parent_combos;
 		}
 		
-		n_ijk->Store ((long) index, child_state, (*n_ijk)(index, child_state) + 1);
-		n_ij->Store ((long) index, 0, (*n_ij)(index, 0) + 1);
+		CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
+		CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
+		
+		
+		// initialize matrices with prior hyperparameters (a_ijk) -- if using K2, entries will remain zero
+		for (long j = 0; j < num_parent_combos; j++)
+		{
+			n_ij->Store (j, 0, prior_sample_size(dnode,0) / num_parent_combos);
+			
+			for (long k = 0; k < num_levels.lData[dnode]; k++)
+			{
+				n_ijk->Store (j, k, (*n_ij)(j,0) / num_levels.lData[dnode]);
+			}
+		}
+		
+		
+		// update hyperparameters with data
+		/*
+			What should we do with incomplete cases?  Currently using Gibbs sampling to impute
+				an average node score - should we export one of these samples?
+			For now, just export complete cases - BUT THIS WILL CAUSE PROBLEMS IF NONE OF 
+				THE CASES IS COMPLETE! - afyp, 2010/02/25
+		 */
+		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		{
+			long	index			= 0,
+					child_state		= (*theData)(obs, dnode);
+			
+			if (child_state < 0)
+				continue;	/* missing observation */
+			
+			for (long par = 0; par < dparents.lLength; par++)
+			{
+				long	this_parent			= dparents.lData[par],
+						this_parent_state	= (*theData)(obs, this_parent);
+				
+				if (this_parent_state < 0)
+				{
+					index = -1;	/* missing observation */
+					break;
+				}
+				index += this_parent_state * multipliers.lData[par];
+			}
+			
+			if (index >= 0)
+			{
+				n_ijk->Store ((long) index, child_state, (*n_ijk)(index, child_state) + 1);
+				n_ij->Store ((long) index, 0, (*n_ij)(index, 0) + 1);
+			}
+		}
+	}
+	
+	else
+	{
+		// conditionally independent node
+		CreateMatrix (n_ij, 1, 1, false, true, false);
+		CreateMatrix (n_ijk, 1, num_levels.lData[dnode], false, true, false);
+		
+		// prior hyperparameters (uniform distribution)
+		for (long k = 0; k < num_levels.lData[dnode]; k++)
+			n_ijk->Store(0, k, prior_sample_size(dnode,0) / num_levels.lData[dnode]);
+		
+		// update with data
+		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		{
+			long child_state = (*theData)(obs, dnode);
+			
+			if (child_state < 0)
+				continue;
+			
+			n_ijk->Store (0, child_state, (*n_ijk)(0, child_state) + 1);
+			n_ij->Store (0, 0, (*n_ij)(0,0) + 1);
+		}
 	}
 }
 
@@ -1048,12 +1092,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		return;
 	
 	
-#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
-	
-	/*********************************/
-	/*  THIS IS TOTALLY BUSTED  :-/  */
-	/*********************************/
-	
+#if defined __HYPHYMPI__
 	// MPI_Init() is called in main()
 	int			size,
 				rank;
@@ -1202,7 +1241,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			
 			if (mpi_node < size)	// at least one node is busy
 			{
-				MPIReceiveScores (mpi_node_status, false, node_id);
+				MPIReceiveScores (mpi_node_status, false, 0);
 			}
 			else
 			{
@@ -1501,7 +1540,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 
 
 //________________________________________________________________________________________________________
-#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+#if defined __HYPHYMPI__
 void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long node_id)
 {
 	_Matrix		single_parent_scores (num_nodes, 1, false, true);
@@ -1586,8 +1625,6 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 {
 	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
-	_String		dataStr,
-				dataName ("bgmData");
 	
 	_Parameter	mcem_max_steps, mcem_burnin, mcem_sample_size;	// permit user to reset impute settings
 	
@@ -1643,17 +1680,17 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 	rec << "=(nodes);\n";
 	
 	// missing data imputation settings
-	rec << "BGM_MCEM_MAXSTEPS = ";
-	rec << (long) mcem_max_steps;
-	rec << ";\nBGM_MCEM_BURNIN = ";
-	rec << (long) mcem_burnin;
-	rec << ";\nBGM_MCEM_SAMPLES = ";
-	rec << ";\n";
+	sprintf (buf, "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)mcem_max_steps);
+	rec << buf;
+	sprintf (buf, "BGM_IMPUTE_BURNIN = %d;\n", (long)mcem_burnin);
+	rec << buf;
+	sprintf (buf, "BGM_IMPUTE_SAMPLES = %d;\n", (long)mcem_sample_size);
+	rec << buf;
 	
 	// serialize data matrix and assign to BGM
-	obsData->Serialize (dataStr, dataName);
-	rec << dataStr;
-	rec << "\n";
+	rec << "bgmData=";
+	rec << (_String *)obsData->toStr();
+	rec << ";\n";
 	rec << "SetParameter(";
 	rec << bgmName;
 	rec << ",BGM_DATA_MATRIX,bgmData);\n";
@@ -2014,9 +2051,10 @@ _SimpleList *	_BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
 		// loop through nodes in list looking for parents
 		for (left_of = 0; left_of < new_order->lLength; left_of++)
 		{
+			// if the node is the child, 
 			if (graph (left_of, node))
 			{
-				new_order->InsertElement ((BaseRef) node, left_of);
+				new_order->InsertElement ((BaseRef) node, left_of, false, false);
 				break;
 			}
 		}
@@ -2255,38 +2293,7 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 	//	Modify a graph by adding, removing, or reversing an edge, so long as that modification
 	//	complies with the constraint matrix and (when fixed_order=TRUE) node order.
 	
-	long	step = 0, fail = 0, 
-			child, parent, 
-			child_idx, parent_idx;
-	
-	/*
-	char debug [255];
-	
-	sprintf (debug, "fixed_order %d, graph:\n", fixed_order);
-	BufferToConsole (debug);
-	for (long row = 0; row < graph->GetHDim(); row++)
-	{
-		for (long col = 0; col < graph->GetVDim(); col++)
-		{
-			sprintf (debug, "%d ", (long) (*graph)(row,col));
-			BufferToConsole (debug);
-		}
-		NLToConsole ();
-	}
-	NLToConsole();
-	*/
-	
-	// convert order into matrix format of edge permissions
-	_Matrix order_matrix (num_nodes, num_nodes, false, true);
-	
-	for (long p_index = 0; p_index < num_nodes; p_index++)
-	{
-		for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
-		{
-			order_matrix.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
-		}
-	}
-	
+	long	step = 0, fail = 0;
 	
 	
 	// calculate number of parents for each child for rapid access later
@@ -2294,10 +2301,10 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 	
 	num_parents.Populate (num_nodes, 0, 0);
 	
-	for (child = 0; child < num_nodes; child++)
+	for (long child = 0; child < num_nodes; child++)
 	{
-		for (parent = 0; parent < num_nodes; parent++)
-		{
+		for (long parent = 0; parent < num_nodes; parent++)
+		{		
 			if ( (*graph)(parent, child) > 0)
 			{
 				num_parents.lData[child]++;
@@ -2306,15 +2313,15 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		
 		if (num_parents.lData[child] > max_parents.lData[child])
 		{
-			_String oops ("Number of parents exceeds maximum BEFORE randomization of graph.");
-			WarnError (oops);
+			WarnError (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.lData[child] & " > " & max_parents.lData[child] & ")\n" );
 			break;
 		}
-	}
-	
+	}	
 	
 	
 	// randomize graph
+	long	p_rank, c_rank, parent, child;
+	
 	do
 	{
 		// a fail-safe to avoid infinite loops
@@ -2325,40 +2332,38 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		}
 		
 		// pick a random edge
-		parent_idx	= (genrand_int32() % (num_nodes-1)) + 1;	// shift right to not include lowest node in order
-		child_idx	= genrand_int32() % parent_idx;
+		p_rank	= (genrand_int32() % (num_nodes-1)) + 1;	// shift right to not include lowest node in order
+		c_rank	= genrand_int32() % p_rank;
 		
-		child = order->lData[child_idx];
-		parent = order->lData[parent_idx];
+		child = order->lData[c_rank];
+		parent = order->lData[p_rank];
 		
 		
 		if (fixed_order || genrand_real2() > prob_swap)
 		{
-			if ( (*graph)(parent,child) == 0 && constraint_graph(parent,child) >= 0)		// add an edge
+			// add an edge if it is absent and not banned
+			if ( (*graph)(parent,child) == 0 && constraint_graph(parent,child) >= 0)
 			{
 				if (num_parents.lData[child] == max_parents.lData[child])
 				{
-					// generate a list of current parents that can be removed
-					_SimpleList		deadbeat_dads;
+					// move an edge from an existing parent to target parent
+					_SimpleList		removeable_edges;
 					
+					// build a list of current parents
 					for (long par = 0; par < num_nodes; par++)
-					{
-						if ((*graph)(par,child) == 1 && constraint_graph(par, child) <= 0)	// not an enforced edge
-						{
-							deadbeat_dads << par;
-						}
-					}
+						if ((*graph)(par,child) && constraint_graph(par,child)<=0) 
+							removeable_edges << par;
 					
-					if (deadbeat_dads.lLength > 0)
+					if (removeable_edges.lLength > 0)
 					{
-						graph->Store (deadbeat_dads.lData[genrand_int32() % deadbeat_dads.lLength], child, 0.);
+						// shuffle the list and remove the first parent
+						graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], child, 0.);
 						graph->Store (parent, child, 1.);
 						step++;
-						
-						//ReportWarning (_String("switch parents"));
 					}
 					else
 					{
+						// none of the edges can be removed
 						fail++;
 					}
 				}
@@ -2367,17 +2372,15 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 					graph->Store (parent, child, 1.);
 					num_parents.lData[child]++;
 					step++;
-					
-					//ReportWarning (_String("add an edge"));
 				}
 			}
-			else if ( (*graph)(parent,child) == 1 && constraint_graph(parent,child) <= 0)		// delete an edge
+			
+			// delete an edge if it is present and not enforced
+			else if ( (*graph)(parent,child) == 1 && constraint_graph(parent,child) <= 0)
 			{
 				graph->Store (parent, child, 0.);
 				num_parents.lData[child]--;
 				step++;
-				
-				//ReportWarning (_String("delete an edge"));
 			}
 			else
 			{
@@ -2386,48 +2389,89 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		}
 		else	// swap nodes in ordering and flip edge if present
 		{
-			long	buzz = 0;
+			bool	ok_to_go = TRUE;
 			
-			for (long bystander, i=child_idx+1; i < parent_idx; i++)
+			// edge cannot be flipped
+			if ( (*graph)(parent,child) == 1  &&  ( constraint_graph(child,parent)<0 || constraint_graph(parent,child) )>0  )
+				ok_to_go = FALSE;
+			
+			
+			// check all other nodes affected by the swap
+			if (ok_to_go)
 			{
-				bystander = order->lData[i];
-				if (constraint_graph(parent,bystander) > 0 || constraint_graph(bystander,child) > 0)
+				for (long bystander, i=c_rank+1; i < p_rank; i++)
 				{
-					fail++;
-					buzz = 1;
+					bystander = order->lData[i];	// retrieve node id
+					
+					if ( 
+						( (*graph)(parent,bystander)==1 && constraint_graph (parent, bystander)>0 )  || 
+						( (*graph)(bystander,child)==1 && constraint_graph (bystander, child)>0 )  ||
+						constraint_graph (bystander,parent)<0  ||  constraint_graph (child,bystander)<0 
+						) {
+						ok_to_go = FALSE;
+						break;
+					}
 				}
 			}
 			
-			if ( buzz == 0 && 
-				( (*graph)(parent,child) == 0
-				 || ( (*graph)(parent,child) == 1 && constraint_graph(parent,child) <= 0 
-					 && num_parents.lData[parent] < max_parents.lData[parent])
-				 ))
+			
+			// if everything checks out OK
+			if ( ok_to_go )
 			{
 				// flip the target edge
-				if ( (*graph)(parent,child) == 1)
+				if ( (*graph)(parent,child) == 1 && constraint_graph(child,parent)>=0 )
 				{
-					graph->Store (parent,child, 0);
-					graph->Store (child,parent,1);
+					graph->Store (parent, child, 0);
+					graph->Store (child, parent, 1);
 					num_parents.lData[child]--;
 					num_parents.lData[parent]++;
 					
-					//ReportWarning ("edge flip");
+					if (num_parents.lData[parent] > max_parents.lData[parent])
+					{
+						// parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
+						_SimpleList		removeable_edges;
+						
+						for (long par = 0; par < num_nodes; par++)
+							if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) 
+								removeable_edges << par;
+						
+						graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
+						num_parents.lData[parent]--;
+					}
+					
+					step++;
 				}
 				
-				// flip the other edges affected by node swap
-				for (long bystander, i = child_idx+1; i < parent_idx; i++)
+				// swap nodes in order
+				order->lData[p_rank] = child;
+				order->lData[c_rank] = parent;
+				
+				// update edges affected by node swap
+				for (long bystander, i = c_rank+1; i < p_rank; i++)
 				{
 					bystander = order->lData[i];
-					if ( (*graph)(bystander, child) == 1)
+					
+					if ( (*graph)(bystander, child) == 1 )
 					{
 						graph->Store (bystander, child, 0);
 						num_parents.lData[child]--;
 						
-						if (num_parents.lData[bystander] < max_parents.lData[bystander])
+						graph->Store (child, bystander, 1);
+						num_parents.lData[bystander]++;
+						
+						if (num_parents.lData[bystander] > max_parents.lData[bystander])
 						{
-							graph->Store (child, bystander, 1);
-							num_parents.lData[bystander]++;
+							// number of parents for bystander node now exceeds maximum, 
+							//  select a random edge to remove
+							_SimpleList		removeable_edges;
+							
+							for (long par = 0; par < num_nodes; par++)
+								if (  (*graph)(par, bystander)  &&  constraint_graph(par, bystander)<=0  ) 
+									removeable_edges << par;
+							
+							//removeable_edges.Permute(1);
+							graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], bystander, 0.);
+							num_parents.lData[bystander]--;
 						}
 					}
 					
@@ -2436,29 +2480,25 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 						graph->Store (parent, bystander, 0);
 						num_parents.lData[bystander]--;
 						
-						if (num_parents.lData[parent] < max_parents.lData[parent])
+						graph->Store (bystander, parent, 1);
+						num_parents.lData[parent]++;
+						
+						if (num_parents.lData[parent] > max_parents.lData[parent])
 						{
-							graph->Store (bystander, parent, 1);
-							num_parents.lData[parent]++;
+							_SimpleList		removeable_edges;
+							
+							for (long par = 0; par < num_nodes; par++)
+								if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) 
+									removeable_edges << par;
+							
+							//removeable_edges.Permute(1);
+							graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
+							num_parents.lData[parent]--;
 						}
 					}
 				}
 				
-				// swap nodes in order
-				order->lData[parent_idx] = child;
-				order->lData[child_idx] = parent;
-				
-				// refresh order matrix
-				for (long p_index = 0; p_index < num_nodes; p_index++)
-				{
-					for (long par = order->lData[p_index], c_index = 0; c_index < num_nodes; c_index++)
-					{
-						order_matrix.Store (par, order->lData[c_index], (p_index > c_index) ? 1 : 0);
-					}
-				}
-				
 				step++;
-				
 			}
 			else
 			{
@@ -2467,20 +2507,6 @@ void	_BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * ord
 		}
 	}
 	while (step < num_steps);
-	
-	/*
-	sprintf (debug, " | \n V \n");
-	BufferToConsole (debug);
-	for (long row = 0; row < graph->GetHDim(); row++)
-	{
-		for (long col = 0; col < graph->GetVDim(); col++)
-		{
-			sprintf (debug, "%d ", (long) (*graph)(row,col));
-			BufferToConsole (debug);
-		}
-		NLToConsole ();
-	}
-	 */
 }
 
 
