@@ -1,5 +1,5 @@
 ExecuteAFile ("Utility/GrabBag.bf");
-#include "SequentialAddition.ibf";
+ExecuteAFile ("SequentialAddition.ibf");
 
 
 /*___________________________________________________________________________________________________________*/
@@ -115,7 +115,7 @@ if (dataType<0)
 if (dataType)
 {
 	SetDialogPrompt ("Please choose a codon data file:");
-	#include "TemplateModels/chooseGeneticCode.def";
+	ExecuteAFile("TemplateModels/chooseGeneticCode.def");
 }
 else
 {
@@ -282,15 +282,52 @@ if (clumpingL>=0)
 		clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
 		clusterCount = doClustering (clumpingL, clumpingU);
 		
+		
 		fprintf (stdout, "\nFound ", clusterCount, " clusters\n");
 		
 		sortedCluster = {mDim,2};
+		degreeDistro  = {};
+		ones		  = {mDim,1}["1"];
+		maxDegree	  = 0;
 		
 		for (k=0; k<mDim; k=k+1)
 		{
 			sortedCluster[k][0] = visited[k];
 			sortedCluster[k][1] = k;
+			thisRow 			= ((gatedDistances[k][-1])*ones)[0] + 1;
+			degreeDistro[thisRow] = degreeDistro[thisRow] + 1;
 		}	
+		
+		diffDegrees = Abs(degreeDistro);
+		logLog 		= {diffDegrees,2};
+		keys		= Rows (degreeDistro);
+		
+		for (k=0; k<diffDegrees; k=k+1)
+		{
+			logLog[k][0] = Log(0+keys[k]);
+			logLog[k][1] = Log(degreeDistro[keys[k]])-Log(mDim);
+		}
+		
+		
+columnHeaders = {{"Log[Degree]","Log[Prob]"};
+OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
+		{"columnHeaders"}
+		{"logLog"}
+		{"Scatterplot"}
+		{"Log[Degree]"}
+		{"Log[Prob]}
+		{"Log(Degree)"}
+		{""}
+		{"Log(Probability)"}
+		{"0"}
+		{""}
+		{"-1;-1"}
+		{"10;1.309;0.785398"}
+		{"Times:12:0;Times:10:0;Times:12:2"}
+		{"0;0;16777215;8355711;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
+		{"16,0,0"}
+		},
+		"480;665;70;70");
 		
 		sortedCluster = sortedCluster % 0;
 		
@@ -491,10 +528,13 @@ function doClustering (from, to)
 			visited[currentVertex] = clusterCount;
 			for (k=currentVertex+1; k<mDim; k=k+1)
 			{
-				if (visited[k] == 0 && gatedDistances[currentVertex][k])
+				if (visited[k] == 0)
 				{
-					visited[k] = clusterCount;
-					doAVertex (k, 0);
+					if (gatedDistances[currentVertex][k])
+					{
+						visited[k] = clusterCount;
+						doAVertex (k, 0);
+					}
 				}
 			}
 			clusterCount = clusterCount + 1;
@@ -510,10 +550,13 @@ function 	doAVertex (vertexID, currentNeighbor)
 {
 	for (;currentNeighbor < mDim; currentNeighbor=currentNeighbor+1)
 	{
-		if (visited[currentNeighbor]==0 && gatedDistances[vertexID][currentNeighbor])
+		if (visited[currentNeighbor]==0)
 		{
-			visited[currentNeighbor] = clusterCount;
-			ExecuteCommands("doAVertex ("+currentNeighbor+", 0);");
+			if (gatedDistances[vertexID][currentNeighbor])
+			{
+				visited[currentNeighbor] = clusterCount;
+				ExecuteCommands("doAVertex ("+currentNeighbor+", 0);");
+			}
 		}
 	}
 	return 0;
