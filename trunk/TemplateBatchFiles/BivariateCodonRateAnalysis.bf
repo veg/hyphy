@@ -40,10 +40,7 @@ bivariateFitOptions ["09"] = "1";
 bivariateFitOptions ["10"] = "Unconstrained";
 bivariateFitOptions ["11"] = currentLFSpool;
 
-ExecuteAFile (  HYPHY_BASE_DIRECTORY + 
-				"TemplateBatchFiles" + 
-				DIRECTORY_SEPARATOR  + 
-				"dNdSBivariateRateAnalysis.bf",
+ExecuteAFile (  "TemplateBatchFiles/dNdSBivariateRateAnalysis.bf",
 				bivariateFitOptions
 			 );
 			 
