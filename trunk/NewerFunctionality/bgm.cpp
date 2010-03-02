@@ -1738,16 +1738,16 @@ void Bgm::CacheNodeScores (void)
 #else
 	
 	
-#if !defined __UNIX__ || defined __HEADLESS__
-	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-#if !defined __HEADLESS__
-	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
-#else
-	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
-#endif	
-	_Parameter	seconds_accumulator = .0,
+	#if !defined __UNIX__ || defined __HEADLESS__
+		TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+	#if !defined __HEADLESS__
+		SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+	#else
+		SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
+	#endif	
+		_Parameter	seconds_accumulator = .0,
 				temp;
-#endif
+	#endif
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
@@ -1840,6 +1840,7 @@ void Bgm::CacheNodeScores (void)
 				break;
 		}
 #endif
+}
 
 #endif
 	
