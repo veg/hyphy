@@ -304,18 +304,28 @@ if (clumpingL>=0)
 		
 		for (k=0; k<diffDegrees; k=k+1)
 		{
-			logLog[k][0] = Log(0+keys[k]);
-			logLog[k][1] = Log(degreeDistro[keys[k]])-Log(mDim);
+			logLog[k][0] = 0+keys[k];
+			logLog[k][1] = degreeDistro[keys[k]];
+		}
+	
+		
+		logLog = logLog % 0;
+		logLog[diffDegrees-1][1] = logLog[diffDegrees-1][1] / mDim;
+		for (k=diffDegrees-2; k>=0; k=k-1)
+		{
+			logLog[k][1] = logLog[k][1]/mDim+logLog[k+1][1];
 		}
 		
+		fprintf (stdout, logLog, "\n");
+		logLog = Log(logLog);
 		
-columnHeaders = {{"Log[Degree]","Log[Prob]"};
+columnHeaders = {{"Log[Degree]","Log[Prob]"}};
 OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 		{"columnHeaders"}
 		{"logLog"}
 		{"Scatterplot"}
 		{"Log[Degree]"}
-		{"Log[Prob]}
+		{"Log[Prob]"}
 		{"Log(Degree)"}
 		{""}
 		{"Log(Probability)"}
