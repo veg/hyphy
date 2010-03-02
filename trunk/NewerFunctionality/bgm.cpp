@@ -1840,8 +1840,6 @@ void Bgm::CacheNodeScores (void)
 				break;
 		}
 #endif
-	}
-#endif
 
 #endif
 	
