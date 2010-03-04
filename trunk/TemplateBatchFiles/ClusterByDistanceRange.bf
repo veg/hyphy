@@ -316,7 +316,6 @@ if (clumpingL>=0)
 			logLog[k][1] = logLog[k][1]/mDim+logLog[k+1][1];
 		}
 		
-		fprintf (stdout, logLog, "\n");
 		logLog = Log(logLog);
 		
 columnHeaders = {{"Log[Degree]","Log[Prob]"}};
