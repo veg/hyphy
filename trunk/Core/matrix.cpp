@@ -9521,6 +9521,12 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 
 	switch (opCode)
 	{
+		case 6: // +
+			if (p)
+				MStore (_String((long)avl.countitems()), p, true);
+				return new _Constant (avl.countitems());
+			break;
+
 		case 7:
 		case 14:
 			if (opCode == 7)
