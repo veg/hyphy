@@ -40,7 +40,7 @@ bivariateFitOptions ["09"] = "1";
 bivariateFitOptions ["10"] = "Unconstrained";
 bivariateFitOptions ["11"] = currentLFSpool;
 
-ExecuteAFile (  "TemplateBatchFiles/dNdSBivariateRateAnalysis.bf",
+ExecuteAFile (  "dNdSBivariateRateAnalysis.bf",
 				bivariateFitOptions
 			 );
 			 
@@ -50,7 +50,6 @@ currentRateCount = 1;
 bestClassCount = 1;
 
 gateauxOptions = {};
-gateauxOptions ["00"] = _genCodeID;
 gateauxOptions ["02"] = "-1";
 
 
@@ -67,7 +66,7 @@ while (currentCAIC < bestCAICsoFar)
 	ExecuteAFile (  HYPHY_BASE_DIRECTORY + 
 				"TemplateBatchFiles" + 
 				DIRECTORY_SEPARATOR  + 
-				"Gateaux.bf",
+				"GateauxMR.bf",
 				gateauxOptions
 			 );
 
