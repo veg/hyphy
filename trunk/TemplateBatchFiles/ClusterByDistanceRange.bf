@@ -283,7 +283,7 @@ if (clumpingL>=0)
 		clusterCount = doClustering (clumpingL, clumpingU);
 		
 		
-		fprintf (stdout, "\nFound ", clusterCount, " clusters\n");
+		fprintf (stdout, "\nFound ", clusterCount, " clusters on total ", totalEdgeCount," edges\n");
 		
 		sortedCluster = {mDim,2};
 		degreeDistro  = {};
@@ -529,6 +529,8 @@ function doClustering (from, to)
 	clusterCount = 1;
 	done		 = 0;
 	vertexCount  = 0;
+	
+	totalEdgeCount = (Transpose(visited["1"])*gatedDistances*visited["1"])[0];
 
 	for (currentVertex=0; currentVertex < mDim; currentVertex=currentVertex+1)
 	{

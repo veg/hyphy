@@ -2545,7 +2545,7 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
 				if (v->IsCategory()&&includeCategs)
 					v->ScanForVariables (l,includeGlobals);
 					
-				if(includeAll|| v->ObjectClass()==NUMBER)
+				if(includeAll || v->ObjectClass()==NUMBER)
 					l.Insert ((BaseRef)f);
 					
 				if (skipMatrixAssignments)

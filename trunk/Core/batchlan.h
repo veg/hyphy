@@ -407,6 +407,9 @@ extern	_SimpleList
 		batchLanguageFunctionParameters,
 		batchLanguageFunctionClassification,
 		modelMatrixIndices,
+		modelTypeList, 
+			// SLKP: 20100313 this list stores 0 for  normal (rate-matrix based models),
+			//		 vs expression based matrices, for which the dimension is stored.
 		modelFrequenciesIndices,
 		listOfCompiledFormulae;
 
@@ -507,6 +510,11 @@ long	FindBgmName					 (_String &);
 
 long	FindLikeFuncName		 	 (_String&, bool = false);
 long	FindModelName			 	 (_String&);
+void	ScanModelForVariables		 (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat);
+		/* 20100316 SLKP:
+			factored out a function call to scan a particular model
+			for variables to permit the use of explicit (formula-based) model definitions
+		 */
 _String*ReturnCurrentCallStack		 (void);
 	
 void	ReadBatchFile				 (_String&, _ExecutionList&);
@@ -530,6 +538,7 @@ void	KillDataFilterRecord   		 (long, bool = false);
 void	KillLFRecord  		   		 (long, bool = true);
 void	KillDataSetRecord      		 (long);
 void	KillModelRecord				 (long);
+void	KillExplicitModelFormulae	 (void);
 bool	PushFilePath				 (_String&);
 void	PopFilePath					 (void);
 _Matrix*CheckMatrixArg				 (_String*, bool);

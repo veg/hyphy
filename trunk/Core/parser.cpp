@@ -2629,11 +2629,37 @@ _VariableContainer::_VariableContainer (_String theName, _String theTmplt, _Vari
 
 //__________________________________________________________________________________
 
+bool _VariableContainer::HasExplicitFormModel (void)
+{
+	if (theModel == -1)
+		return false;
+	return (modelTypeList.lData[theModel]);
+}
+
+
+//__________________________________________________________________________________
+
 _Matrix* _VariableContainer::GetModelMatrix (void)
 {
-	if (theModel==-1)
+	if (theModel == -1)
 		return nil;
+	if (modelTypeList.lData[theModel])
+		return (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
 	return (_Matrix*) (LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
+}
+
+//__________________________________________________________________________________
+
+long _VariableContainer::GetModelDimension (void)
+{
+	long matrixDim = 0;
+	if (theModel >= 0)
+	{
+		matrixDim = modelTypeList.lData[theModel];
+		if (matrixDim == 0)
+			return GetModelMatrix()->GetHDim();
+	}
+	return matrixDim;
 }
 
 //__________________________________________________________________________________
@@ -2654,25 +2680,16 @@ _Matrix* _VariableContainer::GetFreqMatrix (void)
 //__________________________________________________________________________________
 void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
 {
-	_Variable * curVar;
-	long 	f = modelNames.Find(&theTmplt);
+	_String fullName (aName), 
+	varName;
 
-	if (f>=0)
-	{
-		theModel = f;
-		curVar = LocateVar (modelMatrixIndices.lData[f]);
-	}
-	else
-		theModel = -1;
-	
+	theModel  = FindModelName(theTmplt);
 	theParent = theP;
 	
-	_String fullName (aName), 
-			varName;
 	
 	if (aName.sLength)
 	{
-		f = aName.Find('.');
+		long f = aName.Find('.');
 		
 		while (theP)
 		{
@@ -2694,7 +2711,7 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
     	fullName = *theName;
     	
    
-	if (theModel!=-1) // build the matrix variables
+	if (theModel!= HY_NO_MODEL) // build the matrix variables
 	{
 		_SimpleList 	  mVars;
 		{
@@ -2704,8 +2721,8 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 			if (doScan)
 			{
 			
-				_AVLList 		   ma (&mVars);
-				GetModelMatrix ()->ScanForVariables2 (ma,true,curVar->GetAVariable(),false);
+				_AVLList				ma (&mVars);
+				ScanModelForVariables   (GetModelIndex(), ma,true,theModel,false);
 				
 				long freqID 	= modelFrequenciesIndices.lData[theModel];
 				if (freqID>=0)
@@ -2723,23 +2740,23 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 		
 		for (long i=0; i<mVars.lLength; i++)
 		{
-			curVar = (_Variable*)variablePtrs (mVars.lData[i]);
-			if (curVar->IsGlobal()) 
+			_Variable * aVar = (_Variable*)variablePtrs (mVars.lData[i]);
+			if (aVar->IsGlobal()) 
 			{
 				//if (curVar->IsIndependent())
 				{
 					if (!gVariables)
 						checkPointer (gVariables = new _SimpleList);
-					(*gVariables) << curVar->GetAVariable();
+					(*gVariables) << aVar->GetAVariable();
 				}
 				continue;
 			}
 			
-			f = curVar->theName->FindBackwards('.',0,-1);
+			long f = aVar->theName->FindBackwards('.',0,-1);
 			if (f>=0)
-				varName = fullName&"."& curVar->theName->Cut(f+1,-1);
+				varName = fullName&'.'& aVar->theName->Cut(f+1,-1);
 			else
-				varName = fullName&"."& *curVar->theName;
+				varName = fullName&'.'& *aVar->theName;
 			
 			f = LocateVarByName (varName);
 			
@@ -2750,8 +2767,11 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 			}
 			else
 				f = variableNames.GetXtra (f);
+			
+			_Variable * spawnedVar = FetchVar (f);
+			spawnedVar->SetBounds (aVar->GetLowerBound(), aVar->GetUpperBound());
 
-			if (curVar->IsIndependent())
+			if (aVar->IsIndependent())
 			{
 				if (!iVariables)
 					checkPointer (iVariables = new _SimpleList);

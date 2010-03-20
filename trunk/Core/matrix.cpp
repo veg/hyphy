@@ -2516,6 +2516,7 @@ void	_Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long model
 			_Variable*			   cachedDeps = FetchVar(LocateVarByName (CACHE_FORMULA_DEPENDANCY));
 			
 			if (cachedDeps && cachedDeps->ObjectClass () == ASSOCIATIVE_LIST)
+				// 20100316 SLKP: I am pretty sure this is broken...
 			{
 				definedCache = (_AssociativeList*)cachedDeps->GetValue();
 				_String		matrixKey (modelID);

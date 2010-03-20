@@ -68,14 +68,15 @@ _Parameter	acquireScalerMultiplier (long s)
 /*----------------------------------------------------------------------------------------------------------*/
 void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 {
-	_List	  matrixQueue,
-			  nodesToDo;
+	_List			matrixQueue,
+					nodesToDo;
+	_SimpleList		mustExponentiate;
 		
 	for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++)
 	{
 		long didIncrease = matrixQueue.lLength;
 		_CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
-		thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue);
+		thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&mustExponentiate);
 		if (matrixQueue.lLength - didIncrease)
 			nodesToDo << thisNode;
 	}
@@ -89,7 +90,12 @@ void		_TheTree::ExponentiateMatrices	(_List& expNodes, long tc, long catID)
 	
 #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
 	for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++)
-		((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
+	{
+		if (mustExponentiate.lData[matrixID])
+			((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);	
+		else
+			((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID)), catID);	
+	}
 }
 
 /*----------------------------------------------------------------------------------------------------------*/

@@ -614,20 +614,18 @@ bool	_LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from trip
 		}
 		if (!t->IsCurrentNodeTheRoot())
 		{
-			if (!travNode->GetModelMatrix())
+			if (travNode->GetModelIndex () == HY_NO_MODEL)
 			{
-				_String warnMsg ("Model is not associated with the node:");
-				warnMsg = warnMsg&*travNode->GetName();
-				acknError (warnMsg);
+				WarnError (_String ("Model is not associated with the node:") & *travNode->GetName());
 				return false;
 			}				
 			else
-				if (travNode->GetModelMatrix()->GetHDim()!=dfDim)
+				if (travNode->GetModelDimension() != dfDim)
 				{
 					_String warnMsg ("The dimension of the transition matrix at node ");
 					warnMsg = warnMsg&travNode->GetName()->Cut(travNode->GetName()->FindBackwards('.',0,-1)+1,-1)
 						&" is not equal to the state count in the data filter associated with the tree.";
-					acknError (warnMsg);
+					WarnError (warnMsg);
 					return false;
 				}	
 		}			
@@ -7487,18 +7485,21 @@ long	_LikelihoodFunction::DependOnDS (long ID)
 //_______________________________________________________________________________________
 long	_LikelihoodFunction::DependOnModel (_String& modelTitle)
 {
-	long f = modelNames.Find (&modelTitle);
-	if ((f>=0)&&(modelTitle.sLength))
+	if (modelTitle.sLength)
 	{
-		for (long k=0; k<theTrees.lLength; k++)
+		long modelIndex = FindModelName(modelTitle);
+		if (modelIndex != HY_NO_MODEL)
 		{
-			_TheTree * t = (_TheTree*)LocateVar (theTrees.lData[k]);
-			_CalcNode* cN = t->DepthWiseTraversal (true);
-			while (cN)
+			for (long k=0; k<theTrees.lLength; k++)
 			{
-				if (cN->GetModelIndex()==f)
-					return k;
-				cN = t->DepthWiseTraversal (false);
+				_TheTree * t = (_TheTree*)LocateVar (theTrees.lData[k]);
+				_CalcNode* cN = t->DepthWiseTraversal (true);
+				while (cN)
+				{
+					if (cN->GetModelIndex() == modelIndex)
+						return k;
+					cN = t->DepthWiseTraversal (false);
+				}
 			}
 		}
 	}

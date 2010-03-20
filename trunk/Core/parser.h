@@ -69,6 +69,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define  HY_DEP_CLEAR_MASK		0xC7
 
+#define  HY_NO_MODEL			(-1)
+
 
 class   _Variable;
 class   _VariableContainer;
@@ -609,32 +611,32 @@ class	_VariableContainer: public _Variable {
 	// name, matrix constructor, the parent (if there is one)
 	virtual ~_VariableContainer(void);
 
-	void     InitializeVarCont (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
+	void					InitializeVarCont (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
 	
-	virtual	  void	  MarkDone (void); 
+	virtual	    void		MarkDone (void); 
 
 	// variable access/operation functions
 	
-	virtual		bool	   IsContainer 					(void) 
-															{return true;}
+	virtual		bool	    IsContainer 				(void) 
+														{return true;}
 					
-	virtual		bool	   HasChanged 					(void);
-	virtual		bool	   NeedToExponentiate 			(bool = false);
+	virtual		bool	    HasChanged 					(void);
+	virtual		bool	    NeedToExponentiate 			(bool = false);
 	
-				void 	   ScanAndAttachVariables 		(void); 
+				void 	    ScanAndAttachVariables 		(void); 
 	
-	virtual		void	   ScanForVariables 			(_AVLList&,_AVLList&); 
-	virtual		void	   ScanForDVariables 			(_AVLList&,_AVLList&); 
-	virtual		void	   ScanForGVariables 			(_AVLList&,_AVLList&); 
+	virtual		void	    ScanForVariables 			(_AVLList&,_AVLList&); 
+	virtual		void	    ScanForDVariables 			(_AVLList&,_AVLList&); 
+	virtual		void	    ScanForGVariables 			(_AVLList&,_AVLList&); 
 	
-	virtual		bool	   IsModelVar					(long);
-	virtual		bool	   IsConstant					(void);
-	virtual		BaseRef	   makeDynamic 					(void);
-	virtual		void	   Duplicate   					(BaseRef);
+	virtual		bool	    IsModelVar					(long);
+	virtual		bool	    IsConstant					(void);
+	virtual		BaseRef	    makeDynamic 				(void);
+	virtual		void	    Duplicate   				(BaseRef);
 	
-	virtual	    BaseRef	   toStr						(void);
+	virtual	    BaseRef	    toStr						(void);
 	
-				bool	   HasLocals 					(void);
+				bool	    HasLocals 					(void);
 	
 	virtual		bool		RemoveDependance 			(long);
 	virtual		long		SetDependance  				(long);
@@ -657,8 +659,16 @@ class	_VariableContainer: public _Variable {
 				void		MatchParametersToList		(_List&, bool doAll = false, bool indOnly = false);
 				_Matrix*	GetModelMatrix 				(void);	
 				_Matrix*	GetFreqMatrix 				(void);	
+				bool		HasExplicitFormModel		(void);
+
 				long		GetModelIndex 				(void) 
-															{ return theModel; }
+														{ return theModel; }
+				long		GetModelDimension			(void);
+					/* 20100316 SLKP
+						return the dimension of the model; needed to handle the case
+						of explicit model exponentials
+					 */
+	
 				void		CopyMatrixParameters 		(_VariableContainer*);
 				void		GetListOfModelParameters 	(_List&);
 				_String*	GetSaveableListOfUserParameters 		

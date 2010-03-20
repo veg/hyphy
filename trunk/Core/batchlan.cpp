@@ -132,6 +132,7 @@ _SimpleList
 			batchLanguageFunctionParameters,
 			batchLanguageFunctionClassification,
 			modelMatrixIndices,
+			modelTypeList,
 			modelFrequenciesIndices,
 			listOfCompiledFormulae;
 			
@@ -930,6 +931,15 @@ void KillDataSetRecord (long dsID)
 
 //__________________________________________________________
 
+void	KillExplicitModelFormulae (void)
+{
+	for (long i = 0; i < modelTypeList.lLength; i++)
+		if (modelTypeList.lData[i])
+			delete (_Formula*)(modelMatrixIndices.lData[i]);
+}
+
+//__________________________________________________________
+
 void KillModelRecord (long mdID)
 {
 	long mID;
@@ -941,7 +951,12 @@ void KillModelRecord (long mdID)
 	{
 		mID = modelMatrixIndices.lData[mdID];
 		modelMatrixIndices.lData[mdID] = -1;
-		DeleteVariable (*LocateVar(mID)->GetName());
+		if (modelTypeList.lData[mdID])
+			delete (_Formula*)mID;
+		else
+			DeleteVariable (*LocateVar(mID)->GetName());
+		
+		modelTypeList.lData[mdID] = 0;
 		mID = modelFrequenciesIndices.lData[mdID];
 		modelFrequenciesIndices.lData[mdID] = -1;
 		if (mID>=0)
@@ -953,7 +968,10 @@ void KillModelRecord (long mdID)
 		modelNames.Delete(mdID);
 		mID = modelMatrixIndices.lData[mdID];
 		modelMatrixIndices.lData[mdID] = -1;
-		DeleteVariable (*LocateVar(mID)->GetName());
+		if (modelTypeList.lData[mdID])
+			delete (_Formula*)mID;
+		else
+			DeleteVariable (*LocateVar(mID)->GetName());
 		mID = modelFrequenciesIndices.lData[mdID];
 		modelFrequenciesIndices.lData[mdID] = -1;
 		if (mID>=0 && modelFrequenciesIndices.Find(mID) < 0)
@@ -961,6 +979,7 @@ void KillModelRecord (long mdID)
 		
 		modelMatrixIndices.Delete (modelMatrixIndices.lLength-1);
 		modelFrequenciesIndices.Delete (modelFrequenciesIndices.lLength-1);
+		modelTypeList.Delete (modelTypeList.lLength-1);
 		
 		if (mdID)
 			while (((_String*)modelNames (--mdID))->sLength==0)
@@ -968,6 +987,7 @@ void KillModelRecord (long mdID)
 				modelNames.Delete(mdID);
 				modelMatrixIndices.Delete (mdID);
 				modelFrequenciesIndices.Delete (mdID);
+				modelTypeList.Delete (mdID);
 				if (mdID == 0)
 					break;
 			}
@@ -3022,7 +3042,7 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 					
 					while (1)
 					{
-						if ((theModelID  	= thisNode->GetModelIndex())<0) // this node has no model
+						if ((theModelID  	= thisNode->GetModelIndex()) == HY_NO_MODEL) // this node has no model
 						{
 							done = false;
 							break;
@@ -3032,7 +3052,7 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 						while(thisNode)
 						{
 							theModelID  	= thisNode->GetModelIndex();
-							if (theModelID<0) // no model
+							if (theModelID == HY_NO_MODEL) // no model
 							{
 								done = false;
 								break;
@@ -4446,11 +4466,16 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 //____________________________________________________________________________________	
 
 void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
+// 20100312 SLKP: added matrix-expression based model 
+// definitions
 {
 	chain.currentCommand++;
 	// first check to see if matrix parameters here are valid
 	
-	bool	 usingLastDefMatrix = false;
+	bool	 usingLastDefMatrix = false,
+			 doExpressionBased	= false;
+	
+	_Formula *isExpressionBased  = nil;
 	
 	_String* parameterName, 
 			 errMsg,
@@ -4462,6 +4487,8 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 			 f3, 
 			 multFreqs = 1;
 	
+	
+	
 	if (parameters.lLength>3)
 	{
 		parameterName = (_String*)parameters.lData[3];
@@ -4471,10 +4498,18 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 			TrainModelNN (&arg0,&arg1);
 			return;
 		}
-		multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
+		else
+			
+		if (parameterName->Equal(&explicitFormMExp))
+		{
+			doExpressionBased = true;
+			multFreqs		  = 0;
+		}
+		else
+			multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
 	}
 	
-	parameterName = (_String*)parameters.lData[1];
+	_Matrix*  checkMatrix;
 	
 	if (parameterName->Equal (&useLastDefinedMatrix))
 	{
@@ -4490,31 +4525,54 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 	}
 	else
 	{
-		_String augName (chain.AddNameSpaceToID(*parameterName));
-		f = LocateVarByName (augName);
-	}
-		
-	if (f<0)
-	{
-		errMsg = *parameterName & " has not been defined prior to the call to Model = ...";
-		WarnError (errMsg);
-		return;
+		if (doExpressionBased)
+		{
+			_String	matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
+					defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
+			// try to parse the expression, confirm that it is a square  matrix, 
+			// and that it is a valid transition matrix
+			isExpressionBased = (_Formula*)checkPointer(new _Formula);
+			long parseCode = Parse(isExpressionBased,matrixExpression,chain.nameSpacePrefix);
+			if (parseCode != -1 || isExpressionBased->ObjectClass()!= MATRIX )
+			{
+				WarnError (defErrMsg );
+				return;
+			}
+			checkMatrix = (_Matrix*)isExpressionBased->Compute();	
+			
+			
+		}
+		else
+		{
+			parameterName = (_String*)parameters.lData[1];
+			
+			_String augName (chain.AddNameSpaceToID(*parameterName));
+			f = LocateVarByName (augName);
+				
+			if (f<0)
+			{
+				WarnError (*parameterName & " has not been defined prior to the call to Model = ...");
+				return;
+			}
+			
+			_Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
+			if (checkVar->ObjectClass()!=MATRIX)
+			{
+				WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
+				return;
+			}
+			checkMatrix = (_Matrix*)checkVar->GetValue();
+		}
 	}
 	
-	_Variable* checkVar = usingLastDefMatrix?LocateVar(f):FetchVar (f);
-	if (checkVar->ObjectClass()!=MATRIX)
-	{
-		WarnError (*parameterName & " must refer to a matrix in the call to Model = ...");
-		return;
-	}
 	
-	_Matrix*  checkMatrix = (_Matrix*)checkVar->GetValue();
 	matrixDim = checkMatrix->GetHDim();
 	if ( matrixDim!=checkMatrix->GetVDim() || matrixDim<2 )
 	{
 		WarnError (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
 		return;
 	}
+	
 	// so far so good
 	
 	parameterName = (_String*)parameters.lData[2]; // this is the frequency matrix (if there is one!)
@@ -4523,15 +4581,13 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 	f2 = LocateVarByName (freqNameTag);
 	if (f2<0)
 	{
-		errMsg = *parameterName & " has not been defined prior to the call to Model = ...";
-		acknError (errMsg);
+		WarnError(*parameterName & " has not been defined prior to the call to Model = ...");
 		return;
 	}
-	checkVar = FetchVar (f2);
+	_Variable * checkVar = FetchVar (f2);
 	if (checkVar->ObjectClass()!=MATRIX)
 	{
-		errMsg = *parameterName & " must refer to a column/row vector in the call to Model = ...";
-		acknError (errMsg);
+		WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
 		return;
 	}
 	checkMatrix = (_Matrix*)checkVar->GetValue();
@@ -4539,8 +4595,7 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 	{
 		if (checkMatrix->GetHDim()!=matrixDim)
 		{
-			errMsg = *parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...";
-			acknError (errMsg);
+			WarnError (*parameterName & " must be a column vector of the same dimension as the model matrix in the call to Model = ...");
 			return;
 		}
 	}
@@ -4549,8 +4604,7 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 		{
 			if (checkMatrix->GetVDim()!=matrixDim)
 			{
-				errMsg = *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...";
-				acknError (errMsg);
+				WarnError ( *parameterName & " must be a row vector of the same dimension as the model matrix in the call to Model = ...");
 				return;
 			}
 			errMsg = *parameterName & " has been transposed to the default column vector setting ";
@@ -4559,8 +4613,7 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 		}
 		else
 		{
-			errMsg = *parameterName & " must refer to a column/row vector in the call to Model = ...";
-			acknError (errMsg);
+			WarnError (*parameterName & " must refer to a column/row vector in the call to Model = ...");
 			return;
 		}
 	
@@ -4570,18 +4623,24 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 			f2 = -f2-1;
 	}
 	else
-		if (!multFreqs) // optional flag present
+		if (multFreqs == 0) // optional flag present
 			f2 = -f2-1;
 	
-	matrixDim = modelNames.Find(&arg0);
+	long existingIndex = modelNames.Find(&arg0);
 	
-	if (matrixDim==-1)
+	if (existingIndex == -1) // name not found
 	{
 		lastMatrixDeclared = modelNames.Find (&empty);
+		
 		if (lastMatrixDeclared>=0)
 		{
 			modelNames.Replace (lastMatrixDeclared,&arg0,true);
-			modelMatrixIndices.lData[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
+			modelTypeList.lData[lastMatrixDeclared] = isExpressionBased?matrixDim:0;
+			if (isExpressionBased)
+				modelMatrixIndices.lData[lastMatrixDeclared] = (long)isExpressionBased;
+			else
+				modelMatrixIndices.lData[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
+				
 			if (f2>=0)
 				modelFrequenciesIndices.lData[lastMatrixDeclared] = variableNames.GetXtra(f2);
 			else
@@ -4590,7 +4649,11 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 		else
 		{
 			modelNames && & arg0;
-			modelMatrixIndices << (usingLastDefMatrix?f:variableNames.GetXtra(f));
+			modelTypeList << (isExpressionBased?matrixDim:0);
+			if (isExpressionBased)
+				modelMatrixIndices << (long)isExpressionBased;
+			else
+				modelMatrixIndices << (usingLastDefMatrix?f:variableNames.GetXtra(f));
 			if (f2>=0)
 				modelFrequenciesIndices << variableNames.GetXtra(f2);
 			else
@@ -4600,13 +4663,23 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 	}
 	else
 	{
-		modelNames.Replace(matrixDim,&arg0,true);
-		modelMatrixIndices[matrixDim] = usingLastDefMatrix?f:variableNames.GetXtra(f);
-		if (f2>=0)
-			modelFrequenciesIndices[matrixDim] = variableNames.GetXtra(f2);
+		modelNames.Replace(existingIndex,&arg0,true);
+		if (modelTypeList.lData[existingIndex])
+			delete ((_Formula*)modelMatrixIndices[existingIndex]);
+		
+		modelTypeList.lData[existingIndex] = isExpressionBased?matrixDim:0;
+		if (isExpressionBased)
+			modelMatrixIndices[existingIndex] = (long)isExpressionBased;
 		else
-			modelFrequenciesIndices[matrixDim] = -variableNames.GetXtra(-f2-1)-1;	
-		lastMatrixDeclared = matrixDim;
+			modelMatrixIndices[existingIndex] = usingLastDefMatrix?f:variableNames.GetXtra(f);
+
+		
+		if (f2>=0)
+			modelFrequenciesIndices[existingIndex] = variableNames.GetXtra(f2);
+		else
+			modelFrequenciesIndices[existingIndex] = -variableNames.GetXtra(-f2-1)-1;	
+		
+		lastMatrixDeclared = existingIndex;
 	}
 }
 
@@ -5814,7 +5887,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 					if (theObject->ObjectClass()==TREE_NODE)
 					{
 						_CalcNode* theNode = (_CalcNode*)theObject;
-						if (theNode->GetModelMatrix())
+						if (theNode->GetModelIndex() != HY_NO_MODEL)
 						{
 							checkPointer(result	= new _Matrix);
 							theNode->RecomputeMatrix (0,1,result);	
@@ -8509,7 +8582,10 @@ bool	_ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionList&
 
 bool	_ElementaryCommand::ConstructModel (_String&source, _ExecutionList&target)
 
-// Model ID = (inst transition matrix ident, <equilibrium frequencies ident>);
+// Model ID = (inst transition matrix ident, equilibrium frequencies ident, <multiply by frequencies>);
+// if the third parameter is explicitFormMExp, then inst transition matrix ident is expected to be an explicit matrix exponential
+// EXPRESSION
+
 {
 	// first we must segment out the data set name
 	

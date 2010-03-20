@@ -243,7 +243,7 @@ void	_CalcNode::InitializeCN 	( _String& parms, int, _VariableContainer* theP, _
 	 
 	InitializeVarCont (empty, matrixName, theP, aCache);
 	
-	if (!GetModelMatrix() &&parms.Length()) 
+	if (GetModelIndex() == HY_NO_MODEL && parms.Length()) 
 		f = 0;
 
 	while (f!=-1)
@@ -601,81 +601,81 @@ long		_CalcNode::CheckForReferenceNode(void)
 		 idx = 0;
 	
 	// check if all independents are global first
+	long modIdx = GetModelIndex();
 	
-	if (GetModelMatrix())
+	if (modIdx != HY_NO_MODEL)
 	{
-		long modIdx = GetModelIndex();
 		
 		if (iVariables && iVariables->lLength)
 			return -1;
 			
 		if (dVariables)
-		for (idx = 0; idx < dVariables->lLength; idx+=2)
-		{
-			if (dVariables->lData[idx+1]>=0)
+			for (idx = 0; idx < dVariables->lLength; idx+=2)
 			{
-				bool       good = false;
-				_Variable* thisDep = LocateVar (dVariables->lData[idx]);				
-				//while (thisDep->NumberOperations() == 1)
-				while (thisDep->varFormula && thisDep->varFormula->NumberOperations () == 1)
+				if (dVariables->lData[idx+1]>=0)
 				{
-					_Operation* op = (_Operation*)thisDep->varFormula->GetList() (0);
-					long 		isVar = op->GetAVariable();
-					if (isVar >= 0)
+					bool       good = false;
+					_Variable* thisDep = LocateVar (dVariables->lData[idx]);				
+					//while (thisDep->NumberOperations() == 1)
+					while (thisDep->varFormula && thisDep->varFormula->NumberOperations () == 1)
 					{
-						thisDep = LocateVar (isVar);
-						if (thisDep->IsIndependent())
+						_Operation* op = (_Operation*)thisDep->varFormula->GetList() (0);
+						long 		isVar = op->GetAVariable();
+						if (isVar >= 0)
 						{
-							good = true;
-							break;
-						} 
-					}
-					else
-					{
-						break;
-					}	
-				}
-				
-				if (good)
-				{
-					if (thisDep->IsGlobal())
-						continue;
-					else
-					{
-						_String varName = *thisDep->GetName();
-						long	dot = varName.FindBackwards ('.',0,-1);
-						if (dot > 0)
-						{
-							varName.Trim (0,dot-1);
-							dot = LocateVarByName (varName);
-							if (dot < 0)
+							thisDep = LocateVar (isVar);
+							if (thisDep->IsIndependent())
+							{
+								good = true;
 								break;
-								
-							if (rN == -1)
-							{
-								thisDep = FetchVar (dot);
-							
-								if (thisDep->ObjectClass () != TREE_NODE)
-									break;
-							
-								if (((_CalcNode*)thisDep)->GetModelIndex() != modIdx)
-									break;
-								
-								rN = thisDep->GetAVariable();
-							}
-							else
-							{
-								if (rN != variableNames.GetXtra(dot))
-									break;
-							}
+							} 
 						}
-						else 
+						else
+						{
 							break;
+						}	
+					}
+					
+					if (good)
+					{
+						if (thisDep->IsGlobal())
+							continue;
+						else
+						{
+							_String varName = *thisDep->GetName();
+							long	dot = varName.FindBackwards ('.',0,-1);
+							if (dot > 0)
+							{
+								varName.Trim (0,dot-1);
+								dot = LocateVarByName (varName);
+								if (dot < 0)
+									break;
+									
+								if (rN == -1)
+								{
+									thisDep = FetchVar (dot);
+								
+									if (thisDep->ObjectClass () != TREE_NODE)
+										break;
+								
+									if (((_CalcNode*)thisDep)->GetModelIndex() != modIdx)
+										break;
+									
+									rN = thisDep->GetAVariable();
+								}
+								else
+								{
+									if (rN != variableNames.GetXtra(dot))
+										break;
+								}
+							}
+							else 
+								break;
+						}
 					}
 				}
-			}
-		}	
-	}
+			}	
+		}
 	return rN;
 }
 
@@ -711,7 +711,7 @@ bool		_CalcNode::NeedToExponentiate(long catID)
 }
 		
 //_______________________________________________________________________________________________
-void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue)	
+void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags)	
 {
 	// assumed that NeedToExponentiate was called prior to this function
 	
@@ -791,11 +791,13 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 		else
 			if (compExp) DeleteObject (compExp);
 		
+	bool	isExplicitForm = HasExplicitFormModel ();
 	
 	_Matrix * myModelMatrix = GetModelMatrix();
-	if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE && explicitFormMatrixExponential<0.5)
+	
+	if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE)
 	{
-		_Matrix *temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
+		_Matrix *temp = (_Matrix*)(isExplicitForm?myModelMatrix->makeDynamic():myModelMatrix->MultByFreqs(theModel));
 			
 		if (dVariables)
 			for (i=0; i<dVariables->lLength; i+=2)
@@ -827,10 +829,13 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 			if (queue)
 			{
 				(*queue) << temp;
+				if (tags)
+					(*tags) << (isExplicitForm == 0);
 				return;
 			}
 		#endif
-		SetCompExp ((_Matrix*)temp->Exponentiate(), totalCategs>1?categID:-1);	
+		
+		SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);	
 		#ifdef __MP__
 			if (matrixTasks)
 				DeleteObject (temp);
@@ -890,7 +895,7 @@ _Matrix*		_CalcNode::ComputeModelMatrix  (bool)
 			}
 	
 	_Matrix * modelMx = GetModelMatrix();
-	if (modelMx && modelMx->ObjectClass()==MATRIX && modelMx->MatrixType()!=_POLYNOMIAL_TYPE && explicitFormMatrixExponential<0.5)
+	if (modelMx && modelMx->ObjectClass()==MATRIX && modelMx->MatrixType()!=_POLYNOMIAL_TYPE)
 		return (_Matrix*)modelMx->ComputeNumeric();
 	
 	return nil;
@@ -2108,7 +2113,7 @@ BaseRef		_TheTree::toStr (void)
 		if (includeMSP>0.5)
 		{
 			long midx = curNode->GetModelIndex();
-			if (midx>=0)
+			if (midx != HY_NO_MODEL)
 			{
 				(*res) << '{';
 				(*res) << (_String*)modelNames (midx);
@@ -2121,7 +2126,7 @@ BaseRef		_TheTree::toStr (void)
 		if (includeMSP>0.5)
 		{
 			long midx = nextNode->GetModelIndex();
-			if (midx>=0)
+			if (midx != HY_NO_MODEL)
 			{
 				(*res) << '{';
 				(*res) << (_String*)modelNames (midx);
@@ -2178,7 +2183,7 @@ BaseRef		_TheTree::toStr (void)
 			if (includeMSP>0.5)
 			{
 				long midx = curNode->GetModelIndex();
-				if (midx>=0)
+				if (midx != HY_NO_MODEL)
 				{
 					(*res) << '{';
 					(*res) << (_String*)modelNames (midx);
@@ -2342,7 +2347,7 @@ void _TheTree::CompileListOfModels (_SimpleList& l)
 	while (curNode)
 	{
 		long    modelID = curNode->GetModelIndex();
-		if ((modelID>=0)&&(l.Find(modelID)==-1))
+		if (modelID != HY_NO_MODEL && l.Find(modelID) == -1 )
 			l << modelID;
 		curNode = DepthWiseTraversal (false);	
 	}

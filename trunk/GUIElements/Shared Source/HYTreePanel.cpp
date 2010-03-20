@@ -4086,7 +4086,7 @@ void	_HYTreePanel::JoinSelectedBranches (void)
 	shift = travNode->GetModelIndex();
 	_String nodeName (empty);
 	_String dummy ("1.0"), dummy2 ("");
-	if (shift>=0)
+	if (shift != HY_NO_MODEL)
 	{
 		nodeName = *(_String*)modelNames(shift);
 		me->FinalizeNode(newp,FindUnusedSuffix ("Node"),dummy2,nodeName,dummy);
@@ -4719,34 +4719,44 @@ node<long>*	PatchNodesFromClipboard (node<long>* thisNode, _TheTree* me, bool& h
 {
 	node<long>* newNode = new node<long>;
 	checkPointer (newNode);	
+	
 	for (long i=0; i<thisNode->nodes.length; i++)
-	{
 		newNode->add_node(*PatchNodesFromClipboard (thisNode->nodes.data[i],me,hasModel));
-	}
+	
 	
 	_CalcNode *sourceNode = (_CalcNode*)LocateVar(thisNode->in_object);
-	long	  modelID = sourceNode->GetModelIndex(),k=2;
-	_String   nodeName (*sourceNode->GetName()), tryName;
+	
+	long	  modelID = sourceNode->GetModelIndex(),
+			  k=2;
+	
+	_String   nodeName (*sourceNode->GetName()), 
+			  tryName;
+	
 	nodeName.Trim(nodeName.Find('.')+1,-1);
 	nodeName = *me->GetName()&'.'&nodeName;
-	tryName = nodeName;
-	while (LocateVarByName(tryName)>=0)
+	tryName  = nodeName;
+	
+	while	(LocateVarByName(tryName)>=0)
 	{
 		tryName = nodeName&'_'&k;
 		k++;
 	}
-	if (modelID>=0)
+	if (modelID != HY_NO_MODEL)
 		nodeName = *(_String*)modelNames(modelID);
 	else
 	{
 		nodeName = empty;
 		hasModel = false;
 	}
+	
 	modelID = lastMatrixDeclared;
 	lastMatrixDeclared = -1;
+	
 	_String dummy ("1.0");
 	me->FinalizeNode(newNode,0,tryName,nodeName,dummy);	
+	
 	lastMatrixDeclared = modelID;
+	
 	_CalcNode* thisCNode = (_CalcNode*)LocateVar (newNode->in_object);
 	thisCNode->CopyMatrixParameters (sourceNode);
 	thisCNode->SetCodeBase (me->GetCodeBase());
@@ -5030,7 +5040,7 @@ void	_HYTreePanel::MoveSubTree (void)
 					
 					k = travNode->GetModelIndex();
 					_String nodeName (empty);
-					if (k>=0)
+					if (k != HY_NO_MODEL)
 					{
 						nodeName = *(_String*)modelNames(k);
 						_String dummy ("1.0"), dummy2;
@@ -5354,7 +5364,7 @@ void _HYTreePanel::SelectBranchesWithoutModel(void)
 		if (currentNd->in_object.varRef>=0)
 		{
 			currentNd->in_object.flags&=HY_BRANCH_DESELECT;
-			if (((_VariableContainer*)LocateVar(currentNd->in_object.varRef))->GetModelIndex()==-1)
+			if (((_VariableContainer*)LocateVar(currentNd->in_object.varRef))->GetModelIndex()== HY_NO_MODEL)
 			{
 				currentNd->in_object.flags|=HY_BRANCH_SELECT;
 				currentSelection<<(long)currentNd;
@@ -7740,7 +7750,7 @@ bool	_HYNodeInfoDialog::SetNodeModel (_CalcNode* thisCNode, long modelID, bool i
 			thisCNode->ScanForVariables (nal,nal);
 			nal.ReorderList();
 		}
-		thisCNode->SetCodeBase(thisCNode->GetModelMatrix()->GetHDim());
+		thisCNode->SetCodeBase(thisCNode->GetModelDimension());
 		_Constant	newVal (.25);
 		for (long i=0; i<newVars.lLength; i++)
 			LocateVar(newVars.lData[i])->SetValue (&newVal);

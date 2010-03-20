@@ -3503,17 +3503,21 @@ inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _Simple
 
 void	RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
 {
-	mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
-	long fvi = modelFrequenciesIndices.lData[mid];
-	fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
-	mbf = (fvi>=0);
+	if (modelTypeList.lData[mid] == 0)
+	{
+		mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
+		long fvi = modelFrequenciesIndices.lData[mid];
+		fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
+		mbf = (fvi>=0);
+	}
 }
 
 //____________________________________________________________________________________	
 
 bool	IsModelReversible (long mid)
 {
-	_Matrix *m, *f;
+	_Matrix *m = nil,
+			*f = nil;
 	bool	mbf;
 	RetrieveModelComponents (mid, m, f, mbf);
 	if (m&&f)
@@ -3539,4 +3543,20 @@ _String * ReturnCurrentCallStack (void)
 	}
 	return new _String ();
 }
+	
+//____________________________________________________________________________________	
+
+void	ScanModelForVariables		 (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat)
+{
+	if (modelID != HY_NO_MODEL)
+	{
+		if (modelTypeList.lData[modelID] == 0)
+			// standard rate matrix
+			((_Matrix*) (LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
+		else
+			// formula based
+			((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
+	}
+}
+	
  

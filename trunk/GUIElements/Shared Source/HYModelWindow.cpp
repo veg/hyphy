@@ -3904,7 +3904,7 @@ bool			 	OpenModelFromCalcNode (_String& nodeName, bool expMx = false)
 			_CalcNode* thisCNode = (_CalcNode*)thisNode;
 			
 			i1 = thisCNode->GetModelIndex();
-			if (i1>=0)
+			if (i1 != HY_NO_MODEL)
 			{
 				if (OpenModelFromMatrix(*(_String*)modelNames(i1),false))
 				{

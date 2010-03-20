@@ -320,8 +320,10 @@ void	PurgeAll (bool all)
 		dataSetNamesList.Clear();
 		compiledFormulaeParameters.Clear();
 		modelNames.Clear();
+		KillExplicitModelFormulae ();
 		modelMatrixIndices.Clear();
 		modelFrequenciesIndices.Clear();
+		modelTypeList.Clear();
 		listOfCompiledFormulae.Clear();
 		variablePtrs.Clear();
 		freeSlots.Clear();
