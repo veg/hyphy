@@ -4509,7 +4509,9 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 			multFreqs = ProcessNumericArgument (parameterName,chain.nameSpacePrefix);
 	}
 	
-	_Matrix*  checkMatrix;
+	_Matrix*  checkMatrix = nil;
+	
+	parameterName = (_String*)parameters.lData[1];
 	
 	if (parameterName->Equal (&useLastDefinedMatrix))
 	{

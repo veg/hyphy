@@ -95,7 +95,10 @@ void	_List::Duplicate (const BaseRef theRef)
 	_SimpleList::Duplicate (theRef);
 	if (lData)
 		for (unsigned long i = 0; i<lLength; i++)
-			((BaseRef*)lData)[i]->nInstances++;
+		{
+			if (((BaseRef*)lData)[i])
+				(((BaseRef*)lData)[i])->nInstances++;
+		}
 }
 		
 //______________________________________________________________
