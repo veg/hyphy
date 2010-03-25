@@ -588,12 +588,16 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 					return;
 				}
 				long mindex = f;
-				_Variable * hmv = LocateVar (modelMatrixIndices.lData[f]);
-				f = weights->GetHDim()*weights->GetVDim();
-				if (hmv->ObjectClass()==MATRIX)
+				_Matrix * hmm, 
+						*freq;
+				
+				bool	mbf;				
+				
+				RetrieveModelComponents (mindex, hmm, freq, mbf);
+				if (hmm)
 				{
-					_Matrix* hmm = (_Matrix*)hmv->GetValue();
-					if ((hmm->GetHDim()==f)&&(hmm->GetVDim()==f))
+					f = weights->GetHDim()*weights->GetVDim();
+					if (hmm->GetHDim()==f && hmm->GetVDim()==f)
 					{
 						hiddenMarkovModel = mindex;
 						return;

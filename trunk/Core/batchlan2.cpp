@@ -3504,12 +3504,13 @@ inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _Simple
 void	RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
 {
 	if (modelTypeList.lData[mid] == 0)
-	{
 		mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
-		long fvi = modelFrequenciesIndices.lData[mid];
-		fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
-		mbf = (fvi>=0);
-	}
+	else
+		mm = nil;
+	
+	long fvi = modelFrequenciesIndices.lData[mid];
+	fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
+	mbf = (fvi>=0);
 }
 
 //____________________________________________________________________________________	

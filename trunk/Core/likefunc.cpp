@@ -2036,6 +2036,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 		for (long partID=0; partID<theTrees.lLength; partID++)
 		{
 			if (blockDependancies.lData[partID])
+				// has category variables
 			{
 				if ( computationalResults.GetUsed()<=partID || HasBlockChanged(partID))
 					// first time computing or partition requires updating
@@ -2045,11 +2046,11 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					*/
 					
 #ifdef __HYPHYMPI__
-		if (_hy_mpi_node_rank == 0)
-			ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer, -1, nil, hyphyMPIOptimizerMode);	
-		else
+					if (_hy_mpi_node_rank == 0)
+						ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer, -1, nil, hyphyMPIOptimizerMode);	
+					else
 #endif					
-			ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
+						ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 					
 #ifdef _UBER_VERBOSE_LF_DEBUG
 					printf ("Did compute\n", result);
@@ -7523,11 +7524,10 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 				  covCat,
 				  cpCat;
 	
-	long		  i;
 	
 	{
 		_AVLList avl (&allVariables);
-		for (i=0; i<theProbabilities.lLength; i++)
+		for (long i=0; i<theProbabilities.lLength; i++)
 			(LocateVar(theProbabilities(i)))->ScanForVariables (avl,true);
 		
 			
@@ -7544,32 +7544,33 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		_AVLList iia (&indexInd),
 				 iid (&indexDep);
 	
-		for (i=0; i<allVariables.lLength; i++)
+		for (long i=0; i<allVariables.lLength; i++)
 		{
-			_Variable* theV = ((_Variable*)LocateVar(allVariables(i)));
+			long variableIndex = allVariables.lData[i];
+			_Variable* theV = (_Variable*)LocateVar(variableIndex);
 			if (theV->IsCategory())
 			{
 				if (((_CategoryVariable*)theV)->IsUncorrelated())
 				{
 					if (((_CategoryVariable*)theV)->IsConstantOnPartition())
-						indexCat << allVariables(i);
+						indexCat << variableIndex;
 					else
-						cpCat << allVariables(i);
+						cpCat << variableIndex;
 				}
 				else
-					covCat<<allVariables(i);
+					covCat<< variableIndex;
 				continue;
 			}
 			if (theV->IsIndependent())
-				iia.Insert ((BaseRef)allVariables(i));
+				iia.Insert ((BaseRef)variableIndex);
 			else
-				iid.Insert ((BaseRef)allVariables(i));
+				iid.Insert ((BaseRef)variableIndex);
 		}
 						
-		for (i=0; i<theTrees.lLength; i++)
+		for (long i=0; i<theTrees.lLength; i++)
 			((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid);
 		
-		for (i=0; i<theTrees.lLength; i++)
+		for (long i=0; i<theTrees.lLength; i++)
 		{
 			_TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
 			cT->ScanForVariables  (iia, iid);
@@ -7588,7 +7589,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 	bool haveHMM				 = false,
 		 haveConstantOnPartition = false;
 	
-	for (i=0; i<theTrees.lLength; i++)
+	for (long i=0; i<theTrees.lLength; i++)
 	{
 		_SimpleList localCategVars;
 		{
@@ -7632,7 +7633,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		return;
 	}
 
-	for (i=0; i<theTrees.lLength; i++)
+	for (long i=0; i<theTrees.lLength; i++)
 	{
 		_SimpleList categVars;
 		{
@@ -7670,7 +7671,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 			_SimpleList   auxL;
 			_AVLList      auxa (&auxL);
 			
-			for (i=0; i<indexCat.lLength; i++)
+			for (long i=0; i<indexCat.lLength; i++)
 			{
 				_CategoryVariable *theCV = (_CategoryVariable*)LocateVar(indexCat(i));
 				theCV->ScanForGVariables (auxa);
@@ -7693,7 +7694,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 	_Parameter l = DEFAULTLOWERBOUND*(1.0-machineEps),
 			   u = DEFAULTUPPERBOUND*(1.0-machineEps);
 			   
-	for (i=0;i<indexInd.lLength;i++)
+	for (long i=0;i<indexInd.lLength;i++)
 	{
 		_Variable *_cv = GetIthIndependentVar(i);
 		if (_cv->GetLowerBound()<=l)
@@ -7701,7 +7702,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		if (_cv->GetUpperBound()>=u)
 			_cv->SetBounds(_cv->GetLowerBound(),DEFAULTPARAMETERUBOUND);
 	}
-	for (i=0;i<indexDep.lLength;i++)
+	for (long i=0;i<indexDep.lLength;i++)
 	{
 		_Variable *_cv = GetIthDependentVar(i);
 		if (_cv->GetLowerBound()<=l)
@@ -7717,12 +7718,6 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		_SimpleList iv,dv,cv;
 		ScanAllVariablesOnPartition (pidx, iv, dv, cv, true);
 		indVarsByPartition && & iv;
-		/*for (long v = 0; v < iv.lLength; v++)
-		{
-			_Variable * vv = LocateVar (iv.lData[v]);
-			if (vv)
-				printf ("%d : %s\n", v, vv->GetName()->sData);
-		}*/
 	}
 }
 
