@@ -1583,14 +1583,14 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					family_nlevels (family_size, 0, 0),
 					is_missing;				// store linear indices to missing entries
 	
+	is_missing.RequestSpace((long) family_size * obsData->GetHDim());
+	
 	_Matrix			n_ijk, n_ij,
+					m_ijk, m_ij,
 					data_deep_copy,			// make a deep copy of the relevant columns of the data matrix
-					observed_freqs;
+					reassign_probs;
 	
-	_GrowingVector	* vector_of_scores	= new _GrowingVector(),		// for storing scores sampled during re-assignment of missing values
-					* reassign_probs	= new _GrowingVector();		// it's totally painful to shoe-horn _Matrix calls, but necessary
-																	// for LogSumExpo() --- unless I can cast into a derived class?
-	
+	_GrowingVector	* vector_of_scores	= new _GrowingVector();		// for storing scores sampled during re-assignment of missing values
 	
 	_Parameter		log_score			= 0,
 					max_iterations,
@@ -1601,29 +1601,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	double			urn;			// uniform random number
 	
 	
-#ifdef __DEBUG_GADS2__
-	sprintf (buf, "_______________________________________________________________\nGibbs %d <-[%d]-- ", node_id, family_size);
-	BufferToConsole (buf);
-	
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		sprintf (buf, "%d ", parents.lData[par]);
-		BufferToConsole (buf);
-	}
-	NLToConsole ();
-	
-	sprintf (buf, "num_levels: %d ", num_levels.lData[node_id]);
-	BufferToConsole (buf);
-	
-	for (long par = 0; par < parents.lLength; par++)
-	{
-		sprintf (buf, "%d ", num_levels.lData[parents.lData[par]]);
-		BufferToConsole (buf);
-	}
-	NLToConsole ();
-#endif
-	
-	
+	// get MCEM settings
 	checkParameter (mcemMaxSteps, max_iterations, 0.);
 	if (max_iterations < 1)
 	{
@@ -1633,7 +1611,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	
 	
 	
-	// used for indexing from matrix into linear array (parent combinations)
+	// to index into N_ij/k matrices by parent combination
 	for (long par = 0; par < parents.lLength; par++)
 	{
 		num_parent_combos *= num_levels.lData[parents.lData[par]];
@@ -1641,215 +1619,202 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	}
 	
 	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "multipliers: ");
-	BufferToConsole (buf);
-	for (long mu = 0; mu < multipliers.lLength; mu++)
+	// get number of levels per family member
+	family_nlevels.lData[0] = r_i;
+	for (long par = 0; par < parents.lLength; par++)
 	{
-		sprintf (buf, "%d ", multipliers.lData[mu]);
-		BufferToConsole (buf);
+		family_nlevels.lData[par+1] = num_levels.lData [ parents.lData[par] ];
+		if (family_nlevels.lData[par+1] > max_num_levels) max_num_levels = family_nlevels.lData[par+1];
 	}
-	NLToConsole ();
-#endif
+	
 	
 	// allocate space to matrices
 	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
 	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
 	CreateMatrix (&data_deep_copy, obsData->GetHDim(), family_size, false, true, false);
+	CreateMatrix (&reassign_probs, max_num_levels, 1, false, true, false);
 	
 	
-	// allocate space to growing vector object
-	for (long pa = 0; pa < num_parent_combos; pa++)	reassign_probs->Store (0.);
 	
+	// make deep copy and annotate which entries are missing - for use during Gibbs sampling
+	// simultaneously tally N_ijk's for complete cases
+	_SimpleList	is_complete ((unsigned long) data_deep_copy.GetHDim());
+	long		n_complete_cases = 0;
 	
-	// evaluate the number of levels for each node in family for allocating next matrix
-	family_nlevels.lData[0] = r_i;
-	for (long par = 0; par < parents.lLength; par++)
+	for (long pa_index, row = 0; row < obsData->GetHDim(); row++)
 	{
-		long	par_nlevels = num_levels.lData [ parents.lData[par] ];
-		
-		family_nlevels.lData[par+1] = par_nlevels;
-		
-		if (par_nlevels > max_num_levels)
-		{
-			max_num_levels = par_nlevels;
-		}
-	}
-	CreateMatrix (&observed_freqs, family_size, max_num_levels, false, true, false);
-	
-	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "family_nlevels (%ld): ", family_nlevels.lLength);
-	BufferToConsole (buf);
-	for (long fi = 0; fi < family_nlevels.lLength; fi++)
-	{
-		sprintf (buf, "%ld ", family_nlevels.lData[fi]);
-		BufferToConsole (buf);
-	}
-	sprintf (buf, "\nmax_num_levels: %d\tnum_parent_combos: %d\n", max_num_levels, num_parent_combos);
-	BufferToConsole (buf);
-#endif
-	
-	
-	
-	// make deep copy and annotate which entries are missing
-	for (long /*flag_missing,*/ pa_index, row = 0; row < obsData->GetHDim(); row++)
-	{
-		//flag_missing	= 0;
-		pa_index		= 0;
-		child_state		= (*obsData) (row, node_id);
-		
+		pa_index				= 0;
+		child_state				= (*obsData) (row, node_id);
 		data_deep_copy.Store (row, 0, child_state);
+		is_complete.lData[row]	= 1;
 		
-		if (child_state < 0)	
+		if (child_state < 0)
 		{
 			is_missing << row * family_size;
-			//flag_missing = 1;
+			is_complete.lData[row] = 0;
 		}
-		else
-		{
-			observed_freqs.Store (0, child_state, observed_freqs(0,child_state) + 1);
-		}
-		
 		
 		for (long par = 0; par < parents.lLength; par++)
 		{
 			parent_state = (*obsData) (row, parents.lData[par]);
 			data_deep_copy.Store (row, par+1, parent_state);
 			
-			if (parent_state < 0)	
+			if (parent_state < 0) 
 			{
 				is_missing << row * family_size + par+1;
-				//flag_missing = 1;
+				is_complete.lData[row] = 0;
 			}
-			else					
-			{
-				observed_freqs.Store (par+1, parent_state, observed_freqs (par+1, parent_state) + 1);
-				pa_index += parent_state * multipliers.lData[par];
-			}
+			else pa_index += parent_state * multipliers.lData[par];
 		}
-		/*
-		if (!flag_missing)	// tally complete cases only
+		
+		if (is_complete.lData[row])
 		{
-			n_ijk.Store (pa_index, child_state, n_ijk(pa_index, child_state) + 1);
+			n_complete_cases += 1;
+			n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) + 1);
 			n_ij.Store  (pa_index, 0, n_ij(pa_index, 0) + 1);
 		}
-		 */
 	}
 	
+	//ReportWarning (_String("is_missing = ") & (_String *) is_missing.toStr());
 	
+	// convert N_ijk's into probability matrix - equation 16 from Cooper and Herskovits
+	// reset N_ijk and N_ij while we're looping
+	_Matrix prob_n_ijk, prob_n_ij;
 	
+	CreateMatrix (&prob_n_ijk, num_parent_combos, r_i, false, true, false);
+	CreateMatrix (&prob_n_ij, num_parent_combos, 1, false, true, false);
 	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "deep copy:\n");
-	BufferToConsole (buf);
-	
-	for (long row = 0; row < data_deep_copy.GetHDim(); row++)
+	for (long j = 0; j < num_parent_combos; j++)
 	{
-		for (long col = 0; col < data_deep_copy.GetVDim(); col++)
-		{
-			sprintf (buf, "%d ", (long) data_deep_copy (row, col));
-			BufferToConsole (buf);
-		}
-		NLToConsole ();
-	}
-	NLToConsole ();
-	
-	sprintf (buf, "Missing indices:\n");
-	BufferToConsole (buf);
-	
-	for (long mi = 0; mi < is_missing.lLength; mi++)
-	{
-		sprintf (buf, "%d ", is_missing.lData[mi]);
-		BufferToConsole (buf);
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
-	
-	// convert observed states into frequencies
-	for (long obs_total, var = 0; var < family_size; var++)
-	{
-		obs_total = 0;
-		for (long lev = 0; lev < family_nlevels.lData[var]; lev++)
-		{
-			obs_total += observed_freqs (var,lev);
-		}
+		prob_n_ij.Store ( j, 0, (n_ij(j,0) + 1) / (n_complete_cases + num_parent_combos) );	// is this the correct estimator?
 		
-		for (long lev = 0; lev < family_nlevels.lData[var]; lev++)
+		for (long k = 0; k < r_i; k++)
 		{
-			observed_freqs.Store (var, lev, (_Parameter) (observed_freqs (var, lev) / obs_total));
+			prob_n_ijk.Store( j, k, prob_n_ij(j,0) * (n_ijk(j,k) + 1) / (n_ij(j,0) + r_i) );
+			n_ijk.Store( j, k, 0.);
 		}
+		n_ij.Store ( j, 0, 0.);
 	}
 	
+	//ReportWarning (_String("Probability N_ijk:") & (_String *) prob_n_ijk.toStr());
 	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "Observed freqs (var x lev):\n");
-	BufferToConsole (buf);
+	// cache marginalizations over this probability matrix as determined by which variables are missing
+		// this would be nice, but let's brute-force it for now :-P
 	
-	for (long var = 0; var < family_size; var++)
+	//ReportWarning (_String("Original data : ") & (_String *) data_deep_copy.toStr());
+	
+	// initialize missing entries to random assignments based on complete cases (N_ijk)
+	if (family_size > 1)
 	{
-		for (long lev = 0; lev < family_nlevels.lData[var]; lev++)
+		for (long row = 0; row < data_deep_copy.GetHDim(); row++)
 		{
-			sprintf (buf, "%f ", observed_freqs (var, lev));
-			BufferToConsole (buf);
-		}
-		NLToConsole ();
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
-	// initialize missing entries to random assignments based on observed frequencies
-	for (long row, col, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++)
-	{
-		urn = genrand_real2 ();
-		row = is_missing.lData[missing_idx] / family_size;
-		col = is_missing.lData[missing_idx] % family_size;
-		
-		for (long level = 0; level < family_nlevels.lData[col]; level++)
-		{
-			if (urn < observed_freqs (col, level))
+			if (!is_complete.lData[row])
 			{
-				data_deep_copy.Store (row, col, (_Parameter) level);
-				break;
+				_Parameter	denominator = 0.;
+				_SimpleList	keep_pa_indices;
+				
+				// determine which parental state combinations (indexed by j) are possible
+				// store those indices in a list and accumulate the probabilities in a denominator
+				for (long j = 0; j < num_parent_combos; j++)
+				{
+					bool keep = FALSE;
+					for (long par = 1; par <= parents.lLength; par++)
+					{
+						if ( data_deep_copy(row,par) < 0 )
+							keep = TRUE;
+						else	// non-missing value, use this parent combo only if it is consistent with value
+							keep = ( (long)(j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]] == data_deep_copy(row,par) ) ? TRUE : FALSE;
+					}
+					
+					if (keep)
+					{
+						keep_pa_indices << j;
+						
+						long	k = data_deep_copy(row,0);
+						if ( k >= 0 )
+							denominator += prob_n_ijk (j, k);	// append from this column only
+						else
+							for (k = 0; k < r_i; k++)
+								denominator += prob_n_ijk (j, k);	// sum across columns (child states)
+					}
+				}
+				
+				
+				// select random values (j, k) subject to constraints
+				long	k = data_deep_copy(row,0),
+						j;
+				urn = genrand_real2();
+				for (long pa = 0; pa < keep_pa_indices.lLength; pa++)
+				{
+					j = keep_pa_indices.lData[pa];
+					
+					if (k >= 0)
+					{
+						if ( urn < (prob_n_ijk (j,k) / denominator) )
+							break;
+						urn -= prob_n_ijk (j,k) / denominator;
+					}
+					else
+					{
+						for (k = 0; k < r_i; k++)
+						{
+							if ( urn < (prob_n_ijk (j,k) / denominator) )
+								break;
+							urn -= prob_n_ijk (j,k) / denominator;
+						}
+						if (k < r_i) break;	// break out of outer loop carrying j and k
+					}
+				}
+				
+				//ReportWarning (_String ("j,k=") & j & "," & k);
+				
+				// convert j, k to data
+				if ( data_deep_copy(row,0) < 0 )
+					data_deep_copy.Store(row, 0, k);
+				
+				for (long par = 1; par <= parents.lLength; par++)
+				{
+					if ( data_deep_copy(row,par) < 0 )
+						data_deep_copy.Store(row, par, (long)(j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]]);
+				}
+				
 			}
-			else	urn -= observed_freqs (col, level);
 		}
 	}
-	
-	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "Initialized data matrix:\n");
-	BufferToConsole (buf);
-	
-	for (long row = 0; row < data_deep_copy.GetHDim(); row++)
+	else	// family_size == 1
 	{
-		for (long col = 0; col < data_deep_copy.GetVDim(); col++)
+		for (long row = 0; row < data_deep_copy.GetHDim(); row++)
 		{
-			sprintf (buf, "%d ", (long) data_deep_copy (row, col));
-			BufferToConsole (buf);
+			if (data_deep_copy(row,0) < 0)
+			{
+				urn = genrand_real2();
+				for (child_state = 0; child_state < r_i; child_state++)
+				{
+					this_prob = prob_n_ijk(0,child_state);
+					if (urn < this_prob) break;
+					urn -= this_prob;
+				}
+				
+				data_deep_copy.Store (row, 0, child_state);
+			}
 		}
-		NLToConsole ();
 	}
-	NLToConsole ();
-#endif
 	
 	
+	//ReportWarning (_String("Initialized data : ") & (_String *) data_deep_copy.toStr());
 	
 	
-	// tally N_ijk's
+	// recount N_ij and N_ijk from entire data set (with imputed cases)
+	
 	for (long pa_index, row = 0; row < data_deep_copy.GetHDim(); row++)
 	{
-		pa_index	= 0;
-		child_state = data_deep_copy (row, 0);
+		pa_index		= 0;
+		child_state		= data_deep_copy (row, 0);
 		
 		for (long par = 0; par < parents.lLength; par++)
 		{
-			pa_index += (long) data_deep_copy (row, par+1) * multipliers.lData[par];
+			parent_state = data_deep_copy (row, par+1);
+			pa_index += parent_state * multipliers.lData[par];
 		}
 		
 		n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) + 1);
@@ -1857,215 +1822,96 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	}
 	
 	
-	
-#ifdef __DEBUG_GADS__
-	sprintf (buf, "N_ij | N_ijk\n_____________\n");
-	BufferToConsole (buf);
-	
-	for (long j = 0; j < num_parent_combos; j++)
-	{
-		sprintf (buf, "%d | ", (long) n_ij(j,0));
-		BufferToConsole (buf);
-		
-		for (long k = 0; k < r_i; k++)
-		{
-			sprintf (buf, "%d ", (long) n_ijk(j,k));
-			BufferToConsole (buf);
-		}
-		NLToConsole ();
-	}
-	NLToConsole ();
-#endif
-	
-	
-	
+	//ReportWarning (_String("N_ijk:") & (_String *) n_ijk.toStr());
 	
 	
 	//  Cycle through random permutation of missing entries and reassign by marginal probability.
 	//		Based on family configuration of the corresponding case, adjust N_ijk to compute reassignment probs.
 	//		If accept reassignment, update N_ijk values.
+	
+	// log_score = K2Score (r_i, n_ij, n_ijk);	// compute score from complete cases
+	
 	for (long iter = 0; iter < max_iterations; iter++)
 	{
-		is_missing.Permute(1);	// shuffle list of missing entries
-		
-		log_score = K2Score (r_i, n_ij, n_ijk);	// compute initial score
+		// shuffle list of missing entries
+		// is_missing.Permute(1);
+		// ReportWarning (_String("is_missing Permute:") & (_String *) is_missing.toStr());
 		
 		for (long row, col, pa_index, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++)
 		{
 			row			= is_missing.lData[missing_idx] / family_size;
 			col			= is_missing.lData[missing_idx] % family_size;
 			pa_index	= 0;
-			denom		= 0.;
-			
 			
 			// determine parent combination for this row
 			for (long par = 0; par < parents.lLength; par++)
-			{
 				pa_index += ((long) data_deep_copy (row, par+1)) * multipliers.lData[par];
-			}
-			
-#ifdef __DEBUG_GADS__
-			sprintf (buf, "mi %d: row %d | col %d | value %d | pa %ld\n", is_missing.lData[missing_idx], row, col, (long) data_deep_copy(row,col), pa_index);
-			BufferToConsole (buf);
-#endif
-			
-			
-			reassign_probs->ZeroUsed();	// reset _GrowingVector
 			
 			
 			if (col == 0)	// child node, reassign N_ijk's, keep N_ij's constant
 			{				
 				child_state = data_deep_copy (row, col);
-				log_score -= log(n_ijk(pa_index, child_state));
-				
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
 				// compute probabilities for all instantiations of child node
+				denom = 0.;
 				for (long k = 0; k < r_i; k++)
 				{
-					reassign_probs->Store (log_score + log (n_ijk(pa_index, k) + 1));
+					denom += this_prob = (n_ijk(pa_index,k) + 1) / (n_ij(pa_index,0) + r_i);
+					reassign_probs.Store (k, 0, this_prob);
 				}
 				
-				
-				/*
-				// compute probabilities, look over k-values (child node states)
-				for (long lev = 0; lev < r_i; lev++)
-				{
-					n_ijk.Store (pa_index, lev, n_ijk(pa_index, lev) + 1);
-					
- 					reassign_probs->Store (K2Score (r_i, n_ij, n_ijk));	// append to _GrowingVector
-					
-					n_ijk.Store (pa_index, lev, n_ijk(pa_index, lev) - 1);
-				}
-				*/
-				
-				denom = LogSumExpo (reassign_probs);
-				
-#ifdef __DEBUG_GADS__
-				sprintf (buf, "\tlog probs (%d): ", reassign_probs->GetUsed());
-				BufferToConsole (buf);
-				for (long lev = 0; lev < reassign_probs->GetUsed(); lev++)
-				{
-					sprintf (buf, "%f | ", (* (_Matrix *) reassign_probs) (lev,0));
-					BufferToConsole (buf);
-				}
-				sprintf (buf, "| %f\n", denom);
-				BufferToConsole (buf);
-#endif
 				
 				// random reassignment
 				urn = genrand_real2 ();
-				
 				for (long lev = 0; lev < r_i; lev++)
 				{
-					if ( urn  <  ( this_prob = exp ((* (_Matrix *) reassign_probs) (lev,0) - denom) ))
+					this_prob = reassign_probs(lev,0) / denom;
+					//ReportWarning(_String("child: urn, this_prob = ") & urn & "," & this_prob);
+					if ( urn < this_prob )
 					{
 						n_ijk.Store (pa_index, lev, n_ijk(pa_index,lev) + 1);
 						data_deep_copy.Store (row, col, lev);
-						
-						log_score = (* (_Matrix *) reassign_probs) (lev, 0);
-						
-						if (missing_idx == is_missing.lLength - 1) vector_of_scores->Store ((* (_Matrix *) reassign_probs) (lev,0));
-						
-#ifdef __DEBUG_GADS__
-						sprintf (buf, "\tassign %d with %f < %f\n", lev, urn, this_prob); 
-						BufferToConsole (buf);
-#endif
-						
 						break;
 					}
-					
 					urn -= this_prob;
 				}
-				
 			}
-			else	// parent node, reassign both N_ij's AND N_ijk's
+			else	// col > 0, parent node, reassign both N_ij's AND N_ijk's
 			{
 				parent_state	= data_deep_copy (row, col);
 				child_state		= data_deep_copy (row, 0);
-				
-				log_score	-= log (n_ijk (pa_index, (long) child_state));
-				log_score	+= log (n_ij  (pa_index, 0) + 1);
 				
 				n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
 				pa_index	-= parent_state * multipliers.lData[col-1];
 				
-				
+				denom = 0.;
 				for (long pa_temp, lev = 0; lev < family_nlevels.lData[col]; lev++)
 				{
 					pa_temp = pa_index + lev * multipliers.lData[col-1];
-					reassign_probs->Store (log_score + log (n_ijk (pa_temp, (long) child_state) + 1)
-										   - log (n_ij (pa_temp, 0) + 2) );
+					//reassign_probs->Store (log_score + log (n_ijk (pa_temp, (long) child_state) + 1)
+					//					   - log (n_ij (pa_temp, 0) + 2) );
+					denom += this_prob = (n_ijk(pa_temp,lev) + 1) / (n_ij(pa_temp,0) + r_i);
+					reassign_probs.Store (lev, 0, this_prob);
 				}
 				
 				
-				
-				
-				
-				/*
-				for (long lev = 0; lev < family_nlevels.lData[col]; lev++)
-				{
-					pa_index += lev * multipliers.lData[col-1];
-					
-					n_ij.Store (pa_index, 0, n_ij(pa_index,0) + 1);
-					n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long)child_state) + 1);
-					
-					reassign_probs->Store (K2Score (family_nlevels.lData[col], n_ij, n_ijk));
-					
-					// revert
-					n_ijk.Store (pa_index, (long)child_state, n_ijk(pa_index, (long)child_state) - 1);
-					n_ij.Store (pa_index, 0, n_ij(pa_index,0) - 1);
-					
-					pa_index -= lev * multipliers.lData[col-1];
-				}
-				// note, [pa_index] remains in decremented state, restored below once new state is determined
-				*/
-				
-				
-				// compute denominator and convert log-values to probability vector
-				denom = LogSumExpo (reassign_probs);
-				
-				
-#ifdef __DEBUG_GADS__
-				sprintf (buf, "\tlog probs (%d): ", reassign_probs->GetUsed());
-				BufferToConsole (buf);
-				for (long lev = 0; lev < reassign_probs->GetUsed(); lev++)
-				{
-					sprintf (buf, "%f | ", (* (_Matrix *) reassign_probs)(lev,0));
-					BufferToConsole (buf);
-				}
-				sprintf (buf, "| %f\n", denom);
-				BufferToConsole (buf);
-#endif
-				
-				
-				
-				// re-assign state
+				// re-assign parent state
 				urn = genrand_real2();	// a uniform random number within interval [0,1)
 				
 				for (long lev = 0; lev < family_nlevels.lData[col]; lev++)
 				{
-					this_prob = exp((* (_Matrix *) reassign_probs) (lev, 0) - denom);
-					
+					this_prob = reassign_probs (lev,0) / denom;
+					//ReportWarning(_String("parent: urn, this_prob = ") & urn & "," & this_prob);
 					if (urn < this_prob)
 					{
-						pa_index += lev * multipliers.lData[col-1];
+						pa_index += lev * multipliers.lData[col-1];	// note that pa_index was decremented above
 						
 						n_ij.Store (pa_index, 0, n_ij(pa_index,0) + 1);
 						n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) + 1);
-						
-						log_score = (* (_Matrix *) reassign_probs) (lev, 0);
-						
 						data_deep_copy.Store (row, col, lev);
-						if (missing_idx == is_missing.lLength - 1) vector_of_scores->Store ((* (_Matrix *) reassign_probs) (lev,0));
-						
-#ifdef __DEBUG_GADS__
-						sprintf (buf, "\tassign %d with urn %f\n", lev, urn); 
-						BufferToConsole (buf);
-#endif
-						
 						break;
 					}
 					
@@ -2073,57 +1919,28 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				}
 				
 			}
-			
+			// end if-else
+			//ReportWarning (_String ("N_ijk at step ") & missing_idx & " : " & (_String *) n_ijk.toStr() );
 		}
 		// end loop over missing values
-		
-		
-		
-		
-		
-		
-#ifdef __DEBUG_GADS__
-		sprintf (buf, "N_ij | N_ijk\n_____________\n");
-		BufferToConsole (buf);
-		
-		for (long j = 0; j < num_parent_combos; j++)
-		{
-			sprintf (buf, "%d | ", (long) n_ij(j,0));
-			BufferToConsole (buf);
-			
-			for (long k = 0; k < r_i; k++)
-			{
-				sprintf (buf, "%d ", (long) n_ijk(j,k));
-				BufferToConsole (buf);
-			}
-			NLToConsole ();
-		}
-		NLToConsole ();
-#endif
-		
-		
-#ifdef __DEBUG_GADS2__
-		sprintf (buf, " %f |", (*(_Matrix *)vector_of_scores)(iter,0));
-		BufferToConsole (buf);
-#endif
+		vector_of_scores->Store ( K2Score(r_i, n_ij, n_ijk) );
 	}
 	// end loop over iterations
 	
+	/*
+	ReportWarning (_String("Score sample: "));
+	for (long s = 0; s < vector_of_scores->GetUsed(); s++)
+	{
+		ReportWarning (_String(" ") & (* (_Matrix *)vector_of_scores) (s,0));
+	}
+	*/
 	
 	// compute the average of sampled log-likelihoods
 	log_score = LogSumExpo (vector_of_scores) - log(max_iterations);
 	
-	
-#ifdef __DEBUG_GADS2__
-	sprintf (buf, "| (%d) %f\n", vector_of_scores->GetUsed(), LogSumExpo (vector_of_scores) - log(max_iterations));
-	BufferToConsole (buf);
-#endif
-	
-	
 	DeleteObject (vector_of_scores);
-	DeleteObject (reassign_probs);
 	
-	
+	ReportWarning (_String("Returning expected log score: ") & log_score);
 	
 	return (log_score);
 }
