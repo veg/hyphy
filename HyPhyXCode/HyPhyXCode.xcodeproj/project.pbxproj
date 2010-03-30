@@ -78,7 +78,6 @@
 		850513F81028C532009668C9 /* HYPlatformTWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD1E0DE4EAA600682547 /* HYPlatformTWindow.cpp */; };
 		850513F91028C532009668C9 /* hydialogs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD6F0DE4EC6200682547 /* hydialogs.cpp */; };
 		850513FA1028C532009668C9 /* main-mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BD760DE4EC9B00682547 /* main-mac.cpp */; };
-		850513FB1028C532009668C9 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917B0E2BC5C90070B4AE /* likefunc2.cpp */; };
 		850513FC1028C532009668C9 /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917C0E2BC5C90070B4AE /* calcnode2.cpp */; settings = {COMPILER_FLAGS = "-fstrict-aliasing -funroll-loops"; }; };
 		850513FD1028C532009668C9 /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		850513FE1028C532009668C9 /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
@@ -106,7 +105,6 @@
 		8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCBB0DE4E87D00682547 /* bgm.cpp */; };
 		8529BB150E2D5431001B4F53 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BB140E2D5431001B4F53 /* QuickTime.framework */; };
 		8529BBD70E2D543E001B4F53 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8529BBD60E2D543E001B4F53 /* Carbon.framework */; };
-		858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917B0E2BC5C90070B4AE /* likefunc2.cpp */; };
 		858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 858A917C0E2BC5C90070B4AE /* calcnode2.cpp */; settings = {COMPILER_FLAGS = "-fstrict-aliasing -funroll-loops"; }; };
 		8593AB7B0DE7883E008384A0 /* Help in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8593AB720DE7883B008384A0 /* Help */; };
 		8599DC720F7C367900958ED8 /* bayesgraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8599DC700F7C367900958ED8 /* bayesgraph.cpp */; };
@@ -195,6 +193,8 @@
 		85A2C1DD0DE5066E00682547 /* TreeAddIns in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1A80DE5066E00682547 /* TreeAddIns */; };
 		85A2C1DE0DE5066E00682547 /* UserAddins in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85A2C1AC0DE5066E00682547 /* UserAddins */; };
 		85A942AA0FE0AA28009F1FB1 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
+		85BC6FB4115B51B100686747 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85BC6FB3115B51B100686747 /* likefunc2.cpp */; };
+		85BC6FB5115B51B100686747 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85BC6FB3115B51B100686747 /* likefunc2.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -244,7 +244,6 @@
 		8514AFA30FA7770E00A0B10D /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = ../SQLite/trunk/sqlite3.c; sourceTree = SOURCE_ROOT; };
 		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
 		8529BBD60E2D543E001B4F53 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
-		858A917B0E2BC5C90070B4AE /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = likefunc2.cpp; path = ../trunk/Core/likefunc2.cpp; sourceTree = SOURCE_ROOT; };
 		858A917C0E2BC5C90070B4AE /* calcnode2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = calcnode2.cpp; path = ../trunk/Core/calcnode2.cpp; sourceTree = SOURCE_ROOT; };
 		8593AB720DE7883B008384A0 /* Help */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Help; path = ../trunk/Help; sourceTree = SOURCE_ROOT; };
 		8599DC700F7C367900958ED8 /* bayesgraph.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bayesgraph.cpp; path = ../trunk/NewerFunctionality/bayesgraph.cpp; sourceTree = SOURCE_ROOT; };
@@ -337,6 +336,7 @@
 		85A2C19D0DE5066E00682547 /* TopologyInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TopologyInference; path = ../trunk/TopologyInference; sourceTree = SOURCE_ROOT; };
 		85A2C1A80DE5066E00682547 /* TreeAddIns */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TreeAddIns; path = ../trunk/TreeAddIns; sourceTree = SOURCE_ROOT; };
 		85A2C1AC0DE5066E00682547 /* UserAddins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UserAddins; path = ../trunk/UserAddins; sourceTree = SOURCE_ROOT; };
+		85BC6FB3115B51B100686747 /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = likefunc2.cpp; path = ../trunk/Core/likefunc2.cpp; sourceTree = SOURCE_ROOT; };
 		85EA05E40E35487400FDE33E /* buildFromSVN.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = buildFromSVN.sh; path = ../trunk/Scripts/buildFromSVN.sh; sourceTree = SOURCE_ROOT; };
 		85EA05E50E3548BA00FDE33E /* intelCCbuild.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = intelCCbuild.sh; path = ../trunk/Scripts/intelCCbuild.sh; sourceTree = SOURCE_ROOT; };
 		85F903D40DE6501400D28244 /* build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = build.sh; path = ../trunk/Scripts/build.sh; sourceTree = SOURCE_ROOT; };
@@ -435,7 +435,7 @@
 				85A2BC960DE4E80E00682547 /* error.cpp */,
 				85A2BC970DE4E80E00682547 /* fisher_exact.cpp */,
 				85A2BC980DE4E80E00682547 /* likefunc.cpp */,
-				858A917B0E2BC5C90070B4AE /* likefunc2.cpp */,
+				85BC6FB3115B51B100686747 /* likefunc2.cpp */,
 				85A2BC990DE4E80E00682547 /* list.cpp */,
 				85A2BC9A0DE4E80E00682547 /* matrix.cpp */,
 				85A2BC9B0DE4E80E00682547 /* nexus.cpp */,
@@ -778,7 +778,6 @@
 				850513F81028C532009668C9 /* HYPlatformTWindow.cpp in Sources */,
 				850513F91028C532009668C9 /* hydialogs.cpp in Sources */,
 				850513FA1028C532009668C9 /* main-mac.cpp in Sources */,
-				850513FB1028C532009668C9 /* likefunc2.cpp in Sources */,
 				850513FC1028C532009668C9 /* calcnode2.cpp in Sources */,
 				850513FD1028C532009668C9 /* bgm.cpp in Sources */,
 				850513FE1028C532009668C9 /* bgm2.cpp in Sources */,
@@ -786,6 +785,7 @@
 				850514001028C532009668C9 /* bayesgraph2.cpp in Sources */,
 				850514011028C532009668C9 /* sqlite3.c in Sources */,
 				850514021028C532009668C9 /* strings.cpp in Sources */,
+				85BC6FB5115B51B100686747 /* likefunc2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -863,7 +863,6 @@
 				85A2BD290DE4EAA700682547 /* HYPlatformTWindow.cpp in Sources */,
 				85A2BD700DE4EC6200682547 /* hydialogs.cpp in Sources */,
 				85A2BD770DE4EC9B00682547 /* main-mac.cpp in Sources */,
-				858A917D0E2BC5C90070B4AE /* likefunc2.cpp in Sources */,
 				858A917E0E2BC5C90070B4AE /* calcnode2.cpp in Sources */,
 				8520A72B0E3007DE003B9F2C /* bgm.cpp in Sources */,
 				0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */,
@@ -871,6 +870,7 @@
 				8599DC730F7C367900958ED8 /* bayesgraph2.cpp in Sources */,
 				8514AFA40FA7770E00A0B10D /* sqlite3.c in Sources */,
 				85A942AA0FE0AA28009F1FB1 /* strings.cpp in Sources */,
+				85BC6FB4115B51B100686747 /* likefunc2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1094,6 +1094,7 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					__AFYP_REWRITE_BGM__,
 					_SLKP_LFENGINE_REWRITE_,
 					__HYPHYXCODE__,
 					__MAC__,

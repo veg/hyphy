@@ -7,7 +7,6 @@
 	
 /* end test preamble */
 
-fprintf (stdout, "\nRunning an  fit on an Influenza A alignment with 349 sequences and 967 nucleotides\n");
 timer = Time (1);
 
 
