@@ -230,10 +230,14 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 						// returns true if at least one of the requested partitions is valid
 						// otherwise returns false
 	
-		long			TotalRateClassesForAPartition (long);
+		long			TotalRateClassesForAPartition (long, char = 0);
 						// given a partition index (assuming that category caches have been set up)
 						// returns how many total rate classes there are for this partition
 						// if the index is < 0, return the total number of categories for the LF as a whole
+	
+						// char flag: 0 - all categories
+						//			  1 - only HMM
+						//			  2 - only constant on partition
 		
 	
 		bool			HasBeenSetup				(void) {return hasBeenSetUp > 0;}
@@ -391,6 +395,18 @@ static	void			CheckFibonacci				(_Parameter);
 							compute the log likelihood of the partition
 						 
 						 */
+
+		_Parameter		SumUpSiteHiddenMarkov		(long, const _Parameter*, const _SimpleList&);
+		/* 
+			 SLKP 20100329
+			 
+			 given a partition index (argument 1),
+			 a matrix of _pattern_ likelihoods (argument 2) and	
+			 a list of pattern scaling factors (argument 3)
+			 
+			 compute the log likelihood of the partition using the forward HMM algorithm with scaling
+		 */
+
 	
 		void			UpdateBlockResult			(long, _Parameter);
 						/*
@@ -424,20 +440,21 @@ static	void			CheckFibonacci				(_Parameter);
 		_List			optimalOrders,
 						leafSkips,
 						categoryTraversalTemplate,
+						/*SLKP: 20090225 
+						 This list contains as many entries (themselves of type _List) as there are partitions
+						 The entry will be empty for a partition without category variables
+						 For a partition with N category variables the entry will contain a
+						 1). _List of references to category variables themselves in the order that 
+						 they appear in the blockDependancies
+						 2). _SimpleList of category counts for each variable C_1, C_2, ... C_N + a final entry with
+						 C_1 * C_2 * ... * C_N -- the total number of rate categories for this partition
+						 3). _SimpleList of incremental loop offsets for each variable, e.g. if the
+						 _SimpleList in 2). is 2,3,4, then this _SimpleList is
+						 12,4,1
+						 */
 						indVarsByPartition;
 						
-/*SLKP: 20090225 
-						This list contains as many entries (themselves of type _List) as there are partitions
-						The entry will be empty for a partition without category variables
-						For a partition with N category variables the entry will contain a
-							1). _List of references to category variables themselves in the order that 
-								they appear in the blockDependancies
-							2). _SimpleList of category counts for each variable C_1, C_2, ... C_N + a final entry with
-								C_1 * C_2 * ... * C_N -- the total number of rate categories for this partition
-							3). _SimpleList of incremental loop offsets for each variable, e.g. if the
-								_SimpleList in 2). is 2,3,4, then this _SimpleList is
-								12,4,1
-*/
+
 						
 		long		 	evalsSinceLastSetup,
 						// this is necessary to force internal caches to be filled in at least once

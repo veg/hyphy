@@ -1790,8 +1790,10 @@ long	_LikelihoodFunction::PartitionLengths 		(char runMode,  _SimpleList const *
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::AllocateSiteResults 		(void)
 {
-	long dim			= PartitionLengths(0);
-	siteResults			= (_Matrix*)checkPointer(new _Matrix (dim,2,false,true));
+	long dim			= PartitionLengths(0),
+		 catSpan		= TotalRateClassesForAPartition(-1,1) + 1;
+	
+	siteResults			= (_Matrix*)checkPointer(new _Matrix (dim,catSpan,false,true));
 	siteScalerBuffer.Populate (dim,0,0);
 }
 
