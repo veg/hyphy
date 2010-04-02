@@ -649,7 +649,7 @@ void	  _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 		_LikelihoodFunction*			lf = (_LikelihoodFunction*)likeFuncList(objectID);
 		if (lf->ProcessPartitionList(partsToDo, partitionList, _hyStatusConditionProbsMatrix))
 		{
-			char runMode = 0;
+			char runMode = _hyphyLFConstructCategoryMatrixConditionals;
 			if (parameters.lLength > 2)
 			{
 				if (((_String*)parameters(2))->Equal(&completeFlag))

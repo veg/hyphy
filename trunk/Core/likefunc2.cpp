@@ -565,6 +565,13 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 				_Parameter	_hprestrict_ *bufferForThisCategory = buffer + indexShifter;
 
 				ComputeBlock	(index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+				if (usedCachedResults)
+				{
+					bool saveFR = forceRecomputation;
+					forceRecomputation = true;
+					ComputeBlock	(index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
+					forceRecomputation = saveFR;
+				}
 				
 				if (runMode == _hyphyLFConditionProbsRawMatrixMode)
 					for (long p = 0; p < blockLength; p++)
@@ -627,6 +634,13 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 #endif
 					
 					ComputeBlock	(index, buffer + blockLength, useThisPartitonIndex, branchIndex, branchValues);
+					if (usedCachedResults)
+					{
+						bool saveFR = forceRecomputation;
+						forceRecomputation = true;
+						ComputeBlock	(index, buffer + blockLength, useThisPartitonIndex, branchIndex, branchValues);
+						forceRecomputation = saveFR;
+					}
 
 					if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate)
 						for (long r1 = 0, r2 = blockLength; r1 < blockLength; r1++,r2++)
