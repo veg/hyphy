@@ -149,7 +149,7 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 		void		SetAllIndependent		  (_Matrix*);
 
 		
-		void		UpdateIndependent (long,bool);
+		void		UpdateIndependent (long,bool,_SimpleList* = nil,_SimpleList* = nil);
 		void		UpdateDependent (long);
 		_AssociativeList*	
 					SimulateCodonNeutral (_Matrix*, _Matrix*, long);
@@ -452,7 +452,8 @@ static	void			CheckFibonacci				(_Parameter);
 						 _SimpleList in 2). is 2,3,4, then this _SimpleList is
 						 12,4,1
 						 */
-						indVarsByPartition;
+						indVarsByPartition,
+						depVarsByPartition;
 						
 
 						

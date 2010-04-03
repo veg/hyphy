@@ -814,6 +814,8 @@ void	 _LikelihoodFunction::Clear (void)
 	computationalResults.Clear();
 	partScalingCache.Clear();
 	indVarsByPartition.Clear();
+	depVarsByPartition.Clear();
+	
 	
 	optimalOrders.Clear();
 	leafSkips.Clear();
@@ -7462,6 +7464,7 @@ void	_LikelihoodFunction::RescanAllVariables (void)
 	indexInd.Clear ();
 	computationalResults.Clear();
 	indVarsByPartition.Clear  ();
+	depVarsByPartition.Clear  ();
 	ScanAllVariables();
 }
 
@@ -7720,6 +7723,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		_SimpleList iv,dv,cv;
 		ScanAllVariablesOnPartition (pidx, iv, dv, cv, true);
 		indVarsByPartition && & iv;
+		depVarsByPartition && & dv;
 	}
 }
 
@@ -7849,25 +7853,40 @@ void	_LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _Simpl
 }
 
 //_______________________________________________________________________________________
-void	_LikelihoodFunction::UpdateIndependent (long index, bool purgeResults)
+void	_LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _SimpleList* whichList, _SimpleList* secondList)
 {
-	long f = indexInd.Find (index);
+	_SimpleList * theList = &indexInd;
+	if (whichList)
+		theList = whichList;
+	else
+		secondList = &indexDep;
+	
+	long f = theList->Find (index);
 	if (f!=-1)
 	{
-		indexInd.Delete(f);
-		indexDep<<index;
+		theList->Delete(f);
+		(*secondList)<<index;
+		
 		_SimpleList   newVars;
 		{
 			_AVLList  al (&newVars);
 			LocateVar(index)->ScanForVariables(al,true);
 			al.ReorderList();
 		}
-		for (f=0; f<newVars.lLength; f++)
+		
+		for (f=0; f<newVars.countitems(); f++)
 		{
 			_Variable* cv = LocateVar(newVars.lData[f]);
-			if (cv->IsIndependent()&&(indexInd.Find(newVars.lData[f])==-1))
-				indexInd << newVars.lData[f];
+			if (cv->IsIndependent()&& whichList->Find(newVars.lData[f])==-1)
+				(*whichList) << newVars.lData[f];
 		}
+		
+		if (theList!=whichList)
+		{
+			for (f = 0; f < indVarsByPartition.lLength; f++)
+				UpdateIndependent (index, false, (_SimpleList*)indVarsByPartition(f), (_SimpleList*)depVarsByPartition(f));
+		}
+		
 		if (purgeResults)
 			computationalResults.Clear();
 	}
@@ -7882,6 +7901,15 @@ void	_LikelihoodFunction::UpdateDependent (long index)
 	{
 		indexDep.Delete(f);
 		indexInd<<index;
+		for (long k = 0; k<depVarsByPartition.lLength; k++)
+		{
+			f = ((_SimpleList*)depVarsByPartition(k))->Find(index);
+			if (f >= 0)
+			{
+				((_SimpleList*)depVarsByPartition(k))->Delete(f);
+				(*(_SimpleList*)indVarsByPartition(k)) << index;
+			}
+		}
 	}
 
 }
