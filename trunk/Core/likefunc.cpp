@@ -7877,8 +7877,8 @@ void	_LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _Sim
 		for (f=0; f<newVars.countitems(); f++)
 		{
 			_Variable* cv = LocateVar(newVars.lData[f]);
-			if (cv->IsIndependent()&& whichList->Find(newVars.lData[f])==-1)
-				(*whichList) << newVars.lData[f];
+			if (cv->IsIndependent()&& theList->Find(newVars.lData[f])==-1)
+				(*theList) << newVars.lData[f];
 		}
 		
 		if (theList!=whichList)
