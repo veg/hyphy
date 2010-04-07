@@ -631,10 +631,12 @@ void			_LikelihoodFunction::PopulateConditionalProbabilities	(long index, char r
 						}
 					}
 					else
+						
 #endif
 					
 					ComputeBlock	(index, buffer + blockLength, useThisPartitonIndex, branchIndex, branchValues);
-					if (usedCachedResults)
+					
+					if (runMode != _hyphyLFConditionMPIIterate && usedCachedResults)
 					{
 						bool saveFR = forceRecomputation;
 						forceRecomputation = true;

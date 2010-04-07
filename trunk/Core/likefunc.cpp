@@ -4905,13 +4905,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 						brackStep	  = fabs(lastParameterValue-previousParameterValue); 
 						if (brackStep == 0.0)
 						{
-							long k = stepsSoFar-3;
+							long k = MAX(stepsSoFar-3,0);
+							
 							for (; k && brackStep == 0.0; k--)
 							{
 								previousParameterValue			= vH->theData[k],
 								lastParameterValue				= vH->theData[k+1];	
 								brackStep						= fabs(lastParameterValue-previousParameterValue); 
 							}
+							
 							if (k == 0)
 								brackStep = MIN(0.001,precision*0.001);
 						}

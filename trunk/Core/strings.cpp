@@ -2192,7 +2192,7 @@ void		_String::RegExpMatchAll (Ptr pattern, _SimpleList& matchedPairs)
 			else
 				break;
 		}
-		delete			matches;		 
+		delete	[]		matches;		 
 	}
 }
 
