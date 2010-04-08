@@ -105,7 +105,8 @@ _AVLListX	 _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
 
 //____________________________________________________________________________________	
 
-int  	 	 _HYSQLCallBack						(void* exList,int cc,char** rd,char** cn);
+int  	 	 _HYSQLCallBack						(void* data,int callCount);
+//int  	 	 _HYSQLBusyCallBack					(void* exList,int cc,char** rd,char** cn);
 _Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
 _Parameter	 CostOnly							(_String*,_String*, long, long, long, long, bool, bool, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix*, char = 0, char* = nil);
 _Parameter   LinearSpaceAlign					(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool, _SimpleList&,_Parameter,long,long,long,long,_Matrix**, char, char*);
@@ -393,6 +394,22 @@ int  _HYSQLCallBack (void* exL,int cc, char** rd, char** cn)
 		}
 	return 0; 
 }
+
+//____________________________________________________________________________________	
+/*
+int  _HYSQLBusyCallBack (void* data, int callCount)
+{
+	if (callCount > 100)
+		return 0;
+	
+#ifdef __WINDOZE__
+	Sleep  (1 + genrand_real2()*100.);
+#else	
+	usleep (100 + genrand_real2()*100000.);
+#endif
+	return 1;
+}*/
+
 
 //____________________________________________________________________________________	
 
@@ -1194,6 +1211,8 @@ void	  _ElementaryCommand::ExecuteCase53 (_ExecutionList& chain)
 				}
 				else
 					sqlDatabases.lData[f] = (long)aDB;
+				
+				sqlite3_busy_timeout (aDB, 5000);
 				
 				dbVar->SetValue (new _Constant (f), false);
 			}
