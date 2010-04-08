@@ -286,7 +286,7 @@ void	ReportMPIError	    (int code, bool send)
 	}	
 }
 
-#define MPI_SEND_CHUNK 0x7fffffL
+#define MPI_SEND_CHUNK 0xFFFFFFL
 
 //____________________________________________________________________________________	
 
@@ -349,37 +349,40 @@ _String*	MPIRecvString		(long senderT, long& senderID)
 		messageLength = -messageLength;
 	}
 	
+	if (!isError)
+	{
   	//MPI_Get_count (&status,MPI_CHAR,&actualReceived);
 
-	if (messageLength==0)
-		return new _String;
-				
-	theMessage = new _String (messageLength, false);
+		if (messageLength==0)
+			return new _String;
+					
+		theMessage = new _String (messageLength, false);
+			
+		senderT = senderID = status.MPI_SOURCE;
+			
+		while (messageLength-transferCount>MPI_SEND_CHUNK)
+		{
+			ReportMPIError(MPI_Recv(theMessage->sData+transferCount, MPI_SEND_CHUNK, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
+			MPI_Get_count (&status,MPI_CHAR,&actualReceived);
+			if (actualReceived!=MPI_SEND_CHUNK)
+				WarnError ("Failed in MPIRecvString - some data was not properly received\n");
+				//return    nil;
+			transferCount += MPI_SEND_CHUNK;
+		}
 		
-	senderT = senderID = status.MPI_SOURCE;
+		if (messageLength-transferCount)
+		{
+			ReportMPIError(MPI_Recv(theMessage->sData+transferCount, messageLength-transferCount, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
+			MPI_Get_count (&status,MPI_CHAR,&actualReceived);
+			if (actualReceived!=messageLength-transferCount)
+				WarnError ("Failed in MPIRecvString - some data was not properly received\n");
+				//return    nil;
+		}
+		//ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
 		
-	while (messageLength-transferCount>MPI_SEND_CHUNK)
-	{
-  		ReportMPIError(MPI_Recv(theMessage->sData+transferCount, 0x7fff, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
-  		MPI_Get_count (&status,MPI_CHAR,&actualReceived);
-  		if (actualReceived!=MPI_SEND_CHUNK)
-  			WarnError ("Failed in MPIRecvString - some data was not properly received\n");
-  			//return    nil;
-  		transferCount += MPI_SEND_CHUNK;
+		if (isError)
+			FlagError (theMessage);
 	}
-	
-	if (messageLength-transferCount)
-	{
-	  	ReportMPIError(MPI_Recv(theMessage->sData+transferCount, messageLength-transferCount, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
-		MPI_Get_count (&status,MPI_CHAR,&actualReceived);
-		if (actualReceived!=messageLength-transferCount)
-			WarnError ("Failed in MPIRecvString - some data was not properly received\n");
-			//return    nil;
-	}
-	//ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
-	
-	if (isError)
-		FlagError (theMessage);
 	return theMessage;
 }
 #endif	
