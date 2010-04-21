@@ -265,7 +265,6 @@ _String  *  progressFileString = nil;
 		 
 node<long>* DepthWiseStepTraverserLevel  (long&, node<long>* root);
 _Parameter  myLog (_Parameter);
-_Parameter	SumUpHiddenMarkov (_Matrix&, _Matrix&, _Matrix&, _SimpleList &, long);
 
 		 
 #ifdef 		__UNIX__
@@ -483,67 +482,6 @@ _Parameter myLog (_Parameter arg)
 	return (arg>0.0)?log(arg):-1000000.;
 }
 
-//__________________________________________________________________________________
-
-_Parameter			SumUpHiddenMarkov (_Matrix& hmc, _Matrix& hmm, _Matrix& hmf, _SimpleList & duplicateMap, long bl)
-{
-	long      		   ni = hmm.GetHDim(),
-					   k,
-					   m,
-					   mi;
-					   					   
-	_Matrix	  		   temp  (ni,1,false,true),
-					   temp2 (ni,1,false,true);
-					  
-	_Parameter		   *p1 = hmc.fastIndex(),
-					   scrap,
-					   min;
-			
-	long		       correctionFactor = 0; // correction factor
-	
-	p1 = hmc.fastIndex();
-	mi = duplicateMap.lData[duplicateMap.lLength-1];
-	
-	for (m=0; m<ni; m++,mi += bl)
-		temp2.theData[m] = p1[mi];
-	
-	for (long i=duplicateMap.lLength-2; i>=0; i--)
-	{
-		min = 1.e300;
-		for (k=0; k<ni;k++)
-		{
-			mi    = duplicateMap.lData[i];
-			scrap = 0.0;
-			
-			for (m=0; m<ni; m++,mi += bl)
-				scrap += hmm.theData[k*ni+m] * p1[mi] * temp2.theData[m];
-				
-			temp.theData[k] = scrap;
-			
-			if (scrap<min)
-				min = scrap;
-		}
-		
-		if (min <= 0.0)
-			return -1000000.;
-			
-		k = log (min)-1;
-		correctionFactor -= k;
-		scrap = exp ((_Parameter)(-k));
-		for (k=0; k<ni; k++)
-			temp.theData[k] *= scrap;
-		
-		_Parameter* swap = temp.theData;
-		temp.theData     = temp2.theData;
-		temp2.theData    = swap;
-	}
-	scrap = 0.0;
-	
-	for (k=0; k<ni; k++)
-		scrap += temp2.theData[k] * hmf.theData[k];
-	
-	return myLog(scrap) - correctionFactor;
-}
 
 //_______________________________________________________________________________________
 
@@ -996,7 +934,8 @@ bool	 _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* theP)
 			
 			if (hasSiteMx)
 			{
-				templateKind = _hyphyLFComputationalTemplateBySite;
+				if (templateKind == _hyphyLFComputationalTemplateNone)
+					templateKind = _hyphyLFComputationalTemplateBySite;
 				
 				for (long f=0; f<theDataFilters.lLength; f++)
 				{
@@ -1461,12 +1400,17 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 	}
 	
 	// compute the number of columns in the matrix 
-	for (long i=0;i<whichParts.lLength;i++)
-		if (runMode != _hyphyLFConstructCategoryMatrixConditionals && HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
-			vDim	+=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]))->GetSiteCount();
-	// all sites
-		else
-			vDim	+=		BlockLength(i);
+	
+	if (templateKind < 0)
+		vDim	=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]))->GetSiteCount();	
+	else
+		for (long i=0;i<whichParts.lLength;i++)
+			if (runMode != _hyphyLFConstructCategoryMatrixConditionals 
+				&& HasHiddenMarkov(blockDependancies.lData[whichParts.lData[i]])>=0)
+				vDim	+=	((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]))->GetSiteCount();
+		// all sites
+			else
+				vDim	+=		BlockLength(i);
 	// only unique patterns for now
 
 	
@@ -1478,166 +1422,97 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 					 *cache	 = nil;
 		_SimpleList  *scalerCache = nil;
 		
+		bool		 done		  = false;
+		
 		if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
 		{
 			long bufferL = PartitionLengths (0, &whichParts);
 			cache		 = (_Matrix*)checkPointer (new _Matrix (bufferL,2,false,true));
 			scalerCache  = (_SimpleList*)checkPointer (new _SimpleList (bufferL,0,0));
 		}
-		
-		// now proceed to compute each of the blocks
-		for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
+		else
 		{
-			long i = whichParts.lData[whichPart];
-			
-			if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
+			if (templateKind < 0) // HMM
 			{
-				long partititonSpan				= BlockLength (i);
-				ComputeSiteLikelihoodsForABlock (i, cache->theData, *scalerCache);
-				for (long c = 0; c < partititonSpan; c++)
-				{
-					result->theData[currentOffset+c] = log(cache->theData[c]);
-					if (scalerCache->lData[c])
-						result->theData[currentOffset+c] -= scalerCache->lData[c]*_logLFScaler;
-					
-					
-				}
-				currentOffset				   += partititonSpan;
-				continue;
+				_CategoryVariable*hmmVar = (_CategoryVariable*)FetchVar (-templateKind-1);
+				
+				Compute								 ();
+				
+				RunViterbi							 (*result,bySiteResults->theData, 
+													  *hmmVar->ComputeHiddenMarkov(), 
+													  *hmmVar->ComputeHiddenMarkovFreqs(), 
+													  nil,
+													  &partScalingCache,
+													  vDim
+													  );
+				
+				remap = false;
+				done = true;
+				
 			}
 			
-			if (blockDependancies.lData[i] > 0)
-			// if a partition that does not depend on category variables
-			// then the matrix is already populated with zeros
+		}
+		
+		// now proceed to compute each of the blocks
+		if (!done)
+			for (long whichPart=0;whichPart<whichParts.lLength;whichPart++)
 			{
-				long	hmmID	  = HasHiddenMarkov (blockDependancies.lData[i]),
-						blockSize = BlockLength (i);
-			
-				if (hmmID>=0)
-				// the partition depends on hidden Markov variables
-				// this will be a new feature for v2.0 -- multiple HMM can be handled
+				long i = whichParts.lData[whichPart];
+				
+				if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
 				{
-						WarnError ("This feature has not yet been implemented in the new LF engine framework");
-						return result;
+					long partititonSpan				= BlockLength (i);
+					ComputeSiteLikelihoodsForABlock (i, cache->theData, *scalerCache);
+					for (long c = 0; c < partititonSpan; c++)
+					{
+						result->theData[currentOffset+c] = log(cache->theData[c]);
+						if (scalerCache->lData[c])
+							result->theData[currentOffset+c] -= scalerCache->lData[c]*_logLFScaler;
+						
+						
+					}
+					currentOffset				   += partititonSpan;
+					continue;
+				}
+				
+				if (blockDependancies.lData[i] > 0)
+				// if a partition that does not depend on category variables
+				// then the matrix is already populated with zeros
+				{
+					_SimpleList		 *catVarType	     = (_SimpleList*)((*(_List*)categoryTraversalTemplate(i))(4)),
+									 *filterMap			 = &((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->duplicateMap;
 					
-						// run the Viterbi algorithm to reconstruct the most likely
-						// HMM path; this is done by integrating out all other
-						// category variables
+					long			 categoryType		 = catVarType->Element (-1),
+									 blockSize			 = BlockLength (i),
+									 siteCount			 = filterMap->lLength;
 					
-						df = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]);
-						_CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[hmmID]);
-						thisC->Refresh();
+					// check to see if we need to handle HMM or COP variables
+					if (categoryType & _hyphyCategoryHMM)
+					{
+						_CategoryVariable*hmmVar		= (_CategoryVariable*)((*(_List*)(*(_List*)categoryTraversalTemplate(i))(0))(0));
 						
-						long      		   ni = thisC->GetNumberOfIntervals(),
-										   bl = BlockLength (i),
-										   k,
-										   m,
-										   mi,
-										   mi2,
-										   ul = df->GetUnitLength(),
-										   tl = df->theOriginalOrder.lLength,
-										   ml = tl/ul,
-										   j,
-										   hmmShifter = 1;
-										   
-						_Matrix	  		   hmc (ni,bl,false,true),
-										  *hmm = thisC->ComputeHiddenMarkov(),
-										   temp(ni,ml,false,true),
-										  *hmf = thisC->ComputeHiddenMarkovFreqs();
-										  
-						_Parameter		  *p1 = hmc.fastIndex(),
-										  *p2,
-										  scrap,
-										  max,
-										  min;
-								
-						for (m=HighestBit(blockDependancies.lData[i]);m>=0;m--)
-							if (CheckNthBit (blockDependancies.lData[i],m))
-							{
-								_CategoryVariable * aC = (_CategoryVariable*)LocateVar(indexCat.lData[m]);
-								if (! (aC->IsHiddenMarkov() || aC->IsConstantOnPartition()))
-									hmmShifter *= aC->GetNumberOfIntervals();
-							}
+						/* 
+						   run the Viterbi algorithm to reconstruct the most likely
+						   HMM path
+						*/
+						ComputeSiteLikelihoodsForABlock    (i, siteResults->theData, siteScalerBuffer);
 						
-						offsetCounter = 1;
-						for (m=0; m<ni; m++,categID++)
-						{
-							categID = m*hmmShifter;
-							thisC->SetIntervalValue (m);
-							RecurseCategory (i,0,blockDependancies.lData[i],HighestBit(blockDependancies.lData[i]),1);
-							p2 = siteResults->fastIndex();
-							for   (k = 0; k<bl; k++,p2++,p1++)
-								*p1 = *p2;
-						}
+						RunViterbi (*result,	
+									siteResults->theData, 
+									*hmmVar->ComputeHiddenMarkov(),	
+									*hmmVar->ComputeHiddenMarkovFreqs(), 
+									&((_DataSetFilter*)dataSetFilterList (theDataFilters(i)))->duplicateMap,     
+									&siteScalerBuffer, 
+									blockSize);
 						
-						categID = 0; // correction factor
-						p1 = hmc.fastIndex();
-						mi = df->duplicateMap.lData[tl/ul-1];
-						for (m=ml-1; m<ml*ni; m+=ml,mi += bl)
-							temp.theData[m] = p1[mi];
 						
-						for (j=ml-2; j>=0; j--)
-						{
-							for (k=0; k<ni;k++)
-							{
-								mi  = df->duplicateMap.lData[j];
-								mi2 = j+1;
-								max = 0.0;
-								min = 1.e300;
-								for (m=0; m<ni; m++,mi += bl,mi2 += ml)
-								{
-									scrap = hmm->theData[k*ni+m] * p1[mi] * temp.theData[mi2];
-									if (scrap > max)
-										max = scrap;
-									if (scrap < min)
-										min = scrap;
-									
-								}
-								temp.theData[j+k*ml] = max;
-							}
-							k = log (min)-1;
-							//categID -= k;
-							scrap = exp ((_Parameter)(-k));
-							mi2 = j;
-							for (; mi2<ni*ml; mi2 += ml)
-								temp.theData[mi2] *= scrap;
-							
-						}
-						max = 0.;
-						mi2 = 0;
-						for (k=0,mi=0; k<ni; k++,mi+=ml)
-						{
-							scrap = temp.theData[mi] * hmf->theData[k];
-							if (scrap > max)
-							{
-								mi2 = mi;
-								max = scrap;
-							}
-						}
-						mi2 /= ml;
-						result->theData[currentOffset] = mi2;
-						for (k=1; k<ml; k++)
-						{
-							mi = k;
-							max = 0.;
-							long mi3  = df->duplicateMap.lData[k],
-								 mi4  = 0;
-							for (m=0; m<ni; m++, mi += ml, mi3 += bl)
-							{
-								scrap = hmm->theData[mi2*ni+m] * p1[mi3] * temp.theData[mi];
-								if (scrap > max)
-								{
-									max = scrap;
-									mi4 = m;
-								}
-							}
-							mi2 = mi4;
-							result->theData[currentOffset+k] = mi2;
-						}
-						currentOffset+=ml;
+						currentOffset += siteCount;
 					}
 					else
 					{
+						WarnError ("This feature has not yet been implemented in v2.0");
+						return result;
+						
 						long hasConstantOnPartition = HasHiddenMarkov(blockDependancies.lData[i],false);
 						if (hasConstantOnPartition<0)
 						{
@@ -1658,8 +1533,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 							return result;
 
 							long	mxDim = 1,
-								    bl = BlockLength (i),
-								    j;
+									bl = BlockLength (i),
+									j;
 
 							for (j=0; j<=hasConstantOnPartition; j++)
 								if (CheckNthBit (blockDependancies.lData[i],j))
@@ -1704,8 +1579,8 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 						}					
 						currentOffset+=blockSize;
 					}
+				}
 			}
-		}
 		DoneComputing();
 		DeleteObject (cache);
 		DeleteObject (scalerCache);
@@ -2131,36 +2006,55 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 					}
 				}
 			
-			// no need to remap; just process directly based on partiton indices
 			
-			siteArrayPopulated		   = true;
-			siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
-			_SimpleList scalerCache    (theTrees.lLength,0,0);
-			_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
-
-			for (long siteID = 0; siteID < blockWidth; siteID++)
+			if (templateKind < 0) // HMM
 			{
-				// pass one to determine scaling factors
-				long minScalingFactor = ((_SimpleList*)partScalingCache(0))->lData[siteID];
-				scalerCache.lData [0] = minScalingFactor;
-				for (long partID=1; partID<theTrees.lLength; partID++)
-				{
-					scalerCache.lData [partID] = ((_SimpleList*)partScalingCache(partID))->lData[siteID]; 
-					if (minScalingFactor > scalerCache.lData [partID])
-						minScalingFactor = scalerCache.lData [partID];
-				}
-				for (long partID=0; partID<theTrees.lLength; partID++)
-				{
-					siteMatrix->theData[partID] = bySiteResults->theData[partID*blockWidth+siteID];
-					long diff = scalerCache.lData[partID]-minScalingFactor;
-					if (diff)
-						siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
-				}
+				_CategoryVariable*hmmVar = (_CategoryVariable*)FetchVar (-templateKind-1);
+				_Matrix			 *hmm    = hmmVar->ComputeHiddenMarkov(),
+								 *hmf    = hmmVar->ComputeHiddenMarkovFreqs();		
 				
+				result			 = SumUpHiddenMarkov (bySiteResults->theData, 
+													*hmm, 
+													*hmf, 
+													nil,
+													&partScalingCache,
+													blockWidth
+													);
 				
-				result += computingTemplate->Compute()->Value();
-				if (minScalingFactor)
-					result-=_logLFScaler*minScalingFactor;
+			}
+			else 
+			{
+				// no need to remap; just process directly based on partiton indices
+
+				siteArrayPopulated		   = true;
+				siteWiseVar->SetValue	   (new _Matrix (theTrees.lLength,1,false,true), false);
+				_SimpleList scalerCache    (theTrees.lLength,0,0);
+				_Matrix     * siteMatrix = (_Matrix*)siteWiseVar->GetValue();
+
+				for (long siteID = 0; siteID < blockWidth; siteID++)
+				{
+					// pass one to determine scaling factors
+					long minScalingFactor = ((_SimpleList*)partScalingCache(0))->lData[siteID];
+					scalerCache.lData [0] = minScalingFactor;
+					for (long partID=1; partID<theTrees.lLength; partID++)
+					{
+						scalerCache.lData [partID] = ((_SimpleList*)partScalingCache(partID))->lData[siteID]; 
+						if (minScalingFactor > scalerCache.lData [partID])
+							minScalingFactor = scalerCache.lData [partID];
+					}
+					for (long partID=0; partID<theTrees.lLength; partID++)
+					{
+						siteMatrix->theData[partID] = bySiteResults->theData[partID*blockWidth+siteID];
+						long diff = scalerCache.lData[partID]-minScalingFactor;
+						if (diff)
+							siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
+					}
+					
+					
+					result += computingTemplate->Compute()->Value();
+					if (minScalingFactor)
+						result-=_logLFScaler*minScalingFactor;
+				}
 			}
 			done = true;
 		}
@@ -2424,7 +2318,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 									*p1 = *p2;
 							}
 							
-							result += SumUpHiddenMarkov (hmc, *hmm, *hmf, df->duplicateMap, bl);
+							//result += SumUpHiddenMarkov (hmc, *hmm, *hmf, df->duplicateMap, bl);
 						}
 					}
 					else
@@ -2484,7 +2378,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 								  
 				_SimpleList		  rm (bySiteResults->GetVDim(), 0, 1);
 								  				
-				result 			  += SumUpHiddenMarkov (*bySiteResults, *hmm, *hmf, rm, bySiteResults->GetVDim());
+				//result 			  += SumUpHiddenMarkov (*bySiteResults, *hmm, *hmf, rm, bySiteResults->GetVDim());
 				
 			}
 			else

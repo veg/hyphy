@@ -59,7 +59,7 @@ bool	   CheckEqual 			(_Parameter, _Parameter);
 _CategoryVariable::_CategoryVariable (_String& name, _List* parms, _VariableContainer* theP):_Variable (name) 
 { 
 	values = intervalEnds = weights = conditionalWeights = nil;
-	hiddenMarkovModel = -1;
+	hiddenMarkovModel = HY_NO_MODEL;
 	flags			  = 0;
 	covariant 		 = -1;
 	intervalSplitter = -1;
@@ -545,22 +545,15 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 		}
 	}
 	
+	
+	
+	hiddenMarkovModel = HY_NO_MODEL;
+	
 	parameterList.Duplicate  (&scannedVarsList);
 	// finally go thru all the variables and put them where they belong in dependance containers
 	
-	for (long vid = 0; vid < parameterList.lLength; vid ++)
-	{
-		long vf = variableDependanceAllocations.Find ((BaseRef)parameterList.lData[vid]);
-		if (vf >= 0)
-			affectedClasses << (_SimpleList*)(variableDependanceAllocations.GetXtra (vf));
-		else
-			affectedClasses.AppendNewInstance (new _SimpleList (intervals,1,0));
-		
-		_String vlog = _String ("Variable ") & *LocateVar(parameterList.lData[vid])->GetName() & " mapped to class " & _String(((_String*)affectedClasses(vid)->toStr()));
-		ReportWarning (vlog);
-	}
-	
-	hiddenMarkovModel = -1;
+	_SimpleList		exclude;
+
 	if (parameters.countitems()>7) // aux mean formula
 	{
 		param = (_String*)parameters(7); 
@@ -589,26 +582,60 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 				}
 				long mindex = f;
 				_Matrix * hmm, 
-						*freq;
+						* freq;
 				
 				bool	mbf;				
 				
 				RetrieveModelComponents (mindex, hmm, freq, mbf);
+				mbf = false;
+				
 				if (hmm)
 				{
+					
 					f = weights->GetHDim()*weights->GetVDim();
+					
 					if (hmm->GetHDim()==f && hmm->GetVDim()==f)
 					{
+						_SimpleList	  hmmVars,
+									  existingVars (parameterList);
+
+						_AVLList      sv (&hmmVars);
+
+						hmm->ScanForVariables (sv,true);
+						freq->ScanForVariables (sv,true);
+
+						
+						sv.ReorderList();
+						parameterList.Union (hmmVars,existingVars);
+						exclude.Subtract (hmmVars,existingVars);
+						
 						hiddenMarkovModel = mindex;
-						return;
+						mbf = true;
 					}
 				}
-				errorMsg = errorMsg & (*(_String*)parameters(8))& " is not a valid model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'";
-				WarnError (errorMsg);
+				
+				if (!mbf)
+					WarnError (errorMsg & (*(_String*)parameters(8))& " is not a valid HMM-component model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'");
 			}
 		}
 	}
 	
+	for (long vid = 0; vid < parameterList.lLength; vid ++)
+	{
+		long vf = variableDependanceAllocations.Find ((BaseRef)parameterList.lData[vid]);
+		if (vf >= 0)
+			affectedClasses << (_SimpleList*)(variableDependanceAllocations.GetXtra (vf));
+		else
+			if (exclude.Find (parameterList.lData[vid]) >= 0)
+				affectedClasses.AppendNewInstance (new _SimpleList (intervals,0,0));
+			else
+				affectedClasses.AppendNewInstance (new _SimpleList (intervals,1,0));
+		
+		_String vlog = _String ("Variable ") & *LocateVar(parameterList.lData[vid])->GetName() & " mapped to class " & _String(((_String*)affectedClasses(vid)->toStr()));
+		ReportWarning (vlog);
+	}
+	
+
 	if (covariant >= 0)
 		conditionalWeights = new _Matrix (intervals, 1, false, true);
 
@@ -737,7 +764,7 @@ void	_CategoryVariable::Clear (void)
 	DeleteObject 		(conditionalWeights);
 	covariant		  = -1;
 	intervalSplitter  = -1;
-	hiddenMarkovModel = -1;
+	hiddenMarkovModel = HY_NO_MODEL;
 	flags 			  = 0;
 	parameterList.Clear();
 	affectedClasses.Clear();
@@ -961,6 +988,7 @@ bool	_CategoryVariable::HaveParametersChanged (long catID)
 			if (catID == -1 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID])
 				return true;
 	}
+	
 	return false;
 }
 
@@ -986,12 +1014,12 @@ void	  _CategoryVariable::ScanForVariables (_AVLList& l, bool globals)
 	weights->ScanForVariables(l,true);
 	values->ScanForVariables(l,true);
 	
-	if (hiddenMarkovModel>=0)
+	if (hiddenMarkovModel != HY_NO_MODEL)
 	{
 		GetHiddenMarkov()->ScanForVariables (l,true);
 		GetHiddenMarkovFreqs()->ScanForVariables (l,true);
 	}
-	if (intervalSplitter >= 0)
+	if (intervalSplitter != HY_NO_MODEL)
 		LocateVar(intervalSplitter)->ScanForVariables (l, globals);
 	
 	if (globals)
@@ -1008,7 +1036,7 @@ void	  _CategoryVariable::ScanForGVariables (_AVLList& l)
 		density.ScanFForVariables(tempA,true);
 		weights->ScanForVariables(tempA,true);
 		values->ScanForVariables(tempA,true);
-		if (hiddenMarkovModel>=0)
+		if (hiddenMarkovModel != HY_NO_MODEL)
 		{
 			GetHiddenMarkov()->ScanForVariables (tempA,true);
 			GetHiddenMarkovFreqs()->ScanForVariables (tempA,true);
@@ -1210,7 +1238,7 @@ void _CategoryVariable::SerializeCategory (_String& rec)
 		values->Serialize (rec, catNames);
 		
 	rec << '\n';
-	if (hiddenMarkovModel>=0)
+	if (hiddenMarkovModel != HY_NO_MODEL)
 		SerializeModel (rec,hiddenMarkovModel);
 	
 	rec << "\ncategory ";
@@ -1270,10 +1298,10 @@ void _CategoryVariable::SerializeCategory (_String& rec)
 	rec << *theFS;
 	DeleteObject (theFS);
 	
-	if ((hiddenMarkovModel>=0)||(flags&CONSTANT_ON_PARTITION))
+	if ((hiddenMarkovModel != HY_NO_MODEL)||(flags&CONSTANT_ON_PARTITION))
 	{
 		rec << ',';
-		if (hiddenMarkovModel>=0)
+		if (hiddenMarkovModel != HY_NO_MODEL)
 			rec << *(_String*)modelNames (hiddenMarkovModel);
 			
 		if (flags&CONSTANT_ON_PARTITION)

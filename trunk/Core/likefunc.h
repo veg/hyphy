@@ -81,6 +81,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyLFMPIModeREL							3
 #define	  _hyphyLFMPIModeAuto							4
 
+/* partition category variable types */
+
+#define	  _hyphyCategoryNormal							0x1
+#define	  _hyphyCategoryHMM								0x2
+#define   _hyphyCategoryCOP								0x4
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -171,10 +177,8 @@ virtual
 		void		Simulate					(_DataSet &,_List&, _Matrix* = nil, _Matrix* = nil, _Matrix* = nil, _String* = nil);
 	
 		void		ReconstructAncestors		(_DataSet &, _SimpleList&, _String&, bool = false, bool = false, bool = false);
-					// 20090224: added an argument to allow 
-					// the marginal state reconstruction
-					// 20091009: added an argument to allow
-					// the reconstruction of leaves
+					// 20090224: added an argument to allow the marginal state reconstruction
+					// 20091009: added an argument to allow the reconstruction of leaves
 	
 		long		MaximumDimension			(void);
 		
@@ -384,28 +388,37 @@ static	void			CheckFibonacci				(_Parameter);
 						// allows the calculation of the probability vector while setting a specific interior branch
 						// to a given sequence
 						
-		_Parameter		SumUpSiteLikelihoods		(long, const _Parameter*, const _SimpleList&);
+		_Parameter			SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, const _SimpleList*, long);
 					    /* 
-							SLKP 20090318 
+							SLKP 20090420
 							
-							given a partition index (argument 1),
-							a vector of _pattern_ likelihoods (argument 2) and	
-							a list of pattern scaling factors (argument 3)
+							given conditional probs							(1)
+							the transition matrix for the HMM				(2)
+							the initial probabilities for the HMM			(3)
+							the duplicate map (or nil if no need to remap)  (4)
+							the vector of by-site scaling factors as		(5)		
+								a concatenated _SimpleList if (4) is not nil or
+								as a _List of _SimpleLists if (4) is nil
+							partition length								(6)
 						 
-							compute the log likelihood of the partition
-						 
+							compute the log likelihood of the partition using the forward HMM algorithm with scaling
 						 */
 
-		_Parameter		SumUpSiteHiddenMarkov		(long, const _Parameter*, const _SimpleList&);
-		/* 
-			 SLKP 20100329
-			 
-			 given a partition index (argument 1),
-			 a matrix of _pattern_ likelihoods (argument 2) and	
-			 a list of pattern scaling factors (argument 3)
-			 
-			 compute the log likelihood of the partition using the forward HMM algorithm with scaling
-		 */
+	void					RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  const _SimpleList* , long );
+						 /* Viterbi decoding for HMM; parameter meanings as in SumUpHiddenMarkov, 
+						    except the first, which will store the optimal path to be returned */
+
+	_Parameter				SumUpSiteLikelihoods		(long, const _Parameter*, const _SimpleList&);
+					/* 
+					 SLKP 20090318 
+					 
+					 given a partition index (argument 1),
+					 a vector of _pattern_ likelihoods (argument 2) and	
+					 a list of pattern scaling factors (argument 3)
+					 
+					 compute the log likelihood of the partition
+					 
+					 */		
 
 	
 		void			UpdateBlockResult			(long, _Parameter);
@@ -441,16 +454,34 @@ static	void			CheckFibonacci				(_Parameter);
 						leafSkips,
 						categoryTraversalTemplate,
 						/*SLKP: 20090225 
-						 This list contains as many entries (themselves of type _List) as there are partitions
-						 The entry will be empty for a partition without category variables
-						 For a partition with N category variables the entry will contain a
-						 1). _List of references to category variables themselves in the order that 
-						 they appear in the blockDependancies
-						 2). _SimpleList of category counts for each variable C_1, C_2, ... C_N + a final entry with
-						 C_1 * C_2 * ... * C_N -- the total number of rate categories for this partition
-						 3). _SimpleList of incremental loop offsets for each variable, e.g. if the
-						 _SimpleList in 2). is 2,3,4, then this _SimpleList is
-						 12,4,1
+						 
+							 This list contains as many entries (themselves of type _List) as there are partitions
+							 The entry will be empty for a partition without category variables
+							 For a partition with N category variables the entry will contain a
+							 
+							 1). _List of references to category variables themselves in the order that 
+							 they appear in the blockDependancies
+							 
+							 2). _SimpleList of category counts for each variable C_1, C_2, ... C_N + a final entry with
+							 C_1 * C_2 * ... * C_N -- the total number of rate categories for this partition
+							 
+							 3). _SimpleList of incremental loop offsets for each variable, e.g. if the
+							 _SimpleList in 2). is 2,3,4, then this _SimpleList is
+							 12,4,1
+						 
+						  SLKP: 20100416
+							
+							 4). A _SimpleList including _relative_ indexing for the buffer array 
+								 for HMM and "constant on partition" variables similar to 3, but 
+								 ignoring all other variables. The last entry is the total number
+								 of HMM (or similar) rate classes on a partition
+						 
+							 5). A _SimpleList storing the type of each cat variable in a partition (flag)
+								 the last element is the cumulative flag composed of bit toggles to indicate 
+								 what type of category variables there are for a given partition:
+									_hyphyCategoryNormal
+									_hyphyCategoryHMM
+									_hyphyCategoryCOP						 
 						 */
 						indVarsByPartition,
 						depVarsByPartition;
