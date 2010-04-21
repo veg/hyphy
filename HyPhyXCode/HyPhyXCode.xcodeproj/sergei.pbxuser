@@ -136,7 +136,7 @@
 					16,
 					200,
 					50,
-					600.20849609375,
+					418.20849609375,
 				);
 				PBXFileTableDataSourceColumnsKey = (
 					PBXSymbolsDataSource_SymbolTypeIconID,
@@ -191,8 +191,8 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 293572918;
-			PBXWorkspaceStateSaveDate = 293572918;
+			PBXPerProjectTemplateStateSaveDate = 293573896;
+			PBXWorkspaceStateSaveDate = 293573896;
 		};
 		sourceControlManager = 85A2BBC50DE4D29B00682547 /* Source Control */;
 		userBookmarkGroup = 85D1440E0DE788570087893B /* PBXBookmarkGroup */;

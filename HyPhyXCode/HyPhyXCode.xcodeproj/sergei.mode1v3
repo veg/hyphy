@@ -229,6 +229,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -270,8 +272,6 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>16</integer>
-									<integer>14</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -340,8 +340,6 @@
 							<string>0pt</string>
 						</dict>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -378,9 +376,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>85508163117F913B00D9045B</string>
+				<string>8550819A117F952B00D9045B</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>85508164117F913B00D9045B</string>
+				<string>8550819B117F952B00D9045B</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -516,6 +514,7 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>1CD10A99069EF8BA00B06720</string>
 		<string>850D095D109FA8AF0085E0F7</string>
 		<string>/Users/sergei/hyphy/HyPhyXCode/HyPhyXCode.xcodeproj</string>
 	</array>
@@ -597,7 +596,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>850D095D109FA8AF0085E0F7</string>
-				<string>85508165117F913B00D9045B</string>
+				<string>8550819C117F952B00D9045B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -717,13 +716,13 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>855080AF117F852100D9045B</string>
+				<string>8550819D117F952B00D9045B</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>855080B0117F852100D9045B</string>
-				<string>855080B1117F852100D9045B</string>
-				<string>855080B2117F852100D9045B</string>
-				<string>855080B3117F852100D9045B</string>
-				<string>855080B4117F852100D9045B</string>
+				<string>8550819E117F952B00D9045B</string>
+				<string>8550819F117F952B00D9045B</string>
+				<string>855081A0117F952B00D9045B</string>
+				<string>855081A1117F952B00D9045B</string>
+				<string>855081A2117F952B00D9045B</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debugV3</string>
