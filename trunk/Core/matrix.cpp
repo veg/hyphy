@@ -9299,7 +9299,10 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 					{
 						((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);
 						if (CheckEqual(testFormula.Compute()->Value(),0.0))
+						{
+							cn = avl.Traverser (hist,ls);
 							continue;
+						}
 					}
 					((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(fKey);
 					((_Operation**)actionFormula.GetList().lData)[1]->SetNumber((_PMathObj)avl.GetXtra (cn));
