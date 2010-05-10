@@ -1826,16 +1826,16 @@ _String*		_TreeTopology::ConvertFromPSW						(_AVLListX& nodeMap,_SimpleList& ps
 }
 
 //__________________________________________________________________________________
-bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _SimpleList& pswRepresentation, bool reference)
+bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _SimpleList& pswRepresentation, bool reference)
 {
 	if (reference == false)
 		nodeMap.Clear();
 	
 	pswRepresentation.Clear();
 	
-	long	leafIndex  = 0;
-	long	iNodeCount = -1;
-	long	level	   = 0;
+	long	leafIndex  = 0,
+			iNodeCount = -1,
+			level	   = 0;
 	
 	_String nodeName;
 	
@@ -1861,7 +1861,14 @@ bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _SimpleList& pswRepresent
 				if (remapped < 0)
 					return false;
 				else
-					pswRepresentation << nodeMap.GetXtra (remapped);
+				{	
+					remapped = nodeMap.GetXtra (remapped);
+					if (remapped >= 0)
+						pswRepresentation << remapped;
+					else
+						return false;
+				}
+					
 				leafIndex++;
 			}
 			else
@@ -1873,6 +1880,9 @@ bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _SimpleList& pswRepresent
 			pswRepresentation << levelBuffer.lData[level];
 			if (reference)
 				pswRepresentation << 0;
+			else
+				(*inames) && &nodeName;
+
 			iNodeCount--;
 		}
 		if (level)
@@ -1897,8 +1907,10 @@ bool		_TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _SimpleList& pswRepresent
 _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 // compare tree topologies
 {
-	_Matrix  * result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true));
-	_FString * treeR  = new _FString();
+	_Matrix		* result = (_Matrix*) checkPointer(new _Matrix (2,1,false,true)),
+				* result2 = nil;
+	
+	_FString	* treeR  = new _FString();
 	
 	_Constant * bc = (_Constant*) BranchCount ();
 	result->theData[0] = bc->Value();
@@ -1907,15 +1919,17 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 	
 	if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE))
 	{
-		_List			avlSupport;
-		
+		_List			avlSupport,
+						iNames;
+				
 		_AVLListX		nameMap  (&avlSupport);
-		_SimpleList		psw, psw2, clusters;		
+		
+		_SimpleList		psw, psw2, clusters, inodeList;		
 		
 		
-		ConvertToPSW			(nameMap, psw);
+		ConvertToPSW			(nameMap, &iNames, psw);
 		ComputeClusterTable		(clusters, psw);
-		if (((_TreeTopology*)p)->ConvertToPSW			(nameMap, psw2, true))
+		if (((_TreeTopology*)p)->ConvertToPSW			(nameMap, nil, psw2, true))
 		{
 			_SimpleList	          workSpace;		
 			long leafCount      = psw.Element (-2);
@@ -1966,7 +1980,8 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 			
 			long L, R;
 			
-			_SimpleList leafSpans (leafCount,0,0);
+			_SimpleList leafSpans (leafCount,0,0),
+						iNodesTouched;
 			
 			for (long k = 0; k < psw.lLength-2; k+=2)
 			{
@@ -1987,6 +2002,8 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 						L = (psw2.lLength>>1) - leafSpans.lData[L] + 1;
 						psw2 << leafCount+iNodeCount++;
 						psw2 << L;
+						
+						iNodesTouched << psw.lData[k];
 					}
 				}
 			}
@@ -2003,14 +2020,24 @@ _AssociativeList *	 _TreeTopology::SplitsIdentity (_PMathObj p)
 			result->theData[0] = psw.Element (-1);
 			result->theData[1] = matchCount;
 			
+			
 			*treeR->theString  = ConvertFromPSW (nameMap, psw2);
+			
+			_List sharedNames;
+			for (long k = 0; k < iNodesTouched.lLength; k++)
+				sharedNames << iNames (iNodesTouched(k)-leafCount);
+			
+			result2 = new _Matrix (sharedNames);
 		}
+		
 	}
 	
 	DeleteObject (bc);
 	
 	_AssociativeList * resultList = new _AssociativeList;
 	resultList->MStore ("CLUSTERS", result, false);
+	if (result2)
+		resultList->MStore ("NODES",	result2, false);
 	resultList->MStore ("CONSENSUS", treeR, false);
 	return resultList;
 }

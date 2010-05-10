@@ -354,8 +354,10 @@ class _TreeTopology: public _CalcNode {
 					with the consensus string
 				 
 				*/
-		bool			ConvertToPSW						(_AVLListX&,_SimpleList&,bool = false);
+		bool			ConvertToPSW						(_AVLListX&,_List*, _SimpleList&,bool = false);
 			/* 20090612: SLKP
+			   20100510: Modified the function to also return internal node names in the second AVL
+			 
 				covert the topology into the post-order with weights representation
 				The first argument maps node names to their internal indices in the traversal order 
 			    (note that leaves are numbered 1..leaves-1 and internal indices as leaves-1...leaves+inodes-1)
@@ -372,14 +374,15 @@ class _TreeTopology: public _CalcNode {
 				The last two entries store the number of leaves and internal nodes
 				
 			 
-				if the third argument is TRUE, then each LEAF in the tree must be found in the reference
+				if the bool argument is TRUE, then each LEAF in the tree must be found in the reference
 				dictionary supplied by the FIRST argument; false will be returned if this is not the case.
 			*/
 	
 		_String*		ConvertFromPSW						(_AVLListX&,_SimpleList&);
 			/* 20090612: SLKP
 					given a PSW tree traversal order and a labeling legend,
-					return the Newick string for the tree */
+					return the Newick string for the tree 
+			*/
 
 		void			ComputeClusterTable					(_SimpleList&, _SimpleList&);
 			/* given the PSW traversal representation (arg 2) 
