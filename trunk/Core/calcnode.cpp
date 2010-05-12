@@ -10435,18 +10435,21 @@ _AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
 }
 
 //_______________________________________________________________________________________________
-void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere)
+void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere, bool doINodes)
 {
-	_AVLListX*			nodeMapper    = ConstructNodeToIndexMap (true);
+	_AVLListX*			nodeMapper    = ConstructNodeToIndexMap (doINodes);
 	_CalcNode*			traversalNode = StepWiseTraversal		(true);
 	
 	long				allNodeCount = 0;
-	storeHere.Populate (flatTree.lLength, 0, 0);
+	
+	storeHere.Populate (doINodes?flatTree.lLength:flatLeaves.lLength, 0, 0);
 	
 	while (traversalNode)
 	{
-		if (!IsCurrentNodeATip())
+		bool isTip = IsCurrentNodeATip();
+		if (isTip && !doINodes || !isTip && doINodes)
 			storeHere.lData[nodeMapper->GetXtra (nodeMapper->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
+
 		traversalNode = StepWiseTraversal(false);
 	}
 	

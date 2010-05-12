@@ -368,7 +368,13 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			
 			if (isLeaf)
 			{
-				long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
+				long siteState;
+				
+				if (setBranch == nodeCode + flatLeaves.lLength)
+					siteState = setBranchTo[siteOrdering.lData[siteID]] ;
+					
+				else
+					siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
 				if (siteState >= 0)
 				// a single character state; sweep down the appropriate column 
 				{

@@ -431,7 +431,7 @@ static	void			CheckFibonacci				(_Parameter);
 	
 	
 		_List*			RecoverAncestralSequencesMarginal
-													(long, _Matrix&,_List&);
+													(long, _Matrix&,_List&, bool = false);
 		void			DetermineLocalUpdatePolicy  (void);
 		void			FlushLocalUpdatePolicy		(void);
 		void			RestoreScalingFactors		(long, long, long, long*, long *);

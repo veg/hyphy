@@ -8104,7 +8104,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 			else
 			{
 				RestoreScalingFactors		(index, *cbid, patternCnt, scc, sccb);
-				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,(branchIndex>=0)?(branchIndex+t->GetLeafCount()):*cbid,canClear);
+				t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,(branchIndex >=0 )?(branchIndex+t->GetLeafCount()):*cbid,canClear);
 				*cbid						= -1;
 				branches					= &changedBranches;
 				matrices					= &changedModels;

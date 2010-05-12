@@ -377,7 +377,7 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 			{
 				_Matrix  *marginals = new _Matrix;
 				_String  supportMxID = baseResultID & '.' & _hyMarginalSupportMatrix;
-				thisSet = RecoverAncestralSequencesMarginal (partIndex, *marginals, *expandedMap);
+				thisSet = RecoverAncestralSequencesMarginal (partIndex, *marginals, *expandedMap, doLeaves);
 				CheckReceptacleAndStore(&supportMxID, "ReconstructAncestors", true, marginals, false);
 				
 			}
@@ -819,7 +819,7 @@ void			_LikelihoodFunction::ComputeSiteLikelihoodsForABlock	(long index, _Parame
 
 //_______________________________________________________________________________________________
 
-_List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Matrix & supportValues, _List& expandedSiteMap) 
+_List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Matrix & supportValues, _List& expandedSiteMap, bool doLeaves) 
 // index:			which part to process
 // supportValues:	for each internal node and site stores alphabetDimension values for the 
 //				:	relative support of each residue at a given site
@@ -827,6 +827,8 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 //				:   1st - node index (same order as flatTree)
 //				:   2nd - site index (only unique patterns are stored)
 //				:   3rd - the character
+
+// doLeaves		:	compute support values leaves instead of internal nodes
 
 {	
 	
@@ -838,6 +840,7 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 					unitLength						= dsf->GetUnitLength		(),
 					iNodeCount						= blockTree->GetINodeCount	(),
 					leafCount						= blockTree->GetLeafCount   (),
+					matrixSize						= doLeaves?leafCount:iNodeCount,
 					siteCount						= dsf->GetSiteCount			(),
 					shiftForTheNode					= patternCount * alphabetDimension;
 	
@@ -849,31 +852,54 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 					branchValues,
 					postToIn;
 	
-	blockTree->MapPostOrderToInOderTraversal (postToIn);
-	supportValues.Clear				();
-	CreateMatrix					(&supportValues,iNodeCount,shiftForTheNode,false,true,false);
+	blockTree->MapPostOrderToInOderTraversal (postToIn, doLeaves == false);
+	supportValues.Clear						 ();
+	CreateMatrix					         (&supportValues,matrixSize,shiftForTheNode,false,true,false);
 	
-	ComputeSiteLikelihoodsForABlock	   (index, siteLikelihoods, scalersBaseline); // establish a baseline likelihood for each site
+	ComputeSiteLikelihoodsForABlock			 (index, siteLikelihoods, scalersBaseline); 
+													// establish a baseline likelihood for each site
 		
-	for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
-	// the prob for the last char is  (1 - sum (probs other chars))
-	{
-		branchValues.Populate			(patternCount,currentChar,0);
-		for (long branchID = 0; branchID < iNodeCount; branchID ++)
+	if (doLeaves)
+		for								(long currentChar = 0; currentChar < alphabetDimension; currentChar++)
+			// the prob for the last char is  (1 - sum (probs other chars))
 		{
-			long mappedBranchID = postToIn.lData[branchID];
-			ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
-			for (long siteID = 0; siteID < patternCount; siteID++)
+			branchValues.Populate			(patternCount,currentChar,0);
+			for (long branchID = 0; branchID < leafCount; branchID ++)
 			{
-				long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
-				_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
-				if (scaleDiff > 0)
-					ratio *= acquireScalerMultiplier(scaleDiff);
-				supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
-			}
-			blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
-		}			
-	}
+				long mappedBranchID = postToIn.lData[branchID];
+				ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID+iNodeCount, &branchValues);
+				for (long siteID = 0; siteID < patternCount; siteID++)
+				{
+					long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
+					_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+					if (scaleDiff > 0)
+						ratio *= acquireScalerMultiplier(scaleDiff);
+					supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
+				}
+				blockTree->AddBranchToForcedRecomputeList (leafCount);
+			}			
+		}
+	
+	else
+		for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
+			// the prob for the last char is  (1 - sum (probs other chars))
+		{
+			branchValues.Populate			(patternCount,currentChar,0);
+			for (long branchID = 0; branchID < iNodeCount; branchID ++)
+			{
+				long mappedBranchID = postToIn.lData[branchID];
+				ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
+				for (long siteID = 0; siteID < patternCount; siteID++)
+				{
+					long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
+					_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+					if (scaleDiff > 0)
+						ratio *= acquireScalerMultiplier(scaleDiff);
+					supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
+				}
+				blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
+			}			
+		}
 	
 	_SimpleList  conversion;
 	_AVLListXL	 conversionAVL (&conversion);

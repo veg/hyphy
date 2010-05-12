@@ -593,9 +593,11 @@ class _TheTree: public _TreeTopology {
 						// makes an AVL of with keys storing memory addresses of node<long> tree nodes
 						// and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 	
-			void		MapPostOrderToInOderTraversal	(_SimpleList&);
+			void		MapPostOrderToInOderTraversal	(_SimpleList&, bool = true);
 						// 20090306: SLKP
-						// construct a post-order -> in-order traveral map for internal nodes
+						// 20100511: SLKP
+							// construct a post-order -> in-order traveral map for internal nodes
+							// bool = true (internal nodes), bool = false (leaf nodes)
 		
 			void		AddBranchToForcedRecomputeList	(long idx)		{forceRecalculationOnTheseBranches << idx;}
 			void		ClearForcedRecomputeList		(void)			{forceRecalculationOnTheseBranches.Clear();}
