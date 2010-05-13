@@ -10438,7 +10438,7 @@ _AVLListX*	_TheTree::ConstructNodeToIndexMap (bool doINodes)
 void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere, bool doINodes)
 {
 	_AVLListX*			nodeMapper    = ConstructNodeToIndexMap (doINodes);
-	_CalcNode*			traversalNode = StepWiseTraversal		(true);
+	_CalcNode*			traversalNode = doINodes?StepWiseTraversal(true):DepthWiseTraversal(true);
 	
 	long				allNodeCount = 0;
 	
@@ -10450,7 +10450,7 @@ void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere, bool doINo
 		if (isTip && !doINodes || !isTip && doINodes)
 			storeHere.lData[nodeMapper->GetXtra (nodeMapper->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
 
-		traversalNode = StepWiseTraversal(false);
+		traversalNode = doINodes?StepWiseTraversal(false):DepthWiseTraversal(false);
 	}
 	
 	nodeMapper->DeleteAll(false);DeleteObject (nodeMapper);

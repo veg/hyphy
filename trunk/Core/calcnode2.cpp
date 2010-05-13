@@ -370,9 +370,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			{
 				long siteState;
 				
-				if (setBranch == nodeCode + flatLeaves.lLength)
+				if (setBranch == nodeCode + flatTree.lLength)
 					siteState = setBranchTo[siteOrdering.lData[siteID]] ;
-					
 				else
 					siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
 				if (siteState >= 0)

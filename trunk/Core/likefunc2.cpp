@@ -320,7 +320,8 @@ void	_LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList& do
 		
 		if (i==0)
 		{
-			tree->AddNodeNamesToDS (&target,doMarginal == false && sample == false && doLeaves,true,2*(doMarginal == false && sample == false && doLeaves)); // store internal node names in the dataset
+			tree->AddNodeNamesToDS (&target,sample == false && doLeaves,!(doLeaves && doMarginal) ,2*(doMarginal == false && sample == false && doLeaves));
+				// store internal or leaf node names in the dataset
 			sequenceCount = target.GetNames().lLength;
 		}
 		else
@@ -860,25 +861,29 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 													// establish a baseline likelihood for each site
 		
 	if (doLeaves)
+	{
 		for								(long currentChar = 0; currentChar < alphabetDimension; currentChar++)
-			// the prob for the last char is  (1 - sum (probs other chars))
 		{
 			branchValues.Populate			(patternCount,currentChar,0);
 			for (long branchID = 0; branchID < leafCount; branchID ++)
 			{
+				blockTree->AddBranchToForcedRecomputeList (branchID);
 				long mappedBranchID = postToIn.lData[branchID];
-				ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID+iNodeCount, &branchValues);
+				ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, 
+												 branchID+iNodeCount, &branchValues);
 				for (long siteID = 0; siteID < patternCount; siteID++)
 				{
 					long scaleDiff = (scalersSpecState.lData[siteID]-scalersBaseline.lData[siteID]);
 					_Parameter ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
+					
 					if (scaleDiff > 0)
 						ratio *= acquireScalerMultiplier(scaleDiff);
 					supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
 				}
-				blockTree->AddBranchToForcedRecomputeList (leafCount);
+				blockTree->AddBranchToForcedRecomputeList (branchID);
 			}			
 		}
+	}
 	
 	else
 		for								(long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
@@ -906,14 +911,14 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 	_String		 codeBuffer    (unitLength, false);
 	_List	     *result	   = new _List;
 	
-	for (long k = 0; k < iNodeCount; k++)
+	for (long k = 0; k < matrixSize; k++)
 		result->AppendNewInstance (new _String(siteCount*unitLength,false));
 	
 	for (long siteID = 0; siteID < patternCount; siteID++)
 	{
 		_SimpleList*	patternMap = (_SimpleList*) expandedSiteMap (siteID);
 				
-		for  (long nodeID = 0; nodeID < iNodeCount ; nodeID++)
+		for  (long nodeID = 0; nodeID < matrixSize ; nodeID++)
 		{
 			long			mappedNodeID = postToIn.lData[nodeID];
 			_Parameter		max_lik     = 0.,	
@@ -921,29 +926,48 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 							*scores		= supportValues.theData + shiftForTheNode*mappedNodeID +  siteID*alphabetDimension;
 			long			max_idx     = 0;
 
-			for (long charID = 0; charID < alphabetDimension-1; charID ++)
+			for (long charID = 0; charID < alphabetDimension-(!doLeaves); charID ++)
 			{
 				sum+=scores[charID];
 				if (scores[charID] > max_lik)
 				{
 					max_idx = charID; max_lik = scores[charID];
+					
 				}
 			}
-			
 				   
 			//if (fabs(scores[alphabetDimension-1]+sum-1.) > 0.1)
 			//	WarnError (_String("Bad monkey!") & scores[alphabetDimension-1] & ":" & (1.-sum) );
 			
-			scores[alphabetDimension-1] = 1. - sum;
+			if (doLeaves)
+			{
+				sum = 1./sum;
+				for (long charID = 0; charID < alphabetDimension; charID ++)
+				{
+					scores [charID] *= sum;
+					/*if (siteID == 16)
+						printf ("Site %ld Leaf %ld (%ld) Char %ld = %g\n", siteID, nodeID, mappedNodeID, charID, 
+								supportValues.theData[mappedNodeID*shiftForTheNode + siteID*alphabetDimension + charID]);
+					 */
+		
+				}
+			}
+			else
+			{
+				scores[alphabetDimension-1] = 1. - sum;
 
-			if (scores[alphabetDimension-1] > max_lik)
-				max_idx = alphabetDimension-1; 
+				if (scores[alphabetDimension-1] > max_lik)
+					max_idx = alphabetDimension-1; 
+			}
 						
 			dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(max_idx), unitLength, codeBuffer.sData, &conversionAVL);
 			_String  *sequence   = (_String*) (*result)(mappedNodeID);
 			
 			for (long site = 0; site < patternMap->lLength; site++)
 			{
+				//if (patternMap->lData[site] == 119)
+				//	printf ("%ld\n", 
+				//			siteID);
 				char* storeHere = sequence->sData + patternMap->lData[site]*unitLength;
 				for (long charS = 0; charS < unitLength; charS ++)
 					storeHere[charS] = codeBuffer.sData[charS];
