@@ -35,6 +35,10 @@ function WriteSeparatedTable (fileName, column_headers, numeric_data, first_colu
 	else
 	{
 		_rd2 = Rows (numeric_data);
+		if (_rd == 0)
+		{
+			_rd = Columns (numeric_data);
+		}
 		for (_gb_idx = 0; _gb_idx < _rd2; _gb_idx = _gb_idx + 1)
 		{
 			fprintf (_f2r, "\n", numeric_data[_gb_idx][0]);
