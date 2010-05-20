@@ -53,6 +53,8 @@ _geneticCodeOptionMatrix   =
 			};
 			
 _hyphyAAOrdering		   = "FLIMVSPTAYXHQNKDECWRG";
+_alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
+
 _aaLetterToCode			   = {};
 
 for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
@@ -127,18 +129,54 @@ function CompareCodonProperties (codon1, codon2, code)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function RawToSense (code)
+/* 
+    given:
+    		genetic code,
+    
+    returns a 64x1 matrix mapping raw codons to sense codons only (stops are mapped to -1)
+*/
+{
+	_codonMap = {64,1};
+	
+	_cShift = 0;
+	for (_ci = 0; _ci < 64; _ci = _ci + 1)
+	{
+		if (code[_ci] == 10)
+		{
+			_cShift = _cShift + 1;
+			_codonMap [_ci] = -1;
+		}
+		else
+		{
+			_codonMap [_ci] = _ci - _cShift;
+		}
+	}
+	
+	return _codonMap;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 function IsTransition (pair)
 /* 
     given:
     		a pair of nucleotides (as a 1x2 matrix, e.g. as returned by CompareCodonProperties["1"]),
     
-    returns whether the substitution is a transition 
+    returns 1 if the substitution is a transition 
+    returns -1 if the substitution is a transversion
+    
     RETURNS 0 IF NO SUBSTITUTION TOOK PLACE
 */
 {
 	if (pair[0] != pair[1])
 	{
-		return (Abs(pair[0]-pair[1])%2 == 0);
+		if (Abs(pair[0]-pair[1])%2 == 0)
+		{
+			return 1;
+		}
+		return -1;
 	}
 	return 0;
 }
