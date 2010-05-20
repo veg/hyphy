@@ -80,6 +80,87 @@ if (!skipCodeSelectionStep)
 	ApplyGeneticCodeTable (modelType);
 }
 
+/*----------------------------------------------------------------------------------------------------------*/
+
+function CompareCodonProperties (codon1, codon2, code)
+/* given: 
+		 codon1 (a number between 0 and 63 in AAA...TTT encoding), 
+		 codon2 (same encoding),
+		 code (the genetic code)
+		 
+	returns a dictionary with the following keys:
+	
+		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
+		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
+		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
+		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
+										   for example, codon1 = TCT, codon 2 = GCT, this matrix will be {{3,2}}
+
+		"2"				: ... same for the second position
+		"3"				: ... same for the third  position		
+*/		 
+
+{
+	_codonCompResult = {};
+	
+	_codonCompResult ["NONSYNONYMOUS"] = (code[codon1] != code[codon2]);
+	_codonCompResult ["BY_POSITION"]   = {1,3};
+	
+	for (_ci = 0; _ci < 3; _ci = _ci + 1)
+	{
+		
+		_positionMatrix = {1,2};
+		_positionMatrix [0] = codon1 % 4;
+		_positionMatrix [1] = codon2 % 4;
+	
+		_codonCompResult[1+_ci] = _positionMatrix;
+		(_codonCompResult ["BY_POSITION"])  [_ci] = (_positionMatrix [0] != _positionMatrix [1]);
+		
+		codon1 = codon1 $ 4;
+		codon2 = codon2 $ 4;
+	}
+	
+	_codonCompResult ["DIFFERENCES"] = (_codonCompResult ["BY_POSITION"])[0] + (_codonCompResult ["BY_POSITION"])[1] + (_codonCompResult ["BY_POSITION"])[2];
+	
+	return _codonCompResult;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function IsTransition (pair)
+/* 
+    given:
+    		a pair of nucleotides (as a 1x2 matrix, e.g. as returned by CompareCodonProperties["1"]),
+    
+    returns whether the substitution is a transition 
+    RETURNS 0 IF NO SUBSTITUTION TOOK PLACE
+*/
+{
+	if (pair[0] != pair[1])
+	{
+		return (Abs(pair[0]-pair[1])%2 == 0);
+	}
+	return 0;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function IsStop (codon, code)
+
+/* 
+	given: 
+		 codon (a number between 0 and 63 in AAA...TTT encoding)
+		 code (the genetic code)
+		 
+	returns 
+		 whether or not the codon is a stop codon
+*/		 
+
+{
+	return code[codon] == 10;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
 
 function ComputeCodonCodeToStringMap (genCode)
 {
@@ -99,6 +180,8 @@ function ComputeCodonCodeToStringMap (genCode)
 	}
 	return _codonMap;
 }
+
+/*----------------------------------------------------------------------------------------------------------*/
 
 
 function ApplyGeneticCodeTable (myModelType)
