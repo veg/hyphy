@@ -7397,7 +7397,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 			long mID = FindModelName(namedspacedMM);
 			
 			if (mID<0 && !useNoModel.Equal((_String*)parameters(0)))
-				WarnError(*(_String*)parameters(0) & " is not a valid model ident in call to UseMatrix.");
+				WarnError(*(_String*)parameters(0) & " is not a valid model ident in call to UseModel.");
 			else
 				lastMatrixDeclared = mID;
 		}

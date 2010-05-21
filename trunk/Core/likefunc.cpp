@@ -2099,6 +2099,12 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	#ifdef _UBER_VERBOSE_LF_DEBUG
 		printf ("%g\n", result);
 	#endif		
+		if (isnan (result))
+		{
+			ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
+			return -A_LARGE_NUMBER;
+		}
+			
 		return result;
 	}
 

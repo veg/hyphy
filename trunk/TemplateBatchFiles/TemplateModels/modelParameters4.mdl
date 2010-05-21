@@ -5,6 +5,7 @@
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
 	ChoiceList (rateType,"Rate Variation Options",1,SKIP_NONE,
+				"None","Single dN/dS",
 				"Neutral Model",   "dN/dS is either 0 (with probability p), or 1 (with probability 1-p).",
 				"Selection Model", "dN/dS is either 0 (with probability p1), 1 (with probability p2) or W (1-p1-p2).",
 				"Discrete Model",  "dN/dS comes from an uncontrained discrete distribution with 3 bins.",
