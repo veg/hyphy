@@ -51,7 +51,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 	
 	ReportWarning (_String("Entered _BayesianGraphicalModel::ExportModel()"));
 	
-	if (theData)
+	if (theData.GetHDim() > 0)
 	{
 		_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 		_String		bgmNameLocal;
@@ -65,7 +65,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 		
 		for (long node = 0; node < num_nodes; node++)
 		{
-			nodeKey = bgmNameLocal & "[\"Node" & node & "\"]";
+			nodeKey = bgmNameLocal & "[\"" & node & "\"]";
 			
 			rec << nodeKey;
 			rec << " = {};\n";
@@ -158,11 +158,11 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 				}
 				
 				n_ij.Populate (num_parent_combos, 0, 0);
-				pa_indexing.Populate (theData->GetHDim(), 0, 0);
+				pa_indexing.Populate (theData.GetHDim(), 0, 0);
 				
 				if (d_parents.lLength > 0)
 				{
-					for (long obs = 0; obs < theData->GetHDim(); obs++)
+					for (long obs = 0; obs < theData.GetHDim(); obs++)
 					{
 						long	index		= 0,
 								multiplier	= 1;
@@ -171,7 +171,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 						{
 							long	this_parent		= parents.lData[par];
 							
-							index += (*theData)(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
+							index += theData(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
 							multiplier *= num_levels.lData[this_parent];
 						}
 						
@@ -180,7 +180,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 					}
 				}
 				else
-					n_ij.lData[0] = theData->GetHDim();
+					n_ij.lData[0] = theData.GetHDim();
 				
 				
 				// set CG hyperparameter priors (independent of discrete parent config)
@@ -213,15 +213,15 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 					_Matrix		zbpa (n_ij.lData[pa], k+1, false, true),
 								yb (n_ij.lData[pa], 1, false, true);
 					
-					for (long count_n = 0, obs = 0; obs < theData->GetHDim(); obs++)
+					for (long count_n = 0, obs = 0; obs < theData.GetHDim(); obs++)
 					{
 						if (pa_indexing.lData[obs] == pa)
 						{
 							zbpa.Store (count_n, 0, 1);
 							for (long cpar = 0; cpar < k; cpar++)
-								zbpa.Store (count_n, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+								zbpa.Store (count_n, cpar+1, theData(obs, c_parents.lData[cpar]));
 							
-							yb.Store (count_n, 0, (*theData)(obs, node));
+							yb.Store (count_n, 0, theData(obs, node));
 							
 							count_n++;
 						}
@@ -502,7 +502,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 	}
 	
 	
-	if (!theData)
+	if (theData.GetHDim() == 0)
 	{
 		WarnError (_String ("Uh-oh, there's no node score cache nor is there any data matrix to compute scores from!"));
 		return 0.;
@@ -541,9 +541,9 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 						pa_indexing;		// track discrete parent combinations per observation
 		
 		n_ij.Populate (num_parent_combos, 0, 0);
-		pa_indexing.Populate (theData->GetHDim(), 0, 0);
+		pa_indexing.Populate (theData.GetHDim(), 0, 0);
 		
-		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		for (long obs = 0; obs < theData.GetHDim(); obs++)
 		{
 			long	index		= 0,
 					multiplier	= 1;
@@ -552,7 +552,7 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 			{
 				long	this_parent		= parents.lData[par];
 				
-				index += (*theData)(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
+				index += theData(obs, this_parent) * multiplier;	// max index = sum (parent * levels(parent))
 				multiplier *= num_levels.lData[this_parent];
 			}
 			
@@ -596,16 +596,16 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 			_Matrix		zbpa (n_ij.lData[pa], k+1, false, true),
 						yb (n_ij.lData[pa], 1, false, true);
 			
-			for (long count_n = 0, obs = 0; obs < theData->GetHDim(); obs++)
+			for (long count_n = 0, obs = 0; obs < theData.GetHDim(); obs++)
 			{
 				if (pa_indexing.lData[obs] == pa)
 				{
 					// populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
 					zbpa.Store (count_n, 0, 1);
 					for (long cpar = 0; cpar < k; cpar++)
-						zbpa.Store (count_n, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+						zbpa.Store (count_n, cpar+1, theData(obs, c_parents.lData[cpar]));
 					
-					yb.Store (count_n, 0, (*theData)(obs, node_id));
+					yb.Store (count_n, 0, theData(obs, node_id));
 					
 					count_n++;
 				}
@@ -647,20 +647,20 @@ _Parameter _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Simpl
 					phi		= prior_scale (node_id, 0);
 		
 		
-		_Matrix		zbpa (theData->GetHDim(), k+1, false, true),
-					yb (theData->GetHDim(), 1, false, true);
+		_Matrix		zbpa (theData.GetHDim(), k+1, false, true),
+					yb (theData.GetHDim(), 1, false, true);
 		
-		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		for (long obs = 0; obs < theData.GetHDim(); obs++)
 		{
 			zbpa.Store (obs, 0, 1);	// just a bunch of 1's
 			for (long cpar = 0; cpar < k; cpar++)
-				zbpa.Store (obs, cpar+1, (*theData)(obs, c_parents.lData[cpar]));
+				zbpa.Store (obs, cpar+1, theData(obs, c_parents.lData[cpar]));
 			
-			yb.Store (obs, 0, (*theData)(obs, node_id));
+			yb.Store (obs, 0, theData(obs, node_id));
 		}
 		
 		
-		log_score = BottcherScore (yb, zbpa, tau, mu, rho, phi, theData->GetHDim());
+		log_score = BottcherScore (yb, zbpa, tau, mu, rho, phi, theData.GetHDim());
 	}
 	
 	
@@ -783,7 +783,7 @@ _Parameter	_BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa,
 	pa_log_score += -(rho + batch_size)/2. * log(1. + temp_mat(0,0));
 	
 	
-	//ReportWarning (_String("BottcherScore() returning with log L = ") & pa_log_score);
+	ReportWarning (_String("BottcherScore() returning with log L = ") & pa_log_score);
 	
 	return pa_log_score;
 }
@@ -898,9 +898,9 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	// allocate space to matrices
 	CreateMatrix (&n_ijk, num_parent_combos, r_i, false, true, false);
 	CreateMatrix (&n_ij, num_parent_combos, 1, false, true, false);
-	CreateMatrix (&data_deep_copy, theData->GetHDim(), family_size, false, true, false);
+	CreateMatrix (&data_deep_copy, theData.GetHDim(), family_size, false, true, false);
 	
-	pa_indices.Populate(theData->GetHDim(), 0, 0);
+	pa_indices.Populate(theData.GetHDim(), 0, 0);
 	
 	
 	// allocate space to _GrowingVector object -- used for imputing discrete nodes only
@@ -915,10 +915,10 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	
 	
 	// make deep copy, annotate which entries are missing, and tally observed states
-	for (long pa_index, row = 0; row < theData->GetHDim(); row++)
+	for (long pa_index, row = 0; row < theData.GetHDim(); row++)
 	{
 		pa_index	= 0;
-		child_state	= (*theData) (row, node_id);
+		child_state	= theData (row, node_id);
 		
 		data_deep_copy.Store (row, 0, child_state);	// first entry in row always stores child state
 		
@@ -926,7 +926,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 		for (long fnode, fstate, findex = 0; findex < family_size; findex++)
 		{
 			fnode = (findex == 0) ? node_id : parents.lData[findex-1];	// parent node, get network-wide index
-			fstate = (*theData) (row, fnode);
+			fstate = theData (row, fnode);
 			data_deep_copy.Store (row, findex, fstate);
 			
 			if (node_type.lData[fnode] == 0)	// discrete node
@@ -1008,7 +1008,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 	{
 		row		= is_missing.lData[missing_idx] / family_size;
 		col		= is_missing.lData[missing_idx] % family_size;
-		fnode	= (col == 0) ? node_id : parents.lData[col];
+		fnode	= (col == 0) ? node_id : parents.lData[col-1];
 		
 		if (node_type.lData[fnode] == 0)	// discrete node
 		{
@@ -1210,7 +1210,7 @@ _Parameter _BayesianGraphicalModel::ImputeNodeScore (long node_id, _SimpleList &
 		
 		
 		// partition data set by discrete parent state combination
-		for (long multiplier, obs = 0; obs < theData->GetHDim(); obs++)
+		for (long multiplier, obs = 0; obs < theData.GetHDim(); obs++)
 		{
 			pa_index	= 0;
 			multiplier	= 1;	// takes place of num_parent_combos
@@ -1584,9 +1584,9 @@ void _BayesianGraphicalModel::ComputeParameters(_Matrix * structure)
 				// tally Dirichlet hyperparameters
 				CreateMatrix (&n_ijk, 1, r_i, false, true, false);
 				
-				for (long k, obs = 0; obs < theData->GetHDim(); obs++)
+				for (long k, obs = 0; obs < theData.GetHDim(); obs++)
 				{
-					k = (*theData)(obs, node);	// child state
+					k = theData(obs, node);	// child state
 					n_ijk.Store (0, k, n_ijk(0,k) + a_ijk);
 					n_i += n_ijk(0,k);
 				}
@@ -1631,13 +1631,13 @@ void _BayesianGraphicalModel::ComputeParameters(_Matrix * structure)
 			
 			
 			// tally N_ijk and N_ij's
-			for (long child_state, obs = 0; obs < theData->GetHDim(); obs++)
+			for (long child_state, obs = 0; obs < theData.GetHDim(); obs++)
 			{
-				child_state	=  (*theData)(obs, node);
+				child_state	=  theData(obs, node);
 				pa_index	= 0;
 				
 				for (long par = 0; par < parents.lLength; par++)
-					pa_index += (*theData)(obs, parents.lData[par]) * multipliers.lData[par];
+					pa_index += theData(obs, parents.lData[par]) * multipliers.lData[par];
 				
 				n_ijk.Store (pa_index, child_state, n_ijk(pa_index, child_state) + 1);
 				n_ij.Store (pa_index, 0, n_ij(pa_index,0) + 1);

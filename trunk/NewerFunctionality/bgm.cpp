@@ -534,6 +534,7 @@ void	Bgm::SetGraphMatrix (_Matrix *graph)
 	BufferToConsole (bug);
 	*/
 	dag = (_Matrix &) (*graph);	// matrix assignment
+	ReportWarning (_String("set graph matrix to:\n") & (_String *) dag.toStr() & "\n" );
 }
 
 
@@ -547,6 +548,7 @@ void	Bgm::SetBanMatrix (_Matrix *banMx)
 void	Bgm::SetEnforceMatrix (_Matrix *enforceMx)
 {
 	enforced_edges = (_Matrix &) (*enforceMx);
+	ReportWarning (_String("Set enforce matrix to ") & (_String *) enforced_edges.toStr() & "\n" );
 }
 
 void	Bgm::SetBestOrder (_SimpleList * orderList)
@@ -604,9 +606,10 @@ void	Bgm::ResetGraph (_Matrix * g)
 		{
 			for (long col = 0; col < num_nodes; col++)
 			{
-				g->Store (row, col, enforced_edges (row, col));
+				g->Store (row, col, dag (row, col));
 			}
 		}
+		ReportWarning (_String("Reset graph to dag argument\n"));
 	}
 	else
 	{
@@ -1738,16 +1741,16 @@ void Bgm::CacheNodeScores (void)
 #else
 	
 	
-	#if !defined __UNIX__ || defined __HEADLESS__
-		TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-	#if !defined __HEADLESS__
-		SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
-	#else
-		SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
-	#endif	
-		_Parameter	seconds_accumulator = .0,
+#if !defined __UNIX__ || defined __HEADLESS__
+	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+#if !defined __HEADLESS__
+	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+#else
+	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
+#endif	
+	_Parameter	seconds_accumulator = .0,
 				temp;
-	#endif
+#endif
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
@@ -1840,19 +1843,21 @@ void Bgm::CacheNodeScores (void)
 				break;
 		}
 #endif
-}
-
+		
+	} // end for loop over nodes
 #endif
-	
+
+#if defined __HYPHYMPI__
+	}
+#endif
+
 #if !defined __UNIX__ || defined __HEADLESS__
 	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE_DONE);
 #endif
 	
 	scores_cached = TRUE;
 		
-#if defined __HYPHYMPI__
-	}
-#endif
+
 }
 
 
@@ -2338,13 +2343,6 @@ _Matrix *	Bgm::Optimize (void)
 //___________________________________________________________________________________________
 _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 {
-#ifdef __DEBUG_GMCMC__	
-	char		bug [255];
-	sprintf (bug, "Entered GraphMCMC()\n");
-	BufferToConsole (bug);
-#endif
-	
-	
 	_Matrix		*	proposed_graph	= new _Matrix (num_nodes, num_nodes, false, true),
 				*	orderMx			= new _Matrix (num_nodes, num_nodes, false, true);
 	
@@ -2362,8 +2360,8 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 	_SimpleList		current_order;
 	
 	
-	
-	checkParameter (mcmcSteps, mcmc_steps, 0);			// parse HBL settings
+	// parse HBL settings
+	checkParameter (mcmcSteps, mcmc_steps, 0);
 	if (mcmc_steps == 0)
 	{
 		_String oops ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
@@ -2383,62 +2381,113 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 	checkParameter (numRandomize, num_randomize, num_nodes*num_nodes);
 	
 	
-	
+	//	Contents:	(1) chain trace; 
+	//				(2) model-averaged edge probabilities; 
+	//				(3) best graph;
 	_Matrix		* result;
 	
 	checkPointer (result = new _Matrix ( (mcmc_samples > num_nodes*num_nodes) ? mcmc_samples : num_nodes*num_nodes, 3, false, true));
-								//	Contents:	(1) chain trace; 
-								//				(2) model-averaged edge probabilities; 
-								//				(3) best graph;
 	
 	
 	
-	if (best_node_order.lLength == 0)
+	//  Set current graph to member object (dag, an empty graph by default)
+	ResetGraph (proposed_graph);
+	
+	//  does this graph conform to enforced/banned edges, maximum parentage settings?
+	_SimpleList pars;
+	for (long chi = 0; chi < num_nodes; chi++)
 	{
-		if (fixed_order)
+		pars.Clear();
+		for (long par = 0; par < num_nodes; par++)
+		{
+			if ( (*proposed_graph)(par,chi) == 1)
+			{ 
+				if ( banned_edges(par,chi) )
+				{
+					proposed_graph->Store(par, chi, 0);
+					ReportWarning(_String("Deleted banned edge ") & par & "->" & chi & " from graph");
+				}
+				pars << par;
+			}
+			else if ( (*proposed_graph)(par,chi) == 0 && enforced_edges(par,chi) )
+			{
+				proposed_graph->Store(par, chi, 1);
+				ReportWarning(_String("Restored enforced edge ") & par & "->" & chi & " to graph");
+			}
+		}
+		
+		if (pars.lLength > max_parents.lData[chi])
+		{
+			ReportWarning(_String("Number of parents (") & (long)pars.lLength & ")exceed maximum setting for child node " & chi & ": " & max_parents.lData[chi] & "\n");
+			pars.Permute(1);
+			for (long p = 0; p < (long)pars.lLength - max_parents.lData[chi]; p++)
+			{
+				proposed_graph->Store(pars.lData[p], chi, 0);
+				ReportWarning(_String("Deleted excess edge ") & pars.lData[p] & "->" & chi & " from graph");
+			}
+		}
+	}
+	
+	
+	
+	if (fixed_order)
+	{
+		// coerce graph to conform to user-defined node order
+		if (best_node_order.lLength == 0)
 		{
 			_String	oops ("Cannot run fixed-order graph MCMC without defined order (via order-MCMC). Run CovarianceMatrix(receptacle, BGM) first.");
 			WarnError (oops);
 			
 			result = new _Matrix();		// return an empty matrix
 		}
-		proposed_order->Populate (num_nodes, 0, 1);
-		proposed_order->Permute (1);
-		ReportWarning (_String("Initializing node order to random permutation: ") & (_String *) proposed_order->toStr());
+		else
+		{
+			proposed_order->Populate(num_nodes, 0, 0);	// allocate memory
+			for (long i = 0; i < num_nodes; i++)
+				proposed_order->lData[i] = best_node_order.lData[i];
+			
+			ReportWarning (_String("Transferring best node order to proposal: ") & (_String *)proposed_order->toStr());
+		}
 	}
 	else
 	{
-		proposed_order->Populate(num_nodes, 0, 0);	// allocate memory
-		
-		for (long i = 0; i < num_nodes; i++)
+		if (best_node_order.lLength == 0)
 		{
-			proposed_order->lData[i] = best_node_order.lData[i];
-		}
-		
-		ReportWarning (_String("Transferring best node order to proposal: ") & (_String *)proposed_order->toStr());
-	}
-	
-	
-	// make sure that the initial order complies with enforced edges
-	for (long pindex = 0; pindex < num_nodes-1; pindex++)
-	{
-		for (long parent = proposed_order->lData[pindex], cindex = pindex+1; cindex < num_nodes; cindex++)
-		{
-			long	child	= proposed_order->lData[cindex];
-			
-			if (enforced_edges(parent,child)==1 && pindex < cindex)
+			// quickly generate a node order from graph
+			for (long order_index, onode, node = 0; node < num_nodes; node++)
 			{
-				if (fixed_order)
+				// locate the lowest-ranked parent in the order, if any
+				for (order_index = 0; order_index < proposed_order->lLength; order_index++)
 				{
-					_String oops ("Forced to modify fixed order to comply with enforced edge matrix.\n");
-					WarnError (oops);
+					onode = proposed_order->lData[order_index];
+					if ((*proposed_graph) (onode, node))
+					{
+						// insert new node immediately left of this parent
+						proposed_order->InsertElement ((BaseRef) node, order_index, false, false);
+						break;
+					}
 				}
-				
-				proposed_order->lData[pindex] = child;		// swap ordering
-				proposed_order->lData[cindex] = parent;
+				// if reached end of order list without finding a parent, push node onto start of list
+				if (order_index == proposed_order->lLength)
+					proposed_order->InsertElement ((BaseRef) node, 0, false, false);
 			}
+			ReportWarning(_String("Constructed node order from graph:\n") & (_String *)proposed_order->toStr() & "\n");
+		}
+		else
+		{
+			// restore order
+			proposed_order->Populate(5,0,1);
+			for (long i = 0; i < num_nodes; i++)
+				proposed_order->lData[i] = best_node_order.lData[i];
 		}
 	}
+	
+	
+	// randomize graph
+	if (num_randomize > 0)
+		RandomizeGraph (proposed_graph, proposed_order, (long)num_randomize, fixed_order);
+	else
+		ReportWarning(_String("NUM_RANDOMIZE set to 0, skipping initial RandomizeGraph()\n"));
 	
 	
 	
@@ -2453,7 +2502,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 			orderMx->Store (proposed_order->lData[j], child, (j > i) ? 1 : 0);
 		}
 	}
-	
+	ReportWarning(_String("Populated order matrix\n"));
 	
 	
 	// status line
@@ -2468,38 +2517,15 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 #endif
 	
 	
-	//  Reset the graph to either an empty graph, or enforced edges if defined
-	ResetGraph (proposed_graph);
 	
-#ifdef __DEBUG_GMCMC__
-	sprintf (bug, "Reset graph to:\n");
-	BufferToConsole (bug);
-	PrintGraph (proposed_graph);
-#endif
 	
-	RandomizeGraph (proposed_graph, proposed_order, (long)num_randomize, fixed_order);
-	
-#ifdef __DEBUG_GMCMC__
-	sprintf (bug, "Randomized graph:\n");
-	BufferToConsole (bug);
-	PrintGraph (proposed_graph);
-	
-	sprintf (bug, "Initial node order:");
-	BufferToConsole (bug);
-	for (long rex = 0; rex < num_nodes; rex++)
-	{
-		sprintf (bug, "%d ", proposed_order->lData[rex]);
-		BufferToConsole (bug);
-	}
-	NLToConsole ();
-#endif
 	
 	current_order = (*proposed_order);
 	current_graph = (_Matrix &) (*proposed_graph);
 	best_graph = (_Matrix &) (*proposed_graph);
 	best_score = proposed_score = current_score = Compute(proposed_graph);
 	
-	
+	ReportWarning(_String("Initiating MCMC with graph:\n") & (_String *) current_graph.toStr() );
 	
 	
 	// MAIN LOOP
@@ -2614,7 +2640,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 #else
 		if (step % (long)((mcmc_steps + mcmc_burnin)/100) == 0)
 		{
-			ReportWarning (_String ("GraphMCMC at step ") & step & " of " & (mcmc_steps+mcmc_burnin) & "\n");
+			ReportWarning (_String ("GraphMCMC at step ") & step & " of " & (mcmc_steps+mcmc_burnin) & " with posterior " & current_score & " and graph:\n" & (_String *)current_graph.toStr() & " and order:\n" & (_String *)current_order.toStr() & "\n");
 		}
 #endif
 	}
@@ -2628,6 +2654,11 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 			result->Store (offset+col, 2, best_graph(row, col));
 		}
 	}
+	
+	
+	// set dag member to last visit graph
+	dag = (_Matrix &) current_graph;
+	best_node_order = current_order;
 	
 	delete (proposed_graph);
 	delete (orderMx);
@@ -2752,7 +2783,6 @@ _Parameter		Bgm::LogSumExpo (_GrowingVector * log_values)
 			max_log = this_log;
 		}
 	}
-	
 	
 	// go back through log values and increment by max log value
 	//		This will cause some underflow for the smallest values, but we can
@@ -3406,6 +3436,9 @@ void	Bgm::SerializeBgm (_String & rec)
 	checkParameter (mcemMaxSteps, mcem_max_steps, 10000);
 	checkParameter (mcemBurnin, mcem_burnin, 1000);
 	checkParameter (mcemSampleSize, mcem_sample_size, 100);
+	
+	rec << "PRINT_DIGITS=-1;\n";
+	rec << "USE_MPI_CACHING=1;\n";
 	
 	// write utility functions
 	rec << "function make_dnode (id,n,maxp)\n";

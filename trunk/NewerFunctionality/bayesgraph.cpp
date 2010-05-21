@@ -22,15 +22,16 @@ _String		_HYBgm_NODE_INDEX	("NodeID"),
 			_HYBgm_PRIOR_MEAN	("PriorMean"),		/* for continuous (Gaussian) nodes */
 			_HYBgm_PRIOR_PRECISION	("PriorPrecision"),
 			_HYBgm_PRIOR_SCALE	("PriorScale"),
-
+			
 			/*SLKP 20070926; add string constants for progress report updates */
 			_HYBgm_STATUS_LINE_MCMC			("Running Bgm MCMC"),
 			_HYBgm_STATUS_LINE_MCMC_DONE	("Finished Bgm MCMC"),
 			_HYBgm_STATUS_LINE_CACHE		("Caching Bgm scores"),
 			_HYBgm_STATUS_LINE_CACHE_DONE	("Done caching Bgm scores"),
 			/*SLKP*/
-
+			
 			_HYBgm_METHOD_KEY ("BGM_OPTIMIZATION_METHOD"),
+			_HYBgm_MPI_CACHING ("USE_MPI_CACHING"),
 			
 			_HYBgm_K2_RESTARTS ("BGM_K2_RESTARTS"),
 			_HYBgm_K2_RANDOMIZE ("BGM_K2_RANDOMIZE"),
@@ -43,7 +44,7 @@ _String		_HYBgm_NODE_INDEX	("NodeID"),
 
 			_HYBgm_MCMC_PROBSWAP	("BGM_MCMC_PROBSWAP"),
 			_HYBgm_MCMC_MAXFAILS	("BGM_MCMC_MAXFAILS"),
-
+			
 			_HYBgm_IMPUTE_MAXSTEPS	("BGM_IMPUTE_MAXSTEPS"),
 			_HYBgm_IMPUTE_BURNIN	("BGM_IMPUTE_BURNIN"),
 			_HYBgm_IMPUTE_SAMPLES	("BGM_IMPUTE_SAMPLES"),
@@ -170,9 +171,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 	long				global_max_parents	= 0;
 	_Constant *			avl_val;
 	
-	
-	
-	theData = NULL;
+	node_names.Clear();
 	
 	
 	// the fundamental defining characteristic of _BayesianGraphicalModel objects
@@ -188,6 +187,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 	CreateMatrix (&prior_scale, num_nodes, 1, false, true, false);
 	
 	CreateMatrix (&constraint_graph, num_nodes, num_nodes, false, true, false);
+	
 	
 	// allocate space for _SimpleList objects
 	node_type.Populate (num_nodes, 0, 0);
@@ -209,6 +209,13 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 		//										"PriorMean"		- hyperparameter for Gaussian node
 		//										"PriorPrecision" - hyperparameter for Gaussian node
 		//										"PriorScale"	- fourth hyperparameter for Gaussian node
+		
+		_String name = (_String *) (this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING))->toStr();
+		
+		node_names && (const char *) name;	// append a pointer to _String duplicate
+		
+		// DEBUGGING
+		ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
 		
 		
 		// node type (0 = discrete, 1 = continuous)
@@ -399,15 +406,16 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 	
 	if (data->GetVDim() == num_nodes)
 	{
-		if (theData) DeleteObject (theData);	// purge duplicate from memory (makeDynamic)
+		// if (theData) DeleteObject (theData);	
+		// purge duplicate from memory (makeDynamic)
 		
-		theData = data;	// reassign pointer
-		theData->CheckIfSparseEnough (TRUE);
+		theData = (_Matrix &) *data;		// duplicate matrix to member variable
+		theData.CheckIfSparseEnough (TRUE);
 		
 		scores_cached = FALSE;
 		
 		
-		for (long nrows = theData->GetHDim(), node = 0; node < num_nodes; node++)
+		for (long nrows = theData.GetHDim(), node = 0; node < num_nodes; node++)
 		{
 			// if discrete node, compute number of levels and missingness
 			if (node_type.lData[node] == 0)
@@ -416,7 +424,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 				
 				for (long val, row = 0; row < nrows; row++)
 				{
-					val = (*theData) (row, node);
+					val = theData (row, node);
 					
 					if (val < 0 && has_missing.lData[node] == 0)
 					{
@@ -470,6 +478,20 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 	return (TRUE);
 }
 
+
+
+bool _BayesianGraphicalModel::SetWeightMatrix (_Matrix * weights)
+{
+	if (weights->GetHDim() == theData.GetHDim() && weights->GetHDim() == num_nodes)
+	{
+		theWeights = (_Matrix &) *weights;
+		ReportWarning(_String("Assigned weight matrix:\n") & (_String *) theWeights.toStr());
+		return TRUE;
+	}
+	
+	WarnError (_String("Incompatible matrix dimensions in SetWeightMatrix()."));
+	return FALSE;
+}
 
 
 //__________________________________________________________________________________________________________
@@ -934,10 +956,10 @@ void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Simpl
 			For now, just export complete cases - BUT THIS WILL CAUSE PROBLEMS IF NONE OF 
 				THE CASES IS COMPLETE! - afyp, 2010/02/25
 		 */
-		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		for (long obs = 0; obs < theData.GetHDim(); obs++)
 		{
 			long	index			= 0,
-					child_state		= (*theData)(obs, dnode);
+					child_state		= theData(obs, dnode);
 			
 			if (child_state < 0)
 				continue;	/* missing observation */
@@ -945,7 +967,7 @@ void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Simpl
 			for (long par = 0; par < dparents.lLength; par++)
 			{
 				long	this_parent			= dparents.lData[par],
-						this_parent_state	= (*theData)(obs, this_parent);
+						this_parent_state	= theData(obs, this_parent);
 				
 				if (this_parent_state < 0)
 				{
@@ -974,9 +996,9 @@ void	_BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Simpl
 			n_ijk->Store(0, k, prior_sample_size(dnode,0) / num_levels.lData[dnode]);
 		
 		// update with data
-		for (long obs = 0; obs < theData->GetHDim(); obs++)
+		for (long obs = 0; obs < theData.GetHDim(); obs++)
 		{
-			long child_state = (*theData)(obs, dnode);
+			long child_state = theData(obs, dnode);
 			
 			if (child_state < 0)
 				continue;
@@ -1093,297 +1115,306 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 	
 	
 #if defined __HYPHYMPI__
-	// MPI_Init() is called in main()
-	int			size,
-				rank;
+	_Parameter	use_mpi_caching;
+	checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, 0);
 	
-	long		mpi_node;
-	
-	_Matrix		single_parent_scores (num_nodes, 1, false, true);
-	
-	_SimpleList	parents,
-				all_but_one (num_nodes-1, 0, 1),
-				aux_list,
-				nk_tuple;
-	
-	_Parameter	score;
-	
-	char		mpi_message [256];
-	
-	MPI_Status	status;	// contains source, tag, and error code
-	
-	
-	
-	MPI_Comm_size (MPI_COMM_WORLD, &size);	// number of processes
-	MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-	
-	if (rank == 0)
+	if (use_mpi_caching)
 	{
-		_String		bgmSwitch ("_BGM_SWITCH_"),
-					bgmStr;
+		ReportWarning (_String ("Using MPI to cache node scores."));
 		
-		_List	*	this_list;
+		// MPI_Init() is called in main()
+		int				size, rank;
+		long			mpi_node;
+		_SimpleList		parents,
+						all_but_one (num_nodes-1, 0, 1),
+						aux_list,
+						nk_tuple;
 		
-		SerializeBGMtoMPI (bgmStr);
+		_Parameter		score;
+		_Matrix			single_parent_scores (num_nodes, 1, false, true);
 		
-		_Matrix		* mpi_node_status = new _Matrix ((long)size, 2, false, true);
-		long		senderID;
+		MPI_Status		status;	// contains source, tag, and error code
 		
 		
+		MPI_Comm_size (MPI_COMM_WORLD, &size);	// number of processes
+		MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 		
-		// switch compute nodes from mpiNormal to bgm loop context
-		for (long ni = 1; ni < size; ni++)
+		
+		if (rank == 0)
 		{
-			MPISendString (bgmSwitch, ni);
-		}
-		
-		
-		
-		// receive confirmation of successful switch
-		for (long ni = 1; ni < size; ni++)
-		{
-			long fromNode = ni;
+			_String		bgmSwitch ("_BGM_SWITCH_"),
+						bgmStr;
 			
-			_String t (MPIRecvString (ni,fromNode));
-			if (!t.Equal (&bgmSwitch))
+			_List		* this_list;
+			
+			_Matrix		* mpi_node_status = new _Matrix ((long)size, 2, false, true);	// semaphore
+			
+			
+			// prepare message exporting _BayesianGraphicalModel object to compute nodes
+			SerializeBGMtoMPI (bgmStr);
+			ReportWarning (_String("Serialized _BayesianGraphicalModel object as:\n") & bgmStr);
+			
+			
+			// switch compute nodes from mpiNormal to bgm loop context
+			for (long ni = 1; ni < size; ni++)
+				MPISendString (bgmSwitch, ni);
+			
+			
+			// receive confirmation of successful switch
+			for (long ni = 1; ni < size; ni++)
 			{
-				WarnError (_String("Failed to confirm MPI mode switch at node ") & ni);
-				return;
-			}
-			else
-			{
-				ReportWarning (_String("Successful mode switch to Bgm MPI confirmed from node ") & ni);
-				MPISendString (bgmStr, ni);
-			}
-		}
-		
-		
-		
-		// farm out jobs to idle nodes until none are left
-		for (long node_id = 0; node_id < num_nodes; node_id++)
-		{
-			long		maxp			= max_parents.lData[node_id],
-						ntuple_receipt,
-						this_node;
-			
-			bool		remaining;
-			
-			_String		mxString,
-			mxName;
-			
-			
-			this_list	= (_List *) node_scores.lData[node_id];
-			
-			// [_SimpleList parents] should always be empty here
-			_Parameter	score;
-			
-			if (node_type.lData[node_id] == 0)
-			{
-				ComputeDiscreteScore (node_id, parents);
-			}
-			else
-			{
-				ComputeContinuousScore (node_id, parents);
-			}
-			
-			_Constant	orphan_score (score);
-			
-			
-			this_list->Clear();
-			(*this_list) && (&orphan_score);	// handle orphan score locally
-			
-			
-			if (maxp > 0)	// don't bother to farm out trivial cases
-			{
-				// look for idle nodes
-				mpi_node = 1;
-				do
+				long fromNode = ni;
+				
+				_String t (MPIRecvString (ni,fromNode));
+				if (!t.Equal (&bgmSwitch))
 				{
-					if ((*mpi_node_status)(mpi_node, 0) == 0)
-					{
-						ReportMPIError(MPI_Send(&node_id, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
-						ReportWarning (_String ("Sent child ") & node_id & " to node " & mpi_node);
-						
-						mpi_node_status->Store (mpi_node, 0, 1);	// set busy signal
-						mpi_node_status->Store (mpi_node, 1, node_id);
-						
-						break;
-					}
-					mpi_node++;
-				}
-				while (mpi_node < size);
-			}
-			
-			
-			if (mpi_node == size)	// all nodes are busy, wait for one to send results
-			{
-				MPIReceiveScores (mpi_node_status, true, node_id);
-			}
-		}
-		// end loop over child nodes
-		
-		
-		// collect remaining jobs
-		while (1)
-		{
-			// look for a busy node
-			mpi_node = 1;
-			do
-			{
-				if ( (*mpi_node_status)(mpi_node,0) == 1)
-				{
-					break;
-				}
-				mpi_node++;
-			}
-			while (mpi_node < size);
-			
-			
-			if (mpi_node < size)	// at least one node is busy
-			{
-				MPIReceiveScores (mpi_node_status, false, 0);
-			}
-			else
-			{
-				break;
-			}
-		}
-		
-		
-		// shut down compute nodes
-		for (long shutdown = -1, mpi_node = 1; mpi_node < size; mpi_node++)
-		{
-			ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
-			ReportWarning (_String ("Node 0 sending shutdown signal to node ") & mpi_node);
-		}
-		
-	}
-	
-	else	// compute node
-	{
-		long		node_id,
-		maxp;
-		
-		_List		list_of_matrices;
-		
-		while (1)
-		{
-			_String		mxString,
-						mxName;
-			
-			list_of_matrices.Clear();
-			
-			
-			// wait for master node to issue node ID to compute
-			ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
-			ReportWarning (_String("Node") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE);
-			
-			if (node_id < 0)
-			{
-				break;	// received shutdown message (-1)
-			}
-			
-			
-			maxp = max_parents.lData[node_id];
-			
-			parents.Clear();
-			parents.Populate (1,0,0);
-			
-			
-			// compute single parent scores
-			for (long par = 0; par < num_nodes; par++)
-			{
-				if (par == node_id)		// child cannot be its own parent, except in Kansas
-				{
-					single_parent_scores.Store (par, 0, 0.);
+					WarnError (_String("Failed to confirm MPI mode switch at node ") & ni);
+					return;
 				}
 				else
 				{
-					parents.lData[0] = par;
-					single_parent_scores.Store (par, 0, node_type.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : 
-												ComputeContinuousScore (node_id, parents));
+					ReportWarning (_String("Successful mode switch to Bgm MPI confirmed from node ") & ni);
+					MPISendString (bgmStr, ni);
 				}
 			}
 			
 			
-			// compute multiple parents cores
-			for (long np = 2; np <= maxp; np++)
+			// farm out jobs to idle nodes until none are left
+			for (long node_id = 0; node_id < num_nodes; node_id++)
 			{
-				parents.Clear();
-				parents.Populate (np, 0, 0);
+				long		maxp			= max_parents.lData[node_id];
+				_String		mxString,
+							mxName;
+				_Parameter	score;
 				
-				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+				
+				this_list	= (_List *) node_score_cache.lData[node_id];
+				
+				if (node_type.lData[node_id] == 0)
+					score = ComputeDiscreteScore (node_id, parents);	// [_SimpleList parents] should always be empty for master node
+				else
+					score = ComputeContinuousScore (node_id, parents);
+				
+				_Constant	orphan_score (score);
+				
+				
+				this_list->Clear();
+				(*this_list) && (&orphan_score);	// handle orphan score locally
+				
+				
+				if (maxp > 0)	// don't bother to farm out trivial cases
 				{
-					bool		remaining;
-					long		tuple_index		= 0,
-					num_ktuples		= exp(lnGamma(num_nodes) - lnGamma(num_nodes - np) - lnGamma(np+1));
-					
-					
-					_Matrix		tuple_scores (num_ktuples, 1, false, true);
-					
-					for (long tuple_index = 0; tuple_index < num_ktuples; tuple_index++)
+					// look for idle nodes
+					mpi_node = 1;
+					do
 					{
-						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-						
-						if (!remaining && tuple_index < num_ktuples-1)
+						if ((*mpi_node_status)(mpi_node, 0) == 0)
 						{
-							ReportWarning (_String ("ERROR: Ran out of (n,k)tuples in CacheNodeScores()."));
+							ReportMPIError(MPI_Send(&node_id, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+							ReportWarning (_String ("Sent child ") & node_id & " to node " & mpi_node);
+							
+							mpi_node_status->Store (mpi_node, 0, 1);	// set busy signal
+							mpi_node_status->Store (mpi_node, 1, node_id);
+							
+							break;
 						}
-						
-						for (long par_idx = 0; par_idx < np; par_idx++)
-						{
-							long par = nk_tuple.lData[par_idx];
-							if (par >= node_id) par++;
-							parents.lData[par_idx] = par;
-						}
-						
-						score = node_type.lData[node_id] ?	ComputeDiscreteScore (node_id, parents) : 
-															ComputeContinuousScore (node_id, parents);
-						
-						tuple_scores.Store (tuple_index, 0, (double)score);
+						mpi_node++;
 					}
-					
-					if (remaining)
-					{
-						ReportWarning (_String ("ERROR: Did not compute all nk-tuples in CacheNodeScores()"));
-					}
-					
-					list_of_matrices && (&tuple_scores);		// append duplicate
-				}
-				else 
-				{
-					ReportWarning (_String ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores()"));
+					while (mpi_node < size);
 				}
 				
+				
+				if (mpi_node == size)	// all nodes are busy, wait for one to send results
+				{
+					MPIReceiveScores (mpi_node_status, true, node_id);
+				}
 			}
-			
-			// send results to master node
-			
-			ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+			// end loop over child nodes
 			
 			
-			for (long np = 2; np <= maxp; np++)
+			// collect remaining jobs
+			while (1)
 			{
-				_Matrix	* storedMx		= (_Matrix *) list_of_matrices.lData[np-2];
+				// look for a busy node
+				mpi_node = 1;
+				do
+				{
+					if ( (*mpi_node_status)(mpi_node,0) == 1)  break;
+					mpi_node++;
+				}
+				while (mpi_node < size);
 				
-				ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+				if (mpi_node < size) MPIReceiveScores (mpi_node_status, false, 0); // at least one node is busy
+				else break;
 			}
+			
+			
+			// shut down compute nodes
+			for (long shutdown = -1, mpi_node = 1; mpi_node < size; mpi_node++)
+			{
+				ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
+				ReportWarning (_String ("Node 0 sending shutdown signal to node ") & mpi_node);
+			}
+			
 		}
+		
+		else	// compute node
+		{
+			long		node_id, maxp;	// update in while loop
+			_List		list_of_matrices;
+			
+			while (1)
+			{
+				_String		mxString,
+							mxName;
+				
+				list_of_matrices.Clear();
+				
+				
+				// wait for master node to issue node ID to compute
+				ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
+				ReportWarning (_String("Node") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE);
+				
+				if (node_id < 0)
+				{
+					ReportWarning (_String("Node") & (long)rank & " recognizes shutdown signal.\n");
+					break;	// received shutdown message (-1)
+				}
+				
+				maxp = max_parents.lData[node_id];
+				parents << 0;	// allocate space for one parent
+				
+				if (parents.lLength != 1)	/* DEBUGGING */
+				{
+					WarnError (_String("ERROR: _SimpleList parents not expected length (1), found ") & parents.lLength);
+				}
+				
+				
+				// compute single parent scores
+				for (long par = 0; par < num_nodes; par++)
+				{
+					if (par == node_id)		// child cannot be its own parent
+						continue;
+					
+					parents.lData[0] = par;
+					
+					if (node_type.lData[node_id] == 0)
+					{
+						// discrete-valued child node cannot have continuous parent
+						if (node_type.lData[par] == 0)
+							score = ComputeDiscreteScore (node_id, parents); 
+					}
+					else
+					{
+						// continuous child can have discrete or continuous parents
+						score = ComputeContinuousScore (node_id, parents);
+					}
+					
+					single_parent_scores.Store (par, 0, score);
+				}
+				
+				
+				// compute multiple parent scores
+				for (long np = 2; np <= maxp; np++)
+				{
+					_NTupleStorage	family_scores (num_nodes-1, np);
+					
+					parents << 0;	// allocate space for one additional parent
+					
+					if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+					{
+						bool	remaining, family_is_discrete;
+						long	res;
+						
+						do 
+						{
+							remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+							
+							if (node_type.lData[node_id] == 0)
+							{
+								family_is_discrete = TRUE;
+								for (long par, par_idx = 0; par_idx < np; par_idx++)
+								{
+									par = nk_tuple.lData[par_idx];
+									if (par >= node_id) 
+										par++;
+									
+									if (node_type.lData[par] != 0)	// all parents must be discrete
+									{
+										family_is_discrete = FALSE;
+										break;
+									}
+									
+									parents.lData[par_idx] = par;
+								}
+								
+								if (family_is_discrete)
+									score = ComputeDiscreteScore (node_id, parents);
+							}
+							else
+							{
+								for (long par_idx = 0; par_idx < np; par_idx++)
+								{
+									long par = nk_tuple.lData[par_idx];
+									if (par >= node_id) 
+										par++;
+									parents.lData[par_idx] = par;
+								}
+								
+								score = ComputeContinuousScore (node_id, parents);
+							}
+							
+							res = family_scores.Store (score, nk_tuple);
+						} 
+						while (remaining);
+					} 
+					else 
+					{
+						_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+						WarnError(oops);
+					}
+					
+					list_of_matrices << (&family_scores);	// append duplicate to storage
+				}
+				
+				// send results to master node
+				
+				ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+				
+				for (long np = 2; np <= maxp; np++)
+				{
+					_Matrix	* storedMx = (_Matrix *) list_of_matrices.lData[np-2];
+					ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
+				}
+			} 
+			// end while, received shutdown from master node
+		}
+		// end else if compute node
 	}
 	
+	else	// perform single-threaded
+	{
 #else
 	
+	_SimpleList		parents,
+					all_but_one (num_nodes-1, 0, 1),
+					aux_list,
+					nk_tuple;
+	
+	_Parameter		score;
+	_Matrix			single_parent_scores (num_nodes, 1, false, true);
 		
-#if !defined __UNIX__ || defined __HEADLESS__
-	TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-#if !defined __HEADLESS__
-	SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
-#else
-	SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
-#endif	
-	_Parameter	seconds_accumulator = .0,
-	temp;
-#endif
+		
+	#if !defined __UNIX__ || defined __HEADLESS__
+		TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+		#if !defined __HEADLESS__
+			SetStatusLine 	  (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+		#else
+			SetStatusLine 	  (_HYBgm_STATUS_LINE_CACHE);
+		#endif	
+		_Parameter	seconds_accumulator = .0,
+		temp;
+	#endif
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
@@ -1409,9 +1440,9 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 		_Constant	orphan_score (score);	// score computed with no parents (initialized empty list)
 		(*this_list) && (&orphan_score);
 		
-#if !defined __UNIX__ || defined __HEADLESS__
+	#if !defined __UNIX__ || defined __HEADLESS__
 		temp = .0;
-#endif
+	#endif
 		
 		if (maxp > 0)
 		{
@@ -1428,7 +1459,7 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 				
 				// discrete child cannot have continuous parent
 				if (node_type.lData[node_id] == 0)
-					score = (node_type.lData[par] == 0)	? ComputeDiscreteScore (node_id, parents) : 0;
+					score = (node_type.lData[par] == 0)	? ComputeDiscreteScore (node_id, parents) : -A_LARGE_NUMBER;
 				else
 					score = ComputeContinuousScore (node_id, parents);
 				
@@ -1437,75 +1468,69 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			(*this_list) && (&single_parent_scores);
 		}
 		
-		if (maxp > 1)
+		for (long np = 2; np <= maxp; np++)
 		{
-			_SimpleList		all_but_one (num_nodes-1, 0, 1),	// 0, 1, 2, ... , n-1
-							aux_list,
-							nk_tuple;
+			_NTupleStorage	family_scores (num_nodes-1, np);
 			
-			for (long np = 2; np <= maxp; np++)
+			parents << 0;	// allocate space for one additional parent
+			
+			if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
 			{
-				_NTupleStorage	family_scores (num_nodes-1, np);
+				bool	remaining, family_is_discrete;
+				long	res;
 				
-				parents << 0;	// allocate space for one additional parent
-				
-				if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false))
+				do 
 				{
-					bool	remaining, family_is_discrete;
-					long	res;
-					do 
+					remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+					
+					if (node_type.lData[node_id] == 0)
 					{
-						remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-						
-						
-						if (node_type.lData[node_id] == 0)
+						family_is_discrete = TRUE;
+						for (long par, par_idx = 0; par_idx < np; par_idx++)
 						{
-							family_is_discrete = TRUE;
-							for (long par_idx = 0; par_idx < np; par_idx++)
+							par = nk_tuple.lData[par_idx];
+							if (par >= node_id) 
+								par++;
+							
+							if (node_type.lData[par] != 0)	// all parents must be discrete
 							{
-								long par = nk_tuple.lData[par_idx];
-								if (par >= node_id) 
-									par++;
-								
-								if (node_type.lData[par] != 0)	// all parents must be discrete
-								{
-									family_is_discrete = FALSE;
-									break;
-								}
-								
-								parents.lData[par_idx] = par;
+								family_is_discrete = FALSE;
+								break;
 							}
 							
-							if (family_is_discrete)
-								score = ComputeDiscreteScore (node_id, parents);
-							else
-								score = 0.;
-						}
-						else 
-						{
-							for (long par_idx = 0; par_idx < np; par_idx++)
-							{
-								long par = nk_tuple.lData[par_idx];
-								if (par >= node_id) 
-									par++;
-								parents.lData[par_idx] = par;
-							}
-							
-							score = ComputeContinuousScore (node_id, parents);
+							parents.lData[par_idx] = par;
 						}
 						
-						res = family_scores.Store (score, nk_tuple);
-					} 
-					while (remaining);
-				} else {
-					_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-					WarnError(oops);
-				}
-				(*this_list) && (&family_scores);	// append duplicate to storage
+						if (family_is_discrete)
+							score = ComputeDiscreteScore (node_id, parents);
+					}
+					else
+					{
+						for (long par_idx = 0; par_idx < np; par_idx++)
+						{
+							long par = nk_tuple.lData[par_idx];
+							if (par >= node_id) 
+								par++;
+							parents.lData[par_idx] = par;
+						}
+						
+						score = ComputeContinuousScore (node_id, parents);
+					}
+					
+					res = family_scores.Store (score, nk_tuple);
+				} 
+				while (remaining);
+			} 
+			else 
+			{
+				_String	oops ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+				WarnError(oops);
 			}
+			(*this_list) && (&family_scores);	// append duplicate to storage
 		}
 		
-#if !defined __UNIX__ || defined __HEADLESS__
+		
+	#if !defined __UNIX__ || defined __HEADLESS__
 		if ((temp=TimerDifferenceFunction(true))>1.0) // time to update
 		{
 			seconds_accumulator += temp;
@@ -1513,19 +1538,23 @@ void	_BayesianGraphicalModel::CacheNodeScores (void)
 			_String statusLine = _HYBgm_STATUS_LINE_CACHE & " " & (node_id+1) & "/" & num_nodes 
 			& " nodes (" & (1.0+node_id)/seconds_accumulator & "/second)";
 			
-#if defined __HEADLESS__
+		#if defined __HEADLESS__
 			SetStatusLine (statusLine);
-#else
+		#else
 			SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
-#endif
+		#endif
 			TimerDifferenceFunction (false); // reset timer for the next second
 			yieldCPUTime (); // let the GUI handle user actions
 			
 			if (terminateExecution) // user wants to cancel the analysis
 				break;
 		}
-#endif
+	#endif
 	}
+#endif
+
+#if defined __HYPHYMPI__
+	}	// completes else statement
 #endif
 
 #if !defined __UNIX__ || defined __HEADLESS__
@@ -1554,7 +1583,7 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 				this_node	= (long) (*mpi_node_status) (senderID, 1),
 				maxp		= max_parents.lData[this_node];
 	
-	_List	*	this_list	= (_List *) node_scores.lData[this_node];
+	_List	*	this_list	= (_List *) node_score_cache.lData[this_node];
 	
 	
 	_String		mxString,
@@ -1624,51 +1653,59 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 
 void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 {
+	char		buf [255];
+	
 	_String	*	bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
 	
-	_Parameter	mcem_max_steps, mcem_burnin, mcem_sample_size;	// permit user to reset impute settings
+	_Parameter	impute_max_steps, impute_burnin, impute_sample_size;	// permit user to reset impute settings
 	
-	checkParameter (mcemMaxSteps, mcem_max_steps, 10000);
-	checkParameter (mcemBurnin, mcem_burnin, 1000);
-	checkParameter (mcemSampleSize, mcem_sample_size, 100);
+	checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000);
+	checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000);
+	checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100);
+	
+	rec << "USE_MPI_CACHING=1;\n";
+	rec << "PRINT_DIGITS=-1;\n";
 	
 	// write utility functions
-	rec << "function make_dnode (id,n,maxp)\n";
+	rec << "function add_discrete_node (id,maxp,size,nlev)\n";
 	rec << "{\ndnode={};\n";
 	rec << "dnode[\"NodeID\"]=id;\n";
-	rec << "dnode[\"PriorSize\"]=n;\n";
+	rec << "dnode[\"NodeType\"]=0;\n";
 	rec << "dnode[\"MaxParents\"]=maxp;\n";
-	rec << "dnode[\"PriorMean\"]=0;\n";
-	rec << "dnode[\"PriorVar\"]=0;\n";
+	rec << "dnode[\"PriorSize\"]=size;\n";
+	rec << "dnode[\"NumLevels\"]=nlev;\n";
 	rec << "return dnode;\n}\n";
 	
-	rec << "function make_cnode (id,n,maxp,mean,prec)\n";
-	rec << "{\ncnode={};\n";
-	rec << "cnode[\"NodeID\"]=id;\n";
-	rec << "cnode[\"PriorSize\"]=n;\n";
-	rec << "cnode[\"MaxParents\"]=maxp;\n";
-	rec << "cnode[\"PriorMean\"]=mean;\n";
-	rec << "cnode[\"PriorVar\"]=prec;\n";
-	rec << "return cnode;\n}\n";
+	rec << "function add_gaussian_node (id,maxp,size,mean,prec,scale)\n";
+	rec << "{\ngnode={};\n";
+	rec << "gnode[\"NodeID\"]=id;\n";
+	rec << "gnode[\"NodeType\"]=1;\n";
+	rec << "gnode[\"PriorSize\"]=size;\n";
+	rec << "gnode[\"MaxParents\"]=maxp;\n";
+	rec << "gnode[\"PriorMean\"]=mean;\n";
+	rec << "gnode[\"PriorVar\"]=prec;\n";
+	rec << "gnode[\"PriorScale\"]=scale;\n";
+	rec << "return gnode;\n}\n";
 	
 	
 	// prepare assortative lists
-	rec << "dnodes={};\ncnodes={};\n";
+	rec << "nodes={};\n";
 	
 	for (long node_id = 0; node_id < num_nodes; node_id++)
 	{
-		if (is_discrete.lData[node_id])
+		if (node_type.lData[node_id] == 0)
 		{
-			rec << "nodes[Abs(nodes)]=make_dnode(";
-			sprintf (buf, "%d,%d,%d", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
+			rec << "nodes[Abs(nodes)]=add_discrete_node(";
+			// I can't figure out how to write the _String object from [node_names] to file :-P
+			sprintf (buf, "\"Node%d\",%d,%d,%d", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0), num_levels.lData[node_id]);
 			rec << buf;
 			rec << ");\n";
 		}
 		else
 		{
-			rec << "nodes[Abs(nodes)]=make_cnode(";
-			sprintf (buf, "%d,%d,%d,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
-					 prior_mean(node_id,0), prior_precision(node_id,0));
+			rec << "nodes[Abs(nodes)]=add_gaussian_node(";
+			sprintf (buf, "\"Node%d\",%d,%d,%f,%f,%f", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0), 
+					 prior_mean(node_id,0), prior_precision(node_id,0), prior_scale(node_id,0) );
 			rec << buf;
 			rec << ");\n";
 		}
@@ -1680,20 +1717,37 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
 	rec << "=(nodes);\n";
 	
 	// missing data imputation settings
-	sprintf (buf, "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)mcem_max_steps);
+	sprintf (buf, "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)impute_max_steps);
 	rec << buf;
-	sprintf (buf, "BGM_IMPUTE_BURNIN = %d;\n", (long)mcem_burnin);
+	sprintf (buf, "BGM_IMPUTE_BURNIN = %d;\n", (long)impute_burnin);
 	rec << buf;
-	sprintf (buf, "BGM_IMPUTE_SAMPLES = %d;\n", (long)mcem_sample_size);
+	sprintf (buf, "BGM_IMPUTE_SAMPLES = %d;\n", (long)impute_sample_size);
 	rec << buf;
+	
+	// serialize constraint matrix
+	rec << "bgmConstraints=";
+	rec << (_String *)constraint_graph.toStr();
+	rec << ";\n";
+	rec << "SetParameter(";
+	rec << bgmName;
+	rec << ",BGM_CONSTRAINT_MATRIX,bgmConstraints);\n";
 	
 	// serialize data matrix and assign to BGM
 	rec << "bgmData=";
-	rec << (_String *)obsData->toStr();
+	rec << (_String *)theData.toStr();
 	rec << ";\n";
 	rec << "SetParameter(";
 	rec << bgmName;
 	rec << ",BGM_DATA_MATRIX,bgmData);\n";
+	
+	/*
+	rec << "bgmWeights=";
+	rec << (_String *)theWeights.toStr();
+	rec << ";\n";
+	rec << "SetParameter(";
+	rec << bgmName;
+	rec << ",BGM_WEIGHT_MATRIX,bgmWeights);\n";
+	*/
 }
 #endif
 
@@ -1844,7 +1898,7 @@ _Matrix *	_BayesianGraphicalModel::Optimize (void)
 					ReportWarning (_String("Executing order-MCMC for burn-in period of ") & mcmc_burnin & " steps");
 					OrderMetropolis (FALSE, mcmc_burnin, mcmc_samples, 1., output_matrix);
 					
-					ReportWarning (_String("Automatically reset node_order_arg to best order visited in order-MCMC burn-in: "));
+					ReportWarning (_String("Automatically reset node_order_arg to best order visited in order-MCMC burn-in:\n "));
 					if (node_order_arg.lLength == 0)	 node_order_arg.Populate (num_nodes, 0, 0);
 					for (long i = 0; i < num_nodes; i++) node_order_arg.lData[i] = (*output_matrix) (i,3);
 					ReportWarning    (_String((_String*)node_order_arg.toStr()));	
@@ -2148,7 +2202,7 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 			(*proposed_graph) = (_Matrix &) theStructure;
 			(*proposed_order) = (_SimpleList &) node_order_arg;
 			
-			ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg ") & (_String *) node_order_arg.toStr());
+			ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg:\n ") & (_String *) proposed_order->toStr());
 		}
 		else
 		{
@@ -2260,8 +2314,13 @@ void	_BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burni
 			if (terminateExecution) // user wants to cancel the analysis
 				break;
 		}
+#else
+		if (step % ((mcmc_steps + mcmc_burnin)/100) == 0)
+		{
+			ReportWarning (_String ("graphMCMC at step ") & step & " of " & (mcmc_steps+mcmc_burnin));
+		}
 #endif
-	
+		
 	}
 	
 	// convert edge tallies to frequencies, and report best and last graph
@@ -2712,6 +2771,7 @@ void	_BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, l
 	
 	// update node order 
 	node_order_arg = current_order;
+	ReportWarning (_String("Set node_order_arg to last order visited in orderMCMC:\n") & (_String*)node_order_arg.toStr());
 }
 
 

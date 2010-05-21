@@ -1805,8 +1805,8 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	
 	
 	// recount N_ij and N_ijk from entire data set (with imputed cases)
-	
-	for (long pa_index, row = 0; row < data_deep_copy.GetHDim(); row++)
+	n_complete_cases = data_deep_copy.GetHDim();
+	for (long pa_index, row = 0; row < n_complete_cases; row++)
 	{
 		pa_index		= 0;
 		child_state		= data_deep_copy (row, 0);
@@ -1885,15 +1885,16 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
-				pa_index	-= parent_state * multipliers.lData[col-1];
-				
-				denom = 0.;
+				pa_index	-= parent_state * multipliers.lData[col-1];	// marginalize index
+				denom		= 0.;
 				for (long pa_temp, lev = 0; lev < family_nlevels.lData[col]; lev++)
 				{
+					// parental index for this instantiation of parent node given other parents (fixed)
 					pa_temp = pa_index + lev * multipliers.lData[col-1];
-					//reassign_probs->Store (log_score + log (n_ijk (pa_temp, (long) child_state) + 1)
-					//					   - log (n_ij (pa_temp, 0) + 2) );
-					denom += this_prob = (n_ijk(pa_temp,lev) + 1) / (n_ij(pa_temp,0) + r_i);
+					
+					// by Bayes' Theorem, Pr(P|C,P') is proportional to Pr(C|P,P') x Pr(P,P')
+					denom += this_prob = (n_ijk(pa_temp,child_state) + 1) / (n_ij(pa_temp,0) + r_i) 
+										* (n_ij(pa_temp,0)+1) / (n_complete_cases + num_parent_combos);
 					reassign_probs.Store (lev, 0, this_prob);
 				}
 				
