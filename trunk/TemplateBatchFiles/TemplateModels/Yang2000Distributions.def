@@ -1,0 +1,330 @@
+/*-------------------------------------------------------------------------------*/
+
+function SetWDistribution (resp)
+{
+	if (rateType == 0)
+	{
+		global P = .5;
+		P:<1;
+		global W = 0.1;
+		W :< 1;
+		categFreqMatrix = {{P,1-P}};
+		categRateMatrix = {{W,1}};
+		category c = (2, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);
+	}
+	else
+	{
+		if (rateType == 1)
+		{
+			global P1 = 1/3;
+			global P2 = 1/2;
+			
+			P1:<1;
+			P2:<1;
+			
+			global W_1 = 0.1;
+			W_1 :< 1;
+			global W_2 = 5;
+			W_2 :> 1;
+			categFreqMatrix = {{P1,(1-P1)*P2, (1-P1)*(1-P2)}} ;
+			categRateMatrix = {{W_1,1,W_2}};
+			category c = (3, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);
+		}		
+		else
+		{
+			if (rateType == 2)
+			{
+				global P1 = 1/3;
+				global P2 = .5;
+				P1:<1;
+				P2:<1;
+				global W1 = .25;
+				global R_1 = .5;
+				global R_2 = 3;
+				R_1:<1;
+				R_2:>1;
+				categFreqMatrix = {{P1,(1-P1)*P2, (1-P1)*(1-P2)}} ;
+				categRateMatrix = {{W1*R_1,W1,W1*R_2}};
+				category c = (3, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);				
+			}
+			else
+			{
+				if (rateType == 3)
+				{
+					global P1 = 1/5;
+					global P2 = 1/4;
+					global P3 = 1/3;
+					global P4 = 1/2;
+					
+					P1:<1;
+					P2:<1;
+					P3:<1;
+					P4:<1;
+					
+					categFreqMatrix = {{P1,
+										(1-P1)P2,
+										(1-P1)(1-P2)*P3,
+										(1-P1)(1-P2)(1-P3)P4,
+										(1-P1)(1-P2)(1-P3)(1-P4)}} ;
+					categRateMatrix = {{0,1/3,2/3,1,3}};
+					category c = (5, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);				
+				}
+				else
+				{
+					if (rateType == 4)
+					{
+						global alpha = .5;
+						global beta = 1;
+						alpha:>0.01;alpha:<100;
+						beta:>0.01;
+						beta:<200;
+						category c = (resp, EQUAL, MEAN, GammaDist(_x_,alpha,beta), CGammaDist(_x_,alpha,beta), 0 , 
+				 			 		  1e25,CGammaDist(_x_,alpha+1,beta)*alpha/beta);
+					}
+					else
+					{
+						if (rateType == 5)
+						{
+							global alpha = .5;
+							global beta  =  1;
+							global alpha2=  .75;
+							global P	 = .5; 
+							alpha:>0.01;alpha:<100;
+							beta:>0.01;
+							beta:<200;
+							P:<1;
+							alpha2:>0.01;alpha2:<100;
+							category c = (resp, EQUAL, MEAN, P*GammaDist(_x_,alpha,beta) + (1-P)*GammaDist(_x_,alpha2,alpha2)
+														   , P*CGammaDist(_x_,alpha,beta) + (1-P)*CGammaDist(_x_,alpha2,alpha2), 
+														   0 , 1e25,
+														   P*CGammaDist(_x_,alpha+1,beta)*alpha/beta + (1-P)*CGammaDist(_x_,alpha2+1,alpha2));
+						}
+						else
+						{
+							if (rateType == 6)
+							{
+								global betaP = 1;
+								global betaQ = 1;
+								betaP:>0.05;betaP:<85;
+								betaQ:>0.05;betaQ:<85;
+								category c = (resp, EQUAL, MEAN, _x_^(betaP-1)*(1-_x_)^(betaQ-1)/Beta(betaP,betaQ), IBeta(_x_,betaP,betaQ), 0 , 
+						 			 		  1,IBeta(_x_,betaP+1,betaQ)*betaP/(betaP+betaQ));
+							}
+							else
+							{
+								if (rateType == 7 || rateType == 14)
+								{
+									global W = 2;
+									W:>1;
+									global P	 = 1-1/(resp+1);
+									global betaP = 1;
+									global betaQ = 2;
+									betaP:>0.05;
+									betaQ:>0.05;
+									betaP:<85;
+									betaQ:<85;
+									P:>0.0000001;
+									P:<0.9999999;
+									categFreqMatrix = {resp+1,1};
+									for (k=0; k<resp; k=k+1)
+									{
+										categFreqMatrix[k]:=P/resp__;
+									}
+									categFreqMatrix[resp]:=(1-P);
+
+									if (rateType == 14)
+									{
+										W:=1;
+										category c = (resp+1, categFreqMatrix, MEAN, 
+														P*_x_^(betaP-1)*(1-Min(_x_,1))^(betaQ-1)/Beta(betaP,betaQ)+W-W, 
+														P*IBeta(Min(_x_,1),betaP,betaQ)+(1-P)*(_x_>=W), 
+														0,1,
+														P*IBeta(Min(_x_,1),betaP+1,betaQ)*betaP/(betaP+betaQ)+(1-P)*W*(_x_>=W));
+									}
+									else
+									{
+										category c = (resp+1, categFreqMatrix, MEAN, 
+														P*_x_^(betaP-1)*(1-Min(_x_,1))^(betaQ-1)/Beta(betaP,betaQ)+W-W, 
+														P*IBeta(Min(_x_,1),betaP,betaQ)+(1-P)*(_x_>=W), 
+														0,1e25,
+														P*IBeta(Min(_x_,1),betaP+1,betaQ)*betaP/(betaP+betaQ)+(1-P)*W*(_x_>=W));
+									}
+								}
+								else
+								{
+									if (rateType == 8)
+									{
+										global P	 = .5;
+										global betaP = 1;
+										global betaQ = 2;
+										betaP:>0.05;betaP:<85;
+										betaQ:>0.05;betaQ:<85;
+										global alpha = .5;
+										global beta  = 1;
+										alpha:>0.01;alpha:<100;
+										beta:>0.01;										
+										beta:<200;
+										P:<1;
+										category c = (resp, EQUAL, MEAN, 
+															P*_x_^(betaP-1)*(1-Min(_x_,1))^(betaQ-1)/Beta(betaP,betaQ)+(1-P)*GammaDist(_x_,alpha,beta), 
+															P*IBeta(Min(_x_,1),betaP,betaQ)+(1-P)*CGammaDist(_x_,alpha,beta), 
+															0,1e25,
+															P*betaP/(betaP+betaQ)*IBeta(Min(_x_,1),betaP+1,betaQ)+(1-P)*alpha/beta*CGammaDist(_x_,alpha+1,beta));
+									}	
+									else
+									{
+										if (rateType == 9)
+										{
+											global P	 = .5;
+											P:<1;
+											global betaP = 1;
+											betaP:>0.05;betaP:<85;
+											global betaQ = 2;
+											betaQ:>0.05;betaQ:<85;
+											global alpha = .5;
+											alpha:>0.01;alpha:<100;
+											global beta  = 1;
+											beta:>0.01;beta:<500;
+											category c = (resp, EQUAL, MEAN, 
+																P*_x_^(betaP-1)*(1-Min(_x_,1))^(betaQ-1)/Beta(betaP,betaQ)+(1-P)*(_x_>1)*GammaDist(Max(1e-20,_x_-1),alpha,beta), 
+																P*IBeta(Min(_x_,1),betaP,betaQ)+(1-P)*CGammaDist(Max(_x_-1,0),alpha,beta), 
+																0,1e25,
+																P*betaP/(betaP+betaQ)*IBeta(Min(_x_,1),betaP+1,betaQ)+
+																		(1-P)*(alpha/beta*CGammaDist(Max(0,_x_-1),alpha+1,beta)+CGammaDist(Max(0,_x_-1),alpha,beta)));
+										}				
+										else
+										{
+											if (rateType == 10)
+											{
+												global P	 = .5;
+												global betaP = 1;
+												global betaQ = 2;
+												betaP:>0.05;
+												betaQ:>0.05;
+												betaP:<85;
+												betaQ:<85;
+												global mu = 3;
+												global sigma  = .01;
+												sigma:>0.0001;
+												sqrt2pi = Sqrt(8*Arctan(1));
+												P:<1;
+
+												category c = (resp, EQUAL, MEAN, 
+																P*_x_^(betaP-1)*(1-Min(_x_,1))^(betaQ-1)/Beta(betaP,betaQ)+
+																	(1-P)*(_x_>=1)*Exp(-(_x_-mu)(_x_-mu)/(2*sigma*sigma))/(sqrt2pi__*sigma)/ZCDF((mu-1)/sigma), 
+																P*IBeta(Min(_x_,1),betaP,betaQ)+(1-P)*(_x_>=1)*(1-ZCDF((mu-_x_)/sigma)/ZCDF((mu-1)/sigma)), 
+																0,1e25,
+																P*betaP/(betaP+betaQ)*IBeta(Min(_x_,1),betaP+1,betaQ)+
+																(1-P)*(_x_>=1)*(mu*(1-ZCDF((1-mu)/sigma)-ZCDF((mu-_x_)/sigma))+
+																sigma*(Exp((mu-1)(1-mu)/(2*sigma*sigma))-Exp((_x_-mu)(mu-_x_)/(2*sigma*sigma)))/sqrt2pi__)/ZCDF((mu-1)/sigma));
+											}				
+											else
+											{
+												if (rateType == 11)
+												{
+													global P	 = 1/3;
+													global P1    = .5;
+
+													global mu = 3;
+													global sigma  = .5;
+													sigma:>0.0001;
+													global sigma1  = 1;
+													sigma1:>0.0001;
+
+													sqrt2pi = Sqrt(8*Arctan(1));
+													P:<1;
+													P1:<1;
+													
+													categFreqMatrix = {resp+1,1};
+													for (k=1; k<=resp; k=k+1)
+													{
+														categFreqMatrix[k]:=(1-P)/resp__;
+													}
+													categFreqMatrix[0]:=P;
+
+													category c = (resp+1, categFreqMatrix, MEAN,
+																	(1-P)((1-P1)*Exp(-(_x_-mu)(_x_-mu)/(2*sigma1*sigma1))/(sqrt2pi__*sigma1)/ZCDF(mu/sigma1)+
+																			  P1*Exp(-(_x_-1)(_x_-1)/(2*sigma*sigma))/(sqrt2pi__*sigma)/ZCDF(1/sigma)), 
+																	P+(1-P)(_x_>1e-20)((1-P1)(1-ZCDF((mu-_x_)/sigma1)/ZCDF(mu/sigma1))+
+																						P1*(1-ZCDF((1-_x_)/sigma)/ZCDF(1/sigma))), 
+																	0,1e25,
+																	(1-P)((1-P1)(mu*(1-ZCDF(-mu/sigma1)-ZCDF((mu-_x_)/sigma1))+
+																	sigma1*(Exp(-mu*mu/(2*sigma1*sigma1))-Exp((_x_-mu)(mu-_x_)/(2*sigma1*sigma1)))/sqrt2pi__)/ZCDF(mu/sigma1)+
+																	P(1-ZCDF(-1/sigma)-ZCDF((1-_x_)/sigma)+
+																	sigma*(Exp(-1/(2*sigma*sigma))-Exp((_x_-1)(1-_x_)/(2*sigma*sigma)))/sqrt2pi__)/ZCDF(1/sigma))
+																 );
+												}
+												else		
+												{
+													if (rateType == 12)
+													{
+														global P	 = 1/3;
+														global P1    = .5;
+
+														global mu = 3;
+														global sigma  = .25;
+														global sigma1 = .5;
+														global sigma2 = 1;
+														sigma:>0.0001;
+														sigma1:>0.0001;
+														sigma2:>0.0001;
+
+														sqrt2pi = Sqrt(8*Arctan(1));
+														P:<1;
+														P1:<1;
+
+														category c = (resp, EQUAL , MEAN,
+																		2*P*Exp(-_x_^2/(2*sigma*sigma))+
+																		(1-P)((1-P1)*Exp((_x_-mu)(mu-_x_)/(2*sigma2*sigma2))/(sqrt2pi__*sigma2)/ZCDF(mu/sigma2)+
+																			  P1*Exp((1-_x_)(_x_-1)/(2*sigma1*sigma1))/(sqrt2pi__*sigma1)/ZCDF(1/sigma1)), 
+																		P*(1-2*ZCDF(-_x_/sigma))+
+																		(1-P)((1-P1)(1-ZCDF((mu-_x_)/sigma2)/ZCDF(mu/sigma2))+
+																			   P1*(1-ZCDF((1-_x_)/sigma1)/ZCDF(1/sigma1))), 
+																		0,1e25,
+																		2*P*sigma*(1-Exp(-_x_*_x_/(2*sigma*sigma)))/sqrt2pi__+
+																		(1-P)((1-P1)(mu*(1-ZCDF(-mu/sigma2)-ZCDF((mu-_x_)/sigma2))+
+																		sigma2*(Exp(-mu*mu/(2*sigma2*sigma2))-Exp((_x_-mu)(mu-_x_)/(2*sigma2*sigma2)))/sqrt2pi__)/ZCDF(mu/sigma2)+
+																		P1(1-ZCDF(-1/sigma1)-ZCDF((1-_x_)/sigma1)+
+																		sigma1*(Exp(-1/(2*sigma1*sigma1))-Exp((_x_-1)(1-_x_)/(2*sigma1*sigma1)))/sqrt2pi__)/ZCDF(mu/sigma1))
+																		);
+													}
+													else
+													{				
+														if (rateType == 13)
+														{
+														
+															global betaP = 1;
+															global betaQ = 1;
+															betaP:>0.05;betaP:<85;
+															betaQ:>0.05;betaQ:<85;
+															category pc = (resp-1, EQUAL, MEAN, 
+																			_x_^(betaP-1)*(1-_x_)^(betaQ-1)/Beta(betaP,betaQ), /* density */
+																			IBeta(_x_,betaP,betaQ), /*CDF*/
+																			0, 				   /*left bound*/
+																			1, 			   /*right bound*/
+																			IBeta(_x_,betaP+1,betaQ)*betaP/(betaP+betaQ)
+															);
+
+															global alpha = .5;
+															global beta = 1;
+															alpha:>0.01;alpha:<100;
+															beta:>0.01;
+															beta:<200;
+															category c = (resp, pc, MEAN, GammaDist(_x_,alpha,beta), CGammaDist(_x_,alpha,beta), 0 , 
+													 			 		  1e25,CGammaDist(_x_,alpha+1,beta)*alpha/beta);
+														}
+													}
+												}				
+											}				
+										}				
+									}						
+								}
+							}
+						}
+					}				
+				}	
+			}	
+		}	
+	}		
+	return 0;
+}
