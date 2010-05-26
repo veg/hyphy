@@ -1,7 +1,9 @@
-/* This file defines the transition matrix for the Muse-Gaut 94 model x an arbitrary 4x4 rate matrix
-   for nucleotide substituions and multiple non-syn rates for various types of A.A. substitutions.
-   
-   02/05/2004  by Sergei L. Kosakovsky Pond
+/* this file defines a multi-rate model 
+   with multiple substitutions under the 
+   F61 parameterization
+
+v0.1 20100524 SLKP spond@ucsd.edu 
+
 */
 
 ModelMatrixDimension = 0;
@@ -29,6 +31,8 @@ function PopulateModelMatrix (ModelMatrixName&)
 	modelDefString = "";
 	modelDefString*16384;
 	
+	modelDefString * "global twoNSsubsRate = 1;\nglobal threeNSsubsRate = 1;\nglobal twoSYNsubsRate = 1;\nglobal threeSYNsubsRate = 1;\n";
+	
 	if (modelType > 0)
 	{
 		catCounterAL = {};
@@ -54,40 +58,30 @@ function PopulateModelMatrix (ModelMatrixName&)
 				vshift = vshift+1;
 				continue; 
 			}
-			nucPosInCodon = 2;
-			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
+			codonProps = CompareCodonProperties (h,v,_Genetic_Code);
+
+			aa1 = _Genetic_Code[h];
+			aa2 = _Genetic_Code[v];
+			hs = Format(h-hshift,0,0);
+			vs = Format(v-vshift,0,0);
+			
+			nucTerms = "";
+			
+			for (pos = 0; pos < 3; pos = pos + 1)
 			{
-				if (h$4==v$4)
+				thisPosition = codonProps[1+pos];
+				if (thisPosition[0] != thisPosition [1])
 				{
-					transition = v%4;
-					transition2= h%4;
+					nucTerms = nucTerms + _nucBiasTerms[thisPosition[0]][thisPosition[1]];
 				}
-				else
-				{
-					if(diff%16==0)
-					{
-						transition = v$16;
-						transition2= h$16;
-						nucPosInCodon = 0;
-					}
-					else
-					{
-						transition = v%16$4;
-						transition2= h%16$4;
-						nucPosInCodon = 1;
-					}
-				}
-				hs = Format(h-hshift,0,0);
-				vs = Format(v-vshift,0,0);
-				ts = Format(transition,0,0);
-				ts2= Format(transition2,0,0);
-				ps = Format(nucPosInCodon,0,0);
-				aa1 = _Genetic_Code[0][h];
-				aa2 = _Genetic_Code[0][v];
+			}
+						
+			if (codonProps["DIFFERENCES"] == 1)
+			{
 				if (aa1==aa2) 
 				{
-					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+"synRate;\n"+
-													 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+"synRate;\n");
+					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nucTerms+"synRate;\n"+
+									"ModelMatrixName["+vs+"]["+hs+"] := "+nucTerms+"synRate;\n");
 				}
 				else
 				{
@@ -115,19 +109,47 @@ function PopulateModelMatrix (ModelMatrixName&)
 							bt = "NSClass"+bt;
 						}
 						
-						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate;\n"+
-														 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate;\n");
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nucTerms+bt+"*synRate;\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+nucTerms+bt+"*synRate;\n");
 					}
 					else
 					{
 						bt = "nsClass"+aaRateMultipliers[aa1][aa2];
-						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate;\n"+
-														 "ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+bt+"*synRate;\n");				
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nucTerms+bt+"*synRate;\n"+
+														 "ModelMatrixName["+vs+"]["+hs+"] := "+nucTermsbt+"*synRate;\n");				
 					}			
 				}
 			}
+			else
+			{
+				if (aa1 == aa2)
+				{
+					if (codonProps["DIFFERENCES"] == 2)
+					{
+						term = "twoSYNsubsRate";
+					}
+					else
+					{
+						term = "threeSYNsubsRate";
+					}
+				}
+				else
+				{
+					if (codonProps["DIFFERENCES"] == 2)
+					{
+						term = "twoNSsubsRate";
+					}
+					else
+					{
+						term = "threeNSsubsRate";
+					}				
+				}
+				modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+nucTerms+"synRate*"+term+";\n"+
+								"ModelMatrixName["+vs+"]["+hs+"] := "+nucTerms+"synRate*"+term+";\n");					
+			}
 	    }
     }		
+    
 	modelDefString*0;
 	ExecuteCommands (modelDefString);
 	return 1;
@@ -235,9 +257,8 @@ FREQUENCY_SENSITIVE = 1;
 
 COUNT_GAPS_IN_FREQUENCIES = 0;
 
-HarvestFrequencies 			(observedFreq,filteredData,3,3,1);
-vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]); 
-/* cough, cough, cough....HACK! */
+HarvestFrequencies (observedFreq,filteredData,3,3,1);
+vectorOfFrequencies = Transpose(observedFreq[Transpose(_Genetic_Code["_MATRIX_ELEMENT_VALUE_!=10"])]); /* cough, cough, cough....HACK! */
 
 Model MG94customModel = (MG94custom,vectorOfFrequencies,1);
 
