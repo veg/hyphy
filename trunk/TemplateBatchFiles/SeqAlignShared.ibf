@@ -1,0 +1,222 @@
+alignOptions = {};
+
+alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]="ARNDCQEGHILKMFPSTWYV";
+
+ChoiceList (refSeq,"Scoring Matrix",1,SKIP_NONE,"BLOSUM62","Default BLAST BLOSUM62 matrix",
+												"HIV 5%","Empirically derived 5% divergence HIV matrix",
+												"HIV 25%","Empirically derived 25% divergence HIV matrix",
+												"HIV 50%","Empirically derived 50% divergence HIV matrix");
+
+if (refSeq < 0)
+{
+	return 0;
+	
+}
+if (refSeq == 0)
+{
+	scoreMatrix = {
+	{7,-3,-3,-3,-1,-2,-2,0,-3,-3,-3,-1,-2,-4,-1,2,0,-5,-4,-1}
+	{-3,9,-1,-3,-6,1,-1,-4,0,-5,-4,3,-3,-5,-3,-2,-2,-5,-4,-4}
+	{-3,-1,9,2,-5,0,-1,-1,1,-6,-6,0,-4,-6,-4,1,0,-7,-4,-5}
+	{-3,-3,2,10,-7,-1,2,-3,-2,-7,-7,-2,-6,-6,-3,-1,-2,-8,-6,-6}
+	{-1,-6,-5,-7,13,-5,-7,-6,-7,-2,-3,-6,-3,-4,-6,-2,-2,-5,-5,-2}
+	{-2,1,0,-1,-5,9,3,-4,1,-5,-4,2,-1,-5,-3,-1,-1,-4,-3,-4}
+	{-2,-1,-1,2,-7,3,8,-4,0,-6,-6,1,-4,-6,-2,-1,-2,-6,-5,-4}
+	{0,-4,-1,-3,-6,-4,-4,9,-4,-7,-7,-3,-5,-6,-5,-1,-3,-6,-6,-6}
+	{-3,0,1,-2,-7,1,0,-4,12,-6,-5,-1,-4,-2,-4,-2,-3,-4,3,-5}
+	{-3,-5,-6,-7,-2,-5,-6,-7,-6,7,2,-5,2,-1,-5,-4,-2,-5,-3,4}
+	{-3,-4,-6,-7,-3,-4,-6,-7,-5,2,6,-4,3,0,-5,-4,-3,-4,-2,1}
+	{-1,3,0,-2,-6,2,1,-3,-1,-5,-4,8,-3,-5,-2,-1,-1,-6,-4,-4}
+	{-2,-3,-4,-6,-3,-1,-4,-5,-4,2,3,-3,9,0,-4,-3,-1,-3,-3,1}
+	{-4,-5,-6,-6,-4,-5,-6,-6,-2,-1,0,-5,0,10,-6,-4,-4,0,4,-2}
+	{-1,-3,-4,-3,-6,-3,-2,-5,-4,-5,-5,-2,-4,-6,12,-2,-3,-7,-6,-4}
+	{2,-2,1,-1,-2,-1,-1,-1,-2,-4,-4,-1,-3,-4,-2,7,2,-6,-3,-3}
+	{0,-2,0,-2,-2,-1,-2,-3,-3,-2,-3,-1,-1,-4,-3,2,8,-5,-3,0}
+	{-5,-5,-7,-8,-5,-4,-6,-6,-4,-5,-4,-6,-3,0,-7,-6,-5,16,3,-5}
+	{-4,-4,-4,-6,-5,-3,-5,-6,3,-3,-2,-4,-3,4,-6,-3,-3,3,11,-3}
+	{-1,-4,-5,-6,-2,-4,-4,-6,-5,4,1,-4,1,-2,-4,-3,0,-5,-3,7}
+	};
+}
+
+if (refSeq == 1)
+{
+	scoreMatrix = 
+{
+{                11,                 0,                 2,                 2,                -2,                 3,                -1,                 1,                 0,                -1,                 1,                 0,                 3,                -2,                 0,                 3,                 7,                 5,                -5,                -4}
+{                 0,                15,                -2,                -4,                 8,                 2,                 2,                -1,                -2,                 0,                -1,                 0,                -1,                -4,                 0,                 5,                 2,                 0,                 5,                 7}
+{                 2,                -2,                12,                 6,                -3,                 4,                 4,                -2,                 1,                -5,                -2,                 7,                -2,                -1,                -1,                 2,                 1,                 2,                -4,                 2}
+{                 2,                -4,                 6,                10,                -5,                 4,                 0,                -3,                 4,                -5,                 0,                 1,                -3,                 3,                 0,                -1,                 0,                 1,                -4,                -2}
+{                -2,                 8,                -3,                -5,                14,                 0,                 2,                 4,                -3,                 5,                 2,                -1,                -1,                -2,                -2,                 2,                 0,                 2,                 3,                 8}
+{                 3,                 2,                 4,                 4,                 0,                10,                -1,                -2,                 1,                -4,                -2,                 0,                -2,                -1,                 3,                 4,                 0,                 1,                 2,                -3}
+{                -1,                 2,                 4,                 0,                 2,                -1,                15,                 0,                 2,                 2,                 0,                 6,                 4,                 6,                 6,                 2,                 2,                -3,                 0,                 9}
+{                 1,                -1,                -2,                -3,                 4,                -2,                 0,                10,                 0,                 4,                 7,                 1,                -1,                -2,                 0,                 2,                 5,                 7,                -4,                 0}
+{                 0,                -2,                 1,                 4,                -3,                 1,                 2,                 0,                11,                -2,                 3,                 5,                 0,                 5,                 7,                 2,                 4,                 0,                -2,                -2}
+{                -1,                 0,                -5,                -5,                 5,                -4,                 2,                 4,                -2,                 9,                 5,                -3,                 2,                 2,                 0,                 1,                 0,                 2,                 1,                 0}
+{                 1,                -1,                -2,                 0,                 2,                -2,                 0,                 7,                 3,                 5,                15,                 0,                 0,                 0,                 4,                 0,                 5,                 6,                 0,                -2}
+{                 0,                 0,                 7,                 1,                -1,                 0,                 6,                 1,                 5,                -3,                 0,                12,                 0,                 1,                 2,                 7,                 5,                -1,                -5,                 4}
+{                 3,                -1,                -2,                -3,                -1,                -2,                 4,                -1,                 0,                 2,                 0,                 0,                12,                 5,                 2,                 5,                 3,                -2,                -2,                -1}
+{                -2,                -4,                -1,                 3,                -2,                -1,                 6,                -2,                 5,                 2,                 0,                 1,                 5,                11,                 4,                 0,                 0,                -3,                -3,                 0}
+{                 0,                 0,                -1,                 0,                -2,                 3,                 6,                 0,                 7,                 0,                 4,                 2,                 2,                 4,                10,                 4,                 3,                -1,                 2,                 0}
+{                 3,                 5,                 2,                -1,                 2,                 4,                 2,                 2,                 2,                 1,                 0,                 7,                 5,                 0,                 4,                11,                 6,                 0,                -2,                 2}
+{                 7,                 2,                 1,                 0,                 0,                 0,                 2,                 5,                 4,                 0,                 5,                 5,                 3,                 0,                 3,                 6,                11,                 2,                -4,                 0}
+{                 5,                 0,                 2,                 1,                 2,                 1,                -3,                 7,                 0,                 2,                 6,                -1,                -2,                -3,                -1,                 0,                 2,                11,                -5,                -2}
+{                -5,                 5,                -4,                -4,                 3,                 2,                 0,                -4,                -2,                 1,                 0,                -5,                -2,                -3,                 2,                -2,                -4,                -5,                14,                 3}
+{                -4,                 7,                 2,                -2,                 8,                -3,                 9,                 0,                -2,                 0,                -2,                 4,                -1,                 0,                 0,                 2,                 0,                -2,                 3,                14}
+};
+
+}
+
+if (refSeq == 2)
+{
+	scoreMatrix = 
+{
+{                11,                -2,                 1,                 0,                -5,                 1,                -3,                -1,                -3,                -3,                -2,                -2,                 1,                -4,                -1,                 2,                 5,                 4,                -8,                -7}
+{                -2,                16,                -6,                -7,                 6,                 0,                 0,                -4,                -6,                -3,                -5,                -2,                -4,                -7,                -1,                 4,                 0,                 0,                 3,                 6}
+{                 1,                -6,                12,                 4,                -6,                 2,                 2,                -5,                -2,                -8,                -5,                 6,                -5,                -4,                -5,                 0,                -1,                 0,                -7,                 0}
+{                 0,                -7,                 4,                10,                -8,                 2,                -2,                -6,                 2,                -8,                -2,                -1,                -6,                 1,                -2,                -5,                -2,                 0,                -7,                -4}
+{                -5,                 6,                -6,                -8,                14,                -1,                 0,                 2,                -5,                 4,                 0,                -4,                -4,                -5,                -6,                 0,                -4,                 0,                 1,                 7}
+{                 1,                 0,                 2,                 2,                -1,                10,                -4,                -6,                 0,                -8,                -5,                -1,                -5,                -4,                 2,                 2,                -1,                 0,                 0,                -7}
+{                -3,                 0,                 2,                -2,                 0,                -4,                15,                -3,                 0,                 1,                -2,                 5,                 3,                 4,                 5,                 0,                 0,                -6,                -2,                 7}
+{                -1,                -4,                -5,                -6,                 2,                -6,                -3,                10,                -1,                 2,                 5,                 0,                -4,                -6,                 0,                 0,                 4,                 5,                -7,                -2}
+{                -3,                -6,                -2,                 2,                -5,                 0,                 0,                -1,                11,                -4,                 1,                 4,                -3,                 4,                 5,                 0,                 3,                -2,                -5,                -6}
+{                -3,                -3,                -8,                -8,                 4,                -8,                 1,                 2,                -4,                 9,                 3,                -6,                 1,                 0,                -1,                 0,                -3,                 0,                 0,                -2}
+{                -2,                -5,                -5,                -2,                 0,                -5,                -2,                 5,                 1,                 3,                15,                -3,                -4,                -1,                 2,                -3,                 4,                 4,                -2,                -6}
+{                -2,                -2,                 6,                -1,                -4,                -1,                 5,                 0,                 4,                -6,                -3,                12,                -3,                 0,                 0,                 5,                 4,                -4,                -8,                 2}
+{                 1,                -4,                -5,                -6,                -4,                -5,                 3,                -4,                -3,                 1,                -4,                -3,                12,                 3,                 0,                 3,                 1,                -5,                -4,                -4}
+{                -4,                -7,                -4,                 1,                -5,                -4,                 4,                -6,                 4,                 0,                -1,                 0,                 3,                12,                 2,                -2,                -1,                -6,                -5,                -2}
+{                -1,                -1,                -5,                -2,                -6,                 2,                 5,                 0,                 5,                -1,                 2,                 0,                 0,                 2,                11,                 2,                 2,                -4,                 0,                -3}
+{                 2,                 4,                 0,                -5,                 0,                 2,                 0,                 0,                 0,                 0,                -3,                 5,                 3,                -2,                 2,                12,                 4,                -3,                -5,                 0}
+{                 5,                 0,                -1,                -2,                -4,                -1,                 0,                 4,                 3,                -3,                 4,                 4,                 1,                -1,                 2,                 4,                11,                 0,                -7,                -3}
+{                 4,                 0,                 0,                 0,                 0,                 0,                -6,                 5,                -2,                 0,                 4,                -4,                -5,                -6,                -4,                -3,                 0,                11,                -8,                -5}
+{                -8,                 3,                -7,                -7,                 1,                 0,                -2,                -7,                -5,                 0,                -2,                -8,                -4,                -5,                 0,                -5,                -7,                -8,                14,                 2}
+{                -7,                 6,                 0,                -4,                 7,                -7,                 7,                -2,                -6,                -2,                -6,                 2,                -4,                -2,                -3,                 0,                -3,                -5,                 2,                14}
+};
+
+}
+
+if (refSeq == 3)
+{
+	scoreMatrix = 
+{
+{                10,                 1,                 4,                 3,                 0,                 4,                 0,                 3,                 1,                 0,                 3,                 3,                 4,                 0,                 2,                 5,                 7,                 6,                -2,                -1}
+{                 1,                15,                 0,                -2,                 9,                 3,                 4,                 0,                 0,                 1,                 0,                 2,                 0,                -1,                 2,                 6,                 3,                 2,                 6,                 8}
+{                 4,                 0,                12,                 7,                -1,                 5,                 5,                 0,                 3,                -3,                 0,                 8,                 0,                 1,                 0,                 4,                 3,                 3,                -2,                 3}
+{                 3,                -2,                 7,                10,                -3,                 5,                 1,                 0,                 5,                -3,                 0,                 3,                 0,                 4,                 2,                 0,                 1,                 2,                -2,                 0}
+{                 0,                 9,                -1,                -3,                13,                 1,                 5,                 5,                -1,                 6,                 4,                 0,                 1,                 0,                 0,                 3,                 1,                 3,                 4,                 9}
+{                 4,                 3,                 5,                 5,                 1,                10,                 1,                 0,                 3,                -2,                 0,                 2,                 0,                 0,                 4,                 5,                 2,                 2,                 3,                -1}
+{                 0,                 4,                 5,                 1,                 5,                 1,                14,                 1,                 4,                 3,                 2,                 7,                 5,                 7,                 7,                 4,                 3,                 0,                 1,                10}
+{                 3,                 0,                 0,                 0,                 5,                 0,                 1,                 9,                 1,                 5,                 7,                 2,                 0,                 0,                 2,                 3,                 6,                 7,                -1,                 1}
+{                 1,                 0,                 3,                 5,                -1,                 3,                 4,                 1,                10,                 0,                 4,                 6,                 1,                 6,                 8,                 3,                 5,                 1,                 0,                 0}
+{                 0,                 1,                -3,                -3,                 6,                -2,                 3,                 5,                 0,                 9,                 6,                 0,                 4,                 3,                 1,                 2,                 1,                 3,                 2,                 2}
+{                 3,                 0,                 0,                 0,                 4,                 0,                 2,                 7,                 4,                 6,                15,                 2,                 1,                 2,                 5,                 2,                 6,                 7,                 0,                 0}
+{                 3,                 2,                 8,                 3,                 0,                 2,                 7,                 2,                 6,                 0,                 2,                11,                 2,                 3,                 4,                 7,                 6,                 0,                -2,                 5}
+{                 4,                 0,                 0,                 0,                 1,                 0,                 5,                 0,                 1,                 4,                 1,                 2,                12,                 6,                 3,                 6,                 4,                 0,                -1,                 0}
+{                 0,                -1,                 1,                 4,                 0,                 0,                 7,                 0,                 6,                 3,                 2,                 3,                 6,                11,                 5,                 1,                 2,                -1,                -1,                 2}
+{                 2,                 2,                 0,                 2,                 0,                 4,                 7,                 2,                 8,                 1,                 5,                 4,                 3,                 5,                10,                 5,                 4,                 0,                 3,                 1}
+{                 5,                 6,                 4,                 0,                 3,                 5,                 4,                 3,                 3,                 2,                 2,                 7,                 6,                 1,                 5,                11,                 6,                 1,                 0,                 3}
+{                 7,                 3,                 3,                 1,                 1,                 2,                 3,                 6,                 5,                 1,                 6,                 6,                 4,                 2,                 4,                 6,                10,                 4,                -2,                 1}
+{                 6,                 2,                 3,                 2,                 3,                 2,                 0,                 7,                 1,                 3,                 7,                 0,                 0,                -1,                 0,                 1,                 4,                10,                -2,                 0}
+{                -2,                 6,                -2,                -2,                 4,                 3,                 1,                -1,                 0,                 2,                 0,                -2,                -1,                -1,                 3,                 0,                -2,                -2,                13,                 5}
+{                -1,                 8,                 3,                 0,                 9,                -1,                10,                 1,                 0,                 2,                 0,                 5,                 0,                 2,                 1,                 3,                 1,                 0,                 5,                14}
+};
+
+}
+
+
+alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
+alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	40;
+alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	20;
+alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	10;
+alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	5;
+alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
+
+ChoiceList (refSeq,"Prefix/Suffix Indels",1,SKIP_NONE,"No penalty","Do not penalize prefix and suffix Indels","Normal penalty","Treat prefix and suffix indels as any other indels");
+if (refSeq < 0)
+{
+	return 0;
+}
+
+alignOptions ["SEQ_ALIGN_NO_TP"]		=   1-refSeq;
+
+
+predefSeqNames = {{"First in file", "Use the first sequence in the data file as a reference"}
+				  {"Longest in file", "Use the longest sequence in the data file as the reference"}
+				 /*0*/ {"HXB2_env", "Use HIV-1 HXB2 reference strain envelope sequence (K03455)"}
+				 /*1*/ {"HXB2_nef", "Use HIV-1 HXB2 reference strain NEF sequence (K03455)"}
+				 /*2*/ {"HXB2_gag", "Use HIV-1 HXB2 reference strain gag sequence (K03455)"} 
+				 /*3*/ {"HXB2_vpr", "Use HIV-1 HXB2 reference strain vpr sequence (K03455)"} 
+				 /*4*/ {"HXB2_vif", "Use HIV-1 HXB2 reference strain vif sequence (K03455)"} 
+				 /*5*/ {"HXB2_vpu", "Use HIV-1 HXB2 reference strain vpu sequence (K03455)"} 
+				 /*6*/ {"HXB2_pr", "Use HIV-1 HXB2 reference strain protease sequence (K03455)"} 
+				 /*7*/ {"HXB2_rt", "Use HIV-1 HXB2 reference strain reverse transcriptase sequence (K03455)"} 
+				 /*8*/ {"HXB2_int", "Use HIV-1 HXB2 reference strain integrase sequence (K03455)"} 
+				 /*9*/ {"HXB2_rev", "Use HIV-1 HXB2 reference strain rev (exons 1 and 2)sequence (K03455)"} 
+				/*10*/ {"HXB2_tat", "Use HIV-1 HXB2 reference strain tat (exons 1 and 2) sequence (K03455)"} 
+				/*11*/ {"HXB2_prrt", "Use HIV-1 HXB2 reference strain protease+rt sequence (K03455)"}
+				/*12*/ {"NL4_3prrt", "Use HIV-1 NL4-3 reference strain pr+rt sequence"} 
+				/*13*/ {"HXB2_pol",  "Use HIV-1 HXB2 reference strain pol (starting at pr) sequence (K03455)"}
+				  				  };
+				  
+				  
+predefSeqNames2 = {{"No", "No reference coordinate sequences"}
+				 /*0*/ {"HXB2_env", "Use HIV-1 HXB2 reference strain envelope sequence (K03455)"}
+				 /*1*/ {"HXB2_nef", "Use HIV-1 HXB2 reference strain NEF sequence (K03455)"}
+				 /*2*/ {"HXB2_gag", "Use HIV-1 HXB2 reference strain gag sequence (K03455)"} 
+				 /*3*/ {"HXB2_vpr", "Use HIV-1 HXB2 reference strain vpr sequence (K03455)"} 
+				 /*4*/ {"HXB2_vif", "Use HIV-1 HXB2 reference strain vif sequence (K03455)"} 
+				 /*5*/ {"HXB2_vpu", "Use HIV-1 HXB2 reference strain vpu sequence (K03455)"} 
+				 /*6*/ {"HXB2_pr", "Use HIV-1 HXB2 reference strain protease sequence (K03455)"} 
+				 /*7*/ {"HXB2_rt", "Use HIV-1 HXB2 reference strain reverse transcriptase sequence (K03455)"} 
+				 /*8*/ {"HXB2_int", "Use HIV-1 HXB2 reference strain integrase sequence (K03455)"} 
+				 /*9*/ {"HXB2_rev", "Use HIV-1 HXB2 reference strain rev (exons 1 and 2)sequence (K03455)"} 
+				/*10*/ {"HXB2_tat", "Use HIV-1 HXB2 reference strain tat (exons 1 and 2) sequence (K03455)"} 
+				/*11*/ {"HXB2_prrt", "Use HIV-1 HXB2 reference strain protease+rt sequence (K03455)"} 
+				/*12*/ {"NL4_3prrt", "Use HIV-1 NL4-3 reference strain pr+rt sequence"} 
+				/*13*/ {"HXB2_pol",  "Use HIV-1 HXB2 reference strain pol (starting at pr) sequence (K03455)"}
+				  };
+
+RefSeqs = {};
+RefSeqs [0] = "ATGAGAGTGAAGGAGAAATATCAGCACTTGTGGAGATGGGGGTGGAGATGGGGCACCATGCTCCTTGGGATGTTGATGATCTGTAGTGCTACAGAAAAATTGTGGGTCACAGTCTATTATGGGGTACCTGTGTGGAAGGAAGCAACCACCACTCTATTTTGTGCATCAGATGCTAAAGCATATGATACAGAGGTACATAATGTTTGGGCCACACATGCCTGTGTACCCACAGACCCCAACCCACAAGAAGTAGTATTGGTAAATGTGACAGAAAATTTTAACATGTGGAAAAATGACATGGTAGAACAGATGCATGAGGATATAATCAGTTTATGGGATCAAAGCCTAAAGCCATGTGTAAAATTAACCCCACTCTGTGTTAGTTTAAAGTGCACTGATTTGAAGAATGATACTAATACCAATAGTAGTAGCGGGAGAATGATAATGGAGAAAGGAGAGATAAAAAACTGCTCTTTCAATATCAGCACAAGCATAAGAGGTAAGGTGCAGAAAGAATATGCATTTTTTTATAAACTTGATATAATACCAATAGATAATGATACTACCAGCTATAAGTTGACAAGTTGTAACACCTCAGTCATTACACAGGCCTGTCCAAAGGTATCCTTTGAGCCAATTCCCATACATTATTGTGCCCCGGCTGGTTTTGCGATTCTAAAATGTAATAATAAGACGTTCAATGGAACAGGACCATGTACAAATGTCAGCACAGTACAATGTACACATGGAATTAGGCCAGTAGTATCAACTCAACTGCTGTTAAATGGCAGTCTAGCAGAAGAAGAGGTAGTAATTAGATCTGTCAATTTCACGGACAATGCTAAAACCATAATAGTACAGCTGAACACATCTGTAGAAATTAATTGTACAAGACCCAACAACAATACAAGAAAAAGAATCCGTATCCAGAGAGGACCAGGGAGAGCATTTGTTACAATAGGAAAAATAGGAAATATGAGACAAGCACATTGTAACATTAGTAGAGCAAAATGGAATAACACTTTAAAACAGATAGCTAGCAAATTAAGAGAACAATTTGGAAATAATAAAACAATAATCTTTAAGCAATCCTCAGGAGGGGACCCAGAAATTGTAACGCACAGTTTTAATTGTGGAGGGGAATTTTTCTACTGTAATTCAACACAACTGTTTAATAGTACTTGGTTTAATAGTACTTGGAGTACTGAAGGGTCAAATAACACTGAAGGAAGTGACACAATCACCCTCCCATGCAGAATAAAACAAATTATAAACATGTGGCAGAAAGTAGGAAAAGCAATGTATGCCCCTCCCATCAGTGGACAAATTAGATGTTCATCAAATATTACAGGGCTGCTATTAACAAGAGATGGTGGTAATAGCAACAATGAGTCCGAGATCTTCAGACCTGGAGGAGGAGATATGAGGGACAATTGGAGAAGTGAATTATATAAATATAAAGTAGTAAAAATTGAACCATTAGGAGTAGCACCCACCAAGGCAAAGAGAAGAGTGGTGCAGAGAGAAAAAAGAGCAGTGGGAATAGGAGCTTTGTTCCTTGGGTTCTTGGGAGCAGCAGGAAGCACTATGGGCGCAGCCTCAATGACGCTGACGGTACAGGCCAGACAATTATTGTCTGGTATAGTGCAGCAGCAGAACAATTTGCTGAGGGCTATTGAGGCGCAACAGCATCTGTTGCAACTCACAGTCTGGGGCATCAAGCAGCTCCAGGCAAGAATCCTGGCTGTGGAAAGATACCTAAAGGATCAACAGCTCCTGGGGATTTGGGGTTGCTCTGGAAAACTCATTTGCACCACTGCTGTGCCTTGGAATGCTAGTTGGAGTAATAAATCTCTGGAACAGATTTGGAATCACACGACCTGGATGGAGTGGGACAGAGAAATTAACAATTACACAAGCTTAATACACTCCTTAATTGAAGAATCGCAAAACCAGCAAGAAAAGAATGAACAAGAATTATTGGAATTAGATAAATGGGCAAGTTTGTGGAATTGGTTTAACATAACAAATTGGCTGTGGTATATAAAATTATTCATAATGATAGTAGGAGGCTTGGTAGGTTTAAGAATAGTTTTTGCTGTACTTTCTATAGTGAATAGAGTTAGGCAGGGATATTCACCATTATCGTTTCAGACCCACCTCCCAACCCCGAGGGGACCCGACAGGCCCGAAGGAATAGAAGAAGAAGGTGGAGAGAGAGACAGAGACAGATCCATTCGATTGGTGAACGGATCCTTGGCACTTATCTGGGACGATCTGCGGAGCCTGTGCCTCTTCAGCTACCACCGCTTGAGAGACTTACTCTTGATTGTAACGAGGATTGTGGAACTTCTGGGACGCAGGGGGTGGGAAGCCCTCAAATATTGGTGGAATCTCCTACAGTATTGGAGTCAGGAACTAAAGAATAGTGCTGTTAGCTTGCTCAATGCCACAGCCATAGCAGTAGCTGAGGGGACAGATAGGGTTATAGAAGTAGTACAAGGAGCTTGTAGAGCTATTCGCCACATACCTAGAAGAATAAGACAGGGCTTGGAAAGGATTTTGCTA";
+RefSeqs [1] = "ATGGGTGGCAAGTGGTCAAAAAGTAGTGTGATTGGATGGCCTACTGTAAGGGAAAGAATGAGACGAGCTGAGCCAGCAGCAGATAGGGTGGGAGCAGCATCTCGAGACCTGGAAAAACATGGAGCAATCACAAGTAGCAATACAGCAGCTACCAATGCTGCTTGTGCCTGGCTAGAAGCACAAGAGGAGGAGGAGGTGGGTTTTCCAGTCACACCTCAGGTACCTTTAAGACCAATGACTTACAAGGCAGCTGTAGATCTTAGCCACTTTTTAAAAGAAAAGGGGGGACTGGAAGGGCTAATTCACTCCCAAAGAAGACAAGATATCCTTGATCTGTGGATCTACCACACACAAGGCTACTTCCCTGAT---CAGAACTACACACCAGGGCCAGGGGTCAGATATCCACTGACCTTTGGATGGTGCTACAAGCTAGTACCAGTTGAGCCAGATAAGATAGAAGAGGCCAATAAAGGAGAGAACACCAGCTTGTTACACCCTGTGAGCCTGCATGGGATGGATGACCCGGAGAGAGAAGTGTTAGAGTGGAGGTTTGACAGCCGCCTAGCATTTCATCACGTGGCCCGAGAGCTGCATCCGGAGTACTTCAAGAACTGC";
+RefSeqs [2] = "ATGGGTGCGAGAGCGTCAGTATTAAGCGGGGGAGAATTAGATCGATGGGAAAAAATTCGGTTAAGGCCAGGGGGAAAGAAAAAATATAAATTAAAACATATAGTATGGGCAAGCAGGGAGCTAGAACGATTCGCAGTTAATCCTGGCCTGTTAGAAACATCAGAAGGCTGTAGACAAATACTGGGACAGCTACAACCATCCCTTCAGACAGGATCAGAAGAACTTAGATCATTATATAATACAGTAGCAACCCTCTATTGTGTGCATCAAAGGATAGAGATAAAAGACACCAAGGAAGCTTTAGACAAGATAGAGGAAGAGCAAAACAAAAGTAAGAAAAAAGCACAGCAAGCAGCAGCTGACACAGGACACAGCAATCAGGTCAGCCAAAATTACCCTATAGTGCAGAACATCCAGGGGCAAATGGTACATCAGGCCATATCACCTAGAACTTTAAATGCATGGGTAAAAGTAGTAGAAGAGAAGGCTTTCAGCCCAGAAGTGATACCCATGTTTTCAGCATTATCAGAAGGAGCCACCCCACAAGATTTAAACACCATGCTAAACACAGTGGGGGGACATCAAGCAGCCATGCAAATGTTAAAAGAGACCATCAATGAGGAAGCTGCAGAATGGGATAGAGTGCATCCAGTGCATGCAGGGCCTATTGCACCAGGCCAGATGAGAGAACCAAGGGGAAGTGACATAGCAGGAACTACTAGTACCCTTCAGGAACAAATAGGATGGATGACAAATAATCCACCTATCCCAGTAGGAGAAATTTATAAAAGATGGATAATCCTGGGATTAAATAAAATAGTAAGAATGTATAGCCCTACCAGCATTCTGGACATAAGACAAGGACCAAAGGAACCCTTTAGAGACTATGTAGACCGGTTCTATAAAACTCTAAGAGCCGAGCAAGCTTCACAGGAGGTAAAAAATTGGATGACAGAAACCTTGTTGGTCCAAAATGCGAACCCAGATTGTAAGACTATTTTAAAAGCATTGGGACCAGCGGCTACACTAGAAGAAATGATGACAGCATGTCAGGGAGTAGGAGGACCCGGCCATAAGGCAAGAGTTTTGGCTGAAGCAATGAGCCAAGTAACAAATTCAGCTACCATAATGATGCAGAGAGGCAATTTTAGGAACCAAAGAAAGATTGTTAAGTGTTTCAATTGTGGCAAAGAAGGGCACACAGCCAGAAATTGCAGGGCCCCTAGGAAAAAGGGCTGTTGGAAATGTGGAAAGGAAGGACACCAAATGAAAGATTGTACTGAGAGACAGGCTAATTTTTTAGGGAAGATCTGGCCTTCCTACAAGGGAAGGCCAGGGAATTTTCTTCAGAGCAGACCAGAGCCAACAGCCCCACCAGAAGAGAGCTTCAGGTCTGGGGTAGAGACAACAACTCCCCCTCAGAAGCAGGAGCCGATAGACAAGGAACTGTATCCTTTAACTTCCCTCAGGTCACTCTTTGGCAACGACCCCTCGTCACAA";				  
+RefSeqs [3] = "ATGGAACAAGCCCCAGAAGACCAAGGGCCACAGAGGGAGCCACACAATGAATGGACACTAGAGCTTTTAGAGGAGCTTAAGAATGAAGCTGTTAGACATTTTCCTAGGATTTGGCTCCATGGCTTAGGGCAACATATCTATGAAACTTATGGGGATACTTGGGCAGGAGTGGAAGCCATAATAAGAATTCTGCAACAACTGCTGTTTATCCATTTTCAGAATTGGGTGTCGACATAGCAGAATAGGCGTTACTCGACAGAGGAGAGCAAGAAATGGAGCCAGTAGATCC";				  
+RefSeqs [4] = "ATGGAAAACAGATGGCAGGTGATGATTGTGTGGCAAGTAGACAGGATGAGGATTAGAACATGGAAAAGTTTAGTAAAACACCATATGTATGTTTCAGGGAAAGCTAGGGGATGGTTTTATAGACATCACTATGAAAGCCCTCATCCAAGAATAAGTTCAGAAGTACACATCCCACTAGGGGATGCTAGATTGGTAATAACAACATATTGGGGTCTGCATACAGGAGAAAGAGACTGGCATTTGGGTCAGGGAGTCTCCATAGAATGGAGGAAAAAGAGATATAGCACACAAGTAGACCCTGAACTAGCAGACCAACTAATTCATCTGTATTACTTTGACTGTTTTTCAGACTCTGCTATAAGAAAGGCCTTATTAGGACACATAGTTAGCCCTAGGTGTGAATATCAAGCAGGACATAACAAGGTAGGATCTCTACAATACTTGGCACTAGCAGCATTAATAACACCAAAAAAGATAAAGCCACCTTTGCCTAGTGTTACGAAACTGACAGAGGATAGATGGAACAAGCCCCAGAAGACCAAGGGCCACAGAGGGAGCCACACAATGAATGGACAC";				  
+RefSeqs [5] = "ACGCAACCTATACCAATAGTAGCAATAGTAGCATTAGTAGTAGCAATAATAATAGCAATAGTTGTGTGGTCCATAGTAATCATAGAATATAGGAAAATATTAAGACAAAGAAAAATAGACAGGTTAATTGATAGACTAATAGAAAGAGCAGAAGACAGTGGCAATGAGAGTGAAGGAGAAATATCAGCACTTGTGGAGATGGGGGTGGAGATGGGGCACCATGCTCCTTGGGATGTTGATGATC";				  
+RefSeqs [6] = "CCTCAGGTCACTCTTTGGCAACGACCCCTCGTCACAATAAAGATAGGGGGGCAACTAAAGGAAGCTCTATTAGATACAGGAGCAGATGATACAGTATTAGAAGAAATGAGTTTGCCAGGAAGATGGAAACCAAAAATGATAGGGGGAATTGGAGGTTTTATCAAAGTAAGACAGTATGATCAGATACTCATAGAAATCTGTGGACATAAAGCTATAGGTACAGTATTAGTAGGACCTACACCTGTCAACATAATTGGAAGAAATCTGTTGACTCAGATTGGTTGCACTTTAAATTTT";				  
+RefSeqs [7] = "CCCATTAGCCCTATTGAGACTGTACCAGTAAAATTAAAGCCAGGAATGGATGGCCCAAAAGTTAAACAATGGCCATTGACAGAAGAAAAAATAAAAGCATTAGTAGAAATTTGTACAGAGATGGAAAAGGAAGGGAAAATTTCAAAAATTGGGCCTGAAAATCCATACAATACTCCAGTATTTGCCATAAAGAAAAAAGACAGTACTAAATGGAGAAAATTAGTAGATTTCAGAGAACTTAATAAGAGAACTCAAGACTTCTGGGAAGTTCAATTAGGAATACCACATCCCGCAGGGTTAAAAAAGAAAAAATCAGTAACAGTACTGGATGTGGGTGATGCATATTTTTCAGTTCCCTTAGATGAAGACTTCAGGAAGTATACTGCATTTACCATACCTAGTATAAACAATGAGACACCAGGGATTAGATATCAGTACAATGTGCTTCCACAGGGATGGAAAGGATCACCAGCAATATTCCAAAGTAGCATGACAAAAATCTTAGAGCCTTTTAGAAAACAAAATCCAGACATAGTTATCTATCAATACATGGATGATTTGTATGTAGGATCTGACTTAGAAATAGGGCAGCATAGAACAAAAATAGAGGAGCTGAGACAACATCTGTTGAGGTGGGGACTTACCACACCAGACAAAAAACATCAGAAAGAACCTCCATTCCTTTGGATGGGTTATGAACTCCATCCTGATAAATGGACAGTACAGCCTATAGTGCTGCCAGAAAAAGACAGCTGGACTGTCAATGACATACAGAAGTTAGTGGGGAAATTGAATTGGGCAAGTCAGATTTACCCAGGGATTAAAGTAAGGCAATTATGTAAACTCCTTAGAGGAACCAAAGCACTAACAGAAGTAATACCACTAACAGAAGAAGCAGAGCTAGAACTGGCAGAAAACAGAGAGATTCTAAAAGAACCAGTACATGGAGTGTATTATGACCCATCAAAAGACTTAATAGCAGAAATACAGAAGCAGGGGCAAGGCCAATGGACATATCAAATTTATCAAGAGCCATTTAAAAATCTGAAAACAGGAAAATATGCAAGAATGAGGGGTGCCCACACTAATGATGTAAAACAATTAACAGAGGCAGTGCAAAAAATAACCACAGAAAGCATAGTAATATGGGGAAAGACTCCTAAATTTAAACTGCCCATACAAAAGGAAACATGGGAAACATGGTGGACAGAGTATTGGCAAGCCACCTGGATTCCTGAGTGGGAGTTTGTTAATACCCCTCCCTTAGTGAAATTATGGTACCAGTTAGAGAAAGAACCCATAGTAGGAGCAGAAACCTTC";				  
+RefSeqs [8] = "TTTTTAGATGGAATAGATAAGGCCCAAGATGAACATGAGAAATATCACAGTAATTGGAGAGCAATGGCTAGTGATTTTAACCTGCCACCTGTAGTAGCAAAAGAAATAGTAGCCAGCTGTGATAAATGTCAGCTAAAAGGAGAAGCCATGCATGGACAAGTAGACTGTAGTCCAGGAATATGGCAACTAGATTGTACACATTTAGAAGGAAAAGTTATCCTGGTAGCAGTTCATGTAGCCAGTGGATATATAGAAGCAGAAGTTATTCCAGCAGAAACAGGGCAGGAAACAGCATATTTTCTTTTAAAATTAGCAGGAAGATGGCCAGTAAAAACAATACATACTGACAATGGCAGCAATTTCACCGGTGCTACGGTTAGGGCCGCCTGTTGGTGGGCGGGAATCAAGCAGGAATTTGGAATTCCCTACAATCCCCAAAGTCAAGGAGTAGTAGAATCTATGAATAAAGAATTAAAGAAAATTATAGGACAGGTAAGAGATCAGGCTGAACATCTTAAGACAGCAGTACAAATGGCAGTATTCATCCACAATTTTAAAAGAAAAGGGGGGATTGGGGGGTACAGTGCAGGGGAAAGAATAGTAGACATAATAGCAACAGACATACAAACTAAAGAATTACAAAAACAAATTACAAAAATTCAAAATTTTCGGGTTTATTACAGGGACAGCAGAAATCCACTTTGGAAAGGACCAGCAAAGCTCCTCTGGAAAGGTGAAGGGGCAGTAGTAATACAAGATAATAGTGACATAAAAGTAGTGCCAAGAAGAAAAGCAAAGATCATTAGGGATTATGGAAAACAGATGGCAGGTGATGATTGTGTGGCAAGTAGACAGGATGAGGAT";
+RefSeqs [9] = "ATGGCAGGAAGAAGCGGAGACAGCGACGAAGAGCTCATCAGAACAGTCAGACTCATCAAGCTTCTCTAACCCACCTCCCAACCCCGAGGGGACCCGACAGGCCCGAAGGAATAGAAGAAGAAGGTGGAGAGAGAGACAGAGACAGATCCATTCGATTAGTGAACGGATCCTTGGCACTTATCTGGGACGATCTGCGGAGCCTGTGCCTCTTCAGCTACCACCGCTTGAGAGACTTACTCTTGATTGTAACGAGGATTGTGGAACTTCTGGGACGCAGGGGGTGGGAAGCCCTCAAATATTGGTGGAATCTCCTACAGTATTGGAGTCAGGAACTAAAGA";
+RefSeqs[10] = "ATGGAGCCAGTAGATCCTAGACTAGAGCCCTGGAAGCATCCAGGAAGTCAGCCTAAAACTGCTTGTACCAATTGCTATTGTAAAAAGTGTTGCTTTCATTGCCAAGTTTGTTTCATAACAAAAGCCTTAGGCATCTCCTATGGCAGGAAGAAGCGGAGACAGCGACGAAGAGCTCATCAGAACAGTCAGACTCATCAAGCTTCTCTATCAAAGCAACCCACCTCCCAACCCCGAGGGGACCCGACAGGCCCGAAGGAATAGAAGAAGAAGGTGGAGAGAGAGACAGAGACAGATCCATTCGAT";
+RefSeqs[11] = "CCTCAGGTCACTCTTTGGCAACGACCCCTCGTCACAATAAAGATAGGGGGGCAACTAAAGGAAGCTCTATTAGATACAGGAGCAGATGATACAGTATTAGAAGAAATGAGTTTGCCAGGAAGATGGAAACCAAAAATGATAGGGGGAATTGGAGGTTTTATCAAAGTAAGACAGTATGATCAGATACTCATAGAAATCTGTGGACATAAAGCTATAGGTACAGTATTAGTAGGACCTACACCTGTCAACATAATTGGAAGAAATCTGTTGACTCAGATTGGTTGCACTTTAAATTTTCCCATTAGCCCTATTGAGACTGTACCAGTAAAATTAAAGCCAGGAATGGATGGCCCAAAAGTTAAACAATGGCCATTGACAGAAGAAAAAATAAAAGCATTAGTAGAAATTTGTACAGAGATGGAAAAGGAAGGGAAAATTTCAAAAATTGGGCCTGAAAATCCATACAATACTCCAGTATTTGCCATAAAGAAAAAAGACAGTACTAAATGGAGAAAATTAGTAGATTTCAGAGAACTTAATAAGAGAACTCAAGACTTCTGGGAAGTTCAATTAGGAATACCACATCCCGCAGGGTTAAAAAAGAAAAAATCAGTAACAGTACTGGATGTGGGTGATGCATATTTTTCAGTTCCCTTAGATGAAGACTTCAGGAAGTATACTGCATTTACCATACCTAGTATAAACAATGAGACACCAGGGATTAGATATCAGTACAATGTGCTTCCACAGGGATGGAAAGGATCACCAGCAATATTCCAAAGTAGCATGACAAAAATCTTAGAGCCTTTTAGAAAACAAAATCCAGACATAGTTATCTATCAATACATGGATGATTTGTATGTAGGATCTGACTTAGAAATAGGGCAGCATAGAACAAAAATAGAGGAGCTGAGACAACATCTGTTGAGGTGGGGACTTACCACACCAGACAAAAAACATCAGAAAGAACCTCCATTCCTTTGGATGGGTTATGAACTCCATCCTGATAAATGGACAGTACAGCCTATAGTGCTGCCAGAAAAAGACAGCTGGACTGTCAATGACATACAGAAGTTAGTGGGGAAATTGAATTGGGCAAGTCAGATTTACCCAGGGATTAAAGTAAGGCAATTATGTAAACTCCTTAGAGGAACCAAAGCACTAACAGAAGTAATACCACTAACAGAAGAAGCAGAGCTAGAACTGGCAGAAAACAGAGAGATTCTAAAAGAACCAGTACATGGAGTGTATTATGACCCATCAAAAGACTTAATAGCAGAAATACAGAAGCAGGGGCAAGGCCAATGGACATATCAAATTTATCAAGAGCCATTTAAAAATCTGAAAACAGGAAAATATGCAAGAATGAGGGGTGCCCACACTAATGATGTAAAACAATTAACAGAGGCAGTGCAAAAAATAACCACAGAAAGCATAGTAATATGGGGAAAGACTCCTAAATTTAAACTGCCCATACAAAAGGAAACATGGGAAACATGGTGGACAGAGTATTGGCAAGCCACCTGGATTCCTGAGTGGGAGTTTGTTAATACCCCTCCCTTAGTGAAATTATGGTACCAGTTAGAGAAAGAACCCATAGTAGGAGCAGAAACCTTC";
+RefSeqs[12] = "CCTCAGATCACTCTTTGGCAGCGACCCCTCGTCACAATAAAGATAGGGGGGCAATTAAAGGAAGCTCTATTAGATACAGGAGCAGATGATACAGTATTAGAAGAAATGAATTTGCCAGGAAGATGGAAACCAAAAATGATAGGGGGAATTGGAGGTTTTATCAAAGTAGGACAGTATGATCAGATACTCATAGAAATCTGCGGACATAAAGCTATAGGTACAGTATTAGTAGGACCTACACCTGTCAACATAATTGGAAGAAATCTGTTGACTCAGATTGGCTGCACTTTAAATTTTCCCATTAGTCCTATTGAGACTGTACCAGTAAAATTAAAGCCAGGAATGGATGGCCCAAAAGTTAAACAATGGCCATTGACAGAAGAAAAAATAAAAGCATTAGTAGAAATTTGTACAGAAATGGAAAAGGAAGGAAAAATTTCAAAAATTGGGCCTGAAAATCCATACAATACTCCAGTATTTGCCATAAAGAAAAAAGACAGTACTAAATGGAGAAAATTAGTAGATTTCAGAGAACTTAATAAGAGAACTCAAGATTTCTGGGAAGTTCAATTAGGAATACCACATCCTGCAGGGTTAAAACAGAAAAAATCAGTAACAGTACTGGATGTGGGCGATGCATATTTTTCAGTTCCCTTAGATAAAGACTTCAGGAAGTATACTGCATTTACCATACCTAGTATAAACAATGAGACACCAGGGATTAGATATCAGTACAATGTGCTTCCACAGGGATGGAAAGGATCACCAGCAATATTCCAGTGTAGCATGACAAAAATCTTAGAGCCTTTTAGAAAACAAAATCCAGACATAGTCATCTATCAATACATGGATGATTTGTATGTAGGATCTGACTTAGAAATAGGGCAGCATAGAACAAAAATAGAGGAACTGAGACAACATCTGTTGAGGTGGGGATTTACCACACCAGACAAAAAACATCAGAAAGAACCTCCATTCCTTTGGATGGGTTATGAACTCCATCCTGATAAATGGACAGTACAGCCTATAGTGCTGCCAGAAAAGGACAGCTGGACTGTCAATGACATACAGAAATTAGTGGGAAAATTGAATTGGGCAAGTCAGATTTATGCAGGGATTAAAGTAAGGCAATTATGTAAACTTCTTAGGGGAACCAAAGCACTAACAGAAGTAGTACCACTAACAGAAGAAGCAGAGCTAGAACTGGCAGAAAACAGGGAGATTCTAAAAGAACCGGTACATGGAGTGTATTATGACCCATCAAAAGACTTAATAGCAGAAATACAGAAGCAGGGGCAAGGCCAATGGACATATCAAATTTATCAAGAGCCATTTAAAAATCTGAAAACAGGAAAATATGCAAGAATGAAGGGTGCCCACACTAATGATGTGAAACAATTAACAGAGGCAGTACAAAAAATAGCCACAGAAAGCATAGTAATATGGGGAAAGACTCCTAAATTTAAATTACCCATACAAAAGGAAACATGGGAAGCATGGTGGACAGAGTATTGGCAAGCCACCTGGATTCCTGAGTGGGAGTTTGTCAATACCCCTCCCTTAGTGAAGTTATGGTACCAGTTAGAGAAAGAACCCATAATAGGAGCAGAAACTTTC";
+RefSeqs[13] = "CCTCAGGTCACTCTTTGGCAACGACCCCTCGTCACAATAAAGATAGGGGGGCAACTAAAGGAAGCTCTATTAGATACAGGAGCAGATGATACAGTATTAGAAGAAATGAGTTTGCCAGGAAGATGGAAACCAAAAATGATAGGGGGAATTGGAGGTTTTATCAAAGTAAGACAGTATGATCAGATACTCATAGAAATCTGTGGACATAAAGCTATAGGTACAGTATTAGTAGGACCTACACCTGTCAACATAATTGGAAGAAATCTGTTGACTCAGATTGGTTGCACTTTAAATTTTCCCATTAGCCCTATTGAGACTGTACCAGTAAAATTAAAGCCAGGAATGGATGGCCCAAAAGTTAAACAATGGCCATTGACAGAAGAAAAAATAAAAGCATTAGTAGAAATTTGTACAGAGATGGAAAAGGAAGGGAAAATTTCAAAAATTGGGCCTGAAAATCCATACAATACTCCAGTATTTGCCATAAAGAAAAAAGACAGTACTAAATGGAGAAAATTAGTAGATTTCAGAGAACTTAATAAGAGAACTCAAGACTTCTGGGAAGTTCAATTAGGAATACCACATCCCGCAGGGTTAAAAAAGAAAAAATCAGTAACAGTACTGGATGTGGGTGATGCATATTTTTCAGTTCCCTTAGATGAAGACTTCAGGAAGTATACTGCATTTACCATACCTAGTATAAACAATGAGACACCAGGGATTAGATATCAGTACAATGTGCTTCCACAGGGATGGAAAGGATCACCAGCAATATTCCAAAGTAGCATGACAAAAATCTTAGAGCCTTTTAGAAAACAAAATCCAGACATAGTTATCTATCAATACATGGATGATTTGTATGTAGGATCTGACTTAGAAATAGGGCAGCATAGAACAAAAATAGAGGAGCTGAGACAACATCTGTTGAGGTGGGGACTTACCACACCAGACAAAAAACATCAGAAAGAACCTCCATTCCTTTGGATGGGTTATGAACTCCATCCTGATAAATGGACAGTACAGCCTATAGTGCTGCCAGAAAAAGACAGCTGGACTGTCAATGACATACAGAAGTTAGTGGGGAAATTGAATTGGGCAAGTCAGATTTACCCAGGGATTAAAGTAAGGCAATTATGTAAACTCCTTAGAGGAACCAAAGCACTAACAGAAGTAATACCACTAACAGAAGAAGCAGAGCTAGAACTGGCAGAAAACAGAGAGATTCTAAAAGAACCAGTACATGGAGTGTATTATGACCCATCAAAAGACTTAATAGCAGAAATACAGAAGCAGGGGCAAGGCCAATGGACATATCAAATTTATCAAGAGCCATTTAAAAATCTGAAAACAGGAAAATATGCAAGAATGAGGGGTGCCCACACTAATGATGTAAAACAATTAACAGAGGCAGTGCAAAAAATAACCACAGAAAGCATAGTAATATGGGGAAAGACTCCTAAATTTAAACTGCCCATACAAAAGGAAACATGGGAAACATGGTGGACAGAGTATTGGCAAGCCACCTGGATTCCTGAGTGGGAGTTTGTTAATACCCCTCCCTTAGTGAAATTATGGTACCAGTTAGAGAAAGAACCCATAGTAGGAGCAGAAACCTTCTATGTAGATGGGGCAGCTAACAGGGAGACTAAATTAGGAAAAGCAGGATATGTTACTAATAGAGGAAGACAAAAAGTTGTCACCCTAACTGACACAACAAATCAGAAGACTGAGTTACAAGCAATTTATCTAGCTTTGCAGGATTCGGGATTAGAAGTAAACATAGTAACAGACTCACAATATGCATTAGGAATCATTCAAGCACAACCAGATCAAAGTGAATCAGAGTTAGTCAATCAAATAATAGAGCAGTTAATAAAAAAGGAAAAGGTCTATCTGGCATGGGTACCAGCACACAAAGGAATTGGAGGAAATGAACAAGTAGATAAATTAGTCAGTGCTGGAATCAGGAAAGTACTATTTTTAGATGGAATAGATAAGGCCCAAGATGAACATGAGAAATATCACAGTAATTGGAGAGCAATGGCTAGTGATTTTAACCTGCCACCTGTAGTAGCAAAAGAAATAGTAGCCAGCTGTGATAAATGTCAGCTAAAAGGAGAAGCCATGCATGGACAAGTAGACTGTAGTCCAGGAATATGGCAACTAGATTGTACACATTTAGAAGGAAAAGTTATCCTGGTAGCAGTTCATGTAGCCAGTGGATATATAGAAGCAGAAGTTATTCCAGCAGAAACAGGGCAGGAAACAGCATATTTTCTTTTAAAATTAGCAGGAAGATGGCCAGTAAAAACAATACATACTGACAATGGCAGCAATTTCACCGGTGCTACGGTTAGGGCCGCCTGTTGGTGGGCGGGAATCAAGCAGGAATTTGGAATTCCCTACAATCCCCAAAGTCAAGGAGTAGTAGAATCTATGAATAAAGAATTAAAGAAAATTATAGGACAGGTAAGAGATCAGGCTGAACATCTTAAGACAGCAGTACAAATGGCAGTATTCATCCACAATTTTAAAAGAAAAGGGGGGATTGGGGGGTACAGTGCAGGGGAAAGAATAGTAGACATAATAGCAACAGACATACAAACTAAAGAATTACAAAAACAAATTACAAAAATTCAAAATTTTCGGGTTTATTACAGGGACAGCAGAAATCCACTTTGGAAAGGACCAGCAAAGCTCCTCTGGAAAGGTGAAGGGGCAGTAGTAATACAAGATAATAGTGACATAAAAGTAGTGCCAAGAAGAAAAGCAAAGATCATTAGGGATTATGGAAAACAGATGGCAGGTGATGATTGTGTGGCAAGTAGACAGGATGAGGATTAG";
+
+ChoiceList (refSeq,"Choose a reference sequence",1,SKIP_NONE,predefSeqNames);
+if (refSeq < 0)
+{
+	return 0;
+}
+
+function translateCodonToAA (codonSeq, mapping, offset)
+{
+	seqLen = Abs (codonSeq);
+	translString = "";
+	translString * (seqLen/3+1);
+	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
+	{
+		codon = codonSeq[seqPos][seqPos+2];
+		prot  = mapping[codon];
+		if (Abs(prot))
+		{
+			translString * prot;
+		}
+		else
+		{
+			translString * "?";
+		}
+	} 
+	translString * 0;
+	translString = translString^{{"X$","?"}};
+	
+	return translString;
+}
