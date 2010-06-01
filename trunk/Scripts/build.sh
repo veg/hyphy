@@ -150,7 +150,7 @@ makedir $OBJ_DIR_NAME
 if [ $1 = "SP" ] 
 then
 	TARGET_NAME="HYPHY";
-	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -ldl ";
+	LINKER_FLAGS=$CURL_LINKER_LIBS" -lm -ldl -lpthread ";
 	echo "+--------------------------------------+"
 	echo "|Building a single threaded HYPHYKernel|"
 	echo "+--------------------------------------+"
@@ -219,7 +219,7 @@ then
     echo "+---------------------------------------+"
     echo "|Building a debug version HYPHYDebug    |"
     echo "+---------------------------------------+"
-    COMPILER_FLAGS=" -w -c -g -ftest-coverage -fprofile-arcs -fpermissive -D __UNIX__ ";
+    COMPILER_FLAGS=" -w -c -g -ftest-coverage -fprofile-arcs -fpermissive -D __UNIX__ -lpthread ";
 fi
 
 if [ $1 = "DMALLOC" ]
@@ -249,6 +249,8 @@ then
 	fi
 	
 fi
+
+#COMPILER_FLAGS=$COMPILER_FLAGS" -D __AFYP_REWRITE_BGM__ "
 
 echo "COMPILER=$COMPILER, $COMPILERC";
 echo "COMPILER_FLAGS=$COMPILER_FLAGS";

@@ -1460,7 +1460,7 @@ void Bgm::CacheNodeScores (void)
 	*/
 	
 	
-#if defined __HYPHYMPI__
+#if defined __HYPHYMPI_ND__
 	_Parameter	use_mpi_caching;
 	checkParameter (useMPIcaching, use_mpi_caching, 0);
 	
@@ -1847,7 +1847,7 @@ void Bgm::CacheNodeScores (void)
 	} // end for loop over nodes
 #endif
 
-#if defined __HYPHYMPI__
+#if defined __HYPHYMPI_ND__
 	}
 #endif
 
