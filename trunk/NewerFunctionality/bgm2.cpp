@@ -385,12 +385,12 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 		
 		if (child_state > -1)
 		{
-			observed_freqs.Store (0, child_state, observed_freqs (0, child_state) + 1);
+			observed_freqs.Store (0, (long)child_state, observed_freqs (0, (long)child_state) + 1);
 			
 			for (long par = 0; par < parents.lLength; par++)
 			{
 				long	this_parent			= parents.lData[par],
-						this_parent_state	= (*obsData) (obs, this_parent);
+						this_parent_state	= (long) ((*obsData) (obs, this_parent));
 				
 				if (this_parent_state < 0) 
 				{
@@ -411,7 +411,7 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 		
 		if (index > -1)	// update n_ijk's with complete case
 		{
-			n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
+			n_ijk.Store ((long) index, (long)child_state, n_ijk(index, (long)child_state) + 1);
 			n_ij.Store ((long) index, 0, n_ij(index, 0) + 1);
 		}
 		else
@@ -422,7 +422,7 @@ _Parameter	Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 			
 			for (long par = 0; par < parents.lLength; par++)
 			{
-				long	parent_state	= (*obsData) (obs, parents.lData[par]);
+				long	parent_state	= (long) ((*obsData) (obs, parents.lData[par]));
 				
 				impute.Store ( (_Parameter) parent_state);
 				is_missing.Store ( (_Parameter) ((parent_state < 0) ? 1 : 0) );
@@ -1579,7 +1579,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					max_num_levels		= r_i,
 					family_size			= parents.lLength + 1;
 	
-	_SimpleList		multipliers (1, 1, 0),	// length constructor, populator
+	_SimpleList		multipliers ((long) 1),	// length constructor, populator
 					family_nlevels (family_size, 0, 0),
 					is_missing;				// store linear indices to missing entries
 	
@@ -1624,8 +1624,12 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	for (long par = 0; par < parents.lLength; par++)
 	{
 		family_nlevels.lData[par+1] = num_levels.lData [ parents.lData[par] ];
-		if (family_nlevels.lData[par+1] > max_num_levels) max_num_levels = family_nlevels.lData[par+1];
+		if (family_nlevels.lData[par+1] > max_num_levels)
+		{
+			max_num_levels = family_nlevels.lData[par+1];
+		}
 	}
+	
 	
 	
 	// allocate space to matrices
@@ -1664,7 +1668,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				is_missing << row * family_size + par+1;
 				is_complete.lData[row] = 0;
 			}
-			else pa_index += parent_state * multipliers.lData[par];
+			else pa_index += ((long)parent_state) * multipliers.lData[par];
 		}
 		
 		if (is_complete.lData[row])
@@ -1675,7 +1679,6 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 		}
 	}
 	
-	//ReportWarning (_String("is_missing = ") & (_String *) is_missing.toStr());
 	
 	// convert N_ijk's into probability matrix - equation 16 from Cooper and Herskovits
 	// reset N_ijk and N_ij while we're looping
@@ -1696,19 +1699,17 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 		n_ij.Store ( j, 0, 0.);
 	}
 	
-	//ReportWarning (_String("Probability N_ijk:") & (_String *) prob_n_ijk.toStr());
 	
 	// cache marginalizations over this probability matrix as determined by which variables are missing
 		// this would be nice, but let's brute-force it for now :-P
 	
-	//ReportWarning (_String("Original data : ") & (_String *) data_deep_copy.toStr());
 	
 	// initialize missing entries to random assignments based on complete cases (N_ijk)
 	if (family_size > 1)
 	{
 		for (long row = 0; row < data_deep_copy.GetHDim(); row++)
 		{
-			if (!is_complete.lData[row])
+			if (!is_complete.lData[row])	// this row contains a missing value
 			{
 				_Parameter	denominator = 0.;
 				_SimpleList	keep_pa_indices;
@@ -1717,65 +1718,86 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				// store those indices in a list and accumulate the probabilities in a denominator
 				for (long j = 0; j < num_parent_combos; j++)
 				{
-					bool keep = FALSE;
+					bool keep = TRUE;
 					for (long par = 1; par <= parents.lLength; par++)
 					{
-						if ( data_deep_copy(row,par) < 0 )
-							keep = TRUE;
-						else	// non-missing value, use this parent combo only if it is consistent with value
-							keep = ( (long)(j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]] == data_deep_copy(row,par) ) ? TRUE : FALSE;
+						if ( data_deep_copy(row,par) >= 0 )
+						{
+							if ( (long)(j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]] != (long)data_deep_copy(row,par) )
+							{
+								// observed parent state is incompatible with this pa combo
+								keep = FALSE;
+								break;
+							}
+						}
 					}
 					
 					if (keep)
 					{
 						keep_pa_indices << j;
 						
-						long	k = data_deep_copy(row,0);
+						long	k = (long) data_deep_copy(row,0);
 						if ( k >= 0 )
-							denominator += prob_n_ijk (j, k);	// append from this column only
+						{
+							denominator += prob_n_ijk (j, k);	// child state is observed, append from this column only
+						}
 						else
+						{
 							for (k = 0; k < r_i; k++)
-								denominator += prob_n_ijk (j, k);	// sum across columns (child states)
+								denominator += prob_n_ijk (j, k);	// sum across columns (unknown child state)
+						}
 					}
 				}
 				
 				
 				// select random values (j, k) subject to constraints
-				long	k = data_deep_copy(row,0),
-						j;
+				long	k		= (long) data_deep_copy(row,0),
+						pick_k,
+						pick_j;
+				
 				urn = genrand_real2();
+				
 				for (long pa = 0; pa < keep_pa_indices.lLength; pa++)
 				{
-					j = keep_pa_indices.lData[pa];
+					pick_j = keep_pa_indices.lData[pa];
 					
-					if (k >= 0)
+					if (k >= 0 && k < r_i)	/* k is a fixed non-missing value */
 					{
-						if ( urn < (prob_n_ijk (j,k) / denominator) )
+						if ( urn < (prob_n_ijk (pick_j,k) / denominator) )	/*** LEAK ***/
 							break;
-						urn -= prob_n_ijk (j,k) / denominator;
+						urn -= prob_n_ijk (pick_j,k) / denominator;	/*** LEAK ***/
+					}
+					else if (k == -1)	// child is missing
+					{
+						for (pick_k = 0; pick_k < r_i; pick_k++)
+						{
+							if ( urn < (prob_n_ijk (pick_j,pick_k) / denominator) )
+								break;
+							urn -= prob_n_ijk (pick_j,pick_k) / denominator;
+						}
+						if (pick_k < r_i)
+						{
+							// break out of outer loop carrying current values [j] and [pick_k]
+							break;
+						}
+						// otherwise go to top of outer loop to try a different [j]
 					}
 					else
 					{
-						for (k = 0; k < r_i; k++)
-						{
-							if ( urn < (prob_n_ijk (j,k) / denominator) )
-								break;
-							urn -= prob_n_ijk (j,k) / denominator;
-						}
-						if (k < r_i) break;	// break out of outer loop carrying j and k
+						WarnError(_String("This shouldn't happen! : row = ") & row & "  k = " & k & "  data_deep_copy(row,0) = " & data_deep_copy(row,0) & "  (long)data_deep_copy(row,0) = " & (long)data_deep_copy(row,0));
 					}
 				}
 				
 				//ReportWarning (_String ("j,k=") & j & "," & k);
 				
 				// convert j, k to data
-				if ( data_deep_copy(row,0) < 0 )
-					data_deep_copy.Store(row, 0, k);
+				if ( k < 0 )
+					data_deep_copy.Store(row, 0, pick_k);
 				
 				for (long par = 1; par <= parents.lLength; par++)
 				{
 					if ( data_deep_copy(row,par) < 0 )
-						data_deep_copy.Store(row, par, (long)(j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]]);
+						data_deep_copy.Store(row, par, (long)(pick_j/multipliers.lData[par-1]) % num_levels.lData[parents.lData[par-1]]);
 				}
 				
 			}
@@ -1790,7 +1812,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				urn = genrand_real2();
 				for (child_state = 0; child_state < r_i; child_state++)
 				{
-					this_prob = prob_n_ijk(0,child_state);
+					this_prob = prob_n_ijk(0,(long)child_state);
 					if (urn < this_prob) break;
 					urn -= this_prob;
 				}
@@ -1805,7 +1827,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 	
 	
 	// recount N_ij and N_ijk from entire data set (with imputed cases)
-	n_complete_cases = data_deep_copy.GetHDim();
+	n_complete_cases = data_deep_copy.GetHDim();	// variable re-use!
 	for (long pa_index, row = 0; row < n_complete_cases; row++)
 	{
 		pa_index		= 0;
@@ -1814,7 +1836,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 		for (long par = 0; par < parents.lLength; par++)
 		{
 			parent_state = data_deep_copy (row, par+1);
-			pa_index += parent_state * multipliers.lData[par];
+			pa_index += ((long)parent_state) * multipliers.lData[par];
 		}
 		
 		n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) + 1);
@@ -1885,7 +1907,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 				n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
 				n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
 				
-				pa_index	-= parent_state * multipliers.lData[col-1];	// marginalize index
+				pa_index	-= ((long)parent_state) * multipliers.lData[col-1];	// marginalize index
 				denom		= 0.;
 				for (long pa_temp, lev = 0; lev < family_nlevels.lData[col]; lev++)
 				{
@@ -1893,7 +1915,7 @@ _Parameter	Bgm::GibbsApproximateDiscreteScore (long node_id, _SimpleList & paren
 					pa_temp = pa_index + lev * multipliers.lData[col-1];
 					
 					// by Bayes' Theorem, Pr(P|C,P') is proportional to Pr(C|P,P') x Pr(P,P')
-					denom += this_prob = (n_ijk(pa_temp,child_state) + 1) / (n_ij(pa_temp,0) + r_i) 
+					denom += this_prob = (n_ijk(pa_temp,(long)child_state) + 1) / (n_ij(pa_temp,0) + r_i) 
 										* (n_ij(pa_temp,0)+1) / (n_complete_cases + num_parent_combos);
 					reassign_probs.Store (lev, 0, this_prob);
 				}
