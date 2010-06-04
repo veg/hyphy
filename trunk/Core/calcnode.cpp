@@ -807,7 +807,8 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 					if (!curVar->IsIndependent())
 					{
 						locVar = LocateVar (dVariables->lData[i]);
-						locVar->SetValue (curVar->Compute());
+						if (locVar->IsIndependent())
+							locVar->SetValue (curVar->Compute());
 					}
 				}
 		

@@ -3150,9 +3150,13 @@ long	  _VariableContainer::SetDependance (long varIndex)
 			varIndex = iVariables->lData[f];
 		}
 			
-	  	if (iVariables->lData[f+1]>=0)
+		//printf ("Moving ind->dep for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
+		//		GetName()->sData);
+		
+		if (iVariables->lData[f+1]>=0)
 	    {
-		   if (!LocateVar(iVariables->lData[f+1])->IsIndependent())
+			//printf ("Local variable %s\n", LocateVar (iVariables->lData[f+1])->GetName()->sData);
+			if (!LocateVar(iVariables->lData[f+1])->IsIndependent())
 		       return -2;
         }
 

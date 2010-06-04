@@ -7486,6 +7486,7 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		iia.ReorderList ();
 		iid.ReorderList ();
 	}
+	
 
 	
 	/* mod 10/28/2005; Need to make two passes on trees; one to check for all category variables defined on the tree
@@ -7625,6 +7626,10 @@ void	_LikelihoodFunction::ScanAllVariables (void)
 		indVarsByPartition && & iv;
 		depVarsByPartition && & dv;
 	}
+
+	//for (long iid = 0; iid < indexInd.lLength; iid++)
+	//	printf ("%ld: %s\n", iid, LocateVar(indexInd.lData[iid])->GetName()->sData);
+
 }
 
 //_______________________________________________________________________________________
