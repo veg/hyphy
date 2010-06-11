@@ -64,6 +64,9 @@ _String		_HYBgm_BAN_PARENT_KEY	("BanParent"),
 			_HYBgm_STATUS_LINE_CACHE		("Caching Bgm scores"),
 			_HYBgm_STATUS_LINE_CACHE_DONE	("Done caching Bgm scores"),
 			/*SLKP*/
+
+			_HYBgm_MPI_CACHING ("USE_MPI_CACHING"),
+			
 			/* maxParentString ("Bgm_MAXIMUM_PARENTS"), */
 			maxNumRestart	("BGM_NUM_RESTARTS"),
 			numRandomize	("BGM_NUM_RANDOMIZE"),
@@ -366,6 +369,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
 											// matrix; before including this command, we suffered a
 											// noticeable slow-down in this routine. - AFYP
 	
+	/*
 	// allocate space to weight matrix
 	if (obsWeights)
 	{
@@ -378,7 +382,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
 		for (long col = 0; col < obsData->GetVDim(); col++)
 			obsWeights->Store(row, col, 1.);
 	
-	
+	*/
 	
 	// reset data-dependent member variables
 	for (long node = 0; node < num_nodes; node++)
@@ -2476,7 +2480,7 @@ _Matrix *	Bgm::GraphMCMC (bool fixed_order)
 		else
 		{
 			// restore order
-			proposed_order->Populate(5,0,1);
+			proposed_order->Populate(num_nodes,0,1);
 			for (long i = 0; i < num_nodes; i++)
 				proposed_order->lData[i] = best_node_order.lData[i];
 		}
