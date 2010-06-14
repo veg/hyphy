@@ -2504,7 +2504,9 @@ void	_VariableContainer::Duplicate (BaseRef theO)
 	theModel = theVC->theModel;
 	if (theVC->iVariables)
 	{
-		if (!iVariables)
+		if (iVariables)
+			iVariables->Clear();
+		else
 			checkPointer(iVariables = new _SimpleList);
 		iVariables->Duplicate (theVC->iVariables);
 	}
@@ -2518,7 +2520,9 @@ void	_VariableContainer::Duplicate (BaseRef theO)
 	}
 	if (theVC->dVariables)
 	{
-		if (!dVariables)
+		if (dVariables)
+			dVariables->Clear();
+		else
 			checkPointer(dVariables = new _SimpleList);
 		dVariables->Duplicate (theVC->dVariables);
 	}
@@ -2532,7 +2536,9 @@ void	_VariableContainer::Duplicate (BaseRef theO)
 	}
 	if (theVC->gVariables)
 	{
-		if (!gVariables)
+		if (gVariables)
+			gVariables->Clear();
+		else
 			checkPointer (gVariables = new _SimpleList);
 		gVariables->Duplicate (theVC->gVariables);
 	}
@@ -2758,8 +2764,8 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 			else
 				varName = fullName&'.'& *aVar->theName;
 			
+			 
 			f = LocateVarByName (varName);
-			
 			if (f<0)
 			{
 				_Variable v (varName);
@@ -3017,21 +3023,27 @@ bool	  _VariableContainer::RemoveDependance (long varIndex)
 				 
 		if (f!=-1)
 		{
-			  _String* thisName;
-			  if (dVariables->lData[f+1]>=0)
-			  {
+			
+				//printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
+				//		GetName()->sData);
+			  
+			   
+			   /*if (dVariables->lData[f+1]>=0)
+			   {
 				  _Variable* checkVar = LocateVar(dVariables->lData[f+1]);
-				   if (!checkVar->IsIndependent())
-				       return false;
-		       }
-		       thisName = LocateVar (dVariables->lData[f])->GetName();
+				   printf ("Local variable %s\n", checkVar->GetName()->sData);
+				  //if (!checkVar->IsIndependent())
+					//  return false;
+			   }*/
+			
+		       _String* thisName = LocateVar (dVariables->lData[f])->GetName();
 		       
 		       long insPos = 0;
-		       
+			
 		       if (!iVariables)
 		       		checkPointer (iVariables = new _SimpleList);
 		       
-		       while (insPos<iVariables->lLength&&(thisName->Greater (LocateVar (iVariables->lData[insPos])->GetName())))
+		       while (insPos<iVariables->lLength && (thisName->Greater (LocateVar (iVariables->lData[insPos])->GetName())))
 		       		insPos+=2;
 		       		
 			   
@@ -3046,8 +3058,8 @@ bool	  _VariableContainer::RemoveDependance (long varIndex)
 			   }
 			   else
 			   {
-			   		delete dVariables;
-			   		dVariables = nil;
+				   delete dVariables;
+				   dVariables = nil;
 			   }
 		}
 	}
@@ -3137,7 +3149,7 @@ long	  _VariableContainer::SetDependance (long varIndex)
 	if (iVariables)
 	{
 		long f;
-		
+
 		if (varIndex>=0)
 		{
 			f = iVariables->FindStepping(varIndex,2);
@@ -3149,6 +3161,7 @@ long	  _VariableContainer::SetDependance (long varIndex)
 			f = -varIndex-1;
 			varIndex = iVariables->lData[f];
 		}
+	
 			
 		//printf ("Moving ind->dep for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
 		//		GetName()->sData);
@@ -3167,9 +3180,18 @@ long	  _VariableContainer::SetDependance (long varIndex)
         if (!dVariables)
         	checkPointer (dVariables = new _SimpleList);
        	
-       	while (insPos<dVariables->lLength&&(thisName->Greater (LocateVar (dVariables->lData[insPos])->GetName())))
+       	while (insPos<dVariables->lLength)
+		{
+			_Variable *dVar = LocateVar (dVariables->lData[insPos]);
+			if (!dVar)
+			{
+				FlagError ("Internal error in SetDependance()");
+				return -1;
+			}
+			if (!thisName->Greater (dVar->GetName()))
+				break;
        		insPos+=2;
-		
+		}
 		
 		dVariables->InsertElement ((BaseRef)varIndex, insPos, false, false);
 		dVariables->InsertElement ((BaseRef)iVariables->lData[f+1], insPos+1, false, false);
@@ -3410,7 +3432,7 @@ bool _VariableContainer::IsConstant (void)
 
 //__________________________________________________________________________________
 				
-void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList&)
+void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2)
 {
 	if (iVariables)
 		for (long i = 0; i<iVariables->lLength; i+=2)
@@ -3418,6 +3440,7 @@ void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList&)
 	if (dVariables)
 		for (long i = 0; i<dVariables->lLength; i+=2)
 		{	
+			l2.Insert ((BaseRef)dVariables->lData[i]);
 			_SimpleList temp;
 			{
 				_AVLList  ta (&temp);
