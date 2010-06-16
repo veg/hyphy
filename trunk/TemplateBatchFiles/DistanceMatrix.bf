@@ -91,6 +91,27 @@ if (distanceChoice)
 	fprintf 	 (stdout,"\nHYPHY is computing pairwise maximum likelihood distance estimates. A total of ", Format(ds.species*(ds.species-1)/2,0,0),
 				    	 " estimations will be performed.\n");
 	_pddVF = 1;
+	
+	pairwiseAlign = 0;
+	
+	GetDataInfo (charInfo, filteredData, "CHARACTERS");
+	if (Columns(charInfo) == 20)
+	{
+		ChoiceList (pairwiseAlign, "Peform pairwise alignment prior to comparison",1,SKIP_NONE,
+					"No","Assume that the sequences are already aligned.",
+					"Yes","Align each pair of sequences before computing pairwise distances");
+	
+		if (pairwiseAlign < 0)
+		{
+			return 0;
+		}
+		if (pairwiseAlign)
+		{
+			_skipPredefsSeqAlignShared = 1;
+			ExecuteAFile ("SeqAlignShared.ibf");
+		}
+	}
+
 	ExecuteAFile ("pairwiseDistanceEstimator.ibf");
 	
 }

@@ -52,6 +52,9 @@ else
 	Tree Inferred_Tree 	    = (1,2);
 }
 
+
+
+
 /*------------------------------------------------------------------------------------------
 	IF THERE EXISTS A TREE
 	SEE IF ONE NEEDS TO ESTIMATE GLOBAL
@@ -179,6 +182,18 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 		else
 		{
 			DataSetFilter twoSpecFilter = CreateFilter (filteredData,1,"",speciesIndex==_pddi+1 || speciesIndex==_pddj);
+			if (pairwiseAlign)
+			{
+				GetDataInfo (s1, twoSpecFilter, 0);
+				GetDataInfo (s2, twoSpecFilter, 1);
+				inStr = {{s1^{{"\\?",""}},s2^{{"\\?",""}}}};
+				AlignSequences(aligned, inStr, alignOptions);
+				aligned = aligned[0];
+				s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
+				
+				DataSet realigned = ReadFromString (s1);
+				DataSetFilter twoSpecFilter = CreateFilter (realigned,1);
+			}
 		}
 		if (MPI_NODE_COUNT > 1)
 		{
@@ -261,6 +276,7 @@ function _pddReceiveJobs (dummy)
 		_dj		= _pddj;
 		_dk 	= BranchLength 		  (Inferred_Tree,0);
 	}
+	
 	distanceMatrix[_dj][_di+1]  = _dk;
 	distanceMatrix[_di+1][_dj]  = _dk;
 	if (_pddVF)
