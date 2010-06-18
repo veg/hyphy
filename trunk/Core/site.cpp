@@ -110,6 +110,18 @@ _TranslationTable::_TranslationTable (_TranslationTable& t)
 }
 
 //_________________________________________________________
+_TranslationTable::_TranslationTable (_String& alphabet) 
+{
+	baseLength = alphabet.sLength;
+	checkTable = NULL;
+	if (!(alphabet.Equal (&dnaOneCharCodes) || alphabet.Equal (&rnaOneCharCodes) || 
+		alphabet.Equal (&binaryOneCharCodes) || alphabet.Equal (&aminoAcidOneCharCodes)))
+	{
+		AddBaseSet (alphabet); 
+	}
+}
+
+//_________________________________________________________
 BaseRef		_TranslationTable::makeDynamic (void) 
 {
 	_TranslationTable * r = new _TranslationTable;

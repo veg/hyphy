@@ -49,6 +49,14 @@ class _TranslationTable:public BaseObj
 	
 	_TranslationTable	 					(void);
 	_TranslationTable	 					(char);
+	_TranslationTable	 					(_String&);
+		/* 20100618: SLKP
+		 
+				- new constructor (needed to handle ExecuteCase52 / Simulate properly)
+				  which takes an alphabet string and checks to see if it's a standard one
+				  DNA/RNA/Protein or Binary
+		 
+		 */
 	_TranslationTable    					(_TranslationTable&);
 	virtual	~_TranslationTable 				(void) 		
 												{ if (checkTable) free (checkTable); }

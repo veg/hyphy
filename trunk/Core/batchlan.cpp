@@ -6585,11 +6585,10 @@ void	  _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 									}
 									if (errMsg.sLength == 0)
 									{
-										_TranslationTable newTT;
-										newTT.AddBaseSet (baseSet);						
-										_DataSet * ds = new _DataSet;
-										checkPointer (ds);
-										if (baseSet != _String("ACGT"))
+										_TranslationTable newTT (baseSet);
+										_DataSet * ds = (_DataSet*)checkPointer(new _DataSet);
+										
+										if (! newTT.IsStandardNucleotide() )
 											ds->SetTranslationTable (&newTT); // mod 20060113 to properly deal with non-standard alphabets
 										// make a dummy 
 										spawningTree->AddNodeNamesToDS (ds,true,false,1);
