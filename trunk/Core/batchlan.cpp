@@ -218,6 +218,7 @@ _String
 			blScanfRewind					("REWIND"),
 			blFprintfRedirect				("GLOBAL_FPRINTF_REDIRECT"),
 			blFprintfDevNull				("/dev/null"),
+			getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
 			dialogPrompt,
 			lastModelUsed,
 			baseDirectory,
@@ -6269,10 +6270,20 @@ void	  _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
 					{
 						if ((seq>=0)&&(site>=0)&&(seq<dsf->NumberSpecies())&&(site<dsf->NumberDistinctSites()))
 						{
-							_Matrix * res = new _Matrix (dsf->GetDimension (true), 1, false, true);
-							checkPointer (res);
-							dsf->Translate2Frequencies ((*dsf)(site,seq), res->theData,  true); 
-							stVar->SetValue (res,false);
+							_Matrix				* res = (_Matrix*)checkPointer(new _Matrix (dsf->GetDimension (true), 1, false, true));
+							
+							_Parameter			onlyTheIndex = 0.0;
+							checkParameter		(getDataInfoReturnsOnlyTheIndex,onlyTheIndex,0.0);
+
+							long				theValue = dsf->Translate2Frequencies ((*dsf)(site,seq), res->theData,  true); 
+							
+							if (onlyTheIndex > 0.5)
+							{
+								stVar->SetValue (new _Constant (theValue),false);
+								DeleteObject     (res);
+							}	
+							else
+								stVar->SetValue (res,false);
 						}
 						else
 							errMsg = _String (seq) & "," & _String (site) & " is an invalid site index ";

@@ -4980,6 +4980,8 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 	{
 		if (p->ObjectClass() == STRING)
 		{
+			
+				
 			_String aFormulaString = *((_FString*)p)->theString;
 			_Formula f (aFormulaString);
 			
@@ -5005,16 +5007,38 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 				else
 				{
 							  
+					_Formula * conditionalCheck = nil;
+					
+					if (p2 && p2->ObjectClass() == STRING)
+					{
+						conditionalCheck = new _Formula (*((_FString*)p2)->theString);
+						if (conditionalCheck->IsEmpty())
+						{
+							delete conditionalCheck;
+							conditionalCheck = nil;
+						}
+						
+						conditionalCheck->Compute();
+						if (terminateExecution)
+						{
+							delete conditionalCheck;
+							return new _Matrix ();
+						}
+					}
+
 					_Matrix   * retMatrix = new _Matrix (hDim,vDim,false,true);
 					
 					long	      stackDepth = 0;
 					_SimpleList   vIndex;		  
-					if (f.AmISimple (stackDepth,vIndex))
+					if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex)))
 					{
 						_SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
 											* varValues = new _SimpleFormulaDatum [vIndex.lLength];
 									
 						f.ConvertToSimple (vIndex);
+						if (conditionalCheck)
+							conditionalCheck->ConvertToSimple(vIndex);
+						
 						
 						long rid []={cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
 							 
@@ -5036,11 +5060,22 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 								if (rid[2]>=0)
 									varValues[rid[2]].value = (*this)(r,c);
 								
+								if (conditionalCheck && CheckEqual(conditionalCheck->ComputeSimple(stack,varValues),0.0))
+								{
+									if (rid[2]>=0)
+										retMatrix->Store (r,c,varValues[rid[2]].value);
+									else
+										retMatrix->Store (r,c, (*this)(r,c));
+									continue;
+								}
+								
 								retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
 							}
 						}					
 						
 						f.ConvertFromSimple (vIndex);
+						if (conditionalCheck)
+							conditionalCheck->ConvertFromSimple(vIndex);
 						
 						delete  [] stack;
 						delete  [] varValues;
@@ -5054,13 +5089,28 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 							{
 								cc->CheckAndSet (c);
 								cv->CheckAndSet ((*this)(r,c));
-								_PMathObj fv = f.Compute();
+								_PMathObj fv;
+								
+								if (conditionalCheck)
+								{
+									fv = conditionalCheck->Compute();
+									if (fv->ObjectClass() == NUMBER)
+										if (CheckEqual (fv->Value(), 0.0))
+										{
+											retMatrix->Store (r,c,cv->Value());
+											continue;
+										}
+								}
+								
+								fv = f.Compute();
 								if (fv->ObjectClass()==NUMBER)
 									retMatrix->Store (r,c,fv->Value());
 							}
 						}					
 					}
 					retMatrix->AmISparse();
+					if (conditionalCheck)
+						delete conditionalCheck;
 					return retMatrix;
 				}
 			}
