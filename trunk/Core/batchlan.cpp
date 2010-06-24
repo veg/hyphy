@@ -4951,7 +4951,7 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 									sel<<choice;	
 								else
 								{
-									WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to Choice List (with multiple selections) '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
+									WarnError (_String("Not a valid (or duplicate) option: '") & buffer & "' passed to ChoiceList (with multiple selections) '" & ((_String*)parameters(1))->sData & "' using redirected stdin input");
 									return;
 								}
 							}
@@ -5008,9 +5008,9 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 									break;
 								}
 								choice = buffer.toNum();
-								if ((choice<1)||(choice>theChoices->lLength)) 
+								if (choice<1 || choice>theChoices->lLength) 
 								{
-									choice=-1;
+									choice =- 1;
 									if (loopits++ > 10)
 									{
 										FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
@@ -5106,8 +5106,7 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 							break;
 					}
 				}
-				_Constant theRes (choice);
-				holder->SetValue (&theRes);
+				holder->SetValue (new _Constant (choice), false);
 			}
 			else
 			{
@@ -5130,16 +5129,15 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 					{
 						choice=sel.lData[f];
 						
+						_FString  *choiceString = new _FString ((*(_String*) ((_List*)(*theChoices)(choice))->lData[0]));
+						_Formula  sf (choiceString);
+						selMatrix.MStore(0,f,sf);
 						for (long k=0;k<exclusions.lLength;k++)
 						{
 							if (choice>=exclusions.lData[k]) choice++;
 							else
 								break;
 						}
-						_FString  *choiceString = new _FString ((*(_String*) ((_List*)(*theChoices)(choice))->lData[0]));
-						_Formula  sf (choiceString);
-						_Constant hi (0), vi (f);
-						selMatrix.MStore(&hi,&vi,sf);
 						selVector[f]=choice;
 						//DeleteObject (choiceString);
 					}

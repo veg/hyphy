@@ -1,3 +1,4 @@
+_piConst = 4*Arctan (1);
 
 /*-------------------------------------------------*/
 
@@ -34,3 +35,13 @@ function sampleFromBeta (p,q)
 	FindRoot (_k,IBeta(_x_,p,q)-_sampledValue,_x_,0,1);
 	return _k;
 }
+
+/*-------------------------------------------------*/
+
+function sampleFromNormal ()
+{
+	/* Box-Muller */
+	
+	return Sqrt (-2*Log (Random (1e-26,1)))*Cos (2 * _piConst * Random (1e-26,1));
+}
+

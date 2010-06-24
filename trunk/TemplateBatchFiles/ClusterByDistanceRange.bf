@@ -344,27 +344,38 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 		
 		graphVizSt = ""; graphVizSt * 128;
 		
+		edgesPrinted = 0;
+		nodesMade	 = {};
+		
 		outString  * ("SequenceID,ClusterID_"+clumpingL+"_"+clumpingU);
 		
-		lastClusterID = 1;
-		clusterSpan	  = 0;
-		clusterSizes  = {};
+		lastClusterID     = 1;
+		clusterSpan	      = 0;
+		clusterSizes      = {};
+		clusterMembership = {};
 		
-		for (k=0; k<mDim; k=k+1)
+		for (k=0; k<=mDim; k=k+1)
 		{
-			clusterID		= sortedCluster[k][0];
-			visited [k]		= clusterID;
-			GetString		(seqName, ds,sortedCluster[k][1]);
-			stringLabel		= stringLabel + ";" + seqName;
-			outString	    * ("\n"+seqName+","+clusterID);
-			
-			if (lastClusterID != clusterID || k == mDim - 1)
+			if (k < mDim)
 			{
-				clusterSize	= k-clusterSpan+1;
-
-				clusterSizes[clusterSize] = clusterSizes[clusterSize] + 1;
+				clusterID		= sortedCluster[k][0];
+				visited [k]		= clusterID;
+				GetString		(seqName, ds,sortedCluster[k][1]);
+				stringLabel		= stringLabel + ";" + seqName;
+				outString	    * ("\n"+seqName+","+clusterID);
+			}
+			else
+			{
+				clusterID 		= lastClusterID+1;
+			}	
+			
+			if (lastClusterID != clusterID)
+			{
+				clusterSize						= k-clusterSpan;
+				clusterSizes[clusterSize]		= clusterSizes[clusterSize] + 1;
+				clusterMembership[clusterSize]  = clusterMembership[clusterSize] + clusterSize;
 				
-				graphVizSt * ("\n\n/* cluster " + clusterID + "*/\n\n");
+				graphVizSt * ("\n\n/* cluster " + lastClusterID + "*/\n\n");
 				
 				for (n1 = 0; n1 < clusterSize; n1=n1+1)
 				{
@@ -374,21 +385,29 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 					{
 						id2 = sortedCluster[clusterSpan + n2][1];
 						d = distanceMatrix[id1][id2];
+						/*fprintf (stdout, id1, ":", id2, ":", d, "\n");*/
 						if (d <= clumpingU && d>= clumpingL)
 						{
 							GetString		(seqName2, ds,id2); 
 							graphVizSt * ("\"" + seqName + "\" -- \"" + seqName2 + "\";\n");
+							edgesPrinted = edgesPrinted + 1;
+							nodesMade [seqName] = 1;
+							nodesMade [seqName2] = 1;
 						}
 					}
 				}
-				clusterSpan = k+1;
+				clusterSpan = k;
 				lastClusterID = clusterID;
 			}
 		}
 		
-		fprintf (stdout, "\nCluster size distribution\n");
+		fprintf (stdout, "Graphviz edges/nodes = ", edgesPrinted, "/", Abs(nodesMade), "\n");
 		
-		_printAnAVLNumeric (clusterSizes, ".");
+		fprintf (stdout, "\nCluster size distribution\n");
+		_printAnAVLNumericTotal (clusterSizes, ".");
+
+		fprintf (stdout, "\nCluster membership distribution\n");
+		_printAnAVLNumericTotal (clusterMembership, ".");
 		
 		graphVizSt * 0;
 		
@@ -530,7 +549,7 @@ function doClustering (from, to)
 	done		 = 0;
 	vertexCount  = 0;
 	
-	totalEdgeCount = (Transpose(visited["1"])*gatedDistances*visited["1"])[0];
+	totalEdgeCount = (Transpose(visited["1"])*gatedDistances*visited["1"])[0] $ 2;
 
 	for (currentVertex=0; currentVertex < mDim; currentVertex=currentVertex+1)
 	{

@@ -521,10 +521,13 @@ void	_HYObjectInspector::BuildListOfObjects (long index)
 					if (theDS->GetTT()->IsStandardNucleotide())
 						newStat = "Nucleotide data";
 					else
-					if (theDS->GetTT()->IsStandardAA())
-						newStat = "Aminoacid data";
-					else
-						newStat = "Custom data";
+						if (theDS->GetTT()->IsStandardAA())
+							newStat = "Aminoacid data";
+						else
+							if (theDS->GetTT()->IsStandardBinary())
+								newStat = "Binary data";
+							else
+								newStat = "Custom data";
 
 					newStat = newStat & ". "& _String (theDS->NoOfColumns()) &" sites ("&_String (theDS->NoOfUniqueColumns())&" distinct patterns), "&_String(theDS->NoOfSpecies())& " species.";
 					oList->SetCellData (&newStat,rowCount,1,HY_TABLE_STATIC_TEXT,true);

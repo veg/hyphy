@@ -406,6 +406,38 @@ function vector_max (vec1)
 	return {{maxV__,maxI__}};
 }
 
+
+/*---------------------------------------------
+ the analog of Python's string.join (list)
+---------------------------------------------*/
+
+function string_join (sep, list)
+{
+	_result = ""; _result * 128;
+	
+	if (Type (list) == "Matrix")
+	{
+		_dim = Rows(list)*Columns(list);
+	}
+	else
+	{
+		_dim = Abs (list);
+	}
+	
+	if (_dim)
+	{
+		_result * ("" + list[0]);
+		for (_r = 1; _r < _dim; _r = _r + 1)
+		{
+			_result * (sep + list[_r]);
+		
+		}
+	}
+	
+	_result * 0;
+	return _result;
+}
+
 /*---------------------------------------------
  prompt for a value in a given range, given
  a default value. 
@@ -447,8 +479,25 @@ key[_sepChar]+: number (%)
 function _printAnAVL (_theList, _sepChar)
 {
 	_gb_keys 		= _sortStrings(Rows (_theList));
+	_printAnAVLInt (_theList, _gb_keys, _sepChar, 0);
+		
+	return 0;
+}
+
+/*---------------------------------------------
+take an AVL of the form ["string"] = number
+and print it as:
+
+key[_sepChar]+: number (%)
+
+add a "Total" row
+
+---------------------------------------------*/
 	
-	_printAnAVLInt (_theList, _gb_keys, _sepChar);
+function _printAnAVLTotal (_theList, _sepChar)
+{
+	_gb_keys 		= _sortStrings(Rows (_theList));
+	_printAnAVLInt (_theList, _gb_keys, _sepChar, 1);
 		
 	return 0;
 }
@@ -471,18 +520,37 @@ function _printAnAVLNumeric (_theList, _sepChar)
 		_gb_keys[_gb_idx] = ""+num_keys[_gb_idx];
 	}
 	
-	_printAnAVLInt (_theList, _gb_keys, _sepChar);
+	_printAnAVLInt (_theList, _gb_keys, _sepChar, 0);
+		
+	return 0;
+}
+
+function _printAnAVLNumericTotal (_theList, _sepChar)
+{
+	_gb_dim   		= Abs(_theList);
+	num_keys		= avlKeysToMatrix (_theList)%0;
+	_gb_keys 		= {_gb_dim,1};
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
+		_gb_keys[_gb_idx] = ""+num_keys[_gb_idx];
+	}
+	
+	_printAnAVLInt (_theList, _gb_keys, _sepChar, 1);
 		
 	return 0;
 }
 
 /*---------------------------------------------*/
 
-function _printAnAVLInt (_theList, _gb_keys, _sepChar)
+function _printAnAVLInt (_theList, _gb_keys, _sepChar, _doTotal)
 {	
 	_gb_dim   		= Abs(_theList);
 	_gb_total 		= 0;
 	_gb_max_key_len = 0;
+	if (_doTotal)
+	{
+		gb_max_key_len = 5;
+	}
 
 	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
 	{
@@ -501,6 +569,16 @@ function _printAnAVLInt (_theList, _gb_keys, _sepChar)
 			fprintf (stdout, _sepChar);
 		}
 		fprintf (stdout, ":", Format (_theList[_gb_key],8,0), " (", Format (100*_theList[_gb_key]/_gb_total,5,2), "%)\n");
+	}
+	
+	if (_doTotal)
+	{
+		fprintf (stdout, "Total");
+		for (_gb_idx2 = 5; _gb_idx2 < _gb_max_key_len; _gb_idx2 = _gb_idx2 + 1)
+		{
+			fprintf (stdout, _sepChar);
+		}
+		fprintf (stdout, ":", Format (_gb_total,8,0),"\n");
 	}
 		
 	return 0;
