@@ -50,6 +50,10 @@ _geneticCodeOptionMatrix   =
 			{"Ascidian mtDNA","Ascidian mitochondrial DNA code. (Genebank transl_table=13)."}
 			{"Flatworm mtDNA","Flatworm mitochondrial DNA code. (Genebank transl_table=14)."}
 			{"Blepharisma Nuclear","Blepharisma Nuclear code. (Genebank transl_table=15)."}
+			{"Chlorophycean mtDNA","Chlorophycean Mitochondrial Code (transl_table=16)."}
+			{"Trematode mtDNA","Trematode Mitochondrial Code (transl_table=21)."}
+			{"Scenedesmus obliquus mtDNA","Scenedesmus obliquus mitochondrial Code (transl_table=22)."}
+			{"Thraustochytrium mtDNA","Thraustochytrium Mitochondrial Code (transl_table=23)."}
 			};
 			
 _hyphyAAOrdering		   = "FLIMVSPTAYXHQNKDECWRG";
@@ -354,5 +358,44 @@ function ApplyGeneticCodeTable (myModelType)
 		
 		GeneticCodeExclusions = "TAA,TGA";
 	}
+
+
+	if (myModelType == 12)
+	/* Chlorophycean Mitochondrial Code */
+	{
+		_Genetic_Code [50] = 1;/* TAG => Leu  */
+		
+		GeneticCodeExclusions = "TAA,TGA";
+	}
+
+	if (myModelType == 13)
+	/* Trematode Mitochondrial Code */
+	{
+		_Genetic_Code [56] = 18; /* TGA => Trp  */
+		_Genetic_Code [12] = 3;  /* ATA => Met  */
+		_Genetic_Code [8]  = 5;  /* AGA => Ser  */
+		_Genetic_Code [10] = 5;  /* AGG => Trp  */
+		_Genetic_Code [0]  = 13; /* AAA => Asn  */
+		
+		GeneticCodeExclusions = "TAA,TAG";
+	}
+
+	if (myModelType == 14)
+	/*  Scenedesmus obliquus mitochondrial Code */
+	{
+		_Genetic_Code [52] = 10;  /* TCA => Stop  */
+		_Genetic_Code [50] = 1;   /* TAG => Leu  */
+				
+		GeneticCodeExclusions = "TAA,TCA,TGA";
+	}
+
+	if (myModelType == 15)
+	/*  Thraustochytrium mtDNA */
+	{
+		_Genetic_Code [60] = 10;  /* TTA => Stop  */
+				
+		GeneticCodeExclusions = "TAA,TAG,TGA,TTA";
+	}
+
 	return  myModelType;
 }
