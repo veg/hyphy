@@ -2791,6 +2791,8 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 														  (mbf?(*baseFreqs)(cellIndex%vDim,0):1.0);
 				}
 			}
+			
+
 			bool	firstDone = false;
 			for (long k=0; k<newFormulas.lLength; k++)
 			{
@@ -2811,26 +2813,15 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 			if (baseFreqs->storageType == 2)
 			// formula-based equilibrium frequencies
 			{
-				_String * sendMeBack = new _String(128L, true);
 				_List	freqFla,
 						multipliersByRate;
 				
-				{
-					for (long k=0; k<newFormulas.lLength; k++)
-					{
-						_String *d = new _String (128L,true);
-						multipliersByRate << d;
-						DeleteObject (d);
-					}
-                }
-				{
-					for (long i = 0; i<hDim; i++)
-					{
-						_String * flaString = (_String*)baseFreqs->GetFormula(i,0)->toStr(nil,true);
-						freqFla << flaString;
-						DeleteObject (flaString);
-					}
-                }
+				for (long k=0; k<newFormulas.lLength; k++)
+						multipliersByRate.AppendNewInstance(new _String (128L,true));
+                
+				for (long i = 0; i<hDim; i++)
+					freqFla.AppendNewInstance ((_String*)baseFreqs->GetFormula(i,0)->toStr(nil,true));
+				
 				for (long i = 0; i<lDim; i++)
 				{
 					long thisRef = references.lData[i];
@@ -2856,13 +2847,18 @@ _String*		_Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf)
 						(*thisAdder) << ')';						
 					}
 				}
+				
+				for (long k=0; k<newFormulas.lLength; k++)
+				{
+					((_String*)multipliersByRate(k))->Finalize();
+				}
+					
 				for (long k=0; k<newFormulas.lLength; k++)
 				{
 					if (k)
 						(*sendMeBack) << '+'; 
-					_String * fStr = (_String*)flaStringsL(k);
 					(*sendMeBack) << '(';
-					(*sendMeBack) << fStr;
+					(*sendMeBack) << (_String*)flaStringsL(k);
 					(*sendMeBack) << ")*(";
 					(*sendMeBack) << (_String*)multipliersByRate(k);
 					(*sendMeBack) << ')';
