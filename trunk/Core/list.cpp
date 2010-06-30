@@ -2603,6 +2603,28 @@ long  _AVLList::Find (BaseRef obj)
 
 //______________________________________________________________
 
+long  _AVLList::FindLong (long obj)
+{
+	long curNode = root;
+	
+	while (curNode>=0)
+	{
+		long comp = dataList->lData[curNode];
+		
+		if (obj<comp)
+			curNode = leftChild.lData[curNode];
+		else
+			if (obj>comp)
+				curNode = rightChild.lData[curNode];
+			else
+				return curNode;
+	}
+	
+	return -1;
+}
+
+//______________________________________________________________
+
 char  _AVLList::FindBest (BaseRef obj, long& lastNode)
 {
 	long curNode  = root,

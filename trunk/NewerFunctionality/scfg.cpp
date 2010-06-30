@@ -70,7 +70,7 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 	_SimpleList 	parsedFormulas;				
 					// stash pointers to processed formulas here
 	
-	startSymbol	  = ss;
+	startSymbol	    = ss;
 	insideCalls		= 0;
 	outsideCalls	= 0;
 	
@@ -89,14 +89,14 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 													// it is used to keep track of duplicate production rules
 		
 		_SimpleList	  foundNT,						// an array to keep track of all 'declared' non-terminals
-					  ntFlags;
+					  ntFlags;						// an array of flags of non-terminal properties
 		
 		_AVLList 	  tempTerminals	(&terminals),		// an auxiliary wrapper around the set of terminal symbols used to check for duplication
 					  alreadySeen	(&alreadySeenX);	// and a wrapper for the alreadySeen list
 
 		_AVLListX	  tempNT		(&foundNT);			// and a wrapper for the set of non-terminals
 					 							
-		// build a parse tree as we go along
+		// build a prefix parse tree as we go along
 		// begin by allocating memory for the root data structure
 		checkPointer (parseTree = new node<long>* [256]);
 		
@@ -117,55 +117,75 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 						 
 				if (literal && lhs && literal->theString->sLength)
 				{
-					long index = tempTerminals.Insert (literal->theString); // insert to the list of terminals if not seen before
+					long index = tempTerminals.Insert (literal->theString); 
+						// insert to the list of terminals if not seen before
 					if  (index>=0) // new terminal; added to list 
 								   // now we process the terminal into the parse tree
 					{
 						literal->theString->nInstances++; // increase reference counter for the string object
-						// add    the literal to the parse tree
-						// handle the first character separately
+														  // add    the literal to the parse tree
+														  // handle the first character separately
+						
 						char		currentCharacter = literal->theString->getChar(0);
 						node<long>* currentTreeNode  = parseTree[currentCharacter];
+						
+						bool		addedRootStub	 = false;
 						
 						if (currentTreeNode == nil)
 						{
 							checkPointer (currentTreeNode = new node<long>);
 							currentTreeNode->init(0);
 							parseTree[currentCharacter] = currentTreeNode;
+							addedRootStub = true;
 						}
+						
 						long charP = 1;
+						
 						for  (;charP < literal->theString->sLength; charP++)
 						{
 							currentCharacter   		= literal->theString->getChar(charP);
 							
-							long   nodeCounter		= 1,
-								   availableNodes   = currentTreeNode->get_num_nodes ();
+							long   availableNodes   = currentTreeNode->get_num_nodes (),
+								   nodeCounter		= (availableNodes>0);
 							
-							for (;nodeCounter<=availableNodes;nodeCounter++)	
-							{
-								node <long> * tryANode = currentTreeNode->go_down (nodeCounter);
-								if ((tryANode->get_data () & _HYSCFG_CHARACTER_MASK_) == currentCharacter)
+							// SLKP: 20100630 need to check for a one-character existing prefix
+							
+							if (availableNodes)
+								for (;nodeCounter<=availableNodes;nodeCounter++)	
 								{
-									if (tryANode->get_num_nodes () == 0) // ERROR: not a prefix code; the terminal currently being added 
-																		 // contains another terminal as a prefix
-										errorMessage = _String("Terminal symbols must form a prefix code. ") & *literal->theString & " contains another terminal as a prefix."; 
-									else
-										currentTreeNode = tryANode;
-									break;
+									node <long> * tryANode = currentTreeNode->go_down (nodeCounter);
+									if ((tryANode->get_data () & _HYSCFG_CHARACTER_MASK_) == currentCharacter)
+											// can spell the 'literal' string down this branch 
+									{
+										if (tryANode->get_num_nodes () == 0) // ERROR: not a prefix code; the terminal currently being added 
+																			 // contains another terminal as a prefix
+											availableNodes = 0; 
+										else
+											currentTreeNode = tryANode;
+										break;
+									}
+								}
+							
+							if (availableNodes || addedRootStub && charP == 1) // no error set
+								// SLKP: 20100630
+								// looks like there was a bug here, when a partial prefix would 
+								// not simply be reused, but rather re-added to the parent node
+							{
+								if (availableNodes == nodeCounter) 
+									// and no matching child node has been found
+								{
+									// insert the new child
+									node<long> *    addANode = (node<long>*) checkPointer(new node<long>);
+									addANode->init ((long)currentCharacter);
+									currentTreeNode->add_node (*addANode);
+									currentTreeNode = addANode;
 								}
 							}
-							
-							if (errorMessage.sLength == 0) // no error set, and no matching child node has been found
-														   // insert the new child
-							{
-								node<long> *    addANode = new node<long>;
-								checkPointer   (addANode);
-								addANode->init ((long)currentCharacter);
-								currentTreeNode->add_node (*addANode);
-								currentTreeNode = addANode;
-							}
 							else
+							{
+								errorMessage = _String("Terminal symbols must form a prefix code, but '") & *literal->theString & "' contains another terminal symbol as a prefix.";
 								break;
+							}
 						}
 						
 						if (errorMessage.sLength == 0) // no error set; check to see if this terminal is not a prefix of something else
@@ -177,18 +197,20 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 						}
 					}
 					else
-						index = -index-1; // if this terminal has already been added
+						index = -index-1; // if this terminal has already been added, use the index
 						
 					if (errorMessage.sLength == 0)
 					{
 						long		  nt_index  = (long)(lhs->Compute()->Value()),
 									  avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed 
 						
-						if (avl_index<0) avl_index = -avl_index - 1; 
+						if (avl_index<0) // nt_index already exists; correct to positive range
+							avl_index = -avl_index - 1; 
+						
 						tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_); // update status flags for this non-terminal
 						
 						// first ensure the rule is not a duplicate
-						_String			ruleString = _String (nt_index) & ",[" & index & ']';
+						_String			ruleString = _String (nt_index) & ",[" & index & ']'; 
 						long			seenMe	   = alreadySeen.Insert (ruleString.makeDynamic());
 						if (seenMe < 0) // already seen
 							errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
@@ -1275,7 +1297,7 @@ _Parameter 	 Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 	// see if this is already done
 	long   	stringL  		= ((_String**)corpusChar.lData)[stringIndex]->sLength,
 			tripletIndex	= scfgIndexIntoAnArray(from,to,ntIndex,stringL),
-			avlIndex 		= theAVL->Find ((BaseRef)tripletIndex),
+			avlIndex 		= theAVL->FindLong (tripletIndex),
 			matrixIndex		= -1;
 			
 	if (avlIndex < 0) // the triplet is not in the search tree
@@ -1544,8 +1566,9 @@ _Parameter 	 Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
 	
 	/* look up (s,t,i) in cache and decide if it has already been computed */
 	_AVLListX *		theAVL			= (_AVLListX*)outsideProbs(stringIndex);
+	
 	long			tripletIndex	= scfgIndexIntoAnArray(from,to,ntIndex,stringL),	// convert (s,t,i)
-					avlIndex		= theAVL->Find ((BaseRef)tripletIndex),				// retrieve key
+					avlIndex		= theAVL->FindLong (tripletIndex),				// retrieve key
 					matrixIndex		= -1;
 	
 	if (avlIndex < 0)	// the triplet is not in the search tree
@@ -1571,12 +1594,6 @@ _Parameter 	 Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
 				return currentValue;
 		}
 	}
-	
-	/*
-	char buf [256];
-	sprintf(buf, "%d\t%d\t%d\n", from, to, ntIndex);
-	BufferToConsole(buf);
-	*/
 	
 	/* have to compute stuff; note, nothing below this line should get called after the first pass */
 	if (firstOutside)

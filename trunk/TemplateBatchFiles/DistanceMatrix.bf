@@ -52,7 +52,8 @@ if (distanceChoice > 0)
 ChoiceList (distanceFormat, "Matrix Format",1,SKIP_NONE,
 			"PHYLIP Style","Symmetric PHYLIP style matrix.",
 			"HyPhy Matrix","Use HyPhy matrix syntax (suitable for input to other HyPhy analyses) and is written to disk incrementally",
-			"TAB","Use tab separated format, suitable for importing into a statistical analysis package and written to disk incrementally");
+			"TAB","Use tab separated format, suitable for importing into a statistical analysis package and written to disk incrementally",
+			"Pairwise","Write a tab format in the form: seq1 seq2 distance");
 			
 if (distanceFormat < 0)
 {
@@ -213,7 +214,7 @@ else
 }
 	
 
-if (distanceFormat != 1)
+if (distanceFormat != 1 && distanceFormat != 3)
 {
 	if (distanceFormat == 2)
 	{
@@ -255,7 +256,22 @@ if (distanceFormat != 1)
 }
 else
 {
-	fprintf (LAST_FILE_PATH,CLEAR_FILE,distanceMatrix);
+	if (distanceFormat == 1)
+	{
+		fprintf (LAST_FILE_PATH,CLEAR_FILE,distanceMatrix);
+	}
+	else
+	{
+		GetString (seqString,ds,-1);
+		fprintf (LAST_FILE_PATH,CLEAR_FILE,"Sequence1\tSequence2\tDistance");
+		for (i = 0; i<ds.species; i=i+1)
+		{
+			for (j = i+1; j<ds.species; j = j+1)
+			{
+				fprintf (LAST_FILE_PATH,"\n",seqString[i],"\t",seqString[j],"\t",distanceMatrix[i][j]);
+			}
+		}		
+	}
 }
 	
 fprintf (LAST_FILE_PATH, CLOSE_FILE);

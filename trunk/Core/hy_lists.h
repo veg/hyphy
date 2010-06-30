@@ -363,6 +363,9 @@ virtual		~_AVLList	(void) {}
 
 
 	long				Find 				(BaseRef);
+	long				FindLong 			(long); 
+												// 20100623: a shortcut function to look for integers only
+												// avoids calling ::Compare
 	char				FindBest			(BaseRef, long&);
 	long				Find 				(BaseRef, _SimpleList&);
 	long				Next 				(long,    _SimpleList&);
