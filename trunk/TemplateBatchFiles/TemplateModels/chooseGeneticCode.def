@@ -56,6 +56,24 @@ _geneticCodeOptionMatrix   =
 			{"Thraustochytrium mtDNA","Thraustochytrium Mitochondrial Code (transl_table=23)."}
 			};
 			
+_genBankTranTableMap = {};
+_genBankTranTableMap ["1"] = "Universal";
+_genBankTranTableMap ["2"] = "Vertebrate mtDNA";
+_genBankTranTableMap ["3"] = "Yeast mtDNA";
+_genBankTranTableMap ["4"] = "Mold/Protozoan mtDNA";
+_genBankTranTableMap ["5"] = "Invertebrate mtDNA";
+_genBankTranTableMap ["6"] = "Ciliate Nuclear";
+_genBankTranTableMap ["9"] = "Echinoderm mtDNA";
+_genBankTranTableMap ["10"] = "Euplotid Nuclear";
+_genBankTranTableMap ["12"] = "Alt. Yeast Nuclear";
+_genBankTranTableMap ["13"] = "Ascidian mtDNA";
+_genBankTranTableMap ["14"] = "Flatworm mtDNA";
+_genBankTranTableMap ["15"] = "Blepharisma Nuclear";
+_genBankTranTableMap ["16"] = "Chlorophycean mtDNA";
+_genBankTranTableMap ["21"] = "Trematode mtDNA";
+_genBankTranTableMap ["22"] = "Scenedesmus obliquus mtDNA";
+_genBankTranTableMap ["23"] = "Thraustochytrium mtDNA";
+			
 _hyphyAAOrdering		   = "FLIMVSPTAYXHQNKDECWRG";
 _alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
 
