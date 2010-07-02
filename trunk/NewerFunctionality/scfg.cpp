@@ -199,7 +199,8 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 					else
 						index = -index-1; // if this terminal has already been added, use the index
 						
-					if (errorMessage.sLength == 0)
+					if (errorMessage.sLength == 0) 
+						// a valid production rule 
 					{
 						long		  nt_index  = (long)(lhs->Compute()->Value()),
 									  avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed 
@@ -207,7 +208,9 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 						if (avl_index<0) // nt_index already exists; correct to positive range
 							avl_index = -avl_index - 1; 
 						
-						tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_); // update status flags for this non-terminal
+						// update status flags for this non-terminal
+						tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_); 
+						
 						
 						// first ensure the rule is not a duplicate
 						_String			ruleString = _String (nt_index) & ",[" & index & ']'; 
@@ -216,11 +219,10 @@ Scfg::Scfg	(_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
 							errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
 						else
 						{
-							// create a new record for the rule
-							_SimpleList	goodTRule;	
-							goodTRule << nt_index;
-							goodTRule << index;
-							rules 	  && & goodTRule; // append the new rule to the list of existing rules 
+							// create a new record for the rule of the form [nt index] -> [t index]
+							_SimpleList	*goodTRule = (_SimpleList*) checkPointer (new _SimpleList ((long)nt_index));	
+							(*goodTRule) << index;
+							rules.AppendNewInstance (goodTRule); // append the new rule to the list of existing rules 
 							
 							// process the formula 
 							ProcessAFormula (expression, ruleProbabilities, parsedFormulas, errorMessage);
