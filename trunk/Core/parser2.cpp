@@ -4359,11 +4359,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			DeleteObject (literal);
 			checkPointer (fString);
 			
-			_Operation *theString = new _Operation (fString);
-			checkPointer (theString);
-			
-			(*levelData) << theString;
-			DeleteObject (theString);
+			levelData->AppendNewInstance (new _Operation (fString));
 			
 			i += j;
 			continue;
@@ -4375,8 +4371,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			if (twoToken)
 			{
 				_String thisOp (s.getChar(i-1));
-				_Operation theVar (thisOp,1L);
-				(*levelOps)&&(&theVar);
+				levelOps->AppendNewInstance (new _Operation (thisOp,1L));
 			}
 			impliedMult = (i && numeric.isAllowed [s.getChar(i-1)]);
 			

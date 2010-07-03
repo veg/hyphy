@@ -503,39 +503,39 @@ class _Variable : public _Constant {
 
 	virtual	  void	  		MarkDone (void); 
 
-	virtual		_PMathObj  Compute (void); 	  // compute or return the value
-	virtual		bool	   IsVariable (void); //  
-	virtual		bool	   IsIndependent (void) 
+	virtual		_PMathObj   Compute (void); 	  // compute or return the value
+	virtual		bool	    IsVariable (void); //  
+	virtual		bool	    IsIndependent (void) 
 									{ return (varFormula&&varFormula->theFormula.lLength)?
 														false:
 														(varValue?varValue->IsIndependent():true);
 									}   
-	virtual		bool	   IsConstant (void);
-				void	   SetValue (_PMathObj, bool = true); // set the value of the variable
-				void	   SetNumericValue (_Parameter);
-				void	   CheckAndSet (_Parameter, bool = false); 
+	virtual		bool	    IsConstant (void);
+				void	    SetValue (_PMathObj, bool = true); // set the value of the variable
+				void	    SetNumericValue (_Parameter);
+				void	    CheckAndSet (_Parameter, bool = false); 
 									// set the value of the variable
 									// bool flag is used to indicate that out of bounds values should be rejected
 	
-				_PMathObj  GetValue (void) {return varValue;} // get the value of the variable
-				void	   SetFormula (_Formula&); // set the variable to a new formula
+				_PMathObj   GetValue (void) {return varValue;} // get the value of the variable
+				void	    SetFormula (_Formula&); // set the variable to a new formula
 	
-	virtual		bool	   HasChanged     (bool = false);
-	virtual     void	   PreMarkChanged  ();
-	virtual		void	   PostMarkChanged ();
-	virtual		bool	   IsGlobal (void) 
+	virtual		bool	    HasChanged     (bool = false);
+	virtual     void	    PreMarkChanged  ();
+	virtual		void	    PostMarkChanged ();
+	virtual		bool	    IsGlobal (void) 
 											{ return varFlags & HY_VARIABLE_GLOBAL;}
-	virtual		bool	   IsCategory (void) 
-											{ return false;}
-	virtual		long	   GetAVariable (void) 
+	virtual		bool	    IsCategory (void) 
+						 					{ return false;}
+	virtual		long	    GetAVariable (void) 
 											{ return theIndex;}
-	virtual		long	   ObjectClass (void) 
+	virtual		long	    ObjectClass (void) 
 											{ return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);}
-				void	   SetIndex (long i) 
+				void	    SetIndex (long i) 
 											{theIndex = i;}
-				long	   GetIndex (void) 
+				long	    GetIndex (void) 
 											{ return theIndex;}
-	virtual		void	   ScanForVariables (_AVLList& l, bool globals = false)
+	virtual		void	    ScanForVariables (_AVLList& l, bool globals = false)
 						  					{ 
 						  						if (varValue) 
 						  							varValue->ScanForVariables (l, globals);
@@ -543,10 +543,10 @@ class _Variable : public _Constant {
 						   							varFormula->ScanFForVariables(l,globals);
 						  					}
 						   
-	virtual		bool	   IsContainer (void) 
+	virtual		bool	    IsContainer (void) 
 											{ return false;}
 	
-				void	   SetBounds (_Parameter lb, _Parameter ub) 
+				void	    SetBounds (_Parameter lb, _Parameter ub) 
 											{lowerBound = lb; upperBound = ub;}
 				
 				_Parameter 	GetLowerBound (void) 

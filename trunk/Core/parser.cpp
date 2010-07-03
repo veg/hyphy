@@ -2289,8 +2289,7 @@ void	_Variable::ClearConstraints (void)
 	if (IsCategory ())
 	{
 		_Variable newVar (*GetName(), IsGlobal());
-		newVar.SetValue ((_PMathObj)Compute()->makeDynamic());
-		
+		newVar.SetValue ((_PMathObj)Compute()->makeDynamic(),false);
 		ReplaceVar ( &newVar);
 		/*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.lData[1])->GetValue();
 		for (long k=0; k<4; k++)
@@ -2303,12 +2302,11 @@ void	_Variable::ClearConstraints (void)
 		*/
 	}
 	else
+	{
 		if (!IsIndependent()) 
-		{
-			_PMathObj repVal = (_PMathObj)Compute()->makeDynamic();
-			SetValue (repVal);
-			DeleteObject (repVal);
-		}
+			SetValue ((_PMathObj)Compute()->makeDynamic(),false);
+		SetBounds (DEFAULTLOWERBOUND,DEFAULTUPPERBOUND);
+	}
 }
 
 //__________________________________________________________________________________
