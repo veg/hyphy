@@ -175,6 +175,7 @@ bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 							if (c=='\'')
 							{
 								if (newPos+1<CurrentLine.sLength)
+									// check for a double quote
 								{
 									c = CurrentLine.sData[++newPos];
 									if (c=='\'')
@@ -183,7 +184,7 @@ bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 										continue;
 									}
 									else
-										if (!startedReading)
+										if (!startedReading || insideLiteral)
 											newPos--;
 								}
 							}

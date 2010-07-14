@@ -9871,7 +9871,7 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 		
 		// mp stuff begins here
 		
-		#ifdef __MP__
+		/*#ifdef __MP__
 			
 			pthread_t 		*countingThreads = nil;
 			WancReleafTask	*wancTasks		 = nil;
@@ -9948,7 +9948,7 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 			}
 			else
 			{
-		#endif
+		#endif*/
 
 
 		for (long sites = 1; sites < dsf->theFrequencies.lLength; sites++)
@@ -9968,9 +9968,9 @@ void	_LikelihoodFunction::StateCounter (long functionCallback)
 		}
 	}
 	
-	#ifdef __MP__
+	/*#ifdef __MP__
 	}
-	#endif
+	#endif*/
 
 	#if !defined __UNIX__ || defined __HEADLESS__
 		SetStatusBarValue (-1,1.,0.);
