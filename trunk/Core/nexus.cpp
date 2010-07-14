@@ -192,6 +192,7 @@ bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 							if (startedReading &&stopOnQuote)
 							{
 								done = true;
+								newPos++;
 								break;
 							}
 							else
