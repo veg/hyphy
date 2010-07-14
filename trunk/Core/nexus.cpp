@@ -129,7 +129,7 @@ void 	NexusParseEqualStatement (_String& source)
 
 bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces)
 {
-	bool done = false, 
+	bool done          = false, 
 		 insideLiteral = false, 
 		 startedReading = false;
 	
@@ -177,15 +177,16 @@ bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 								if (newPos+1<CurrentLine.sLength)
 									// check for a double quote
 								{
-									c = CurrentLine.sData[++newPos];
+									c = CurrentLine.sData[newPos+1];
 									if (c=='\'')
 									{
+										newPos += 2;
 										blank<<c;
 										continue;
 									}
-									else
-										if (!startedReading || insideLiteral)
-											newPos--;
+									//else
+									//	if (!startedReading || insideLiteral)
+									//		newPos--;
 								}
 							}
 							if (startedReading &&stopOnQuote)
@@ -194,12 +195,7 @@ bool	ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 								break;
 							}
 							else
-							{
-								if (!insideLiteral)
-									insideLiteral = true;
-								else
-									insideLiteral = false;
-							}
+								insideLiteral = !insideLiteral;
 						}
 						else
 						{
