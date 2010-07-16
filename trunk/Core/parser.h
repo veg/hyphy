@@ -417,6 +417,11 @@ virtual	long	  	ObjectClass 		(void);
 					
 	
 virtual	void	  	ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
+virtual	void	  	ScanFForType		(_SimpleList&,  int);
+		/* SLKP 20100716: 
+				A simple utility function to retrieve all variables of a given type
+		 */
+	
 virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		_List&	  	GetList 			(void) 
 						{return theFormula;}	

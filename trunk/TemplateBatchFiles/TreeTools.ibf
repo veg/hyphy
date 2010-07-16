@@ -103,7 +103,7 @@ function PostOrderAVL2StringDistances (theAVL, distAVL)
 	
 	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex = nodeIndex + 1)
 	{
-		if (nodeIndex != rootIndex)
+		if (nodeIndex != rootIndex && (theAVL[nodeIndex])["Parent"] >= 0)
 		{
 			nodeInfo = theAVL[nodeIndex];
 			myDepth = nodeInfo["Depth"];

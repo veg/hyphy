@@ -2567,6 +2567,30 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
 
 //__________________________________________________________________________________
 
+void _Formula::ScanFForType (_SimpleList &l, int type) 
+{
+	for (long i = 0; i<theFormula.lLength; i++)
+	{
+		_Operation* theObj = ((_Operation**)theFormula.lData)[i];
+		if (theObj->IsAVariable())
+		{
+			long f = theObj->GetAVariable();
+			
+			if (f>=0)
+			{
+				_Variable * v = LocateVar(f);
+					
+				if(v->ObjectClass()==type)
+					l << f;
+					
+			}
+		}
+	}
+}
+
+
+//__________________________________________________________________________________
+
 bool _Formula::CheckFForDependence (long varID, bool checkAll) 
 {
 	for (int i = 0; i<theFormula.lLength; i++)

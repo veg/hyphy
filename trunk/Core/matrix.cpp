@@ -7510,6 +7510,7 @@ void	 _Matrix::Serialize (_String& res, _String& myID)
 {
 	if (storageType)
 	{
+		res << '\n';
 		res <<  myID;
 		if (storageType == 1)
 		{

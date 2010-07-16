@@ -9553,11 +9553,38 @@ void		SetDataFilterParameters (_String& parName, _DataSetFilter* thedf, bool set
 void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool completeExport)
 {
 	bool		mByF = true,
-				do1  = false,
 				do2  = false;
 	
-	_Variable	* tV  = LocateVar(modelMatrixIndices.lData[theModel]),
-				* tV2;
+	_Variable	* tV  = nil,
+				* tV2 = nil;
+	
+	_Formula    * theExp  = nil;
+	_SimpleList   matrices;
+	
+	if (modelTypeList.lData[theModel])
+	{
+		theExp = (_Formula*)modelMatrixIndices.lData[theModel];
+		theExp->ScanFForType(matrices, MATRIX);
+		
+		for (long mi = 0; mi < matrices.countitems(); mi++)
+		{
+			if (alreadyDone && alreadyDone->Insert ((BaseRef)matrices.lData[mi]) < 0)
+			{
+				matrices.Delete(mi);
+				mi--;
+			}
+		}
+	}
+	else
+	{
+		if (!alreadyDone || alreadyDone->Find ((BaseRef)modelMatrixIndices.lData[theModel]) < 0)
+		{
+			if (alreadyDone)
+				alreadyDone->Insert ((BaseRef)modelMatrixIndices.lData[theModel]);
+			matrices << modelMatrixIndices.lData[theModel];
+		}
+		tV = LocateVar(modelMatrixIndices.lData[theModel]);
+	}
 				
 	long freqID = modelFrequenciesIndices.lData[theModel];
 	
@@ -9569,12 +9596,6 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 		tV2 = LocateVar(-freqID-1);
 	}
 
-	if (!alreadyDone || alreadyDone->Find ((BaseRef)modelMatrixIndices.lData[theModel]) < 0)
-	{
-		if (alreadyDone)
-			alreadyDone->Insert ((BaseRef)modelMatrixIndices.lData[theModel]);
-		do1 = true;		
-	}
 	if (!alreadyDone || alreadyDone->Find ((BaseRef)tV2->GetAVariable()) < 0)
 	{
 		if (alreadyDone)
@@ -9582,7 +9603,7 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 		do2 = true;
 	}
 
-	if (completeExport && (do1 || do2))
+	if (completeExport && (matrices.lLength || do2 || theExp))
 	{
 		_SimpleList    vl,
 					   ind,
@@ -9590,8 +9611,15 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 					   cat;
 					   
 		_AVLList vlst (&vl);
-		if (do1)
-			tV->ScanForVariables (vlst,true);
+		
+		if (theExp)
+		{
+			theExp->ScanFForVariables(vlst, true, false, true);
+		}
+		
+		for (long mi = 0; mi < matrices.lLength; mi++)
+				LocateVar(matrices.lData[mi])->ScanForVariables (vlst,true);
+		
 		if (do2)
 			tV2->ScanForVariables (vlst,true);
 		vlst.ReorderList ();
@@ -9609,10 +9637,14 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 		ExportCatVariables (rec,&cat);
 	}
 	
-	if (do1)
+	if (matrices.lLength)
 	{
-		((_Matrix*)   tV->GetValue())->Serialize (rec,*tV->GetName());
-		rec << '\n';
+		for (long k = 0; k < matrices.lLength; k++)
+		{
+			_Variable *tV = LocateVar (matrices.lData[k]);
+			((_Matrix*)   tV->GetValue())->Serialize (rec,*tV->GetName());
+			rec << '\n';
+		}
 	}
 	
 	if (do2)
@@ -9621,10 +9653,23 @@ void	SerializeModel	(_String& rec, long theModel, _AVLList* alreadyDone, bool co
 	rec << "\nModel ";
 	rec << *((_String*)modelNames (theModel));
 	rec << "=(";
-	rec << *tV->GetName();
+	if (theExp)
+	{
+		rec << '"';
+		rec << _String((_String*)(theExp->toStr()));
+		rec << '"';
+	}
+	else	
+		rec << *tV->GetName();
 	rec << ',';
 	rec << *tV2->GetName();
-	if (!mByF)
-		rec << ",0";
+	if (theExp)
+	{
+		rec << ',';
+		rec << explicitFormMExp;
+	}
+	else
+		if (!mByF)
+			rec << ",0";
 	rec << ");\n";
 }
