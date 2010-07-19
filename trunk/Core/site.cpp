@@ -1514,9 +1514,11 @@ long _DataSet::ComputeSize(void)
 _Parameter _DataSet::CheckAlphabetConsistency(void)
 {
 	long 		charsIn = 0, 
-		 		total = 0;
+				gaps	= 0,
+		 		total   = 0;
 	
-	char 		checks[255];
+	char 		checks	  [255],
+				gapChar = theTT->GetGapChar();
 	
 	_String		baseSymbols;
 	
@@ -1548,11 +1550,14 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 		for (long j = 0; j<thisColumn->sLength; j++)
 			if (checks[thisColumn->sData[j]])
 				charsIn+=w;
+			else
+				if (gapChar == thisColumn->sData[j])
+					gaps += w;
 			
 		total += w*thisColumn->sLength;
 	}
 	
-	return (_Parameter)charsIn/(_Parameter)total;
+	return (_Parameter)charsIn/(_Parameter)(total-gaps+1);
 	
 }
 

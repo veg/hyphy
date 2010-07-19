@@ -5926,8 +5926,7 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 					catVars && & varName;
 				}
 				
-				result = new _Matrix (catVars);
-				checkPointer (result);
+				result = (_Matrix*) checkPointer(new _Matrix (catVars));
 			}
 			else
 			{
@@ -5963,14 +5962,17 @@ void	  _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 					{			// it's a tree node with a rate matrix assigned
 						f = FindModelName (objectNameID);
 						if (f>=0)
-						// return a vector of strings - each with actual characters of the corresponding sequence
+						// for models, return the list of variables in the model
 						{
 							_SimpleList	modelParms;
-							_AVLList modelParmsA (&modelParms);
+							_AVLList    modelParmsA (&modelParms);
+							
 							LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
 							_List		modelPNames;
+							
 							for (long vi=0; vi<modelParms.lLength; vi++)
 								modelPNames << LocateVar(modelParms.lData[vi])->GetName();
+							
 							result = new _Matrix (modelPNames);
 						}
 					}

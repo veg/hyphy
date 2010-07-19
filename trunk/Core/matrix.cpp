@@ -2285,8 +2285,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 							if (lterm.sLength == 1 && lterm.sData[0]=='*') 
 								lterm = empty; // dummy element in probability matrix
 								
-							_Formula*  theTerm = new _Formula (lterm, theP);
-							checkPointer (theTerm);
+							_Formula*  theTerm = (_Formula*)checkPointer(new _Formula (lterm, theP));
 							
 							if (isAConstant) // there is hope that this matrix is of numbers
 								if (theTerm->ObjectClass() == NUMBER)
