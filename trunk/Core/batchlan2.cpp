@@ -1633,7 +1633,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 																		 doLocal,doAffine,ops,score,0,
 																		 str1->sLength,0,string2->sLength,buffers,0,alignmentRoute);
 									
-									delete		alignmentRoute;
+									delete[]	alignmentRoute;
 
 									_String		*result1 = new _String (str1->sLength+1, true),
 												*result2 = new _String (string2->sLength+1, true);
