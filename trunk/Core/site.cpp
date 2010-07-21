@@ -26,6 +26,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <ctype.h>
 #include <stdlib.h>
 
+#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
+
 #include "likefunc.h"
 
 #define	  DATA_SET_SWITCH_THRESHOLD 	100000
@@ -245,7 +247,7 @@ bool	_TranslationTable::TokenCode (char token, long* receptacle, bool gapToOnes)
 	// OPTIMIZE FLAG linear search: 
 	// SLKP 20071002 should really be a 256 char lookup table
 	
-	if (f!=-1) 
+	if (f != -1) 
 	{
 		SplitTokenCode(translationsAdded.lData[f], receptacle);
 		return true;
@@ -1120,7 +1122,7 @@ void	 _DataSet::Write2Site (long index, char c)
 				if (theNames.lLength > theMap.lData[0])
 					fprintf (streamThrough,"\n>%s\n",((_String*)theNames(theMap.lData[0]))->getStr());
 				else
-					fprintf (streamThrough,"\n>Sequence %d\n",theMap.lData[0]+1);		
+					fprintf (streamThrough,"\n>Sequence %ld\n",theMap.lData[0]+1);		
 					
 				theMap.lData[1] = 0;	
 			}
@@ -1594,7 +1596,7 @@ void	_DataSet::toFileStr (FILE* dest)
 	theNames.toFileStr(dest);
 	
 	fprintf (dest, ";\nTotal Sites: %ld",GetNoTypes()) ;
-	fprintf (dest, ";\nDistinct Sites: %d",theFrequencies.lLength);
+	fprintf (dest, ";\nDistinct Sites: %ld",theFrequencies.lLength);
 	
 /*	fprintf (dest,"\n"); 
 	for (long j=0; j<noOfSpecies;j++)
@@ -2506,8 +2508,9 @@ extern _String skipOmissions;
 
 void	_DataSetFilter::FilterDeletions(_SimpleList *theExc)
 {
-	_Parameter skipo;
+	_Parameter		skipo;
 	checkParameter (skipOmissions,skipo,0.0);
+	
 	if (skipo>.5 || theExc ) // delete omissions
 	{
 		//build up the list of "bad" sites
@@ -2710,34 +2713,32 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 {
 
 	theExclusions.Clear();
-	
 	theList->StripQuotes();	
+	
 	if (theList->sLength == 0) 
 		return;
 		
-	_List *tokens 		= theList->Tokenize(',');	
-	_Parameter	 *store = (_Parameter*)checkPointer(new _Parameter[GetDimension (false)]);
-	_SimpleList hack;
-
+	_List		 *tokens = theList->Tokenize(',');	
+	_SimpleList	 holder;
+	
 	for (long k = 0; k < tokens->lLength; k++)
 	{
-		long posMarker = Translate2Frequencies(*(_String*)((*tokens)(k)),store,true);
+		long posMarker = MapStringToCharIndex(*(_String*)((*tokens)(k)));
 
 		if (posMarker < 0)
 			ReportWarning (_String("Exclusion request for '") & *(_String*)((*tokens)(k)) &"' does not represent a unique state and will therefore be ignored.");
 		else
-			hack<<posMarker;
+			holder<<posMarker;
 	}
 	
-	delete		 []  store;
 	DeleteObject (tokens);
 	
-	hack.Sort(true);
+	holder.Sort(true);
 	
 	if (filter)
-		FilterDeletions (&hack);
+		FilterDeletions (&holder);
 	
-	theExclusions << hack;
+	theExclusions<<holder;
 }
 
 //_______________________________________________________________________
@@ -3265,7 +3266,7 @@ _SimpleList* _DataSetFilter::CountAndResolve (long pattern, _Parameter * storage
 			resList->lData[k] = characterRes;
 				
 			if (characterRes >= dimension)
-				BufferToConsole ("\nInternal error\n");
+				WarnError (_String("Internal error in _DataSetFilter::CountAndResolve\n"));
 			
 			if ((counts.lData[characterRes]++) == 0)
 				normalizingSum ++;
@@ -3775,7 +3776,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 	_Parameter	   
 			*sm1   = new _Parameter[mxDim],
 		   	*sm2   = new _Parameter[mxDim];
-		   
+	
 	
 	checkPointer (res);
 	checkPointer (sm1);
@@ -4139,8 +4140,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, char amb)
 		}
 	}
 	
-	delete (sm1);
-	delete (sm2);
+	delete[] sm1;
+	delete[] sm2;
 	
 	return res;
 }
@@ -4430,18 +4431,22 @@ long	_DataSetFilter::CorrectCode (long code)
 //_______________________________________________________________________
 long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, bool smear)
 {
-	long count = 0,	
-		 nonzeropos = 0;
+	long count		= 0,	
+		 nonzeropos = 0,
+		 store		[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
+	
 		 
-	long store[512];
-		
 	if (unitLength == 1)
 	{
 		theData->theTT->TokenCode (str.sData[0],store,smear);
 		if (theExclusions.lLength==0)
 		{
-				for (long i = 0; i<undimension; i++)
-					if ( (parvect[i]=store [i]) ) {nonzeropos = i;count++;}
+			for (long i = 0; i<undimension; i++)
+				if ( (parvect[i]=store [i]) ) 
+				{
+					nonzeropos = i;
+					count++;
+				}
 		}
 		else
 		{
@@ -4459,30 +4464,47 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 				parvect[i-k]=store[i];
 			}
 		}
-		if (!count&&smear)
+		if (count == 0)
 		{
-			for (long i = 0; i<undimension; i++)
-				parvect[i] = 1;
+			if (smear)
+				for (long i = 0; i<undimension; i++)
+					parvect[i] = 1.;
+			
 			return -1;
 		}
-		if (count>1) return -1;
+		
+		if (count>1) 
+			return -1;
+		
 		return nonzeropos;
 	}
 	else
 	{
 		//pull the frequencies out of the Translation table
 		_Matrix		out (undimension,1,false,true);
-		long m,n,index = 0, shifter = 1, *lp;
+		
+		long		m,
+					n,
+					index = 0, 
+					shifter = 1, 
+					*lp,
+					*storeP;
+		
 		_Parameter* fl;
+		
+		if (theData->theTT->baseLength * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE)
+			storeP = new long [theData->theTT->baseLength * unitLength];
+		else
+			storeP = store;
 
 		count = 1;
 		for (m = 0; m<unitLength; m++ )
-			theData->theTT->TokenCode (str.sData[m], store+theData->theTT->baseLength*m);
+			theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
 		
 		for (m = unitLength-1; m>=0; m--)
 		{
 			int smcount = 0;
-			lp = store+theData->theTT->baseLength*m;
+			lp = storeP+theData->theTT->baseLength*m;
 			for (n = 0; n<theData->theTT->baseLength; n++,lp++)
 			{
 				if (*lp)
@@ -4493,7 +4515,7 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 			}
 			if ((smcount==0)&&smear) // deletion -- replace with 1's
 			{
-				lp = store+theData->theTT->baseLength*m;
+				lp = storeP+theData->theTT->baseLength*m;
 				for (n = 0; n<theData->theTT->baseLength; n++,lp++)
 					*lp=1;
 				smcount = theData->theTT->baseLength;
@@ -4503,13 +4525,16 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 			count *=smcount;
 		}
 		
+
 		if (count>1)
-			theData->constructFreq (store, &out, 1, 0, count, unitLength-1 , 1, 0);
+			theData->constructFreq (storeP, &out, 1, 0, count, unitLength-1 , 1, 0);
 		else
 			if (count == 1)
 				out.theData[index] = count;
 				
-			
+		if (storeP != store)
+			delete [] storeP;
+		
 		if (count==1)
 		{
 			fl = out.theData;
@@ -4589,8 +4614,8 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 {
 	long 	count 		= 0,	
-		 	nonzeropos  = 0,
-		 	store	[512];
+			nonzeropos  = 0,
+			store		[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
 		
 	if (unitLength == 1)
 	{
@@ -4632,18 +4657,24 @@ long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 				n,
 				index = 0, 
 				shifter = 1, 
-				*lp;
+				*lp,
+				*storeP;
 
 		count = 1;
 		
+		if (theData->theTT->baseLength * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE)
+			storeP = new long [theData->theTT->baseLength * unitLength];
+		else
+			storeP = store;
+
 		for (m = 0; m<unitLength; m++ )
-			theData->theTT->TokenCode (str.sData[m], store+theData->theTT->baseLength*m);
+			theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
 		
 		for (m = unitLength-1; m>=0; m--)
 		{
 			int smcount = 0;
 
-			lp = store+theData->theTT->baseLength*m;
+			lp = storeP+theData->theTT->baseLength*m;
 
 			for (n = 0; n<theData->theTT->baseLength; n++,lp++)
 				if (*lp)
@@ -4654,7 +4685,7 @@ long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 
 			if (smcount==0)
 			{
-				lp = store+theData->theTT->baseLength*m;
+				lp = storeP+theData->theTT->baseLength*m;
 				
 				for (n = 0; n<theData->theTT->baseLength; n++,lp++)
 					*lp=1;
@@ -4667,6 +4698,10 @@ long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 			count *=smcount;
 		}
 		
+		
+		if (storeP != store)
+			delete [] storeP;
+
 		if (count==1)
 		{
 			m = 0;
@@ -4692,12 +4727,11 @@ long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 }
 
 //_______________________________________________________________________
-long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, bool smear)
+/*long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, bool smear)
 {
-	long count = 0,	
-		 nonzeropos = 0;
-		 
-	long store[512];
+	long count		 = 0,	
+		 nonzeropos  = 0,
+		 store		 [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
 		
 	if (unitLength == 1)
 	{
@@ -4705,20 +4739,26 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 		if (theExclusions.lLength==0)
 		{
 			for (long i = 0; i<undimension; i++)
-				if ( (parvect[i]=store [i]) ) {nonzeropos = i;count++;}
+				if ( (parvect[i]=store [i]) ) 
+				{
+					nonzeropos = i;
+					count++;
+				}
 		}
 		else
 		{
 			long k=0;
 			for (long i = 0; i<undimension; i++)
 			{
-				if (i==theExclusions.lData[k] && k<theExclusions.lLength) k++;
+				if (i==theExclusions.lData[k] && k<theExclusions.lLength) 
+					k++;
 				else
 					if ( store [i] ) 
 					{
 						nonzeropos = i;
 						count++;
 					}
+				
 				parvect[i-k]=store[i];
 			}
 		}
@@ -4728,21 +4768,31 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 				parvect[i] = 1;
 			return -1;
 		}
-		if (count>1) return -1;
+		
+		if (count>1) 
+			return -1;
+		
 		return nonzeropos;
 	}
 	else
 	{
 		//pull the frequencies out of the Translation table
 		//_Matrix		out (undimension,1,false,true);
-		_Parameter		out [512];
-		long m,n,index = 0, shifter = 1, *lp;
-		_Parameter* fl;
+		
+		_Parameter		out [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
+						*fl;
+
+		long			m,
+						n,
+						index = 0, 
+						shifter = 1, 
+						*lp;
 		
 		for (m = 0; m<undimension; m++)
 			out[m] = 0.;
 
 		count = 1;
+		
 		for (m = 0; m<unitLength; m++ )
 			theData->theTT->TokenCode (str[m], store+theData->theTT->baseLength*m, smear);
 		
@@ -4778,7 +4828,7 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 		if (count==1)
 		{
 			fl = out;
-			m = 0;
+			m  = 0;
 			if (theExclusions.lLength)
 			{	
 				for (n = 0; n<undimension; n++, fl++)
@@ -4846,23 +4896,24 @@ long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, boo
 		}
 	}
 	return 0;
-}
+}*/
 
 	
 //_______________________________________________________________________
 long 	_DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool smear)
 {
-	long 	  store [512];
-	
-	long 	 i,k=0,count =0;
+	long 	 count =0,
+			 store [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
 		
 	theData->theTT->TokenCode (s,store, smear);
 	
 	if (theExclusions.lLength)
 	{
-		for ( i = 0; i<undimension; i++)
+		long k = 0;
+		for (long i = 0; i<undimension; i++)
 		{
-			if (i==theExclusions[k]) k++;
+			if (i==theExclusions[k]) 
+				k++;
 			else
 				if ( store [i] ) 
 					count++;
@@ -4872,12 +4923,12 @@ long 	_DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool s
 	}
 	else
 	{
-		for ( i = 0; i<undimension; i++)
+		for (long i = 0; i<undimension; i++)
 			if ( (parvect[i]=store [i]) ) count++;
 	}
 			
-	if (!count&&smear)
-		for ( i = 0; i<undimension; i++)
+	if (count == 0 && smear)
+		for (long i = 0; i<undimension; i++)
 			parvect[i] = 1.0;
 			
 	return count==1?1:-1; 
@@ -4922,8 +4973,13 @@ void 	_DataSetFilter::SetupConversion (void)
 	if ( unitLength==1 ) // do stuff
 	{
 		char c = 40;
-		long i,charCount,theCode;
-		_Parameter *temp = (_Parameter*)MemAllocate ((undimension+1)*sizeof(_Parameter));
+		
+		long i,
+			 charCount,
+			 theCode;
+		
+		_Parameter *temp	= new _Parameter [undimension+1];
+		
 		while(c<127)
 		{
 			for (i=0; i<undimension; i++)
@@ -4947,7 +5003,7 @@ void 	_DataSetFilter::SetupConversion (void)
 			conversionCache<<charCount;
 			c++;
 		}
-		free (temp);
+		delete[] temp;
 	}
 	else
 	{

@@ -10160,7 +10160,7 @@ void	_LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Mat
 				for (j=0; j<localExc->lLength; j++)
 				{
 					dsf->Translate2Frequencies(*(_String*)(*localExc)(j),translatedState,true);
-					k = 0;
+					k	   = 0;
 					long l = -1;
 					
 					for (long h=dsf->GetDimension(false)-1; h>=0; h--)

@@ -406,10 +406,10 @@ class _DataSetFilter:public BaseObj {
 		     long	   HasExclusions  (unsigned long site, _SimpleList* theExc, _Parameter *buffer);
 		     bool	   IsConstant     (unsigned long site,  bool relaxedDeletions = true);
 
-	long	 Translate2Frequencies (_String&, _Parameter*, bool = true);
+	long	 Translate2Frequencies (_String&, _Parameter*, bool);
 	long	 MapStringToCharIndex  (_String&);
-	long	 Translate2Frequencies (char*, _Parameter*, bool = true);
-	long	 Translate2Frequencies (char,  _Parameter*, bool = true);
+	//long	 Translate2Frequencies (char*,    _Parameter*, bool = true);
+	long	 Translate2Frequencies (char,     _Parameter*, bool);
 
 	_Matrix* HarvestFrequencies (char unit, char atom, bool posSpec, bool = true);
 	

@@ -79,6 +79,7 @@ _alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
 
 _aaLetterToCode			   = {};
 
+
 for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
 {
 	_aaLetterToCode[_hyphyAAOrdering[_idx]] = _idx;
@@ -151,6 +152,21 @@ function CompareCodonProperties (codon1, codon2, code)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function defineCodonToAA ()
+{	
+	codonToAAMap = {};
+	nucChars = "ACGT";
+	
+	for (p1=0; p1<64; p1=p1+1)
+	{
+		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
+	}
+	
+	return codonToAAMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 function RawToSense (code)
 /* 
     given:
@@ -218,6 +234,32 @@ function IsStop (codon, code)
 
 {
 	return code[codon] == 10;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function translateCodonToAA (codonSeq, mapping, offset)
+{
+	seqLen = Abs (codonSeq);
+	translString = "";
+	translString * (seqLen/3+1);
+	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
+	{
+		codon = codonSeq[seqPos][seqPos+2];
+		prot  = mapping[codon];
+		if (Abs(prot))
+		{
+			translString * prot;
+		}
+		else
+		{
+			translString * "?";
+		}
+	} 
+	translString * 0;
+	translString = translString^{{"X$","?"}};
+	
+	return translString;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
