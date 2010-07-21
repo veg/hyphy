@@ -2720,6 +2720,7 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 		
 	_List		 *tokens = theList->Tokenize(',');	
 	_SimpleList	 holder;
+	_AVLList	 exclusions (&holder);
 	
 	for (long k = 0; k < tokens->lLength; k++)
 	{
@@ -2728,12 +2729,14 @@ void	_DataSetFilter::SetExclusions (_String* theList, bool filter)
 		if (posMarker < 0)
 			ReportWarning (_String("Exclusion request for '") & *(_String*)((*tokens)(k)) &"' does not represent a unique state and will therefore be ignored.");
 		else
-			holder<<posMarker;
+		{
+			if (exclusions.Insert((BaseRef)posMarker) < 0)
+				ReportWarning (_String("Exclusion symbol for '") & *(_String*)((*tokens)(k)) &"' is included more than once.");
+		}
 	}
 	
 	DeleteObject (tokens);
-	
-	holder.Sort(true);
+	exclusions.ReorderList();
 	
 	if (filter)
 		FilterDeletions (&holder);
@@ -2768,9 +2771,9 @@ _String*	_DataSetFilter::GetExclusions (void)
 
 long	_DataSetFilter::GetDimension (bool correct)
 {
-	long result = 1;
-	for (long i=0; i<unitLength; i++)
-		result*=theData->theTT->baseLength;
+	long result = theData->theTT->baseLength;
+	for (long i=1; i<unitLength; i++)
+		result *= theData->theTT->baseLength;
 	if (correct)
 		result-=theExclusions.lLength;
 	return result;
@@ -4548,6 +4551,8 @@ long 	_DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect, 
 						m++;
 						continue;
 					}
+					
+					
 					if (*fl>0.)
 					{
 						parvect[n-m] = 1.0;
