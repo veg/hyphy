@@ -9340,7 +9340,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 				_String* aKey = ((_String**)avl.dataList->lData)[cn];				
 				if (aKey)
 				{
-					*fKey->theString = *aKey;
+					fKey->theString->Duplicate(aKey);
 					if (fID2 >= 0)
 					{
 						((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);

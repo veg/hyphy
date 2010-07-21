@@ -3234,11 +3234,6 @@ _PMathObj _FString::RerootTree (void)
 	
 	_TheTree 	rTree (internalRerootTreeID,*theString);
 	
-	if (rTree.IsDegenerate())
-	{
-		DeleteVariable	(internalRerootTreeID);
-		return new _FString (*theString);
-	}
 	
 	if (rTree.IsDegenerate()) // no need to reroot two-sequence trees
 	{
