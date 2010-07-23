@@ -2797,7 +2797,8 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 	FILE* dest = nil;
 	
 	int		out2    = 0;
-	bool	doClose = true;
+	bool	doClose = true,
+			skipFilePathEval = false;
 	
 	if (targetName->Equal(&stdoutDestination))
 	{
@@ -2807,7 +2808,10 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 			if (redirect->theString->Equal (&blFprintfDevNull))
 				return;
 			else
+			{	
+				skipFilePathEval = true;
 				targetName = redirect->theString;
+			}
 		}
 		else
 			out2=1;
@@ -2825,7 +2829,7 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 		}
 		else
 		{
-			if (targetName->Find('"')==-1)
+			if (skipFilePathEval == false && targetName->Find('"')==-1)
 				fnm = GetStringFromFormula (&fnm,chain.nameSpacePrefix);						
 
 			fnm.ProcessFileName(true,false,(Ptr)chain.nameSpacePrefix);
