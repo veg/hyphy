@@ -9300,74 +9300,81 @@ _PMathObj _AssociativeList::MAccess (_PMathObj p)
 _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 {
 	long done = 0;
+	
 
 	if (p->ObjectClass() == STRING && p2->ObjectClass() == STRING)
 	{
-		_String * s  = (_String*)p->toStr(),
-				* s2 = (_String*)p2->toStr();
-				
-		long    fID  = FindBFFunctionName (*s),
-				fID2 = FindBFFunctionName (*s2);
-				
-		if (fID < 0 || batchLanguageFunctionParameters.lData[fID] != 2)
-			WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
-		else
+		
+		long avlRoot = avl.GetRoot();
+		
+		if (avlRoot >= 0)
 		{
-			if (fID2 >= 0 && batchLanguageFunctionParameters.lData[fID2] != 1)
-				WarnError ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
-			
-			_Formula      testFormula,
-						  actionFormula;
-						  
-			actionFormula.GetList().AppendNewInstance(new _Operation());
-			actionFormula.GetList().AppendNewInstance(new _Operation());
-			actionFormula.GetList().AppendNewInstance(new _Operation(empty,-fID-1));
-			
-			if (fID2 >= 0)
+			_String * s  = (_String*)p->toStr(),
+					* s2 = (_String*)p2->toStr();
+					
+			long    fID  = FindBFFunctionName (*s),
+					fID2 = FindBFFunctionName (*s2);
+					
+			if (fID < 0 || batchLanguageFunctionParameters.lData[fID] != 2)
+				WarnError ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
+			else
 			{
-				testFormula.GetList().AppendNewInstance(new _Operation());
-				testFormula.GetList().AppendNewInstance(new _Operation(empty,-fID2-1));
-			}
-			
-			
-			_SimpleList	 hist;
-			long		 ls, 
-						 cn	= avl.Traverser (hist,ls,avl.GetRoot());
-			
-			_FString * fKey = new _FString;
-			while (cn >= 0)
-			{
-				_String* aKey = ((_String**)avl.dataList->lData)[cn];				
-				if (aKey)
-				{
-					DeleteObject (fKey->theString);
-					fKey->theString = (_String*)aKey->toStr();
-					if (fID2 >= 0)
-					{
-						((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);
-						if (CheckEqual(testFormula.Compute()->Value(),0.0))
-						{
-							cn = avl.Traverser (hist,ls);
-							continue;
-						}
-					}
-					((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(fKey);
-					((_Operation**)actionFormula.GetList().lData)[1]->SetNumber((_PMathObj)avl.GetXtra (cn));
-					actionFormula.Compute();
-					done ++;
-				}
-				cn = avl.Traverser (hist,ls);
-			}
-			DeleteObject (fKey);
-						
-			((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(nil);
-			((_Operation**)actionFormula.GetList().lData)[1]->SetNumber(nil);
-			if (fID2 >= 0)
-				((_Operation**)testFormula.GetList().lData)[0]->SetNumber(nil);
+				if (fID2 >= 0 && batchLanguageFunctionParameters.lData[fID2] != 1)
+					WarnError ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
 				
+				_Formula      testFormula,
+							  actionFormula;
+							  
+				actionFormula.GetList().AppendNewInstance(new _Operation());
+				actionFormula.GetList().AppendNewInstance(new _Operation());
+				actionFormula.GetList().AppendNewInstance(new _Operation(empty,-fID-1));
+				
+				if (fID2 >= 0)
+				{
+					testFormula.GetList().AppendNewInstance(new _Operation());
+					testFormula.GetList().AppendNewInstance(new _Operation(empty,-fID2-1));
+				}
+				
+				
+				_SimpleList	 hist;
+				long		 ls, 
+							 cn	= avl.Traverser (hist,ls,avlRoot);
+				
+				_FString * fKey = new _FString;
+				while (cn >= 0)
+				{
+					_String* aKey = ((_String**)avl.dataList->lData)[cn];				
+					if (aKey)
+					{
+						DeleteObject (fKey->theString);
+						fKey->theString = (_String*)aKey->toStr();
+						if (fID2 >= 0)
+						{
+							((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);
+							if (CheckEqual(testFormula.Compute()->Value(),0.0))
+							{
+								cn = avl.Traverser (hist,ls);
+								continue;
+							}
+						}
+						((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(fKey);
+						((_Operation**)actionFormula.GetList().lData)[1]->SetNumber((_PMathObj)avl.GetXtra (cn));
+						actionFormula.Compute();
+						done ++;
+					}
+					cn = avl.Traverser (hist,ls);
+				}
+				DeleteObject (fKey);
+							
+				((_Operation**)actionFormula.GetList().lData)[0]->SetNumber(nil);
+				((_Operation**)actionFormula.GetList().lData)[1]->SetNumber(nil);
+				if (fID2 >= 0)
+					((_Operation**)testFormula.GetList().lData)[0]->SetNumber(nil);
+					
+			}
+			DeleteObject (s) ;
+			DeleteObject (s2);
 		}
-		DeleteObject (s) ;
-		DeleteObject (s2);
 	}
 	else
 		WarnError ("Both arguments must be Strings in an iterator call for Associative Arrays");
