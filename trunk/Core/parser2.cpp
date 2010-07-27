@@ -4492,7 +4492,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		{
 			long j = 1;
 			
-			while ( i+j<s.sLength && (numeric.isAllowed [s.getChar(i+j)] || ((s.getChar(i+j)=='-' || s.getChar(i+j)=='+' )&& tolower(s.getChar(i+j-1)=='e'))) )
+			while ( i+j<s.sLength && (numeric.isAllowed [s.getChar(i+j)] || ((s.getChar(i+j)=='-' || s.getChar(i+j)=='+' )&& tolower(s.getChar(i+j-1))=='e')) )
 				j++;
 				
 			curOp =  (s.Cut(i,i+j-1));
