@@ -601,6 +601,10 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			if (accumulator <= 0.0)
 			{
 				result = -A_LARGE_NUMBER;
+#pragma omp critical
+				{
+				ReportWarning (_String("Site ") & (siteID+1) & " evaluated to a 0 probability");
+				}
 				break;
 			}
 			result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
@@ -1074,6 +1078,10 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 			if (accumulator <= 0.0)
 			{
 				result = -A_LARGE_NUMBER;
+#pragma omp critical
+				{
+					ReportWarning (_String("Site ") & (siteID+1) & " evaluated to a 0 probability");
+				}
 				break;
 			}
 			result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
