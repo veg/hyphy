@@ -603,7 +603,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 				result = -A_LARGE_NUMBER;
 #pragma omp critical
 				{
-				ReportWarning (_String("Site ") & (siteID+1) & " evaluated to a 0 probability");
+				ReportWarning (_String("Site ") & siteOrdering.lData[siteID+1] & " evaluated to a 0 probability in ComputeTreeBlockByBranch");
 				}
 				break;
 			}
@@ -1080,7 +1080,7 @@ _Parameter			_TheTree::ComputeLLWithBranchCache (
 				result = -A_LARGE_NUMBER;
 #pragma omp critical
 				{
-					ReportWarning (_String("Site ") & (siteID+1) & " evaluated to a 0 probability");
+					ReportWarning (_String("Site ") & siteOrdering.lData[siteID+1] & " evaluated to a 0 probability in ComputeLLWithBranchCache");
 				}
 				break;
 			}
