@@ -246,7 +246,8 @@ _Parameter  explicitFormMatrixExponential = 0.0,
 long		scanfLastReadPosition 		  = 0;
 
 extern		_String 			MATRIX_AGREEMENT,
-								ANAL_COMP_FLAG;
+								ANAL_COMP_FLAG,
+								deferConstrainAssignment;
 
 	
 extern		_Parameter 			toPolyOrNot,
@@ -5186,6 +5187,17 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 		return;
 	}
 
+	if (currentArgument->Equal (&deferConstrainAssignment))
+	{
+		bool on = ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix);
+		if (on)
+			deferSetFormula = (_SimpleList*)checkPointer(new _SimpleList);
+		else
+			if (deferSetFormula)
+				FinishDeferredSF ();
+		return;
+	}
+	
 	if (currentArgument->Equal (&statusBarProgressValue))
 	{
 #if !defined __UNIX__ 
@@ -9183,8 +9195,7 @@ bool	_ElementaryCommand::ConstructSetParameter (_String&source, _ExecutionList&t
 	ExtractConditions (source,blSetParameter.sLength,pieces,',');
 	if (pieces.lLength!=3)
 	{
-		_String errMsg ("Expected: syntax: SetParameter(lkfuncID, index, value)");
-		acknError (errMsg);
+		WarnError ("Expected: syntax: SetParameter(lkfuncID, index, value)");
 		return false;
 	}
 

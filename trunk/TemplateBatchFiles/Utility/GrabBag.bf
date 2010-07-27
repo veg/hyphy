@@ -707,3 +707,49 @@ function nucleotideReverseComplement (seqIn)
 	_seqOut*0;
 	return _seqOut;
 }
+
+/*---------------------------------------------------------------------*/
+
+function RankMatrix (matrix)
+/* take a sorted row matrix and return a rank row matrix averaging ranks for tied values */
+{
+	lastValue				   			 = matrix[0];
+	lastIndex				   			 = 0;
+	matrix							 [0] = 0;
+	
+	sampleCount = Rows (matrix);
+	
+	for (_i = 1; _i < sampleCount; _i = _i+1)
+	{
+		if (lastValue != matrix[_i])
+		{
+			meanIndex = _i - lastIndex;
+			lastValue = matrix[_i];
+			if (meanIndex > 1)
+			{
+				meanIndex = (lastIndex + _i - 1) * meanIndex / (2 * meanIndex);
+				for (_j = lastIndex; _j < _i; _j = _j + 1)
+				{
+					matrix[_j] = meanIndex;
+				}
+			}
+			matrix[_i] = _i;
+			lastIndex = _i;
+		}
+	}
+	
+	meanIndex = _i - lastIndex;
+	if (meanIndex > 1)
+	{
+		meanIndex = (lastIndex + _i - 1) * meanIndex / (2 * meanIndex);
+		for (_j = lastIndex; _j < _i; _j = _j + 1)
+		{
+			matrix[_j] = meanIndex;
+		}
+	}
+	else
+	{
+		matrix[_i-1] = _i - 1;
+	}
+	return matrix;
+}
