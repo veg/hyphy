@@ -127,7 +127,7 @@ virtual		operator const char* (void);
 			void	Flip(void);
 				// in-place flip string
 	
-			void 	Trim(long, long);
+			void 	Trim(long, long, bool = false);
  				// trim the string between from and to
  				
  			void	Insert (char, long);

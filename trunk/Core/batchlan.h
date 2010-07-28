@@ -170,7 +170,7 @@ class 	_ElementaryCommand: public _String // string contains the literal for thi
 		void	  ExecuteCase63  (_ExecutionList&); // NN; currently not functional
 		void	  ExecuteCase64  (_ExecutionList&);	// BGM
 		
-static	_String	  FindNextCommand 		(_String&);
+static	_String	  FindNextCommand 		(_String&, bool = false);
 									   // finds & returns the next command block in input 
 									   // chops the input to remove the newly found line
 

@@ -1503,13 +1503,16 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 	if (terminateExecution)
 		return false;
 	
+	char * savePointer = s.sData;
+	
 	while (s.Length()) // repeat while there is stuff left in the buffer
 	{
 
-		_String currentLine (_ElementaryCommand::FindNextCommand (s));
+		_String currentLine (_ElementaryCommand::FindNextCommand (s,true));
 		
 		if (currentLine.getChar(0)=='}') 
 			currentLine.Trim(1,-1);
+		
 		if (!currentLine.Length())  
 			continue;
 		
@@ -1865,7 +1868,8 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 			}
 		}
 	}
-	s.Trim (1,0);
+	s.sData = savePointer;
+	s.DuplicateErasing (&empty);
 	return countitems();
 }
 		
@@ -7564,7 +7568,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 //____________________________________________________________________________________	
 			
 		
-_String	  _ElementaryCommand::FindNextCommand  (_String& input)
+_String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim)
 {
 	
 	bool 	isString = false, 
@@ -7598,7 +7602,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 			
 	// non printable characters at the end ?
 	while (index>=0 && !isprint(input[--index])) ;	
-	input.Trim (0,index);
+	input.Trim (0,index, useSoftTrim);
 	
 	for (index = 0; index<input.Length(); index++)
 	{
@@ -7769,23 +7773,34 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input)
 	}
 
 	lastChar=0;
-	while (result.getChar(lastChar)=='{') lastChar++;
+	while (result.getChar(lastChar)=='{') 
+		lastChar++;
+	
 	if (lastChar)
 	{
-		long index2 = result.Length()-1;
-		while (result[index2]=='}') index2--;
-		if ((result.Length()-index2-1)<lastChar)
+		long index2 = result.sLength-1;
+		
+		while (result[index2]=='}') 
+			index2--;
+		
+		if (result.sLength-index2-1 <lastChar)
 		{
 			ReportWarning ((_String)("Expression appears to be incomplete/syntax error and will be ignored:")&input);
-			result = "";
+			result.DuplicateErasing (&empty);
 		}
 		else
-			result.Trim(lastChar,result.Length()-1-lastChar);
+			result.Trim(lastChar,result.sLength-1-lastChar);
 	}
+	
 	if (index<input.Length()-1)
-		input.Trim (index+1,-1);
+		input.Trim (index+1,-1, useSoftTrim);
 	else
-		input = "";
+		if (useSoftTrim)
+			input.sLength = 0;
+		else
+			input.DuplicateErasing (&empty);
+		
+	
 	return result;
 }
 //____________________________________________________________________________________	

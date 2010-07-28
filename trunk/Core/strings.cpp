@@ -215,8 +215,10 @@ void	_String::Initialize (void) {
 //_______________________________________________________________________
 void	_String::Duplicate (BaseRef ref) {
 	_String * s = (_String*)ref;
+	
 	sLength = s->sLength;
-	sData = s->sData;
+	sData   = s->sData;
+	
 	if (sData) 
 	{
 		checkPointer (sData = (char*)MemAllocate (sLength+1));
@@ -386,16 +388,9 @@ char _String::operator () (unsigned long index)
 //_______________________________________________________________________
 void	_String::DuplicateErasing (BaseRef ref) {
 	if (sData) 
-	{
 		free (sData);
-	}	
-	_String * s = (_String*)ref;
-	sLength = s->sLength;
-	sData = s->sData;
-	if (sData) {
-			checkPointer (sData = (char*)MemAllocate (sLength+1));
-			memcpy (sData, s->sData, sLength+1);
-	}
+
+	Duplicate(ref);
 
 }
 //_______________________________________________________________________
@@ -404,18 +399,9 @@ void	_String::DuplicateErasing (BaseRef ref) {
 void _String::operator = (_String s)
 {
 	if (sData) 
-	{
 		free (sData);
-	}
 
-	sLength = s.sLength;
-	sData = s.sData;
-	
-	if (sData) {
-		checkPointer (sData = (char*)MemAllocate (sLength+1));
-		nInstances = 1;
-		memcpy (sData, s.sData, sLength+1);
-	}
+	Duplicate (&s);
 }
 
 //_______________________________________________________________________
@@ -715,7 +701,7 @@ long _String::Adler32(void)
 
 //_______________________________________________________________________
 // cut string from, to (-1 for any means from beginning/to end)
-void _String::Trim(long from, long to)
+void _String::Trim(long from, long to, bool softTrim)
 {
 	if (!sLength) return;
 	if (from < 0) from = 0;
@@ -726,19 +712,28 @@ void _String::Trim(long from, long to)
 	else
 		if (to>=sLength)
 			to = ((long)sLength)-1;
-	if (to-from+1>0)
+	
+	if (softTrim)
 	{
-		memmove (sData,sData+from,  to-from+1);
+		sData += from;
 		sLength = to-from+1;
-		sData = MemReallocate (sData, to-from+2);
-		sData[to-from+1]=0;
 	}
-	else
-	{
-		sLength = 0;
-		sData = MemReallocate (sData, 1);
-		sData[0]=0;
-	}
+	else	
+		if (to-from+1>0)
+		{
+			if (from)
+				memmove (sData,sData+from,  to-from+1);
+			
+			sLength = to-from+1;
+			sData = MemReallocate (sData, to-from+2);
+			sData[to-from+1]=0;
+		}
+		else
+		{
+			sLength = 0;
+			sData = MemReallocate (sData, 1);
+			sData [0] = 0;
+		}
 }
 
 //_______________________________________________________________________
