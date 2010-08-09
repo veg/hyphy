@@ -40,6 +40,81 @@ function boost (value, direction, factor)
 		return value*factor;
 	}
 } 
+/*--------------------------------------------------------*/
+
+function		    xProd (index1, index2, index3)
+{
+	return (pointSet[index2][0]-pointSet[index1][0])*(pointSet[index3][1]-pointSet[index1][1])-
+	       (pointSet[index3][0]-pointSet[index1][0])*(pointSet[index2][1]-pointSet[index1][1]);
+}
+
+
+/*--------------------------------------------------------*/
+
+function ComputeConvexHull (pointSet /* Nx2 matrix with x,y values of points to obtain the convex hull for */
+						   )
+							
+/* returns the AVL of points (indices) to connect to draw a convex hull */
+{
+	points 			= Rows (pointSet);
+	hull_comp       = {points,3};
+		
+	for (c = 0; c < points; c=c+1)
+	{
+		hull_comp[c][0] = pointSet[c][0];
+		hull_comp[c][1] = pointSet[c][1];
+		hull_comp[c][2] = c;
+	}
+	
+	if (points > 2)
+	{
+		/* determine convex hull using Graham scan */
+		hull_comp = hull_comp % 0; /* sort by the x coordinate */
+		/* if there is a tie, adjust the first coordinate a little */
+		if (hull_comp [0][0] == hull_comp[1][0])
+		{
+			hull_comp[0][0] = boost (hull_comp[0][0],0,1.0001);
+		}
+		
+		angles = {points-1,2};
+		for (c = 1; c < points; c=c+1)
+		{
+			angles[c-1][0] = (hull_comp[c][1]-hull_comp[0][1])/(hull_comp[c][0]-hull_comp[0][0]);
+			angles[c-1][1] = hull_comp[c][2];
+		}
+		angles    = angles%0; /* sort on angle */
+		hull      = {};
+		
+		hull [0] = hull_comp[0][2];
+		hull [1] = angles[0][1];
+		
+		for (c=1; c < points-1; c=c+1)
+		{
+			while (Abs(hull) >=2 && xProd (hull[Abs(hull)-2],hull[Abs(hull)-1],angles[c][1]) <= 0)
+			{
+				hull - (Abs(hull)-1);
+			}
+			hull[Abs(hull)] = angles[c][1];
+		}
+		
+		
+		/* check the last point */ 
+		if (xProd (hull[Abs(hull)-2],hull[Abs(hull)-1],hull[0]) <= 0)
+		{
+			hull - (Abs(hull)-1);
+		}
+	
+		hull[Abs(hull)] = hull[0];
+		
+		for (c = 0; c < Abs(hull); c=c+1)
+		{
+			hull [c] = pointSet[hull[c]][2];
+		}
+		return hull;
+	}
+
+	return {};
+}
 
 
 /*--------------------------------------------------------*/
@@ -56,7 +131,9 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 							  				   for the embedded labels */
 							  colors, 		/* Nx3 matrix of RGB colors to plot each point with */
 							  shapes, 		/* Nx1 matrix of shapes to plot for each point */
-							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
+							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label
+							                   could also be 1x3 + unique colors in 'colors' to draw a legend
+							  				*/
 							  pointLabels	/* Nx1 matrix of strings with labels for every point */,
 							  embedLabels   /* whether or not to plot points (0) or text labels (1) */,
 							  centroid		/* 2x1 point of the centroid */,
@@ -80,7 +157,40 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 	yMin		= xyranges[1][0];
 	yMax		= xyranges[1][1];
 	
-	plotSpanX   = plotWidth + 5*plotDim[2];
+	_x = Rows (xy);
+
+	legendWidth		   = 0;
+	if (Columns (labels) > 3)
+	{
+		/* count unique colors */
+		uniqueColors = {};
+		for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
+		{
+			if (uniqueColors[colors[_dataPoint][-1]] == 0)
+			{
+				uniqueColors[colors[_dataPoint][-1]] = 1 + Abs (uniqueColors);
+			}
+		}
+		
+		_legendColors = {};
+		
+		for (_dataPoint = 0; _dataPoint <  Abs (uniqueColors); _dataPoint = _dataPoint + 1)
+		{
+			_legendColors [(Rows(uniqueColors))[_dataPoint]]= labels[3+_dataPoint];
+			px = _HYPSGetStringWidth (labels[3+_dataPoint]) * plotDim[2];
+			if (px > legendWitdh)
+			{
+				legendWitdh = px;
+			}
+		}
+		
+		if (legendWitdh)
+		{
+			legendWitdh = legendWitdh + 2*plotDim[2];
+		}		
+	}
+
+	plotSpanX   = plotWidth + 5*plotDim[2] + legendWitdh;
 	plotSpanY	= plotHeight + 4*plotDim[2];
 	
 	if (doWrappers)
@@ -97,9 +207,6 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
 	
 	/* adjust data ranges if necessary */
-	
-	_x = Rows (xy);
-
 	for (_dataPoint = 0; _dataPoint < _x; _dataPoint = _dataPoint + 1)
 	{
 		xMin = Min(xMin,xy[_dataPoint][0]);
@@ -128,19 +235,30 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 	px = plotWidth /(xMax-xMin);
 	py = plotHeight/(yMax-yMin);
 	
+
 	
 	_hullSize = Abs(hull);
-	if (_hullSize>1)
+	if (_hullSize>=1)
 	{
-		psDensityPlot * ("0.5 0.5 0.5 setrgbcolor\n[3] 0 setdash\n");
-		for (_dataPoint = 1; _dataPoint < _hullSize; _dataPoint = _dataPoint + 1)
+		if (Type(hull[0]) != "AssociativeList")
 		{
-			psDensityPlot * ("newpath " + (plotOriginX+(xy[hull[_dataPoint-1]][0]-xMin)*px) + " " 
-										+ (plotOriginY+(xy[hull[_dataPoint-1]][1]-yMin)*py) + " moveto "
-										+ (plotOriginX+(xy[hull[_dataPoint]][0]-xMin)*px) + " " 
-										+ (plotOriginY+(xy[hull[_dataPoint]][1]-yMin)*py) 
-										+ " lineto stroke\n");
-		
+			hull = {"0":hull};	
+		}
+	
+		psDensityPlot * ("0.5 0.5 0.5 setrgbcolor\n[3] 0 setdash\n");
+		for (_i = 0; _i < Abs(hull); _i = _i + 1)
+		{
+			_hullSize = Abs (hull[_i]);
+			
+			for (_dataPoint = 1; _dataPoint < _hullSize; _dataPoint = _dataPoint + 1)
+			{
+				psDensityPlot * ("newpath " + (plotOriginX+(xy[(hull[_i])[_dataPoint-1]][0]-xMin)*px) + " " 
+											+ (plotOriginY+(xy[(hull[_i])[_dataPoint-1]][1]-yMin)*py) + " moveto "
+											+ (plotOriginX+(xy[(hull[_i])[_dataPoint]][0]-xMin)*px) + " " 
+											+ (plotOriginY+(xy[(hull[_i])[_dataPoint]][1]-yMin)*py) 
+											+ " lineto stroke\n");
+			
+			}
 		}
 		psDensityPlot * ("0 0 0 setrgbcolor\n[] 0 setdash\n");
 	}
@@ -173,10 +291,20 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 			psDensityPlot * (""+ colors[_dataPoint][0] + " " + colors[_dataPoint][1] + " " + colors[_dataPoint][2] + " setrgbcolor\n");
 			myX_coord = plotOriginX+(xy[_dataPoint][0]-xMin)*px;
 			myY_coord = plotOriginY+(xy[_dataPoint][1]-yMin)*py;
-			psDensityPlot * ("newpath " + (myX_coord) + " " 
-										+ (myY_coord) + " " 
-										+ "3 0 360 arc fill\n");
-										
+			
+			if (Abs(shapes))
+			{
+				psDensityPlot * ("newpath " + (myX_coord) + " " 
+											+ (myY_coord) + " " 
+											+ shapes[_dataPoint] + "\n");
+			}
+			else
+			{
+				
+				psDensityPlot * ("newpath " + (myX_coord) + " " 
+											+ (myY_coord) + " " 
+											+ "3 0 360 arc fill\n");
+			}										
 		}	
 	}
 	
@@ -212,6 +340,40 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 
 	psDensityPlot * ("" + (plotOriginX+plotWidth/2) + " " + (0.5*plotDim[2]) +" (" + labels[1] + ") centertext\n");
 	psDensityPlot * ("" + (plotOriginY+plotHeight/2) + " " + (-1.5*plotDim[2]) +" ("+ labels[2] + ") vcentertext\n");	
+
+
+	if (legendWitdh)
+	{
+		yLoc = plotOriginY + plotHeight - 1.5*plotDim[2];
+		xLoc = plotOriginX + plotWidth  + 0.5*plotDim[2];
+
+		_colors = Rows (_legendColors);
+		
+		for (_segment = 0; _segment < Abs(_legendColors); _segment = _segment + 1)
+		{
+				
+			ExecuteCommands ("_thisColor = " + _colors[_segment] +";");
+			
+			psDensityPlot * ("" + _thisColor[_segment][0] + " " + _thisColor[_segment][1] + " " + _thisColor[_segment][2] + " setrgbcolor\n");
+			psDensityPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectfill\n");
+			psDensityPlot * ("0 0 0 setrgbcolor\n");
+			psDensityPlot * ("newpath " + xLoc + " " 
+									+ yLoc + " " 
+									+ plotDim[2] + " " 
+									+ plotDim[2] + " " 
+									+ " rectstroke\n");
+									
+			psDensityPlot * ("newpath " + (xLoc + plotDim[2]*1.5) + " " + (yLoc+plotDim[2]/6) + " moveto (" + _legendColors[_colors[_segment]] + ") show stroke\n");
+
+			yLoc = yLoc - plotDim[2] * 1.5;
+			
+		}
+	}
+	
 	psDensityPlot * 0;
 	
 	if (doWrappers)
