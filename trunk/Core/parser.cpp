@@ -819,6 +819,11 @@ void	SetupOperationLists (void)
 		//HY_OP_CODE_INVERSE
 		BuiltInFunctions.AppendNewInstance (new _String ("Inverse"));
 		
+		//HY_OP_CODE_JOIN
+		BuiltInFunctions.AppendNewInstance (new _String ("Join"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_JOIN);
+		FunctionArgumentCount << 2;
+
 		//HY_OP_CODE_LUDECOMPOSE
 		BuiltInFunctions.AppendNewInstance (new _String ("LUDecompose"));
 		

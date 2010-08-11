@@ -3004,6 +3004,21 @@ _PMathObj _FString::AreEqualCIS (_PMathObj p)
 
 //__________________________________________________________________________________
 
+_PMathObj _FString::Join (_PMathObj p)
+{
+	_List theStrings;
+	
+	if (p->ObjectClass()==MATRIX)
+		((_Matrix*)(p->Compute()))->FillInList (theStrings);
+	else
+		if (p->ObjectClass()==ASSOCIATIVE_LIST)
+			((_AssociativeList*)(p->Compute()))->FillInList (theStrings);
+			
+	return new _FString((_String*)theStrings.Join(theString));
+}
+
+//__________________________________________________________________________________
+
 _PMathObj _FString::EqualAmb (_PMathObj p)
 {
 	if (p->ObjectClass()==STRING)
@@ -3405,6 +3420,8 @@ _PMathObj _FString::Evaluate ()
 	return new _Constant (.0);
 }
 
+
+
 //__________________________________________________________________________________
 	
 	
@@ -3519,6 +3536,9 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				return res;
 			}
 			break;
+		case HY_OP_CODE_JOIN: // Inverse
+			return Join (p);
+			
 		case HY_OP_CODE_LOG: // Log - check sum
 			return new _Constant (theString->Adler32());
 		case HY_OP_CODE_MACCESS: // MAccess

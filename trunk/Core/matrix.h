@@ -623,6 +623,7 @@ class 			_AssociativeList: public _MathObject
 		void				MStore  		(_String  , _String);
 		virtual	long		ObjectClass 	(void) 		{ return ASSOCIATIVE_LIST; } 
 		_List*				GetKeys			(void);
+		void				FillInList		(_List&);
 		_String*			Serialize 		(_String&);
 
 	_AVLListXL		avl;

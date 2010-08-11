@@ -9491,45 +9491,6 @@ _String* _AssociativeList::Serialize (_String& avlName)
 	_String * outString = new _String (1024L,true);
 	checkPointer (outString);
 	
-	/*(*outString) << avlName;
-	(*outString) << "={};\n";
-	
-	_List * meKeys = GetKeys();
-	for (long k = 0; k < meKeys->lLength; k=k+1)
-	{
-		_String   *thisKey  = (_String*)(*meKeys)(k);
-		if (thisKey)
-		{
-			_PMathObj anObject = GetByKey (*thisKey);
-			if (anObject->ObjectClass() == ASSOCIATIVE_LIST)
-			{
-				_String	baseName = _String ('(') & avlName & "[\"" & *thisKey & "\"])",
-						* nestedList = ((_AssociativeList*)anObject)->Serialize (baseName);
-						
-				(*outString) << nestedList;
-				DeleteObject (nestedList);
-			}
-			else
-			{
-				(*outString) << avlName;
-				(*outString) << "[\"";
-				(*outString) << thisKey;
-				(*outString) << "\"] = ";
-				_String* serializedObj = (_String*)anObject->toStr();
-				if (anObject->ObjectClass() == STRING)
-				{
-					(*outString) << '"';
-					(*outString) << serializedObj;
-					(*outString) << '"';
-				}
-				else
-					(*outString) << serializedObj;
-				(*outString) << ";\n";
-				DeleteObject (serializedObj);
-			}			
-		}
-	}*/
-	
 	(*outString) << "{";
 	bool		doComma = false;
 	_List * meKeys = GetKeys();
@@ -9581,6 +9542,26 @@ _List* _AssociativeList::GetKeys (void)
 {
 	return (_List*)avl.dataList;
 }
+
+//_____________________________________________________________________________________________
+void	 	_AssociativeList::FillInList (_List& fillMe)
+// check if a formula matrix contains strings
+{
+	_SimpleList	 hist;
+	long		 ls, 
+				 cn	= avl.Traverser (hist,ls,avl.GetRoot());
+	
+	while (cn >= 0)
+	{
+		_String* aKey = ((_String**)avl.dataList->lData)[cn];				
+		if (aKey)
+		{
+			fillMe.AppendNewInstance(avl.GetXtra (cn)->toStr());
+		}
+		cn = avl.Traverser (hist,ls);
+	}
+}
+
 
 //__________________________________________________________________________________
 	

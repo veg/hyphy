@@ -29,7 +29,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _HLIST_
 #define _HLIST_
 //#pragma once
+#include "string.h"
 #include "baseobj.h"
+
 #define  MEMORYSTEP 8
 
 // for storing longs
@@ -297,6 +299,11 @@ virtual 	_List operator = (_List&);
  			// replace an item 
 		
 virtual 	long	 FreeUpMemory (long);
+	
+			BaseRef Join	   (BaseRef);
+			/* SLKP: 20100811
+				Equivalent to Python's join using the argument as the spacer
+			 */
 
 
  			void bumpNInst (void);

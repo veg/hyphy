@@ -1259,6 +1259,22 @@ long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
 	}
 	return -1;
 }	
+//______________________________________________________________
+
+BaseRef  _List::Join (BaseRef spacer)
+{
+	_String *joined = new _String (256L,true);
+	
+	for (long k = 0; k < lLength; k++)
+	{
+		if (k)
+			(*joined) << *(_String*)spacer;
+		(*joined) << (_String*) ((BaseRef*)lData)[k]->toStr();
+	}
+	
+	joined->Finalize();
+	return joined;
+}
 
 //______________________________________________________________
 
