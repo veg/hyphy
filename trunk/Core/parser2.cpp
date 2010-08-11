@@ -4031,7 +4031,6 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				return -2;
 			}
 			inAssignment = false;
-			twoToken     = false;
 			if (!sss)
 			// normal variable assignment
 			{
@@ -4048,7 +4047,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						}
 						if (twoToken && s.getChar(i-1) == '+')
 						{
-							theV->SetValue(varObj->Add (theV->Compute()));
+							theV->SetValue(theV->Compute()->Execute(HY_OP_CODE_ADD,varObj));
 						}
 						else
 						{
@@ -4061,6 +4060,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				else
 					f->Duplicate((BaseRef)&newF);
 
+				twoToken     = false;
 				return (s.getChar(i-1)!=':')?theV->GetAVariable():-theV->GetAVariable()-5;
 			}
 			else
@@ -4082,10 +4082,10 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					
 					if (newF.IsAConstant() || s.getChar(i-1) !=':')
 					{
-						_PMathObj varObj = (_PMathObj)newF.Compute()->makeDynamic();
-						_Operation newOp (varObj);
+						_PMathObj		currentValue = (_PMathObj)newF.Compute();
+						currentValue->AddAReference();
 						newF.theFormula.Clear();
-						newF.theFormula&&(&newOp);
+						newF.theFormula.AppendNewInstance (new _Operation(currentValue));
 					}
 					
 					
@@ -4095,13 +4095,16 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					if (last0 > 0)
 					{
 						stackD = f->theFormula.lLength;
-						f->theFormula.lLength		= last0+1;
-						_PMathObj	lvalue  = f->Compute();
-						f->theFormula.lLength = stackD;
+						f->theFormula.lLength	= last0+1;
+						_PMathObj	lvalue		= f->Compute();
+						f->theFormula.lLength	= stackD;
+						
 						if (lvalue->ObjectClass () == MATRIX)
 							mmx = (_Matrix*)lvalue;
-						if (lvalue->ObjectClass () == ASSOCIATIVE_LIST)
-							mma = (_AssociativeList*)lvalue;
+						else
+							if (lvalue->ObjectClass () == ASSOCIATIVE_LIST)
+								mma = (_AssociativeList*)lvalue;
+						
 						last0++;
 					}
 					else
@@ -4135,7 +4138,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 							_Constant hC ((*mcoord)[0]), 
 									  vC ((*mcoord)[1]);
 							
-							mmx->MStore (&hC, &vC, newF);
+							mmx->MStore (&hC, &vC, newF, (twoToken && s.getChar(i-1) =='+')?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
 						}
 					}
 					else
@@ -4143,14 +4146,15 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						{
 							_PMathObj coordIdx = f->Compute(last0);
 							
-							if (!coordIdx||(coordIdx->ObjectClass()!=STRING))
+							if (!coordIdx|| coordIdx->ObjectClass() != STRING )
 								anError = true;
 							else
-								mma->MStore (coordIdx, newF.Compute());
+								mma->MStore (coordIdx, newF.Compute(),true, (twoToken && s.getChar(i-1) =='+')?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
 						}
 						else
 							anError = true;
 
+					
 					if (anError)
 					{
 						if (flagErrors) WarnError (_String("Invalid Matrix/Associative List Ident Supplied:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
@@ -4162,7 +4166,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				else
 				{
 					bool isSimple = (s.getChar(i-1) != ':');
-					f2->Duplicate ((BaseRef)&newF);
+					f2->Duplicate   ((BaseRef)&newF);
 					if (last0 == 0)
 						((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
 					return isSimple?-3:-4;

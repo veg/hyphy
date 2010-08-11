@@ -115,15 +115,22 @@ class		_Matrix: public _MathObject {
 			_PMathObj	MCoord (_PMathObj, _PMathObj);
 												// implements the M[i][j] operation for formulas
 	
-			void		MStore (long, long, _Formula&);
+			void		MStore (long, long, _Formula&, long = -1);
 			bool		MResolve (_PMathObj, _PMathObj, long&, long&);
 												// resolve coordiates from two Number arguments
 			
 			bool		CheckCoordinates ( long&, long&);
 												// validate matrix coordinates
 
-			void		MStore (_PMathObj, _PMathObj, _Formula&);
+			void		MStore (_PMathObj, _PMathObj, _Formula&, long = HY_OP_CODE_NONE);
 												// implements the M[i][j]= operation for formulas
+						/* 
+							20100811: the last argument provides an op code (-1 = none)
+							to perform on the _Formula argument and the current value in the matrix;
+							this only applies to constant _Formula arguments
+						 
+							e.g. passing HY_OP_CODE_ADD implements +=
+						 */
 
 			void		MStore (long, long, _PMathObj);
 			void		MStore (_PMathObj, _PMathObj, _PMathObj);
@@ -609,7 +616,9 @@ class 			_AssociativeList: public _MathObject
 		_PMathObj			GetByKey		(long, long);
 		void				DeleteByKey		(_PMathObj);
 		_PMathObj			MCoord  		(_PMathObj);
-		void				MStore  		(_PMathObj, _PMathObj, bool = true);
+		void				MStore  		(_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
+							// SLKP 20100811: see the comment for _Matrix::MStore
+	
 		void				MStore  		(_String  , _PMathObj, bool = true);
 		void				MStore  		(_String  , _String);
 		virtual	long		ObjectClass 	(void) 		{ return ASSOCIATIVE_LIST; } 

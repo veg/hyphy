@@ -5350,7 +5350,7 @@ bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
 								
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (long ind1, long ind2, _Formula& f)
+void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
 {
 	if (ind2>=0) // element storage
 	{
@@ -5366,18 +5366,21 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f)
 			else
 			{
 				_PMathObj res = f.Compute();
-				Store(ind1,ind2,res->Value());
+				_Parameter toStore = res->Value();
+				if (opCode == HY_OP_CODE_ADD)
+					toStore += (*this)(ind1,ind2);
+				Store(ind1,ind2,toStore);
 			}
 		}
 	}
 }
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f)
+void _Matrix::MStore (_PMathObj p, _PMathObj p2, _Formula& f, long opCode)
 {
 	long	  ind1, ind2;
 	if (MResolve (p,p2, ind1,ind2))
-		MStore   (ind1,ind2,f);
+		MStore   (ind1,ind2,f, opCode);
 }
 
 //_____________________________________________________________________________________________
@@ -9434,12 +9437,24 @@ void _AssociativeList::DeleteByKey (_PMathObj p)
 
 
 //_____________________________________________________________________________________________
-void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl)
+void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long opCode)
 {
 	_FString * index = (_FString*)p;
 	long	   f 	 = avl.Find (index->theString);
+	
 	if (f>=0) // already exists - replace
+	{
+		if (opCode == HY_OP_CODE_ADD)
+		{
+			_PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->Add (inObject);
+			if (repl == false)
+				DeleteObject (inObject);
+			else
+				repl = false;
+			inObject = newObject;
+		}
 		avl.xtraD.Replace (f, inObject, repl);
+	}
 	else // insert new
 	{
 		if (repl)

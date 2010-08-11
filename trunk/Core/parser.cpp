@@ -2134,7 +2134,10 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 	//hasBeenChanged = true;
 	varFlags &= HY_VARIABLE_SET;
 	varFlags |= HY_VARIABLE_CHANGED;
-	if (theP->ObjectClass()==NUMBER)
+	
+	long	 valueClass = theP->ObjectClass();
+	
+	if (valueClass==NUMBER)
 	{
 		if (varFormula)
 		{
@@ -2201,16 +2204,18 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 			DeleteObject (varValue);
 			varValue=nil;
 		}
-		if (theP->ObjectClass()==TREE)
+		if (valueClass==TREE)
 		{
 			variablePtrs.lData[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
 			DeleteObject(this);
 		}
 		else
+		{
 			if (dup)
 				varValue = (_PMathObj)theP->makeDynamic();
 			else
-				varValue = theP;			
+				varValue = theP;	
+		}
 	}
 }
 

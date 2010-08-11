@@ -77,6 +77,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // START OPCODES
 
+#define	 HY_OP_CODE_NONE			-1								// noop
+
 #define	 HY_OP_CODE_NOT				0								// !
 #define	 HY_OP_CODE_NEQ				(1+HY_OP_CODE_NOT)				// !=
 #define	 HY_OP_CODE_IDIV			(1+HY_OP_CODE_NEQ)				// $
@@ -151,67 +153,67 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 
 	public:
 
-	virtual	_MathObject* Add 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Sub 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Minus 		(void) 		   	   {return nil;}
-	virtual	_MathObject* Mult 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Div 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* lDiv 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* longDiv 	(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Raise 		(_MathObject*) 	   {return nil;}
+	virtual	_MathObject* Add 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Sub 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Minus 		(void) 		   	   {return new _MathObject;}
+	virtual	_MathObject* Mult 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Div 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* lDiv 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* longDiv 	(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Raise 		(_MathObject*) 	   {return new _MathObject;}
 	virtual void		 Assign 	(_MathObject*) 	   {}
 	virtual	bool		 Equal 		(_MathObject*) 	   {return false;}
-	virtual	_MathObject* Abs 		(void) 			   {return nil;}
-	virtual	_MathObject* Sin 		(void) 			   {return nil;}
-	virtual	_MathObject* Cos 		(void) 			   {return nil;}
-	virtual	_MathObject* Tan 		(void) 			   {return nil;}
-	virtual	_MathObject* Exp 		(void) 			   {return nil;}
-	virtual	_MathObject* Log 		(void) 			   {return nil;}
-	virtual	_MathObject* Sqrt 		(void) 			   {return nil;}
-	virtual	_MathObject* Gamma 		(void) 			   {return nil;}
-	virtual	_MathObject* Erf 		(void) 			   {return nil;}
-	virtual _MathObject* LnGamma	(void)			   {return nil;}	// <-- added by afyp, February 7, 2007
-	virtual	_MathObject* Beta  		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* IGamma		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* CChi2		(_MathObject*) 	   {return nil;}
+	virtual	_MathObject* Abs 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Sin 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Cos 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Tan 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Exp 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Log 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Sqrt 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Gamma 		(void) 			   {return new _MathObject;}
+	virtual	_MathObject* Erf 		(void) 			   {return new _MathObject;}
+	virtual _MathObject* LnGamma	(void)			   {return new _MathObject;}	// <-- added by afyp, February 7, 2007
+	virtual	_MathObject* Beta  		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* IGamma		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* CChi2		(_MathObject*) 	   {return new _MathObject;}
 	virtual _MathObject* IBeta		(_MathObject*,_MathObject*)
-													   {return nil;}
-	virtual _MathObject* Simplex	(void)			   {return nil;}
-	virtual _MathObject* Min		(_MathObject*)	   {return nil;}
-	virtual _MathObject* Max		(_MathObject*)	   {return nil;}
-	virtual	_MathObject* InvChi2	(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* ZCDF		(void)		 	   {return nil;}
-	virtual	_MathObject* Time 		(void) 		   	   {return nil;}
-	virtual	_MathObject* Arctan 	(void) 		   	   {return nil;}
-	virtual	_MathObject* Less 		(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Random 	(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* Greater	(_MathObject*)     {return nil;}
-	virtual	_MathObject* LessEq 	(_MathObject*) 	   {return nil;}
-	virtual	_MathObject* GreaterEq 	(_MathObject*)     {return nil;}
-	virtual	_MathObject* AreEqual 	(_MathObject*)     {return nil;}
-	virtual	_MathObject* NotEqual 	(_MathObject*)     {return nil;}
-	virtual	_MathObject* LAnd	 	(_MathObject*)     {return nil;}
-	virtual	_MathObject* LOr	 	(_MathObject*)     {return nil;}
+													   {return new _MathObject;}
+	virtual _MathObject* Simplex	(void)			   {return new _MathObject;}
+	virtual _MathObject* Min		(_MathObject*)	   {return new _MathObject;}
+	virtual _MathObject* Max		(_MathObject*)	   {return new _MathObject;}
+	virtual	_MathObject* InvChi2	(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* ZCDF		(void)		 	   {return new _MathObject;}
+	virtual	_MathObject* Time 		(void) 		   	   {return new _MathObject;}
+	virtual	_MathObject* Arctan 	(void) 		   	   {return new _MathObject;}
+	virtual	_MathObject* Less 		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Random 	(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Greater	(_MathObject*)     {return new _MathObject;}
+	virtual	_MathObject* LessEq 	(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* GreaterEq 	(_MathObject*)     {return new _MathObject;}
+	virtual	_MathObject* AreEqual 	(_MathObject*)     {return new _MathObject;}
+	virtual	_MathObject* NotEqual 	(_MathObject*)     {return new _MathObject;}
+	virtual	_MathObject* LAnd	 	(_MathObject*)     {return new _MathObject;}
+	virtual	_MathObject* LOr	 	(_MathObject*)     {return new _MathObject;}
 	virtual	_MathObject* GammaDist  (_MathObject*,_MathObject*)  
-													   {return nil;}
+													   {return new _MathObject;}
 	virtual	_MathObject* CGammaDist (_MathObject*,_MathObject*) 
-													   {return nil;}
-	virtual	_MathObject* LNot  		(void)	 		   {return nil;}
-	virtual	_MathObject* TipCount  	(void)		   	   {return nil;}
-	virtual	_MathObject* BranchCount (void)        	   {return nil;}
-	virtual	_MathObject* TipName	 (_MathObject*)	   {return nil;}
-	virtual	_MathObject* BranchName	 (_MathObject*)	   {return nil;}
-	virtual	_MathObject* BranchLength(_MathObject*)	   {return nil;}
-	virtual	_MathObject* RerootTree	 (_MathObject*)	   {return nil;}
+													   {return new _MathObject;}
+	virtual	_MathObject* LNot  		(void)	 		   {return new _MathObject;}
+	virtual	_MathObject* TipCount  	(void)		   	   {return new _MathObject;}
+	virtual	_MathObject* BranchCount (void)        	   {return new _MathObject;}
+	virtual	_MathObject* TipName	 (_MathObject*)	   {return new _MathObject;}
+	virtual	_MathObject* BranchName	 (_MathObject*)	   {return new _MathObject;}
+	virtual	_MathObject* BranchLength(_MathObject*)	   {return new _MathObject;}
+	virtual	_MathObject* RerootTree	 (_MathObject*)	   {return new _MathObject;}
 	virtual	_MathObject* TEXTreeString(_MathObject*)
-												   	   {return nil;}
+												   	   {return new _MathObject;}
 	virtual	_MathObject* Type						   (void);
 	virtual	_MathObject* PlainTreeString(_MathObject*)
-						 						   	   {return nil;}
+						 						   	   {return new _MathObject;}
 	virtual	_MathObject* FormatNumberString (_MathObject*,_MathObject*)
-												   {return nil;}
+												   {return new _MathObject;}
 	virtual	_Parameter	 Value (void) 			   {return 0.0;}
-	virtual	_MathObject* Compute (void) 		   {return nil;}
+	virtual	_MathObject* Compute (void) 		   {return new _MathObject;}
 	virtual	void	     ScanForVariables (_AVLList&,bool = false)			
 													{}
 	
