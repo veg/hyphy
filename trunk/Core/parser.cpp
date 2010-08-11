@@ -891,7 +891,7 @@ void	SetupOperationLists (void)
 		BuiltInFunctions.AppendNewInstance (new _String ("TipCount"));
 		
 		//HY_OP_CODE_TIPNAME
-		BuiltInFunctions.AppendNewInstance (new _String ("TipCount"));
+		BuiltInFunctions.AppendNewInstance (new _String ("TipName"));
 		FunctionNameList << BuiltInFunctions (HY_OP_CODE_TIPNAME);
 		FunctionArgumentCount << 2;
 		
