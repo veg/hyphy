@@ -798,22 +798,22 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
 {
 	switch (opCode)
 	{
-		case 5: //*
+		case HY_OP_CODE_MUL: //*
 			return Mult(p);
 			break;
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			return Add(p);
 			break;
-		case 7: // -
+		case HY_OP_CODE_SUB: // -
 			if (p)
 				return Sub(p);
 			else
 				return Minus();
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
-		case 56: // ^
+		case HY_OP_CODE_POWER: // ^
 			return Raise(p);
 			break;
 	}

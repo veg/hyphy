@@ -86,7 +86,6 @@ _List			FunctionNameList,
 				BuiltInFunctions;
 				
 _SimpleList		FunctionArgumentCount,
-				BuiltInFunctionParameterCount,
 				freeSlots,
 			  * deferSetFormula = nil,
 				deferIsConstant;
@@ -452,7 +451,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacle (_String* name, _String fID, bool checkValid)
+_Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool isGlobal)
 {
 	if (checkValid && (!name->IsValidIdentifier()))
 	{
@@ -464,7 +463,7 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid)
 	long 	f = LocateVarByName (*name);
 	if (f<0)
 	{
-		_Variable dummy (*name);
+		_Variable dummy (*name, isGlobal);
 		f = LocateVarByName (*name);
 	}
 	
@@ -615,7 +614,7 @@ bool _MathObject::IsDefined	(_String& s)  // is this operation defined for the t
 
 //__________________________________________________________________________________
 
-_String		UnOps ("-,!,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,"), 
+_String		UnOps ("-,!,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,"), 
 			HalfOps (":<>=!&|");
 		
 _SimpleList	opPrecedence, 
@@ -626,6 +625,8 @@ _SimpleList	opPrecedence,
 
 void	SetupOperationLists (void)
 {
+	
+	
 	BinOps<<'|'*256+'|';
 	opPrecedence<<1;
 	BinOps<<'&'*256+'&';
@@ -658,281 +659,272 @@ void	SetupOperationLists (void)
 	opPrecedence<<6;
 	BinOps<<'^';
 	opPrecedence<<7;
-	
-	_String fName ("Beta");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("BranchLength");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("BranchName");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("CChi2");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("CGammaDist");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 3;
-	fName = ("Format");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 3;
-	fName = ("GammaDist");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 3;
-	fName = ("IBeta");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 3;
-	fName = ("IGamma");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("InvChi2");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("LUSolve");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("Max");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("Min");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("PSTreeString");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 3;
-	fName = ("Random");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("RerootTree");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("TEXTreeString");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = ("TipName");
-	FunctionNameList&& &fName;
-	FunctionArgumentCount<< 2;
-	fName = "_x_";
-	_Variable d(fName,true);
-	dummyVariable1 =  variableNames.GetXtra(LocateVarByName (fName));
-	fName = "_n_";
-	_Variable d1 (fName,true);
-	dummyVariable2 =  variableNames.GetXtra(LocateVarByName (fName));
-	
-
+	BinOps<<'+'*256+'=';
+	opPrecedence<<8;
+		
 	if (BuiltInFunctions.lLength==0)
-	// construct a list of operations
-	// don't forget to update SimplifyConstants, simpleOperationCodes, InternalDifferentiate, InternalSimplify, Formula::HasChanged and all Execute commands
-	// also MAccess and MCoord codes are used in Parse to merge multiple matrix access operations
+		// construct a list of operations
+		// don't forget to update SimplifyConstants, simpleOperationCodes, InternalDifferentiate, InternalSimplify, Formula::HasChanged and all Execute commands
+		// also MAccess and MCoord codes are used in Parse to merge multiple matrix access operations
 	{
-		_String s;
-		s = "!";//0
-		BuiltInFunctions&& &s;
-		BuiltInFunctionParameterCount<<1;		
-		s = "!=";//1
-		BuiltInFunctions&& &s;
-		s = "$";//2
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "%";//3
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "&&";//4
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "*";//5
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<5;
-		simpleOperationFunctions<<(long)MultNumbers;
-		s = "+";//6
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<6;
+		//HY_OP_CODE_NOT
+		BuiltInFunctions.AppendNewInstance (new _String ('!'));
+		
+		//HY_OP_CODE_NEQ
+		BuiltInFunctions.AppendNewInstance (new _String ("!="));
+		
+		//HY_OP_CODE_IDIV
+		BuiltInFunctions.AppendNewInstance (new _String ('$'));
+		
+		//HY_OP_CODE_MOD
+		BuiltInFunctions.AppendNewInstance (new _String ('%'));
+		
+		//HY_OP_CODE_AND
+		BuiltInFunctions.AppendNewInstance (new _String ("&&"));
+		
+		//HY_OP_CODE_MUL
+		BuiltInFunctions.AppendNewInstance (new _String ('*'));
+		simpleOperationCodes    << HY_OP_CODE_MUL;
+		simpleOperationFunctions<< (long)MultNumbers;
+		
+		//HY_OP_CODE_ADD
+		BuiltInFunctions.AppendNewInstance (new _String ('+'));
+		simpleOperationCodes<< HY_OP_CODE_ADD;
 		simpleOperationFunctions<<(long)AddNumbers;
-		s = "-";//7
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<7;
+		
+		//HY_OP_CODE_SUB
+		BuiltInFunctions.AppendNewInstance (new _String ('-'));
+		simpleOperationCodes<<HY_OP_CODE_SUB;
 		simpleOperationFunctions<<(long)SubNumbers;
-		s = "/";//8
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<8;
+		
+		//HY_OP_CODE_DIV
+		BuiltInFunctions.AppendNewInstance (new _String ('/'));
+		simpleOperationCodes<<HY_OP_CODE_DIV;
 		simpleOperationFunctions<<(long)DivNumbers;
-		s = "<";//9
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<9;
+		
+		//HY_OP_CODE_LESS
+		BuiltInFunctions.AppendNewInstance (new _String ('<'));
+		simpleOperationCodes<<HY_OP_CODE_LESS;
 		simpleOperationFunctions<<(long)LessThan;
-		s = "<=";//10
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<10;
+		
+		//HY_OP_CODE_LEQ
+		BuiltInFunctions.AppendNewInstance (new _String ("<="));
+		simpleOperationCodes<<HY_OP_CODE_LEQ;
 		simpleOperationFunctions<<(long)LessThanE;
-		s = "==";//11
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<11;
+		
+		//HY_OP_CODE_EQ
+		BuiltInFunctions.AppendNewInstance (new _String ("=="));
+		simpleOperationCodes<<HY_OP_CODE_EQ;
 		simpleOperationFunctions<<(long)EqualNumbers;
-		s = ">";//12
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<12;
+		
+		//HY_OP_CODE_GREATER
+		BuiltInFunctions.AppendNewInstance (new _String ('>'));
+		simpleOperationCodes<<HY_OP_CODE_GREATER;
 		simpleOperationFunctions<<(long)GreaterThan;
-		s = ">=";//13
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<13;
+		
+		//HY_OP_CODE_GEQ
+		BuiltInFunctions.AppendNewInstance (new _String (">="));
+		simpleOperationCodes<<HY_OP_CODE_GEQ;
 		simpleOperationFunctions<<(long)GreaterThanE;
-		s = "Abs";//14
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Arctan";//15
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Beta";//16
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "BranchCount";//17
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "BranchLength";//18
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "BranchName";//19
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "CChi2";//20
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "CGammaDist";//21
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "Columns";//22
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Cos";//23
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Eigensystem";//24
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Erf";//25
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Exp";//26
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<26;
+		
+		//HY_OP_CODE_ABS
+		BuiltInFunctions.AppendNewInstance (new _String ("Abs"));
+		
+		//HY_OP_CODE_ARCTAN
+		BuiltInFunctions.AppendNewInstance (new _String ("Arctan"));
+		
+		//HY_OP_CODE_BETA
+		BuiltInFunctions.AppendNewInstance (new _String ("Beta"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_BETA);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_BRANCHCOUNT
+		BuiltInFunctions.AppendNewInstance (new _String ("BranchCount"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHCOUNT);
+		FunctionArgumentCount << 2;
+	
+		//HY_OP_CODE_BRANCHLENGTH
+		BuiltInFunctions.AppendNewInstance (new _String ("BranchLength"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHLENGTH);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_BRANCHNAME
+		BuiltInFunctions.AppendNewInstance (new _String ("BranchName"));
+		
+		//HY_OP_CODE_CCHI2
+		BuiltInFunctions.AppendNewInstance (new _String ("CChi2"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_CCHI2);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_CGAMMADIST
+		BuiltInFunctions.AppendNewInstance (new _String ("CGammaDist"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_CGAMMADIST);
+		FunctionArgumentCount << 3;
+		
+		//HY_OP_CODE_COLUMNS
+		BuiltInFunctions.AppendNewInstance (new _String ("Columns"));
+		
+		//HY_OP_CODE_COS
+		BuiltInFunctions.AppendNewInstance (new _String ("Cos"));
+		
+		//HY_OP_CODE_EIGENSYSTEM
+		BuiltInFunctions.AppendNewInstance (new _String ("Eigensystem"));
+		
+		//HY_OP_CODE_ERF
+		BuiltInFunctions.AppendNewInstance (new _String ("Erf"));
+		
+		//HY_OP_CODE_EVAL
+		BuiltInFunctions.AppendNewInstance (new _String ("Eval"));
+
+		//HY_OP_CODE_EXP
+		BuiltInFunctions.AppendNewInstance (new _String ("Exp"));
+		simpleOperationCodes<<HY_OP_CODE_EXP;
 		simpleOperationFunctions<<(long)ExpNumbers;
-		s = "Format";//27
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "Gamma";//28
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "GammaDist";//29
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "IBeta";//30
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "IGamma";//31
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "InvChi2";//32
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Inverse";//33
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "LUDecompose";//34
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "LUSolve";//35
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "Log";//36
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<36;
+		
+		//HY_OP_CODE_FORMAT
+		BuiltInFunctions.AppendNewInstance (new _String ("Format"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_FORMAT);
+		FunctionArgumentCount << 3;
+		
+		//HY_OP_CODE_GAMMA
+		BuiltInFunctions.AppendNewInstance (new _String ("Gamma"));
+		
+		//HY_OP_CODE_GAMMADIST
+		BuiltInFunctions.AppendNewInstance (new _String ("GammaDist"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_GAMMADIST);
+		FunctionArgumentCount << 3;
+		
+		//HY_OP_CODE_IBETA
+		BuiltInFunctions.AppendNewInstance (new _String ("IBeta"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_IBETA);
+		FunctionArgumentCount << 3;
+		
+		//HY_OP_CODE_IGAMMA
+		BuiltInFunctions.AppendNewInstance (new _String ("IGamma"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_IGAMMA);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_INVCHI2
+		BuiltInFunctions.AppendNewInstance (new _String ("InvChi2"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_INVCHI2);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_INVERSE
+		BuiltInFunctions.AppendNewInstance (new _String ("Inverse"));
+		
+		//HY_OP_CODE_LUDECOMPOSE
+		BuiltInFunctions.AppendNewInstance (new _String ("LUDecompose"));
+		
+		//HY_OP_CODE_LUSOLVE
+		BuiltInFunctions.AppendNewInstance (new _String ("LUSolve"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_LUSOLVE);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_LOG
+		BuiltInFunctions.AppendNewInstance (new _String ("Log"));
+		simpleOperationCodes<<HY_OP_CODE_LOG;
 		simpleOperationFunctions<<(long)LogNumbers;
-		s = "MAccess";//37
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<37;
+		
+		//HY_OP_CODE_MACCESS
+		BuiltInFunctions.AppendNewInstance (new _String ("MAccess"));
+		simpleOperationCodes<<HY_OP_CODE_MACCESS;
 		simpleOperationFunctions<<(long)FastMxAccess;
-		s = "MCoord";//38
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "Max";//39
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<39;
+		
+		//HY_OP_CODE_MCOORD
+		BuiltInFunctions.AppendNewInstance (new _String ("MCoord"));
+		
+		//HY_OP_CODE_MAX
+		BuiltInFunctions.AppendNewInstance (new _String ("Max"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_MAX);
+		FunctionArgumentCount << 2;
+		simpleOperationCodes<<HY_OP_CODE_MAX;
 		simpleOperationFunctions<<(long)MaxNumbers;
-		s = "Min";//40
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<40;
+		
+		//HY_OP_CODE_MIN
+		BuiltInFunctions.AppendNewInstance (new _String ("Min"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_MIN);
+		FunctionArgumentCount << 2;
+		simpleOperationCodes<<HY_OP_CODE_MIN;
 		simpleOperationFunctions<<(long)MinNumbers;
-		s = "PSTreeString";//41
-		BuiltInFunctionParameterCount<<3;		
-		BuiltInFunctions&& &s;
-		s = "Random";//42
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		simpleOperationCodes<<42;
+		
+		//HY_OP_CODE_PSTREESTRING
+		BuiltInFunctions.AppendNewInstance (new _String ("PSTreeString"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_PSTREESTRING);
+		FunctionArgumentCount << 3;
+		
+		//HY_OP_CODE_RANDOM
+		BuiltInFunctions.AppendNewInstance (new _String ("Random"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_RANDOM);
+		FunctionArgumentCount << 2;
+		simpleOperationCodes<<HY_OP_CODE_RANDOM;
 		simpleOperationFunctions<<(long)RandomNumber;
-		s = "RerootTree";//43
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "Rows";//44
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Simplex";//45
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Sin";//46
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Sqrt";//47
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "TEXTreeString";//48
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Tan";//49
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Time";//50
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "TipCount";//51
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "TipName";//52
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Transpose";//53
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "Type";//54
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "ZCDF";//55
-		BuiltInFunctionParameterCount<<1;		
-		BuiltInFunctions&& &s;
-		s = "^";//56
-		simpleOperationCodes<<56;
+		
+		//HY_OP_CODE_REROOTTREE
+		BuiltInFunctions.AppendNewInstance (new _String ("RerootTree"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_REROOTTREE);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_ROWS
+		BuiltInFunctions.AppendNewInstance (new _String ("Rows"));
+		
+		//HY_OP_CODE_SIMPLEX
+		BuiltInFunctions.AppendNewInstance (new _String ("Simplex"));
+		
+		//HY_OP_CODE_SIN
+		BuiltInFunctions.AppendNewInstance (new _String ("Sin"));
+		
+		//HY_OP_CODE_SQRT
+		BuiltInFunctions.AppendNewInstance (new _String ("Sqrt"));
+		
+		//HY_OP_CODE_TEXTREESTRING
+		BuiltInFunctions.AppendNewInstance (new _String ("TEXTreeString"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_TEXTREESTRING);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_TAN
+		BuiltInFunctions.AppendNewInstance (new _String ("Tan"));
+		
+		//HY_OP_CODE_TIME
+		BuiltInFunctions.AppendNewInstance (new _String ("Time"));
+		
+		//HY_OP_CODE_TIPCOUNT
+		BuiltInFunctions.AppendNewInstance (new _String ("TipCount"));
+		
+		//HY_OP_CODE_TIPNAME
+		BuiltInFunctions.AppendNewInstance (new _String ("TipCount"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_TIPNAME);
+		FunctionArgumentCount << 2;
+		
+		//HY_OP_CODE_TRANSPOSE
+		BuiltInFunctions.AppendNewInstance (new _String ("Transpose"));
+		
+		//HY_OP_CODE_TYPE
+		BuiltInFunctions.AppendNewInstance (new _String ("Type"));
+		
+		//HY_OP_CODE_ZCDF
+		BuiltInFunctions.AppendNewInstance (new _String ("ZCDF"));
+		
+		//HY_OP_CODE_POWER
+		BuiltInFunctions.AppendNewInstance (new _String ('^'));
+		simpleOperationCodes<<HY_OP_CODE_POWER;
 		simpleOperationFunctions<<(long)Power;
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-		s = "||";//57
-		BuiltInFunctionParameterCount<<2;		
-		BuiltInFunctions&& &s;
-	}			
+		
+		//HY_OP_CODE_OR
+		BuiltInFunctions.AppendNewInstance (new _String ("||"));
+	}		
+	
+	
+	_String xname ("_x_");
+	if (_hyApplicationGlobals.Find (&xname) < 0)
+		_hyApplicationGlobals.Insert (new _String (xname));
+	_x_ = CheckReceptacle (&xname,empty,false,false);
+	xname = "_n_";
+	if (_hyApplicationGlobals.Find (&xname) < 0)
+		_hyApplicationGlobals.Insert (new _String (xname));
+	_n_ = CheckReceptacle (&xname,empty,false,false);
+		
+
+		
 }
 //__________________________________________________________________________________
 
@@ -977,143 +969,139 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
 {
 	switch (opCode)
 	{
-		case 0: // !
+		case HY_OP_CODE_NOT: // !
 			return LNot();
 			break;
-		case 1: // !=
+		case HY_OP_CODE_NEQ: // !=
 			return NotEqual(p);
 			break;
-		case 2: // $
+		case HY_OP_CODE_IDIV: // $
 			return longDiv(p);
 			break;
-		case 3: // %
+		case HY_OP_CODE_MOD: // %
 			return lDiv(p);
 			break;
-		case 4: // &&
+		case HY_OP_CODE_AND: // &&
 			return LAnd(p);
 			break;
-		case 5: // *
+		case HY_OP_CODE_MUL: // *
 			return Mult(p);
 			break;
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			return Add(p);
 			break;
-		case 7: // -
+		case HY_OP_CODE_SUB: // -
 			if (p)
 				return Sub(p);
 			else
 				return Minus();
 			break;
-		case 8: // /
+		case HY_OP_CODE_DIV: // /
 			return Div(p);
 			break;
-		case 9: // <
+		case HY_OP_CODE_LESS: // <
 			return Less(p);
 			break;
-		case 10: // <=
+		case HY_OP_CODE_LEQ: // <=
 			return LessEq(p);
 			break;
-		case 11: // ==
+		case HY_OP_CODE_EQ: // ==
 			return AreEqual(p);
 			break;
-		case 12: // >
+		case HY_OP_CODE_GREATER: // >
 			return Greater(p);
 			break;
-		case 13: // >=
+		case HY_OP_CODE_GEQ: // >=
 			return GreaterEq(p);
 			break;
-		case 14: // Abs
+		case HY_OP_CODE_ABS: // Abs
 			return Abs();
 			break;
-		case 15: // Arctan
+		case HY_OP_CODE_ARCTAN: // Arctan
 			return Arctan();
 			break;
-		case 16: // Beta
+		case HY_OP_CODE_BETA: // Beta
 			return Beta(p);
 			break;
-		case 20: // CChi2
+		case HY_OP_CODE_CCHI2: // CChi2
 			return CChi2(p);
 			break;
-		case 21: // CGammaDist
+		case HY_OP_CODE_CGAMMADIST: // CGammaDist
 			return CGammaDist(p,p2);
 			break;
-		case 23: // Cos
+		case HY_OP_CODE_COS: // Cos
 			return Cos();
 			break;
-		case 22: // Columns
-		case 44: // Roes
+		case HY_OP_CODE_COLUMNS: // Columns
+		case HY_OP_CODE_ROWS: // Rows
 			return new _Constant (0.0);
 			break;
-		case 25: // Erf
+		case HY_OP_CODE_ERF: // Erf
 			return Erf();
 			break;
-		case 26: // Exp
+		case HY_OP_CODE_EXP: // Exp
 			return Exp();
 			break;
-		case 27: // Format
+		case HY_OP_CODE_FORMAT: // Format
 			return FormatNumberString(p,p2);
 			break;
-		case 28: // Gamma
+		case HY_OP_CODE_GAMMA: // Gamma
 			return Gamma();
 			break;
-		case 29: // GammaDist
+		case HY_OP_CODE_GAMMADIST: // GammaDist
 			return GammaDist(p,p2);
 			break;
-		case 30: // IBeta
+		case HY_OP_CODE_IBETA: // IBeta
 			return IBeta(p,p2);
 			break;
-		case 31: // IGamma
+		case HY_OP_CODE_IGAMMA: // IGamma
 			return IGamma(p);
 			break;
-		case 32: // InvChi2
+		case HY_OP_CODE_INVCHI2: // InvChi2
 			return InvChi2(p);
 			break;
-		case 36: // Log
+		case HY_OP_CODE_LOG: // Log
 			return Log();
 			break;
-		case 39: // Max
+		case HY_OP_CODE_MAX: // Max
 			return Max(p);
 			break;
-		case 40: // Min
+		case HY_OP_CODE_MIN: // Min
 			return Min(p);
 			break;
-		case 42: // Random
+		case HY_OP_CODE_RANDOM: // Random
 			return Random(p);
 			break;
-		case 45: // Simplex
+		case HY_OP_CODE_SIMPLEX: // Simplex
 			return Simplex();
 			break;
-		case 46: // Sin
+		case HY_OP_CODE_SIN: // Sin
 			return Sin();
 			break;
-		case 47: // Sqrt
+		case HY_OP_CODE_SQRT: // Sqrt
 			return Sqrt();
 			break;
-		case 49: // Tan
+		case HY_OP_CODE_TAN: // Tan
 			return Tan();
 			break;
-		case 50: // Time
+		case HY_OP_CODE_TIME: // Time
 			return Time();
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
-		case 55: // ZCDF
+		case HY_OP_CODE_ZCDF: // ZCDF
 			return ZCDF();
 			break;
-		case 56: // ^
+		case HY_OP_CODE_POWER: // ^
 			return Raise(p);
 			break;
-		case 57: // ||
+		case HY_OP_CODE_OR: // ||
 			return LOr(p);
 			break;
 		default:
 		{
-			_String *ss,errMsg;
-			ss = (_String*)toStr();
-			errMsg = _String("Operation ")&*(_String*)BuiltInFunctions(opCode)&" is not defined for "&*ss;
-			DeleteObject(ss);
-			WarnError (errMsg);
+			WarnNotDefined (this, opCode);
 			return new _Constant (0.0);
 		}
 	}
@@ -1915,12 +1903,11 @@ _PMathObj _Constant::Max (_PMathObj theObj)
 	
 _Variable::_Variable (void)
 {
-	//hasBeenChanged = false;
 	varFormula = nil;
-	varFlags = 0;
-	theName = nil;
-	varValue = nil;
-	theIndex = -1;
+	varFlags   = HY_VARIABLE_NOTSET;
+	theName    = nil;
+	varValue   = nil;
+	theIndex   = -1;
 	SetBounds (DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
 }
 
@@ -1929,12 +1916,10 @@ void _Variable::Initialize (void)
  {
  	//_Formula::Initialize();
  	_Constant::Initialize();
- 	theName = new _String();
- 	checkPointer(theName);
- 	varValue = nil;
+ 	theName = (_String*)checkPointer(new _String());
+  	varValue = nil;
  	theIndex = -1;
-	//hasBeenChanged = false;
-	varFlags = 0;
+	varFlags = HY_VARIABLE_NOTSET;
 	SetBounds (DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
  }
  
@@ -1992,51 +1977,39 @@ bool _Variable::CheckFForDependence (long idx, bool opt)
 //__________________________________________________________________________________
 BaseRef _Variable::toStr(void)
 {
-	_String res;
 	if (varValue&&varValue->IsPrintable())
 		return varValue->toStr();
 	_PMathObj vv = Compute();
 	if (!vv)
-		res = "NAN";
-	else
-	{
-		_String* vs = (_String*)vv->toStr();
-		res=*vs;
-		DeleteObject(vs);
-	}
-	return res.makeDynamic();
+		return new _String("NAN");
+	return new _String((_String*)vv->toStr());
 }
 
 //__________________________________________________________________________________
 void _Variable::toFileStr(FILE* f)
 {
-	_String res;
 	if (varValue&&varValue->IsPrintable())
-	{
 		varValue->toFileStr(f);
-		return;
-	}
-	_PMathObj vv = Compute();
-	if (!vv)
-		fprintf(f,"NAN");
-	else
+	else 
 	{
-		vv->toFileStr(f);
+		_PMathObj vv = Compute();
+		if (!vv)
+			fprintf(f,"NAN");
+		else
+			vv->toFileStr(f);
 	}
+
 }
 //__________________________________________________________________________________
 	
 _Variable::_Variable (_String&s, bool isG)
 {
-	theName = new _String(s);
-	checkPointer(theName);
-	//hasBeenChanged = false;
-	//isGlobal = isG;
-	varFlags = isG?HY_VARIABLE_GLOBAL:0;
-	varValue = nil;
-	varFormula = nil;
-	SetBounds (DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
-	InsertVar (this);
+	theName			= (_String*)checkPointer(new _String(s));
+	varFlags		= HY_VARIABLE_NOTSET|(isG?HY_VARIABLE_GLOBAL:0);
+	varValue		= nil;
+	varFormula		= nil;
+	SetBounds		(DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
+	InsertVar		(this);
 }
 
 //__________________________________________________________________________________
@@ -2045,23 +2018,20 @@ _Variable::_Variable (_String&s, _String&f, bool isG)//:  _Formula (f)
 {
 	//hasBeenChanged = false;
 	//isGlobal = isG;
-	theName = new _String(s);
-	checkPointer(theName);
-	varFlags = isG?HY_VARIABLE_GLOBAL:0;
-	varValue = nil;
-	SetBounds (DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
-	InsertVar (this);
+	theName		= (_String*)checkPointer(new _String(s));
+	varFlags	= isG?HY_VARIABLE_GLOBAL:0;
+	varValue	= nil;
+	SetBounds	(DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
+	InsertVar	(this);
 	varFormula = new _Formula (f);
 	if (varFormula->IsAConstant())
 	{
-		_PMathObj theP =varFormula->Compute();
+		_PMathObj theP = varFormula->Compute();
 		if (theP)
 		{
 			SetValue (theP);
-			delete (varFormula);
+			delete   (varFormula);
 			varFormula = nil;
-			//theFormula.Clear();
-			//theStack.theStack.Clear();
 		}
 		else
 			return;
@@ -2094,11 +2064,16 @@ bool	_Variable::IsVariable (void) {return true;}
 
 _PMathObj  _Variable::Compute (void) // compute or return the value 
 {
+	
+
 	if (varFormula == nil) // no formula, just return the value
 	{
 		if (varValue)
 			return varValue->Compute();
 
+		if (varFlags |= HY_VARIABLE_NOTSET)
+			ReportWarning (_String ("Variable '") & *GetName() & "' was not initilized prior to being used");
+			
 		varValue =  new _Constant(theValue);
 	}
 	else
@@ -2155,6 +2130,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 {
 	//hasBeenChanged = true;
+	varFlags &= HY_VARIABLE_SET;
 	varFlags |= HY_VARIABLE_CHANGED;
 	if (theP->ObjectClass()==NUMBER)
 	{
@@ -2240,6 +2216,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a number
 {
 	//hasBeenChanged = true;
+	varFlags &= HY_VARIABLE_SET;
 	varFlags |= HY_VARIABLE_CHANGED;
 	theValue = v;
 			
@@ -2257,6 +2234,7 @@ void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a
 void  _Variable::CheckAndSet (_Parameter c, bool oob) // set the value of the var
 {
 	//hasBeenChanged = true;
+	varFlags &= HY_VARIABLE_SET;
 	varFlags |= HY_VARIABLE_CHANGED;
 	_Parameter l = lowerBound+1.0e-30,
 			   u = upperBound-1.0e-30;
@@ -2359,6 +2337,7 @@ void  _Variable::SetFormula (_Formula& theF) // set the value of the var to a fo
 		return;
 	}
 	
+	varFlags &= HY_VARIABLE_SET;
 	
 	if (varFlags & HY_VARIABLE_CHANGED)
 		varFlags -= HY_VARIABLE_CHANGED;
@@ -3591,10 +3570,10 @@ _Operation::_Operation 	(_String& opc, long opNo = 2)
 		
 	if (opCode<0)
 	{
-		_String errMsg ("Operation: ");
-		errMsg = errMsg & opc &" is not defined.";
-		WarnError(errMsg);	
+		WarnError(_String ("Operation: '") & opc &"' is not defined." );	
+		opCode = 0;
 	}
+	
 	numberOfTerms = opNo;
 	theData		  = -1;
 	theNumber	  = nil;
@@ -3833,6 +3812,7 @@ bool		_Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace)
 							// simply swap the value of the var, otherwise
 							// duplicate the entire variable
 						{
+							theV->varFlags &= HY_VARIABLE_SET;
 							if (!theV->varValue)
 								theV->Compute();
 							displacedValues<<theV->varValue;

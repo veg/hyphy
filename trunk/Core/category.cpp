@@ -130,20 +130,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	long	f;
 	
 	Clear(); // clear this variable if needed
-	
-	if (!_x_) // first run. initialize the internal variables
-	{
-		_String xname ("_x_");
-		if (_hyApplicationGlobals.Find (&xname) < 0)
-			_hyApplicationGlobals.Insert (new _String (xname));
-		_Variable dummy_x (xname,true); // create it as global
-		_x_ = FetchVar(LocateVarByName (xname));
-		xname = "_n_";
-		if (_hyApplicationGlobals.Find (&xname) < 0)
-			_hyApplicationGlobals.Insert (new _String (xname));
-		_Variable dummy_n (xname,true); // create it as global
-		_n_ = FetchVar(LocateVarByName (xname));
-	}
+
 	
 	checkParameter (maxCatIvals, maxCategoryIntervals, 100);
 	// set up the number of intervals and the matrices

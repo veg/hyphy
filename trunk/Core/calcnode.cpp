@@ -2520,7 +2520,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 
 	switch (opCode)
 	{
-		case 2:  // Split ($) - 2nd argument
+		case HY_OP_CODE_IDIV:  // Split ($) - 2nd argument
 		{
 			if (p->ObjectClass()!=NUMBER)
 			{
@@ -2598,16 +2598,16 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 		}
 		break;
 		
-		case 5: // compute the strict consensus between T1 and T2
+		case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
 			return SplitsIdentity (p);
 			break;
 		
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			AddANode (p);
 			return new _Constant (0.0);
 			break;
 			
-		case 10: // MatchPattern (<=)
+		case HY_OP_CODE_LEQ: // MatchPattern (<=)
 		{
 			if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY))
 			{
@@ -2618,22 +2618,22 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 			return new _Constant (!res.beginswith ("Unequal"));
 			break;
 		}	
-		case 11: // ==
+		case HY_OP_CODE_EQ: // ==
 			return new _Constant (Equal(p));
 			break;
-		case 14: // Abs
+		case HY_OP_CODE_ABS: // Abs
 			return FlatRepresentation();
 			break;
-		case 17: //BranchCount
+		case HY_OP_CODE_BRANCHCOUNT: //BranchCount
 			return BranchCount();
 			break;
-		case 18: //BranchLength
+		case HY_OP_CODE_BRANCHLENGTH: //BranchLength
 			return BranchLength(p);
 			break;
-		case 19: //BranchName
+		case HY_OP_CODE_BRANCHNAME: //BranchName
 			return BranchName(p);
 			break;
-		case 27: // Format
+		case HY_OP_CODE_FORMAT: // Format
 		{
 			currentNode = theRoot;			
 			_String  *tStr = new _String  ((unsigned long)1024,true);
@@ -2641,35 +2641,33 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 			tStr->Finalize();
 			return new _FString (tStr);
 		}
-		case 37: // MAccess
+		case HY_OP_CODE_MACCESS: // MAccess
 			return BranchName (p,true, p2);
 			break;
-		case 40: // COT (Min)
+		case HY_OP_CODE_MIN: // COT (Min)
 			return FindCOT (p);
 			break;
-		case 43: // RerootTree
+		case HY_OP_CODE_REROOTTREE: // RerootTree
 			return RerootTree(p);
 			break;
-		case 48: // TEXTreeString
+		case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
 			//return TEXTreeString(p);
 			break;
-		case 51: // TipCount
+		case HY_OP_CODE_TIPCOUNT: // TipCount
 			return TipCount();
 			break;
-		case 52: // TipName
+		case HY_OP_CODE_TIPNAME: // TipName
 			return TipName(p);
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
-		case 56: //^
+		case HY_OP_CODE_POWER: //^
 			return AVLRepresentation (p);
 			break;
 	}
 
-	_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for topologies/trees";
-	WarnError (errMsg);
+	WarnNotDefined (this, opCode);
 	return nil;
 
 }
@@ -2682,22 +2680,18 @@ _PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 
 	switch (opCode)
 	{
-		case 41: //PlainTreeString
+		case HY_OP_CODE_PSTREESTRING: //PlainTreeString
 			return PlainTreeString(p,p2);
 			break;
-		case 48: // TEXTreeString
+		case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
 			return TEXTreeString(p);
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
 	}
 
 	return  _TreeTopology::Execute (opCode,p,p2);
-	/*_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for trees";
-	WarnError (errMsg);
-	return nil;*/
 
 }
 

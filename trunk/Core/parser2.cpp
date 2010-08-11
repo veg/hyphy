@@ -60,9 +60,7 @@ extern	  _Parameter 	tolerance,
 						machineEps;
 
 extern	  _String		intPrecFact ,
-						intMaxIter, 
-						UnOps, 
-						HalfOps;
+						intMaxIter;
 
 _Parameter	verbosityLevel = 0.0,
 	 		twoOverSqrtPi   = 2./sqrtPi;
@@ -138,6 +136,18 @@ void		PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* v
 	}
 }
 
+
+//__________________________________________________________________________________
+
+void		WarnNotDefined (_PMathObj p, long opCode)
+{
+	_FString * t = (_FString*)p->Type();
+	WarnError (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);
+	DeleteObject (t);
+}
+
+
+//__________________________________________________________________________________
 //__________________________________________________________________________________
 
 _Formula::_Formula (void) {
@@ -402,7 +412,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 	
 	switch (op->opCode)
 	{
-		case 5:
+		case HY_OP_CODE_MUL:
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
@@ -451,8 +461,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 6: // +
-		case 7: // -
+		case HY_OP_CODE_ADD: // +
+		case HY_OP_CODE_SUB: // -
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = nil;
@@ -482,7 +492,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 		
-		case 8: // /
+		case HY_OP_CODE_DIV: // /
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
@@ -560,7 +570,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 15: // Arctan
+		case HY_OP_CODE_ARCTAN: // Arctan
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -622,7 +632,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 23: // Cos
+		case HY_OP_CODE_COS: // Cos
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -669,7 +679,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 25: // Erf
+		case HY_OP_CODE_ERF: // Erf
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -750,8 +760,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 26: // Exp
-		case 46: // Sin
+		case HY_OP_CODE_EXP: // HY_OP_CODE_EXP
+		case HY_OP_CODE_SIN: // HY_OP_CODE_SIN
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -761,10 +771,10 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			_String			  opC  ('*'),
 							  opC2;
 							  
-			if (op->opCode==46)
-				opC2 = "Cos";
+			if (op->opCode==HY_OP_CODE_SIN)
+				opC2 = *(_String*)BuiltInFunctions(HY_OP_CODE_COS);
 			else
-				opC2 = "Exp";
+				opC2 = *(_String*)BuiltInFunctions(HY_OP_CODE_EXP);
 				      
 			_Operation*   	  newOp  = new _Operation (opC  ,2),
 					  *		  newOp2 = new _Operation (opC2 ,1);
@@ -782,18 +792,15 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*b1);
 			
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	 (newOp);
-			DeleteObject	 (newOp2);
-			
+			tgt.theFormula.AppendNewInstance(newOp);
+
 			return 			 newNode;
 		}
 		break;
 
-		case 36: // Log
+		case HY_OP_CODE_LOG: // Log
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -817,7 +824,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 47: // Sqrt
+		case HY_OP_CODE_SQRT: // Sqrt
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -826,7 +833,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 				
 			_String			  opC  ('/'),
 							  opC2 ('*'),
-							  opC3 ("Sqrt");
+							  opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_SQRT));
 				      
 			_Operation*   	  newOp  = new _Operation (opC  ,2),
 					  *		  newOp2 = new _Operation (opC2 ,2),
@@ -872,7 +879,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 49: // Tan
+		case HY_OP_CODE_TAN: // Tan
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
@@ -881,7 +888,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 				
 			_String			  opC  ('/'),
 							  opC2 ('^'),
-							  opC3 ("Cos");
+							  opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_COS));
 				      
 			_Operation*   	  newOp  = new _Operation (opC ,2),
 					  *		  newOp2 = new _Operation (opC2,2),
@@ -926,7 +933,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		}
 		break;
 
-		case 56: // ^
+		case HY_OP_CODE_POWER: // ^
 		// f[x]^g[x] (g'[x] Log[f[x]] + f'[x]g[x]/f[x])
 		{
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
@@ -939,7 +946,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 							  opC2 ('+'),
 							  opC3 ('/'),
 							  opC4 ('^'),
-							  opC5 ("Log");
+							  opC5 (*(_String*)BuiltInFunctions(HY_OP_CODE_LOG));
 				      
 			_Operation*   	  newOp  = new _Operation (opC  ,2),
 					  *		  newOp2 = new _Operation (opC4 ,2),
@@ -1061,7 +1068,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 	
 	isConstant = isConstant && firstConst && ((numChildren==1)||secondConst);
 	
-	if (op->opCode >=0)
+	if (op->opCode >=0 )
 	{
 		if (isConstant)
 		{
@@ -1079,7 +1086,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 					
 				switch (op->opCode)
 				{
-					case 5: // *
+					case HY_OP_CODE_MUL: // *
 					{
 						if (CheckEqual (theVal,0.0)) // *0 => 0
 						{
@@ -1097,7 +1104,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 					}
 					break;
 					
-					case 6: // +
+					case HY_OP_CODE_ADD: // +
 					{
 						if (CheckEqual (theVal,0.0)) // ?+0 => ?
 						{
@@ -1109,7 +1116,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 						}
 					}
 
-					case 7: // -
+					case HY_OP_CODE_SUB: // -
 					{
 						if (CheckEqual (theVal,0.0)) 
 						{
@@ -1121,7 +1128,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 						}
 					}
 
-					case 8: // /
+					case HY_OP_CODE_DIV: // /
 					{
 						if (firstConst&&CheckEqual (theVal,0.0)) // 0/? => 0
 						{
@@ -1136,7 +1143,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 					}
 					break;
 					
-					case 56: // ^
+					case HY_OP_CODE_POWER: // ^
 					{
 						if (firstConst&&CheckEqual (theVal,1.0)) // 1^? => 1
 						{
@@ -1164,8 +1171,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 			startNode->kill_node (k);
 		}
 		startNode->in_object = theFormula.lLength;
-		_Operation tempO (newVal);
-		theFormula && & tempO;
+		theFormula.AppendNewInstance (new _Operation(newVal));
 	}
 	
 	if (collapse2!=-1)
@@ -2309,7 +2315,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 				if (simpleOperationCodes.Find(thisOp->opCode)==-1)
 					return false;
 				else
-					if (thisOp->opCode == 37 && thisOp->numberOfTerms != 2)
+					if (thisOp->opCode == HY_OP_CODE_MACCESS && thisOp->numberOfTerms != 2)
 						return false;
 				
 				locDepth-=thisOp->numberOfTerms;
@@ -2346,11 +2352,11 @@ void _Formula::ConvertToSimple (_SimpleList& variableIndex)
 					thisOp->theData = variableIndex.Find (thisOp->theData);
 				}
 				else
-					if (thisOp->opCode == 7 && thisOp->numberOfTerms == 1)
+					if (thisOp->opCode == HY_OP_CODE_SUB && thisOp->numberOfTerms == 1)
 						thisOp->opCode = (long)MinusNumber;
 					else	
 					{
-						if (thisOp->opCode == 37)
+						if (thisOp->opCode == HY_OP_CODE_MACCESS)
 							thisOp->numberOfTerms = -2;
 						thisOp->opCode = simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
 					}
@@ -2375,7 +2381,7 @@ void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
 				thisOp->theData = variableIndex[thisOp->theData];
 			else
 				if (thisOp->opCode == (long)MinusNumber)
-					thisOp->opCode = 7;
+					thisOp->opCode = HY_OP_CODE_SUB;
 				else
 				{
 					if (thisOp->opCode == (long)FastMxAccess)
@@ -2506,7 +2512,8 @@ bool _Formula::HasChanged (bool ingoreCats)
 				if (thisOp->theNumber->HasChanged()) return true;
 		}
 		else
-			if (thisOp->opCode == 18||thisOp->opCode == 42||thisOp->opCode == 50)// time, random or branch length
+			if (thisOp->opCode == HY_OP_CODE_BRANCHLENGTH||thisOp->opCode == HY_OP_CODE_RANDOM||thisOp->opCode == HY_OP_CODE_TIME)
+					// time, random or branch length
 				return true;
 			else
 				if (thisOp->numberOfTerms<0) 
@@ -2743,19 +2750,19 @@ void _Formula::SimplifyConstants (void)
 			}
 			else
 			{
-				if (thisOp->numberOfTerms > 0 && (thisOp->opCode==5||thisOp->opCode==8||thisOp->opCode==56)) 
+				if (thisOp->numberOfTerms > 0 && 
+						(thisOp->opCode==HY_OP_CODE_MUL||thisOp->opCode==HY_OP_CODE_DIV||thisOp->opCode==HY_OP_CODE_POWER)) 
 				// *,/,^ 1 can be removed
 				{
 					_Operation*  aTerm = ((_Operation*)((BaseRef**)theFormula.lData)[i-1]);
 					if (!((aTerm->IsAVariable())||(aTerm->opCode>=0)))
 					{
-						if (aTerm->theNumber->ObjectClass()==NUMBER)
-							if (aTerm->theNumber->Value() == 1.)
-							{
-								theFormula.Delete (i);
-								theFormula.Delete (i-1);
-								i--;
-							}
+						if (aTerm->theNumber->ObjectClass()==NUMBER && aTerm->theNumber->Value() == 1.)
+						{
+							theFormula.Delete (i);
+							theFormula.Delete (i-1);
+							i--;
+						}
 					}
 				}
 			}
@@ -3344,24 +3351,44 @@ _PMathObj _FString::RerootTree (void)
 }
 
 //__________________________________________________________________________________
+
+
+_PMathObj _FString::Evaluate () 
+{
+	if (theString && theString->sLength)
+	{
+		_String		s (*theString);
+		_Formula	evaluator (s);
+		_PMathObj	evalTo = evaluator.Compute();
+		
+		if (evalTo && !terminateExecution)
+		{
+			evalTo->AddAReference(); 
+			return evalTo;
+		}
+	}
+	return new _Constant (.0);
+}
+
+//__________________________________________________________________________________
 	
 	
 _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute this operation with the second arg if necessary
 {
 	switch (opCode)
 	{
-		case 0: // !
+		case HY_OP_CODE_NOT: // !
 			return FileExists();
-		case 1: // !=
+		case HY_OP_CODE_NEQ: // !=
 			return NotEqual(p);
 			break;
-		case 2: // $ match regexp
+		case HY_OP_CODE_IDIV: // $ match regexp
 			return EqualRegExp(p);
 			break;
-		case 3: // % equal case insenstive
+		case HY_OP_CODE_MOD: // % equal case insenstive
 			return AreEqualCIS(p);
 			break;
-		case 4: // && upcase or lowercase
+		case HY_OP_CODE_AND: // && upcase or lowercase
 			{
 				_Parameter pVal = 0.0;
 				if (p->ObjectClass () == NUMBER)
@@ -3394,40 +3421,43 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				}
 			}
 			break;
-		case 5: // *
+		case HY_OP_CODE_MUL: // *
 			if (p->ObjectClass() == MATRIX)
 				return		MapStringToVector (p);
 			else
 				return new _Constant(AddOn(p));
 			break;
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			return Add(p);
 			break;
-		case 8: // /
+		case HY_OP_CODE_DIV: // /
 			return EqualAmb(p);
 			break;
-		case 9: // <
+		case HY_OP_CODE_LESS: // <
 			return Less(p);
 			break;
-		case 10: // <=
+		case HY_OP_CODE_LEQ: // <=
 			return LessEq(p);
 			break;
-		case 11: // ==
+		case HY_OP_CODE_EQ: // ==
 			return AreEqual(p);
 			break;
-		case 12: // >
+		case HY_OP_CODE_GREATER: // >
 			return Greater(p);
 			break;
-		case 13: // >=
+		case HY_OP_CODE_GEQ: // >=
 			return GreaterEq(p);
 			break;
-		case 14: // Abs
+		case HY_OP_CODE_ABS: // Abs
 			return new _Constant (theString->sLength);
 			break;
-		case 26: // Exp
+		case HY_OP_CODE_EVAL: // Eval
+			return Evaluate();
+			break;
+		case HY_OP_CODE_EXP: // Exp
 			return new _Constant (theString->LempelZivProductionHistory(nil));
 			break;
-		case 27: // Format
+		case HY_OP_CODE_FORMAT: // Format
 			{
 				_String cpyString (*theString);
 				_Formula f (cpyString);
@@ -3436,14 +3466,12 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 					return ((_Constant*)fv)->FormatNumberString (p,p2);
 				else
 				{
-					_String errMsg ("Failed to evaluate ");
-					errMsg = errMsg & *theString & " to a number in call to Format (string...)";
-					ReportWarning (errMsg);
+					ReportWarning (_String("Failed to evaluate ")& *theString & " to a number in call to Format (string...)");
 					return new _FString();
 				}
 			}
 			break;
-		case 33: // Inverse
+		case HY_OP_CODE_INVERSE: // Inverse
 			{
 				_FString * res = new _FString (*theString, false);
 				checkPointer (res);
@@ -3453,31 +3481,29 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				return res;
 			}
 			break;
-		case 36: // Log - check sum
+		case HY_OP_CODE_LOG: // Log - check sum
 			return new _Constant (theString->Adler32());
-		case 37: // MAccess
+		case HY_OP_CODE_MACCESS: // MAccess
 			return CharAccess(p,p2);
 			break;
-		case 43: // RerootTree
+		case HY_OP_CODE_REROOTTREE: // RerootTree
 			return RerootTree ();
 			break;
-		case 44: // Count Objects of given type
+		case HY_OP_CODE_ROWS: // Count Objects of given type
 			return CountGlobalObjects();
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
-		case 56: // Replace (^)
+		case HY_OP_CODE_POWER: // Replace (^)
 			return ReplaceReqExp (p);
 			break;
-		case 57: // Match all instances of the reg.ex (||) 
+		case HY_OP_CODE_OR: // Match all instances of the reg.ex (||) 
 			return EqualRegExp (p, true);
 			break;
 	}
 	
-	_String		errMsg ("Operation ");
-	errMsg		= errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for strings.";
-	WarnError	(errMsg);
+	WarnNotDefined (this, opCode);
 	return new _FString;
 
 }
@@ -3926,9 +3952,6 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				}
 				squareBrackets.Delete(squareBrackets.lLength-1);
 				curOp = "MAccess";
-				/*_Operation theVar (curOp ,mcount+1);
-				f->theFormula&&(&theVar);
-				mcount = 0;*/
 				if (mergeMAccess.lLength && mergeMAccess.lData[mergeMAccess.lLength-1] >= 0 && mergeMAccessLevel.lData[mergeMAccessLevel.lLength-1] == level)
 				{
 					long mergeIndex				 = mergeMAccess.lData[mergeMAccess.lLength-1];
@@ -3968,11 +3991,11 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		}
 		
 		
-		if (s.getChar(i) == '=' && s.getChar(i+1) != '=' && (!twoToken || s.getChar(i-1)==':')) // assignment operator
+		if (s.getChar(i) == '=' && s.getChar(i+1) != '=' && (!twoToken || s.getChar(i-1)==':' || s.getChar (i-1) == '+')) // assignment operator
 		{
 			_String*  sss = nil;
 			
-			if (!f->IsEmpty())
+			if (f->IsEmpty() == false) // have buffered operations
 				sss = &(((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->GetCode());						
 
 			bool check = !inAssignment;
@@ -3981,7 +4004,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			{
 				if (sss)
 				{
-					if (*sss!=_String("MAccess"))
+					if (!sss->Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS)))
 						check = false;
 					else
 						(((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode())++; 
@@ -4015,7 +4038,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				_Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
 				if (!f2)
 				{
-					if (s.getChar(i-1)!=':')
+					if (s.getChar(i-1) != ':')
 					{
 						_PMathObj varObj = newF.Compute();
 						if (!varObj)
@@ -4023,7 +4046,14 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 							if (flagErrors) WarnError (_String("Invalid RHS in an assignment:")&s.Cut(i+1,-1));
 							return -2;
 						}
-						theV->SetValue(varObj);
+						if (twoToken && s.getChar(i-1) == '+')
+						{
+							theV->SetValue(varObj->Add (theV->Compute()));
+						}
+						else
+						{
+							theV->SetValue(varObj);
+						}
 					}
 					else
 						theV->SetFormula (newF);
@@ -4232,7 +4262,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			if (!f->IsEmpty())
 				lastCode = ((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode();	
 				
-			if (lastCode == 37 && s.getChar(i-1) == ']')
+			if (lastCode == HY_OP_CODE_MACCESS && s.getChar(i-1) == ']')
 			{
 				mergeMAccess << f->theFormula.lLength-1;
 				mergeMAccessLevel << level;
@@ -4507,8 +4537,15 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			else
 				continue;
 		}
-		if ((BinOps.Find (s.getChar(i))!=-1)||(twoToken&&(BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1)))
+		if ( BinOps.Find (s.getChar(i))!=-1 || twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1) )
 		{
+			if (BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1)
+			{
+				twoToken = true;
+				continue;
+			}
+					
+			
 			if ((UnOps.contains(s.getChar(i)))&&!twoToken)
 			{
 				char cim1 = s.getChar(i-1);
@@ -4620,11 +4657,10 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		else
 			if (UnOps.contains(s.getChar(i)))
 			{
-				if ((s.getChar(i)=='-')&&(!i||(s.getChar(i-1)=='(')))
+				if (s.getChar(i)=='-' && (!i|| s.getChar(i-1)=='(')) // unary minus?
 				{
 					curOp = "-";
-					_Operation theVar (curOp,1);
-					(*levelOps) && (&theVar);
+					levelOps->AppendNewInstance (new _Operation (curOp,1));
 					continue;
 				}
 				else

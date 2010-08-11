@@ -81,6 +81,8 @@ class BaseObj  {
 		virtual	void	 Initialize (void) {nInstances=1;}
 
 		virtual	void	 Duplicate (BaseObj* ref) {nInstances=++ref->nInstances;}
+	
+		virtual void	 AddAReference (void)	  {nInstances ++;}
 
 		long			 nInstances;
 

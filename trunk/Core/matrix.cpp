@@ -1421,109 +1421,105 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 
 	switch (opCode)
 	{
-		case 2: // $
+		case HY_OP_CODE_IDIV: // $
 			return MultElements(p);
 			break;
-		case 3: // %
+		case HY_OP_CODE_MOD: // %
 			return SortMatrixOnColumn (p);
 			break;
-		case 4: // &&
+		case HY_OP_CODE_AND: // &&
 			return pFDR (p);
 			break;
-		case 5: // *
+		case HY_OP_CODE_MUL: // *
 			return MultObj(p);
 			break;
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			return AddObj (p);
 			break;
-		case 7: // -
+		case HY_OP_CODE_SUB: // -
 			if (p)
 				return SubObj(p);
 			else
 				return (_PMathObj)((*this)*(-1.0)).makeDynamic();
 			break;
-		case 9: // <
+		case HY_OP_CODE_LESS: // <
 			return PathLogLikelihood(p);
 			break;
-		case 10: // <=
+		case HY_OP_CODE_LEQ: // <=
 			return K_Means(p);
 			break;
-		case 11: // ==
+		case HY_OP_CODE_EQ: // ==
 			return ProfileMeanFit(p);
 			break;
-		case 12: // >
+		case HY_OP_CODE_GREATER: // >
 			return NeighborJoin (!CheckEqual(p->Value(),0.0));
 			break;
-		case 13: // >=
+		case HY_OP_CODE_GEQ: // >=
 			return MakeTreeFromParent (p->Value());
 			break;
-		case 14: // Abs
+		case HY_OP_CODE_ABS: // Abs
 			return Abs();
 			break;
-		case 20: //CChi2
+		case HY_OP_CODE_CCHI2: //CChi2
 			if ((p->ObjectClass()==NUMBER)&&(p->Value()>0.999))
 				return new _Constant (FisherExact(5.,80.,1.));
 			else
 				return new _Constant (FisherExact(0.,0.,0.));
 			break;
-		case 22:  //Columns
-			//res.SetValue(vDim);
+		case HY_OP_CODE_COLUMNS:  //Columns
 			return new _Constant (vDim);
 			break;
-		case 24: //Eigensystem
+		case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
 			return Eigensystem();
 			break;
-		case 26: //Exp
+		case HY_OP_CODE_EXP: //Exp
 			return Exponentiate();
 			break;
-		case 33: //Inverse
+		case HY_OP_CODE_INVERSE: //Inverse
 			return Inverse();
 			break;
-		case 34: // LUDecompose
+		case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
 			return LUDecompose();
 			break;
-		case 35: // LUSolve
+		case HY_OP_CODE_LUSOLVE: // LUSolve
 			return LUSolve (p);
 			break;
-		case 36: // Log
+		case HY_OP_CODE_LOG: // Log
 			return Log();
 			break;
-		case 37: // MAccess
+		case HY_OP_CODE_MACCESS: // MAccess
 			return MAccess (p,p2);
 			break;
-		case 38: // MCoord
+		case HY_OP_CODE_MCOORD: // MCoord
 			return MCoord (p,p2);
 			break;
-		case 39: // Max
+		case HY_OP_CODE_MAX: // Max
 			return new _Constant (MaxElement ());
 			break;
-		case 42: // Random
+		case HY_OP_CODE_RANDOM: // Random
 			return Random (p);
 			break;
-		case 44: // Rows
+		case HY_OP_CODE_ROWS: // Rows
 			return new _Constant (hDim);
 			break;
-		case 45: // Simplex
+		case HY_OP_CODE_SIMPLEX: // Simplex
 			return SimplexSolve();
 			break;
-		case 53: // Transpose
+		case HY_OP_CODE_TRANSPOSE: // Transpose
 		{
 			_Matrix* result = (_Matrix*)makeDynamic();
 			result->Transpose ();
 			return result;
 		}
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
-		case 56: // ^ (Poisson log-likelihood)
+		case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
 			return  PoissonLL (p);
 	}
 	
-	_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for matrices";
-	WarnError (errMsg);
+	WarnNotDefined (this, opCode);
 	return nil;
-
 }
 //_____________________________________________________________________________________________
 
@@ -9579,28 +9575,28 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 
 	switch (opCode)
 	{
-		case 6: // +
+		case HY_OP_CODE_ADD: // +
 			if (p)
 				MStore (_String((long)avl.countitems()), p, true);
 				return new _Constant (avl.countitems());
 			break;
 
-		case 7:
-		case 14:
-			if (opCode == 7)
+		case HY_OP_CODE_SUB:
+		case HY_OP_CODE_ABS:
+			if (opCode == HY_OP_CODE_SUB)
 				DeleteByKey (p);
 			return new _Constant (avl.countitems());
 			break;
-		case 37: // MAccess
+		case HY_OP_CODE_MACCESS: // MAccess
 			if (p2)
 				return MIterator (p,p2);
 			else
 				return MAccess   (p);
 			break;
-		case 38: // MCoord
+		case HY_OP_CODE_MCOORD: // MCoord
 			return MCoord (p);
 			break;
-		case 44: // Rows - get keys
+		case HY_OP_CODE_ROWS: // Rows - get keys
 			if (avl.emptySlots.lLength)
 			{
 				_List  dataListCompact;
@@ -9615,15 +9611,13 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 			else
 				return new _Matrix (*(_List*)avl.dataList);
 			break;
-		case 54: // Type
+		case HY_OP_CODE_TYPE: // Type
 			return Type();
 			break;
 	}
 	
 	
-	_String errMsg ("Operation ");
-	errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for associative lists";
-	WarnError (errMsg);
+	WarnNotDefined (this, opCode);
 	return nil;
 
 }
