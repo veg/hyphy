@@ -4095,9 +4095,17 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					else
 						theV->SetFormula (newF);
 				}
-				else
+				else // this gets called from ExecuteCase0...
+				{
+					if (twoToken && s.getChar(i-1) == '+')
+					{
+						_Operation* self = new _Operation ();
+						self->SetAVariable(theV->GetAVariable());
+						newF.theFormula.InsertElement (self, -1,false);
+						newF.theFormula.AppendNewInstance (new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
+					}
 					f->Duplicate((BaseRef)&newF);
-
+				}
 				twoToken     = false;
 				return (s.getChar(i-1)!=':')?theV->GetAVariable():-theV->GetAVariable()-5;
 			}
