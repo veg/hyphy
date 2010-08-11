@@ -2073,7 +2073,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
 		if (varValue)
 			return varValue->Compute();
 
-		if (varFlags | HY_VARIABLE_NOTSET)
+		if (varFlags & HY_VARIABLE_NOTSET)
 			ReportWarning (_String ("Variable '") & *GetName() & "' was not initialized prior to being used");
 			
 		varValue =  new _Constant(theValue);
