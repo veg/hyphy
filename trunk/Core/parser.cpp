@@ -750,6 +750,8 @@ void	SetupOperationLists (void)
 		
 		//HY_OP_CODE_BRANCHNAME
 		BuiltInFunctions.AppendNewInstance (new _String ("BranchName"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHNAME);
+		FunctionArgumentCount << 2;
 		
 		//HY_OP_CODE_CCHI2
 		BuiltInFunctions.AppendNewInstance (new _String ("CChi2"));
@@ -2072,7 +2074,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
 			return varValue->Compute();
 
 		if (varFlags |= HY_VARIABLE_NOTSET)
-			ReportWarning (_String ("Variable '") & *GetName() & "' was not initilized prior to being used");
+			ReportWarning (_String ("Variable '") & *GetName() & "' was not initialized prior to being used");
 			
 		varValue =  new _Constant(theValue);
 	}
