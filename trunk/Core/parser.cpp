@@ -769,6 +769,11 @@ void	SetupOperationLists (void)
 		//HY_OP_CODE_COS
 		BuiltInFunctions.AppendNewInstance (new _String ("Cos"));
 		
+		//HY_OP_CODE_DIFF
+		BuiltInFunctions.AppendNewInstance (new _String ("D"));
+		FunctionNameList << BuiltInFunctions (HY_OP_CODE_DIFF);
+		FunctionArgumentCount << 2;
+
 		//HY_OP_CODE_EIGENSYSTEM
 		BuiltInFunctions.AppendNewInstance (new _String ("Eigensystem"));
 		

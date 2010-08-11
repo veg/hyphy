@@ -1068,7 +1068,7 @@ bool _Formula::InternalSimplify (node<long>* startNode)
 	
 	isConstant = isConstant && firstConst && ((numChildren==1)||secondConst);
 	
-	if (op->opCode >=0 )
+	if (op->opCode > HY_OP_CODE_NONE)
 	{
 		if (isConstant)
 		{
@@ -3184,6 +3184,41 @@ _PMathObj _FString::LessEq (_PMathObj p)
 
 //__________________________________________________________________________________
 
+_PMathObj _FString::Differentiate (_PMathObj p)
+{
+	_Formula F;
+	
+	_String  *X,
+			 *DFDX = nil;
+	
+	bool	 deleteX = false;
+	
+	if (p->ObjectClass()==STRING)
+		X = ((_FString*)p)->theString;
+	else
+	{
+		deleteX = true;
+		X = (_String*)p->toStr();
+	}	
+	
+	_String copyMe (*theString);
+	if (Parse (&F,copyMe) == -1)
+	{
+		_Formula *DF = F.Differentiate (*X,true);
+		if (DF)
+			DFDX = (_String*)DF->toStr();
+		
+	}
+	
+	if (deleteX)
+		DeleteObject (X);
+	
+	return new _FString (DFDX?DFDX:new _String());
+	
+}
+
+//__________________________________________________________________________________
+
 _PMathObj _FString::GreaterEq (_PMathObj p)
 {
 	if (p->ObjectClass()==STRING)
@@ -3450,6 +3485,9 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 			break;
 		case HY_OP_CODE_ABS: // Abs
 			return new _Constant (theString->sLength);
+			break;
+		case HY_OP_CODE_DIFF: // Differentiate
+			return Differentiate(p);
 			break;
 		case HY_OP_CODE_EVAL: // Eval
 			return Evaluate();

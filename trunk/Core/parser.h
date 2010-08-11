@@ -105,7 +105,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	 HY_OP_CODE_CGAMMADIST		(1+HY_OP_CODE_CCHI2) // CGammaDist
 #define	 HY_OP_CODE_COLUMNS			(1+HY_OP_CODE_CGAMMADIST) // Columns
 #define	 HY_OP_CODE_COS				(1+HY_OP_CODE_COLUMNS) // Cos
-#define	 HY_OP_CODE_EIGENSYSTEM		(1+HY_OP_CODE_COS) // Eigensystem
+#define	 HY_OP_CODE_DIFF			(1+HY_OP_CODE_COS) // D
+#define	 HY_OP_CODE_EIGENSYSTEM		(1+HY_OP_CODE_DIFF) // Eigensystem
 #define	 HY_OP_CODE_ERF				(1+HY_OP_CODE_EIGENSYSTEM) // Erf
 #define	 HY_OP_CODE_EVAL			(1+HY_OP_CODE_ERF) // Eval
 #define	 HY_OP_CODE_EXP				(1+HY_OP_CODE_EVAL) // Exp
@@ -802,6 +803,7 @@ class _FString : public _MathObject { // strings encountered in formulas
 	virtual	_PMathObj CountGlobalObjects(void);
 	virtual _PMathObj FileExists		(void);
 	virtual _PMathObj Evaluate			(void);
+	virtual _PMathObj Differentiate		(_PMathObj);
 	virtual	long 	  ObjectClass 		(void) 
 					  					{ return STRING;}
 	virtual	_PMathObj Compute 			(void) 
