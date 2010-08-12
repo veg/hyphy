@@ -386,8 +386,20 @@ private:
 	_Parameter	computePFDR			(_Parameter, _Parameter);
 	void		InitMxVar 			(_SimpleList&	, _Parameter);
 	bool		ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = false);
+	
 	_PMathObj	PathLogLikelihood	(_PMathObj);
+		/* SLKP: 20100812
+		 
+		 This function assumes that 'this' an 3xK matrix, where each column is of the form
+		 A: integer in [0,N-1], B: integer in [0,N-1], T: real >= 0
+		 
+		 and the argument is an NxN RATE matrix for a Markov chain
+		 
+		 The return value is the \sum_ j = 0 ^ {K-1} Prob {A_j -> B_j | T_j}
+		 */
+	
 	_PMathObj	ProfileMeanFit		(_PMathObj);
+	
 	_Matrix*	branchLengthStencil (void);
 	
 	//bool		IsAStringMatrix 	(void);

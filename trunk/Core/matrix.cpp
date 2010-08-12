@@ -6288,7 +6288,7 @@ _PMathObj		_Matrix::PoissonLL (_PMathObj mp)
 	
 	for (long idx = 0; idx < lDim; idx++)
 	{
-		long  cellValue = 0.0;
+		long  cellValue = 0;
 		if (theIndex)
 		{
 			cellValue = theIndex[idx];
