@@ -925,16 +925,6 @@ void	SetupOperationLists (void)
 		BuiltInFunctions.AppendNewInstance (new _String ("||"));
 	}		
 	
-	
-	_String xname ("_x_");
-	if (_hyApplicationGlobals.Find (&xname) < 0)
-		_hyApplicationGlobals.Insert (new _String (xname));
-	_x_ = CheckReceptacle (&xname,empty,false,false);
-	xname = "_n_";
-	if (_hyApplicationGlobals.Find (&xname) < 0)
-		_hyApplicationGlobals.Insert (new _String (xname));
-	_n_ = CheckReceptacle (&xname,empty,false,false);
-		
 
 		
 }
