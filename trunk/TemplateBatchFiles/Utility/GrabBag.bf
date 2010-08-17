@@ -632,6 +632,7 @@ function generate_gdd_freqs (numberOfRates, freqs&, lfMixing&, probPrefix, incre
 		{
 			mi = numberOfRates-1;
 			ExecuteCommands ("global "+probPrefix+"_"+mi+":<1;"+probPrefix+"_"+mi+"=1/2;");
+			ExecuteCommands ("global "+probPrefix+"_"+mi+":>0;");
 			for (mi=1; mi<numberOfRates-1; mi=mi+1)
 			{
 				ExecuteCommands (""+probPrefix+"_"+mi+" = "+probPrefix+"_"+mi+"*(1-1/numberOfRates);");
@@ -643,6 +644,7 @@ function generate_gdd_freqs (numberOfRates, freqs&, lfMixing&, probPrefix, incre
 			for (mi=1; mi<numberOfRates; mi=mi+1)
 			{
 				ExecuteCommands ("global "+probPrefix+"_"+mi+":<1;"+probPrefix+"_"+mi+" = 1/" + (numberOfRates-mi+1));
+				ExecuteCommands ("global "+probPrefix+"_"+mi+":>0;");
 			}
 		}
 		
