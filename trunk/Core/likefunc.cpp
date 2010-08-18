@@ -1365,9 +1365,7 @@ _Matrix*	_LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichP
 	long		 				hDim = 1,
 				 				vDim = 0,
 				 				currentOffset = 0;
-				 				
-	_DataSetFilter			    *df;
-	
+				 					
 	
 	PrepareToCompute();
 	if (runMode == _hyphyLFConstructCategoryMatrixConditionals || runMode == _hyphyLFConstructCategoryMatrixWeights)
@@ -11143,16 +11141,25 @@ void	_LikelihoodFunction::RankVariables(void)
 _CustomFunction::_CustomFunction (_String* arg)
 {
 	_String	body (*arg);
-	Parse (&myBody, body,nil,nil,true);
-	_SimpleList myVars;
+	
+	long	varRef = 0;
+	
+	if (Parse (&myBody, body, varRef, nil,nil,true) == HY_FORMULA_EXPRESSION)
 	{
-		_AVLList al (&myVars);
-		myBody.ScanFForVariables(al,true,false,false);
-		al.ReorderList();
+		_SimpleList myVars;
+		{
+			_AVLList al (&myVars);
+			myBody.ScanFForVariables(al,true,false,false);
+			al.ReorderList();
+		}
+		for (long k=0; k<myVars.lLength; k++)
+			if (LocateVar(myVars.lData[k])->IsIndependent())
+				GetIndependentVars() << myVars.lData[k];
 	}
-	for (long k=0; k<myVars.lLength; k++)
-		if (LocateVar(myVars.lData[k])->IsIndependent())
-			GetIndependentVars() << myVars.lData[k];
+	else
+	{
+		WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & *arg & '\'');
+	}
 }
 
 //_______________________________________________________________________________________

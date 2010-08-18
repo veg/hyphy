@@ -329,7 +329,10 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	param = (_String*)parameters(3);
 	
 	if (!covariantVar)
-		Parse (&density, *param, theP,nil); // check if the formula is good
+	{
+		long varR = 0;
+		Parse (&density, *param, varR, theP,nil); // check if the formula is good
+	}
 	
 	if (!density.IsEmpty())
 	{
@@ -371,7 +374,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 		{
 			if(check)
 			{
-				Parse(&cumulative,*param,theP,nil);
+				long varR = 0;
+				Parse(&cumulative,*param,varR,theP,nil);
 				{
 					_SimpleList	  densityVars,
 								  existingVars (scannedVarsList);
@@ -424,9 +428,10 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 				density.Clear();
 				_Parameter dns = 1.0/(x_max-x_min);
 				errorMsg = _String(dns);
-				Parse(&density, errorMsg,nil,nil);
+				long varR = 0;
+				Parse(&density, errorMsg,varR,nil,nil);
 				errorMsg = _String(dns)&"*(_x_-"&_String(x_min)&")";
-				Parse(&cumulative, errorMsg,nil,nil);
+				Parse(&cumulative, errorMsg,varR,nil,nil);
 			}
 		}
 	}
@@ -554,7 +559,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 	if (parameters.countitems()>7) // aux mean formula
 	{
 		param = (_String*)parameters(7); 
-		Parse	 (&meanC,*param,theP,nil);
+		long  varR = 0;
+		Parse	 (&meanC,*param,varR,theP,nil);
 		
 		if (parameters.lLength>8)
 		{

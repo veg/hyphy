@@ -1228,9 +1228,10 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 							 
 					checkPointer ((BaseRef)(f&&f2));
 					
-					long 	 parseCode = Parse(f,*formulaString,nameSpacePrefix,f2);
+					long		  varRef,
+								  parseCode = Parse(f,*formulaString,varRef,nameSpacePrefix,f2);
 					
-					if (parseCode >=-1)
+					if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT)
 					{
 						if (f->AmISimple(stackDepth,varList))
 						{
@@ -1240,7 +1241,10 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 							
 							formulaeToConvert << (long)f;
 							
-							parseCodes 		  << parseCode;
+							if (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT)
+								parseCodes 		  << varRef;
+							else
+								parseCodes        << -1;
 							break;
 						}
 					}
@@ -2620,15 +2624,19 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 				 
 		_String* theFla 	= (_String*)parameters(0);
 		
-		long 	 parseCode = Parse(&f,(*theFla),chain.nameSpacePrefix,&f2);
+		
+		long 	varRef,
+				parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2);
 				
-		if (parseCode!=-2)
+		if (parseCode != HY_FORMULA_FAILED )
 		{
 			if (theFla->sData[theFla->sLength-1]!='}') // not a matrix constant
 			{
-				simpleParameters<<parseCode;
-				simpleParameters<<long (f.makeDynamic());
-				simpleParameters<<long (f2.makeDynamic());
+				simpleParameters	<<parseCode;
+				simpleParameters	<<long (f.makeDynamic());
+				simpleParameters	<<long (f2.makeDynamic());
+				simpleParameters    <<varRef;
+				
 				_SimpleList*		varList = new _SimpleList;
 				_AVLList			varListA (varList);
 				f.ScanFForVariables (varListA, true, true, true, true);
@@ -2639,7 +2647,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 			}
 			else
 			{
-				ExecuteFormula(&f,&f2,parseCode,chain.nameSpacePrefix);
+				ExecuteFormula(&f,&f2,parseCode,varRef,chain.nameSpacePrefix);
 				return;
 			}
 		}
@@ -2647,7 +2655,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 			return;
 	}
 
-	ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],chain.nameSpacePrefix);
+	ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
 	
 	if (terminateExecution)
 	{
@@ -2670,13 +2678,14 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 		if ( parameters.lLength && simpleParameters.lLength < 3)
 		{
 			_Formula f;
+			long	 varRef;
 			//printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 			
-			long status = Parse (&f, *(_String*)parameters(0), chain.nameSpacePrefix,nil);
+			long status = Parse (&f, *(_String*)parameters(0), varRef, chain.nameSpacePrefix,nil);
 		
 			//printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
 			
-			if (status==-1)
+			if (status== HY_FORMULA_EXPRESSION)
 				simpleParameters<<long(f.makeDynamic());
 		}
 			
@@ -2959,8 +2968,9 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 													thePrintObject = bgmList (loc);
 												else
 												{
-													Parse (&f,(*varname), chain.nameSpacePrefix,nil);
-													thePrintObject = f.Compute();												
+													long   varRef = -1;
+													if (Parse (&f,(*varname), varRef, chain.nameSpacePrefix,nil) == HY_FORMULA_EXPRESSION)
+														thePrintObject = f.Compute();												
 												}
 											}
 										}
@@ -4546,9 +4556,10 @@ void	  _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
 					defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
 			// try to parse the expression, confirm that it is a square  matrix, 
 			// and that it is a valid transition matrix
+			long				varRef = 0;
 			isExpressionBased = (_Formula*)checkPointer(new _Formula);
-			long parseCode = Parse(isExpressionBased,matrixExpression,chain.nameSpacePrefix);
-			if (parseCode != -1 || isExpressionBased->ObjectClass()!= MATRIX )
+			long parseCode = Parse(isExpressionBased,matrixExpression,varRef,chain.nameSpacePrefix);
+			if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX )
 			{
 				WarnError (defErrMsg );
 				return;

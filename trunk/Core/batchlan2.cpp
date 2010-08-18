@@ -1324,13 +1324,16 @@ bool	ExpressionCalculator (void)
 		if (checkForExit == _String ("exit"))
 			return false;
 	}
+	
 	_Formula  lhs,
 			  rhs;
-			  
-	long	  retCode = Parse(&lhs,data,nil,nil);
+	
+	long	   refV,
+			   retCode = Parse(&lhs, data, refV, nil,nil);
+	
 	if (!terminateExecution)
 	{
-		if (retCode == -1)
+		if (retCode == HY_FORMULA_EXPRESSION)
 		{
 			_PMathObj formRes = lhs.Compute();
 			if (!formRes)
@@ -2082,8 +2085,7 @@ void	  _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 			_Parameter      doDeferSet;
 			checkParameter (deferConstrainAssignment,doDeferSet,0.0);
 			bool			applyNow = CheckEqual(doDeferSet,0.0);
-			_String			*constraintAccumulator = new _String(128L,true);
-			checkPointer	(constraintAccumulator);
+			_String			*constraintAccumulator = (_String*)checkPointer(new _String(128L,true));
 			
 			if (applyNow)
 			{
@@ -2096,9 +2098,10 @@ void	  _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
 				replicateSource = (_String*)(theConstraints(ind1)->toStr());
 				if (applyNow)
 				{
-					_Formula dummy1, dummy2;
-					ind2 = Parse (&dummy1,*replicateSource,chain.nameSpacePrefix,&dummy2);
-					ExecuteFormula(&dummy1,&dummy2,ind2);
+					_Formula rhs, lhs;
+					long	 varRef;
+					ind2 = Parse (&rhs,*replicateSource,varRef,chain.nameSpacePrefix,&lhs);
+					ExecuteFormula(&rhs,&lhs,ind2,varRef);
 				}
 				(*constraintAccumulator) << replicateSource;
 				(*constraintAccumulator) << ';';

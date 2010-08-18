@@ -3633,9 +3633,16 @@ void	_HYChartWindow::HandleChartOptions		(void)
 			overlayString = (_String*)args(3);
 			res = true;
 			overlayPlot.Clear();
+			
+			
+			
 			if (overlayString->sLength)
-				if (Parse (&overlayPlot, *(_String*)args(3),nil,nil,true)!= -1)
+			{
+				long varRef = 0;
+			
+				if (Parse (&overlayPlot, *(_String*)args(3),varRef,nil,nil,true)!= HY_FORMULA_EXPRESSION)
 					overlayPlot.Clear();
+			}
 		}
 		else
 			DeleteObject (overlayString);
@@ -3685,8 +3692,12 @@ void	_HYChartWindow::SetLabels		(_String xx, _String yy, _String zz, long vv, _S
 	overlayPlot.Clear();
 	
 	if (fla.sLength)
-		if (Parse (&overlayPlot, fla ,nil,nil,true)!= -1)
+	{
+		long varRef = 0;
+		
+		if (Parse (&overlayPlot, fla,varRef,nil,nil,true)!= HY_FORMULA_EXPRESSION)
 			overlayPlot.Clear();
+	}
 	
 	xAxis3DScale = xs;
 	yAxis3DScale = ys;

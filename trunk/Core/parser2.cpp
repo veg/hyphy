@@ -3217,7 +3217,8 @@ _PMathObj _FString::Differentiate (_PMathObj p)
 	}	
 	
 	_String copyMe (*theString);
-	if (Parse (&F,copyMe) == -1)
+	long	varRef;
+	if (Parse (&F,copyMe, varRef) == HY_FORMULA_EXPRESSION)
 	{
 		_Formula *DF = F.Differentiate (*X,true);
 		if (DF)
@@ -3692,30 +3693,56 @@ _PMathObj	_FString::CountGlobalObjects (void)
 
 //__________________________________________________________________________________
 
-long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, _VariableContainer* nameSpace)
+long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _VariableContainer* nameSpace)
 {
-	if (code>=-1)
+	if (code == HY_FORMULA_EXPRESSION || code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT)
 	{
 		_PMathObj  formulaValue = f->Compute(0, nameSpace);
 		if (!formulaValue)
 			return 0;
 		
-		if (code>=0)
+		if (code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT)
 		{
-			LocateVar (code)->SetValue (formulaValue);
+			LocateVar (reference)->SetValue (formulaValue);
 			return 1;
 		}
 		return 0;		
 	}
 	
-	if (code<-4)
+	if (code == HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT)
 	{
 		_Formula fFixed;
 		fFixed.DuplicateReference(f);
-		LocateVar (-code-5)->SetFormula (fFixed);
+		LocateVar (reference)->SetFormula (fFixed);
 		return 1;
 	}
-	if ( code==-3 || code==-4 )
+	
+	if (code == HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT || code == HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT)
+	{
+		if (f2->IsEmpty())
+		{
+			WarnError ("Empty RHS in a constraint assignment.");
+			return 0;
+		}
+
+		_PMathObj varObj = f2->Compute();
+		if (varObj->ObjectClass()!=NUMBER)
+		{
+			WarnError ("Not a numeric RHS in a constraint assignment.");
+			return 0;
+		}
+		
+		_Variable * theV = LocateVar (reference);
+		
+		if (code == HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT )
+			theV->SetBounds(varObj->Value(),theV->GetUpperBound());
+		else
+			theV->SetBounds(theV->GetLowerBound(),varObj->Value());
+		
+	}
+	
+	
+	if ( code== HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT || code== HY_FORMULA_FORMULA_VALUE_ASSIGNMENT )
 	{
 		_Formula newF;
 		
@@ -3725,7 +3752,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, _VariableContainer
 			return 0;
 		}
 		
-		if (code == -4)
+		if (code == HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT)
 			newF.DuplicateReference(f2);
 		else
 			newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute(0, nameSpace)->makeDynamic()));
@@ -3858,15 +3885,34 @@ _String		alpha 	("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
 
 //__________________________________________________________________________________
 
-long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f2, bool flagErrors)
-// returns: 
-// -2		- failed formula
-// -1		- valid formula - no variable assignment
-// -3		- regular '=' with formula receptacle
-// -4		= ":=" with formula receptacle
-// <-4		= ":=" with variable receptacle
-// >=0	   "=" with variable receptacle
+long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContainer* theParent, _Formula* f2, bool flagErrors)
+// SLKP 20100817: decoupled return code from variable reference return
 
+// returns: 
+
+
+/*
+ 
+ case						| return value									| variableReference value
+
+ parse failed				| HY_FORMULA_FAILED								| undefined
+ expresion (no LHS)			| HY_FORMULA_EXPRESSION							| undefined
+ z = x/y					| HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT			| index of the LHS
+ z := x/y					| HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT		| index of the LHS
+ object[a] := x/y			| HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT			| undefined
+ object[a] = x/y			| HY_FORMULA_FORMULA_VALUE_ASSIGNMENT			| undefined
+ z :< expr					| HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT	| index of the LHS
+ z :> expr					| HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT	| index of the LHS
+ 
+
+ -1		- valid formula - no variable assignment, e.g. x + y
+ -3		- regular '=' with formula receptacle, e.g. matrix [a] = 1
+ -4		= ":=" with formula receptacle, e.g. matrix [1] := x + y
+ <-4		= ":=" with variable receptacle, e.g. z := x / y
+ >=0	    "=" with variable receptacle, e.g. z = x/y
+
+*/
+ 
 {
 	static bool inAssignment = false;
 	
@@ -3945,13 +3991,13 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			if (level<0) 
 			{
 				if (flagErrors) WarnError (_String("Unbalanced Parentheses in Expression:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			
 			if (lookAtMe ==',' && (level<1 || squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength] == level))
 			{
 				if (flagErrors) WarnError (_String("Parameter list is out of context:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			
 			if (levelOps->lLength) // there are some buffered operations left
@@ -3959,7 +4005,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				if (levelOps->lLength > 3 || levelData->lLength > 2)
 				{
 					if (flagErrors) WarnError (_String ("Syntax error in expression:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 				
 				for (int i = 0; i<levelData->countitems(); i++)
@@ -3977,7 +4023,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				 if (levelData->lLength>1)
 				 {
 					if (flagErrors) WarnError (_String ("Syntax error in expression:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				 }
 				 else
 				 	if (levelData->lLength)
@@ -4006,7 +4052,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				if (!squareBrackets.lLength || squareBrackets.lData [squareBrackets.lLength-1] != level + 1)
 				{
 					if (flagErrors) WarnError (_String ("Unexpected ']': ")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 				squareBrackets.Delete(squareBrackets.lLength-1);
 				curOp = "MAccess";
@@ -4017,7 +4063,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					if (previousMaccess->GetCode () != curOp)
 					{
 						if (flagErrors) WarnError (_String ("Internal error in Parse. Incorrect matrix access token code: ")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-						return -2;
+						return HY_FORMULA_FAILED;
 					}
 					if (previousMaccess->GetNoTerms() > 2)
 					{
@@ -4065,28 +4111,30 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					if (!sss->Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS)))
 						check = false;
 					else
-						(((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode())++; 
+						(((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode()) = HY_OP_CODE_MCOORD; 
 						/* this will break if another operation is inserted between MAccess and MCoord */ 
 						//*sss = "MCoord";
 				}
 				else
-					if (!f->IsEmpty() || levelData->countitems()!=1 || !((_Operation*)(*levelData)(0))->IsAVariable())
-						check = false;
+					if (!f->IsEmpty() || 
+						levelData->countitems()!=1 || 
+						!((_Operation*)(*levelData)(0))->IsAVariable())
+							check = false;
 			}
 			if (!check)
 			{
 				if (flagErrors) WarnError (_String("Can't assign like this:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			
 			inAssignment = true;
 			_String ss (s,i+1,-1);
-			
 			_Formula  newF;
-			if (Parse(&newF,ss,theParent,f2,flagErrors)==-2) 
+			long	  refV;
+			if (Parse(&newF,ss,refV,theParent,f2,flagErrors) != HY_FORMULA_EXPRESSION) 
 			{
 				inAssignment = false;
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			inAssignment = false;
 			if (!sss)
@@ -4101,16 +4149,12 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						if (!varObj)
 						{
 							if (flagErrors) WarnError (_String("Invalid RHS in an assignment:")&s.Cut(i+1,-1));
-							return -2;
+							return HY_FORMULA_FAILED;
 						}
 						if (twoToken && s.getChar(i-1) == '+')
-						{
 							theV->SetValue(theV->Compute()->Execute(HY_OP_CODE_ADD,varObj));
-						}
 						else
-						{
 							theV->SetValue(varObj);
-						}
 					}
 					else
 						theV->SetFormula (newF);
@@ -4127,7 +4171,10 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					f->Duplicate((BaseRef)&newF);
 				}
 				twoToken     = false;
-				return (s.getChar(i-1)!=':')?theV->GetAVariable():-theV->GetAVariable()-5;
+				
+				variableReference = theV->GetAVariable();
+				
+				return (s.getChar(i-1)==':')?HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT:HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT;
 			}
 			else
 			// matrix/associative array element assignment
@@ -4224,10 +4271,10 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					if (anError)
 					{
 						if (flagErrors) WarnError (_String("Invalid Matrix/Associative List Ident Supplied:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-						return -2;
+						return HY_FORMULA_FAILED;
 					}
 					
-					return -1;
+					return HY_FORMULA_EXPRESSION;
 				}
 				else
 				{
@@ -4235,7 +4282,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					f2->Duplicate   ((BaseRef)&newF);
 					if (last0 == 0)
 						((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-					return isSimple?-3:-4;
+					return isSimple?HY_FORMULA_FORMULA_VALUE_ASSIGNMENT:HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT;
 				}				
 			}
 		}
@@ -4244,35 +4291,50 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 		{
 			if (inAssignment||(!f->IsEmpty())||(levelData->countitems()!=1)||!(((_Operation*)(*levelData)(0))->IsAVariable()))
 			{
-				if (flagErrors) WarnError (_String("Can't set bounds like this:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				if (flagErrors) WarnError (_String("Can't set bounds like this: ")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
+				return HY_FORMULA_FAILED;
 			}
 			
 			inAssignment = true;
+			
 			_String ss (s,i+1,-1);
 			_Formula newF;
-			if (Parse(&newF,ss,theParent,f2,flagErrors) == -2) 
+			
+			long	 refV;
+			
+			if (Parse(&newF,ss,refV,theParent,f2,flagErrors) != HY_FORMULA_EXPRESSION) 
 			{		
 				inAssignment = false;
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
+			
+			
 			inAssignment = false;
 			twoToken = false;
 			_Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
 			
-			_PMathObj varObj = newF.Compute();
-			if (varObj->ObjectClass()!=NUMBER)
+			if (!f2)
 			{
-				if (flagErrors) WarnError (_String("Variable bound must evaluate to a number:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				_PMathObj varObj = newF.Compute();
+				if (varObj->ObjectClass()!=NUMBER)
+				{
+					if (flagErrors) WarnError (_String("Variable bound must evaluate to a number: ")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
+					return HY_FORMULA_FAILED;
+				}
+				
+				if (s.getChar(i)=='>')
+					theV->SetBounds(varObj->Value(),theV->GetUpperBound());
+				else
+					theV->SetBounds(theV->GetLowerBound(),varObj->Value());
+			}
+			else
+			{
+				f2->Duplicate   ((BaseRef)&newF);
+				variableReference = theV->GetAVariable();
+				return (s.getChar(i)=='>')?HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT:HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT;				
 			}
 				
-			if (s.getChar(i)=='>')
-				theV->SetBounds(varObj->Value(),theV->GetUpperBound());
-			else
-				theV->SetBounds(theV->GetLowerBound(),varObj->Value());
-				
-			return -1;
+			return HY_FORMULA_EXPRESSION;
 		}
 			
 			
@@ -4288,7 +4350,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				if (j<0)
 				{
 					if (flagErrors) WarnError (_String("Poorly formed matrix/associative array construct:")&s.Cut(i,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 					
 				_String matrixDef   (s,i,j);
@@ -4304,7 +4366,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						if (!theList->ParseStringRepresentation (matrixDef,flagErrors, theParent))
 						{
 							if (flagErrors) WarnError (_String("Poorly formed associative array construct:")&s.Cut(i,-1));
-							return -2;
+							return HY_FORMULA_FAILED;
 						}
 					}
 					
@@ -4322,7 +4384,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				continue;
 			}
 			else 
-				return -2;
+				return HY_FORMULA_FAILED;
 		}
 
 		if (s.getChar(i) == '[') // opening [
@@ -4342,7 +4404,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				if (levelData->lLength == 0 && f->IsEmpty())
 				{
 					if (flagErrors) WarnError (_String("[..] must be preceded by an object to index:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 				
 				if (levelData->lLength)
@@ -4442,7 +4504,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						if (j == inPlaceID)
 						{
 							if (flagErrors) WarnError (_String("Attempted to string substitute an empty quotation:")&s.Cut(0,i+j)&"?"&s.Cut(i+j+1,-1));
-							return -2;
+							return HY_FORMULA_FAILED;
 						}
 						else
 						{
@@ -4452,7 +4514,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 							if (!inPlaceVar || inPlaceVar->ObjectClass()!=STRING)
 							{
 								if (flagErrors) WarnError (_String("Attempted to string substitute something other that a string variable:")&s.Cut(0,i+j)&"?"&s.Cut(i+j+1,-1));
-								return -2;
+								return HY_FORMULA_FAILED;
 							}
 							
 							(*literal) << ((_FString*)(inPlaceVar->Compute()))->theString;
@@ -4472,7 +4534,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			if (inPlaceID >= 0)
 			{
 				if (flagErrors) WarnError (_String("Unterminated string substitution inside a literal:")&s.Cut(0,i+j)&"?"&s.Cut(i+j+1,-1));
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			_FString   *fString = new _FString (*literal);
 			DeleteObject (literal);
@@ -4541,7 +4603,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 					if (realVarLoc<0) // bad instant variable reference
 					{
 						if (flagErrors) WarnError (_String("Attempted to take value of undeclared variable:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-						return -2;
+						return HY_FORMULA_FAILED;
 					}
 					if (!f2) // 03/25/2004 ? Confused why the else
 					{
@@ -4646,7 +4708,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			if ((levelData->countitems()==0)&&(s[i-curOp.sLength]!=')')&&(storage!=')')&&(s[i-curOp.sLength]!=']'))
 			{
 				if (flagErrors) WarnError (_String("Bad Binary Operator Placement:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return -2;
+				return HY_FORMULA_FAILED;
 			}
 			else
 			{
@@ -4677,7 +4739,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			{
 				levelOps->AppendNewInstance (new _Operation (curOp,2));
 				if (terminateExecution)
-					return -2;
+					return HY_FORMULA_FAILED;
 				continue;
 			}
 			
@@ -4700,7 +4762,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			{
 				levelOps->AppendNewInstance (new _Operation (curOp,2));
 				if (terminateExecution)
-					return -2;
+					return HY_FORMULA_FAILED;
 				continue;
 			}
 			
@@ -4721,7 +4783,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 			}
 			levelOps->AppendNewInstance (new _Operation (curOp,2));
 			if (terminateExecution)
-				return -2;
+				return HY_FORMULA_FAILED;
 			continue;
 		}
 		else
@@ -4741,7 +4803,7 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 						continue;
 					}
 					if (flagErrors) WarnError ((_String)"Bad unary operator placement " &s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 			}
 			else
@@ -4749,14 +4811,14 @@ long		Parse (_Formula* f, _String& s, _VariableContainer* theParent, _Formula* f
 				if (!HalfOps.contains(s.getChar(i)))
 				{
 					if (flagErrors) WarnError ((_String)"Bad symbols in expression " &s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-					return -2;
+					return HY_FORMULA_FAILED;
 				}
 				else
 					twoToken = true;
 					
 			}
 	}
-	return -1;
+	return HY_FORMULA_EXPRESSION;
 }
 
 
@@ -4765,7 +4827,9 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, bool errors)
 // the parser itself
 {
 	theTree = nil;
-	if (Parse (this, s, theParent,nil,errors)==-2)	Clear();
+	long	  refV;
+	if (Parse (this, s, refV, theParent,nil,errors)== HY_FORMULA_FAILED)	
+		Clear();
 }
 
 //__________________________________________________________________________________

@@ -2795,13 +2795,14 @@ void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool is
 	_String input (input2);
 	if (input.getChar(0)!='"') // a formula
 	{
-		_Formula fmla;
-		long	outcome = Parse (&fmla, input, nil,nil);
-		if (outcome!=-1)
+		_Formula fmla, lhs;
+		
+		long	 varRef = 0,
+		         outcome = Parse (&fmla, input, varRef, nil,&lhs);
+		
+		if (outcome!=HY_FORMULA_EXPRESSION)
 		{
-			_String errMsg (input);
-			errMsg = errMsg&_String(" is an invalid partition specification");
-			WarnError (errMsg);
+			WarnError (input & _String(" is an invalid partition specification"));
 			return;
 		}
 		_PMathObj	fV = fmla.Compute();

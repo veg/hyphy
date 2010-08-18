@@ -565,8 +565,13 @@ void	Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities, _S
 	if (expression) // probabilistic rule 
 	{
 		checkPointer (aFormula = new _Formula);
+		
 		_String  anExpression = *expression->theString;
-		if (Parse 	(aFormula, anExpression) != -1) // not a valid expression
+		
+		_Formula lhs;
+		long	 varCode;
+		
+		if (Parse 	(aFormula, anExpression, varCode, nil, &lhs) != HY_FORMULA_EXPRESSION) // not a valid expression
 			errorMessage = _String ("Invalid probability expression: ") & expression->theString;
 		else
 			ruleProbabilities << expression->theString;
@@ -724,7 +729,7 @@ void	Scfg::RandomSampleVerify  (long samples)
 				if ((errMsg=VerifyValues ()))
 				{
 					char buf [256];
-					sprintf(buf, "Breaking from RandomSampleVerify() on iteration %d of %d", it, samples);
+					sprintf(buf, "Breaking from RandomSampleVerify() on iteration %ld of %ld", it, samples);
 					BufferToConsole(buf);
 					
 					break;
@@ -971,8 +976,6 @@ _Parameter 		Scfg::Compute (void)
 				useJP;
 	
 	checkParameter (useJeffreysPrior, useJP, 0.0);
-	
-	char buf [256];
 	
 	// update the probability matrix 
 	probabilities.Compute ();
@@ -1754,7 +1757,7 @@ _Matrix* 	 Scfg::Optimize (void)	/* created by AFYP, 2006-06-20 */
 				if ( thisRule->EqualFormula (thatRule) )
 				{
 					*thisLink << nextrule;
-					sprintf (buf, "linked rule %d to %d\n", ruleCount+1, nextrule+1);
+					sprintf (buf, "linked rule %ld to %ld\n", ruleCount+1, nextrule+1);
 					BufferToConsole (buf);
 				}
 			}
@@ -2104,14 +2107,14 @@ _Matrix* 	 Scfg::Optimize (void)	/* created by AFYP, 2006-06-20 */
 		
 		if (newLk < oldLk)
 		{
-			sprintf (buf, "\nERROR: log L = %f is lower than previous value %f at step %d \n", newLk, oldLk, rep);
+			sprintf (buf, "\nERROR: log L = %f is lower than previous value %f at step %ld \n", newLk, oldLk, rep);
 			BufferToConsole (buf);
 			// break;
 		}
 		
 	} while (fabs(newLk - oldLk) > SCFG_OPTIMIZATION_THRESHOLD);	// should be non-absolute - afyp 11/30/2006
 	
-	sprintf (buf, "Used %d iterations in expectation maximization.\n", rep);
+	sprintf (buf, "Used %ld iterations in expectation maximization.\n", rep);
 	BufferToConsole (buf);
 	
 	delete	thisLink;	// release allocated memory
@@ -2320,8 +2323,6 @@ void	Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX * t
 {
 	//	for sub-string (i,j) and non-terminal (v), string of length (stringL)
 	
-	char	buf [256];
-	char	nodename [256];
 	long	stringL			= ((_String**)corpusChar.lData)[stringIndex]->sLength,
 			tripletIndex	= scfgIndexIntoAnArray(i,j,v,stringL),
 			avlIndex		= theAVL -> Find ((BaseRef)tripletIndex);

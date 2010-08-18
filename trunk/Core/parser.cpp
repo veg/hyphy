@@ -770,7 +770,7 @@ void	SetupOperationLists (void)
 		BuiltInFunctions.AppendNewInstance (new _String ("Cos"));
 		
 		//HY_OP_CODE_DIFF
-		BuiltInFunctions.AppendNewInstance (new _String ("D"));
+		BuiltInFunctions.AppendNewInstance (new _String ("Differentiate"));
 		FunctionNameList << BuiltInFunctions (HY_OP_CODE_DIFF);
 		FunctionArgumentCount << 2;
 
@@ -2267,6 +2267,19 @@ void  _Variable::CheckAndSet (_Parameter c, bool oob) // set the value of the va
 
 	varValue =  new _Constant(theValue);
 }
+
+//__________________________________________________________________________________
+void	_Variable::SetBounds (_Parameter lb, _Parameter ub)
+{	
+	lowerBound = lb; 
+	upperBound = ub;
+	
+	/*_String * myName = GetName();
+	if (myName)
+		ReportWarning (_String ("Set variable bounds for '") & *myName & "' to [" & lb & ',' & ub & "].");
+	 */
+}
+
 
 //__________________________________________________________________________________
 void	_Variable::ClearConstraints (void)

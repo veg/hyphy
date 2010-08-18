@@ -1756,7 +1756,7 @@ int main (void)
 			BufferToConsole ("One processor detected.\n");
 		else
 		{
-			sprintf (buffer,"%d processors detected.\n", systemCPUCount);
+			sprintf (buffer,"%ld processors detected.\n", systemCPUCount);
 			BufferToConsole (buffer);
 		}
 	#endif

@@ -148,6 +148,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // END OPCODES
 
+// START FORMULA RETURN CODES
+
+#define  HY_FORMULA_EXPRESSION							0
+#define	 HY_FORMULA_FAILED								(-1)
+#define  HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT			1
+#define  HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT			2
+#define  HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT			3
+#define  HY_FORMULA_FORMULA_VALUE_ASSIGNMENT			4
+#define  HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT		5
+#define  HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT		6
+
+
+
+
+// END FORMULA RETURN CODES
+
 class   _Variable;
 class   _VariableContainer;
 
@@ -460,8 +476,8 @@ class 	_Formula { // a computational formula
 		bool	 	IsEmpty				(void); // is there anything in the formula
 		long	 	NumberOperations 	(void); // how many ops in the formula?
 	
-friend	long	  	Parse 				(_Formula*, _String&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
-friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long, _VariableContainer* = nil); 
+friend	long	  	Parse 				(_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
+friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long, long, _VariableContainer* = nil); 
 										// the execution block for "compiled formulae
 	/*  
 	 SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference" 
@@ -627,9 +643,8 @@ class _Variable : public _Constant {
 	virtual		bool	    IsContainer (void) 
 											{ return false;}
 	
-				void	    SetBounds (_Parameter lb, _Parameter ub) 
-											{lowerBound = lb; upperBound = ub;}
-				
+				void	    SetBounds (_Parameter lb, _Parameter ub);
+					
 				_Parameter 	GetLowerBound (void) 
 											{ return lowerBound; }
 				_Parameter 	GetUpperBound (void) 

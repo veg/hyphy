@@ -526,8 +526,7 @@ long		ComputeHashMarkPlacement  (_HYRect line, _Parameter min, _Parameter max, _
 		else
 		{
 			_Parameter tracer = minLabel;
-			long res  = 0,
-				 last = -100000,
+			long last = -100000,
 				 k,
 				 sw;
 				 
