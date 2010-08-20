@@ -2046,6 +2046,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 							siteMatrix->theData[partID] *= acquireScalerMultiplier(diff);
 					}
 					
+				
 					
 					result += computingTemplate->Compute()->Value();
 					if (minScalingFactor)
@@ -3914,12 +3915,15 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 {	
 	char		   buffer [1024];
 	
+	
  	if (lockedLFID != -1)
  	{
  		_String nrerr ("Optimize() could not be executed, because another optimization is already in progress.");
  		WarnError (nrerr);
 		return new _Matrix (1,1,false,true);
  	}
+	
+	RescanAllVariables ();
  	
  	if (indexInd.lLength == 0)
  	{

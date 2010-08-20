@@ -4469,8 +4469,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 			long j             = 1,
 				 inPlaceID	   = -1;
 				
-			_String * literal = new _String (16,true);
-			checkPointer (literal);
+			_String * literal = (_String*)checkPointer(new _String (16,true));
 			
 			while (i+j<s.sLength)
 			{
@@ -4499,7 +4498,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 				if (aChar == '`')
 				{
 					if (inPlaceID < 0)
-						j = inPlaceID = j+1;
+						inPlaceID = ++j;
 					else
 						if (j == inPlaceID)
 						{
@@ -4508,16 +4507,16 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 						}
 						else
 						{
-							_String		inPlaceVID (s,inPlaceID,j-1);
-							_Variable	*inPlaceVar = FetchVar (LocateVarByName (inPlaceVID));
+							_String		inPlaceVID (s,i+inPlaceID,i+j-1);
+							_FString	*inPlaceValue = (_FString*)FetchObjectFromVariableByType (&inPlaceVID, STRING);
 							
-							if (!inPlaceVar || inPlaceVar->ObjectClass()!=STRING)
+							if (!inPlaceValue)
 							{
 								if (flagErrors) WarnError (_String("Attempted to string substitute something other that a string variable:")&s.Cut(0,i+j)&"?"&s.Cut(i+j+1,-1));
 								return HY_FORMULA_FAILED;
 							}
 							
-							(*literal) << ((_FString*)(inPlaceVar->Compute()))->theString;
+							(*literal) << inPlaceValue->theString;
 							inPlaceID = -1;
 							j++;
 						}
