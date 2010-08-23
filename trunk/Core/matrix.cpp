@@ -9446,7 +9446,7 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
 	{
 		if (opCode == HY_OP_CODE_ADD)
 		{
-			_PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->Add (inObject);
+			_PMathObj newObject = ((_PMathObj)avl.GetXtra(f))->Execute (HY_OP_CODE_ADD,inObject);
 			if (repl == false)
 				DeleteObject (inObject);
 			else

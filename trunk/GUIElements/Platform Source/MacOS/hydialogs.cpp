@@ -143,20 +143,13 @@ pascal Boolean HYOpenTextPreview (NavCBRecPtr callBackParms, void *)
 _String	MacSimpleFileOpen (void)
 {
 	if (previewFunctionHook == nil)
-	#ifdef TARGET_API_MAC_CARBON
 		previewFunctionHook = NewNavPreviewUPP(HYOpenTextPreview);
-	#else
-		previewFunctionHook = NewNavPreviewProc((NavPreviewProcPtr)HYOpenTextPreview);	
-	#endif
+	
 	_String 			feedback;
 	OSErr     			navErr;
 	NavReplyRecord		navRR;
 	NavDialogOptions	navDO;
-	#ifdef TARGET_API_MAC_CARBON
-		NavEventUPP			navEF = NewNavEventUPP (HYOpenEventProc);
-	#else
-		NavEventUPP			navEF = NewNavEventProc (HYOpenEventProc);
-	#endif
+	NavEventUPP			navEF = NewNavEventUPP (HYOpenEventProc);
 	NavPreviewUPP		navPF = previewFunctionHook;
 	
 	terminateExecution 		 = true;
@@ -383,28 +376,20 @@ bool	PopUpFileDialog(_String ps, _String* defaultLocation)
 	
 	StringToStr255 (ps, promptS);
 	
-	#ifdef TARGET_API_MAC_CARBON
-		previewFunctionHook = NewNavPreviewUPP(HYOpenTextPreview);
-	#else
-		previewFunctionHook = NewNavPreviewProc((NavPreviewProcPtr)HYOpenTextPreview);	
-	#endif
+	previewFunctionHook = NewNavPreviewUPP(HYOpenTextPreview);
 	OSErr     			navErr;
 	NavReplyRecord		navRR;
 	NavDialogOptions	navDO;
-	#ifdef TARGET_API_MAC_CARBON
-		NavEventUPP		navEF = NewNavEventUPP (HYOpenEventProc);
-	#else
-		NavEventUPP		navEF = NewNavEventProc (HYOpenEventProc);
-	#endif
+	NavEventUPP			navEF = NewNavEventUPP (HYOpenEventProc);
 	NavPreviewUPP		navPF = previewFunctionHook;
 	
-	NavTypeListHandle	navLH =  (NavTypeListHandle)NewHandle(sizeof(NavTypeList) + (2 * sizeof(OSType)));
+	NavTypeListHandle	navLH =  (NavTypeListHandle)NewHandle(sizeof(NavTypeList) + (3 * sizeof(OSType)));
    
-    (*navLH)->componentSignature = 'MuSe';
-    (*navLH)->osTypeCount = 2;
-    (*navLH)->osType[0] = '****';
-    (*navLH)->osType[1] = 'TEXT';
-	
+    (*navLH)->componentSignature = kNavGenericSignature;
+    (*navLH)->osTypeCount		 = 3;
+    (*navLH)->osType[0]			 = kNavGenericSignature;
+    (*navLH)->osType[1]			 = 'TEXT';
+	(*navLH)->osType[2]			 = 'text';
 	
 	navDO.version 		=	kNavDialogOptionsVersion;
 	navDO.location 		= 	(Point){-1,-1};
@@ -440,6 +425,19 @@ bool	PopUpFileDialog(_String ps, _String* defaultLocation)
 		AEDisposeDesc (&defDesc);
 	}
 	else
+	{
+	/*	NavDialogRef		   daBox;
+		navErr = NavCreateGetFileDialog (
+							    &navDO,
+								&navRR,
+								navLH,
+								navEF,
+								navPF,
+								NULL,
+								NULL,
+								&daBox
+							   );*/
+		
 		navErr = NavGetFile (nil,
 							 &navRR,
 							 &navDO,
@@ -448,6 +446,7 @@ bool	PopUpFileDialog(_String ps, _String* defaultLocation)
 							 nil,
 							 navLH,
 							 nil);
+	}
 	
 	if (navErr == noErr)
 	{
@@ -458,8 +457,8 @@ bool	PopUpFileDialog(_String ps, _String* defaultLocation)
 			{
 				if (countAED==1)
 				{
-					char 	fileRec [2048];
-					Size	actualSize;
+					char		fileRec [2048];
+					Size		actualSize;
 					AEKeyword	keywd;
 					DescType	returnedType;
 					FSSpec*		fSR;
@@ -477,13 +476,24 @@ bool	PopUpFileDialog(_String ps, _String* defaultLocation)
 						else
 							*argFileName = _String ((char*)(fSR->name+1));
 							
-						long parentDirID = fSR->parID;
+						long	   parentDirID = fSR->parID;
 						CInfoPBRec infoRec;
 						HFileInfo* accessInfo = (HFileInfo*)&infoRec;
-						Str63 fName;
+						Str63	   fName;
 						accessInfo->ioVRefNum = fSR->vRefNum;
 						accessInfo->ioNamePtr = fName;
 						accessInfo->ioFDirIndex = -1;
+						
+						
+						/*FSRefParam			 fileBlock;
+						FSCatalogInfo		 catInfo;
+						fileBlock.ref		 = fSR;
+						fileBlock.whichInfo  =  kFSCatInfoFinderInfo |  kFSCatInfoFinderXInfo;
+						fileBlock.spec		 = nil;
+						fileBlock.catInfo    = &catInfo;
+						
+						PBGetCatalogInfoSync (&fileBlock);*/
+						
 						while (parentDirID!=fsRtParID)
 						{
 							accessInfo->ioDirID = parentDirID;

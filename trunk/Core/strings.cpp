@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020100810beta");
+_String	  __KERNEL__VERSION__ ("2.0020100823beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__

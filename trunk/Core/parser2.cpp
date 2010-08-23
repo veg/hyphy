@@ -201,11 +201,7 @@ void _Formula::DuplicateReference  (_Formula* f)
 	{
 		 _Operation *theO = ((_Operation*)f->theFormula(i));
 		 if (theO->GetAVariable()==-2)
-		 {
-			_PMathObj theObj = LocateVar (-theO->GetNoTerms()-1)->Compute();
-			_Operation newOp ((_PMathObj)theObj->makeDynamic());
-			theFormula&& &newOp;
-		 }
+			theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-theO->GetNoTerms()-1)->Compute()->makeDynamic()));
 		 else
 		 	theFormula&& theO;
 	}
@@ -3742,7 +3738,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 	}
 	
 	
-	if ( code== HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT || code== HY_FORMULA_FORMULA_VALUE_ASSIGNMENT )
+	if ( code== HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT || code== HY_FORMULA_FORMULA_VALUE_ASSIGNMENT || code == HY_FORMULA_FORMULA_VALUE_INCREMENT)
 	{
 		_Formula newF;
 		
@@ -3756,7 +3752,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 			newF.DuplicateReference(f2);
 		else
 			newF.theFormula.AppendNewInstance(new _Operation((_PMathObj)f2->Compute(0, nameSpace)->makeDynamic()));
-
+			
 		long stackD = -1,
 			 last0	= 0;
 			 
@@ -3769,8 +3765,6 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 
 		_Matrix			 * mmx = nil;
 		_AssociativeList * mma = nil;
-		
-		bool			 anError = false;
 		
 		if (last0 > 0)
 		{
@@ -3801,17 +3795,25 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 						((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
 					}
 		}
-					
-		if (mmx)
+		_PMathObj coordMx = nil;
+		if (mma || mmx)
 		{
-			_PMathObj coordMx = f->Compute(last0);
-			
+			coordMx = f->Compute(last0);
 			if (!coordMx|| coordMx->ObjectClass() != MATRIX)
 			{
 				WarnError (_String("Matrix expected but not supplied."));
 				return 0;
-			}
-			
+			}		
+		}
+		else
+		{
+			WarnError ("Matrix/List LHS expected but not supplied.");
+			return 0;
+		}
+		
+					
+		if (mmx) // matrix LHS
+		{
 			_Matrix * mcoord = (_Matrix*)coordMx;
 			
 			long hC = mcoord->theData[0], 
@@ -3820,7 +3822,7 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 			if (mmx->CheckCoordinates (hC,vC))
 			{
 				if (!ANALYTIC_COMPUTATION_FLAG)
-					mmx->MStore (hC, vC, newF);
+					mmx->MStore (hC, vC, newF, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
 				else
 				{
 					_PMathObj newP = newF.ConstructPolynomial();
@@ -3833,25 +3835,8 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 			}
 		}
 		else
-			if (mma)
-			{
-				_PMathObj coordMx = f->Compute(last0);
-				if (!coordMx|| coordMx->ObjectClass() != STRING)
-				{
-					WarnError (_String ("List keys must be strings."));
-					return 0;
-				}
-				
-				mma->MStore (coordMx, newF.Compute());
-			}
-
-
-		if (anError)
-		{
-			_String errMsg ("Matrix/List expected but not supplied.");
-			WarnError (errMsg);
-			return 0;
-		}
+			if (mma) // Associative array LHS
+					mma->MStore (coordMx, newF.Compute(), true, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
 		
 		return 1;	
 	}
@@ -4055,7 +4040,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					return HY_FORMULA_FAILED;
 				}
 				squareBrackets.Delete(squareBrackets.lLength-1);
-				curOp = "MAccess";
+				curOp = *(_String*)BuiltInFunctions(HY_OP_CODE_MACCESS);
 				if (mergeMAccess.lLength && mergeMAccess.lData[mergeMAccess.lLength-1] >= 0 && mergeMAccessLevel.lData[mergeMAccessLevel.lLength-1] == level)
 				{
 					long mergeIndex				 = mergeMAccess.lData[mergeMAccess.lLength-1];
@@ -4069,8 +4054,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					{
 						mergeMAccess.Delete (mergeMAccess.lLength-1,false);
 						mergeMAccessLevel.Delete (mergeMAccessLevel.lLength-1,false);
-						_Operation theVar (curOp ,2);
-						f->theFormula&&(&theVar);
+						f->theFormula.AppendNewInstance(new _Operation (curOp ,2));
 					}
 					else
 					{
@@ -4282,7 +4266,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					f2->Duplicate   ((BaseRef)&newF);
 					if (last0 == 0)
 						((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
-					return isSimple?HY_FORMULA_FORMULA_VALUE_ASSIGNMENT:HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT;
+					return isSimple?((s.getChar(i-1) == '+')?HY_FORMULA_FORMULA_VALUE_INCREMENT:HY_FORMULA_FORMULA_VALUE_ASSIGNMENT):HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT;
 				}				
 			}
 		}
