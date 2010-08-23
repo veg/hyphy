@@ -206,7 +206,8 @@ _String
 	optimizationStringQuantum		("OPTIMIZATION_PROGRESS_QUANTUM"),
 	assumeReversible				("ASSUME_REVERSIBLE_MODELS"),
 	categoryMatrixScalers			(".site_scalers"),
-	categoryLogMultiplier			(".log_scale_multiplier");
+	categoryLogMultiplier			(".log_scale_multiplier"),
+	optimizationHardLimit			("OPTIMIZATION_TIME_HARD_LIMIT");
 	
 	
 
@@ -3916,10 +3917,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	char		   buffer [1024];
 	
 	
+	
  	if (lockedLFID != -1)
  	{
- 		_String nrerr ("Optimize() could not be executed, because another optimization is already in progress.");
- 		WarnError (nrerr);
+  		WarnError ("Optimize() could not be executed, because another optimization is already in progress.");
 		return new _Matrix (1,1,false,true);
  	}
 	
@@ -3964,6 +3965,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 
 
 	TimerDifferenceFunction (false);
+	
+	_Parameter				hardLimitOnOptimizationValue;
+	checkParameter			(optimizationHardLimit, hardLimitOnOptimizationValue, INFINITY);
+	
+	hardLimitOnOptimizationValue = MAX (hardLimitOnOptimizationValue, 0.0);
+	if (hardLimitOnOptimizationValue != INFINITY)
+		ReportWarning (_String("Set a hard time limit for optimization routines to ") & hardLimitOnOptimizationValue & " seconds\n");
 							  	
 	isInOptimize = true;
 	lockedLFID   = likeFuncList._SimpleList::Find ((long)this);
@@ -5043,6 +5051,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 					ConjugateGradientDescent (currentPrecision, bestMSoFar);
 					logLHistory.Store(maxSoFar);
 				}			
+			
+			if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue)
+			{
+				ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
+				break;
+			}
+			
 		}
 		
 		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes\n");
@@ -5058,10 +5073,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		DeleteObject (stepHistory);
 
 	}
-	if (optMethod==1)
-		SimplexMethod (precision);
-	if (optMethod==2)
-		Anneal (precision);
+	else
+		if (optMethod==1)
+			SimplexMethod (precision);
+		if (optMethod==2)
+			Anneal (precision);
 	
 	_Matrix result (2,indexInd.lLength+indexDep.lLength<3?3:indexInd.lLength+indexDep.lLength, false, true);
 	
