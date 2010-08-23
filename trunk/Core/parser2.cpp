@@ -3795,13 +3795,19 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 						((_Operation*)f->theFormula(0))->SetAVariable(-((_Operation*)f->theFormula(0))->GetAVariable()-3);
 					}
 		}
+		
 		_PMathObj coordMx = nil;
 		if (mma || mmx)
 		{
+			long expectedType = mmx?MATRIX:STRING;
 			coordMx = f->Compute(last0);
-			if (!coordMx|| coordMx->ObjectClass() != MATRIX)
+			if (!coordMx || coordMx->ObjectClass() != expectedType)
 			{
-				WarnError (_String("Matrix expected but not supplied."));
+				if (mmx)
+					WarnError (_String("Matrix expected but not supplied."));
+				else
+					WarnError (_String("String key expected but not supplied."));
+					
 				return 0;
 			}		
 		}
