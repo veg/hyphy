@@ -3366,12 +3366,15 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		FILE * commandSource = nil;
 		if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil)
 		{
-			_String errMsg ("Could not read command file in ExecuteAFile from: ");
-			WarnError (errMsg & filePath);
+			WarnError (_String("Could not read command file in ExecuteAFile from: ") & filePath);
 			return;
 		}
 		commands = new _String (commandSource);
-		fclose (commandSource);
+		if (fclose		 (commandSource) ) // failed to fclose
+		{
+			DeleteObject (commands);
+			WarnError (_String("Internal error: failed in a call to fclose ") & filePath);		
+		}
 		PushFilePath (filePath);	
 	}
 	
