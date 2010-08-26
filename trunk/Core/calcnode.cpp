@@ -4137,9 +4137,10 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 							
 					DepthWiseTLevel(l,true);
 					
-					while (currentNode)
+					_String 	 cBranchName;
+					
+					while (currentNode && (!n1 || !n2))
 					{
-						_String 	 cBranchName;
 						GetNodeName (currentNode, cBranchName);
 						if (cBranchName.Equal (node1))
 						{

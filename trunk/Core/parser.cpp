@@ -1789,11 +1789,12 @@ _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 _PMathObj _Constant::CChi2 (_PMathObj n) 
 // chi^2 n d.f. probability up to x
 {
-	_Constant halfn (((_Constant*)n)->theValue/2), halfx = (theValue/2);
-	if ((theValue<0)||(halfn.theValue<0))
+	_Constant halfn (((_Constant*)n)->theValue*.5), 
+			  halfx = (theValue,0.5);
+	
+	if (theValue < 0. || halfn.theValue <= 0.)
 	{
-		_String warnMsg ("CChi2(x,n) only makes sense for both arguments positive");
-		ReportWarning (warnMsg);
+		ReportWarning ("CChi2(x,n) only makes sense for both arguments positive");
 		return new _Constant (0.0);
 	}
 	return halfn.IGamma( &halfx);
