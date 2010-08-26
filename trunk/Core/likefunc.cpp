@@ -3960,8 +3960,9 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				
 	long 		i,
 		 		j, 
-		 		fnDim 		= MaximumDimension(), 
-		 		evalsIn 	= likeFuncEvalCallCount;
+		 		fnDim				= MaximumDimension(), 
+		 		evalsIn				= likeFuncEvalCallCount,
+				exponentiationsIn	= matrixExpCount;
 
 
 	TimerDifferenceFunction (false);
@@ -5060,7 +5061,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			
 		}
 		
-		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes\n");
+		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes\n." & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrixExpCount - exponentiationsIn & " matrix exponentiations calls were made\n");
 
 		if (optMethod == 7)
 		{
