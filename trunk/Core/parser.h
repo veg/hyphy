@@ -174,70 +174,71 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 
 	public:
 
-	virtual	_MathObject* Add 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Sub 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Minus 		(void) 		   	   {return new _MathObject;}
-	virtual	_MathObject* Mult 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Div 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* lDiv 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* longDiv 	(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Raise 		(_MathObject*) 	   {return new _MathObject;}
-	virtual void		 Assign 	(_MathObject*) 	   {}
-	virtual	bool		 Equal 		(_MathObject*) 	   {return false;}
-	virtual	_MathObject* Abs 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Sin 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Cos 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Tan 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Exp 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Log 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Sqrt 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Gamma 		(void) 			   {return new _MathObject;}
-	virtual	_MathObject* Erf 		(void) 			   {return new _MathObject;}
-	virtual _MathObject* LnGamma	(void)			   {return new _MathObject;}	// <-- added by afyp, February 7, 2007
-	virtual	_MathObject* Beta  		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* IGamma		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* CChi2		(_MathObject*) 	   {return new _MathObject;}
+	virtual	_MathObject* Add 		(_MathObject*) 	   {warnError (-666); ; return new _MathObject;}
+	virtual	_MathObject* Sub 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Minus 		(void) 		   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Mult 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Div 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* lDiv 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* longDiv 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Raise 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual void		 Assign 	(_MathObject*) 	   {warnError (-666); }
+	virtual	bool		 Equal 		(_MathObject*) 	   {warnError (-666); return false;}
+	virtual	_MathObject* Abs 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Sin 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Cos 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Tan 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Exp 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Log 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Sqrt 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Gamma 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Erf 		(void) 			   {warnError (-666); return new _MathObject;}
+	virtual _MathObject* LnGamma	(void)			   {warnError (-666); return new _MathObject;}	// <-- added by afyp, February 7, 2007
+	virtual	_MathObject* Beta  		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* IGamma		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* CChi2		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
 	virtual _MathObject* IBeta		(_MathObject*,_MathObject*)
-													   {return new _MathObject;}
-	virtual _MathObject* Simplex	(void)			   {return new _MathObject;}
-	virtual _MathObject* Min		(_MathObject*)	   {return new _MathObject;}
-	virtual _MathObject* Max		(_MathObject*)	   {return new _MathObject;}
-	virtual	_MathObject* InvChi2	(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* ZCDF		(void)		 	   {return new _MathObject;}
-	virtual	_MathObject* Time 		(void) 		   	   {return new _MathObject;}
-	virtual	_MathObject* Arctan 	(void) 		   	   {return new _MathObject;}
-	virtual	_MathObject* Less 		(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Random 	(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* Greater	(_MathObject*)     {return new _MathObject;}
-	virtual	_MathObject* LessEq 	(_MathObject*) 	   {return new _MathObject;}
-	virtual	_MathObject* GreaterEq 	(_MathObject*)     {return new _MathObject;}
-	virtual	_MathObject* AreEqual 	(_MathObject*)     {return new _MathObject;}
-	virtual	_MathObject* NotEqual 	(_MathObject*)     {return new _MathObject;}
-	virtual	_MathObject* LAnd	 	(_MathObject*)     {return new _MathObject;}
-	virtual	_MathObject* LOr	 	(_MathObject*)     {return new _MathObject;}
+													   {warnError (-666); return new _MathObject;}
+	virtual _MathObject* Simplex	(void)			   {warnError (-666); return new _MathObject;}
+	virtual _MathObject* Min		(_MathObject*)	   {warnError (-666); return new _MathObject;}
+	virtual _MathObject* Max		(_MathObject*)	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* InvChi2	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* ZCDF		(void)		 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Time 		(void) 		   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Arctan 	(void) 		   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Less 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Random 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Greater	(_MathObject*)     {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* LessEq 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* GreaterEq 	(_MathObject*)     {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* AreEqual 	(_MathObject*)     {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* NotEqual 	(_MathObject*)     {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* LAnd	 	(_MathObject*)     {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* LOr	 	(_MathObject*)     {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* GammaDist  (_MathObject*,_MathObject*)  
-													   {return new _MathObject;}
+													   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* CGammaDist (_MathObject*,_MathObject*) 
-													   {return new _MathObject;}
-	virtual	_MathObject* LNot  		(void)	 		   {return new _MathObject;}
-	virtual	_MathObject* TipCount  	(void)		   	   {return new _MathObject;}
-	virtual	_MathObject* BranchCount (void)        	   {return new _MathObject;}
-	virtual	_MathObject* TipName	 (_MathObject*)	   {return new _MathObject;}
-	virtual	_MathObject* BranchName	 (_MathObject*)	   {return new _MathObject;}
-	virtual	_MathObject* BranchLength(_MathObject*)	   {return new _MathObject;}
-	virtual	_MathObject* RerootTree	 (_MathObject*)	   {return new _MathObject;}
+													   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* LNot  		(void)	 		   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* TipCount  	(void)		   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* BranchCount (void)        	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* TipName	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* BranchName	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* BranchLength(_MathObject*)	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* RerootTree	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* TEXTreeString(_MathObject*)
-												   	   {return new _MathObject;}
+												   	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* Type						   (void);
 	virtual	_MathObject* PlainTreeString(_MathObject*)
-						 						   	   {return new _MathObject;}
+						 						   	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* FormatNumberString (_MathObject*,_MathObject*)
-												   {return new _MathObject;}
-	virtual	_Parameter	 Value (void) 			   {return 0.0;}
+												   {warnError (-666); return new _MathObject;}
+	virtual	_Parameter	 Value (void) 			   {warnError (-666); return 0.0;}
 	virtual	_MathObject* Compute (void) 		   {return new _MathObject;}
 	virtual	void	     ScanForVariables (_AVLList&,bool = false)			
 													{}
 	
+	virtual		 BaseRef makeDynamic			   (void);
 	virtual	bool		 IsVariable (void)		   {return false;}
 	virtual	bool		 IsObjectEmpty (void)	   {return true;}
 	virtual	bool		 IsPrintable (void)		   {return false;}

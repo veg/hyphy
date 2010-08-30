@@ -957,6 +957,12 @@ _PMathObj _MathObject::Type (void)
 	return ts;
 }
 
+//__________________________________________________________________________________
+
+BaseRef _MathObject::makeDynamic (void)
+{
+	return(_PMathObj)checkPointer(new _MathObject);
+}
 
 //__________________________________________________________________________________
 	

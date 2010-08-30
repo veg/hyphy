@@ -4193,7 +4193,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 		}
 	}
 	
-	if (resValue == HY_INVALID_RETURN_VALUE)
+	if (isnan (resValue))
 		return new _MathObject ();
 	
 	return new _Constant (resValue);

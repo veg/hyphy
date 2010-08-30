@@ -2222,11 +2222,21 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 			case 56: // sscanf
 			{
 				converted = (_String*)parameters(0);
-				result = _String ("Read the following data from ")&*converted&":";
+				result = _String ("Read the following data from ")&*converted&" : ";
+				long shift = 1;
 				for (long p = 0; p<simpleParameters.lLength; p++)
 				{
-					result = result&*(_String*)allowedFormats (simpleParameters(p))
-							 &" into "&*(_String*)parameters(p+1)&";";
+					long theFormat = simpleParameters(p);
+					if (theFormat < 0)
+					{
+						shift -- ;
+						result = result & " REWIND THE FILE";
+					}
+					else
+					{
+						result = result&*(_String*)allowedFormats (theFormat)
+								&" into "&*(_String*)parameters(p+shift)&";";
+					}
 				}
 				converted = nil;
 				break;
