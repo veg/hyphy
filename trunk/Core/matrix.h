@@ -145,8 +145,6 @@ class		_Matrix: public _MathObject {
 												// scans for all local independent variables on which the matrix depends
 												// and stores them in the list passed as the parameter
 	
-	virtual	bool		IsDefined	(_String&);  // is this operation defined for the type
-	
 	virtual	bool		IsIndependent (void)   { return storageType!=2;}
 												// used to determine whether the matrix contains references
 												// to other unknowns

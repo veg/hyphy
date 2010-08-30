@@ -2934,7 +2934,7 @@ void _Polynomial::toFileStr (FILE*f)
 						if (*cT>1)
 						{
 							fprintf(f,"^");;
-							fprintf(f,"%d",*cT);
+							fprintf(f,"%ld",*cT);
 						}
 					}
 				}

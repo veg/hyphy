@@ -225,7 +225,6 @@ typedef	bool _HYTopologyTraversalFunction (node<long>*, Ptr);
 class _TheTree; // forward declaration for xlc
 
 
-
 //_______________________________________________________________________________________________
 
 class _TreeTopology: public _CalcNode {
@@ -290,6 +289,11 @@ class _TreeTopology: public _CalcNode {
 				 bool			IsDegenerate 						(void);
 
 		virtual _PMathObj 		Execute 							(long, _PMathObj = nil , _PMathObj = nil);
+		virtual	void			EdgeCount							(long&, long&);
+				// SLKP 20100827: a utility function to count edges in a tree
+				//              : note that the root node WILL be counted as an internal node
+				//				: writes [leaf count, internal node count] into the arguments
+	
 		virtual	_PMathObj 		TipCount  	 						(void);
 		virtual	_PMathObj 		BranchCount 						(void);
 		virtual	_PMathObj 		AVLRepresentation 					(_PMathObj);

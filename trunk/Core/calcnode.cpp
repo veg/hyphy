@@ -463,8 +463,23 @@ _Parameter	_CalcNode::BranchLength (void)
 			k, 
 			c, 
 			t;
+	
+	
+	
+	if (theModel < 0)
+		return Value();
+	
+	_Matrix		*freqMx, 
+				*theMx; 
+	
+	bool		mbf;
 			
-	_Parameter weight=1.0, 
+	RetrieveModelComponents (theModel, theMx, freqMx, mbf);
+	
+	if (!freqMx)
+		return Value();
+
+	_Parameter weight = 1.0, 
 			   result = 0.0;
 			   
 	_CategoryVariable* cVar = nil;
@@ -478,19 +493,7 @@ _Parameter	_CalcNode::BranchLength (void)
 		}
 	}
 	
-	_Matrix* 	freqMx= GetFreqMatrix();
-	bool		mbf = false;
-	
-	if (theModel>=0)
-		mbf =  (modelFrequenciesIndices.lData[theModel]>=0);
-	else
-		return Value();
-
-	if (freqMx)
-		freqMx = (_Matrix*)freqMx->ComputeNumeric();
-	else
-		return Value();
-		
+	freqMx = (_Matrix*)freqMx->ComputeNumeric();
 	categoryCounter = 0;
 	
 	do
@@ -3856,35 +3859,38 @@ _String	 _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topNode)
 }
 
 //__________________________________________________________________________________
-_PMathObj _TreeTopology::TipCount (void)
-{
-	long res = 0;
-	LeafWiseT(true);
+void _TreeTopology::EdgeCount (long& leaves, long& internals)
+{	
+	leaves    = 0; 
+	internals = 0;
+	DepthWiseT(true);
 	while (currentNode)
 	{
-		res++;
-		LeafWiseT(false);
+		if (IsCurrentNodeATip())
+			leaves ++;
+		else
+			internals ++;
+		
+		DepthWiseT(false);
 	}
-	return new _Constant (res);
+	
+}
+
+
+//__________________________________________________________________________________
+_PMathObj _TreeTopology::TipCount (void)
+{
+	long leaves, ints;
+	EdgeCount (leaves, ints);
+	return new _Constant (leaves);
 }
 
 //__________________________________________________________________________________
 _PMathObj _TreeTopology::BranchCount (void)
 {
-	long res = 0;
-	DepthWiseT(true);
-	while (currentNode)
-	{
-		if (!IsCurrentNodeATip())
-			res++;
-
-		DepthWiseT(false);
-		if (IsCurrentNodeTheRoot()) 
-			break;
-	}
-	
-	return new _Constant (res);
-
+	long leaves, ints;
+	EdgeCount (leaves, ints);
+	return new _Constant (ints-1);	
 }
 
 //__________________________________________________________________________________
@@ -4068,7 +4074,7 @@ _PMathObj _TreeTopology::TipName (_PMathObj p)
 //__________________________________________________________________________________
 _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 {	
-	_Parameter resValue = 0.0;
+	_Parameter resValue = HY_INVALID_RETURN_VALUE;
 	
 	if (p)
 	{
@@ -4077,49 +4083,36 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 			long res 		= p->Value(), 
 				 count 		= 0;
 				 
-			if (res<0)
+			if (res < 0) 
+				// get ALL branch lengths
 			{
-				DepthWiseT(true);
-				while (currentNode)
-				{
-					count++;
-					DepthWiseT(false);
-				}
-					
-				_Matrix*      branchLengths = new _Matrix (1,count,false,true);
-				checkPointer (branchLengths);
+				EdgeCount (count, res);
+				_Matrix*   branchLengths = (_Matrix*) checkPointer(new _Matrix (1,count+res,false,true));
 				
-				count = 0;
-				DepthWiseT(true);
-				
+				count		= 0;
+				DepthWiseT	(true);
 				while (!IsCurrentNodeTheRoot())
 				{
-					//branchLengths->theData[count] = travNode->BranchLength();
-					GetBranchLength (currentNode, branchLengths->theData[count]);
-					count++;
-					DepthWiseT(false);
+					GetBranchLength (currentNode, branchLengths->theData[count++]);
+					DepthWiseT		(false);
 				}		
 				return branchLengths;	
 			}
 			else
+				// get a branch length
 			{
 				DepthWiseT(true);
-				while (currentNode)
+				while (currentNode && res != count)
 				{
-					if (res==count)
-						break;
 					count++;
 					DepthWiseT(false);
 				}
-				if (currentNode&&(!IsCurrentNodeTheRoot()))
-					//resValue = travNode->BranchLength();
+				if (currentNode && !IsCurrentNodeTheRoot())
 					GetBranchLength (currentNode,resValue);
 			}
 		}
 		else
 		{
-			resValue = -1.;
-			
 			if (p->ObjectClass()==STRING)
 			{
 				_List * twoIDs = ((_FString*)p->Compute())->theString->Tokenize(";");
@@ -4191,11 +4184,17 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 						
 						resValue = p1+p2;
 					}
+					else
+						if (n1 && node1->Equal(node2))
+							resValue = 0.0;
 				}
 				DeleteObject (twoIDs);
 			}
 		}
 	}
+	
+	if (resValue == HY_INVALID_RETURN_VALUE)
+		return new _MathObject ();
 	
 	return new _Constant (resValue);
 

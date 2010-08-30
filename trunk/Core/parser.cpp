@@ -605,12 +605,6 @@ void  ReplaceVar (_Variable* theV)
 		InsertVar (theV);	
 }
 
-//__________________________________________________________________________________
-
-bool _MathObject::IsDefined	(_String& s)  // is this operation defined for the type
-{
-	return s.sLength;
-}
 
 //__________________________________________________________________________________
 

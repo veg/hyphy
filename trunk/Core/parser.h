@@ -161,9 +161,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define  HY_FORMULA_FORMULA_VALUE_INCREMENT				7
 
 
-
-
 // END FORMULA RETURN CODES
+
+
+#define	 HY_INVALID_RETURN_VALUE						NAN
+
 
 class   _Variable;
 class   _VariableContainer;
@@ -240,8 +242,6 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 	virtual	bool		 IsObjectEmpty (void)	   {return true;}
 	virtual	bool		 IsPrintable (void)		   {return false;}
 	
-	virtual	bool		 IsDefined	(_String&);  // is this operation defined for the type
-											
 	virtual	bool		 IsIndependent (void) 		{ return true; } 
 	virtual	long		 ObjectClass (void) 		{ return HY_UNDEFINED; } 
 			// returns a unique ID for this object
@@ -249,13 +249,12 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 			// 1 - number
 			// 4 - matrix
 											
-	virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);   // execute this operation with the list of Args
+	virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);   
+						 // execute this operation with the list of Args
+	
 	virtual	bool		 HasChanged (void) { return false; }
 
-	virtual   bool 	  IsConstant	(void)
-						{
-							return true;
-						}
+	virtual   bool		 IsConstant	(void) { return true;  }
 };
 
 typedef	_MathObject* _PMathObj ;

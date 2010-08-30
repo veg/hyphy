@@ -299,12 +299,6 @@ void	MatrixIndexError (long hPos, long vPos, long hDim, long vDim)
 }
 
 
-//__________________________________________________________________________________
-
-bool _Matrix::IsDefined	(_String&)  // is this operation defined for the type
-{
-	return true;
-}
 
 //_____________________________________________________________________________________________
 

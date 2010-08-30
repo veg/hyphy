@@ -154,7 +154,7 @@ void	 	 TrainModelNN 	(_String* model, _String* matrix)
 								{
 									if (verbI > 5)
 									{
-										sprintf (buffer, "\nNeural Network Pass %d. Building a training set...\n", itCount);
+										sprintf (buffer, "\nNeural Network Pass %ld. Building a training set...\n", itCount);
 										BufferToConsole (buffer);
 									}
 
@@ -198,7 +198,7 @@ void	 	 TrainModelNN 	(_String* model, _String* matrix)
 										long 	nowDone = (cellCount+1)*100./fullDimension;
 										if (nowDone > lastDone)
 										{
-											sprintf (buffer,"%d%% done\n", lastDone = nowDone);
+											sprintf (buffer,"%ld%% done\n", lastDone = nowDone);
 											BufferToConsole (buffer);
 										}
 									}
