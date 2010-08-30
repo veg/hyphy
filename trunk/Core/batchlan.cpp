@@ -1496,7 +1496,8 @@ _String	 _ExecutionList::TrimNameSpaceFromID (_String& theID)
 		  blSCFG 					("SCFG "),
 		  blNN	 					("NeuralNet "),
 		  blBGM						("BGM "),
-		  blSimulateDataSet			("SimulateDataSet");
+		  blSimulateDataSet			("SimulateDataSet"),
+		  blAssert 					("assert(");
 
 
  		  
@@ -1847,6 +1848,11 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 		}
 		// plain ol' formula - parse it as such!
 		else
+		if (currentLine.startswith (blAssert)) // ConstructAssert
+		{
+			_ElementaryCommand::ConstructAssert (currentLine, *this);
+		}
+			else
 		{
 			_String checker (currentLine);
 			if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length())
@@ -2606,7 +2612,13 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 				}
 				result = result & ')';
 				break;
-		}
+			case 65:
+			{
+				converted = (_String*)parameters(0)->toStr();
+				result = _String ("Assert ") & "'" & *converted & "'";
+				break;
+			} 
+	}
 	
 	DeleteObject (converted);
 	return result.makeDynamic();
@@ -7580,6 +7592,10 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 
 		case 64:
 			ExecuteCase64 (chain);	
+			break;
+
+		case 65:
+			ExecuteCase65 (chain);	
 			break;
 
 		default:

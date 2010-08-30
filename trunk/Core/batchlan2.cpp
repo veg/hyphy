@@ -89,7 +89,8 @@ extern		_String					blDoSQL,
 									versionString,
 									lastModelParameterList,
 									blGetString,
-									blRequireVersion;
+									blRequireVersion,
+									blAssert;
 
 _SimpleList sqlDatabases;
 
@@ -2299,6 +2300,29 @@ void	  _ElementaryCommand::ExecuteCase60 (_ExecutionList& chain)
 
 //____________________________________________________________________________________	
 
+void	  _ElementaryCommand::ExecuteCase65 (_ExecutionList& chain)
+{
+	chain.currentCommand++;
+	
+	_String assertion (*(_String*)parameters(0));
+
+	_Formula rhs, lhs;
+	long	 varRef;
+	if (Parse (&rhs,assertion,varRef,chain.nameSpacePrefix,&lhs) == HY_FORMULA_EXPRESSION)
+	{
+		_PMathObj assertionResult = rhs.Compute();
+		if (assertionResult && assertionResult->ObjectClass () == NUMBER)
+		{
+			if (CheckEqual(assertionResult->Value(),0.0))
+				WarnError (_String("Assertion '") & *(_String*)parameters(0) & "' failed.");				
+			return;
+		}
+	}
+	WarnError ("Assertion statement could not be computed or was not numeric.");
+}
+
+//____________________________________________________________________________________	
+
 void	  _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
@@ -2540,15 +2564,14 @@ bool	_ElementaryCommand::ConstructNN (_String&source, _ExecutionList&target)
 	nn->addAndClean(target,&pieces,0);
 	return true;
 }
-
-
+	
 //____________________________________________________________________________________	
 bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 // syntax: BGM ident = (<discrete nodes>, <continuous nodes>)
 {
 	// locate ident in HBL string
 	long	mark1 = source.FirstSpaceIndex(0,-1,1), 
-			mark2 = source.Find ('=', mark1, -1);
+	mark2 = source.Find ('=', mark1, -1);
 	
 	// assign ident to _String variable
 	_String	bgmID (source, mark1+1,mark2-1);
@@ -2583,6 +2606,28 @@ bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 	
 	_ElementaryCommand * bgm = new _ElementaryCommand (64);
 	bgm->parameters	&& (&bgmID);
+	bgm->addAndClean(target,&pieces,0);
+	return true;
+}
+	
+	
+//____________________________________________________________________________________	
+bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
+// syntax: assert (statement)
+{
+	
+	// extract arguments from remainder of HBL string
+	_List pieces;
+	
+	ExtractConditions (source,blAssert.sLength,pieces,',');
+	
+	if (pieces.lLength != 1)
+	{
+		WarnError ("Expected: assert (statement);");
+		return false;
+	}
+
+	_ElementaryCommand * bgm = new _ElementaryCommand (65);
 	bgm->addAndClean(target,&pieces,0);
 	return true;
 }

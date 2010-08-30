@@ -169,6 +169,7 @@ class 	_ElementaryCommand: public _String // string contains the literal for thi
 		void	  ExecuteCase61  (_ExecutionList&); // SCFG 
 		void	  ExecuteCase63  (_ExecutionList&); // NN; currently not functional
 		void	  ExecuteCase64  (_ExecutionList&);	// BGM
+		void	  ExecuteCase65  (_ExecutionList&);	// assert
 		
 static	_String	  FindNextCommand 		(_String&, bool = false);
 									   // finds & returns the next command block in input 
@@ -324,6 +325,8 @@ static  bool	  ConstructNN			(_String&, _ExecutionList&);
 
 static	bool	  ConstructBGM			(_String&, _ExecutionList&);
 										
+static	bool	  ConstructAssert		(_String&, _ExecutionList&);
+
 static  bool	  SelectTemplateModel	(_String&, _ExecutionList&);
 
 static  bool	  MakeGeneralizedLoop	(_String*, _String*, _String* , bool , _String&, _ExecutionList&);
