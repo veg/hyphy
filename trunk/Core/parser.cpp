@@ -1790,7 +1790,7 @@ _PMathObj _Constant::CChi2 (_PMathObj n)
 // chi^2 n d.f. probability up to x
 {
 	_Constant halfn (((_Constant*)n)->theValue*.5), 
-			  halfx = (theValue,0.5);
+			  halfx (theValue*0.5);
 	
 	if (theValue < 0. || halfn.theValue <= 0.)
 	{
