@@ -10,10 +10,14 @@ function getTestedFunctions ()
 
 function runTest ()
 {
-	Topology T 			   = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult  	   = 0;
 	
+	Topology T 			   = (a,b,c);
+	assert (BranchLength (T,0) == (-1), "Retrieve a branch length by a valid index when no branch length has been defined");
+
+	Topology T 			   = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
+
 	assert (BranchLength (T,0) == 0.1, "Retrieve a branch length by a valid index");
 	assert (Abs(BranchLength (T,-1) - {{0.1,0.2,0.4,0.15,0.33,0.0}}) == 0.0, "Retrieve all branch lengths");
 	assert (BranchLength (T,"b") == 0.2, "Retrieve a branch length by a valid name");
