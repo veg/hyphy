@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020100823beta");
+_String	  __KERNEL__VERSION__ ("2.0020100830beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__
@@ -1397,13 +1397,27 @@ void 	_String::UpCase (void)
 {
 	char * TheText = sData;
 	for (long i = 0; i<sLength; i++) 
-	{
-		//char c = TheText[i];
-		//if ((c>='a')&&(c<='z')) 
-			//TheText[i]-=32;
 		TheText[i] = toupper (TheText[i]);
-	}
+}
 
+//_______________________________________________________________________
+_Parameter 	_String::ProcessTreeBranchLength (void)
+{
+	_Parameter res = -1.;
+	
+	if (sLength)
+	{
+		if (sData[0]==':')
+			res = Cut(1,-1).toNum();
+		else
+			res = toNum();
+		
+		
+		if (res < 1e-5)
+			res = 1e-5;
+	}
+	
+	return res;
 }
 
 //_______________________________________________________________________

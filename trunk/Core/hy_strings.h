@@ -278,7 +278,16 @@ virtual		operator const char* (void);
   			
   			long	LempelZivProductionHistory 
   									 (_SimpleList* = nil);
+	
+			_Parameter
+					ProcessTreeBranchLength ();
 
+	
+			/* SLKP 20100831: a utility function to handle 
+							  the conversion of branch length strings to parameters
+			 
+			 */
+			 
 _Parameter		toNum (void);
  			
 			void	SetLength (unsigned long nl) {sLength=nl;}

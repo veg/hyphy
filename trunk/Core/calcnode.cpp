@@ -411,7 +411,7 @@ _CalcNode::~_CalcNode (void) {
 		if (theProbs) 
 			vec_free(theProbs);
 	#endif
-	if ((compExp) && (referenceNode < 0))
+	if (compExp && referenceNode < 0)
 		DeleteObject (compExp);
 }
 
@@ -420,7 +420,7 @@ _CalcNode::~_CalcNode (void) {
 long	_CalcNode::FreeUpMemory (long) 
 {
 	long res = 0;
-	if ((compExp) && (referenceNode < 0))
+	if (compExp && referenceNode < 0)
 	{
 		res = compExp->GetMySize();
 		DeleteObject (compExp);
@@ -457,14 +457,6 @@ bool	_CalcNode::MatchSubtree (_CalcNode* mNode)
 	
 _Parameter	_CalcNode::BranchLength (void) 
 {
-	// only works for one category variable for now!
-	long	categoryCounter, 
-			totalCategs = 1, 
-			k, 
-			c, 
-			t;
-	
-	
 	
 	if (theModel < 0)
 		return Value();
@@ -476,13 +468,17 @@ _Parameter	_CalcNode::BranchLength (void)
 			
 	RetrieveModelComponents (theModel, theMx, freqMx, mbf);
 	
-	if (!freqMx)
+	if (!freqMx && !theModel)
 		return Value();
 
-	_Parameter weight = 1.0, 
-			   result = 0.0;
+	_Parameter				weight = 1.0, 
+							result = 0.0;
 			   
+	long					categoryCounter, 
+							totalCategs = 1; 
+	
 	_CategoryVariable* cVar = nil;
+	
 	if (categoryVariables.lLength)
 	{
 		for (categoryCounter = 0;categoryCounter<categoryVariables.lLength; categoryCounter++)
@@ -498,39 +494,37 @@ _Parameter	_CalcNode::BranchLength (void)
 	
 	do
 	{
-		if (cVar)
+		if (categoryVariables.lLength)
 		{
-			c = categoryCounter;
+			long c = categoryCounter;
 			weight = 1.0;
-			for (k=categoryVariables.lLength-1;k>=0;k--)
+			for (long k=categoryVariables.lLength-1;k>=0;k--)
 			{
 				cVar = (_CategoryVariable*)LocateVar (categoryVariables.lData[k]);
-				t = cVar->GetNumberOfIntervals();
+				long t = cVar->GetNumberOfIntervals();
 				cVar->SetIntervalValue(c%t);
 				weight*=cVar->GetIntervalWeight(c%t);
 				c/=t;
 			}
 		}
-		_Matrix*	theMx = ComputeModelMatrix();
-				
-		_Parameter expSubs = 0.0;
+		
+		_Matrix*	theMx   = ComputeModelMatrix();
+		_Parameter  expSubs = 0.0;
 			
-		if (!theMx)
-			return Value();
-		else
+		expSubs = -theMx->ExpNumberOfSubs (freqMx, mbf);
+		
+		if (theMx->GetHDim()>20)
 		{
-			expSubs = -theMx->ExpNumberOfSubs (freqMx, mbf);
-			if (theMx->GetHDim()>20)
-			{
-				_Parameter divisor;
-				checkParameter (largeMatrixBranchLength, divisor, 3.);
-				expSubs /= divisor;
-			}
+			_Parameter divisor;
+			checkParameter (largeMatrixBranchLength, divisor, 3.);
+			expSubs /= divisor;
 		}
+		
 		categoryCounter++;
-		result+=fabs(expSubs)*weight;
+		result += fabs(expSubs)*weight;
 	}
 	while (categoryCounter<totalCategs);
+	
 	return result;
 }  
 
@@ -1058,8 +1052,7 @@ void	_TheTree::PreTreeConstructor (bool)
 void	_TreeTopology::PreTreeConstructor (bool)
 {
 	rooted	  				= UNROOTED;
-	compExp					= (_Matrix*)new _List;
-	checkPointer (compExp);
+	compExp					= (_Matrix*)checkPointer(new _GrowingVector);
 
 	iNodePrefix = "Node";
 	_PMathObj iv = FetchObjectFromVariableByType(&internalNodePrefix,STRING);
@@ -1179,18 +1172,6 @@ void	_TheTree::PostTreeConstructor (bool dupMe)
 
 void	_TreeTopology::PostTreeConstructor (bool dupMe)
 {
-	_List * vals = (_List*)compExp;
-	compExp 	 = new _Matrix (vals->lLength,1,false,true);
-	checkPointer (compExp);
-	
-	for (long k=0; k<vals->lLength; k++)
-	{
-		_String * thisVal = (_String*)(*vals)(k);
-		compExp->theData[k] = thisVal->toNum();
-	}
-		
-	DeleteObject (vals);
-
 	BaseRef temp =  variablePtrs(theIndex);
 	
 	if (dupMe)
@@ -1578,31 +1559,18 @@ bool	_TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeName,
  	isDefiningATree = 1;
     nodie->init (cNt.theIndex);
 
-	_Constant val (-1.);
-	if (nodeValue.Length())
-	{
-		if (nodeValue.sData[0]==':')
-			val.SetValue (nodeValue.Cut(1,-1).toNum());
-		else
-			val.SetValue (nodeValue.toNum());
-		if (val.Value() < 1e-5)
-			val.SetValue (1e-5);
 
-		if (takeBranchLengths)
+	_Constant val (nodeValue.ProcessTreeBranchLength());
+	if (nodeValue.Length() && takeBranchLengths)
+	{
+		if (cNt.iVariables && cNt.iVariables->lLength == 2) // can assign default values
 		{
-			if (cNt.iVariables && cNt.iVariables->lLength == 2) // can assign default values
-			{
-				LocateVar (cNt.iVariables->lData[0])->SetValue (&val);	
-				_String errMsg = _String("Branch parameter of ") & nodeName&" set to " & nodeValue;
-		  	 	ReportWarning (errMsg);
-			}
-			else
-			{
-				_String errMsg = nodeName&" has "& _String((long)(cNt.iVariables?cNt.iVariables->lLength/2:0)) & " parameters - branch length not assigned";
-		  	 	ReportWarning (errMsg);
-			}
+			LocateVar (cNt.iVariables->lData[0])->SetValue (&val);	
+			ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & nodeValue);
 		}
-	}		
+		else
+			ReportWarning (nodeName&" has "& _String((long)(cNt.iVariables?cNt.iVariables->lLength/2:0)) & " parameters - branch length not assigned");
+	}
 	
 	_CalcNode *nodeVar = (_CalcNode*)LocateVar(cNt.theIndex);
 	
@@ -1636,7 +1604,8 @@ bool	_TreeTopology::FinalizeNode (node<long>* nodie, long number , _String& node
 	nodie->in_object = flatTree.lLength;
 	flatTree   		  && & nodeName;
 	flatCLeaves 	  && & nodeParameters;
-	(*(_List*)compExp) && & nodeValue;
+	
+	((_GrowingVector*)compExp)->Store (nodeValue.ProcessTreeBranchLength());
 
 	nodeName       = empty;
 	nodeParameters = empty;
@@ -1709,7 +1678,7 @@ void	_TreeTopology::AddANode (_PMathObj newNode)
 		curp->replace_node(graftAt,newp);
 		
 		FinalizeNode (newp, 0, *newParent->theString, empty, empty);
-		FinalizeNode (newt, 0, *newName->theString, empty, empty);
+		FinalizeNode (newt, 0, *newName->theString,   empty, empty);
 		
 	}
 	else
@@ -6841,30 +6810,6 @@ void		_TheTree::MatrixCacheUpdate (void)
 	}
 }
 			 
-//_______________________________________________________________________________________________
-	
-_Parameter	 _TheTree::ReleafTreeAndCheckChar (_DataSetFilter* dsf, long index, bool cache, long categID)	
-// set leaf value and reexp if needed
-// for first entry into a datafilter
-{
-#if defined 	__MP__ && ! defined __MACHACKMP__
-	if (systemCPUCount>1 && cBase>=15)
-		ThreadMatrixUpdate (categID, cache);
-	else
-#endif
-		SerialMatrixUpdate (categID, cache);
-
-	if (cache)
-		MatrixCacheUpdate();
-	
-	if (flatLeaves.lLength == 1)
-		return ReleafTreeCharDegenerate (dsf,index);
-		
-	if (cache)
-		return ThreadReleafTreeCharCache (dsf,index,-1,0,flatLeaves.lLength-1,categID>=0?categID:0);	
-	else
-		return ReleafTreeChar (dsf,index,-1,0,flatLeaves.lLength-1);
-}
 
 //_______________________________________________________________________________________________
 	
@@ -9405,210 +9350,6 @@ _Parameter	 _TheTree::ReleafTreeChar4Degenerate (_DataSetFilter* dsf, long index
 
 //_______________________________________________________________________________________________
 
-_Parameter	 _TheTree::ReleafTreeCharCache (_DataSetFilter* dsf, long index, long lastIndex, long startLeaf, long endLeaf, long position)	
-// set leaf value and re-prune w/o reexping
-// for subsequent entries into a datafilter
-{
-
-	_CalcNode *travNode,
-			  *theChildNode;
-			  
-	long 	   nodeCount,
-			   f;
-			   			   			   
-	_Parameter* fastIndex,
-			  * stopper;
-			  
-	node<long>* nodeChild;
-	
-	char *pastState = nil, 
-		 *thisState = dsf->GetColumn(index);
-		 
-	if (lastIndex>=0)
-		pastState = dsf->GetColumn(lastIndex);
-		 
-	for (nodeCount = startLeaf; nodeCount<=endLeaf; nodeCount++)
-	{
-		travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]);
-		f = dsf->theNodeMap.lData[nodeCount];
-		if ((lastIndex==-1)||(thisState[f]!=pastState[f]))
-		{
-		 	travNode->lastState = dsf->LookupConversion (thisState[f], travNode->theProbs);
-			theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)
-				[((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object]);
-			// we can immediately place the changes in the parent node
-			if (theChildNode->cBase>0)
-				theChildNode->cBase = -1;
-		}
-	}
-	
-	if ((lastIndex==-1)&&(nodeStates))
-	{
-		for (nodeCount = 0; nodeCount<flatLeaves.lLength; nodeCount++)
-		{
-			travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]);
-			nodeStates[nodeCount] = travNode->lastState;
-		}
-	}
-	
-	long lm1 = topLevelNodes.lLength-1,
-		 mm = topLevelNodes.lData[lm1],
-		 startINode = leftiNodes.lData[startLeaf];
-		 
-	for (long nI = 0; nI < lm1; nI++,mm>>=1)
-	{
-		if (mm&1)
-		//if (1)
-		// marked for recalculation
-		{
-			long startAt = 0;
-			
-			if (nI)
-				startAt = topLevelNodes.lData[nI-1]+1;
-
-			if (startAt<startINode)
-				startAt = startINode;
-
-			for (nodeCount=startAt; nodeCount<=topLevelNodes.lData[nI]; nodeCount++)
-			{
-				theChildNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[nodeCount]);
-				if (theChildNode->cBase == -1) // marked for update
-				{
-					fastIndex = theChildNode->theProbs;
-					stopper =   theChildNode->theProbs+cBase;
-					
-					for (;fastIndex!=stopper; *(fastIndex++)=1.) ;
-									
-					nodeChild = ((node <long>*)(flatNodes.lData[nodeCount]));
-
-					theChildNode->cBase = cBase;
-					
-					for (long k=0; k <nodeChild->nodes.length; k++)
-					{
-						travNode = 
-								((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->nodes.data[k]->in_object]);
-						fastIndex = travNode->GetCompExp()->fastIndex();
-						f = travNode->lastState;
-						if (f<0)
-						{
-							for (long i=0; i<cBase; i++)
-							{
-								_Parameter tmp = *(travNode->theProbs) * *fastIndex;
-								stopper = travNode->theProbs+1;
-								fastIndex++;
-								for (long j=1; j<cBase; j++,fastIndex++, stopper++)
-									tmp += *stopper * (*fastIndex);
-								/*_Parameter tmp = 0.0,
-										   *sndArg = travNode->theProbs;
-								stopper = fastIndex+cBase;
-								for (; fastIndex!=stopper;)
-									tmp += *(sndArg++) * *(fastIndex++)+
-										   *(sndArg++) * *(fastIndex++)+
-										   *(sndArg++) * *(fastIndex++)+
-										   *(sndArg++) * *(fastIndex++);*/
-									
-								theChildNode->theProbs[i]*=tmp;
-							}
-						}	
-						else
-						{
-							fastIndex+=f;
-							_Parameter tmp = travNode->theProbs[f];
-							for (long i=0; i<cBase; i++,fastIndex+=cBase)
-								theChildNode->theProbs[i]*=tmp* (*fastIndex);
-						}
-					}	
-					travNode->cBase = cBase;
-					nodeChild = nodeChild->parent;
-					if (nodeChild)
-						((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->in_object])->cBase = -1;
-				}
-			}	
-			
-			theChildNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[topLevelNodes.lData[nI]]);
-			_Parameter* nodeProbs = theChildNode->theProbs;
-			fastIndex = rootIChildrenCache+position*cBase*(topLevelNodes.lLength-1)+cBase*nI;
-			for (long i=0; i<cBase; i++)
-				fastIndex[i] = nodeProbs[i];
-		}
-		else
-		{
-			_Parameter* nodeProbs = ((_CalcNode*)(((BaseRef*)flatTree.lData)[topLevelNodes.lData[nI]]))->theProbs;
-			fastIndex = rootIChildrenCache+position*cBase*(topLevelNodes.lLength-1)+cBase*nI;
-			for (long i=0; i<cBase; i++)
-				nodeProbs[i] =fastIndex[i];
-			nodeChild = ((node <long>*)(flatNodes.lData[topLevelNodes.lData[nI]]))->parent;
-			((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->in_object])->cBase = -1;
-		}
-	}
-
-	for (nodeCount=topLevelNodes.lData[lm1-1]+1; nodeCount<flatTree.lLength; nodeCount++)
-	{
-		theChildNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[nodeCount]);
-		if (theChildNode->cBase == -1) // marked for update
-		{
-			fastIndex = theChildNode->theProbs;
-			stopper =   theChildNode->theProbs+cBase;
-			
-			for (;fastIndex!=stopper; *(fastIndex++)=1.) ;
-							
-			nodeChild = ((node <long>*)(flatNodes.lData[nodeCount]));
-
-			theChildNode->cBase = cBase;
-			
-			for (long k=0; k <nodeChild->nodes.length; k++)
-			{
-				travNode = 
-						((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->nodes.data[k]->in_object]);
-				fastIndex = travNode->GetCompExp()->fastIndex();
-				f = travNode->lastState;
-				if (f<0)
-				{
-					for (long i=0; i<cBase; i++)
-					{
-						_Parameter tmp = *(travNode->theProbs) * *fastIndex;
-						stopper = travNode->theProbs+1;
-						fastIndex++;
-						for (long j=1; j<cBase; j++,fastIndex++, stopper++)
-							tmp += *stopper * (*fastIndex);
-						theChildNode->theProbs[i]*=tmp;
-						/*_Parameter tmp = 0.0,
-								   *sndArg = travNode->theProbs;
-						stopper = fastIndex+cBase;
-						for (; fastIndex!=stopper;)
-							tmp += *(sndArg++) * *(fastIndex++)+
-								   *(sndArg++) * *(fastIndex++)+
-								   *(sndArg++) * *(fastIndex++)+
-								   *(sndArg++) * *(fastIndex++);
-						theChildNode->theProbs[i]*=tmp;*/
-					}
-				}	
-				else
-				{
-					fastIndex+=f;
-					_Parameter tmp = travNode->theProbs[f];
-					for (long i=0; i<cBase; i++,fastIndex+=cBase)
-						theChildNode->theProbs[i]*=tmp* (*fastIndex);
-				}
-			}	
-			travNode->cBase = cBase;
-			nodeChild = nodeChild->parent;
-			if (nodeChild)
-				((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->in_object])->cBase = -1;
-		}
-	}
-	
-	_Parameter result = 0.0;
-	
-	for (long i=0; i<cBase; i++)
-		result+= theProbs[i]* theChildNode->theProbs[i];
-	
-	if (result<=0.0) return ALMOST_ZERO;
-	return result;
-}
-
-//_______________________________________________________________________________________________
-
 _Parameter	 _TheTree::ThreadReleafTreeCharCache (_DataSetFilter* dsf, long index, long lastIndex, long startLeaf, long endLeaf, 
 												 long position,long offset)	
 // set leaf value and re-prune w/o reexping
@@ -9877,101 +9618,6 @@ _Parameter	 _TheTree::ThreadReleafTreeCharCache (_DataSetFilter* dsf, long index
 	
 	for (long i=0; i<cBase; i++)
 		result += theProbs[i] * fastIndex[i];
-	
-	if (result<=0.0) return ALMOST_ZERO;
-	return result;
-}
-
-//_______________________________________________________________________________________________
-
-_Parameter	 _TheTree::ReleafTreeChar (_DataSetFilter* dsf, long index, long lastIndex, long startLeaf, long endLeaf)	
-// set leaf value and re-prune w/o reexping
-// for subsequent entries into a datafilter
-{
-
-	_CalcNode *travNode,
-			  *theChildNode;
-			  
-	long 	   nodeCount,
-			   f;
-			   			   			   
-	_Parameter* fastIndex,
-			  * stopper;
-			  
-	node<long>* nodeChild;
-
-	char *pastState = nil, 
-		 *thisState = dsf->GetColumn(index);
-		 
-	if (lastIndex>=0)
-		pastState = dsf->GetColumn(lastIndex);
-		 
-	for (nodeCount = startLeaf; nodeCount<=endLeaf; nodeCount++)
-	{
-		travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]);
-		f = dsf->theNodeMap.lData[nodeCount];
-		if ((lastIndex==-1)||(thisState[f]!=pastState[f]))
-		{
-		 	travNode->lastState = dsf->LookupConversion (thisState[f], travNode->theProbs);
-			theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)
-				[((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object]);
-			// we can immediately place the changes in the parent node
-			if (theChildNode->cBase>0)
-				theChildNode->cBase = -1;
-		}
-	}
-	
-	for (nodeCount=leftiNodes.lData[startLeaf]; nodeCount<flatTree.lLength; nodeCount++)
-	{
-		theChildNode = (_CalcNode*)(((BaseRef*)flatTree.lData)[nodeCount]);
-		if (theChildNode->cBase == -1) // marked for update
-		{
-			fastIndex = theChildNode->theProbs;
-			stopper =   theChildNode->theProbs+cBase;
-			
-			for (;fastIndex!=stopper; *(fastIndex++)=1.) ;
-							
-			nodeChild = ((node <long>*)(flatNodes.lData[nodeCount]));
-
-			theChildNode->cBase = cBase;
-			
-			for (long k=0; k <nodeChild->nodes.length; k++)
-			{
-				travNode = 
-						((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->nodes.data[k]->in_object]);
-				fastIndex = travNode->GetCompExp()->fastIndex();
-				f = travNode->lastState;
-				if (f<0)
-				{
-					for (long i=0; i<cBase; i++)
-					{
-						_Parameter tmp = *(travNode->theProbs) * *fastIndex;
-						stopper = travNode->theProbs+1;
-						fastIndex++;
-						for (long j=1; j<cBase; j++,fastIndex++, stopper++)
-							tmp += *stopper * (*fastIndex);
-						theChildNode->theProbs[i]*=tmp;
-					}
-				}	
-				else
-				{
-					fastIndex+=f;
-					_Parameter tmp = travNode->theProbs[f];
-					for (long i=0; i<cBase; i++,fastIndex+=cBase)
-						theChildNode->theProbs[i]*=tmp* (*fastIndex);
-				}
-			}	
-			travNode->cBase = cBase;
-			nodeChild = nodeChild->parent;
-			if (nodeChild)
-				((_CalcNode*)((BaseRef*)variablePtrs.lData)[nodeChild->in_object])->cBase = -1;
-		}
-	}
-		
-	_Parameter result = 0.0;
-
-	for (long i=0; i<cBase; i++)
-		result+= theProbs[i]* theChildNode->theProbs[i];
 	
 	if (result<=0.0) return ALMOST_ZERO;
 	return result;

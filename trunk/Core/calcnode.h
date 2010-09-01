@@ -468,7 +468,6 @@ class _TheTree: public _TreeTopology {
 			 void	 		InitializeTreeFrequencies 	(_Matrix *, bool = false);
 	
 			_Parameter		ReleafTreeAndCheck 			(_DataSetFilter*, long, bool, long categID = -1);				 
-			_Parameter		ReleafTreeAndCheckChar  	(_DataSetFilter*, long, bool, long categID = -1);	
 			_Parameter		ReleafTreeAndCheckChar4 	(_DataSetFilter*, long, bool, long categID = -1);	
 
 			_Parameter		ReleafTree 					(_DataSetFilter*,long,long,long,long);	
@@ -489,8 +488,6 @@ class _TheTree: public _TreeTopology {
 			void			SerialMatrixUpdate			(long, bool);
 			void			MatrixCacheUpdate			(void);
 	
-			_Parameter  	ReleafTreeChar 				(_DataSetFilter*,long,long,long,long);	
-			_Parameter		ReleafTreeCharCache 		(_DataSetFilter*,long,long,long,long,long);	
 			_Parameter		ThreadReleafTreeCharCache 	(_DataSetFilter*,long,long,long,long,long,long offset = 0);	
 			_Parameter		ReleafTreeCharDegenerate 	(_DataSetFilter*,long);	
 			_Parameter		ReleafTreeChar4 			(_DataSetFilter*,long,long,long,long,long);
