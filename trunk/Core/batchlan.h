@@ -66,45 +66,53 @@ virtual
 		BaseRef		toStr (void);
 
 virtual	
-		void		Duplicate		(BaseRef);
-		bool		BuildList		(_String&, _SimpleList* = nil, bool = false);
+		void		Duplicate					(BaseRef);
+		bool		BuildList					(_String&, _SimpleList* = nil, bool = false);
 		
-	    _PMathObj	Execute		 	(void);				// run this execution list
-	    _PMathObj	GetResult		(void)
+	    _PMathObj	Execute						(void);				// run this execution list
+	    _PMathObj	GetResult					(void)
 													    {
 													    	return result;
 													    }
-	    void		ExecuteSimple	(void);				// run a simple compiled list
-	    bool		TryToMakeSimple (void);				// see if a list can be made into a compiled version
+	    void		ExecuteSimple				(void);				// run a simple compiled list
+	    bool		TryToMakeSimple				(void);				// see if a list can be made into a compiled version
 	    
-	    long		ExecuteAndClean (long,_String* = nil); 	
+	    long		ExecuteAndClean				(long,_String* = nil); 	
 	    
-	    void		ResetFormulae 	(void);   			// decompile formulas (for reference functions)
-	    void		ResetNameSpace 	(void);   			
-		void		SetNameSpace	(_String);
-		_String*	GetNameSpace	(void);
-		_String		AddNameSpaceToID(_String&);			
-		_String		TrimNameSpaceFromID
-									(_String&);			
+	    void		ResetFormulae				(void);   			// decompile formulas (for reference functions)
+	    void		ResetNameSpace				(void);   			
+		void		SetNameSpace				(_String);
+		_String*	GetNameSpace				(void);
+		_String		AddNameSpaceToID			(_String&);			
+		_String		TrimNameSpaceFromID			(_String&);			
+		_String*    FetchFromStdinRedirect		(void);
+	
+		void	    GoToLastInstruction			(void) {currentCommand = MAX(currentCommand,lLength-1);}
+	
 		
-		_String*    FetchFromStdinRedirect (void);
 	    
 	    // data fields
 	    // _____________________________________________________________
 	
-		long		  currentCommand;
-		char		  doProfile;
+		long							currentCommand;
+		char							doProfile;
 		
-		_PMathObj 	  result;
-		_VariableContainer*
-					 nameSpacePrefix;
-		_AVLListXL	  *stdinRedirect;
-		_List		  *stdinRedirectAux;
-		_String	  	  sourceFile;
-		_SimpleList	  callPoints,
-					  lastif;
-		_Matrix		  *profileCounter;		
-		_CELInternals *cli;
+		_PMathObj						result;
+		
+		_VariableContainer*				nameSpacePrefix;
+		
+		_AVLListXL						*stdinRedirect;
+		
+		_List							*stdinRedirectAux;
+		
+		_String							sourceFile;
+	
+		_SimpleList						callPoints,
+										lastif;
+	
+		_Matrix							*profileCounter;		
+		
+		_CELInternals					*cli;
 
 };
 
@@ -547,7 +555,8 @@ void	PopFilePath					 (void);
 _Matrix*CheckMatrixArg				 (_String*, bool);
 _AssociativeList *   
 		CheckAssociativeListArg 	 (_String*);
-void	RetrieveModelComponents		 (long, _Matrix*&, _Matrix*&, bool &);
+void	RetrieveModelComponents		 (long, _Matrix*&,     _Matrix*&, bool &);
+void	RetrieveModelComponents		 (long, _Variable*&, _Variable*&, bool &);
 bool	IsModelReversible			 (long);
 
 _PMathObj	
