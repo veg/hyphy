@@ -49,6 +49,7 @@ function runTest ()
 	   measured in expected numbers of substitutions per site */
 	   
 	BRANCH_LENGTH_STENCIL = 0;
+	LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION = 21;
 	
 	Tree  T = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
 	
@@ -85,6 +86,11 @@ function runTest ()
 	
 	BRANCH_LENGTH_STENCIL = 0;
 	assert 	   (BranchLength (T,0) == 0.136, "Testing BRANCH_LENGTH_STENCIL reset");
+	
+	LARGE_MATRIX_BRANCH_LENGTH_MODIFIER = 2;
+	assert 	   (BranchLength (T,0) == 0.136, "Testing LARGE_MATRIX_BRANCH_LENGTH_MODIFIER; should not apply because of LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION");
+	LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION = 2;
+	assert 	   (BranchLength (T,0) == 0.136/2, "Testing LARGE_MATRIX_BRANCH_LENGTH_MODIFIER; should apply ");
 	
 	testResult = 1;
 		
