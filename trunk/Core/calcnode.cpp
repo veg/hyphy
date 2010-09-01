@@ -53,7 +53,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 extern	 	_Parameter   explicitFormMatrixExponential;	
-extern		_String		 VerbosityLevelString;
+extern		_String		 VerbosityLevelString,
+						 BRANCH_LENGTH_STENCIL;
 			 
 long* 		nonZeroNodes = nil,
 			nonZeroNodesDim = 0;
@@ -122,6 +123,8 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputLayout	  = "TREE_OUTPUT_LAYOUT",
 			treeOutputNNPlaceH	  = "__NODE_NAME__",
 			treeOutputFSPlaceH	  = "__FONT_SIZE__",
+			largeMatrixBranchLengthDimension 
+								  = "LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION",
 			largeMatrixBranchLength 
 								  = "LARGE_MATRIX_BRANCH_LENGTH_MODIFIER",
 			newNodeGraftName	  = "NAME",
@@ -150,38 +153,6 @@ _Parameter  _timesCharWidths[256]= // Hardcoded relative widths of all 255 chara
 },
 _maxTimesCharWidth = 0.980392;
 
-#ifdef	__HYALTIVEC__
-
-	vector float VECTOR_ZERO = {0.0,0.0,0.0,0.0},
-				 VECTOR_ONE = {1.0,1.0,1.0,1.0},
-				 VECTOR_MONE = {-1.0,-1.0,-1.0,-1.0};
-	union vect_conv_type
-	{
-		float flt[4];
-		vector float vect;
-	} vector_convertor,vector_convertor2;
-	
-#endif
-
-#if USE_SCALING_TO_FIX_UNDERFLOW
-	//#include "HYConsoleWindow.h"
-	//extern _HYConsoleWindow * hyphyConsoleWindow;
-	//#define		__HY_SCALING_DEBUG__
-	extern long likeFuncEvalCallCount;
-	void		dumpErrorMessage (long, _Parameter, bool);
-	
-	void		dumpErrorMessage (long site, _Parameter factor, bool underOver)
-	{
-		_String errMsg = _String ("Fatal  ") & (underOver?" under":"over") & "flow at site " & site & " with factor " & factor;
-		ReportWarning (errMsg);
-	}
-#endif 	
-
-//#define 		LF_SCALING_HACK	
-//#define			LF_SCALING_FACTOR 1.5
-
-//long		 marginalLFEvalsAmb = 0,
-//			 marginalLFEvals	= 0;
 
 #ifdef 	  __HYPHYDMALLOC__
 	#include "dmalloc.h"
@@ -461,11 +432,17 @@ _Parameter	_CalcNode::BranchLength (void)
 	if (theModel < 0)
 		return Value();
 	
+	_FString   *stencil = (_FString*)FetchObjectFromVariableByType (&BRANCH_LENGTH_STENCIL,STRING);
+	
+	if (stencil && stencil->theString->Equal (&stringSuppliedLengths))
+		return Value();
+				
+	
 	_Matrix		*freqMx, 
 				*theMx; 
 	
 	bool		mbf;
-			
+	
 	RetrieveModelComponents (theModel, theMx, freqMx, mbf);
 	
 	if (!freqMx && !theModel)
@@ -513,9 +490,11 @@ _Parameter	_CalcNode::BranchLength (void)
 			
 		expSubs = -theMx->ExpNumberOfSubs (freqMx, mbf);
 		
-		if (theMx->GetHDim()>20)
+		_Parameter divisor;
+		checkParameter (largeMatrixBranchLengthDimension, divisor, 20.);
+		
+		if (theMx->GetHDim()>divisor)
 		{
-			_Parameter divisor;
 			checkParameter (largeMatrixBranchLength, divisor, 3.);
 			expSubs /= divisor;
 		}
@@ -4045,6 +4024,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 {	
 	_Parameter resValue = HY_INVALID_RETURN_VALUE;
 	
+	
 	if (p)
 	{
 		if (p->ObjectClass()==NUMBER)
@@ -4085,10 +4065,10 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 			if (p->ObjectClass()==STRING)
 			{
 				_List * twoIDs = ((_FString*)p->Compute())->theString->Tokenize(";");
-				if (twoIDs->lLength == 2)
+				if (twoIDs->lLength == 2 || twoIDs->lLength == 1)
 				{
 					_String * node1 = (_String*)(*twoIDs) (0),
-							* node2 = (_String*)(*twoIDs) (1);
+							* node2 = twoIDs->lLength>1?(_String*)(*twoIDs) (1):nil;
 							
 					node<long>* n1 = nil,
 							  * n2 = nil;
@@ -4110,7 +4090,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 							l1 = l;
 						}
 						else
-							if (cBranchName.Equal (node2))
+							if (node2 && cBranchName.Equal (node2))
 							{
 								n2 = currentNode;
 								l2 = l;	
@@ -4154,8 +4134,22 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
 						resValue = p1+p2;
 					}
 					else
-						if (n1 && node1->Equal(node2))
-							resValue = 0.0;
+						if (n1)
+							if (node2)
+							{
+								if (node1->Equal(node2))
+									resValue = 0.0;
+								else
+									if (node2->Equal (&expectedNumberOfSubs))
+									{
+										_String bl;
+										GetBranchLength (n1, bl, true);
+										if (bl.sLength)
+											return new _FString (bl);
+									}
+							}
+							else
+								GetBranchLength(n1,resValue);
 				}
 				DeleteObject (twoIDs);
 			}
@@ -4448,9 +4442,12 @@ void			_TreeTopology::PasteBranchLength (node<long>* currentNode, _String& res, 
 }
 
 //__________________________________________________________________________________
-void			_TreeTopology::GetBranchLength (node<long> * n, _String& r)
+void			_TreeTopology::GetBranchLength (node<long> * n, _String& r, bool getBL)
 {
-	r = compExp->theData[n->in_object];
+	if (getBL)
+		r = empty;
+	else
+		r = compExp->theData[n->in_object];
 }
 
 //__________________________________________________________________________________
@@ -4460,9 +4457,25 @@ void			_TreeTopology::GetBranchLength (node<long> * n, _Parameter& r)
 }
 
 //__________________________________________________________________________________
-void			_TheTree::GetBranchLength (node<long> * n, _String& r)
+void			_TheTree::GetBranchLength (node<long> * n, _String& r, bool getBL)
 {
-	r = ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->BranchLength();
+	if (getBL)
+	{
+		bool	mbf;
+		
+		_Matrix *mm, 
+				*fv;
+		
+		RetrieveModelComponents(((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->GetModelIndex(), mm, fv, mbf);
+		
+		if (mm && fv)
+			r.CopyDynamicString(mm->BranchLengthExpression(fv,mbf), true);
+		else
+			r = empty;
+		
+	}
+	else
+		r = ((_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]))->BranchLength();
 }
 
 //__________________________________________________________________________________
@@ -4567,9 +4580,6 @@ void			_TreeTopology::GetBranchVarValue (node<long> *, _String& r, long)
 void			_TheTree::GetBranchVarValue (node<long> * n, _String& r, long idx)
 {
 	_CalcNode * travNode = (_CalcNode*)(((BaseRef*)variablePtrs.lData)[n->in_object]);
-	#ifndef USE_POINTER_VC
-	r = _String(LocateVar (travNode->independentVars.lData[travNode->indIndexVars.Find(idx)])->Value());
-	#else
 	long iVarValue = travNode->iVariables->FindStepping(idx,2,1);
 	if (iVarValue>0)
 	// user variable, but not in the model
@@ -4587,7 +4597,6 @@ void			_TheTree::GetBranchVarValue (node<long> * n, _String& r, long idx)
 			}
 		}
 	}
-	#endif
 }
 
 //__________________________________________________________________________________
@@ -4799,7 +4808,8 @@ _Parameter		 _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef, 
 	if (mapMode == 3)
 		return 1.;
 	
-	_CalcNode * travNode = (_CalcNode*)(((BaseRef*)variablePtrs.lData)[varRef]);
+	_CalcNode * travNode = (_CalcNode*)LocateVar(varRef);
+	
 	_Parameter branchLength = BAD_BRANCH_LENGTH;
 
 	if (mapMode==1)

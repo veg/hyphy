@@ -74,6 +74,7 @@ _String		sqlOpen 				("SQL_OPEN"),
 			siteProbabilities		("SITE_LOG_LIKELIHOODS"),
 			lastSetOfConstraints	("LAST_SET_OF_CONSTRAINTS"),
 			deferConstrainAssignment("DEFER_CONSTRAINT_APPLICATION"),
+			assertionBehavior		("ASSERTION_BEHAVIOR"),
 			_hyStatusConditionProbsMatrix				
 									("Constructing Conditional Probabilities Matrix"),
 
@@ -1057,35 +1058,33 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 							}
 							else
 							{
-								_Variable	* tV  = LocateVar(modelMatrixIndices.lData[f]),
-								* tV2;
+								_Variable	* tV, * tV2;
+								bool		 mByF;
+								RetrieveModelComponents (f, tV, tV2, mByF);
 								
-								bool		 mByF = true;
-								
-								long freqID = modelFrequenciesIndices.lData[f];
-								
-								if (freqID>=0)
-									tV2 = LocateVar(freqID);
+								if (tV)
+								{
+									if (sID == -1) // branch length expression
+										result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
+									else 
+									/* 
+										returns an AVL with keys
+										"RATE_MATRIX" - the ID of the rate matrix
+										"EQ_FREQS"	  - the ID of eq. freq. vector
+										"MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+									*/
+									{
+										_AssociativeList * resList = new _AssociativeList;
+										resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
+										resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
+										resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
+										theReceptacle->SetValue (resList,false);
+										return;
+									}
+								}
 								else
 								{
-									mByF = false;
-									tV2 = LocateVar(-freqID-1);
-								}
-								if (sID == -1) // branch length expression
-									result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
-								else 
-								/* 
-									returns an AVL with keys
-									"RATE_MATRIX" - the ID of the rate matrix
-									"EQ_FREQS"	  - the ID of eq. freq. vector
-									"MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
-								*/
-								{
-									_AssociativeList * resList = new _AssociativeList;
-									resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
-									resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
-									resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
-									theReceptacle->SetValue (resList,false);
+									theReceptacle->SetValue (new _FString(), false);
 									return;
 								}
 							}
@@ -2314,7 +2313,21 @@ void	  _ElementaryCommand::ExecuteCase65 (_ExecutionList& chain)
 		if (assertionResult && assertionResult->ObjectClass () == NUMBER)
 		{
 			if (CheckEqual(assertionResult->Value(),0.0))
-				WarnError (_String("Assertion '") & *(_String*)parameters(0) & "' failed.");				
+			{
+				_Parameter whatToDo;
+				checkParameter (assertionBehavior, whatToDo, 0.0);
+				
+				_String errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.\n" & *(_String*)parameters(1);
+				
+				if (CheckEqual (whatToDo, 1.))
+				{
+					StringToConsole (errMsg);
+					NLToConsole();
+					chain.GoToLastInstruction ();
+				}
+				else
+					WarnError (errMsg);	
+			}
 			return;
 		}
 	}
@@ -2613,7 +2626,7 @@ bool	_ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 	
 //____________________________________________________________________________________	
 bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
-// syntax: assert (statement)
+// syntax: assert (statement,message on failure)
 {
 	
 	// extract arguments from remainder of HBL string
@@ -2621,9 +2634,9 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 	
 	ExtractConditions (source,blAssert.sLength,pieces,',');
 	
-	if (pieces.lLength != 1)
+	if (pieces.lLength != 2)
 	{
-		WarnError ("Expected: assert (statement);");
+		WarnError ("Expected: assert (statement,message on failure);");
 		return false;
 	}
 
@@ -3570,13 +3583,35 @@ inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _Simple
 
 void	RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
 {
+	if (mid >=0 && mid < modelTypeList.lLength)
+	{
+		if (modelTypeList.lData[mid] == 0)
+			mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
+		else
+			mm = nil;
+		
+		long fvi = modelFrequenciesIndices.lData[mid];
+		fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
+		mbf = (fvi>=0);
+	}
+	else
+	{
+		mm = fv = nil;
+		mbf = false;
+	}
+}
+	
+//____________________________________________________________________________________	
+
+void	RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool & mbf)
+{
 	if (modelTypeList.lData[mid] == 0)
-		mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
+		mm = LocateVar(modelMatrixIndices.lData[mid]);
 	else
 		mm = nil;
 	
 	long fvi = modelFrequenciesIndices.lData[mid];
-	fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
+	fv = LocateVar (fvi>=0?fvi:(-fvi-1));
 	mbf = (fvi>=0);
 }
 
