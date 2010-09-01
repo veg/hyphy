@@ -1491,8 +1491,10 @@ DataSetFilter IntermediateCodon_AA_part = CreateFilter(IntermediateCodon_AA,1,"0
 LikelihoodFunction IntermediateCodon_AA_LF = (IntermediateCodon_AA_part,IntermediateCodon_tree);
 
 
-OPTIMIZATION_PRECISION    = 0.001;
-VERBOSITY_LEVEL			  = 1;
+OPTIMIZATION_PRECISION    		= 0.001;
+VERBOSITY_LEVEL			  		= 1;
+USE_ADAPTIVE_VARIABLE_STEP		= 1;
+OPTIMIZATION_METHOD        		= 4;
 
 Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
 

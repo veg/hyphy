@@ -7,6 +7,10 @@
 	
 /* end test preamble */
 
+VERBOSITY_LEVEL			   = 1;
+USE_ADAPTIVE_VARIABLE_STEP = 1;
+OPTIMIZATION_METHOD        = 4;
+
 fprintf (stdout, "\nRunning an \n");
 runTimer = Time (1);
 

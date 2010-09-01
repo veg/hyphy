@@ -106,6 +106,11 @@ givenTree.2.mu=0.06485966277329239;
 DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter filteredData = CreateFilter(ds,1,"0-1999","0-7");
 LikelihoodFunction lf = (filteredData,givenTree);
+USE_ADAPTIVE_VARIABLE_STEP	= 1;
+/*
+VERBOSITY_LEVEL			    = 100;
+*/
+
 Optimize(res_lf,lf);
 
 /* test epilogue */

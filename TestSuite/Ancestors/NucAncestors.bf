@@ -3,7 +3,7 @@
 BEGIN TAXA;
 	DIMENSIONS NTAX = 8;
 	TAXLABELS
-		'B_FR_83_HXB2_ACC_K03455''B_US_83_RF_ACC_M17451''B_US_86_JRFL_ACC_U63632''B_US_90_WEAU160_ACC_U21135''D_CD_83_ELI_ACC_K03454''D_CD_83_NDK_ACC_M27323''D_CD_84_84ZR085_ACC_U88822''D_UG_94_94UG114_ACC_U88824';
+		'B_FR_83_HXB2_ACC_K03455' 'B_US_83_RF_ACC_M17451' 'B_US_86_JRFL_ACC_U63632' 'B_US_90_WEAU160_ACC_U21135' 'D_CD_83_ELI_ACC_K03454' 'D_CD_83_NDK_ACC_M27323' 'D_CD_84_84ZR085_ACC_U88822' 'D_UG_94_94UG114_ACC_U88824';
 END;
 
 BEGIN CHARACTERS;
@@ -71,8 +71,6 @@ DataSet	 				mlAncestors = ReconstructAncestors (_lf_ID);
 DataSetFilter			_AncestalFilter	= CreateFilter (mlAncestors,1);
 GetDataInfo				(_AncestalFilterChars,_AncestalFilter,"CHARACTERS");
 
-
-
 for (k = 0; k < _AncestalFilter.species; k = k+1)
 {
 	GetDataInfo (aSeq, _AncestalFilter, k);
@@ -85,6 +83,7 @@ for (k = 0; k < _AncestalFilter.species; k = k+1)
 }
 
 fprintf (stdout, "[OK: ML SEQUENCE RECONSTRUCTION]\n");
+
 
 _samplingIterates		= 100;
 

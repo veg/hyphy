@@ -40,12 +40,13 @@ LikelihoodFunction flu_LF2  = 	(flu_part2,Tree_12);
 
 
 VERBOSITY_LEVEL 			  		= 	1;
+USE_ADAPTIVE_VARIABLE_STEP			=   1;
+OPTIMIZATION_METHOD					=   4;
 OPTIMIZATION_PROGRESS_QUANTUM 		= 	0.5;
 OPTIMIZATION_PROGRESS_STATUS  		= 	"OPTIMIZING THE LIKELIHOOD FUNCTION";
 OPTIMIZATION_PROGRESS_TEMPLATE 		= 	"$1 $2 $3% $4 $5 $6";
 
-
-Optimize			(res_flu_LF2,flu_LF2);
+Optimize								(res_flu_LF2,flu_LF2);
 
 /* test epilogue */
 	timeMatrix = endTestTimer 				  (_testDescription);

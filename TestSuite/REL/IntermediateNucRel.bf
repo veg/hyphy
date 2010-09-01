@@ -63,7 +63,8 @@ Tree Tree_1				=	DATAFILE_TREE;
 
 DataSetFilter flu_part 			= CreateFilter(flu,1);
 LikelihoodFunction flu_LF 		= (flu_part,Tree_1);
-
+USE_ADAPTIVE_VARIABLE_STEP		= 1;
+VERBOSITY_LEVEL					= 1;
 Optimize						(res_flu_LF,flu_LF);
 
 expectedConditionalProbabilities = {
