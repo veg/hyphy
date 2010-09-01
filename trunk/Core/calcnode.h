@@ -320,7 +320,11 @@ class _TreeTopology: public _CalcNode {
 				void		 	LeafWiseT 							(bool = false); 
 		
 		virtual	void			GetNodeName							(node<long> *, _String&, bool = false);
-		virtual	void			GetBranchLength						(node<long> *, _String&);
+		virtual	void			GetBranchLength						(node<long> *, _String&, bool = false);
+								// SLKP 20100901: 
+								//				 added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
+								//				 just the numeric value (if false)
+	
 		virtual	void			GetBranchLength						(node<long> *, _Parameter&);
 		virtual	void			GetBranchValue						(node<long> *, _String&);
 		virtual	void			GetBranchVarValue					(node<long> *, _String&, long);
@@ -459,7 +463,7 @@ class _TheTree: public _TreeTopology {
 	virtual	 _PMathObj 		PlainTreeString				(_PMathObj,_PMathObj);
 	
 	virtual	 void			GetNodeName					(node<long> *, _String&, bool = false);
-	virtual	 void			GetBranchLength				(node<long> *, _String&);
+	virtual	 void			GetBranchLength				(node<long> *, _String&, bool = false);
 	virtual	 void			GetBranchLength				(node<long> *, _Parameter&);
 	virtual	 void			GetBranchValue				(node<long> *, _String&);
 	virtual  _String*		GetBranchSpec				(node<long> *);
