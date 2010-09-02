@@ -188,7 +188,7 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 		// optional list of parameters to estimate the conditional covariance for
 
 
-		void		RescanAllVariables		(void);
+		virtual		void		RescanAllVariables		(void);
 													
 		long		DependOnTree	   		(_String&);
 		long		DependOnModel	   		(_String&);
@@ -603,6 +603,7 @@ public:
 						_CustomFunction 		(_String*);
 	
 virtual		_Parameter	Compute 				(void);
+virtual		void		RescanAllVariables		(void) {}
 	
 	
 
