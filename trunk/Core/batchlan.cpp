@@ -5737,8 +5737,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 				
 				if (f<0 || f>=dsNames->lLength)
 				{
-					errMsg = *currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter";
-					WarnError (errMsg);
+					WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
 					return;
 				}				
 				
@@ -7611,9 +7610,10 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim)
 {
 	
-	bool 	isString = false, 
-			skipping = false, 
-			isComment = false;
+	bool 	isString  = false, 
+			skipping  = false;
+	
+	char	isComment = 0;
 	
 	
 	long	scopeIn 	= 0,  
@@ -7654,23 +7654,37 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 		// check for comments
 		if (isComment)
 		{
-			if ( c=='/' && input.sData[index-1]=='*' ) 
+			if (isComment == 1)
 			{
-				isComment = false;
-				lastChar  = 0;
-				continue;
+				if (c=='/' && input.sData[index-1]=='*')
+					isComment = 0;
 			}
-			lastChar = 0;
+			else
+				if (c == '\r' || c == '\n')
+					isComment = 0;
+			
+			lastChar  = 0;
 			continue;
 		}
 		else
 		{
-			if (!isString && c=='/' && input.getChar(index+1)=='*' )
+			if (!isString && c=='/')
 			{
-				isComment = true;
-				lastChar  = 0;
-				index++;
-				continue;
+				switch (input.getChar(index+1))
+				{
+					case '*':
+						isComment = 1;
+						break;
+					case '/':
+						isComment = 2;
+				}
+				
+				if (isComment)
+				{
+					lastChar  = 0;
+					index++;
+					continue;
+				}
 			}
 		}
 		
