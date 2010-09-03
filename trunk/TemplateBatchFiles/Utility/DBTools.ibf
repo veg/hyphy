@@ -51,7 +51,7 @@ function bufferBuilder (key, value)
 function _CreateTableIfNeeded (DB_ID, tableID, tableDefinition, force)
 {
 	haveTable = _TableExists(DB_ID, tableID);
-	if (haveTable)
+	if (haveTable && force)
 	{
 		DoSQL (DB_ID,"DROP TABLE " + tableID, "return 0;");
 	}
@@ -64,6 +64,7 @@ function _CreateTableIfNeeded (DB_ID, tableID, tableDefinition, force)
 		tableDefinition["bufferBuilder"][""];
 		_buffer * ")";
 		_buffer * 0;
+		
 		DoSQL (DB_ID, "CREATE TABLE `tableID` `_buffer`", "");
 		return 1;
 	}
