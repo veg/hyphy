@@ -1225,8 +1225,16 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
 					return;
 				}
 			}			
-			_String	 nv (LocateVar(thisNodeOperation->GetAVariable())->Compute()->Value());
-			result<< &nv;
+			
+			_PMathObj subThisValue = LocateVar(thisNodeOperation->GetAVariable())->Compute();
+			
+			if (subThisValue->ObjectClass () == NUMBER)
+				result.AppendNewInstance(new _String (subThisValue->Value()));
+			else
+				if (subThisValue->ObjectClass () == STRING)
+					result.AppendNewInstance((_String*)subThisValue->toStr());
+				else
+					result << LocateVar(thisNodeOperation->GetAVariable())->GetName();
 		}
 		else
 		{
@@ -2475,7 +2483,8 @@ _PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formu
 {
 	theStack.Reset();
 	bool wellDone = true;
-	for (int i=0; i<theFormula.lLength; i++)
+	
+	for (long i=0; i<theFormula.lLength; i++)
 		if (!((_Operation*)((BaseRef**)theFormula.lData)[i])->ExecutePolynomial(theStack))
 		{
 			wellDone = false;

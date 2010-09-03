@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020100830beta");
+_String	  __KERNEL__VERSION__ ("2.0020100903beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__
@@ -248,6 +248,7 @@ void _String::CopyDynamicString (_String *s, bool flushMe)
 		free (sData);
 	
 	sLength 	= s->sLength;
+	
 	if (s->nInstances == 1)
 	{
 		sData   	= s->sData;
@@ -467,19 +468,6 @@ void _String::operator << (const _String* s)
 {
 	if ( s && s->sLength) 
 	{
-		/*unsigned long leftOver = storageIncrement-sLength%storageIncrement;
-		
-		if (sLength&&(leftOver==storageIncrement)) 
-			leftOver = 0;
-		
-		if (leftOver<s->sLength) //readjust memory allocation
-		{
-			long times = (s->sLength-leftOver)/storageIncrement+1;
-
-			if (!(sData = MemReallocate (sData, (sLength/storageIncrement+times+1)*storageIncrement)))
-				warnError( -108);
-		}*/
-		
 		if (nInstances < sLength + s->sLength)
 		{
 			unsigned long incBy = sLength + s->sLength - nInstances;
@@ -498,9 +486,20 @@ void _String::operator << (const _String* s)
 				checkPointer (sData);
 		}
 
-		memcpy(sData+sLength,s->sData,s->sLength);
+		for (long k = 0; k < s->sLength; k++)
+			sData[sLength+k] = s->sData[k];
+		
+		//memcpy(sData+sLength,s->sData,s->sLength);
 		sLength+=s->sLength;
 	}
+}
+
+//_______________________________________________________________________
+// append and delete operator
+void _String::AppendNewInstance (_String* s)
+{
+	(*this) << s;
+	DeleteObject (s);
 }
 
 //_______________________________________________________________________

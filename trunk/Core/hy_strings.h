@@ -90,6 +90,10 @@ virtual 	char& operator [] (long);
   			
  			virtual void operator << (const _String*);
  				// append into operator
+	
+			void	AppendNewInstance (_String*);
+			/* SLKP 20100903: added a utility function to append the contents of a dynamic string 
+							  to a string buffer and then free the argument */
 
  			virtual void operator << (const char);
  				// append into operator
