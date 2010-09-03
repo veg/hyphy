@@ -7464,7 +7464,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 			if (mID<0 && !useNoModel.Equal((_String*)parameters(0)))
 				WarnError(*(_String*)parameters(0) & " is not a valid model ident in call to UseModel.");
 			else
-				lastModelUsed = mID;
+				lastMatrixDeclared = mID;
 		}
 		break;
 		
