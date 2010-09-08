@@ -838,6 +838,10 @@ class _FString : public _MathObject { // strings encountered in formulas
 	virtual	bool	  HasChanged		(void)
 					  					{ return true; }
 	
+	virtual bool	  IsEmpty			(void)
+											{return !theString || theString->sLength == 0;}
+		// SLKP 20100907: a simple utility function to check if the object is an empty string
+	
 	_String*	 	  theString;
 		
 };

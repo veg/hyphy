@@ -636,10 +636,7 @@ _String _String::Chop(long from, long to)
 // cut string from, to (-1 for any means from beginning/to end)
 _String _String::Cut(long from, long to)
 {
-	if (sLength==0) 
-	{
-		return empty;
-	}
+	if (!sLength) return empty;
 	if (from == -1) from = 0;
 	if (to == -1 || to >= sLength) to = ((long)sLength)-1;
 	if (to<from) return empty;

@@ -2741,6 +2741,7 @@ _Matrix*		_Matrix::branchLengthStencil (void)
 		else
 			stencil = nil;
 	}
+	
 	return stencil;
 }
 
@@ -9557,6 +9558,34 @@ void	 	_AssociativeList::FillInList (_List& fillMe)
 }
 
 
+//_____________________________________________________________________________________________
+void	 	_AssociativeList::Merge (_PMathObj p)
+{
+	if (p && p->ObjectClass() == ASSOCIATIVE_LIST)
+	{
+		_AssociativeList	* rhs = (_AssociativeList*) p;
+		
+		_SimpleList	 hist;
+		long		 ls, 
+					 cn	= rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
+		
+		while (cn >= 0)
+		{
+			_String* aKey = new _String(*((_String**)rhs->avl.dataList->lData)[cn]);				
+			long insAt = 0;
+			if ((insAt = avl.Insert (aKey, (long)rhs->avl.GetXtra(cn)->makeDynamic(), false)) < 0) // already exists
+			{	
+				avl.SetXtra (-insAt-1,new _MathObject(), false);
+				DeleteObject (aKey);
+			}
+			
+			cn = rhs->avl.Traverser (hist,ls);
+		}
+	}
+	else
+		WarnError ("Associative list merge operation requires an associative list argument.");
+}
+
 //__________________________________________________________________________________
 	
 	
@@ -9566,11 +9595,13 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 	switch (opCode)
 	{
 		case HY_OP_CODE_ADD: // +
-			if (p)
-				MStore (_String((long)avl.countitems()), p, true);
-				return new _Constant (avl.countitems());
-			break;
+			MStore (_String((long)avl.countitems()), p, true);
+			return new _Constant (avl.countitems());
 
+		case HY_OP_CODE_MUL: // merge
+			Merge (p);
+			return new _Constant (avl.countitems());
+			
 		case HY_OP_CODE_SUB:
 		case HY_OP_CODE_ABS:
 			if (opCode == HY_OP_CODE_SUB)

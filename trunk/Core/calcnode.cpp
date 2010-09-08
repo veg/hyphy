@@ -120,6 +120,7 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputSymbols	  = "TREE_OUTPUT_SYMBOLS",
 			treeOutputSymbolSize  = "TREE_OUTPUT_SYMBOL_SIZE",
 			treeOutputExtraPS	  = "TREE_OUTPUT_EXTRA_POSTSCRIPT",
+			treeOutputPrefixPS	  = "TREE_OUTPUT_PREFIX_POSTSCRIPT",
 			treeOutputLayout	  = "TREE_OUTPUT_LAYOUT",
 			treeOutputNNPlaceH	  = "__NODE_NAME__",
 			treeOutputFSPlaceH	  = "__FONT_SIZE__",
@@ -130,6 +131,8 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			newNodeGraftName	  = "NAME",
 			newNodeGraftWhere	  = "WHERE",
 			newNodeGraftParent	  = "PARENT",
+			eqWithReroot		  = "Equal with reroot at ",
+			eqWithoutReroot		  = "Equal without rerooting",
 			iNodePrefix;
 						
 _Parameter  _timesCharWidths[256]= // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
@@ -2570,7 +2573,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 			break;
 		}	
 		case HY_OP_CODE_EQ: // ==
-			return new _Constant (Equal(p));
+			return  Compare(p);
 			break;
 		case HY_OP_CODE_ABS: // Abs
 			return FlatRepresentation();
@@ -3119,18 +3122,23 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 
 //__________________________________________________________________________________
 
-bool	 _TreeTopology::Equal (_PMathObj p)
+_FString*	 _TreeTopology::Compare (_PMathObj p)
 // compare tree topologies
 {
+	_FString * res = new _FString;
+	
 	long objClass = p->ObjectClass();
 	
-	if ((objClass!=TREE)&&(objClass!=TOPOLOGY))
-		return false;
-	else
+	if (objClass==TREE || objClass==TOPOLOGY)
 	{
-		_TheTree * t = (_TheTree*)p;
-		return 	 !CompareTrees (t).beginswith("Unequal ");
+		_String cmp = CompareTrees ((_TreeTopology*)p);
+		if (cmp.startswith (eqWithReroot))
+			(*res->theString) = cmp.Cut(eqWithReroot.sLength + ((_TreeTopology*)p)->GetName()->sLength + 1, cmp.sLength-2);
+		else
+			if (cmp.startswith(eqWithoutReroot))
+				(*res->theString) = _String (' ');
 	}
+	return res;	
 }
 
 
@@ -3886,13 +3894,11 @@ _PMathObj _TreeTopology::AVLRepresentation (_PMathObj layoutOption)
 	{
 		bool			   preOrder = layoutOption->Compute()->Value()>0.5;
 			
-		_AssociativeList * masterList = new _AssociativeList ();
-		_FString		   nameHolder,
-						   arrayKey;
+		_AssociativeList * masterList = (_AssociativeList * ) checkPointer(new _AssociativeList ());
+		_FString		   nameHolder;
+			//			   arrayKey;
 						   
 		_Constant		   lengthHolder;
-		
-		checkPointer (masterList);
 		
 		long		 rootIndex = 0,
 					 nodeLevel = 0;
@@ -3916,57 +3922,35 @@ _PMathObj _TreeTopology::AVLRepresentation (_PMathObj layoutOption)
 		
 		while     (tNode)
 		{
-			_AssociativeList * nodeList = new _AssociativeList ();
-			checkPointer (nodeList);
+			_AssociativeList * nodeList = (_AssociativeList * ) checkPointer(new _AssociativeList ());
 			GetNodeName (tNode, *nameHolder.theString);
-			*arrayKey.theString = "Name";
-			nodeList->MStore (&arrayKey, &nameHolder, true);
+			nodeList->MStore ("Name", &nameHolder, true);
 			GetBranchLength (tNode, lengthHolder.theValue);
-			*arrayKey.theString = "Length";
-			nodeList->MStore (&arrayKey, &lengthHolder, true);
+			nodeList->MStore ("Length", &lengthHolder, true);
 			lengthHolder.theValue = nodeLevel;
-			*arrayKey.theString = "Depth";
-			nodeList->MStore (&arrayKey, &lengthHolder, true);
+			nodeList->MStore ("Depth", new _Constant (nodeLevel), false);
 			if (tNode->parent)
-			{
-				lengthHolder.theValue = nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode->parent));
-				*arrayKey.theString = "Parent";
-				nodeList->MStore (&arrayKey, &lengthHolder, true);
-			}
+				nodeList->MStore ("Parent", new _Constant(nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode->parent))), false);
+
 			long nCount = tNode->get_num_nodes();
 			if (nCount)
 			{
 				_AssociativeList * childList = new _AssociativeList ();
 				checkPointer (childList);
 				for (long k = 1; k<=nCount; k=k+1)
-				{
-					lengthHolder.theValue = nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode->go_down(k)));
-					*arrayKey.theString = _String((long)(k-1));
-					childList->MStore (&arrayKey, &lengthHolder, true);
-				}
-				*arrayKey.theString = "Children";
-				nodeList->MStore (&arrayKey, childList, false);
-			}
-			
-			*arrayKey.theString = _String((long)nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode)));	
-			masterList->MStore (&arrayKey, nodeList, false);
-
+					childList->MStore (_String((long)(k-1)),new _Constant(nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode->go_down(k)))) , false);
+				nodeList->MStore ("Children", childList, false);
+			}			
+			masterList->MStore (_String((long)nodeIndexList.GetXtra (nodeIndexList.Find((BaseObj*)tNode))), nodeList, false);
 			tNode = preOrder?StepWiseTraverserLevel(nodeLevel,(node<long>*)nil):DepthWiseStepTraverserLevel (nodeLevel,(node<long>*)nil);
 		}
 		
 		_AssociativeList * headerList = new _AssociativeList ();
 		checkPointer (headerList);
 		
-		*arrayKey.theString = "Name";
-		*nameHolder.theString = *GetName();
-		headerList->MStore (&arrayKey, &nameHolder, true);
-
-		*arrayKey.theString = "Root";
-		lengthHolder.theValue = rootIndex;
-		headerList->MStore (&arrayKey, &lengthHolder, true);
-
-		*arrayKey.theString = "0";
-		masterList->MStore (&arrayKey, headerList, false);
+		headerList->MStore ("Name", new _FString (*GetName()), false);
+		headerList->MStore ("Root", new _Constant(rootIndex), false);
+		masterList->MStore ("0", headerList, false);
 		
 		return masterList;
 	}
@@ -5076,7 +5060,8 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 			
 			bool	 doEmbed = false;
 			bool	 doSymbol = false;
-			_FString *extraPS = nil;
+			_FString *extraPS	= nil,
+					 *prefixPS	= nil;
 			long	symbolsize = 3;
 			
 			
@@ -5098,6 +5083,10 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				if ( lc )
 					extraPS = (_FString*)lc->Compute();
 				
+				lc = toptions->GetByKey(treeOutputPrefixPS, STRING);
+				if ( lc )
+					prefixPS = (_FString*)lc->Compute();
+
 				lc = toptions->GetByKey(treeOutputSymbolSize, NUMBER);
 				if ( lc )
 					symbolsize = lc->Value();
@@ -5173,6 +5162,9 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 				(*res)<<"] >> setpagedevice\n";
 			}
 			
+			if (prefixPS)
+				(*res) << prefixPS->theString->Replace (treeOutputFSPlaceH, _String(fontSize), true);
+			
 			long	    xtraChars = 0;
 			
 			if (toptions)
@@ -5200,7 +5192,8 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << "/size ";
 					(*res) << _String(symbolsize);
 					(*res) << " def\n";
-					(*res) << "/box { 1 size mul 0 size mul rlineto\n";
+					(*res) << "/box { 0 -0.5 size mul rmoveto\n";
+					(*res) << "1 size mul 0 size mul rlineto\n";
 					(*res) << "0 size mul 1 size mul rlineto\n";
 					(*res) << "-1 size mul 0 size mul rlineto\n";
 					(*res) << "closepath\n";
@@ -5211,7 +5204,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << "closepath\n";
 					(*res) << "} def\n";
 					
-					(*res) << "/circle {	0.5 size mul 0 360 arc\n";
+					(*res) << "/circle {currentpoint exch 0.5 size mul add exch 0.5 size mul 0 360 arc\n";
 					(*res) << "closepath\n";
 					(*res) << "} def\n";
 					
@@ -5982,7 +5975,7 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			if (layout == 1)
 			{
 				t = _String(child->in_object.label1*hScale) & " 0 moveto\n";
-				res<<&t;	
+				res << &t;	
 				t = _String(-child->in_object.bL*hScale) & " 0 rlineto\n";
 			}
 			else
@@ -11212,7 +11205,7 @@ _String				_TreeTopology::CompareTrees		 (_TreeTopology* compareTo)
 		char compRes;
 		
 		if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil))>0)
-			rerootAt = "Equal w/o rerooting.";
+			rerootAt = eqWithoutReroot;
 		else
 		{
 			long   tCount = 0;
@@ -11245,7 +11238,7 @@ _String				_TreeTopology::CompareTrees		 (_TreeTopology* compareTo)
 				{
 					if (tCount==1)
 					{
-						rerootAt = _String("Equal with reroot at ") & *LocateVar (meNode->in_object)->GetName() & '.';
+						rerootAt = eqWithReroot & *LocateVar (meNode->in_object)->GetName() & '.';
 						break;
 					}
 					else
@@ -11328,11 +11321,10 @@ void	_TreeTopology::destroyCompTree (node<long>* compRoot)
 {
  	 long 	nc = compRoot->get_num_nodes();
  	 for (int i=1; i<=nc; i++)
- 	 {
-		compRoot->go_down(i)->delete_tree(); 	 
-		delete (compRoot->go_down(i));
- 	 }
+		destroyCompTree (compRoot->go_down(i));
+ 	 
  	 DeleteObject ((BaseRef)compRoot->in_object);
+	 delete (compRoot);
 }
 
 //_______________________________________________________________________________________________

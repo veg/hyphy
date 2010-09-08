@@ -210,7 +210,7 @@ _SimpleList*		CountingSort			(long, _SimpleList* = nil);
 void				BubbleSort 				(void);
 void				QuickSort 				(long, long);
  				
-long*		quickArrayAccess 				(void) 
+long*				quickArrayAccess 		(void) 
 												{ return (long*)lData;}
  				 			
 virtual		long	Compare					(long,long);

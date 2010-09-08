@@ -610,6 +610,16 @@ class 			_AssociativeList: public _MathObject
 		virtual _PMathObj 	Execute 		(long opCode, _PMathObj = nil, _PMathObj = nil);   
 		virtual	BaseRef		makeDynamic 	(void); 
 		virtual	_PMathObj	Compute   		(void); 
+		virtual void		Merge			(_PMathObj);
+			/* 20100907: SLKP
+					A simple function to merge two lists;
+					the combined list will have the key set equal to the union of the two input key sets
+					if there are conflicting values for a given key, an undefined value will be stored in
+					for the corresponding key
+			 
+				 
+			 */
+	
 		virtual	void		Duplicate 		(BaseRef); 
 		_PMathObj			MAccess 		(_PMathObj);
 		

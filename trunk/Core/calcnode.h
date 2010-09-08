@@ -277,7 +277,7 @@ class _TreeTopology: public _CalcNode {
 					   			
 		virtual		  			~_TreeTopology 						(void);
 
-		virtual	 bool			Equal 								(_PMathObj);
+		virtual	 _FString*		Compare 							(_PMathObj);
 		virtual	 _PMathObj		Compute 							(void);
 		virtual  BaseRef		makeDynamic							(void);
 				 node<long>*	CopyTreeStructure   				(node<long>*, bool);	

@@ -1269,7 +1269,7 @@ BaseRef  _List::Join (BaseRef spacer)
 	{
 		if (k)
 			(*joined) << *(_String*)spacer;
-		(*joined) << (_String*) ((BaseRef*)lData)[k]->toStr();
+		joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
 	}
 	
 	joined->Finalize();

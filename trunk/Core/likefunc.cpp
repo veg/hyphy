@@ -5061,7 +5061,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 			
 		}
 		
-		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes\n." & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrixExpCount - exponentiationsIn & " matrix exponentiations calls were made\n");
+		ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrixExpCount - exponentiationsIn & " matrix exponentiations calls were made\n");
 
 		if (optMethod == 7)
 		{

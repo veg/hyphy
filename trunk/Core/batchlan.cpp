@@ -2739,7 +2739,23 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 				return;
 			}
 			
-			if (result->Value()==0.0)
+			bool conditionFalse = false;
+			
+			switch (result->ObjectClass())
+			{
+				case NUMBER:
+					conditionFalse = result->Value()==0.0;
+					break;
+				case STRING:
+					conditionFalse = ((_FString*)result)->IsEmpty();
+					break;
+				default:
+					WarnError ("Condition evaluation result be be a number or a string");
+					return;
+					
+			}
+			
+			if (conditionFalse)
 			{
 				chain.currentCommand = simpleParameters.lData[1];
 				return;
