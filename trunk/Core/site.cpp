@@ -7100,8 +7100,7 @@ bool	StoreADataSet (_DataSet* ds, _String* setName)
 {
 	if (!setName->IsValidIdentifier (true))
 	{
-		_String errMsg = *setName & " is not a valid identifier while constructing a DataSet";
-		WarnError (errMsg);
+		WarnError (*setName & " is not a valid identifier while constructing a DataSet");
 		return false;
 	}
 	
@@ -7124,35 +7123,35 @@ bool	StoreADataSet (_DataSet* ds, _String* setName)
 			}
 		#endif
 		
+		_DataSet* existingDS = (_DataSet*)dataSetList (pos);
+		
+		bool isDifferent = existingDS->NoOfSpecies () != ds->NoOfSpecies() ||
+						   existingDS->NoOfColumns () != ds->NoOfColumns() ||
+						   existingDS->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
+						   existingDS->GetTT () != ds->GetTT();
+		
+		
 		for (long dfIdx = 0; dfIdx < dataSetFilterNamesList.lLength; dfIdx++)
 			if (((_String*)dataSetFilterNamesList(dfIdx))->sLength)
 			{
 				_DataSetFilter * aDF = (_DataSetFilter*)dataSetFilterList(dfIdx);
-				if (aDF->GetData() == (_DataSet*)dataSetList (pos))
+				if (aDF->GetData() == existingDS)
+				{
+					if (isDifferent)
+					{
+						ReportWarning (_String("Overwriting dataset '") & *setName & "' caused DataSetFilter '" & *((_String*)dataSetFilterNamesList(dfIdx)) & "' to be deleted");
+						KillDataFilterRecord(dfIdx, true);
+					}
 					aDF->SetData(ds);
+				}
 			}
 		dataSetList.Replace(pos,ds,false);
 	}
 	
-	_String parName (*setName);
-	_String varName (parName&".species");
-	_Variable rows (varName);
-	varName = parName&".sites";
-	_Variable cols (varName);
-	varName = parName&".unique_sites";
-	_Variable u_cols (varName);
 	
-	_Constant c;
-	_Parameter varVal = ds->NoOfSpecies(); 
-	c.SetValue (varVal);
-	FetchVar (LocateVarByName(*rows.GetName()))->SetValue(&c);
+	CheckReceptacleAndStore (*setName&".species",empty,false, new _Constant (ds->NoOfSpecies()), false);
+	CheckReceptacleAndStore (*setName&".sites",empty,false, new _Constant (ds->NoOfColumns()), false);
+	CheckReceptacleAndStore (*setName&".unique_sites",empty,false, new _Constant (ds->NoOfUniqueColumns()), false);
 	
-	varVal = ds->NoOfColumns();
-	c.SetValue (varVal);
-	FetchVar (LocateVarByName(*cols.GetName()))->SetValue(&c);
-	
-	varVal = ds->NoOfUniqueColumns();
-	c.SetValue (varVal);
-	FetchVar (LocateVarByName(*u_cols.GetName()))->SetValue(&c);
 	return true;
  }
