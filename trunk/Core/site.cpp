@@ -7140,9 +7140,10 @@ bool	StoreADataSet (_DataSet* ds, _String* setName)
 					if (isDifferent)
 					{
 						ReportWarning (_String("Overwriting dataset '") & *setName & "' caused DataSetFilter '" & *((_String*)dataSetFilterNamesList(dfIdx)) & "' to be deleted");
-						KillDataFilterRecord(dfIdx, true);
+						KillDataFilterRecord(dfIdx, false);
 					}
-					aDF->SetData(ds);
+					else
+						aDF->SetData(ds);
 				}
 			}
 		dataSetList.Replace(pos,ds,false);

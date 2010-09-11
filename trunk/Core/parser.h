@@ -904,6 +904,9 @@ _Variable*  CheckReceptacle
 bool	    CheckReceptacleAndStore
 							(_String*,_String, bool, _PMathObj, bool = true);
 
+bool	    CheckReceptacleAndStore
+							(_String,_String, bool, _PMathObj, bool = true);
+		
 void		FinishDeferredSF(void);
 							
 void		SetupOperationLists (void);

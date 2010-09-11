@@ -349,6 +349,7 @@ void	FlushRegExp					(Ptr);
 _String GetRegExpError				(int);
 void	ReportWarning				(_String);
 void	FlagError					(_String);
+void	WarnErrorWhileParsing		(_String, _String&);
 void	WarnError					(_String);
 _String GetVersionString			(void);
 _String GetTimeStamp				(bool = false);

@@ -741,15 +741,14 @@ long  AddDataSetToList (_String& theName,_DataSet* theDS)
 	long k = dataSetNamesList.Find (&empty);
 	if (k==-1)
 	{
-		dataSetList<<theDS;
+		dataSetList.AppendNewInstance (theDS);
 		dataSetNamesList&& & theName;
 		k = dataSetNamesList.lLength-1;
-		DeleteObject (theDS);
 	}
 	else
 	{
 		dataSetNamesList.Replace (k, &theName, true);
-		dataSetList.lData[k] = (long)theDS;
+		dataSetList.lData[k]     = (long)theDS;
 	}
 	return k;
 }
@@ -1512,7 +1511,6 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 	
 	while (s.Length()) // repeat while there is stuff left in the buffer
 	{
-
 		_String currentLine (_ElementaryCommand::FindNextCommand (s,true));
 		
 		if (currentLine.getChar(0)=='}') 
@@ -1575,8 +1573,7 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 				
 				if (lif<0 || lif>=lLength)
 				{
-					_String errMsg("'else' w/o an if to latch on to...");
-					WarnError (errMsg);
+					WarnError ("'else' w/o an if to latch on to...");
 					return false;
 				}
 				
@@ -1588,9 +1585,8 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 			}
 			else
 			{
-				_String errMsg("'else' w/o an if to latch on to...");
-				WarnError (errMsg);
-				return FALSE;
+				WarnError ("'else' w/o an if to latch on to...");
+				return false;
 			}
 				
 		}
@@ -1604,8 +1600,7 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 		{
 			if (bc)
 			{
-				_ElementaryCommand b;
-				(*this)&&(&b);
+				AppendNewInstance(new _ElementaryCommand);
 				(*bc)<<(countitems()-1);
 			}
 		}
@@ -1614,8 +1609,7 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 		{
 			if (bc)
 			{
-				_ElementaryCommand b;
-				(*this)&&(&b);
+				AppendNewInstance(new _ElementaryCommand);
 				(*bc)<<(-(long)countitems()+1);
 			}
 		}
@@ -1846,13 +1840,13 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 		{
 			_ElementaryCommand::ConstructBGM (currentLine, *this);
 		}
-		// plain ol' formula - parse it as such!
 		else
 		if (currentLine.startswith (blAssert)) // ConstructAssert
 		{
 			_ElementaryCommand::ConstructAssert (currentLine, *this);
 		}
-			else
+		// plain ol' formula - parse it as such!
+		else
 		{
 			_String checker (currentLine);
 			if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length())
@@ -1865,8 +1859,7 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 				_ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
 				oddCommand->code = 0;
 				oddCommand->parameters&&(&currentLine);
-				(*this) << oddCommand;
-				DeleteObject (oddCommand);
+				AppendNewInstance (oddCommand);
 			}
 			else
 			{
@@ -2691,10 +2684,12 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 
 void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 {
+	chain.currentCommand++;
 	if (simpleParameters.lLength==2)
 	{
 	
 	}
+	
 	if (simpleParameters.lLength==3 || parameters.lLength)
 	{
 		if ( parameters.lLength && simpleParameters.lLength < 3)
@@ -2831,7 +2826,7 @@ void	  _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
 	}
 	_String  * dsID = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
 	StoreADataSet (ds, dsID);
-	DeleteObject (dsID);
+	DeleteObject  (dsID);
 	//StoreADataSet (ds, (_String*)parameters(0));
 }
 
@@ -8224,8 +8219,7 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 
 	if (mark1==-1 || mark2==-1 || dsID.Length()==0)
 	{
-		_String errMsg ("DataSet declaration missing a valid identifier");
-		acknError (errMsg);
+		WarnErrorWhileParsing ("DataSet declaration missing a valid identifier", source);
 		return false;
 	}
 		
@@ -8242,8 +8236,7 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 		mark2 = ExtractConditions (source,mark1+1,pieces,',');
 		if (pieces.lLength!=1)
 		{
-			_String errMsg ("DataSet declaration missing a valid filename");
-			acknError (errMsg);
+			WarnErrorWhileParsing ("DataSet declaration missing a valid filename", source);
 			return false;
 		}
 		
@@ -8265,7 +8258,8 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 			mark2 = ExtractConditions (source,mark1+1,pieces,',');
 			if ( pieces.lLength>4 || pieces.lLength==0 )
 			{
-				WarnError (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).");
+				WarnErrorWhileParsing (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).",
+									   source);
 				return false;
 			}
 			
@@ -8285,8 +8279,7 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 				mark2 = ExtractConditions (source,mark1+1,pieces,',');
 				if (pieces.lLength==0)
 				{
-					_String errMsg ("DataSet merging operation missing a valid list of arguments.");
-					acknError (errMsg);
+					WarnErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
 					return false;
 				}
 				
@@ -8310,8 +8303,7 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 				
 				if (dsc.parameters.lLength<=1)
 				{
-					_String errMsg ("DataSet merging operation missing a valid list of arguments.");
-					acknError (errMsg);
+					WarnErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
 					return false;
 				}
 				
@@ -8327,8 +8319,8 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 					mark2 = ExtractConditions (source,mark1+1,pieces,',');
 					if (pieces.lLength>3 || pieces.lLength==0)
 					{
-						_String errMsg ("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.");
-						acknError (errMsg);
+						WarnErrorWhileParsing("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.",
+											  source);
 						return false;
 					}
 					
@@ -8354,8 +8346,8 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 						mark2 = ExtractConditions (source,mark1+1,pieces,',');
 						if ((pieces.lLength>7)||(pieces.lLength<4))
 						{
-							_String errMsg ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>");
-							acknError (errMsg);
+							WarnErrorWhileParsing ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>",
+												   source);
 							return false;
 						}
 						
@@ -8370,8 +8362,8 @@ bool	_ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target
 					}
 					else				
 					{
-						_String errMsg ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);");
-						acknError (errMsg);
+						WarnErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
+											   source);
 					}
 	}
 	

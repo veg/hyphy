@@ -484,6 +484,12 @@ bool CheckReceptacleAndStore (_String* name, _String fID, bool checkValid, _PMat
 	return false;
 }
 
+//__________________________________________________________________________________
+bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, _PMathObj v, bool dup)
+{
+	return CheckReceptacleAndStore (&name, fID, checkValid, v, dup);
+}
+
 
 //__________________________________________________________________________________
 void  InsertVar (_Variable* theV)

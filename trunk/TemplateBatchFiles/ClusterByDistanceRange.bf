@@ -341,8 +341,7 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 		sortedCluster = sortedCluster % 0;
 		
 		stringLabel = "";
-		
-		graphVizSt = ""; graphVizSt * 128;
+		graphVizSt  = ""; graphVizSt * 128;
 		
 		edgesPrinted = 0;
 		nodesMade	 = {};
@@ -353,6 +352,7 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 		clusterSpan	      = 0;
 		clusterSizes      = {};
 		clusterMembership = {};
+		definedNode = {};
 		
 		for (k=0; k<=mDim; k=k+1)
 		{
@@ -377,10 +377,12 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 				
 				graphVizSt * ("\n\n/* cluster " + lastClusterID + "*/\n\n");
 				
+				
 				for (n1 = 0; n1 < clusterSize; n1=n1+1)
 				{
 					id1  = sortedCluster[clusterSpan + n1][1];
 					GetString		(seqName, ds,id1); 
+										
 					for (n2 = n1 + 1; n2 < clusterSize; n2 = n2+1)
 					{
 						id2 = sortedCluster[clusterSpan + n2][1];
@@ -388,7 +390,17 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 						/*fprintf (stdout, id1, ":", id2, ":", d, "\n");*/
 						if (d <= clumpingU && d>= clumpingL)
 						{
+							if (Abs(definedNode[seqName]) == 0)
+							{
+								graphVizSt * ("\"" + seqName + "\" [label = \"\"];\n");
+								definedNode[seqName]  = 1;
+							}
 							GetString		(seqName2, ds,id2); 
+							if (Abs(definedNode[seqName2]) == 0)
+							{
+								graphVizSt * ("\"" + seqName2 + "\" [label = \"\"];\n");
+								definedNode[seqName2]  = 1;
+							}
 							graphVizSt * ("\"" + seqName + "\" -- \"" + seqName2 + "\";\n");
 							edgesPrinted = edgesPrinted + 1;
 							nodesMade [seqName] = 1;

@@ -1462,6 +1462,7 @@ void	FlagError (_String st)
 	char  str[] = "\nError:";
 	
 		st = st & _String(ReturnCurrentCallStack());
+		
 		if (globalErrorFile) 
 		{
 			fwrite (str, 1, 7, globalErrorFile);
@@ -1525,6 +1526,12 @@ void	FlagError (_String st)
 		exit(1);
 	#endif	
 #endif
+}
+
+//_______________________________________________________________________
+void	WarnErrorWhileParsing (_String st, _String& context)
+{
+	WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
 

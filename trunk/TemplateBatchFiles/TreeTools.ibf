@@ -689,3 +689,88 @@ function _parsimonyAncestralMapping (treeAVL&, label)
 	assignmentMatrices = 0;
 	return totalCost;
 }
+
+function ComputeCOT (_treeID, _filePath)
+/* IN 	: the identifier of an existing tree variable (String)
+		  _filePath : if not an empty string, write a PostScript image with this tree
+		  			  to the given path
+		  			  
+   OUT	: an associative array with four entries
+   		  "Branch" 		- the branch where the COT resides
+   		  				  branch ENDS at the node whose value is returned 
+   		  				  
+   		  "Split"  		- how far up the branch the COT is, measured in the same units as branch lengths
+   		  				  from the END of the branch (i.e node) 
+   		  				  
+   		  "COTTree"		- tree rerooted at the COT
+   		  
+   		  "Distances"	- mean squared distance from the COT to all leaves		  
+*/ 
+{
+	_power = 2;
+					 /* '2' is the power of the distance function to 
+						   minimize - i.e. least squares in this case */
+	ExecuteCommands (
+	"_cot = Min (`_treeID`,_power);");
+	
+	_returnList = {};
+	_returnList ["Branch"] = _cot["COT_NODE"];
+	_returnList ["Split"]  = _cot["COT_SPLIT"];
+	_meanD = 0;
+	_keys  = Rows(_cot["COT_TO_NODE"]); 
+		/* _cot["COT_TO_NODE"] is an associative array
+		   mapping tree nodes to the total distance from COT (linear distance)
+		*/ 
+
+	for (_k = 0; _k < Columns(_keys); _k=_k+1)
+	{
+		_meanD = _meanD + (_cot["COT_TO_NODE"])[_keys[_k]]^_power;
+	}
+
+	_returnList     ["Distances"]  = _meanD/Columns(_keys);
+	/* reroot the tree at the COT branch */
+	ExecuteCommands ("_rerootedTree = RerootTree (`_treeID`, \""+_returnList ["Branch"]+"\");");
+	/* hackish lines below split the root branch into appropriate bits */
+	
+	ACCEPT_ROOTED_TREES = 1;
+	UseModel (USE_NO_MODEL);
+	Tree _temp = _rerootedTree;
+	_tempA = _temp^0; /* this converts the tree into a post-order list of nodes as an associative array; 
+						print it to see the structure */					       
+	_rootID	   = (_tempA[0])["Root"];
+	_dist	   = {};
+	for (_k = 1; _k < Abs (_tempA); _k = _k + 1)
+	{
+		if ((_tempA[_k])["Parent"] == _rootID)
+		{
+			if (_k == _rootID - 1)
+			{
+				_dist [(_tempA[_k])["Name"]] = _cot["COT_SPLIT"];
+			}
+			else
+			{
+				_dist [(_tempA[_k])["Name"]] = _cot["COT_BRANCH_LENGTH"]-_cot["COT_SPLIT"];			
+			}
+		}
+		else
+		{
+			_dist [(_tempA[_k])["Name"]] = (_tempA[_k])["Length"];
+		}
+	}
+	
+	_returnList["COTTree"] = PostOrderAVL2StringDistances (_tempA,_dist);
+	
+	/* make a postscript file if needed */
+	if (Abs(_filePath))
+	{
+		TREE_OUTPUT_OPTIONS = {};
+		nodeSpec = {};
+		nodeSpec ["TREE_OUTPUT_BRANCH_SPLIT"]		= _cot["COT_SPLIT"]/_cot["COT_BRANCH_LENGTH"];	
+		TREE_OUTPUT_OPTIONS [_cot["COT_NODE"]] 		= nodeSpec;
+		ExecuteCommands 							("psString = PSTreeString (`_treeID`,\"STRING_SUPPLIED_LENGTHS\",{{-1,-1}});");
+		fprintf 									(_filePath, CLEAR_FILE, psString);
+	}
+
+	return _returnList;
+	
+}
