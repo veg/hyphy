@@ -456,7 +456,7 @@ function _handleAlignment (dataSetName, writeToFiles)
 	}
 
 	alignmentScoresM = avlToMatrix  ("alignmentScores");
-	ExecuteAFile 					(Join(DIRECTORY_SEPARATOR,{{HYPHY_BASE_DIRECTORY[0][Abs(HYPHY_BASE_DIRECTORY)-2],"TemplateBatchFiles","Utility","DescriptiveStatistics.bf"}}));
+	LoadFunctionLibrary				("DescriptiveStatistics.bf");
 	distInfo = 						GatherDescriptiveStats (alignmentScoresM);
 	distInfo["Mean"] - 2*distInfo["Std.Dev"];
 	

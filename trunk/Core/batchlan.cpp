@@ -119,7 +119,9 @@ _List
 			modelNames,
 			executionStack,
 			openFileHandlesBackend,
-			standardLibraryPaths;
+			standardLibraryPaths,
+			standardLibraryExtensions,
+			loadedLibraryPathsBackend;
 			
 	
 #ifdef __MAC__
@@ -262,7 +264,8 @@ extern		long				globalRandSeed,
 						    	matrixExpCount;
 						    	
 						    	
-_AVLListX	openFileHandles		(&openFileHandlesBackend);					    	
+_AVLListX	openFileHandles		(&openFileHandlesBackend);
+_AVLList	loadedLibraryPaths	(&loadedLibraryPathsBackend);
 			
 _ExecutionList
 			*currentExecutionList = nil;
@@ -3403,20 +3406,36 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		commands = ProcessCommandArgument((_String*)parameters(0));
 	else
 	{
-		_String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix);
+		_String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix),
+				originalPath = filePath;
+
 		
 		FILE * commandSource = nil;
 		if (code == 66)
 		{
-			for (long p = 0; p < standardLibraryPaths.lLength; p++)
-			{
-				_String tryPath = *((_String*)standardLibraryPaths(p)) & filePath;
-				if (commandSource = doFileOpen (tryPath.getStr(), "rb"))
+			bool hasExtension	 = filePath.FindBackwards (".",0,-1) > 0;
+			
+			for (long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++)
+			{				
+				for (long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++)
 				{
-					filePath = tryPath;
-					break;
+					_String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
+					
+					if (loadedLibraryPaths.Find(&tryPath) >= 0)
+					{
+						ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
+						return;
+					}
+					if (commandSource = doFileOpen (tryPath.getStr(), "rb"))
+					{
+						filePath = tryPath;
+						break;
+					}
+					if (hasExtension)
+						break;
 				}
 			}
+			
 		}
 		
 		if (commandSource == nil)
@@ -3428,6 +3447,13 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 				return;
 			}
 		}
+
+		if (code == 66 && commandSource)
+		{
+			ReportWarning (_String("Loaded '") & originalPath & "' from " & filePath);
+			loadedLibraryPaths.Insert (filePath.makeDynamic(),0,false,true);
+		}
+		
 		commands = new _String (commandSource);
 		if (fclose		 (commandSource) ) // failed to fclose
 		{
@@ -3510,9 +3536,6 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		ReadDataSetFile (nil,1,&theCommand,nil,namespc);
 	else
 	{
-		//if (chain.stdinRedirect)
-		//	printf ("(%s) BEFORE:\n%s\n", ((_String*)parameters(0))->sData,_String((_String*)chain.stdinRedirect->toStr()).sData);
-	
 		_ExecutionList exc (theCommand,namespc);
 		
 		exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
@@ -3526,9 +3549,6 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 		else
 			exc.Execute();
 		
-		//if (chain.stdinRedirect)
-		//	printf ("(%s) AFTER:\n%s\n", ((_String*)parameters(0))->sData, _String((_String*)chain.stdinRedirect->toStr()).sData);
-	
 		exc.stdinRedirectAux = nil;
 		exc.stdinRedirect    = nil;
 		if (exc.result)
@@ -3543,8 +3563,6 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 	{
 		DeleteObject 			(inArg);
 		DeleteObject 			(inArgAux);
-		//chain.stdinRedirect 	= nil;
-		//chain.stdinRedirectAux  = nil;
 	}
 	
 	DeleteObject (namespc);
@@ -9473,24 +9491,18 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 	
 	if ( mark1==-1 || mark2==-1 || mark1+1>mark2-1)
 	{
-		_String errMsg ("Function declaration missing a valid function identifier or parameter list.");
-		acknError (errMsg);
+		WarnError	   ("Function declaration missing a valid function identifier or parameter list.");
 		isInFunction = false;
 		return false;
 	}
 		
-	_String*	funcID  = new _String(source.Cut (mark1,mark2-1));
-	
-	checkPointer(funcID);
+	_String*	funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+	*funcID = chain.AddNameSpaceToID (*funcID);
 	
 	// now look for the opening paren
 	
 	if ((mark1=batchLanguageFunctionNames.Find(funcID))!=-1)
-	{
-		_String errMsg ("Overwritten previously defined function:\"");
-		errMsg = errMsg & *funcID & '"';
-		ReportWarning (errMsg);
-	}
+		ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
 	
 	_List pieces;
 	

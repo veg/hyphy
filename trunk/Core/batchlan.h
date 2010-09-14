@@ -411,7 +411,8 @@ extern	_List
 		modelNames,
 		executionStack,
 		compiledFormulaeParameters,
-		standardLibraryPaths;
+		standardLibraryPaths,
+		standardLibraryExtensions;
 
 
 extern	_SimpleList 
@@ -510,6 +511,9 @@ extern	_String
 		hfCountGap						;
 			
 extern	_ExecutionList				*currentExecutionList;
+
+extern	_AVLList					   
+		loadedLibraryPaths;
 
 
 long	FindDataSetName 			 (_String&);

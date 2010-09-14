@@ -144,7 +144,7 @@ bool	GlobalStartup (void)
 	init_genrand			(k);
 	globalRandSeed			= k;
 	setParameter			(randomSeed,globalRandSeed);
-	long				p   = 1;
+	long					p   = 1;
 	
 	_hyApplicationGlobals.Insert(new _String (dataFileTree));
 	_hyApplicationGlobals.Insert(new _String (dataFileTreeString));
@@ -160,11 +160,17 @@ bool	GlobalStartup (void)
 	
 	_String  			dd (GetPlatformDirectoryChar());
 	
-	standardLibraryPaths.AppendNewInstance (new _String(baseDirectory & "TemplateBatchFiles" & dd));
-	standardLibraryPaths.AppendNewInstance (new _String(baseDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
-	standardLibraryPaths.AppendNewInstance (new _String(baseDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-	standardLibraryPaths.AppendNewInstance (new _String(baseDirectory & "TemplateBatchFiles" & dd & "UserAddIns" & dd));
-	standardLibraryPaths.AppendNewInstance (new _String(baseDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "UserAddIns" & dd));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+	
+	standardLibraryExtensions.AppendNewInstance (new _String (""));
+	standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
+	standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
+	standardLibraryExtensions.AppendNewInstance (new _String (".def"));
+	standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
 	
 	_HBL_Init_Const_Arrays	();
 	
@@ -318,6 +324,7 @@ void	PurgeAll (bool all)
 	batchLanguageFunctionParameters.Clear();
 	batchLanguageFunctionClassification.Clear();
 	executionStack.Clear();
+	loadedLibraryPaths.Clear(true);
 	if (all)
 	{
 		likeFuncList.Clear();

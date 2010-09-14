@@ -1,4 +1,4 @@
-RequireVersion ("1.0020071011");
+RequireVersion ("2.0020100914");
 
 _ancestralRecoveryCache       = {};
 
@@ -13,8 +13,7 @@ _ancestralRecoveryCache       = {};
 
 *******************************************/
 
-ExecuteAFile  (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+
-				DIRECTORY_SEPARATOR+"TreeTools.ibf");
+LoadFunctionLibrary			("TreeTools.ibf");
 
 _bacCacheInstanceCounter = 0;
 
