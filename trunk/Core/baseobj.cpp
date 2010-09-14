@@ -163,7 +163,7 @@ bool	GlobalStartup (void)
 	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd));
 	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
 	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "UserAddIns" & dd));
+	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "UserAddIns" & dd));
 	standardLibraryPaths.AppendNewInstance		(new _String(baseDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
 	
 	standardLibraryExtensions.AppendNewInstance (new _String (""));

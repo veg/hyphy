@@ -3421,7 +3421,9 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 				{
 					_String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 					
-					if (loadedLibraryPaths.Find(&tryPath) >= 0)
+						//printf ("%s\n", tryPath.sData);
+					
+					if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2)
 					{
 						ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
 						return;
