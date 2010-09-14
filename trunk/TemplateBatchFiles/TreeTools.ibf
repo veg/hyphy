@@ -690,6 +690,11 @@ function _parsimonyAncestralMapping (treeAVL&, label)
 	return totalCost;
 }
 
+/*************************************************************************************/
+/* 
+  	Center of Tree (COT) calculation 
+*/
+
 function ComputeCOT (_treeID, _filePath)
 /* IN 	: the identifier of an existing tree variable (String)
 		  _filePath : if not an empty string, write a PostScript image with this tree
@@ -711,7 +716,7 @@ function ComputeCOT (_treeID, _filePath)
 					 /* '2' is the power of the distance function to 
 						   minimize - i.e. least squares in this case */
 	ExecuteCommands (
-	"_cot = Min (`_treeID`,_power);");
+	"_cot = Min ("+_treeID+",_power);");
 	
 	_returnList = {};
 	_returnList ["Branch"] = _cot["COT_NODE"];
@@ -729,7 +734,7 @@ function ComputeCOT (_treeID, _filePath)
 
 	_returnList     ["Distances"]  = _meanD/Columns(_keys);
 	/* reroot the tree at the COT branch */
-	ExecuteCommands ("_rerootedTree = RerootTree (`_treeID`, \""+_returnList ["Branch"]+"\");");
+	ExecuteCommands ("_rerootedTree = RerootTree ("+_treeID+", \""+_returnList ["Branch"]+"\");");
 	/* hackish lines below split the root branch into appropriate bits */
 	
 	ACCEPT_ROOTED_TREES = 1;
@@ -767,7 +772,7 @@ function ComputeCOT (_treeID, _filePath)
 		nodeSpec = {};
 		nodeSpec ["TREE_OUTPUT_BRANCH_SPLIT"]		= _cot["COT_SPLIT"]/_cot["COT_BRANCH_LENGTH"];	
 		TREE_OUTPUT_OPTIONS [_cot["COT_NODE"]] 		= nodeSpec;
-		ExecuteCommands 							("psString = PSTreeString (`_treeID`,\"STRING_SUPPLIED_LENGTHS\",{{-1,-1}});");
+		ExecuteCommands 							("psString = PSTreeString ("+_treeID+",\"STRING_SUPPLIED_LENGTHS\",{{-1,-1}});");
 		fprintf 									(_filePath, CLEAR_FILE, psString);
 	}
 

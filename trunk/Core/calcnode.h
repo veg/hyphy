@@ -325,6 +325,7 @@ class _TreeTopology: public _CalcNode {
 								//				 added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
 								//				 just the numeric value (if false)
 	
+			
 		virtual	void			GetBranchLength						(node<long> *, _Parameter&);
 		virtual	void			GetBranchValue						(node<long> *, _String&);
 		virtual	void			GetBranchVarValue					(node<long> *, _String&, long);

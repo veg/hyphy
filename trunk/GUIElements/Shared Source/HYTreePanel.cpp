@@ -1512,16 +1512,19 @@ void	_HYTreePanel::SetVariableReference (_String& varName)
 			likeFuncID = -1;
 			for (f=0;f<likeFuncList.lLength;f++)
 			{
-				_LikelihoodFunction* theLF = (_LikelihoodFunction*)likeFuncList (f);
-				if (theLF->DependOnTree (varName)>=0)
+				if (((_String*)likeFuncNamesList(f))->sLength)
 				{
-					if (likeFuncID>=0)
+					_LikelihoodFunction* theLF = (_LikelihoodFunction*)likeFuncList (f);
+					if (theLF->DependOnTree (varName)>=0)
 					{
-						likeFuncID=-1;
-						break;
+						if (likeFuncID>=0)
+						{
+							likeFuncID=-1;
+							break;
+						}
+						else
+							likeFuncID = f;
 					}
-					else
-						likeFuncID = f;
 				}
 			}			
 			UpdateScalingVariablesList ();
@@ -7757,10 +7760,12 @@ bool	_HYNodeInfoDialog::SetNodeModel (_CalcNode* thisCNode, long modelID, bool i
 			
 		for (long i = 0; i<likeFuncList.lLength; i++)
 		{
-			_LikelihoodFunction * thisLF = (_LikelihoodFunction*)likeFuncList(i);
-			if (thisLF->DependOnTree(treeName)>=0)
-				thisLF->RescanAllVariables();
-
+			if (((_String*)likeFuncNamesList(i))->sLength)
+			{
+				_LikelihoodFunction * thisLF = (_LikelihoodFunction*)likeFuncList(i);
+				if (thisLF->DependOnTree(treeName)>=0)
+					thisLF->RescanAllVariables();
+			}
 		}
 	}
 	

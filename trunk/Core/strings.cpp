@@ -1409,8 +1409,8 @@ _Parameter 	_String::ProcessTreeBranchLength (void)
 			res = toNum();
 		
 		
-		if (res < 1e-5)
-			res = 1e-5;
+		if (res < 1e-10)
+			res = 1e-10;
 	}
 	
 	return res;

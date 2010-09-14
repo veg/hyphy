@@ -2185,18 +2185,13 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 		if (!dup)
 			DeleteObject (theP);
 			
-		if ((theValue<lowerBound)||(theValue>upperBound))
+		if (theValue<lowerBound || theValue>upperBound)
 		{
-			/*_String *t = (_String*)theP->toStr(),s;
-			s = _String("Value:")&*t&" is out of bounds for the variable "&*theName;
-			ReportWarning (s);
-			DeleteObject(t);*/
-			if (theValue<=lowerBound+1e-50)
+			if (theValue <= lowerBound+1e-50)
 				theValue = lowerBound;
 			else
 				theValue = upperBound;
 		}
-		
 	}
 	else
 	{

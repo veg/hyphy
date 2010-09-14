@@ -1496,7 +1496,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 	min1 = unknown->GetLowerBound();
 	min2 = unknown->GetUpperBound();
 	
-	long		it;
+	long		it = 0;
 
 	if (a>b) // autobracket to the left
 	{
@@ -1743,16 +1743,15 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 	}
 	
 	subNumericValues = 2;
-	_String *ss = (_String*)toStr();
+	_String msg ((_String*)toStr());
 	subNumericValues = 0;
-	_String msg = *ss&"=0";
-	if (it<MAX_BRENT_ITERATES)
+	msg = msg & "=0";
+	if (it < MAX_BRENT_ITERATES)
 		msg = 	msg & " has no (or multiple) roots in ["&_String(a)&","&_String(b)&"]";
 	else
 		msg = 	msg & " failed to converge to sufficient precision in " & MAX_BRENT_ITERATES &" iterates.";
 	
 	ReportWarning (msg);
-	DeleteObject (ss);
 	return    b;
 }
 //__________________________________________________________________________________
@@ -3292,11 +3291,10 @@ _PMathObj _FString::RerootTree (void)
 	long   	 stashedModelID = lastMatrixDeclared,
 			 totalNodeCount = 0;
 			 
-	lastMatrixDeclared 	    = -1; 
+	lastMatrixDeclared 	    = HY_NO_MODEL; 
 			 /* unset current model; do not want the internal tree to have an attached model */
 	
 	_TheTree 	rTree (internalRerootTreeID,*theString);
-	
 	
 	if (rTree.IsDegenerate()) // no need to reroot two-sequence trees
 	{
@@ -4606,8 +4604,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					}
 					if (!f2) // 03/25/2004 ? Confused why the else
 					{
-						_Operation theVar ((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic());
-						(*levelData) && (&theVar);
+						levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));
 					}
 					else
 					{
@@ -4628,23 +4625,22 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 				if (impliedMult)
 				{
 					storage = s.getChar(i);
-					s.setChar(i,'*');
+					s.setChar(i,((_String*)BuiltInFunctions(HY_OP_CODE_MUL))->getChar(0));
 				}
-				if (s.getChar(i+1)=='(')
-				{
-					if (!storage)
+				else
+					if (s.getChar(i+1)=='(')
 					{
-						storage = s.getChar(i);
-						s.setChar(i,'*');
+						if (!storage)
+						{
+							storage = s.getChar(i);
+							s.setChar(i,((_String*)BuiltInFunctions(HY_OP_CODE_MUL))->getChar(0));
+						}
+						else
+						{											
+							curOp = *(_String*)BuiltInFunctions(HY_OP_CODE_MUL);
+							levelOps->AppendNewInstance(new _Operation (curOp,2));
+						}
 					}
-					else
-					{				
-						
-						curOp = "*";
-						_Operation theVar (curOp,1);
-						(*levelOps) && (&theVar);
-					}
-				}
 				if (!storage)
 					continue;
 			}
@@ -4658,12 +4654,11 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 				
 			curOp =  (s.Cut(i,i+j-1));
 			i+=j-1;
-			_Operation theVar (false, curOp);
-			(*levelData) && (&theVar);
-			if ((i<s.sLength-1)&&(s.getChar(i+1)=='('))
+			levelData->AppendNewInstance (new _Operation (false, curOp));
+			if (i<s.sLength-1 && s.getChar(i+1)=='(')
 			{
 				storage = s.getChar(i);
-				s.setChar(i,'*');
+				s.setChar(i,((_String*)BuiltInFunctions(HY_OP_CODE_MUL))->getChar(0));
 			}
 			else
 				continue;
@@ -4685,8 +4680,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 				//if ((s.getChar(i)=='-')&&(levelData->lLength==0)&&(levelOps->lLength==0))
 				{
 					curOp = "-";
-					_Operation theVar (curOp,1);
-					(*levelOps) && (&theVar);
+					levelOps->AppendNewInstance(new _Operation (curOp,1));
 					continue;
 				}
 			}
@@ -4721,8 +4715,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 							f->theFormula&&((*levelData)(k));
 
 						levelData->Clear();
-						(*levelData)<<newS;
-						DeleteObject (newS);
+						levelData->AppendNewInstance (newS);
 					}
 					else
 					{

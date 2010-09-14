@@ -118,7 +118,9 @@ _List
 			compiledFormulaeParameters,
 			modelNames,
 			executionStack,
-			openFileHandlesBackend;
+			openFileHandlesBackend,
+			standardLibraryPaths;
+			
 	
 #ifdef __MAC__
 			_String volumeName;
@@ -1474,6 +1476,7 @@ _String	 _ExecutionList::TrimNameSpaceFromID (_String& theID)
  		  blGetInformation			("GetInformation("),
  		  blExecuteCommands 		("ExecuteCommands("),
  		  blExecuteAFile	 		("ExecuteAFile("),
+		  blLoadFunctionLibrary		("LoadFunctionLibrary("),
  		  blOpenWindow				("OpenWindow("),
  		  blSpawnLF					("SpawnLikelihoodFunction("),
  		  blDifferentiate			("Differentiate("),
@@ -1749,7 +1752,8 @@ bool		_ExecutionList::BuildList	(_String& s, _SimpleList* bc, bool processed)
 			_ElementaryCommand::ConstructGetInformation (currentLine, *this);
 		} 
 		else 
-		if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile)) // execute commands
+		if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary)) 
+				// execute commands
 		{
 			_ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
 		} 
@@ -2352,12 +2356,17 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 
 			case 39: // execute commands
 			case 62: // execute a file
+			case 66: // load function library
 			{
 				converted = (_String*)parameters(0)->toStr();
 				if (code == 39)
 					result = _String("ExecuteCommands in string ");
 				else
-					result = _String("ExecuteAFile from file ");
+					if (code == 62)
+						result = _String("ExecuteAFile from file ");
+					else
+						result = _String("LoadFunctionLibrary from file");
+										 
 				result = result & *converted & _String(" using basepath ") & ((_String*)parameters(1)->toStr()) & '.';
 				if (simpleParameters.lLength)
 					result = result & "\nCompiled.";
@@ -3395,12 +3404,29 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 	else
 	{
 		_String filePath = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix);
-		filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+		
 		FILE * commandSource = nil;
-		if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil)
+		if (code == 66)
 		{
-			WarnError (_String("Could not read command file in ExecuteAFile from: ") & filePath);
-			return;
+			for (long p = 0; p < standardLibraryPaths.lLength; p++)
+			{
+				_String tryPath = *((_String*)standardLibraryPaths(p)) & filePath;
+				if (commandSource = doFileOpen (tryPath.getStr(), "rb"))
+				{
+					filePath = tryPath;
+					break;
+				}
+			}
+		}
+		
+		if (commandSource == nil)
+		{
+			filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
+			if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil)
+			{
+				WarnError (_String("Could not read command file in ExecuteAFile from: ") & filePath);
+				return;
+			}
 		}
 		commands = new _String (commandSource);
 		if (fclose		 (commandSource) ) // failed to fclose
@@ -4807,16 +4833,18 @@ void	  _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 			for (f=0;f<likeFuncList.lLength;f++)
 			{
 				if (exclusions.BinaryFind(f)>=0)
-				{
 					continue;
-				}
-				_List thisPair;
-				thisPair<< likeFuncNamesList(f);
-				_String likeFuncDesc ("Likelihood Function \"");
-				likeFuncDesc = likeFuncDesc&*(_String*)likeFuncNamesList(f)&("\".");
+
+				if (likeFuncList.lData[f])
+				{
+					_List thisPair;
+					thisPair << likeFuncNamesList(f);
+					_String likeFuncDesc ("Likelihood Function \"");
+					likeFuncDesc = likeFuncDesc&*(_String*)likeFuncNamesList(f)&("\".");
 				
-				thisPair && &likeFuncDesc;
-				choices&& &thisPair;
+					thisPair && &likeFuncDesc;
+					choices&& &thisPair;
+				}
 			}
 			validChoices = true;
 			parameters&& & choices;
@@ -7509,6 +7537,7 @@ bool	  _ElementaryCommand::Execute 	 (_ExecutionList& chain) // perform this com
 
 		case 39:
 		case 62:
+		case 66:
 			ExecuteCase39 (chain);	
 			break;
 
@@ -9170,22 +9199,34 @@ bool	_ElementaryCommand::ConstructExecuteCommands (_String&source, _ExecutionLis
 {
 	
 	_List pieces;
-	bool  execAFile = source.startswith (blExecuteAFile);
 	
-	if (execAFile)
-		ExtractConditions (source,blExecuteAFile.sLength,pieces,',');
-	else
-		ExtractConditions (source,blExecuteCommands.sLength,pieces,',');
+	char  execAFile = source.startswith (blExecuteAFile)?1:(source.startswith(blLoadFunctionLibrary)?2:0);
+	long  code = 39;
+	
+	switch (execAFile)
+	{
+		case 0:
+			ExtractConditions (source,blExecuteCommands.sLength,pieces,',');
+			break;
+		
+		case 1:
+			ExtractConditions (source,blExecuteAFile.sLength,pieces,',');
+			code = 62;
+			break;
+			
+		case 2:
+			ExtractConditions (source,blLoadFunctionLibrary.sLength,pieces,',');
+			code = 66;
+			break;
+	}
 	
 	if (pieces.lLength < 1 || pieces.lLength > 3)
 	{
-		_String errMsg ("Expected: ExecuteCommands (identifier, <compiled|(input redirect<,string prefix>)>) or ExecuteAFile (path name, <compiled|(input redirect<,string prefix>)>)");
-		acknError (errMsg);
+		WarnError ("Expected: ExecuteCommands (identifier, <compiled|(input redirect<,string prefix>)>) or ExecuteAFile (path name, <compiled|(input redirect<,string prefix>)> or LoadFunctionLibrary (path name, <compiled|(input redirect<,string prefix>)>)");
 		return false;
 	}
 										
-	_ElementaryCommand * exc = new _ElementaryCommand (execAFile?62:39);
-	checkPointer (exc);
+	_ElementaryCommand * exc = (_ElementaryCommand *)checkPointer(new _ElementaryCommand (code));
 
 	exc->parameters<<pieces(0);
 	

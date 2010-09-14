@@ -3189,7 +3189,7 @@ void _AVLListX::PopulateFromList (_List& src)
 
 //______________________________________________________________
 
-long  _AVLList::Insert (BaseRef b, long xtra,bool cp)
+long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear)
 {
 	if (dataList->lLength-emptySlots.lLength)
 	{
@@ -3210,7 +3210,11 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp)
 		{
 			long comp = dataList->Compare (b, p);
 			if (comp == 0)
+			{
+				if (cp == false && clear)
+					DeleteObject (b);
 				return -p-1;
+			}
 			if (balanceFactor.lData[p] != 0)
 			{
 				z = q; 

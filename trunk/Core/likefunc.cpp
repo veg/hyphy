@@ -574,10 +574,9 @@ bool	_LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from trip
 	// scan thru the names in the datafilter and check whether there is a 1-1 match
 	if ((t->IsDegenerate()?2:tips.lLength)!=df->NumberSpecies())
 	{
-		_String warnMsg ("The number of tree tips in ");
-		warnMsg = warnMsg&*t->GetName()& " (" & _String((long)tips.lLength) & ") is not equal to the number of species in the data filter associated with the tree " &
-				 '(' & _String((long)df->NumberSpecies()) & ")." ;
-		acknError (warnMsg);
+		WarnError (_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength) 
+					   & ") is not equal to the number of species in the data filter associated with the tree " &
+				   '(' & _String((long)df->NumberSpecies()) & ")." );
 		return false;
 	}
 	
@@ -628,20 +627,33 @@ bool	_LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from trip
 		
 		if (j==tips.lLength) // all matched
 		{
-			_String warnMsg ("The tips of the tree:"),*s = (_String*)tipMatches.toStr();
-			warnMsg = warnMsg & *t->GetName() &" were matched with the species names from the data as follows "&*s;
-			DeleteObject(s);
-			ReportWarning (warnMsg);
-			/*for (j=0; j<tips.lLength;j++)
+			/*
+				20100913: SLKP need to check that reusing the datafilter will not mess up existing likelihood function dependendancies
+			*/
+			
+			_SimpleList * currentMap = (_SimpleList *)df->GetMap();
+			if (! currentMap || ! currentMap->Equal (tipMatches))
 			{
-				tipMatches.lData[j] = df->theNodeMap.lData[tipMatches.lData[j]];
-			}*/
-			df->SetMap(tipMatches);
+				for (long lfID = 0; lfID < likeFuncList.lLength; lfID++)
+				{
+					_LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
+					if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f]))
+					{
+						WarnError (_String ("Cannot reuse the filter '") & *(_String*)dataSetFilterNamesList (theDataFilters.lData[f]) & "' because it is already being used by likelihood function '" &
+											*(_String*)likeFuncNamesList (lfID) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
+											"Create a copy the filter and pass it to the second likelihood function to resolve this issue.");
+						
+								return false;
+					}
+				}
+				df->SetMap(tipMatches);
+			}
+			ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data as follows "& _String ((_String*)tipMatches.toStr()));
 		}
 		else
 		{
-			_String warnMsg ("The leaf of the tree:");
-			warnMsg = warnMsg & *t->GetName() &" labeled " &*(_String*)tips(j)&" had no match in the data. Please make sure that all leaf names correspond to a sequence name in the data file.";
+			_String warnMsg = _String ("The leaf of the tree:") & *t->GetName() &" labeled " &*(_String*)tips(j)
+									  &" had no match in the data. Please make sure that all leaf names correspond to a sequence name in the data file.";
 			_Parameter asmm = 0.0;
 			checkParameter (allowSequenceMismatch, asmm, 0.0);
 			if (asmm<.5)

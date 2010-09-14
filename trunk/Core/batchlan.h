@@ -410,7 +410,8 @@ extern	_List
 		likeFuncNamesList,
 		modelNames,
 		executionStack,
-		compiledFormulaeParameters;	
+		compiledFormulaeParameters,
+		standardLibraryPaths;
 
 
 extern	_SimpleList 

@@ -379,8 +379,10 @@ virtual		~_AVLList	(void) {}
 	long				Prev 				(long,    _SimpleList&);
 	long				First				(void);
 	long				Last				(void);
-	long				Insert				(BaseRef, long = 0, bool = true);
-											// the bool flag is to say whether to dup the object being inserted
+	long				Insert				(BaseRef, long = 0, bool = true, bool = false);
+											// the 1st bool flag is to say whether to dup the object being inserted
+											// the 2nd bool flag (if the first flag is false) if set to true,
+											// will cause failed inserts (key already exists) to delete the key
 	void				Delete				(BaseRef, bool = false);
 	virtual	 void		ReorderList			(_SimpleList* = nil);
 	BaseRef				Retrieve			(long);
