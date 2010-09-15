@@ -149,7 +149,7 @@ function selectHXB2subsequence (seq,theSubset)
 		_span = _HXB_Annotation[theSubset[_k]];
 		if (Abs(_span))
 		{
-			_template = _template + _template["_MATRIX_ELEMENT_COLUMN_>=_span[0]&&_MATRIX_ELEMENT_COLUMN_<=_span[1]"];
+			_template += _template["_MATRIX_ELEMENT_COLUMN_>=_span[0]&&_MATRIX_ELEMENT_COLUMN_<=_span[1]"];
 		}
 	}
 	_mappedReference = mapSequenceToHXB2 (seq,0);
@@ -186,7 +186,7 @@ function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA)
 		{
 			if (nucOrAA == 0)
 			{
-				_template += _template["_MATRIX_ELEMENT_COLUMN_>=_span[0]&&_MATRIX_ELEMENT_COLUMN_<=_span[1]"];
+				_template = _template["_MATRIX_ELEMENT_COLUMN_>=_span[0]&&_MATRIX_ELEMENT_COLUMN_<=_span[1]"];
 			}
 			else
 			{

@@ -4162,8 +4162,8 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					{
 						_Operation* self = new _Operation ();
 						self->SetAVariable(theV->GetAVariable());
-						newF.theFormula.AppendNewInstance (self);
-						newF.theFormula.Swap(newF.theFormula.lLength-2,newF.theFormula.lLength-1);
+						newF.theFormula.InsertElement (self,0,false);
+						DeleteObject (self);
 						newF.theFormula.AppendNewInstance (new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
 					}
 					f->Duplicate((BaseRef)&newF);
