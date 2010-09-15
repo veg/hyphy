@@ -543,8 +543,27 @@ long	FindSCFGName (_String&s)
 }
 
 //____________________________________________________________________________________	
-long	FindBFFunctionName (_String&s)
+long	FindBFFunctionName (_String&s, _VariableContainer* theP)
 {
+	if (theP)
+	{
+		_String testName = *(theP->GetName()) & '.' & s;
+		
+		long cutAt = testName.sLength - s.sLength - 2;
+		do 
+		{
+			long idx = batchLanguageFunctionNames.Find (&testName);
+			if (idx >= 0)
+			{
+				s = testName;
+				return idx;
+			}
+			testName.Trim (0,cutAt);
+			cutAt = testName.FindBackwards('.',0,-1);
+		}
+		while (cutAt >= 0);
+	}
+		
 	return batchLanguageFunctionNames.Find (&s);
 }
 

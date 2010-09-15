@@ -519,7 +519,7 @@ extern	_AVLList
 long	FindDataSetName 			 (_String&);
 long	FindDataSetFilterName 		 (_String&);
 long	FindSCFGName 		 		 (_String&);
-long	FindBFFunctionName 		 	 (_String&);
+long	FindBFFunctionName 		 	 (_String&, _VariableContainer* = nil);
 
 long	FindBgmName					 (_String &);		
 									 // added by afyp, March 18, 2007

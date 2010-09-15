@@ -4580,9 +4580,12 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
 					continue;
 				}
+				
 				// check if this is a function defined in the batch language
-				bLang = batchLanguageFunctionNames.Find (&curOp);
-				if (bLang>=0)
+				
+				
+				
+				if ((bLang = FindBFFunctionName (curOp, theParent))>=0)
 				{
 					levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
 					continue;
