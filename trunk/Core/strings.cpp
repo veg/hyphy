@@ -1569,9 +1569,9 @@ void	WarnError (_String st)
 			
 			if (rank > 0)
 			{
-				printf ("\n\n\nNode %d terminating\n\n\n", rank, "\n");
-				abort ();
-				MPISendString (errMsg,0,true); // send the error message to a master node
+				fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
+				MPI_Abort (MPI_COMM_WORLD,1);
+				abort();
 			}
 			else
 				errMsg = _String ("\nMaster node received an error:") ;
