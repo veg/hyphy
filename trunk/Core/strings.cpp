@@ -1569,8 +1569,9 @@ void	WarnError (_String st)
 			
 			if (rank > 0)
 			{
-				MPISendString (errMsg,0,true);
-				abort();
+				printf ("\n\n\nNode %d terminating\n\n\n", rank, "\n");
+				abort ();
+				MPISendString (errMsg,0,true); // send the error message to a master node
 			}
 			else
 				errMsg = _String ("\nMaster node received an error:") ;
