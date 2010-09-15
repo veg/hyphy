@@ -1552,7 +1552,7 @@ void	WarnError (_String st)
 	{
 		fwrite (str, 1, 7, globalErrorFile);
 		fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
-		fflush(globalErrorFile);
+		fflush (globalErrorFile);
 	}
 	
 #ifdef __HYPHYMPI__
@@ -1561,14 +1561,17 @@ void	WarnError (_String st)
 #endif
 	
 	if (globalMessageFile)
-		fprintf (globalMessageFile, "%s\n", st.sData);
+		fprintf (globalMessageFile, "\n%s", st.sData);
 	#if !defined __MAC__ && !defined __WINDOZE__
 		_String errMsg;
 		#ifdef __HYPHYMPI__
 			errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 			
 			if (rank > 0)
+			{
 				MPISendString (errMsg,0,true);
+				abort();
+			}
 			else
 				errMsg = _String ("\nMaster node received an error:") ;
 		#else

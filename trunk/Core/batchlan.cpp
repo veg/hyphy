@@ -2903,8 +2903,7 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 			{
 				if ((dest = doFileOpen (fnm.getStr(), "a")) == nil)
 				{
-					_String errMsg ("Could not create/open output file");
-					WarnError (errMsg);
+					WarnError (_String  ("Could not create/open output file at path '") & fnm & '\\');
 					return;
 				}
 			}
