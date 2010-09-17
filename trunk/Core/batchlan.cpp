@@ -479,6 +479,21 @@ _String	ProcessLiteralArgument (_String* data, _VariableContainer* theP)
 
 //____________________________________________________________________________________	
 
+_AssociativeList*	ProcessDictionaryArgument (_String* data, _VariableContainer* theP)
+{
+	_Formula  nameForm (*data,theP);
+	_PMathObj formRes = nameForm.Compute();
+	if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST)
+	{
+		formRes->AddAReference();
+		return (_AssociativeList*)formRes;
+	}
+	
+	return nil;
+}
+
+//____________________________________________________________________________________	
+
 _String	ProcessStringArgument (_String* data)
 {
 	if (data->sLength>2)
@@ -3506,8 +3521,8 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 	if (parameters.lLength >= 3)
 	// stdin redirect (and/or name space prefix)
 	{
-		_String stdinOverloadNspc (chain.AddNameSpaceToID(*(_String*)parameters(2)));
-		_PMathObj inAVL = FetchObjectFromVariableByType (&stdinOverloadNspc, ASSOCIATIVE_LIST);
+		_PMathObj inAVL = ProcessDictionaryArgument ((_String*)parameters(2),chain.nameSpacePrefix); 
+		
 		if (!inAVL)
 		{
 			if (parameters.lLength == 3)
@@ -3531,12 +3546,16 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 				_FString * aString		= (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
 				if (!aString)
 				{
-					WarnError (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
+					WarnError	 (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
+					DeleteObject (inAVL);
 					return;
 				}		
 				inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
 			}
 		}
+
+		DeleteObject (inAVL);
+		
 		if (parameters.lLength > 3)
 		{
 			_String nameSpaceID = ProcessLiteralArgument((_String*)parameters(3),chain.nameSpacePrefix);

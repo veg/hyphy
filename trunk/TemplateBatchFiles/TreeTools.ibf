@@ -170,7 +170,7 @@ function KillInternalZeroBranchLengths (treeAVL)
 	{
 		newDAVL [(treeAVL[nodeIndex])["Name"]] = (treeAVL[nodeIndex])["Length"];
 		
-		if (Abs((treeAVL[nodeIndex])["Children"]) && Abs((treeAVL[nodeIndex])["Length"]) < 1e-10 && (treeAVL[nodeIndex])["Parent"]) 
+		if (Abs((treeAVL[nodeIndex])["Children"]) && Abs((treeAVL[nodeIndex])["Length"]) <= 1e-10 && (treeAVL[nodeIndex])["Parent"]) 
 			/* zero internal branch */
 		{
 			oldIndexMap[nodeIndex] = -(treeAVL[nodeIndex])["Parent"];
