@@ -4210,42 +4210,124 @@ _PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree, _PMathObj p2)
 		{
 			if (p->ObjectClass()==STRING)
 			{
-				_String * nodeName = ((_FString*)p->Compute())->theString;
+				_List * twoIDs = ((_FString*)p->Compute())->theString->Tokenize(";");
 				
-				_AssociativeList * resList = new _AssociativeList;
-				checkPointer (resList);
-				
-				long		level       = 0,
-							masterLevel = 0;
-							
-				StepWiseTLevel   (level,true);
-				
-				while (currentNode)
+		
+				if (twoIDs->lLength == 2 || twoIDs->lLength == 1)
 				{
-					_String 	  givenNodeName;
-					GetNodeName   (currentNode,givenNodeName);
-					if (givenNodeName.Equal (nodeName))
+					
+						_String * node1 = (_String*)(*twoIDs) (0),
+							* node2 = twoIDs->lLength>1?(_String*)(*twoIDs) (1):nil;
+
+					
+					
+					if (twoIDs->lLength == 1)
 					{
-						masterLevel = level;
-						_FString * key = new _FString (givenNodeName,false);
-						checkPointer (key);
-						resList->MStore(key,new _Constant (currentNode->get_num_nodes()));
-						do
+						_AssociativeList * resList = (_AssociativeList*) checkPointer(new _AssociativeList);
+						long			level       = 0,
+										masterLevel = 0;
+									
+						StepWiseTLevel   (level,true);
+						
+						_String 	  givenNodeName;
+
+						while (currentNode)
 						{
 							GetNodeName   (currentNode,givenNodeName);
-							_FString * key = new _FString (givenNodeName,false);
-							checkPointer (key);
-							resList->MStore(key,new _Constant (1+(currentNode->get_num_nodes()>0)));
+							if (givenNodeName.Equal (node1))
+							{
+								masterLevel = level;
+								resList->MStore(givenNodeName,new _Constant (currentNode->get_num_nodes()));
+								do
+								{
+									GetNodeName   (currentNode,givenNodeName);
+									resList->MStore(givenNodeName,new _Constant (1+(currentNode->get_num_nodes()>0)));
+									StepWiseTLevel(level,false);
+								}
+								while (currentNode && level > masterLevel);
+								
+								break;
+							}
 							StepWiseTLevel(level,false);
 						}
-						while (currentNode && level > masterLevel);
-						
-						break;
+						if (resList->avl.countitems() == 0)
+								// fail
+						{
+							DeleteObject (resList);
+							return new _MathObject;
+						}
+						return resList;
 					}
-					StepWiseTLevel(level,false);
+					else
+					{
+						node<long>* n1 = nil,
+								  * n2 = nil;
+						
+						long		l1 = 0,
+									l2 = 0,
+									l  = 0;
+						
+						DepthWiseTLevel(l,true);
+						
+						_String 	 cBranchName;
+						
+						while (currentNode && (!n1 || !n2))
+						{
+							GetNodeName (currentNode, cBranchName);
+							if (cBranchName.Equal (node1))
+							{
+								n1 = currentNode;
+								l1 = l;
+							}
+							else
+								if (node2 && cBranchName.Equal (node2))
+								{
+									n2 = currentNode;
+									l2 = l;	
+								}
+							
+							DepthWiseTLevel  (l,false);
+						}
+						
+						if (n1 && n2)
+						{
+							_List prefix,
+								  suffix;
+							
+							while (l1<l2)
+							{
+								GetNodeName				 (n2,cBranchName);
+								suffix.AppendNewInstance (cBranchName.makeDynamic());
+								n2 = n2->parent;
+								l2--;
+							}
+							
+							while (l2<l1)
+							{
+								GetNodeName		(n2,cBranchName);
+								prefix.AppendNewInstance (cBranchName.makeDynamic());
+								n1 = n1->parent;
+								l1--;
+							}
+							
+							while (n1!=n2)
+							{
+								GetNodeName		(n2,cBranchName);
+								suffix.AppendNewInstance (cBranchName.makeDynamic());
+								GetNodeName		(n1,cBranchName);
+								prefix.AppendNewInstance (cBranchName.makeDynamic());
+								n2 = n2->parent;
+								n1 = n1->parent;					
+							}
+							
+							suffix.Flip();
+							prefix << suffix;
+							return new _Matrix(prefix);
+						}	
+						return new _MathObject();
+					}
+					
 				}
-				
-				return resList;
 			}
 		}
 	}
