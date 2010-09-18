@@ -1656,16 +1656,20 @@ void	_TreeTopology::AddANode (_PMathObj newNode)
 		}
 		
 		node<long>* newp = (node<long>*) checkPointer(new node<long>),
-				  * newt = (node<long>*) checkPointer(new node<long>),
 				  * curp = graftAt->get_parent();
 		
-		newp->set_parent(*curp);
-		newp->add_node(*newt);
-		newp->add_node(*graftAt);
+		newp->set_parent  (*curp);
+		newp->add_node    (*graftAt);
 		curp->replace_node(graftAt,newp);
 		
+		if (!newName->IsEmpty())
+		{
+			node<long>* newt = (node<long>*) checkPointer(new node<long>);
+			newp->add_node(*newt);			
+			FinalizeNode (newt, 0, *newName->theString,   empty, empty);
+		}
+		
 		FinalizeNode (newp, 0, *newParent->theString, empty, empty);
-		FinalizeNode (newt, 0, *newName->theString,   empty, empty);
 		
 	}
 	else
@@ -3116,7 +3120,7 @@ _FString*	 _TreeTopology::Compare (_PMathObj p)
 
 //__________________________________________________________________________________
 
-char	 _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, bool isPattern)
+char	 _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology* tree2, bool isPattern)
 // compares whether the nodes create the same subpartition
 {
 	// count the number of children 
@@ -3341,7 +3345,12 @@ char	 _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Simpl
 				if (stSizes.lData[k12]) 
 					return 0;
 		}
-				
+		
+		/*_String nm1, nm2;
+		tree2->GetNodeName (n1,nm1);
+		GetNodeName (n2,nm2);
+		printf ("Node match %s, %s\n",  nm1.sData, nm2.sData, "\n");*/
+		
 		return 1;
 	}
 	
@@ -3352,7 +3361,7 @@ char	 _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Simpl
 //long 	 itcCount = 0;
 //__________________________________________________________________________________
 
-char	 _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _SimpleList* reindexer, char compMode, long totalSize, node<long>* n22, bool isPattern)
+char	 _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _SimpleList* reindexer, char compMode, long totalSize, node<long>* n22, _TreeTopology* tree2, bool isPattern)
 // compare tree topologies
 {	
 	if (n1->get_num_nodes() == 0)
@@ -3360,7 +3369,7 @@ char	 _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Simpl
 	else
 	{
 		_SimpleList mapper;
-		if (internalNodeCompare (n1,n2, mapper, reindexer, compMode, totalSize, n22, isPattern))
+		if (internalNodeCompare (n1,n2, mapper, reindexer, compMode, totalSize, n22, tree2, isPattern))
 		{
 			long nc1 = n1->get_num_nodes();
 			
@@ -3371,13 +3380,13 @@ char	 _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Simpl
 			{
 				if (mapper.lData[k1]>=0)
 				{
-					if (internalTreeCompare (n1->go_down(k1+1),n2->go_down(mapper.lData[k1]+1), reindexer, 0, totalSize, nil, isPattern)<1)
+					if (internalTreeCompare (n1->go_down(k1+1),n2->go_down(mapper.lData[k1]+1), reindexer, 0, totalSize, nil, tree2, isPattern)<1)
 						return -1;
 				}
 				else
 					if (mapper.lData[k1] == -1)
 					{
-						if (internalTreeCompare (n1->go_down(k1+1),n2->parent, reindexer, 0, totalSize, n2, isPattern)<1)
+						if (internalTreeCompare (n1->go_down(k1+1),n2->parent, reindexer, 0, totalSize, n2, tree2, isPattern)<1)
 							return -1;
 					}
 					else
@@ -3429,9 +3438,9 @@ char	 _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Simpl
 				if (newLeaves->lLength > 1)
 				{
 					if (k4<n2->get_num_nodes())
-						res = internalTreeCompare(dummy, n2->go_down(k4+1),  reindexer, 0, totalSize, nil, isPattern);
+						res = internalTreeCompare(dummy, n2->go_down(k4+1),  reindexer, 0, totalSize, nil, tree2, isPattern);
 					else
-						res = internalTreeCompare (dummy,n2->parent, reindexer, 0, totalSize, n2, isPattern);
+						res = internalTreeCompare (dummy,n2->parent, reindexer, 0, totalSize, n2, tree2, isPattern);
 				}
 				
 				DeleteObject (newLeaves);
@@ -3534,7 +3543,7 @@ _String	 _TheTree::FindMaxCommonSubTree (_TheTree* compareTo, long& sizeVar, _Li
 								 								 
 				char			 cRes = 0;
 				
-				while ((internalTreeCompare (p1,p2,&reindexer,0,myLeaves.lLength,p2->parent?nil:ln2) == 1)&&p1&&p2)
+				while ((internalTreeCompare (p1,p2,&reindexer,0,myLeaves.lLength,p2->parent?nil:ln2,compareTo) == 1)&&p1&&p2)
 				{
 					ln1 = p1;
 					ln2 = p2;
@@ -3715,7 +3724,7 @@ _String	 _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topNode)
 				long kk;
 				for (kk = 1; kk <= nc; kk++)
 				{
-					compRes = internalTreeCompare (otherCT,meNode, reindexer, 0, otherLeaves.lLength, meNode->go_down(kk));
+					compRes = internalTreeCompare (otherCT,meNode, reindexer, 0, otherLeaves.lLength, meNode->go_down(kk),compareTo);
 					if (compRes)
 					{
 						if (compRes == -1)
@@ -3725,7 +3734,7 @@ _String	 _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topNode)
 				}
 				if (kk>nc)
 				{
-					compRes = internalTreeCompare (otherCT,meNode, reindexer, 0, otherLeaves.lLength, nil);
+					compRes = internalTreeCompare (otherCT,meNode, reindexer, 0, otherLeaves.lLength, nil, compareTo);
 					if (compRes)
 					{
 						if (compRes == -1)
@@ -3763,7 +3772,7 @@ _String	 _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topNode)
 			if (nc == nc2+1)
 				for (long kk = 1; kk <= nc; kk++)
 				{
-					compRes = internalTreeCompare (otherCT,myCT, reindexer, 0, otherLeaves.lLength, myCT->go_down(kk));
+					compRes = internalTreeCompare (otherCT,myCT, reindexer, 0, otherLeaves.lLength, myCT->go_down(kk),compareTo);
 					if (compRes==1)
 						break;
 				}		
@@ -4304,7 +4313,7 @@ _PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree, _PMathObj p2)
 							
 							while (l2<l1)
 							{
-								GetNodeName		(n2,cBranchName);
+								GetNodeName				(n1,cBranchName);
 								prefix.AppendNewInstance (cBranchName.makeDynamic());
 								n1 = n1->parent;
 								l1--;
@@ -4390,12 +4399,12 @@ void _TreeTopology::RerootTreeInternalTraverser (long originator, bool passedRoo
 				SubTreeString (res,false,blOption);
 			}
 			res<<')';
-			if (stashOriginator->get_num_nodes())
+			/*if (stashOriginator->get_num_nodes())
 			{
-				GetNodeName (stashOriginator/*myParent*/, t);
+				GetNodeName (stashOriginator, t);
 				if (!t.startswith(iNodePrefix))
 					res<<&t;				
-			}
+			}*/
 			PasteBranchLength (stashOriginator,res,blOption);
 		}
 	}
@@ -11245,7 +11254,7 @@ _String				_TreeTopology::CompareTrees		 (_TreeTopology* compareTo)
 		
 		char compRes;
 		
-		if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil))>0)
+		if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo))>0)
 			rerootAt = eqWithoutReroot;
 		else
 		{
@@ -11257,7 +11266,7 @@ _String				_TreeTopology::CompareTrees		 (_TreeTopology* compareTo)
 			{
 				if (meNode->get_num_nodes())
 				{
-					compRes = internalTreeCompare (myCT, meNode, reindexer, 1, myLeaves.lLength, nil);
+					compRes = internalTreeCompare (myCT, meNode, reindexer, 1, myLeaves.lLength, nil, compareTo);
 					if (compRes>0)
 						break;
 					else
@@ -11334,11 +11343,9 @@ node<long>*	_TreeTopology::prepTree4Comparison (_List& leafNames, _SimpleList& m
 		{
 			(*descendants) << leafNames.lLength;
 			indexer 	   << leafNames.lLength;				
-			_String 	* dd = new _String;// (*LocateVar (meNode->in_object)->GetName(),treeNameLength,-1);
-			checkPointer (dd);
+			_String 	* dd = (_String*)checkPointer(new _String);// (*LocateVar (meNode->in_object)->GetName(),treeNameLength,-1);
 			GetNodeName (meNode, *dd);
-			leafNames << dd;
-			DeleteObject (dd);	
+			leafNames.AppendNewInstance (dd);
 		}
 		
 		meNode->in_object = (long)descendants;	
@@ -11734,7 +11741,7 @@ _String	_TreeTopology::MatchTreePattern (_TreeTopology* compareTo)
 				
 		char compRes;
 		
-		if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, true))>0)
+		if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true))>0)
 			rerootAt = "Equal w/o rerooting.";
 		else
 		{
@@ -11746,7 +11753,7 @@ _String	_TreeTopology::MatchTreePattern (_TreeTopology* compareTo)
 			{
 				if (meNode->get_num_nodes())
 				{
-					compRes = internalTreeCompare (myCT, meNode, reindexer, 1, myLeaves.lLength, nil, true);
+					compRes = internalTreeCompare (myCT, meNode, reindexer, 1, myLeaves.lLength, nil, compareTo, true);
 					if (compRes>0)
 						break;
 					else

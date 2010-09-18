@@ -237,8 +237,8 @@ class _TreeTopology: public _CalcNode {
  				node<long>* 	prepTree4Comparison	 				(_List&, _SimpleList&, node<long>* = nil);
  				void			destroyCompTree						(node<long>*);
 				_List*			SplitTreeIntoClustersInt 			(node<long>*, _List*, _AVLListX&, long, long);
- 				char			internalTreeCompare 				(node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, bool = false);
- 				char			internalNodeCompare 				(node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, bool = false);
+ 				char			internalTreeCompare 				(node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology*, bool = false);
+ 				char			internalNodeCompare 				(node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology*, bool = false);
 		virtual	_PMathObj 		FlatRepresentation  				(void);
 				void			FindCOTHelper 						(node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, _Parameter);
 				void 			FindCOTHelper2 						(node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, _Parameter);

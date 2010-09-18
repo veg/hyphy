@@ -449,19 +449,27 @@ function	selectATreeBranch (treeID, title)
 
 /*************************************************************************************/
 
-function	computeTreeSplits (treeID,mirror)
+function	computeTreeSplits (treeID,mirror,leafMap)
 {
 	ExecuteCommands ("_treeAVL		= `treeID`^0;");
 	ExecuteCommands ("_leafNodes     = TipCount(`treeID`);");
 	_tipMap			= {};
 	_splitMap		= {};
 	_splitTemplate = {_leafNodes,1};
+	_hasLeafMap	   = Abs (leafMap);
 	
 	for (_k = 1; _k < Abs(_treeAVL); _k = _k+1)
 	{
 		if (Abs((_treeAVL[_k])["Children"]) == 0)
 		{
-			_tipMap [_k] = Abs(_tipMap);
+			if (_hasLeafMap)
+			{
+				_tipMap [_k] = leafMap [(_treeAVL[_k])["Name"]];
+			}
+			else
+			{
+				_tipMap [_k] = Abs(_tipMap);
+			}
 		}
 		else
 		{
@@ -478,7 +486,7 @@ function	computeTreeSplits (treeID,mirror)
 			if (_cc)
 			{
 				_mySplit                 = ((_treeAVL[_k])["Split"])["_MATRIX_ELEMENT_VALUE_>0"];
-				_splitMap[_mySplit]		  = _k;
+				_splitMap[_mySplit]		  = (_treeAVL[_k])["Name"];
 				(_treeAVL[_pc])["Split"] = (_treeAVL[_pc])["Split"] + _mySplit;
 			}
 			else
