@@ -6116,9 +6116,13 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 							y = child->in_object.v;
 						}
 						
-						t = _String(x) & ' ' & _String (y-0.5*halfFontSize) & " moveto ";				
+						t = _String(x-0.5*halfFontSize) & ' ' & _String (y-0.5*halfFontSize) & " moveto ";				
 						res << &t;	
-						t = _String(x) & ' ' & _String (y+0.5*halfFontSize) & " lineto\n";				
+						t = _String(x+0.5*halfFontSize) & ' ' & _String (y+0.5*halfFontSize) & " lineto\n";				
+						res << &t;	
+						t = _String(x-0.5*halfFontSize) & ' ' & _String (y+0.5*halfFontSize) & " moveto ";				
+						res << &t;	
+						t = _String(x+0.5*halfFontSize) & ' ' & _String (y-0.5*halfFontSize) & " lineto\n";				
 						res << &t;	
 						res << "stroke\n";						
 					}
