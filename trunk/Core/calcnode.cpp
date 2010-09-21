@@ -112,6 +112,8 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputEmbed		  = "TREE_OUTPUT_EMBED",
 			treeOutputXtraMargin  = "TREE_OUTPUT_XTRA_MARGIN",
 			treeOutputSplit		  = "TREE_OUTPUT_BRANCH_SPLIT",
+			treeOutputNotchesColor= "TREE_OUTPUT_BRANCH_NOTCHES_COLOR",
+			treeOutputNotches	  = "TREE_OUTPUT_BRANCH_NOTCHES",
 			treeOutputLabel		  = "TREE_OUTPUT_BRANCH_LABEL",
 			treeOutputTLabel	  = "TREE_OUTPUT_BRANCH_TLABEL",
 			treeOutputColor		  = "TREE_OUTPUT_BRANCH_COLOR",
@@ -4379,9 +4381,12 @@ void _TreeTopology::RerootTreeInternalTraverser (long originator, bool passedRoo
 		} 
 		else // passing old root
 		{
-			// create a new root with 2 children nodes - this, and one more containing all other children (>=2 of them)
-			res<<'(';
-			long count = 0;
+			// create a new root with >=2 children nodes - this, and one more containing all other children (>=2 of them)
+			long count        = 0,
+				 rootChildren = theRoot->get_num_nodes();
+			
+			if (rootChildren > 2)
+				res << '(';
 			
 			node<long>* stashOriginator;
 			
@@ -4398,7 +4403,9 @@ void _TreeTopology::RerootTreeInternalTraverser (long originator, bool passedRoo
 				count++;
 				SubTreeString (res,false,blOption);
 			}
-			res<<')';
+			if (rootChildren > 2)
+				res<<')';
+			
 			/*if (stashOriginator->get_num_nodes())
 			{
 				GetNodeName (stashOriginator, t);
@@ -4952,15 +4959,18 @@ node<nodeCoord>* _TheTree::ScaledBranchMapping (node<nodeCoord>* theParent, _Str
 	
 	if (wasRoot)
 	{
-		if ((b>0)&&(descendants==2))
+		if (b>0 && descendants==2)
 		{
-			if (b==1) j=2; else j=1;
-			branchLength = theParent->go_down(j)->in_object.h/2;
-			treeWidth -= branchLength;
-			ScaledBranchReMapping (theParent->go_down(j),branchLength);
-			theParent->go_down(b)->in_object.h = branchLength;
-			ScaledBranchMapping (theParent->go_down(b), scalingParameter, locDepth+1, depth, mapMode);			
+			j = (b==1)? 2 : 1;
+			
+			//branchLength = theParent->go_down(j)->in_object.h/2;
+			//treeWidth -= branchLength;
+			//branchLength = theParent->go_down(j)->in_object.h;
+			ScaledBranchReMapping (theParent->go_down(j),0);
+			theParent->go_down(b)->in_object.h = 0;
+			ScaledBranchMapping (theParent->go_down(b), scalingParameter, locDepth, depth, mapMode);			
 		}
+		
 		ScaledBranchReMapping (theParent, treeWidth);
 		return theParent;
 	}
@@ -5924,9 +5934,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			TreePSRecurse (child, res, hScale, (layout==1)?vScale+currNode->in_object.bL:vScale, hSize, vSize,halfFontSize,shift,outOptions,layout,xtra);
 			if (k==1)
 				hc1 = layout==1?child->in_object.label2:child->in_object.v;
-			else
-				if (k==descendants)
-					hc2 = layout==1?child->in_object.label2:child->in_object.v;
+			if (k==descendants)
+				hc2 = layout==1?child->in_object.label2:child->in_object.v;
 		}
 		
 		char doVLines = 3;
@@ -5946,10 +5955,14 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			newV += child->in_object.v;
 			
 			_AssociativeList * childOptions = nil;
+							 
 			_Parameter		   splitBranch = -1.;
 			_String			   childColor,
+							   notchColor,
 							   *blabelString = nil,
 							   childDash;
+			
+			_Matrix			*  notches = nil;
 			
 			if (layout == 1)
 				res << (_String(child->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
@@ -5962,12 +5975,25 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 					_PMathObj keyVal = childOptions->GetByKey (treeOutputSplit,NUMBER);
 					if (keyVal)
 						splitBranch = keyVal->Compute()->Value();
+					
+					keyVal = childOptions->GetByKey (treeOutputNotches,MATRIX);
+					if (keyVal)
+						notches = (_Matrix*)(((_Matrix*)keyVal->Compute())->ComputeNumeric())->makeDynamic();
+
 					keyVal = childOptions->GetByKey (treeOutputColor,MATRIX);
 					if (keyVal)
 					{
 						_Matrix* rgbColor = (_Matrix*)keyVal->Compute();
 						childColor = _String((*rgbColor)(0,0)) & " " & _String((*rgbColor)(0,1)) & " " & _String((*rgbColor)(0,2)) & " setrgbcolor\n";
 					}
+
+					keyVal = childOptions->GetByKey (treeOutputNotchesColor,MATRIX);
+					if (keyVal)
+					{
+						_Matrix* rgbColor = (_Matrix*)keyVal->Compute();
+						notchColor = _String((*rgbColor)(0,0)) & " " & _String((*rgbColor)(0,1)) & " " & _String((*rgbColor)(0,2)) & " setrgbcolor\n";
+					}
+					
 					keyVal = childOptions->GetByKey (treeOutputDash,MATRIX);
 					if (keyVal)
 					{
@@ -6065,6 +6091,41 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				res<<&t;	
 				res << "fill\n";
 			}
+			
+			if (notches)
+			{
+				notches->CheckIfSparseEnough(true);
+				res << notchColor;
+				for (long l = 0; l < notches->GetSize(); l++)
+				{
+					_Parameter aNotch = (*notches)[l];
+					if (aNotch >= 0. && aNotch <= 1.)
+					{
+						res << "newpath\n";
+						_Parameter x,
+								   y;
+						
+						if (layout == 1)
+						{
+							x = (child->in_object.label1 - child->in_object.bL*aNotch)*hScale;
+							y = 0.;
+						}
+						else
+						{
+							x = hc+(child->in_object.h-hc)*(1.-aNotch);
+							y = child->in_object.v;
+						}
+						
+						t = _String(x) & ' ' & _String (y-0.5*halfFontSize) & " moveto ";				
+						res << &t;	
+						t = _String(x) & ' ' & _String (y+0.5*halfFontSize) & " lineto\n";				
+						res << &t;	
+						res << "stroke\n";						
+					}
+				}
+				DeleteObject (notches);
+			}
+			
 			res << &colorString;
 			if (layout == 1)
 				res << (_String(-child->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");

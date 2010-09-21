@@ -471,11 +471,9 @@ function	computeTreeSplits (treeID,mirror,leafMap)
 				_tipMap [_k] = Abs(_tipMap);
 			}
 		}
-		else
-		{
-			(_treeAVL[_k])["Split"]		   = _splitTemplate;
-		}
+		(_treeAVL[_k])["Split"]		   = _splitTemplate;
 	}
+	
 	
 	for (_k = 1; _k < Abs(_treeAVL); _k = _k+1)
 	{
@@ -486,15 +484,19 @@ function	computeTreeSplits (treeID,mirror,leafMap)
 			if (_cc)
 			{
 				_mySplit                 = ((_treeAVL[_k])["Split"])["_MATRIX_ELEMENT_VALUE_>0"];
-				_splitMap[_mySplit]		  = (_treeAVL[_k])["Name"];
 				(_treeAVL[_pc])["Split"] = (_treeAVL[_pc])["Split"] + _mySplit;
 			}
 			else
 			{
+				((_treeAVL[_k])["Split"])[_tipMap[_k]] = 1;
+				_mySplit = (_treeAVL[_k])["Split"];
 				((_treeAVL[_pc])["Split"])[_tipMap[_k]] = 1;
 			}
+			_splitMap[_mySplit]		  = (_treeAVL[_k])["Name"];
 		}
 	}
+	
+	
 	_uniqueSplits = Rows(_splitMap);
 	_splitStrings = {};
 	for (_k = 0; _k < Abs(_splitMap); _k = _k+1)
