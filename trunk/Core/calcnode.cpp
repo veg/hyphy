@@ -1065,11 +1065,16 @@ void	_TheTree::PostTreeConstructor (bool dupMe)
 		 	isDefiningATree = false;
 		 	return;
 		 }
-		 _String pp = *LocateVar(theRoot->get_data())->theName;
-		 DeleteVariable(pp);
-		 delete node_temp->get_parent();
-		 node_temp->detach_parent();
-		 theRoot = node_temp;
+		 if (node_temp->get_num_nodes())
+		 {
+			 _String pp = *LocateVar(theRoot->get_data())->theName;
+			 DeleteVariable(pp);
+			 delete node_temp->get_parent();
+			 node_temp->detach_parent();
+			 theRoot = node_temp;
+		 }
+		 else
+			 break;
 	}
   
   	if (theRoot->get_num_nodes() == 2) // rooted tree - check
