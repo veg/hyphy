@@ -51,7 +51,9 @@ extern   _SimpleList 	BinOps,
 		  				
 extern   long	 		expressionsParsed;
 
-extern	  _List	 		FunctionNameList;  
+extern	  _List	 		FunctionNameList;
+
+extern	  _AVLListX		_HY_GetStringGlobalTypes;
 						
 extern	  _Parameter 	tolerance, 
 						sqrtPi, 
@@ -3647,50 +3649,58 @@ _PMathObj	_FString::FileExists (void)
 _PMathObj	_FString::CountGlobalObjects (void)
 {
 	_Parameter res = 0.0;
-	if ((*theString)==_String("LikelihoodFunction"))
-		res = likeFuncList.lLength;
-	else
-		if ((*theString)==_String("DataSet"))
-			res = dataSetList.lLength;
-		else
-			if ((*theString)==_String("DataSetFilter"))
-				res = dataSetFilterList.lLength;
-			else
-				if ((*theString)==_String("Variable"))
-					res = variableNames.countitems();					
-				else
-					if ((*theString)==_String("SCFG"))
-						res = scfgList.lLength;
-					else
-						if ((*theString)==_String("Tree"))
-						{
-							_SimpleList tc;
-							long		si,
-										vi = variableNames.Traverser (tc,si,variableNames.GetRoot());
-										
-							for (; vi >= 0; vi = variableNames.Traverser (tc,si))
-								if (((_Variable*)FetchVar(vi))->ObjectClass () == TREE)
-									res += 1.;						
-						}
-						else
-							if ((*theString)==_String("UserFunction"))
-								res = batchLanguageFunctionNames.lLength;
-							else
-								if ((*theString)==lastModelParameterList)
-								{
-									if (lastMatrixDeclared>=0)
-									{
-										_SimpleList p;
-										_Variable *theM = LocateVar (modelMatrixIndices.lData[lastMatrixDeclared]);
-										{
-											_AVLList pA (&p);
-											theM->ScanForVariables (pA,false);
-											pA.ReorderList();
-										}
-										res = p.lLength;
-									}
-								}
-
+	
+	long	  standardType = _HY_GetStringGlobalTypes.Find(theString);
+	if (standardType >=0 ) 
+		standardType = _HY_GetStringGlobalTypes.GetXtra (standardType);
+	
+	switch (standardType)
+	{
+		case 0:
+			return new _Constant (likeFuncList.lLength);
+		case 1:
+			return new _Constant (dataSetList.lLength);
+		case 2:
+			return new _Constant (dataSetFilterList.lLength);
+		case 3:
+			return new _Constant (batchLanguageFunctionNames.lLength);
+		case 4:
+		{
+			_SimpleList tc;
+			long		si,
+			vi = variableNames.Traverser (tc,si,variableNames.GetRoot());
+			
+			for (; vi >= 0; vi = variableNames.Traverser (tc,si))
+				if (((_Variable*)FetchVar(vi))->ObjectClass () == TREE)
+					res += 1.;		
+			
+			break;
+		}
+			
+		case 5: 	
+			return new _Constant (scfgList.lLength);
+		case 6: 	
+			return new _Constant (variableNames.countitems());
+			
+	}
+	
+	if (standardType < 0)
+	{
+		if ((*theString)==lastModelParameterList)
+		{
+			if (lastMatrixDeclared>=0)
+			{
+				_SimpleList p;
+				_Variable *theM = LocateVar (modelMatrixIndices.lData[lastMatrixDeclared]);
+				{
+					_AVLList pA (&p);
+					theM->ScanForVariables (pA,false);
+					pA.ReorderList();
+				}
+				res = p.lLength;
+			}
+		}
+	}
 	return new _Constant (res);
 }
 
