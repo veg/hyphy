@@ -511,7 +511,7 @@ void	Bgm::SetWeightMatrix (_Matrix * weights)
 {
 	if ( obsData 
 		&& (long) (obsData->GetHDim()) == (long) (weights->GetHDim()) 
-		&& (long) (obsData->GetVDim()) == (long) (weights->GetVDim()) )
+		/*&& (long) (obsData->GetVDim()) == (long) (weights->GetVDim())*/ )
 	{
 		obsWeights = weights;
 		ReportWarning( _String("Set weight matrix to ") & (_String *) obsWeights->toStr() );

@@ -283,7 +283,7 @@ function runBGM (_bgm_data)
 		discreteNodes[Abs(discreteNodes)] = make_discrete_node (k, 0, num_parents);
 	}
 
-	BGM gen_bgm = 		(discreteNodes, continuousNodes);
+	BGM gen_bgm = 		(discreteNodes);
 	SetParameter 		(gen_bgm, BGM_DATA_MATRIX, 	 bgm_data_matrix);
 	SetParameter 		(gen_bgm, BGM_WEIGHT_MATRIX, num_nodes);
 	CovarianceMatrix 	(postp, gen_bgm);

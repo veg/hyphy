@@ -5585,8 +5585,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					}
 					else
 					{
-						errMsg = _String("Number of weights does not match number of observations in current data set.");
-						acknError (errMsg);
+						WarnError ("Number of weights does not match number of observations in current data set.");
 						return;
 					}
 				}
@@ -5610,8 +5609,7 @@ void	  _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 					}
 					else
 					{
-						errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-						acknError (errMsg);
+						WarnError (_String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable");
 						return;
 					}
 				}
@@ -7911,7 +7909,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 	result.Finalize();
 	_String::storageIncrement = saveSI;
 	
-	if (scopeIn||isString||isComment||parenIn||matrixScope)
+	if (scopeIn||isString||isComment == 1||parenIn||matrixScope)
 	{
 		if (result!='}')
 		{
