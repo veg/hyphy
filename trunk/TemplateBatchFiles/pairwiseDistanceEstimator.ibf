@@ -191,7 +191,7 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 				aligned = aligned[0];
 				s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
 				
-				DataSet realigned = ReadFromString (s1);
+				DataSet realigned 			= ReadFromString (s1);
 				DataSetFilter twoSpecFilter = CreateFilter (realigned,1);
 			}
 		}

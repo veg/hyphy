@@ -96,20 +96,40 @@ if (distanceChoice)
 	pairwiseAlign = 0;
 	
 	GetDataInfo (charInfo, filteredData, "CHARACTERS");
-	if (Columns(charInfo) == 20)
+	ChoiceList (pairwiseAlign, "Peform pairwise alignment prior to comparison",1,SKIP_NONE,
+				"No","Assume that the sequences are already aligned.",
+				"Yes","Align each pair of sequences before computing pairwise distances");
+
+	if (pairwiseAlign < 0)
 	{
-		ChoiceList (pairwiseAlign, "Peform pairwise alignment prior to comparison",1,SKIP_NONE,
-					"No","Assume that the sequences are already aligned.",
-					"Yes","Align each pair of sequences before computing pairwise distances");
+		return 0;
+	}
 	
-		if (pairwiseAlign < 0)
-		{
-			return 0;
-		}
-		if (pairwiseAlign)
+			
+	
+	if (pairwiseAlign)
+	{
+		if (Columns (charInfo) == 20)
 		{
 			_skipPredefsSeqAlignShared = 1;
 			ExecuteAFile ("SeqAlignShared.ibf");
+		}
+		else
+		{
+			alignOptions = {};
+			scoreMatrix = {
+			{5,-4,-4,-4}
+			{-4,5,-4,-4}
+			{-4,-4,5,-4}
+			{-4,-4,-4,5}
+			};
+			alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
+			alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	10;
+			alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	5;
+			alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
+			alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
+			alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
+			alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=   "ACGT";
 		}
 	}
 
