@@ -4186,7 +4186,7 @@ _PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree, _PMathObj p2)
 					}
 					DepthWiseT(false);
 					if (IsCurrentNodeTheRoot()) 
-						break;
+						return new _MathObject();
 				}
 			}
 			else
@@ -4340,6 +4340,9 @@ _PMathObj _TreeTopology::BranchName (_PMathObj p, bool subtree, _PMathObj p2)
 							prefix << suffix;
 							return new _Matrix(prefix);
 						}	
+						else
+							if (n1)
+								return new _Matrix();
 						return new _MathObject();
 					}
 					
