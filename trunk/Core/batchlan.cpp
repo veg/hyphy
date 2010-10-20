@@ -1160,7 +1160,7 @@ _PMathObj		_ExecutionList::Execute		(void)		// run this execution list
 	
 	_String  			dd (GetPlatformDirectoryChar());
 		
-	_FString	   		bp  (baseDirectory),
+	_FString	   		bp  (baseDirectory, false),
 						ds  (dd),
 						cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
 						* stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
@@ -8238,6 +8238,7 @@ bool	_ElementaryCommand::ProcessInclude		(_String&source, _ExecutionList&target)
 		WarnError (_String("#include missing a meaningful filename. Check that there is a ';' at the end of the statement. Had ")& source.Cut(8,source.sLength-2));
 		return false;
 	}
+	
 	fileName.ProcessFileName(false,false,(Ptr)target.nameSpacePrefix);
 	if (terminateExecution) return false;
 	

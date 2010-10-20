@@ -1743,7 +1743,6 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 			*this = WriteFileDialogInput ();
 			
 		ProcessFileName(false,false,theP);
-		
 		CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
 		return; 
 	}
@@ -1837,6 +1836,9 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 	for (long stringIndex = 0; stringIndex < sLength; stringIndex ++)
 	{
 		char currentChar = getChar (stringIndex);
+			//char b[256];
+			//sprintf (b,"%c %d\n", currentChar, currentChar);
+			//BufferToConsole (b);
 		switch (currentChar)
 		{
 			case '\t':
@@ -1853,8 +1855,7 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 	}
 	escapedString.Finalize();
 	(*this) = escapedString;
-	//(*this)=Replace ('\n',"\\n",true);
-	//(*this)=Replace ('\t',"\\t",true);
+	
 #endif
 
 #ifdef __MAC__

@@ -1184,7 +1184,7 @@ function ReceiveJobs (sendOrNot)
 		{
 			fprintf (stdout," ");
 		}
-		dummy = GetDistributionParameters(psigLevel);
+		GetDistributionParameters(psigLevel);
 		fprintf (stdout,"| ",Format (res[1][0],14,6)," | ",Format (dummy,13,8)," |  ",
 							 Format(degFCount,5,0),"  |\n",tableSeparator);
 	}
