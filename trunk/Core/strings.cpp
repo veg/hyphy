@@ -1744,9 +1744,7 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 			
 		ProcessFileName(false,false,theP);
 		
-		_Variable* pathVar = CheckReceptacle(&useLastFString,empty,false);
-		_FString   pathVal (*this);
-		pathVar->SetValue (&pathVal);
+		CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
 		return; 
 	}
 
