@@ -7743,7 +7743,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 	{
 		char c = input.sData[index];
 		
-		if (c=='\t') 
+		if (!isString && c=='\t') 
 			c = ' ';
 		
 		// check for comments
