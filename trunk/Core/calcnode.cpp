@@ -2573,6 +2573,8 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 			break;
 		
 		case HY_OP_CODE_ADD: // +
+			if (!p)
+				return Sum();
 			AddANode (p);
 			return new _Constant (0.0);
 			break;

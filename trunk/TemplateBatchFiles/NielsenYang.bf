@@ -993,7 +993,8 @@ dummyVar = FrameText ("-","|",2,"SUMMARY TABLE");
 tableSeparator =  "+-------------------------+----------------+---------------+---------+\n";
 fprintf (stdout, "\n\"p\" is the number of estimated model parameters.\nDetailed results including sites with dN/dS>1 will be written to\n",SUMMARY_FILE,"\n\n");
 fprintf (stdout, tableSeparator,
-				 "| MODEL (Number & Desc)   | Log likelihood | 	   dN/dS     |    p    |\n",
+				 "| MODEL (Number & Desc)   | Log likelihood |     dN/dS     |    p    |\n",
+				                                             
 				 tableSeparator);
 				 
 cachedBranchLengths = {{-1,-1}};
@@ -1184,8 +1185,7 @@ function ReceiveJobs (sendOrNot)
 		{
 			fprintf (stdout," ");
 		}
-		GetDistributionParameters(psigLevel);
-		fprintf (stdout,"| ",Format (res[1][0],14,6)," | ",Format (dummy,13,8)," |  ",
+		fprintf (stdout,"| ",Format (res[1][0],14,6)," | ",Format (GetDistributionParameters(psigLevel),13,8)," |  ",
 							 Format(degFCount,5,0),"  |\n",tableSeparator);
 	}
 	else

@@ -802,7 +802,10 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
 			return Mult(p);
 			break;
 		case HY_OP_CODE_ADD: // +
-			return Add(p);
+			if (p)
+				return Add(p);
+			else
+				return Sum ();
 			break;
 		case HY_OP_CODE_SUB: // -
 			if (p)

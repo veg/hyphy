@@ -1403,6 +1403,12 @@ _PMathObj	_Matrix::RetrieveNumeric (void)
 	}
 	return this;
 }
+
+	//__________________________________________________________________________________
+_PMathObj	_Matrix::Sum (void)
+{
+	return new _Constant (MaxElement (1));
+}
 		
 //__________________________________________________________________________________
 	
@@ -1428,7 +1434,10 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			return MultObj(p);
 			break;
 		case HY_OP_CODE_ADD: // +
-			return AddObj (p);
+			if (p)
+				return AddObj (p);
+			else
+				return Sum ();
 			break;
 		case HY_OP_CODE_SUB: // -
 			if (p)
@@ -1486,9 +1495,6 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			break;
 		case HY_OP_CODE_MCOORD: // MCoord
 			return MCoord (p,p2);
-			break;
-		case HY_OP_CODE_MAX: // Max
-			return new _Constant (MaxElement ());
 			break;
 		case HY_OP_CODE_RANDOM: // Random
 			return Random (p);
@@ -1640,7 +1646,7 @@ bool	_Matrix::AmISparse(void)
 	}
 		
 		
-	if ((k*100)/lDim<=_Matrix::switchThreshold)
+	if ((_Parameter(k)/lDim*100.)<=_Matrix::switchThreshold)
 	{
 		// we indeed are sparse enough
 		_Matrix sparseMe (hDim,vDim,true,storageType==1); 
@@ -2987,7 +2993,7 @@ _PMathObj 	_Matrix::Evaluate (bool replace)
 				if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
 				{
 					formValue = theFormulas[i]->Compute();
-					if (formValue)
+					if (formValue && formValue->ObjectClass() == NUMBER)
 					{
 						result.theData[i] = formValue->Value();
 						//DeleteObject (formValue);
@@ -4158,24 +4164,32 @@ long	_Matrix::HashBack  (long logicalIndex)
 
 //_____________________________________________________________________________________________
 
-_Parameter	_Matrix::MaxElement  (void)	
+_Parameter	_Matrix::MaxElement  (char runMode)	
 // returns matrix's largest abs value element
 {
 	if (storageType == 1)
 	{
 		_Parameter max 	= 0.0, 
 				   temp;
+		
 		if (theIndex)
 		{
 			for (long i = 0; i<lDim; i++)
 			{
 				long k = theIndex[i];
-				if (k!=-1)
+				if  (k != -1)
 				{
 					temp = theData[i];
-					if (temp<0.0)
+					if (runMode != 1 && temp<0.0)
 						temp = -temp;
-					if (temp>max) max = temp;
+					
+					if (runMode == 0)
+					{
+						if (temp>max) 
+							max = temp;
+					}
+					else
+						max += temp;
 				}
 			}
 			return max;		
@@ -4185,13 +4199,23 @@ _Parameter	_Matrix::MaxElement  (void)
 			for (long i = 0; i<lDim; i++)
 			{
 				temp = theData[i];
-				if (temp<0.0)
+				if (runMode != 1 && temp<0.0)
 					temp = -temp;
-				if (temp>max) max = temp;
+				
+				if (runMode == 0)
+				{
+					if (temp>max) 
+						max = temp;
+				}
+				else
+					max += temp;
 			}
 			return max;
 		}
 	}
+	if (runMode) 
+		return 0;
+	
 	return 10.0;
 }
 
@@ -5016,50 +5040,76 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 					
 					long	      stackDepth = 0;
 					_SimpleList   vIndex;		  
+					
 					if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex)))
 					{
 						_SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
 											* varValues = new _SimpleFormulaDatum [vIndex.lLength];
-									
-						f.ConvertToSimple (vIndex);
-						if (conditionalCheck)
-							conditionalCheck->ConvertToSimple(vIndex);
 						
+						bool				constantValue = false;
+						_Parameter			constantV	  = f.Compute()->Value();
 						
-						long rid []={cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
-							 
-						for (long k=0; k<3; k++)
-							rid[k] = vIndex.Find(rid[k]);
-							
-						PopulateArraysForASimpleFormula(vIndex, varValues);
-							
-						for (long r=0; r<hDim; r++)
+						if (f.IsConstant())
 						{
-							if (rid[0]>=0)
-								varValues[rid[0]].value = r;
-							
-							for (long c=0; c<vDim; c++)
-							{
-								if (rid[1]>=0)
-									varValues[rid[1]].value = c;
-								
-								if (rid[2]>=0)
-									varValues[rid[2]].value = (*this)(r,c);
-								
-								if (conditionalCheck && CheckEqual(conditionalCheck->ComputeSimple(stack,varValues),0.0))
-								{
-									if (rid[2]>=0)
-										retMatrix->Store (r,c,varValues[rid[2]].value);
-									else
-										retMatrix->Store (r,c, (*this)(r,c));
-									continue;
-								}
-								
-								retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
-							}
-						}					
+							constantValue = true;
+							constantV	  = f.Compute()->Value();
+						}
+						else
+						{
+							f.ConvertToSimple (vIndex);
+							if (conditionalCheck)
+								conditionalCheck->ConvertToSimple(vIndex);
+						}
 						
-						f.ConvertFromSimple (vIndex);
+						
+						if (constantValue && !conditionalCheck)
+						{
+							for (long r=0; r<hDim; r++)
+								for (long c=0; c<vDim; c++)
+									retMatrix->Store (r,c,constantV);
+						}
+						else
+						{
+							
+							long rid []={cr->GetAVariable(),cc->GetAVariable(),cv->GetAVariable()};
+							
+							for (long k=0; k<3; k++)
+								rid[k] = vIndex.Find(rid[k]);
+							
+							PopulateArraysForASimpleFormula(vIndex, varValues);
+
+							for (long r=0; r<hDim; r++)
+							{
+								
+								if (rid[0]>=0)
+									varValues[rid[0]].value = r;
+								
+								for (long c=0; c<vDim; c++)
+								{
+									if (rid[1]>=0)
+										varValues[rid[1]].value = c;
+									
+									if (rid[2]>=0)
+										varValues[rid[2]].value = (*this)(r,c);
+									
+									if (conditionalCheck && CheckEqual(conditionalCheck->ComputeSimple(stack,varValues),0.0))
+									{
+										if (rid[2]>=0)
+											retMatrix->Store (r,c,varValues[rid[2]].value);
+										else
+											retMatrix->Store (r,c, (*this)(r,c));
+										continue;
+									}
+									
+									if (constantValue)
+										retMatrix->Store (r,c,constantV);
+									else
+										retMatrix->Store (r,c,f.ComputeSimple(stack,varValues));
+								}
+							}					
+							
+							f.ConvertFromSimple (vIndex);
+						}
 						if (conditionalCheck)
 							conditionalCheck->ConvertFromSimple(vIndex);
 						
@@ -9434,6 +9484,8 @@ void _AssociativeList::DeleteByKey (_PMathObj p)
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long opCode)
 {
+	if (!p) return;
+	
 	_FString * index = (_FString*)p;
 	long	   f 	 = avl.Find (index->theString);
 	

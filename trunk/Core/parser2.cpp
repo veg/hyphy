@@ -3486,7 +3486,10 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 				return new _Constant(AddOn(p));
 			break;
 		case HY_OP_CODE_ADD: // +
-			return Add(p);
+			if (p)
+				return Add(p);
+			else
+				return Sum();
 			break;
 		case HY_OP_CODE_DIV: // /
 			return EqualAmb(p);
@@ -4685,14 +4688,13 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 			}
 					
 			
-			if ((UnOps.contains(s.getChar(i)))&&!twoToken)
+			if (UnOps.contains(s.getChar(i)) && !twoToken)
 			{
 				char cim1 = s.getChar(i-1);
 				
 				if ( i == 0 || cim1=='(' || cim1=='[' || cim1==',')
-				//if ((s.getChar(i)=='-')&&(levelData->lLength==0)&&(levelOps->lLength==0))
 				{
-					curOp = "-";
+					curOp = s.getChar(i);
 					levelOps->AppendNewInstance(new _Operation (curOp,1));
 					continue;
 				}
@@ -4794,9 +4796,9 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 		else
 			if (UnOps.contains(s.getChar(i)))
 			{
-				if (s.getChar(i)=='-' && (!i|| s.getChar(i-1)=='(')) // unary minus?
+				if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) // unary minus?
 				{
-					curOp = "-";
+					curOp   = s.getChar(i);
 					levelOps->AppendNewInstance (new _Operation (curOp,1));
 					continue;
 				}

@@ -1074,8 +1074,8 @@ _ExecutionList::~_ExecutionList (void)
 {
 	if (cli)
 	{
-		delete cli->values;
-		delete cli->stack;
+		delete [] cli->values;
+		delete [] cli->stack;
 		delete cli;
 		cli = nil;
 	}
@@ -1276,6 +1276,7 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 							aStatement->simpleParameters<<parseCode;
 							aStatement->simpleParameters<<(long)f;
 							aStatement->simpleParameters<<(long)f2;
+							aStatement->simpleParameters<<varRef;
 							
 							formulaeToConvert << (long)f;
 							
@@ -1286,6 +1287,9 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 							break;
 						}
 					}
+					
+					delete f;
+					delete f2;
 				}
 				status = false;
 				break;
@@ -1293,8 +1297,23 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 				
 			case 4:
 				parseCodes 		  << -1;						
-				if (aStatement->simpleParameters.lLength == 3)
+				if (aStatement->simpleParameters.lLength == 3 || aStatement->parameters.lLength)
 				{
+					if (aStatement->parameters.lLength)
+					{
+						_Formula f;
+						long	 varRef;
+							//printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+						
+						long status = Parse (&f, *(_String*)aStatement->parameters(0), varRef, nameSpacePrefix,nil);
+						
+							//printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+						
+						if (status== HY_FORMULA_EXPRESSION)
+							aStatement->simpleParameters<<long(f.makeDynamic());						
+					}
+					
+					
 					_Formula *cf  = ((_Formula*)aStatement->simpleParameters(2));
 					if (cf->AmISimple(stackDepth,varList))
 						formulaeToConvert << (long)cf;
@@ -1307,11 +1326,7 @@ bool		_ExecutionList::TryToMakeSimple		(void)
 				status = false;
 		}
 		if (status == false)
-		{
-			_String oc ((_String*)aStatement->toStr());
-			oc = _String ("Failed to compile an execution list: offending command was\n") & oc;
-			ReportWarning (oc);
-		}
+			ReportWarning (_String ("Failed to compile an execution list: offending command was\n") & _String (((_String*)aStatement->toStr())));
 	}
 	
 	if (status)
@@ -2715,7 +2730,7 @@ void	  _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 		else
 			return;
 	}
-
+	
 	ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
 	
 	if (terminateExecution)

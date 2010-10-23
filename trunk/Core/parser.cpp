@@ -614,7 +614,7 @@ void  ReplaceVar (_Variable* theV)
 
 //__________________________________________________________________________________
 
-_String		UnOps ("-,!,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,"), 
+_String		UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,"), 
 			HalfOps (":<>=!&|");
 		
 _SimpleList	opPrecedence, 
@@ -681,6 +681,8 @@ void	SetupOperationLists (void)
 		
 		//HY_OP_CODE_AND
 		BuiltInFunctions.AppendNewInstance (new _String ("&&"));
+		simpleOperationCodes    << HY_OP_CODE_AND;
+		simpleOperationFunctions<< (long)MultNumbers;
 		
 		//HY_OP_CODE_MUL
 		BuiltInFunctions.AppendNewInstance (new _String ('*'));
@@ -996,7 +998,10 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
 			return Mult(p);
 			break;
 		case HY_OP_CODE_ADD: // +
-			return Add(p);
+			if (p)
+				return Add(p);
+			else
+				return Sum ();
 			break;
 		case HY_OP_CODE_SUB: // -
 			if (p)
@@ -1262,6 +1267,13 @@ _PMathObj _Constant::Minus (void)
 {
 	return 	   new 	_Constant (-Value());
 }
+
+//__________________________________________________________________________________
+_PMathObj _Constant::Sum (void) 
+{
+	return 	   new 	_Constant (Value());
+}
+
 //__________________________________________________________________________________
 _PMathObj _Constant::Mult (_PMathObj theObj) 
 {
@@ -3699,7 +3711,7 @@ bool _Operation::IsConstant (void)
 	if (theData==-1)
 	{
 		if (theNumber)
-			return theNumber->IsVariable();
+			return theNumber->IsConstant();
 		return true;
 	}
 	return LocateVar(GetAVariable())->IsConstant();

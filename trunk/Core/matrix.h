@@ -164,6 +164,8 @@ class		_Matrix: public _MathObject {
 
 	virtual _PMathObj	 MultElements (_PMathObj);	// element wise multiplication operation on matrices
 	
+	virtual	_PMathObj	 Sum		  (void);
+	
 	_Matrix		operator + (_Matrix&);			// addition operation on matrices
 										
 	_Matrix	 	operator - (_Matrix&);			// subtraction operation on matrices
@@ -237,11 +239,14 @@ class		_Matrix: public _MathObject {
 													// and storage type (pointer/array)
 	
 	friend		void				DuplicateMatrix	(_Matrix*,  _Matrix*);				
-													
+														// an auxiliary function which duplicates a matrix
 	
 													
-				_Parameter			MaxElement		();	// an auxiliary function which duplicates a matrix
+				_Parameter			MaxElement		(char doSum = 0);
+							// SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or 
+							// the sum of all absolute values (doSum == 2)
 														// returns the largest element's abs value for given matrix
+	
 				_Parameter			MinElement		(); // returns the smallest, non-zero element value for given matrix
 
 				bool				IsMaxElement	(_Parameter);

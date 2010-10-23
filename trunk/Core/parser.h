@@ -177,6 +177,7 @@ class	_MathObject : public BaseObj{ //abstract math operations class
 	virtual	_MathObject* Add 		(_MathObject*) 	   {warnError (-666); ; return new _MathObject;}
 	virtual	_MathObject* Sub 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* Minus 		(void) 		   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Sum 		(void) 		   	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* Mult 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* Div 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
 	virtual	_MathObject* lDiv 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
@@ -302,6 +303,7 @@ class _Constant : public _MathObject { // a numerical constant
 	virtual	_PMathObj Add 			(_PMathObj);
 	virtual	_PMathObj Sub 			(_PMathObj);
 	virtual	_PMathObj Minus	 		(void) ;
+	virtual	_PMathObj Sum	 		(void) ;
 	virtual	_PMathObj Mult 			(_PMathObj);
 	virtual	_PMathObj Div 			(_PMathObj);
 	virtual	_PMathObj lDiv 			(_PMathObj);
