@@ -1493,6 +1493,9 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 		case HY_OP_CODE_MACCESS: // MAccess
 			return MAccess (p,p2);
 			break;
+		case HY_OP_CODE_MAX: // Max
+			return new _Constant (MaxElement (0));
+			break;
 		case HY_OP_CODE_MCOORD: // MCoord
 			return MCoord (p,p2);
 			break;
