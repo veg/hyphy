@@ -208,6 +208,16 @@ pairwiseP		 = {readPCount,readPCount};
 treeSplitMatches 	 = 0;
 khIterations		 = 10000;
 
+if (OPTIMIZATION_PRECISION == 0)
+{
+	cutThreshold		= 0.001;
+}
+else
+{
+	cutThreshold		= 2 * OPTIMIZATION_PRECISION;
+}
+
+
 for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
 {
 	for (pc2 = 0; pc2 <  readPCount; pc2 = pc2 + 1)
@@ -245,7 +255,7 @@ for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
 			textMx = testLRT(partTreeConds,otherPartTree,khIterations) % 0;
 			for (kk=0; kk<khIterations; kk=kk+1)
 			{	
-				if (textMx[kk]>=2*OPTIMIZATION_PRECISION)
+				if (textMx[kk] >= cutThreshold)
 				{
 					break;
 				}
