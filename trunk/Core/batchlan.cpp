@@ -4425,14 +4425,15 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 			if (p<=0)
 			{
 				iseof->SetValue (new _Constant (1.0), false);
+				fclose(inputBuffer);
 				return;
 			}
 			
 			data = (_String*)checkPointer(new _String ((unsigned long)p));
 			rewind (inputBuffer);
-			fseek (inputBuffer, scanfLastReadPosition, SEEK_SET);
-			fread (data->sData, 1, p, inputBuffer);
-			fclose(inputBuffer);			
+			fseek  (inputBuffer, scanfLastReadPosition, SEEK_SET);
+			fread  (data->sData, 1, p, inputBuffer);
+			fclose (inputBuffer);			
 		}
 	}
 	// now that the string has been read in, read in all the terms, ignoring all the characters in between
@@ -9669,11 +9670,7 @@ void	ReadBatchFile (_String& fName, _ExecutionList& target)
 	FILE 			*f = doFileOpen (fName.getStr(), "rb");
 	SetStatusLine   ("Parsing File");
 	if (!f)
-	{
-		_String errMsg ("Could not read batch file:");
-		errMsg = errMsg & fName & ".\nPath stack: " & (_String*)pathNames.toStr();
-		acknError (errMsg);
-	}
+		WarnError (_String("Could not read batch file '") & fName & "'.\nPath stack: " & (_String*)pathNames.toStr());
 	else
 	{
 		_String beavis (f);
