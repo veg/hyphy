@@ -245,7 +245,7 @@ for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
 			textMx = testLRT(partTreeConds,otherPartTree,khIterations) % 0;
 			for (kk=0; kk<khIterations; kk=kk+1)
 			{	
-				if (textMx[kk]>=0)
+				if (textMx[kk]>=2*OPTIMIZATION_PRECISION)
 				{
 					break;
 				}

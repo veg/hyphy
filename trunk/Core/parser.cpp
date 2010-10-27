@@ -682,7 +682,7 @@ void	SetupOperationLists (void)
 		//HY_OP_CODE_AND
 		BuiltInFunctions.AppendNewInstance (new _String ("&&"));
 		simpleOperationCodes    << HY_OP_CODE_AND;
-		simpleOperationFunctions<< (long)MultNumbers;
+		simpleOperationFunctions<< (long)AndNumbers;
 		
 		//HY_OP_CODE_MUL
 		BuiltInFunctions.AppendNewInstance (new _String ('*'));

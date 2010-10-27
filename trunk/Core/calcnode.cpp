@@ -491,9 +491,7 @@ _Parameter	_CalcNode::BranchLength (void)
 		}
 		
 		_Matrix*	theMx   = ComputeModelMatrix();
-		_Parameter  expSubs = 0.0;
-			
-		expSubs = -theMx->ExpNumberOfSubs (freqMx, mbf);
+		_Parameter  expSubs = theMx->ExpNumberOfSubs (freqMx, mbf);
 		
 		_Parameter divisor;
 		checkParameter (largeMatrixBranchLengthDimension, divisor, 20.);

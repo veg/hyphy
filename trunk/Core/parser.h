@@ -930,6 +930,7 @@ extern		_AVLListX		_hyApplicationGlobals;
 _Parameter	AddNumbers  (_Parameter, _Parameter);
 _Parameter	SubNumbers  (_Parameter, _Parameter);
 _Parameter	MultNumbers (_Parameter, _Parameter);
+_Parameter	AndNumbers  (_Parameter, _Parameter);
 _Parameter	DivNumbers  (_Parameter, _Parameter);
 _Parameter  EqualNumbers(_Parameter, _Parameter);
 _Parameter  LessThan	(_Parameter, _Parameter);

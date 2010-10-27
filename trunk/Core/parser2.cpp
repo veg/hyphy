@@ -97,6 +97,7 @@ _Parameter	MinNumbers	(_Parameter x, _Parameter y) {return x<y?x:y;}
 _Parameter	ExpNumbers  (_Parameter x) {return exp(x);}
 _Parameter	LogNumbers  (_Parameter x) {return log(x);}
 _Parameter	FastMxAccess(Ptr m, _Parameter index) {return ((_Parameter*)m)[(long)index];}
+_Parameter	AndNumbers  (_Parameter x, _Parameter y) {return x != 0.0 && y != 0.0;}
 
 //__________________________________________________________________________________
 
