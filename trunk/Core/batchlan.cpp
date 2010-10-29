@@ -7809,14 +7809,17 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 						   && input.getChar(index-4) == 't'
 						   && input.getChar(index-5) == 'e'
 						   && input.getChar(index-6) == 'r')
-					result<<' ';
+			{
+					if (index == 6 || index > 6 && !(isalnum(input.getChar(index-7)) || input.getChar(index-7) == '_'))
+						result<<' ';
+			}
 					
 						   
 			skipping = true;
 			continue;
 		}
 		
-		if (skipping&&(isalpha(c) || c=='_') && ((isalnum(lastChar))||(lastChar=='_')))
+		if (skipping&&( isalpha(c) || c=='_') && (isalnum(lastChar) || lastChar=='_'))
 			result<<' ';
 		
 		skipping = false;
@@ -9530,8 +9533,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 {
 	if (isInFunction)
 	{
-		_String errMsg ("Nested function declarations are not allowed");
-		WarnError (errMsg);
+		WarnError ("Nested function declarations are not allowed");
 		return false;
 	}
 	
