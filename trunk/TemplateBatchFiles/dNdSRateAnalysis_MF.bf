@@ -598,7 +598,7 @@ for (mi = 0; mi<5; mi=mi+1)
 			/* Non-MPI execution */
 			Optimize (res,lf);
 			modelIndex = mi;
-			dummy = ReceiveJobs (0);
+			ReceiveJobs (0);
 		}
 	}
 }
@@ -674,7 +674,7 @@ function ReceiveJobs (sendOrNot)
 	
 	if (branchLengths)
 	{
-		res[1][1] = res[1][1] + TipCount (givenTree) + BranchCount (givenTree) - 1;
+		res[1][1] = res[1][1] + TipCount (givenTree_0) + BranchCount (givenTree_0) - 1;
 	}
 
 	LIKELIHOOD_FUNCTION_OUTPUT = 6;
