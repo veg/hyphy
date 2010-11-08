@@ -98,7 +98,7 @@ if (refSeq < 0)
 
 SetDialogPrompt ("Sequence File:");
 
-if (refSeq > 0)
+if (refSeq > 1)
 {
 	DataSet        unal2 			= ReadDataFile 	(PROMPT_FOR_FILE);
 	refSeq = ">" + predefSeqNames [refSeq][0] + "\n" + RefSeqs[refSeq-2];
