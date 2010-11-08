@@ -674,7 +674,7 @@ function ReceiveJobs (sendOrNot)
 	
 	if (branchLengths)
 	{
-		res[1][1] = res[1][1] + TipCount (givenTree_0) + BranchCount (givenTree_0) - 1;
+		res[1][1] = res[1][1] + TipCount (givenTree_1) + BranchCount (givenTree_1) - 1;
 	}
 
 	LIKELIHOOD_FUNCTION_OUTPUT = 6;
