@@ -190,7 +190,10 @@ class		_Matrix: public _MathObject {
 	
 	_List*		ComputeRowAndColSums 			(void);
 	_Matrix* 	MutualInformation				(void);
-	void		FillInList						(_List&);
+	void		FillInList						(_List&, bool = false);
+				// SLKP 20101108: 
+				//				 added a boolean flag to allow numeric matrices  
+				//				 to be implicitly converted to strings
 	
 	_Matrix*    NeighborJoin					(bool);
 	_Matrix*    MakeTreeFromParent				(long);

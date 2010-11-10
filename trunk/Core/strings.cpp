@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020101027beta");
+_String	  __KERNEL__VERSION__ ("2.0020101108beta");
 
 #ifdef	 __UNIX__
 	#if !defined __MINGW32__
@@ -548,6 +548,33 @@ void _String::EscapeAndAppend (const char c, char mode)
 				case '%':
 					(*this) << '\\'; (*this) << c;
 					return;
+			}
+		}
+		else
+		{
+			if (mode == 4)
+			{
+				switch (c)
+				{
+					case '"':
+						(*this) << "&quot;";
+						break;
+					case '\'':
+						(*this) << "&apos;";
+						break;
+					case '<':
+						(*this) << "&lt;";
+						break;
+					case '>':
+						(*this) << "&gt;";
+						break;
+					case '&':
+						(*this) << "&amp;";
+						break;
+					default:
+						(*this) << c;
+				}
+				return;
 			}
 		}
 	}

@@ -3712,7 +3712,8 @@ bool _Operation::IsConstant (void)
 	{
 		if (theNumber)
 			return theNumber->IsConstant();
-		return true;
+		
+		return !(opCode == HY_OP_CODE_BRANCHLENGTH||opCode == HY_OP_CODE_RANDOM||opCode == HY_OP_CODE_TIME);
 	}
 	return LocateVar(GetAVariable())->IsConstant();
 		

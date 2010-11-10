@@ -2317,7 +2317,7 @@ void	  _ElementaryCommand::ExecuteCase65 (_ExecutionList& chain)
 				_Parameter whatToDo;
 				checkParameter (assertionBehavior, whatToDo, 0.0);
 				
-				_String errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.\n" & *(_String*)parameters(1);
+				_String errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.\n" & ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix);
 				
 				if (CheckEqual (whatToDo, 1.))
 				{

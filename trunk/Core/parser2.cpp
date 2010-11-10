@@ -3016,7 +3016,7 @@ _PMathObj _FString::Join (_PMathObj p)
 	_List theStrings;
 	
 	if (p->ObjectClass()==MATRIX)
-		((_Matrix*)(p->Compute()))->FillInList (theStrings);
+		((_Matrix*)(p->Compute()))->FillInList (theStrings,true);
 	else
 		if (p->ObjectClass()==ASSOCIATIVE_LIST)
 			((_AssociativeList*)(p->Compute()))->FillInList (theStrings);
@@ -3460,10 +3460,10 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
 					_String * t = nil;
 					
 					
-					if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0))
+					if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0))
 					{
 						checkPointer (t = new _String (theString->sLength+1,true));
-						t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0));
+						t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0));
 						t->Finalize();
 					}
 					else

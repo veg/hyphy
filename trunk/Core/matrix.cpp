@@ -3123,10 +3123,10 @@ bool	 	_Matrix::IsAStringMatrix (void)
 }
 
 //_____________________________________________________________________________________________
-void	 	_Matrix::FillInList (_List& fillMe)
+void	 	_Matrix::FillInList (_List& fillMe, bool doNumeric)
 // check if a formula matrix contains strings
 {
-	if (storageType == 2)
+	if (storageType == _FORMULA_TYPE)
 		for (long r=0; r<hDim; r++)
 			for (long c=0; c<vDim; c++)
 			{
@@ -3144,6 +3144,15 @@ void	 	_Matrix::FillInList (_List& fillMe)
 						}
 				}
 			}
+	else
+	{
+		if (doNumeric && storageType == _NUMERICAL_TYPE)
+		{
+			for (long r=0; r<hDim; r++)
+				for (long c=0; c<vDim; c++)
+					fillMe.AppendNewInstance (new _String ((*this)(r,c)));
+		}
+	}
 }
 
 //_____________________________________________________________________________________________
