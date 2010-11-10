@@ -3628,31 +3628,6 @@ bool	IsModelReversible (long mid)
 	return false;
 }
 
-//____________________________________________________________________________________	
-
-_String * ReturnCurrentCallStack (void)
-{
-	if (executionStack.lLength)
-	{
-		_String *stackTrace = new _String (128L,true);
-		(*stackTrace) << "\nCall stack\n";
-		for (long callLevel = executionStack.lLength -1 ; callLevel >=0 ; callLevel --)
-		{
-			_ExecutionList * currentLevel = (_ExecutionList*)executionStack (callLevel);
-			(*stackTrace) << (_String(1+callLevel) & " : " & _String ((_String*)((_ElementaryCommand*)(*currentLevel)(currentLevel->currentCommand?currentLevel->currentCommand-1:0))->toStr()) & '\n');
-			if (currentLevel->stdinRedirect)
-			{
-				(*stackTrace) << "\nStandard Input Redirect: ";
-				stackTrace->AppendNewInstance ((_String*)currentLevel->stdinRedirect->toStr());
-				(*stackTrace) << "\n";
-				
-			}
-		}
-		stackTrace->Finalize();
-		return stackTrace;
-	}
-	return new _String ();
-}
 	
 //____________________________________________________________________________________	
 

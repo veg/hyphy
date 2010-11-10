@@ -502,6 +502,10 @@ extern	_String
 		pathToCurrentBF					,
 		statusBarUpdateString			,
 		statusBarProgressValue			,
+		errorReportFormatExpression		,
+		errorReportFormatExpressionStr	,
+		errorReportFormatExpressionStack,
+		errorReportFormatExpressionStdin,
 		
 #ifdef		__HYPHYMPI__
 		mpiNodeID 						,
@@ -531,7 +535,6 @@ void	ScanModelForVariables		 (long modelID, _AVLList& theReceptacle, bool inclG,
 			factored out a function call to scan a particular model
 			for variables to permit the use of explicit (formula-based) model definitions
 		 */
-_String*ReturnCurrentCallStack		 (void);
 	
 void	ReadBatchFile				 (_String&, _ExecutionList&);
 _String	ReturnDialogInput 			 (bool dispPath = false);
@@ -565,12 +568,16 @@ void	RetrieveModelComponents		 (long, _Variable*&, _Variable*&, bool &);
 bool	IsModelReversible			 (long);
 
 _PMathObj	
-		ProcessAnArgumentByType		(_String*, _VariableContainer*, long);
+		ProcessAnArgumentByType		 (_String*, _VariableContainer*, long);
 
-void	_HBL_Init_Const_Arrays		(void);
+void	_HBL_Init_Const_Arrays		 (void);
+void	ReturnCurrentCallStack		 (_List&, _List&);
+
 		
 
 
-extern 	bool	numericalParameterSuccessFlag;									
+extern 	bool						numericalParameterSuccessFlag;	
+extern 	_Parameter					messageLogFlag;
+
 
 #endif

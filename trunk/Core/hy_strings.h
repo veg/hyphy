@@ -359,7 +359,7 @@ void	NLToConsole					(void);
 _String*StringFromConsole			(bool=true);
 char	GetPlatformDirectoryChar	(void);
 
-extern  _String 		  __KERNEL__VERSION__;
+extern  _String						__KERNEL__VERSION__;
 
 
 #endif

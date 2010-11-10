@@ -30,6 +30,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "regex.h"
 #endif
 
+#ifdef	 __UNIX__
+	#if !defined __MINGW32__
+		#include <sys/utsname.h>
+	#endif
+#endif
+
+#ifdef 	  __HYPHYDMALLOC__
+#include "dmalloc.h"
+#endif
+
 #include "batchlan.h"
 
 #include <stdlib.h>
@@ -39,38 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String	  __KERNEL__VERSION__ ("2.0020101108beta");
-
-#ifdef	 __UNIX__
-	#if !defined __MINGW32__
-		#include <sys/utsname.h>
-	#endif
-	extern  bool dropIntoDebugMode;
-#else	
-	void 	SaveConsole (void);
-#endif
-
-#ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
-#endif
-
-#if !defined __UNIX__ || defined __HEADLESS__
-	#include "preferences.h"
-#endif
-
-#ifdef __MAC__
-	#include <Dialogs.h>
-	#include "HYUtils.h"
-#endif
-
-#ifdef __WINDOZE__
-	void WinErrorBox(_String&, bool);
-#endif
-
-#ifdef __HYPHY_GTK__
-	#include <gtk/gtk.h>
-	#include "HYConsoleWindow.h"
-#endif
+_String	  __KERNEL__VERSION__ ("2.0020101109beta");
 
 
 _String 	empty(""),
@@ -82,7 +61,6 @@ char		defaultReturn = 0;
 
 unsigned 	long _String::storageIncrement = 32;
 
-extern 		_Parameter messageLogFlag;
 
 //_______________________________________________________________________
 
@@ -1457,253 +1435,7 @@ void 	_String::LoCase (void)
 	}
 }
 
-//_______________________________________________________________________
-void	ReportWarning (_String st)
-{
-	checkParameter 			(MessageLogging, messageLogFlag, 1.0);
-	
-#ifdef  __HEADLESS__
-	if (globalInterfaceInstance && messageLogFlag >= 0.1)
-		globalInterfaceInstance->PushWarning (&st);
-#else		
-	if ( !globalMessageFile || messageLogFlag<.1 ) 
-		return;
-	
-	char   str[] = "\n";
-	fwrite (str, 1, 1, globalMessageFile);
-	fwrite (st.getStr(), 1, st.Length(), globalMessageFile);
-	fflush (globalMessageFile);
-#endif
-}
 
-
-//_______________________________________________________________________
-void	FlagError (_String st)
-{
-#ifdef  __HEADLESS__
-	if (globalInterfaceInstance)
-		globalInterfaceInstance->PushError (&st);
-	
-	terminateExecution = true;
-#else		
-	char  str[] = "\nError:";
-	
-		st = st & _String(ReturnCurrentCallStack());
-		
-		if (globalErrorFile) 
-		{
-			fwrite (str, 1, 7, globalErrorFile);
-			fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
-			fflush(globalErrorFile);
-		}
-#ifdef __HYPHYMPI__
-	int     rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-	
-	#if !defined __MAC__ && !defined __WINDOZE__
-		_String errMsg;
-		#ifdef __HYPHYMPI__
-			errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
-			
-			if (rank > 0)
-				MPISendString (errMsg,0,true);
-			else
-				errMsg = _String ("\nMaster node received an error:") ;
-		#else
-			errMsg = _String("Error:");
-		#endif
-		errMsg = errMsg & _String("\n") & st & "\n";
-		#ifdef	_MINGW32_MEGA_
-			SetStatusLine  (errMsg);
-		#else
-			StringToConsole(errMsg);
-		#endif
-	#endif
-	
-	#ifdef __MAC__
-		Str255 			  err;
-		StringToStr255	 (st,err);
-		ParamText 	   	 (err,NULL,NULL,NULL);
-		Alert 			 (128, (ModalFilterUPP)NULL);
-		WritePreferences ();
-		SaveConsole		 ();
-	#endif
-	
-	#ifdef __WINDOZE__
-		if (st.sLength>255)
-			st = st.Cut(0,255);
-		WritePreferences();
-		WinErrorBox(st,false);
-	#endif
-	
-	#ifdef __HYPHYMPI__
-		if (rank==0)
-			MPI_Abort (MPI_COMM_WORLD,1);
-	#endif
-	
-	#ifdef __UNIX__
-		if (dropIntoDebugMode)
-			while (ExpressionCalculator()) ;
-	#endif
-		//GlobalShutdown();
-	#ifdef _HY_ABORT_ON_ERROR
-		abort ();
-	#else
-		exit(1);
-	#endif	
-#endif
-}
-
-//_______________________________________________________________________
-void	WarnErrorWhileParsing (_String st, _String& context)
-{
-	WarnError (_String ("While parsing:\n") & context & "\n" & st);
-}
-
-
-//_______________________________________________________________________
-void	WarnError (_String st)
-{
-#ifdef  __HEADLESS__
-	if (globalInterfaceInstance)
-		globalInterfaceInstance->PushError (&st);
-	terminateExecution = true;
-#else		
-	char  str[] = "\nError:";
-#ifndef __HYPHY_GTK__
-	st = st & _String(ReturnCurrentCallStack());
-#endif
-
-	if (globalErrorFile)
-	{
-		fwrite (str, 1, 7, globalErrorFile);
-		fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
-		fflush (globalErrorFile);
-	}
-	
-#ifdef __HYPHYMPI__
-	int     rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-	
-	if (globalMessageFile)
-		fprintf (globalMessageFile, "\n%s", st.sData);
-	#if !defined __MAC__ && !defined __WINDOZE__
-		_String errMsg;
-		#ifdef __HYPHYMPI__
-			errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
-			
-			if (rank > 0)
-			{
-				fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
-				MPI_Abort (MPI_COMM_WORLD,1);
-				abort();
-			}
-			else
-				errMsg = _String ("\nMaster node received an error:") ;
-		#else
-			errMsg = _String("Error:");
-		#endif
-		errMsg = errMsg & _String("\n") & st & "\n";
-		#ifdef	_MINGW32_MEGA_
-			SetStatusLine  (errMsg);
-		#else
-			StringToConsole(errMsg);
-		#endif
-	#endif
-	
-#ifdef __MAC__
-	if (!skipWarningMessages)
-	{
-		Str255 err;
-		err[0] = st.sLength>255?255:st.sLength;
-		memcpy (err+1,st.getStr(),st.sLength>255?255:st.sLength);
-		ParamText (err,NULL,NULL,NULL);
-		char alertCode;
-		#ifndef __OLDMAC__
-			#ifdef TARGET_API_MAC_CARBON
-				alertCode = Alert (129, (ModalFilterUPP)NULL);
-			#else
-				alertCode = Alert (129, (RoutineDescriptor*)NULL);
-			#endif
-		#else
-			alertCode = Alert (129, NULL);
-		#endif
-		terminateExecution = true;
-		if (alertCode == 2)
-			skipWarningMessages = true;
-		else
-			if (alertCode == 3)
-			{
-				WritePreferences();
-				SaveConsole();
-				//GlobalShutdown(); 
-				// graceless exit; no need to clean stuff up
-				exit(1);
-			}
-	}
-	return;
-		#endif
-#ifdef __HYPHY_GTK__
-	if (!skipWarningMessages)
-	{
-		GtkWidget *dialog = gtk_message_dialog_new (
-							hyphyConsoleWindow?GTK_WINDOW(gtk_widget_get_ancestor(hyphyConsoleWindow->theWindow,GTK_TYPE_WINDOW)):NULL,
-							GTK_DIALOG_MODAL,
-							GTK_MESSAGE_WARNING,
-							GTK_BUTTONS_NONE,
-							"The following error occurred:\n %s",
-							st.sData);
-							
-		gtk_dialog_add_button (GTK_DIALOG(dialog),"Skip Further Messages",2);
-		gtk_dialog_add_button (GTK_DIALOG(dialog),"Quit",3);
-		gtk_dialog_add_button (GTK_DIALOG(dialog),"OK",1);
-		char alertCode = gtk_dialog_run (GTK_DIALOG (dialog));
-		gtk_widget_destroy (dialog);
-
-		terminateExecution = true;
-		if (alertCode == 2)
-			skipWarningMessages = true;
-		else
-			if (alertCode == 3)
-			{
-				WritePreferences();
-				SaveConsole ();
-				GlobalShutdown();
-				exit(1);
-			}
-	}
-	return;
-#endif
-#ifdef __WINDOZE__
-	if (!skipWarningMessages)
-	{
-		if (st.sLength>255)
-			st = st.Cut(0,255);
-		WinErrorBox(st, true);
-		terminateExecution = true;
-	}
-	return;
-#endif
-#ifdef __UNIX__
-	if (dropIntoDebugMode)
-		while (ExpressionCalculator()) ;
-#endif
-#ifdef __HYPHYMPI__
-	if (rank==0)
-		MPI_Abort (MPI_COMM_WORLD,1);
-#endif
-	//GlobalShutdown();
-
-#ifdef _HY_ABORT_ON_ERROR
-	abort ();
-#else
-	exit(1);
-#endif	
-	
-#endif
-}
 //_______________________________________________________________________
 
 void	_String::StripQuotes (void) 

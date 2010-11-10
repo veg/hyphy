@@ -1396,10 +1396,13 @@ void		_ExecutionList::ResetFormulae		(void)		// run this execution list
 					delete f2;
 				thisCommand->simpleParameters.Clear();
 				long k = listOfCompiledFormulae.Find((long)thisCommand);
-				listOfCompiledFormulae.Delete(k);
-				//printf ("[ResetFormulae:listOfCompiledFormulae%d]\n",k);
-				compiledFormulaeParameters.Delete(k);
-				//printf ("[ResetFormulae:compiledFormulaeParameters%d]\n",k);
+				if (k >= 0)
+				{
+					listOfCompiledFormulae.Delete(k);
+					//printf ("[ResetFormulae:listOfCompiledFormulae %d]\n",k);
+					compiledFormulaeParameters.Delete(k);
+					//printf ("[ResetFormulae:compiledFormulaeParameters %d]\n",k);
+				}
 			}
 		}
 		else
