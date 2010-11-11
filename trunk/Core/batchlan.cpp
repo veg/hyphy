@@ -4363,7 +4363,14 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 		if (chain.stdinRedirect)
 			data = chain.FetchFromStdinRedirect ();
 		else
+        {
+            if (!CheckEqual(iseof->Compute()->Value(),0))
+            {
+                WarnError ("Ran out of standard input\n");
+                return;
+            }
 			checkPointer ((Ptr)(data = new _String (StringFromConsole())));
+        }
 	}
 	else
 	{
@@ -4442,9 +4449,11 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 	// now that the string has been read in, read in all the terms, ignoring all the characters in between
 	if (!skipDataDelete)
 		p = 0; // will be used to keep track of the position in the string
+    
 	q = 0;
 	r = shifter;
-	while ((r<simpleParameters.lLength)&&(p<data->sLength))
+	
+    while (r<simpleParameters.lLength && p<data->sLength)
 	{
 		_String *currentParameter = ProcessCommandArgument((_String*)parameters(r+1-shifter)); // name of the receptacle
 		if (!currentParameter)

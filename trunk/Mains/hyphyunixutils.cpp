@@ -130,8 +130,7 @@ _String*	StringFromConsole	(bool)
 		{
 			if (readAChar == EOF)
 			{
-				if (returnme->sLength == 0)
-					WarnError ("Ran out of standard input\n");
+                CheckReceptacleAndStore (&hasEndBeenReached,empty,false,new _Constant (1.), false);
 				break;
 			}
 			*returnme << readAChar;
