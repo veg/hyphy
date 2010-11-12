@@ -2316,9 +2316,18 @@ void	  _ElementaryCommand::ExecuteCase65 (_ExecutionList& chain)
 			{
 				_Parameter whatToDo;
 				checkParameter (assertionBehavior, whatToDo, 0.0);
-				
-				_String errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.\n" & ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix);
-				
+                
+                _String errMsg;
+                
+                if (parameters.lLength == 1)
+                {
+                    errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.";
+                }
+				else
+                {
+                    errMsg = ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix);
+				}
+                
 				if (CheckEqual (whatToDo, 1.))
 				{
 					StringToConsole (errMsg);
@@ -2634,9 +2643,9 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 	
 	ExtractConditions (source,blAssert.sLength,pieces,',');
 	
-	if (pieces.lLength != 2)
+	if (pieces.lLength != 2 && pieces.lLength != 1)
 	{
-		WarnError ("Expected: assert (statement,message on failure);");
+		WarnError ("Expected: assert (statement,<message on failure>");
 		return false;
 	}
 
