@@ -354,11 +354,7 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
 			
 		if (bail)
 		{
-			_String *flaString = (_String*)toStr(),
-				    warnMsg = _String ("Differentiation of ") & *flaString & " failed.";
-				    
-			DeleteObject (flaString);
-			WarnError    (warnMsg);
+			WarnError    (_String ("Differentiation of ") & _String((_String*)toStr()) & " failed.");
 			res->Clear();
 			return 		 res;
 		}
@@ -372,11 +368,10 @@ _Formula* _Formula::Differentiate (_String varName, bool bail)
 	for (k=0; k<dydx.lLength; k++)
 		delete ((_Formula*)dydx.lData[k]);
 		
-	_Operation tempOp (new _Constant (0.0));
-	res->theFormula && & tempOp ;
-	res->theTree = dTree;
+	res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ;
+	res->theTree		 = dTree;
 	res->InternalSimplify (dTree);
-	res->ConvertFromTree ();
+	res->ConvertFromTree  ();
 	return res;
 		
 }
@@ -389,13 +384,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 	
 	if (op->theData!=-1)
 	{
-		long k = op->GetAVariable();
-		k = varRefs.BinaryFind (k);
+		long k     = varRefs.BinaryFind (op->GetAVariable());
 		if (k<0)
 			return nil;	
 			
 		_Formula* dYdX = (_Formula*)dydx(k);
-			
 		return dYdX->DuplicateFormula (dYdX->theTree, tgt);
 	}
 	
@@ -406,8 +399,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 		return   src.DuplicateFormula (src.theTree, tgt);
 	}
 	
-	node<long>* newNode = new node<long>;
-	checkPointer (newNode);
+	node<long>* newNode = (node<long>*)checkPointer (new node<long>);
+
 	
 	switch (op->opCode)
 	{
@@ -416,8 +409,13 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 				      
-			if (!(b1&&b2))
+			if (!b1 || !b2)
+			{
+			    newNode->delete_tree(true);
+				if (b1) b1->delete_tree (true);
+				if (b2) b2->delete_tree (true);
 				return nil;
+			}
 				
 			_String			  opC  ('*'),
 							  opC2 ('+');
@@ -430,11 +428,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			checkPointer      (newOp2);
 			checkPointer      (newOp3);
 			
-			node<long>* 	  newNode2 = new node<long>;
-			node<long>* 	  newNode3 = new node<long>;
-			
-			checkPointer      (newNode2);
-			checkPointer      (newNode3);
+			node<long>* 	  newNode2 = (node<long>*)checkPointer(new node<long>);
+			node<long>* 	  newNode3 = (node<long>*)checkPointer(new node<long>);
 			
 			newNode2->add_node (*b1);
 			newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
@@ -446,16 +441,12 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*newNode3);
 			
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance (newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula. AppendNewInstance (newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			
+			tgt.theFormula.AppendNewInstance (newOp);
+						
 			return 			newNode;
 		}
 		break;
@@ -466,27 +457,35 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = nil;
 				      
-				      
+			if (!b1)
+			{
+				newNode->delete_tree (true);
+				return nil;
+			}
+			
 			long	  isUnary = (currentSubExpression->get_num_nodes()==1);
 			
 			if (!isUnary)
+			{
 				b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
-				      
-			if (!(b1&&(b2||isUnary)))
-				return nil;
+				if (!b2)
+				{
+					b1->delete_tree      (true);
+					newNode->delete_tree (true);
+					return nil;
+				}
+			}
+			
 				      
 			_Operation*   newOp = new _Operation ();
 			checkPointer  (newOp);
 			newOp->Duplicate (op);
-			
-			
 			newNode->add_node (*b1);
 			if (!isUnary)
 				newNode->add_node (*b2);
 			newNode->in_object = tgt.theFormula.lLength;
 			
-			tgt.theFormula << newOp;
-			DeleteObject	(newOp);
+			tgt.theFormula.AppendNewInstance(newOp);
 			return 			newNode;
 		}
 		break;
@@ -496,9 +495,14 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 				      
-			if (!(b1&&b2))
+			if (!b1 || !b2)
+			{
+			    newNode->delete_tree(true);
+				if (b1) b1->delete_tree (true);
+				if (b2) b2->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('*'),
 							  opC2 ('-'),
 							  opC3 ('/'),
@@ -546,25 +550,19 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*newNode2);
 			
 			newNode6->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp5;
+			tgt.theFormula.AppendNewInstance(newOp5);
 			newNode5->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula.AppendNewInstance(newOp4);
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance(newOp3);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp6;
+			tgt.theFormula.AppendNewInstance(newOp6);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
+			tgt.theFormula.AppendNewInstance(newOp);
 			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
-			DeleteObject	(newOp5);
-			DeleteObject	(newOp6);
-			
+						
 			return 			newNode;
 		}
 		break;
@@ -574,7 +572,10 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
+			}
 				
 			_String			  opC  ('/'),
 							  opC2 ('+'),
@@ -611,21 +612,15 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node (*newNode2);
 			
 			newNode5->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp5;
+			tgt.theFormula.AppendNewInstance(newOp5);
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula.AppendNewInstance(newOp4);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance(newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
-			DeleteObject	(newOp5);
+			tgt.theFormula.AppendNewInstance(newOp);
 			
 			return 			newNode;
 		}
@@ -636,8 +631,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('*'),
 							  opC2 ('-'),
 							  opC3 ("Sin");
@@ -683,8 +681,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('*'),
 							  opC2 ('/'),
 							  opC3 ("Exp"),
@@ -733,27 +734,19 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*newNode2);
 			
 			newNode7->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp7;
+			tgt.theFormula.AppendNewInstance(newOp7);
 			newNode6->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp6;
+			tgt.theFormula.AppendNewInstance(newOp6);
 			newNode5->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp5;
+			tgt.theFormula.AppendNewInstance(newOp5);
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula.AppendNewInstance(newOp4);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance(newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
-			DeleteObject	(newOp5);
-			DeleteObject	(newOp6);
-			DeleteObject	(newOp7);
+			tgt.theFormula.AppendNewInstance(newOp);
 			
 			return 			newNode;
 		}
@@ -765,8 +758,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('*'),
 							  opC2;
 							  
@@ -804,8 +800,10 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
 			_String			  opC  ('/');
 										  
 			_Operation*   	  newOp  = new _Operation (opC  ,2);
@@ -816,9 +814,8 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
 			
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
+			tgt.theFormula.AppendNewInstance(newOp);
 			
-			DeleteObject	 (newOp);
 			return 			 newNode;
 		}
 		break;
@@ -828,8 +825,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('/'),
 							  opC2 ('*'),
 							  opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_SQRT));
@@ -861,18 +861,13 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*newNode2);
 			
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula.AppendNewInstance(newOp4);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance(newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
+			tgt.theFormula.AppendNewInstance(newOp);
 			
 			return 			newNode;
 		}
@@ -883,8 +878,11 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
 				      
 			if (!b1)
+			{
+				newNode->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('/'),
 							  opC2 ('^'),
 							  opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_COS));
@@ -915,18 +913,13 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node (*newNode2);
 			
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula.AppendNewInstance(newOp4);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula.AppendNewInstance(newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula.AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
+			tgt.theFormula.AppendNewInstance(newOp);
 			
 			return 			newNode;
 		}
@@ -938,9 +931,14 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
 				      * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
 				      
-			if (!(b1&&b2))
+			if (!b1 || !b2)
+			{
+			    newNode->delete_tree(true);
+				if (b1) b1->delete_tree (true);
+				if (b2) b2->delete_tree (true);
 				return nil;
-				
+			}
+			
 			_String			  opC  ('*'),
 							  opC2 ('+'),
 							  opC3 ('/'),
@@ -999,34 +997,25 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 			newNode->add_node  (*newNode3);
 			
 			newNode7->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp7;
+			tgt.theFormula .AppendNewInstance(newOp7);
 			newNode6->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp6;
+			tgt.theFormula .AppendNewInstance(newOp6);
 			newNode5->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp5;
+			tgt.theFormula .AppendNewInstance(newOp5);
 			newNode4->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp4;
+			tgt.theFormula .AppendNewInstance(newOp4);
 			newNode3->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp3;
+			tgt.theFormula .AppendNewInstance(newOp3);
 			newNode2->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp2;
+			tgt.theFormula .AppendNewInstance(newOp2);
 			newNode->in_object = tgt.theFormula.lLength;
-			tgt.theFormula << newOp;
-			
-			DeleteObject	(newOp);
-			DeleteObject	(newOp2);
-			DeleteObject	(newOp3);
-			DeleteObject	(newOp4);
-			DeleteObject	(newOp5);
-			DeleteObject	(newOp6);
-			DeleteObject	(newOp7);
+			tgt.theFormula .AppendNewInstance(newOp);
 			
 			return 			newNode;
 		}
 	}
 	
 	delete (newNode);
-	
 	return nil;
 }
 

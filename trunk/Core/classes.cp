@@ -311,7 +311,7 @@ void 	PurgeTreeInfo	 (node <descendantInfo>* root)
 
 
 //-------------------------------------------------------------
-template <class node_data> void node<node_data>::delete_tree(){
+template <class node_data> void node<node_data>::delete_tree(bool delSelf){
  	
  	 long 	nc = get_num_nodes();
  	 for (int i=1; i<=nc; i++)
@@ -319,6 +319,8 @@ template <class node_data> void node<node_data>::delete_tree(){
 			go_down(i)->delete_tree(); 	 
 			delete (go_down(i));
  	 }
+	 if (delSelf)
+		 delete (this);
 }
 
 //-------------------------------------------------------------
