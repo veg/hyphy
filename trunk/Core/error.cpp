@@ -237,7 +237,7 @@ void	FlagError (_String st)
 	if (rank > 0)
 		MPISendString (errMsg,0,true);
 	else
-		errMsg = _String ("\nMaster node received an error:") ;
+		errMsg = _String ("\nMaster node received an error:") & st ;
 #else
 	errMsg = st;
 #endif
@@ -329,7 +329,7 @@ void	WarnError (_String st)
 		abort   ();
 	}
 	else
-		errMsg = _String ("\nMaster node received an error:") ;
+		errMsg = _String ("\nMaster node received an error:") & st;
 #else
 	errMsg = st;
 #endif
