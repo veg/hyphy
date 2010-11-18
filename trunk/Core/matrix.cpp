@@ -6698,52 +6698,21 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 		if (key == _String("LHS")) 
 		// latin hypercube sampling: samples are in ROWS
 		{			
-			if (myVDim <= myHDim)
+			_Matrix * lhc = new _Matrix (myHDim, myVDim, false, true);
+			// the idea is to sample by row
+			// draw a random (unused by previous rows) number for the first column
+			// then an unused number for the second column, excluding the one used in the first column etc
+			
+			_SimpleList permutation (myHDim,0,1);
+									 
+			for (long c = 0; c < myVDim; c++)
 			{
-			
-				_Matrix * lhc = new _Matrix (myHDim, myVDim, false, true);
-				// the idea is to sample by row
-				// draw a random (unused by previous rows) number for the first column
-				// then an unused number for the second column, excluding the one used in the first column etc
-				
-				for (long row = 0; row < myHDim; row ++)
-				{
-					_Parameter rfloat = row;
-					
-					for (long col = 0; col < myVDim; col ++)
-						lhc -> theData [row*myVDim+col] = rfloat;
-				}
-				
-				_SimpleList 	indexArray (myVDim*myHDim,0,0);
-				
-				for (long row = 0; row < myHDim*myVDim; row++)
-					indexArray[row] = row % myVDim;
-				
-				for (long col = 0; col < myVDim; col++)
-				{
-					_SimpleList permutation (myHDim,0,1);
-					
-					for (long row = 0; row < myHDim; row++)
-					{
-						for (long col2 = 0; col2 < col; col2++)
-						{
-								
-						}
-						
-						long drawANumber = genrand_int32 () % (myHDim-row);
-						indexArray    [row*myVDim + col]   = permutation.lData[row+drawANumber];
-						permutation.lData[row+drawANumber] = permutation.lData[row];
-					}
-				}
-				
-				for (long k = 0; k < myHDim * myVDim; k++)
-					lhc->theData[k] = indexArray.lData[k];
-				
-				return lhc;
+				permutation.Permute (1);
+				for (long r = 0; r < myHDim; r++)
+					lhc->theData[r*myVDim + c] = theData[permutation.lData[r]*myVDim + c]; 
 			}
-			else
-				errMsg = _String ("To perform Latin Hypercube sampling, the number of rows (samples) must not be less than the number of columns (variables)");
 			
+			return lhc;
 		}
 		errMsg = _String ("Invalid string argument passed to matrix Random :") & key;
 	}
