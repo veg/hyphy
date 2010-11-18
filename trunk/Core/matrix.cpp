@@ -94,7 +94,6 @@ int 		fexact_			 		(long , long , double *, double , double , double , double *,
 void		MatrixIndexError 		(long, long, long, long);
 
 
-#if defined __AFYP_REWRITE_BGM__
 // function prototypes
 _Parameter	lnGamma (_Parameter),
 			gammaDeviate (double, double = 1.);
@@ -285,7 +284,6 @@ _Parameter	chisqDeviate (double df)
 	return gammaDeviate(df/2.0, 2.0);	// chi-square distribution is special case of gamma
 }
 
-#endif
 
 
 //__________________________________________________________________________________
@@ -1106,7 +1104,6 @@ _PMathObj   _Matrix::LUSolve (_PMathObj p)
 
 
 
-#if defined __AFYP_REWRITE_BGM__
 //__________________________________________________________________________________
 _PMathObj	_Matrix::CholeskyDecompose (void)
 {
@@ -1173,7 +1170,6 @@ _PMathObj	_Matrix::CholeskyDecompose (void)
 	
 	return lowerTri;
 }
-#endif
 
 
 
@@ -6586,17 +6582,18 @@ _Parameter		_Matrix::computePFDR (_Parameter lambda, _Parameter gamma)
 }
 
 //_____________________________________________________________________________________________
-#if defined __AFYP_REWRITE_BGM__
+
 _PMathObj		_Matrix::Random (_PMathObj kind)
 {
 	_String		errMsg;
+	
+	long myVDim = GetVDim(),
+		 myHDim = GetHDim();
 	
 	if (kind->ObjectClass() == NUMBER)
 	{
 		bool	resample = (kind->Compute()->Value()>0);
 		
-		long myVDim = GetVDim(),
-		myHDim = GetHDim();
 		
 		_SimpleList 	remapped (myVDim,0,1);
 		
@@ -6695,86 +6692,70 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 		
 		DeleteObject (pdfkey);
 	}
-	
+	else if (kind->ObjectClass () == STRING)
+	{
+		_String key = *((_FString*)kind->Compute())->theString;
+		if (key == _String("LHS")) 
+		// latin hypercube sampling: samples are in ROWS
+		{			
+			if (myVDim <= myHDim)
+			{
+			
+				_Matrix * lhc = new _Matrix (myHDim, myVDim, false, true);
+				// the idea is to sample by row
+				// draw a random (unused by previous rows) number for the first column
+				// then an unused number for the second column, excluding the one used in the first column etc
+				
+				for (long row = 0; row < myHDim; row ++)
+				{
+					_Parameter rfloat = row;
+					
+					for (long col = 0; col < myVDim; col ++)
+						lhc -> theData [row*myVDim+col] = rfloat;
+				}
+				
+				_SimpleList 	indexArray (myVDim*myHDim,0,0);
+				
+				for (long row = 0; row < myHDim*myVDim; row++)
+					indexArray[row] = row % myVDim;
+				
+				for (long col = 0; col < myVDim; col++)
+				{
+					_SimpleList permutation (myHDim,0,1);
+					
+					for (long row = 0; row < myHDim; row++)
+					{
+						for (long col2 = 0; col2 < col; col2++)
+						{
+								
+						}
+						
+						long drawANumber = genrand_int32 () % (myHDim-row);
+						indexArray    [row*myVDim + col]   = permutation.lData[row+drawANumber];
+						permutation.lData[row+drawANumber] = permutation.lData[row];
+					}
+				}
+				
+				for (long k = 0; k < myHDim * myVDim; k++)
+					lhc->theData[k] = indexArray.lData[k];
+				
+				return lhc;
+			}
+			else
+				errMsg = _String ("To perform Latin Hypercube sampling, the number of rows (samples) must not be less than the number of columns (variables)");
+			
+		}
+		errMsg = _String ("Invalid string argument passed to matrix Random :") & key;
+	}
 	else
 	{
-		errMsg = _String ("Invalid argument passes to matrix Random (should be a number or associative list):") & _String((_String*)kind->toStr());
+		errMsg = _String ("Invalid argument passes to matrix Random (should be a number, an associative list or a string):") & _String((_String*)kind->toStr());
 	}
 	
 	// error handling
 	WarnError (errMsg);
 	return new _Matrix (1,1);
 }
-#else
-_PMathObj		_Matrix::Random (_PMathObj kind)
-{
-	_String 		errMsg;
-	bool			resample;
-					
-	
-	if (kind->ObjectClass () != NUMBER)
-		errMsg = _String ("Invalid argument passes to matrix Random (should be a number):") & _String((_String*)kind->toStr());
-	else
-		resample = (kind->Compute()->Value()>0);
-		
-	if (errMsg.sLength)
-	{
-		WarnError  (errMsg);
-		return new _Matrix (1,1);
-	}
-	
-	long myVDim = GetVDim(),
-		 myHDim = GetHDim();
-
-	_SimpleList 	remapped (myVDim,0,1);
-	
-	if (resample)
-		remapped.PermuteWithReplacement(1);
-	else
-		remapped.Permute(1);
-		
-	
-	if (storageType==1)
-	{
-		_Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,true);
-		checkPointer (res);
-		
-		if (!theIndex)
-			for (long vv = 0; vv<lDim; vv+=myVDim)
-				for (long k2=0; k2<remapped.lLength; k2++)
-					res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
-		else
-		{
-			for (long vv = 0; vv<myHDim; vv++)
-				for (long k=0; k<remapped.lLength; k++)
-				{
-					long ki = remapped.lData[k];
-					if ((ki = Hash (vv,ki)) >= 0)
-						res->Store (vv,k,theData[ki]);
-				}
-		}
-		return res;
-	} 
-	else
-		if (storageType==2)
-		{
-			_Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
-			checkPointer (res);
-			
-			for (long vv = 0; vv<myHDim; vv++)
-				for (long k=0; k<remapped.lLength; k++)
-				{
-					long ki = remapped.lData[k];
-					_Formula * ff = GetFormula (vv,ki);
-					if (ff)
-						res->StoreFormula (vv, k, *ff);
-				}
-			return res;
-		}
-	
-	return new _Matrix (1,1);	
-}
-#endif
 
 //_____________________________________________________________________________________________
 _PMathObj		_Matrix::K_Means (_PMathObj classes)
@@ -8980,7 +8961,6 @@ void	_Matrix::CopyABlock (_Matrix * source, long startRow, long startColumn, lon
 }
 
 
-#if defined __AFYP_REWRITE_BGM__
 //_____________________________________________________________________________________________
 _PMathObj	_Matrix::DirichletDeviate (void)
 {
@@ -9243,7 +9223,6 @@ _PMathObj	_Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 	return (_PMathObj) decomp.makeDynamic();
 }
 
-#endif
 
 
 

@@ -209,10 +209,8 @@ class		_Matrix: public _MathObject {
 	void	 	Transpose (void);					// transpose a matrix
 	_Matrix	 	Gauss	(void);						// Gaussian Triangularization process
 	_PMathObj	LUDecompose (void);
-#if defined __AFYP_REWRITE_BGM__
 	_PMathObj	CholeskyDecompose (void);			
 				// added by afyp July 6, 2009
-#endif
 	_PMathObj	Eigensystem (void);
 	_PMathObj	LUSolve (_PMathObj);
 	_PMathObj	Inverse (void);

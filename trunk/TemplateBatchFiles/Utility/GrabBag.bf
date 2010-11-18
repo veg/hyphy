@@ -221,6 +221,40 @@ function defineIfNeeded (_parName, _parValue)
 }
 
 /*---------------------------------------------------------*/
+/* export a list of variables into the string of the form 
+   
+   varID = varValue; 
+
+*/
+   
+function exportVarList (_varList)
+{
+	_exportString = ""; _exportString * 256;
+	
+	for (_idx = 0; _idx < Columns (_varList) * Rows (_varList); _idx += 1)
+	{
+		_exportString * (_varList [_idx] + " = " + Eval (_varList[_idx]) + ";\n");
+	}
+	
+	_exportString * 0;
+	return _exportString;
+}
+
+/*---------------------------------------------------------*/
+/* restore values of global parameters */
+   
+
+function restoreGlobalParameters (_paramStash)
+{
+	_stashKeys = Rows(_paramStash);
+	for (_gb_idx = 0; _gb_idx < Abs (_paramStash); _gb_idx = _gb_idx + 1)
+	{
+		ExecuteCommands (_stashKeys[_gb_idx] + "=" + _paramStash[_stashKeys[_gb_idx]] + ";");
+	} 	
+	return 0;
+}
+
+/*---------------------------------------------------------*/
 /* restore values of global parameters */
    
 
