@@ -5069,12 +5069,10 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 							constantV	  = f.Compute()->Value();
 						}
 						else
-						{
 							f.ConvertToSimple (vIndex);
-							if (conditionalCheck)
-								conditionalCheck->ConvertToSimple(vIndex);
-						}
 						
+						if (conditionalCheck)
+							conditionalCheck->ConvertToSimple(vIndex);
 						
 						if (constantValue && !conditionalCheck)
 						{
