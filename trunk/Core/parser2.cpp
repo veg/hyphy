@@ -2528,6 +2528,33 @@ bool _Formula::HasChanged (bool ingoreCats)
 
 //__________________________________________________________________________________
 
+bool _Formula::HasChangedSimple (_SimpleList& variableIndex) 
+{
+	_Operation *thisOp;
+	for (long i = 0; i<theFormula.lLength; i++)
+	{
+		thisOp = (_Operation*)((BaseRef**)theFormula.lData)[i];
+		if (thisOp->theNumber)
+			continue;
+		else
+			if (thisOp->theData >= 0)
+			{
+				if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[variableIndex.lData[thisOp->theData]]))->HasChanged(false))
+					return true;
+			}		
+			else
+			{
+				long codeOp = simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
+				if (codeOp == HY_OP_CODE_RANDOM || codeOp == HY_OP_CODE_TIME)
+					return true;
+			}
+	}
+	return false;
+}
+
+
+//__________________________________________________________________________________
+
 void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments) 
 {
 	for (long i = 0; i<theFormula.lLength; i++)

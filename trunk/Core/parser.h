@@ -522,6 +522,7 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 						{return theFormula;}	
 		
 		bool	  	HasChanged 			(bool = false); // does  the formula need recomputing
+		bool		HasChangedSimple	(_SimpleList&);
 		bool		EqualFormula		(_Formula*);
 		bool	  	IsAConstant 		(void); //  does this formula include variables, or is it just a constant? 
 		bool	  	IsConstant 			(void); //  does this formula depend on something other that constants and fixed parameters? 
@@ -620,7 +621,7 @@ class _Variable : public _Constant {
 				_PMathObj   GetValue (void) {return varValue;} // get the value of the variable
 				void	    SetFormula (_Formula&); // set the variable to a new formula
 	
-	virtual		bool	    HasChanged     (bool = false);
+	virtual		bool	    HasChanged		(bool = false);
 	virtual     void	    PreMarkChanged  ();
 	virtual		void	    PostMarkChanged ();
 	virtual		bool	    IsGlobal (void) 

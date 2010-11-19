@@ -335,7 +335,7 @@ bool		_Matrix::HasChanged(void)
 		}
 		
 	}
-	
+	else
 	if (storageType == 0)
 	{
 		_MathObject *theO, **objData=(_MathObject**)theData;
@@ -361,6 +361,12 @@ bool		_Matrix::HasChanged(void)
 		}
 		
 	}	
+	else
+	if (storageType == 3)
+	{
+		for (long fid = 0; fid < cmd->formulasToEval.lLength; fid++)
+			if (((_Formula*)cmd->formulasToEval.lData[fid])->HasChangedSimple(cmd->varIndex)) return true;
+	}
 	return false;
 }
 //__________________________________________________________________________________
@@ -6699,9 +6705,6 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 		// latin hypercube sampling: samples are in ROWS
 		{			
 			_Matrix * lhc = new _Matrix (myHDim, myVDim, false, true);
-			// the idea is to sample by row
-			// draw a random (unused by previous rows) number for the first column
-			// then an unused number for the second column, excluding the one used in the first column etc
 			
 			_SimpleList permutation (myHDim,0,1);
 									 
