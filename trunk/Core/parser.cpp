@@ -2085,8 +2085,6 @@ bool	_Variable::IsVariable (void) {return true;}
 
 _PMathObj  _Variable::Compute (void) // compute or return the value 
 {
-	
-
 	if (varFormula == nil) // no formula, just return the value
 	{
 		if (varValue)

@@ -2091,10 +2091,10 @@ void	_HYChartWindow::Generate3DChart (_SimpleList& columns, _HYRect plotRect, ch
 				 
 		for (j=0; j<surfaceDivs; j++)
 		{
-			xVar->SetNumericValue (plotBase.theData[j]);
+			xVar->SetValue (new _Constant(plotBase.theData[j]), false);
 			for (k=0; k<surfaceDivs; k++)
 			{
-				yVar->SetNumericValue (plotBase.theData[surfaceDivs+k]);
+				yVar->SetValue (new _Constant (plotBase.theData[surfaceDivs+k]), false);
 				y3DMax = overlayPlot.Compute()->Value();
 				if (y3DMax < 0)
 					y3DMax = 0.;
@@ -3242,7 +3242,7 @@ void	_HYChartWindow::DoSave (long option, _String* distrib)
 				_String * fla = (_String*)overlayPlot.toStr();
 				
 				fprintf (f,
-				"\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%d\"}\n\t\t{\"%s\"}\n\t\t{\"%d;%d\"}\n\t\t{\"%g;%g;%g\"}\n\t\t{\"%s:%d:%d;%s:%d:%d;%s:%d:%d\"}\n\t\t{\"",
+				"\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%ld\"}\n\t\t{\"%s\"}\n\t\t{\"%ld;%ld\"}\n\t\t{\"%g;%g;%g\"}\n\t\t{\"%s:%ld:%ld;%s:%ld:%ld;%s:%ld:%ld\"}\n\t\t{\"",
 							xLabel.getStr(),
 							yLabel.getStr(),
 							zLabel.getStr(),
@@ -3263,21 +3263,21 @@ void	_HYChartWindow::DoSave (long option, _String* distrib)
 							labelFont3.size,
 							labelFont3.style);
 							
-				fprintf (f, "%d", theColors.lData[0]);
+				fprintf (f, "%ld", theColors.lData[0]);
 				for (option = 1; option<theColors.lLength; option++)
-					fprintf (f, ";%d", theColors.lData[option]);
+					fprintf (f, ";%ld", theColors.lData[option]);
 								
 
 				if (distrib)
-					fprintf (f,"\"}\n\t\t{\"%d,%g,%g\"}\n\t\t{\"%s\"}\n\t\t}",	
+					fprintf (f,"\"}\n\t\t{\"%ld,%g,%g\"}\n\t\t{\"%s\"}\n\t\t}",	
 								surfaceDivs,userMin,userMax,
 								distrib->getStr());
 				
 				else
-					fprintf (f,"\"}\n\t\t{\"%d,%g,%g\"}\n\t\t}",	
+					fprintf (f,"\"}\n\t\t{\"%ld,%g,%g\"}\n\t\t}",	
 								surfaceDivs,userMin,userMax);
 				
-				fprintf (f,",\n\t\t\"%d;%d;%d;%d\");",	
+				fprintf (f,",\n\t\t\"%ld;%ld;%ld;%ld\");",	
 							wr.right-wr.left,
 							wr.bottom-wr.top,
 							wr.left,
@@ -4813,16 +4813,14 @@ void		_HYDistributionChartWindow::ProduceDistribution	(_SimpleList& vars, _Simpl
 	
 	for (long k = 0; k < wts->GetHDim () * wts->GetVDim (); k++)
 	{
-		v->SetNumericValue ((*probs)[k]);
+		v->SetValue (new _Constant ((*probs)[k]),false);
+		
 		if (idx < vars.lLength-1)
 			ProduceDistribution (vars, map, res, f, idx+1, p*(*wts)[k]);
 		else
-		{
-			_Constant	f2 (f.Compute ()->Value()), 
-						f3 (p*(*wts)[k]);
-						
-			res && & f2;
-			res && & f3;
+		{						
+			res.AppendNewInstance (new _Constant (f.Compute ()->Value()));
+			res.AppendNewInstance (new _Constant (p*(*wts)[k]));
 		}
 	}
 }
