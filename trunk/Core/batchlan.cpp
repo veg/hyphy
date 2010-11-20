@@ -574,7 +574,7 @@ long	FindBFFunctionName (_String&s, _VariableContainer* theP)
 				return idx;
 			}
 			testName.Trim (0,cutAt);
-			cutAt = testName.FindBackwards('.',0,-1);
+			cutAt = testName.FindBackwards('.',0,-1)-1;
 		}
 		while (cutAt >= 0);
 	}
