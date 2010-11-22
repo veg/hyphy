@@ -8038,21 +8038,22 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	_SimpleList				  *sl = (_SimpleList*)optimalOrders.lData[index];
 						//*ls = (_SimpleList*)leafSkips.lData[index];
 						
-	_Matrix					  *glFreqs  = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
-	_DataSetFilter			  *df		= ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
-	_TheTree				   *t		= ((_TheTree*)LocateVar(theTrees.lData[index]));
-	bool					   canClear = true;
+	_Matrix					  *glFreqs		    = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
+	_DataSetFilter			  *df			    = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
+	_TheTree				   *t			    = ((_TheTree*)LocateVar(theTrees.lData[index]));
+	bool					   canClear			= true,
+							   rootFreqsChange  = forceRecomputation?true:glFreqs->HasChanged();
+	
 	if (currentRateClass >=0 && t->HasForcedRecomputeList())
 		canClear = TotalRateClassesForAPartition(index) == currentRateClass+1;
 	
 	t->InitializeTreeFrequencies		  ((_Matrix*)glFreqs->ComputeNumeric());
 		
-	forceRecomputation					= forceRecomputation||glFreqs->HasChanged();
 	usedCachedResults					= false;
 	
 	if (computingTemplate&&templateKind)
 	{
-		if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)))
+		if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)||rootFreqsChange))
 		{		
 			usedCachedResults = true;
 			//printf ("\n[CACHED]\n");
@@ -8061,7 +8062,7 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	}
 	else
 	{
-		if (!forceRecomputation && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !HasPartitionChanged(index))
+		if (!forceRecomputation && computationalResults.GetUsed()==optimalOrders.lLength && !siteRes && !HasPartitionChanged(index) && !rootFreqsChange)
 		{		
 			usedCachedResults = true;
 			//printf ("\n[CACHED]\n");

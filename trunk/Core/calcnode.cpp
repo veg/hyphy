@@ -665,7 +665,7 @@ bool		_CalcNode::NeedToExponentiate(long catID)
 	if (isInOptimize&&(referenceNode>=0))
 		return ((_CalcNode*)LocateVar(referenceNode))->NeedToExponentiate(catID);
 		
-	if (forceRecomputation||_VariableContainer::NeedToExponentiate(catID>=0))
+	if (_VariableContainer::NeedToExponentiate(catID>=0))
 		return true;
 	
 	if (catID==-1)

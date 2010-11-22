@@ -3865,15 +3865,43 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					long cumulativeIndex = 0;
 					
 					_Parameter * row = theData;
-					for (long i=0; i<hDim; i++, row += vDim)
+					
+					if (vDim % 4 == 0)
+					// manual loop unroll
 					{
-						for (long j=0; j<secondArg.vDim; j++)
+						for (long i=0; i<hDim; i++, row += vDim)
 						{
-							_Parameter resCell = 0.0,
-									   *column  = secondArg.theData + j;
-							for (long k = 0; k < vDim; k++, column += secondArg.vDim)
-								resCell += row[k] * *column;
-							storage.theData[cumulativeIndex++] = resCell;
+							for (long j=0; j<secondArg.vDim; j++)
+							{
+								_Parameter resCell = 0.0,
+										  *column  = secondArg.theData + j;
+								
+								for (long k = 0; k < vDim; k+=4, column += 4*secondArg.vDim)
+									resCell += row[k]   * column [0] + 
+											   row[k+1] * column [secondArg.vDim ] +
+											   row[k+2] * column [secondArg.vDim * 2] +
+											   row[k+3] * column [secondArg.vDim * 3];
+											
+								
+								storage.theData[cumulativeIndex++] = resCell;
+							}
+						}
+						
+					}
+					else
+					{
+						for (long i=0; i<hDim; i++, row += vDim)
+						{
+							for (long j=0; j<secondArg.vDim; j++)
+							{
+								_Parameter resCell = 0.0,
+										   *column  = secondArg.theData + j;
+								
+								for (long k = 0; k < vDim; k++, column += secondArg.vDim)
+									resCell += row[k] * *column;
+								
+								storage.theData[cumulativeIndex++] = resCell;
+							}
 						}
 					}
 				}
