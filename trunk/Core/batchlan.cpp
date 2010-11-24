@@ -1053,7 +1053,7 @@ _ExecutionList::_ExecutionList ()
 } // doesn't do much
 
 //____________________________________________________________________________________	
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID)
+_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource)
 {
 	currentCommand = 0;
 	result 		   = nil;
@@ -1065,6 +1065,8 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID)
 	nameSpacePrefix = nil;
 	if (namespaceID)
 		SetNameSpace (*namespaceID);
+	if (copySource)
+		sourceText.Duplicate (&source);
 	BuildList (source);
 }
 
@@ -1098,8 +1100,7 @@ _ExecutionList::~_ExecutionList (void)
 
 BaseRef		_ExecutionList::makeDynamic (void)
 {
-	_ExecutionList * Res = new _ExecutionList;
-	checkPointer	(Res);
+	_ExecutionList * Res = (_ExecutionList*)checkPointer(new _ExecutionList);
 	
 	memcpy ((char*)Res, (char*)this, sizeof (_ExecutionList));
 	
@@ -1424,19 +1425,20 @@ void		_ExecutionList::ResetFormulae		(void)		// run this execution list
 
 BaseRef	 _ExecutionList::toStr (void)
 {
-	_String result (1,true), step ("\n\nStep"),dot (".");
+	_String *result = new _String (1,true), 
+			step ("\n\nStep"),
+			dot (".");
+	
 	for (long i=0; i<countitems(); i++)
 	{
-		result<<&step;
+		(*result) << &step;
 		_String lineNumber (i);
-		result<<&lineNumber;
-		result<<&dot;
-		_String * s = (_String*)(*this)(i)->toStr();
-		result<<s;
-		DeleteObject (s);
+		(*result)<< &lineNumber;
+		(*result)<< '.';
+		result->AppendNewInstance ((_String*)(*this)(i)->toStr());
 	}
-	result.Finalize();
-	return result.makeDynamic();
+	result->Finalize();
+	return result;
 }
 
 //____________________________________________________________________________________	
@@ -9588,7 +9590,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 		pieces.Replace (k,&chain.AddNameSpaceToID (*(_String*)pieces(k)),true);
 
 	_String			 sfunctionBody (source, upto+1,source.Length()-2);
-	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace());
+	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
 	
 	//  take care of all the return statements
 	while (returnlist.lLength)
@@ -9601,24 +9603,20 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 	if (mark1>=0)
 	{
 		batchLanguageFunctions.Replace (mark1, functionBody, false);
-		functionBody->nInstances++;
 		batchLanguageFunctionNames.Replace (mark1, funcID, false);
-		funcID->nInstances++;
 		batchLanguageFunctionParameterLists.Replace (mark1, &pieces, true);
 		batchLanguageFunctionParameters.lData[mark1] = pieces.lLength;
 		batchLanguageFunctionClassification.lData[mark1] = isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE;
 	}
 	else
 	{
-		batchLanguageFunctions				<< functionBody;
-		batchLanguageFunctionNames			<< funcID;
+		batchLanguageFunctions.AppendNewInstance(functionBody);
+		batchLanguageFunctionNames.AppendNewInstance(funcID);
 		batchLanguageFunctionParameterLists	&&(&pieces);
 		batchLanguageFunctionParameters		<<pieces.lLength;
 		batchLanguageFunctionClassification <<(isFFunction? BL_FUNCTION_NORMAL_UPDATE :  BL_FUNCTION_ALWAYS_UPDATE);
 	}
 	
-	DeleteObject (funcID);
-	DeleteObject (functionBody);
 
 	isInFunction = false;
 	return true;

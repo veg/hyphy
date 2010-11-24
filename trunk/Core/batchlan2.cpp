@@ -128,6 +128,7 @@ void		_HBL_Init_Const_Arrays  (void)
 		_HY_GetStringGlobalTypes.Insert(new _String("UserFunction"), 3);
 		_HY_GetStringGlobalTypes.Insert(new _String("Tree"), 4);
 		_HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
+		_HY_GetStringGlobalTypes.Insert(new _String("Variable"), 6);
 }
 
 //____________________________________________________________________________________	
@@ -1118,37 +1119,50 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 									result = GetTimeStamp(sID < 0.5);
 								else
 								{
-									_Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
-									if (theVar)
+									f = FindBFFunctionName (*currentArgument);
+									if (f >= 0)
 									{
-										_String* theStr = nil;
-										if (theVar->IsIndependent())
-											theStr = (_String*)theVar->toStr();
-										else
-										{
-											if (sID < -1.)
-												// list of variables
-											{
-												_SimpleList vL; 
-												_AVLList	vAVL (&vL);
-												theVar->ScanForVariables (vAVL, sID > -2.5);
-												vAVL.ReorderList();
-												_AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
-												InsertVarIDsInList (resL, "DEPENDANCIES", vL);
-												theReceptacle->SetValue (resL,false);
-												return;
-											}
-																								
-											else	// formula string
-												theStr = (_String*)theVar->GetFormulaString ();
-										}
-											
-										result.CopyDynamicString(theStr, true);
+										_AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+										resAVL->MStore ("ID", new _FString (*(_String*)batchLanguageFunctionNames(f)), false); 
+										resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(f)), false); 
+										resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(f))->sourceText,false),false);
+										theReceptacle->SetValue (resAVL,false);
+										return;										
 									}
 									else
 									{
-										errMsg = *currentArgument & " is not a validly defined object in call to GetString";
-										ReportWarning (errMsg);
+										_Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
+										if (theVar)
+										{
+											_String* theStr = nil;
+											if (theVar->IsIndependent())
+												theStr = (_String*)theVar->toStr();
+											else
+											{
+												if (sID < -1.)
+													// list of variables
+												{
+													_SimpleList vL; 
+													_AVLList	vAVL (&vL);
+													theVar->ScanForVariables (vAVL, sID > -2.5);
+													vAVL.ReorderList();
+													_AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
+													InsertVarIDsInList (resL, "DEPENDANCIES", vL);
+													theReceptacle->SetValue (resL,false);
+													return;
+												}
+																									
+												else	// formula string
+													theStr = (_String*)theVar->GetFormulaString ();
+											}
+												
+											result.CopyDynamicString(theStr, true);
+										}
+										else
+										{
+											errMsg = *currentArgument & " is not a validly defined object in call to GetString";
+											ReportWarning (errMsg);
+										}
 									}
 								}
 						}				
@@ -2283,6 +2297,8 @@ void	  _ElementaryCommand::ExecuteCase59 (_ExecutionList& chain)
 		long	  f;
 		if 	((f = FindLikeFuncName(AppendContainerName(*(_String*)parameters(objCount),chain.nameSpacePrefix))) >= 0)
 			KillLFRecord (f,true);
+		
+		
 	}		   
 }
 

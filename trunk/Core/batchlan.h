@@ -54,7 +54,7 @@ class 	_ExecutionList: public _List // a sequence of commands to be executed
 {
 	public:
 		_ExecutionList (); // doesn't do much
-		_ExecutionList (_String&, _String* = nil);
+		_ExecutionList (_String&, _String* = nil, bool = false);
 
 virtual	
 		~_ExecutionList (void);
@@ -105,7 +105,8 @@ virtual
 		
 		_List							*stdinRedirectAux;
 		
-		_String							sourceFile;
+		_String							sourceFile,
+										sourceText;
 	
 		_SimpleList						callPoints,
 										lastif;
@@ -544,6 +545,9 @@ _String	WriteFileDialogInput 		 (void);
 _Parameter		
 		ProcessNumericArgument 		 (_String*,_VariableContainer*);	
 _String	ProcessLiteralArgument 		 (_String*,_VariableContainer*);
+_AssociativeList*
+		ProcessDictionaryArgument (_String* data, _VariableContainer* theP);
+
 _String	GetStringFromFormula 		 (_String*,_VariableContainer*);
 void    ExecuteBLString				 (_String&,_VariableContainer*);
 		
