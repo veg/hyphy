@@ -3084,13 +3084,17 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 	if (ohWell)
 	{
 		cornholio 			   = LocateVar(badConstraint);
+		
+		subNumericValues = 3;
 		_String 		* cStr = (_String*)cornholio->GetFormulaString(),
 						badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
 		
+		subNumericValues = 0;
 		DeleteObject 			 (cStr);
 
-		_String errMsg = _String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found. Set it by hand, or check your constraints for compatibility. Failed constraint:") & badX;
-		acknError(errMsg);
+		WarnError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found. Set it by hand, or check your constraints for compatibility. Failed constraint:") 
+						  & badX);
+
 	}
 }
 //_______________________________________________________________________________________

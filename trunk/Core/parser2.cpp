@@ -1208,7 +1208,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
 	{
 		if (subNumericValues)
 		{
-			if (subNumericValues > 1)
+			if (subNumericValues == 2)
 			{
 				_Variable* theV = LocateVar(thisNodeOperation->GetAVariable());
 				if  (_x_&&(theV->GetAVariable()==_x_->GetAVariable()))
@@ -1218,10 +1218,28 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
 				}
 			}			
 			
-			_PMathObj subThisValue = LocateVar(thisNodeOperation->GetAVariable())->Compute();
+			_Variable *thisVariable = LocateVar(thisNodeOperation->GetAVariable());
+			_PMathObj subThisValue = thisVariable->Compute();
 			
 			if (subThisValue->ObjectClass () == NUMBER)
-				result.AppendNewInstance(new _String (subThisValue->Value()));
+			{
+				if (subNumericValues == 3)
+				{
+					result << LocateVar(thisNodeOperation->GetAVariable())->GetName();
+					result << '[';
+					result.AppendNewInstance(new _String (subThisValue->Value()));
+					result << ':';
+					result.AppendNewInstance(new _String (thisVariable->GetLowerBound()));
+					result << '-';
+					result.AppendNewInstance(new _String (thisVariable->GetUpperBound()));
+					result << ']';
+					
+				}
+				else
+				{
+					result.AppendNewInstance(new _String (subThisValue->Value()));
+				}
+			}
 			else
 				if (subThisValue->ObjectClass () == STRING)
 					result.AppendNewInstance((_String*)subThisValue->toStr());
