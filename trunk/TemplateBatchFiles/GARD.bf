@@ -1014,7 +1014,7 @@ if (rvChoice)
 			gdDefString*("+"+rateStrMx[mi]+"*"+freqStrMx[mi]);
 		}
 
-		gdDefString*(";\ncategFreqMatrix={{"+freqStrMx[0]);
+		gdDefString*(";c_scale :< 1e100; \ncategFreqMatrix={{"+freqStrMx[0]);
 
 		for (mi=1; mi<rateClasses; mi=mi+1)
 		{
