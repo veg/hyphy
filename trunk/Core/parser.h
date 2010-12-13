@@ -420,6 +420,8 @@ virtual	 void    		SetAVariable 		(long d) 	// return the index of the variable
 							
 virtual  bool			AssignmentVariable	(void)
 							{return theData<-2;}
+	
+virtual	 bool			HasChanged			(void);
 							
 virtual	 void   	 	SetTerms 			(long d) 
 							{numberOfTerms=d;} 
@@ -433,11 +435,14 @@ virtual	 void   	 	SetNumber 			(_PMathObj d)
 		long			GetNoTerms			(void) 
 							{return numberOfTerms;}
 		long			PrecedenceLevel		(void);
+	
+		bool			CanResultsBeCached (_Operation *);
 
 		
 virtual bool			EqualOp				(_Operation*);
 	
 	protected:
+	
 	
 		long	 	opCode; 		// internal operation code
 		long		numberOfTerms,  // 1 - unary, 2 - binary, etc
@@ -564,6 +569,7 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		bool		InternalSimplify	(node<long>*);
 	
 		void	    LocalizeFormula 	(_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
+		void		ConvertMatrixArgumentsToSimpleOrComplexForm	(bool);
 		
 	protected:
 	
@@ -573,7 +579,9 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		bool		CheckSimpleTerm		(_PMathObj);
 		node<long>* DuplicateFormula 	(node<long>*,_Formula&);  
 		
-		_List  		theFormula;
+		_List  		theFormula,
+					*resultCache;
+	
 		_Stack 		theStack;
 		node<long>* theTree; // this formula converted to a tree for operation purposes
 							 // such as simplification, differentiation and printing.
@@ -760,6 +768,7 @@ class	_VariableContainer: public _Variable {
 				_Matrix*	GetModelMatrix 				(void);	
 				_Matrix*	GetFreqMatrix 				(void);	
 				bool		HasExplicitFormModel		(void);
+				_Formula*	GetExplicitFormModel		(void);
 
 				long		GetModelIndex 				(void) 
 														{ return theModel; }

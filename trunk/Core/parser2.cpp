@@ -154,24 +154,22 @@ void		WarnNotDefined (_PMathObj p, long opCode)
 //__________________________________________________________________________________
 
 _Formula::_Formula (void) {
-	theTree = nil;
+	theTree		= nil;
+	resultCache = nil;
 }
 
 //__________________________________________________________________________________
 
 _Formula::_Formula (_PMathObj p, bool isAVar)
 {
-	theTree = nil;
+	theTree     = nil;
+	resultCache = nil;
 	if (!isAVar)
-	{
-		_Operation o (p);
-		theFormula&&(&o);
-	}
+		theFormula.AppendNewInstance (new _Operation (p));
 	else
 	{
 		_Variable* v = (_Variable*)p;
-		_Operation o (true,*v->GetName(),v->IsGlobal(), nil);
-		theFormula&&(&o);
+		theFormula.AppendNewInstance (new _Operation (true,*v->GetName(),v->IsGlobal(), nil));
 	}
 }
 
@@ -192,6 +190,11 @@ void _Formula::Duplicate  (BaseRef f)
 		theTree = f_cast->theTree->duplicate_tree();
 	else	
 		theTree = nil;
+	
+	if (f_cast->resultCache)
+		resultCache = (_List*)f_cast->resultCache->makeDynamic();
+	else
+		resultCache = nil;
 }
 
 
@@ -215,8 +218,9 @@ BaseRef _Formula::makeDynamic (void)
 {
 	_Formula * res = new _Formula;
 	checkPointer(res);
-	memcpy ((char*)res, (char*)this, sizeof (_Formula));
+	
 	res->Duplicate((BaseRef)this);
+
 	return (BaseRef)res;
 }
 //__________________________________________________________________________________
@@ -236,6 +240,9 @@ void	_Formula::Clear (void)
 		delete theTree;
 	}
 	theTree = nil;
+	if (resultCache)
+		DeleteObject (resultCache);
+	
 	theFormula.Clear();
 //	theStack.Clear();
 }
@@ -2241,16 +2248,74 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace) // co
 		return nil;
 	
 	bool wellDone = true;
+	
 	if (startAt == 0)
 		theStack.theStack.Clear();
 
-	for (long i=startAt; i<theFormula.lLength; i++)
-		if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace))
+	if (startAt == 0 && resultCache && resultCache->lLength)
+	{
+		long cacheID     = 0;
+		bool cacheResult = false;
+		
+		for (long i=0; i<theFormula.lLength; i++)
 		{
-			wellDone = false;
-			break;
+			_Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+			if (i < theFormula.lLength-1)
+			{
+				_Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
+				
+				if (! cacheResult && nextOp->CanResultsBeCached(thisOp))
+				{
+					if (!thisOp->Execute(theStack,nameSpace))
+					{
+						wellDone = false;
+						break;
+					}
+					
+					_Matrix *currentArg = (_Matrix*)theStack.Pop(false),
+							*cachedArg  = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
+							*diff		= nil;
+					
+					if (cachedArg->ObjectClass() == MATRIX)
+						diff =	(_Matrix*)cachedArg->SubObj(currentArg);
+							
+					if (diff && diff->MaxElement() <= 1e-12)
+					{
+						DeleteObject  (theStack.Pop  ());
+						theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
+						cacheID += 2; 
+						i ++;
+					}
+					else
+					{
+						cacheResult = true;
+						resultCache->Replace(cacheID++,theStack.Pop(false),true);
+					}
+					DeleteObject (diff);
+					continue;
+				}
+			}
+			if (!thisOp->Execute(theStack,nameSpace))
+			{
+				wellDone = false;
+				break;
+			}
+			if (cacheResult)
+			{
+				resultCache->Replace(cacheID++,theStack.Pop(false),true);
+				cacheResult = false;
+			}
 		}
-
+	}
+	else
+	{
+		for (long i=startAt; i<theFormula.lLength; i++)
+			if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace))
+			{
+				wellDone = false;
+				break;
+			}
+	}
 	if (theStack.theStack.lLength != 1 || !wellDone) 
 	{
 		WarnError (_String((_String*)toStr()) & _String(" contains errors."));
@@ -2258,13 +2323,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace) // co
 	}
 	
 	
-	/*_PMathObj result = theStack.Pop(false);
-	
-	if (result->ObjectClass() == NUMBER && isnan(result->Value()))
-		WarnError (_String((_String*)toStr()) & _String(" evaluated to an NAN."));
-		
-	return result;*/
-	return theStack.Pop(false);
+		return theStack.Pop(false);
 }
 
 //__________________________________________________________________________________
@@ -2287,6 +2346,64 @@ bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
 			return true;
 	}
 	return false;
+}
+
+//__________________________________________________________________________________
+
+void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
+{
+	if (makeComplex)
+	{
+		if (resultCache)
+		{
+			DeleteObject (resultCache);
+			resultCache = nil;
+		}
+	}
+	else
+	{
+		if (!resultCache)
+		{
+			resultCache = new _List();
+			for (int i=1; i<theFormula.lLength; i++)
+			{
+				_Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+				if (thisOp->CanResultsBeCached(((_Operation*)(((BaseRef**)theFormula.lData)[i-1]))))
+				{
+					resultCache->AppendNewInstance(new _MathObject());
+					resultCache->AppendNewInstance(new _MathObject());
+				}
+			}
+		}
+	}
+	
+	for (int i=0; i<theFormula.lLength; i++)
+	{
+		_Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+		
+		_Matrix	  * thisMatrix = nil;
+		
+		if (thisOp->theNumber)
+		{
+			if (thisOp->theNumber->ObjectClass() == MATRIX)
+				thisMatrix = (_Matrix*)thisOp->theNumber;
+		}
+		else
+		{
+			if (thisOp->theData>-1)
+			{
+				_Variable* thisVar = LocateVar (thisOp->theData);
+				if (thisVar->ObjectClass() == MATRIX)
+					thisMatrix = (_Matrix*)thisVar->GetValue();
+			}
+		}
+		
+		if (thisMatrix)
+			if (makeComplex)
+				thisMatrix->MakeMeGeneral();
+			else
+				thisMatrix->MakeMeSimple();
+	}
 }
 
 //__________________________________________________________________________________
@@ -4868,7 +4985,9 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 _Formula::_Formula (_String&s, _VariableContainer* theParent, bool errors)
 // the parser itself
 {
-	theTree = nil;
+	theTree     = nil;
+	resultCache = nil;
+	
 	long	  refV;
 	if (Parse (this, s, refV, theParent,nil,errors)== HY_FORMULA_FAILED)	
 		Clear();

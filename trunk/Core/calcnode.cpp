@@ -770,7 +770,7 @@ void		_CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* stor
 		else
 			if (compExp) DeleteObject (compExp);
 		
-	bool	isExplicitForm = HasExplicitFormModel ();
+	bool	isExplicitForm  = HasExplicitFormModel ();
 	
 	_Matrix * myModelMatrix = GetModelMatrix();
 	
@@ -11054,12 +11054,20 @@ node<long>* _CalcNode::LocateMeInTree (void)
 
 long _CalcNode::ConvertToSimpleMatrix (void)
 {	
-	_Matrix * mm = GetModelMatrix();
-	if (mm)
-		mm->MakeMeSimple();
-	mm = GetFreqMatrix();
-	if (mm)
-		mm->MakeMeSimple();
+	_Formula * mf = GetExplicitFormModel();
+	if (mf)
+		mf->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+	else
+	{
+		_Matrix * mm = GetModelMatrix();
+		if (mm)
+			mm->MakeMeSimple();
+		
+		mm = GetFreqMatrix();
+		if (mm)
+			mm->MakeMeSimple();
+	}
+	
 	return 0;
 }
 
@@ -11067,12 +11075,20 @@ long _CalcNode::ConvertToSimpleMatrix (void)
 
 void _CalcNode::ConvertFromSimpleMatrix (void)
 {
-	_Matrix * mm = GetModelMatrix();
-	if (mm)
-		mm->MakeMeGeneral();
-	mm = GetFreqMatrix();
-	if (mm)
-		mm->MakeMeGeneral();
+	_Formula * mf = GetExplicitFormModel();
+	if (mf)
+		mf->ConvertMatrixArgumentsToSimpleOrComplexForm (true);
+	else
+	{
+		_Matrix * mm = GetModelMatrix();
+		if (mm)
+			mm->MakeMeGeneral();
+		
+		mm = GetFreqMatrix();
+		
+		if (mm)
+			mm->MakeMeGeneral();
+	}
 }
 
 //_______________________________________________________________________________________________

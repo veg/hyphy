@@ -2651,6 +2651,17 @@ bool _VariableContainer::HasExplicitFormModel (void)
 	return (modelTypeList.lData[theModel]);
 }
 
+//__________________________________________________________________________________
+
+_Formula* _VariableContainer::GetExplicitFormModel (void)
+{
+	if (theModel == -1)
+		return nil;
+	if (modelTypeList.lData[theModel]) // an explicit formula based matrix
+		return (_Formula*)modelMatrixIndices.lData[theModel];
+	return nil;
+}
+
 
 //__________________________________________________________________________________
 
@@ -2658,8 +2669,10 @@ _Matrix* _VariableContainer::GetModelMatrix (void)
 {
 	if (theModel == -1)
 		return nil;
-	if (modelTypeList.lData[theModel])
+	
+	if (modelTypeList.lData[theModel]) // an explicit formula based matrix
 		return (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
+	
 	return (_Matrix*) (LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
 }
 
@@ -3620,6 +3633,31 @@ _Operation::_Operation 	(_PMathObj theObj)
 	opCode		  = -1;
 	theNumber	  = theObj;
 }
+
+//__________________________________________________________________________________
+
+bool _Operation::CanResultsBeCached (_Operation* prev)
+{
+	if (theNumber == nil && theData == -1 && numberOfTerms == 1)
+	{
+		if (prev->theNumber && prev->theNumber->ObjectClass() == MATRIX || prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)
+			return true;	
+	}
+	return false;
+}
+
+//__________________________________________________________________________________
+
+bool _Operation::HasChanged (void)
+{
+	if (theNumber)
+		return theNumber->HasChanged();
+	if (theData >= 0)
+		return LocateVar (GetAVariable())->HasChanged();
+		
+	return false;
+}
+	
 //__________________________________________________________________________________
 _Operation::_Operation 	(bool isVar, _String& stuff, bool isG, _VariableContainer* theParent)
 {
