@@ -1,3 +1,5 @@
+/*----------------------------------------------------------------*/
+
 function ReadCSVTable (fileName, haveHeader)
 {
 	if (Abs(fileName) == 0)
@@ -18,14 +20,17 @@ function ReadCSVTable (fileName, haveHeader)
 	felMXString * "_tempMatrix={";
 	if (haveHeader > 1)
 	{
+		rowHeaders = {Columns(inData) - 1, 1};
 		for (lineID = 1; lineID < Columns(inData); lineID = lineID + 1)
 		{
 			_tempMatrix = inData[lineID]$"\\,";
 			if (_tempMatrix[0]>=0)
 			{
+				rowHeaders [lineID-1] = (inData[lineID])[0][_tempMatrix[0]-1];
 				felMXString * ("{" + (inData[lineID])[_tempMatrix[0]+1][Abs(inData[lineID])-1] + "}\n");
 			}
 		}		
+		output [2] = rowHeaders;
 	}
 	else
 	{
@@ -47,7 +52,6 @@ function ReadCSVTable (fileName, haveHeader)
 	}
 	return _tempMatrix;
 }
-
 
 
 /*----------------------------------------------------------------*/
