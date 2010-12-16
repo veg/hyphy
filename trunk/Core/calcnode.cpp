@@ -117,6 +117,8 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			treeOutputLabel		  = "TREE_OUTPUT_BRANCH_LABEL",
 			treeOutputTLabel	  = "TREE_OUTPUT_BRANCH_TLABEL",
 			treeOutputColor		  = "TREE_OUTPUT_BRANCH_COLOR",
+			treeOutputThickness	  = "TREE_OUTPUT_BRANCH_THICKNESS",
+			treeOutputLinecap	  = "TREE_OUTPUT_BRANCH_LINECAP",
 			treeOutputDash		  = "TREE_OUTPUT_BRANCH_DASH",
 			treeOutputOLabel	  = "TREE_OUTPUT_OVER_BRANCH",
 			treeOutputSymbols	  = "TREE_OUTPUT_SYMBOLS",
@@ -5820,7 +5822,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 								 long hSize, long vSize, long halfFontSize, long shift, _AssociativeList* outOptions, 
 								 char layout, _Parameter * xtra)
 {
-	long  			   descendants = currNode->get_num_nodes();
+	long  			   descendants = currNode->get_num_nodes(),
+					   lineW	   = halfFontSize/3+1;
 	
 	_Parameter		   vc, 
 					   hc, 
@@ -5964,13 +5967,20 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			
 			_AssociativeList * childOptions = nil;
 							 
-			_Parameter		   splitBranch = -1.;
+			_Parameter		   splitBranch = -1.,
+							   lineWP = 0.0;
+			
 			_String			   childColor,
 							   notchColor,
 							   *blabelString = nil,
-							   childDash;
+							   childDash,
+							   linewidth1,
+							   linewidth2,
+							   linecap1,
+							   linecap2;
 			
-			_Matrix			*  notches = nil;
+			_Matrix			*  notches    = nil,
+							*  multiColor = nil;
 			
 			if (layout == 1)
 				res << (_String(child->in_object.label2*DEGREES_PER_RADIAN) & " rotate\n");
@@ -5980,10 +5990,23 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				childOptions = (_AssociativeList *) outOptions->GetByKey (t, ASSOCIATIVE_LIST);
 				if (childOptions)
 				{
-					_PMathObj keyVal = childOptions->GetByKey (treeOutputSplit,NUMBER);
+					_PMathObj keyVal = childOptions->GetByKey (treeOutputThickness,NUMBER);
+					if (keyVal)
+					{
+						lineWP = keyVal->Compute()->Value();
+						linewidth1 = _String("currentlinewidth ") & lineWP & " setlinewidth\n";
+						linewidth2 = "setlinewidth\n";
+					}
+					keyVal = childOptions->GetByKey (treeOutputLinecap,NUMBER);
+					if (keyVal)
+					{
+						linecap1 = _String("currentlinecap ") & (long)keyVal->Compute()->Value() & " setlinecap\n";
+						linecap2 = "setlinecap\n";
+					}
+					keyVal = childOptions->GetByKey (treeOutputSplit,NUMBER);
 					if (keyVal)
 						splitBranch = keyVal->Compute()->Value();
-					
+
 					keyVal = childOptions->GetByKey (treeOutputNotches,MATRIX);
 					if (keyVal)
 						notches = (_Matrix*)(((_Matrix*)keyVal->Compute())->ComputeNumeric())->makeDynamic();
@@ -5992,7 +6015,10 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 					if (keyVal)
 					{
 						_Matrix* rgbColor = (_Matrix*)keyVal->Compute();
-						childColor = _String((*rgbColor)(0,0)) & " " & _String((*rgbColor)(0,1)) & " " & _String((*rgbColor)(0,2)) & " setrgbcolor\n";
+						if (rgbColor->GetHDim() > 1 && rgbColor->GetVDim () == 4 && layout != 1)
+							multiColor = (_Matrix*)rgbColor->makeDynamic();
+						else
+							childColor = _String((*rgbColor)(0,0)) & " " & _String((*rgbColor)(0,1)) & " " & _String((*rgbColor)(0,2)) & " setrgbcolor\n";
 					}
 
 					keyVal = childOptions->GetByKey (treeOutputNotchesColor,MATRIX);
@@ -6055,6 +6081,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				
 			}
 			
+			res << &linewidth1;
+			res << &linecap1;
 			res << "newpath\n";
 			if (layout == 1)
 			{
@@ -6064,9 +6092,39 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			}
 			else
 			{
-				t = _String(hc) & ' ' & _String (child->in_object.v) & " moveto\n";
-				res<<&t;	
-				t = _String(child->in_object.h) & ' ' & _String (child->in_object.v) & " lineto\n";
+				
+				_Parameter lineWidthInset = 0.0;
+				
+					//if (lineWP > 0.0)
+				//	lineWidthInset = (lineWP-lineW)*.5;	
+				
+				if (multiColor)
+				{
+					_Parameter span        = child->in_object.h - hc + 2*lineWidthInset,
+							   currentX	   = hc - lineWidthInset;
+					
+					res <<  (_String(currentX) & ' ' & _String (child->in_object.v) & " moveto\n");
+					for (long seg = 0; seg < multiColor->GetHDim(); seg++)
+					{
+						res << (_String((*multiColor)(seg,0)) & " " & _String((*multiColor)(seg,1)) & " " & _String((*multiColor)(seg,2)) & " setrgbcolor\n");
+						_Parameter mySpan = span*(*multiColor)(seg,3);
+						res << (_String(mySpan) & " 0 rlineto\n");
+						if (seg < multiColor->GetHDim()-1)
+						{
+							currentX += mySpan;
+							res << "stroke\nnewpath\n";
+							res <<  (_String(currentX) & ' ' & _String (child->in_object.v) & " moveto\n");
+						}
+					}
+					DeleteObject (multiColor);
+					t = empty;
+				}
+				else
+				{
+					t = _String(hc - lineWidthInset) & ' ' & _String (child->in_object.v) & " moveto\n";
+					res<<&t;	
+					t = _String(child->in_object.h) & ' ' & _String (child->in_object.v + lineWidthInset) & " lineto\n";
+				}
 				if (layout == 1)
 					minChildHC = MIN(child->in_object.label1,minChildHC);
 				else
@@ -6074,6 +6132,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 			}
 			res<<&t;	
 			res << "stroke\n";
+			res << &linecap2;
+			res << &linewidth2;
 
 			if (childDash.sLength)
 				res << "[] 0 setdash\n";
@@ -6190,10 +6250,10 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				{
 					nnWidth = (minChildHC - hc)/nnWidth;
 					vcl 	= currNode->in_object.v;
-					if (nnWidth < 2.*halfFontSize)
-						scF = nnWidth;
-					else
-						nnWidth = 1.;
+						//if (nnWidth < 2.*halfFontSize)
+						//scF = nnWidth;
+						//else
+						//nnWidth = 1.;
 				}
 			}
 			
