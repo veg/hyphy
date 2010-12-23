@@ -167,6 +167,9 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 				(*catVarReferences) << aCV;
 				long				intervalCount = aCV->GetNumberOfIntervals();
 				(*catVarCounts)		<< intervalCount;
+                
+                StringToConsole (*aCV->GetName());
+                NLToConsole();
 				
 				if (aCV->IsHiddenMarkov() || aCV->IsConstantOnPartition())
 				{
@@ -205,8 +208,11 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--)
 				catVarOffsets->lData[varIndex] = catVarOffsets->lData[varIndex+1]*catVarCounts->lData[varIndex+1];
             
-            //StringToConsole (*((_String*)catVarOffsets->toStr()));
-            //NLToConsole();
+            StringToConsole (*((_String*)catVarCounts->toStr()));
+            NLToConsole();
+
+            StringToConsole (*((_String*)catVarOffsets->toStr()));
+            NLToConsole();
 
 			for (long varIndex = hmmAndCOP->lLength-2; varIndex >= 0; varIndex--)
 				hmmAndCOP->lData[varIndex] *= hmmAndCOP->lData[varIndex+1];
