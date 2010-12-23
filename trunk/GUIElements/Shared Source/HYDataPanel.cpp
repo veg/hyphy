@@ -7743,7 +7743,7 @@ bool  _HYDataPanel::AdjustStatusLine (long onOff, bool force, long preselected)
 					{
 						_LikelihoodFunction *lf = (_LikelihoodFunction*)likeFuncList (lfID);
 						_SimpleList			allParts (lf->CountObjects(0),0,1);
-						_Matrix*			rates = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixConditionals);
+						_Matrix*			rates = lf->ConstructCategoryMatrix (allParts, _hyphyLFConstructCategoryMatrixClasses);
 						_String 			rateS (32,true);
 						long				k = 0,
 						                    kk;

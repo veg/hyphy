@@ -3563,14 +3563,17 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 			for (long kid = 0; kid < stdKeys->lLength; kid++)
 			{
 				_String  * aKey 		= (_String*)(*stdKeys) (kid);
-				_FString * aString		= (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
-				if (!aString)
+				if (aKey)
 				{
-					WarnError	 (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
-					DeleteObject (inAVL);
-					return;
-				}		
-				inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
+					_FString * aString		= (_FString*)stdinRedirect->GetByKey (*aKey, STRING);
+					if (!aString)
+					{
+						WarnError	 (_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & *aKey);
+						DeleteObject (inAVL);
+						return;
+					}		
+					inArg -> Insert (aKey->makeDynamic(),(long)new _String (*aString->theString),false);
+				}
 			}
 		}
 
