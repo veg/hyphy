@@ -1671,7 +1671,7 @@ void	 _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& class
 		}
 		
 		for (long myCatID = catCount-1; myCatID >= 0; myCatID--)
-			rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID]*classCounter.lData[remappedIDs.lData[myCatID+1]];
+			rateMultiplers.lData[myCatID] = rateMultiplers.lData[myCatID+1]*classCounter.lData[remappedIDs.lData[myCatID+1]];
 		
 		for	(long currentRateCombo  = 0; currentRateCombo < totalCategories; currentRateCombo++)
 		{
