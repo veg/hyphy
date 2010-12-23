@@ -203,7 +203,7 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 			(*varType)		<< catVarFlags;
 			
 			for (long varIndex = myCats.lLength-2; varIndex >= 0; varIndex--)
-				catVarOffsets->lData[varIndex] *= catVarCounts->lData[varIndex+1];
+				catVarOffsets->lData[varIndex] *= catVarOffsets->lData[varIndex+1]*catVarCounts->lData[varIndex+1];
 
 			for (long varIndex = hmmAndCOP->lLength-2; varIndex >= 0; varIndex--)
 				hmmAndCOP->lData[varIndex] *= hmmAndCOP->lData[varIndex+1];
