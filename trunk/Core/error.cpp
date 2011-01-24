@@ -236,7 +236,7 @@ void	FlagError (_String st)
 	
 	if (rank > 0)
 	{
-		errMsg = ConstructAnErrorMessage (errMsg);
+		errMsg = ConstructAnErrorMessage (st);
 		MPISendString (errMsg,0,true);
 	}
 	else
@@ -327,6 +327,7 @@ void	WarnError (_String st)
 	
 	if (rank > 0)
 	{
+		errMsg = ConstructAnErrorMessage (st);
 		fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
 		MPI_Abort (MPI_COMM_WORLD,1);
 		abort   ();
