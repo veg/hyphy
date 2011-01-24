@@ -235,7 +235,10 @@ void	FlagError (_String st)
 	errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 	
 	if (rank > 0)
+	{
+		errMsg = ConstructAnErrorMessage (errMsg);
 		MPISendString (errMsg,0,true);
+	}
 	else
 		errMsg = _String ("\nMaster node received an error:") & st ;
 #else

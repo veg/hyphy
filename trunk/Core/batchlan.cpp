@@ -4369,7 +4369,7 @@ void	  _ElementaryCommand::ExecuteCase25 (_ExecutionList& chain, bool issscanf)
 			data = chain.FetchFromStdinRedirect ();
 		else
         {
-            if (!CheckEqual(iseof->Compute()->Value(),0))
+            if (!CheckEqual(iseof->Compute()->Value(),0) && currentParameter.Equal (&scanfLastFilePath))
             {
                 WarnError ("Ran out of standard input\n");
                 return;
