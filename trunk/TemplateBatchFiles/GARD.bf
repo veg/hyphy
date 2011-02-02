@@ -1213,6 +1213,7 @@ for (currentBPC = startAtBreakpoint; currentBPC < maxBPP; currentBPC = currentBP
 	}
 }
 
+
 fprintf (outputFilePath, "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'><html><head><META http-equiv='Content-Style-Type' content='text/css'><meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-1'><title>GARD Results</title><LINK REL=STYLESHEET TYPE='text/css' HREF='http://www.datamonkey.org/GARD/styles/styles.css'></head><body>");
 fprintf (outputFilePath, "<DIV CLASS = 'RepClassSM'>Processed alignment <b>", baseFilePath,"</b> with ", ds.species, " sequences and ", ds.sites, " sites.",
 					      "<p> Processor time taken: ", Time(1)-startTimer, " seconds.</DIV>");
@@ -1267,6 +1268,9 @@ fprintf	  (stdout, "Performing the final optimization...\n");
 
 rawOutFile = outputFilePath + "_splits";
 fprintf (rawOutFile,CLEAR_FILE);
+
+
+
 if (Rows(bestIndividualOverall))
 {
 	totalBitSize = Rows (bestIndividualOverall)*Columns(bestIndividualOverall);

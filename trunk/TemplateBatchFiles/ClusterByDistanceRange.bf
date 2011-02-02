@@ -413,6 +413,8 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 			}
 		}
 		
+		outString * 0;
+		fprintf (outFile, outString);
 		fprintf (stdout, "Graphviz edges/nodes = ", edgesPrinted, "/", Abs(nodesMade), "\n");
 		
 		fprintf (stdout, "\nCluster size distribution\n");
@@ -426,12 +428,9 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 		SetDialogPrompt ("Save GraphViz file to:");
 		fprintf			(PROMPT_FOR_FILE, CLEAR_FILE, "graph G{\n", graphVizSt, "\n};");
 		
-		outString * 0;
-	
-		fprintf (outFile, outString);
-		
 		fprintf (stdout, "Continue with another threshold (y/n)?");
 		fscanf  (stdin,"String", shouldCont);
+		
 	}
 	while (shouldCont[0] != "n" && shouldCont[0] != "N");
 	
@@ -524,6 +523,8 @@ else
 		outString * ("\n"+distanceMx[rz][0]+","+distanceMx[rz][1]);
 	}
 	
+	outString * 0;
+	fprintf (outFile, outString);
 	columnHeaders = {{"Cutoff","Clusters"}};
 	OpenWindow (CHARTWINDOW,{{"Cluster Count Plot"}
 		{"columnHeaders"}
@@ -545,9 +546,6 @@ else
 		"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
 }
 
-outString * 0;
-
-fprintf (outFile, outString);
 
 
 /*___________________________________________________________________________________________________________*/

@@ -57,7 +57,7 @@ function GatherDescriptiveStats (_dataVector)
 
 	if (count > 1)
 	{
-		counter = (sum2-sum*sum/count)/(count-1);
+		counter = Max(0,(sum2-sum*sum/count)/(count-1));
 		
 		if (count > 3)
 		{

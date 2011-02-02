@@ -199,6 +199,10 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 		psDensityPlot * "\n";
 		psDensityPlot * _HYPSTextCommands(0);
 	}
+	else
+	{
+		_renderedPlotDimensions = {{plotSpanX__,plotSpanY__}};
+	}
 	
 	psDensityPlot * _HYPSSetFont (fontFace, plotDim[2]);
 	psDensityPlot * "\n";
@@ -374,12 +378,12 @@ function ScatterPlot		 (xy&, 			/* Nx2 matrix with x,y,value points to plot */
 		}
 	}
 	
-	psDensityPlot * 0;
-	
 	if (doWrappers)
 	{
 		psDensityPlot * "\nshowpage\n";
 	}
+	psDensityPlot * 0;
+	
 	return psDensityPlot;
 }
 
@@ -527,6 +531,10 @@ function StackedBarPlot		 (xy&, 			/* x axis followed by K columns of y values*/
 		psDensityPlot * _HYPSPageHeader (plotSpanX,plotSpanY, "Stacked Bar Plot");
 		psDensityPlot * "\n";
 		psDensityPlot * _HYPSTextCommands(0);
+	}
+	else
+	{
+		_renderedPlotDimensions = {{plotSpanX__,plotSpanY__}};
 	}
 	
 	psDensityPlot * _HYPSSetFont (fontFace, plotDim[2]);
@@ -744,6 +752,10 @@ function CircleGraphPlot	  (edgeWeights&, 			/* a KxK matrix of graph edge weigh
 		psCircleGraphPlot * "\n";
 		psCircleGraphPlot * _HYPSTextCommands(0);
 	}
+	else
+	{
+		_renderedPlotDimensions = {{plotSpanX__,plotSpanY__}};
+	}
 	
 	psCircleGraphPlot * _HYPSSetFont (fontFace, plotDim[2]);
 	psCircleGraphPlot * "\n";
@@ -908,9 +920,11 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 							  colors, 		/* 2x3 matrix {{R_base,G_base,B_base}{R_max,G_max,R_max
 							  			 		the colors are linearly interpolated from base (min intensity)*/
 							  labels,  		/* 1x3 matrix of strings: plot-label, x-axis label, y-axis label*/
-							  circles	    /* Nx3/4 matrix (N could be 0) with coordinates/radii of circles to place on the map
+							  circles,	    /* Nx3/4 matrix (N could be 0) with coordinates/radii of circles to place on the map
 							                   if N = 4, then plot an ellipse
 											*/
+							  doWrappers    /* should PS prefix and suffix be included */
+				
 							  )
 {
 	
@@ -930,8 +944,19 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 	py			= plotHeight/yBoxes;
 	zMin		= 1e100;
 	zMax		= -1e100;
+	plotSpanX   = plotWidth + 5*plotDim[2];
+	plotSpanY	= plotHeight + 4*plotDim[2];
 
-	psDensityPlot * _HYPSPageHeader (plotWidth + 5*plotDim[2], plotHeight + 4*plotDim[2], "Density Plot");
+
+	if (doWrappers)
+	{
+		psDensityPlot * _HYPSPageHeader (plotSpanX, plotSpanY, "Density Plot");
+	}
+	else
+	{
+		_renderedPlotDimensions = {{plotSpanX__,plotSpanY__}};
+	}
+	
 	psDensityPlot * "\n";
 	doPercentage  = Columns (plotDim) > 3;
 	if (doPercentage)
@@ -946,7 +971,10 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 		psDensityPlot * _HYPSSetFont ("Times-Roman", plotDim[2]);
 	}
 	psDensityPlot * "\n";
-	psDensityPlot * _HYPSTextCommands(0);
+	if (doWrappers)
+	{
+		psDensityPlot * _HYPSTextCommands(0);
+	}
 	
 	psDensityPlot * "\n 1 setlinewidth 1 setlinecap 0 setlinejoin 0 0 0 setrgbcolor";
 	psDensityPlot * ("\n " + plotOriginX + " " + plotOriginY + " " + plotWidth + " " + plotHeight + " rectstroke\n");
@@ -1039,7 +1067,7 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 	{
 		xStep = circles[_y][0]*px + plotOriginX;
 		yStep = circles[_y][1]*py + plotOriginY;
-		if (Columns (circles) == 4)
+		if (Columns (circles) == 4 && circles[_y][3] > 0 && circles[_y][2] > 0)
 		{
 			psDensityPlot * ("gsave "+ xStep + " " + yStep + " translate 1 " + circles[_y][3]/circles[_y][2] + " scale newpath 0 0 " + circles[_y][2] + " 0 360 arc stroke grestore\n");
 		}
@@ -1049,8 +1077,11 @@ function generateDensityPlot (data_matrix&, /* Nx3 matrix with x,y,value points 
 		}
 	}
 	
-	psDensityPlot * "\nshowpage\n";
 	psDensityPlot * 0;
+	if (doWrappers)
+	{
+		psDensityPlot * "\nshowpage\n";
+	}
 	
 	return psDensityPlot;
 }

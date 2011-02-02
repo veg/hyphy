@@ -4,7 +4,7 @@ SetDialogPrompt ("Please load a nucleotide data file:");
 DataSet 	ds = ReadDataFile (PROMPT_FOR_FILE);
 
 SetDialogPrompt ("Please load a GA partition analysis result file:");
-fscanf  (PROMPT_FOR_FILE,"Lines",partLines);
+fscanf  (PROMPT_FOR_FILE,REWIND,"Lines",partLines);
 
 readPCount = Columns (partLines)/2-1;
 fprintf (stdout, "\nLoaded ", readPCount , " partitions\n");
