@@ -317,7 +317,7 @@ bool	GlobalShutdown (void)
 //____________________________________________________________________________________	
 
 void	PurgeAll (bool all)
-{
+{    
 	batchLanguageFunctions.Clear();
 	batchLanguageFunctionNames.Clear();
 	batchLanguageFunctionParameterLists.Clear();

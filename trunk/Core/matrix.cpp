@@ -6685,13 +6685,13 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 		//  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
 		_AssociativeList	* pdfArgs	= (_AssociativeList *)kind;
 		_List				* keys		= pdfArgs->GetKeys();
-		_String				* pdfkey	= new _String("PDF"),
+		_String				pdfkey      ("PDF"),
 							* arg0		= (_String *)(*keys)(0);
 		
-		if (arg0->Equal(pdfkey))
+		if (arg0->Equal(&pdfkey))
 		{
-			_String		pdf ((_String *) (pdfArgs->GetByKey(*(_String*)(*keys)(0),STRING))->toStr());
-			DeleteObject (pdfkey);
+			_String		pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
+                        arg ("ARG0");
 			
 			if (pdf == _String("Dirichlet"))
 			{
@@ -6699,22 +6699,23 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 			}
 			else if (pdf == _String("Gaussian"))
 			{
-				_Matrix	* cov	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
-				return (_Matrix *) GaussianDeviate ((_Matrix &) *cov);
+				return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
 			}
 			else if (pdf == _String("Wishart"))
 			{
-				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
-				return (_Matrix *) WishartDeviate ((_Matrix &) *df);
+				return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
 			}
 			else if (pdf == _String("InverseWishart"))
 			{
-				_Matrix * df	= (_Matrix *) pdfArgs->GetByKey (*(_String*)(*keys)(1), MATRIX);
-				return (_Matrix *) InverseWishartDeviate ((_Matrix &) *df);
+				return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+			}
+			else if (pdf == _String("Multinomial"))
+			{
+				return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
 			}
 			else
 			{
-				errMsg = _String("String argument passed to Random not a supported PDF:") & pdf;
+				errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
 			}
 		}
 		else
@@ -6722,7 +6723,6 @@ _PMathObj		_Matrix::Random (_PMathObj kind)
 			errMsg = _String("Expecting \"PDF\" key in associative list argument passed to Random(), received: ") & ((_String *)(*keys)(0))->getStr();
 		}
 		
-		DeleteObject (pdfkey);
 	}
 	else if (kind->ObjectClass () == STRING)
 	{
@@ -9067,6 +9067,97 @@ _PMathObj	_Matrix::GaussianDeviate (_Matrix & cov)
 	return new _Matrix;
 }
 
+
+//_____________________________________________________________________________________________
+_PMathObj	_Matrix::MultinomialSample (_Constant *replicates)
+{
+   	_String		errMsg;
+	long		values      = GetHDim(),
+                samples     = replicates?replicates->Value ():0;
+	
+	_Matrix     *eval    = (_Matrix*)Compute (),
+                * sorted = nil,
+                * result = nil;
+    
+    if (samples < 1)
+        errMsg = "Expected a numerical (>=1) value for the number of replicates";
+    else if (eval->storageType != 1 || GetVDim() != 2 || values < 2)
+		errMsg = "Expecting numerical Nx2 (with N>=1) matrix.";
+    else
+    {
+        _Constant one (1.);
+        sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
+        
+        
+        _Parameter      sum = 0.;
+        
+        for (long n = 1; n < 2*values; n+=2)
+        {
+            _Parameter v = sorted->theData[n];
+            if (v < 0.)
+            {
+                sum = 0.; break;
+            }
+            sum += v;
+        }
+        
+        
+        
+        if (CheckEqual (sum, 0.))
+        {
+            errMsg = "The probabilities (second column) cannot add to 0 or be negative";
+        }
+        else
+        {
+            sum = 1./sum;
+            
+            _Matrix     *raw_result  = new _Matrix (1, values, false, true),
+                        *normalized  = new _Matrix (1, values, false, true);
+            
+            for (long v = 0; v < values; v++)
+                normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
+            
+            //BufferToConsole (_String(*(_String*)normalized->toStr()).sData);
+            //NLToConsole ();
+            
+            for (long it = 0; it < samples; it++)
+            {
+                _Parameter randomValue = genrand_real2(),
+                           sum   = normalized->theData[0];
+                long       index = 0;
+                
+                while (sum < randomValue)
+                {
+                    index++;
+                    sum += normalized->theData[index];
+                }
+                
+                raw_result->theData[index] += 1.;
+            }
+            
+            result = new _Matrix (1, values, false, true);
+            
+            for (long v = 0; v < values; v++)
+            {
+                result->theData[(long)sorted->theData[2*(values-1-v)]] = raw_result->theData[v];
+            }
+            
+            DeleteObject (raw_result);
+            DeleteObject (sorted);
+            sorted = normalized;
+        }
+    }
+       
+   
+    DeleteObject (sorted); 
+    if (errMsg.sLength)
+    {
+        WarnError (_String("Error in _Matrix::MultinomialSample(). ") & errMsg);
+        DeleteObject (result); 
+        return new _Matrix;
+    }
+    return result;
+}
 
 
 //_____________________________________________________________________________________________

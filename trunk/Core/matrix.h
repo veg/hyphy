@@ -319,6 +319,23 @@ class		_Matrix: public _MathObject {
 	_PMathObj	InverseWishartDeviate		(_Matrix &);	//  "	"	"	"		rho hyperparameter, additional for phi matrix
 	_PMathObj	WishartDeviate				(_Matrix &, _Matrix &),
 				WishartDeviate				(_Matrix &);
+    
+    _PMathObj   MultinomialSample           (_Constant*);
+                /* SLKP 20110208: an internal function to draw the multinomial sample
+                 
+                    the matrix _base_ must be 2xN, where each _row_ lists 
+                    
+                        value (integer 0 to N-1, but not enforced), probability 
+                 
+                    the function will normalize by sum of all the values in the second column  
+        
+                    the constant argument is the number of replicates (M) to draw
+                 
+                    returns an 1xN matrix with counts of how often each value has been drawn
+                    
+                 */
+    
+        
 	
 	bool		IsReversible				(_Matrix* = nil);
 	// check if the matrix is reversible
