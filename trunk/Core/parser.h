@@ -558,7 +558,7 @@ virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
 		_Parameter	Newton 				(_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
 		_Parameter 	Newton 				(_Variable*,_Parameter, _Parameter, _Parameter);
 
-		_Parameter 	Brent 				(_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil);
+		_Parameter 	Brent 				(_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
 
 		_Parameter	Integral 			(_Variable*,_Parameter, _Parameter, bool inifinite = false);
 		_Parameter	MeanIntegral 		(_Variable*,_Parameter, _Parameter, bool inifinite = false);

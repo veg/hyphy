@@ -185,6 +185,11 @@ void				DebugVarList			(void);
 		print the names of variables whose indices are 
 	    contained in the list
 	 */
+    
+void                ClearFormulasInList     (void);
+    /* SLKP: 20110209
+        An UGLY hack to automate clearing lists that have pointers to formulas in them */
+    
 	
 long				Min						(void);
 long				Max						(void);

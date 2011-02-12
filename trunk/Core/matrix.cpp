@@ -39,6 +39,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#include "dmalloc.h"
 #endif
 
+/*SLKP 20110209; include progress report updates */
+#if !defined __UNIX__ && !defined __HEADLESS__
+    #include "HYConsoleWindow.h"
+#endif
+/*SLKP*/
+
 //#include "profiler.h"
 
 #define	MEMORYERROR "Out of Memory"
@@ -9071,9 +9077,9 @@ _PMathObj	_Matrix::GaussianDeviate (_Matrix & cov)
 //_____________________________________________________________________________________________
 _PMathObj	_Matrix::MultinomialSample (_Constant *replicates)
 {
-   	_String		errMsg;
-	long		values      = GetHDim(),
-                samples     = replicates?replicates->Value ():0;
+   	_String		  errMsg;
+	long          values      = GetHDim();
+    unsigned long samples     = replicates?replicates->Value ():0;
 	
 	_Matrix     *eval    = (_Matrix*)Compute (),
                 * sorted = nil,
@@ -9120,7 +9126,21 @@ _PMathObj	_Matrix::MultinomialSample (_Constant *replicates)
             //BufferToConsole (_String(*(_String*)normalized->toStr()).sData);
             //NLToConsole ();
             
-            for (long it = 0; it < samples; it++)
+            _String      _HYMultinomialStatus		("Generating multinomial samples");
+
+            
+            #if !defined __UNIX__ || defined __HEADLESS__
+                    TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
+            #if !defined __HEADLESS__
+                    SetStatusLine 	  (empty,_HYMultinomialStatus, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
+            #else
+                    SetStatusLine 	  (_HYMultinomialStatus);
+            #endif	
+                    _Parameter	seconds_accumulator = .0,
+                                temp;
+            #endif
+            
+            for (unsigned long it = 0; it < samples; it++)
             {
                 _Parameter randomValue = genrand_real2(),
                            sum   = normalized->theData[0];
@@ -9133,6 +9153,26 @@ _PMathObj	_Matrix::MultinomialSample (_Constant *replicates)
                 }
                 
                 raw_result->theData[index] += 1.;
+#if !defined __UNIX__ || defined __HEADLESS__
+                if ((it % 1000 == 0) && (temp=TimerDifferenceFunction(true))>1.0) // time to update
+                {
+                    seconds_accumulator += temp;
+                    
+                    _String statusLine = _HYMultinomialStatus & " " & (_Parameter)(it+1) & "/" & (_Parameter)samples 
+                                            & " samples drawn (" & (1.0+it)/seconds_accumulator & "/second)";
+                
+#if defined __HEADLESS__
+                    SetStatusLine (statusLine);
+#else
+                    SetStatusLine (empty,statusLine,empty,100*(float)it/(samples),HY_SL_TASK|HY_SL_PERCENT);
+#endif
+                    TimerDifferenceFunction (false); // reset timer for the next second
+                    yieldCPUTime (); // let the GUI handle user actions
+                    
+                    if (terminateExecution) // user wants to cancel the analysis
+                        break;
+                }
+#endif
             }
             
             result = new _Matrix (1, values, false, true);

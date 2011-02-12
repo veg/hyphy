@@ -1356,7 +1356,14 @@ long		  _SimpleList::Max			(void)
 			res = lData[e];
 	return res;
 }
+//______________________________________________________________
 
+void		  _SimpleList::ClearFormulasInList			(void)
+{
+    for (long k = 0; k < lLength; k++)
+        if (lData[k])
+            delete (_Formula*)lData[k];
+}
 //______________________________________________________________
 
 void		  _SimpleList::DebugVarList			(void)

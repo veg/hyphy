@@ -1063,6 +1063,19 @@ void	  _CategoryVariable::ScanForGVariables (_AVLList& l)
 }
 
 //___________________________________________________________________________________________	
+_Parameter		_CategoryVariable::Mean (void)
+{
+    _Parameter mean = 0.;
+    _Matrix * wts = GetWeights(),
+            * val = GetValues();
+    
+    for (long ii = 0; ii < intervals; ii++)
+        mean += wts->theData[ii] * val->theData[ii];
+    
+    return mean;
+}
+
+//___________________________________________________________________________________________	
 bool		_CategoryVariable::UpdateIntervalsAndValues (bool force)
 {
 	if (density.IsEmpty())

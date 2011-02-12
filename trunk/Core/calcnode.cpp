@@ -84,11 +84,15 @@ long* 		nonZeroNodes = nil,
 	pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 			
-char 		isDefiningATree   = false,
-			takeBranchLengths = false;
+char 		isDefiningATree         = false,
+			takeBranchLengths       = false,
+            autoSolveBranchLengths  = false;
 
 _Parameter	treeLayoutVert,
 			scalingLogConstant    = log (1.e300);
+
+_SimpleList convertedMatrixExpressionsL;
+_AVLListX   convertedMatrixExpressions (&convertedMatrixExpressionsL);
 
 _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",	
 			stringSuppliedLengths = "STRING_SUPPLIED_LENGTHS",
@@ -96,6 +100,7 @@ _String		expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
 			includeModelSpecs	  = "INCLUDE_MODEL_SPECS",
 			acceptRootedTrees	  = "ACCEPT_ROOTED_TREES",
 			acceptBranchLengths	  = "ACCEPT_BRANCH_LENGTHS",
+            autoConvertBL         = "AUTOMATICALLY_CONVERT_BRANCH_LENGTHS",
 			splitNodeNames		  = "SPLIT_NODE_NAMES",
 			internalNodePrefix	  = "INTERNAL_NODE_PREFIX",
 			cotNode				  = "COT_NODE",
@@ -1024,6 +1029,9 @@ void	_TheTree::PreTreeConstructor (bool)
 	categoryCount 			= 1;	
 	
 	aCache	 				= new _AVLListXL (new _SimpleList);
+    
+    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.Clear();
 	
 	iNodePrefix = "Node";
 	_PMathObj iv = FetchObjectFromVariableByType(&internalNodePrefix,STRING);
@@ -1054,6 +1062,9 @@ void	_TheTree::PostTreeConstructor (bool dupMe)
 	DeleteObject (aCache->dataList);
 	DeleteObject (aCache);
 	aCache = nil;
+
+    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.Clear();
 
 	while (theRoot->get_num_nodes() == 1) // dumb tree w/ an extra top level node
 	{
@@ -1285,13 +1296,12 @@ bool	_TreeTopology::MainTreeConstructor 	(_String& parms, bool checkNames)
 	_Parameter      checkABL;
 	
 	checkParameter  (acceptBranchLengths, checkABL, 1.0);
-	
-	if (CheckEqual (checkABL, 0.0))
-		takeBranchLengths = false;
-	else
-		takeBranchLengths = true;
-		
+	takeBranchLengths = !CheckEqual (checkABL, 0.0);
 
+    checkParameter  (autoConvertBL, checkABL, 0.0);
+	autoSolveBranchLengths = CheckEqual (checkABL, 1.0);
+
+    
 	_SimpleList nodeStack, 
 				nodeNumbers;
 	
@@ -1559,8 +1569,51 @@ bool	_TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeName,
 	{
 		if (cNt.iVariables && cNt.iVariables->lLength == 2) // can assign default values
 		{
-			LocateVar (cNt.iVariables->lData[0])->SetValue (&val);	
-			ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & nodeValue);
+            bool setDef = true;
+            if (autoSolveBranchLengths)
+            {
+                long nodeModelID = cNt.GetModelIndex();
+                if (nodeModelID != HY_NO_MODEL)
+                {
+                    _Formula * expressionToSolveFor = nil;
+                    long alreadyConverted = convertedMatrixExpressions.Find ((BaseRef)nodeModelID);
+                    if (alreadyConverted < 0)
+                    {
+                        _Variable	* tV, * tV2;
+                        bool		 mByF;
+                        RetrieveModelComponents (nodeModelID, tV, tV2, mByF);
+                        _String * result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
+                        if (result->sLength)
+                        {
+                            expressionToSolveFor = new _Formula (*result);
+                            for (long cc = 0; cc < cNt.categoryVariables.lLength; cc++)
+                            {
+                                _CategoryVariable * thisCC = (_CategoryVariable *)LocateVar(cNt.categoryVariables.lData[cc]);
+                                thisCC -> SetNumericValue (thisCC->Mean());
+                                
+                            }
+                        }
+                        DeleteObject (result);
+                    }
+                    else
+                        expressionToSolveFor = (_Formula*)convertedMatrixExpressions.GetXtra(alreadyConverted);
+                        
+                    if (expressionToSolveFor != nil)
+                    {
+                        _Variable * solveForMe = LocateVar (cNt.iVariables->lData[1]);
+                        _Parameter modelP = expressionToSolveFor->Brent (solveForMe,solveForMe->GetLowerBound(), solveForMe->GetUpperBound(), 1e-6, nil, val.Value());
+                        ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & modelP);
+                        LocateVar (cNt.iVariables->lData[0])->SetValue(new _Constant (modelP), false);
+                        setDef = false;
+                   }
+                }
+            }
+            
+            if (setDef)
+            {
+                LocateVar (cNt.iVariables->lData[0])->SetValue (&val);	
+                ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & nodeValue);
+            }
 		}
 		else
 			ReportWarning (nodeName&" has "& _String((long)(cNt.iVariables?cNt.iVariables->lLength/2:0)) & " parameters - branch length not assigned");

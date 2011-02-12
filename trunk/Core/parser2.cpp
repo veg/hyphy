@@ -1501,7 +1501,7 @@ _Parameter	 _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramete
 
 //__________________________________________________________________________________
 
-_Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Parameter tol, _List* storeEvals)
+_Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Parameter tol, _List* storeEvals, _Parameter rhs)
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
 {
 	// check that there is indeed a sign change on the interval
@@ -1527,7 +1527,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 			(*storeEvals) && & dummy;		
 		}
 
-		if ((b<0.00001)&&(b>-0.00001))
+		if (b<0.00001 && b>-0.00001)
 			a = b-0.0001;
 		else
 			a = b-fabs(b)*0.1;
@@ -1537,7 +1537,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 		
 		dummy.SetValue (a);
 		unknown->SetValue(&dummy);
-		fa = Compute()->Value();
+		fa = Compute()->Value()-rhs;
 		if (storeEvals)
 		{
 			(*storeEvals) && & dummy;
@@ -1566,7 +1566,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 			
 			dummy.SetValue (a);
 			unknown->SetValue(&dummy);
-			fa = Compute()->Value();
+			fa = Compute()->Value()-rhs;
 			if (storeEvals)
 			{
 				(*storeEvals) && & dummy;
@@ -1580,7 +1580,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 		{
 			dummy.SetValue (a);
 			unknown->SetValue(&dummy);
-			fa = Compute()->Value();
+			fa = Compute()->Value()-rhs;
 
 			if (storeEvals)
 			{
@@ -1600,7 +1600,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 			
 			dummy.SetValue (b);
 			unknown->SetValue(&dummy);
-			fb = Compute()->Value();
+			fb = Compute()->Value()-rhs;
 			
 			if (storeEvals)
 			{
@@ -1630,7 +1630,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 				
 				dummy.SetValue (b);
 				unknown->SetValue(&dummy);
-				fb = Compute()->Value();
+				fb = Compute()->Value()-rhs;
 				if (storeEvals)
 				{
 					(*storeEvals) && & dummy;
@@ -1645,7 +1645,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 	{
 		dummy.SetValue (a);
 		unknown->SetValue(&dummy);
-		fa = Compute()->Value();
+		fa = Compute()->Value()-rhs;
 		if (storeEvals)
 		{
 			(*storeEvals) && & dummy;
@@ -1660,7 +1660,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 	{
 		dummy.SetValue (b);
 		unknown->SetValue(&dummy);
-		fb = Compute()->Value();
+		fb = Compute()->Value()-rhs;
 		if (storeEvals)
 		{
 			(*storeEvals) && & dummy;
@@ -1749,7 +1749,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 				
 			dummy.SetValue (b);
 			unknown->SetValue(&dummy);
-			fb = Compute()->Value();
+			fb = Compute()->Value()-rhs;
 			if (storeEvals)
 			{
 				(*storeEvals) && & dummy;
@@ -1762,7 +1762,7 @@ _Parameter	 _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Par
 	subNumericValues = 2;
 	_String msg ((_String*)toStr());
 	subNumericValues = 0;
-	msg = msg & "=0";
+	msg = msg & "=" & rhs;
 	if (it < MAX_BRENT_ITERATES)
 		msg = 	msg & " has no (or multiple) roots in ["&_String(a)&","&_String(b)&"]";
 	else

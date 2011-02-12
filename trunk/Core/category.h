@@ -94,6 +94,8 @@ virtual
 	
 	_Parameter	SetIntervalValue (long, bool recacl = true);
 				// set interval value is returned
+    
+    _Parameter  Mean (void);
 	
 	_Parameter	GetIntervalValue (long);
 
