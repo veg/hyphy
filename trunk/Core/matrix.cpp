@@ -2343,7 +2343,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer* theP)
 				{
 					if (j > 0) break;
 					term = s.Cut(1,i-1);
-					hDim = ProcessNumericArgument (&term,theP);
+					hDim = round(ProcessNumericArgument (&term,theP));
 					j    = i+1;
 				}
 			}
