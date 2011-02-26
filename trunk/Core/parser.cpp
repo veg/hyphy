@@ -2709,7 +2709,7 @@ _Matrix* _VariableContainer::GetFreqMatrix (void)
 void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
 {
 	_String fullName (aName), 
-	varName;
+			varName;
 
 	theModel  = FindModelName(theTmplt);
 	theParent = theP;
@@ -2762,7 +2762,8 @@ void	_VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _
 					varCache->Insert ((BaseRef)theModel, (long)mVars.makeDynamic(),false);
 			}
 			else
-				mVars.Duplicate (varCache->GetXtra (cachedID));
+				if (varCache)
+					mVars.Duplicate (varCache->GetXtra (cachedID));
 
 		}
 		

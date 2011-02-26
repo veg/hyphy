@@ -6848,7 +6848,7 @@ void	  _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 													rootStates->theData[cc] = stateV;
 											}
 											
-											delete holder;	
+											delete [] holder;	
 										}				
 										if (errMsg.sLength == 0)
 										{

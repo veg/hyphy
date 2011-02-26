@@ -258,7 +258,15 @@ else
 clumpingL = -1;
 
 
-
+ChoiceList (clusteringType,"Clustering algorithm",1,SKIP_NONE,
+						   "At least one","A sequence in a cluster is sufficiently close to AT LEAST ONE of the other sequences in the cluster.",
+						   "All",		  "A sequence in a cluster is sufficiently close to ALL OTHER sequences in the cluster.");
+						   
+if (clusteringType < 0)
+{
+		return 0;
+}	
+		
 while (clumpingL < 0)
 {
 	fprintf (stdout, "Please enter the lower distance bound (>=0, or -1 to plot clusters vs cutoff):");
@@ -280,7 +288,7 @@ if (clumpingL>=0)
 		outString = "";
 		outString * 8192;
 		clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
-		clusterCount = doClustering (clumpingL, clumpingU);
+		clusterCount = doClustering (clumpingL, clumpingU, clusteringType);
 		
 		
 		fprintf (stdout, "\nFound ", clusterCount, " clusters on total ", totalEdgeCount," edges\n");
@@ -502,7 +510,7 @@ else
 	outString * "Cutoff, Cluster Count";
 
 	distanceMx = distanceMx%0;
-	distanceMx[0][1] = doClustering (0, distanceMx[0][0]);
+	distanceMx[0][1] = doClustering (0, distanceMx[0][0], clusteringType);
 	outString * ("\n"+distanceMx[0][0]+","+distanceMx[0][1]);
 	for (rz = 1; rz < Rows(distanceMx); rz = rz+1)
 	{
@@ -514,7 +522,7 @@ else
 
 		if (distanceMx[rz][0]>distanceMx[rz-1][0])
 		{
-			distanceMx[rz][1] = doClustering (0, distanceMx[rz][0]);
+			distanceMx[rz][1] = doClustering (0, distanceMx[rz][0], clusteringType);
 		}
 		else
 		{
@@ -550,7 +558,7 @@ else
 
 /*___________________________________________________________________________________________________________*/
 
-function doClustering (from, to)
+function doClustering (from, to, clusteringAlg)
 {
 	visited 	   = {mDim,1};
 	gatedDistances = distanceMatrix["_MATRIX_ELEMENT_VALUE_ >= from && _MATRIX_ELEMENT_VALUE_ <= to && _MATRIX_ELEMENT_ROW_!=_MATRIX_ELEMENT_COLUMN_"];
@@ -559,26 +567,70 @@ function doClustering (from, to)
 	done		 = 0;
 	vertexCount  = 0;
 	
-	totalEdgeCount = (Transpose(visited["1"])*gatedDistances*visited["1"])[0] $ 2;
-
-	for (currentVertex=0; currentVertex < mDim; currentVertex=currentVertex+1)
+	totalEdgeCount = (+gatedDistances) $ 2;
+	
+	if (clusteringAlg == 0)	
 	{
-		if (visited[currentVertex] == 0)
+		for (currentVertex=0; currentVertex < mDim; currentVertex=currentVertex+1)
 		{
-			visited[currentVertex] = clusterCount;
-			for (k=currentVertex+1; k<mDim; k=k+1)
+			if (visited[currentVertex] == 0)
 			{
-				if (visited[k] == 0)
+				visited[currentVertex] = clusterCount;
+				for (k=currentVertex+1; k<mDim; k=k+1)
 				{
-					if (gatedDistances[currentVertex][k])
+					if (visited[k] == 0)
 					{
-						visited[k] = clusterCount;
-						doAVertex (k, 0);
+						if (gatedDistances[currentVertex][k])
+						{
+							visited[k] = clusterCount;
+							doAVertex (k, 0);
+						}
+					}
+				}
+				clusterCount += 1;
+			}
+		}
+	}
+	else
+	{
+		for (currentVertex=0; currentVertex < mDim; currentVertex +=1 )
+		{
+			//fprintf (stdout, visited, "\n");
+			for (k=0; k<currentVertex; k += 1 )
+			{
+				if (gatedDistances[currentVertex][k])
+				{
+					tryThisCluster = visited[k];
+					//fprintf (stdout, "\n", currentVertex, " testing: ", tryThisCluster, "\n");
+					for (k2 = 0; k2 < currentVertex; k2+=1)
+					{
+						if (visited[k2] == tryThisCluster)
+						{
+							if (gatedDistances[currentVertex][k2] == 0)
+							{
+								//fprintf (stdout, currentVertex, " failed: ", k2, "\n");
+								k2 = -1;
+								break;
+							}
+						}
+					}
+					if (k2 > 0)
+					{
+						//fprintf (stdout, currentVertex, " passed: ", tryThisCluster, "\n");
+						visited[currentVertex] = tryThisCluster;
+						k = -1;
+						break;
 					}
 				}
 			}
-			clusterCount = clusterCount + 1;
+			if (k >= 0)
+			{
+				//fprintf (stdout, currentVertex, " assigned to a new cluster: ", clusterCount, "\n");
+				visited[currentVertex] = clusterCount;
+				clusterCount += 1;			
+			}
 		}
+		
 	}
 	return clusterCount-1;
 }

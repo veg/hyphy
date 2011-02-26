@@ -931,8 +931,8 @@ _PMathObj	_Matrix::Eigensystem (void)
 	DeleteObject (dss);
 	//DeleteObject (vs);
 	
-	delete (b);
-	delete (z);
+	delete [] b;
+	delete [] z;
 	
 	
 	return res;
@@ -6411,7 +6411,7 @@ _PMathObj		_Matrix::PoissonLL (_PMathObj mp)
 		}
 	}	
 	
-	delete 		 logFactorials;
+	delete 		[] logFactorials;
 		
 	return new _Constant (loglik);
 }	
@@ -8644,7 +8644,7 @@ _Parameter		_Matrix::FisherExact (_Parameter p1, _Parameter p2, _Parameter p3)
 				tempArray[j*hDim+i] = numericMx->theData[i*vDim+j];
 		
 		fexact_ (hDim,vDim,tempArray,p1,p2,p3,&prob,&pval);
-		delete 		tempArray;
+		delete 	[]	tempArray;
 		return pval;
 		
 	}

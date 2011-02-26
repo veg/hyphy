@@ -67,7 +67,7 @@ function 	  doTheMapping (dummy)
 						}
 					}
 					
-					if ((resolutionMapping*((Transpose(resolutionMapping))["1"]))[0] == 1)
+					if ((+resolutionMapping) == 1)
 					{
 						prot = codeToAA[((Transpose(resolutionMapping))["_MATRIX_ELEMENT_COLUMN_"])[0]];
 					}
@@ -100,17 +100,17 @@ function 	  doTheMapping (dummy)
 
 if (_runAsFunctionLibrary != 1)
 {
-	incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
-	ExecuteCommands  ("#include \""+incFileName+"\";");
+	LoadFunctionLibrary ("chooseGeneticCode.def");
 	
 	SetDialogPrompt ("Please choose a data file to convert:");
 	
 	ChoiceList (SKIP_OMISSIONS,"Deletions",1,SKIP_NONE,"Keep Deletions","Deletions will NOT be filtered from the data.",
-				"Skip Deletions","Deletions will be pruned out and NOT included in the converted file.");
+							   "Skip Deletions","Deletions will be pruned out and NOT included in the converted file.");
 	
 	if (SKIP_OMISSIONS<0)
 	{
 		fprintf (stdout, "\n\nExecution Canceled...");
+		return 0;
 	}
 	
 	havePartitions = 0;

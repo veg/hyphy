@@ -975,8 +975,8 @@ _List*	 _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Mat
 			
 		}
 	}
-	delete siteLikelihoods; 
-	delete siteLikelihoodsSpecState;
+	delete [] siteLikelihoods; 
+	delete [] siteLikelihoodsSpecState;
 	return result;
 }
 

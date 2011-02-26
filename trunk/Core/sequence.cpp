@@ -553,7 +553,7 @@ _String*	_CString::DecompressFrequency(void)
 		k++;
 	}
 	result.Finalize();	
-	delete codeMaps;
+	delete [] codeMaps;
 	return (_String*)(_String (result.getStr())).makeDynamic();
 	
 }

@@ -10215,7 +10215,7 @@ void	_LikelihoodFunction::Simulate (_DataSet &target, _List& theExclusions, _Mat
 					
 					localExclusions<<l;
 				}
-				delete (translatedState);
+				delete [] translatedState;
 				columnWise = true;
 			}
 		}

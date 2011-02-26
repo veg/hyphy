@@ -66,7 +66,7 @@ unsigned 	long _String::storageIncrement = 32;
 
 struct _hyValidIDCharsType
 {
-	bool valid_chars[255];
+	bool valid_chars[256];
 	_hyValidIDCharsType(void)
 	{
 		for (int c = 0; c < 256; c++)
