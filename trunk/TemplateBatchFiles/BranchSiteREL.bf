@@ -176,6 +176,7 @@ omegaG1 :< 1;
 global	omegaG2 = 0.5;
 omegaG2 :< 1;
 global	omegaG3 = 2.0;
+omegaG3 :> 1;
 
 PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t1", "omegaG1", "");
 PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t2", "omegaG2", "");
@@ -282,8 +283,15 @@ LikelihoodFunction three_LF   = (dsf,mixtureTreeG);
 
 fprintf 					  (stdout, "[PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
 
+omegaG1 = 0.39;
+omegaG2 = 1;
+omegaG3 = 1.2;
+
+Paux1G	= 0.64;
+Paux2G	= 0.975;
+
 USE_LAST_RESULTS			  = 1;
-Optimize					  (res_three_LF_global,three_LF);
+//Optimize					  (res_three_LF_global,three_LF);
 fprintf						  (stdout,"\n",three_LF);
 
 lfOut	= csvFilePath + ".relglobal.fit";
@@ -293,14 +301,22 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
+
+//wg1 = Paux1G;
+//wg2 = (1-Paux1G)*Paux2G;
+//wg3 = (1-Paux1G)*(1-Paux2G);
+
 for (k = 0; k < totalBranchCount; k = k+1)
 {
+	baseOmega = (pValueByBranch[k][0]) / (wg1/5+wg2+wg3*5);
+	//fprintf (stdout, baseOmega, "\n");
+
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".t1 = mixtureTreeG." + bNames[k] + ".t1");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 = omegaG1;");
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 :< 1;");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 = omegaG2;");
+	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 = baseOmega/5;");
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 :< 1;");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 = omegaG3;");
+	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 = baseOmega;");
+	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 = baseOmega*5;");
 
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux1 = Paux1G");
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux2 = Paux2G");
