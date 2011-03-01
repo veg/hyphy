@@ -291,7 +291,7 @@ Paux1G	= 0.64;
 Paux2G	= 0.975;
 
 USE_LAST_RESULTS			  = 1;
-//Optimize					  (res_three_LF_global,three_LF);
+Optimize					  (res_three_LF_global,three_LF);
 fprintf						  (stdout,"\n",three_LF);
 
 lfOut	= csvFilePath + ".relglobal.fit";
