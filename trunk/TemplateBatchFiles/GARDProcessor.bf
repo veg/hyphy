@@ -2,6 +2,7 @@ VERBOSITY_LEVEL = -1;
 
 SetDialogPrompt ("Please load a nucleotide data file:");
 DataSet 	ds = ReadDataFile (PROMPT_FOR_FILE);
+baselineDSPath = LAST_FILE_PATH;
 
 SetDialogPrompt ("Please load a GA partition analysis result file:");
 fscanf  (PROMPT_FOR_FILE,REWIND,"Lines",partLines);
@@ -169,6 +170,11 @@ ExecuteCommands (lfDef);
 Optimize (res, multiPart);
 
 fprintf (stdout, multiPart);
+
+lfout = baselineDSPath + "_multi.fit";
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf (lfout, CLEAR_FILE, multiPart);
+LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 myDF = baseParams + res[1][1];
 

@@ -913,7 +913,7 @@ bool	handleGUI (bool useGet)
  	EventRecord			guiEvent;
  	long 				menuChoice, 	
  						mSel;
- 	do
+	do
 	{
 		if (GlobalGUIEventQueue.lLength)
 			HandleGlobalQueueEvent ();
@@ -928,7 +928,7 @@ bool	handleGUI (bool useGet)
 			gotEvent = WaitNextEvent (everyEvent, &guiEvent, 0x7FFFFFFF, mouseRgn);		
 		
 		if (highLevelQuit)
-			return false;
+            return false;
 		
 		if (!gotEvent) continue;
 		
@@ -961,7 +961,7 @@ bool	handleGUI (bool useGet)
 				{
 					AEProcessAppleEvent(&guiEvent);
 					if (highLevelQuit)
-						return false;
+                        return false;
 					continue;
 				}
 		}		
@@ -1299,6 +1299,8 @@ bool	handleGUI (bool useGet)
 				
 	}
 	while (isSuspended||loopMore);
+    
+    
 	return true;
 }
 

@@ -4224,6 +4224,10 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	checkParameter (optimizationPrecisionMethod,optimizationPrecMethod,0.0);
 	checkParameter (optimizationPrecision,precision,0.001);
 	checkParameter (maximumIterationsPerVariable,maxItersPerVar,5000);
+    
+    ReportWarning  (_String("Optimization settings:\n\t") & optimizationMethod & " = " & optMethodP & 
+                            "\n\t" & optimizationPrecision & " = " & precision & 
+                            "\n\t" & maximumIterationsPerVariable & " = " & maxItersPerVar & "\n");
 	
 	maxItersPerVar *= indexInd.lLength;
 	checkParameter (relativePrecision,relPrec,0.0);

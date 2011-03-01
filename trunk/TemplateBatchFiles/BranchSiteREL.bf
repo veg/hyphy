@@ -57,7 +57,9 @@ for (h=0; h<4; h=h+1)
 h=0;
 v=0;
 
-function PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP)
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP, nonsynRateP)
 {
 	if (!ModelMatrixDimension)
 	{
@@ -133,8 +135,17 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, synrateP, globalP)
 				}
 				else
 				{
-					modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+""+synrateP+"*"+globalP+"*EFV__["+ts+"]["+ps+"];\n"+
-									"ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+""+synrateP+"*"+globalP+"*EFV__["+ts2+"]["+ps+"];\n");	
+					if (Abs(globalP))
+					{
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+""+synrateP+"*"+globalP+"*EFV__["+ts+"]["+ps+"];\n"+
+										"ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+""+synrateP+"*"+globalP+"*EFV__["+ts2+"]["+ps+"];\n");	
+					
+					}
+					else
+					{
+						modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := "+_nucBiasTerms[transition][transition2]+""+nonsynRateP+"*EFV__["+ts+"]["+ps+"];\n"+
+										"ModelMatrixName["+vs+"]["+hs+"] := "+_nucBiasTerms[transition][transition2]+""+nonsynRateP+"*EFV__["+ts2+"]["+ps+"];\n");	
+					}
 				}
 			}
 	    }
@@ -156,9 +167,9 @@ omega3 = 1.0;
 
 nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
 
-PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t1", "omega1");
-PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t2", "omega2");
-PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t3", "omega3");
+PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t1", "omega1", "");
+PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t2", "omega2", "");
+PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t3", "omega3", "");
 
 global	omegaG1 = 0.2;
 omegaG1 :< 1;
@@ -166,14 +177,16 @@ global	omegaG2 = 0.5;
 omegaG1 :< 1;
 global	omegaG3 = 2.0;
 
-PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t1", "omegaG1");
-PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t2", "omegaG2");
-PopulateModelMatrix			  ("MGMatrix3G",  nucCF, "t3", "omegaG3");
+PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t1", "omegaG1", "");
+PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t2", "omegaG2", "");
+PopulateModelMatrix			  ("MGMatrix3G",  nucCF, "t3", "omegaG3", "");
 
 
+
+PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
 
 codon3x4					= BuildCodonFrequencies (nucCF);
-Model		MGL				= (MGMatrix1, codon3x4, 0);
+Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 
 LoadFunctionLibrary			  ("queryTree");
 
@@ -187,24 +200,39 @@ VERBOSITY_LEVEL				 = 0;
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
 Optimize					  (res_base,base_LF);
 
+lfOut	= csvFilePath + ".mglocal.fit";
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf (lfOut, CLEAR_FILE, base_LF);
+LIKELIHOOD_FUNCTION_OUTPUT = 2;
+
 localLL						 = res_base[1][0];
 localParams					 = res_base[1][1] + 9;
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
-GetInformation	   (varNames, "givenTree\\..*\\.omega1");
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
-localOmegaValues			 = {totalBranchCount,1}["Eval(varNames[_MATRIX_ELEMENT_ROW_])"];
+
+//GetInformation	   		   (varNames, "givenTree\\..*\\.omega1");
+//localOmegaValues			 = {totalBranchCount,1}["Eval(varNames[_MATRIX_ELEMENT_ROW_])"];
 
 pValueByBranch				  = {totalBranchCount,10};
 bNames						  = BranchName (givenTree, -1);
 
 for (k = 0; k < totalBranchCount; k = k+1)
 {
-	pValueByBranch [k][0] = Eval ("givenTree." + bNames[k] + ".omega1");
+	srate  = Eval ("givenTree." + bNames[k] + ".syn");
+	nsrate = Eval ("givenTree." + bNames[k] + ".nonsyn");
+	if (srate > 0)
+	{
+		pValueByBranch [k][0] = Min (10, nsrate/srate);
+	}
+	else
+	{
+		pValueByBranch [k][0] = 10;
+	}	
 }
 
-omegaStats					 = GatherDescriptiveStats (localOmegaValues);
+omegaStats					 = GatherDescriptiveStats (pValueByBranch[-1][0]);
 
 fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom\n");
 
@@ -227,16 +255,16 @@ Model 		MGG		=		  ("Exp(MGMatrix1G)*Paux1G+Exp(MGMatrix2G)*(1-Paux1G)*Paux2G+Exp
 Tree						   mixtureTreeG = treeString;
 
 Model 		MG1		=		  ("Exp(MGMatrix1)*Paux1+Exp(MGMatrix2)*(1-Paux1)*Paux2+Exp(MGMatrix3)*(1-Paux1)*(1-Paux2)",codon3x4,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
-
 Tree						   mixtureTree = treeString;
 
 
 
-ReplicateConstraint 		  ("this1.?.t1:=this2.?.t1",mixtureTreeG,givenTree);
-ReplicateConstraint 		  ("this1.?.t1:=this2.?.t1",mixtureTree,givenTree);
+ReplicateConstraint 		  ("this1.?.t1:=this2.?.syn",mixtureTreeG,givenTree);
+ReplicateConstraint 		  ("this1.?.t1:=this2.?.syn",mixtureTree,givenTree);
 
 ClearConstraints			  (mixtureTree);
 ClearConstraints			  (mixtureTreeG);
+
 omega1G						 :< 1;
 omega2G						 :< 1;
 Paux1G 						 :< 1;
@@ -257,6 +285,11 @@ fprintf 					  (stdout, "[PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n
 USE_LAST_RESULTS			  = 1;
 Optimize					  (res_three_LF_global,three_LF);
 fprintf						  (stdout,"\n",three_LF);
+
+lfOut	= csvFilePath + ".relglobal.fit";
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf (lfOut, CLEAR_FILE, three_LF);
+LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
@@ -279,9 +312,7 @@ fprintf						  (stdout,"\n",three_LF);
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
-
 fprintf (lfOut, CLEAR_FILE, three_LF);
-
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 
