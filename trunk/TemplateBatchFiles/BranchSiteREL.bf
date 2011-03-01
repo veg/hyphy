@@ -174,7 +174,7 @@ PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t3", "omega3", "");
 global	omegaG1 = 0.2;
 omegaG1 :< 1;
 global	omegaG2 = 0.5;
-omegaG1 :< 1;
+omegaG2 :< 1;
 global	omegaG3 = 2.0;
 
 PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t1", "omegaG1", "");
