@@ -302,9 +302,9 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
 
-//wg1 = Paux1G;
-//wg2 = (1-Paux1G)*Paux2G;
-//wg3 = (1-Paux1G)*(1-Paux2G);
+wg1 = Paux1G;
+wg2 = (1-Paux1G)*Paux2G;
+wg3 = (1-Paux1G)*(1-Paux2G);
 
 for (k = 0; k < totalBranchCount; k = k+1)
 {
