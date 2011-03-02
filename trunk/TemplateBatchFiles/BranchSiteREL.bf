@@ -406,7 +406,7 @@ for							  (k = 0; k < totalBranchCount; k = k+1)
 		fprintf (stdout, "...Testing for selection at this branch\n");
 		_stashLF = saveLF ("three_LF");
 
-		ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 :< 1");
+		ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 := 1");
 		Optimize					  (res_three_current,three_LF);
 		
 		fprintf (stdout, "\nNode: ", ref, 
