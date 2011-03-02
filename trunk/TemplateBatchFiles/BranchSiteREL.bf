@@ -278,19 +278,11 @@ ReplicateConstraint 		  ("this1.?.t3:=this2.?.t1",mixtureTreeG,mixtureTreeG);
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
 
-LikelihoodFunction three_LF   = (dsf,mixtureTreeG);
+/*LikelihoodFunction three_LF   = (dsf,mixtureTreeG);
 
 
 fprintf 					  (stdout, "[PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
 
-omegaG1 = 0.39;
-omegaG2 = 1;
-omegaG3 = 1.2;
-
-Paux1G	= 0.64;
-Paux2G	= 0.975;
-
-USE_LAST_RESULTS			  = 1;
 Optimize					  (res_three_LF_global,three_LF);
 fprintf						  (stdout,"\n",three_LF);
 
@@ -299,32 +291,88 @@ LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, three_LF);
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
+global Paux1G=0.6417071370308534;
+global Paux2G=1;
+global omegaG3=1.064891502388613;
+global omegaG2=0.9203043460462096;
+global omegaG1=0.3863674819501042;
+
+
+wg1 = Max(0.05,Paux1G);
+wg2 = Max(0.05,(1-Paux1G)*Paux2G);
+wg3 = Max(0.05,(1-Paux1G)*(1-Paux2G));
+
+sum = wg1+wg2+wg3;
+
+wg1 = wg1/sum;
+wg2 = wg2/sum;
+wg3 = wg3/sum;
+
+Paux1G = wg1;
+Paux2G = wg2/(1-Paux1G);*/
+
+USE_LAST_RESULTS			  = 1;
+
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
 
-wg1 = Paux1G;
-wg2 = (1-Paux1G)*Paux2G;
-wg3 = (1-Paux1G)*(1-Paux2G);
-
 for (k = 0; k < totalBranchCount; k = k+1)
 {
-	baseOmega = (pValueByBranch[k][0]) / (wg1/5+wg2+wg3*5);
-	//fprintf (stdout, baseOmega, "\n");
-
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".t1 = mixtureTreeG." + bNames[k] + ".t1");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 :< 1;");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 = baseOmega/5;");
+    if (k == 0)
+    {
+        expr            = Eval("BranchLength(givenTree,\""+bNames[0]+";EXPECTED_NUMBER_OF_SUBSTITUTIONS\")");
+        syn             = 1; nonsyn = 0;
+        synM            = Eval(expr);
+        syn             = 0; nonsyn = 1;
+        nonsynM         = Eval(expr);
+    }
+    
+ 	srate  = Eval ("givenTree." + bNames[k] + ".syn");
+	nsrate = Eval ("givenTree." + bNames[k] + ".nonsyn");
+    bl = Eval("BranchLength(givenTree,\""+bNames[k]+"\")")*3;
+    
+    if (srate > 0)
+    {
+        baseOmega = nsrate/srate;
+    }
+    else
+    {
+        baseOmega = 10000;
+    }
+        
+    bl = bl / (synM + nonsynM * baseOmega);
+    
+    ExecuteCommands ("mixtureTree." + bNames[k] + ".t1 = bl");
+    ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 :< 1;");
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 :< 1;");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 = baseOmega;");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 = baseOmega*5;");
+    if (baseOmega > 1)
+    {
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 = 0.1;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 = 1;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 = baseOmega;");
 
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux1 = Paux1G");
-	ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux2 = Paux2G");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux1 = 0.01;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux2 = 0.01;");
+    }
+    else
+    {
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 = baseOmega;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 = 1;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 = 2;");
+
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux1 = 0.98;");
+        ExecuteCommands ("mixtureTree." + bNames[k] + ".Paux2 = 0.5;");    
+    }
 }
+
+
+//VERBOSITY_LEVEL = 10;
+OPTIMIZATION_METHOD = 0;
 
 fprintf 					  (stdout, "[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout,"\n",three_LF);
+
 
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
@@ -377,6 +425,9 @@ for							  (k = 0; k < totalBranchCount; k = k+1)
 		pValueByBranch[k][8] = 1.0;
 	}
 }
+
+OPTIMIZATION_METHOD = 4;
+
 
 pValueSorter = {totalBranchCount,2};
 pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+pValueByBranch[_MATRIX_ELEMENT_ROW_][8]*(_MATRIX_ELEMENT_COLUMN_==1)"];

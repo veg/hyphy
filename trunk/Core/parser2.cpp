@@ -3901,11 +3901,18 @@ long	   ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _V
 		}
 		
 		_Variable * theV = LocateVar (reference);
-		
+ 
 		if (code == HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT )
 			theV->SetBounds(varObj->Value(),theV->GetUpperBound());
 		else
 			theV->SetBounds(theV->GetLowerBound(),varObj->Value());
+        
+        
+        /*
+            SLKP 20110301 if the new constraint makes the current variable value 
+            invalid, then the value will be modified to stay in bounds*/
+        
+        theV->EnsureTheValueIsInBounds();
 		
 	}
 	

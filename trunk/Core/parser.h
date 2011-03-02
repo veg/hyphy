@@ -656,7 +656,9 @@ class _Variable : public _Constant {
 											{ return false;}
 	
 				void	    SetBounds (_Parameter lb, _Parameter ub);
+                void        EnsureTheValueIsInBounds (void);
 					
+        
 				_Parameter 	GetLowerBound (void) 
 											{ return lowerBound; }
 				_Parameter 	GetUpperBound (void) 

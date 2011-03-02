@@ -2292,6 +2292,20 @@ void	_Variable::SetBounds (_Parameter lb, _Parameter ub)
 	 */
 }
 
+//__________________________________________________________________________________
+void	_Variable::EnsureTheValueIsInBounds (void)
+{	
+    if (ObjectClass () == NUMBER && IsIndependent())
+    {
+        _Constant*   myValue = (_Constant*) Compute();
+        if (myValue->Value() < lowerBound)
+            SetValue (new _Constant (lowerBound),false);
+        else
+            if (myValue->Value() > upperBound)
+                SetValue (new _Constant (upperBound),false);
+    }
+}
+
 
 //__________________________________________________________________________________
 void	_Variable::ClearConstraints (void)
