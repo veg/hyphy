@@ -1224,8 +1224,7 @@ if (timeLeft < 0)
 							 "Consider reducing the size of the alignment, either by removing sequences or selecting shorted sequence regions, or choosing a simpler model (no rate variation etc). </DIV>\n");
 }
 
-fprintf (outputFilePath, "<DIV class = 'RepClassSM'><u>Results</u><p>");
-fprintf (outputFilePath,reportImprovementHTML (0), "\n<span style = 'font-size:9px'>To process RAW files you need to download this <a href = 'http://www.datamonkey.org/GARD/BFs/RecombinationProcessor.bf'>HyPhy batchfile</a>, run it <b>locally</b> in HyPhy and input the raw file when prompted.</span></DIV>");
+fprintf (outputFilePath, "<DIV class = 'RepClassSM'><u>Results</u><p>", reportImprovementHTML (0), "</DIV>");
 
 						 
 
@@ -1260,7 +1259,7 @@ fprintf (outputFilePath, "<p><u>Nucleotide substitution rate matrix</u><p>",
 		"<TR CLASS = 'TRReport2'><TH>C</TH><TD>&#45;</TD><TD>&#42</TD><TD>",CG,"</TD><TD>",CT,"</TD></TR>",		
 		"<TR CLASS = 'TRReport1'><TH>G</TH><TD>&#45;</TD><TD>&#45</TD><TD>&#42</TD><TD>",GT,"</TD></TR>",		
 		"<TR CLASS = 'TRReport2'><TH>T</TH><TD>&#45;</TD><TD>&#45</TD><TD>&#45</TD><TD>&#42</TD></TR></TABLE>",		
-		"</DIV>\n",FILE_SEPARATOR,"\n");
+		"</DIV></html>");
 
 
 fprintf  (outputFilePath, "</body></html>", CLOSE_FILE);

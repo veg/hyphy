@@ -417,8 +417,24 @@ for							  (k = 0; k < totalBranchCount; k = k+1)
 		pValueByBranch[k][7]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);				 
 		pValueByBranch[k][8]			  = (1-CChi2 (pValueByBranch[k][7],1))*.5;
 		fprintf (stdout, "\np-value = ", pValueByBranch[k][8],"\n\n", three_LF, "\n");
+		
 		ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 :< 1e26");
-		_stashLF ["restoreLF"][""];
+		
+		if (pValueByBranch[k][7] < (-0.5))
+		{
+			fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
+			lfOut	= csvFilePath + ".fit";
+			Optimize					  (res_three_LF,three_LF);
+			LIKELIHOOD_FUNCTION_OUTPUT = 7;
+			fprintf (lfOut, CLEAR_FILE, three_LF);
+			LIKELIHOOD_FUNCTION_OUTPUT = 2;
+			_stashLF = saveLF ("three_LF");
+			k = 0;
+		}
+		else
+		{
+			_stashLF ["restoreLF"][""];
+		}
 	}
 	else
 	{
