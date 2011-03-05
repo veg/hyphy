@@ -1851,6 +1851,7 @@ void Bgm::CacheNodeScores (void)
 	} // end for loop over nodes
 #endif
 
+
 #if defined __HYPHYMPI_ND__
 	}
 #endif
@@ -3008,12 +3009,12 @@ _Matrix *	Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long samp
 		{
 			// write Markov chain state to output matrix
 			
-			if (step % sample_lag == 0)
+			if (step % sample_lag == 0 && step > 0)	// AFYP 2011/3/2 added this second conditional because the zero-th step was getting recorded
 			{
 				_GrowingVector *	gv;
 				_Parameter			denom;
 				
-				row = (long int) (step / sample_lag);
+				row = (long int) (step / sample_lag) - 1;	// AFYP 2011/3/2 need to shift over other info to maintain 0-index
 				
 				// report log likelhood
 				mcmc_output->Store (row, 0, prob_current_order);
@@ -3521,7 +3522,6 @@ void	Bgm::SerializeBgm (_String & rec)
 //___________________________________________________________________________________________
 //___________________________________________________________________________________________
 //___________________________________________________________________________________________
-
 
 
 #endif
