@@ -446,12 +446,13 @@ if (modelChoice==2)
 {
     for (mi = 0; mi<5; mi=mi+1)
     {
-	chosenModelList[mi][0] = 0;
+		chosenModelList[mi][0] = 0;
     }
     chosenModelList[5][0] = 1;
     chosenModelList[6][0] = 1;
     resp = 3; /* nr of synonymous rate classes (not used for PARRIS models except in output and postprocessing) */
     resp2 = 3; /* nr of nonsynonymous rate classes (in alternative model) (not used for PARRIS models except in output and postprocessing) */
+	USE_LAST_RESULTS = 1;
 }
 else
 {
@@ -651,11 +652,11 @@ for (midx = 0; midx<num_models; midx=midx+1)
 	    }
 
 /* execute model file: */
-	    ExecuteCommands ("#include \""+modelInFile+"\";");
+	    ExecuteAFile (modelInFile);
 	    
 	    if (Abs(modelConstraintString))
 	    {
-		ExecuteCommands (modelConstraintString);
+			ExecuteCommands (modelConstraintString);
 	    }
 
 	    
@@ -691,27 +692,26 @@ for (midx = 0; midx<num_models; midx=midx+1)
 	    
 	    for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	    {
-		if (branchLengths)
-		{
-		    ExecuteCommands ("ClearConstraints (givenTree_" + fileID + ");");
-		    ExecuteCommands ("ReplicateConstraint (\"this1.?.synRate:=this2.?.t__/codonFactor\",givenTree_" + fileID + ",nucTree_" + fileID + ");");
-		}
-		else
-		{
-		    ExecuteCommands ("bnames = BranchName (givenTree_"+fileID+",-1);");
-		    for (lc = 0; lc < Columns (bnames); lc = lc+1)
-		    {
-			bn = bnames[lc];
-			ExecuteCommands ("givenTree_" + fileID + "." + bn + ".synRate=nucTree_" + fileID + "." + bn + ".t/codonFactor;");
-		    }
-		}
+			if (branchLengths)
+			{
+				ExecuteCommands ("ClearConstraints (givenTree_" + fileID + ");");
+				ExecuteCommands ("ReplicateConstraint (\"this1.?.synRate:=this2.?.t__/codonFactor\",givenTree_" + fileID + ",nucTree_" + fileID + ");");
+			}
+			else
+			{
+				bnames = Eval ("BranchName (givenTree_"+fileID+",-1)");
+				for (lc = 0; lc < Columns (bnames) - 1; lc = lc+1)
+				{
+					ExecuteCommands ("givenTree_" + fileID + "." + bnames[lc] + ".synRate=nucTree_" + fileID + "." + bnames[lc] + ".t/codonFactor;");
+				}
+			}
 	    }
 	    
 	    ExecuteCommands (constructLF ("lf", "filteredData", "givenTree", fileCount));
 	    
 	    if (midx >= 4) /* nonpositive discrete distribution and PARRIS models */
 	    {
-		R := 1;
+			R := 1;
 	    }	
 		
 	    if (MPI_NODE_COUNT>1)
@@ -742,9 +742,9 @@ for (midx = 0; midx<num_models; midx=midx+1)
 	    else
 	    {
 		/* Non-MPI execution */
-		Optimize (res,lf);
-		modelIndex = midx;
-		dummy = ReceiveJobs (0);
+			Optimize (res,lf);
+			modelIndex = midx;
+			ReceiveJobs (0);
 	    }
 	}
 }
