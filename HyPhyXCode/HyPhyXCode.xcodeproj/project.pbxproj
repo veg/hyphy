@@ -195,6 +195,7 @@
 		85A942AA0FE0AA28009F1FB1 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BCA30DE4E80E00682547 /* strings.cpp */; };
 		85BC6FB4115B51B100686747 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85BC6FB3115B51B100686747 /* likefunc2.cpp */; };
 		85BC6FB5115B51B100686747 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85BC6FB3115B51B100686747 /* likefunc2.cpp */; };
+		85FA60E013299A7D00D19D3F /* data in CopyFiles */ = {isa = PBXBuildFile; fileRef = 85FA60DB13299A7700D19D3F /* data */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -223,6 +224,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
+				85FA60E013299A7D00D19D3F /* data in CopyFiles */,
 				8593AB7B0DE7883E008384A0 /* Help in CopyFiles */,
 				85A2C1D70DE5066E00682547 /* DatapanelAddIns in CopyFiles */,
 				85A2C1D80DE5066E00682547 /* GeneticCodes in CopyFiles */,
@@ -341,6 +343,7 @@
 		85EA05E50E3548BA00FDE33E /* intelCCbuild.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = intelCCbuild.sh; path = ../trunk/Scripts/intelCCbuild.sh; sourceTree = SOURCE_ROOT; };
 		85F903D40DE6501400D28244 /* build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = build.sh; path = ../trunk/Scripts/build.sh; sourceTree = SOURCE_ROOT; };
 		85F903D50DE6501400D28244 /* gtk_build.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = gtk_build.sh; path = ../trunk/Scripts/gtk_build.sh; sourceTree = SOURCE_ROOT; };
+		85FA60DB13299A7700D19D3F /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = ../trunk/data; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -377,6 +380,7 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
+				85FA60DB13299A7700D19D3F /* data */,
 				859FCF250E09C2E70007B356 /* Library */,
 				8593AB720DE7883B008384A0 /* Help */,
 				85F903D10DE64F9100D28244 /* Scripts */,
@@ -651,7 +655,14 @@
 			isa = PBXProject;
 			buildConfigurationList = C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */;
 			compatibilityVersion = "Xcode 3.0";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 20286C29FDCF999611CA2CEA /* HyPhyXCode */;
 			projectDirPath = "";
 			projectRoot = ..;
