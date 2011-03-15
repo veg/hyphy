@@ -3242,11 +3242,11 @@ void	_HYChartWindow::DoSave (long option, _String* distrib)
 				_String * fla = (_String*)overlayPlot.toStr();
 				
 				fprintf (f,
-				"\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%ld\"}\n\t\t{\"%s\"}\n\t\t{\"%ld;%ld\"}\n\t\t{\"%g;%g;%g\"}\n\t\t{\"%s:%ld:%ld;%s:%ld:%ld;%s:%ld:%ld\"}\n\t\t{\"",
+				"\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%s\"}\n\t\t{\"%d\"}\n\t\t{\"%s\"}\n\t\t{\"%ld;%ld\"}\n\t\t{\"%g;%g;%g\"}\n\t\t{\"%s:%d:%d;%s:%d:%d;%s:%d:%d\"}\n\t\t{\"",
 							xLabel.getStr(),
 							yLabel.getStr(),
 							zLabel.getStr(),
-							showLegend,
+							(int)showLegend,
 							fla->getStr(),
 							xAxis3DScale+1,
 							yAxis3DScale+1,

@@ -172,13 +172,13 @@ void			_LikelihoodFunction::SetupCategoryCaches	  (void)
 				{
 					if (aCV->IsConstantOnPartition())
 					{
-						if (catVarFlags & (_hyphyCategoryCOP||_hyphyCategoryHMM))
+						if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM))
 							break;
 						varType->lData[varIndex] = _hyphyCategoryCOP;
 					}
 					else
 					{
-						if (catVarFlags & (_hyphyCategoryCOP||_hyphyCategoryHMM))
+						if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM))
 							break;
 						varType->lData[varIndex] = _hyphyCategoryHMM;
 					}

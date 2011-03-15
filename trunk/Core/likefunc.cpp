@@ -2123,7 +2123,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	WarnError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
 	return -A_LARGE_NUMBER;
 	
-
+#ifdef OLDHYPHYCODE
 	if (computingTemplate && templateKind > _hyphyLFComputationalTemplateByPartition) 
 	{
 		for (long i=0; i<theTrees.lLength; i++)
@@ -2305,10 +2305,8 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 											   bl 				= BlockLength (j),
 											   hmmShifter		= 1;
 											   
-							_Matrix	  		   hmc (ni,bl,false,true),
-											  *hmm = thisC->ComputeHiddenMarkov(),
-											  *hmf = thisC->ComputeHiddenMarkovFreqs();
-											  
+							_Matrix	  		   hmc (ni,bl,false,true);
+											  											  
 							_Parameter		   *p1 = hmc.fastIndex(),
 											   *p2;
 									
@@ -2389,9 +2387,6 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 			{
 				_CategoryVariable * thisC = (_CategoryVariable*)LocateVar (-templateKind-1);							
 								   
-				_Matrix	  		  *hmm = thisC->ComputeHiddenMarkov(),
-								  *hmf = thisC->ComputeHiddenMarkovFreqs();
-								  
 				_SimpleList		  rm (bySiteResults->GetVDim(), 0, 1);
 								  				
 				//result 			  += SumUpHiddenMarkov (*bySiteResults, *hmm, *hmf, rm, bySiteResults->GetVDim());
@@ -2417,6 +2412,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 //		exit(0);
 //	}
 	return result;
+#endif
 }
 //_______________________________________________________________________________________
 
@@ -2958,7 +2954,7 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 			
 			for (j = indexInd.lLength-1; j>-1; j--)
 			{
-				if (correlation = dependancies(badVarIndex,j)) 
+				if (correlation == dependancies(badVarIndex,j)) 
 				{
 					for (i=0; i<badIndices.lLength;i++)
 					{
@@ -4719,7 +4715,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 				BufferToConsole (buffer);
 				if (useAdaptiveStep > 0.5 && logLHistory.GetUsed() > 2)
 				{
-					sprintf (buffer, "\nLast cycle logL change = %g\n", diffs[0], "\n");
+					sprintf (buffer, "\nLast cycle logL change = %g\n", diffs[0]);
 					BufferToConsole (buffer);
 				}
 			}

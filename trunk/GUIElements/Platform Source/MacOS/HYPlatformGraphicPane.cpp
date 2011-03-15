@@ -251,7 +251,6 @@ void _HYPlatformGraphicPane::_SlidePane  (int dv, int dh)
 //__________________________________________________________________
 void _HYPlatformGraphicPane::_SlideRect (_HYRect& rct, int dv, int dh)
 {
-	_HYGraphicPane* theParent = (_HYGraphicPane*)this;
 	Rect r;
 	r.left = rct.left;
 	r.top = rct.top;

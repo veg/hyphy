@@ -1229,7 +1229,7 @@ void	_HYParameterTable::HandleLRT (void)
 		
 		
 		char			cb[128];
-		sprintf 		 	(cb,"\nLikelihood Ratio Test\n\n\t 2*LR = %g\n\t DF = %d\n\t P-Value = ",2.*(H_A-H_0),DF_A-DF_0);
+		sprintf 		 	(cb,"\nLikelihood Ratio Test\n\n\t 2*LR = %g\n\t DF = %ld\n\t P-Value = ",2.*(H_A-H_0),DF_A-DF_0);
 		if (P>0.0)
 		{
 			_Constant 		c1 (2.*(H_A-H_0)), 
@@ -4564,13 +4564,15 @@ void	_HYGeneralBootstrapWindow::UpdateBSButtons 		(void)
 
 void	_HYGeneralBootstrapWindow::UpdateLRValue 		(void)
 {
-	_HYTable *th =  (_HYTable*) GetObject (2);
+	/*_HYTable *th =  (_HYTable*) GetObject (2);
 	
 	_String	 cellValue ("Simulated LR");
 	
 	if ((lfNullID>=0)&&(lfAltID>=0))
 	{
-	}
+	}*/
+    
+    //TBA?
 
 }
 

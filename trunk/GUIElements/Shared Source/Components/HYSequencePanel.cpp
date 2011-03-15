@@ -1537,15 +1537,15 @@ void		_HYSequencePane::CleanUpSequenceNames (void)
 		if (!testString)
 			checkPointer (testString);
 		
-		long	k = 2;
+		long	tryThisSuffix = 2;
 		
 		while (names.Find (testString)>=0)
 		{
-			*testString = *thisString & '_' & k;
-			k++;
+			*testString = *thisString & '_' & tryThisSuffix;
+			tryThisSuffix++;
 		}
 		
-		if (k>2)
+		if (tryThisSuffix>2)
 		{
 			BufferToConsole ("Changed ");
 			StringToConsole(*thisString);

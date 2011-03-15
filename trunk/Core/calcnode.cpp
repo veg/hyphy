@@ -5352,7 +5352,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					doLabelWidth = false;
 				}
 
-				if (fontSizeIn = (_Constant*)(toptions)->GetByKey (treeOutputXtraMargin, NUMBER))	
+				if ((fontSizeIn = (_Constant*)(toptions)->GetByKey (treeOutputXtraMargin, NUMBER)))	
 					xtraChars = fontSizeIn->Value();
 			}
 
@@ -5875,8 +5875,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 								 long hSize, long vSize, long halfFontSize, long shift, _AssociativeList* outOptions, 
 								 char layout, _Parameter * xtra)
 {
-	long  			   descendants = currNode->get_num_nodes(),
-					   lineW	   = halfFontSize/3+1;
+	long  			   descendants = currNode->get_num_nodes();
+					   //lineW	   = halfFontSize/3+1;
 	
 	_Parameter		   vc, 
 					   hc, 
@@ -8559,7 +8559,7 @@ _Parameter	 _TheTree::ReleafTreeCache (_DataSetFilter* dsf, long index, long las
 											
 											theseProbs[i] *= tmp1+tmp2+tmp3+tmp4+
 															 + cProbs[upTo]*fastIndex[upTo] + 
-															 + cProbs[upTo+1]*fastIndex[upTo+1];
+															 + cProbs[upTo+1]*fastIndex[upTo+1]+
 															 + cProbs[upTo+2]*fastIndex[upTo+2];
 															 
 											fastIndex += cBase;									
@@ -11397,7 +11397,7 @@ void		_TheTree::ScanSubtreeVars  (_List& rec, char flags, _CalcNode* startAt)
 			{
 				while ((k>f)&&rec.lLength)
 				{
-					thisV->MatchParametersToList(rec,true,flags&0x02!=0);
+					thisV->MatchParametersToList(rec,true,(flags&0x02)!=0);
 					thisV = StepWiseTraversalLevel(k);
 				}
 				return;
@@ -11410,7 +11410,7 @@ void		_TheTree::ScanSubtreeVars  (_List& rec, char flags, _CalcNode* startAt)
 		thisV = DepthWiseTraversal();
 		while (thisV&&rec.lLength&&(!IsCurrentNodeTheRoot()))
 		{
-			thisV->MatchParametersToList(rec,true,flags&0x02!=0);
+			thisV->MatchParametersToList(rec,true,(flags&0x02)!=0);
 			thisV = DepthWiseTraversal();
 		}
 	}

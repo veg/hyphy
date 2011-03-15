@@ -1475,8 +1475,6 @@ bool	_HYTreePanel::ProcessEvent (_HYEvent* e)
 
 void	_HYTreePanel::SetTreeString (_String& theString)
 {
-	_TheTree				   myTree (treeName,theString);
-	_HYPullDown* scalingVars = (_HYPullDown*)GetObject (5);
 	UpdateScalingVariablesList ();
 }
 
@@ -6623,12 +6621,12 @@ void	_HYTreePanel::GenerateDistanceTable (char opt)
 						if (meNode->get_num_nodes())
 						{
 							sortingOrder  	<< (long)meNode;
-							iBranchLengths	&& & _Constant (meNode->in_object.bL);
+							iBranchLengths.AppendNewInstance(new _Constant(meNode->in_object.bL));
 						}
 						else
 						{
 							sortingOrder2  	<< (long)meNode;
-							leafLengths	&& & _Constant (meNode->in_object.bL);
+							leafLengths.AppendNewInstance(new _Constant (meNode->in_object.bL));
 						}
 												
 					meNode = NodeTraverser((node<nodeCoord>*)NULL);	
@@ -6642,12 +6640,12 @@ void	_HYTreePanel::GenerateDistanceTable (char opt)
 					if (meNode->get_num_nodes())
 					{
 						sortingOrder  	<< (long)meNode;
-						iBranchLengths	&& & _Constant (meNode->in_object.bL);
+						iBranchLengths.AppendNewInstance(new  _Constant (meNode->in_object.bL));
 					}
 					else
 					{
 						sortingOrder2  	<< (long)meNode;
-						leafLengths	&& & _Constant (meNode->in_object.bL);
+						leafLengths.AppendNewInstance(new _Constant (meNode->in_object.bL));
 					}
 				}
 			}
@@ -6698,7 +6696,7 @@ void	_HYTreePanel::GenerateDistanceTable (char opt)
 			
 			rowLabels.Finalize();
 			
-			vNames && & _String ("Length");
+			vNames.AppendNewInstance(new _String ("Length"));
 			vNames && & rowLabels;
 		}	
 		else // pairwise distances

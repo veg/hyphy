@@ -1802,7 +1802,7 @@ bool	_Matrix::IsReversible(_Matrix* freqs)
 									DeleteObject (rcpF); DeleteObject (crpF);
 								}
 								else
-									compResult == !(tr||tc);
+									compResult = !(tr||tc);
 								
 								DeleteObject (tr);   DeleteObject (tc);
 							}

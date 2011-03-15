@@ -1975,7 +1975,7 @@ void	_HYDataPanel::ShowCodonUsage (long partIndex)
 	char			buffer [1024];
 	_String			rec;
 	
-	sprintf			(buffer,"\nCodon Usage Report\n\nAltogether : %d codons\n\nBy codon:\n\n", cCount);	
+	sprintf			(buffer,"\nCodon Usage Report\n\nAltogether : %ld codons\n\nBy codon:\n\n", cCount);	
 	BufferToConsole (buffer);
 	
 	char			nucs[] = "ACGT";
@@ -1990,7 +1990,7 @@ void	_HYDataPanel::ShowCodonUsage (long partIndex)
 			if (cUsage)
 			{
 				CodeTo3AA (rec, k, gCode);
-				sprintf (buffer,"%c%c%c(%s) : %10d (%10.4g %%)\n", nucs[k/16], nucs[(k%16)/4], nucs[k%4], rec.getStr(), (long)(cUsage*cCount), 100.*cUsage);
+				sprintf (buffer,"%c%c%c(%s) : %10ld (%10.4g %%)\n", nucs[k/16], nucs[(k%16)/4], nucs[k%4], rec.getStr(), (long)(cUsage*cCount), 100.*cUsage);
 				BufferToConsole (buffer);
 			}
 		}
@@ -2017,7 +2017,7 @@ void	_HYDataPanel::ShowCodonUsage (long partIndex)
 						BufferToConsole (buffer);
 			
 					}
-					sprintf (buffer,"%c%c%c:%6d (%6.4g %%)\t", nucs[k/16], nucs[(k%16)/4], nucs[k%4], (long)(cUsage*cCount), 100.*cUsage);
+					sprintf (buffer,"%c%c%c:%6ld (%6.4g %%)\t", nucs[k/16], nucs[(k%16)/4], nucs[k%4], (long)(cUsage*cCount), 100.*cUsage);
 					BufferToConsole (buffer);	
 				}
 				else
@@ -3501,13 +3501,13 @@ void	_HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subset,
 		
 		char	buffer [1024];
 	
-		sprintf (buffer,"\nCreated likelihood function '%s' with\n %d\tpartitions,\n %d\tshared parameters,\n %d\tlocal parameters,\n %d\tconstrained parameters.\n",
+		sprintf (buffer,"\nCreated likelihood function '%s' with\n %ld\tpartitions,\n %ld\tshared parameters,\n %ld\tlocal parameters,\n %ld\tconstrained parameters.\n",
 				  errMsg.getStr(), lf->CountObjects (0),  lf->CountObjects (1),  lf->CountObjects (2),  lf->CountObjects (3)); 
 				  
 		BufferToConsole (buffer);
 	
 		lf->ComputePruningEfficiency (k,g);
-		sprintf (buffer,"\nPruning efficiency %d vs %d (%g %% savings)\n", g,k, 100.-g*100./k);
+		sprintf (buffer,"\nPruning efficiency %ld vs %ld (%g %% savings)\n", g,k, 100.-g*100./k);
 		BufferToConsole (buffer);
 	}
 	else
@@ -4212,7 +4212,7 @@ bool	_HYDataPanel::SaveDataPanel (bool saveAs, _String* saveFile, _String* dsPat
 			if (theDF->GetUnitLength()==3 &&theDF->theExclusions.lLength)
 				DFExclusionsToString	  (theDF,exclusions);
 
-			fprintf (dsout, "DataSetFilter %s = CreateFilter (%s,%d,\"%s\",\"%s\",\"%s\");\n", 
+			fprintf (dsout, "DataSetFilter %s = CreateFilter (%s,%ld,\"%s\",\"%s\",\"%s\");\n", 
 					 ((_String*)dataSetFilterNamesList(dataPartitions.lData[k]))->getStr(),							
 					 ((_String*)dataSetNamesList(dataSetID))->getStr(),
 					 theDF->GetUnitLength(),
@@ -6725,14 +6725,14 @@ void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
 				long	  totCount = sp->speciesIndex.lLength*sp->selection.lLength;
 				if (buffer.Equal (&contextString1))
 				{
-					sprintf (bufferS,"\nNucleotide counts and frequencies (%d sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
+					sprintf (bufferS,"\nNucleotide counts and frequencies (%luu sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
 							(totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1],(totCount*(*freqs)[2]),(*freqs)[2],(totCount*(*freqs)[3]),(*freqs)[3]);
 					BufferToConsole (bufferS);
 				}
 				else
 					if (buffer.Equal (&contextString2))
 					{
-						sprintf (bufferS,"\nAminoacid counts and frequencies (%d sites)",sp->selection.lLength);
+						sprintf (bufferS,"\nAminoacid counts and frequencies (%lu sites)",sp->selection.lLength);
 						BufferToConsole (bufferS);
 						for (long k=0; k<aminoAcidOneCharCodes.sLength; k++)
 						{
@@ -6743,7 +6743,7 @@ void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
 					}
 					else
 					{
-						sprintf (bufferS,"\nBinary counts and frequencies (%d sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
+						sprintf (bufferS,"\nBinary counts and frequencies (%lu sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
 								(totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1]);
 						BufferToConsole (bufferS);
 					}
@@ -6862,7 +6862,7 @@ void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
 						sp->_MarkForUpdate();
 						UpdateSelDepPartitionOperations();
 						char buffer [256];
-						sprintf (buffer,"%d (%g %%) mismatches found\n",noMatch.lLength, 
+						sprintf (buffer,"%lu (%g %%) mismatches found\n",noMatch.lLength, 
 																noMatch.lLength*100./(_Parameter)sp->columnStrings.lLength);
 						BufferToConsole (buffer);
 					}
@@ -7149,7 +7149,7 @@ void _HYDataPanel::ProcessContextualPopUpAux (long l, long t)
 					sp->_MarkForUpdate();
 					UpdateSelDepPartitionOperations();
 					char    buffer[128];
-					sprintf (buffer,"Found %d sites in rate class %c\n",matches.lLength,c);
+					sprintf (buffer,"Found %lu sites in rate class %c\n",matches.lLength,c);
 					BufferToConsole (buffer);
 				}
 			}
@@ -8502,7 +8502,7 @@ void  _HYDataPanel::ShowConstantSites (bool deletions, bool relaxed, bool sequen
 	sp->BuildPane();
 	sp->_MarkForUpdate();
 	char 	buffer[128];
-	sprintf (buffer,"%d(%4.4g%%) %s found\n",fndc,fnd,outWord.sData);
+	sprintf (buffer,"%ld(%4.4g%%) %s found\n",fndc,fnd,outWord.sData);
 	BufferToConsole (buffer);
 }
 
@@ -8622,7 +8622,7 @@ void  _HYDataPanel::ShowDuplicateSequences (bool relaxed)
 	sp->_MarkForUpdate();
 	
 	char	buffer[128];
-	sprintf (buffer,"%d(%4.4g%%) duplicate sequences found\n", duplicateSequences.lLength ,((_Parameter)duplicateSequences.lLength)/sp->speciesIndex.lLength*100.);
+	sprintf (buffer,"%lu(%4.4g%%) duplicate sequences found\n", duplicateSequences.lLength ,((_Parameter)duplicateSequences.lLength)/sp->speciesIndex.lLength*100.);
 	BufferToConsole (buffer);
 	for (long idx = 0; idx < duplicateSequences.lLength; idx++)
 	{
@@ -9755,12 +9755,12 @@ void  NewGeneticCodeTable (long starting)
 		testMe = doFileOpen (fName.sData,"w");
 		if (testMe)
 		{
-			fprintf(testMe,"%d;\n%s;\n%s;\n",geneticCodes.lLength,line1.sData,line2.sData);
+			fprintf(testMe,"%lu;\n%s;\n%s;\n",geneticCodes.lLength,line1.sData,line2.sData);
 			for (k=0; k<63; k++)
 			{
-				fprintf (testMe,"%d /*%c%c%c*/,\n",translationTable.lData[k],nucs.sData[k/16],nucs.sData[(k%16)/4],nucs.sData[k%4]);
+				fprintf (testMe,"%ld /*%c%c%c*/,\n",translationTable.lData[k],nucs.sData[k/16],nucs.sData[(k%16)/4],nucs.sData[k%4]);
 			}
-			fprintf (testMe,"%d /*TTT*/;\n",translationTable.lData[63]);
+			fprintf (testMe,"%ld /*TTT*/;\n",translationTable.lData[63]);
 			fclose (testMe);
 			geneticCodes && & theList;
 		}

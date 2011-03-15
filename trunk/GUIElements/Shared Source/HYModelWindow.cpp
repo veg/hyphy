@@ -1181,7 +1181,8 @@ void	_HYModelWindow::CopyEFVMatrix (_Matrix* m)
 			partSum+=v;
 			if ((v<0.0)||(partSum>1.0))
 				break;
-			EFVs->SetCellData (&_String(v),k,0,HY_TABLE_EDIT_TEXT,true);
+            _String converter (v);
+			EFVs->SetCellData (&converter,k,0,HY_TABLE_EDIT_TEXT,true);
 		}
 		if (k==stateLabels.lLength-1)
 			good = true;
@@ -2226,7 +2227,7 @@ void	_HYModelWindow::DoSave (char mode)
 	
 	modelOut << &modelDimension;
 	modelOut << '=';
-	modelOut << &_String ((long)stateLabels.lLength);
+	modelOut << _String ((long)stateLabels.lLength);
 	modelOut << ';';
 	modelOut << '\n';
 	
@@ -2240,7 +2241,7 @@ void	_HYModelWindow::DoSave (char mode)
 		else
 			modelType = HY_DATAPANEL_MODEL_MODELS;
 			
-	modelOut << &_String (modelType) ;
+	modelOut.AppendNewInstance(new _String (modelType)) ;
 	modelOut << ";\n";
 	
 	modelOut << &ModelEFVType;
@@ -2250,7 +2251,7 @@ void	_HYModelWindow::DoSave (char mode)
 	
 	modelOut << &modelDataType;
 	modelOut << '=';
-	modelOut << &_String ((long)type);
+	modelOut.AppendNewInstance(new _String ((long)type));
 	modelOut << ";\n";
 	
 	if (type == HY_MODEL_TYPE_CODON)
@@ -3766,7 +3767,7 @@ void			 	SpawnStandardLabels (char type, _List& labels)
 		case HY_MODEL_TYPE_AA:
 		{
 			for (k=0; k<20; k++)
-				labels && & _String (aminoAcidOneCharCodes.sData[k]);
+				labels.AppendNewInstance (new _String (aminoAcidOneCharCodes.sData[k]));
 			break;
 		}
 		case HY_MODEL_TYPE_CODON:
@@ -4229,10 +4230,10 @@ _HYModelWindow*	SpawnNewModel (long mDim, long gCode, _String& s1, long s2)
 	switch (mDim)
 	{
 		case 4:
-			labels && & _String('A');
-			labels && & _String('C');
-			labels && & _String('G');
-			labels && & _String('T');
+			labels.AppendNewInstance (new _String('A'));
+			labels.AppendNewInstance (new _String('C'));
+			labels.AppendNewInstance (new _String('G'));
+			labels.AppendNewInstance (new _String('T'));
 			type = HY_MODEL_TYPE_NUC;
 			break;
 		case 16:
@@ -4249,7 +4250,7 @@ _HYModelWindow*	SpawnNewModel (long mDim, long gCode, _String& s1, long s2)
 		case 20:
 		{
 			for (k=0; k<20; k++)
-				labels && & _String (aminoAcidOneCharCodes.sData[k]);
+				labels.AppendNewInstance (new _String (aminoAcidOneCharCodes.sData[k]));
 			type = HY_MODEL_TYPE_AA;
 			break;
 		}

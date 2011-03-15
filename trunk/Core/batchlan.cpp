@@ -3481,7 +3481,7 @@ void	  _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 						ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
 						return;
 					}
-					if (commandSource = doFileOpen (tryPath.getStr(), "rb"))
+					if ((commandSource = doFileOpen (tryPath.getStr(), "rb")))
 					{
 						filePath = tryPath;
 						break;
@@ -9590,7 +9590,7 @@ bool	_ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chai
 	}
 
 	for (long k = 0; k < pieces.lLength; k++)
-		pieces.Replace (k,&chain.AddNameSpaceToID (*(_String*)pieces(k)),true);
+		pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k))),false);
 
 	_String			 sfunctionBody (source, upto+1,source.Length()-2);
 	_ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);

@@ -6437,7 +6437,7 @@ void	_DataSetFilter::internalToStr (FILE*dest,_String& rec)
 			_String * bSet = &theData->theTT->baseSet;
 			if (dest)
 			{
-				fprintf (dest,"$BASESET:\"%s\"\n",bSet->sData,"\n"); 
+				fprintf (dest,"$BASESET:\"%s\"\n",bSet->sData); 
 				if (theData->theTT->tokensAdded.sLength)
 				{
 					for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++)

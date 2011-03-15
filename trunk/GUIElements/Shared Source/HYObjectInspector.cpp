@@ -676,7 +676,6 @@ void	_HYObjectInspector::UpdateButtonsAndInfo (void)
 {
 	_HYTable* 		dl = (_HYTable*)GetCellObject (HY_OBJECT_INSPECTOR_TABLE_ROW,0);
 	_HYButtonBar* 	b1 = (_HYButtonBar*)GetCellObject (0,0);
-	_HYPullDown* 	p1 = (_HYPullDown*)GetCellObject (0,2);
 	
 	_SimpleList     sel;
 	dl->GetSelection (sel);
@@ -990,8 +989,8 @@ void	_HYObjectInspector::SortObjectsByName (long location)
 		 
 	_List			   menuItems;
 	
-	menuItems && & _String ("Ascending");
-	menuItems && & _String ("Descending");
+	menuItems.AppendNewInstance(new _String ("Ascending"));
+	menuItems.AppendNewInstance(new _String ("Descending"));
 	
 	long	h = table->_HandlePullDown  (menuItems,(location&0xffff0000)>>16,location&0x0000ffff,0),
 			k;

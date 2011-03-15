@@ -909,8 +909,8 @@ bool		 _Polynomial::Equal(_MathObject* m)
 		_Polynomial * diff = (_Polynomial *)Sub(m);
 		if (diff)
 		{
-			_Constant * v;
-			if (v = (_Constant*)diff->IsANumber(true))
+			_Constant * v = (_Constant*)diff->IsANumber(true);
+			if (v!=nil)
 			{
 				result = fabs (v->Value()) < 1.e-6;
 				DeleteObject (v);

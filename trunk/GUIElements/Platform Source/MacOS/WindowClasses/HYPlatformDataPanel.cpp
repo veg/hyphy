@@ -698,8 +698,7 @@ void _HYDataPanel::_SetMenuBar(void)
 				   lfDisplayMode	= NewMenu(HY_DATAPANEL_HMENU_ID+5,"\p"),
 				   simulateData 	= NewMenu(HY_DATAPANEL_HMENU_ID+6,"\p"),
 				   saveSubMenu		= NewMenu(HY_DATAPANEL_HMENU_ID+7,"\p"),
-				   dataProcMenu		= NewMenu(HY_DATAPANEL_HMENU_ID+9,"\p"),
-				   inferSubMenu		= nil;
+                 dataProcMenu		= NewMenu(HY_DATAPANEL_HMENU_ID+9,"\p");
 				   
 		if (!(dataMenu&&blockMenu&&repeatCharMenu&&nameDisplayMenu&&omittedSpecies&&additionalInfo))
 			warnError (-108);
@@ -1103,8 +1102,7 @@ bool _HYDataPanel::_ProcessOSEvent (Ptr vEvent)
 			lastV = localClick.v;
 			int	  c = FindClickedCell(localClick.h,localClick.v),ch,cv;
 			if (c<0) return false;
-			_HYComponent* thisComponent = (_HYComponent*)components(c);
-			
+
 			if (c==1) // navBar
 			{
 				ch = localClick.h-componentL.lData[1]-thermRect.left;
