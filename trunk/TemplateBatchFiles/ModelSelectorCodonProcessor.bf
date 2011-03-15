@@ -10,8 +10,11 @@ the output for GA codon model selection runs.
 
 ****************************************************/
 
+_BF_RESULTS = {};
 
-ExecuteAFile ("ModelSelectorCodon.ibf");
+
+ExecuteAFile  ("ModelSelectorCodon.ibf");
+
 
 
 /****************************************************/
@@ -128,7 +131,12 @@ if (_TableExists (resultsDatabase,"DATASET"))
 					 "\t", Abs (byRateClass), " different rate counts\n"
 					 );
 					 
-					 
+	
+	_BF_RESULTS ["TOTAL MODEL COUNT"]				= modelCount;
+	_BF_RESULTS ["BEST MODEL SCORE"]				= Format(bestScore,15,4);
+	_BF_RESULTS ["BEST MODEL RATE COUNT"]			= bestRates;
+	_BF_RESULTS ["SCORE CUTOFF"]					= evidenceRCut;
+					 				 
 	for (k=0; k<Abs(byRateClass); k=k+1)
 	{
 		fprintf (stdout, "\t", Format(byRateClass[ratesRead[k]],8,0), " models with ", Format(ratesRead[k],4,0), " rate classes\n");
@@ -232,6 +240,12 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	fprintf (stdout, "\tFound ", modelCount, " credible models\n",
 					 "\t", Abs (byRateClass), " different rate counts\n");
 					 
+
+	_BF_RESULTS ["CREDIBLE MODELS"]					= modelCount;
+	_BF_RESULTS ["ONE STEP SUBSTITUTIONS"]			= stateVectorDimension;
+	
+	
+		
 	for (k=0; k<Abs(byRateClass); k=k+1)
 	{
 		fprintf (stdout, "\t", Format(byRateClass[ratesRead[k]],8,0), " models with ", Format(ratesRead[k],4,0), " rate classes\n");
@@ -268,6 +282,29 @@ if (_TableExists (resultsDatabase,"DATASET"))
 	modelAveragedM = modelAveragedM * (1/(-modelAveragedM[0][0]));
 	akaikeWeights  = akaikeWeights*(1/({1,modelCount}["1"]*akaikeWeights)[0]);
 
+
+	_BF_RESULTS ["BEST MATRIX"]						= {};
+	
+	//aminoacidOrdering;
+	k3 = 0;
+	
+	for (k=0; k<20; k=k+1)
+	{
+		for (k2=k+1; k2<20; k2=k2+1)
+		{
+			if (isOneStepSub[k][k2])
+			{
+				thisRecord = {"FROM": aminoacidOrdering[k], "TO": aminoacidOrdering[k2], 
+							  "CLASS": bestCompressedMR[k3],
+							  "NUMERIC": bestNRates [bestCompressedMR[k3]+3],
+							  "AVERAGED": modelAveragedM [k][k2]};
+				_BF_RESULTS ["BEST MATRIX"] + thisRecord;			
+				k3 = k3+1;
+			}
+			qMatrix[k2][k] = qMatrix[k][k2];
+		}
+	}
+				
 	DEFAULT_FILE_SAVE_NAME = file_name + ".ma_matrix";
 	ExportAMatrix ("modelAveragedM","","Save the numerical model-averaged rate matrix to:");
 
@@ -685,6 +722,7 @@ function ExportAMatrix				(theMatrix&, fileName, theprompt)
 		if (autoSave)
 		{
 			fileName = dir_prefix+DEFAULT_FILE_SAVE_NAME;
+			fprintf (fileName, CLEAR_FILE);
 		}
 		else
 		{
