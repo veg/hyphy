@@ -406,7 +406,7 @@ private:
 	
 	_Parameter	computePFDR			(_Parameter, _Parameter);
 	void		InitMxVar 			(_SimpleList&	, _Parameter);
-	bool		ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = false);
+	bool		ProcessFormulas     (long&, _SimpleList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 	
 	_PMathObj	PathLogLikelihood	(_PMathObj);
 		/* SLKP: 20100812
