@@ -352,7 +352,6 @@ _HYListSelectDialog::_HYListSelectDialog	 (_List* d, _SimpleList* c, _SimpleList
 					
 	
 	long			counter;
-	_HYColor		bgRGB = GetDialogBackgroundColor ();
 
 	keyboardFocusChain << 0;
 
@@ -658,8 +657,6 @@ _HYSimpleListSelectDialog::_HYSimpleListSelectDialog	 (_List* d, _SimpleList* c,
 	reqSel		    = ns;
 	
 	long			counter;
-	_HYColor		bgRGB = GetDialogBackgroundColor ();
-
 	
 	_HYRect			canvasSettings = {150,300,150,300,HY_COMPONENT_V_SCROLL|HY_COMPONENT_TRANSP_BG};
 	
@@ -1006,7 +1003,6 @@ _HYPreferencesDialog::_HYPreferencesDialog	 (_List& thePreferences, _String n, b
  	cellValues 		 = (_List*) 	  thePreferences (4);
  	
 	long			counter;
-	_HYColor		bgRGB = GetDialogBackgroundColor ();
 
 	for (counter = 0; counter< preferencesCodes->lLength; counter++)
 	{		
@@ -1687,7 +1683,8 @@ void  ProblemReport (_String& pr, Ptr par)
 		wiseCrackButtons && & b1;
 	}
 	
-	_PMathObj       rn = _Constant (0.0).Random (&_Constant (wiseCrackButtons.lLength));
+    _Constant       messageListLength (wiseCrackButtons.lLength);
+	_PMathObj       rn = _Constant (0.0).Random (&messageListLength);
 	b1 = *(_String*)wiseCrackButtons (rn->Value());
 	DeleteObject (rn);
 			
