@@ -1519,7 +1519,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 				gaps	= 0,
 		 		total   = 0;
 	
-	char 		checks	  [255],
+	char 		checks	  [256],
 				gapChar = theTT->GetGapChar();
 	
 	_String		baseSymbols;
@@ -1559,7 +1559,8 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 		total += w*thisColumn->sLength;
 	}
 	
-	return (_Parameter)charsIn/(_Parameter)(total-gaps+1);
+    //printf ("%ld %ld %ld\n", charsIn, total, gaps);
+	return (_Parameter)charsIn/(total-gaps+1.);
 	
 }
 
