@@ -58,6 +58,7 @@ _SimpleList		simpleOperationCodes,
 				simpleOperationFunctions;
 
 _List			globalNamesSupportList,
+                hyReservedWords,
 				varNamesSupportList,
 		 		variablePtrs;   // stores all the variables declared so far
 		 		
@@ -925,6 +926,10 @@ void	SetupOperationLists (void)
 		
 		//HY_OP_CODE_OR
 		BuiltInFunctions.AppendNewInstance (new _String ("||"));
+        
+        hyReservedWords << BuiltInFunctions;
+        hyReservedWords.AppendNewInstance (new _String("global"));
+        hyReservedWords.Sort();
 	}		
 	
 

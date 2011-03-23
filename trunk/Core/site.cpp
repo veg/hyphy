@@ -1559,8 +1559,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
 		total += w*thisColumn->sLength;
 	}
 	
-    //printf ("%ld %ld %ld\n", charsIn, total, gaps);
-	return (_Parameter)charsIn/(total-gaps+1.);
+ 	return (_Parameter)charsIn/(total-gaps+1.);
 	
 }
 

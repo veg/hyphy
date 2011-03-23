@@ -237,20 +237,26 @@ void	_HYTWindow::SetCell (int r, int c, _HYGuiObject* d)
 {
 	long f = components._SimpleList::Find ((long)d);
 	if (f>=0)
-	{
 		cells.lData[r*columns+c] = f;
-	}
 }
 
 //__________________________________________________________________
 
-void	_HYTWindow::AddObject (_HYGuiObject* d)
+void	_HYTWindow::AddObject (_HYGuiObject* d, bool dup, long r, long c)
 {
-	components<<d;
-	componentL<<0;
+    if (r >= 0 && c >= 0)
+        cells.lData[r*columns+c] = components.lLength;
+
+    if (dup)
+        components << d;
+    else
+        components.AppendNewInstance(d);
+	
+    componentL<<0;
 	componentR<<0;
 	componentT<<0;
 	componentB<<0;
+    
 }
 
 //__________________________________________________________________

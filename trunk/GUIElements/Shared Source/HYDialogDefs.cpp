@@ -1560,10 +1560,10 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
 
 //____________________________________________________________________________________________
 
-bool		EnterStringDialog (_String& res, _String& prompt, Ptr parent)
+bool		EnterStringDialog (_String& res, _String& prompt, Ptr parent, _hyStringValidatorType validator)
 {
 	bool resB = false;
-	_HYTextDialog* sd = new _HYTextDialog (&res,prompt,&resB, parent);
+	_HYTextDialog* sd = new _HYTextDialog (&res,prompt,&resB, parent, validator);
 	sd->BringToFront();
 	while (windowObjectRefs.Find ((long)sd)>=0)
 		handleGUI();
@@ -2598,65 +2598,51 @@ bool	_HYPartitionDialog::ProcessEvent (_HYEvent* e)
 }
 
 //__________________________________________________________________
-_HYTextDialog::_HYTextDialog	 (_String* res, _String& prompt, bool* resB, Ptr parent):_HYTWindow ("Text Dialog",false,true, parent)
+_HYTextDialog::_HYTextDialog	 (_String* res, _String& prompt, bool* resB, Ptr parent, _hyStringValidatorType textValidator):_HYTWindow ("Text Dialog",false,true, parent)
 {
-	result		= resB;
-	textOut     = res;
+	result               = resB;
+	textOut              = res;
+    validator            = textValidator;
+    lastValidationState  = textValidator?(*textValidator) (res):false;
 
 	_HYRect			canvasSettings = {30,270,30,270,HY_COMPONENT_TRANSP_BG};
-	
-	_HYLabel*		l1 = new _HYLabel (canvasSettings, GetOSWindowData());
-	checkPointer    (l1);
+	_HYLabel*		l1 = (_HYLabel*)checkPointer(new _HYLabel (canvasSettings, GetOSWindowData())); // label
 	
 	canvasSettings.top   = canvasSettings.bottom  = 170;
-	_HYTextBox*     tb = new _HYTextBox (canvasSettings, GetOSWindowData());
-	checkPointer    (tb);
+	_HYTextBox*     tb   = (_HYTextBox*)checkPointer(new _HYTextBox (canvasSettings, GetOSWindowData()));
 	tb->boxFlags |= HY_TB_WRAP;
 	
 	canvasSettings.left   = canvasSettings.right  = 15;
 	canvasSettings.top    = 200;
 	canvasSettings.bottom = 10000;
 
-	_HYLabel*		l2 = new _HYLabel (canvasSettings, GetOSWindowData());
-	checkPointer    (l2);
-
-	_HYLabel*		l3 = new _HYLabel (canvasSettings, GetOSWindowData());
-	checkPointer    (l3);
+	_HYLabel*		l2 = (_HYLabel*)checkPointer(new _HYLabel (canvasSettings, GetOSWindowData())); // left spacer
+	_HYLabel*		l3 = (_HYLabel*)checkPointer(new _HYLabel (canvasSettings, GetOSWindowData())); // right spacer
 
 	canvasSettings.bottom = canvasSettings.top   = 40;
 	canvasSettings.left   = canvasSettings.right = 210;
 	
-	_HYButton*   	b1 		= new _HYButton (canvasSettings, GetOSWindowData());
+	_HYButton*   	b1 		= (_HYButton*)checkPointer(new _HYButton (canvasSettings, GetOSWindowData()));
 	canvasSettings.left   = canvasSettings.right = 90;
-	_HYButton*   	b2 		= new _HYButton (canvasSettings, GetOSWindowData());
+	_HYButton*   	b2 		= (_HYButton*)checkPointer(new _HYButton (canvasSettings, GetOSWindowData()));
 	
-	checkPointer (b1);
-	checkPointer (b2);
-		
 	tb->SetMessageRecipient (this);
 	b1->SetMessageRecipient (this);
 	b2->SetMessageRecipient (this);
 	
 	SetTableDimensions (3,3);
 	
-	AddObject (b1);// 0
-	AddObject (b2);// 1
-	AddObject (l1);// 2
-	AddObject (l2);// 3
-	AddObject (l3);// 4
-	AddObject (tb);// 5
+	AddObject (b1, false, 2, 0); // 0
+	AddObject (b2, false, 2, 2); // 1
+	AddObject (l1, false, 0, 1); // 2
+	AddObject (l2, false, 0, 0); // 3
+	AddObject (l3, false, 0, 2); // 4
+	AddObject (tb, false, 1, 1); // 5
 	
-	SetCell (0,0,l2);
-	SetCell (0,1,l1);
-	SetCell (0,2,l3);
 
 	SetCell (1,0,l2);
-	SetCell (1,1,tb);
 	SetCell (1,2,l3);
-	
-	SetCell (2,0,b1);
 	SetCell (2,1,b1);
-	SetCell (2,2,b2);
 
 	_HYFont			labelFont;
     SetDefaultDialogFont(labelFont);
@@ -2673,6 +2659,7 @@ _HYTextDialog::_HYTextDialog	 (_String* res, _String& prompt, bool* resB, Ptr pa
 	
 	b1->SetText (" OK ");
 	b2->SetText (" Cancel ");
+    b1->EnableButton (lastValidationState);
 	
 	b1->SetAlignFlags (HY_ALIGN_RIGHT);
 	l1->SetAlignFlags (HY_ALIGN_LEFT);
@@ -2689,14 +2676,6 @@ _HYTextDialog::_HYTextDialog	 (_String* res, _String& prompt, bool* resB, Ptr pa
 
 	SetWindowRectangle  (0,0,dim.bottom,dim.right); 
 	CenterWindow	    (this);	
-	
-	DeleteObject (b1);	
-	DeleteObject (b2);	
-	DeleteObject (l1);	
-	DeleteObject (l2);	
-	DeleteObject (l3);	
-	DeleteObject (tb);	
-	
 }
 
 //__________________________________________________________
@@ -2728,6 +2707,34 @@ bool	_HYTextDialog::ProcessEvent (_HYEvent* e)
 		
 		done = true;
 	}
+    else
+    {
+        if (validator)
+        {
+            if (e->EventClass() == _hyTextEditChange)
+            {
+                firstArg = e->EventCode().Cut (0,(f=e->EventCode().Find(','))-1);
+                i = MatchComponentID (firstArg);
+            
+                if (i == 5)
+                {
+                    f =  e->EventCode().Cut(f+1,-1).toNum();
+                     _HYTextBox*  myTB = (_HYTextBox*)components(i);
+                    _String tt = myTB->GetText();
+                    bool	 	 good = (*validator) (&tt);
+                   
+                    if (good != lastValidationState)
+                    {
+                        ((_HYButton*)components(0))->EnableButton (good);
+                        myTB->SetForeColor ((_HYColor){good?0:127,good?127:0,0});
+                        lastValidationState = good;
+                    }
+                    done = true;
+                }
+            }
+          
+        }
+    }
 		
 	if (done) 
 	{
@@ -4051,14 +4058,14 @@ bool	_HYLProfDialog::ProcessEvent (_HYEvent* e)
 				{
 					case 0:
 						*left = myTB->GetText().toNum();
-						if ((*left>=vlb)&&(*left<=mle)&&(*left<*right))
+						if (*left>=vlb && *left<=mle && *left<*right)
 							good = true;
 						else
 							good = false;
 						break;
 					case 1:
 						*right = myTB->GetText().toNum();
-						if ((*right>=mle)&&(*right<=vub)&&(*left<*right))
+						if (*right>=mle && *right<=vub && *left<*right)
 							good = true;
 						else
 							good = false;
@@ -4066,7 +4073,7 @@ bool	_HYLProfDialog::ProcessEvent (_HYEvent* e)
 					case 2:
 					{
 						_Parameter temp = myTB->GetText().toNum();
-						if ((temp>2)&&(CheckEqual(ceil(temp),temp)))
+						if (temp>2 && CheckEqual(ceil(temp),temp))
 						{
 							*intervals = temp;
 							good = true;

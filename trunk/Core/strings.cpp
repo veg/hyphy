@@ -1455,21 +1455,24 @@ bool	_String::IsValidIdentifier (bool strict)
 	
 	if (strict)
 	{
-		if (!(isalpha(sData[0])||(sData[0]=='_')))
+		if (!(isalpha(sData[0]) || sData[0]=='_' ))
 			 return false;
 	}
 	else
-		if (!(isalnum (sData[0])||(sData[0]=='_')))
+		if (!(isalnum(sData[0]) || sData[0]=='_' ))
 			 return false;
 	
 	
 	for(long p = 1; p<sLength; p++)
 	{
 		char c = sData[p];
-		if (!(isalnum(c)||(c=='_')||(strict&&(c=='.'))))
+		if (!(isalnum(c)|| c=='_' || strict&& c=='.'))
 			return false;
 	}
-	return true;
+    
+    // check to see if it's not a keyword / function name etc
+    
+	return hyReservedWords.Find (this) == -1;
 }
 
 //_______________________________________________________________________
@@ -2259,6 +2262,12 @@ void		_String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 	}
 }
 
+//_______________________________________________________________________
+
+bool    hyIDValidator (_String* s)
+{
+    return s->IsValidIdentifier(false);
+}
 
 
 //EOF

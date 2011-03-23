@@ -2350,14 +2350,12 @@ void	_HYParameterTable::DoProportionalConstraint (void)
 			if (v<=2*globalVars.lLength+1+(globalVars.lLength!=0))
 			{
 				prStr = "Identifier of the new ratio variable:";
-				if (!EnterStringDialog (newID,prStr, (Ptr)this))
+				if (!EnterStringDialog (newID,prStr, (Ptr)this, hyIDValidator))
 					return;
 				else
 				{
 					if ((h=globalVars.Find (&newID))>=0)
-					{
 						menuChoice = menuChoice.Replace ("{New Ratio}", newID, true);	
-					}
 					else
 					{
 						if (!newID.IsValidIdentifier())
