@@ -863,7 +863,8 @@ class _FString : public _MathObject { // strings encountered in formulas
 //__________________________________________________________________________________
 
 	
-extern		_List 			variablePtrs;
+extern		_List 			variablePtrs,
+                            hyReservedWords;
 
 extern		_SimpleList		BuiltInFunctionParameterCount,
 							*deferSetFormula;

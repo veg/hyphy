@@ -359,8 +359,11 @@ void	NLToConsole					(void);
 _String*StringFromConsole			(bool=true);
 char	GetPlatformDirectoryChar	(void);
 
+
 extern  _String						__KERNEL__VERSION__;
 
+typedef bool (*_hyStringValidatorType) (_String*);
+bool    hyIDValidator (_String*);
 
 #endif
  			
