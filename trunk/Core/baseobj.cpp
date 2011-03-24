@@ -118,7 +118,7 @@ BaseObj*  BaseObj::makeDynamic(void)
 
 //____________________________________________________________________________________	
 
-FILE *		doFileOpen (const char * fileName, const char * mode)
+FILE *		doFileOpen (const char * fileName, const char * mode, bool warn)
 {
 	FILE	*daFile = nil;
 	
@@ -130,7 +130,9 @@ FILE *		doFileOpen (const char * fileName, const char * mode)
 		#else
 			daFile = fopen (fileName,mode);
 		#endif		
-	}
+        if (!daFile && warn)
+            WarnError (_String("Could not open file '") & *fileName & "' with mode '" & *mode & "'.");
+ 	}
 	return daFile;
 }
 	 

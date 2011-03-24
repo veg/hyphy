@@ -4550,48 +4550,43 @@ bool	OpenTreeFile (void)
 	if (!PopUpFileDialog("HY-PHY Open: Choose a tree file"))
 		return false;
 			
-	FILE *f = doFileOpen (argFileName->getStr(), "r");
 	SetStatusLine ("Reading Tree");
 	char c;
+
+	FILE *f = doFileOpen (argFileName->getStr(), "r", true);
 	if (!f)
-	{
-		_String errMsg ("Could not read the file:");
-		errMsg = errMsg & *argFileName;
-		acknError (errMsg);
-	}
+        return false;
+        
 	while (!feof(f))
+        // guess what type of file this is
 	{
-		c = fgetc (f);
-		if (!isspace(c))
+		if (!isspace(c = fgetc (f)))
 		{
 			if (c!='(')
 			{
 				if (c=='#')
 				{
-					char checkNxs [6],
+					char checkNxs [6] = {toupper(fgetc (f)),toupper(fgetc (f)),toupper(fgetc (f)),toupper(fgetc (f)),toupper(fgetc (f)),'\0'},
 						 nxs[6] = "NEXUS";
-					checkNxs[0] = fgetc (f);
-					checkNxs[1] = fgetc (f);
-					checkNxs[2] = fgetc (f);
-					checkNxs[3] = fgetc (f);
-					checkNxs[4] = fgetc (f);
-					checkNxs[5] = 0;
 					
 					if (strcmp (nxs,checkNxs) == 0)
+                        // NEXUS
 					{
 						c = 3;
 						rewind (f);
 					}
 				}
-				else
+				else // HBL
 					c = 2;				
 			}
-			else
+			else // Newick
 				c = 1;
+            
 			break;
 		}	
 	}
-	if (feof(f)) c=0;
+    
+	if (feof(f)) c=0; // fail
 	
 	long stashLMD = lastMatrixDeclared;
 	lastMatrixDeclared = -1;
@@ -4611,52 +4606,58 @@ bool	OpenTreeFile (void)
 						  ssi = _String::storageIncrement;
 			
 			fseek (f,0,SEEK_END);
-			
 			_String::storageIncrement = ftell(f)-cfp+1;
-			
 			_String treeString (16L,true);
-			
 			fseek (f,cfp,SEEK_SET);
-
+			
 
 			treeString<<'(';
 			long levelCounter = 1;
-			while ((!feof(f))&&(levelCounter))
+			while (!feof(f) && levelCounter )
 			{
 				c = fgetc (f);
 				if (c=='(') levelCounter++;
 				else
-				if (c==')') levelCounter--;
+                    if (c==')') levelCounter--;
 				treeString<<c;
 			}
 			treeString.Finalize();
-			_String::storageIncrement = ssi;
-			_String treeName ("Tree_");
-			treeName = treeName&openTreeCounter;
-			openTreeCounter++;
-			_HYTreePanel* newTreePanel = new _HYTreePanel (treeName, treeString);
-			newTreePanel->_Zoom (true);
-			newTreePanel->BringToFront();
-			//newTreePanel->Show();
-		}
+            _String::storageIncrement = ssi;
+            
+            if (levelCounter == 0)
+            {
+                 _String treeName = _String("Tree_") & openTreeCounter++ ;
+
+                _HYTreePanel* newTreePanel = new _HYTreePanel (treeName, treeString);
+                newTreePanel->_Zoom (true);
+                newTreePanel->BringToFront();
+            }
+            else
+                 WarnError ("Imbalanced parentheses in the Newick string file");
+ 		}
 		else
 			if (c==3)
 			{
-				_DataSet* ds = ReadDataSetFile (f);
-				DeleteObject (ds); 
-				_String readTrees (1024L, true);
-				readTrees << "UseModel(USE_NO_MODEL);\nfor (i=0; i<Rows(";
-				readTrees << nexusFileTreeMatrix;
-				readTrees << "); i=i+1)\n\t{\n\tdefineTreeString=\"Tree \"+";
-				readTrees << nexusFileTreeMatrix;
-				readTrees << "[i][0] +\" = \" +";
-				readTrees << nexusFileTreeMatrix;
-				readTrees << "[i][1]+\";\";\n\tExecuteCommands (defineTreeString);\n\t}";	
-				readTrees.Finalize();
-				_ExecutionList el (readTrees);
-				el.Execute();	
-				terminateExecution = false;
+				DeleteObject (ReadDataSetFile (f)); 
+                if (!terminateExecution)
+                {
+                    _String readTrees (1024L, true);
+                    readTrees << "UseModel(USE_NO_MODEL);\nfor (i=0; i<Rows(";
+                    readTrees << nexusFileTreeMatrix;
+                    readTrees << "); i=i+1)\n\t{\n\tdefineTreeString=\"Tree \"+";
+                    readTrees << nexusFileTreeMatrix;
+                    readTrees << "[i][0] +\" = \" +";
+                    readTrees << nexusFileTreeMatrix;
+                    readTrees << "[i][1]+\";\";\n\tExecuteCommands (defineTreeString);OpenWindow (TREEWINDOW,{{";
+                    readTrees << nexusFileTreeMatrix;
+                    readTrees <<"[i][0]}},\"(SCREEN_WIDTH-50)/2;(SCREEN_HEIGHT-50)/2;(20+i*20)%(SCREEN_WIDTH$2);(45+i*20)%(SCREEN_HEIGHT$2)\");\n\t}";	
+                    readTrees.Finalize();
+                     _ExecutionList el (readTrees);
+                    el.Execute();	
+                }
+                terminateExecution = false;
 			}
+    
 	fclose (f);
 	SetStatusLine ("Idle");
 	lastMatrixDeclared = stashLMD;

@@ -160,7 +160,7 @@ bool 		_HYConsoleWindow::_ProcessMenuSelection (long msel)
 				
 				case 8:
 					_DoPrint();
-					return true;;
+					return true;
 			}
 			break;
 		}

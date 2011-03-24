@@ -87,22 +87,22 @@ _HYConsoleWindow::_HYConsoleWindow (_String name):_HYTWindow (name, 2)
 	ow->SetMessageRecipient (this);
 	iw->boxFlags |= HY_TB_WRAP;
 	
-	AddObject (ow);        // 0
-	AddObject (iw);	   	   // 1
-	AddObject (bb); 	   // 2
+	AddObject (ow,false);      // 0
+	AddObject (iw,false);	   // 1
+	AddObject (bb,false); 	   // 2
 	
 	SetTableDimensions (2,2);
 	
 	SetCell   (HY_CONSOLE_OUT_ROW,0,ow);
 	SetCell   (HY_CONSOLE_OUT_ROW,1,ow);
 	
+	SetCell   (HY_CONSOLE_IN_ROW,0,iw);
+	SetCell   (HY_CONSOLE_IN_ROW,1,bb);
+
 	iw->SetBackColor (consoleIBarColor);
 	bb->SetBackColor (consoleIBarColor);
 	bb->SetButtonLayoutW (1);
 	
-	SetCell   (HY_CONSOLE_IN_ROW,0,iw);
-	SetCell   (HY_CONSOLE_IN_ROW,1,bb);
-
 	_HYFont			defFont;
 	
 	#ifdef __MAC__
@@ -117,6 +117,7 @@ _HYConsoleWindow::_HYConsoleWindow (_String name):_HYTWindow (name, 2)
 		defFont.face = _HY_SANS_FONT;
 		defFont.size = 10;
 	#endif
+    
 	defFont.style = HY_FONT_PLAIN;
 	ow->SetFont (defFont);
 	
@@ -158,10 +159,6 @@ _HYConsoleWindow::_HYConsoleWindow (_String name):_HYTWindow (name, 2)
 	editOptions		= 0;
 	inputStatus     = 0;
 	
-	DeleteObject (ow);
-	DeleteObject (iw);
-	DeleteObject (bb);
-
 }
 
 //__________________________________________________________

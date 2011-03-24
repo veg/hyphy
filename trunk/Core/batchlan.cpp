@@ -3701,19 +3701,17 @@ void	  _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
 					theOptions = new _Matrix (*windowOptions);
 				else
 				{
-					errMsg = *windowOptions & " is not a valid inline matrix specification/variable reference in call to OpenWindow.";
-					WarnError (errMsg);
+					WarnError (*windowOptions & " is not a valid inline matrix specification/variable reference in call to OpenWindow.");
 					return;
 				}
 			}
 			else
 				theOptions->nInstances++;
 				
-			if ((theOptions->MatrixType()!=2)||(theOptions->GetVDim()>1)||(theOptions->GetHDim()<1))
+			if (theOptions->MatrixType()!=2||theOptions->GetVDim()>1||theOptions->GetHDim()<1)
 			{
 				DeleteObject (theOptions);
-				errMsg = *windowOptions & " is not a valid options matrix in call to OpenWindow.";
-				WarnError (errMsg);
+                WarnError (*windowOptions & " is not a valid options matrix in call to OpenWindow.");
 				return;
 			}
 			
