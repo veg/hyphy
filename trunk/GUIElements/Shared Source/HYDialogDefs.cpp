@@ -2603,7 +2603,7 @@ _HYTextDialog::_HYTextDialog	 (_String* res, _String& prompt, bool* resB, Ptr pa
 	result               = resB;
 	textOut              = res;
     validator            = textValidator;
-    lastValidationState  = textValidator?(*textValidator) (res):false;
+    lastValidationState  = textValidator?(*textValidator) (res):true;
 
 	_HYRect			canvasSettings = {30,270,30,270,HY_COMPONENT_TRANSP_BG};
 	_HYLabel*		l1 = (_HYLabel*)checkPointer(new _HYLabel (canvasSettings, GetOSWindowData())); // label
