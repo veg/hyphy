@@ -3882,12 +3882,16 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 								_Parameter resCell = 0.0,
 										  *column  = secondArg.theData + j;
 								
+#ifndef _SLKP_SSE_VECTORIZATION_
 								for (long k = 0; k < vDim; k+=4, column += 4*secondArg.vDim)
 									resCell += row[k]   * column [0] + 
 											   row[k+1] * column [secondArg.vDim ] +
 											   row[k+2] * column [secondArg.vDim * 2] +
 											   row[k+3] * column [secondArg.vDim * 3];
-											
+#else
+                                for (long k = 0; k < vDim; k++, column += secondArg.vDim)
+                                    resCell += row[k]   * column [0];
+#endif
 								
 								storage.theData[cumulativeIndex++] = resCell;
 							}
@@ -3972,7 +3976,8 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							_Parameter	_hprestrict_ *res				= storage.theData    + (m-i);
 							_Parameter	_hprestrict_ *secArg			= secondArg.theData  + i*vDim;
 										
-							for (long i = 0; i < loopBound; i+=4)
+#ifndef _SLKP_SSE_VECTORIZATION_
+                            for (long i = 0; i < loopBound; i+=4)
 							{
 								res[i] += value * secArg[i];
 								res[i+1] += value * secArg[i+1];
@@ -3981,6 +3986,11 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							}
 							for (long j = loopBound; j < vDim; j++)
 								res[j]   += value * secArg[j];
+#else
+							for (long i = 0; j < vDim; j++)
+								res[i]   += value * secArg[i];
+#endif							
+                        
 						}
 					}	
 				}
@@ -5897,6 +5907,8 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 					_Parameter * row    = theData + i,
 								 buffer = 0.0;
 					
+
+#ifndef _SLKP_SSE_VECTORIZATION_
 					long		k = 0;
 					
 					for (; k < loopBound; k+=4)
@@ -5907,7 +5919,11 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 					
 					for (; k < vDim; k++)
 						buffer += row[k] * column [k]; 
-					
+#else
+					for (long k = 0; k < vDim; k+=4)
+						buffer += row[k]   * column [k];
+					                    
+#endif
 					stash[i+j] = buffer;
 				}
 			}

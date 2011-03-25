@@ -40,6 +40,7 @@ extern	long likeFuncEvalCallCount,
 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 
+
 _Parameter			_lfScalerUpwards		  = pow(2.,200.),
 					_lfScalingFactorThreshold = 1./_lfScalerUpwards,
 					_logLFScaler			  = 200. *log(2.);
@@ -473,6 +474,8 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 			{
 				_Parameter sum = 0.0;
 				
+#ifndef _SLKP_SSE_VECTORIZATION_
+                
 				if (alphabetDimension > alphabetDimensionmod4)
 					for (long p = 0; p < alphabetDimension; p++)
 					{
@@ -504,7 +507,21 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
 						tMatrix				  += alphabetDimension;
 						sum += (parentConditionals[p] *= accumulator);
 					}
-				
+#else
+                for (long p = 0; p < alphabetDimension; p++)
+                {
+                    _Parameter		accumulator = 0.0;
+                
+                    for (long c = 0; c < alphabetDimensionmod4; c++) 
+                        accumulator +=  tMatrix[c]   * childVector[c];
+                    
+                    tMatrix				  += alphabetDimension;
+                    sum += (parentConditionals[p] *= accumulator);
+                }
+               
+#endif				
+                
+                
 				if (sum < _lfScalingFactorThreshold && sum > 0.0)
 				{
 					_Parameter tryScale									= scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
@@ -942,6 +959,7 @@ void			_TheTree::ComputeBranchCache	(
 			}
 			else
 			{
+#ifndef _SLKP_SSE_VECTORIZATION_
 				for (long p = 0; p < alphabetDimension; p++)
 				{
 					_Parameter		accumulator = 0.0;
@@ -958,6 +976,19 @@ void			_TheTree::ComputeBranchCache	(
 					tMatrix				  += alphabetDimension;
 					sum += (parentConditionals[p] *= accumulator);
 				}
+#else
+				for (long p = 0; p < alphabetDimension; p++)
+				{
+					_Parameter		accumulator = 0.0;
+					
+					for (long c = 0; c < alphabetDimensionmod4; c++) // 4 - unroll the loop
+						accumulator +=  tMatrix[c]   * childVector[c];
+					
+					
+					tMatrix				  += alphabetDimension;
+					sum += (parentConditionals[p] *= accumulator);
+                }
+#endif
 				if (canScale)
 				{
 					if (sum < _lfScalingFactorThreshold && sum > 0.0)
