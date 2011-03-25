@@ -512,7 +512,7 @@ _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering,
                 {
                     _Parameter		accumulator = 0.0;
                 
-                    for (long c = 0; c < alphabetDimensionmod4; c++) 
+                    for (long c = 0; c < alphabetDimension; c++) 
                         accumulator +=  tMatrix[c]   * childVector[c];
                     
                     tMatrix				  += alphabetDimension;
@@ -981,7 +981,7 @@ void			_TheTree::ComputeBranchCache	(
 				{
 					_Parameter		accumulator = 0.0;
 					
-					for (long c = 0; c < alphabetDimensionmod4; c++) // 4 - unroll the loop
+					for (long c = 0; c < alphabetDimension; c++) // 4 - unroll the loop
 						accumulator +=  tMatrix[c]   * childVector[c];
 					
 					

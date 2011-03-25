@@ -5920,7 +5920,7 @@ void		_Matrix::Sqr (_Parameter* _hprestrict_ stash)
 					for (; k < vDim; k++)
 						buffer += row[k] * column [k]; 
 #else
-					for (long k = 0; k < vDim; k+=4)
+					for (long k = 0; k < vDim; k++)
 						buffer += row[k]   * column [k];
 					                    
 #endif
