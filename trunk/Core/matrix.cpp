@@ -3987,7 +3987,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							for (long j = loopBound; j < vDim; j++)
 								res[j]   += value * secArg[j];
 #else
-							for (long i = 0; j < vDim; j++)
+							for (long i = 0; i < vDim; i++)
 								res[i]   += value * secArg[i];
 #endif							
                         
