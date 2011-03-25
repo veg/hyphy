@@ -3872,6 +3872,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					
 					_Parameter * row = theData;
 					
+#ifndef _SLKP_SSE_VECTORIZATION_
 					if (vDim % 4 == 0)
 					// manual loop unroll
 					{
@@ -3879,24 +3880,17 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 						{
 							for (long j=0; j<secondArg.vDim; j++)
 							{
-								_Parameter resCell = 0.0;
-
-#ifndef _SLKP_SSE_VECTORIZATION_
-                                _Parameter *column  = secondArg.theData + j;
-								for (long k = 0; k < vDim; k+=4, column += 4*secondArg.vDim)
-									resCell += row[k]   * column [0] + 
-											   row[k+1] * column [secondArg.vDim ] +
-											   row[k+2] * column [secondArg.vDim * 2] +
-											   row[k+3] * column [secondArg.vDim * 3];
-#else
-                                for (long k = 0, column = j; k < vDim; k++, column += secondArg.vDim)
-                                    resCell += row[k]   * secondArg.theData [column];
-#endif
+								_Parameter resCell  = 0.0,
+                                           column    = j;
 								
-								storage.theData[cumulativeIndex++] = resCell;
+                                for (long k = 0, column = j; k < vDim; k+=4, column += 4*secondArg.vDim)
+									resCell += row[k]   * secondArg.theData [column]                         + 
+											   row[k+1] * secondArg.theData [column + secondArg.vDim ]       +
+											   row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)] +
+											   row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
+                               
 							}
 						}
-						
 					}
 					else
 					{
@@ -3904,17 +3898,31 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 						{
 							for (long j=0; j<secondArg.vDim; j++)
 							{
-								_Parameter resCell = 0.0,
-										   *column  = secondArg.theData + j;
+								_Parameter resCell = 0.0;
 								
-								for (long k = 0; k < vDim; k++, column += secondArg.vDim)
-									resCell += row[k] * *column;
+								for (long k = 0, column = j; k < vDim; k++, column += secondArg.vDim)
+									resCell += row[k] * secondArg.theData[column];
 								
 								storage.theData[cumulativeIndex++] = resCell;
 							}
 						}
 					}
-				}
+#else
+                    secondArg.Transpose();
+                    for (long i=0; i<hDim; i++, row += vDim)
+                    {
+                        for (long j=0; j<hDim; j++)
+                        {
+                           _Parameter resCell  = 0.0;
+                           for (long k = 0, column = j*hDim; k < vDim; k++, column ++)
+                                resCell += row[k] * secondArg.theData [column];
+                        
+                            storage.theData[cumulativeIndex++] = resCell;
+                        }
+                    }
+                    secondArg.Transpose();
+#endif
+                }
 				else
 				/* rectangular matrices */
 				{
@@ -7304,7 +7312,8 @@ void		_Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage,
 	else
 	{
 		externalStorage->CheckIfSparseEnough (true);
-		for (long s = 0; s < externalStorage->lDim; s++) externalStorage->theData[s] = 0.0;
+        memset (externalStorage->theData, 0, sizeof (_Parameter)*externalStorage->lDim);
+		//for (long s = 0; s < externalStorage->lDim; s++) externalStorage->theData[s] = 0.0;
 	}
 }
 
