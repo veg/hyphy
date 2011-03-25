@@ -3879,18 +3879,18 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 						{
 							for (long j=0; j<secondArg.vDim; j++)
 							{
-								_Parameter resCell = 0.0,
-										  *column  = secondArg.theData + j;
-								
+								_Parameter resCell = 0.0;
+
 #ifndef _SLKP_SSE_VECTORIZATION_
+                                _Parameter *column  = secondArg.theData + j;
 								for (long k = 0; k < vDim; k+=4, column += 4*secondArg.vDim)
 									resCell += row[k]   * column [0] + 
 											   row[k+1] * column [secondArg.vDim ] +
 											   row[k+2] * column [secondArg.vDim * 2] +
 											   row[k+3] * column [secondArg.vDim * 3];
 #else
-                                for (long k = 0; k < vDim; k++, column += secondArg.vDim)
-                                    resCell += row[k]   * column [0];
+                                for (long k = 0, column = j; k < vDim; k++, column += secondArg.vDim)
+                                    resCell += row[k]   * secondArg.theData [column];
 #endif
 								
 								storage.theData[cumulativeIndex++] = resCell;
