@@ -117,7 +117,8 @@ void		  PurgeAll		   			(bool	all = true);
 void 	 	  init_genrand	   			(unsigned long);
 unsigned long genrand_int32	  		 	(void);
 double	 	  genrand_real2	   			(void);
-FILE*		  doFileOpen	   			(const char *, const char *);
+FILE*		  doFileOpen	   			(const char *, const char *, bool = false);
+    // 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
 double		  TimerDifferenceFunction 	(bool);
 
 #define	 	  RAND_MAX_32	   			4294967295.0
