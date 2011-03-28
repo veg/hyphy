@@ -1,4 +1,5 @@
-#include "qndhelper1.ibf";
+ExecuteAFile ("qndhelper1.ibf");
+LoadFunctionLibrary ("GrabBag");
 
 REPLACE_TREE_STRUCTURE = 1;
 
@@ -38,7 +39,8 @@ ChoiceList  (cOptions,"Ancestor Counting Options",1,NO_SKIP,
 			/*6*/ "Rate Distribution","Obtain a site-specific distribution of dN and dS, under the assumption that E[dS] = 1. Also obtain an upper bound on rate-variation model likelihood scores.",
 			/*7*/ "Full site-by-site LRT","Each site has a separate dN AND branch lengths. Experimental and VERY slow.",
 			/*8*/ "Multirate FEL","Fixed effects site-by-site likelihood estimation, where non-synonymous rates are split into several classes",
-			/*9*/ "BGM co-evolution","Use a Bayesian graphical model fitted to site substitution patterns to detect co-evolving sites");
+			/*9*/ "BGM co-evolution","Use a Bayesian graphical model fitted to site substitution patterns to detect co-evolving sites",
+            /*10*/ "MEME", "Mixed effects model of evolution to search for evidence of episodic selection at indvidual sites [EXPERIMENTAL, March 2011]");
 
 
 if (cOptions < 0)
@@ -67,7 +69,7 @@ _EFV_MATRIX1_ 			= _EFV_MATRIX0_;
 _EFV_MATRIX2_ 			= _EFV_MATRIX0_;
 useCustomCountingBias 	= 1;
 
-if (cOptions == 9)
+if (cOptions == 9) // BGM
 {
 		ExecuteAFile ("Distances/CodonToolsMain.def");
 		ExecuteAFile ("BGM.bf");
@@ -375,31 +377,28 @@ if (cOptions == 9)
 	return 0;
 }
 
-if (cOptions == 0)
+if (cOptions == 0) // SLAC
 {
 	synRate = 1;
-	dNdS = dNdS+1;
-	cBeta = 0;
+	dNdS    = dNdS+1;
+	cBeta   = 0;
+    
 	for (h=0; h<ModelMatrixDimension; h=h+1)
 	{
 		cBeta = cBeta - CodonMatrix[h][h]*codonFrequencies[h];
 	}
+    
 	dNdS 	= dNdS-1;
 	cBeta   = cBeta-blCodon;
 	cAlpha  = blCodon-dNdS*cBeta;
 	
-	codonT	= 0;
-	v = TipCount (codonTree);
-	for (h=0; h<v; h=h+1)
-	{
-		ExecuteCommands ("codonT=codonT+codonTree."+TipName(codonTree,h)+".synRate;");
-	}
-	v = BranchCount (codonTree);
-	for (h=0; h<v; h=h+1)
-	{
-		ExecuteCommands ("codonT=codonT+codonTree."+BranchName(codonTree,h)+".synRate;");
-	}
-	
+    branchNames = BranchName (codonTree,-1);
+ 	codonT	= 0;
+    
+    for (h = 0; h < Columns (branchNames) - 1; h+=1)
+    {
+        codonT += Eval ("codonTree."+branchNames[h]+".synRate");
+    }	
 	
 	ChoiceList  (slacOptions,"SLAC Options",1,NO_SKIP,
 				 "Full tree","Analyze the entire tree",
@@ -412,15 +411,15 @@ if (cOptions == 0)
 
 	if (slacOptions)
 	{
-		ExecuteCommands ("#include \"SGIvL.bf\";");
+		ExecuteAFile("SGIvL.bf");
 	}
 	else
 	{
-		ExecuteCommands ("#include \"SGEmulator.bf\";");
+		ExecuteAFile("SGEmulator.bf");
 		
 		ChoiceList  (cOptions,"Rate class estimator",1,NO_SKIP,
-				 "Skip","Skip the estimation of number of dS and dN rate classes",
-				 "Count","Obtain approximate numbers of dS and dN rate classes supported by the data");
+                    "Skip","Skip the estimation of number of dS and dN rate classes",
+                    "Count","Obtain approximate numbers of dS and dN rate classes supported by the data");
 				 
 		if (cOptions>0)
 		{
@@ -430,18 +429,11 @@ if (cOptions == 0)
 			p  = 1/(codonT*cAlpha);
 			p2 = 1/(codonT*cBeta);
 			
-			cd1 = 0;
-			cd2 = 0;
+			cd1 = + (resultMatrix[-1][0]*p);
+			cd2 = + (resultMatrix[-1][1]*p2);
 			
-			for (h=0; h<v; h=h+1)
-			{
-				cd1 = cd1 + resultMatrix[h][0]*p;
-				cd2 = cd2 + resultMatrix[h][1]*p2;
-			}
-			
-			p  = p*v/cd1;
-			p2 = p2*dNdS*v/cd2;
-
+			p   = p*v/cd1;
+			p2  = p2*dNdS*v/cd2;
 
 			for (h=0; h<v; h=h+1)
 			{
@@ -484,16 +476,15 @@ if (cOptions == 0)
 }
 else
 {
-	if (cOptions == 1)
+    if (cOptions == 1) // WANC
 	{
 		ExecuteAFile ("WANC.bf");
 	}
 	else
 	{
-		if (cOptions == 2)
+        if (cOptions == 2) // Sampler
 		{
-			fprintf (stdout, "How many ancestral samples should be generated?");
-			fscanf	(stdin,"Number",sampleCount);
+            sampleCount = prompt_for_a_value ("How many ancestral samples should be generated?",1000,1,1e26,1);
 			SetDialogPrompt ("Save data replicates to:");
 			fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
 			FILE_PATH = LAST_FILE_PATH;
@@ -522,9 +513,9 @@ else
 		}
 		else
 		{
-			if (cOptions == 3)
+            if (cOptions == 3) // Sample processor
 			{
-				ExecuteCommands ("#include \"SGASimProcessor.bf\";");
+				ExecuteAFile ("SGASimProcessor.bf");
 			}
 			else
 			{
@@ -540,7 +531,7 @@ else
 					nFactor:<100;
 					sFactor:<100;
 					
-					ExecuteCommands ("#include\"qndhelper3.ibf\";");
+					ExecuteAFile ("qndhelper3.ibf");
 
 					doneSites    = {filteredData.unique_sites,4};
 					fullSites    = {filteredData.sites,4};
@@ -560,20 +551,12 @@ else
 								filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
 								DataSetFilter siteFilter = CreateFilter (ds,3,filterString,"",GeneticCodeExclusions);
 								HarvestFrequencies (f1, siteFilter, 3, 3, 0);
-								
-								m1 = 0;
-								for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
-								{
-									if (f1[mpiNode]>0)
-									{
-										m1=m1+1;
-									}
-								}	
-								
-								LikelihoodFunction siteLikelihood = (siteFilter, siteTree);
+                                m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters in this site?
+
 								
 								if (m1>1)
 								{															
+                                    LikelihoodFunction siteLikelihood = (siteFilter, siteTree);
 									sFactor = 1;
 									nFactor	= 1;
 									Optimize (site_res, siteLikelihood);
@@ -594,7 +577,7 @@ else
 									doneSites[siteMap][2] = constLF;
 								}
 							}
-							dummy = ReportSite3 (siteCount, siteMap);				 
+							ReportSite3 (siteCount, siteMap);				 
 						}	
 					}
 					else
@@ -611,19 +594,11 @@ else
 								DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
 								HarvestFrequencies (f1, siteFilter, 3, 3, 0);
 								
-								m1 = 0;
-								for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
-								{
-									if (f1[mpiNode]>0)
-									{
-										m1=m1+1;
-									}
-								}	
-								
-								LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
+                                m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters in this site?
 								
 								if (m1>1)
 								{			
+                                    LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
 									sFactor = 1;
 									nFactor	= 1;
 									
@@ -733,14 +708,10 @@ else
 				}
 				else
 				{
-					pValue = 0;
-					while ((pValue<=0)||(pValue>=1))
-					{	
-						fprintf (stdout, "\nSignificance level for Likelihood Ratio Tests (between 0 and 1)?");
-						fscanf  (stdin,"Number", pValue);
-					}
-					fprintf (stdout, "\n");
-					if (cOptions == 4 || cOptions == 7)
+                    
+					pValue = prompt_for_a_value ("Significance level for Likelihood Ratio Tests",0.1,0.0,1.0,0);
+					
+                    if (cOptions == 4 || cOptions == 7) // Single rate of full LRT
 					{
 						Tree		   siteTree = treeString;
 						doneSites    = {filteredData.unique_sites,4};
@@ -934,8 +905,7 @@ else
 							fprintf (stdout, "\n\n\n");
 							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
 							{
-								siteMap = dupInfo[siteCount];
-								dummy = ReportSite1 (siteCount, siteMap);				 
+								ReportSite1 (siteCount, dupInfo[siteCount]);				 
 							}
 						}
 					}
@@ -961,7 +931,7 @@ else
 					
 						if (cOptions == 5)
 						{
-							ExecuteCommands ("#include\"qndhelper3.ibf\";");				
+							ExecuteAFile ("qndhelper3.ibf");				
 							global			sFactor = 1;
 							global			nFactor = 1;
 							
@@ -977,6 +947,7 @@ else
 								fullSites    = {filteredData.sites,7};
 								labels = {{"dN","dS","dN/dS","dS=dN","LRT","p-value","Full Log(L)"}};
 							}
+
 							Tree		   siteTree = treeString;
 							
 							ReplicateConstraint ("this1.?.synRate   :=sFactor*this2.?.synRate__",siteTree,codonTree);
@@ -1068,27 +1039,55 @@ else
 						}
 						else
 						{
-							ExecuteCommands ("#include\"qndhelper4.ibf\";");	
-							brOptions = 1;									
-							global			sFactor      = 1;
-							global			nFactor      = 1;
-							global 			nFactorOther = 1;
-							
-							if (brOptions > 0)
-							{
-								doneSites    = {filteredData.unique_sites,8};
-								fullSites    = {filteredData.sites,8};						
-								labels = {{"dN","dS","dN/dS","dS=dN","LRT","p-value","Full Log(L)","dN_other"}};
-							}
+                            if (cOptions == 8)
+                            {
+                                ExecuteCommands ("qndhelper4.ibf");	
+                                brOptions = 1;									
+                                global			sFactor      = 1;
+                                global			nFactor      = 1;
+                                global 			nFactorOther = 1;
+                                
+                                doneSites    = {filteredData.unique_sites,8};
+                                fullSites    = {filteredData.sites,8};						
+                                labels = {{"dN","dS","dN/dS","dS=dN","LRT","p-value","Full Log(L)","dN_other"}};
+    
 
-							Tree		   siteTree = treeString;
-							
-							ReplicateConstraint ("this1.?.synRate   :=sFactor*this2.?.synRate__",siteTree,codonTree);
-							ExecuteCommands ("ReplicateConstraint(\"this1.?."+_rateLabelToTest+":=nFactor*this2.?.synRate__\",siteTree,codonTree)");
-							for (k=0; k<Abs (aaRateClassIDs)-1; k=k+1)
-							{
-								ReplicateConstraint ("this1.?.?:=nFactorOther*this2.?.synRate__",siteTree,codonTree);
-							}
+                                Tree		   siteTree = treeString;
+                                
+                                ReplicateConstraint ("this1.?.synRate   :=sFactor*this2.?.synRate__",siteTree,codonTree);
+                                ExecuteCommands ("ReplicateConstraint(\"this1.?."+_rateLabelToTest+":=nFactor*this2.?.synRate__\",siteTree,codonTree)");
+                                for (k=0; k<Abs (aaRateClassIDs)-1; k=k+1)
+                                {
+                                    ReplicateConstraint ("this1.?.?:=nFactorOther*this2.?.synRate__",siteTree,codonTree);
+                                }
+                            }
+                            else // MEME
+                            {
+                                // save AC, AT, CG, CT and GT
+                                saveNucs = {{AC__,AT__,CG__,CT__,GT__}};
+                                LoadFunctionLibrary("BranchSiteTemplate");
+                                global      omega1  =         0.5; omega1 :< 1;
+                                global      omega2  =         2.0; 
+                                global      mixingP =         0.5; mixingP :< 1;
+                                PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t1", "omega1", "");
+                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t2", "omega2", "");
+                                AC := saveNucs__[0];
+                                AT := saveNucs__[1];
+                                CG := saveNucs__[2];
+                                CT := saveNucs__[3];
+                                GT := saveNucs__[4];
+                                
+                                Model 		MG1		=		  ("Exp(MGMatrix1)*mixingP+Exp(MGMatrix2)*(1-mixingP)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
+                                Tree	    siteTree = treeString;
+                                global      sFactor =  1;
+                                
+                                doneSites    = {filteredData.unique_sites,8};
+                                fullSites    = {filteredData.sites,8};						
+                                labels       = {{"omega1","omega2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
+
+ 								ReplicateConstraint ("this1.?.t1:=sFactor*this2.?.synRate__",siteTree,codonTree);
+                                ReplicateConstraint ("this1.?.t2:=this2.?.t1",siteTree,siteTree);
+                            }
 						}
 					
 						if (MPI_NODE_COUNT<=1)
@@ -1099,86 +1098,108 @@ else
 								if (alreadyDone[siteMap] == 0)
 								{
 									alreadyDone[siteMap] = 1;					
-									filterString = "";
-									filterString = filterString + (siteCount*3) + "-" + (siteCount*3+2);
+									filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
 									DataSetFilter siteFilter = CreateFilter (ds,3,filterString,"",GeneticCodeExclusions);
 									
 									HarvestFrequencies (f1, siteFilter, 3, 3, 0);
-									m1 = 0;
-									for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
-									{
-										if (f1[mpiNode]>0)
-										{
-											m1=m1+1;
-										}
-									}
-									
+                                    m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters in this site?
+																		
 									if (m1>1)
 									{
 										LikelihoodFunction siteLikelihood = (siteFilter, siteTree);
-										sFactor      = 1;
-										nFactor	     = 1;
-										nFactorOther = 1;
-										Optimize (site_res, siteLikelihood);
-										doneSites[siteMap][0] = nFactor;
-										doneSites[siteMap][1] = sFactor;
-										m1 = sFactor+nFactor;
-										sFactor 	= m1/2;
-										nFactor := sFactor;
-										Optimize (site_resN, siteLikelihood);
+                                        sFactor      = 1;
+                                       
+                                        if (cOptions == 10)
+                                        {
+                                            omega1 = 0.5;
+                                            omega2 = 2.0;
+                                        }
+                                        else
+                                        {
+                                            nFactor	     = 1;
+                                            nFactorOther = 1;
+                                        }
+                                        
+ 										Optimize (site_res, siteLikelihood);
+                                        
+                                        if (cOptions == 10)
+                                        {
+                                            doneSites[siteMap][0] = omega1;
+                                            doneSites[siteMap][1] = omega2;
+                                            doneSites[siteMap][2] = mixingP;
+                                            doneSites[siteMap][6] = 1-mixingP;                                        
+                                            doneSites[siteMap][7] = sFactor;
+                                            
+                                            if (omega2 > 1 && mixingP < 1) // only test for selection if the point estimate is > 1
+                                            {
+                                                omega2               := 1;
+                                                Optimize (site_resN, siteLikelihood);
+                                            }
+                                            else
+                                            {
+                                                site_resN = site_res;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            doneSites[siteMap][0] = nFactor;
+                                            doneSites[siteMap][1] = sFactor;
+                                        
+                                            sFactor 	= (sFactor+nFactor)/2;
+                                            nFactor := sFactor;
+                                            Optimize (site_resN, siteLikelihood);
+                                            doneSites[siteMap][2] = sFactor;
+                                      }
 										
-										doneSites[siteMap][2] = sFactor;
+										
 										doneSites[siteMap][3] = 2*(site_res[1][0]-site_resN[1][0]);
 										doneSites[siteMap][4] = 1-CChi2(doneSites[siteMap][3],1);															
-										doneSites[siteMap][5] = site_res[1][0];															
-										doneSites[siteMap][6] = doneSites[siteMap][0]/doneSites[siteMap][1];	
-										if (brOptions > 0)
-										{
-											doneSites[siteMap][7] = nFactorOther;
-										}													
-									}
+										doneSites[siteMap][5] = site_res[1][0];		
+                                        
+                                        if (cOptions != 10)
+                                        {													
+                                            doneSites[siteMap][6] = doneSites[siteMap][0]/doneSites[siteMap][1];	
+                                            if (brOptions > 0)
+                                            {
+                                                doneSites[siteMap][7] = nFactorOther;
+                                            }	
+										}
+
+ 									}
 									else
 									{
-										doneSites[siteMap][0] = 0;
-										doneSites[siteMap][1] = 0;
-										doneSites[siteMap][2] = 0;
-										doneSites[siteMap][3] = 0;
+                                        // all other columns are 0
 										doneSites[siteMap][4] = 1;															
-										doneSites[siteMap][5] = 0;
-										if (brOptions > 0)
-										{
-											doneSites[siteMap][7] = 0;
-										}
 									}	
 								}
-								dummy = ReportSite2 (siteCount, siteMap);				 
-							}	
+                                
+                                if (cOptions == 10)
+                                {
+                                    ReportSiteMEME (siteCount, siteMap);
+                                }
+                                else
+                                {
+                                    ReportSite2 (siteCount, siteMap);				 
+                                }
+                            }	
 						}
 						else
 						{
 							MPINodeState = {MPI_NODE_COUNT-1,4};
 							
 							lfSpawnDone = 0;
-							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
+							for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
 							{
 								siteMap = dupInfo[siteCount];
 								if (alreadyDone[siteMap] == 0)
 								{
-									filterString = "";
-									filterString = filterString + (siteCount*3) + "-" + (siteCount*3+2);
+									alreadyDone[siteMap] = 1;				
+									filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
 									DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
 
 									HarvestFrequencies (f1, siteFilter, 3, 3, 0);
-									m1 = 0;
-									for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
-									{
-										if (f1[mpiNode]>0)
-										{
-											m1=m1+1;
-										}
-									}
+                                    m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
 									
-									alreadyDone[siteMap] = 1;				
 									if (m1>1)
 									{
 										if (lfSpawnDone == 0)
@@ -1187,10 +1208,19 @@ else
 											lfSpawnDone = 1;
 										}
 													
-										sFactor = 1;
-										nFactor	= 1;
-										nFactorOther = 1;
-
+										sFactor      = 1;
+                                        
+                                        if (cOptions == 10)
+                                        {
+                                            omega1 = 0.5;
+                                            omega2 = 2.0;
+                                        }
+                                        else
+                                        {
+                                            nFactor	     = 1;
+                                            nFactorOther = 1;
+                                        }
+ 
 										for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 										{
 											if (MPINodeState[mpiNode][0]==0)
@@ -1200,24 +1230,36 @@ else
 										}
 										
 										if (mpiNode==MPI_NODE_COUNT-1)
-										/* all nodes busy */
+										// all nodes busy 
 										{
-											mpiNode = ReceiveJobs2 (1,1);
-										}
-										else
-										{
-											MPISend (mpiNode+1,siteLikelihood);
+                                            if (cOptions == 10)
+                                            {
+                                                mpiNode = ReceiveJobsMEME (1,1);
+                                            }   
+                                            else
+                                            {
+                                                mpiNode = ReceiveJobs2 (1,1);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            MPISend (mpiNode+1,siteLikelihood);
 											MPINodeState[mpiNode][0] = 1;
 											MPINodeState[mpiNode][1] = siteCount;
 											MPINodeState[mpiNode][2] = 1;
 											MPINodeState[mpiNode][3] = MPINodeState[mpiNode][3] + 1;
-											
 										}
 										
-										m1 = sFactor+nFactor;
-										sFactor 	= m1/2;
-										nFactor:=sFactor;
-
+                                        if (cOptions == 10)
+                                        {
+                                            omega2               := 1;
+                                        }
+                                        else
+                                        {
+                                            sFactor 	= (sFactor+nFactor)/2;
+                                            nFactor := sFactor;
+                                        }
+  
 										for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 										{
 											if (MPINodeState[mpiNode][0]==0)
@@ -1226,13 +1268,17 @@ else
 											}
 										}
 										
-										/*DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
-										LikelihoodFunction siteLikelihood = (siteFilter, siteTree);		*/
-												
+													
 										if (mpiNode==MPI_NODE_COUNT-1)
-										/* all nodes busy */
 										{
-											mpiNode = ReceiveJobs2 (1,0);
+                                            if (cOptions == 10)
+                                            {
+                                                mpiNode = ReceiveJobsMEME (1,1);
+                                            }   
+                                            else
+                                            {
+                                                mpiNode = ReceiveJobs2 (1,1);
+                                            }
 										}
 										else
 										{
@@ -1244,10 +1290,6 @@ else
 									}
 									else
 									{
-				                        doneSites[siteMap][0] = 0;
-				                        doneSites[siteMap][1] = 0;
-				                        doneSites[siteMap][2] = 0;
-				                        doneSites[siteMap][3] = 0;
 				                        doneSites[siteMap][4] = 1;									
 									}
 								}
@@ -1258,7 +1300,14 @@ else
 								{
 									if (MPINodeState[nodeCounter][0]==1)
 									{
-										fromNode = ReceiveJobs2 (0,0);
+                                        if (cOptions == 10)
+                                        {
+                                            fromNode = ReceiveJobsMEME (1,1);
+                                        }   
+                                        else
+                                        {
+                                            fromNode = ReceiveJobs2 (1,1);
+                                        }
 										break;	
 									}
 								}
@@ -1271,30 +1320,39 @@ else
 							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
 							{
 								siteMap = dupInfo[siteCount];
-								dummy = ReportSite2 (siteCount, siteMap);				 
-							}
+                                if (cOptions == 10)
+                                {
+                                    ReportSiteMEME (siteCount, siteMap);
+                                }
+                                else
+                                {
+                                    ReportSite2 (siteCount, siteMap);				 
+                                }
+                            }
 						}
 					}
 					
-					OpenWindow (CHARTWINDOW,{{"FEL Results"}
-												{"labels"},
-												{"fullSites"},
-												{"Bar Chart"},
-												{"Index"},
-												{labels[0]},
-												{"Site Index"},
-												{""},
-												{labels[0]},
-												{"0"}
-												{""}
-												{"-1;-1"}
-												{"10;1.309;0.785398"}
-												{"Times:12:0;Times:10:0;Times:12:2"}
-												{"0;0;16777215;1644825;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;5000268;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-												{"16,0,0"}
-												},
-												"(SCREEN_WIDTH-60)/2;(SCREEN_HEIGHT-50)/2;(SCREEN_WIDTH-60)/2;50");
-											   
+                    if (cOptions != 10)
+                    {
+                        OpenWindow (CHARTWINDOW,{{"FEL Results"}
+                                                    {"labels"},
+                                                    {"fullSites"},
+                                                    {"Bar Chart"},
+                                                    {"Index"},
+                                                    {labels[0]},
+                                                    {"Site Index"},
+                                                    {""},
+                                                    {labels[0]},
+                                                    {"0"}
+                                                    {""}
+                                                    {"-1;-1"}
+                                                    {"10;1.309;0.785398"}
+                                                    {"Times:12:0;Times:10:0;Times:12:2"}
+                                                    {"0;0;16777215;1644825;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;5000268;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
+                                                    {"16,0,0"}
+                                                    },
+                                                    "(SCREEN_WIDTH-60)/2;(SCREEN_HEIGHT-50)/2;(SCREEN_WIDTH-60)/2;50");
+                    }
 					SHORT_MPI_RETURN = 0;
 											   
 					fprintf (stdout, "\n\nWall-clock run-time (seconds): ", Time(1) - FEL_RUN_TIMER, 

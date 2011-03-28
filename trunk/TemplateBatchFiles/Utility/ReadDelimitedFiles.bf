@@ -114,7 +114,8 @@ function ReadSplitOnRegExpCallback (fileName, regExp,func)
 	{
 		if (Abs(func))
 		{
-			ExecuteCommands ("_lineStatus = " + func + "(splitOnRegExp (inData[lineID], regExp),lineID)"); 
+            thisLine = inData[lineID];
+			ExecuteCommands ("_lineStatus = " + func + "(splitOnRegExp (thisLine, regExp),lineID)"); 
 			if (_lineStatus < 0)
 			{
 				return 1;

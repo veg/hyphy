@@ -7874,6 +7874,12 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 		if (c==')')
 		{
 			parenIn--;
+            if (parenIn < 0)
+            {
+                WarnError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'."); 
+                input = empty;
+                return empty;
+            }
 			lastChar = 0;continue;
 		}
 
@@ -7947,7 +7953,9 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 	{
 		if (result!='}')
 		{
-			acknError ((_String)("Expression appears to be incomplete/syntax error:")&input);
+			WarnError (_String("Expression appears to be incomplete/syntax error. Scope: ") &scopeIn & ", paretheses depth: " 
+                        & parenIn & ", matrix scope: " & matrixScope & '.' & matrixScope & '.' & (isString?"In a literal. ":empty) & 
+                        (isComment == 1? "In a comment ":empty) & '\n' & input);
 			input = empty;
 			return empty;
 		}

@@ -3880,8 +3880,7 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 						{
 							for (long j=0; j<secondArg.vDim; j++)
 							{
-								_Parameter resCell  = 0.0,
-                                           column    = j;
+                                _Parameter resCell  = 0.0;
 								
                                 for (long k = 0, column = j; k < vDim; k+=4, column += 4*secondArg.vDim)
 									resCell += row[k]   * secondArg.theData [column]                         + 
