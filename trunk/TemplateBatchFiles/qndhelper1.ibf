@@ -185,10 +185,10 @@ function ReportSiteMEME (siteI, siteM)
 	fprintf (stdout, "| Codon: ", 		Format(siteI+1,4,0),
 					 "| Omega1: ", 		Format(fullSites[siteI][0],10,2),
 					 "| P(Omega1): ", 	Format(fullSites[siteI][2],5,2),
-					 "| Omega2: ", 		Format(fullSites[siteI][1],5,2),
+					 "| Omega2: ", 		Format(fullSites[siteI][1],10,2),
 					 "| P(Omega1): ",	Format(fullSites[siteI][3],5,2),
 					 "| Scaling: ",		Format(fullSites[siteI][4],10,2),
-					 "| LRT: ",			Format(fullSites[siteI][5],5,2),
+					 "| LRT: ",			Format(fullSites[siteI][5],6,2),
 					 "| p: ",			Format(fullSites[siteI][6],5,2),		
 					 "| Log(L): ",		Format(fullSites[siteI][7],5,2));		
 
@@ -403,11 +403,11 @@ function ReceiveJobsMEME (sendOrNot, nullAlt)
 	
 	if (siteNA) // alternative
 	{
-        doneSites[siteMap][0] = omega1;
-        doneSites[siteMap][1] = omega2;
-        doneSites[siteMap][2] = mixingP;
-        doneSites[siteMap][6] = 1-mixingP;                                        
-        doneSites[siteMap][7] = sFactor;
+        doneSites[siteMap][0] = omega1F;
+        doneSites[siteMap][1] = omega2F;
+        doneSites[siteMap][2] = mixingF;
+        doneSites[siteMap][6] = 1-mixingF;                                        
+        doneSites[siteMap][7] = sFValue;
 		
 		doneSites[siteMap][3] = doneSites[siteMap][3]+2*siteLikelihood_MLES[1][0];
 		doneSites[siteMap][5] = siteLikelihood_MLES[1][0];

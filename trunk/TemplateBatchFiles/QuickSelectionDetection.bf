@@ -1068,7 +1068,7 @@ else
                                 LoadFunctionLibrary("BranchSiteTemplate");
                                 global      omega1  =         0.5; omega1 :< 1;
                                 global      omega2  =         2.0; 
-                                global      mixingP =         0.5; mixingP :< 1;
+                                global      mixingP =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
                                 PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t1", "omega1", "");
                                 PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t2", "omega2", "");
                                 AC := saveNucs__[0];
@@ -1112,7 +1112,7 @@ else
                                         if (cOptions == 10)
                                         {
                                             omega1 = 0.5;
-                                            omega2 = 2.0;
+                                            omega2 = 1.0;
                                         }
                                         else
                                         {
@@ -1213,7 +1213,7 @@ else
                                         if (cOptions == 10)
                                         {
                                             omega1 = 0.5;
-                                            omega2 = 2.0;
+                                            omega2 = 1.0;
                                         }
                                         else
                                         {
@@ -1273,11 +1273,11 @@ else
 										{
                                             if (cOptions == 10)
                                             {
-                                                mpiNode = ReceiveJobsMEME (1,1);
+                                                mpiNode = ReceiveJobsMEME (1,0);
                                             }   
                                             else
                                             {
-                                                mpiNode = ReceiveJobs2 (1,1);
+                                                mpiNode = ReceiveJobs2 (1,0);
                                             }
 										}
 										else
@@ -1302,11 +1302,11 @@ else
 									{
                                         if (cOptions == 10)
                                         {
-                                            fromNode = ReceiveJobsMEME (1,1);
+                                            fromNode = ReceiveJobsMEME (0,0);
                                         }   
                                         else
                                         {
-                                            fromNode = ReceiveJobs2 (1,1);
+                                            fromNode = ReceiveJobs2 (0,0);
                                         }
 										break;	
 									}
