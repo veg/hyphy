@@ -308,7 +308,7 @@ void	MatrixIndexError (long hPos, long vPos, long hDim, long vDim)
 
 inline 	bool	_Matrix::IsNonEmpty  (long logicalIndex)	
 {
-	return  (theIndex?theIndex [logicalIndex]!=-1:(storageType!=1?GetObject(logicalIndex)!=ZEROPOINTER:true));
+	return  (theIndex?theIndex [logicalIndex]!=-1:(storageType!=1?GetMatrixObject(logicalIndex)!=ZEROPOINTER:true));
 }
 
 //__________________________________________________________________________________
@@ -1652,7 +1652,7 @@ bool	_Matrix::AmISparse(void)
 	else
 	{
 		for (long i=0;i<lDim; i++)
-			if (IsNonEmpty(i) && !GetObject(i)->IsObjectEmpty())
+			if (IsNonEmpty(i) && !GetMatrixObject(i)->IsObjectEmpty())
 					k++;
 	}
 		
@@ -1674,9 +1674,9 @@ bool	_Matrix::AmISparse(void)
 			{
 				for (long i=0;i<lDim; i++)
 				{
-					if ((GetObject(i)!=ZEROPOINTER)&&(!GetObject(i)->IsObjectEmpty()))
-						sparseMe.StoreObject(i,GetObject(i));
-						GetObject(i)->nInstances++;
+					if ((GetMatrixObject(i)!=ZEROPOINTER)&&(!GetMatrixObject(i)->IsObjectEmpty()))
+						sparseMe.StoreObject(i,GetMatrixObject(i));
+						GetMatrixObject(i)->nInstances++;
 				}
 			}
 		
@@ -2036,13 +2036,13 @@ void	DuplicateMatrix	(_Matrix* targetMatrix, _Matrix* sourceMatrix)
 					if (!sourceMatrix->theIndex) // non-sparse matrix
 					{
 						for (long i=0;i<sourceMatrix->lDim;i++)
-							if (sourceMatrix->GetObject(i))
-								(sourceMatrix->GetObject(i))->nInstances++;
+							if (sourceMatrix->GetMatrixObject(i))
+								(sourceMatrix->GetMatrixObject(i))->nInstances++;
 					}
 					else
 						for (long i=0;i<sourceMatrix->lDim;i++)
 						{
-							_MathObject* theO = (sourceMatrix->GetObject(i));
+							_MathObject* theO = (sourceMatrix->GetMatrixObject(i));
 							if (theO!=ZEROPOINTER)
 								theO->nInstances++;
 						}
@@ -3556,12 +3556,12 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 				{
 					for (i = 0; i<lDim; i++)
 						if (IsNonEmpty(i))
-							storage.StoreObject(theIndex[i],GetObject(i),true);
+							storage.StoreObject(theIndex[i],GetMatrixObject(i),true);
 				}	
 				else // normal matrix
 				{
 					for (i = 0; i<lDim; i++)
-						storage.StoreObject(i,GetObject(i),true);
+						storage.StoreObject(i,GetMatrixObject(i),true);
 				}*/
 			}
 			
@@ -3577,11 +3577,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 								long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
 								if (h<0) // empty slot in matrix 1
 								{
-									storage.StoreObject (hb,secondArg.GetObject(i)->Minus());
+									storage.StoreObject (hb,secondArg.GetMatrixObject(i)->Minus());
 								}
 								else
 								{
-									storage.StoreObject (hb, GetObject(h)->Sub (secondArg.GetObject(i)));
+									storage.StoreObject (hb, GetMatrixObject(h)->Sub (secondArg.GetMatrixObject(i)));
 								}
 							}
 					}
@@ -3593,11 +3593,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 								long hb =secondArg.HashBack (i), h = Hash (hb/vDim, hb%vDim);
 								if (h<0) // empty slot in matrix 1
 								{
-									storage.StoreObject (hb,secondArg.GetObject(i),true);
+									storage.StoreObject (hb,secondArg.GetMatrixObject(i),true);
 								}
 								else
 								{
-									storage.StoreObject (hb,GetObject(h)->Add (secondArg.GetObject(i)));
+									storage.StoreObject (hb,GetMatrixObject(h)->Add (secondArg.GetMatrixObject(i)));
 								}
 							}
 					}
@@ -3613,10 +3613,10 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 								long p = secondArg.HashBack (i);
 								if (CheckObject(p))
 								{
-									storage.StoreObject (p,GetObject(p)->Sub(secondArg.GetObject(i)));
+									storage.StoreObject (p,GetMatrixObject(p)->Sub(secondArg.GetMatrixObject(i)));
 								}
 								else
-									storage.StoreObject (p,secondArg.GetObject(i)->Minus());
+									storage.StoreObject (p,secondArg.GetMatrixObject(i)->Minus());
 							}
 					}
 					else
@@ -3626,9 +3626,9 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 							{
 								long p = secondArg.HashBack (i);
 								if (CheckObject(p))
-									storage.StoreObject (p,GetObject(p)->Add(secondArg.GetObject(i)));
+									storage.StoreObject (p,GetMatrixObject(p)->Add(secondArg.GetMatrixObject(i)));
 								else
-									storage.StoreObject (p,secondArg.GetObject(i),true);
+									storage.StoreObject (p,secondArg.GetMatrixObject(i),true);
 							}
 					}
 				}
@@ -3645,11 +3645,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 					{
 						for (i = 0; i<secondArg.lDim; i++)
 						{
-							tempP = secondArg.GetObject(i);
+							tempP = secondArg.GetMatrixObject(i);
 							if (tempP)
 							{
 								if (CheckObject(i))
-									storage.StoreObject(i,GetObject(i)->Sub(tempP));
+									storage.StoreObject(i,GetMatrixObject(i)->Sub(tempP));
 								else
 									storage.StoreObject(i,tempP->Minus());
 							}
@@ -3659,11 +3659,11 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 					{
 						for (i = 0; i<secondArg.lDim; i++)
 						{
-							tempP = secondArg.GetObject(i);
+							tempP = secondArg.GetMatrixObject(i);
 							if (tempP)
 							{
 								if (CheckObject(i))
-									storage.StoreObject(i,GetObject(i)->Add(tempP));
+									storage.StoreObject(i,GetMatrixObject(i)->Add(tempP));
 								else
 									storage.StoreObject(i,tempP,true);
 							}
@@ -3678,12 +3678,12 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 					{
 						for (i = 0; i<secondArg.lDim; i++)
 						{
-							tempP = secondArg.GetObject(i);
+							tempP = secondArg.GetMatrixObject(i);
 							if (tempP)
 							{
 								h = Hash (i/hDim,i%hDim);
 								if (h>=0)
-									storage.StoreObject(i,GetObject(h)->Sub(tempP));
+									storage.StoreObject(i,GetMatrixObject(h)->Sub(tempP));
 								else
 									storage.StoreObject(i,tempP->Minus());
 							}
@@ -3693,12 +3693,12 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 					{
 						for (i = 0; i<secondArg.lDim; i++)
 						{
-							tempP = secondArg.GetObject(i);
+							tempP = secondArg.GetMatrixObject(i);
 							if (tempP)
 							{
 								h = Hash (i/hDim,i%hDim);
 								if (h>=0)
-									storage.StoreObject(i,GetObject(h)->Add(tempP));
+									storage.StoreObject(i,GetMatrixObject(h)->Add(tempP));
 								else
 									storage.StoreObject(i,tempP,true);
 							}
@@ -3812,13 +3812,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Parameter c)
 				{
 					for (long i=0; i<lDim; i++)
 						if (IsNonEmpty (i))
-							storage.StoreObject (HashBack(i),GetObject(i)->Mult (cc));
+							storage.StoreObject (HashBack(i),GetMatrixObject(i)->Mult (cc));
 				}
 				else
 				{
 					for (long i=0; i<lDim; i++)
 						if (IsNonEmpty (i))
-							storage.StoreObject (i,GetObject(i)->Mult (cc));
+							storage.StoreObject (i,GetMatrixObject(i)->Mult (cc));
 				}							
 			}
 			DeleteObject (cc);
@@ -3846,18 +3846,18 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 				for (long i=0; i<hDim; i++)
 					for (long j=i*secondArg.vDim; j<(i+1)*secondArg.vDim; j++)
 					{
-						_MathObject* secTerm = secondArg.GetObject(j%secondArg.vDim), *firstTerm = GetObject (i*vDim);
+						_MathObject* secTerm = secondArg.GetMatrixObject(j%secondArg.vDim), *firstTerm = GetMatrixObject (i*vDim);
 						if (firstTerm&&secTerm)
 							storage.StoreObject (j,firstTerm->Mult (secTerm));
 						else
 							storage.StoreObject (j,new _Polynomial(0.0));
 						for (long k=i*vDim+1, l=j%secondArg.vDim+secondArg.vDim; k<(i+1)*vDim; k++, l+=secondArg.vDim)
 						{
-							tempP = GetObject (k), tempP2 = secondArg.GetObject(l);
+							tempP = GetMatrixObject (k), tempP2 = secondArg.GetMatrixObject(l);
 							if (tempP&&tempP2)
 							{
 								_MathObject* temp = tempP->Mult (tempP2);
-								storage.StoreObject (j,temp->Add(storage.GetObject(j)));
+								storage.StoreObject (j,temp->Add(storage.GetMatrixObject(j)));
 								DeleteObject (temp);
 							}
 						}
@@ -4028,13 +4028,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					{
 						long i = theIndex[k]/vDim;
 						long j = theIndex[k]%vDim;
-						_MathObject* p = GetObject(k);
+						_MathObject* p = GetMatrixObject(k);
 						for (long l=j*secondArg.vDim, m=i*secondArg.vDim; l<(j+1)*secondArg.vDim; l++,m++)
 						{
-							tempP = secondArg.GetObject (l);
+							tempP = secondArg.GetMatrixObject (l);
 							if (!tempP) continue;
-							_MathObject* temp = p->Mult (secondArg.GetObject (l));
-							tempP = storage.GetObject(m);
+							_MathObject* temp = p->Mult (secondArg.GetMatrixObject (l));
+							tempP = storage.GetMatrixObject(m);
 							if (tempP)
 								storage.StoreObject (m, tempP->Add (temp));
 							else
@@ -4100,13 +4100,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					{
 						long i = secondArg.theIndex[k]/secondArg.vDim;
 						long j = secondArg.theIndex[k]%secondArg.vDim;
-						_MathObject* p = secondArg.GetObject(k);
+						_MathObject* p = secondArg.GetMatrixObject(k);
 						for (long l=i, m=j; l<lDim; l+=vDim,m+=secondArg.vDim)
 						{
-							tempP = GetObject (l);
+							tempP = GetMatrixObject (l);
 							if (!tempP) continue;
 							_MathObject* temp = p->Mult (tempP);
-							tempP = storage.GetObject(m);
+							tempP = storage.GetMatrixObject(m);
 							if (tempP)
 							{
 								storage.StoreObject (m, tempP->Add (temp));
@@ -4187,13 +4187,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 					{
 						long i = theIndex[k]/vDim;
 						long j = theIndex[k]%vDim;
-						_MathObject* p = GetObject(k);
+						_MathObject* p = GetMatrixObject(k);
 						long n = j*dd;
 						long m = i*secondArg.vDim;
 						for (long l=n; l<n+indexVector[j]; l++)
 						{
-							_MathObject* temp = p->Mult (secondArg.GetObject (indexTable2[l]));
-							tempP = storage.GetObject(m+indexTable[l]%secondArg.vDim);
+							_MathObject* temp = p->Mult (secondArg.GetMatrixObject (indexTable2[l]));
+							tempP = storage.GetMatrixObject(m+indexTable[l]%secondArg.vDim);
 							if (tempP)
 							{
 								storage.StoreObject (m+indexTable[l]%secondArg.vDim, tempP->Add (temp));
@@ -4525,12 +4525,12 @@ void	_Matrix::Transpose (void)
 						if (storageType==2)
 							z = (Ptr)GetFormula(i,j);
 						else
-							z = (Ptr)GetObject(i*vDim+j);
+							z = (Ptr)GetMatrixObject(i*vDim+j);
 						
 						if (storageType==2)
 							((_Formula**)theData)[i*vDim+j] = GetFormula(j,i);
 						else
-							((_PMathObj*)theData)[i*vDim+j] = GetObject(j*vDim+i);
+							((_PMathObj*)theData)[i*vDim+j] = GetMatrixObject(j*vDim+i);
 						
 						((Ptr*)theData)[j*vDim+i] = z;
 					}
@@ -4551,14 +4551,14 @@ void	_Matrix::Transpose (void)
 							if (storageType==2)
 								z = (Ptr)GetFormula(k,l);
 							else
-								z = (Ptr)GetObject(i);
+								z = (Ptr)GetMatrixObject(i);
 							
 							if (p>=0)
 							{
 								if (storageType==2)
 									((_Formula**)theData)[i]    = GetFormula(l,k);
 								else
-									((_MathObject**)theData)[i] = GetObject(p);
+									((_MathObject**)theData)[i] = GetMatrixObject(p);
 								
 								((Ptr*)theData)[p] = z;
 							}
@@ -4590,7 +4590,7 @@ void	_Matrix::Transpose (void)
 							result.StoreFormula(j,i,*GetFormula(i,j),true,false);
 						else
 						{
-							z =   (Ptr)GetObject (i*vDim+j);
+							z =   (Ptr)GetMatrixObject (i*vDim+j);
 							result.StoreObject(j*hDim+i,(_PMathObj)z);
 							((_PMathObj)z)->nInstances++;
 						}
@@ -4610,7 +4610,7 @@ void	_Matrix::Transpose (void)
 						}
 						else
 						{
-							z =   (Ptr)GetObject (i);
+							z =   (Ptr)GetMatrixObject (i);
 							result.StoreObject(c*hDim+r,(_PMathObj)z);
 							((_PMathObj)z)->nInstances++;							
 						}
@@ -5298,14 +5298,14 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
 			{
 				_MathObject* cell;
 				if (!theIndex)
-					cell = (_MathObject*)GetObject (ind1*vDim+ind2)->makeDynamic();
+					cell = (_MathObject*)GetMatrixObject (ind1*vDim+ind2)->makeDynamic();
 				else
 				{
 					long p = Hash (ind1, ind2);
 					if (p<0)
 						cell = new _Constant (0.0);
 					else
-						cell = (_MathObject*)GetObject (p)->makeDynamic();
+						cell = (_MathObject*)GetMatrixObject (p)->makeDynamic();
 				}
 				return cell;
 			}
@@ -5598,7 +5598,7 @@ void		_Matrix::StoreObject (long i, long j, _MathObject* value, bool dup)
 	}
 	else
 	{
-		DeleteObject (GetObject(lIndex));
+		DeleteObject (GetMatrixObject(lIndex));
 		((_MathObject**)theData)[lIndex] = value;
 	}
 	if (AUTO_PAD_DIAGONAL) // correct the diagonal entry
@@ -5614,12 +5614,12 @@ void		_Matrix::UpdateDiag  (long i,long j, _MathObject* value)
 	{
 		_MathObject * diagCell = nil, *newCell;
 		if (!theIndex)
-			diagCell = GetObject(i*hDim+i);
+			diagCell = GetMatrixObject(i*hDim+i);
 		else
 		{
 			long lIndex = Hash (i,i);
 			if (lIndex>=0)
-				diagCell = GetObject(lIndex);
+				diagCell = GetMatrixObject(lIndex);
 		}
 		if (!diagCell)
 		{
@@ -6084,7 +6084,7 @@ void		_Matrix::ConvertFormulas2Poly (bool force2numbers)
 		{
 			_Polynomial zero;
 			for (i=0;i<lDim;i++)
-				if (!GetObject (i))
+				if (!GetMatrixObject (i))
 					StoreObject (i,&zero,true);
 		}
 	}
@@ -7533,11 +7533,11 @@ BaseRef _Matrix::toStr(void)
 					for (long j = 0; j<vDim; j++)
 					{
 						long p = Hash (i,j);
-						if (GetObject(p))
+						if (GetMatrixObject(p))
 						{
 							if (p>=0)
 							{
-								_String *sp = (_String*) GetObject (p)->toStr();
+								_String *sp = (_String*) GetMatrixObject (p)->toStr();
 								result<<sp;
 								if (j<vDim-1)
 									result<<',';
@@ -7694,7 +7694,7 @@ void	_Matrix::toFileStr (FILE*dest)
 					long p = Hash (i,j);
 					if (p>=0)
 					{
-						_String *sp = (_String*) GetObject (p)->toStr();
+						_String *sp = (_String*) GetMatrixObject (p)->toStr();
 						fprintf(dest, "%s", sp->sData);
 						fprintf (dest, ",");
 						DeleteObject (sp);
