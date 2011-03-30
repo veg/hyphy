@@ -2244,37 +2244,42 @@ void	_HYChartWindow::GenerateBarChart (_SimpleList& columns, _HYRect plotRect, c
 	for 		(k=0; k<m; k++)
 	{
 		x = numbers.theData[k];
-		if (x>maxX)
-			maxX = x;
-		if (x<minX)
-			minX = x;
-		if (options!=4)
-			for (j=1; j<columns.lLength; j++)
-			{
-				x = numbers.theData [j*m+k];
-				
-				if (x>maxY)
-					maxY = x;
-				if (x<minY)
-					minY = x;
-			}
-		else
-		{
-			x = 0;
-			for (j=1; j<columns.lLength; j++)
-				x += numbers.theData [j*m+k];
-				
-			if (x>maxY)
-				maxY = x;
-			if (x<minY)
-				minY = x;
-		}
+        if (isfinite (x))
+        {
+            if (x>maxX)
+                maxX = x;
+            if (x<minX)
+                minX = x;
+            if (options!=4)
+                for (j=1; j<columns.lLength; j++)
+                {
+                    x = numbers.theData [j*m+k];
+                    if (isfinite(x))
+                    {
+                        if (x>maxY)
+                            maxY = x;
+                        if (x<minY)
+                            minY = x;
+                    }
+                }
+            else
+            {
+                x = 0.;
+                for (j=1; j<columns.lLength; j++)
+                    x += numbers.theData [j*m+k];
+                    
+                if (x>maxY)
+                    maxY = x;
+                if (x<minY)
+                    minY = x;
+            }
+        }
 	}
 	
-	if ((minY>0)&&(maxY>0))
+	if (minY>0 && maxY>0)
 		minY = 0.0;
 	else
-		if ((minY<0)&&(maxY<0))
+		if (minY<0 && maxY<0)
 			maxY = 0.0;
 			
 	if (options==5)
@@ -2324,7 +2329,7 @@ void	_HYChartWindow::GenerateBarChart (_SimpleList& columns, _HYRect plotRect, c
 	sc->SetFont (labelFont1);
 	while (tp<=maxY)
 	{
-		if ((options==5)&&(tp<0))
+		if (options==5 && tp<0)
 			label = -tp;
 		else
 			label = tp;
