@@ -469,7 +469,7 @@ private:
 	void		ClearObjects  			(void);				// internal reuseable purger	
    inline		
 	_MathObject*& 
-				GetObject				(long ind)  
+				GetMatrixObject			(long ind)  
 											{ return ((_MathObject**)theData)[ind];}
    inline		
 	bool		CheckObject				(long ind)  
