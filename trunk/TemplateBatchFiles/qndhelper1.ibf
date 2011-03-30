@@ -399,7 +399,7 @@ function ReceiveJobsMEME (sendOrNot, nullAlt)
 	omega1F = siteLikelihood_MLE_VALUES ["omega1"];
 	omega2F = siteLikelihood_MLE_VALUES ["omega2"];
 	mixingF = siteLikelihood_MLE_VALUES ["mixingP"];
-	sFValue = siteLikelihood_MLE_VALUES ["sFactor"];
+	sFValue = siteLikelihood_MLE_VALUES ["sFactor"]^4;
 	
 	if (siteNA) // alternative
 	{

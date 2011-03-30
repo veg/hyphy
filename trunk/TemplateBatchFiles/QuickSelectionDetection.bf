@@ -1069,8 +1069,8 @@ else
                                 global      omega1  =         0.5; omega1 :< 1;
                                 global      omega2  =         2.0; 
                                 global      mixingP =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
-                                PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t1", "omega1", "");
-                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t2", "omega2", "");
+                                PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t", "omega1", "");
+                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t", "omega2", "");
                                 AC := saveNucs__[0];
                                 AT := saveNucs__[1];
                                 CG := saveNucs__[2];
@@ -1085,9 +1085,8 @@ else
                                 fullSites    = {filteredData.sites,8};						
                                 labels       = {{"omega1","omega2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
 
- 								ReplicateConstraint ("this1.?.t1:=sFactor*this2.?.synRate__",siteTree,codonTree);
-                                ReplicateConstraint ("this1.?.t2:=this2.?.t1",siteTree,siteTree);
-                            }
+ 								ReplicateConstraint ("this1.?.t:=sFactor^4*this2.?.synRate__",siteTree,codonTree);
+                             }
 						}
 					
 						if (MPI_NODE_COUNT<=1)
@@ -1112,6 +1111,7 @@ else
                                         if (cOptions == 10)
                                         {
                                             omega1 = 0.5;
+                                            ClearConstraints (omega2);
                                             omega2 = 1.0;
                                         }
                                         else
@@ -1128,11 +1128,11 @@ else
                                             doneSites[siteMap][1] = omega2;
                                             doneSites[siteMap][2] = mixingP;
                                             doneSites[siteMap][6] = 1-mixingP;                                        
-                                            doneSites[siteMap][7] = sFactor;
+                                            doneSites[siteMap][7] = sFactor^4;
                                             
                                             if (omega2 > 1 && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
-                                                omega2               := 1;
+                                                omega2               :< 1;
                                                 Optimize (site_resN, siteLikelihood);
                                             }
                                             else
@@ -1213,6 +1213,7 @@ else
                                         if (cOptions == 10)
                                         {
                                             omega1 = 0.5;
+                                            ClearConstraints (omega2);
                                             omega2 = 1.0;
                                         }
                                         else
@@ -1252,7 +1253,7 @@ else
 										
                                         if (cOptions == 10)
                                         {
-                                            omega2               := 1;
+                                            omega2               :< 1;
                                         }
                                         else
                                         {
