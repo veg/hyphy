@@ -1066,6 +1066,26 @@ else
                                 // save AC, AT, CG, CT and GT
                                 saveNucs = {{AC__,AT__,CG__,CT__,GT__}};
                                 LoadFunctionLibrary("BranchSiteTemplate");
+                                
+                                OPTIMIZATION_METHOD = 0;
+                                USE_LAST_RESULTS   = 1;
+                                
+                                ClearConstraints (codonTree);
+                                
+                                ClearConstraints (AC); 
+                                ClearConstraints (AT); 
+                                ClearConstraints (CG); 
+                                ClearConstraints (CT);
+                                ClearConstraints (GT); 
+ 
+                                fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
+                                
+                                Optimize (codonLF, lf);
+                                
+                                fprintf (stdout, "IMPROVED Log(L) BY ", codonLF[1][0]-resC[1][0], " POINTS\n");
+                                
+                                OPTIMIZATION_METHOD = 4;
+
                                 global      omega1  =         0.5; omega1 :< 1;
                                 global      omega2  =         2.0; 
                                 global      mixingP =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
