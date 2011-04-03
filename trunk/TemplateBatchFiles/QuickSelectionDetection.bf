@@ -931,6 +931,18 @@ else
 					
 						if (cOptions == 5)
 						{
+                        
+                            OPTIMIZATION_METHOD = 0;
+                            USE_LAST_RESULTS   = 1;
+                            ClearConstraints (codonTree,AC,AT,CG,CT,GT); 
+ 
+                            fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
+                            Optimize (codonLF, lf);
+                            fprintf (stdout, "IMPROVED Log(L) BY ", codonLF[1][0]-resC[1][0], " POINTS\n");
+                            AC:=AC__;AT:=AT__;CG:=CG__;CT:=CT__;GT:=GT__;
+                            
+                            OPTIMIZATION_METHOD = 4;
+                                                      
 							ExecuteAFile ("qndhelper3.ibf");				
 							global			sFactor = 1;
 							global			nFactor = 1;
@@ -1070,13 +1082,8 @@ else
                                 OPTIMIZATION_METHOD = 0;
                                 USE_LAST_RESULTS   = 1;
                                 
-                                ClearConstraints (codonTree);
-                                
-                                ClearConstraints (AC); 
-                                ClearConstraints (AT); 
-                                ClearConstraints (CG); 
-                                ClearConstraints (CT);
-                                ClearConstraints (GT); 
+                                ClearConstraints (codonTree,AC,AT,CG,CT,GT); 
+
  
                                 fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
                                 
