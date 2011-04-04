@@ -324,18 +324,18 @@ else
 						ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];	
 						if (rateBiasTerms[customLoopCounter2] == "1")
 						{
-							modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
+							modelConstraintString += rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
 						}
 						else
 						{
-							modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+							modelConstraintString += rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
 						}
 						break;
 					}
 				}
 				if (customLoopCounter==customLoopCounter2)
 				{
-					ModelTitle = ModelTitle+modelDesc[customLoopCounter2];	
+					ModelTitle += modelDesc[customLoopCounter2];	
 				}
 			}	
 			
@@ -522,6 +522,29 @@ baselineOutput = LAST_FILE_PATH;
 distribOutput = baselineOutput + ".distributions";
 fprintf (distribOutput,CLEAR_FILE);
 
+if (chosenModelList[4])
+{
+    ChoiceList (regExpForLocalFlag,"Lineage specific model filter",1,SKIP_NONE,
+				"None","Every branch has it's own mean dN/dS",
+				"Regex","Only branches whose names match a regular expression are given a separate dN/dS (all other branches share a single dN/dS)");
+                
+    if (regExpForLocalFlag < 0)
+    {
+        return 0;
+    }
+    if (regExpForLocalFlag == 1)
+    {
+        fprintf (stdout, "Enter the filtering regular expression:");
+        fscanf (stdin, "String", regExpForLocal);
+    }
+    else
+    {
+        regExpForLocal = "";
+    }
+
+}
+	
+
 separator =      "+---------------------+---------------------+---------------+-------------------+-------------------+---------------+-----+-----------+\n";
 
 fprintf (stdout, "\n\nRUNNING ",ModelTitle," MODEL COMPARISONS on ",dataFilePath, "\n\n",
@@ -568,6 +591,7 @@ if (MPI_NODE_COUNT>1)
 
 doNucFit = (branchLengths<2);
 
+
 for (mi = 0; mi<5; mi=mi+1)
 {
 	if (chosenModelList[mi])
@@ -596,6 +620,9 @@ for (mi = 0; mi<5; mi=mi+1)
 		Model MG94model = (theRateMatrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);
 		Tree  givenTree = treeString;
 
+        bnames = BranchName (givenTree,-1);
+        lbc    = Columns    (bnames) - 1;
+
 		if (branchLengths == 1)
 		{
 			ClearConstraints (givenTree);
@@ -603,15 +630,12 @@ for (mi = 0; mi<5; mi=mi+1)
 		}
 		else
 		{
-			bnames = BranchName (givenTree,-1);
-			lbc    = Columns    (bnames) - 1;
-			
 			if (branchLengths == 0)
 			{					
 				initString = "";
 				for (lc = 0; lc < lbc; lc = lc+1)
 				{
-					initString = initString + "givenTree." + bnames[lc] + ".synRate=nucTree." + bnames[lc] + ".t/codonFactor;";
+					initString += "givenTree." + bnames[lc] + ".synRate=nucTree." + bnames[lc] + ".t/codonFactor;";
 				}	
 				ExecuteCommands (initString);
 				initString = "";
@@ -649,10 +673,28 @@ for (mi = 0; mi<5; mi=mi+1)
 					for (lc = 0; lc < lbc; lc = lc+1)
 					{
 						ExecuteCommands ("givenTree." + bnames[lc] + ".synRate:="+_stringBLs[lc]+"/("+s1s+"+givenTree."+bnames[lc]+".r("+s2s+"));");
-					}					
-				}
+					}				
+                }
 			}
 		}
+
+        if (Abs(regExpForLocal) > 0)
+        {
+            fprintf (stdout, "\n");
+            global shared_R  = 1;
+            for (lc = 0; lc < lbc; lc = lc+1)
+            {
+                if ((bnames[lc]$regExpForLocal)[0] < 0)
+                {
+                    ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_R");
+                }
+                else
+                {
+                    fprintf (stdout, bnames[lc], " => local dN/dS \n");
+                }
+             }				
+        }	
+
 
 		LikelihoodFunction lf = (filteredData,givenTree);
 		
@@ -691,7 +733,7 @@ for (mi = 0; mi<5; mi=mi+1)
 			/* Non-MPI execution */
 			Optimize (res,lf);
 			modelIndex = mi;
-			dummy = ReceiveJobs (0);
+			ReceiveJobs (0);
 		}
 	}
 }
