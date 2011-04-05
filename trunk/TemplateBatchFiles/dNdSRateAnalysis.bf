@@ -678,7 +678,7 @@ for (mi = 0; mi<5; mi=mi+1)
 			}
 		}
 
-        if (Abs(regExpForLocal) > 0)
+        if (Abs(regExpForLocal) > 0 && mi == 4)
         {
             fprintf (stdout, "\n");
             global shared_R  = 1;
