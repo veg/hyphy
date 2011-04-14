@@ -525,14 +525,15 @@ fprintf (distribOutput,CLEAR_FILE);
 if (chosenModelList[4])
 {
     ChoiceList (regExpForLocalFlag,"Lineage specific model filter",1,SKIP_NONE,
-				"None","Every branch has it's own mean dN/dS",
-				"Regex","Only branches whose names match a regular expression are given a separate dN/dS (all other branches share a single dN/dS)");
+				"None",         "Every branch has it's own mean dN/dS",
+				"Regex",        "Only branches whose names match a regular expression are given a separate dN/dS (all other branches share a single dN/dS)",
+                "Regex Global", "Branches whose names match a regular expression are given a separate (global) dN/dS, while all other branches share another single dN/dS");
                 
     if (regExpForLocalFlag < 0)
     {
         return 0;
     }
-    if (regExpForLocalFlag == 1)
+    if (regExpForLocalFlag > 0)
     {
         fprintf (stdout, "Enter the filtering regular expression:");
         fscanf (stdin, "String", regExpForLocal);
@@ -682,6 +683,11 @@ for (mi = 0; mi<5; mi=mi+1)
         {
             fprintf (stdout, "\n");
             global shared_R  = 1;
+            if (regExpForLocalFlag == 2)
+            {
+                global shared_FR = 1;
+            }
+            
             for (lc = 0; lc < lbc; lc = lc+1)
             {
                 if ((bnames[lc]$regExpForLocal)[0] < 0)
@@ -690,7 +696,11 @@ for (mi = 0; mi<5; mi=mi+1)
                 }
                 else
                 {
-                    fprintf (stdout, bnames[lc], " => local dN/dS \n");
+                    if (regExpForLocalFlag == 2)
+                    {
+                        ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_FR");
+                   }
+                    //fprintf (stdout, bnames[lc], " => local dN/dS \n");
                 }
              }				
         }	
