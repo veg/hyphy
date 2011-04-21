@@ -827,6 +827,9 @@ void	SetupOperationLists (void)
 		FunctionNameList << BuiltInFunctions (HY_OP_CODE_JOIN);
 		FunctionArgumentCount << 2;
 
+		//HY_OP_CODE_LOG_GAMMA
+		BuiltInFunctions.AppendNewInstance (new _String ("LnGamma"));
+
 		//HY_OP_CODE_LUDECOMPOSE
 		BuiltInFunctions.AppendNewInstance (new _String ("LUDecompose"));
 		
@@ -1077,6 +1080,9 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
 			break;
 		case HY_OP_CODE_INVCHI2: // InvChi2
 			return InvChi2(p);
+			break;
+		case HY_OP_CODE_LNGAMMA: // InvChi2
+			return LnGamma(p);
 			break;
 		case HY_OP_CODE_LOG: // Log
 			return Log();

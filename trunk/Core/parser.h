@@ -119,6 +119,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	 HY_OP_CODE_INVCHI2			(1+HY_OP_CODE_IGAMMA) // InvChi2
 #define	 HY_OP_CODE_INVERSE			(1+HY_OP_CODE_INVCHI2) // Inverse
 #define	 HY_OP_CODE_JOIN			(1+HY_OP_CODE_INVERSE) // Join
+#define	 HY_OP_CODE_LNGAMMA			(1+HY_OP_CODE_JOIN) // Join
 #define	 HY_OP_CODE_LUDECOMPOSE		(1+HY_OP_CODE_JOIN) // LUDecompose
 #define	 HY_OP_CODE_LUSOLVE			(1+HY_OP_CODE_LUDECOMPOSE) // LUSolve
 #define	 HY_OP_CODE_LOG				(1+HY_OP_CODE_LUSOLVE) // Log
