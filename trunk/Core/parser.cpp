@@ -615,7 +615,7 @@ void  ReplaceVar (_Variable* theV)
 
 //__________________________________________________________________________________
 
-_String		UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,"), 
+_String		UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,LnGamma,"), 
 			HalfOps (":<>=!&|");
 		
 _SimpleList	opPrecedence, 
