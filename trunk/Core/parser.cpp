@@ -1082,7 +1082,7 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
 			return InvChi2(p);
 			break;
 		case HY_OP_CODE_LNGAMMA: // InvChi2
-			return LnGamma(p);
+			return LnGamma();
 			break;
 		case HY_OP_CODE_LOG: // Log
 			return Log();
