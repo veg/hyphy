@@ -270,7 +270,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&		     update
 		
 		if (!isLeaf)
 			childVector = iNodeCache + (nodeCode * siteCount) * alphabetDimension; 
-                          // if this mode is internal, simply look up the conditional vector in the same cache
+                          // if THIS node is internal, simply look up the conditional vector in the same cache
                           // as the parent (just a different offset)
 
 		for (long siteID = 0; siteID < siteCount; siteID++, 
@@ -295,7 +295,7 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&		     update
 					long matrixIndex =  siteState;
                     for (long k = 0; k < alphabetDimension; k++, matrixIndex += alphabetDimension)  
                         parentConditionals[k] *= tMatrix[matrixIndex];
-					continue; // nothing else to do, move to the next node
+					continue; // nothing else to do, move to the next site
 				}
 				else
 					childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension; 
@@ -313,9 +313,14 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&		     update
                     accumulator +=  matrixPointer[c]   * childVector[c];
                 
                 matrixPointer				  += alphabetDimension;
+                                
                 sum += (parentConditionals[p] *= accumulator);
             }
-			
+            
+            // if (sum < small_number) -- handle underflow
+
+            childVector	   += alphabetDimension; 
+                // shift the position in childvector to the next site
         }
     }
         
@@ -329,14 +334,17 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&		     update
     for (long siteID = 0; siteID < siteCount; siteID++)
     {
         _Parameter accumulator = 0.;
-         for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
-            accumulator += rootConditionals[p] * theProbs[p];        
+        for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
+        {
+            accumulator += *rootConditionals * theProbs[p];        
+        }
                 /* theProbs is a member variable of the tree, which basically determines
                    what probability there is to observe a given character at the root
                    in simple cases it is fixed for the duration of optimization, but for more
                    complex models it may change from iteration to iteration
                  */
         result += log(accumulator) * theFilter->theFrequencies [siteID];
+                // correct for the fact that identical alignment columns may appear more than once
     }
 
  
