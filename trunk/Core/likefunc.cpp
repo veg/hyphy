@@ -8025,6 +8025,8 @@ bool	_LikelihoodFunction::HasPartitionChanged (long index)
 	
 	return false;
 }
+
+//#define _HY_GPU_EXAMPLE_CALCULATOR
 	
 //_______________________________________________________________________________________
 
@@ -8076,6 +8078,91 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 	
 	if (conditionalInternalNodeLikelihoodCaches)
 	{
+#ifdef  _HY_GPU_EXAMPLE_CALCULATOR
+
+       long		ciid			 = MAX(0,currentRateClass); // ignore this for now as it pertains to more complex evolutionary models
+       
+/* step 1: determine which _branches_ need to be updated; most of the work is done in _TheTree::DetermineNodesForUpdate 
+We will store store both those branches which need to be traversed and 
+those matrices that need to be reexponentiated. Note that the first set can have branches not in the second set 
+(parents of "touched" nodes, whose matrices have not changed).
+
+
+*/ 
+
+      _List      changedModels;
+                /* retrieve the list of modified matrices for partition 'index' (initially always 0 for simple cases)
+                 */
+      
+      _SimpleList changedBranches;
+                /* this is the list of INDICES of branches that are going to be computed;
+                
+                   for a tree with N leaves and M < N internal nodes, the leaves will 
+                   be indexed from 0 to N-1 (in post-order traversal), while internal 
+                   branches from N to N + M - 1 (also in post-order traversal)
+                   
+                   for example the tree ((A,C)N1,D,(B,E)N2)Root will be laid out as
+                   
+                   A,C,D,B,E,N1,N2,Root
+                   
+                   when we look at the index of a branch, we can decide if its a leaf by checking
+                   that its index is < N.
+                   
+                */ 
+                
+        t->DetermineNodesForUpdate (changedBranches, // this will receive the list of branch indices (in post-order traversal, with 
+                                               // child ALWAYS preceding the parent (as in the tree example before)
+                                     &changedModels, // this will receive the list of _CalcNode objects which must be exponentitated
+                                        -1, -1, true); // don't worry about this now
+                
+       
+
+
+
+/* step 2: update all the transition matrices that have been marked as modified are 
+ this is normally done by _TheTree::ExponentiateMatrices
+ determination of WHICH matrices have been modifed is taken care of my the host code and is supplied
+ in the matricesToExponentiate member variable:  */
+
+
+ 
+         
+        t->ExponentiateMatrices(changedModels, 
+                                1 /* use one thread */,
+                                -1 /*ignore this flag for now */);
+                                
+/* now for the kernel computation you would need to copy modified matrices onto the device using the code like 
+
+    for (long nodeID = 0; nodeID < matrices->lLength; nodeID++)
+	{
+		_CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
+		thisNode->GetCompMatrix (ciid)->theData; // this is the class member which actually contains the double* 
+                                                 // pointer to matrix entires (laid out row by row, i.e. [i*vDim + j]
+                                                 // indexes row i column j; here vDim is the "vertical" dimension, i.e. 
+                                                 // the number of columns
+	}
+
+*/
+
+/* step 3
+*/
+
+/*
+    because much of the access is done using protected members of _TheTree, I defined a new function that does 
+    the calculation as simply as possible
+*/    
+
+    // this is to update the GUI.
+    if (divideBy && (likeFuncEvalCallCount % divideBy == 0))
+        yieldCPUTime();
+            
+    return t->VerySimpleLikelihoodEvaluator (changedBranches, 
+                                              df, 
+                                              conditionalInternalNodeLikelihoodCaches[index],     
+                                              conditionalTerminalNodeStateFlag[index],
+                                              (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index) );
+    
+#else
 		long		catID			 = siteRes?currentRateClass:-1;
 		
 		if (conditionalInternalNodeLikelihoodCaches[index])
@@ -8285,6 +8372,8 @@ _Parameter	_LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, l
 				   return t->Process3TaxonNumericFilter ((_DataSetFilterNumeric*)df);
 				   
 			}
+    #endif
+    
 	}
 	else
 	{		

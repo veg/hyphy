@@ -206,6 +206,146 @@ void		_TheTree::FillInConditionals		(_DataSetFilter*		theFilter, _Parameter*	iNo
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+
+_Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&		     updateNodes, 
+                                                       _DataSetFilter*		 theFilter,
+                                                       _Parameter*			 iNodeCache,
+                                                       long	   *			 lNodeFlags,
+                                                       _GrowingVector*		 lNodeResolutions)
+{
+// set some useful global variables
+	_SimpleList		taggedInternals					(flatNodes.lLength, 0, 0);
+                        // as we are traversing the tree, we are ensuring that each node which changes
+                        // forces the parent to change and preps the parent cache for computations
+                        // by zeroing everything out 
+                         
+                        // flatNodes is the array of indices (post-order traveral) of _internal nodes_
+                        // for example ((A,C)N1,D,(B,E)N2)Root will have
+                        // N1 (index 0), N2 (index 1), Root (index 2) in this array
+
+	long			alphabetDimension	  =			theFilter->GetDimension(), 
+                        // the number of characters (and the dimension of transition matrices)
+                                                        
+					siteCount			  =			theFilter->NumberDistinctSites();
+                        // how many unique sites are there
+                        
+	for  (long nodeID = 0; nodeID < updateNodes.lLength; nodeID++)
+	{
+		long	nodeCode   = updateNodes.lData [nodeID],
+				parentCode = flatParents.lData [nodeCode]; 
+                            // the INDEX of the parent node for the current node;
+                            // this list (a member of _TheTree is computed when the tree is created
+                            // for ((A,C)N1,D,(B,E)N2)Root this array will store
+                            // 0 (A), 0(C), 2(D), 1(B), 1(E), 2(N1), 2(N3), -1 (root)
+		
+		bool	isLeaf	   = nodeCode < flatLeaves.lLength;
+        
+        if (!isLeaf)
+            nodeCode -=  flatLeaves.lLength;
+
+       _Parameter * parentConditionals = iNodeCache +	(parentCode  * siteCount) * alphabetDimension;
+                // this is a convenience pointer into the global cache
+                // each node will have siteCount*alphabetDimension contiguous doubles
+                
+        
+ 
+		if (taggedInternals.lData[parentCode] == 0)
+		// mark the parent for update and clear its conditionals if needed
+        {
+            taggedInternals.lData[parentCode]	  = 1; // only do this once
+            for (long k = 0, k3 = 0; k < siteCount; k++)
+                for (long k2 = 0; k2 < alphabetDimension; k2++)
+                    parentConditionals [k3++] = 1.0;
+        }
+		
+
+						
+		_Parameter  *		tMatrix = (isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):
+                                               ((_CalcNode*) flatTree    (nodeCode)))->GetCompExp(0)->theData;
+                            // in the host code the transition matrix is retrieved from the _CalcNode object
+                            // in the devide code there will probably be another array to grab it from                   
+                                
+		_Parameter  *	    childVector; // the vector of conditional probabilities for 
+                                         // THIS node (nodeCode)
+		
+		if (!isLeaf)
+			childVector = iNodeCache + (nodeCode * siteCount) * alphabetDimension; 
+                          // if this mode is internal, simply look up the conditional vector in the same cache
+                          // as the parent (just a different offset)
+
+		for (long siteID = 0; siteID < siteCount; siteID++, 
+                                                  parentConditionals += alphabetDimension)
+		{		
+            _Parameter  sum		 = 0.0;
+
+			if (isLeaf)
+            // the leaves do NOT have a conditional probability vector because most of them are fully resolved
+            // For example the codon AAG is going to map to (AAA)0,(AAC)0,(AAG)1,.....,(TTT)0, so we can 
+            // just store this as index 2, which says to put a '1' in the 2-nd index of the array (and assume the rest are 0)
+            // this is stored in lNodeFlags
+            // For ambiguous codons, e.g. AAR = {AAA,AAG}, the host code will resolve this to 1,0,1,0,...0 at prep time (because this will never change)
+            // and stores it in the lNodeResolutions (say at index K) and puts -K-1 into lNodeFlags, so that we now have to look it up here
+			{
+				long siteState = lNodeFlags[nodeCode*siteCount + siteID] ;
+                
+				if (siteState >= 0)
+				// a single character state; sweep down the appropriate column 
+                // note that one of the loops (over child state) drops out, since there is only one state
+				{
+					long matrixIndex =  siteState;
+                    for (long k = 0; k < alphabetDimension; k++, matrixIndex += alphabetDimension)  
+                        parentConditionals[k] *= tMatrix[matrixIndex];
+					continue; // nothing else to do, move to the next node
+				}
+				else
+					childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension; 
+                    // look up the resolution for the ambugious node -- this will have to be on the device as well
+                    // but can be in constant memory
+			}
+			
+            _Parameter *matrixPointer = tMatrix;
+            
+            for (long p = 0; p < alphabetDimension; p++)
+            {
+                _Parameter		accumulator = 0.0;
+            
+                for (long c = 0; c < alphabetDimension; c++) 
+                    accumulator +=  matrixPointer[c]   * childVector[c];
+                
+                matrixPointer				  += alphabetDimension;
+                sum += (parentConditionals[p] *= accumulator);
+            }
+			
+        }
+    }
+        
+    // now just process the root and return the likelihood
+
+    _Parameter	* rootConditionals = iNodeCache + alphabetDimension * ((flatTree.lLength-1)  * siteCount),
+                // the root is always the LAST internal node in all lists
+                  result = 0.0;
+
+
+    for (long siteID = 0; siteID < siteCount; siteID++)
+    {
+        _Parameter accumulator = 0.;
+         for (long p = 0; p < alphabetDimension; p++,rootConditionals++)
+            accumulator += rootConditionals[p] * theProbs[p];        
+                /* theProbs is a member variable of the tree, which basically determines
+                   what probability there is to observe a given character at the root
+                   in simple cases it is fixed for the duration of optimization, but for more
+                   complex models it may change from iteration to iteration
+                 */
+        result += log(accumulator) * theFilter->theFrequencies [siteID];
+    }
+
+ 
+    return result;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 _Parameter		_TheTree::ComputeTreeBlockByBranch	(					_SimpleList&		siteOrdering, 
 																		_SimpleList&		updateNodes, 
 																		_SimpleList*		tcc,
