@@ -619,6 +619,12 @@ class _TheTree: public _TreeTopology {
 						   a wrapper function to set up category variable maps for nodes;
 					       see comments for remapMyCategories in _CalcNode
 						 */
+                         
+            _Parameter  VerySimpleLikelihoodEvaluator   (_SimpleList&		     updateNodes, 
+                                                         _DataSetFilter*		 theFilter,
+                                                         _Parameter*			 iNodeCache,
+                                                          long	   *			 lNodeFlags,
+                                                         _GrowingVector*		 lNodeResolutions);
 		 
 #ifdef	_SLKP_LFENGINE_REWRITE_
 		void			SampleAncestorsBySequence		(_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);
