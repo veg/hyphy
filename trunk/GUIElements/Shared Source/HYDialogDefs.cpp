@@ -1816,10 +1816,11 @@ _String  NewTreeWindow (long sourceDF)
 		{
 			if (tipCount<=1)
 			{
-				optionList = _String("Sorry, but I can't create a tree with ")&tipCount&" tips for fairly obvious reasons.";
-				ProblemReport (optionList);
+                _String errMsg = _String("Sorry, but I can't create a tree with ")&tipCount&" tips for fairly obvious reasons.";
+				ProblemReport (errMsg);
 				return empty;
 			}
+            
 			for (long f=1; f<=tipCount; f++)
 			{
 				_String thisSpec ("Species_");

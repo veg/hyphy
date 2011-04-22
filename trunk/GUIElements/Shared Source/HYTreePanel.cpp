@@ -129,16 +129,16 @@ _HYTreePanel::_HYTreePanel(_String& title,_String& argument):_HYTWindow (_String
 	_HYLabel*		l4 = new _HYLabel (canvasSettings,GetOSWindowData());
 	bb->SetButtonDim (20);
 	bb->SetButtonLayoutW (4);
-	AddObject (c);
-	AddObject (c1);
-	AddObject (r);
-	AddObject (p1);
-	AddObject (l1);
-	AddObject (p2);
-	AddObject (l2);
-	AddObject (bb);
-	AddObject (l3);
-	AddObject (l4);
+	AddObject (c,false);
+	AddObject (c1,false);
+	AddObject (r,false);
+	AddObject (p1,false);
+	AddObject (l1,false);
+	AddObject (p2,false);
+	AddObject (l2,false);
+	AddObject (bb,false);
+	AddObject (l3,false);
+	AddObject (l4,false);
 	SetTableDimensions (6,3);
 	SetCell (0,0,c1);SetCell (0,1,l1);SetCell (0,2,p1);
 	SetCell (1,0,c1);SetCell (1,1,l2);SetCell (1,2,p2);
@@ -255,16 +255,7 @@ _HYTreePanel::_HYTreePanel(_String& title,_String& argument):_HYTWindow (_String
 	canvasSettings.top = canvasSettings.bottom = 50;
 	l3->SetDimensions (canvasSettings,canvasSettings);
 	SetWindowRectangle (0,0,HY_TREEPANEL_DEFSIZE,HY_TREEPANEL_DEFSIZE);
-	DeleteObject (c);
-	DeleteObject (c1);
-	DeleteObject (p1);
-	DeleteObject (l1);
-	DeleteObject (p2);
-	DeleteObject (l2);
-	DeleteObject (r);
-	DeleteObject (bb);
-	DeleteObject (l3);
-	DeleteObject (l4);
+
 	treeName = title;
 	hSpace = HY_TREEPANEL_HSPACE;
 	vSpace = HY_TREEPANEL_VSPACE;
@@ -1475,6 +1466,9 @@ bool	_HYTreePanel::ProcessEvent (_HYEvent* e)
 
 void	_HYTreePanel::SetTreeString (_String& theString)
 {
+    // need to make the tree variable, eh
+    _String treeStringPrep = _String ("Tree ") & treeName & " = " & theString;
+    ExecuteBLString (treeStringPrep, nil);
 	UpdateScalingVariablesList ();
 }
 
@@ -1493,44 +1487,44 @@ void	_HYTreePanel::ClearClipboardContents (void)
 
 void	_HYTreePanel::SetVariableReference (_String& varName)
 {
-	long f = LocateVarByName (varName),k;
-	if (f>=0)
-	{
-		_Variable* t = FetchVar(f);
-		_HYPullDown* scalingVars = (_HYPullDown*)GetObject (5);
-		f = scalingVars->MenuItemCount();
-		if (t->ObjectClass()==TREE)
-		{
-			treeName = varName;
-			for (k=3;k<f;k++)
-				scalingVars->DeleteMenuItem(3);
-			_SimpleList newScalingVariables;
-			((_TheTree*)t)->FindScalingVariables(newScalingVariables);
-			scaleVariable = "";
-			likeFuncID = -1;
-			for (f=0;f<likeFuncList.lLength;f++)
-			{
-				if (((_String*)likeFuncNamesList(f))->sLength)
-				{
-					_LikelihoodFunction* theLF = (_LikelihoodFunction*)likeFuncList (f);
-					if (theLF->DependOnTree (varName)>=0)
-					{
-						if (likeFuncID>=0)
-						{
-							likeFuncID=-1;
-							break;
-						}
-						else
-							likeFuncID = f;
-					}
-				}
-			}			
-			UpdateScalingVariablesList ();
-		}
-		else
-			for (k=3;k<f;k++)
-				scalingVars->DeleteMenuItem(k);
-	}
+	_TheTree * myTree = (_TheTree *)FetchObjectFromVariableByType (&varName, TREE);
+    
+    _HYPullDown* scalingVars = (_HYPullDown*)GetObject (5);
+    long f = scalingVars->MenuItemCount();
+   
+     if (myTree)
+    {
+        treeName = varName;
+        for (long k=3;k<f;k++)
+            scalingVars->DeleteMenuItem(3);
+            
+        _SimpleList newScalingVariables;
+        (myTree)->FindScalingVariables(newScalingVariables);
+        scaleVariable = empty;
+        likeFuncID = -1;
+        
+        for (long f=0;f<likeFuncList.lLength;f++)
+        {
+            if (((_String*)likeFuncNamesList(f))->sLength)
+            {
+                _LikelihoodFunction* theLF = (_LikelihoodFunction*)likeFuncList (f);
+                if (theLF->DependOnTree (varName)>=0)
+                {
+                    if (likeFuncID>=0)
+                    {
+                        likeFuncID=-1;
+                        break;
+                    }
+                    else
+                        likeFuncID = f;
+                }
+            }
+        }			
+        UpdateScalingVariablesList ();
+    }
+    else
+        for (long k=3;k<f;k++)
+            scalingVars->DeleteMenuItem(k);
 }
 
 //__________________________________________________________
