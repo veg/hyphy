@@ -744,8 +744,6 @@ function testLRT (vec1, vec2, itCount)
 {
 	size1 = Columns(vec1);
 	
-	sumVec1 = {size1,1};
-	sumVec1 = sumVec1["1"];
 	jvec	= {2,size1};
 	resMx1	= {itCount,1};
 	resMx2	= {itCount,1};
@@ -759,10 +757,11 @@ function testLRT (vec1, vec2, itCount)
 	
 	for (k=0; k<itCount; k=k+1)
 	{
-		resampled = Random(jvec,1)*sumVec1;
-		resMx1[k] = resampled[0];
-		resMx2[k] = resampled[1];
+		resampled = +Random(jvec,1);
+		resMx1[k] = +(resampled[0][-1]);
+		resMx2[k] = +(resampled[1][-1]);
 	}
 	
-	return (resMx1-resMx2)*2;
+	resMx = (resMx1-resMx2)*2;
+    return resMx - (+resMx) * (1/itCount);
 }
