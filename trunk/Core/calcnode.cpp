@@ -5331,13 +5331,15 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << "closepath\n";
 					(*res) << "} def\n";
 					
-					(*res) << "/diamond { 45 rotate\n";
-					(*res) <<  "1 size mul 0 size mul rlineto\n";
-					(*res) <<  "0 size mul 1 size mul rlineto\n";
-					(*res) <<  "-1 size mul 0 size mul rlineto\n";				
-					(*res) <<  "-45 rotate\n";
-					(*res) <<  "closepath\n";
-					(*res) <<  "} def\n";
+					(*res) << "/diamond { 0 -0.707107 size mul rmoveto\
+                              0.707107 size mul 0 rmoveto\
+                              45 rotate\
+                              size  0 rlineto\
+                              0 size rlineto\
+                              -1 size mul 0 rlineto\			
+                              -45 rotate\
+                              closepath\
+                              } def\n";
 				}
 				
 
