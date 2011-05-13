@@ -570,7 +570,7 @@ modelNames = {{"| Constant Rates      |",
 			   "| Dual V.R. + Lineage |"}};
 			   
 
-if (MPI_NODE_COUNT>1)
+if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
 /* Check to see if we are running with more than one MPI node.
    If not - bail to single CPU execution */			   
 {
@@ -713,7 +713,7 @@ for (mi = 0; mi<5; mi=mi+1)
 			R:=1;
 		}	
 		
-		if (MPI_NODE_COUNT>1)
+		if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
 		{
 			/* look for an idle node */
 			for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
@@ -748,7 +748,7 @@ for (mi = 0; mi<5; mi=mi+1)
 	}
 }
 
-if (MPI_NODE_COUNT>1)
+if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
 /* wait for all the jobs to finish, process their results */
 {
 	while (1)
@@ -778,7 +778,7 @@ function ReceiveJobs (sendOrNot)
    set to 1 if there are jobs waiting to be sent to
    an MPI node */
 {
-	if (MPI_NODE_COUNT>1)
+	if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
 	{
 		MPIReceive (-1, fromNode, result_String);
 		modelIndex = MPINodeState[fromNode-1][1];
@@ -897,7 +897,7 @@ function ReceiveJobs (sendOrNot)
 					DVRMLL = res[1][0];
 					DVRMPC = res[1][1];
 					/* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
-					if ((chosenModelList[2])&&(MPI_NODE_COUNT<=1))
+					if ((chosenModelList[2])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0))
 					{
 						pVal = 1-CChi2(2*(DVRMLL-NVRMLL),DVRMPC-NVRMPC);
 						fprintf (stdout, Format (pVal,13,8), " |");
@@ -921,7 +921,7 @@ function ReceiveJobs (sendOrNot)
 	if (modelIndex==4) /* local rates */
 	{
 		/* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
-		if ((chosenModelList[3])&&(MPI_NODE_COUNT<=1))
+		if ((chosenModelList[3])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0))
 		{
 			fprintf (stdout, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
 			fprintf (baselineOutput, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
