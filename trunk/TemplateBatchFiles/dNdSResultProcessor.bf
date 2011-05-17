@@ -698,8 +698,16 @@ function ComputePositiveSelection (modelID, sitesOnly)
 				if (psChoice)
 				{
 					tempVal = tempVal/columnSum;
-					rateAssignmentMatrix[counter1][0] = Max(Log(tempVal/(1-tempVal)/priorOdds),0);
-					rateAssignmentMatrix[counter1][1] = Max(-Log(tempVal/(1-tempVal)/priorOdds),0);
+                    if (tempVal == 1)
+                    {
+                        logOdds = 1e26;
+                    }
+                    else
+                    {
+                        logOdds = Log(tempVal/(1-tempVal)/priorOdds);
+                    }
+					rateAssignmentMatrix[counter1][0] = Max(logOdds,0);
+					rateAssignmentMatrix[counter1][1] = Max(-logOdds,0);
 				}
 				else
 				{
