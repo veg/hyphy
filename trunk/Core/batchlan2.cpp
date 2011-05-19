@@ -66,8 +66,10 @@ _String		sqlOpen 				("SQL_OPEN"),
 			seqAlignGapExtend		("SEQ_ALIGN_GAP_EXTEND"),
 			seqAlignGapOpen2		("SEQ_ALIGN_GAP_OPEN2"),
 			seqAlignGapExtend2		("SEQ_ALIGN_GAP_EXTEND2"),
+			seqAlignFrameShift      ("SEQ_ALIGN_FRAMESHIFT"),
 			seqAlignGapLocal		("SEQ_ALIGN_NO_TP"),
 			seqAlignGapAffine		("SEQ_ALIGN_AFFINE"),
+			seqAlignCodonAlign      ("SEQ_ALIGN_CODON_ALIGN"),
 			seqAlignGapLinearSpace	("SEQ_ALIGN_LINEAR_SPACE"),
 			completeFlag 			("COMPLETE"),
 			conditionalWeights		("WEIGHTS"),
@@ -109,7 +111,7 @@ _AVLListX	 _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
 
 int  	 	 _HYSQLCallBack						(void* data,int callCount);
 //int  	 	 _HYSQLBusyCallBack					(void* exList,int cc,char** rd,char** cn);
-_Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
+_Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
 _Parameter	 CostOnly							(_String*,_String*, long, long, long, long, bool, bool, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix*, char = 0, char* = nil);
 _Parameter   LinearSpaceAlign					(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool, _SimpleList&,_Parameter,long,long,long,long,_Matrix**, char, char*);
 void 		 BacktrackAlign						(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
@@ -1467,6 +1469,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 			if (mappingTable)
 			{
 				// check for required parameters
+                    
 				_FString * charVector = (_FString*)mappingTable->GetByKey (seqAlignMap, STRING);
 				
 				long	   charCount = 0;
@@ -1478,7 +1481,8 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 					for (long cc = 0; cc < charVector->theString->sLength; cc++)
 						if (ccount.lData[charVector->theString->sData[cc]]>=0)
 						{
-							charCount = 0;
+							charCount = 0; // this is an error condition for 
+                                           // duplicate characters in the string
 							break;
 						}
 						else
@@ -1487,9 +1491,22 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 							charCount ++;
 						}
 				}
+                
 				if (charVector && charCount)
 				{
 					// now check that all characters
+                    bool		doLocal 	= false,
+                                doAffine	= false,
+                                doLinear	= true,
+                                doCodon     = false;
+
+                    _PMathObj 	c = mappingTable->GetByKey (seqAlignCodonAlign, NUMBER);
+                    if (c)
+                        doCodon = c->Compute()->Value() > 0.5;
+                        
+                    if (doCodon)
+                        charCount *= charCount * charCount;
+
 					_Matrix * scoreMatrix = (_Matrix*)mappingTable->GetByKey (seqAlignScore, MATRIX);
 					if (scoreMatrix && scoreMatrix->GetHDim () == charCount && scoreMatrix->GetVDim () == charCount)
 					{
@@ -1509,17 +1526,16 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 						settingReport << "\n\tGap character:";
 						settingReport << gapCharacter;
 
-						_Parameter	gapOpen   = 15.,
-									gapOpen2  = 15.,
-									gapExtend = 1.,
-									gapExtend2= 1.;
+						_Parameter	gapOpen       = 15.,
+									gapOpen2      = 15.,
+									gapExtend     = 1.,
+									gapExtend2    = 1.,
+                                    gapFrameshift = 50.;
 									
-						bool		doLocal 	= false,
-									doAffine	= false,
-									doLinear	= true;
+                                    
 									
 									
-						_PMathObj 	c = mappingTable->GetByKey (seqAlignGapOpen, NUMBER);
+						c = mappingTable->GetByKey (seqAlignGapOpen, NUMBER);
 						if (c)
 							gapOpen = c->Compute()->Value();
 						
@@ -1549,35 +1565,45 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 						settingReport << "\n\tGap extend cost:";
 						settingReport << _String (gapExtend2);
 
-						c = mappingTable->GetByKey (seqAlignGapLocal, NUMBER);
+						c = mappingTable->GetByKey (seqAlignFrameShift, NUMBER);
+						if (c)
+							gapFrameshift = c->Compute()->Value();
+							
+						settingReport << "\n\tCodon frameshift cost:";
+						settingReport << _String (gapFrameshift);
+	
+    
+                        c = mappingTable->GetByKey (seqAlignGapLocal, NUMBER);
 						if (c)
 							doLocal = c->Compute()->Value() > 0.5;
 
 						settingReport << "\n\tIgnore terminal gaps: ";
-						if (doLocal)
+                        settingReport << (doLocal?"Yes":"No");
+	
+                        settingReport << "\n\tUse codon alignment with frameshift routines: ";
+						if (doCodon)
+                        {
 							settingReport << "Yes";
+                            doAffine = false;
+                            doLinear = false;
+                            
+                            settingReport << "\n\t: Linear space routines or affine gaps are not implemented";
+                        }
 						else
 							settingReport << "No";
 
 						c = mappingTable->GetByKey (seqAlignGapAffine, NUMBER);
 						if (c)
 							doAffine = c->Compute()->Value() > 0.5;
-
 						settingReport << "\n\tAffine gap costs: ";
-						if (doAffine)
-							settingReport << "Yes";
-						else
-							settingReport << "No";
+                        settingReport << (doAffine?"Yes":"No");
 
 						c = mappingTable->GetByKey (seqAlignGapLinearSpace, NUMBER);
 						if (c)
 							doLinear = c->Compute()->Value() > 0.5;
 							
 						settingReport << "\n\tUse linear space routines: ";
-						if (doLinear)
-							settingReport << "Yes";
-						else
-							settingReport << "No";
+                        settingReport << (doLinear?"Yes":"No");
 							
 						settingReport.Finalize();
 						ReportWarning (settingReport);
@@ -1613,7 +1639,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								{
 									_List 		  store;
 									score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
-																	gapOpen,gapExtend,gapOpen2,gapExtend2,doLocal,doAffine,doLinear,store);
+																	gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,store);
 									store.bumpNInst();
 									pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
 									pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
@@ -2673,7 +2699,9 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 
 //____________________________________________________________________________________	
 
-_Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,_Parameter gopen2,_Parameter gextend2,bool doLocal,bool doAffine,bool,_List& store)
+_Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,
+                                         _Parameter gopen2,_Parameter gextend2, _Parameter gFrameshift,
+                                         bool doLocal,bool doAffine,bool doCodon,_List& store)
 {
 	_String *res1 = new _String (s1->sLength+1, true),
 			*res2 = new _String (s2->sLength+1, true);
@@ -2729,13 +2757,20 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				}				
 				else
 				{
-					_Parameter cost = -gopen;
-					for (long m=1; m < colCount; m++, cost-=gopen)
-						scoreMatrix.theData[m] = cost;
-						
-					cost = -gopen2;
-					for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
-						scoreMatrix.theData[k] = cost;
+                    if (doCodon)
+                    {
+                        // initialize the codon case here
+                    }
+                    else
+                    {
+                        _Parameter cost = -gopen;
+                        for (long m=1; m < colCount; m++, cost-=gopen)
+                            scoreMatrix.theData[m] = cost;
+                            
+                        cost = -gopen2;
+                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
+                            scoreMatrix.theData[k] = cost;
+                    }
 				}
 			}
 			else
@@ -2787,27 +2822,53 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 			{
 				long upto1 = s1->sLength,
 					 upto2 = s2->sLength;
-					 
-				for (long r=1; r<=upto1; r++)
-				{
-					long	  c1 = cmap.lData[s1->sData[r-1]];
-					for (long c=1; c<=upto2; c++)
-					{
-						_Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
-								   score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
-								   score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
-								   
-						if (c1>=0)
-						{
-							long	   c2 = cmap.lData[s2->sData[c-1]];
-							
-							if (c2>=0)
-								score3 += (*ccost)(c1,c2);
-						}
-						
-						scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
-					}
-				}
+                     
+                if (doCodon)
+                {					 
+                    for (long r=1; r<=upto1; r++)
+                    {
+                        long	  c1 = cmap.lData[s1->sData[r-1]];
+                        for (long c=1; c<=upto2; c++)
+                        {
+                            _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
+                                       score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
+                                       score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+                                       
+                            if (c1>=0)
+                            {
+                                long	   c2 = cmap.lData[s2->sData[c-1]];
+                                
+                                if (c2>=0)
+                                    score3 += (*ccost)(c1,c2);
+                            }
+                            
+                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+                        }
+                    }
+                }
+                else
+                {
+                    for (long r=1; r<=upto1; r++)
+                    {
+                        long	  c1 = cmap.lData[s1->sData[r-1]];
+                        for (long c=1; c<=upto2; c++)
+                        {
+                            _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
+                                       score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
+                                       score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+                                       
+                            if (c1>=0)
+                            {
+                                long	   c2 = cmap.lData[s2->sData[c-1]];
+                                
+                                if (c2>=0)
+                                    score3 += (*ccost)(c1,c2);
+                            }
+                            
+                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+                        }
+                    }
+                }
 			}
 				
 			long p1 = s1->sLength,
