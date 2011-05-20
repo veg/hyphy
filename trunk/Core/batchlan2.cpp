@@ -111,7 +111,7 @@ _AVLListX	 _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
 
 int  	 	 _HYSQLCallBack						(void* data,int callCount);
 //int  	 	 _HYSQLBusyCallBack					(void* exList,int cc,char** rd,char** cn);
-_Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&);
+_Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Parameter,_Parameter,_Parameter,_Parameter,_Parameter,bool,bool,bool,_List&, long);
 _Parameter	 CostOnly							(_String*,_String*, long, long, long, long, bool, bool, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix*, char = 0, char* = nil);
 _Parameter   LinearSpaceAlign					(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool, _SimpleList&,_Parameter,long,long,long,long,_Matrix**, char, char*);
 void 		 BacktrackAlign						(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
@@ -1504,11 +1504,9 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                     if (c)
                         doCodon = c->Compute()->Value() > 0.5;
                         
-                    if (doCodon)
-                        charCount *= charCount * charCount;
 
 					_Matrix * scoreMatrix = (_Matrix*)mappingTable->GetByKey (seqAlignScore, MATRIX);
-					if (scoreMatrix && scoreMatrix->GetHDim () == charCount && scoreMatrix->GetVDim () == charCount)
+					if (scoreMatrix && scoreMatrix->GetHDim () == (doCodon?charCount*charCount*charCount:charCount) && scoreMatrix->GetVDim () == scoreMatrix->GetHDim ())
 					{
 						scoreMatrix = (_Matrix*)scoreMatrix->ComputeNumeric();
 						scoreMatrix->CheckIfSparseEnough(true);
@@ -1639,7 +1637,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 								{
 									_List 		  store;
 									score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
-																	gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,store);
+																	gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,store, charCount);
 									store.bumpNInst();
 									pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
 									pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
@@ -2701,7 +2699,7 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 
 _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,
                                          _Parameter gopen2,_Parameter gextend2, _Parameter gFrameshift,
-                                         bool doLocal,bool doAffine,bool doCodon,_List& store)
+                                         bool doLocal,bool doAffine,bool doCodon,_List& store, long charCount)
 {
 	_String *res1 = new _String (s1->sLength+1, true),
 			*res2 = new _String (s2->sLength+1, true);
@@ -2824,25 +2822,55 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 					 upto2 = s2->sLength;
                      
                 if (doCodon)
-                {					 
+                    // peform a codon alignment
+                {				
+                    short c11 = -1, c12 = -1, c13 = -1, c21 = -1, c22 = -1, c23 = -1;
+                    if (upto1 >= 3)
+                    {
+                        c11 = cmap.lData[s1->sData[0]];
+                        c12 = cmap.lData[s1->sData[1]];
+                        c13 = cmap.lData[s1->sData[2]];
+                    }
+                    if (upto2 >= 3)
+                    {
+                        c21 = cmap.lData[s2->sData[0]];
+                        c22 = cmap.lData[s2->sData[1]];
+                        c23 = cmap.lData[s2->sData[2]];
+                    }                   
                     for (long r=1; r<=upto1; r++)
                     {
-                        long	  c1 = cmap.lData[s1->sData[r-1]];
+                        long	  codon1 = -1;
+                        if (r >= 3)
+                        {
+                            if (c11 >=0 && c12 >=0 && c13 >=0)
+                                 codon1 = charCount * (c11*charCount + c12) + c13;
+                            c11 = c12; c12 = c13; c13 = cmap.lData[s1->sData[r]];
+                            
+                        }
+                                                    
                         for (long c=1; c<=upto2; c++)
                         {
-                            _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
-                                       score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
-                                       score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+                            _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gFrameshift,  // frameshift in 2nd 
+                                       score2 = scoreMatrix.theData[r*colCount+c-1]   - gFrameshift,  // frameshift in 1st
+                                       score3 = -A_LARGE_NUMBER,
+                                       score4 = (r>=3?scoreMatrix.theData[(r-3)*colCount+c-1]-gopen2:-A_LARGE_NUMBER), // codon insert in the 2nd sequence
+                                       score5 = (c>=3?scoreMatrix.theData[r*colCount+c-3]-gopen2:-A_LARGE_NUMBER); // codon inster in the 2nd sequence
                                        
-                            if (c1>=0)
+                            if (codon1 >= 0)
                             {
-                                long	   c2 = cmap.lData[s2->sData[c-1]];
-                                
-                                if (c2>=0)
-                                    score3 += (*ccost)(c1,c2);
+                                long codon2 = -1;
+                                if (c >= 3)
+                                {
+                                    if (c21 >=0 && c22 >=0 && c23 >=0)
+                                         codon2 = charCount * (c21*charCount + c22) + c23;
+                                    c21 = c22; c22 = c23; c23 = cmap.lData[s2->sData[c]];
+                                }
+                                if (codon2 >= 0)
+                                    score3 = scoreMatrix.theData[(r-3)*colCount+c-3] + (*ccost)(codon1,codon2);
                             }
                             
-                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,MAX(score3,MAX(score4,score5))));
+                            printf ("(%ld,%ld): %g\n", r, c,  scoreMatrix.theData[r*colCount+c]);
                         }
                     }
                 }
