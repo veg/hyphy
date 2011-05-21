@@ -103,7 +103,8 @@ if (Abs(DATAFILE_TREE))
 				return 0;
 			}
 			
-			ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"GrabBag.bf");
+			LoadFunctionLibrary ("GrabBag.bf");
+            
 			if (_paramOption == 0)
 			{
 				if (Abs(_Genetic_Code))
@@ -190,7 +191,7 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 				AlignSequences(aligned, inStr, alignOptions);
 				aligned = aligned[0];
 				s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
-				
+                //fprintf (stdout, s1, "\n");
 				DataSet realigned 			= ReadFromString (s1);
 				DataSetFilter twoSpecFilter = CreateFilter (realigned,1);
 			}
@@ -275,6 +276,8 @@ function _pddReceiveJobs (dummy)
 		_di 	= _pddi;
 		_dj		= _pddj;
 		_dk 	= BranchLength 		  (Inferred_Tree,0);
+        
+        //fprintf (stdout, _dk, "\n");
 	}
 	
 	distanceMatrix[_dj][_di+1]  = _dk;

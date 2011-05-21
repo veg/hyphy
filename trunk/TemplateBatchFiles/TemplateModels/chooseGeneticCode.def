@@ -238,7 +238,7 @@ function IsStop (codon, code)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function translateCodonToAA (codonSeq, mapping, offset)
+function mapCodonsToAA (codonSeq,aaSequence)
 {
 	seqLen = Abs (codonSeq);
 	translString = "";
@@ -458,4 +458,47 @@ function ApplyGeneticCodeTable (myModelType)
 	}
 
 	return  myModelType;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAA (codonSeq,aaSequence)
+{
+	mapping = defineCodonToAA ();
+	seqLen  = Abs (aaSequence);
+	translString = "";
+	translString * (seqLen);
+	
+	aaPos     = 0;
+	seqPos    = 0;
+	codon     = codonSeq[seqPos][seqPos+2];
+	currentAA = mapping[codon];
+	
+	for (aaPos = 0; aaPos < seqLen; aaPos += 1)
+	{
+		advance = 1;
+		if (aaSequence[aaPos] == "-")
+		{
+			if (currentAA != "X")
+			{
+				translString * "---";
+				advance = 0;
+			}
+		}
+		else
+		{
+			assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings");
+		}
+
+		if (advance)
+		{
+			translString * codon;
+			seqPos    += 3;
+			codon     = codonSeq[seqPos][seqPos+2];
+			currentAA = mapping[codon];
+		}
+	} 
+	translString * 0;
+	
+	return translString;
 }

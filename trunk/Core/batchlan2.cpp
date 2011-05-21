@@ -115,7 +115,9 @@ _Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Par
 _Parameter	 CostOnly							(_String*,_String*, long, long, long, long, bool, bool, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix*, char = 0, char* = nil);
 _Parameter   LinearSpaceAlign					(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool, _SimpleList&,_Parameter,long,long,long,long,_Matrix**, char, char*);
 void 		 BacktrackAlign						(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
+void 		 BacktrackAlignCodon				(_SimpleList&, long&, long&, _Parameter[5]);
 void 		 MismatchScore						(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&);
+void 		 MismatchScoreCodon					(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&, long);
 _String		 ProcessStringArgument				(_String*);
 bool		 RecurseDownTheTree					(_SimpleList&, _List&, _List&, _List&, _SimpleList&);
 
@@ -2755,19 +2757,26 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				}				
 				else
 				{
-                    if (doCodon)
+                    if (doCodon == false)
                     {
-                        // initialize the codon case here
-                    }
-                    else
-                    {
-                        _Parameter cost = -gopen;
+                         _Parameter cost = -gopen;
                         for (long m=1; m < colCount; m++, cost-=gopen)
                             scoreMatrix.theData[m] = cost;
                             
                         cost = -gopen2;
                         for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
-                            scoreMatrix.theData[k] = cost;
+                            scoreMatrix.theData[k] = cost;                    
+                    }
+                    else
+                    {
+                        _Parameter cost = -gopen;
+                        for (long m=1; m < colCount; m++, cost-=gopen)
+                            scoreMatrix.theData[m] = cost - (m%3!=1)?gFrameshift:0;
+                            
+                        cost = -gopen2;
+                        long cc = 1;
+                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2, cc++)
+                            scoreMatrix.theData[k] = cost - (cc%3 != 1)?gFrameshift:0;
                     }
 				}
 			}
@@ -2853,8 +2862,8 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                             _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gFrameshift,  // frameshift in 2nd 
                                        score2 = scoreMatrix.theData[r*colCount+c-1]   - gFrameshift,  // frameshift in 1st
                                        score3 = -A_LARGE_NUMBER,
-                                       score4 = (r>=3?scoreMatrix.theData[(r-3)*colCount+c-1]-gopen2:-A_LARGE_NUMBER), // codon insert in the 2nd sequence
-                                       score5 = (c>=3?scoreMatrix.theData[r*colCount+c-3]-gopen2:-A_LARGE_NUMBER); // codon inster in the 2nd sequence
+                                       score4 = (r>=3?scoreMatrix.theData[(r-3)*colCount+c]-gopen2:-A_LARGE_NUMBER), // codon insert in the 2nd sequence
+                                       score5 = (c>=3?scoreMatrix.theData[r*colCount+c-3]-gopen:-A_LARGE_NUMBER); // codon insert in the 1st sequence
                                        
                             if (codon1 >= 0)
                             {
@@ -2869,10 +2878,12 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                     score3 = scoreMatrix.theData[(r-3)*colCount+c-3] + (*ccost)(codon1,codon2);
                             }
                             
+                            //printf ("%ld %ld: (%g,%g,%g,%g,%g)\n", r,c , score1, score2, score3, score4, score5);
                             scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,MAX(score3,MAX(score4,score5))));
-                            printf ("(%ld,%ld): %g\n", r, c,  scoreMatrix.theData[r*colCount+c]);
                         }
                     }
+                   // _String alignmentSM ("alignmentScoreMatrix");
+                   // CheckReceptacleAndStore(&alignmentSM, empty, true, &scoreMatrix);
                 }
                 else
                 {
@@ -2977,15 +2988,35 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 			}
 			else
 			{
-				while (p1 && p2)
-				{
-					_Parameter bscore1 = scoreMatrix.theData[(p1-1)*colCount+p2]-gopen2,
-							   bscore2 = scoreMatrix.theData[p1*colCount+p2-1]-gopen,
-							   bscore3 = scoreMatrix.theData[(p1-1)*colCount+p2-1];
-							   							   
-					MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore3);
-					BacktrackAlign (editOps, p1,p2,bscore1,bscore2,bscore3);
-				}
+                if (doCodon)
+                {
+                    while (p1 && p2)
+                    {
+                        _Parameter scores[5] = {scoreMatrix.theData[(p1-1)*colCount+p2] - gFrameshift,  // frameshift in 2nd 
+                                                scoreMatrix.theData[p1*colCount+p2-1]   - gFrameshift,  // frameshift in 1st
+                                                (p1>=3&&p2>=3)?scoreMatrix[(p1-3)*colCount+p2-3]:-A_LARGE_NUMBER,
+                                                (p1>=3?scoreMatrix.theData[(p1-3)*colCount+p2]-gopen2:-A_LARGE_NUMBER), // codon insert in the 2nd sequence
+                                                (p2>=3?scoreMatrix.theData[p1*colCount+p2-3]-gopen:-A_LARGE_NUMBER) // codon inster in the 1st sequence
+                                                };
+                                                
+                        MismatchScoreCodon (s1,s2,p1,p2,cmap,ccost,scores[2], charCount);
+                        BacktrackAlignCodon (editOps, p1,p2,scores);
+                       // fprintf (stdout, "%ld %ld: %ld\n", p1, p2, editOps.Element(-1));
+                    }
+                
+                }
+                else
+                {
+                    while (p1 && p2)
+                    {
+                        _Parameter bscore1 = scoreMatrix.theData[(p1-1)*colCount+p2]-gopen2,
+                                   bscore2 = scoreMatrix.theData[p1*colCount+p2-1]-gopen,
+                                   bscore3 = scoreMatrix.theData[(p1-1)*colCount+p2-1];
+                                                               
+                        MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore3);
+                        BacktrackAlign (editOps, p1,p2,bscore1,bscore2,bscore3);
+                    }
+                }
 			}
 			
 			while (p1>0)
@@ -3011,9 +3042,33 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 						(*res1) << gap;
 						(*res2) << s2->sData[p2++];
 						break;
+					case 3:
+						(*res1) << gap;
+						(*res1) << gap;
+						(*res1) << gap;
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+						break;
+					case -3:
+						(*res2) << gap;
+						(*res1) << s1->sData[p1++];
+						(*res2) << gap;
+						(*res1) << s1->sData[p1++];
+						(*res2) << gap;
+						(*res1) << s1->sData[p1++];
+						break;
 					case -1:
 						(*res2) << gap;
 						(*res1) << s1->sData[p1++];
+						break;
+					case 9:
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
 						break;
 				}
 				
@@ -3681,6 +3736,53 @@ inline	void BacktrackAlign			(_SimpleList& editOps , long& p1, long& p2, _Parame
 
 //____________________________________________________________________________________	
 
+inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, _Parameter scores[5])
+{
+
+// score 0 -- frameshift in 2nd
+// score 1 -- frameshift in 1st
+// score 3 -- codon align
+// score 4 -- 3x insert in 2nd
+// score 5 -- 3x insert in 1st
+
+    long maxID = 0;
+    _Parameter maxV = scores[0];
+    for (long k = 1; k < 5; k++)
+        if (scores[k] > maxV)
+        {
+            maxID = k;
+            maxV = scores[k];
+        }
+
+    switch (maxID)
+    {
+        case 0: 
+            p1--;
+            editOps << -1;
+            break;
+        case 1: 
+            p2--;
+            editOps << 1;
+            break;
+        case 2: 
+            p2-=3;
+            p1-=3;
+            editOps << 9;
+            break;
+        case 3:
+            p1-=3;
+            editOps << -3;
+            break;
+        case 4:
+            p2-=3;
+            editOps << 3;
+            
+    }
+}
+
+
+//____________________________________________________________________________________	
+
 inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _SimpleList& cmap, _Matrix* ccost, _Parameter& score)
 {
 	long	  c1 = cmap.lData[s1->sData[p1-1]];
@@ -3691,6 +3793,26 @@ inline	void MismatchScore			(_String* s1, _String*s2 , long p1, long p2, _Simple
 		if (c2>=0)
 			score += (*ccost)(c1,c2);
 	}
+}
+
+//____________________________________________________________________________________	
+
+inline	void MismatchScoreCodon		 (_String* s1, _String*s2 , long p1, long p2, _SimpleList& cmap, _Matrix* ccost, _Parameter& score, long charCount)
+{
+	long	  c1[3], c2[3];
+  
+    for (long k = 1; k <= 3; k++)
+    {
+        c1[3-k] = cmap.lData[s1->sData[p1-k]];
+        c2[3-k] = cmap.lData[s2->sData[p2-k]];
+        if (c1[3-k] < 0 || c2[3-k] < 0)
+            return;
+    }
+
+    score += (*ccost)(c1[2]+charCount*(c1[1]+charCount*c1[0]),
+                      c2[2]+charCount*(c2[1]+charCount*c2[0]));
+                      
+
 }
 
 //____________________________________________________________________________________	

@@ -608,7 +608,7 @@ function doClustering (from, to, clusteringAlg)
 						{
 							if (gatedDistances[currentVertex][k2] == 0)
 							{
-								//fprintf (stdout, currentVertex, " failed: ", k2, "\n");
+								//fprintf (stdout, currentVertex, " failed: ", k2, "/", distanceMatrix[currentVertex][k2], "\n");
 								k2 = -1;
 								break;
 							}

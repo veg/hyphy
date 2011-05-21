@@ -794,3 +794,47 @@ function RankMatrix (matrix)
 
 /*---------------------------------------------------------------------*/
 
+function mapSets (sourceList,targetList)
+// source ID -> target ID (-1 means no correspondence)
+
+{
+	mapping 	  = {};
+	targetIndexing = {};
+	_d = Rows (targetList) * Columns (targetList);
+	
+	for (_i = 0; _i < _d; _i += 1)
+	{
+		targetIndexing [targetList[_i]] = _i + 1;
+	}
+	_d = Rows (sourceList) * Columns (sourceList);
+	for (_i = 0; _i < _d; _i += 1)
+	{
+		mapping [_i] = targetIndexing[sourceList[_i]] - 1;
+	}
+	
+	return mapping;
+}
+
+/*---------------------------------------------------------------------*/
+
+function mapStrings (sourceStr,targetStr)
+// source ID -> target ID (-1 means no correspondence)
+
+{
+	mapping 	  = {};
+	targetIndexing = {};
+	_d = Abs(targetStr);
+	
+	for (_i = 0; _i < _d; _i += 1)
+	{
+		targetIndexing [targetStr[_i]] = _i + 1;
+	}
+	_d = Abs (targetStr);
+	for (_i = 0; _i < _d; _i += 1)
+	{
+		mapping [_i] = targetIndexing[sourceStr[_i]] - 1;
+	}
+	
+	return mapping;
+}
+
