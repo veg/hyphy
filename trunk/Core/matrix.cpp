@@ -4229,13 +4229,16 @@ long	_Matrix::HashBack  (long logicalIndex)
 
 //_____________________________________________________________________________________________
 
-_Parameter	_Matrix::MaxElement  (char runMode)	
+_Parameter	_Matrix::MaxElement  (char runMode, long* indexStore)	
 // returns matrix's largest abs value element
 {
 	if (storageType == 1)
 	{
-		_Parameter max 	= 0.0, 
+		_Parameter max 	= -A_LARGE_NUMBER, 
 				   temp;
+                   
+        bool doAbsValue = runMode != 1 && runMode != 3,
+             doMaxElement = runMode == 0 || runMode == 3;
 		
 		if (theIndex)
 		{
@@ -4245,13 +4248,17 @@ _Parameter	_Matrix::MaxElement  (char runMode)
 				if  (k != -1)
 				{
 					temp = theData[i];
-					if (runMode != 1 && temp<0.0)
+					if (doAbsValue && temp<0.0)
 						temp = -temp;
 					
-					if (runMode == 0)
+					if (doMaxElement)
 					{
 						if (temp>max) 
+                        {
 							max = temp;
+                            if (indexStore)
+                                *indexStore = k;
+                        }
 					}
 					else
 						max += temp;
@@ -4264,13 +4271,17 @@ _Parameter	_Matrix::MaxElement  (char runMode)
 			for (long i = 0; i<lDim; i++)
 			{
 				temp = theData[i];
-				if (runMode != 1 && temp<0.0)
+				if (doAbsValue && temp<0.0)
 					temp = -temp;
 				
-				if (runMode == 0)
+				if (doMaxElement)
 				{
 					if (temp>max) 
+                    {
 						max = temp;
+                        if (indexStore)
+                            *indexStore = i;
+                    }
 				}
 				else
 					max += temp;
