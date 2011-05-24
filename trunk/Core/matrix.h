@@ -243,10 +243,12 @@ class		_Matrix: public _MathObject {
 														// an auxiliary function which duplicates a matrix
 	
 													
-				_Parameter			MaxElement		(char doSum = 0);
+				_Parameter			MaxElement		(char doSum = 0, long * = nil);
 							// SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or 
 							// the sum of all absolute values (doSum == 2)
-														// returns the largest element's abs value for given matrix
+                            // returns the largest element's abs value for given matrix
+                            // SLKP 20110523: added an option (doSum == 3) to return the largest element (no abs value)
+                            // for run modes 0 and 3, if the 2nd argument is non-nil, the index of the winning element will be stored
 	
 				_Parameter			MinElement		(); // returns the smallest, non-zero element value for given matrix
 
