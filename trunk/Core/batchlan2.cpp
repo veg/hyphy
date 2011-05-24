@@ -2748,8 +2748,8 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                mIndex2	= mIndex-3*colCount,
                codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
               
-     alignmentOptions.theData  [0] = scoreMatrix.theData[mIndex-colCount]  - gFrameshift; // introduce a +1 frameshift in the 2nd sequence
-     alignmentOptions.theData  [1] = scoreMatrix.theData[mIndex-1]  - gFrameshift;        // introduce a +1 frameshift in the 1st sequence
+     alignmentOptions.theData  [0] = -A_LARGE_NUMBER;//scoreMatrix.theData[mIndex-colCount]  - gFrameshift; // introduce a +1 frameshift in the 2nd sequence
+     alignmentOptions.theData  [1] = -A_LARGE_NUMBER;//scoreMatrix.theData[mIndex-1]  - gFrameshift;        // introduce a +1 frameshift in the 1st sequence
      alignmentOptions.theData  [2] = -A_LARGE_NUMBER;
      alignmentOptions.theData  [3] = (r>=3?scoreMatrix.theData[mIndex2]-gopen2:-A_LARGE_NUMBER); // 3-nuc insert in the 2nd sequence
      alignmentOptions.theData  [4] = (c>=3?scoreMatrix.theData[mIndex-3]-gopen:-A_LARGE_NUMBER); // 3-nuc insert in the 1st sequence
