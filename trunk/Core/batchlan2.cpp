@@ -115,7 +115,7 @@ _Parameter	 AlignStrings						(_String*,_String*,_SimpleList&,_Matrix*,char,_Par
 _Parameter	 CostOnly							(_String*,_String*, long, long, long, long, bool, bool, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool,_Matrix&, _Matrix*, _Matrix*, char = 0, char* = nil);
 _Parameter   LinearSpaceAlign					(_String*,_String*, _SimpleList&, _Matrix*, _Parameter, _Parameter, _Parameter, _Parameter, bool, bool, _SimpleList&,_Parameter,long,long,long,long,_Matrix**, char, char*);
 void 		 BacktrackAlign						(_SimpleList&, long&, long&, _Parameter, _Parameter, _Parameter);
-void 		 BacktrackAlignCodon				(_SimpleList&, long&, long&, _Parameter[5]);
+void 		 BacktrackAlignCodon				(_SimpleList&, long&, long&, long);
 void 		 MismatchScore						(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&);
 void 		 MismatchScoreCodon					(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&, long);
 _String		 ProcessStringArgument				(_String*);
@@ -2758,33 +2758,40 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
      alignmentOptions.theData  [7] = -A_LARGE_NUMBER; // align 2 nucleotides of 1st sequence with 3 in 2st (+1 frameshift)
      alignmentOptions.theData  [8] = -A_LARGE_NUMBER; // align 1 nucleotide of  1st sequence with 3 in 2st (+2 frameshift)
 
+    long codon2 = ConstructCodonIndex (encodedString2,charCount, c,3);
+    if (codon2 >= 0)
+    {
+        if (codon1 >= 0)
+            alignmentOptions[2] = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1,codon2);
+        if (r >= 2)
+        {
+            _Parameter          maxV         = -A_LARGE_NUMBER;
+            for (long k = 0; k < charCount; k++)
+            {
+                long codont = ConstructCodonIndex (encodedString1,charCount,r,2,k);
+                if (codont >= 0)
+                    maxV = MAX(maxV, (*ccost)(codont,codon2));
+            }
+            alignmentOptions[7] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV - gFrameshift;                              
+        }
+        _Parameter          maxV         = -A_LARGE_NUMBER;
+        for (long k = 0; k < charCount*charCount; k++)
+        {
+            long codont = ConstructCodonIndex (encodedString1,charCount,r,1,k);
+            if (codont >= 0)
+            {
+                /*if (c==7 && r==6)
+                {
+                    printf ("%ld: %g %g\n", codont, scoreMatrix.theData[mIndex-3-colCount],(*ccost)(codont,codon2));
+                }*/
+                maxV = MAX(maxV, (*ccost)(codont,codon2));
+            }
+        }
+        alignmentOptions[8] = scoreMatrix.theData[mIndex-3-colCount] + maxV -2 * gFrameshift;      
+    }
+        
     if (codon1 >= 0)
     {
-        long codon2 = ConstructCodonIndex (encodedString2,charCount, c,3);
-        if (codon2 >= 0)
-        {
-            alignmentOptions[2] = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1,codon2);
-            if (r >= 2)
-            {
-                _Parameter          maxV         = -A_LARGE_NUMBER;
-                for (long k = 0; k < charCount; k++)
-                {
-                    long codon1 = ConstructCodonIndex (encodedString1,charCount,r,2,k);
-                    if (codon1 >= 0)
-                        maxV = MAX(maxV, (*ccost)(codon1,codon2));
-                }
-                alignmentOptions[7] = scoreMatrix.theData[mIndex-3-colCount] + maxV;                              
-            }
-            _Parameter          maxV         = -A_LARGE_NUMBER;
-            for (long k = 0; k < charCount*charCount; k++)
-            {
-                long codon1 = ConstructCodonIndex (encodedString1,charCount,r,1,k);
-                if (codon1 >= 0)
-                    maxV = MAX(maxV, (*ccost)(codon1,codon2));
-            }
-            alignmentOptions[8] = scoreMatrix.theData[mIndex2-3] + maxV;      
-        }
-        
         if (c>=2) // try option 5
         {
             _Parameter          maxV         = -A_LARGE_NUMBER;
@@ -2794,7 +2801,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                 if (codon2 >= 0)
                     maxV = MAX(maxV, (*ccost)(codon1,codon2));
             }
-            alignmentOptions[5] = scoreMatrix.theData[mIndex2-1] + maxV;
+            alignmentOptions[5] = scoreMatrix.theData[mIndex2-2] + maxV - gFrameshift;
         }
         
         _Parameter          maxV         = -A_LARGE_NUMBER;
@@ -2804,7 +2811,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             if (codon2 >= 0)
                 maxV = MAX(maxV, (*ccost)(codon1,codon2));
         }
-        alignmentOptions[6] = scoreMatrix.theData[mIndex2] + maxV;
+        alignmentOptions[6] = scoreMatrix.theData[mIndex2-1] + maxV - 2*gFrameshift;
     }
         
     long whichOne = 0;    
@@ -3045,6 +3052,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                     
                     
                     _Matrix alignmentOptions (9,1,false,true);
+                    _Matrix tracker          (upto1+1,upto2+1,false,true);
 
                                                                                            
                     for (long r=1; r<=upto1; r++)
@@ -3053,7 +3061,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                     
                         for (long c=1; c<=upto2; c++)
                         {
-                            CodonAlignStringsStep              (alignmentOptions, 
+                            long id = CodonAlignStringsStep              (alignmentOptions, 
                                                   scoreMatrix,
                                                   encodedString1, 
                                                   encodedString2,
@@ -3066,11 +3074,14 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                                   gopen2,
                                                   ccost
                                                  );
+                            tracker.Store (r,c,id);
                         }
                         
                     }
-                    //_String alignmentSM ("alignmentScoreMatrix");
-                    //CheckReceptacleAndStore(&alignmentSM, empty, true, &scoreMatrix);
+                   /* _String alignmentSM ("alignmentScoreMatrix");
+                    CheckReceptacleAndStore(&alignmentSM, empty, true, &scoreMatrix);
+                    alignmentSM = ("alignmentMoveMatrix");
+                    CheckReceptacleAndStore(&alignmentSM, empty, true, &tracker); */
                 }
                 else
                 {
@@ -3261,18 +3272,26 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 			{
                 if (doCodon)
                 {
-                    while (p1 && p2)
+                    
+                    _Matrix alignmentOptions (9,1,false,true);
+                     while (p1 && p2)
                     {
-                        _Parameter scores[5] = {scoreMatrix.theData[(p1-1)*colCount+p2] - gFrameshift,  // frameshift in 2nd 
-                                                scoreMatrix.theData[p1*colCount+p2-1]   - gFrameshift,  // frameshift in 1st
-                                                (p1>=3&&p2>=3)?scoreMatrix[(p1-3)*colCount+p2-3]:-A_LARGE_NUMBER,
-                                                (p1>=3?scoreMatrix.theData[(p1-3)*colCount+p2]-gopen2:-A_LARGE_NUMBER), // codon insert in the 2nd sequence
-                                                (p2>=3?scoreMatrix.theData[p1*colCount+p2-3]-gopen:-A_LARGE_NUMBER) // codon inster in the 1st sequence
-                                                };
-                                                
-                        MismatchScoreCodon (s1,s2,p1,p2,cmap,ccost,scores[2], charCount);
-                        BacktrackAlignCodon (editOps, p1,p2,scores);
-                       // fprintf (stdout, "%ld %ld: %ld\n", p1, p2, editOps.Element(-1));
+                        
+                        
+                        BacktrackAlignCodon (editOps, p1,p2,CodonAlignStringsStep              (alignmentOptions, 
+                                                                                                scoreMatrix,
+                                                                                                encodedString1, 
+                                                                                                encodedString2,
+                                                                                                p1,
+                                                                                                p2,
+                                                                                                colCount,
+                                                                                                charCount,
+                                                                                                gFrameshift,
+                                                                                                gopen,
+                                                                                                gopen2,
+                                                                                                ccost
+                                                                                                ));
+                       //printf ("%ld %ld: %ld\n", p1, p2, editOps.Element(-1));
                     }
                 
                 }
@@ -3341,6 +3360,38 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 						(*res2) << s2->sData[p2++];
 						(*res2) << s2->sData[p2++];
 						break;
+                    case 12:
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res2) << gap;
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+                        break;
+                    case 13:
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res2) << gap;
+						(*res2) << gap;
+						(*res2) << s2->sData[p2++];
+                       break;
+                    case -12:
+						(*res1) << gap;
+						(*res1) << s1->sData[p1++];
+						(*res1) << s1->sData[p1++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+                        break;
+                    case -13:
+						(*res1) << gap;
+						(*res1) << gap;
+						(*res1) << s1->sData[p1++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+						(*res2) << s2->sData[p2++];
+                        break;                        
 				}
 				
 			
@@ -4007,23 +4058,8 @@ inline	void BacktrackAlign			(_SimpleList& editOps , long& p1, long& p2, _Parame
 
 //____________________________________________________________________________________	
 
-inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, _Parameter scores[5])
+inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, long maxID)
 {
-
-// score 0 -- frameshift in 2nd
-// score 1 -- frameshift in 1st
-// score 3 -- codon align
-// score 4 -- 3x insert in 2nd
-// score 5 -- 3x insert in 1st
-
-    long maxID = 0;
-    _Parameter maxV = scores[0];
-    for (long k = 1; k < 5; k++)
-        if (scores[k] > maxV)
-        {
-            maxID = k;
-            maxV = scores[k];
-        }
 
     switch (maxID)
     {
@@ -4047,7 +4083,31 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, _P
         case 4:
             p2-=3;
             editOps << 3;
+            break;
             
+        case 5:
+            p2-=2;
+            p1-=3;
+            editOps << 12;
+            break;
+           
+        case 6:
+            p2--;
+            p1-=3;
+            editOps << 13;
+            break;
+           
+        case 7:
+            p1-=2;
+            p2-=3;
+            editOps << -12;
+            break;
+           
+        case 8:
+            p1--;
+            p2-=3;
+            editOps << -13;
+            break;            
     }
 }
 
