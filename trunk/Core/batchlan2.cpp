@@ -120,8 +120,8 @@ void 		 MismatchScore						(_String*, _String*, long, long, _SimpleList&, _Matri
 void 		 MismatchScoreCodon					(_String*, _String*, long, long, _SimpleList&, _Matrix*, _Parameter&, long);
 _String		 ProcessStringArgument				(_String*);
 bool		 RecurseDownTheTree					(_SimpleList&, _List&, _List&, _List&, _SimpleList&);
-long         ConstructCodonIndex                (_SimpleList& , long , long , long , long  = -1);
-long         CodonAlignStringsStep              (_Matrix& ,_SimpleList& ,  _SimpleList& , long ,long ,long ,long ,_Parameter ,_Parameter ,_Parameter ,_Matrix *);
+long         ConstructCodonIndex                (_SimpleList& , long , long , long , long = -1, long = -1);
+long         CodonAlignStringsStep              (_Matrix& ,_SimpleList& ,  _SimpleList& , long ,long ,long ,long ,_Parameter ,_Parameter ,_Parameter ,_Parameter ,_Parameter ,_Matrix *, _Matrix* = nil, _Matrix* = nil);
 
 //____________________________________________________________________________________	
 
@@ -2697,9 +2697,28 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 	bgm->addAndClean(target,&pieces,0);
 	return true;
 }
+
+#define HY_ALIGN_STRINGS_111_111 0
+#define HY_ALIGN_STRINGS_111_000 1
+#define HY_ALIGN_STRINGS_000_111 2
+#define HY_ALIGN_STRINGS_111_011 3
+#define HY_ALIGN_STRINGS_111_101 4
+#define HY_ALIGN_STRINGS_111_110 5
+#define HY_ALIGN_STRINGS_111_001 6
+#define HY_ALIGN_STRINGS_111_010 7
+#define HY_ALIGN_STRINGS_111_100 8
+#define HY_ALIGN_STRINGS_110_111 9
+#define HY_ALIGN_STRINGS_101_111 10
+#define HY_ALIGN_STRINGS_011_111 11
+#define HY_ALIGN_STRINGS_001_111 12
+#define HY_ALIGN_STRINGS_010_111 13
+#define HY_ALIGN_STRINGS_100_111 14
+#define HY_ALIGNMENT_TYPES_COUNT 15
+    
+    
 //____________________________________________________________________________________	
 
-long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long currentIndex, long definedChars, long index)
+long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long currentIndex, long definedChars, long index, long patternType)
 {
     if (definedChars == 3)
     {
@@ -2714,14 +2733,38 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
         if (definedChars == 2 && index >= 0 && currentIndex >= 2)
         {
            if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0)
-                return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * index);
+           {
+               switch (patternType)
+               {
+                   case HY_ALIGN_STRINGS_111_011:
+                   case HY_ALIGN_STRINGS_011_111:
+                       return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * index);
+                   case HY_ALIGN_STRINGS_111_101:
+                   case HY_ALIGN_STRINGS_101_111:
+                       return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] * charCount + index);
+                   case HY_ALIGN_STRINGS_111_110:
+                   case HY_ALIGN_STRINGS_110_111:
+                       return index + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-2]);
+                    
+               }
+            }
         }
         else
         {
-            if (definedChars == 1 && index >= 0 && currentIndex >= 2)
+            if (definedChars == 1 && index >= 0 && currentIndex >= 1)
             {
                 if (encodedS.lData[currentIndex-1] >= 0)
-                    return encodedS.lData[currentIndex-1] + charCount * index;
+                    switch (patternType)
+                    {
+                        case HY_ALIGN_STRINGS_111_001:
+                        case HY_ALIGN_STRINGS_001_111:
+                            return encodedS.lData[currentIndex-1] + charCount * index;
+                        case HY_ALIGN_STRINGS_111_010:
+                        case HY_ALIGN_STRINGS_111_100:
+                        case HY_ALIGN_STRINGS_010_111:
+                        case HY_ALIGN_STRINGS_100_111:
+                            return encodedS.lData[currentIndex-1] + index;
+                    }
             }
         }
     }
@@ -2741,79 +2784,115 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                                                   _Parameter gFrameshift,
                                                   _Parameter gopen,
                                                   _Parameter gopen2,
-                                                  _Matrix * ccost
+                                                  _Parameter gextend,
+                                                  _Parameter gextend2,
+                                                  _Matrix * ccost,
+                                                  _Matrix * gapScore1,
+                                                  _Matrix * gapScore2
                                                  )
 {
     long	   mIndex 	= r*colCount+c,
-               mIndex2	= mIndex-3*colCount,
-               codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
-              
-     alignmentOptions.theData  [0] = -A_LARGE_NUMBER;//scoreMatrix.theData[mIndex-colCount]  - gFrameshift; // introduce a +1 frameshift in the 2nd sequence
-     alignmentOptions.theData  [1] = -A_LARGE_NUMBER;//scoreMatrix.theData[mIndex-1]  - gFrameshift;        // introduce a +1 frameshift in the 1st sequence
-     alignmentOptions.theData  [2] = -A_LARGE_NUMBER;
-     alignmentOptions.theData  [3] = (r>=3?scoreMatrix.theData[mIndex2]-gopen2:-A_LARGE_NUMBER); // 3-nuc insert in the 2nd sequence
-     alignmentOptions.theData  [4] = (c>=3?scoreMatrix.theData[mIndex-3]-gopen:-A_LARGE_NUMBER); // 3-nuc insert in the 1st sequence
-     alignmentOptions.theData  [5] = -A_LARGE_NUMBER; // align 2 nucleotides of 2nd sequence with 3 in 1st (+1 frameshift)
-     alignmentOptions.theData  [6] = -A_LARGE_NUMBER; // align 1 nucleotide of  2nd sequence with 3 in 1st (+2 frameshift)
-     alignmentOptions.theData  [7] = -A_LARGE_NUMBER; // align 2 nucleotides of 1st sequence with 3 in 2st (+1 frameshift)
-     alignmentOptions.theData  [8] = -A_LARGE_NUMBER; // align 1 nucleotide of  1st sequence with 3 in 2st (+2 frameshift)
-
+    mIndex2	= mIndex-3*colCount,
+    codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
+    
+    for (long i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++)
+        alignmentOptions.theData [i] = -A_LARGE_NUMBER;    
+    
+    if (r>=3)
+    {
+        if (gapScore2)
+            alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>3)?gextend2:gopen2));
+        else
+            alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = scoreMatrix.theData[mIndex2]-gopen2;
+    }
+    if (c>=3)
+    {
+        if (gapScore1)
+            alignmentOptions.theData  [HY_ALIGN_STRINGS_000_111] = MAX(scoreMatrix.theData[mIndex-3]-gopen,gapScore1->theData[mIndex-3]-((c>3)?gextend:gopen)); 
+        else
+            alignmentOptions.theData  [HY_ALIGN_STRINGS_000_111] = scoreMatrix.theData[mIndex-3]-gopen; 
+    }
     long codon2 = ConstructCodonIndex (encodedString2,charCount, c,3);
     if (codon2 >= 0)
     {
         if (codon1 >= 0)
-            alignmentOptions[2] = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1,codon2);
+            alignmentOptions[HY_ALIGN_STRINGS_111_111] = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1,codon2);
+        
         if (r >= 2)
         {
-            _Parameter          maxV         = -A_LARGE_NUMBER;
+            _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
             for (long k = 0; k < charCount; k++)
             {
-                long codont = ConstructCodonIndex (encodedString1,charCount,r,2,k);
-                if (codont >= 0)
-                    maxV = MAX(maxV, (*ccost)(codont,codon2));
+                long codont [3] = {ConstructCodonIndex (encodedString1,charCount,r,2,k,HY_ALIGN_STRINGS_110_111),
+                                   ConstructCodonIndex (encodedString1,charCount,r,2,k,HY_ALIGN_STRINGS_101_111),
+                                   ConstructCodonIndex (encodedString1,charCount,r,2,k,HY_ALIGN_STRINGS_011_111)};
+                for (long k2 = 0; k2 < 3; k2++)
+                    if (codont[k2] >= 0)
+                        maxV[k2] = MAX(maxV[k2], (*ccost)(codont[k2],codon2));
             }
-            alignmentOptions[7] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_110_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[0] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_101_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[1] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[2] - gFrameshift;                              
         }
-        _Parameter          maxV         = -A_LARGE_NUMBER;
-        for (long k = 0; k < charCount*charCount; k++)
+        _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
+        for (long k = 0; k < charCount; k++)
         {
-            long codont = ConstructCodonIndex (encodedString1,charCount,r,1,k);
-            if (codont >= 0)
+            for (long k2 = 0; k2 < charCount; k2++)
             {
-                /*if (c==7 && r==6)
-                {
-                    printf ("%ld: %g %g\n", codont, scoreMatrix.theData[mIndex-3-colCount],(*ccost)(codont,codon2));
-                }*/
-                maxV = MAX(maxV, (*ccost)(codont,codon2));
+                long codont [3] = {ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_100_111),
+                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount*charCount+k2,HY_ALIGN_STRINGS_010_111),
+                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_100_111)};
+                for (long k3 = 0; k3 < 3; k3++)
+                    if (codont[k3] >= 0)
+                        maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
             }
         }
-        alignmentOptions[8] = scoreMatrix.theData[mIndex-3-colCount] + maxV -2 * gFrameshift;      
+        alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[0] - gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[1] - gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[2] - gFrameshift;                              
     }
-        
+    
     if (codon1 >= 0)
     {
-        if (c>=2) // try option 5
+        if (c >= 2)
         {
-            _Parameter          maxV         = -A_LARGE_NUMBER;
+            _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
             for (long k = 0; k < charCount; k++)
             {
-                long codon2 = ConstructCodonIndex (encodedString2,charCount,c,2,k);
-                if (codon2 >= 0)
-                    maxV = MAX(maxV, (*ccost)(codon1,codon2));
+                long codont [3] = {ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_110),
+                    ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_101),
+                    ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_011)};
+                for (long k2 = 0; k2 < 3; k2++)
+                    if (codont[k2] >= 0)
+                        maxV[k2] = MAX(maxV[k2], (*ccost)(codon1,codont[k2]));
             }
-            alignmentOptions[5] = scoreMatrix.theData[mIndex2-2] + maxV - gFrameshift;
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + maxV[0] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + maxV[1] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + maxV[2] - gFrameshift;                              
         }
-        
-        _Parameter          maxV         = -A_LARGE_NUMBER;
-        for (long k = 0; k < charCount*charCount; k++)
+        _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
+        for (long k = 0; k < charCount; k++)
         {
-            long codon2 = ConstructCodonIndex (encodedString2,charCount,c,1,k);
-            if (codon2 >= 0)
-                maxV = MAX(maxV, (*ccost)(codon1,codon2));
+            for (long k2 = 0; k2 < charCount; k2++)
+            {
+                long codont [3] = {ConstructCodonIndex (encodedString2,charCount,c,1,k*charCount+k2,HY_ALIGN_STRINGS_111_100),
+                    ConstructCodonIndex (encodedString2,charCount,c,1,k*charCount*charCount+k2,HY_ALIGN_STRINGS_111_010),
+                    ConstructCodonIndex (encodedString2,charCount,c,1,k*charCount+k2,HY_ALIGN_STRINGS_111_001)};
+                for (long k3 = 0; k3 < 3; k3++)
+                    if (codont[k3] >= 0)
+                        maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
+            }
         }
-        alignmentOptions[6] = scoreMatrix.theData[mIndex2-1] + maxV - 2*gFrameshift;
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + maxV[0] - gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + maxV[1] - gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + maxV[2] - gFrameshift;  
     }
-        
+    
+    if (gapScore2)
+        gapScore2->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_111_000];
+    if (gapScore1)
+        gapScore1->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_000_111];
+    
     long whichOne = 0;    
     scoreMatrix.theData[mIndex] = alignmentOptions.MaxElement(3, &whichOne);
     return whichOne;
@@ -2823,381 +2902,330 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
 //____________________________________________________________________________________	
 
 _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* ccost,char gap,_Parameter gopen,_Parameter gextend,
-                                         _Parameter gopen2,_Parameter gextend2, _Parameter gFrameshift,
-                                         bool doLocal,bool doAffine,bool doCodon,_List& store, long charCount)
-{
-	_String *res1 = new _String (s1->sLength+1, true),
-			*res2 = new _String (s2->sLength+1, true);
-			
-	checkPointer (res1);
-	checkPointer (res2);
-	
-	_Parameter	 score = 0.;
-	
-    const  long upto1 = s1->sLength,
-                upto2 = s2->sLength;
-                     
-	if (upto1)
-	{
-		if (upto2)
-		{
-            _SimpleList encodedString1 (s1->sLength),
-                        encodedString2 (s2->sLength);
-                        
-            if (doCodon)
-            {
-                for (long k = 0; k < s1->sLength; k++)
-                    encodedString1 << cmap.lData[s1->sData[k]];
-                for (long k = 0; k < s2->sLength; k++)
-                    encodedString2 << cmap.lData[s2->sData[k]];
-            }
+                             _Parameter gopen2,_Parameter gextend2, _Parameter gFrameshift,
+                             bool doLocal,bool doAffine,bool doCodon,_List& store, long charCount)
+    {
+        _String *res1 = new _String (s1->sLength+1, true),
+        *res2 = new _String (s2->sLength+1, true);
         
-			_Matrix 			scoreMatrix (s1->sLength+1,s2->sLength+1, false, true),
-							   *gapScore1 = nil,
-							   *gapScore2 = nil;
-			_SimpleList			editOps 	(MAX(s1->sLength,s2->sLength));
-			long				colCount = 	upto2+1;
-
-			if (doAffine)
-			{
-				gapScore1 = (_Matrix*)checkPointer(new _Matrix (s1->sLength+1,s2->sLength+1, false, true)),
-				gapScore2 = (_Matrix*)checkPointer(new _Matrix (s1->sLength+1,s2->sLength+1, false, true));
-			}
-			
-			if (!doLocal)
-			// initialize gap costs in first column and first row
-			// they are 0 for local alignments
-			{
-				if (doAffine)
-				{
-					_Parameter cost = -gopen;
-					for (long k=1; k < colCount; k++, cost-=gextend)
-					{
-						scoreMatrix.theData[k] = cost;
-						gapScore1->theData[k]  = cost;
-						gapScore2->theData[k]  = cost;
-					}
-						
-					cost = -gopen2;
-					
-					gapScore1->theData[0] = -gopen;
-					gapScore2->theData[0] = -gopen2;
-					
-					for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount, cost-=gextend2)
-					{
-						scoreMatrix.theData[m] = cost;
-						gapScore1->theData [m] = cost;
-						gapScore2->theData [m] = cost;
-					}
-				}				
-				else
-				{
-                    if (doCodon == false)
-                    {
-                         _Parameter cost = -gopen;
-                        for (long m=1; m < colCount; m++, cost-=gopen)
-                            scoreMatrix.theData[m] = cost;
-                            
-                        cost = -gopen2;
-                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
-                            scoreMatrix.theData[k] = cost;                    
-                    }
-                    else
+        checkPointer (res1);
+        checkPointer (res2);
+        
+        _Parameter	 score = 0.;
+        
+        const  long upto1 = s1->sLength,
+        upto2 = s2->sLength;
+        
+        if (upto1)
+        {
+            if (upto2)
+            {
+                _SimpleList encodedString1 (s1->sLength),
+                encodedString2 (s2->sLength);
+                
+                if (doCodon)
+                {
+                    for (long k = 0; k < s1->sLength; k++)
+                        encodedString1 << cmap.lData[s1->sData[k]];
+                    for (long k = 0; k < s2->sLength; k++)
+                        encodedString2 << cmap.lData[s2->sData[k]];
+                }
+                
+                _Matrix 			scoreMatrix (s1->sLength+1,s2->sLength+1, false, true),
+                *gapScore1 = nil,
+                *gapScore2 = nil;
+                _SimpleList			editOps 	(MAX(s1->sLength,s2->sLength));
+                long				colCount = 	upto2+1;
+                
+                if (doAffine)
+                {
+                    gapScore1 = (_Matrix*)checkPointer(new _Matrix (s1->sLength+1,s2->sLength+1, false, true)),
+                    gapScore2 = (_Matrix*)checkPointer(new _Matrix (s1->sLength+1,s2->sLength+1, false, true));
+                }
+                
+                if (!doLocal)
+                    // initialize gap costs in first column and first row
+                    // they are 0 for local alignments
+                {
+                    if (doAffine)
                     {
                         _Parameter cost = -gopen;
-                        for (long m=1; m < colCount; m++, cost-=gopen)
-                            scoreMatrix.theData[m] = cost - ((m%3!=1)?gFrameshift:0);
-                            
+                        for (long k=1; k < colCount; k++, cost-=gextend)
+                        {
+                            scoreMatrix.theData[k] = cost;
+                            gapScore1->theData[k]  = cost;
+                            gapScore2->theData[k]  = cost;
+                        }
+						
                         cost = -gopen2;
-                        long cc = 1;
-                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2, cc++)
-                            scoreMatrix.theData[k] = cost - ((cc%3 != 1)?gFrameshift:0);
-                    }
-				}
-			}
-			else
-			{
-				if (doAffine)
-				{
-                    if (doCodon)
-                    {
-                        for (long m=1; m < colCount; m++)
-                            gapScore2->theData[m] = -gopen2 - ((m%3!=1)?gFrameshift:0);
-                        long cc = 1;
-                        for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount,cc++)
-                            gapScore1->theData[m] = -gopen - ((cc%3 != 1)?gFrameshift:0);	
-                    }
+                        
+                        gapScore1->theData[0] = -gopen;
+                        gapScore2->theData[0] = -gopen2;
+                        
+                        for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount, cost-=gextend2)
+                        {
+                            scoreMatrix.theData[m] = cost;
+                            gapScore1->theData [m] = cost;
+                            gapScore2->theData [m] = cost;
+                        }
+                    }				
                     else
                     {
-                        for (long m=1; m < colCount; m++)
-                            gapScore2->theData[m] = -gopen2;						
-                        for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount)
-                            gapScore1->theData[m] = -gopen;	
-                    }
-				}	
-			}
-			
-			if (doAffine)
-			{
-				long upto1 = s1->sLength,
-					 upto2 = s2->sLength;
-
-				if (doCodon)
-                {
-                    short codon1[3],
-                          codon2[3];
-                    if (upto1 >= 3)
-                        for (long k = 0; k < 3; k++)
-                            codon1[k] = cmap.lData[s1->sData[k]];
-                     if (upto2 >= 3)
-                        for (long k = 0; k < 3; k++)
-                            codon2[k] = cmap.lData[s2->sData[k]];
-                   
-                    for (long r=1; r<=upto1; r++)
-                    {
-                        long	  codon1mapped = -1;
-                        if (r >= 3)
+                        if (doCodon == false)
                         {
-                            if (codon1[0] >= 0 && codon1[1] >= 0 && codon1[2] >= 0)
-                                 codon1mapped = codon1[2] + charCount * (codon1[1] + charCount * codon1[0]);
-                                                                                            
-                                 
-                            codon1[0] = codon1[1]; codon1[1] = codon1[2]; codon1[2] = cmap.lData[s1->sData[r]];
+                            _Parameter cost = -gopen;
+                            for (long m=1; m < colCount; m++, cost-=gopen)
+                                scoreMatrix.theData[m] = cost;
                             
+                            cost = -gopen2;
+                            for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2)
+                                scoreMatrix.theData[k] = cost;                    
                         }
-                                                    
-                        for (long c=1; c<=upto2; c++)
+                        else
                         {
-                            long mIndex  = r*colCount + c,
-                                 mIndex2 = mIndex - 3*colCount; 
+                            _Parameter cost = -gopen;
+                            for (long m=1; m < colCount; m++, cost-=gopen)
+                                scoreMatrix.theData[m] = cost - ((m%3!=1)?gFrameshift:0);
                             
-                            _Parameter score1 = scoreMatrix.theData[mIndex - colCount] - gFrameshift,  // frameshift in 2nd 
-                                       score2 = scoreMatrix.theData[mIndex -1 ]   - gFrameshift,       // frameshift in 1st
-                                       score3 = -A_LARGE_NUMBER,
-                                       score4 = -A_LARGE_NUMBER, // codon insert in the 2nd sequence
-                                       score5 = (c>=3?scoreMatrix.theData[mIndex-3]-gopen:-A_LARGE_NUMBER); // codon insert in the 1st sequence
-                                       
-                            if (r>=3)
-                                score4 = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>3)?gextend2:gopen2));
-                            if (c>=3)
-                                score5  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-((c>3)?gextend:gopen));
-                                
-                            if (codon1mapped >= 0)
-                            {
-                               long	  codon2mapped = -1;
-                                if (c >= 3)
-                                {
-                                    if (codon2[0] >= 0 && codon2[1] >= 0 && codon2[2] >= 0)
-                                         codon2mapped = codon2[2] + charCount * (codon2[1] + charCount * codon2[0]);
-                                                                                                    
-                                         
-                                    codon2[0] = codon2[1]; codon2[1] = codon2[2]; codon2[2] = cmap.lData[s2->sData[c]];
-                                    
-                                }
-                                if (codon2mapped >= 0)
-                                    score3 = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1mapped,codon2mapped);
-                            }
-                            
-                            //printf ("%ld %ld: (%g,%g,%g,%g,%g)\n", r,c , score1, score2, score3, score4, score5);
-                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,MAX(score3,MAX(score4,score5))));
-                            gapScore2->theData[mIndex]  = score4;
-                            gapScore1->theData[mIndex]  = score5;
-                       }
-                    }
-                    /*_String alignmentSM ("alignmentScoreMatrix");
-                     CheckReceptacleAndStore(&alignmentSM, empty, true, &scoreMatrix);
-                     alignmentSM = "GAPz1";
-                     CheckReceptacleAndStore(&alignmentSM, empty, true, gapScore1);
-                     alignmentSM = "GAPz2";
-                     CheckReceptacleAndStore(&alignmentSM, empty, true, gapScore2);*/
-               }
-                else
-                {	 
-                    long mapL = ccost->GetVDim();
-                    for (long r=1; r<=upto1; r++)
-                    {
-                        long	  c1 = cmap.lData[s1->sData[r-1]];
-                        for (long c=1; c<=upto2; c++)
-                        {
-                            long	   mIndex 	= r*colCount+c,
-                                       mIndex2	= mIndex-colCount;
-                            
-                            _Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>1)?gextend2:gopen2)), 	// gap in 2nd 
-                                       gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-((c>1)?gextend:gopen)),    // gap in 1st
-                                       gscore3  = scoreMatrix.theData[mIndex2-1];     
-                                       
-                                       
-                            if (c1>=0)
-                            {
-                                long	   c2 = cmap.lData[s2->sData[c-1]];
-                                
-                                if (c2>=0)
-                                    gscore3 += ccost->theData[c1*mapL+c2];
-                            }
-                            
-                            scoreMatrix.theData[mIndex] = MAX(gscore1,MAX(gscore2,gscore3));
-                            gapScore2->theData[mIndex]  = gscore1;
-                            gapScore1->theData[mIndex]  = gscore2;
+                            cost = -gopen2;
+                            long cc = 1;
+                            for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2, cc++)
+                                scoreMatrix.theData[k] = cost - ((cc%3 != 1)?gFrameshift:0);
                         }
                     }
                 }
-			}
-			else
-			// populate the cost matrix row by row
-			{
-                     
+                else
+                {
+                    if (doAffine)
+                    {
+                        if (doCodon)
+                        {
+                            for (long m=1; m < colCount; m++)
+                                gapScore2->theData[m] = -gopen2 - ((m%3!=1)?gFrameshift:0);
+                            long cc = 1;
+                            for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount,cc++)
+                                gapScore1->theData[m] = -gopen - ((cc%3 != 1)?gFrameshift:0);	
+                        }
+                        else
+                        {
+                            for (long m=1; m < colCount; m++)
+                                gapScore2->theData[m] = -gopen2;						
+                            for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount)
+                                gapScore1->theData[m] = -gopen;	
+                        }
+                    }	
+                }
+                
                 if (doCodon)
-                    // peform a codon alignment
-                {			
+                {
+                      
+                    _Matrix alignmentOptions (HY_ALIGNMENT_TYPES_COUNT,1,false,true);
+                    //_Matrix tracker          (upto1+1,upto2+1,false,true);
                     
                     
-                    _Matrix alignmentOptions (9,1,false,true);
-                    _Matrix tracker          (upto1+1,upto2+1,false,true);
-
-                                                                                           
                     for (long r=1; r<=upto1; r++)
                     {
-                                                                        
-                                    
-                        for (long c=1; c<=upto2; c++)
+                        
+                       for (long c=1; c<=upto2; c++)
                         {
-                            long id = CodonAlignStringsStep              (alignmentOptions, 
-                                                  scoreMatrix,
-                                                  encodedString1, 
-                                                  encodedString2,
-                                                  r,
-                                                  c,
-                                                  colCount,
-                                                  charCount,
-                                                  gFrameshift,
-                                                  gopen,
-                                                  gopen2,
-                                                  ccost
-                                                 );
-                            tracker.Store (r,c,id);
+                            CodonAlignStringsStep              
+                            (alignmentOptions, 
+                             scoreMatrix,
+                             encodedString1, 
+                             encodedString2,
+                             r,
+                             c,
+                             colCount,
+                             charCount,
+                             gFrameshift,
+                             gopen,
+                             gopen2,
+                             gextend,
+                             gextend2,
+                             ccost,
+                             gapScore1,
+                             gapScore2
+                             );
+                            //tracker.Store (r,c,id);
                         }
                         
                     }
-                   /* _String alignmentSM ("alignmentScoreMatrix");
-                    CheckReceptacleAndStore(&alignmentSM, empty, true, &scoreMatrix);
-                    alignmentSM = ("alignmentMoveMatrix");
-                    CheckReceptacleAndStore(&alignmentSM, empty, true, &tracker); */
                 }
                 else
                 {
-                    for (long r=1; r<=upto1; r++)
+                    if (doAffine)
                     {
-                        long	  c1 = cmap.lData[s1->sData[r-1]];
-                        for (long c=1; c<=upto2; c++)
+                        long mapL = ccost->GetVDim();
+                        for (long r=1; r<=upto1; r++)
                         {
-                            _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
-                                       score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
-                                       score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
-                                       
-                            if (c1>=0)
+                            long	  c1 = cmap.lData[s1->sData[r-1]];
+                            for (long c=1; c<=upto2; c++)
                             {
-                                long	   c2 = cmap.lData[s2->sData[c-1]];
+                                long	   mIndex 	= r*colCount+c,
+                                mIndex2	= mIndex-colCount;
                                 
-                                if (c2>=0)
-                                    score3 += (*ccost)(c1,c2);
+                                _Parameter gscore1  = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>1)?gextend2:gopen2)), 	// gap in 2nd 
+                                gscore2  = MAX(scoreMatrix.theData[mIndex-1]-gopen,gapScore1->theData[mIndex-1]-((c>1)?gextend:gopen)),    // gap in 1st
+                                gscore3  = scoreMatrix.theData[mIndex2-1];     
+                                
+                                
+                                if (c1>=0)
+                                {
+                                    long	   c2 = cmap.lData[s2->sData[c-1]];
+                                    
+                                    if (c2>=0)
+                                        gscore3 += ccost->theData[c1*mapL+c2];
+                                }
+                                
+                                scoreMatrix.theData[mIndex] = MAX(gscore1,MAX(gscore2,gscore3));
+                                gapScore2->theData[mIndex]  = gscore1;
+                                gapScore1->theData[mIndex]  = gscore2;
                             }
-                            
-                            scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
                         }
-                    }
-                }
-			}
-				
-			long p1 = upto1,
-				 p2 = upto2;
-
-			if (doLocal)
-			{		
-				score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
-				
-				for (long mc2=colCount-1; mc2<s1->sLength*colCount; mc2+=colCount)
-					if (scoreMatrix.theData[mc2]>score)
-					{
-						score = scoreMatrix.theData[mc2];
-						p1 = mc2/colCount;
-					}
-
-				for (long mc=s1->sLength*colCount; mc<(s1->sLength+1)*colCount-1; mc++)
-					if (scoreMatrix.theData[mc]>score)
-					{
-						score = scoreMatrix.theData[mc];
-						p1 = s1->sLength;
-						p2 = mc-s1->sLength*colCount;
-					}
-					
-				for (long mp = p1;mp<s1->sLength; mp++)
-					editOps << -1;
-				for (long mp2 = p2;mp2<s2->sLength; mp2++)
-					editOps << 1;
-			}
-			else
-				score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
-			
-			// backtrack now
-			
-			if (doAffine)
-			{
-				while (p1 && p2)
-				{
-                    _Parameter bscore[5] = {gapScore2->theData[p1*colCount+p2], 
-                                            gapScore1->theData[p1*colCount+p2],
-                                            -A_LARGE_NUMBER,
-                                            -A_LARGE_NUMBER,
-                                            -A_LARGE_NUMBER};
-							   
-                    if (doCodon)
-                    {
-                         if (p1>=3 && p2 >= 3)
-                         {
-                            bscore[2] = scoreMatrix.theData[(p1-3)*colCount+p2-3];
-                         }
-                         bscore[4] = scoreMatrix.theData[(p1-1)*colCount+p2] - gFrameshift;
-                         bscore[5] = scoreMatrix.theData[p1*colCount+p2-1]   - gFrameshift;
-                         MismatchScoreCodon (s1,s2,p1,p2,cmap,ccost,bscore[2], charCount);
                     }
                     else
                     {
-                         bscore[2] = scoreMatrix.theData[(p1-1)*colCount+p2-1]; 
-                         MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore[2]);
-                    }
-                    
-                    _Parameter maxScore = bscore[0];
-                    long       maxIndex = 0;
-                    
-                    for (long k = 1; k < 5; k++)
-                        if (bscore[k] > maxScore)
+                        for (long r=1; r<=upto1; r++)
                         {
-                            maxScore = bscore[k];
-                            maxIndex = k;
+                            long	  c1 = cmap.lData[s1->sData[r-1]];
+                            for (long c=1; c<=upto2; c++)
+                            {
+                                _Parameter score1 = scoreMatrix.theData[(r-1)*colCount+c] - gopen2, // gap in 2nd 
+                                score2 = scoreMatrix.theData[r*colCount+c-1]   - gopen,  // gap in 1st
+                                score3 = scoreMatrix.theData[(r-1)*colCount+c-1];     
+                                
+                                if (c1>=0)
+                                {
+                                    long	   c2 = cmap.lData[s2->sData[c-1]];
+                                    
+                                    if (c2>=0)
+                                        score3 += (*ccost)(c1,c2);
+                                }
+                                
+                                scoreMatrix.theData[r*colCount+c] = MAX(score1,MAX(score2,score3));
+                            }
+                        }                 
+                    }
+                }
+                
+                long p1 = upto1,
+                p2 = upto2;
+                
+                if (doLocal)
+                {		
+                    score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
+                    
+                    for (long mc2=colCount-1; mc2<s1->sLength*colCount; mc2+=colCount)
+                        if (scoreMatrix.theData[mc2]>score)
+                        {
+                            score = scoreMatrix.theData[mc2];
+                            p1 = mc2/colCount;
+                        }
+                    
+                    for (long mc=s1->sLength*colCount; mc<(s1->sLength+1)*colCount-1; mc++)
+                        if (scoreMatrix.theData[mc]>score)
+                        {
+                            score = scoreMatrix.theData[mc];
+                            p1 = s1->sLength;
+                            p2 = mc-s1->sLength*colCount;
+                        }
+					
+                    for (long mp = p1;mp<s1->sLength; mp++)
+                        editOps << -1;
+                    for (long mp2 = p2;mp2<s2->sLength; mp2++)
+                        editOps << 1;
+                }
+                else
+                    score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
+                
+                // backtrack now
+                
+                if (doCodon)
+                {
+                    _Matrix alignmentOptions (HY_ALIGNMENT_TYPES_COUNT,1,false,true);
+                    while (p1 && p2)
+                    {
+                        long code = CodonAlignStringsStep              (alignmentOptions, 
+                                                                        scoreMatrix,
+                                                                        encodedString1, 
+                                                                        encodedString2,
+                                                                        p1,
+                                                                        p2,
+                                                                        colCount,
+                                                                        charCount,
+                                                                        gFrameshift,
+                                                                        gopen,
+                                                                        gopen2,
+                                                                        gextend,
+                                                                        gextend2,
+                                                                        ccost,
+                                                                        gapScore1,
+                                                                        gapScore2);
+                        BacktrackAlignCodon (editOps, p1,p2,code);
+                        if (p1 < 0 || p2 < 0)
+                        {
+                            WarnError ("Internal Error in AlignStrings");
+                            return -A_LARGE_NUMBER;
                         }
                         
-                    switch (maxIndex)
-                    {
-                        case 0:
+                        if (doAffine)
+                        {
+                            long  ci = p1*colCount+p2;
+                            if (code == HY_ALIGN_STRINGS_111_000)
                             {
-                                long  ci = p1*colCount+p2;
-                                if (doCodon)
+                                while (p1 && (scoreMatrix.theData[ci]-gopen2 <= gapScore2->theData[ci]-gextend2))
                                 {
                                     p1-=3;
-                                    editOps << -3;
-                                    while (p1>=3 && (scoreMatrix.theData[ci-3*colCount]-gopen2 <= gapScore2->theData[ci-3*colCount]-gextend2 && 
-                                                    bscore[4] <= gapScore2->theData[ci-3*colCount]-gextend2 && 
-                                                    bscore[5] <= gapScore2->theData[ci-3*colCount]-gextend2))
-                                    {
-                                        p1-=3;
-                                        editOps << -3;
-                                        ci -= 3*colCount;
-                                        bscore[4] = scoreMatrix.theData[ci-colCount] - gFrameshift;
-                                        bscore[5] = scoreMatrix.theData[ci-1]   - gFrameshift;
-                                    }                                
+                                    editOps << -1; editOps << -1; editOps << -1;
+                                    ci -= 3*colCount;
                                 }
-                                else
+                            }
+                            else
+                                if (code == HY_ALIGN_STRINGS_000_111)
                                 {
+                                    while (p2 && (scoreMatrix.theData[ci]-gopen <= gapScore1->theData[ci]-gextend))
+                                    {
+                                        p2-=3;
+                                        editOps << 1; editOps << 1; editOps << 1;
+                                        ci -= 3;
+                                    }
+                                }
+                        }  
+                        
+                    }
+                }
+                else
+                {
+                    
+                    if (doAffine)
+                    {
+                        while (p1 && p2)
+                        {
+                            _Parameter bscore[3] = {gapScore2->theData[p1*colCount+p2], 
+                                                    gapScore1->theData[p1*colCount+p2],
+                                                    -A_LARGE_NUMBER};
+                                
+                            
+                                                        {
+                            bscore[2] = scoreMatrix.theData[(p1-1)*colCount+p2-1]; 
+                            MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore[2]);
+                            
+                            _Parameter maxScore = bscore[0];
+                            long       maxIndex = 0;
+                            
+                            for (long k = 1; k < 3; k++)
+                                if (bscore[k] > maxScore)
+                                {
+                                    maxScore = bscore[k];
+                                    maxIndex = k;
+                                }
+                            
+                            switch (maxIndex)
+                            {
+                                case 0:
+                                {
+                                    long  ci = p1*colCount+p2;
+                                    
                                     p1--;
                                     editOps << -1;
                                     while (p1 && (scoreMatrix.theData[ci-colCount]-gopen2 <= gapScore2->theData[ci-colCount]-gextend2))
@@ -3207,28 +3235,11 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                         ci -= colCount;
                                     }
                                 }
-                            }
-                            break;
-                        case 1:
-                            {
-                                long  ci = p1*colCount+p2;
-                                if (doCodon)
+                                break;
+                                
+                                case 1:
                                 {
-                                    p2-=3;
-                                    editOps << 3;
-                                    while (p2>=3 && (scoreMatrix.theData[ci-3]-gopen <= gapScore1->theData[ci-3]-gextend)
-                                                 && bscore[4] <= gapScore1->theData[ci-3]-gextend
-                                                 && bscore[5] <= gapScore1->theData[ci-3]-gextend)
-                                    {
-                                        p2-=3;
-                                        editOps << 3;
-                                        ci -=3;
-                                        bscore[4] = scoreMatrix.theData[ci-colCount] - gFrameshift;
-                                        bscore[5] = scoreMatrix.theData[ci-1]   - gFrameshift;
-                                   }         
-                                }
-                                else
-                                {
+                                    long  ci = p1*colCount+p2;
                                     p2--;
                                     editOps << 1;
                                     while (p2 && (scoreMatrix.theData[ci-1]-gopen <= gapScore1->theData[ci-1]-gextend))
@@ -3238,91 +3249,49 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                         ci --;
                                     }
                                 }
-                            }
-                            break;
-                        case 2:
-                            {
-                                if (doCodon)
-                                {
-                                    p1-=3;
-                                    p2-=3;
-                                    editOps << 9;
-                                }
-                                else
+                                break;
+                                
+                                case 2:
                                 {
                                     p1--;
                                     p2--;
                                     editOps << 0;
                                 }
-                            }
-                            break;
-                        case 4:
-                            p1 --;
-                            editOps << -1;
-                            break;
-                        case 5:
-                            p2 --;
-                            editOps << 1;
-                            break;
+                                break;
+                                
+                            }					 
+                        }
+                    }
+                    }
+                    else
+                    {
+                        
+                        while (p1 && p2)
+                        {
+                            _Parameter bscore1 = scoreMatrix.theData[(p1-1)*colCount+p2]-gopen2,
+                            bscore2 = scoreMatrix.theData[p1*colCount+p2-1]-gopen,
+                            bscore3 = scoreMatrix.theData[(p1-1)*colCount+p2-1];
                             
-  					}					 
-				}
-			}
-			else
-			{
-                if (doCodon)
-                {
-                    
-                    _Matrix alignmentOptions (9,1,false,true);
-                     while (p1 && p2)
-                    {
+                            MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore3);
+                            BacktrackAlign (editOps, p1,p2,bscore1,bscore2,bscore3);
+                        }
                         
-                        
-                        BacktrackAlignCodon (editOps, p1,p2,CodonAlignStringsStep              (alignmentOptions, 
-                                                                                                scoreMatrix,
-                                                                                                encodedString1, 
-                                                                                                encodedString2,
-                                                                                                p1,
-                                                                                                p2,
-                                                                                                colCount,
-                                                                                                charCount,
-                                                                                                gFrameshift,
-                                                                                                gopen,
-                                                                                                gopen2,
-                                                                                                ccost
-                                                                                                ));
-                       //printf ("%ld %ld: %ld\n", p1, p2, editOps.Element(-1));
                     }
+                }
+                while (p1>0)
+                {
+                    p1--;
+                    editOps << -1;
+                }
                 
-                }
-                else
+                while (p2>0)
                 {
-                    while (p1 && p2)
-                    {
-                        _Parameter bscore1 = scoreMatrix.theData[(p1-1)*colCount+p2]-gopen2,
-                                   bscore2 = scoreMatrix.theData[p1*colCount+p2-1]-gopen,
-                                   bscore3 = scoreMatrix.theData[(p1-1)*colCount+p2-1];
-                                                               
-                        MismatchScore (s1,s2,p1,p2,cmap,ccost,bscore3);
-                        BacktrackAlign (editOps, p1,p2,bscore1,bscore2,bscore3);
-                    }
+                    p2--;
+                    editOps << 1;
                 }
-			}
-			
-			while (p1>0)
-			{
-				p1--;
-				editOps << -1;
-			}
-
-			while (p2>0)
-			{
-				p2--;
-				editOps << 1;
-			}
-			
-			for (long eo = editOps.lLength-1; eo>=0; eo--)
-				switch (editOps.lData[eo])
+                
+                for (long eo = editOps.lLength-1; eo>=0; eo--)
+                    switch (editOps.lData[eo])
 				{
 					case 0:
 						(*res1) << s1->sData[p1++];
@@ -3332,170 +3301,114 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 						(*res1) << gap;
 						(*res2) << s2->sData[p2++];
 						break;
-					case 3:
-						(*res1) << gap;
-						(*res1) << gap;
-						(*res1) << gap;
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						break;
-					case -3:
-						(*res2) << gap;
-						(*res1) << s1->sData[p1++];
-						(*res2) << gap;
-						(*res1) << s1->sData[p1++];
-						(*res2) << gap;
-						(*res1) << s1->sData[p1++];
-						break;
 					case -1:
 						(*res2) << gap;
 						(*res1) << s1->sData[p1++];
 						break;
-					case 9:
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						break;
-                    case 12:
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res2) << gap;
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-                        break;
-                    case 13:
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res2) << gap;
-						(*res2) << gap;
-						(*res2) << s2->sData[p2++];
-                       break;
-                    case -12:
-						(*res1) << gap;
-						(*res1) << s1->sData[p1++];
-						(*res1) << s1->sData[p1++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-                        break;
-                    case -13:
-						(*res1) << gap;
-						(*res1) << gap;
-						(*res1) << s1->sData[p1++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-						(*res2) << s2->sData[p2++];
-                        break;                        
 				}
 				
-			
-			/*_String		alignDebug ("alignScoreMatrix");
-			_Variable * ad = CheckReceptacle (&alignDebug, empty, false);
-			ad->SetValue (&scoreMatrix, true);
-			if (doAffine)
-			{
-				_String		alignDebug ("alignScoreMatrixG1");
-				_Variable * ad = CheckReceptacle (&alignDebug, empty, false);
-				ad->SetValue (gapScore1, true);
-				alignDebug  = ("alignScoreMatrixG2");
-				ad = CheckReceptacle (&alignDebug, empty, false);
-				ad->SetValue (gapScore2, true);
-			}*/
-			
-			DeleteObject (gapScore1);
-			DeleteObject (gapScore2);
-			
-		}
-		else
-		{
-			(*res1) << *s1;
-			for (long s1i = 0; s1i < s1->sLength; s1i++)
-				(*res2) << gap;
+                
+                 /*_String		alignDebug ("alignScoreMatrix");
+                 _Variable * ad = CheckReceptacle (&alignDebug, empty, false);
+                 ad->SetValue (&scoreMatrix, true);
+                 if (doAffine)
+                 {
+                 _String		alignDebug ("alignScoreMatrixG1");
+                 _Variable * ad = CheckReceptacle (&alignDebug, empty, false);
+                 ad->SetValue (gapScore1, true);
+                 alignDebug  = ("alignScoreMatrixG2");
+                 ad = CheckReceptacle (&alignDebug, empty, false);
+                 ad->SetValue (gapScore2, true);
+                 }*/
+                
+                DeleteObject (gapScore1);
+                DeleteObject (gapScore2);
+                
+            }
+            else
+            {
+                (*res1) << *s1;
+                for (long s1i = 0; s1i < s1->sLength; s1i++)
+                    (*res2) << gap;
 				
-			if (!doLocal)
-				if (doAffine)
-					return -gopen2-(s1->sLength-1)*gextend2;
-				else
-					return s1->sLength*gopen2;
-		}
-	}
-	else
-		if (s2->sLength)
-		{
-			(*res2) << *s2;
-			for (long s2i = 0; s2i < s2->sLength; s2i++)
-				(*res1) << gap;
+                if (!doLocal)
+                    if (doAffine)
+                        return -gopen2-(s1->sLength-1)*gextend2;
+                    else
+                        return s1->sLength*gopen2;
+            }
+        }
+        else
+            if (s2->sLength)
+            {
+                (*res2) << *s2;
+                for (long s2i = 0; s2i < s2->sLength; s2i++)
+                    (*res1) << gap;
 				
-			if (!doLocal)
-				if (doAffine)
-					return -gopen-(s2->sLength-1)*gextend;
-				else
-					return s2->sLength*gopen;
-		}
+                if (!doLocal)
+                    if (doAffine)
+                        return -gopen-(s2->sLength-1)*gextend;
+                    else
+                        return s2->sLength*gopen;
+            }
 		
-	res1->Finalize();
-	res2->Finalize();
-	
-	
-	/* verify the score */
-			
-	/*long gap1c = 0,
+        res1->Finalize();
+        res2->Finalize();
+        
+        
+        /* verify the score */
+        
+        /*long gap1c = 0,
 		 gap2c = 0;
 		 
-	_Parameter scoreCheck = 0.;
+         _Parameter scoreCheck = 0.;
 		 
-	for (long sp = 0; sp<res1->sLength; sp++)
-	{
-		char cs1 = res1->sData[sp],
-			 cs2 = res2->sData[sp];
-			 
-		if (cs1 == gap)
-		{
-			if (gap1c)
-				scoreCheck -= gextend;
-			else
-				scoreCheck -= gopen;
-			gap2c = 0;
-			gap1c++;
-		}
-		else
-			if (cs2 == gap)
-			{
-				if (gap2c)
-					scoreCheck -= gextend2;
-				else
-					scoreCheck -= gopen2;
-				gap1c = 0;
-				gap2c++;
-			}
-			else
-			{
-				gap1c = 0;
-				gap2c = 0;
-				long code1 = cmap.lData[cs1],
-					 code2 = cmap.lData[cs2];
-				
-				if (code1 >=0 && code2 >=0 )
-					scoreCheck += (*ccost)(code1,code2);
-			}
-			
-	}
-	
-	char checkScore [256];
-	sprintf (checkScore, "\nScore check: %g\n", scoreCheck);
-	BufferToConsole (checkScore);*/
-
-	store.AppendNewInstance(res1);
-	store.AppendNewInstance(res2);
-	
-	return score;
-}
+         for (long sp = 0; sp<res1->sLength; sp++)
+         {
+         char cs1 = res1->sData[sp],
+         cs2 = res2->sData[sp];
+         
+         if (cs1 == gap)
+         {
+         if (gap1c)
+         scoreCheck -= gextend;
+         else
+         scoreCheck -= gopen;
+         gap2c = 0;
+         gap1c++;
+         }
+         else
+         if (cs2 == gap)
+         {
+         if (gap2c)
+         scoreCheck -= gextend2;
+         else
+         scoreCheck -= gopen2;
+         gap1c = 0;
+         gap2c++;
+         }
+         else
+         {
+         gap1c = 0;
+         gap2c = 0;
+         long code1 = cmap.lData[cs1],
+         code2 = cmap.lData[cs2];
+         
+         if (code1 >=0 && code2 >=0 )
+         scoreCheck += (*ccost)(code1,code2);
+         }
+         
+         }
+         
+         char checkScore [256];
+         sprintf (checkScore, "\nScore check: %g\n", scoreCheck);
+         BufferToConsole (checkScore);*/
+        
+        store.AppendNewInstance(res1);
+        store.AppendNewInstance(res2);
+        
+        return score;
+    }
 
 //____________________________________________________________________________________	
 
@@ -4061,53 +3974,94 @@ inline	void BacktrackAlign			(_SimpleList& editOps , long& p1, long& p2, _Parame
 inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, long maxID)
 {
 
+    long   inStr1 [3] = {0,0,0},
+           inStr2 [3] = {0,0,0};
     switch (maxID)
     {
-        case 0: 
+        /*case 0: 
             p1--;
             editOps << -1;
             break;
         case 1: 
             p2--;
             editOps << 1;
+            break;*/
+        case HY_ALIGN_STRINGS_111_111:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
             break;
-        case 2: 
-            p2-=3;
-            p1-=3;
-            editOps << 9;
+        case HY_ALIGN_STRINGS_111_000:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
             break;
-        case 3:
-            p1-=3;
-            editOps << -3;
-            break;
-        case 4:
-            p2-=3;
-            editOps << 3;
-            break;
-            
-        case 5:
-            p2-=2;
-            p1-=3;
-            editOps << 12;
-            break;
-           
-        case 6:
-            p2--;
-            p1-=3;
-            editOps << 13;
-            break;
-           
-        case 7:
-            p1-=2;
-            p2-=3;
-            editOps << -12;
-            break;
-           
-        case 8:
-            p1--;
-            p2-=3;
-            editOps << -13;
+        case HY_ALIGN_STRINGS_000_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
             break;            
+        case HY_ALIGN_STRINGS_111_101:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[0] = inStr2[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_111_110:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[1] = inStr2[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_111_011:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[0] = inStr2[1] = 1;
+            break;
+        case HY_ALIGN_STRINGS_110_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[1] = inStr1[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_101_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[0] = inStr1[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_011_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[0] = inStr1[1] = 1;
+            break;
+        case HY_ALIGN_STRINGS_111_001:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[0] = 1;
+            break;
+        case HY_ALIGN_STRINGS_111_010:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[1] = 1;
+            break;
+        case HY_ALIGN_STRINGS_111_100:
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            inStr2[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_100_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[2] = 1;
+            break;
+        case HY_ALIGN_STRINGS_010_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[1] = 1;
+            break;
+        case HY_ALIGN_STRINGS_001_111:
+            inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            inStr1[0] = 1;
+            break;
+    }
+    for (long k = 2; k >=0 ; k--)
+    {
+        if (inStr1[k])
+        {   
+            if (inStr2[k])
+            {
+                p1--;p2--;editOps << 0;
+            }
+            else
+            {
+                p1--; editOps << -1;
+            }
+        }
+        else
+        {
+            p2--; editOps << 1;
+        }
     }
 }
 
