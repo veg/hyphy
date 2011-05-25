@@ -2744,7 +2744,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                        return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] * charCount + index);
                    case HY_ALIGN_STRINGS_111_110:
                    case HY_ALIGN_STRINGS_110_111:
-                       return index + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-2]);
+                       return index + charCount * (encodedS.lData[currentIndex-1] + charCount * encodedS.lData[currentIndex-2]);
                     
                }
             }
@@ -2760,10 +2760,11 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                         case HY_ALIGN_STRINGS_001_111:
                             return encodedS.lData[currentIndex-1] + charCount * index;
                         case HY_ALIGN_STRINGS_111_010:
-                        case HY_ALIGN_STRINGS_111_100:
                         case HY_ALIGN_STRINGS_010_111:
+                            return encodedS.lData[currentIndex-1]*charCount + index;
+                        case HY_ALIGN_STRINGS_111_100:
                         case HY_ALIGN_STRINGS_100_111:
-                            return encodedS.lData[currentIndex-1] + index;
+                            return encodedS.lData[currentIndex-1]*charCount*charCount + index;
                     }
             }
         }
@@ -2847,9 +2848,9 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                         maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
             }
         }
-        alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[0] - gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[1] - gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[2] - gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[0] - 2*gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[1] - 2*gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[2] - 2*gFrameshift;                              
     }
     
     if (codon1 >= 0)
@@ -2880,12 +2881,12 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                     ConstructCodonIndex (encodedString2,charCount,c,1,k*charCount+k2,HY_ALIGN_STRINGS_111_001)};
                 for (long k3 = 0; k3 < 3; k3++)
                     if (codont[k3] >= 0)
-                        maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
+                        maxV[k3] = MAX(maxV[k3], (*ccost)(codon1,codont[k3]));
             }
         }
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + maxV[0] - gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + maxV[1] - gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + maxV[2] - gFrameshift;  
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + maxV[0] - 2*gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + maxV[1] - 2*gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + maxV[2] - 2*gFrameshift;  
     }
     
     if (gapScore2)
@@ -4002,15 +4003,15 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             break;
         case HY_ALIGN_STRINGS_111_110:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
-            inStr2[1] = inStr2[2] = 1;
+            inStr2[0] = inStr2[1] = 1;
             break;
         case HY_ALIGN_STRINGS_111_011:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
-            inStr2[0] = inStr2[1] = 1;
+            inStr2[1] = inStr2[2] = 1;
             break;
         case HY_ALIGN_STRINGS_110_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
-            inStr1[1] = inStr1[2] = 1;
+            inStr1[0] = inStr1[1] = 1;
             break;
         case HY_ALIGN_STRINGS_101_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
@@ -4018,11 +4019,11 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             break;
         case HY_ALIGN_STRINGS_011_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
-            inStr1[0] = inStr1[1] = 1;
+            inStr1[1] = inStr1[2] = 1;
             break;
         case HY_ALIGN_STRINGS_111_001:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
-            inStr2[0] = 1;
+            inStr2[2] = 1;
             break;
         case HY_ALIGN_STRINGS_111_010:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
@@ -4030,11 +4031,11 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             break;
         case HY_ALIGN_STRINGS_111_100:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
-            inStr2[2] = 1;
+            inStr2[0] = 1;
             break;
         case HY_ALIGN_STRINGS_100_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
-            inStr1[2] = 1;
+            inStr1[0] = 1;
             break;
         case HY_ALIGN_STRINGS_010_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
@@ -4042,10 +4043,10 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             break;
         case HY_ALIGN_STRINGS_001_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
-            inStr1[0] = 1;
+            inStr1[2] = 1;
             break;
     }
-    for (long k = 2; k >=0 ; k--)
+    for (long k = 2; k >= 0 ; k--)
     {
         if (inStr1[k])
         {   
