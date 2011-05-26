@@ -4234,11 +4234,14 @@ _Parameter	_Matrix::MaxElement  (char runMode, long* indexStore)
 {
 	if (storageType == 1)
 	{
-		_Parameter max 	= -A_LARGE_NUMBER, 
+		_Parameter max 	= 0.0, 
 				   temp;
                    
         bool doAbsValue = runMode != 1 && runMode != 3,
              doMaxElement = runMode == 0 || runMode == 3;
+            
+        if (doMaxElement)
+            max = -A_LARGE_NUMBER;
 		
 		if (theIndex)
 		{
