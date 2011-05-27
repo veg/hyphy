@@ -107,184 +107,6 @@ if (!skipCodeSelectionStep)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function CompareCodonProperties (codon1, codon2, code)
-/* given: 
-		 codon1 (a number between 0 and 63 in AAA...TTT encoding), 
-		 codon2 (same encoding),
-		 code (the genetic code)
-		 
-	returns a dictionary with the following keys:
-	
-		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
-		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
-		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
-		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
-										   for example, codon1 = TCT, codon 2 = GCT, this matrix will be {{3,2}}
-
-		"2"				: ... same for the second position
-		"3"				: ... same for the third  position		
-*/		 
-
-{
-	_codonCompResult = {};
-	
-	_codonCompResult ["NONSYNONYMOUS"] = (code[codon1] != code[codon2]);
-	_codonCompResult ["BY_POSITION"]   = {1,3};
-	
-	for (_ci = 0; _ci < 3; _ci = _ci + 1)
-	{
-		
-		_positionMatrix = {1,2};
-		_positionMatrix [0] = codon1 % 4;
-		_positionMatrix [1] = codon2 % 4;
-	
-		_codonCompResult[1+_ci] = _positionMatrix;
-		(_codonCompResult ["BY_POSITION"])  [_ci] = (_positionMatrix [0] != _positionMatrix [1]);
-		
-		codon1 = codon1 $ 4;
-		codon2 = codon2 $ 4;
-	}
-	
-	_codonCompResult ["DIFFERENCES"] = (_codonCompResult ["BY_POSITION"])[0] + (_codonCompResult ["BY_POSITION"])[1] + (_codonCompResult ["BY_POSITION"])[2];
-	
-	return _codonCompResult;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function defineCodonToAA ()
-{	
-	codonToAAMap = {};
-	nucChars = "ACGT";
-	
-	for (p1=0; p1<64; p1=p1+1)
-	{
-		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
-	}
-	
-	return codonToAAMap;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function RawToSense (code)
-/* 
-    given:
-    		genetic code,
-    
-    returns a 64x1 matrix mapping raw codons to sense codons only (stops are mapped to -1)
-*/
-{
-	_codonMap = {64,1};
-	
-	_cShift = 0;
-	for (_ci = 0; _ci < 64; _ci = _ci + 1)
-	{
-		if (code[_ci] == 10)
-		{
-			_cShift = _cShift + 1;
-			_codonMap [_ci] = -1;
-		}
-		else
-		{
-			_codonMap [_ci] = _ci - _cShift;
-		}
-	}
-	
-	return _codonMap;
-}
-
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function IsTransition (pair)
-/* 
-    given:
-    		a pair of nucleotides (as a 1x2 matrix, e.g. as returned by CompareCodonProperties["1"]),
-    
-    returns 1 if the substitution is a transition 
-    returns -1 if the substitution is a transversion
-    
-    RETURNS 0 IF NO SUBSTITUTION TOOK PLACE
-*/
-{
-	if (pair[0] != pair[1])
-	{
-		if (Abs(pair[0]-pair[1])%2 == 0)
-		{
-			return 1;
-		}
-		return -1;
-	}
-	return 0;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function IsStop (codon, code)
-
-/* 
-	given: 
-		 codon (a number between 0 and 63 in AAA...TTT encoding)
-		 code (the genetic code)
-		 
-	returns 
-		 whether or not the codon is a stop codon
-*/		 
-
-{
-	return code[codon] == 10;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function mapCodonsToAA (codonSeq,aaSequence)
-{
-	seqLen = Abs (codonSeq);
-	translString = "";
-	translString * (seqLen/3+1);
-	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
-	{
-		codon = codonSeq[seqPos][seqPos+2];
-		prot  = mapping[codon];
-		if (Abs(prot))
-		{
-			translString * prot;
-		}
-		else
-		{
-			translString * "?";
-		}
-	} 
-	translString * 0;
-	translString = translString^{{"X$","?"}};
-	
-	return translString;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
-function ComputeCodonCodeToStringMap (genCode)
-{
-	_codonMap = {};
-	_shift	  = 0;
-	_nucLetters = "ACGT";
-	for (_idx = 0; _idx < Columns(genCode); _idx = _idx+1)
-	{
-		if (genCode[_idx] == 10)
-		{
-			_shift = _shift + 1;
-		}
-		else
-		{
-			_codonMap [_idx-_shift] = _nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4];
-		}
-	}
-	return _codonMap;
-}
-
-/*----------------------------------------------------------------------------------------------------------*/
-
 
 function ApplyGeneticCodeTable (myModelType)
 {
@@ -501,4 +323,183 @@ function mapCodonsToAA (codonSeq,aaSequence)
 	translString * 0;
 	
 	return translString;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function CompareCodonProperties (codon1, codon2, code)
+/* given: 
+		 codon1 (a number between 0 and 63 in AAA...TTT encoding), 
+		 codon2 (same encoding),
+		 code (the genetic code)
+		 
+	returns a dictionary with the following keys:
+	
+		"NONSYNONYMOUS" : [BOOLEAN] set to 1 if codon1 <-> codon2 is a non-synynomous substitution, otherwise 0
+		"DIFFERENCES"   : [INTEGER 0,1,2,3] set to the number of nucleotide differences
+		"BY_POSITION"	: [BOOLEAN MATRIX] a 1x3 matrix, where the i-th entry is 1 if the corresponding nucleotide position is different between the codons
+		"1"				: [1x2 MATRIX]	   nucleotide substitution in position 1 (from -> to) encoded as an index into "ACGT"
+										   for example, codon1 = TCT, codon 2 = GCT, this matrix will be {{3,2}}
+
+		"2"				: ... same for the second position
+		"3"				: ... same for the third  position		
+*/		 
+
+{
+	_codonCompResult = {};
+	
+	_codonCompResult ["NONSYNONYMOUS"] = (code[codon1] != code[codon2]);
+	_codonCompResult ["BY_POSITION"]   = {1,3};
+	
+	for (_ci = 0; _ci < 3; _ci = _ci + 1)
+	{
+		
+		_positionMatrix = {1,2};
+		_positionMatrix [0] = codon1 % 4;
+		_positionMatrix [1] = codon2 % 4;
+	
+		_codonCompResult[1+_ci] = _positionMatrix;
+		(_codonCompResult ["BY_POSITION"])  [_ci] = (_positionMatrix [0] != _positionMatrix [1]);
+		
+		codon1 = codon1 $ 4;
+		codon2 = codon2 $ 4;
+	}
+	
+	_codonCompResult ["DIFFERENCES"] = (_codonCompResult ["BY_POSITION"])[0] + (_codonCompResult ["BY_POSITION"])[1] + (_codonCompResult ["BY_POSITION"])[2];
+	
+	return _codonCompResult;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function defineCodonToAA ()
+{	
+	codonToAAMap = {};
+	nucChars = "ACGT";
+	
+	for (p1=0; p1<64; p1=p1+1)
+	{
+		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
+	}
+	
+	return codonToAAMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function RawToSense (code)
+/* 
+    given:
+    		genetic code,
+    
+    returns a 64x1 matrix mapping raw codons to sense codons only (stops are mapped to -1)
+*/
+{
+	_codonMap = {64,1};
+	
+	_cShift = 0;
+	for (_ci = 0; _ci < 64; _ci = _ci + 1)
+	{
+		if (code[_ci] == 10)
+		{
+			_cShift = _cShift + 1;
+			_codonMap [_ci] = -1;
+		}
+		else
+		{
+			_codonMap [_ci] = _ci - _cShift;
+		}
+	}
+	
+	return _codonMap;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function IsTransition (pair)
+/* 
+    given:
+    		a pair of nucleotides (as a 1x2 matrix, e.g. as returned by CompareCodonProperties["1"]),
+    
+    returns 1 if the substitution is a transition 
+    returns -1 if the substitution is a transversion
+    
+    RETURNS 0 IF NO SUBSTITUTION TOOK PLACE
+*/
+{
+	if (pair[0] != pair[1])
+	{
+		if (Abs(pair[0]-pair[1])%2 == 0)
+		{
+			return 1;
+		}
+		return -1;
+	}
+	return 0;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function IsStop (codon, code)
+
+/* 
+	given: 
+		 codon (a number between 0 and 63 in AAA...TTT encoding)
+		 code (the genetic code)
+		 
+	returns 
+		 whether or not the codon is a stop codon
+*/		 
+
+{
+	return code[codon] == 10;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function translateCodonToAA (codonSeq,mapping,offset)
+{
+	seqLen = Abs (codonSeq);
+	translString = "";
+	translString * (seqLen/3+1);
+	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
+	{
+		codon = codonSeq[seqPos][seqPos+2];
+		prot  = mapping[codon];
+		if (Abs(prot))
+		{
+			translString * prot;
+		}
+		else
+		{
+			translString * "?";
+		}
+	} 
+	translString * 0;
+	translString = translString^{{"X$","?"}};
+	
+	return translString;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function ComputeCodonCodeToStringMap (genCode)
+{
+	_codonMap = {};
+	_shift	  = 0;
+	_nucLetters = "ACGT";
+	for (_idx = 0; _idx < Columns(genCode); _idx = _idx+1)
+	{
+		if (genCode[_idx] == 10)
+		{
+			_shift = _shift + 1;
+		}
+		else
+		{
+			_codonMap [_idx-_shift] = _nucLetters[_idx$16] + _nucLetters[(_idx%16)$4] + _nucLetters[_idx%4];
+		}
+	}
+	return _codonMap;
 }
