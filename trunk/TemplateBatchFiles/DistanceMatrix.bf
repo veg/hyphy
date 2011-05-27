@@ -116,25 +116,40 @@ if (distanceChoice)
 		}
 		else
 		{
-			alignOptions = {};
-			scoreMatrix = {
-			{5,-4,-4,-4}
-			{-4,5,-4,-4}
-			{-4,-4,5,-4}
-			{-4,-4,-4,5}
-			};
-			alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
-			alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	10;
-			alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	5;
-			alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
-			alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
-			alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
-			alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=   "ACGT";
+            ChoiceList (codonAlign, "Use codon-based alignment",1,SKIP_NONE,
+                                        "No","Align nucleotide sequences directly.",
+                                        "Yes","Align nucleotide sequences in the codon-space fixing frameshifts if necessary");
+                                        
+            if (codonAlign < 0)
+            {
+                return 0;
+            }
+            if (codonAlign == 0)
+            {
+                alignOptions = {};
+                scoreMatrix = {
+                {5,-4,-4,-4}
+                {-4,5,-4,-4}
+                {-4,-4,5,-4}
+                {-4,-4,-4,5}
+                };
+                alignOptions ["SEQ_ALIGN_SCORE_MATRIX"] = 	scoreMatrix;
+                alignOptions ["SEQ_ALIGN_GAP_OPEN"]		= 	10;
+                alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	5;
+                alignOptions ["SEQ_ALIGN_GAP_EXTEND"]	= 	1;
+                alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	1;
+                alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
+                alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=   "ACGT";
+            }
+            else
+            {
+                _skipPredefsSeqAlignShared = 1;
+				LoadFunctionLibrary ("SeqAlignmentCodonShared");
+			}
 		}
 	}
 
-	ExecuteAFile ("pairwiseDistanceEstimator.ibf");
-	
+    LoadFunctionLibrary ("pairwiseDistanceEstimator");	
 }
 else
 {
