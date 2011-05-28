@@ -11,7 +11,7 @@ _pddSNS 				   = 0;
 	OPTIONS FOR CODON MODELS
 ------------------------------------------------------------------------------------------*/
 
-if (Abs(_Genetic_Code))
+if (Abs(_Genetic_Code) && dataType == 1)
 {
 	ChoiceList (_pddSNS,"Codon Branch Length",1,SKIP_NONE,
 												"Total",      "Synonymous and non-synonymous distance",	
@@ -81,7 +81,7 @@ if (Abs(DATAFILE_TREE))
 	else
 	{
 		Tree _fileTree = DATAFILE_TREE;
-		if (Abs(_Genetic_Code))	
+		if (Abs(_Genetic_Code) && dataType == 1)	
 		{
 			DataSetFilter copy_filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 		}
@@ -107,7 +107,7 @@ if (Abs(DATAFILE_TREE))
             
 			if (_paramOption == 0)
 			{
-				if (Abs(_Genetic_Code))
+				if (Abs(_Genetic_Code) && dataType)
 				{
 					defineIfNeeded ("AC",1);
 					defineIfNeeded ("AT",1);
@@ -179,40 +179,54 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 		if (dataType)
 		{
 			DataSetFilter twoSpecFilter = CreateFilter (filteredData,3,"",speciesIndex==_pddi+1 || speciesIndex==_pddj,GeneticCodeExclusions);
+            GetDataInfo (s1, twoSpecFilter, 0);
+            GetDataInfo (s2, twoSpecFilter, 1);
 		}
 		else
 		{
 			DataSetFilter twoSpecFilter = CreateFilter (filteredData,1,"",speciesIndex==_pddi+1 || speciesIndex==_pddj);
+            GetDataInfo (s1, twoSpecFilter, 0);
+            GetDataInfo (s2, twoSpecFilter, 1);
 			if (pairwiseAlign)
 			{
-				GetDataInfo (s1, twoSpecFilter, 0);
-				GetDataInfo (s2, twoSpecFilter, 1);
-				inStr = {{s1^{{"\\?",""}},s2^{{"\\?",""}}}};
-				AlignSequences(aligned, inStr, alignOptions);
-				aligned = aligned[0];
-				s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
-                //fprintf (stdout, s1, "\n");
-				DataSet realigned 			= ReadFromString (s1);
-				DataSetFilter twoSpecFilter = CreateFilter (realigned,1);
+				inStr = {{s1^{{"[\\?\\-]",""}},s2^{{"[\\?\\-]",""}}}};
 			}
 		}
 		if (MPI_NODE_COUNT > 1)
 		{
-			Export (_pddFilterExport, twoSpecFilter);
 			_nexusJob      = "";
 			_nexusJobShort = "";
-			_nexusJob * (Abs(_pddFilterExport)*2);
-			_nexusJobShort * (Abs(_pddFilterExport)*2);
+			_nexusJob      * 256;
+			_nexusJobShort * 256;
+            
+            if (pairwiseAlign)
+            {
+            _pddFilterExport = "alignOptions = " + alignOptions + ";\n" + 
+                               "inStr=" + inStr + ";\n" + 
+                                "AlignSequences(aligned, inStr, alignOptions);" + 
+                                "aligned = aligned[0];" + 
+                                "s1 = \">1\\n\" + aligned[1] + \"\\n>2\\n\" + aligned[2] + \"\\n\";" + 
+                                "DataSet ds 			= ReadFromString (s1);";
+                                //"DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";  
+            }
+            else
+            {
+            _pddFilterExport = "aligned = aligned[0];" + 
+                                "s1 = \">1\\n\"" + s1 + "\"\\n>2\\n\"" + s2 + "\"\\n\";" + 
+                                "DataSet ds 			= ReadFromString (s1);";
+                               // "DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";  
+            }
+ 
 			_nexusJob * _pddFilterExport;
 			_nexusJobShort * _pddFilterExport;
+           
 			
-			_nexusJob      * ("\nBEGIN HYPHY;\nBRANCH_LENGTH_STENCIL="+BRANCH_LENGTH_STENCIL+";\n");
+			_nexusJob      * ("\nBRANCH_LENGTH_STENCIL="+BRANCH_LENGTH_STENCIL+";\n");
 			_nexusJob      * _pddModelExport;
-			_nexusJob      * ("PRESERVE_SLAVE_NODE_STATE=1;TRY_NUMERIC_SEQUENCE_MATCH=1;Tree givenTree = (1,2);DataSet ds = ReadDataFile (USE_NEXUS_FILE_DATA);");
-			_nexusJobShort * ("\nBEGIN HYPHY;\nDataSet ds = ReadDataFile (USE_NEXUS_FILE_DATA);\n");
+			_nexusJob      * ("PRESERVE_SLAVE_NODE_STATE=1;TRY_NUMERIC_SEQUENCE_MATCH=1;Tree givenTree = (1,2);");
 			if (dataType)
 			{
-				_nexusJob * ("DataSetFilter twoSpecFilter = CreateFilter (ds,3,\"\",\"\",\""+GeneticCodeExclusions+"\");");
+				_nexusJob *      ("DataSetFilter twoSpecFilter = CreateFilter (ds,3,\"\",\"\",\""+GeneticCodeExclusions+"\");");
 				_nexusJobShort * ("DataSetFilter twoSpecFilter = CreateFilter (ds,3,\"\",\"\",\""+GeneticCodeExclusions+"\");");
 			}
 			else
@@ -220,11 +234,26 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 				_nexusJob * "DataSetFilter twoSpecFilter = CreateFilter (ds,1);";
 				_nexusJobShort * "DataSetFilter twoSpecFilter = CreateFilter (ds,1);";
 			}
-			_nexusJob * "LikelihoodFunction lf = (twoSpecFilter,givenTree);Optimize(res,lf);MPI_NEXUS_FILE_RETURN=BranchLength (givenTree,0);\nEND;\n";
+			_nexusJob * "LikelihoodFunction lf = (twoSpecFilter,givenTree);Optimize(res,lf);return BranchLength (givenTree,0);\n";
 			_nexusJob * 0;
-			_nexusJobShort * "LikelihoodFunction lf = (twoSpecFilter,givenTree);Optimize(res,lf);MPI_NEXUS_FILE_RETURN=BranchLength (givenTree,0);\nEND;\n";
+			_nexusJobShort * "LikelihoodFunction lf = (twoSpecFilter,givenTree);Optimize(res,lf);return BranchLength (givenTree,0);\n";
 			_nexusJobShort * 0;
+            
+            //fprintf (stdout, _nexusJobShort, "\n");
 		}
+        else
+        {
+            if (pairwiseAlign)
+            {
+                AlignSequences(aligned, inStr, alignOptions);
+                aligned = aligned[0];
+                s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
+                //fprintf (stdout, s1, "\n");
+                DataSet realigned 			= ReadFromString (s1);
+                DataSetFilter twoSpecFilter = CreateFilter (realigned,1);  
+            }
+        }
+        
 		_pddSendJobs (_pddi,_pddj); 
 	}
 }
