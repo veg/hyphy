@@ -3088,7 +3088,7 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 		subNumericValues = 0;
 		DeleteObject 			 (cStr);
 
-		WarnError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found. Set it by hand, or check your constraints for compatibility. Failed constraint:") 
+		WarnError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:") 
 						  & badX);
 
 	}
@@ -5479,7 +5479,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 		if (verbosityLevel > 100)
 		{
 			char buf [512];
-			sprintf (buf, "\n[BRACKET: %g (%g) - %g (%g) - %g (%g)]", left, leftValue, middle, middleValue, right, rightValue);
+			sprintf (buf, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue, middle, middleValue, right, rightValue);
 			BufferToConsole (buf);
 		}		
 
@@ -5499,7 +5499,7 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			break;
 
 		// case 1: /
-		if ((rightValue>=middleValue)&&(middleValue>=leftValue))
+		if (rightValue>=middleValue && middleValue>=leftValue)
 		{
 			if (movingLeft) 
 				rightStep/=magR;
@@ -5512,14 +5512,14 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			movingLeft = false;
 		}
 		else // case 2
-			if ((rightValue<=middleValue)&&(middleValue<=leftValue))
+			if (rightValue<=middleValue && middleValue<=leftValue)
 			{
-				if ((!movingLeft)&&(!first)) 
+				if (!movingLeft && !first) 
 					leftStep/=magR;
 				else
 				{
-					rightStep = leftStep;
-					leftStep*=magR;
+					rightStep =  leftStep;
+					leftStep  *= magR;
 				}
 				if (index < 0)
 				{
@@ -5549,7 +5549,12 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			middleValue			= SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
 			break;
 		}
-		first = false;
+        if (middle-lowerBound < STD_GRAD_STEP*0.5)
+        {
+			middleValue			= SetParametersAndCompute (index, middle = lowerBound+STD_GRAD_STEP*0.5, &currentValues, gradient);
+			break;
+		}
+        first = false;
 		
 	}	
 	
