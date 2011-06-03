@@ -757,7 +757,7 @@ function testLRT (vec1, vec2, itCount)
 	
 	for (k=0; k<itCount; k=k+1)
 	{
-		resampled = +Random(jvec,1);
+		resampled = Random(jvec,1);
 		resMx1[k] = +(resampled[0][-1]);
 		resMx2[k] = +(resampled[1][-1]);
 	}
