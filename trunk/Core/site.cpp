@@ -5554,10 +5554,7 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
 			if (lastc=='[')
 			{
 				if (fs->isSkippingInNEXUS)
-				{
-					_String errMsg ("Nested comments in NEXUS really shouldn't be used.");
-					ReportWarning (errMsg);
-				}
+					ReportWarning ("Nested comments in NEXUS really shouldn't be used.");
 				else
 					fs->isSkippingInNEXUS = true;
 			}

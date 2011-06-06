@@ -12,6 +12,9 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	scoreMatrix  = {64,64};
 	protLetters = "ARNDCQEGHILKMFPSTWYV";
 	mapping 	= mapStrings (_hyphyAAOrdering, protLetters);	
+    
+    minScore    = 0;
+    
 	for (k = 0; k < 64; k += 1)
 	{
 		mappedK = mapping[_Genetic_Code[k]];
@@ -23,6 +26,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 				if (mappedK2 >= 0)
 				{
 					aScore = protScoreMatrix[mappedK][mappedK2];
+                    minScore = Min (minScore, aScore);
 				}
 				else
 				{
@@ -49,7 +53,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
 	alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	20;
 	alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	5;
-	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	10;
+	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	-5*minScore;
 	alignOptions ["SEQ_ALIGN_CODON_ALIGN"]	= 	1;
 	alignOptions ["SEQ_ALIGN_NO_TP"]		= 	1;
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=  "ACGT";

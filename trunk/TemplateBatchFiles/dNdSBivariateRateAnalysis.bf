@@ -1,4 +1,4 @@
-RequireVersion ("0.9920060817");
+RequireVersion ("2.0020100101");
 
 ChoiceList (runType,"Run Type",1,SKIP_NONE,
 			"New run","Start a new run",
@@ -9,6 +9,7 @@ if (runType < 0)
 {
 	return 0;
 }
+
 
 randomizeInitValues  = 0;
 ModelMatrixDimension = 0;
@@ -50,6 +51,7 @@ totalCharCount  = 0;
 /*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 if (runType == 0)
 {
+    LF_NEXUS_EXPORT_EXTRA = "bivariateFitHasMultipleCladeRates = " + bivariateFitHasMultipleCladeRates + ";";
 	ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
 				"Codon Model","Jointly optimize rate parameters and branch lengths (slow and thorough)",
 				"Nucleotide Model","Estimate branch lengths once, using an appropriate nucleotide model (quick and dirty)."
@@ -469,6 +471,7 @@ if (runType == 0)
 	lfParts	= "";
 	lfParts * 128;
 	lfParts * "LikelihoodFunction lf = (filteredData_1,tree_1_0";
+    
 
 	for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	{
@@ -478,6 +481,13 @@ if (runType == 0)
 			{
 				ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_"+part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"NS_"+part+"/c_scale\",aaRateMultipliers);");
 				ExecuteCommands ("Model MG94model_"+part+"= (rate_matrix_"+part+",vectorOfFrequencies,0);");
+                for (_modelID = 1; _modelID <  bivariateFitHasMultipleCladeRates; _modelID += 1)
+                {
+                    _cladeRate = "clade_" + _modelID + "_NS_" + part;
+                    ExecuteCommands ("global " + cladeRate + "= 1;");
+                    ExecuteCommands ("PopulateModelMatrix(\"rate_matrix__clade" + _modelID + "_" + part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"" + _cladeRate + "*NS_"+part+"/c_scale\",aaRateMultipliers);");
+                    ExecuteCommands ("Model MG94model_clade_" + _modelID + "_" + part+"= (rate_matrix__clade" + _modelID + "_" + part+",vectorOfFrequencies,0);");
+                }
 			}
 			else
 			{
@@ -525,6 +535,8 @@ else
 {
 	SetDialogPrompt ("Choose a model fit:");
 	ExecuteAFile (PROMPT_FOR_FILE);
+
+    LF_NEXUS_EXPORT_EXTRA = "bivariateFitHasMultipleCladeRates = " + bivariateFitHasMultipleCladeRates + ";";
 
 	GetInformation(vars,"^P_[0-9]+$");
 	resp = Columns (vars)+1;
