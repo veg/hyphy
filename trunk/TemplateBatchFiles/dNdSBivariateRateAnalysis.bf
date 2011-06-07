@@ -82,7 +82,10 @@ if (runType == 0)
 		"fprintf (stdout,\"\\n______________READ THE FOLLOWING DATA______________\\n\",ds_" + fileID + ");"+
 		"DataSetFilter filteredData_" + fileID + " = CreateFilter (ds_"+fileID +",3,\"\",\"\",GeneticCodeExclusions);");
 		#include								   "queryTree.bf";
-		ExecuteCommands ("treeString_" + fileID + " = treeString;totalCodonCount=totalCodonCount+filteredData_"+fileID+".sites;totalCharCount=totalCharCount+filteredData_"+fileID+".sites*filteredData_"+fileID+".species;");
+		ExecuteCommands ("treeString_" + fileID + " = treeString;totalCodonCount=totalCodonCount+filteredData_"+
+                                         fileID + ".sites;totalCharCount=totalCharCount+filteredData_" + fileID + ".sites*filteredData_" + fileID + ".species;");
+        ExecuteCommands ("treeStringNoModels_" + fileID + "= treeString_" + fileID + " ^{{\"\\\\{[^\\\\}]+\\\\}\",\"\"}}");
+        
 	}
 	
 	observedFreq       = {4,3};
@@ -451,7 +454,7 @@ if (runType == 0)
 	for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 	{
 		ExecuteCommands ("DataSetFilter nucFilter_"+fileID+" = CreateFilter (filteredData_"+fileID+",1);");
-		ExecuteCommands ("Tree  nucTree_"+fileID+" = treeString_"+fileID+";");
+		ExecuteCommands ("Tree  nucTree_"+fileID+" = treeStringNoModels_"+fileID+";");
 		if (fileID > 1)
 		{
 			nlfDef * ",";
@@ -480,18 +483,18 @@ if (runType == 0)
 			if (fileID == 1)
 			{
 				ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_"+part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"NS_"+part+"/c_scale\",aaRateMultipliers);");
-				ExecuteCommands ("Model MG94model_"+part+"= (rate_matrix_"+part+",vectorOfFrequencies,0);");
+				ExecuteCommands ("Model MG94MODEL_"+part+"= (rate_matrix_"+part+",vectorOfFrequencies,0);");
                 for (_modelID = 1; _modelID <  bivariateFitHasMultipleCladeRates; _modelID += 1)
                 {
                     _cladeRate = "clade_" + _modelID + "_NS_" + part;
-                    ExecuteCommands ("global " + cladeRate + "= 1;");
-                    ExecuteCommands ("PopulateModelMatrix(\"rate_matrix__clade" + _modelID + "_" + part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"" + _cladeRate + "*NS_"+part+"/c_scale\",aaRateMultipliers);");
-                    ExecuteCommands ("Model MG94model_clade_" + _modelID + "_" + part+"= (rate_matrix__clade" + _modelID + "_" + part+",vectorOfFrequencies,0);");
+                    ExecuteCommands ("global " + _cladeRate + " = 1;");
+                    ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_0_clade" + _modelID + "_" + part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"" + _cladeRate + "*NS_"+part+"/c_scale\",aaRateMultipliers);");
+                    ExecuteCommands ("Model MG94MODEL_" + part+"_CLADE_" + _modelID + " = (rate_matrix_0_clade" + _modelID + "_" + part+",vectorOfFrequencies,0);");
                 }
 			}
 			else
 			{
-				ExecuteCommands ("UseModel (MG94model_"+part+");");
+				ExecuteCommands ("UseModel (MG94MODEL_"+part+");");
 			}
 			
 			treeID = "tree_"+fileID+"_"+part;

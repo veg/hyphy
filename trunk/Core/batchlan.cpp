@@ -3232,6 +3232,7 @@ void	  _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
 		{
 			DeleteObject (likelihoodFunctionSpec);
 			WarnError	 (errMsg);
+            return;
 		}
 	}
 		

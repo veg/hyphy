@@ -62,19 +62,19 @@ for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 
 ExecuteCommands ("global S_"+(rateCount-1)+"=0.5; global NS_"+(rateCount-1)+"=0.5;global P_"+(rateCount-1)+"=0.5;P_"+(rateCount-1)+":<1;");
 ExecuteCommands("PopulateModelMatrix(\"rate_matrix_"+(rateCount-1)+"\",observedFreq,\"S_\"+(rateCount-1)+\"/c_scale\",\"NS_\"+(rateCount-1)+\"/c_scale\");");
-ExecuteCommands("Model MG94model_"+(rateCount-1)+"= (rate_matrix_"+(rateCount-1)+",vectorOfFrequencies,0);global P_"+(rateCount-1)+"=1/"+totalCodonCount+";");
+ExecuteCommands("Model MG94MODEL_"+(rateCount-1)+"= (rate_matrix_"+(rateCount-1)+",vectorOfFrequencies,0);global P_"+(rateCount-1)+"=1/"+totalCodonCount+";");
 
 for (_modelID = 1; _modelID <  bivariateFitHasMultipleCladeRates; _modelID += 1)
 {
     _cladeRate = "clade_" + _modelID + "_NS_" + (rateCount-1);
-    ExecuteCommands ("global " + cladeRate + "= 1;");
+    ExecuteCommands ("global " + _cladeRate + "= 1;");
     ExecuteCommands("PopulateModelMatrix(\"rate_matrix_clade_"+_modelID + "_" + (rateCount-1)+"\",observedFreq,\"S_\"+(rateCount-1)+\"/c_scale\",\"" + _cladeRate + "*NS_\"+(rateCount-1)+\"/c_scale\");");
-    ExecuteCommands("Model MG94model_clade"+_modelID + "_"+ (rateCount-1)+"= (rate_matrix_clade_"+_modelID + "_" + (rateCount-1)+",vectorOfFrequencies,0);");
+    ExecuteCommands("Model MG94MODEL_CLADE"+_modelID + "_"+ (rateCount-1)+"= (rate_matrix_clade_"+_modelID + "_" + (rateCount-1)+",vectorOfFrequencies,0);");
 }
 
 for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 {
-	ExecuteCommands ("treeString = Format(tree_"+ fileID+ "_0,1,1);");
+	ExecuteCommands ("treeString = \"\"+ tree_"+ fileID+ "_0;");
 	ExecuteCommands ("Tree tree_" + fileID + "_" + (rateCount-1) + "= treeString;");
 	ExecuteCommands ("ReplicateConstraint (\"this1.?.synRate:=this2.?.synRate\",tree_"+fileID+"_"+(rateCount-1)+",tree_"+fileID+"_0);");
 }
