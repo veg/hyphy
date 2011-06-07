@@ -653,13 +653,14 @@ LogL = res[1][0];
 GetString (paramList, lf, -1);
 
 degF = Columns(paramList["Global Independent"]) /* this will overcount by one; because the mean alpha := 1 */
-	+ 8 /* 9 frequency parameters -1 */
+	-1 
 	- branchLengths; /* remove one more for codon scaling factor, if nuc branch lengths are used */
 
 for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 {
-	ExecuteCommands ("degF = degF + BranchCount(tree_" + fileID + "_0) + TipCount(tree_" + fileID + "_0);");
+    degF += Eval ("BranchCount(tree_" + fileID + "_0)") + Eval ("TipCount(tree_" + fileID + "_0)");
 }	
+
 
 AIC	 = 2*(degF-LogL);
 AICc = 2*(degF*totalCharCount/(totalCharCount-degF-1) - LogL);
