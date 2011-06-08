@@ -14,9 +14,6 @@ if (runType < 0)
 randomizeInitValues  = 0;
 ModelMatrixDimension = 0;
 
-/*
-VERBOSITY_LEVEL = 10;
-*/
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -25,18 +22,33 @@ function ReportDistributionString (rc)
 	distroString = "";
 	distroString * 1024;
 	
-	reportMx = {rc,4};
+	reportMx = {rc + (bivariateFitHasMultipleCladeRates>1)*(bivariateFitHasMultipleCladeRates-1),4};
 	
 	for (mi=0; mi<rc; mi=mi+1)
 	{
-		ExecuteCommands ("reportMx[mi][0]=S_"+mi+"/c_scale;");
-		ExecuteCommands ("reportMx[mi][1]=NS_"+mi+"/c_scale;");
+        reportMx[mi][0] = Eval ("S_"+mi+"/c_scale");
+        reportMx[mi][1] = Eval ("NS_"+mi+"/c_scale");
 		reportMx[mi][2] = reportMx[mi][1]/reportMx[mi][0];
-		ExecuteCommands ("reportMx[mi][3]="+freqStrMx[mi]+";");
-		distroString * ("Class "+(mi+1)+"\n\tdS    = "+Format(reportMx[mi][0],10,3)
+        reportMx[mi][3] = Eval (freqStrMx[mi]);
+        
+  		distroString * ("Class "+(mi+1)+"\n\tdS    = "+Format(reportMx[mi][0],10,3)
 									   +"\n\tdN    = "+Format(reportMx[mi][1],10,3)
 									   +"\n\tdN/dS = "+Format(reportMx[mi][2],10,3)
-									   +"\n\tProb  = "+Format(reportMx[mi][3],10,3) + "\n");
+									   +"\n\tProb  = "+Format(reportMx[mi][3],10,3));
+                                       
+        if (bivariateFitHasMultipleCladeRates > 1)
+        {
+            distroString * "\n\tBranch group-pecific dN/dS";
+        
+            for (mi2 = 1; mi2 < bivariateFitHasMultipleCladeRates; mi2 += 1)
+            {
+                distroString * (            "\n\tGroup " + Format (mi2,2,0) + " dN    = " + Format (reportMx[mi][1]*Eval("clade_"+mi2+"_NS_"+mi),10,3));
+                distroString * (            "\n\tGroup " + Format (mi2,2,0) + " dN/dS = " + Format (reportMx[mi][2]*Eval("clade_"+mi2+"_NS_"+mi),10,3));
+            }
+        }
+        
+        distroString * "\n";
+        
 	}								   
 	
 	distroString * 0;
@@ -226,10 +238,10 @@ if (runType == 0)
 	}
 	
 
-	global		S_0  = 0.5;
+	global		S_0  := 1.0;
 	S_0:>0.0000001;
 	global		NS_0 = 0.1;
-
+ 
 	for (mi=1; mi<resp; mi=mi+1)
 	{
 		categDef1 * ("global S_"+mi+"=0.5;S_"+mi+":>0.0000001;\nglobal NS_"+mi+";\n");
@@ -653,7 +665,6 @@ LogL = res[1][0];
 GetString (paramList, lf, -1);
 
 degF = Columns(paramList["Global Independent"]) /* this will overcount by one; because the mean alpha := 1 */
-	-1 
 	- branchLengths; /* remove one more for codon scaling factor, if nuc branch lengths are used */
 
 for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)

@@ -8872,104 +8872,37 @@ bool	_ElementaryCommand::ConstructModel (_String&source, _ExecutionList&target)
 bool	_ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
 
 {
-	long 	count = 0, 
-		 	f, 
-		 	parenLevel=0,
-		 	bracketLevel = 0;
-		 
-	bool 	inLiteral   = false, 
-		 	lastLiteral = false;
 	  
-	_ElementaryCommand 	fpr;
-	fpr.code = 8;
+	_ElementaryCommand 	*fpr = (_ElementaryCommand*)checkPointer(new _ElementaryCommand (8));
+     
+    long     lastStart = 8;
+    bool     done      = false;
+            
+    _String  comma (",");
+    
+    while (!done)
+    {
+        long lastEnd = source.FindTerminator(lastStart,comma);
+        if (lastEnd < 0)
+        {
+            lastEnd = source.sLength-2; 
+            done = true;
+        }
+        _String *thisArgument = new _String (source, lastStart, lastEnd-1);
+        
+        if (thisArgument->IsALiteralArgument())
+        {
+            fpr->simpleParameters << fpr->parameters.lLength;
+            _FString converted (*thisArgument, true);
+            fpr->parameters << converted.theString;
+            DeleteObject (thisArgument);
+        }
+        else
+            fpr->parameters.AppendNewInstance (thisArgument);
+        lastStart = lastEnd + 1;
+    }
 	
-	_String* literal = new _String ((unsigned long)64, true);
-	checkPointer(literal);
-	
-	for (f = 8; f<source.Length()-1; f++)
-	{
-		if (((source[f]==',') || (f == source.Length()-2)) && (!inLiteral))
-		{
-			if (parenLevel == 0 && bracketLevel == 0)
-			{
-				if (literal->sLength)
-				{
-					literal->Finalize();
-					fpr.parameters<<literal;
-					DeleteObject(literal);
-					if (f<source.Length()-2)
-						checkPointer(literal = new _String ((unsigned long)64, true));
-					else	
-						literal = nil;
-					
-					count++;
-					if (lastLiteral)
-						fpr.simpleParameters<<count-1;
-					lastLiteral = false;
-				}
-				continue;
-			}
-		}
-		
-		if (source[f]=='\\')
-		{
-			switch (source[f+1])
-			{
-				case 'n':
-					(*literal)<<'\n';
-					break;
-				case 't':
-					(*literal)<<'\t';
-					break;
-				case 'r':
-					(*literal)<<'\r';
-					break;
-				case '\\':
-					(*literal)<<'\\';
-					break;
-				case '"':
-					(*literal)<<'\"';
-					break;
-			}
-			f++;
-			continue;
-		}
-		
-		if (bracketLevel == 0 && parenLevel == 0 && source[f]=='"' && fpr.parameters.lLength)
-		{
-			inLiteral	=!	inLiteral;
-			lastLiteral = 	true;
-			continue;
-		}
-
-		if (!inLiteral)
-			switch (source[f])
-			{
-				case '(':
-					parenLevel++;
-					break;
-				case ')':
-					parenLevel--;
-					break;
-				case '[':
-					bracketLevel++;
-					break;
-				case ']':
-					bracketLevel--;
-					break;
-					
-			}
-
-		(*literal) << source[f];
-	}
-	
-	if (literal)
-	{
-		literal->Finalize();
-		DeleteObject (literal);
-	}
-	
-	target&&(&fpr);
+	fpr->addAndClean(target, nil, 0);
 	return true;
 }
 
@@ -8985,22 +8918,14 @@ bool	_ElementaryCommand::ConstructFscanf (_String&source, _ExecutionList&target)
 {
 	if (!allowedFormats.lLength)
 	{
-		_String	 format;
-		format = "Number";
-		allowedFormats&& &format;
-		format = "Matrix";
-		allowedFormats&& &format;
-		format = "Tree";
-		allowedFormats&& &format;
-		format = "String";
-		allowedFormats&& &format;
-		format = "NMatrix";
-		allowedFormats&& &format;
-		format = "Raw";
-		allowedFormats&& &format;
-		format = "Lines";
-		allowedFormats&& &format;
-	}
+		allowedFormats.AppendNewInstance (new _String ("Number"));
+		allowedFormats.AppendNewInstance (new _String ("Matrix"));
+		allowedFormats.AppendNewInstance (new _String ("Tree"));
+		allowedFormats.AppendNewInstance (new _String ("String"));
+		allowedFormats.AppendNewInstance (new _String ("NMatrix"));
+		allowedFormats.AppendNewInstance (new _String ("Raw"));
+		allowedFormats.AppendNewInstance (new _String ("Lines"));
+    }
 
 	_ElementaryCommand 	*fscan = new _ElementaryCommand (source.startswith (blsscanf)?56:25);
 	_List				arguments, argDesc;

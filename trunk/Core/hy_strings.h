@@ -143,40 +143,40 @@ virtual		operator const char* (void);
  			_String Replace(_String, _String, bool);
  				// replace string 1 with string 2, all occurences true/false
  				
- 			char FirstNonSpace(long start = 0, long end = -1, char direction = 1);
+ 			char    FirstNonSpace(long start = 0, long end = -1, char direction = 1);
  				// scans the string for the first non space char
 
- 			long FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
+ 			long    FirstNonSpaceIndex(long start = 0, long end = -1, char direction = 1);
  				// scans the string for the first non space char and returns its index
 
- 			long FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
+ 			long    FirstSpaceIndex(long start = 0, long end = -1, char direction = 1);
  				// scans the string for the first  space char and returns its index
 
- 			long FindEndOfIdent(long start = 0, long end = -1, char wild = '*');
+ 			long    FindEndOfIdent(long start = 0, long end = -1, char wild = '*');
  				// scans the string for the end of an ident starting at 'start'
 
- 			long Find(_String s, long from = 0, long to = -1);
+ 			long    Find(_String s, long from = 0, long to = -1);
  				// find first occurence of the string between from and to
  				
- 			long Find(char s, long from = 0, long to = -1);
+ 			long    Find(char s, long from = 0, long to = -1);
  				// find first occurence of the string between from and to
 
- 			long FindAnyCase (_String, long from = 0, long to = -1);
+ 			long    FindAnyCase (_String, long from = 0, long to = -1);
  				// find first occurence of the string between from and to
  				// case insensitive
 
-  			long FindBackwards(_String, long, long);
+  			long    FindBackwards(_String, long, long);
  				// find first occurence of the string between from and to searching backwards
  				
-			long FindBinary(char);
+			long    FindBinary(char);
  				// finds a character in an alphabetized string
  				
- 			long Adler32 (void);
+ 			long    Adler32 (void);
 	
-			void FormatTimeString (long);
+			void    FormatTimeString (long);
 				// convert the seconds argument into a hh:mm:ss format
 
- 			bool operator == (_String);
+ 			bool    operator == (_String);
  				// lexicographic comparison
  				
  			bool Equal   (_String*);
@@ -262,6 +262,8 @@ virtual		operator const char* (void);
  			bool    IsValidIdentifier(bool = true);
  			
   			bool    IsValidRefIdentifier(void);
+            
+            bool    IsALiteralArgument  (void);
 
 			void	ConvertToAnIdent (bool = true);
  			

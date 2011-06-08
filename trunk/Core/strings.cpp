@@ -554,6 +554,35 @@ void _String::EscapeAndAppend (const char c, char mode)
 				}
 				return;
 			}
+            else
+            {
+                if (mode == 5) // regexp 
+                {
+                    switch (c)
+                    {
+                        case '[':
+                        case '^':
+                        case '$':
+                        case '.':
+                        case '|':
+                        case '?':
+                        case '*':
+                        case '+':
+                        case '(':
+                        case ')':
+                            (*this) << '\\';
+                            (*this) << c;
+                            break;
+                        case '\\':
+                            (*this) << "\\\\";
+                            break;
+                        default:
+                            (*this) << c;
+                    }
+                    return;
+                    
+                }
+            }
 		}
 	}
 	switch (c)
@@ -1387,7 +1416,7 @@ _List* _String::Tokenize (_String s)
 	
 _Parameter		_String::toNum (void)
 {
-	if (!sLength) 	return 0;
+	if (sLength == 0.) 	return 0.;
 	char * endP;
 	return strtod(sData,&endP);
 }
@@ -1396,9 +1425,15 @@ _Parameter		_String::toNum (void)
 //_______________________________________________________________________
 void 	_String::UpCase (void)
 {
-	char * TheText = sData;
 	for (long i = 0; i<sLength; i++) 
-		TheText[i] = toupper (TheText[i]);
+		sData[i] = toupper (sData[i]);
+}
+
+//_______________________________________________________________________
+void 	_String::LoCase (void)
+{
+	for (long i = 0; i<sLength; i++) 
+		sData[i] = tolower (sData[i]);
 }
 
 //_______________________________________________________________________
@@ -1421,20 +1456,20 @@ _Parameter 	_String::ProcessTreeBranchLength (void)
 	return res;
 }
 
-//_______________________________________________________________________
-void 	_String::LoCase (void)
-{
-	char * TheText = sData;
-	for (long i = 0; i<sLength; i++) 
-	{
-		/*char c = TheText[i];
-		if ((c>='A')&&(c<='Z')) 
-			TheText[i]+=32;*/
-			
-		TheText[i] = tolower (TheText[i]);
-	}
-}
 
+//_______________________________________________________________________
+
+bool	_String::IsALiteralArgument (void) 
+{	
+    if (sLength >= 2)
+    {
+        long from = 0,
+             to = ExtractEnclosedExpression (from,'"','"',true,true);
+	
+        return from == 0 && to == sLength - 1;
+    }
+    return false;
+}
 
 //_______________________________________________________________________
 
@@ -1442,15 +1477,13 @@ void	_String::StripQuotes (void)
 {	
 	if (sLength&&(sData[sLength-1]=='"')&&(sData[0]=='"'))
 		Trim(1,sLength-2);
-	//if (sData[0]=='"')
-	//	*this=Cut(1,-1);
 }
 
 //_______________________________________________________________________
 
 bool	_String::IsValidIdentifier (bool strict) 
 {	
-	if (!sLength) 
+	if (sLength == 0) 
 		return false;
 	
 	if (strict)

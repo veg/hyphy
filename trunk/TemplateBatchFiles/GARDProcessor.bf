@@ -259,14 +259,14 @@ for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
 			baseLRT = 2*(likelihoodScores[pccounter][pccounter]-likelihoodScores[pccounter][pc2]);
 			fprintf (stdout, "Tree ", pc2+1, " base LRT = ", baseLRT, ". p-value = ");
 			textMx = testLRT(partTreeConds,otherPartTree,khIterations) % 0;
-			for (kk=0; kk<khIterations; kk=kk+1)
+			for (kk=khIterations-1; kk>=0; kk=kk-1)
 			{	
-				if (textMx[kk] >= cutThreshold)
+				if (textMx[kk] < baseLRT)
 				{
 					break;
 				}
 			}
-			pval = Max(1,kk)/khIterations;
+			pval = Max(1,(khIterations-1-kk))/khIterations;
 			fprintf (stdout, pval , "\n");
 			pairwiseP[pccounter][pc2] = pval;
 		}
@@ -760,8 +760,9 @@ function testLRT (vec1, vec2, itCount)
 		resampled = Random(jvec,1);
 		resMx1[k] = +(resampled[0][-1]);
 		resMx2[k] = +(resampled[1][-1]);
+        SetParameter (STATUS_BAR_STATUS_STRING, "Drawing resampled likelihoods for segments " + pccounter + " and " + pc2 + "("+k+"/"+itCound+" done)",0);
 	}
 	
 	resMx = (resMx1-resMx2)*2;
-    return resMx - (+resMx) * (1/itCount);
+    return resMx + (+resMx) * (-1/itCount);
 }
