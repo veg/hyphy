@@ -3287,9 +3287,9 @@ void	_HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subset,
 							_Matrix						eqMatrix (rowDim,colDim,false,true);
 							_Parameter					fe		  = 1./rowDim;
 							
-							for (;rowDim>=0;rowDim--)
+							for (long r = 0; r < rowDim; r++)
 								for (long c=0; c<colDim; c++)
-									eqMatrix.Store(rowDim,c,fe);
+									eqMatrix.Store(r,c,fe);
 																					
 							*modelDef = *modelDef & '\n' & ident & '=' & _String((_String*)eqMatrix.toStr()) & ';';
 						}
