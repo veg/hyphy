@@ -284,10 +284,9 @@ function ApplyGeneticCodeTable (myModelType)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-function mapCodonsToAA (codonSeq,aaSequence)
+function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
 {
-	mapping = defineCodonToAA ();
-	seqLen  = Abs (aaSequence);
+    seqLen  = Abs (aaSequence);
 	translString = "";
 	translString * (seqLen);
 	
@@ -323,6 +322,14 @@ function mapCodonsToAA (codonSeq,aaSequence)
 	translString * 0;
 	
 	return translString;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function mapCodonsToAA (codonSeq,aaSequence)
+{
+	return mapCodonsToAAGivenMapping (codonSeq,aaSequence,defineCodonToAA ());
 }
 
 
