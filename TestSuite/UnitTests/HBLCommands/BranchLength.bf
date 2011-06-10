@@ -5,7 +5,7 @@ function getTestName ()
 
 function getTestedFunctions ()
 {
-	return {{"_TreeTopology::BranchLength","_CalcNode::BranchLength"}};
+	return {{"_TreeTopology::BranchLength","_CalcNode::BranchLength","_Matrix::ExpNumberOfSubs"}};
 }	
 
 function runTest ()
