@@ -2902,12 +2902,11 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 {
 	chain.currentCommand++;
 	
-	
 	_String* targetName = (_String*)parameters(0), 
 			 fnm;
 
 			 
-	FILE* dest = nil;
+	FILE*    dest = nil;
 	
 	int		out2    = 0;
 	bool	doClose = true,
@@ -3029,55 +3028,28 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 						{
 							// check for possible string reference
 							
-							_String	   temp = ProcessStringArgument (varname);
+							_String	   temp    = ProcessStringArgument (varname),
+                                       nmspace = AppendContainerName(temp,chain.nameSpacePrefix);
+
+                            if (temp.sLength > 0 && temp.IsValidIdentifier())
+                                thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
 							
-							if (temp.sLength>0)
-								varname = &temp;
-							
-							long loc = LocateVarByName (*varname);
-							
-							if (loc>=0)
-								thePrintObject = FetchVar (loc);
-							else
+							if (thePrintObject == nil)
 							{
-								loc = FindDataSetName (*varname);
-								if (loc>=0)
-									thePrintObject = dataSetList (loc);
-								else
-								{
-									loc = FindDataSetFilterName (*varname);
-									if (loc>=0)
-										thePrintObject = dataSetFilterList (loc);
-									else
-									{
-										loc = FindLikeFuncName (*varname);
-										if (loc>=0)
-											thePrintObject = likeFuncList (loc);
-										else
-										{
-											loc = FindSCFGName (*varname);
-											if (loc>=0)
-												thePrintObject = scfgList (loc);
-											else
-											{
-												loc = FindBgmName (*varname);	
-													// modified by afyp, March 18, 2007
-												if (loc >= 0)
-													thePrintObject = bgmList (loc);
-												else
-												{
-													long   varRef = -1;
-													if (Parse (&f,(*varname), varRef, chain.nameSpacePrefix,nil) == HY_FORMULA_EXPRESSION)
-														thePrintObject = f.Compute();												
-												}
-											}
-										}
-									}
-								}
-							}
+                                long typeFlag = HY_BL_ANY;
+								thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
+                                
+                                if (!thePrintObject)
+                                {
+                                    long    varRef = -1;
+                                    _String argCopy = *varname;
+                                    if (Parse (&f,argCopy, varRef, chain.nameSpacePrefix,nil) == HY_FORMULA_EXPRESSION)
+                                        thePrintObject = f.Compute();												
+                                }
+                            }
 						}
 						
-				if (thePrintObject)
+                if (thePrintObject)
 					if (!out2)
 						thePrintObject->toFileStr (dest);
 					else
@@ -8890,7 +8862,7 @@ bool	_ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target
         }
         _String *thisArgument = new _String (source, lastStart, lastEnd-1);
         
-        if (thisArgument->IsALiteralArgument())
+        if (thisArgument->IsALiteralArgument(true))
         {
             fpr->simpleParameters << fpr->parameters.lLength;
             _FString converted (*thisArgument, true);

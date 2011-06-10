@@ -158,6 +158,21 @@ BaseRef		parameterToString (_Parameter value)
 }
 
 //__________________________________________________________________________________
+void SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& theList, _List& splitStorage)
+{
+	splitStorage.Clear();
+    splitStorage.AppendNewInstance(new _SimpleList);
+    splitStorage.AppendNewInstance(new _SimpleList);
+    
+    for (long k=0; k<theList.lLength; k++)
+    {
+        long varID = theList.lData[k];
+        (*(_SimpleList*)splitStorage(1-LocateVar (varID)->IsGlobal())) << varID;
+    }
+}
+
+
+//__________________________________________________________________________________
 _PMathObj	FetchObjectFromVariableByType (_String* id, int objectClass)
 {
 	if (id)

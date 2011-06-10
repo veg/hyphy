@@ -939,7 +939,15 @@ bool		CheckEqual		(_Parameter,_Parameter);
 
 extern		_AVLListX		_hyApplicationGlobals;
 
-
+/**
+    A utility function to take a list of variable indices and split them into local and global
+    
+    @param   inList supplies the input list (all variable indices are assumed to be valid!)
+    @param   outList a list of two _SimpleLists: index 0 for global variables, and index 1 for local variables
+    @author  SLKP
+    @version 20110608
+*/
+void        SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& inList, _List& outList);
 
 _Parameter	AddNumbers  (_Parameter, _Parameter);
 _Parameter	SubNumbers  (_Parameter, _Parameter);

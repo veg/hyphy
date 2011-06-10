@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2011  
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:

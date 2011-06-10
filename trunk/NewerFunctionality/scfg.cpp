@@ -1463,11 +1463,8 @@ void		Scfg::AddSCFGInfo (_AssociativeList* theList)
 	InsertStringListIntoAVL (theList, scfgCorpus, indexer, corpusChar);
 	_List 		ruleStrings;
 	for (long i=0; i<rules.lLength; i++)
-	{
-		_String * aRule = GetRuleString (i);
-		ruleStrings << aRule;
-		DeleteObject (aRule);
-	}
+		ruleStrings.AppendNewInstance(GetRuleString (i));
+        
 	indexer.Populate (rules.lLength, 0, 1);
 	InsertStringListIntoAVL (theList, _addSCFGInfoProductions, indexer, ruleStrings);
 	indexer.Populate (terminals.lLength, 0, 1);
@@ -1487,13 +1484,9 @@ void		Scfg::AddSCFGInfo (_AssociativeList* theList)
 		stats->Store (k,1,pNot0-p01);	// number of tuples with probability = 1
 		stats->Store (k,2,p01);		// number of tuples with probability in interval (0,1)
 	}
-	{
-		_FString aKey (_addSCFGInfoStats,false);
-		theList->MStore (&aKey, stats, false);	
-	}
+	theList->MStore (_addSCFGInfoStats, stats, false);	
 	stats = (_Matrix*)probabilities.Compute();
-	_FString aKey (_addSCFGInfoProbabilities,false);
-	theList->MStore (&aKey, stats, true);	
+	theList->MStore (_addSCFGInfoProbabilities, stats, true);	
 }
 
 

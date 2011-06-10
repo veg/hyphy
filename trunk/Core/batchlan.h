@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2011  
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #ifndef __BATCHLANGUAGE__
-
 #define	__BATCHLANGUAGE__
 
 
@@ -37,6 +36,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	  BL_FUNCTION_ALWAYS_UPDATE		0
 #define	  BL_FUNCTION_NORMAL_UPDATE		1
+
+
+//!  Batch Language 'Object' type codes   
+/*!
+     20110608 SLKP introduced.
+
+     Bit flag style type tags and masks
+     This is primarily to be used for object retrieval
+     using the _HYRetrieveBLObjectByName function
+*/
+
+#define   HY_BL_NOT_DEFINED             0
+#define   HY_BL_DATASET                 1
+#define   HY_BL_DATASET_FILTER          2
+#define   HY_BL_LIKELIHOOD_FUNCTION     4
+#define   HY_BL_SCFG                    8
+#define   HY_BL_BGM                     16
+#define   HY_BL_MODEL                   32
+#define   HY_BL_HBL_FUNCTION            64
+
+#define   HY_BL_ANY                     1023
+
 
 //____________________________________________________________________________________	
 struct	  _CELInternals 
@@ -577,7 +598,28 @@ _PMathObj
 void	_HBL_Init_Const_Arrays		 (void);
 void	ReturnCurrentCallStack		 (_List&, _List&);
 
-		
+/**
+    An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object 
+    by name. A list of acceptable object classes can be specified in the type parameter. Note that
+    types will be searched in the following order:
+        
+        HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
+        
+    i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
+    will be returned. 
+    
+    
+    
+    @param   name provides a string with the name of the object to be retrieved.
+    @param   type [in] which types of objects will be searched. 
+                 [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
+    @param   index (if not nil) will receive the index of the found object in the corresponding array
+    @return  pointer to the retrieved object or nil if not found
+    @author  SLKP
+    @version 20110608
+*/
+
+BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long* index = nil);  
 
 
 extern 	bool						numericalParameterSuccessFlag;	

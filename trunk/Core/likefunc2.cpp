@@ -1258,6 +1258,73 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
 }
 
 //_______________________________________________________________________________________________
+// return the AVL with parameters
+						// AVL will have the following entries 
+							// "Categories"
+							// "Global Independent"
+							// "Global Constrained"
+							// "Local Independent"
+							// "Local Constrained"
+							// "Trees"
+							// "Models"
+							// "Base frequencies"
+							// "Datafilters"
+							// "Compute Template"
+
+_AssociativeList* _LikelihoodFunction::CollectLFAttributes (void)
+{
+    _AssociativeList * resList = new _AssociativeList;
+							
+    _SimpleList		    *vl,
+                        list1;
+                        
+    _List				modelList;
+                        
+    InsertVarIDsInList (resList, "Categories", GetCategoryVars ());
+    
+    SplitVariableIDsIntoLocalAndGlobal (GetIndependentVars (), modelList);
+    InsertVarIDsInList (resList, "Global Independent", *(_SimpleList*)modelList(0));
+    InsertVarIDsInList (resList, "Local Independent",   *(_SimpleList*)modelList(1));
+    
+    SplitVariableIDsIntoLocalAndGlobal (GetDependentVars (), modelList);
+    InsertVarIDsInList (resList, "Global Constrained", *(_SimpleList*)modelList(0));
+    InsertVarIDsInList (resList, "Local Constrained",   *(_SimpleList*)modelList(1));
+
+    
+    list1.Clear();
+    vl = &GetTheTrees ();
+    for (long n=0; n<vl->lLength; n++)
+    {
+        list1 << vl->lData[n];
+        _SimpleList partModels;
+        ((_TheTree*)FetchVar (vl->lData[n]))->CompileListOfModels(partModels);
+        if (partModels.lLength == 1)
+            modelList << modelNames (partModels.lData[0]);
+        else
+            modelList.AppendNewInstance(new _String ("__MULTIPLE__"));
+    }
+    InsertVarIDsInList (resList, "Trees", list1);
+    
+
+    list1.Clear();
+    vl = &GetTheFilters ();
+    for (long p=0; p<vl->lLength; p++)
+        list1 << vl->lData[p];
+
+    InsertStringListIntoAVL (resList, "Datafilters", list1, dataSetFilterNamesList);
+    InsertVarIDsInList (resList, "Base frequencies", GetBaseFreqs());
+    {
+        _SimpleList indexer         (modelList.lLength,0,1);
+        InsertStringListIntoAVL		(resList, "Models", indexer, modelList);
+    }
+    
+    _Formula		*computeT = HasComputingTemplate();
+    resList->MStore (_String("Compute Template"), new _FString((_String*)(computeT?computeT->toStr():new _String)), false);
+    
+    return resList;
+}
+
+//_______________________________________________________________________________________________
 
 void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value) 
 {

@@ -246,6 +246,14 @@ virtual	_PMathObj	CovarianceMatrix			(_SimpleList* = nil);
 	
 		bool			HasBeenSetup				(void) {return hasBeenSetUp > 0;}
 	
+ /**
+    @return  an associative array with a variety of metrics (see http://www.datam0nk3y.org/hyphywiki/index.php/GetString#Functionality) 
+             about this LF.
+    @author  SLKP
+    @version 20110608
+*/
+
+       _AssociativeList*CollectLFAttributes         (void);
 protected:
 	
 		_Matrix* 		PairwiseDistances 		(long index);
@@ -320,6 +328,7 @@ static	void			RandomizeList				(_SimpleList&, long);
 static	void			CheckFibonacci				(_Parameter);
 	
 	
+                        
 		long			PartitionLengths		    (char = 0,  _SimpleList const* = nil);
 						/* 
 							SLKP: 20090317 

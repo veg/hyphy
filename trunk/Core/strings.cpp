@@ -1459,14 +1459,18 @@ _Parameter 	_String::ProcessTreeBranchLength (void)
 
 //_______________________________________________________________________
 
-bool	_String::IsALiteralArgument (void) 
+bool	_String::IsALiteralArgument (bool stipQuotes) 
 {	
     if (sLength >= 2)
     {
         long from = 0,
-             to = ExtractEnclosedExpression (from,'"','"',true,true);
+             to = ExtractEnclosedExpression (from,'"','"',false,true);
 	
-        return from == 0 && to == sLength - 1;
+        if (from == 0 && to == sLength - 1)
+        {
+            Trim (1, sLength-2);
+            return true;
+        }
     }
     return false;
 }
@@ -2154,6 +2158,9 @@ long		_String::ExtractEnclosedExpression (long& from, char open, char close, boo
 			else
 				if (thisChar == open && !isQuote)
 				{
+                    // handle the case when close and open are the same
+                    if (currentLevel == 1 && open == close && from < currentPosition)
+                        return currentPosition;
 					currentLevel++;
 					if (currentLevel == 1)
 						from = currentPosition;
@@ -2284,9 +2291,7 @@ void		_String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
 					(*this) << '"';
 					break;
 				default:
-					_String * serializedValue = (_String*)(varValue->toStr());
-					(*this) << serializedValue;
-					DeleteObject (serializedValue);
+					AppendNewInstance ((_String*)(varValue->toStr()));
 					break;
 				
 			}

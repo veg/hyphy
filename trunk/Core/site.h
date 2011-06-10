@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2011  
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "stdlib.h"
 
 #define	  NUCLEOTIDEDATA 0
-#define	  CODONDATA 1
+#define	  CODONDATA      1
 
 
 

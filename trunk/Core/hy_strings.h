@@ -263,7 +263,7 @@ virtual		operator const char* (void);
  			
   			bool    IsValidRefIdentifier(void);
             
-            bool    IsALiteralArgument  (void);
+            bool    IsALiteralArgument  (bool stripQuotes = FALSE);
 
 			void	ConvertToAnIdent (bool = true);
  			

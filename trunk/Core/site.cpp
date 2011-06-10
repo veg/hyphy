@@ -2779,13 +2779,15 @@ long	_DataSetFilter::GetDimension (bool correct)
 	return result;
 }
 
-//_______________________________________________________________________
+//____________________________________________________________________________________	
+//	20110610: SLKP, some cleanup and refactoring
 
 void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool isVertical, _SimpleList* additionalFilter, _SimpleList* otherDimension)
 {
-	if (!input2.sLength) return;
-	// decide if the input is explicit or formulaic
-	long totalLength = -1;
+	if (!input2.sLength) 
+        return;
+	// decide if the input is an enumeration or a formula
+	long totalLength;
 	
 	if (additionalFilter)
 		totalLength = additionalFilter->lLength;
@@ -2793,7 +2795,8 @@ void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool is
 		totalLength = isVertical?theMap.lLength:noOfSpecies;
 		
 	_String input (input2);
-	if (input.getChar(0)!='"') // a formula
+    
+  	if (!input.IsALiteralArgument()) // not a literal argument
 	{
 		_Formula fmla, lhs;
 		
@@ -2820,8 +2823,8 @@ void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool is
 	}
 	else // an explicit enumeration or a regular expression
 	{
-		if ((input.getChar(1)=='/') && (input.getChar(input.sLength-2)=='/'))
-		// regular expression
+		if (input.getChar(1)=='/' && input.getChar(input.sLength-2)=='/')
+		// a regular expression
 		{
 			input.Trim(2,input.sLength-3);
 			int	  errCode; 
@@ -2841,12 +2844,7 @@ void	_DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool is
 				if (additionalFilter)
 					eligibleSeqs = additionalFilter;
 				else
-				{
-					eligibleSeqs = new _SimpleList;
-					checkPointer (eligibleSeqs);
-					for (long fillerID = 0; fillerID < totalLength; fillerID++)
-						(*eligibleSeqs) << fillerID;
-				}
+					eligibleSeqs = new _SimpleList (0, totalLength, 1);
 				
 				_SimpleList matches;
 				for (long specCount = 0; specCount < eligibleSeqs->lLength; specCount++)
@@ -4732,178 +4730,6 @@ long 	_DataSetFilter::MapStringToCharIndex (_String& str)
 	return 0;
 }
 
-//_______________________________________________________________________
-/*long 	_DataSetFilter::Translate2Frequencies (char* str, _Parameter* parvect, bool smear)
-{
-	long count		 = 0,	
-		 nonzeropos  = 0,
-		 store		 [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
-		
-	if (unitLength == 1)
-	{
-		theData->theTT->TokenCode (str[0],store, smear);
-		if (theExclusions.lLength==0)
-		{
-			for (long i = 0; i<undimension; i++)
-				if ( (parvect[i]=store [i]) ) 
-				{
-					nonzeropos = i;
-					count++;
-				}
-		}
-		else
-		{
-			long k=0;
-			for (long i = 0; i<undimension; i++)
-			{
-				if (i==theExclusions.lData[k] && k<theExclusions.lLength) 
-					k++;
-				else
-					if ( store [i] ) 
-					{
-						nonzeropos = i;
-						count++;
-					}
-				
-				parvect[i-k]=store[i];
-			}
-		}
-		if (!count&&smear)
-		{
-			for (long i = 0; i<undimension; i++)
-				parvect[i] = 1;
-			return -1;
-		}
-		
-		if (count>1) 
-			return -1;
-		
-		return nonzeropos;
-	}
-	else
-	{
-		//pull the frequencies out of the Translation table
-		//_Matrix		out (undimension,1,false,true);
-		
-		_Parameter		out [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
-						*fl;
-
-		long			m,
-						n,
-						index = 0, 
-						shifter = 1, 
-						*lp;
-		
-		for (m = 0; m<undimension; m++)
-			out[m] = 0.;
-
-		count = 1;
-		
-		for (m = 0; m<unitLength; m++ )
-			theData->theTT->TokenCode (str[m], store+theData->theTT->baseLength*m, smear);
-		
-		for (m = unitLength-1; m>=0; m--)
-		{
-			int smcount = 0;
-			lp = store+theData->theTT->baseLength*m;
-			for (n = 0; n<theData->theTT->baseLength; n++,lp++)
-			{
-				if (*lp)
-				{
-					index += shifter*n;
-					smcount++;
-				}
-			}
-			if ((smcount==0)&&smear) // deletion -- replace with 1's
-			{
-				lp = store+theData->theTT->baseLength*m;
-				for (n = 0; n<theData->theTT->baseLength; n++,lp++)
-					*lp=1;
-				smcount = theData->theTT->baseLength;
-			}
-				
-			shifter*=theData->theTT->baseLength;
-			count *=smcount;
-		}
-		
-		if (count>1)
-			theData->constructFreq (store, out, 1, 0, count, unitLength-1 , 1, 0);
-		else
-			out[index] = count;
-			
-		if (count==1)
-		{
-			fl = out;
-			m  = 0;
-			if (theExclusions.lLength)
-			{	
-				for (n = 0; n<undimension; n++, fl++)
-				{	
-					if (n==theExclusions.lData[m] && m<theExclusions.lLength)
-					{
-						m++;
-						continue;
-					}
-					if (*fl>0)
-					{
-						parvect[n-m] = 1.0;
-						break;
-					}
-					else
-						parvect[n-m] = 0.0;
-				}
-				if (n<undimension)
-				{
-					n-=m-1;
-					parvect+=n;
-					for (;n<dimension;n++,parvect++)
-					{
-						*parvect = 0.0;
-					}
-					return index-m;
-				}	
-				else
-				{
-					if (smear)
-						for (n = 0; n<dimension; n++, parvect++)
-							*parvect = 1.0;
-					return -1;	
-				}
-				
-			}		
-			else
-			{
-				if (count)
-				{
-					for (n = 0; n<undimension; n++,fl++)
-						parvect[n] = *fl>0.0?1.0:0.0;
-				}
-				return index;
-			}		
-		}
-		else
-		{
-			XferwCorrection(out, parvect,undimension);
-	
-			if (smear)
-			{
-				for (count = 0; count<dimension; count++)
-					if (parvect[count]>0.0) 
-					{
-						break;
-					}
-				if (count==dimension)
-				{
-					for (count = 0; count<dimension; count++)
-						parvect[count]=1.0; 
-				}
-			}
-			return -1;
-		}
-	}
-	return 0;
-}*/
-
 	
 //_______________________________________________________________________
 long 	_DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool smear)
@@ -5138,10 +4964,7 @@ void 	_DataSetFilter::SetupConversion (void)
 void	checkTTStatus (FileState* fs) // check whether the translation table needs to be refreshed
 {
 	if (fs->translationTable == &defaultTranslationTable)
-	{
 		fs->translationTable =  (_TranslationTable*)defaultTranslationTable.makeDynamic();
-
-	}
 }
 //_________________________________________________________
 void	processCommand (_String*s, FileState*fs)
@@ -5616,142 +5439,6 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
 	if (s->sLength && s->sData[s->sLength-1]== '\n')
 		s->Trim (0,s->sLength-2);
 }
-/*
-//_________________________________________________________
-void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool append, bool upCase)
-{
-	static	bool isSkippingInNEXUS = false;
-	char   * buffer = new char[READ_NEXT_LINE_BUFFER_SIZE+1];
-	checkPointer (buffer);
-	
-	long post = 0;
-	char lastc;
-	
-	if (fp)
-		lastc = fgetc(fp);
-	else
-		lastc = fs->theSource->sData[fs->pInSrc++];
-	
-	if (fs->fileType != 3) // not NEXUS - do not skip [..]
-	{
-		if (fp)
-			while ( !feof(fp) && post < READ_NEXT_LINE_BUFFER_SIZE && lastc!=10 && lastc!=13 )
-			{
-				if (lastc)
-				{
-					buffer[post]=lastc;
-					post++;
-				}
-				lastc = fgetc(fp);
-			}
-		else
-			while (lastc&& post < READ_NEXT_LINE_BUFFER_SIZE && lastc!=10 && lastc!=13 )
-			{
-				buffer[post]=lastc;
-				post++;
-				lastc = fs->theSource->sData[fs->pInSrc++];
-			}
-			
-	}
-	else
-	{
-		if (upCase)
-			lastc = toupper(lastc);
-			
-		while (((fp&&(!feof(fp)))||(fs->theSource&&(fs->pInSrc<=fs->theSource->sLength)))&&(post<READ_NEXT_LINE_BUFFER_SIZE)&&(lastc!=10)&&(lastc!=13))
-		{
-			if (lastc=='[')
-			{
-				if (isSkippingInNEXUS)
-				{
-					_String errMsg ("Nested comments in NEXUS really shouldn't be used.");
-					ReportWarning (errMsg);
-				}
-				else
-					isSkippingInNEXUS = true;
-			}
-			if (isSkippingInNEXUS)
-			{
-				if (lastc==']')
-				{
-					isSkippingInNEXUS = false;
-					buffer[post]=' ';
-					post++;
-				}
-			}
-			else
-			{
-				buffer[post]=lastc;
-				post++;
-			}
-			if (fp)
-			{
-				if (upCase)
-					lastc = toupper(fgetc(fp));
-				else
-					lastc = fgetc(fp);
-			}
-			else
-			{
-				if (upCase)
-					lastc = toupper(fs->theSource->sData[fs->pInSrc++]);
-				else
-					lastc = fs->theSource->sData[fs->pInSrc++];
-			}
-				
-		}
-		if (((lastc==10)||(lastc==13))&&(post<READ_NEXT_LINE_BUFFER_SIZE))
-			buffer [post++] = ' ';
-	}
-	
-	buffer[post]=0;
-	
-	if (((fp&&feof(fp)))||(fs->theSource&&(fs->pInSrc>=fs->theSource->sLength)))
-	{
-		if (!append&&!post)
-		{
-			*s = "";
-			delete buffer;
-			return;
-		}
-	}
-	
-	if (append)
-	{
-		*s = *s&buffer;
-		delete buffer;
-	}
-	else
-	{
-		*s = buffer;
-		delete buffer;
-		if (SkipLine (*s, fs))
-			ReadNextLine(fp,s,fs,false,upCase);
-	}
-		
-	// check to see whether the line is longer that READ_NEXT_LINE_BUFFER_SIZE chars
-	if (s->sLength&&(s->sLength%READ_NEXT_LINE_BUFFER_SIZE)==0) // suspicious
-	{
-		// the only degenerate case is when the string is EXACTLY READ_NEXT_LINE_BUFFER_SIZE-1 chars long
-		char cc = s->sData[s->sLength-1];
-		
-		if (cc!='\n' && cc!='\r')
-		{
-			if(fp)
-				ungetc (lastc,fp);
-			else
-				fs->pInSrc--;
-				
-			ReadNextLine (fp,s,fs,true,upCase);
-		}
-	}
-	
-	if (s->sLength && s->sData[s->sLength-1]=='\n')
-		s->Trim (0,s->sLength-2);
-}*/
-
-
-
 //_________________________________________________________
 void	TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 {
