@@ -296,8 +296,6 @@ _String::_String (FILE* F)
 			
 _String::~_String(void)
 {
-
-
 	if (nInstances<=1){
 		if (sData) 
 		{

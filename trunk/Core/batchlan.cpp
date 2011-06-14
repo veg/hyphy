@@ -3029,14 +3029,22 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 							// check for possible string reference
 							
 							_String	   temp    = ProcessStringArgument (varname),
-                                       nmspace = AppendContainerName(temp,chain.nameSpacePrefix);
+                                       nmspace;
+                                       
+                            if (temp.sLength > 0)
+                            {
+                                nmspace = AppendContainerName(temp,chain.nameSpacePrefix);
+                                if (temp.IsValidIdentifier())
+                                    thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
+                            }
+                            else
+                                nmspace = AppendContainerName(*varname,chain.nameSpacePrefix);
 
-                            if (temp.sLength > 0 && temp.IsValidIdentifier())
-                                thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
-							
+                        
 							if (thePrintObject == nil)
 							{
                                 long typeFlag = HY_BL_ANY;
+                            
 								thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
                                 
                                 if (!thePrintObject)
