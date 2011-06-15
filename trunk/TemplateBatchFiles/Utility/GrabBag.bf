@@ -798,7 +798,6 @@ function mapSets (sourceList,targetList)
 // source ID -> target ID (-1 means no correspondence)
 
 {
-	mapping 	  = {};
 	targetIndexing = {};
 	_d = Rows (targetList) * Columns (targetList);
 	
@@ -807,6 +806,7 @@ function mapSets (sourceList,targetList)
 		targetIndexing [targetList[_i]] = _i + 1;
 	}
 	_d = Rows (sourceList) * Columns (sourceList);
+	mapping 	  = {1,_d};
 	for (_i = 0; _i < _d; _i += 1)
 	{
 		mapping [_i] = targetIndexing[sourceList[_i]] - 1;
@@ -837,4 +837,37 @@ function mapStrings (sourceStr,targetStr)
 	
 	return mapping;
 }
+/*---------------------------------------------------------------------*/
 
+function remapSequenceCoordinatesToReference (ref,seq)
+{
+	_seqLen	  = Abs(seq);
+	_coordMap = {_seqLen,1};
+	
+		
+	_k				= (ref$"^\\-+");
+	_referenceSpan	= _k[1]+1;
+	
+	for (_k = 0; _k < _referenceSpan; _k = _k+1)
+	{
+		_coordMap[_k] = 0;
+	}
+	
+	_qryCoord = _k;
+	_refCoord = 0;
+
+	while (_k < Abs(seq))
+	{
+		if (seq[_k] != "-")
+		{
+			_coordMap[_qryCoord] = _refCoord;
+			_qryCoord = _qryCoord + 1;
+		}
+		if (ref[_k] != "-")
+		{
+			_refCoord = _refCoord + 1;
+		}
+		_k = _k+1;
+	}
+	return _coordMap;
+}
