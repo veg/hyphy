@@ -1293,6 +1293,8 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void)
     
     list1.Clear();
     vl = &GetTheTrees ();
+    modelList.Clear();
+    
     for (long n=0; n<vl->lLength; n++)
     {
         list1 << vl->lData[n];
