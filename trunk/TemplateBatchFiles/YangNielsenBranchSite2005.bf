@@ -421,7 +421,7 @@ while (1)
 
 if (modelKind == 0)
 {
-	fprintf (stdout, "\nInferred rate distribution:"
+	fprintf (stdout, "\nInferred rate distribution:",
 					 "\n\tClass 0.  omega_0 = ", Format (omega_0, 5,3), " weight = ", Format (P_0,5,3),
 					 "\n\tClass 1.  omega  := ", Format (1, 5,3), " weight = ", Format (P_1,5,3),
 					 "\n\tClass 2a. Background omega_0 = ", Format (omega_0, 5,3), " foreground omega_2 = ", Format (omega_2, 5,3), " weight = ", Format (P_0(1-P_0-P_1)/(P_0+P_1),5,3), 
@@ -429,13 +429,13 @@ if (modelKind == 0)
 }
 if (modelKind == 1)
 {
-	fprintf (stdout, "\nInferred rate distribution:"
+	fprintf (stdout, "\nInferred rate distribution:",
 					 "\n\tClass 0.  omega_0 = ", Format (omega_0, 5,3), " weight = ", Format (P_0,5,3),
 					 "\n\tClass 1.  omega  := ", Format (1, 5,3), " weight = ", Format (1-P_0,5,3), "\n");
 }
 if (modelKind == 2)
 {
-	fprintf (stdout, "\nInferred rate distribution:"
+	fprintf (stdout, "\nInferred rate distribution:",
 					 "\n\tClass 0.  omega_0 = ", Format (omega_0, 5,3), " weight = ", Format (P_0,5,3),
 					 "\n\tClass 1.  omega  := ", Format (1, 5,3), " weight = ", Format (P_1,5,3),
 					 "\n\tClass 2a. Background omega_0 = ", Format (omega_0, 5,3), " foreground omega_2 := ", Format (1, 5,3), " weight = ", Format (P_0(1-P_0-P_1)/(P_0+P_1),5,3), 
