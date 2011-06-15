@@ -842,7 +842,7 @@ function mapStrings (sourceStr,targetStr)
 function remapSequenceCoordinatesToReference (ref,seq)
 {
 	_seqLen	  = Abs(seq);
-	_coordMap = {_seqLen,1};
+	_coordMap = {_seqLen,1}["-1"];
 	
 		
 	_k				= (ref$"^\\-+");
