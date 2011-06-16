@@ -1545,8 +1545,6 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 									score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
 																	gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,store, charCount);
 									store.bumpNInst();
-									pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
-									pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
 									
 									if (store.lLength == 0)
 									{
@@ -1555,6 +1553,11 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 										s1 = stringCount;
 										break;
 									}
+                                    else
+                                    {	
+                                        pairwiseComp->MStore ("1", new _FString((_String*)store(0)), false);
+                                        pairwiseComp->MStore ("2", new _FString((_String*)store(1)), false);
+                                    }
 								}
 								else
 								{
@@ -2716,6 +2719,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = scoreMatrix.theData[mIndex2]-gopen2;
 
     }
+    
     if (c>=3)
     {
         if (gapScore1)
@@ -2916,7 +2920,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                             long cc = 1;
                             
                             for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount,cc++)
-                                gapScore1->theData[m]  -gopen - ((cc%3 != 1)?gFrameshift:0);	
+                                gapScore1->theData[m] = -gopen - ((cc%3 != 1)?gFrameshift:0);	
                         }
                         else
                         {
@@ -3021,7 +3025,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                 }
                 
                 long p1 = upto1,
-                p2 = upto2;
+                     p2 = upto2;
                 
                 if (doLocal)
                 {		
@@ -3082,25 +3086,21 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                             return -A_LARGE_NUMBER;
                         }
                         
-                       /* if (p1 < 3)
+                        if (p1 < 3 && p2 < 3)
                         {
                             for (; p1 > 0; p1--)
                             {
-                                editOps << 0;
-                                p2 --; p1--;
+                                editOps << -1;
+                                p1--;
+                            }
+                            for (; p2 > 0; p2--)
+                            {
+                                editOps << 1;
+                                p2 --;
                             }
                             break;
                         }
-                        
-                        if (p2 < 3)
-                        {
-                            for (; p2 > 0; p2--)
-                            {
-                                editOps << 0;
-                                p2 --; p1--;
-                            }
-                            break;
-                        }*/
+                      
                         
                         if (doAffine)
                         {
@@ -3242,7 +3242,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
 				}
 				
                 
-                 /*_String		alignDebug ("alignScoreMatrix");
+                 _String		alignDebug ("alignScoreMatrix");
                  _Variable * ad = CheckReceptacle (&alignDebug, empty, false);
                  ad->SetValue (&scoreMatrix, true);
                  if (doAffine)
@@ -3253,7 +3253,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                  alignDebug  = ("alignScoreMatrixG2");
                  ad = CheckReceptacle (&alignDebug, empty, false);
                  ad->SetValue (gapScore2, true);
-                 }*/
+                 }
                 
                 DeleteObject (gapScore1);
                 DeleteObject (gapScore2);
