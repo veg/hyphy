@@ -3061,6 +3061,9 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                     _Matrix alignmentOptions (HY_ALIGNMENT_TYPES_COUNT,1,false,true);
                     while (p1 && p2)
                     {
+                        if (p1 < 3 && p2 < 3)
+                            break;
+                        
                         long code = CodonAlignStringsStep              (alignmentOptions, 
                                                                         scoreMatrix,
                                                                         encodedString1, 
@@ -3079,28 +3082,12 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                                                         gapScore2);
                         
                         BacktrackAlignCodon (editOps, p1,p2,code);
-                        //printf ("%ld %ld\n", p1, p2, "\n");
+                       // printf ("%ld %ld\n", p1, p2, "\n");
                         if (p1 < 0 || p2 < 0)
                         {
                             WarnError ("Internal Error in AlignStrings");
                             return -A_LARGE_NUMBER;
                         }
-                        
-                        if (p1 < 3 && p2 < 3)
-                        {
-                            for (; p1 > 0; p1--)
-                            {
-                                editOps << -1;
-                                p1--;
-                            }
-                            for (; p2 > 0; p2--)
-                            {
-                                editOps << 1;
-                                p2 --;
-                            }
-                            break;
-                        }
-                      
                         
                         if (doAffine)
                         {
@@ -3912,14 +3899,6 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
            inStr2 [3] = {0,0,0};
     switch (maxID)
     {
-        /*case 0: 
-            p1--;
-            editOps << -1;
-            break;
-        case 1: 
-            p2--;
-            editOps << 1;
-            break;*/
         case HY_ALIGN_STRINGS_111_111:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
