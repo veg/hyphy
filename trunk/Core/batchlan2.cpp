@@ -3107,7 +3107,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                             long  ci = p1*colCount+p2;
                             if (code == HY_ALIGN_STRINGS_111_000)
                             {
-                                while (p1 && (scoreMatrix.theData[ci]-gopen2 <= gapScore2->theData[ci]-gextend2))
+                                while (p1 >= 3 && (scoreMatrix.theData[ci]-gopen2 <= gapScore2->theData[ci]-gextend2))
                                 {
                                     p1-=3;
                                     editOps << -1; editOps << -1; editOps << -1;
@@ -3117,7 +3117,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                             else
                                 if (code == HY_ALIGN_STRINGS_000_111)
                                 {
-                                    while (p2 && (scoreMatrix.theData[ci]-gopen <= gapScore1->theData[ci]-gextend))
+                                    while (p2 >= 3 && (scoreMatrix.theData[ci]-gopen <= gapScore1->theData[ci]-gextend))
                                     {
                                         p2-=3;
                                         editOps << 1; editOps << 1; editOps << 1;
