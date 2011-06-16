@@ -2603,18 +2603,21 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 #define HY_ALIGN_STRINGS_111_111 0
 #define HY_ALIGN_STRINGS_111_000 1
 #define HY_ALIGN_STRINGS_000_111 2
+
 #define HY_ALIGN_STRINGS_111_011 3
-#define HY_ALIGN_STRINGS_111_101 4
-#define HY_ALIGN_STRINGS_111_110 5
-#define HY_ALIGN_STRINGS_111_001 6
-#define HY_ALIGN_STRINGS_111_010 7
-#define HY_ALIGN_STRINGS_111_100 8
+#define HY_ALIGN_STRINGS_111_110 4
+#define HY_ALIGN_STRINGS_111_001 5
+#define HY_ALIGN_STRINGS_111_100 6
+#define HY_ALIGN_STRINGS_111_101 7
+#define HY_ALIGN_STRINGS_111_010 8
+
 #define HY_ALIGN_STRINGS_110_111 9
-#define HY_ALIGN_STRINGS_101_111 10
-#define HY_ALIGN_STRINGS_011_111 11
-#define HY_ALIGN_STRINGS_001_111 12
-#define HY_ALIGN_STRINGS_010_111 13
-#define HY_ALIGN_STRINGS_100_111 14
+#define HY_ALIGN_STRINGS_011_111 10
+#define HY_ALIGN_STRINGS_001_111 11
+#define HY_ALIGN_STRINGS_100_111 12
+#define HY_ALIGN_STRINGS_101_111 13
+#define HY_ALIGN_STRINGS_010_111 14
+
 #define HY_ALIGNMENT_TYPES_COUNT 15
     
     
@@ -2699,19 +2702,27 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
     codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
     
     for (long i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++)
-        alignmentOptions.theData [i] = -A_LARGE_NUMBER;    
+        alignmentOptions.theData [i] = -A_LARGE_NUMBER;   
+        
     
     if (r>=3)
     {
         if (gapScore2)
+        {
             alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = MAX(scoreMatrix.theData[mIndex2]-gopen2,gapScore2->theData[mIndex2]-((r>3)?gextend2:gopen2));
+            gapScore2->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_111_000];
+        }
         else
             alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = scoreMatrix.theData[mIndex2]-gopen2;
+
     }
     if (c>=3)
     {
         if (gapScore1)
+        {
             alignmentOptions.theData  [HY_ALIGN_STRINGS_000_111] = MAX(scoreMatrix.theData[mIndex-3]-gopen,gapScore1->theData[mIndex-3]-((c>3)?gextend:gopen)); 
+            gapScore1->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_000_111];
+        }
         else
             alignmentOptions.theData  [HY_ALIGN_STRINGS_000_111] = scoreMatrix.theData[mIndex-3]-gopen; 
     }
@@ -2735,7 +2746,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             }
             alignmentOptions.theData [HY_ALIGN_STRINGS_110_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[0] - gFrameshift;                              
             alignmentOptions.theData [HY_ALIGN_STRINGS_101_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[1] - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[2] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_011_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[2] - (r>2?gFrameshift:0.);                              
         }
         _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
         for (long k = 0; k < charCount; k++)
@@ -2744,7 +2755,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             {
                 long codont [3] = {ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_100_111),
                     ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount*charCount+k2,HY_ALIGN_STRINGS_010_111),
-                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_100_111)};
+                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_001_111)};
                 for (long k3 = 0; k3 < 3; k3++)
                     if (codont[k3] >= 0)
                         maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
@@ -2752,7 +2763,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
         }
         alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[0] - 2*gFrameshift;                              
         alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[1] - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[2] - 2*gFrameshift;                              
+        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[2] - (r>1?2*gFrameshift:0.);                              
     }
     
     if (codon1 >= 0)
@@ -2771,7 +2782,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             }
             alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + maxV[0] - gFrameshift;                              
             alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + maxV[1] - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + maxV[2] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + maxV[2] - (c>2?gFrameshift:0.);                              
         }
         _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
         for (long k = 0; k < charCount; k++)
@@ -2788,14 +2799,9 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
         }
         alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + maxV[0] - 2*gFrameshift;                              
         alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + maxV[1] - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + maxV[2] - 2*gFrameshift;  
+        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + maxV[2] - (c>1?2*gFrameshift:0.);  
     }
-    
-    if (gapScore2)
-        gapScore2->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_111_000];
-    if (gapScore1)
-        gapScore1->theData[mIndex]  = alignmentOptions.theData[HY_ALIGN_STRINGS_000_111];
-    
+         
     long whichOne = 0;    
     scoreMatrix.theData[mIndex] = alignmentOptions.MaxElement(3, &whichOne);
     return whichOne;
@@ -2905,9 +2911,12 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                         {
                             for (long m=1; m < colCount; m++)
                                 gapScore2->theData[m] = -gopen2 - ((m%3!=1)?gFrameshift:0);
+                             
+                               
                             long cc = 1;
+                            
                             for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount,cc++)
-                                gapScore1->theData[m] = -gopen - ((cc%3 != 1)?gFrameshift:0);	
+                                gapScore1->theData[m]  -gopen - ((cc%3 != 1)?gFrameshift:0);	
                         }
                         else
                         {
@@ -3064,12 +3073,34 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                                                         ccost,
                                                                         gapScore1,
                                                                         gapScore2);
+                        
                         BacktrackAlignCodon (editOps, p1,p2,code);
+                        //printf ("%ld %ld\n", p1, p2, "\n");
                         if (p1 < 0 || p2 < 0)
                         {
                             WarnError ("Internal Error in AlignStrings");
                             return -A_LARGE_NUMBER;
                         }
+                        
+                       /* if (p1 < 3)
+                        {
+                            for (; p1 > 0; p1--)
+                            {
+                                editOps << 0;
+                                p2 --; p1--;
+                            }
+                            break;
+                        }
+                        
+                        if (p2 < 3)
+                        {
+                            for (; p2 > 0; p2--)
+                            {
+                                editOps << 0;
+                                p2 --; p1--;
+                            }
+                            break;
+                        }*/
                         
                         if (doAffine)
                         {
