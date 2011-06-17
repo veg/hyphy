@@ -215,11 +215,11 @@ fi
 if [ $1 = "DEBUG" ]
 then
     TARGET_NAME="HYPHYDebug";
-    LINKER_FLAGS=$CURL_LINKER_LIBS" -ftest-coverage -fprofile-arcs -lm";
+    LINKER_FLAGS=$CURL_LINKER_LIBS" -g -lm -fopenmp ";
     echo "+---------------------------------------+"
     echo "|Building a debug version HYPHYDebug    |"
     echo "+---------------------------------------+"
-    COMPILER_FLAGS=" -w -c -g -ftest-coverage -fprofile-arcs -fpermissive -D __UNIX__ -lpthread ";
+	COMPILER_FLAGS=" -w -c -g -fsigned-char  -fpermissive -D __UNIX__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long "
 fi
 
 if [ $1 = "DMALLOC" ]
