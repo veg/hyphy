@@ -1472,7 +1472,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			return Abs();
 			break;
 		case HY_OP_CODE_CCHI2: //CChi2
-			if ((p->ObjectClass()==NUMBER)&&(p->Value()>0.999))
+			if (p->ObjectClass()==NUMBER && p->Value()>0.999 )
 				return new _Constant (FisherExact(5.,80.,1.));
 			else
 				return new _Constant (FisherExact(0.,0.,0.));
@@ -1502,6 +1502,17 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			return MAccess (p,p2);
 			break;
 		case HY_OP_CODE_MAX: // Max
+			if (p->ObjectClass()==NUMBER)
+            {
+                if (CheckEqual (p->Value(), 1))
+                {
+                    long index;
+                    _Parameter v[2] = {MaxElement (0,&index),0.0};
+                    v[1] = index;
+                    return new _Matrix (v,1,2);
+                }
+            }
+            
 			return new _Constant (MaxElement (0));
 			break;
 		case HY_OP_CODE_MCOORD: // MCoord
@@ -2119,45 +2130,6 @@ _Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)
 	CreateMatrix (this, theHDim, theVDim, sparse, allocateStorage);	
 }
 
-//_____________________________________________________________________________________________
-
-/*_Matrix::_Matrix (long theHDim, long theVDim, int zeroProb, bool sparse = false) 	
-// create an empty matrix of given dimensions; 
-// the flag specifies whether it is sparse or not
-{
-	try
-	{
-		CreateMatrix (this, theHDim, theVDim, sparse, true);
-		
-		long	randThresh = RAND_MAX_32*zeroProb/100, i;
-		
-		non0count = 0;
-		
-		
-		for (i = 0; i<hDim*vDim; i++)
-		{
-			long k = genrand_int32();
-			if (k<randThresh)
-			{
-				 if (!sparse)
-				 	(*this)[i] = 0;
-			}
-			else
-			{
-				(*this)[i] = long( k/1000);
-				non0count ++;
-			}
-		}
-			
-		CheckIfSparseEnough();
-	}
-	
-	catch(long errCode)
-	{
-		warnError(errCode);
-	}
-
-}*/
 
 //_____________________________________________________________________________________________
 
@@ -2479,6 +2451,16 @@ _Matrix::_Matrix (_SimpleList& sl, long colArg)
 			theData[k] = sl.lData[k];
 	}
 } 	
+
+//_____________________________________________________________________________________________
+
+_Matrix::_Matrix (_Parameter* inList, unsigned long rows, unsigned long columns)
+{	
+	CreateMatrix (this, rows, columns, false, true, false);
+    for (long k = 0; k < rows*columns; k++)
+        theData[k] = inList[k];
+} 	
+
 
 //_____________________________________________________________________________________________
 

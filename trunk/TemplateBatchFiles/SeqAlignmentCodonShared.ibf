@@ -27,7 +27,11 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 				{
 					aScore = protScoreMatrix[mappedK][mappedK2];
                     minScore = Min (minScore, aScore);
-				}
+                    if (mappedK == mappedK2 && k2 > k)
+                    {
+                        aScore = aScore - 1;
+                    }
+                }
 				else
 				{
 					aScore = -10000;

@@ -92,6 +92,16 @@ class		_Matrix: public _MathObject {
 												// if <= 0 - a row matrix is returned
 
 	_Matrix ( _List &);							//make string matrix from a list
+    
+    _Matrix (_Parameter *, unsigned long, unsigned long);
+            /*
+                20110616 SLKP 
+                    added a simple constructor from a list of floating point values 
+                    first argument: the values (must be at least 2nd arg x 3rd arg long)
+                    second argument: how many rows
+                    second argument: how many columns
+                
+            */
 
 	~_Matrix (void);  							//destructor
 	
