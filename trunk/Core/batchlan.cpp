@@ -8872,7 +8872,8 @@ bool	_ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target
         
         if (thisArgument->IsALiteralArgument(true))
         {
-            fpr->simpleParameters << fpr->parameters.lLength;
+            if (fpr->parameters.lLength)
+                fpr->simpleParameters << fpr->parameters.lLength;
             _FString converted (*thisArgument, true);
             fpr->parameters << converted.theString;
             DeleteObject (thisArgument);
@@ -9646,11 +9647,7 @@ void		SetDataFilterParameters (_String& parName, _DataSetFilter* thedf, bool set
 		if (thedf->theFrequencies.lLength < sizeCutoff)
 		{
 			receptacleVar = CheckReceptacle (&varName, empty, false);
-			_Matrix	 * siteFreqs = new _Matrix(1,thedf->theFrequencies.lLength,false,true);
-			checkPointer (siteFreqs);
-			for (long dsID=0; dsID < thedf->theFrequencies.lLength; dsID++)
-				siteFreqs->theData[dsID] = thedf->theFrequencies.lData[dsID];
-			receptacleVar->SetValue (siteFreqs,false);
+			receptacleVar->SetValue (new _Matrix(thedf->theFrequencies),false);
 		}
 	}
 	else
