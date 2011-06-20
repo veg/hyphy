@@ -2941,7 +2941,7 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 		}
 		else
 		{
-			if (skipFilePathEval == false && targetName->Find('"')==-1)
+			if (skipFilePathEval == false && !targetName->IsALiteralArgument())
 				fnm = GetStringFromFormula (&fnm,chain.nameSpacePrefix);						
 
 			fnm.ProcessFileName(true,false,(Ptr)chain.nameSpacePrefix);
@@ -8870,10 +8870,9 @@ bool	_ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target
         }
         _String *thisArgument = new _String (source, lastStart, lastEnd-1);
         
-        if (thisArgument->IsALiteralArgument(true))
+        if (fpr->parameters.lLength && thisArgument->IsALiteralArgument(true))
         {
-            if (fpr->parameters.lLength)
-                fpr->simpleParameters << fpr->parameters.lLength;
+            fpr->simpleParameters << fpr->parameters.lLength;
             _FString converted (*thisArgument, true);
             fpr->parameters << converted.theString;
             DeleteObject (thisArgument);
