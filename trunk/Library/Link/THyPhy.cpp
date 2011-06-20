@@ -205,6 +205,7 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 	// set base directory
 	{
 		baseDirectoryInstance = new _THyPhyString (baseDirPath);
+        baseDirectory		= baseDirectoryInstance->sData;
 		ReadPreferences (); 
 	}
 	GlobalStartup();

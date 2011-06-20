@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include 	  "likefunc.h"
 #include	  "scfg.h"
+#include      <ctype.h>
 
 #if defined __AFYP_REWRITE_BGM__
 #include	  "bayesgraph.h"
