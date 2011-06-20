@@ -260,7 +260,11 @@ class		_Matrix: public _MathObject {
                             // SLKP 20110523: added an option (doSum == 3) to return the largest element (no abs value)
                             // for run modes 0 and 3, if the 2nd argument is non-nil, the index of the winning element will be stored
 	
-				_Parameter			MinElement		(); // returns the smallest, non-zero element value for given matrix
+				_Parameter			MinElement		(char doAbs = 1, long * = nil); 
+                                    
+                                  // SLKP 20110620: added the 2nd argument to optionally store the index of the smallest element 
+                                  //              : added the option to NOT do absolute values
+                                  // returns the smallest, non-zero element value for given matrix
 
 				bool				IsMaxElement	(_Parameter);
 									// true if there is an elem abs val of which is greater than the arg

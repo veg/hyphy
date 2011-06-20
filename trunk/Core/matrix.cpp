@@ -1502,19 +1502,20 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 			return MAccess (p,p2);
 			break;
 		case HY_OP_CODE_MAX: // Max
+		case HY_OP_CODE_MIN: // Max
 			if (p->ObjectClass()==NUMBER)
             {
                 if (CheckEqual (p->Value(), 1))
                 {
                     long index;
-                    _Parameter v[2] = {MaxElement (0,&index),0.0};
+                    _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
                     v[1] = index;
                     return new _Matrix (v,1,2);
                 }
             }
-            
-			return new _Constant (MaxElement (0));
+			return new _Constant (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0));
 			break;
+            
 		case HY_OP_CODE_MCOORD: // MCoord
 			return MCoord (p,p2);
 			break;
@@ -4418,21 +4419,48 @@ bool	_Matrix::IsAVector  (char type)
 
 //_____________________________________________________________________________________________
 
-_Parameter	_Matrix::MinElement  (void)	
+_Parameter	_Matrix::MinElement  (char doAbsValue, long* storeIndex)	
 // returns matrix's smalles non-zero abs value element
 {
 	if (storageType == 1)
 	{
-		_Parameter min = 1.e30;
+		_Parameter min = DBL_MAX;
 		
-		for (long i = 0; i<lDim; i++)
-		{
-			_Parameter temp = theData[i];
-			if (temp<0.0)
-				temp = -temp;
-			if (temp<min && temp) 
-				min = temp;
-		}
+        if (theIndex)
+            for (long i = 0; i<lDim; i++)
+            {
+                if (theIndex[i] < 0)
+                    continue;
+                    
+                _Parameter temp = theData[i];
+                
+                if (temp < 0.0 && doAbsValue)
+                    temp = -temp;
+                    
+                if (temp<min) 
+                {
+                    if (storeIndex)
+                        *storeIndex = theIndex[i];
+                    min = temp;
+                }
+              
+            }
+        else
+            for (long i = 0; i<lDim; i++)
+            {
+                _Parameter temp = theData[i];
+                
+                if (temp < 0.0 && doAbsValue)
+                    temp = -temp;
+                    
+                if (temp<min) 
+                {
+                    if (storeIndex)
+                        *storeIndex = i;
+                    min = temp;
+                }
+           }
+            
 		return min;
 	}
 	else
@@ -4767,9 +4795,10 @@ _Matrix*	_Matrix::Exponentiate (void)
 		}
 		else
 		{
-			_Parameter tMax = MinElement()*sqrt ((_Parameter)hDim);
-			//_Parameter tMax = MaxElement();
+			_Parameter tMax = MAX(MinElement()*sqrt ((_Parameter)hDim),truncPrecision);
+
 			i=2;
+
 			_Matrix tempS (hDim, vDim, false, temp.storageType);
 			do 
 			{

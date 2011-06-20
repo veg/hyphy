@@ -1379,7 +1379,7 @@
 					__MAC__,
 					__MP__,
 				);
-				GCC_STRICT_ALIASING = NO;
+				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;

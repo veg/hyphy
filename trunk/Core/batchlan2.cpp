@@ -3213,21 +3213,23 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                 
                 for (long eo = editOps.lLength-1; eo>=0; eo--)
                     switch (editOps.lData[eo])
-				{
-					case 0:
-						(*res1) << s1->sData[p1++];
-						(*res2) << s2->sData[p2++];
-						break;
-					case 1:
-						(*res1) << gap;
-						(*res2) << s2->sData[p2++];
-						break;
-					case -1:
-						(*res2) << gap;
-						(*res1) << s1->sData[p1++];
-						break;
-				}
-				
+                    {
+                        case 0:
+                            (*res1) << s1->sData[p1++];
+                            (*res2) << s2->sData[p2++];
+                            break;
+                        case 1:
+                        case 2:
+                            (*res1) << gap;
+                            (*res2) << ((editOps.lData[eo]==1)?s2->sData[p2++]:tolower (s2->sData[p2++]));
+                            break;
+                        case -1:
+                        case -2:
+                            (*res2) << gap;
+                            (*res1) << ((editOps.lData[eo]==-1)?s1->sData[p1++]:tolower(s1->sData[p1++]));
+                            break;
+                    }
+                    
                 
                  _String		alignDebug ("alignScoreMatrix");
                  _Variable * ad = CheckReceptacle (&alignDebug, empty, false);
@@ -3897,17 +3899,23 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
 
     long   inStr1 [3] = {0,0,0},
            inStr2 [3] = {0,0,0};
+           
+    bool   frameshift = true;
+    
     switch (maxID)
     {
         case HY_ALIGN_STRINGS_111_111:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            frameshift = false;
             break;
         case HY_ALIGN_STRINGS_111_000:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            frameshift = false;
             break;
         case HY_ALIGN_STRINGS_000_111:
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
+            frameshift = false;
             break;            
         case HY_ALIGN_STRINGS_111_101:
             inStr1[0] = inStr1[1] = inStr1[2] = 1;
@@ -3968,12 +3976,12 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             }
             else
             {
-                p1--; editOps << -1;
+                 p1--; editOps << -(frameshift?2:1);
             }
         }
         else
         {
-            p2--; editOps << 1;
+            p2--; editOps << (frameshift?2:1);
         }
     }
 }
