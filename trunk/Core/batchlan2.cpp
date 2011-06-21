@@ -1011,7 +1011,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
                         resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(index)), false); 
                         resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(index))->sourceText,false),false);
                         theReceptacle->SetValue (resAVL,false);
-                        break;
+                        return;
                     }
                 }
             }
