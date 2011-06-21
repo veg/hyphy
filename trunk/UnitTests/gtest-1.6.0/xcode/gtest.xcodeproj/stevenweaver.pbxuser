@@ -1,0 +1,205 @@
+// !$*UTF8*$!
+{
+	0867D690FE84028FC02AAC07 /* Project object */ = {
+		activeBuildConfigurationName = Release;
+		activeExecutable = 2FA816FD13A7C6170064E667 /* gtest_unittest-framework */;
+		activeTarget = 8D07F2BC0486CC7A007CD1D0 /* gtest-framework */;
+		codeSenseManager = 2FA8170C13A7C63B0064E667 /* Code sense */;
+		executables = (
+			2FA816FD13A7C6170064E667 /* gtest_unittest-framework */,
+			2FA816FE13A7C6170064E667 /* gtest_unittest-static */,
+			2FA816FF13A7C6170064E667 /* sample1_unittest-framework */,
+			2FA8170013A7C6170064E667 /* sample1_unittest-static */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					341,
+					20,
+					48.16259765625,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 329762327;
+			PBXWorkspaceStateSaveDate = 329762327;
+		};
+		sourceControlManager = 2FA8170B13A7C63B0064E667 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	2FA816FD13A7C6170064E667 /* gtest_unittest-framework */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		dataTipCustomDataFormattersEnabled = 1;
+		dataTipShowTypeColumn = 1;
+		dataTipSortType = 0;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "gtest_unittest-framework";
+		showTypeColumn = 0;
+		sourceDirectories = (
+		);
+	};
+	2FA816FE13A7C6170064E667 /* gtest_unittest-static */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		dataTipCustomDataFormattersEnabled = 1;
+		dataTipShowTypeColumn = 1;
+		dataTipSortType = 0;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "gtest_unittest-static";
+		showTypeColumn = 0;
+		sourceDirectories = (
+		);
+	};
+	2FA816FF13A7C6170064E667 /* sample1_unittest-framework */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		dataTipCustomDataFormattersEnabled = 1;
+		dataTipShowTypeColumn = 1;
+		dataTipSortType = 0;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "sample1_unittest-framework";
+		showTypeColumn = 0;
+		sourceDirectories = (
+		);
+	};
+	2FA8170013A7C6170064E667 /* sample1_unittest-static */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		dataTipCustomDataFormattersEnabled = 1;
+		dataTipShowTypeColumn = 1;
+		dataTipSortType = 0;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "sample1_unittest-static";
+		showTypeColumn = 0;
+		sourceDirectories = (
+		);
+	};
+	2FA8170B13A7C63B0064E667 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+			repositoryNamesForRoots = {
+				"" = "";
+			};
+		};
+	};
+	2FA8170C13A7C63B0064E667 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	3B238F5F0E828B5400846E11 /* Check */ = {
+		activeExec = 0;
+	};
+	40899F420FFA7184000B29AE /* gtest_unittest-framework */ = {
+		activeExec = 0;
+		executables = (
+			2FA816FD13A7C6170064E667 /* gtest_unittest-framework */,
+		);
+	};
+	4089A0120FFACEFC000B29AE /* sample1_unittest-framework */ = {
+		activeExec = 0;
+		executables = (
+			2FA816FF13A7C6170064E667 /* sample1_unittest-framework */,
+		);
+	};
+	40C44ADC0E3798F4008FCC51 /* Version Info */ = {
+		activeExec = 0;
+	};
+	40C848F9101A209C0083642A /* gtest-static */ = {
+		activeExec = 0;
+	};
+	40C8490A101A217E0083642A /* gtest_main-static */ = {
+		activeExec = 0;
+	};
+	40C8497A101A36850083642A /* gtest_unittest-static */ = {
+		activeExec = 0;
+		executables = (
+			2FA816FE13A7C6170064E667 /* gtest_unittest-static */,
+		);
+	};
+	40C84989101A36A60083642A /* sample1_unittest-static */ = {
+		activeExec = 0;
+		executables = (
+			2FA8170013A7C6170064E667 /* sample1_unittest-static */,
+		);
+	};
+	8D07F2BC0486CC7A007CD1D0 /* gtest-framework */ = {
+		activeExec = 0;
+	};
+}

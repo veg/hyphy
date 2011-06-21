@@ -8,6 +8,38 @@
 
 /* Begin PBXBuildFile section */
 		0E63E81E0E7C6A00002AC53B /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E63E81D0E7C6A00002AC53B /* bgm2.cpp */; };
+		2FCAFD0613ABE9B00036C5B0 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCC913ABE9B00036C5B0 /* baseobj.cpp */; };
+		2FCAFD0713ABE9B00036C5B0 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCCB13ABE9B00036C5B0 /* batchlan.cpp */; };
+		2FCAFD0813ABE9B00036C5B0 /* batchlan2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCCD13ABE9B00036C5B0 /* batchlan2.cpp */; };
+		2FCAFD0913ABE9B00036C5B0 /* bayesgraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCCE13ABE9B00036C5B0 /* bayesgraph.cpp */; };
+		2FCAFD0A13ABE9B00036C5B0 /* bayesgraph2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD013ABE9B00036C5B0 /* bayesgraph2.cpp */; };
+		2FCAFD0B13ABE9B00036C5B0 /* bgm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD113ABE9B00036C5B0 /* bgm.cpp */; };
+		2FCAFD0C13ABE9B00036C5B0 /* bgm2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD313ABE9B00036C5B0 /* bgm2.cpp */; };
+		2FCAFD0D13ABE9B00036C5B0 /* calcnode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD413ABE9B00036C5B0 /* calcnode.cpp */; };
+		2FCAFD0E13ABE9B00036C5B0 /* calcnode2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD613ABE9B00036C5B0 /* calcnode2.cpp */; };
+		2FCAFD0F13ABE9B00036C5B0 /* category.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCD713ABE9B00036C5B0 /* category.cpp */; };
+		2FCAFD1113ABE9B00036C5B0 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCDB13ABE9B00036C5B0 /* error.cpp */; };
+		2FCAFD1213ABE9B00036C5B0 /* fisher_exact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCDD13ABE9B00036C5B0 /* fisher_exact.cpp */; };
+		2FCAFD1313ABE9B00036C5B0 /* HYNetInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCE113ABE9B00036C5B0 /* HYNetInterface.cpp */; };
+		2FCAFD1413ABE9B00036C5B0 /* hyphyunixutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCE313ABE9B00036C5B0 /* hyphyunixutils.cpp */; };
+		2FCAFD1513ABE9B00036C5B0 /* likefunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCE413ABE9B00036C5B0 /* likefunc.cpp */; };
+		2FCAFD1613ABE9B00036C5B0 /* likefunc2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCE613ABE9B00036C5B0 /* likefunc2.cpp */; };
+		2FCAFD1813ABE9B00036C5B0 /* list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCEA13ABE9B00036C5B0 /* list.cpp */; };
+		2FCAFD1A13ABE9B00036C5B0 /* main-unix.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCEC13ABE9B00036C5B0 /* main-unix.cxx */; };
+		2FCAFD1B13ABE9B00036C5B0 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCED13ABE9B00036C5B0 /* matrix.cpp */; };
+		2FCAFD1C13ABE9B00036C5B0 /* Net.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF013ABE9B00036C5B0 /* Net.cpp */; };
+		2FCAFD1D13ABE9B00036C5B0 /* nexus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF113ABE9B00036C5B0 /* nexus.cpp */; };
+		2FCAFD1E13ABE9B00036C5B0 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF213ABE9B00036C5B0 /* parser.cpp */; };
+		2FCAFD1F13ABE9B00036C5B0 /* parser2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF413ABE9B00036C5B0 /* parser2.cpp */; };
+		2FCAFD2013ABE9B00036C5B0 /* polynoml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF513ABE9B00036C5B0 /* polynoml.cpp */; };
+		2FCAFD2213ABE9B00036C5B0 /* regex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCF913ABE9B00036C5B0 /* regex.cpp */; };
+		2FCAFD2313ABE9B00036C5B0 /* scfg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCFA13ABE9B00036C5B0 /* scfg.cpp */; };
+		2FCAFD2413ABE9B00036C5B0 /* sequence.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCFC13ABE9B00036C5B0 /* sequence.cpp */; };
+		2FCAFD2513ABE9B00036C5B0 /* site.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFCFF13ABE9B00036C5B0 /* site.cpp */; };
+		2FCAFD2613ABE9B00036C5B0 /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFD0213ABE9B00036C5B0 /* sqlite3.c */; };
+		2FCAFD2713ABE9B00036C5B0 /* strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFD0513ABE9B00036C5B0 /* strings.cpp */; };
+		2FCAFD6D13AC01890036C5B0 /* gtest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2FCAFD6C13AC01890036C5B0 /* gtest.framework */; };
+		2FCAFD7613AC02300036C5B0 /* ut_strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2FCAFD7513AC02300036C5B0 /* ut_strings.cpp */; };
 		850513B51028C532009668C9 /* baseobj.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC910DE4E80E00682547 /* baseobj.cpp */; };
 		850513B61028C532009668C9 /* batchlan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC920DE4E80E00682547 /* batchlan.cpp */; };
 		850513B71028C532009668C9 /* batchlan2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 85A2BC930DE4E80E00682547 /* batchlan2.cpp */; };
@@ -242,6 +274,70 @@
 
 /* Begin PBXFileReference section */
 		0E63E81D0E7C6A00002AC53B /* bgm2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bgm2.cpp; path = ../trunk/NewerFunctionality/bgm2.cpp; sourceTree = SOURCE_ROOT; };
+		2FCAFCBE13ABE95B0036C5B0 /* UnitTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = UnitTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		2FCAFCC013ABE95B0036C5B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = "../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist"; sourceTree = "<group>"; };
+		2FCAFCC913ABE9B00036C5B0 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = baseobj.cpp; sourceTree = "<group>"; };
+		2FCAFCCA13ABE9B00036C5B0 /* baseobj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = baseobj.h; sourceTree = "<group>"; };
+		2FCAFCCB13ABE9B00036C5B0 /* batchlan.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = batchlan.cpp; sourceTree = "<group>"; };
+		2FCAFCCC13ABE9B00036C5B0 /* batchlan.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = batchlan.h; sourceTree = "<group>"; };
+		2FCAFCCD13ABE9B00036C5B0 /* batchlan2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = batchlan2.cpp; sourceTree = "<group>"; };
+		2FCAFCCE13ABE9B00036C5B0 /* bayesgraph.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bayesgraph.cpp; sourceTree = "<group>"; };
+		2FCAFCCF13ABE9B00036C5B0 /* bayesgraph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bayesgraph.h; sourceTree = "<group>"; };
+		2FCAFCD013ABE9B00036C5B0 /* bayesgraph2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bayesgraph2.cpp; sourceTree = "<group>"; };
+		2FCAFCD113ABE9B00036C5B0 /* bgm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bgm.cpp; sourceTree = "<group>"; };
+		2FCAFCD213ABE9B00036C5B0 /* bgm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bgm.h; sourceTree = "<group>"; };
+		2FCAFCD313ABE9B00036C5B0 /* bgm2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bgm2.cpp; sourceTree = "<group>"; };
+		2FCAFCD413ABE9B00036C5B0 /* calcnode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = calcnode.cpp; sourceTree = "<group>"; };
+		2FCAFCD513ABE9B00036C5B0 /* calcnode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = calcnode.h; sourceTree = "<group>"; };
+		2FCAFCD613ABE9B00036C5B0 /* calcnode2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = calcnode2.cpp; sourceTree = "<group>"; };
+		2FCAFCD713ABE9B00036C5B0 /* category.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = category.cpp; sourceTree = "<group>"; };
+		2FCAFCD813ABE9B00036C5B0 /* category.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = category.h; sourceTree = "<group>"; };
+		2FCAFCD913ABE9B00036C5B0 /* classes.cp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = classes.cp; sourceTree = "<group>"; };
+		2FCAFCDA13ABE9B00036C5B0 /* classes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = classes.h; sourceTree = "<group>"; };
+		2FCAFCDB13ABE9B00036C5B0 /* error.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = error.cpp; sourceTree = "<group>"; };
+		2FCAFCDC13ABE9B00036C5B0 /* errorfns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = errorfns.h; sourceTree = "<group>"; };
+		2FCAFCDD13ABE9B00036C5B0 /* fisher_exact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fisher_exact.cpp; sourceTree = "<group>"; };
+		2FCAFCDE13ABE9B00036C5B0 /* gnuregex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gnuregex.h; sourceTree = "<group>"; };
+		2FCAFCDF13ABE9B00036C5B0 /* hy_lists.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hy_lists.h; sourceTree = "<group>"; };
+		2FCAFCE013ABE9B00036C5B0 /* hy_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hy_strings.h; sourceTree = "<group>"; };
+		2FCAFCE113ABE9B00036C5B0 /* HYNetInterface.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HYNetInterface.cpp; sourceTree = "<group>"; };
+		2FCAFCE213ABE9B00036C5B0 /* HYNetInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HYNetInterface.h; sourceTree = "<group>"; };
+		2FCAFCE313ABE9B00036C5B0 /* hyphyunixutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hyphyunixutils.cpp; sourceTree = "<group>"; };
+		2FCAFCE413ABE9B00036C5B0 /* likefunc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = likefunc.cpp; sourceTree = "<group>"; };
+		2FCAFCE513ABE9B00036C5B0 /* likefunc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = likefunc.h; sourceTree = "<group>"; };
+		2FCAFCE613ABE9B00036C5B0 /* likefunc2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = likefunc2.cpp; sourceTree = "<group>"; };
+		2FCAFCE813ABE9B00036C5B0 /* THyPhy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = THyPhy.cpp; sourceTree = "<group>"; };
+		2FCAFCE913ABE9B00036C5B0 /* THyPhy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = THyPhy.h; sourceTree = "<group>"; };
+		2FCAFCEA13ABE9B00036C5B0 /* list.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = list.cpp; sourceTree = "<group>"; };
+		2FCAFCEB13ABE9B00036C5B0 /* main-GTK.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "main-GTK.cxx"; sourceTree = "<group>"; };
+		2FCAFCEC13ABE9B00036C5B0 /* main-unix.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "main-unix.cxx"; sourceTree = "<group>"; };
+		2FCAFCED13ABE9B00036C5B0 /* matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = matrix.cpp; sourceTree = "<group>"; };
+		2FCAFCEE13ABE9B00036C5B0 /* matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = matrix.h; sourceTree = "<group>"; };
+		2FCAFCEF13ABE9B00036C5B0 /* mypthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mypthread.h; sourceTree = "<group>"; };
+		2FCAFCF013ABE9B00036C5B0 /* Net.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Net.cpp; sourceTree = "<group>"; };
+		2FCAFCF113ABE9B00036C5B0 /* nexus.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nexus.cpp; sourceTree = "<group>"; };
+		2FCAFCF213ABE9B00036C5B0 /* parser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = parser.cpp; sourceTree = "<group>"; };
+		2FCAFCF313ABE9B00036C5B0 /* parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
+		2FCAFCF413ABE9B00036C5B0 /* parser2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = parser2.cpp; sourceTree = "<group>"; };
+		2FCAFCF513ABE9B00036C5B0 /* polynoml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = polynoml.cpp; sourceTree = "<group>"; };
+		2FCAFCF613ABE9B00036C5B0 /* polynoml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = polynoml.h; sourceTree = "<group>"; };
+		2FCAFCF713ABE9B00036C5B0 /* preferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferences.h; sourceTree = "<group>"; };
+		2FCAFCF813ABE9B00036C5B0 /* ptr_array.cp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ptr_array.cp; sourceTree = "<group>"; };
+		2FCAFCF913ABE9B00036C5B0 /* regex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = regex.cpp; sourceTree = "<group>"; };
+		2FCAFCFA13ABE9B00036C5B0 /* scfg.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scfg.cpp; sourceTree = "<group>"; };
+		2FCAFCFB13ABE9B00036C5B0 /* scfg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scfg.h; sourceTree = "<group>"; };
+		2FCAFCFC13ABE9B00036C5B0 /* sequence.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sequence.cpp; sourceTree = "<group>"; };
+		2FCAFCFD13ABE9B00036C5B0 /* sequence.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sequence.h; sourceTree = "<group>"; };
+		2FCAFCFE13ABE9B00036C5B0 /* SerangNet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SerangNet.h; sourceTree = "<group>"; };
+		2FCAFCFF13ABE9B00036C5B0 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
+		2FCAFD0013ABE9B00036C5B0 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
+		2FCAFD0213ABE9B00036C5B0 /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
+		2FCAFD0313ABE9B00036C5B0 /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3.h; sourceTree = "<group>"; };
+		2FCAFD0413ABE9B00036C5B0 /* sqlite3ext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3ext.h; sourceTree = "<group>"; };
+		2FCAFD0513ABE9B00036C5B0 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
+		2FCAFD6C13AC01890036C5B0 /* gtest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = gtest.framework; path = "/Users/stevenweaver/Documents/sergei/hyphy/trunk/UnitTests/gtest-1.6.0/xcode/build/Release/gtest.framework"; sourceTree = "<absolute>"; };
+		2FCAFD7413AC02300036C5B0 /* ut_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ut_strings.h; path = ../trunk/UnitTests/ut_strings.h; sourceTree = SOURCE_ROOT; };
+		2FCAFD7513AC02300036C5B0 /* ut_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ut_strings.cpp; path = ../trunk/UnitTests/ut_strings.cpp; sourceTree = SOURCE_ROOT; };
 		8505141A1028C532009668C9 /* HyPhy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HyPhy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8514AFA30FA7770E00A0B10D /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = ../SQLite/trunk/sqlite3.c; sourceTree = SOURCE_ROOT; };
 		8529BB140E2D5431001B4F53 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
@@ -349,6 +445,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2FCAFCBC13ABE95B0036C5B0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2FCAFD6D13AC01890036C5B0 /* gtest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		850514081028C532009668C9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -375,6 +479,7 @@
 			children = (
 				85A2BD9E0DE4F61400682547 /* HyPhy.app */,
 				8505141A1028C532009668C9 /* HyPhy.app */,
+				2FCAFCBE13ABE95B0036C5B0 /* UnitTests */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -382,6 +487,7 @@
 		20286C29FDCF999611CA2CEA /* HyPhyXCode */ = {
 			isa = PBXGroup;
 			children = (
+				2FCAFCC813ABE9B00036C5B0 /* Source */,
 				85E3A84A133015180066FB14 /* data */,
 				85FD3CDC132AC972006CA61A /* QuickTime.framework */,
 				85FD3CDA132AC962006CA61A /* Carbon.framework */,
@@ -393,6 +499,10 @@
 				20286C2CFDCF999611CA2CEA /* Resources */,
 				20286C32FDCF999611CA2CEA /* External Frameworks and Libraries */,
 				195DF8CFFE9D517E11CA2CBB /* Products */,
+				2FCAFCC013ABE95B0036C5B0 /* Info.plist */,
+				2FCAFD6C13AC01890036C5B0 /* gtest.framework */,
+				2FCAFD7413AC02300036C5B0 /* ut_strings.h */,
+				2FCAFD7513AC02300036C5B0 /* ut_strings.cpp */,
 			);
 			name = HyPhyXCode;
 			sourceTree = "<group>";
@@ -429,6 +539,89 @@
 				8529BB140E2D5431001B4F53 /* QuickTime.framework */,
 			);
 			name = "External Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+		2FCAFCC813ABE9B00036C5B0 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				2FCAFCC913ABE9B00036C5B0 /* baseobj.cpp */,
+				2FCAFCCA13ABE9B00036C5B0 /* baseobj.h */,
+				2FCAFCCB13ABE9B00036C5B0 /* batchlan.cpp */,
+				2FCAFCCC13ABE9B00036C5B0 /* batchlan.h */,
+				2FCAFCCD13ABE9B00036C5B0 /* batchlan2.cpp */,
+				2FCAFCCE13ABE9B00036C5B0 /* bayesgraph.cpp */,
+				2FCAFCCF13ABE9B00036C5B0 /* bayesgraph.h */,
+				2FCAFCD013ABE9B00036C5B0 /* bayesgraph2.cpp */,
+				2FCAFCD113ABE9B00036C5B0 /* bgm.cpp */,
+				2FCAFCD213ABE9B00036C5B0 /* bgm.h */,
+				2FCAFCD313ABE9B00036C5B0 /* bgm2.cpp */,
+				2FCAFCD413ABE9B00036C5B0 /* calcnode.cpp */,
+				2FCAFCD513ABE9B00036C5B0 /* calcnode.h */,
+				2FCAFCD613ABE9B00036C5B0 /* calcnode2.cpp */,
+				2FCAFCD713ABE9B00036C5B0 /* category.cpp */,
+				2FCAFCD813ABE9B00036C5B0 /* category.h */,
+				2FCAFCD913ABE9B00036C5B0 /* classes.cp */,
+				2FCAFCDA13ABE9B00036C5B0 /* classes.h */,
+				2FCAFCDB13ABE9B00036C5B0 /* error.cpp */,
+				2FCAFCDC13ABE9B00036C5B0 /* errorfns.h */,
+				2FCAFCDD13ABE9B00036C5B0 /* fisher_exact.cpp */,
+				2FCAFCDE13ABE9B00036C5B0 /* gnuregex.h */,
+				2FCAFCDF13ABE9B00036C5B0 /* hy_lists.h */,
+				2FCAFCE013ABE9B00036C5B0 /* hy_strings.h */,
+				2FCAFCE113ABE9B00036C5B0 /* HYNetInterface.cpp */,
+				2FCAFCE213ABE9B00036C5B0 /* HYNetInterface.h */,
+				2FCAFCE313ABE9B00036C5B0 /* hyphyunixutils.cpp */,
+				2FCAFCE413ABE9B00036C5B0 /* likefunc.cpp */,
+				2FCAFCE513ABE9B00036C5B0 /* likefunc.h */,
+				2FCAFCE613ABE9B00036C5B0 /* likefunc2.cpp */,
+				2FCAFCE713ABE9B00036C5B0 /* Link */,
+				2FCAFCEA13ABE9B00036C5B0 /* list.cpp */,
+				2FCAFCEB13ABE9B00036C5B0 /* main-GTK.cxx */,
+				2FCAFCEC13ABE9B00036C5B0 /* main-unix.cxx */,
+				2FCAFCED13ABE9B00036C5B0 /* matrix.cpp */,
+				2FCAFCEE13ABE9B00036C5B0 /* matrix.h */,
+				2FCAFCEF13ABE9B00036C5B0 /* mypthread.h */,
+				2FCAFCF013ABE9B00036C5B0 /* Net.cpp */,
+				2FCAFCF113ABE9B00036C5B0 /* nexus.cpp */,
+				2FCAFCF213ABE9B00036C5B0 /* parser.cpp */,
+				2FCAFCF313ABE9B00036C5B0 /* parser.h */,
+				2FCAFCF413ABE9B00036C5B0 /* parser2.cpp */,
+				2FCAFCF513ABE9B00036C5B0 /* polynoml.cpp */,
+				2FCAFCF613ABE9B00036C5B0 /* polynoml.h */,
+				2FCAFCF713ABE9B00036C5B0 /* preferences.h */,
+				2FCAFCF813ABE9B00036C5B0 /* ptr_array.cp */,
+				2FCAFCF913ABE9B00036C5B0 /* regex.cpp */,
+				2FCAFCFA13ABE9B00036C5B0 /* scfg.cpp */,
+				2FCAFCFB13ABE9B00036C5B0 /* scfg.h */,
+				2FCAFCFC13ABE9B00036C5B0 /* sequence.cpp */,
+				2FCAFCFD13ABE9B00036C5B0 /* sequence.h */,
+				2FCAFCFE13ABE9B00036C5B0 /* SerangNet.h */,
+				2FCAFCFF13ABE9B00036C5B0 /* site.cpp */,
+				2FCAFD0013ABE9B00036C5B0 /* site.h */,
+				2FCAFD0113ABE9B00036C5B0 /* SQLite */,
+				2FCAFD0513ABE9B00036C5B0 /* strings.cpp */,
+			);
+			name = Source;
+			path = ../HYPHY/Source;
+			sourceTree = SOURCE_ROOT;
+		};
+		2FCAFCE713ABE9B00036C5B0 /* Link */ = {
+			isa = PBXGroup;
+			children = (
+				2FCAFCE813ABE9B00036C5B0 /* THyPhy.cpp */,
+				2FCAFCE913ABE9B00036C5B0 /* THyPhy.h */,
+			);
+			path = Link;
+			sourceTree = "<group>";
+		};
+		2FCAFD0113ABE9B00036C5B0 /* SQLite */ = {
+			isa = PBXGroup;
+			children = (
+				2FCAFD0213ABE9B00036C5B0 /* sqlite3.c */,
+				2FCAFD0313ABE9B00036C5B0 /* sqlite3.h */,
+				2FCAFD0413ABE9B00036C5B0 /* sqlite3ext.h */,
+			);
+			path = SQLite;
 			sourceTree = "<group>";
 		};
 		85A2BC900DE4E7F200682547 /* Core */ = {
@@ -613,6 +806,22 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2FCAFCBD13ABE95B0036C5B0 /* UnitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2FCAFCC713ABE95B0036C5B0 /* Build configuration list for PBXNativeTarget "UnitTests" */;
+			buildPhases = (
+				2FCAFCBB13ABE95B0036C5B0 /* Sources */,
+				2FCAFCBC13ABE95B0036C5B0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = UnitTests;
+			productName = UnitTests;
+			productReference = 2FCAFCBE13ABE95B0036C5B0 /* UnitTests */;
+			productType = "com.apple.product-type.tool";
+		};
 		850513B31028C532009668C9 /* HyPhyXCodeAndInstall */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 850514171028C532009668C9 /* Build configuration list for PBXNativeTarget "HyPhyXCodeAndInstall" */;
@@ -673,6 +882,7 @@
 			targets = (
 				8D0C4E890486CD37000505A6 /* HyPhyXCode */,
 				850513B31028C532009668C9 /* HyPhyXCodeAndInstall */,
+				2FCAFCBD13ABE95B0036C5B0 /* UnitTests */,
 			);
 		};
 /* End PBXProject section */
@@ -719,6 +929,44 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2FCAFCBB13ABE95B0036C5B0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2FCAFD0613ABE9B00036C5B0 /* baseobj.cpp in Sources */,
+				2FCAFD0713ABE9B00036C5B0 /* batchlan.cpp in Sources */,
+				2FCAFD0813ABE9B00036C5B0 /* batchlan2.cpp in Sources */,
+				2FCAFD0913ABE9B00036C5B0 /* bayesgraph.cpp in Sources */,
+				2FCAFD0A13ABE9B00036C5B0 /* bayesgraph2.cpp in Sources */,
+				2FCAFD0B13ABE9B00036C5B0 /* bgm.cpp in Sources */,
+				2FCAFD0C13ABE9B00036C5B0 /* bgm2.cpp in Sources */,
+				2FCAFD0D13ABE9B00036C5B0 /* calcnode.cpp in Sources */,
+				2FCAFD0E13ABE9B00036C5B0 /* calcnode2.cpp in Sources */,
+				2FCAFD0F13ABE9B00036C5B0 /* category.cpp in Sources */,
+				2FCAFD1113ABE9B00036C5B0 /* error.cpp in Sources */,
+				2FCAFD1213ABE9B00036C5B0 /* fisher_exact.cpp in Sources */,
+				2FCAFD1313ABE9B00036C5B0 /* HYNetInterface.cpp in Sources */,
+				2FCAFD1413ABE9B00036C5B0 /* hyphyunixutils.cpp in Sources */,
+				2FCAFD1513ABE9B00036C5B0 /* likefunc.cpp in Sources */,
+				2FCAFD1613ABE9B00036C5B0 /* likefunc2.cpp in Sources */,
+				2FCAFD1813ABE9B00036C5B0 /* list.cpp in Sources */,
+				2FCAFD1A13ABE9B00036C5B0 /* main-unix.cxx in Sources */,
+				2FCAFD1B13ABE9B00036C5B0 /* matrix.cpp in Sources */,
+				2FCAFD1C13ABE9B00036C5B0 /* Net.cpp in Sources */,
+				2FCAFD1D13ABE9B00036C5B0 /* nexus.cpp in Sources */,
+				2FCAFD1E13ABE9B00036C5B0 /* parser.cpp in Sources */,
+				2FCAFD1F13ABE9B00036C5B0 /* parser2.cpp in Sources */,
+				2FCAFD2013ABE9B00036C5B0 /* polynoml.cpp in Sources */,
+				2FCAFD2213ABE9B00036C5B0 /* regex.cpp in Sources */,
+				2FCAFD2313ABE9B00036C5B0 /* scfg.cpp in Sources */,
+				2FCAFD2413ABE9B00036C5B0 /* sequence.cpp in Sources */,
+				2FCAFD2513ABE9B00036C5B0 /* site.cpp in Sources */,
+				2FCAFD2613ABE9B00036C5B0 /* sqlite3.c in Sources */,
+				2FCAFD2713ABE9B00036C5B0 /* strings.cpp in Sources */,
+				2FCAFD7613AC02300036C5B0 /* ut_strings.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		850513B41028C532009668C9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -892,6 +1140,124 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		2FCAFCC113ABE95B0036C5B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					__UNIX__,
+					"INTPTR_TYPE=long",
+					_SLKP_LFENGINE_REWRITE_,
+					__UNITTEST__,
+				);
+				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
+				GCC_WARN_INHIBIT_ALL_WARNINGS = YES;
+				INSTALL_PATH = /usr/local/bin;
+				LD_RUNPATH_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = /usr/lib/;
+				OTHER_LDFLAGS = (
+					"-lcurl",
+					"-lssl",
+					"-lcrypto",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+			};
+			name = Debug;
+		};
+		2FCAFCC213ABE95B0036C5B0 /* Debug + GCOV */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+			};
+			name = "Debug + GCOV";
+		};
+		2FCAFCC313ABE95B0036C5B0 /* Debug MPI */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+			};
+			name = "Debug MPI";
+		};
+		2FCAFCC413ABE95B0036C5B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		2FCAFCC513ABE95B0036C5B0 /* Optimized + Debug Info */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+			};
+			name = "Optimized + Debug Info";
+		};
+		2FCAFCC613ABE95B0036C5B0 /* Release 64 bit Intel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = UnitTests;
+			};
+			name = "Release 64 bit Intel";
+		};
 		850514181028C532009668C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1398,6 +1764,19 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2FCAFCC713ABE95B0036C5B0 /* Build configuration list for PBXNativeTarget "UnitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2FCAFCC113ABE95B0036C5B0 /* Debug */,
+				2FCAFCC213ABE95B0036C5B0 /* Debug + GCOV */,
+				2FCAFCC313ABE95B0036C5B0 /* Debug MPI */,
+				2FCAFCC413ABE95B0036C5B0 /* Release */,
+				2FCAFCC513ABE95B0036C5B0 /* Optimized + Debug Info */,
+				2FCAFCC613ABE95B0036C5B0 /* Release 64 bit Intel */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		850514171028C532009668C9 /* Build configuration list for PBXNativeTarget "HyPhyXCodeAndInstall" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
