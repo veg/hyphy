@@ -2451,6 +2451,8 @@ _Matrix::_Matrix (_SimpleList& sl, long colArg)
 		for (long k=0; k<sl.lLength; k++)
 			theData[k] = sl.lData[k];
 	}
+    else
+        Initialize();
 } 	
 
 //_____________________________________________________________________________________________
