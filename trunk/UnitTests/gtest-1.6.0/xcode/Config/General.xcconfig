@@ -8,7 +8,7 @@
 // 
 
 // Build for PPC and Intel, 32- and 64-bit
-ARCHS = i386 x86_64 ppc ppc64
+ARCHS = i386
 
 // Zerolink prevents link warnings so turn it off
 ZERO_LINK = NO
@@ -33,7 +33,7 @@ ALWAYS_SEARCH_USER_PATHS = NO
 GCC_DYNAMIC_NO_PIC = YES
 
 // Default SDK and minimum OS version is 10.4
-SDKROOT = $(DEVELOPER_SDK_DIR)/MacOSX10.6u.sdk
+SDKROOT = $(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk
 MACOSX_DEPLOYMENT_TARGET = 10.6
 GCC_VERSION = 4.2
 

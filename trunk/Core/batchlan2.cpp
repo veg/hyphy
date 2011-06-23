@@ -2604,6 +2604,8 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 	return true;
 }
 
+//____________________________________________________________________________________	
+
 #define HY_ALIGN_STRINGS_111_111 0
 #define HY_ALIGN_STRINGS_111_000 1
 #define HY_ALIGN_STRINGS_000_111 2
@@ -2622,59 +2624,86 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
 #define HY_ALIGN_STRINGS_101_111 13
 #define HY_ALIGN_STRINGS_010_111 14
 
-#define HY_ALIGNMENT_TYPES_COUNT 15
+#define HY_ALIGN_STRINGS_111_1110 15
+#define HY_ALIGN_STRINGS_111_1101 16
+#define HY_ALIGN_STRINGS_111_1011 17
+#define HY_ALIGN_STRINGS_111_0111 18
+
+
+#define HY_ALIGNMENT_TYPES_COUNT 19
     
     
 //____________________________________________________________________________________	
 
 long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long currentIndex, long definedChars, long index, long patternType)
 {
-    if (definedChars == 3)
+    if (definedChars == 4)
     {
-        if (currentIndex >= 3)
+        if (currentIndex >= 4)
         {
-            if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0 && encodedS.lData[currentIndex-3] >= 0)
-                return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-3]);
+            if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0 && encodedS.lData[currentIndex-3] >= 0 && encodedS.lData[currentIndex-4] >= 0)
+                switch (patternType)
+                   {
+                       case HY_ALIGN_STRINGS_111_1110:
+                           return encodedS.lData[currentIndex-2] + charCount * (encodedS.lData[currentIndex-3] + charCount * encodedS.lData[currentIndex-4]);
+                       case HY_ALIGN_STRINGS_111_1101:
+                           return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-3] + charCount * encodedS.lData[currentIndex-4]);
+                       case HY_ALIGN_STRINGS_111_1011:
+                           return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-4]);
+                       case HY_ALIGN_STRINGS_111_0111:
+                           return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-3]);
+                   }
         }
     }
     else
     {
-        if (definedChars == 2 && index >= 0 && currentIndex >= 2)
+        if (definedChars == 3)
         {
-           if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0)
-           {
-               switch (patternType)
-               {
-                   case HY_ALIGN_STRINGS_111_011:
-                   case HY_ALIGN_STRINGS_011_111:
-                       return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * index);
-                   case HY_ALIGN_STRINGS_111_101:
-                   case HY_ALIGN_STRINGS_101_111:
-                       return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] * charCount + index);
-                   case HY_ALIGN_STRINGS_111_110:
-                   case HY_ALIGN_STRINGS_110_111:
-                       return index + charCount * (encodedS.lData[currentIndex-1] + charCount * encodedS.lData[currentIndex-2]);
-                    
-               }
+            if (currentIndex >= 3)
+            {
+                if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0 && encodedS.lData[currentIndex-3] >= 0)
+                    return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * encodedS.lData[currentIndex-3]);
             }
         }
         else
         {
-            if (definedChars == 1 && index >= 0 && currentIndex >= 1)
+            if (definedChars == 2 && index >= 0 && currentIndex >= 2)
             {
-                if (encodedS.lData[currentIndex-1] >= 0)
-                    switch (patternType)
-                    {
-                        case HY_ALIGN_STRINGS_111_001:
-                        case HY_ALIGN_STRINGS_001_111:
-                            return encodedS.lData[currentIndex-1] + charCount * index;
-                        case HY_ALIGN_STRINGS_111_010:
-                        case HY_ALIGN_STRINGS_010_111:
-                            return encodedS.lData[currentIndex-1]*charCount + index;
-                        case HY_ALIGN_STRINGS_111_100:
-                        case HY_ALIGN_STRINGS_100_111:
-                            return encodedS.lData[currentIndex-1]*charCount*charCount + index;
-                    }
+               if (encodedS.lData[currentIndex-1] >= 0 && encodedS.lData[currentIndex-2] >= 0)
+               {
+                   switch (patternType)
+                   {
+                       case HY_ALIGN_STRINGS_111_011:
+                       case HY_ALIGN_STRINGS_011_111:
+                           return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] + charCount * index);
+                       case HY_ALIGN_STRINGS_111_101:
+                       case HY_ALIGN_STRINGS_101_111:
+                           return encodedS.lData[currentIndex-1] + charCount * (encodedS.lData[currentIndex-2] * charCount + index);
+                       case HY_ALIGN_STRINGS_111_110:
+                       case HY_ALIGN_STRINGS_110_111:
+                           return index + charCount * (encodedS.lData[currentIndex-1] + charCount * encodedS.lData[currentIndex-2]);
+                        
+                   }
+                }
+            }
+            else
+            {
+                if (definedChars == 1 && index >= 0 && currentIndex >= 1)
+                {
+                    if (encodedS.lData[currentIndex-1] >= 0)
+                        switch (patternType)
+                        {
+                            case HY_ALIGN_STRINGS_111_001:
+                            case HY_ALIGN_STRINGS_001_111:
+                                return encodedS.lData[currentIndex-1] + charCount * index;
+                            case HY_ALIGN_STRINGS_111_010:
+                            case HY_ALIGN_STRINGS_010_111:
+                                return encodedS.lData[currentIndex-1]*charCount + index;
+                            case HY_ALIGN_STRINGS_111_100:
+                            case HY_ALIGN_STRINGS_100_111:
+                                return encodedS.lData[currentIndex-1]*charCount*charCount + index;
+                        }
+                }
             }
         }
     }
@@ -2702,8 +2731,9 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                                                  )
 {
     long	   mIndex 	= r*colCount+c,
-    mIndex2	= mIndex-3*colCount,
-    codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
+               mIndex2	= mIndex-3*colCount,
+               codon1 = -1,
+               bigCharCount = ccost->GetVDim();
     
     for (long i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++)
         alignmentOptions.theData [i] = -A_LARGE_NUMBER;   
@@ -2718,7 +2748,8 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
         }
         else
             alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = scoreMatrix.theData[mIndex2]-gopen2;
-
+    
+        codon1 = ConstructCodonIndex (encodedString1,charCount, r,3);
     }
     
     if (c>=3)
@@ -2735,7 +2766,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
     if (codon2 >= 0)
     {
         if (codon1 >= 0)
-            alignmentOptions[HY_ALIGN_STRINGS_111_111] = scoreMatrix.theData[mIndex2-3] + (*ccost)(codon1,codon2);
+            alignmentOptions[HY_ALIGN_STRINGS_111_111] = scoreMatrix.theData[mIndex2-3] + ccost->theData[codon1*bigCharCount+codon2];
         
         if (r >= 2)
         {
@@ -2747,7 +2778,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                                    ConstructCodonIndex (encodedString1,charCount,r,2,k,HY_ALIGN_STRINGS_011_111)};
                 for (long k2 = 0; k2 < 3; k2++)
                     if (codont[k2] >= 0)
-                        maxV[k2] = MAX(maxV[k2], (*ccost)(codont[k2],codon2));
+                        maxV[k2] = MAX(maxV[k2], ccost->theData[codont[k2]*bigCharCount+codon2]);
             }
             alignmentOptions.theData [HY_ALIGN_STRINGS_110_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[0] - gFrameshift;                              
             alignmentOptions.theData [HY_ALIGN_STRINGS_101_111] = scoreMatrix.theData[mIndex-3-2*colCount] + maxV[1] - gFrameshift;                              
@@ -2759,11 +2790,11 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
             for (long k2 = 0; k2 < charCount; k2++)
             {
                 long codont [3] = {ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_100_111),
-                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount*charCount+k2,HY_ALIGN_STRINGS_010_111),
-                    ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_001_111)};
+                                   ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount*charCount+k2,HY_ALIGN_STRINGS_010_111),
+                                   ConstructCodonIndex (encodedString1,charCount,r,1,k*charCount+k2,HY_ALIGN_STRINGS_001_111)};
                 for (long k3 = 0; k3 < 3; k3++)
                     if (codont[k3] >= 0)
-                        maxV[k3] = MAX(maxV[k3], (*ccost)(codont[k3],codon2));
+                        maxV[k3] = MAX(maxV[k3], ccost->theData[codont[k3]*bigCharCount+codon2]);
             }
         }
         alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + maxV[0] - 2*gFrameshift;                              
@@ -2773,17 +2804,36 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
     
     if (codon1 >= 0)
     {
+        if (c >= 4)
+        {
+            _Parameter          maxV[4]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
+            
+            long codont [4] = { ConstructCodonIndex (encodedString2,charCount,c,4,0,HY_ALIGN_STRINGS_111_1110),
+                                ConstructCodonIndex (encodedString2,charCount,c,4,0,HY_ALIGN_STRINGS_111_1101),
+                                ConstructCodonIndex (encodedString2,charCount,c,4,0,HY_ALIGN_STRINGS_111_1011),
+                                ConstructCodonIndex (encodedString2,charCount,c,4,0,HY_ALIGN_STRINGS_111_0111)};
+                               
+            for (long k2 = 0; k2 < 4; k2++)
+                if (codont[k2] >= 0)
+                    maxV[k2] = MAX(maxV[k2], ccost->theData[codon1*bigCharCount+codont[k2]]);
+                    
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_1110] = scoreMatrix.theData[mIndex2-4] + maxV[0] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_1101] = scoreMatrix.theData[mIndex2-4] + maxV[1] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_1011] = scoreMatrix.theData[mIndex2-4] + maxV[2] - gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_0111] = scoreMatrix.theData[mIndex2-4] + maxV[3] - (c>4?gFrameshift:0);                   
+        }
+        
         if (c >= 2)
         {
             _Parameter          maxV[3]         = {-A_LARGE_NUMBER,-A_LARGE_NUMBER,-A_LARGE_NUMBER};
             for (long k = 0; k < charCount; k++)
             {
                 long codont [3] = {ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_110),
-                    ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_101),
-                    ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_011)};
+                                   ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_101),
+                                    ConstructCodonIndex (encodedString2,charCount,c,2,k,HY_ALIGN_STRINGS_111_011)};
                 for (long k2 = 0; k2 < 3; k2++)
                     if (codont[k2] >= 0)
-                        maxV[k2] = MAX(maxV[k2], (*ccost)(codon1,codont[k2]));
+                        maxV[k2] = MAX(maxV[k2], ccost->theData[codon1*bigCharCount+codont[k2]]);
             }
             alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + maxV[0] - gFrameshift;                              
             alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + maxV[1] - gFrameshift;                              
@@ -2799,7 +2849,7 @@ long    ConstructCodonIndex (_SimpleList& encodedS, long charCount, long current
                     ConstructCodonIndex (encodedString2,charCount,c,1,k*charCount+k2,HY_ALIGN_STRINGS_111_001)};
                 for (long k3 = 0; k3 < 3; k3++)
                     if (codont[k3] >= 0)
-                        maxV[k3] = MAX(maxV[k3], (*ccost)(codon1,codont[k3]));
+                        maxV[k3] = MAX(maxV[k3], ccost->theData[codon1*bigCharCount+codont[k3]]);
             }
         }
         alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + maxV[0] - 2*gFrameshift;                              
@@ -2819,23 +2869,20 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                              _Parameter gopen2,_Parameter gextend2, _Parameter gFrameshift,
                              bool doLocal,bool doAffine,bool doCodon,_List& store, long charCount)
     {
-        _String *res1 = new _String (s1->sLength+1, true),
-        *res2 = new _String (s2->sLength+1, true);
-        
-        checkPointer (res1);
-        checkPointer (res2);
+        _String *res1 = (_String*)checkPointer(new _String (s1->sLength+1, true)),
+                *res2 = (_String*)checkPointer(new _String (s2->sLength+1, true));
         
         _Parameter	 score = 0.;
         
         const  long upto1 = s1->sLength,
-        upto2 = s2->sLength;
+                    upto2 = s2->sLength;
         
         if (upto1)
         {
             if (upto2)
             {
                 _SimpleList encodedString1 (s1->sLength),
-                encodedString2 (s2->sLength);
+                            encodedString2 (s2->sLength);
                 
                 if (doCodon)
                 {
@@ -2846,8 +2893,9 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                 }
                 
                 _Matrix 			scoreMatrix (s1->sLength+1,s2->sLength+1, false, true),
-                *gapScore1 = nil,
-                *gapScore2 = nil;
+                                    *gapScore1 = nil,
+                                    *gapScore2 = nil;
+                                    
                 _SimpleList			editOps 	(MAX(s1->sLength,s2->sLength));
                 long				colCount = 	upto2+1;
                 
@@ -3083,7 +3131,9 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                                                                         gapScore2);
                         
                         BacktrackAlignCodon (editOps, p1,p2,code);
-                       // printf ("%ld %ld\n", p1, p2, "\n");
+                            
+                        
+                        // printf ("%ld %ld\n", p1, p2, "\n");
                         if (p1 < 0 || p2 < 0)
                         {
                             WarnError ("Internal Error in AlignStrings");
@@ -3898,9 +3948,10 @@ inline	void BacktrackAlign			(_SimpleList& editOps , long& p1, long& p2, _Parame
 inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, long maxID)
 {
 
-    long   inStr1 [3] = {0,0,0},
-           inStr2 [3] = {0,0,0};
-           
+    long   inStr1 [5] = {0,0,0,0,0},
+           inStr2 [5] = {0,0,0,0,0},
+           idx        = 2;
+    
     bool   frameshift = true;
     
     switch (maxID)
@@ -3966,8 +4017,32 @@ inline	void BacktrackAlignCodon			(_SimpleList& editOps , long& p1, long& p2, lo
             inStr2[0] = inStr2[1] = inStr2[2] = 1;
             inStr1[2] = 1;
             break;
+ 
+        case HY_ALIGN_STRINGS_111_1110:
+            inStr2[0] = inStr2[1] = inStr2[2] = inStr2[3] = 1;
+            inStr1[0] = inStr1[1] = inStr1[2] = 1;
+            idx = 3;
+            break;
+
+        case HY_ALIGN_STRINGS_111_1101:
+            inStr2[0] = inStr2[1] = inStr2[2] = inStr2[3] = 1;
+            inStr1[0] = inStr1[1] = inStr1[3] = 1;
+            idx = 3;
+            break;
+
+        case HY_ALIGN_STRINGS_111_1011:
+            inStr2[0] = inStr2[1] = inStr2[2] = inStr2[3] = 1;
+            inStr1[0] = inStr1[2] = inStr1[3] = 1;
+            idx = 3;
+            break;
+
+        case HY_ALIGN_STRINGS_111_0111:
+            inStr2[0] = inStr2[1] = inStr2[2] = inStr2[3] = 1;
+            inStr1[1] = inStr1[2] = inStr1[3] = 1;
+            idx = 3;
+            break;
     }
-    for (long k = 2; k >= 0 ; k--)
+    for (long k = idx; k >= 0 ; k--)
     {
         if (inStr1[k])
         {   
