@@ -2941,7 +2941,7 @@ void	  _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
 		}
 		else
 		{
-			if (skipFilePathEval == false && !targetName->IsALiteralArgument())
+			if (skipFilePathEval == false && !fnm.IsALiteralArgument())
 				fnm = GetStringFromFormula (&fnm,chain.nameSpacePrefix);						
 
 			fnm.ProcessFileName(true,false,(Ptr)chain.nameSpacePrefix);
