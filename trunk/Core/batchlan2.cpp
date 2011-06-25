@@ -1408,6 +1408,9 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                 doAffine	= false,
                                 doLinear	= true,
                                 doCodon     = false;
+                            
+                            
+                    long        codonCount = charCount*charCount*charCount;
 
                     _PMathObj 	c = mappingTable->GetByKey (seqAlignCodonAlign, NUMBER);
                     if (c)
@@ -1415,7 +1418,7 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                         
 
 					_Matrix * scoreMatrix = (_Matrix*)mappingTable->GetByKey (seqAlignScore, MATRIX);
-					if (scoreMatrix && scoreMatrix->GetHDim () == (doCodon?charCount*charCount*charCount:charCount) && scoreMatrix->GetVDim () == scoreMatrix->GetHDim ())
+					if (scoreMatrix && scoreMatrix->GetHDim () == (doCodon?codonCount+1:charCount) && scoreMatrix->GetVDim () == scoreMatrix->GetHDim ())
 					{
 						scoreMatrix = (_Matrix*)scoreMatrix->ComputeNumeric();
 						scoreMatrix->CheckIfSparseEnough(true);
@@ -1431,8 +1434,8 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                          {
                             codon3x2 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x2, MATRIX);
                             codon3x1 = (_Matrix*)mappingTable->GetByKey (seqAlignGapCodon3x1, MATRIX);
-                            if(codon3x2 && codon3x1 && codon3x2->GetHDim() == charCount*charCount*charCount
-                                                   && codon3x1->GetHDim() == charCount*charCount*charCount
+                            if(codon3x2 && codon3x1 && codon3x2->GetHDim() == codonCount+1
+                                                   && codon3x1->GetHDim() == codonCount+1
                                                    && codon3x2->GetVDim() == charCount*charCount*3
                                                    && codon3x1->GetVDim() == charCount*3)
                             {
@@ -1515,6 +1518,9 @@ void	  _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             settingReport << "\n\tUse codon alignment with frameshift routines: ";
                             if (doCodon)
                             {
+                                for (long i = 0; i < 256; i++)
+                                    if (ccount.lData[i] < 0)
+                                        ccount.lData[i] = -codonCount - 1;
                                 settingReport << "Yes";
                                 doLinear = false;
                                 
@@ -2687,6 +2693,7 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
                codon1 = -1,
                codon2 = -1,
                bigCharCount = ccost->GetVDim(),
+               rowCount    = scoreMatrix.GetHDim(),
                offset3x2      = charCount * charCount * 3,
                offset3x1      = charCount * 3;
     
@@ -2705,6 +2712,8 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
             alignmentOptions.theData  [HY_ALIGN_STRINGS_111_000] = scoreMatrix.theData[mIndex2]-gopen2;
     
         codon1 = (encodedString1.lData[r-3]*charCount + encodedString1.lData[r-2])*charCount + encodedString1.lData[r-1];
+        if (codon1 < 0)
+            codon1 = bigCharCount-1;
     }
     
     if (c>=3)
@@ -2718,6 +2727,8 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
             alignmentOptions.theData  [HY_ALIGN_STRINGS_000_111] = scoreMatrix.theData[mIndex-3]-gopen; 
          
         codon2 = (encodedString2.lData[c-3]*charCount + encodedString2.lData[c-2])*charCount + encodedString2.lData[c-1];
+        if (codon2 < 0)
+            codon2 = bigCharCount-1;
     }
     
     if (codon2 >= 0)
@@ -2729,16 +2740,22 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
         if (r >= 2)
         {
             long partialCodon = encodedString1.lData[r-2]*charCount + encodedString1.lData[r-1];
-            alignmentOptions.theData [HY_ALIGN_STRINGS_110_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3]   - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_101_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3+1] - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_011_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3+2] - (r>2?gFrameshift:0.);                              
+            if (partialCodon >= 0)
+            {
+                alignmentOptions.theData [HY_ALIGN_STRINGS_110_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3]   - (r<rowCount-1?gFrameshift:0);                              
+                alignmentOptions.theData [HY_ALIGN_STRINGS_101_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3+1] - gFrameshift;                              
+                alignmentOptions.theData [HY_ALIGN_STRINGS_011_111] = scoreMatrix.theData[mIndex-3-2*colCount] + codon3x2->theData[codon2*offset3x2+partialCodon*3+2] - (r>2?gFrameshift:0.);  
+            }
         }
         
         long partialCodon1 =  encodedString1.lData[r-1];
         
-        alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3]   - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3+1] - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3+2] - (r>1?2*gFrameshift:0.);                            
+        if (partialCodon1 >= 0)
+        {
+            alignmentOptions.theData [HY_ALIGN_STRINGS_100_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3]   - 2*(r<rowCount-1?gFrameshift:0);                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_010_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3+1] - 2*gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_001_111] = scoreMatrix.theData[mIndex-3-colCount] + codon3x1->theData[codon2*offset3x1+partialCodon1*3+2] - (r>1?2*gFrameshift:0.);    
+        }
     }
     
     if (codon1 >= 0)
@@ -2765,14 +2782,20 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
         if (c >= 2)
         {
             long partialCodon = encodedString2.lData[c-2]*charCount + encodedString2.lData[c-1];
-            alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3] - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+1] - gFrameshift;                              
-            alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+2] - (c>2?gFrameshift:0.);                              
+            if (partialCodon >= 0)
+            {
+                alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3] - (c>colCount-1?gFrameshift:0);                              
+                alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+1] - gFrameshift;                              
+                alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+2] - (c>2?gFrameshift:0.);
+            }
         }
         long partialCodon1 = encodedString2.lData[c-1];
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3]  - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3+1] - 2*gFrameshift;                              
-        alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3+2] - (c>1?2*gFrameshift:0.);  
+        if (partialCodon1 >= 0)
+        {
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_100] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3]  - 2*(c<colCount-1?gFrameshift:0);                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_010] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3+1] - 2*gFrameshift;                              
+            alignmentOptions.theData [HY_ALIGN_STRINGS_111_001] = scoreMatrix.theData[mIndex2-1] + codon3x1->theData[codon1*offset3x1+partialCodon1*3+2] - (c>1?2*gFrameshift:0.);  
+        }
     }
          
     long whichOne = 0;    

@@ -102,7 +102,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	s2 			 = UnalignedSeqs[seqCounter];
 	inStr 		 = {{s1,s2}};
 	AlignSequences(aligned, inStr, alignOptions);
-	
+    
 	if (doRC)
 	{
 		s2c = nucleotideReverseComplement (s2);
@@ -206,7 +206,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	
 	while (k<refLength)
 	{
-		while (fullRefSeq[k]!=aligned1[s2] && k < refLength)
+		while ((fullRefSeq[k]&&1)!=(aligned1[s2]&&1) && k < refLength)
 		{
 			gappedSeq*("-");
 			k=k+1;

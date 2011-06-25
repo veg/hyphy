@@ -9,11 +9,13 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	protScoreMatrix = alignOptions["SEQ_ALIGN_SCORE_MATRIX"];
 	alignOptions = {};
 	
-	scoreMatrix  = {64,64};
+	scoreMatrix  = {65,65}; // the 65-th position is used to deal with mixtures (a cheap cop-out) 
+    
 	protLetters = "ARNDCQEGHILKMFPSTWYV";
 	mapping 	= mapStrings (_hyphyAAOrdering, protLetters);	
     
-    minScore    = 0;
+    minScore    = 1e100;
+    maxScore    = -1e100;
     
 	for (k = 0; k < 64; k += 1)
 	{
@@ -27,6 +29,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 				{
 					aScore = protScoreMatrix[mappedK][mappedK2];
                     minScore = Min (minScore, aScore);
+                    maxScore = Max(maxScore, aScore);
                     if (mappedK == mappedK2 && k2 > k)
                     {
                         aScore = aScore - 1;
@@ -57,10 +60,70 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	alignOptions ["SEQ_ALIGN_AFFINE"]		=   1;
 	alignOptions ["SEQ_ALIGN_GAP_OPEN2"]	= 	20;
 	alignOptions ["SEQ_ALIGN_GAP_EXTEND2"]	= 	5;
-	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	-5*minScore;
+	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	Max(maxScore,-minScore)-1;
 	alignOptions ["SEQ_ALIGN_CODON_ALIGN"]	= 	1;
 	alignOptions ["SEQ_ALIGN_NO_TP"]		= 	1;
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=  "ACGT";
+    m3x2  =  {65,48};
+    m3x1  =  {65,12};
+
+    for (c1 = 0; c1 < 4; c1 += 1)
+    {
+        for (c2 = 0; c2 < 4; c2+=1)
+        {
+            for (c3 = 0; c3 < 4; c3+=1)
+            {
+                thisCodon = c1*16+c2*4+c3;
+                
+                for (d1 = 0; d1 < 4; d1 += 1)
+                {
+                    for (d2 = 0; d2 < 4; d2 += 1)
+                    {
+                        partialCodon = 4*d1 + d2;
+                        t = 16*d1 + d2;
+                        max110 = -1e100;
+                        max101 = -1e100;
+                        max011 = -1e100;
+                
+                        for (d3 = 0; d3 < 4; d3 += 1)
+                        {
+                            max110 = Max(max110,scoreMatrix[thisCodon][4*partialCodon + d3]);
+                            max101 = Max(max101,scoreMatrix[thisCodon][t + 4*d3]);
+                            max011 = Max(max011,scoreMatrix[thisCodon][partialCodon + 16*d3]);
+                        }
+                        m3x2[thisCodon][3*partialCodon]   = max110;
+                        m3x2[thisCodon][3*partialCodon+1] = max101;
+                        m3x2[thisCodon][3*partialCodon+2] = max011;
+                    }
+                }
+                max = 0;
+                for (d1 = 0; d1 < 4; d1 += 1)
+                {
+                    max100 = -1e100;
+                    max010 = -1e100;
+                    max001 = -1e100;
+                    
+                    for (d2 = 0; d2 < 4; d2+=1)
+                    {
+                        for (d3 = 0; d3 < 4; d3+=1)
+                        {
+                            max100 =  Max(max100,scoreMatrix[thisCodon][d1*16+d2*4+d3]);
+                            max010 =  Max(max010,scoreMatrix[thisCodon][d2*16+d1*4+d3]);
+                            max001 =  Max(max001,scoreMatrix[thisCodon][d2*16+d3*4+d1]);
+                        }
+                    }
+                    m3x1[thisCodon][3*d1]   = max100;
+                    m3x1[thisCodon][3*d1+1] = max010;
+                    m3x1[thisCodon][3*d1+2] = max001;
+                }
+            }
+        }
+    }	
+
+    alignOptions ["SEQ_ALIGN_PARTIAL_3x1_SCORES"]   =  m3x1;
+    alignOptions ["SEQ_ALIGN_PARTIAL_3x2_SCORES"]   =  m3x2;
+
+
 }
 
 
