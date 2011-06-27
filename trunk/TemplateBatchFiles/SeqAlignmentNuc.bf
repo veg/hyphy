@@ -96,5 +96,6 @@ if (refSeq < 0)
 	return 0;
 }
 
+checkReferenceSequenceForStopCodons = 0;
 LoadFunctionLibrary ("SeqAlignmentNucShared");
 
