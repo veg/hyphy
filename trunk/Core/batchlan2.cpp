@@ -2731,6 +2731,7 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
             codon2 = bigCharCount-1;
     }
     
+    
     if (codon2 >= 0)
     {
         if (codon1 >= 0)
@@ -2784,7 +2785,7 @@ bool	_ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
             long partialCodon = encodedString2.lData[c-2]*charCount + encodedString2.lData[c-1];
             if (partialCodon >= 0)
             {
-                alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3] - (c>colCount-1?gFrameshift:0);                              
+                alignmentOptions.theData [HY_ALIGN_STRINGS_111_110] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3] - (c<colCount-1?gFrameshift:0);                              
                 alignmentOptions.theData [HY_ALIGN_STRINGS_111_101] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+1] - gFrameshift;                              
                 alignmentOptions.theData [HY_ALIGN_STRINGS_111_011] = scoreMatrix.theData[mIndex2-2] + codon3x2->theData[codon1*offset3x2+partialCodon*3+2] - (c>2?gFrameshift:0.);
             }
@@ -3033,7 +3034,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                 {		
                     score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
                     
-                    for (long mc2=colCount-1; mc2<s1->sLength*colCount; mc2+=colCount)
+                     for (long mc2=colCount-1; mc2<s1->sLength*colCount; mc2+=colCount)
                         if (scoreMatrix.theData[mc2]>score)
                         {
                             score = scoreMatrix.theData[mc2];
@@ -3052,6 +3053,7 @@ _Parameter	 AlignStrings 	(_String* s1,_String* s2,_SimpleList& cmap,_Matrix* cc
                         editOps << -1;
                     for (long mp2 = p2;mp2<s2->sLength; mp2++)
                         editOps << 1;
+                        
                 }
                 else
                     score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
