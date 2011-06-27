@@ -5324,19 +5324,11 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					
 					(*res) << "/triangle { size size 0.5 mul rlineto 0 size -1 mul rlineto closepath } def\n";
 					
-					(*res) << "/circle {currentpoint exch 0.5 size mul add exch 0.5 size mul 0 360 arc\n";
+					(*res) << "/circle {currentpoint exch 0.5 size mul add exch 0.5 size mul 180 540 arc\n";
 					(*res) << "closepath\n";
 					(*res) << "} def\n";
 					
-					(*res) << "/diamond { 0 -0.707107 size mul rmoveto\
-                              0.707107 size mul 0 rmoveto\
-                              45 rotate\
-                              size  0 rlineto\
-                              0 size rlineto\
-                              -1 size mul 0 rlineto\			
-                              -45 rotate\
-                              closepath\
-                              } def\n";
+					(*res) << "/diamond { 0 -0.5 size mul rmoveto 0.5 size mul 0 rmoveto 45 rotate 0.707107 size mul 0 rlineto 0 size 0.707107 mul rlineto -0.707107 size mul 0 rlineto -45 rotate  closepath} def\n";
 				}
 				
 
