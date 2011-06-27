@@ -5322,10 +5322,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 					(*res) << "closepath\n";
 					(*res) << "} def\n";
 					
-					(*res) << "/triangle { 	1 size mul size 0 mul rlineto\n";
-					(*res) << "-0.5 size mul size 1 mul rlineto\n";
-					(*res) << "closepath\n";
-					(*res) << "} def\n";
+					(*res) << "/triangle { size size 0.5 mul rlineto 0 size -1 mul rlineto closepath } def\n";
 					
 					(*res) << "/circle {currentpoint exch 0.5 size mul add exch 0.5 size mul 0 360 arc\n";
 					(*res) << "closepath\n";
