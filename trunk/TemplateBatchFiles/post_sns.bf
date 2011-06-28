@@ -92,5 +92,5 @@ if (response == 0)
 else
 {
 	SetDialogPrompt ("Save trees to file:");
-	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, synTreeString, "\;\n", nonSynTreeString, "\;\n",dSTreeString, "\;\n", dNTreeString, "\;\n");
+	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, synTreeString, ";\n", nonSynTreeString, ";\n",dSTreeString, ";\n", dNTreeString, ";\n");
 }
