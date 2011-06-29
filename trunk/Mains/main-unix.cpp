@@ -35,6 +35,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #endif
 
+#ifdef	__UNITTEST__
+    #include "gtest/gtest.h"
+    #include "ut_strings.h"
+#endif
+
 //#include <signal.h>
 #if defined   __MP2__ || defined __MP__
 	#include <pthread.h>
@@ -71,6 +76,7 @@ void	ReadInPostFiles				(void);
 long	DisplayListOfPostChoices 	(void);
 void    mpiOptimizerLoop 			(int, int);
 void 	mpiNormalLoop	 			(int, int, _String*);
+
 
 
 extern	long
@@ -464,6 +470,8 @@ void	SetStatusLine 			    (_String s)
 }
 
 //__________________________________________________________________________________
+
+#ifndef	__UNITTEST__
 int main (int argc, char* argv[])
 {
 	mainArgCount = argc - 1;
@@ -742,5 +750,11 @@ int main (int argc, char* argv[])
 	
 }
 
+#endif
 
-
+#ifdef	__UNITTEST__
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+#endif
