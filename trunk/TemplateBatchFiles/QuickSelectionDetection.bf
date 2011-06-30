@@ -1097,7 +1097,7 @@ else
                                 global      omega2  =         2.0; 
                                 global      mixingP =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
                                 PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t", "omega1", "");
-                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t", "omega2", "");
+                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t", "omega2^4", "");
                                 AC := saveNucs__[0];
                                 AT := saveNucs__[1];
                                 CG := saveNucs__[2];
@@ -1152,7 +1152,7 @@ else
                                         if (cOptions == 10)
                                         {
                                             doneSites[siteMap][0] = omega1;
-                                            doneSites[siteMap][1] = omega2;
+                                            doneSites[siteMap][1] = omega2^0.25;
                                             doneSites[siteMap][2] = mixingP;
                                             doneSites[siteMap][6] = 1-mixingP;                                        
                                             doneSites[siteMap][7] = sFactor^4;
