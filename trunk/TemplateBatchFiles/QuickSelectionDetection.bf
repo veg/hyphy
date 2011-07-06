@@ -1094,11 +1094,10 @@ else
                                 OPTIMIZATION_METHOD = 4;
 
                                 global      omega1      =         0.5; omega1 :< 1;
-                                global      omega2Inv   =         0.5;
-                                global      omega2      :=        1/omega2Inv; 
+                                global      omega2      =         1.5; 
                                 global      mixingP     =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
-                                PopulateModelMatrix			  ("MGMatrix1",  positionFrequencies, "t", "omega1", "");
-                                PopulateModelMatrix			  ("MGMatrix2",  positionFrequencies, "t", "omega2", "");
+                                PopulateModelMatrix              ("MGMatrix1",  positionFrequencies, "t", "omega1", "");
+                                PopulateModelMatrix              ("MGMatrix2",  positionFrequencies, "t", "(omega2*(omega2<=1)+omega2^4*(omega2>1))", "");
                                 AC := saveNucs__[0];
                                 AT := saveNucs__[1];
                                 CG := saveNucs__[2];
@@ -1113,7 +1112,7 @@ else
                                 fullSites    = {filteredData.sites,8};						
                                 labels       = {{"omega1","omega2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
 
- 								ReplicateConstraint ("this1.?.t:=sFactor^4*this2.?.synRate__",siteTree,codonTree);
+ 								ReplicateConstraint ("this1.?.t:=(sFactor*(sFactor<=1)+sFactor^4*(sFactor>1))*this2.?.synRate__",siteTree,codonTree);
                              }
 						}
 					
@@ -1153,10 +1152,10 @@ else
                                         if (cOptions == 10)
                                         {
                                             doneSites[siteMap][0] = omega1;
-                                            doneSites[siteMap][1] = omega2;
+                                            doneSites[siteMap][1] = omega2*(omega2<=1)+omega2^4*(omega2>1);
                                             doneSites[siteMap][2] = mixingP;
                                             doneSites[siteMap][6] = 1-mixingP;                                        
-                                            doneSites[siteMap][7] = sFactor^4;
+                                            doneSites[siteMap][7] = sFactor*(sFactor<=1)+sFactor^4*(sFactor>1);
                                             
                                             if (omega2 > 1 && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
