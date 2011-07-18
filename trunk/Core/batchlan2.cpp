@@ -909,7 +909,7 @@ void	  _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
 								case 1:		// return associative list with network structure and parameters
 								{
                                     result = new _String (1024L, true);
-									this_bgm -> SerializeBGM (result);
+									this_bgm -> SerializeBGM (*result);
                                     result->Finalize();
 									theReceptacle->SetValue (new _FString (result),false);
 									return;
