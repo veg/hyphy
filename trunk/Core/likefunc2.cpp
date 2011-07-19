@@ -1194,6 +1194,74 @@ void		_LikelihoodFunction::RunViterbi ( _Matrix & result,				    const _Paramete
 
 //_______________________________________________________________________________________________
 
+
+_Parameter mapParameterToInverval (_Parameter in, char type, bool inverse)
+{
+    switch (type)
+    {
+        case _hyphyIntervalMapExpit:
+            if (inverse)
+                return log (in / (1-in));
+            else
+                return 1. / (1. + exp(-in));
+            break;
+        case _hyphyIntervalMapSqueeze:
+            if (inverse)
+                return in/(1.-in);
+            else
+                return in/(1.+in);
+            break;
+            
+    }
+    return in;
+}
+
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::SetupParameterMapping (void)
+{
+    return;
+    parameterTransformationFunction.Clear();
+    parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
+    
+    for (long pIndex = 0; pIndex < indexInd.lLength; pIndex++)
+    {
+        _Variable* cv        = GetIthIndependentVar(pIndex);
+        _Parameter thisLB    = cv->GetLowerBound(),
+                   thisUB    = cv->GetUpperBound(),
+                   thisValue = cv->Compute()->Value();
+        
+        //parameterTransformationFunction << _hyphyIntervalMapID;
+        if (thisLB >= 0.0 && thisUB <= 1.0)
+            parameterTransformationFunction << _hyphyIntervalMapID;
+        else
+            if (thisLB >=0.0)
+                parameterTransformationFunction << _hyphyIntervalMapSqueeze;
+            else
+                parameterTransformationFunction << _hyphyIntervalMapExpit;
+        
+        
+        parameterValuesAndRanges->Store(pIndex,0,thisValue);
+        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInverval(thisValue,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInverval(thisLB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInverval(thisUB,parameterTransformationFunction.Element(-1),false));
+    }
+
+}
+
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::CleanupParameterMapping (void)
+{
+    DeleteObject (parameterValuesAndRanges);
+    parameterValuesAndRanges = nil;
+    parameterTransformationFunction.Clear();
+}
+
+
+
+//_______________________________________________________________________________________________
+
 _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Parameter * patternLikelihoods, const _SimpleList& patternScalers) 
 /* 
  compute the likelihood of a partition (index), corrected for scaling, 

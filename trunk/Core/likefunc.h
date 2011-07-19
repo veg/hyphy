@@ -87,6 +87,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	  _hyphyCategoryHMM								0x2
 #define   _hyphyCategoryCOP								0x4
 
+/* interval mapping functions */        
+
+#define   _hyphyIntervalMapID                           0x0 // identify
+#define   _hyphyIntervalMapExpit                        0x1 // expit -- maps [-infty,infty) to [0,1] 
+                                                            // 1/(1+exp[-x])
+#define   _hyphyIntervalMapSqueeze                      0x2 // maps [0,infty) to [0,1)
+                                                            // x / (1+x)
+
+
 //_______________________________________________________________________________________
 
 struct	MSTCache
@@ -141,14 +150,16 @@ virtual	void		Duplicate (BaseRef);		 // duplicate an object into this one
 												   // 4 - category variables
 		
 		
-		_Parameter	GetIthIndependent (long);		// get the value of i-th independent variable 
-		_Parameter	GetIthDependent   (long);		// get the value of i-th dependent variable
-		void		GetAllIndependent  (_Matrix&);  // store all indepenent values in a matrix
-		_Variable*	GetIthIndependentVar (long); 	// get the variable object of i-th independent variable 
-		_Variable*	GetIthDependentVar   (long); 	// get the variable object of i-th dependent variable
+		_Parameter	GetIthIndependent           (long);		// get the value of i-th independent variable 
+		_Parameter	GetIthDependent             (long);		// get the value of i-th dependent variable
+		void		GetAllIndependent           (_Matrix&); // store all indepenent values in a matrix
+		_Variable*	GetIthIndependentVar        (long); 	// get the variable object of i-th independent variable 
+		_Variable*	GetIthDependentVar          (long); 	// get the variable object of i-th dependent variable
+        _Parameter  GetIthIndependentBound      (long, bool isLower = true);
+                                                            // get the lower / upper bound for the i-th indepdendent variable
 		
-		void		SetIthIndependent (long, _Parameter); 	// set the value of i-th independent variable 
-		bool		CheckAndSetIthIndependent (long, _Parameter); 	// sget the value of i-th independent variable 
+		void		SetIthIndependent (long, _Parameter);           // set the value of i-th independent variable 
+		bool		CheckAndSetIthIndependent (long, _Parameter); 	// set the value of i-th independent variable 
 		void		SetIthDependent		      (long, _Parameter); 	// set the value of i-th dependent variable 
 		bool		IsIthParameterGlobal	  (long);
 	
@@ -447,6 +458,8 @@ static	void			CheckFibonacci				(_Parameter);
 		void			SetupLFCaches				(void);
 		void			SetupCategoryCaches			(void);
 		bool			HasPartitionChanged			(long);
+        void            SetupParameterMapping       (void);
+        void            CleanupParameterMapping     (void);
 
 		_SimpleList	 	theTrees, 
 						theDataFilters, 
@@ -455,7 +468,10 @@ static	void			CheckFibonacci				(_Parameter);
 						indexDep, 
 						indexCat,
 						*nonConstantDep,
-					 	blockDependancies;
+					 	blockDependancies,
+                        parameterTransformationFunction;
+                        /* 20110718: SLKP this list holds the index of the parameter interval mapping function 
+                            used during optimization */
 
 		_GrowingVector  computationalResults;
 	
@@ -493,8 +509,8 @@ static	void			CheckFibonacci				(_Parameter);
 									_hyphyCategoryCOP						 
 						 */
 						indVarsByPartition,
-						depVarsByPartition;
-						
+                        depVarsByPartition;
+ 						
 
 						
 		long		 	evalsSinceLastSetup,
@@ -526,7 +542,14 @@ static	void			CheckFibonacci				(_Parameter);
 						hasBeenSetUp;
 		
 		_Matrix			*siteResults,
-						*bySiteResults;
+						*bySiteResults,
+                        *parameterValuesAndRanges;
+    
+                        /* 20110718 SLKP
+                            this Nx4 (N is the number of adjustable parameters) matrix
+                            stores variable bounds and values for each independent variable;
+                            this is used for internal normalization transforms during optimization
+                         */
 		
 		bool			hasBeenOptimized,
 						siteArrayPopulated;
@@ -694,7 +717,8 @@ extern	_GrowingVector		_scalerMultipliers,
 							_scalerDividers;
 
 _Parameter					acquireScalerMultiplier (long);
-_Parameter					myLog (_Parameter);
+_Parameter					myLog                   (_Parameter);
+_Parameter                  mapParameterToInverval  (_Parameter, char, bool);
 
 #ifdef	__HYPHYMPI__
 	extern					_Matrix		resTransferMatrix;

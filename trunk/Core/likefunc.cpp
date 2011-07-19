@@ -510,6 +510,7 @@ void _LikelihoodFunction::Init (void)
 	conditionalTerminalNodeStateFlag		= nil;
 	siteScalingFactors						= nil;
 	branchCaches							= nil;
+    parameterValuesAndRanges                = nil;
 #ifdef	_OPENMP
 	SetThreadCount		(systemCPUCount);
 #endif
@@ -1172,11 +1173,24 @@ void	_LikelihoodFunction::GetGlobalVars (_SimpleList& rec)
 //_______________________________________________________________________________________
 _Parameter	_LikelihoodFunction::GetIthIndependent (long index) 
 {
+    if (parameterValuesAndRanges)
+        return (*parameterValuesAndRanges)(index,1);
+
 	return ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
 }
 
 
+//_______________________________________________________________________________________
 
+_Parameter  _LikelihoodFunction::GetIthIndependentBound      (long index, bool isLower)
+{
+    if (parameterValuesAndRanges)
+        return (*parameterValuesAndRanges)(index,isLower?2:3);
+    if (isLower)
+        return GetIthIndependentVar(index)->GetLowerBound();
+    return GetIthIndependentVar(index)->GetUpperBound();
+        
+}
 //_______________________________________________________________________________________
 _Parameter	_LikelihoodFunction::GetIthDependent (long index) 
 {
@@ -1196,8 +1210,14 @@ _Variable*	_LikelihoodFunction::GetIthDependentVar (long index)
 //_______________________________________________________________________________________
 void	_LikelihoodFunction::SetIthIndependent (long index, _Parameter p) 
 {
-	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
-	v->SetValue (new _Constant (p), false);
+    if (parameterValuesAndRanges)
+    {
+        parameterValuesAndRanges->Store(index,1,p);
+        p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
+        parameterValuesAndRanges->Store(index,0,p);
+    }
+    _Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
+    v->SetValue (new _Constant (p), false);
 }
 
 //_______________________________________________________________________________________
@@ -1214,6 +1234,13 @@ bool	_LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p)
 	_Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
 
 	bool set;
+    
+    if (parameterValuesAndRanges)
+    {
+        parameterValuesAndRanges->Store(index,1,p);
+        p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
+        parameterValuesAndRanges->Store(index,0,p);
+    }
 	
 	_Parameter oldValue = v->Value();
 	
@@ -1746,7 +1773,6 @@ bool	_LikelihoodFunction::PreCompute 		(void)
 	{
 		_Variable* cornholio = LocateVar(arrayToCheck->lData[i]);
 		_Parameter result 	 = ((_Constant*) cornholio->Compute())->Value();
-		
 		if (result<cornholio->GetLowerBound() || result>cornholio->GetUpperBound())
 			break;
 	}
@@ -2887,11 +2913,11 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 	for (index = 0; index<indexDep.lLength && !ohWell;index++) 
 	// check whether any of the dependent variables are out of bounds
 	{
-		cornholio 						= 	LocateVar(indexDep.lData[index]);
+		cornholio 						= 	GetIthIndependentVar(index);
 		
-		currentValues.theData[index]	=	cornholio->Compute()->Value();
-		lowerBounds.theData[index]		=	cornholio->GetLowerBound();
-		upperBounds.theData[index]		=	cornholio->GetUpperBound();
+		currentValues.theData[index]	=	GetIthIndependent(index);
+		lowerBounds.theData[index]		=	GetIthIndependentBound(index,true);
+		upperBounds.theData[index]		=	GetIthIndependentBound(index,false);
 		
 		bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
 		if (badApple)	
@@ -2974,8 +3000,6 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 			// until var badVarIndex is within limits again
 			// try this by a trivial bisection
 			
-			cornholio = GetIthIndependentVar(j);
-
 			_Parameter left			, 
 					   right		, 
 					   middle,	
@@ -2985,13 +3009,13 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 			
 			if (decrement) // need to decrement "j"
 			{
-				left  = cornholio->GetLowerBound();
-				right = cornholio->Value();
+				left  = GetIthIndependentBound(j,true);
+				right = GetIthIndependent(j);
 			}
 			else // need to increment "j"
 			{
-				right = cornholio->GetUpperBound();
-				left  = cornholio->Value();
+				right = GetIthIndependentBound(j,false);
+				left  = GetIthIndependent(j);
 			}
 				
 			
@@ -3032,8 +3056,7 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 			for (index = indexDep.lLength-1; index>-1;index--) 
 			// check whether any of the dependent variables are out of bounds
 			{
-				cornholio = GetIthDependentVar(index);
-				currentValues[index]=cornholio->Compute()->Value();
+				currentValues[index]=GetIthIndependent(index);
 				if (currentValues[index]<lowerBounds[index] || currentValues[index]>upperBounds[index])
 					break;
 			}	
@@ -3049,9 +3072,8 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 		
 		for (index = 0; index<indexInd.lLength; index++)
 		{
-			cornholio 			= LocateVar(indexInd.lData[index]);
-			dependancies.Store (0,index,cornholio->GetLowerBound());
-			dependancies.Store (1,index,(cornholio->GetUpperBound()>10?10:cornholio->GetUpperBound())-dependancies(0,index));
+			dependancies.Store (0,index,GetIthIndependentBound (index,true));
+			dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,true))-dependancies(0,index));
 		}
 		
 		for (i=0; i<10000; i++)
@@ -3986,11 +4008,11 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	if (hardLimitOnOptimizationValue != INFINITY)
 		ReportWarning (_String("Set a hard time limit for optimization routines to ") & hardLimitOnOptimizationValue & " seconds\n");
 							  	
-	isInOptimize = true;
-	lockedLFID   = likeFuncList._SimpleList::Find ((long)this);
+	isInOptimize    = true;
+	lockedLFID      = likeFuncList._SimpleList::Find ((long)this);
 
-	RankVariables();
-	VerbosityLevel();
+	RankVariables   ();
+	VerbosityLevel  ();
 	
 	#if defined __UNIX__ && ! defined __HEADLESS__
 		#ifdef __HYPHYMPI__
@@ -4362,9 +4384,12 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 		checkParameter (bracketingPersistence,bP,2.5);
 	else
 		checkParameter (bracketingPersistence,bP,3);
+    
 	if (optMethod == 4 || optMethod == 6 || optMethod == 7) // gradient descent
 	{
 		_Matrix bestSoFar;
+        
+        SetupParameterMapping   ();
 		GetAllIndependent (bestSoFar);
 		
 		if (fnDim<21)
@@ -5141,6 +5166,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 {
 	
 	categID = 0;
+    CleanupParameterMapping ();
 	//printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrixExpCount);
 #ifdef __HYPHYMPI__
 	if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone)
@@ -5300,8 +5326,8 @@ long 	_LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& mi
 			   first	  = true;
 	
 	
-	_Parameter lowerBound = curVar?curVar->GetLowerBound():0., 
-			   upperBound = curVar?curVar->GetUpperBound():0., 
+	_Parameter lowerBound = curVar?GetIthIndependentBound(index,true):0., 
+			   upperBound = curVar?GetIthIndependentBound(index,false):0., 
 			   practicalUB,
 			   magR = 2.,//1.61803,
 			   //r,q,u,d,
@@ -5587,7 +5613,6 @@ void	_LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix*
 {
 	for (long index = 0; index<indexInd.lLength; index++)
 	{
-		_Variable*  curVar = LocateVar (indexInd.lData[index]);
 		
 		_Parameter  Bound,
 					currentValue,
@@ -5595,14 +5620,14 @@ void	_LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix*
 		
 		if (fabs(locValue)<1e-14)
 		{
-			Bound = curVar->GetUpperBound();
+			Bound = GetIthIndependentBound(index,false);
 			locValue = 0.0;
 		}
 		else
 			if (locValue<0)
-				Bound = curVar->GetLowerBound();
+				Bound = GetIthIndependentBound(index,true);
 			else
-				Bound = curVar->GetUpperBound();
+				Bound = GetIthIndependentBound(index,false);
 				
 		
 		if (selection) 
@@ -6091,10 +6116,9 @@ void	_LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter& le
 		_Parameter directionalStep = gradient.theData[i];
 		if (directionalStep)
 		{
-			_Variable  *cv			= GetIthIndependentVar (i);
-			_Parameter currentValue = cv->Compute()->Value(),
-			ub						= cv->GetUpperBound    ()-currentValue,
-			lb						= currentValue-cv->GetLowerBound();
+			_Parameter currentValue = GetIthIndependent (i),
+			ub						= GetIthIndependentBound (i,false)-currentValue,
+			lb						= currentValue-GetIthIndependentBound (i,true);
 			
 			//if (ub < 1e-10 || lb < 1e-10)
 			//	printf ("[HIT BOUNDARY AT %s; %g, %g]\n", cv->GetName()->sData, lb, ub);
@@ -6226,9 +6250,13 @@ bool	_LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar, _
 	for (long index = 0; index<indexInd.lLength; index++)
 	{
 		
-		_Variable*  curVar = LocateVar (indexInd (index));
-		_Parameter lowerBound = curVar->GetLowerBound(),tryStep = step, funcValue, 
-				   upperBound = curVar->GetUpperBound(), practicalUB = upperBound>1000?1000:upperBound, val = GetIthIndependent(index);
+		_Parameter lowerBound       = GetIthIndependentBound(index, true),
+                   tryStep          = step, 
+                   funcValue, 
+				   upperBound       = GetIthIndependentBound(index, false), 
+                   practicalUB      = upperBound>1000?1000:upperBound, 
+                   val              = GetIthIndependent     (index);
+        
 		// try moving backwards
 		while (val-tryStep<lowerBound+1e-8)
 		{
@@ -6403,15 +6431,27 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 void	_LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& bestVal)
 {
 
-	_Parameter  currentPrecision = 0.1, gradientStep=STD_GRAD_STEP, temp, tryStep, maxSoFar = Compute(), bestTry;
-	_SimpleList	leastChange, freeze, countLC;
-	_Matrix unit (bestVal), gradient (bestVal);
-	long	vl = verbosityLevel, index;
+	_Parameter      currentPrecision = 0.1, 
+                    gradientStep     = STD_GRAD_STEP, 
+                    temp, 
+                    tryStep, 
+                    maxSoFar = Compute(), 
+                    bestTry;
+    
+	_SimpleList     leastChange, 
+                    freeze, 
+                    countLC;
+    
+	_Matrix         unit     (bestVal), 
+                    gradient (bestVal);
+    
+	long            vl = verbosityLevel, 
+                    index;
 	
 	for (index=0; index<unit.GetHDim(); index++)
 		unit[index]=1;
 		
-	while ((currentPrecision>=gPrecision)&&(freeze.lLength<indexInd.lLength))
+	while (currentPrecision>=gPrecision && freeze.lLength<indexInd.lLength)
 	{
 			
 		gradientStep = STD_GRAD_STEP;
@@ -6432,20 +6472,21 @@ void	_LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& best
 				for (index=0;index<indexInd.lLength;index++)
 				{
 					if (freeze.Find(index)>=0) continue;
-					_Variable* thisV = LocateVar(indexInd.lData[index]);
-					if ((GetIthIndependent(index)-thisV->GetLowerBound()<1.0e-20)
+
+					if ((GetIthIndependent(index)-GetIthIndependentBound(index,true)<1.0e-20)
 						&& (gradient(0,index)<0.0))
 					{
 						freeze<<index;
 						break;
 					}
-					if ((-GetIthIndependent(index)+thisV->GetUpperBound()<1.0e-20)
+					if ((-GetIthIndependent(index)+GetIthIndependentBound(index,false)<1.0e-20)
 						&& (gradient(0,index)>0.0))
 					{
 						freeze<<index;
 						break;
 					}
 				}
+                
 				tryStep = currentPrecision;
 				if (freeze.lLength==wereFrozen)
 					return;
@@ -6456,6 +6497,7 @@ void	_LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& best
 				SetIthIndependent(index,bestVal(0,index)+tryStep*gradient(index,0));
 			}
 			temp = Compute();
+            
 			if (temp>maxSoFar)
 			{
 				if (vl>=5)
@@ -7864,6 +7906,7 @@ void	_LikelihoodFunction::UpdateDependent (long index)
 
 void	_LikelihoodFunction::Cleanup (void)
 {
+    DeleteObject (parameterValuesAndRanges);
 	DeleteCaches();
 }
 	
