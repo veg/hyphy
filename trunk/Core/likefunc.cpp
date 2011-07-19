@@ -2913,11 +2913,11 @@ void 	_LikelihoodFunction::CheckDependentBounds (void)
 	for (index = 0; index<indexDep.lLength && !ohWell;index++) 
 	// check whether any of the dependent variables are out of bounds
 	{
-		cornholio 						= 	GetIthIndependentVar(index);
+		cornholio 						= 	GetIthDependentVar(index);
 		
-		currentValues.theData[index]	=	GetIthIndependent(index);
-		lowerBounds.theData[index]		=	GetIthIndependentBound(index,true);
-		upperBounds.theData[index]		=	GetIthIndependentBound(index,false);
+		currentValues.theData[index]	=	cornholio->Compute()->Value();
+		lowerBounds.theData[index]		=	cornholio->GetLowerBound();
+		upperBounds.theData[index]		=	cornholio->GetUpperBound();
 		
 		bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
 		if (badApple)	
