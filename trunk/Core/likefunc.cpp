@@ -6178,10 +6178,10 @@ void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Pa
 				gradient[index]=0.;
 			else
 			{
-				_Variable  *cv			= GetIthIndependentVar (index);
+				//_Variable  *cv			= GetIthIndependentVar (index);
 				_Parameter currentValue = GetIthIndependent(index),
-							ub			= cv->GetUpperBound()-currentValue,
-							lb			= currentValue-cv->GetLowerBound(),
+							ub			= GetIthIndependentBound(index,false)-currentValue,
+							lb			= currentValue-GetIthIndependentBound(index,true),
 						    testStep    = MAX(currentValue * gradientStep,gradientStep);
 				
 				if (testStep >= ub)
