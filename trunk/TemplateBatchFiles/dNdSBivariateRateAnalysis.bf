@@ -448,9 +448,40 @@ if (runType == 0)
 		resToPath = LAST_FILE_PATH;	
 	}
 	
-	ExecuteAFile		  ("TemplateModels/MGFreqsEstimator.ibf");
-	BuildCodonFrequencies (paramFreqs, "vectorOfFrequencies");
-	
+    if (doCFFreqs == 1)
+    {
+
+        function BuildCodonFrequencies (obsF)
+        {
+            PIStop = 1.0;
+            result = {ModelMatrixDimension,1};
+            hshift = 0;
+
+            for (h=0; h<64; h=h+1)
+            {
+                first = h$16;
+                second = h%16$4;
+                third = h%4;
+                if (_Genetic_Code[h]==10) 
+                {
+                    hshift = hshift+1;
+                    PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+                    continue; 
+                }
+                result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+            }
+            return result*(1.0/PIStop);
+        }
+        paramFreqs          = observedFreq;
+        vectorOfFrequencies = BuildCodonFrequencies(paramFreqs);
+       
+ 	}
+    else
+    {
+        ExecuteAFile		  ("TemplateModels/MGFreqsEstimator.ibf");
+        BuildCodonFrequencies (paramFreqs, "vectorOfFrequencies");
+    }
+    
 	ExecuteCommands (nucModelString+"\nModel nucModel = (nucModelMatrix,observedFreqSingle);");
 	
 	if (randomizeInitValues == 2)
@@ -474,14 +505,12 @@ if (runType == 0)
 		nlfDef * ("nucFilter_"+fileID+",nucTree_"+fileID);
 	}
 	nlfDef * 0;
-	ExecuteCommands (nlfDef + ");");
+    
+ 	ExecuteCommands (nlfDef + ");");
 	Optimize (nuc_res, nuc_lf);
-
-	computeExpSubWeights (0);
-	if (branchLengths)
-	{
-		ExecuteCommands("global codonFactor = 0.33;");
-	}
+    
+    GetString (nucExpStr, nucModel, -1);
+    
 
 	lfParts	= "";
 	lfParts * 128;
@@ -496,6 +525,25 @@ if (runType == 0)
 			{
 				ExecuteCommands ("PopulateModelMatrix(\"rate_matrix_"+part+"\",paramFreqs,\"S_"+part+"/c_scale\",\"NS_"+part+"/c_scale\",aaRateMultipliers);");
 				ExecuteCommands ("Model MG94MODEL_"+part+"= (rate_matrix_"+part+",vectorOfFrequencies,0);");
+                if (part == 0)
+                {
+                    GetString (codonExpStr, MG94MODEL_0, -1);
+                    synRate = 1;
+                    t = 1;
+                    saveS           = S_0;
+                    S_0             = 1;
+                    saveNS          = NS_0;
+                    NS_0            = 0.25;
+                    GetString       (c_scale_constr,c_scale,-2);
+                    c_scale         = 1;
+                    nucL            = Eval (nucExpStr);
+                    codonL          = Eval (codonExpStr);
+                    NS_0            = saveNS;
+                    S_0             = saveS;
+                    ExecuteCommands ("c_scale:=" + c_scale_constr + ";");
+                    global          codonFactor     = nucL/codonL;
+                    
+                }                
                 for (_modelID = 1; _modelID <  bivariateFitHasMultipleCladeRates; _modelID += 1)
                 {
                     _cladeRate = "clade_" + _modelID + "_NS_" + part;
@@ -664,8 +712,13 @@ LogL = res[1][0];
 
 GetString (paramList, lf, -1);
 
-degF = Columns(paramList["Global Independent"]) /* this will overcount by one; because the mean alpha := 1 */
-	- branchLengths; /* remove one more for codon scaling factor, if nuc branch lengths are used */
+degF = Columns(paramList["Global Independent"]) - 1 /* this will overcount by one; because the mean alpha := 1 */
+              - branchLengths; /* remove one more for codon scaling factor, if nuc branch lengths are used */
+    
+if (doCFFreqs == 1)
+{
+    degF += 9;
+}
 
 for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 {
