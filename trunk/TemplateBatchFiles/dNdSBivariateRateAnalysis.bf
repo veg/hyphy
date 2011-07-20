@@ -1,8 +1,8 @@
 RequireVersion ("2.0020100101");
 
 ChoiceList (runType,"Run Type",1,SKIP_NONE,
-			"New run","Start a new run",
-			"Continued run","Start with an initial point output by a Gateux derivative approximator."
+                    "New run","Start a new run",
+                    "Continued run","Start with an initial point output by a Gateux derivative approximator."
 		    );
 		    
 if (runType < 0)
@@ -64,7 +64,8 @@ totalCharCount  = 0;
 if (runType == 0)
 {
     LF_NEXUS_EXPORT_EXTRA = "bivariateFitHasMultipleCladeRates = " + bivariateFitHasMultipleCladeRates + ";";
-	ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
+	
+    ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
 				"Codon Model","Jointly optimize rate parameters and branch lengths (slow and thorough)",
 				"Nucleotide Model","Estimate branch lengths once, using an appropriate nucleotide model (quick and dirty)."
 			    );

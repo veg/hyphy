@@ -1220,7 +1220,6 @@ _Parameter mapParameterToInverval (_Parameter in, char type, bool inverse)
 
 void _LikelihoodFunction::SetupParameterMapping (void)
 {
-    return;
     parameterTransformationFunction.Clear();
     parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
     
