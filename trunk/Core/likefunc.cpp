@@ -4385,12 +4385,13 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	else
 		checkParameter (bracketingPersistence,bP,3);
     
+    SetupParameterMapping   ();
+
 	if (optMethod == 4 || optMethod == 6 || optMethod == 7) // gradient descent
 	{
 		_Matrix bestSoFar;
         
-        SetupParameterMapping   ();
-		GetAllIndependent (bestSoFar);
+ 		GetAllIndependent (bestSoFar);
 		
 		if (fnDim<21)
 			checkParameter (intermediatePrecision,intermediateP,.1);
