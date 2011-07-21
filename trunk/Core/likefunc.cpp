@@ -4263,6 +4263,8 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 
 	int optMethod = optMethodP;
 	
+    SetupParameterMapping   ();
+    
 	for (j=0; j<indexInd.lLength; j++)
 		variableValues[j]=GetIthIndependent(j);
 	
@@ -4385,9 +4387,7 @@ _Matrix*		_LikelihoodFunction::Optimize ()
 	else
 		checkParameter (bracketingPersistence,bP,3);
     
-    SetupParameterMapping   ();
-
-	if (optMethod == 4 || optMethod == 6 || optMethod == 7) // gradient descent
+ 	if (optMethod == 4 || optMethod == 6 || optMethod == 7) // gradient descent
 	{
 		_Matrix bestSoFar;
         
