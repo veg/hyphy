@@ -13,6 +13,14 @@ ExecuteAFile (HYPHY_BASE_DIRECTORY +
 
 _genCodeID = _geneticCodeOptionMatrix [modelType][0];
 
+
+ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
+            "Codon Model","Jointly optimize rate parameters and branch lengths (slow and thorough)",
+            "Nucleotide Model","Estimate branch lengths once, using an appropriate nucleotide model (quick and dirty)."
+            );
+
+assert (branchLengths >= 0);
+
 fprintf (stdout, "Model string:");
 fscanf  (stdin,  "String",mstring);
 
@@ -21,7 +29,14 @@ ExecuteAFile ("TemplateModels/MGwAA.ibf");
 currentLFSpool = _bivariateFilePath + ".fit.1";
 
 bivariateFitOptions ["00"] = "New run";
-bivariateFitOptions ["01"] = "Nucleotide Model";
+if (branchLengths == 1)
+{
+    bivariateFitOptions ["01"] = "Codon Model";
+}
+else
+{
+    bivariateFitOptions ["01"] = "Nucleotide Model";
+}
 bivariateFitOptions ["02"] = "1";
 bivariateFitOptions ["03"] = _genCodeID;
 bivariateFitOptions ["04"] = _bivariateFilePath;
