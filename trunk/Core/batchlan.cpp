@@ -2430,8 +2430,13 @@ BaseRef	  _ElementaryCommand::toStr 	 (void)
 				else
 					if (parameters.lLength>2)
 					{
-						result = result & " reading input from " & _String ((_String*)parameters(2)->toStr());
-						if (parameters.lLength > 3)
+                        _String inputName ((_String*)parameters(2)->toStr());
+						result = result & " reading input from " & inputName;
+                        _AssociativeList *inputValues = (_AssociativeList *)FetchObjectFromVariableByType(&inputName, ASSOCIATIVE_LIST);
+                        if (inputValues)
+                            result = result & '\n' & _String ((_String*)inputValues->toStr());
+ 
+                        						if (parameters.lLength > 3)
 							result = result & " using name space prefix " & _String ((_String*)parameters(3)->toStr());
 					}
 				break;
