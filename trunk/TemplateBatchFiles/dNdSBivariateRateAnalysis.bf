@@ -617,6 +617,9 @@ else
 	fileCount = Columns (lfInfo["Datafilters"])/resp;	
 	
 	GetInformation (branchLengths, "^codonFactor$");
+    
+    //fprintf (stdout, "\n\n",branchLengths,"\n\n");
+    
 	branchLengths = (Columns (branchLengths)>0);
 	
 	/* do we have codonFactor? */			

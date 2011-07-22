@@ -1216,6 +1216,7 @@ void	_LikelihoodFunction::SetIthIndependent (long index, _Parameter p)
         p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
         parameterValuesAndRanges->Store(index,0,p);
     }
+    //printf ("%10.10g\n", p);
     _Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
     v->SetValue (new _Constant (p), false);
 }
@@ -6182,7 +6183,7 @@ void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Pa
 				_Parameter currentValue = GetIthIndependent(index),
 							ub			= GetIthIndependentBound(index,false)-currentValue,
 							lb			= currentValue-GetIthIndependentBound(index,true),
-						    testStep    = MAX(currentValue * gradientStep,gradientStep);
+				  testStep    = MAX(currentValue * gradientStep,gradientStep);
 				
 				if (testStep >= ub)
 					if (testStep < lb)
@@ -6235,9 +6236,14 @@ void	_LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Pa
 	// normalize the gradient 
 	if (normalize)
 	{
-		funcValue = 0;
+		funcValue = 0.;
 		for (long index=0;index<indexInd.lLength;index++)
 			funcValue+=gradient.theData[index]*gradient.theData[index];
+		
+		//printf ("%10.10g\n",  funcValue);
+
+		if (CheckEqual (funcValue,0.0))
+		  return;
 		
 		funcValue = 1/sqrt(funcValue);
 		for (long index=0;index<indexInd.lLength;index++)
@@ -6345,6 +6351,7 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 	
 	gradL = gradient.AbsValue ();
 	
+
 	if (gradL != 0.0)
 	{
 	
@@ -6378,6 +6385,9 @@ void	_LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matri
 					break;
 			
 			ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
+			gradL =gradient.AbsValue ();
+			if (CheckEqual(gradL,0.0))
+			  break;
 			S	   = gradient;
 			//gradL  = S.AbsValue();
 			//S	  *= 1.;

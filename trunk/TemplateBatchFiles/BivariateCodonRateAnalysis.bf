@@ -29,7 +29,7 @@ ExecuteAFile ("TemplateModels/MGwAA.ibf");
 currentLFSpool = _bivariateFilePath + ".fit.1";
 
 bivariateFitOptions ["00"] = "New run";
-if (branchLengths == 1)
+if (branchLengths == 0)
 {
     bivariateFitOptions ["01"] = "Codon Model";
 }
