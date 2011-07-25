@@ -9380,10 +9380,8 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		rec << "Tree ";
 		rec << LocateVar(redirectorT->lData[idx])->GetName();
 		rec << '=';
-		cStr = (_String*)((_TheTree*)LocateVar(redirectorT->lData[idx]))->toStr();
-		rec << *cStr;
+		rec.AppendNewInstance((_String*)((_TheTree*)LocateVar(redirectorT->lData[idx]))->toStr());
 		rec << '\n';
-		DeleteObject (cStr);
 	}
     }
 	setParameter (includeModelSpecs,stashIM);
@@ -9490,15 +9488,10 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		_Parameter pv;
 		checkParameter (optimizationPrecision, pv ,0.001);
 		rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String (pv));
-		/*rec << optimizationMethod;
-		checkParameter (optimizationMethod, pv ,7);
-		rec << '=';
-		rec << _String(pv);
-		rec << ";\n";
-		rec << useInitialDistanceGuess;
-		checkParameter (useInitialDistanceGuess, pv ,1);
-		rec << '=';
-		rec << _String(pv);*/
+		checkParameter (optimizationMethod, pv ,4.);
+		rec.AppendAnAssignmentToBuffer(&optimizationMethod, new _String (pv));
+		checkParameter (useInitialDistanceGuess, pv ,1.);
+		rec.AppendAnAssignmentToBuffer(&useInitialDistanceGuess, new _String (pv));
 		rec << ";\nOptimize(";
 		rec << lfName;
 		rec << "_MLES,";
