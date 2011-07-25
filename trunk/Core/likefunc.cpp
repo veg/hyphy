@@ -9454,6 +9454,11 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		}
 	}
 	
+    // write out the global variable for enforcing reversible models
+    
+    checkParameter (assumeReversible, stashIM, 0.0);
+    rec.AppendAnAssignmentToBuffer (&assumeReversible, new _String(stashIM));
+    
 	rec << "LikelihoodFunction ";
 	rec << *lfName;
 	rec << " = (";
