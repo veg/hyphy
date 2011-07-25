@@ -9492,6 +9492,8 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 		rec.AppendAnAssignmentToBuffer(&optimizationMethod, new _String (pv));
 		checkParameter (useInitialDistanceGuess, pv ,1.);
 		rec.AppendAnAssignmentToBuffer(&useInitialDistanceGuess, new _String (pv));
+		checkParameter (useLastResults, pv ,0.);
+		rec.AppendAnAssignmentToBuffer(&useLastResults, new _String (pv));
 		rec << ";\nOptimize(";
 		rec << lfName;
 		rec << "_MLES,";
