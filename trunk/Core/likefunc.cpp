@@ -1932,7 +1932,7 @@ _Parameter	_LikelihoodFunction::Compute 		(void)
 	}
 	
 #ifdef __HYPHYMPI__
-	if (hyphyMPIOptimizerMode ==  _hyphyLFMPIModePartitions && 	_hy_mpi_node_rank == 0)
+	if ((hyphyMPIOptimizerMode ==  _hyphyLFMPIModePartitions || hyphyMPIOptimizerMode ==  _hyphyLFMPIModeAuto) && 	_hy_mpi_node_rank == 0)
 		computeMode = 4;		
 #endif
 	
