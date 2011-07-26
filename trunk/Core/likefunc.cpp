@@ -3689,6 +3689,8 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 					_SimpleList * dupMap 	= &aDSF->duplicateMap,
 								* orOrder	= &aDSF->theOriginalOrder;
 
+                    totalNodeCount	   = slaveNodes + 1;
+
 					if (overFlow)
 						overFlow = slaveNodes/overFlow;
 	
@@ -3756,7 +3758,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 													 
 													 
 					MPISwitchNodesToMPIMode (slaveNodes);
-					for (long i = 1; i<=slaveNodes; i++)
+					for (long i = 1; i<totalNodeCount; i++)
 					{
 						toPart = perNode;
 						if (overFlow && i%overFlow == 0)
@@ -3780,7 +3782,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 				}
 				
 	
-				for (long i = 1; i<parallelOptimizerTasks.lLength; i++)
+				for (long i = 1; i<=parallelOptimizerTasks.lLength; i++)
 				{						
 					_String 		*mapString  	= 	MPIRecvString (-1,senderID);
 					_List 			*varNames		= 	mapString->Tokenize (";");
