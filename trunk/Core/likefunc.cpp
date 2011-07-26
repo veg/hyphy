@@ -3697,7 +3697,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 													 & overFlow & "-th node)");
 
 					MPISwitchNodesToMPIMode (slaveNodes);
-					for (long i = 1; i<totalNodeCount; i++)
+					for (long i = 1; i<=slaveNodes; i++)
 					{
 						toPart = sitesPerNode;
 						if (overFlow && i%overFlow == 0) 
