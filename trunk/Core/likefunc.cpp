@@ -207,7 +207,8 @@ _String
 	assumeReversible				("ASSUME_REVERSIBLE_MODELS"),
 	categoryMatrixScalers			(".site_scalers"),
 	categoryLogMultiplier			(".log_scale_multiplier"),
-	optimizationHardLimit			("OPTIMIZATION_TIME_HARD_LIMIT");
+	optimizationHardLimit			("OPTIMIZATION_TIME_HARD_LIMIT"),
+    minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE");
 	
 	
 
@@ -3674,10 +3675,17 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 					_SimpleList    * optimalOrder = (_SimpleList*)(optimalOrders (0));
 					_DataSetFilter * aDSF 	      = (_DataSetFilter*)dataSetFilterList(theDataFilters.lData[0]);
 
+                    _Parameter    minPatternsPerNode = 0.;
+                    checkParameter (minimumSitesForAutoParallelize, minPatternsPerNode, 50.);
+                    
+                    // adjust slaveNodes as needed
+                    slaveNodes = MAX(slaveNodes, round(optimalOrder->lLength/minPatternsPerNode));
+
 					long 		  sitesPerNode	=  optimalOrder->lLength / slaveNodes,
 								  overFlow 		=  optimalOrder->lLength % slaveNodes,
 								  unitLength	=  aDSF->GetUnitLength();
-
+                                  
+                     
 					_SimpleList * dupMap 	= &aDSF->duplicateMap,
 								* orOrder	= &aDSF->theOriginalOrder;
 
