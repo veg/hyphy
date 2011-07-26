@@ -3780,7 +3780,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
 				}
 				
 	
-				for (long i = 1; i<totalNodeCount; i++)
+				for (long i = 1; i<parallelOptimizerTasks.lLength; i++)
 				{						
 					_String 		*mapString  	= 	MPIRecvString (-1,senderID);
 					_List 			*varNames		= 	mapString->Tokenize (";");
