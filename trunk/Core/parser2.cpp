@@ -4840,14 +4840,14 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 		}
 		if ( BinOps.Find (s.getChar(i))!=-1 || twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1) )
 		{
-			if (BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1)
+			if (!twoToken && BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1)
 			{
 				twoToken = true;
 				continue;
 			}
 					
 			
-			if (UnOps.contains(s.getChar(i)) && !twoToken)
+			/*if (UnOps.contains(s.getChar(i)) && !twoToken)
 			{
 				char cim1 = s.getChar(i-1);
 				
@@ -4857,7 +4857,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 					levelOps->AppendNewInstance(new _Operation (curOp,1));
 					continue;
 				}
-			}
+			}*/
 		
 			if (twoToken||(BinOps.Find(s.getChar(i)*256+s.getChar(i+1))!=-1))
 			{
@@ -4867,43 +4867,51 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 			else
 				curOp = s.getChar(i);
 				
-			twoToken = false;
+            long twoOrOne = 2;
 			
 			if (storage)
 				s.setChar(i,storage);
 				
-			if ((levelData->countitems()==0)&&(s[i-curOp.sLength]!=')')&&(storage!=')')&&(s[i-curOp.sLength]!=']'))
+			if (levelData->countitems()==0)
 			{
-				if (flagErrors) WarnError (_String("Bad Binary Operator Placement:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
-				return HY_FORMULA_FAILED;
+                if (s[i-curOp.sLength]!=')' && storage!=')' && s[i-curOp.sLength] !=']')
+                {
+                    if (!twoToken && UnOps.contains(s.getChar(i)))
+                        twoOrOne = 1;
+                    else
+                    {
+                        if (flagErrors) WarnError (_String("Bad Binary Operator Placement:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
+                        return HY_FORMULA_FAILED;
+                    }
+                }
 			}
-			else
-			{
-				if (levelData->countitems())
-				{
-					int k;
-					if (storage)
-					{
-						BaseRef newS = (*levelData)(levelData->countitems()-1)->makeDynamic();
-						for (k = 0;k<levelData->countitems()-1; k++)
-							f->theFormula&&((*levelData)(k));
+            
+			twoToken = false;
+            
+            if (levelData->countitems())
+            {
+                int k;
+                if (storage)
+                {
+                    BaseRef newS = (*levelData)(levelData->countitems()-1)->makeDynamic();
+                    for (k = 0;k<levelData->countitems()-1; k++)
+                        f->theFormula&&((*levelData)(k));
 
-						levelData->Clear();
-						levelData->AppendNewInstance (newS);
-					}
-					else
-					{
-						for (k = 0;k<levelData->countitems(); k++)
-							f->theFormula&&((*levelData)(k));
+                    levelData->Clear();
+                    levelData->AppendNewInstance (newS);
+                }
+                else
+                {
+                    for (k = 0;k<levelData->countitems(); k++)
+                        f->theFormula&&((*levelData)(k));
 
-						levelData->Clear();
-					}
-				}
-			}	
+                    levelData->Clear();
+                }
+            }
 			
 			if (!levelOps->countitems())
 			{
-				levelOps->AppendNewInstance (new _Operation (curOp,2));
+				levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
 				if (terminateExecution)
 					return HY_FORMULA_FAILED;
 				continue;
@@ -4926,7 +4934,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 			
 			if (g>h && h!=-1) // store the op, don't do it yet!
 			{
-				levelOps->AppendNewInstance (new _Operation (curOp,2));
+				levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
 				if (terminateExecution)
 					return HY_FORMULA_FAILED;
 				continue;
@@ -4947,7 +4955,7 @@ long		Parse (_Formula* f, _String& s, long& variableReference, _VariableContaine
 				f->theFormula&&((*levelOps)(j));
 				levelOps->Delete((*levelOps).lLength-1);
 			}
-			levelOps->AppendNewInstance (new _Operation (curOp,2));
+			levelOps->AppendNewInstance (new _Operation (curOp,twoOrOne));
 			if (terminateExecution)
 				return HY_FORMULA_FAILED;
 			continue;

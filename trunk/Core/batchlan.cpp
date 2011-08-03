@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ctype.h"
 #include "polynoml.h"
 #include "time.h"
-#include "scfg.h"
+#include <scfg.h>
 #include "HYNetInterface.h"
 
 #if defined __AFYP_REWRITE_BGM__ 
@@ -2775,6 +2775,8 @@ void	  _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
 			
 			if (status== HY_FORMULA_EXPRESSION)
 				simpleParameters<<long(f.makeDynamic());
+            else
+                return; 
 		}
 			
 		if (chain.cli)
@@ -2895,9 +2897,22 @@ void	  _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
 			fclose (df);
 		}	
 	}
-	_String  * dsID = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
-	StoreADataSet (ds, dsID);
-	DeleteObject  (dsID);
+	
+	
+    // 20110802: need to check that this data set is not empty
+    
+    if (ds->NoOfSpecies() && ds->NoOfColumns())
+    {
+        _String  * dsID = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
+        StoreADataSet (ds, dsID);
+        DeleteObject  (dsID);
+    }
+    else
+    {
+        DeleteObject (ds);
+        WarnError    ("The format of the sequence file has not been recognized and may be invalid"); 
+    }
+
 	//StoreADataSet (ds, (_String*)parameters(0));
 }
 
@@ -7811,7 +7826,7 @@ _String	  _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
 						   && input.getChar(index-5) == 'e'
 						   && input.getChar(index-6) == 'r')
 			{
-					if (index == 6 || index > 6 && !(isalnum(input.getChar(index-7)) || input.getChar(index-7) == '_'))
+					if (index == 6 || (index > 6 && !(isalnum(input.getChar(index-7)) || input.getChar(index-7) == '_')))
 						result<<' ';
 			}
 					
