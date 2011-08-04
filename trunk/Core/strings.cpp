@@ -950,9 +950,11 @@ void _String::buildKmpTable(_String s) {
     this->kmpTable[0] = -1;
     this->kmpTable[1] =  0;
 
+    char *ssP = s.sData;  //Start of Needle substring
+
     while (pos < s.sLength)     
     {
-        if(s[pos-1] == s[cnd]) 
+        if(ssP[pos-1] == ssP[cnd]) 
         {
             ++cnd;
             this->kmpTable[pos] = cnd;
