@@ -892,6 +892,87 @@ long _String::Find(_String s, long from, long to)
 	return -1;
 }
 
+
+long _String::FindKMP(_String s, long from, long to)
+// -1, indicates that search term has not been found
+{
+    //Reproduced from http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
+
+    if (!sLength) return -1;
+    if (from == -1) from = 0;
+    if (to == -1) to = ((long)sLength)-1;
+    if (to<from) return -1;
+    if (to-from+1<s.sLength) return -1;
+
+	char *sP = sData+from; //Start of Haystack substring
+    char *ssP = s.sData;  //Start of Needle substring
+    int m = 0; //beginning of the current match in haystack 
+    int i = 0; //the position of the current character in needle 
+
+    while(m+i < (to-m+i+1))
+    {
+        if(ssP[i] == sP[m+i])
+        {
+            if (i == (s.sLength-1)) 
+            {
+                return m;
+            }
+            ++i;
+        }
+
+        else
+        {
+            m = m + i - this->kmpTable[i];
+            if(this->kmpTable[i] > -1) 
+            {
+                i = this->kmpTable[i];
+            }
+            else
+            {
+                i = 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
+
+//_______________________________________________________________________
+// Construct a KMP table 
+void _String::buildKmpTable(_String s) {
+    //Reproduced from http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
+    int pos = 2;
+    int cnd = 0;
+
+    this->kmpTable = new int[sizeof(int) * sLength];
+
+    this->kmpTable[0] = -1;
+    this->kmpTable[1] =  0;
+
+    while (pos < s.sLength)     
+    {
+        if(s[pos-1] == s[cnd]) 
+        {
+            ++cnd;
+            this->kmpTable[pos] = cnd;
+            ++pos;
+        }
+
+        else if(cnd > 0)
+        {
+           cnd = this->kmpTable[cnd];
+        }
+
+        else 
+        {
+            this->kmpTable[pos] = 0;
+            ++pos;
+        }
+    }
+}
+
+
 //_______________________________________________________________________
 // find first occurence of the string between from and to 
 // case insensitive
@@ -1734,7 +1815,6 @@ void	_String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 _String	_String::PathComposition (_String relPath) 
 // compose two UNIX paths (abs+rel)
 {
-
 	if (relPath.sData[0]!='/') // relative path
 	{
 		long f = -1, k = 0;
@@ -1746,13 +1826,16 @@ _String	_String::PathComposition (_String relPath)
 			if (f==-1) return empty;
 			k++;
 		}
+
 		if (k==0) 
 		{
 			result = result&relPath;
 		}
+
 		else
 			*this = result&relPath.Cut(k*3,-1);
 	}
+
 	else 
 	{
 		return relPath;
@@ -1941,8 +2024,7 @@ _String		GetTimeStamp (bool doGMT)
 }
 
 //_______________________________________________________________________
-
-void		_String::RegExpMatchOnce (_String* pattern, _SimpleList& matchedPairs, bool caseSensitive, bool handleErrors)
+void	_String::RegExpMatchOnce (_String* pattern, _SimpleList& matchedPairs, bool caseSensitive, bool handleErrors)
 {
 	if (sLength)
 	{
@@ -1961,7 +2043,7 @@ void		_String::RegExpMatchOnce (_String* pattern, _SimpleList& matchedPairs, boo
 
 //_______________________________________________________________________
 
-void		_String::RegExpMatch (Ptr pattern, _SimpleList& matchedPairs)
+void	_String::RegExpMatch (Ptr pattern, _SimpleList& matchedPairs)
 {
 	if (sLength)
 	{
@@ -2149,6 +2231,7 @@ long		_String::ExtractEnclosedExpression (long& from, char open, char close, boo
 	while (currentPosition < sLength)
 	{
 		char thisChar = sData[currentPosition];
+
 		if (!doEscape)
 		{
 			if (thisChar == '"' && respectQuote && !doEscape)
@@ -2176,6 +2259,7 @@ long		_String::ExtractEnclosedExpression (long& from, char open, char close, boo
 						if (thisChar == '\\' && respectEscape && isQuote && !doEscape)
 							doEscape = true;
 		}
+
 		else
 			doEscape = false;
 		

@@ -36,6 +36,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 class _String:public BaseObj {
 	
 			// contructor/destructor methods
+            private:
+                int* kmpTable;
 			public:
 			
 			_String (void); 
@@ -157,6 +159,12 @@ virtual		operator const char* (void);
 
  			long    Find(_String s, long from = 0, long to = -1);
  				// find first occurence of the string between from and to
+
+            long    FindKMP(_String s, long from = 0, long to = -1);
+                 //find first occurence of the string between from and to
+
+            void    buildKmpTable(_String s);
+                 //find first occurence of the string between from and to
  				
  			long    Find(char s, long from = 0, long to = -1);
  				// find first occurence of the string between from and to
