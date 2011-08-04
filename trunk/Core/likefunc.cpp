@@ -3679,7 +3679,7 @@ void	_LikelihoodFunction::InitMPIOptimizer (void)
                     checkParameter (minimumSitesForAutoParallelize, minPatternsPerNode, 50.);
                     
                     // adjust slaveNodes as needed
-                    slaveNodes = MIN(slaveNodes, (long)0.5 + (optimalOrder->lLength/minPatternsPerNode));
+                    slaveNodes = MIN(slaveNodes, ceil(optimalOrder->lLength/minPatternsPerNode)));
 
 					long 		  sitesPerNode	=  optimalOrder->lLength / slaveNodes,
 								  overFlow 		=  optimalOrder->lLength % slaveNodes,
