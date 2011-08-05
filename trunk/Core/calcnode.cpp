@@ -6100,6 +6100,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 
 			res << &childDash;
 			res << &childColor;
+			res << &linewidth1;
+			res << &linecap1;
 			
 			if (layout == 1)
 			{
@@ -6125,8 +6127,6 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				
 			}
 			
-			res << &linewidth1;
-			res << &linecap1;
 			res << "newpath\n";
 			if (layout == 1)
 			{
@@ -6249,8 +6249,33 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 		
 		if (layout == 0 && doVLines)
 		{
-			res << "newpath\n";
-			if (doVLines == 3)
+            _String linewidth1, 
+                    linewidth2, 
+                    linecap1, 
+                    linecap2;
+            
+            if (nodeOptions)
+            {
+                _PMathObj keyVal = nodeOptions->GetByKey (treeOutputThickness,NUMBER);
+                if (keyVal)
+                {
+                    _Parameter lineWP = keyVal->Compute()->Value();
+                    linewidth1 = _String("currentlinewidth ") & lineWP & " setlinewidth\n";
+                    linewidth2 = "setlinewidth\n";
+                }
+                keyVal = nodeOptions->GetByKey (treeOutputLinecap,NUMBER);
+                if (keyVal)
+                {
+                    linecap1 = _String("currentlinecap ") & (long)keyVal->Compute()->Value() & " setlinecap\n";
+                    linecap2 = "setlinecap\n";
+                }
+            }
+            
+            res << &linecap1;
+            res << &linewidth1;
+            res << "newpath\n";
+
+            if (doVLines == 3)
 				t = _String(hc) & ' ' & _String (hc2) & " moveto\n";
 			else
 				t = _String(hc) & ' ' & _String (0.5*(hc1+hc2)) & " moveto\n";
@@ -6261,6 +6286,8 @@ void	_TheTree::TreePSRecurse (node<nodeCoord>* currNode, _String&res, _Parameter
 				t = _String(hc) & ' ' & _String (doVLines==1?hc1:hc2) & " lineto\n";				
 			res<<&t;	
 			res << "stroke\n";			
+            res << &linewidth2;
+            res << &linecap2;
 		}
 		
 		if (layout == 0)

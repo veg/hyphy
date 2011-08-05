@@ -367,6 +367,13 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	}
 
 	/********************************************/
+
+	function _mapSNSBySite (_ancID, _siteID, _scaled)
+	{
+		return _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, 2);
+	}
+
+	/********************************************/
 	
 	function _mapSubstitutionsBySiteAux (_ancID, _siteID, _scaled, mode)
 	{
@@ -388,6 +395,12 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 					_bacStateLabel = "";
 					
 					
+					_bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"];
+					TREE_OUTPUT_OPTIONS [_bac_bn] = {};
+                    if (mode == 2)
+                    {
+                        (TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_THICKNESS"] = 1;
+                    }
 					if (_myState >= 0)
 					{
 						if (mode == 0)
@@ -400,14 +413,13 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 						else
 						{
 							_bacStateLabel = _bacSiteC[_myState];
+							
 						}
 					}
 					
-					_bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"];
 					
 					if (Abs(_bacStateLabel))
 					{
-						TREE_OUTPUT_OPTIONS [_bac_bn] = {};
 						if (mode == 0)
 						{
 							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_OVER_BRANCH"] = "gsave 0.7 0.7 scale ("+_bacStateLabel+") drawletter grestore\n";
@@ -416,11 +428,47 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 						}
 						else
 						{
-							(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_TLABEL"] = _bacStateLabel;						
+							if (mode == 1)
+							{
+								(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_TLABEL"] = _bacStateLabel;	
+							}
+							else
+							{
+								if (mode == 2)
+								{
+									haveS 	= _OBSERVED_S_		[_pState][_myState];
+									haveNS	= _OBSERVED_NS_	[_pState][_myState];
+									if (haveNS >= 1)
+									{
+										if (haveS >= 1)
+										{
+											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0.7,0}};
+										}
+										else
+										{
+											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{1,0,0}};										
+										}
+									}
+									else
+									{
+										if (haveS >= 1)
+										{
+											(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_COLOR"] = {{0,0,1}};																				
+										}
+									}
+									
+									(TREE_OUTPUT_OPTIONS[_bac_bn]) ["TREE_OUTPUT_BRANCH_THICKNESS"] = 1 + haveS + haveNS;
+								}
+							}
 						}
 					}
 				}
 				
+                if (mode == 2)
+                {
+                    (TREE_OUTPUT_OPTIONS[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]]) = {"TREE_OUTPUT_BRANCH_THICKNESS" : 1};
+                }
+
 				_bacTreeString 	  = PostOrderAVL2StringDL ((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled);
 				Tree _bacTempTree = _bacTreeString;
 				_bac_bn = "";

@@ -40,7 +40,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * (" "+treeNameID+"_"+nodeNameS+"_T = 1;global "+treeNameID+"_"+nodeNameS+"_T:>(-10000); "+treeNameID+"_"+nodeNameS+"_BL = 0.0001; "+treeNameID+"_"+nodeNameS+"_BL :> 0;\n");
+			DT_String * ("global "+treeNameID+"_"+nodeNameS+"_T = 1; "+treeNameID+"_"+nodeNameS+"_T:>(-10000); "+treeNameID+"_"+nodeNameS+"_BL = 0.0001; "+treeNameID+"_"+nodeNameS+"_BL :> 0;\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -392,6 +392,9 @@ MAXIMUM_ITERATIONS_PER_VARIABLE = 100000;
 LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
+
+VERBOSITY_LEVEL = 10;
+
 Optimize (res1,lfConstrained);
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);
 lnLikDiff = 2(fullModelLik-res1[1][0]);
