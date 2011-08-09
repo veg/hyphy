@@ -231,7 +231,7 @@ if (runType == 0)
 	
 	lfDef	  = {};
 	
-	for (fileID = 0; fileID < fileCount; fileID = fileID + 1)
+	for (fileID = 0; fileID < fileCount; fileID += 1)
 	{
 		lfDef[fileID] = "";
 		lfDef[fileID] * 1024;
@@ -243,7 +243,7 @@ if (runType == 0)
 	S_0:>0.0000001;
 	global		NS_0 = 0.1;
  
-	for (mi=1; mi<resp; mi=mi+1)
+	for (mi=1; mi<resp; mi += 1)
 	{
 		categDef1 * ("global S_"+mi+"=0.5;S_"+mi+":>0.0000001;\nglobal NS_"+mi+";\n");
 		if (randomizeInitValues)
@@ -306,7 +306,7 @@ if (runType == 0)
 
 	categDef1 * ";";
 
-	for (mi=0; mi<resp; mi=mi+1)
+	for (mi=0; mi<resp; mi+=1)
 	{
 		categDef1 * ("\nglobal R_"+mi+"=1;NS_"+mi+":=R_"+mi+"*S_"+mi+";\n");
 	}
@@ -531,8 +531,8 @@ if (runType == 0)
                     GetString (codonExpStr, MG94MODEL_0, -1);
                     synRate = 1;
                     t = 1;
-                    saveS           = S_0;
-                    S_0             = 1;
+                    //saveS           = S_0;
+                    //S_0             = 1;
                     saveNS          = NS_0;
                     NS_0            = 0.25;
                     GetString       (c_scale_constr,c_scale,-2);
@@ -540,7 +540,7 @@ if (runType == 0)
                     nucL            = Eval (nucExpStr);
                     codonL          = Eval (codonExpStr);
                     NS_0            = saveNS;
-                    S_0             = saveS;
+                    //S_0             = saveS;
                     ExecuteCommands ("c_scale:=" + c_scale_constr + ";");
                     global          codonFactor     = nucL/codonL;
                     
@@ -618,7 +618,7 @@ else
 	
 	GetInformation (branchLengths, "^codonFactor$");
     
-    //fprintf (stdout, "\n\n",branchLengths,"\n\n");
+    //Sfprintf (stdout, "\n\n",branchLengths,"\n\n");
     
 	branchLengths = (Columns (branchLengths)>0);
 	
@@ -716,7 +716,7 @@ LogL = res[1][0];
 
 GetString (paramList, lf, -1);
 
-degF = Columns(paramList["Global Independent"]) - 1 /* this will overcount by one; because the mean alpha := 1 */
+degF = Columns(paramList["Global Independent"]) 
               - branchLengths; /* remove one more for codon scaling factor, if nuc branch lengths are used */
     
 if (doCFFreqs == 1)
