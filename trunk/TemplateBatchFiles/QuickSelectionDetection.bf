@@ -1081,14 +1081,13 @@ else
                                 saveNucs = {{AC__,AT__,CG__,CT__,GT__}};
                                 LoadFunctionLibrary("BranchSiteTemplate");
                                 
+                                ClearConstraints (codonTree,AC,AT,CG,CT,GT); 
+    
+                                ASSUME_REVERSIBLE_MODELS = 1;
+                                 
                                 OPTIMIZATION_METHOD = 0;
                                 USE_LAST_RESULTS   = 1;
-                                
-                                ClearConstraints (codonTree,AC,AT,CG,CT,GT); 
-
- 
                                 fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
-                                
                                 Optimize (codonLF, lf);
                                 
                                 fprintf (stdout, "IMPROVED Log(L) BY ", codonLF[1][0]-resC[1][0], " POINTS\n");
@@ -1097,9 +1096,9 @@ else
 
                                 global      omega1      =         0.5; omega1 :< 1;
                                 global      omega2      =         1.5; 
-                                global      mixingP     =         0.5; mixingP :< 1; mixingP :> 1/filteredData.sites;
-                                PopulateModelMatrix              ("MGMatrix1",  positionFrequencies, "t", "omega1", "");
-                                PopulateModelMatrix              ("MGMatrix2",  positionFrequencies, "t", "omega2", "");
+                                global      mixingP     =         0.5; mixingP :< 1;
+                                PopulateModelMatrix              ("MGMatrix1",  positionFrequencies, "alpha", "", "beta1");
+                                PopulateModelMatrix              ("MGMatrix2",  positionFrequencies, "alpha", "", "beta2");
                                 AC := saveNucs__[0];
                                 AT := saveNucs__[1];
                                 CG := saveNucs__[2];
@@ -1108,13 +1107,20 @@ else
                                 
                                 Model 		MG1		=		  ("Exp(MGMatrix1)*mixingP+Exp(MGMatrix2)*(1-mixingP)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
                                 Tree	    siteTree = treeString;
-                                global      sFactor =  1;
+                                global      sFactor   =  1;
+                                global      nsFactor1 =  1;
+                                nsFactor1 :< 1;
+                                global      nsFactor2 =  1;
+                                global      omega2    =  1;
+                                            omega2    :< 1;
                                 
                                 doneSites    = {filteredData.unique_sites,8};
                                 fullSites    = {filteredData.sites,8};						
-                                labels       = {{"omega1","omega2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
+                                labels       = {{"beta1","beta2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
 
- 								ReplicateConstraint ("this1.?.t:=sFactor*this2.?.synRate__",siteTree,codonTree);
+ 								ReplicateConstraint ("this1.?.alpha:=sFactor*this2.?.synRate__",siteTree,codonTree);
+ 								ReplicateConstraint ("this1.?.beta1:=nsFactor1*sFactor*this2.?.synRate__",siteTree,codonTree);
+ 								ReplicateConstraint ("this1.?.beta2:=nsFactor2*this2.?.synRate__",siteTree,codonTree);
                              }
 						}
 					
@@ -1139,9 +1145,11 @@ else
                                        
                                         if (cOptions == 10)
                                         {
-                                            omega1 = 0.5;
-                                            ClearConstraints (omega2);
-                                            omega2 = 1.0;
+                                            nsFactor1 = 0.25;
+                                            nsFactor2 = 1.5;
+                                            mixingP   = 0.9;
+                                            ClearConstraints (nsFactor2);
+                                            //omega2 = 1.0;
                                         }
                                         else
                                         {
@@ -1150,20 +1158,29 @@ else
                                         }
                                         
  										Optimize (site_res, siteLikelihood);
+                                        //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+                                        //fprintf ("/Users/sergei/Desktop/alt.fit", CLEAR_FILE, siteLikelihood);
                                         
                                         if (cOptions == 10)
                                         {
-                                            doneSites[siteMap][0] = omega1;
-                                            doneSites[siteMap][1] = omega2;
+                                            doneSites[siteMap][0] = nsFactor1;
+                                            doneSites[siteMap][1] = nsFactor2;
                                             doneSites[siteMap][2] = mixingP;
                                             doneSites[siteMap][6] = 1-mixingP;                                        
                                             doneSites[siteMap][7] = sFactor;
                                             
-                                            if (omega2 > 1 && mixingP < 1) // only test for selection if the point estimate is > 1
+                                            if (nsFactor2 > sFactor && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
-                                                omega2               :< 1;
+                                                omega2 = 1;
+                                                nsFactor2 := omega2 * sFactor;
+                                                if (sFactor == 0)
+                                                {
+                                                    sFactor = 0.001;
+                                                }
                                                 Optimize (site_resN, siteLikelihood);
-                                            }
+                                                //LIKELIHOOD_FUNCTION_OUTPUT = 7;
+                                                //fprintf ("/Users/sergei/Desktop/null.fit", CLEAR_FILE, siteLikelihood);
+                                           }
                                             else
                                             {
                                                 site_resN = site_res;
@@ -1241,9 +1258,10 @@ else
                                         
                                         if (cOptions == 10)
                                         {
-                                            omega1 = 0.5;
-                                            ClearConstraints (omega2);
-                                            omega2 = 1.0;
+                                            nsFactor1 = 0.25;
+                                            nsFactor2 = 1.5;
+                                            mixingP   = 0.9;
+                                            ClearConstraints (nsFactor2);
                                         }
                                         else
                                         {
@@ -1282,7 +1300,12 @@ else
 										
                                         if (cOptions == 10)
                                         {
-                                            omega2               :< 1;
+                                            omega2 = 1;
+                                            nsFactor2 := omega2 * sFactor;
+                                            if (sFactor == 0)
+                                            {
+                                                sFactor = 0.001;
+                                            }
                                         }
                                         else
                                         {

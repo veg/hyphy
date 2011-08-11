@@ -396,15 +396,17 @@ function ReceiveJobsMEME (sendOrNot, nullAlt)
 		
 	ExecuteCommands (result_String);
 	
-	omega1F = siteLikelihood_MLE_VALUES ["omega1"];
-	omega2F = siteLikelihood_MLE_VALUES ["omega2"];
+	nsf1V   = siteLikelihood_MLE_VALUES ["nsFactor1"];
+	nsf2V   = siteLikelihood_MLE_VALUES ["nsFactor2"];
+    omega2F = siteLikelihood_MLE_VALUES ["omega2"];
+
 	mixingF = siteLikelihood_MLE_VALUES ["mixingP"];
-	sFValue = siteLikelihood_MLE_VALUES ["sFactor"]^4;
+	sFValue = siteLikelihood_MLE_VALUES ["sFactor"];
 	
 	if (siteNA) // alternative
 	{
-        doneSites[siteMap][0] = omega1F;
-        doneSites[siteMap][1] = omega2F;
+        doneSites[siteMap][0] = nsf1V*sFValue;
+        doneSites[siteMap][1] = nsf2V;
         doneSites[siteMap][2] = mixingF;
         doneSites[siteMap][6] = 1-mixingF;                                        
         doneSites[siteMap][7] = sFValue;
