@@ -1096,7 +1096,7 @@ else
 
                                 global      omega1      =         0.5; omega1 :< 1;
                                 global      omega2      =         1.5; 
-                                global      mixingP     =         0.5; mixingP :< 1;
+                                global      mixingP     =         0.5; mixingP :< 1-1e-9; mixingP :> 1e-9;
                                 PopulateModelMatrix              ("MGMatrix1",  positionFrequencies, "alpha", "", "beta1");
                                 PopulateModelMatrix              ("MGMatrix2",  positionFrequencies, "alpha", "", "beta2");
                                 AC := saveNucs__[0];
@@ -1126,7 +1126,7 @@ else
 					
 						if (MPI_NODE_COUNT<=1)
 						{
-							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
+							for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
 							{
 								siteMap = dupInfo[siteCount];
 								if (alreadyDone[siteMap] == 0)
@@ -1158,8 +1158,8 @@ else
                                         }
                                         
  										Optimize (site_res, siteLikelihood);
-                                        //LIKELIHOOD_FUNCTION_OUTPUT = 7;
-                                        //fprintf ("/Users/sergei/Desktop/alt.fit", CLEAR_FILE, siteLikelihood);
+                                       // LIKELIHOOD_FUNCTION_OUTPUT = 7;
+                                       // fprintf ("/Users/sergei/Desktop/alt.fit", CLEAR_FILE, siteLikelihood);
                                         
                                         if (cOptions == 10)
                                         {

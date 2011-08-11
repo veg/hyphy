@@ -183,11 +183,11 @@ function ReportSiteMEME (siteI, siteM)
 
 
 	fprintf (stdout, "| Codon: ", 		Format(siteI+1,4,0),
-					 "| Omega1: ", 		Format(fullSites[siteI][0],10,2),
-					 "| P(Omega1): ", 	Format(fullSites[siteI][2],5,2),
-					 "| Omega2: ", 		Format(fullSites[siteI][1],10,2),
-					 "| P(Omega2): ",	Format(fullSites[siteI][3],5,2),
-					 "| Scaling: ",		Format(fullSites[siteI][4],10,2),
+					 "| Beta1: ", 		Format(fullSites[siteI][0],10,2),
+					 "| P(Beta1): ", 	Format(fullSites[siteI][2],5,2),
+					 "| Beta2: ", 		Format(fullSites[siteI][1],10,2),
+					 "| P(Beta2): ",	Format(fullSites[siteI][3],5,2),
+					 "| alpha: ",		Format(fullSites[siteI][4],10,2),
 					 "| LRT: ",			Format(fullSites[siteI][5],6,2),
 					 "| p: ",			Format(fullSites[siteI][6],5,2),		
 					 "| Log(L): ",		Format(fullSites[siteI][7],5,2));		
