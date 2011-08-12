@@ -388,6 +388,7 @@ unsigned long _String::Length(void)
 {
 	return sLength;
 }
+
 //_______________________________________________________________________
 // append operator
 _String _String::operator & (_String s)
@@ -614,18 +615,19 @@ void _String::EscapeAndAppend (const _String & s, char mode)
 		EscapeAndAppend (s.sData[i], mode);
 }
 
+
 //_______________________________________________________________________
 // finalize buffer string
 void _String::Finalize (void)
 {
+
 	if (!(sData = MemReallocate (sData, sLength+1)))
 		warnError (-108);
 	
-	
 	sData[sLength]  = 0;
 	nInstances		= 1;
-}
 
+}
 
 
 //_______________________________________________________________________
@@ -851,7 +853,7 @@ char _String::FirstNonSpace(long start, long end, char direction)
 }
 
 //_______________________________________________________________________
-// locate the first non-space charachter of the string
+
 long _String::FindEndOfIdent(long start, long end, char wild)
 {
 	if (start == -1) 
@@ -1220,6 +1222,7 @@ bool _String::EqualWithWildChar (_String* s, char wildchar)
 
 	return (*sP==0);
 }
+
 //_______________________________________________________________________
 // lexicographic comparison
 bool _String::operator > (_String s)
@@ -1605,7 +1608,7 @@ bool	_String::IsValidRefIdentifier (void)
 
 //_______________________________________________________________________
 
-void	_String::ProcessParameter (void) 
+void	_String::ProcessParameter(void) 
 {
 	if (Equal(&getDString))
 		*this = ReturnDialogInput();
@@ -1822,20 +1825,22 @@ _String	_String::PathComposition (_String relPath)
 		long f = -1, k = 0;
 		f = sLength-2;
 		_String result = *this;
+
 		while (relPath.beginswith("../"))
 		{
+
+            //Cut Trim relPath 
 			f = FindBackwards('/',0,f)-1;
+
+            relPath = relPath.Chop(0,2);
+            result.Trim(0,f+1);
+
 			if (f==-1) return empty;
 			k++;
+
 		}
 
-		if (k==0) 
-		{
-			result = result&relPath;
-		}
-
-		else
-			*this = result&relPath.Cut(k*3,-1);
+        return result&relPath;
 	}
 
 	else 
@@ -2334,7 +2339,7 @@ long		_String::FindTerminator (long from, _String& terminators)
 
 //_______________________________________________________________________
 
-void		_String::AppendAnAssignmentToBuffer (_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
+void		_String::AppendAnAssignmentToBuffer(_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
 {
 	(*this) << id;
 	if (doBind)
