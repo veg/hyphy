@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ctype.h"
 #include "polynoml.h"
 #include "time.h"
-#include <scfg.h>
+#include "scfg.h"
 #include "HYNetInterface.h"
 
 #if defined __AFYP_REWRITE_BGM__ 

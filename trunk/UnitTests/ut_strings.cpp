@@ -63,17 +63,17 @@ class _StringTest : public ::testing::Test {
 //Stub out the Rest of the tests
 
 TEST_F(_StringTest,DuplicateTest) { 
-    _String result = _String ("hyphy");
+    _String test = _String ("hyphy");
     _String dupe;
-    dupe.Duplicate(&result); 
-    ASSERT_STREQ(result.getStr(), dupe.getStr());
+    dupe.Duplicate(&test); 
+    ASSERT_STREQ(test.getStr(), dupe.getStr());
 }
 
 TEST_F(_StringTest,DuplicateErasingTest) { 
-    _String result = _String ("hyphy");
+    _String test = _String ("hyphy");
     _String dupe = _String("old_hyphy");
-    dupe.Duplicate(&result); 
-    ASSERT_STREQ(result.getStr(), dupe.getStr());
+    dupe.Duplicate(&test); 
+    ASSERT_STREQ(test.getStr(), dupe.getStr());
 }
 
 TEST_F(_StringTest,makeDynamicTest) { 
@@ -83,50 +83,95 @@ TEST_F(_StringTest,makeDynamicTest) {
 }
 
 TEST_F(_StringTest,getCharTest) { 
-  _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-  EXPECT_EQ('e', result.getChar(5));
+
+  _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  EXPECT_EQ('e', test.getChar(5));
+
+  //Default return is 0
+  _String test2 = _String ("");
+  EXPECT_EQ(0, test2.getChar(5));
+
 }
 
 
 TEST_F(_StringTest,setCharTest) { 
-  _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-  result.setChar(5,'d');
-  EXPECT_EQ('d', result.getChar(5));
+  _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  test.setChar(5,'d');
+  EXPECT_EQ('d', test.getChar(5));
+
+  //Should be 0
+  _String test2 = _String ("");
+  test2.setChar(5,'d');
+  EXPECT_EQ('\0', test2.getChar(5));
 }
 
 TEST_F(_StringTest,CopyDynamicStringTest) { 
-    _String result = _String ("hyphy");
+    _String* test = new _String ("hyphy");
     _String dupe = _String("old_hyphy");
-    dupe.CopyDynamicString(&result); 
+    dupe.CopyDynamicString(test); 
     ASSERT_STREQ("hyphy", dupe.getStr());
+
+    _String* test2 = new _String ("");
+    _String dupe2 = _String("old_hyphy");
+    dupe2.CopyDynamicString(test2); 
+    ASSERT_STREQ("", dupe2.getStr());
+
 }
 
 TEST_F(_StringTest, LengthTest) {
-  _String result = new _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-  EXPECT_EQ(101, result.Length());
+  _String test = new _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  EXPECT_EQ(99, test.Length());
+
+  _String test2 = new _String ("");
+  EXPECT_EQ(0, test2.Length());
 }
 
 TEST_F(_StringTest,InsertTest) { 
-  _String result = "AAGGCCTTA";
-  _String expected_result = "CAAGGCCTTA";
-  result.Insert('C',0);
+  _String test = "AAGGCCTTA";
+  _String expected_test = "CAAGGCCTTA";
+  test.Insert('C',0);
+  ASSERT_STREQ(expected_test.getStr(), test.getStr());
 
-  ASSERT_STREQ(expected_result.getStr(), result.getStr());
+  _String test2 = "";
+  _String expected_test2 = "";
+  test2.Insert('C',5);
+  ASSERT_STREQ(expected_test2.getStr(), test2.getStr());
 
 }
 
 TEST_F(_StringTest,DeleteTest) { 
-  _String result = "AAGGCCTTA";
-  result.Delete(3,4);
-  ASSERT_STREQ("AAGCTTA", result.getStr());
+  _String test = "AAGGCCTTA";
+  test.Delete(3,4);
+  ASSERT_STREQ("AAGCTTA", test.getStr());
+
+  /*  //ERROR: Program crashes if you go beyond end of string.
+   *
+   *  _String test2 = "AAGG";
+   *  test2.Delete(1,14);
+   *  ASSERT_STREQ("A", test2.getStr());
+   *
+   */
+
+
+  _String test2 = "AAGG";
+  test2.Delete(1,-5);
+  ASSERT_STREQ("A", test2.getStr());
+
 }
 
 TEST_F(_StringTest,AppendNewInstanceTest) { 
     _String orig = _String ("hyphy");
     _String to_append = _String("-package");
     _String expected = _String("hyphy-package");
-    _String result = orig&to_append; 
-    ASSERT_STREQ(expected.getStr(), result.getStr());
+    _String test = orig&to_append; 
+    ASSERT_STREQ(expected.getStr(), test.getStr());
+
+    orig = _String ("");
+    to_append = _String("");
+    expected = _String("");
+    test = orig&to_append; 
+    ASSERT_STREQ(expected.getStr(), test.getStr());
+
 }
 
 
@@ -147,20 +192,44 @@ TEST_F(_StringTest,FinalizeTest) {
 }
 
 TEST_F(_StringTest,getStrTest) { 
-  _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-  ASSERT_STREQ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n", result.getStr());
+  _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  ASSERT_STREQ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", test.getStr());
+
+  _String test2 = _String ("");
+  ASSERT_STREQ("", test2.getStr());
+
 }
 
 TEST_F(_StringTest,ChopTest) { 
-    _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-    _String r2 = result.Chop(0,2);
-    ASSERT_STREQ("'re asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n", r2.getStr());
+
+    _String test = _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+    _String r2 = test.Chop(0,2);
+    ASSERT_STREQ("'re asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", r2.getStr());
+/*
+ *
+ *    //Error: Should return empty, but it returns "AA"
+ *    _String test2 = _String ("ABBA");
+ *    _String substr2 = test2.Chop(1l,2);
+ *    ASSERT_STREQ("", substr2.getStr());
+ *
+ */
+
+/*    //Error: Memory allocation error
+ *    _String test3 = _String ("ABBA");
+ *    _String substr3 = test3.Chop(2,20);
+ *    ASSERT_STREQ("BA", substr3.getStr());
+ *
+ */
 }
 
 TEST_F(_StringTest,CutTest) { 
-    _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-    _String r2 = result.Cut(0,2);
-    ASSERT_STREQ("You", r2.getStr());
+    _String test = _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+    _String substr = test.Cut(0,2);
+    ASSERT_STREQ("You", substr.getStr());
+
+    _String test2 = _String ("AABBCC");
+    _String substr2 = test2.Cut(4,12);
+    ASSERT_STREQ("CC", substr2.getStr());
 }
 
 TEST_F(_StringTest,FlipTest) { 
@@ -175,14 +244,23 @@ TEST_F(_StringTest,Adler32Test) {
 }
 
 TEST_F(_StringTest,TrimTest) { 
-    _String result = new _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-    result.Trim(7,12);
-    ASSERT_STREQ("asking", result.getStr());
+    _String test = new _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+    test.Trim(7,12);
+    ASSERT_STREQ("asking", test.getStr());
+
+    _String test2 = new _String ("");
+    test2.Trim(7,12);
+    ASSERT_STREQ("", test2.getStr());
+
 }
 
 TEST_F(_StringTest,FirstNonSpaceIndexTest) { 
-    _String result = _String ("    lol");
-    EXPECT_EQ(4, result.FirstNonSpaceIndex());
+    _String test = _String ("    lol");
+    EXPECT_EQ(4, test.FirstNonSpaceIndex());
+
+    _String test2 = _String ("");
+    EXPECT_EQ(-1, test2.FirstNonSpaceIndex());
+
 }
 
 TEST_F(_StringTest,KillSpacesTest) { 
@@ -190,62 +268,125 @@ TEST_F(_StringTest,KillSpacesTest) {
     _String r2;
     result.KillSpaces(r2);
     ASSERT_STREQ("lol", r2.getStr());
+
+    _String test2 = _String ("lol");
+    _String result_string2;
+    test2.KillSpaces(result_string2);
+    ASSERT_STREQ("lol", result_string2.getStr());
+
+    _String test3 = _String ("");
+    _String result_string3;
+    test3.KillSpaces(result_string3);
+    ASSERT_STREQ("", result_string3.getStr());
 }
 
 TEST_F(_StringTest,CompressSpacesTest) { 
-    _String result = _String ("Beavis   and    Butthead");
-    result.CompressSpaces();
-    ASSERT_STREQ("Beavis and Butthead",result.getStr());
+    _String test = _String ("Beavis   and    Butthead");
+    test.CompressSpaces();
+    ASSERT_STREQ("Beavis and Butthead",test.getStr());
+
+    _String test2 = _String ("lo l");
+    test2.CompressSpaces();
+    ASSERT_STREQ("lo l",test2.getStr());
+
+    _String test3 = _String ("");
+    test3.CompressSpaces();
+    ASSERT_STREQ("",test3.getStr());
+
 }
 
 TEST_F(_StringTest,FirstSpaceIndexTest) { 
-    _String result = _String ("AA BB");
-    EXPECT_EQ(2, result.FirstSpaceIndex());
+    _String test = _String ("AA BB");
+    EXPECT_EQ(2, test.FirstSpaceIndex());
+
+    _String test2 = _String ("");
+    EXPECT_EQ(-1, test2.FirstSpaceIndex());
+
+    _String test3 = _String ("A BBB");
+    EXPECT_EQ(1, test3.FirstSpaceIndex(0,-1,-1));
+
 }
 
 TEST_F(_StringTest,FirstNonSpaceTest) { 
-    _String result = _String ("  AA BB");
-    EXPECT_EQ('A', result.FirstNonSpace());
+    _String test = _String ("  AA BB");
+    EXPECT_EQ('A', test.FirstNonSpace());
+
+    _String test2 = _String ("AABB ");
+    EXPECT_EQ('B', test2.FirstNonSpace(0,-1,-1));
+
 }
 
 TEST_F(_StringTest,FindEndOfIdentTest) { 
-    _String result = _String ("iden12&iden34");
-    EXPECT_EQ(5, result.FindEndOfIdent(0,-1,'.'));
+    _String test = _String ("iden12&iden34");
+    EXPECT_EQ(5, test.FindEndOfIdent(0,-1,'.'));
+
+    _String test2 = _String ("iden12");
+    EXPECT_EQ(5, test2.FindEndOfIdent(0,-1,'.'));
+
+    _String test3 = _String ("");
+    EXPECT_EQ(-1, test3.FindEndOfIdent(0,-1,'.'));
 }
 
 TEST_F(_StringTest,FindAnyCaseTest) { 
     _String result = _String ("AABBCCDD");
-    EXPECT_EQ(2, result.Find("BBCCDD"));
+    EXPECT_EQ(2, result.FindAnyCase("BBcCDD"));
+
+    _String test = _String ("AABBCCDD");
+    EXPECT_EQ(-1, test.FindAnyCase("cBcCDD"));
 }
 
 TEST_F(_StringTest,ContainsSubstringTest) { 
-    _String result = _String ("AABBCCDD");
+
+    _String test = _String ("AABBCCDD");
     _String r2 = _String ("CC");
-    
-    EXPECT_EQ(true, result.ContainsSubstring(r2));
+    EXPECT_EQ(true, test.ContainsSubstring(r2));
+
+    _String test2 = _String ("AABBCCDD");
+    _String substr = _String ("cC");
+    EXPECT_EQ(false, test2.ContainsSubstring(substr));
+
+    _String test3 = _String ("AABBCCDD");
+    _String substr2 = _String ("");
+    EXPECT_EQ(true, test3.ContainsSubstring(substr2));
+
 }
 
 TEST_F(_StringTest,FindBackwardsTest) { 
-    _String result = _String ("AABBCCDD");
-    EXPECT_EQ(-1, result.FindBackwards("DC",0,3));
+    _String test = _String ("AABBCCDD");
+    EXPECT_EQ(-1, test.FindBackwards("DC",0,3));
+
+
+    _String test2 = _String ("AABBCCDD");
+    EXPECT_EQ(5, test2.FindBackwards("CD",0,-1));
 }
 
 TEST_F(_StringTest,FindBinaryTest) { 
     _String haystack = _String ("AABBCDDD");
-    char needle = 'c';
+    char needle = 'C';
 
     long loc = haystack.FindBinary(needle);
 
     EXPECT_EQ(3,loc);
 
+
+    _String haystack2 = _String ("AABBCDDD");
+    char needle2 = 'F';
+
+    long loc2 = haystack2.FindBinary(needle2);
+
+    EXPECT_EQ(-1,loc2);
+
 }
 
 TEST_F(_StringTest,EqualsTest) { 
-    _String* result = new _String ("AABBCCDD");
+    _String* test = new _String ("AABBCCDD");
     _String* r2 = new _String ("AABBCCDD");
-    EXPECT_EQ(true, result->Equal(r2));
+    EXPECT_EQ(true, test->Equal(r2));
 
-    delete result;
+    _String test2 = _String("AADCC");
+    EXPECT_EQ(false, test2.Equal(r2));
+
+    delete test;
     delete r2;
 }
 
@@ -255,47 +396,86 @@ TEST_F(_StringTest,CompareTest) {
     //composer precedes computer
     //H2O precedes HOTEL
 
+    //ERROR: This returns true
     _String result = _String ("household");
     _String* r2 = new _String ("house");
 
     EXPECT_EQ(true, result.Compare(r2));
+
 }
 
 TEST_F(_StringTest,EqualWithWildCharTest) { 
-    _String result = _String ("AABBCCDD");
-    _String* r2 = new _String ("EEBBCCDD");
 
-    EXPECT_EQ(true, result.EqualWithWildChar(r2, 'E'));
+    _String test = _String ("AABBCCDD");
+    _String* t = new _String ("EEBBCCDD");
 
-    delete r2;
+    EXPECT_EQ(true, test.EqualWithWildChar(t, 'E'));
+
+    _String test2 = _String ("AAFBCCDD");
+    EXPECT_EQ(false, test2.EqualWithWildChar(t, 'E'));
+
+    delete t;
 }
 
 TEST_F(_StringTest,GreaterTest) { 
     //This is a lexicographic comparison
-    _String result = _String ("house");
-    _String r2 = _String ("household");
+    _String test = _String ("house");
+    _String t = _String ("household");
 
-    EXPECT_EQ(false, result>r2);
+    EXPECT_EQ(false, test>t);
+
+    //This is a lexicographic comparison
+    _String test2 = _String ("");
+    _String t2 = _String ("household");
+
+    EXPECT_EQ(false, test2>t2);
 }
 
 TEST_F(_StringTest,LessTest) { 
-    _String result = _String ("house");
-    _String r2 = _String ("household");
-    EXPECT_EQ(true, result<r2);
+    _String test = _String ("house");
+    _String t = _String ("household");
+    EXPECT_EQ(true, test<t);
+
+    _String test2 = _String ("");
+    _String t2 = _String ("");
+    EXPECT_EQ(false, test2<t2);
+
 }
 
 TEST_F(_StringTest,containsTest) { 
 
-    _String r2 = _String ("household");
-    _String result = _String ("house");
-    EXPECT_EQ(true, r2.contains(result));
+    _String t = _String ("household");
+    _String test = _String ("house");
+    EXPECT_EQ(true, t.contains(test));
+
+    _String t2 = _String ("");
+    _String test2 = _String ("");
+    EXPECT_EQ(false, t2.contains(test2));
+
 }
 
 TEST_F(_StringTest,beginswithTest) { 
     //Why not have an overloaded function instead of beginsWith and startswith?
-    _String result = _String ("household");
-    _String r2 = _String ("house");
-    EXPECT_EQ(true, result.beginswith(r2, true));
+    _String test = _String ("household");
+    _String t = _String ("house");
+    EXPECT_EQ(true, test.beginswith(t, true));
+
+    _String test2 = _String ("household");
+    _String t2 = _String ("hold");
+    EXPECT_EQ(false, test2.beginswith(t2, false));
+
+    _String test3 = _String ("household");
+    _String t3 = _String ("House");
+    EXPECT_EQ(false, test3.beginswith(t3, true));
+
+    _String test4 = _String ("household");
+    _String t4 = _String ("House");
+    EXPECT_EQ(true, test4.beginswith(t4, false));
+
+    _String test5 = _String ("");
+    _String t5 = _String ("");
+    EXPECT_EQ(true, test5.beginswith(t5, false));
+
 }
 
 TEST_F(_StringTest,startswithTest) { 
@@ -303,6 +483,7 @@ TEST_F(_StringTest,startswithTest) {
     _String result = _String ("household");
     _String r2 = _String ("house");
     EXPECT_EQ(true, result.startswith(r2));
+
 }
 
 TEST_F(_StringTest,endswithTest) { 

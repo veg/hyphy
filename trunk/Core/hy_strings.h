@@ -676,10 +676,9 @@ virtual		operator const char* (void);
 
             /**
             * Subtracts the string from the string passed.
-            * \n\n \b Example: \code _String("/home/sergei/hyphy").PathComposition("../datamonkey")\endcode
-            * \n _String("/home/sergei/hyphy").PathSubtraction("/home/sergei/") will return "hyphy"
+            * \n\n \b Example: \code _String("/home/sergei/hyphy").PathSubtraction("/home/sergei/")\endcode
             * @param s String that will be subtracted
-            * @return s - this
+            * @return Example would return "hyphy"
             */
   			_String PathSubtraction (_String&, char);
 			
