@@ -1150,7 +1150,7 @@ else
                                        
                                         if (cOptions == 10)
                                         {
-                                            nsFactor1 = 0.25;
+                                            nsFactor1 = Min(dNdS,0.9);
                                             nsFactor2 = 1.5;
                                             mixingP   = 0.9;
                                             ClearConstraints (nsFactor2);
@@ -1176,7 +1176,7 @@ else
                                             
                                             if (nsFactor2 > sFactor && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
-                                                omega2 = 1;
+                                                omega2     = 1;
                                                 nsFactor2 := omega2 * sFactor;
                                                 if (sFactor == 0)
                                                 {
@@ -1263,10 +1263,10 @@ else
                                         
                                         if (cOptions == 10)
                                         {
-                                            nsFactor1 = 0.25;
+                                            ClearConstraints (nsFactor2);
+                                            nsFactor1 = Min(dNdS,0.9);
                                             nsFactor2 = 1.5;
                                             mixingP   = 0.9;
-                                            ClearConstraints (nsFactor2);
                                         }
                                         else
                                         {
@@ -1305,13 +1305,12 @@ else
 										
                                         if (cOptions == 10)
                                         {
-                                            omega2 = 1;
+                                            sFactor    = 1;
+                                            nsFactor1  = Min(dNdS,0.9);
+                                            omega2     = 1;
                                             nsFactor2 := omega2 * sFactor;
-                                            if (sFactor == 0)
-                                            {
-                                                sFactor = 0.001;
-                                            }
-                                        }
+                                            mixingP    = 0.9;
+                                         }
                                         else
                                         {
                                             sFactor 	= (sFactor+nFactor)/2;
