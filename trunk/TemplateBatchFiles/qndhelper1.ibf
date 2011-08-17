@@ -427,7 +427,7 @@ function ReceiveJobsMEME (sendOrNot, nullAlt)
 	{
 		if (doneSites[siteMap][4] == (-1))
 		{
-			doneSites[siteMap][4] = 1-CChi2(doneSites[siteMap][3],1);						
+			doneSites[siteMap][4] = (1-CChi2(doneSites[siteMap][3],1));						
 			ReportSiteMEME (siteIndex, siteMap);
 		}
 	}

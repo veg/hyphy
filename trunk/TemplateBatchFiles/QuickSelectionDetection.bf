@@ -1114,6 +1114,11 @@ else
                                 global      omega2    =  1;
                                             omega2    :< 1;
                                 
+                                omega2    :> 0;
+                                nsFactor2 :> 0;
+                                nsFactor1 :> 0;
+                                sFactor   :> 0;
+
                                 doneSites    = {filteredData.unique_sites,8};
                                 fullSites    = {filteredData.sites,8};						
                                 labels       = {{"beta1","beta2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
