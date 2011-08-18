@@ -518,7 +518,7 @@ TEST_F(_StringTest,TokenizeTest) {
     _String* sub_string = new _String(",");
 
     _List* result_list = test_string.Tokenize(sub_string);
-    _String* result = result_list->lData[0];
+    _String* result = (_String*)result_list->lData[0];
 
     ASSERT_STREQ("house", result->getStr());
     delete sub_string;
@@ -731,7 +731,7 @@ TEST_F(_StringTest,AppendAnAssignmentToBufferTest) {
 TEST_F(_StringTest,BracketTest) { 
     //[] 
     _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-    EXPECT_EQ('e', result[5]);
+    EXPECT_EQ('e', result[5L]);
 }
 
 TEST_F(_StringTest,ParanthTest) { 
