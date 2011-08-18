@@ -1107,9 +1107,12 @@ else
                                 
                                 Model 		MG1		=		  ("Exp(MGMatrix1)*mixingP+Exp(MGMatrix2)*(1-mixingP)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
                                 Tree	    siteTree = treeString;
+                                Model       MGFEL   =         (MGMatrix2,codonFrequencies,0);
+                                Tree        felTree =  treeString;
+                                
                                 global      sFactor   =  1;
                                 global      nsFactor1 =  1;
-                                nsFactor1 :< 1;
+                                nsFactor1               :< 1;
                                 global      nsFactor2 =  1;
                                 global      omega2    =  1;
                                             omega2    :< 1;
@@ -1126,7 +1129,10 @@ else
  								ReplicateConstraint ("this1.?.alpha:=sFactor*this2.?.synRate__",siteTree,codonTree);
  								ReplicateConstraint ("this1.?.beta1:=nsFactor1*sFactor*this2.?.synRate__",siteTree,codonTree);
  								ReplicateConstraint ("this1.?.beta2:=nsFactor2*this2.?.synRate__",siteTree,codonTree);
-                             }
+                                
+ 								ReplicateConstraint ("this1.?.alpha:=sFactor*this2.?.synRate__",felTree,codonTree);
+ 								ReplicateConstraint ("this1.?.beta2:=nsFactor2*this2.?.synRate__",felTree,codonTree);
+                            }
 						}
 					
 						if (MPI_NODE_COUNT<=1)
@@ -1237,142 +1243,66 @@ else
 						else
 						{
 							MPINodeState = {MPI_NODE_COUNT-1,4};
+                            
+                            bySiteCache  = {filteredData.sites, 3};
+                            toDoList     = {};
 							
-							lfSpawnDone = 0;
-							for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
-							{
-								siteMap = dupInfo[siteCount];
+                            
+                            debugVerboseFlag = 0;
+                            
+                            // populate the initial queue of things to do
+                            
+ 							for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
+                            {
+                                siteMap = dupInfo[siteCount];
 								if (alreadyDone[siteMap] == 0)
 								{
 									alreadyDone[siteMap] = 1;				
 									filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
 									DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
-
+                                    if (lfSpawnDone == 0)
+                                    {
+                                        LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
+                                        LikelihoodFunction felLikelihood  = (siteFilter, felTree);	
+                                        lfSpawnDone = 1;
+                                    }
+                                    
 									HarvestFrequencies (f1, siteFilter, 3, 3, 0);
                                     m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
-									
-									if (m1>1)
-									{
-										if (lfSpawnDone == 0)
-										{
-											LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
-											lfSpawnDone = 1;
-										}
-													
-										sFactor      = 1;
-                                        
-                                        if (cOptions == 10)
-                                        {
-                                            ClearConstraints (nsFactor2);
-                                            nsFactor1 = Min(dNdS,0.9);
-                                            nsFactor2 = 1.5;
-                                            mixingP   = 0.9;
-                                        }
-                                        else
-                                        {
-                                            nFactor	     = 1;
-                                            nFactorOther = 1;
-                                        }
- 
-										for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
-										{
-											if (MPINodeState[mpiNode][0]==0)
-											{
-												break;	
-											}
-										}
-										
-										if (mpiNode==MPI_NODE_COUNT-1)
-										// all nodes busy 
-										{
-                                            if (cOptions == 10)
-                                            {
-                                                mpiNode = ReceiveJobsMEME (1,1);
-                                            }   
-                                            else
-                                            {
-                                                mpiNode = ReceiveJobs2 (1,1);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MPISend (mpiNode+1,siteLikelihood);
-											MPINodeState[mpiNode][0] = 1;
-											MPINodeState[mpiNode][1] = siteCount;
-											MPINodeState[mpiNode][2] = 1;
-											MPINodeState[mpiNode][3] = MPINodeState[mpiNode][3] + 1;
-										}
-										
-                                        if (cOptions == 10)
-                                        {
-                                            sFactor    = 1;
-                                            nsFactor1  = Min(dNdS,0.9);
-                                            omega2     = 1;
-                                            nsFactor2 := omega2 * sFactor;
-                                            mixingP    = 0.9;
-                                         }
-                                        else
-                                        {
-                                            sFactor 	= (sFactor+nFactor)/2;
-                                            nFactor := sFactor;
-                                        }
-  
-										for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
-										{
-											if (MPINodeState[mpiNode][0]==0)
-											{
-												break;	
-											}
-										}
-										
-													
-										if (mpiNode==MPI_NODE_COUNT-1)
-										{
-                                            if (cOptions == 10)
-                                            {
-                                                mpiNode = ReceiveJobsMEME (1,0);
-                                            }   
-                                            else
-                                            {
-                                                mpiNode = ReceiveJobs2 (1,0);
-                                            }
-										}
-										else
-										{
-											MPISend (mpiNode+1,siteLikelihood);
-											MPINodeState[mpiNode][0] = 1;
-											MPINodeState[mpiNode][1] = siteCount;
-											MPINodeState[mpiNode][2] = 0;
-										}
-									}
-									else
-									{
-				                        doneSites[siteMap][4] = 1;									
-									}
-								}
-							}					
-							while (1)
-							{
-								for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
-								{
-									if (MPINodeState[nodeCounter][0]==1)
-									{
-                                        if (cOptions == 10)
-                                        {
-                                            fromNode = ReceiveJobsMEME (0,0);
-                                        }   
-                                        else
+                                    if (m1>1)
+                                    {
+                                        toDoList + {{siteCount__,2}}; // 2 in the 2nd column means FEL
+                                    }
+                                }
+                                else
+                                {
+                                    doneSites[siteMap][4] = 1;									
+                                }
+                            }
+                            
+                            while (MPISendJobMEME ()) 
+                            {
+                                
+                            }
+
+							if (cOptions != 10)
+ 							{
+                                while (1)
+                                {
+                                    for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
+                                    {
+                                        if (MPINodeState[nodeCounter][0]==1)
                                         {
                                             fromNode = ReceiveJobs2 (0,0);
+                                            break;	
                                         }
-										break;	
-									}
-								}
-								if (nodeCounter == MPI_NODE_COUNT-1)
-								{
-									break;
-								}
-							}					
+                                    }
+                                    if (nodeCounter == MPI_NODE_COUNT-1)
+                                    {
+                                        break;
+                                    }
+                                }			
+                            }		
 							fprintf (stdout, "\n\n\n");
 							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
 							{
