@@ -877,8 +877,7 @@ void KillLFRecord (long lfID, bool completeKill)
 				_CalcNode * tNode = thisTree->DepthWiseTraversal (true);
 				while (tNode)
 				{
-					_Constant c (tNode->BranchLength());
-					tNode->SetValue (&c);
+					tNode->SetValue (new _Constant (tNode->BranchLength()),false);
 					tNode = thisTree->DepthWiseTraversal();
 				}
 				thisTree->RemoveModel();
@@ -981,45 +980,77 @@ void	KillExplicitModelFormulae (void)
 			delete (_Formula*)(modelMatrixIndices.lData[i]);
 }
 
+
 //__________________________________________________________
 
 void KillModelRecord (long mdID)
-{
-	long mID;
-	
+{	
 	if (lastMatrixDeclared == mdID)
 		lastMatrixDeclared = -1;
+        
+    // SLKP 20110816
+    // can't delete matrices before checking that no other model depends on the 
+    
+ 
+    if (modelTypeList.lData[mdID])
+        delete (_Formula*)(modelMatrixIndices.lData[mdID]);
+    else
+    {
+        _Variable * modelMatrix = nil, 
+                  * freqMatrix  = nil;
+    
+         bool      multByFreqs   = false;
+              
+         
+        
+         _SimpleList  saveTheseVariablesAux;
+         _AVLList     saveTheseVariables (&saveTheseVariablesAux);
+         
+         for (long k = 0; k < modelNames.lLength; k++)
+         {
+            if (k != mdID && ((_String*)modelNames(k))->sLength)
+            {
+                if (modelTypeList.lData[k])
+                {
+                    _SimpleList dependantMatrices;
+                     ((_Formula*)(modelMatrixIndices.lData[k]))->ScanFForType (dependantMatrices, MATRIX);
+                     for (long k2 = 0; k2 < dependantMatrices.lLength; k2++)
+                        saveTheseVariables.Insert((BaseRef)dependantMatrices.lData[k2]);
+                }
+                else
+                {
+                    RetrieveModelComponents(k, modelMatrix, freqMatrix, multByFreqs);
+                   
+                    if (modelMatrix)
+                        saveTheseVariables.Insert((BaseRef)modelMatrix->GetIndex());
+                    if (freqMatrix)
+                        saveTheseVariables.Insert((BaseRef)freqMatrix->GetIndex());
+                }
+            }
+         }
+         
+         RetrieveModelComponents(mdID, modelMatrix, freqMatrix, multByFreqs);
+         if (modelMatrix && saveTheseVariables.Find ((BaseRef)modelMatrix->GetIndex()) < 0)
+            DeleteVariable (*modelMatrix->GetName());
+         if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->GetIndex()) < 0)
+            DeleteVariable (*freqMatrix->GetName());
+         
+         //DeleteVariable (*LocateVar(mID)->GetName());
+    }
+
+       
+     
 		
 	if (mdID<modelNames.lLength-1)
 	{
-		mID = modelMatrixIndices.lData[mdID];
 		modelMatrixIndices.lData[mdID] = -1;
-		if (modelTypeList.lData[mdID])
-			delete (_Formula*)mID;
-		else
-			DeleteVariable (*LocateVar(mID)->GetName());
-		
 		modelTypeList.lData[mdID] = 0;
-		mID = modelFrequenciesIndices.lData[mdID];
 		modelFrequenciesIndices.lData[mdID] = -1;
-		if (mID>=0)
-			DeleteVariable (*LocateVar(mID)->GetName());
 		modelNames.Replace(mdID,&empty,true);
 	}
 	else
 	{
 		modelNames.Delete(mdID);
-		mID = modelMatrixIndices.lData[mdID];
-		modelMatrixIndices.lData[mdID] = -1;
-		if (modelTypeList.lData[mdID])
-			delete (_Formula*)mID;
-		else
-			DeleteVariable (*LocateVar(mID)->GetName());
-		mID = modelFrequenciesIndices.lData[mdID];
-		modelFrequenciesIndices.lData[mdID] = -1;
-		if (mID>=0 && modelFrequenciesIndices.Find(mID) < 0)
-			DeleteVariable (*LocateVar(mID)->GetName());
-		
 		modelMatrixIndices.Delete (modelMatrixIndices.lLength-1);
 		modelFrequenciesIndices.Delete (modelFrequenciesIndices.lLength-1);
 		modelTypeList.Delete (modelTypeList.lLength-1);
