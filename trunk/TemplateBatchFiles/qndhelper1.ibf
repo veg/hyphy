@@ -587,12 +587,15 @@ function ReceiveJobsMEME ()
         else // null
         {
             doneSites[siteMap][3] = doneSites[siteMap][3]-2*siteLikelihood_MLES[1][0];	
-            fprintf (stdout, "[DEBUG: Received MEME NULL fit of site ", siteIndex, " from node ", fromNode, "]");
-            fprintf (stdout, "\n\talpha  = ",  sFValue,
-                             "\n\tbeta1  = ",  nsf1V,
-                             "\n\tomega2  = ", omega2F,
-                             "\n\tmixing = ",  mixingF,
-                             "\n");
+            if (debugVerboseFlag)
+            {
+                fprintf (stdout, "[DEBUG: Received MEME NULL fit of site ", siteIndex, " from node ", fromNode, "]");
+                fprintf (stdout, "\n\talpha  = ",  sFValue,
+                                 "\n\tbeta1  = ",  nsf1V,
+                                 "\n\tomega2  = ", omega2F,
+                                 "\n\tmixing = ",  mixingF,
+                                 "\n");
+            }
         }
     }
 

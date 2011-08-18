@@ -1247,6 +1247,7 @@ else
                             bySiteCache  = {filteredData.sites, 3};
                             toDoList     = {};
 							
+                            lfSpawnDone  = 0;
                             
                             debugVerboseFlag = 0;
                             
