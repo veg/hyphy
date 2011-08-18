@@ -9111,7 +9111,7 @@ void	_LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * par
 	
 	_String *lfName = (_String*)likeFuncNamesList (likeFuncList._SimpleList::Find((long)this));
     
-    ReportWarning (_String("Serializeing ") & *lfName & " with mode " & opt); 
+    ReportWarning (_String("Serializing ") & *lfName & " with mode " & _String((long)opt)); 
 
 	if (opt == _hyphyLFSerializeModeShortMPI)
 	{
