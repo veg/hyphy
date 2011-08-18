@@ -10,7 +10,7 @@ if [ $# -ne 1 -a $# -ne 2 ]
 then
 	TARGET_NAME="HELP";
 else
-	if [ $1 != "SP" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" -a $1 != "PS3" -a $1 != "DMALLOC" ] 
+	if [ $1 != "SP" -a $1 != "GTEST" -a $1 != "MP" -a $1 != "MP2"  -a $1 != "MPI" -a $1 != "DEBUG" -a $1 != "LIBRARY" -a $1 != "DEV" -a $1 != "PS3" -a $1 != "DMALLOC" ] 
 	then
 		$TARGET_NAME = "HELP"
 	else
@@ -29,6 +29,7 @@ then
 	echo "  PS3 : developmental PS3 OpenMP build with likelihood function speedups."
 	echo "  MPI : for a single-threaded build with MPI message passing support."
 	echo "  DEBUG: single threaded debug version."
+	echo "  GTEST: a unit test version for coverage and regression testing."
 	echo "  LIBRARY [Python|R]: multi-threaded library version with optional wrappers for Python or R."
 	exit 1
 fi
@@ -219,7 +220,17 @@ then
     echo "+---------------------------------------+"
     echo "|Building a debug version HYPHYDebug    |"
     echo "+---------------------------------------+"
-	COMPILER_FLAGS=" -w -c -g -fsigned-char  -fpermissive -D __UNIX__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long "
+    COMPILER_FLAGS=" -w -c -g -fsigned-char  -fpermissive -D __UNIX__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long -I`pwd`/Source "
+fi
+
+if [ $1 = "GTEST" ]
+then
+    TARGET_NAME="HYPHYTest";
+    LINKER_FLAGS=$CURL_LINKER_LIBS" -g -p -lm -fopenmp UnitTests/libgtest.a";
+    echo "+---------------------------------------+"
+    echo "|Building a debug version HYPHYDebug    |"
+    echo "+---------------------------------------+"
+    COMPILER_FLAGS=" -w -c -g -p -fsigned-char  -fpermissive -D __UNIX__ -D__UNITTEST__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long -I`pwd`/Source/  -I`pwd`/UnitTests "
 fi
 
 if [ $1 = "DMALLOC" ]
@@ -337,8 +348,31 @@ do
   fi
 done
 
-
 cd ../..
+
+if [ $1 = "GTEST" ] 
+then
+	cd UnitTests
+	for fileName in *.cpp
+	do
+	  obj_file=../$OBJ_DIR_NAME/${fileName}.o;
+	  if [ $obj_file -nt $fileName ]
+	  then
+			echo File "$fileName" is up to date
+	  else
+		  echo Building "$fileName";
+		  if `$COMPILER -o $obj_file $COMPILER_FLAGS $fileName `
+		   then
+			 echo Complete
+		   else
+				echo Error during compilation;
+				exit 1;
+		   fi
+	  fi
+	done
+	cd ../
+fi
+
 
 if [ $1 != "LIBRARY" -o $LIBRARY_BINDINGS = "NONE" ]
 then
