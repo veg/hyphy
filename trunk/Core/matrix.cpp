@@ -9602,7 +9602,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
             {
                 long index = avl.GetByIndex(p2->Compute()->Value());
                 if (index >= 0)
-                    return (_PMathObj)(s->Equal (&AVL_ITERATOR_ORDER)? ((_String**)avl.dataList->lData)[index]: avl.GetXtra (index))->makeDynamic();
+                    return s->Equal (&AVL_ITERATOR_ORDER)? (new _FString(*((_String**)avl.dataList->lData)[index],false)): ((_PMathObj)avl.GetXtra (index)->makeDynamic());
                 else
                     WarnError ("Index out of bounds in call to AVL iterator (by index)");
             }
