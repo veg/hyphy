@@ -1242,14 +1242,12 @@ else
 						}
 						else
 						{
-							MPINodeState = {MPI_NODE_COUNT-1,4};
-                            
-                            bySiteCache  = {filteredData.sites, 3};
-                            toDoList     = {};
+							MPINodeState     = {MPI_NODE_COUNT-1,4};
+                            bySiteCache      = {filteredData.sites, 3};
+                            toDoList         = {};
 							
-                            lfSpawnDone  = 0;
-                            
-                            debugVerboseFlag = 0;
+                            lfSpawnDone      = 0;
+                            debugVerboseFlag = 1;
                             
                             // populate the initial queue of things to do
                             
@@ -1280,6 +1278,11 @@ else
                                     doneSites[siteMap][4] = 1;									
                                 }
                             }
+                            
+                            if (debugVerboseFlag)
+                            {
+                                fprintf (stdout, toDoList);
+                            }   
                             
                             while (MPISendJobMEME ()) 
                             {
