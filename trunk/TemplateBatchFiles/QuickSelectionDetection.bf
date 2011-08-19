@@ -1255,7 +1255,7 @@ else
                                 toDoList         = {};
                                 
                                 lfSpawnDone      = 0;
-                                debugVerboseFlag = 1;
+                                debugVerboseFlag = 0;
                                 
                                 // populate the initial queue of things to do
                                 
