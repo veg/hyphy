@@ -384,6 +384,7 @@ virtual		~_AVLList	(void) {}
 	long				Prev 				(long,    _SimpleList&);
 	long				First				(void);
 	long				Last				(void);
+    long                GetByIndex          (const long);
 	long				Insert				(BaseRef, long = 0, bool = true, bool = false);
 											// the 1st bool flag is to say whether to dup the object being inserted
 											// the 2nd bool flag (if the first flag is false) if set to true,

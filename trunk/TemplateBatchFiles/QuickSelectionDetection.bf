@@ -1088,7 +1088,12 @@ else
                                 OPTIMIZATION_METHOD = 0;
                                 USE_LAST_RESULTS   = 1;
                                 fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
+                                
+                                T0 = Time(1);
+                                
                                 Optimize (codonLF, lf);
+                                
+                                OPTIMIZATION_TIME_HARD_LIMIT = (Time(1)-T0)*4;
                                 
                                 fprintf (stdout, "IMPROVED Log(L) BY ", codonLF[1][0]-resC[1][0], " POINTS\n");
                                 
@@ -1243,54 +1248,133 @@ else
 						else
 						{
 							MPINodeState     = {MPI_NODE_COUNT-1,4};
-                            bySiteCache      = {filteredData.sites, 3};
-                            toDoList         = {};
-							
-                            lfSpawnDone      = 0;
-                            debugVerboseFlag = 1;
                             
-                            // populate the initial queue of things to do
-                            
- 							for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
+                            if (cOptions == 10)
                             {
-                                siteMap = dupInfo[siteCount];
-								if (alreadyDone[siteMap] == 0)
-								{
-									alreadyDone[siteMap] = 1;				
-									filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
-									DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
-                                    if (lfSpawnDone == 0)
-                                    {
-                                        LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
-                                        LikelihoodFunction felLikelihood  = (siteFilter, felTree);	
-                                        lfSpawnDone = 1;
-                                    }
-                                    
-									HarvestFrequencies (f1, siteFilter, 3, 3, 0);
-                                    m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
-                                    if (m1>1)
-                                    {
-                                        toDoList + {{siteCount__,2}}; // 2 in the 2nd column means FEL
-                                    }
-                                }
-                                else
-                                {
-                                    doneSites[siteMap][4] = 1;									
-                                }
-                            }
-                            
-                            if (debugVerboseFlag)
-                            {
-                                fprintf (stdout, toDoList);
-                            }   
-                            
-                            while (MPISendJobMEME ()) 
-                            {
+                                bySiteCache      = {filteredData.sites, 3};
+                                toDoList         = {};
                                 
+                                lfSpawnDone      = 0;
+                                debugVerboseFlag = 1;
+                                
+                                // populate the initial queue of things to do
+                                
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
+                                {
+                                    siteMap = dupInfo[siteCount];
+                                    if (alreadyDone[siteMap] == 0)
+                                    {
+                                        alreadyDone[siteMap] = 1;				
+                                        filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
+                                        DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
+                                        if (lfSpawnDone == 0)
+                                        {
+                                            LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
+                                            LikelihoodFunction felLikelihood  = (siteFilter, felTree);	
+                                            lfSpawnDone = 1;
+                                        }
+                                        
+                                        HarvestFrequencies (f1, siteFilter, 3, 3, 0);
+                                        m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
+                                        if (m1>1)
+                                        {
+                                            toDoList ["FEL_" + siteCount] = {{siteCount__,2}}; // 2 in the 2nd column means FEL
+                                        }
+                                    }
+                                    else
+                                    {
+                                        doneSites[siteMap][4] = 1;									
+                                    }
+                                }
+                                
+                                if (debugVerboseFlag)
+                                {
+                                    fprintf (stdout, toDoList);
+                                }   
+                                while (MPISendJobMEME ()) 
+                                {
+                                
+                                }
                             }
+                            else
+                            {
+                            
+                                lfSpawnDone = 0;
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
+                                {
+                                    siteMap = dupInfo[siteCount];
+                                    if (alreadyDone[siteMap] == 0)
+                                    {
+                                        alreadyDone[siteMap] = 1;				
+                                        filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
+                                        DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
 
-							if (cOptions != 10)
- 							{
+                                        HarvestFrequencies (f1, siteFilter, 3, 3, 0);
+                                        m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
+                                        
+                                        if (m1>1)
+                                        {
+                                            if (lfSpawnDone == 0)
+                                            {
+                                                LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
+                                                lfSpawnDone = 1;
+                                            }
+                                                        
+                                            sFactor      = 1;
+                                            nFactor	     = 1;
+     
+                                            for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
+                                            {
+                                                if (MPINodeState[mpiNode][0]==0)
+                                                {
+                                                    break;	
+                                                }
+                                            }
+                                            
+                                            if (mpiNode==MPI_NODE_COUNT-1)
+                                            // all nodes busy 
+                                            {
+                                                mpiNode = ReceiveJobs2 (1,1);
+                                            }
+                                            else
+                                            {
+                                                MPISend (mpiNode+1,siteLikelihood);
+                                                MPINodeState[mpiNode][0] = 1;
+                                                MPINodeState[mpiNode][1] = siteCount;
+                                                MPINodeState[mpiNode][2] = 1;
+                                                MPINodeState[mpiNode][3] = MPINodeState[mpiNode][3] + 1;
+                                            }
+                                            sFactor 	= (sFactor+nFactor)/2;
+                                            nFactor := sFactor;
+      
+                                            for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
+                                            {
+                                                if (MPINodeState[mpiNode][0]==0)
+                                                {
+                                                    break;	
+                                                }
+                                            }
+                                            
+                                                        
+                                            if (mpiNode==MPI_NODE_COUNT-1)
+                                            {
+                                                mpiNode = ReceiveJobs2 (1,0);
+                                            }
+                                            else
+                                            {
+                                                MPISend (mpiNode+1,siteLikelihood);
+                                                MPINodeState[mpiNode][0] = 1;
+                                                MPINodeState[mpiNode][1] = siteCount;
+                                                MPINodeState[mpiNode][2] = 0;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            doneSites[siteMap][4] = 1;									
+                                        }
+                                    }
+                                }	                           
+
                                 while (1)
                                 {
                                     for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
@@ -1307,6 +1391,7 @@ else
                                     }
                                 }			
                             }		
+                            
 							fprintf (stdout, "\n\n\n");
 							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
 							{

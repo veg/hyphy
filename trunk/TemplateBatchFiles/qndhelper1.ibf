@@ -370,6 +370,7 @@ function ReceiveJobs2 (sendOrNot, nullAlt)
 	return fromNode-1;
 }
 
+
 /*------------------------------------------------------------------------*/
 
 function MPISendJobMEME ()
@@ -388,9 +389,11 @@ function MPISendJobMEME ()
     }
     
     
-    lastKey = Abs(toDoList)-1;
+    lastKey = Abs(toDoList);
+    
     if (lastKey > 0)
     {
+        lastKey  = toDoList ["INDEXORDER"][0];
         theJob   = toDoList [lastKey];
         toDoList - lastKey;
         MPINodeState[mpiNode][1] = theJob[0];	
@@ -556,7 +559,7 @@ function ReceiveJobsMEME ()
 
        if (nsf2V > sFValue)
         {
-            toDoList + {{siteIndex__,0}}
+            toDoList["MEME_NULL_" + siteIndex] = {{siteIndex__,0}};
             if (debugVerboseFlag)
             {
                 fprintf (stdout, "[DEBUG: Added null model fit for site ", siteIndex, " to the queue]\n");
@@ -574,7 +577,7 @@ function ReceiveJobsMEME ()
         {
             bySiteCache[siteIndex][0] = sFValue;
             bySiteCache[siteIndex][1] = nsf2V;
-            toDoList + {{siteIndex__,1}}
+            toDoList ["MEME_ALT_" + siteIndex] = {{siteIndex__,1}};
             if (debugVerboseFlag)
             {
                 fprintf (stdout, "[DEBUG: Received FEL fit of site ", siteIndex, " from node ", fromNode, "]");

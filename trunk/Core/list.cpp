@@ -2765,6 +2765,37 @@ long  _AVLList::Last (void)
 
 //______________________________________________________________
 
+long  _AVLList::GetByIndex (const long theIndex)
+{
+	if (theIndex == 0)
+        return First();
+    
+    long elementCount = countitems();
+    
+    if (theIndex == elementCount - 1)
+        return Last();
+    
+    if (theIndex > 0 && theIndex < elementCount)
+    {
+        _SimpleList  hist;
+        long		 ls, 
+                     cn	= Traverser (hist,ls,GetRoot()),
+                     counter = 0;
+                     
+        while (counter < theIndex)
+        {
+            counter ++;
+            cn = Traverser (hist,ls);
+        }
+            
+        return cn;
+        
+    }
+        
+    return -1;
+}
+//______________________________________________________________
+
 long  _AVLList::Prev (long d, _SimpleList& hist)
 {
 	if (d >= 0)

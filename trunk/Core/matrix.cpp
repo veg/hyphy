@@ -57,7 +57,9 @@ _String		MATRIX_AGREEMENT 			= "CONVERT_TO_POLYNOMIALS",
 			ANAL_MATRIX_TOLERANCE 		= "ANAL_MATRIX_TOLERANCE",
 			PROFILE_MEAN_VAR_MULT		= "PROFILE_MEAN_VAR_MULT",
 			CACHE_FORMULA_DEPENDANCY	= "CACHE_FORMULA_DEPENDANCY",
-			BRANCH_LENGTH_STENCIL		= "BRANCH_LENGTH_STENCIL";
+			BRANCH_LENGTH_STENCIL		= "BRANCH_LENGTH_STENCIL",
+            AVL_ITERATOR_ORDER          = "INDEXORDER",
+            AVL_ITERATOR_ORDER_VALUE    = "VALUEINDEXORDER";
 
 int	_Matrix::precisionArg = 0;
 int	_Matrix::storageIncrement = 16;
@@ -9592,7 +9594,23 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
 		}
 	}
 	else
-		WarnError ("Both arguments must be Strings in an iterator call for Associative Arrays");
+        if (p->ObjectClass () == STRING && p2->ObjectClass () == NUMBER)
+        {   
+  			_String * s  = (_String*)p->toStr();
+            
+            if (s->Equal (&AVL_ITERATOR_ORDER) || s->Equal (&AVL_ITERATOR_ORDER_VALUE))
+            {
+                long index = avl.GetByIndex(p2->Compute()->Value());
+                if (index >= 0)
+                    return (_PMathObj)(s->Equal (&AVL_ITERATOR_ORDER)? ((_String**)avl.dataList->lData)[index]: avl.GetXtra (index))->makeDynamic();
+                else
+                    WarnError ("Index out of bounds in call to AVL iterator (by index)");
+            }
+            
+            DeleteObject (s);
+        }
+        else
+            WarnError ("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
 	return new _Constant (done);
 }
 
