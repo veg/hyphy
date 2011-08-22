@@ -7386,7 +7386,7 @@ _PMathObj		_Matrix::MultElements (_PMathObj mp)
 	
 	if ((GetHDim()!=m->GetHDim()) || (GetVDim()!=m->GetVDim()))
 	{
-		warnError(- 103); 
+		WarnError ("Element-wise multiplication requires matrixes of the same dimension.");
 		return new _Matrix (1,1);
 	}
 	
@@ -7452,7 +7452,9 @@ void	_Matrix::CheckDimensions (_Matrix& secondArg)
 			secondArg.Transpose();
 		else
 		{
-			warnError(- 103); // matrices are incompatible;
+            char str[255];
+            sprintf (str,"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
+			ReportWarning (str);
 			return;
 		}
 	}
