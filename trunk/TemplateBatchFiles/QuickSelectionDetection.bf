@@ -1267,24 +1267,26 @@ else
                                         alreadyDone[siteMap] = 1;				
                                         filterString = "" + (siteCount*3) + "-" + (siteCount*3+2);
                                         DataSetFilter siteFilter = CreateFilter (filteredData,3,filterString,"",GeneticCodeExclusions);
-                                        if (lfSpawnDone == 0)
-                                        {
-                                            LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
-                                            LikelihoodFunction felLikelihood  = (siteFilter, felTree);	
-                                            lfSpawnDone = 1;
-                                        }
+                                       
                                         
                                         HarvestFrequencies (f1, siteFilter, 3, 3, 0);
                                         m1 = +(f1["_MATRIX_ELEMENT_VALUE_>0"]); // how many unique characters?
                                         if (m1>1)
                                         {
                                             toDoList ["FEL_" + siteCount] = {{siteCount__,2}}; // 2 in the 2nd column means FEL
+                                            if (lfSpawnDone == 0)
+                                            {
+                                                LikelihoodFunction siteLikelihood = (siteFilter, siteTree);	
+                                                LikelihoodFunction felLikelihood  = (siteFilter, felTree);	
+                                                lfSpawnDone = 1;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            doneSites[siteMap][4] = 1;									
                                         }
                                     }
-                                    else
-                                    {
-                                        doneSites[siteMap][4] = 1;									
-                                    }
+                                    
                                 }
                                 
                                 if (debugVerboseFlag)
