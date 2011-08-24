@@ -497,7 +497,7 @@ function MPISendJobMEME ()
         }
     }
     
-    return +(MPINodeState [-1][0]);
+    return +(MPINodeState [-1][0]) || Abs(toDoList);
 }
 
 /*------------------------------------------------------------------------*/
