@@ -34,10 +34,11 @@ else
 	DataSetFilter	    all64 = CreateFilter (ds, 1, "", "");
 }
 
-ChoiceList (filteringOption,"Filter duplicates/gaps?",1,SKIP_NONE,"No/No", "Keep all sequences and sites",
-															   "No/Yes",   "Keep all sequences, filter sites with nothing but gaps",
-															   "Yes/No",   "Filter duplicate sequences but keep all sites",
-															   "Yes/Yes",  "Filter duplicate sequences and sites with nothing but gaps");
+ChoiceList (filteringOption,"Filter duplicates/gaps?",1,SKIP_NONE,"No/No",    "Keep all sequences and sites",
+                                                                  "No/Yes",   "Keep all sequences, filter sites with nothing but gaps",
+															      "Yes/No",   "Filter duplicate sequences but keep all sites",
+                                                                  "Yes/Yes",  "Filter duplicate sequences and sites with nothing but gaps",
+                                                                  "Disallow stops", "Filter duplicate sequences and all sequences that have stop codons");
 															   
 if (filteringOption < 0)
 {
@@ -171,6 +172,10 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 	
 	if (stopCodonCount > 0)
 	{
+        if (filterinOption == 4)
+        {   
+            continue;
+        }
 		fprintf (stdout, "\nSequence ", sequenceNames[sequenceIndex], ":"); 
 		fprintf (stdout, "\n\t", Format(stopCodonCount,8,0), " stop codons found.");
 		

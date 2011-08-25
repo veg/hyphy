@@ -62,61 +62,132 @@ class _StringTest : public ::testing::Test {
 
 //Stub out the Rest of the tests
 
+_String globalTest1 ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+
+/* 20110825: SLKP made this a global string.*/
+    
+/******************************************/
+
 TEST_F(_StringTest,DuplicateTest) { 
-    _String test = _String ("hyphy");
-    _String dupe;
-    dupe.Duplicate(&test); 
-    ASSERT_STREQ(test.getStr(), dupe.getStr());
+    /* 20110825: SLKP code coverage complete
+    
+        - added an extreme case (empty string)
+        - changed ASSERT to EXPECT
+    */
+    _String test    = _String ("hyphy"),
+            empty;
+    _String dupe1,
+            dupe2;
+            
+    dupe1.Duplicate(&test); 
+    EXPECT_STREQ(test.getStr(), dupe1.getStr());
+    
+    dupe2.Duplicate(&empty);
+    EXPECT_EQ (dupe2.sData, (char*)NULL);
+    EXPECT_EQ (dupe2.sLength, 0);
 }
 
+/******************************************/
+
 TEST_F(_StringTest,DuplicateErasingTest) { 
-    _String test = _String ("hyphy");
-    _String dupe = _String("old_hyphy");
-    dupe.Duplicate(&test); 
-    ASSERT_STREQ(test.getStr(), dupe.getStr());
+/* 20110825: SLKP code coverage complete
+    
+         - changed ASSERT to EXPECT
+         - added a test to ensure that the pointer
+           to the string got reallocated after 
+           DuplicateErasing is called
+*/
+    _String test = _String ("hyphy"),
+            dupe = _String ("old_hyphy");
+            
+    char*   oldSData = dupe.sData;       
+    dupe.DuplicateErasing(&test); 
+    
+    test = empty;
+    
+    EXPECT_STREQ ("hyphy", dupe.getStr());
 }
+
+/******************************************/
+
 
 TEST_F(_StringTest,makeDynamicTest) { 
   //What is the difference between this and dupicate?
-  //_String* result = new _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-  //EXPECT_EQ(101, result->Length());
+  
+  /* 20110825: SLKP code coverage complete 
+        The idea of make dynamic is to convert a stack object into a heap object, see code below
+   */
+ 
+  _String stackString (globalTest1, 5, -1), // this helps test one of the constructors
+          *heapString = (_String*)stackString.makeDynamic(); 
+          
+    EXPECT_STREQ (stackString.getStr(), heapString->getStr());
+    stackString = empty; // overwrite the stack object
+    EXPECT_EQ (heapString->sLength, globalTest1.sLength-5);
+    DeleteObject (heapString);
+  
 }
+
+/******************************************/
 
 TEST_F(_StringTest,getCharTest) { 
 
-  _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  /* 20110825: SLKP code coverage complete */
+
+  _String test (globalTest1);
   EXPECT_EQ('e', test.getChar(5));
 
   //Default return is 0
-  _String test2 = _String ("");
+  _String test2 = empty;
   EXPECT_EQ(0, test2.getChar(5));
 
 }
 
+/******************************************/
+
 
 TEST_F(_StringTest,setCharTest) { 
-  _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
+  _String test (globalTest1);
   test.setChar(5,'d');
   EXPECT_EQ('d', test.getChar(5));
 
   //Should be 0
-  _String test2 = _String ("");
+  _String test2 = empty;
   test2.setChar(5,'d');
   EXPECT_EQ('\0', test2.getChar(5));
 }
 
+/******************************************/
+
 TEST_F(_StringTest,CopyDynamicStringTest) { 
+
+  /* 20110825: SLKP code coverage complete 
+    
+        - added a test case when the source string has object counter > 1, i.e. it can't be
+          simply moved to the destination but has to be copied
+  
+  */ 
+    
+
     _String* test = new _String ("hyphy");
     _String dupe = _String("old_hyphy");
     dupe.CopyDynamicString(test); 
-    ASSERT_STREQ("hyphy", dupe.getStr());
+    EXPECT_STREQ("hyphy", dupe.getStr());
 
-    _String* test2 = new _String ("");
-    _String dupe2 = _String("old_hyphy");
+    _String* test2 = new _String ("beavis");
+    test2->AddAReference(); // add 1 to object counter
+    _String dupe2, dupe3, blank;
     dupe2.CopyDynamicString(test2); 
-    ASSERT_STREQ("", dupe2.getStr());
-
+    blank.AddAReference();
+    dupe3.CopyDynamicString(&blank); 
+    EXPECT_STREQ("beavis", dupe2.getStr());
+    EXPECT_STREQ("beavis", test2->getStr());
+    EXPECT_STREQ("", dupe3.getStr());
+    DeleteObject (test2);
 }
+
+/******************************************/
+
 
 TEST_F(_StringTest, LengthTest) {
   _String test = new _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");

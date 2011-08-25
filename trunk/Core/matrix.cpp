@@ -3445,7 +3445,7 @@ void	_Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 		// check matrix dimensions to ensure that they are addable
 		if (!((hDim==secondArg.hDim)&&(storage.hDim==secondArg.hDim)&&(vDim==secondArg.vDim)&&(storage.vDim==secondArg.vDim)))
 		{
-			_String  errMsg = _String ("Incompatible dimensions when trying to add or subtract matrices: first agrument had was a ") & _String (hDim) & 'x' 
+			_String  errMsg = _String ("Incompatible dimensions when trying to add or subtract matrices: first argument was a ") & _String (hDim) & 'x' 
 							 & _String (vDim) & " matrix and the second was a "& _String (secondArg.hDim) & 'x'  & _String (secondArg.vDim) & " matrix.";
 			WarnError (errMsg);
 			/*warnError( -103);*/

@@ -226,11 +226,52 @@ fi
 if [ $1 = "GTEST" ]
 then
     TARGET_NAME="HYPHYTest";
-    LINKER_FLAGS=$CURL_LINKER_LIBS" -g -p -lm -fopenmp UnitTests/libgtest.a";
+    LINKER_FLAGS=$CURL_LINKER_LIBS" -g -fprofile-arcs -ftest-coverage -lm -fopenmp ../UnitTests/libgtest.a";
     echo "+---------------------------------------+"
     echo "|Building a debug version HYPHYDebug    |"
     echo "+---------------------------------------+"
-    COMPILER_FLAGS=" -w -c -g -p -fsigned-char  -fpermissive -D __UNIX__ -D__UNITTEST__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long -I`pwd`/Source/  -I`pwd`/UnitTests "
+    COMPILER_FLAGS=" -w -c -g -fprofile-arcs -ftest-coverage -fsigned-char  -fpermissive -D __UNIX__ -D__UNITTEST__ -D _SLKP_LFENGINE_REWRITE_ -D INTPTR_TYPE=long -I`pwd`/Source/  -I`pwd`/UnitTests "
+
+	echo "COMPILER=$COMPILER, $COMPILERC";
+	echo "COMPILER_FLAGS=$COMPILER_FLAGS";
+	
+	cd Source
+	for fileName in *.cpp main-unix.cxx SQLite/*c ../UnitTests/*cpp
+		do
+			name=${fileName%%.[a-z0-9]*}
+			name=${name##*/}
+			extension=${fileName##*.}
+			#echo $name $extension
+			obj_file="$name.o";
+			#echo Building "$name";
+			
+			if [ $obj_file -nt $fileName ]
+			then
+				echo File "$fileName" is up to date
+	  		else
+				if [ $extension = "c" ]
+				then
+					cmd="$COMPILERC $COMPILER_FLAGS $fileName"
+				else
+					cmd="$COMPILER $COMPILER_FLAGS $fileName"
+				fi
+				echo $cmd
+				if `$cmd`
+				then
+					echo Complete
+				else
+					echo Error during compilation;
+					exit 1;
+				fi
+			fi
+		done
+	  
+	  
+	echo Linking $TARGET_NAME
+	echo $COMPILER $COMPILER_LINK_FLAGS -o ../$TARGET_NAME *.o $LINKER_FLAGS
+    `$COMPILER $COMPILER_LINK_FLAGS -o ../$TARGET_NAME *.o $LINKER_FLAGS`
+ 
+	exit 0 
 fi
 
 if [ $1 = "DMALLOC" ]
@@ -350,28 +391,7 @@ done
 
 cd ../..
 
-if [ $1 = "GTEST" ] 
-then
-	cd UnitTests
-	for fileName in *.cpp
-	do
-	  obj_file=../$OBJ_DIR_NAME/${fileName}.o;
-	  if [ $obj_file -nt $fileName ]
-	  then
-			echo File "$fileName" is up to date
-	  else
-		  echo Building "$fileName";
-		  if `$COMPILER -o $obj_file $COMPILER_FLAGS $fileName `
-		   then
-			 echo Complete
-		   else
-				echo Error during compilation;
-				exit 1;
-		   fi
-	  fi
-	done
-	cd ../
-fi
+
 
 
 if [ $1 != "LIBRARY" -o $LIBRARY_BINDINGS = "NONE" ]
