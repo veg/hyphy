@@ -3869,11 +3869,13 @@ void	_Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 							{
                                 _Parameter resCell  = 0.0;
 								
-                                for (long k = 0, column = j; k < vDim; k+=4, column += 4*secondArg.vDim)
+                                for (long k = 0, column = j; k < vDim; k+=4, column += (secondArg.vDim<<2))
 									resCell += row[k]   * secondArg.theData [column]                         + 
 											   row[k+1] * secondArg.theData [column + secondArg.vDim ]       +
 											   row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)] +
 											   row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
+                                
+                                storage.theData[cumulativeIndex++] = resCell;
                                
 							}
 						}
