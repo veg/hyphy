@@ -78,7 +78,6 @@ void    mpiOptimizerLoop 			(int, int);
 void 	mpiNormalLoop	 			(int, int, _String*);
 
 
-
 extern	long
 		systemCPUCount;
 		
@@ -510,16 +509,24 @@ int main (int argc, char* argv[])
 	#ifdef	__HYPHYMPI__
 		  }
 	#endif
+
+	char 	curWd[4096];
+    getcwd (curWd,4096);
+
+#if defined _HYPHY_BASEDIRECTORY_
+    _String baseDir (_HYPHY_BASEDIRECTORY_);
+#else
+   	_String baseDir (curWd);
+#endif
 	
-	char 	curWd[4096],
-		    dirSlash = GetPlatformDirectoryChar ();
-	getcwd (curWd,4096);
+            
+    char dirSlash = GetPlatformDirectoryChar ();
+    
+    _String argFile;
 
-	_String baseDir (curWd), 
-			argFile;
-		
-
-	baseDir=baseDir & dirSlash;
+    if (baseDir.getChar (baseDir.sLength-1) != dirSlash)
+        baseDir=baseDir & dirSlash;
+        
 	pathNames&& &baseDir;
 	
 	baseDirectory = baseDir;
