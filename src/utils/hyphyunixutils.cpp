@@ -137,7 +137,7 @@ _String*	StringFromConsole	(bool)
 		}
 	#else
 		WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
-		return;
+		return NULL;
 	#endif
 	returnme->Finalize ();
 	return returnme;
