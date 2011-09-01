@@ -1,6 +1,6 @@
 /*
 	A table object glue for GTK+
-	
+
 	Sergei L. Kosakovsky Pond, March 2005.
 */
 
@@ -18,51 +18,53 @@
 
 //__________________________________________________________________
 
-class _HYPlatformTable {
+class _HYPlatformTable
+{
 
-	public:
+public:
 
-					_HYPlatformTable		(void);
-virtual				~_HYPlatformTable		(void);
+	_HYPlatformTable		(void);
+	virtual				~_HYPlatformTable		(void);
 
 	void 			_SetFont 				(void);
 	void 			_SetBackColor 			(_HYColor&);
 	void 			_SetBackColor2 			(_HYColor&);
-	
+
 	void 			_CreateTextBox			(_HYRect&,_String&);
 	_String 		_RetrieveTextValue		(void);
 	void			_KillTextBox			(void);
-	bool			_HasTextBox				(void)
-											{return		editBox;}
-											
+	bool			_HasTextBox				(void) {
+		return		editBox;
+	}
+
 	GdkRectangle	_GetVisibleRowRect		(long);
-	
+
 	void			_HiliteRowForDrag		(long,long);
 	void			_ResetCursorState		(void);
-	
+
 	void			_FrameRect				(GdkRectangle&);
 	bool			_CheckGC				(void);
-		
+
 	GdkColor		backPattern,
 					backPattern2;
-					
+
 	PangoFontDescription
-					*tableFont,
-					*tableFontB,
-					*tableFontI,
-					*tableFontBI;
-					
+	*tableFont,
+	*tableFontB,
+	*tableFontI,
+	*tableFontBI;
+
 	char			cursorState;
-	
+
 	GtkWidget*		editBox;
 	GdkRectangle	textBoxRect,
 					limits;
-	
+
 	long			activeColumn,
 					activeColumn2;
-	
+
 	GdkGC*			theContext;
-	
+
 };
 
 #endif

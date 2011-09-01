@@ -1,13 +1,13 @@
 /*
 	Event Types and Generators
-	
+
 	Sergei L. Kosakovsky Pond, May-August 2000.
 */
 
 #include "HYEventTypes.h"
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 
 _String	 _hyScrollingEvent 		 ("Scroll");
@@ -29,13 +29,13 @@ _String	 _hyGlobalDFKillEvent    ("KillDF");
 _String	 _hyGlobalDSKillEvent    ("KillDS");
 _String	 _hyGlobalTreeKillEvent  ("KillTree");
 _String	 _hyGlobalChangeEvent	 ("Change");
-_String	 _hyContextPopUp		 ("CPopUp");		
+_String	 _hyContextPopUp		 ("CPopUp");
 _String	 _hyTextEditChange		 ("TEChange");
-_String  _hyGlobalCloseWindow	 ("CW");		
+_String  _hyGlobalCloseWindow	 ("CW");
 _String  _hyGlobalChangeLF		 ("CLF");
 _String  _hyGlobalChangeLFParams ("CLFP");
-_String  _hyGlobalSetTreePanelSelection 
-								 ("STPS");
+_String  _hyGlobalSetTreePanelSelection
+("STPS");
 
 //____________________________________________________
 
@@ -83,9 +83,10 @@ _HYEvent*	generateScrollEvent (int h,int v,long objID)
 	_String eventClass (_hyScrollingEvent),
 			eventData ((long)h);
 	eventData = eventData & ','& _String ((long)v);
-	if (objID>=0)
+	if (objID>=0) {
 		eventData = _String (objID)&','&eventData;
-		
+	}
+
 	return	new _HYEvent (eventClass,eventData);
 }
 
@@ -172,8 +173,8 @@ void	postLFKillEvent (long objID,long lfID)
 			eventData (objID);
 	eventData = eventData & ','& _String (lfID);
 	_HYEvent*
-			killEvent = new _HYEvent (eventClass,eventData);
-			
+	killEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << killEvent;
 }
 
@@ -186,8 +187,8 @@ void	postLFSpawnEvent (long objID,long lfID)
 			eventData (objID);
 	eventData = eventData & ','& _String (lfID);
 	_HYEvent*
-			spawnEvent = new _HYEvent (eventClass,eventData);
-			
+	spawnEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << spawnEvent;
 }
 
@@ -199,8 +200,8 @@ void	postDSKillEvent (long objID,long lfID)
 			eventData (objID);
 	eventData = eventData & ','& _String (lfID);
 	_HYEvent*
-			killEvent = new _HYEvent (eventClass,eventData);
-			
+	killEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << killEvent;
 }
 
@@ -212,8 +213,8 @@ void	postTreeKillEvent (long objID,long lfID)
 			eventData (objID);
 	eventData = eventData & ','& _String (lfID);
 	_HYEvent*
-			killEvent = new _HYEvent (eventClass,eventData);
-			
+	killEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << killEvent;
 }
 
@@ -225,8 +226,8 @@ void	postDFKillEvent (long objID,long lfID)
 			eventData (objID);
 	eventData = eventData & ','& _String (lfID);
 	_HYEvent*
-			killEvent = new _HYEvent (eventClass,eventData);
-			
+	killEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << killEvent;
 }
 
@@ -238,8 +239,8 @@ void	postObjectChangelEvent (long senderID,long objectKind, long objectID)
 			eventData (senderID);
 	eventData = eventData & ','& _String ((objectKind<<28)+objectID);
 	_HYEvent*
-			killEvent = new _HYEvent (eventClass,eventData);
-			
+	killEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << killEvent;
 }
 
@@ -270,8 +271,8 @@ void	postWindowCloseEvent (long senderID)
 	_String eventClass (_hyGlobalCloseWindow),
 			eventData (senderID);
 	_HYEvent*
-			closeEvent = new _HYEvent (eventClass,eventData);
-			
+	closeEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << closeEvent;
 }
 
@@ -281,11 +282,11 @@ void	postChangeLFEvent (long senderID, long lfID)
 {
 	_String eventClass (_hyGlobalChangeLF),
 			eventData (senderID);
-			
+
 	eventData = eventData & ',' & lfID;
 	_HYEvent*
-			modEvent = new _HYEvent (eventClass,eventData);
-			
+	modEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << modEvent;
 }
 
@@ -295,11 +296,11 @@ void	postChangeLFParamsEvent (long senderID, long lfID)
 {
 	_String eventClass (_hyGlobalChangeLFParams),
 			eventData (senderID);
-			
+
 	eventData = eventData & ',' & lfID;
 	_HYEvent*
-			modEvent = new _HYEvent (eventClass,eventData);
-			
+	modEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << modEvent;
 }
 
@@ -309,11 +310,11 @@ void	postSetTreePanelSelection (long treeID, _String* sel)
 {
 	_String eventClass (_hyGlobalSetTreePanelSelection),
 			eventData;
-			
+
 	eventData = _String(treeID) & ',' & *sel;
 	_HYEvent*
-			modEvent = new _HYEvent (eventClass,eventData);
-			
+	modEvent = new _HYEvent (eventClass,eventData);
+
 	GlobalGUIEventQueue << modEvent;
 }
 

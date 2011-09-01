@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2006
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -44,75 +44,75 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //_________________________________________________________
 
-class _CString:public _String { // compressible string
-	
-	public:
-			_CString (void); 
-				//does nothing
-			_CString (_String&);
-				// string contructor
-			_CString (char*);
-				// data constructor
-			_CString (unsigned long l, bool flag);
-				// data constructor
-			_CString (char);
-				// data constructor
-virtual 	~_CString(void);
- 				//destructor
- 				
- 			virtual void operator << (_String*);
- 				// append into operator
+class _CString:public _String   // compressible string
+{
 
- 			virtual void operator << (char);
- 				// append into operator
- 				
- 			virtual void Finalize (void);
+public:
+	_CString (void);
+	//does nothing
+	_CString (_String&);
+	// string contructor
+	_CString (char*);
+	// data constructor
+	_CString (unsigned long l, bool flag);
+	// data constructor
+	_CString (char);
+	// data constructor
+	virtual 	~_CString(void);
+	//destructor
 
-virtual		BaseRef	makeDynamic (void);
-				// create a dynamic copy of this object 	
-				
-virtual		long	FreeUpMemory (long);
-				
-void		SetFlag (unsigned char flag) { 
-					compressionType|=flag; }
-bool		IsFlag  (unsigned char flag) { 
-					return (bool)(compressionType&flag); }
-static		_String*	SelectAlpha (unsigned char);
-				
-_Parameter		LZWCompress (unsigned char theAlpha); // returns compression ratio
-_Parameter		FrequencyCompress(unsigned char theAlpha, bool  doit = true);
-_Parameter		BestCompress(unsigned char theAlpha, long triggerSize = 25);
+	virtual void operator << (_String*);
+	// append into operator
 
-_String*		Decompress (void);
+	virtual void operator << (char);
+	// append into operator
 
-bool		IsCompressed (void)
-			{
-				return (IsFlag (LZWCOMPRESSION)||IsFlag(FREQCOMPRESSION));	
-			}			
-			
-void		SetDecompressed (void)
-			{
-				compressionType&=0xf0;	
-			}			
- 				
-virtual		void	Duplicate (BaseRef ref);
+	virtual void Finalize (void);
+
+	virtual		BaseRef	makeDynamic (void);
+	// create a dynamic copy of this object
+
+	virtual		long	FreeUpMemory (long);
+
+	void		SetFlag (unsigned char flag) {
+		compressionType|=flag;
+	}
+	bool		IsFlag  (unsigned char flag) {
+		return (bool)(compressionType&flag);
+	}
+	static		_String*	SelectAlpha (unsigned char);
+
+	_Parameter		LZWCompress (unsigned char theAlpha); // returns compression ratio
+	_Parameter		FrequencyCompress(unsigned char theAlpha, bool  doit = true);
+	_Parameter		BestCompress(unsigned char theAlpha, long triggerSize = 25);
+
+	_String*		Decompress (void);
+
+	bool		IsCompressed (void) {
+		return (IsFlag (LZWCOMPRESSION)||IsFlag(FREQCOMPRESSION));
+	}
+
+	void		SetDecompressed (void) {
+		compressionType&=0xf0;
+	}
+
+	virtual		void	Duplicate (BaseRef ref);
 
 
-_String*		DecompressFrequency (void);
-_String*		DecompressLZW (void);
- 			
- 			// compression flag
- 			
-			unsigned long			 allocatedSpace;			
-		private:
-		
-			unsigned char	 compressionType;
+	_String*		DecompressFrequency (void);
+	_String*		DecompressLZW (void);
+
+	// compression flag
+
+	unsigned long			 allocatedSpace;
+private:
+
+	unsigned char	 compressionType;
 };
 
 //_________________________________________________________
- 
+
 
 void		SetAlphabet (_String&);
- 			
+
 #endif
- 			

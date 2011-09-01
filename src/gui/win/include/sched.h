@@ -3,7 +3,7 @@
  *
  * Purpose:
  *      Provides an implementation of POSIX realtime extensions
- *      as defined in 
+ *      as defined in
  *
  *              POSIX 1003.1b-1993      (POSIX.1b)
  *
@@ -12,25 +12,25 @@
  *      Pthreads-win32 - POSIX Threads Library for Win32
  *      Copyright(C) 1998 John E. Bossom
  *      Copyright(C) 1999,2005 Pthreads-win32 contributors
- * 
+ *
  *      Contact Email: rpj@callisto.canberra.edu.au
- * 
+ *
  *      The current list of contributors is contained
  *      in the file CONTRIBUTORS included with the source
  *      code distribution. The list can also be seen at the
  *      following World Wide Web location:
  *      http://sources.redhat.com/pthreads-win32/contributors.html
- * 
+ *
  *      This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
  *      License as published by the Free Software Foundation; either
  *      version 2 of the License, or (at your option) any later version.
- * 
+ *
  *      This library is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *      Lesser General Public License for more details.
- * 
+ *
  *      You should have received a copy of the GNU Lesser General Public
  *      License along with this library in the file COPYING.LIB;
  *      if not, write to the Free Software Foundation, Inc.,
@@ -127,15 +127,15 @@ typedef int pid_t;
 /* Thread scheduling policies */
 
 enum {
-  SCHED_OTHER = 0,
-  SCHED_FIFO,
-  SCHED_RR,
-  SCHED_MIN   = SCHED_OTHER,
-  SCHED_MAX   = SCHED_RR
+	SCHED_OTHER = 0,
+	SCHED_FIFO,
+	SCHED_RR,
+	SCHED_MIN   = SCHED_OTHER,
+	SCHED_MAX   = SCHED_RR
 };
 
 struct sched_param {
-  int sched_priority;
+	int sched_priority;
 };
 
 #ifdef __cplusplus
@@ -143,26 +143,26 @@ extern "C"
 {
 #endif                          /* __cplusplus */
 
-PTW32_DLLPORT int __cdecl sched_yield (void);
+	PTW32_DLLPORT int __cdecl sched_yield (void);
 
-PTW32_DLLPORT int __cdecl sched_get_priority_min (int policy);
+	PTW32_DLLPORT int __cdecl sched_get_priority_min (int policy);
 
-PTW32_DLLPORT int __cdecl sched_get_priority_max (int policy);
+	PTW32_DLLPORT int __cdecl sched_get_priority_max (int policy);
 
-PTW32_DLLPORT int __cdecl sched_setscheduler (pid_t pid, int policy);
+	PTW32_DLLPORT int __cdecl sched_setscheduler (pid_t pid, int policy);
 
-PTW32_DLLPORT int __cdecl sched_getscheduler (pid_t pid);
+	PTW32_DLLPORT int __cdecl sched_getscheduler (pid_t pid);
 
-/*
- * Note that this macro returns ENOTSUP rather than
- * ENOSYS as might be expected. However, returning ENOSYS
- * should mean that sched_get_priority_{min,max} are
- * not implemented as well as sched_rr_get_interval.
- * This is not the case, since we just don't support
- * round-robin scheduling. Therefore I have chosen to
- * return the same value as sched_setscheduler when
- * SCHED_RR is passed to it.
- */
+	/*
+	 * Note that this macro returns ENOTSUP rather than
+	 * ENOSYS as might be expected. However, returning ENOSYS
+	 * should mean that sched_get_priority_{min,max} are
+	 * not implemented as well as sched_rr_get_interval.
+	 * This is not the case, since we just don't support
+	 * round-robin scheduling. Therefore I have chosen to
+	 * return the same value as sched_setscheduler when
+	 * SCHED_RR is passed to it.
+	 */
 #define sched_rr_get_interval(_pid, _interval) \
   ( errno = ENOTSUP, (int) -1 )
 

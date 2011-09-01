@@ -1,6 +1,6 @@
 /*
 	Graphics Window Object  glue for GTK+
-	
+
 	Sergei L. Kosakovsky Pond, October 2004
 */
 
@@ -17,15 +17,15 @@ void	_HYGWindow::_Paint (Ptr)
 	int t,l,b,r;
 	_VisibleContents (t,l,b,r);
 	//printf ("GPaint on %d %d %d %d\n", t, l, b, r);
-	gdk_draw_drawable (GDK_DRAWABLE(windowContent->window), theContext, thePane, l, t, 
-						windowContent->allocation.x, windowContent->allocation.y, r-l+1, b-t+1); 
+	gdk_draw_drawable (GDK_DRAWABLE(windowContent->window), theContext, thePane, l, t,
+					   windowContent->allocation.x, windowContent->allocation.y, r-l+1, b-t+1);
 }
 
 //__________________________________________________________________
 
 void	_HYGWindow::_Update (Ptr)
 {
-	_Paint (nil);	
+	_Paint (nil);
 }
 
 //__________________________________________________________________
@@ -34,23 +34,20 @@ void	_HYGWindow::_Update (Ptr)
 bool 		_HYGWindow::_ProcessMenuSelection (long msel)
 {
 	bool		done = false;
-	switch (msel)
-	{
-		case HY_WINDOW_MENU_ID_EDIT+1:
-		{
-			_CopyToClipboard ();
-			done = true;
-		}	
-		break;
-		
-		case HY_WINDOW_MENU_ID_FILE+1:
-		{
-			_SavePicture (GetTitle());
-			done = true;
-		}	
-		break;
+	switch (msel) {
+	case HY_WINDOW_MENU_ID_EDIT+1: {
+		_CopyToClipboard ();
+		done = true;
 	}
-	
+	break;
+
+	case HY_WINDOW_MENU_ID_FILE+1: {
+		_SavePicture (GetTitle());
+		done = true;
+	}
+	break;
+	}
+
 	return _HYWindow::_ProcessMenuSelection(msel);
 }
 

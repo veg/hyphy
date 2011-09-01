@@ -1,6 +1,6 @@
 /*
 	Sequence panel code
-	
+
 	Sergei L. Kosakovsky Pond, August 2000.
 */
 
@@ -16,46 +16,44 @@
 
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 //__________________________________________________________________
 
 _HYSequencePane::_HYSequencePane(_HYRect s, Ptr p, int h, int w):_HYCanvas (s,p,h,w,32)
 {
 	startColumn = endColumn = startRow = endRow = headerWidth = 0;
-	for (long i=0; i<256; i++)
+	for (long i=0; i<256; i++) {
 		colorMap[i] = 0;
+	}
 	_HYFont displayFont;
-	#ifdef __MAC__
-		displayFont.face = "Monaco";
-		displayFont.size = 10;
-	#endif
-	#ifdef __WINDOZE__
-		displayFont.face = "Courier";
-		displayFont.size = 14;	
-	#endif
-	#ifdef __HYPHY_GTK__
-		displayFont.face = _HY_MONO_FONT;
-		displayFont.size = 12;	
-	#endif
+#ifdef __MAC__
+	displayFont.face = "Monaco";
+	displayFont.size = 10;
+#endif
+#ifdef __WINDOZE__
+	displayFont.face = "Courier";
+	displayFont.size = 14;
+#endif
+#ifdef __HYPHY_GTK__
+	displayFont.face = _HY_MONO_FONT;
+	displayFont.size = 12;
+#endif
 	displayFont.style = HY_FONT_PLAIN;
 	StartDraw();
 	_HYGraphicPane::SetFont(displayFont);
 	EndDraw();
 	charWidth    = GetMaxCharWidth (displayFont)+1;
 	invertColors = false;
-	backColor = (_HYColor)
-	{
+	backColor = (_HYColor) {
 		0xDE,0xDE,0xDE
 	};
 
-	headerColor = (_HYColor)
-	{
+	headerColor = (_HYColor) {
 		180,167,150
 	};
-	
-	highlightColor = (_HYColor)
-	{
+
+	highlightColor = (_HYColor) {
 		75,75,75
 	};
 
@@ -75,73 +73,70 @@ _HYSequencePane::_HYSequencePane(_HYRect s, Ptr p, int h, int w):_HYCanvas (s,p,
 //__________________________________________________________________
 void _HYSequencePane::InsertColumn(_String* newColumn, long newIndex, bool update)
 {
-	if (newColumn->sLength)
-	{
-		if (columnStrings.lLength)
-		{
-			if (((_String*)columnStrings(0))->sLength!=newColumn->sLength) return;
+	if (newColumn->sLength) {
+		if (columnStrings.lLength) {
+			if (((_String*)columnStrings(0))->sLength!=newColumn->sLength) {
+				return;
+			}
 		}
 		columnStrings.InsertElement (newColumn,newIndex,false);
 	}
-	if (update)
+	if (update) {
 		BuildPane();
+	}
 }
 //__________________________________________________________________
 void _HYSequencePane::RemoveColumn(long killIndex, bool update)
 {
-	if ((killIndex>=0)&&(killIndex<columnStrings.lLength))
-	{
+	if ((killIndex>=0)&&(killIndex<columnStrings.lLength)) {
 		long k;
-		if ((k=hiliteColumns.BinaryFind(killIndex))>=0)
+		if ((k=hiliteColumns.BinaryFind(killIndex))>=0) {
 			hiliteColumns.Delete (k);
+		}
 		columnStrings.Delete(killIndex);
-		if (update)
+		if (update) {
 			BuildPane();
+		}
 	}
 }
 //__________________________________________________________________
 void _HYSequencePane::SetCharColor (unsigned char c, _HYColor newColor, bool update)
 {
 	long k 		= HYColorToLong (newColor),
-		 f,
-		 count	=0;
-		 
-	for (f=0;f<256;f++)
-		if (colorMap[f]==colorMap[c]) count++;
+			f,
+			count	=0;
+
+	for (f=0; f<256; f++)
+		if (colorMap[f]==colorMap[c]) {
+			count++;
+		}
 
 	f = characterColors.Find(k);
-	if (count>1)
-	{
-		if (f<0)
-		{
+	if (count>1) {
+		if (f<0) {
 			f = characterColors.lLength;
 			characterColors<<k;
 		}
-	}
-	else
-	{
-		if (f<0)
-		{
+	} else {
+		if (f<0) {
 			characterColors.lData[colorMap[c]] = k;
 			f = colorMap[c];
-		}
-		else
-		{
+		} else {
 			count = colorMap[c];
-			if (k!=characterColors[count])
-			{
+			if (k!=characterColors[count]) {
 				characterColors.Delete(count);
-				for (k=0;k<256;k++)
-				{
-					if (colorMap[k]>count)
+				for (k=0; k<256; k++) {
+					if (colorMap[k]>count) {
 						colorMap[k]--;
+					}
 				}
 			}
 		}
 	}
 	colorMap[c] = f;
-	if (update)
-		BuildPane();	
+	if (update) {
+		BuildPane();
+	}
 }
 
 //__________________________________________________________________
@@ -182,52 +177,50 @@ void	_HYSequencePane::SetHighliteColor (_HYColor newColor)
 void	_HYSequencePane::BuildHeaders (void)
 {
 	long h,v,slotHeight = GetSlotHeight(),k;
-	long visWidth = _HYCanvas::GetMaxW()-headerWidth-5, 
+	long visWidth = _HYCanvas::GetMaxW()-headerWidth-5,
 		 visHeight = _HYCanvas::GetMaxH()-5,
 		 selectionIndex = 0;
-		  
-	if (settings.width&HY_COMPONENT_V_SCROLL) visWidth-=HY_SCROLLER_WIDTH;
-	if (settings.width&HY_COMPONENT_H_SCROLL) visHeight-=HY_SCROLLER_WIDTH;
 
-	if (headerWidth)
-	{
+	if (settings.width&HY_COMPONENT_V_SCROLL) {
+		visWidth-=HY_SCROLLER_WIDTH;
+	}
+	if (settings.width&HY_COMPONENT_H_SCROLL) {
+		visHeight-=HY_SCROLLER_WIDTH;
+	}
+
+	if (headerWidth) {
 		_HYRect	 r = {0,0,0,0,1};
 		_HYColor    blackC = {0,0,0},
 					selectColor = highlightColor;
-		
+
 		SetColor(headerColor);
 		r.right =  headerWidth;
-		if (numbers)
-		{
+		if (numbers) {
 			r.bottom = (GetSlotHeight()+1)-1;
 			FillRect(r);
 			r.top = r.bottom+2;
-		}
-		else
+		} else {
 			r.top = 0;
+		}
 		r.bottom = visHeight;
 		FillRect(r);
-		
-		if (numbers)
+
+		if (numbers) {
 			v = slotHeight+(GetSlotHeight()+1);
-		else
+		} else {
 			v = slotHeight;
-			
-		if (vselection.lLength)
-		{
+		}
+
+		if (vselection.lLength) {
 			SetColor (selectColor);
-			for (h=startRow; h<endRow; h++)
-			{
-				if (selectionIndex<vselection.lLength)
-				{
+			for (h=startRow; h<endRow; h++) {
+				if (selectionIndex<vselection.lLength) {
 					k = vselection.lData[selectionIndex];
-					while ((k<h)&&(selectionIndex<vselection.lLength))
-					{
+					while ((k<h)&&(selectionIndex<vselection.lLength)) {
 						selectionIndex++;
 						k = vselection.lData[selectionIndex];
 					}
-					if (h==k)
-					{
+					if (h==k) {
 						_HYRect invR;
 						invR.left = 0;
 						invR.right = headerWidth;
@@ -236,34 +229,29 @@ void	_HYSequencePane::BuildHeaders (void)
 						FillRect (invR);
 						selectionIndex++;
 					}
-				}			
-				else
-					break;	
+				} else {
+					break;
+				}
 			}
 		}
 		SetColor (blackC);
 		for (h=startRow; h<endRow; h++)
-		if (nameDisplayFlags&HY_SEQUENCE_PANE_NAMES_SHORT)
-		{
-			for (h=startRow; h<endRow; h++,v+=slotHeight)
-			{
-				_String *thisString = (_String*)rowHeaders(speciesIndex.lData[h]);
-				if (thisString->sLength<=HY_SEQUENCE_PANE_SHORT_WIDTH)
-					DisplayText (*thisString,v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
-				else
-				{
-					_String chopped (*thisString);
-					chopped.Trim(0,HY_SEQUENCE_PANE_SHORT_WIDTH-1);
-					chopped.sData[HY_SEQUENCE_PANE_SHORT_WIDTH-1]='-';
-					DisplayText (chopped,v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
+			if (nameDisplayFlags&HY_SEQUENCE_PANE_NAMES_SHORT) {
+				for (h=startRow; h<endRow; h++,v+=slotHeight) {
+					_String *thisString = (_String*)rowHeaders(speciesIndex.lData[h]);
+					if (thisString->sLength<=HY_SEQUENCE_PANE_SHORT_WIDTH) {
+						DisplayText (*thisString,v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
+					} else {
+						_String chopped (*thisString);
+						chopped.Trim(0,HY_SEQUENCE_PANE_SHORT_WIDTH-1);
+						chopped.sData[HY_SEQUENCE_PANE_SHORT_WIDTH-1]='-';
+						DisplayText (chopped,v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
+					}
 				}
-			}
-		}
-		else			
-			for (h=startRow; h<endRow; h++,v+=slotHeight)
-			{
-				DisplayText (*(_String*)rowHeaders(speciesIndex.lData[h]),v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
-			}
+			} else
+				for (h=startRow; h<endRow; h++,v+=slotHeight) {
+					DisplayText (*(_String*)rowHeaders(speciesIndex.lData[h]),v,HY_SEQUENCE_PANE_CHAR_SPACING/2,true);
+				}
 	}
 }
 
@@ -271,73 +259,76 @@ void	_HYSequencePane::BuildHeaders (void)
 //__________________________________________________________________
 void	_HYSequencePane::BuildPane (bool setport)
 {
-	if (setport) 
-	{	
-		StartDraw();		
+	if (setport) {
+		StartDraw();
 		EraseAll();
 	}
-	if (columnStrings.lLength)
-	{
+	if (columnStrings.lLength) {
 		long visWidth  = _HYCanvas::GetMaxW()-headerWidth-5,
 			 visHeight = _HYCanvas::GetMaxH()-5,
 			 rowCount = speciesIndex.lLength,
 			 slotHeight = GetSlotHeight(),h,v,lastColor = -1, selectionIndex = 0,
 			 c;
-		if (settings.width&HY_COMPONENT_V_SCROLL) visWidth-=HY_SCROLLER_WIDTH;
-		if (settings.width&HY_COMPONENT_H_SCROLL) visHeight-=HY_SCROLLER_WIDTH;
-		if (startColumn<0)
+		if (settings.width&HY_COMPONENT_V_SCROLL) {
+			visWidth-=HY_SCROLLER_WIDTH;
+		}
+		if (settings.width&HY_COMPONENT_H_SCROLL) {
+			visHeight-=HY_SCROLLER_WIDTH;
+		}
+		if (startColumn<0) {
 			startColumn = 0;
-		if (startRow<0)
+		}
+		if (startRow<0) {
 			startRow = 0;
-		if (setport)
-		{
+		}
+		if (setport) {
 			endColumn = startColumn+visWidth/charWidth;
 			h = (endColumn-startColumn)/5;
 			endColumn = startColumn+(visWidth-h)/charWidth;
 			endRow = startRow+visHeight/slotHeight;
 		}
-		if (endColumn>columnStrings.lLength)
+		if (endColumn>columnStrings.lLength) {
 			endColumn = columnStrings.lLength;
-		if (endRow>rowCount)
+		}
+		if (endRow>rowCount) {
 			endRow = rowCount;
-		
+		}
+
 		_HYRect		r = {0,0,visHeight,visWidth+headerWidth,1},
 					backCharRect;
-		
-		_HYColor    blackC      = {0,0,0}, 
-					charColor   = {0,0,0}, 
-					whiteC	    = {255,255,255},
-					selectColor = highlightColor;
 
-		if (setport)
+		_HYColor    blackC      = {0,0,0},
+					charColor   = {0,0,0},
+					whiteC	    = {255,255,255},
+					 selectColor = highlightColor;
+
+		if (setport) {
 			SetColor	(backColor);
-		else
-		{
-			selectColor = (_HYColor){160,160,160};
+		} else {
+			selectColor = (_HYColor) {
+				160,160,160
+			};
 			SetColor	  (whiteC);
 		}
-		
+
 		FillRect	(r);
-					
+
 		SetColor (blackC);
 		BuildHeaders();
-		if (numbers)
-		{
+		if (numbers) {
 			r.left = 0;
 			r.right = visWidth+headerWidth;
 			r.bottom = (GetSlotHeight()+1);
 			SetColor (headerColor);
 			FillRect(r);
-			if (setport)
-			{
+			if (setport) {
 				SetColor (blackC);
 				r.top = r.bottom;
 				DrawLine 	(r);
 			}
 		}
-		
-		if (setport)
-		{
+
+		if (setport) {
 			r.left = r.right = headerWidth;
 			r.top = 0;
 			r.bottom = visHeight;
@@ -348,313 +339,308 @@ void	_HYSequencePane::BuildPane (bool setport)
 		r.bottom = visHeight;
 		h = HY_SEQUENCE_PANE_CHAR_SPACING/2+headerWidth;
 		visWidth+=headerWidth;
-		for (c = startColumn; c < endColumn; c++,h+=charWidth)
-		{
-			if (h+charWidth>visWidth)
-			{
+		for (c = startColumn; c < endColumn; c++,h+=charWidth) {
+			if (h+charWidth>visWidth) {
 				endColumn = c;
 				break;
 			}
-			
+
 			bool isColumnSelected = false;
-			
-			if (selectionIndex<selection.lLength)
-			{
+
+			if (selectionIndex<selection.lLength) {
 				rowCount = selection.lData[selectionIndex];
-				while ((rowCount<c)&&(selectionIndex<selection.lLength))
-				{
+				while ((rowCount<c)&&(selectionIndex<selection.lLength)) {
 					selectionIndex++;
 					rowCount = selection.lData[selectionIndex];
 				}
-				
-				if (c==rowCount)
-				{
-					if (!invertColors)
-					{
+
+				if (c==rowCount) {
+					if (!invertColors) {
 						_HYRect invR;
 						invR.top    = (GetSlotHeight()+1)+1;
 						invR.bottom = visHeight-1;
 						invR.right  = h+charWidth;
 						invR.left   = h;
-						
-						if (c&&(c%blockWidth==0))
+
+						if (c&&(c%blockWidth==0)) {
 							invR.right+=2;
-						else
-							if (c+1==endColumn)
-								invR.right+=3;
-							
+						} else if (c+1==endColumn) {
+							invR.right+=3;
+						}
+
 						charColor = GetColor();
 						SetColor (selectColor);
 						FillRect (invR);
 						SetColor (charColor);
-						
+
 					}
 					selectionIndex++;
 					isColumnSelected = true;
 				}
 			}
-			
-			if (c && (c%blockWidth==0) && (setport|| c>startColumn) )
-			{
+
+			if (c && (c%blockWidth==0) && (setport|| c>startColumn) ) {
 				SetColor (blackC);
-				if (numbers)
-				{
+				if (numbers) {
 					_String number (c);
-					#ifdef __MAC__
-						rowCount = h-2-GetVisibleStringWidth(number);
-					#else
-						rowCount = h-2-GetVisibleStringWidth(number, font);	
-					#endif
-					if (rowCount>headerWidth)
+#ifdef __MAC__
+					rowCount = h-2-GetVisibleStringWidth(number);
+#else
+					rowCount = h-2-GetVisibleStringWidth(number, font);
+#endif
+					if (rowCount>headerWidth) {
 						DisplayText (number,slotHeight-3,rowCount,true);
+					}
 				}
-				if (setport)
-				{
+				if (setport) {
 					r.left = r.right = h;
 					DrawLine (r);
 				}
 				SetColor (charColor);
 				h+=2;
 			}
-			
-			if (numbers)
+
+			if (numbers) {
 				v = slotHeight+(GetSlotHeight()+1);
-			else
+			} else {
 				v = slotHeight;
-				
+			}
+
 			_String 	  *thisString = (_String*)columnStrings(c);
-			
+
 			unsigned char topChar = showDots?thisString->sData[speciesIndex.lData[0]]:0;
-			
+
 			//if (!setport)
-				//SetColor (blackC);
-			
-			backCharRect = (_HYRect)
-			{
+			//SetColor (blackC);
+
+			backCharRect = (_HYRect) {
 				v-slotHeight+1,h-1,v+1,h+charWidth-1,0
 			};
-			if ((c+1)%blockWidth == 0)
+			if ((c+1)%blockWidth == 0) {
 				backCharRect.right++;
-			
-			for (long r = startRow; r < endRow; r++,v+=slotHeight)
-			{
+			}
+
+			for (long r = startRow; r < endRow; r++,v+=slotHeight) {
 				unsigned char thisC = thisString->sData[speciesIndex.lData[r]];
 				long	 myColor	= colorMap[thisC];
-				
-				if (r && thisC==topChar)
+
+				if (r && thisC==topChar) {
 					thisC = '.';
-				
+				}
+
 				//if (setport)
 				{
-					if (invertColors && !isColumnSelected)
-					{
+					if (invertColors && !isColumnSelected) {
 						charColor = LongToHYColor (characterColors.lData[myColor]);
-						if ((long)charColor.R+charColor.G+charColor.B > 100)
-						{
+						if ((long)charColor.R+charColor.G+charColor.B > 100) {
 							SetColor (charColor);
 							FillRect 	(backCharRect);
 						}
 						backCharRect.top    += slotHeight;
 						backCharRect.bottom += slotHeight;
 						SetColor	(blackC);
+					} else if (colorMap[thisC]!=lastColor) {
+						lastColor = colorMap[thisC];
+						charColor = LongToHYColor(characterColors.lData[lastColor]);
+						SetColor (charColor);
 					}
-					else
-						if (colorMap[thisC]!=lastColor)
-						{
-							lastColor = colorMap[thisC];
-							charColor = LongToHYColor(characterColors.lData[lastColor]);
-							SetColor (charColor);
-						}
 				}
 				DisplayChar (thisC,v,h);
 			}
 		}
-		
-		if ((!setport)&&(c%blockWidth == 0))
-		{
+
+		if ((!setport)&&(c%blockWidth == 0)) {
 			SetColor (blackC);
-			if (numbers)
-			{
+			if (numbers) {
 				_String number (c);
-				#ifdef __MAC__
-					rowCount = h-2-GetVisibleStringWidth(number);
-				#else
-					rowCount = h-2-GetVisibleStringWidth(number, font);	
-				#endif
-				if (rowCount>headerWidth)
+#ifdef __MAC__
+				rowCount = h-2-GetVisibleStringWidth(number);
+#else
+				rowCount = h-2-GetVisibleStringWidth(number, font);
+#endif
+				if (rowCount>headerWidth) {
 					DisplayText (number,slotHeight-3,rowCount,true);
+				}
 			}
 		}
 		SetColor (blackC);
 		r.left = 0;
 		r.right = visWidth;
-		
-			
-		if (settings.width&HY_COMPONENT_BORDER_B)
-		{
+
+
+		if (settings.width&HY_COMPONENT_BORDER_B) {
 			r.top = r.bottom = visHeight-1;
-			if (setport) DrawLine(r);
+			if (setport) {
+				DrawLine(r);
+			}
 		}
-		
+
 	}
-	if (setport) 
+	if (setport) {
 		EndDraw();
+	}
 }
 
 //__________________________________________________________________
 void	_HYSequencePane::HScrollPane (long dx)
 {
-	#ifndef __HYPHY_GTK__
+#ifndef __HYPHY_GTK__
 	if (abs(dx)>=endColumn-startColumn-5)
-	#endif
+#endif
 	{
 		startColumn+=dx;
 		BuildPane();
 		_MarkForUpdate();
 		return;
 	}
-	
+
 	long visWidth = _HYCanvas::GetMaxW()-headerWidth-5,
 		 visHeight = _HYCanvas::GetMaxH()-5,
 		 slotHeight = GetSlotHeight(),h,v,lastColor = -1,adx,
 		 loopStart,loopEnd,selectionIndex = 0;
-	
-	if (settings.width&HY_COMPONENT_V_SCROLL) visWidth-=HY_SCROLLER_WIDTH;
-	if (settings.width&HY_COMPONENT_H_SCROLL) visHeight-=HY_SCROLLER_WIDTH;
 
-	if (dx>0)
-	{
-		if (endColumn+dx>columnStrings.lLength)
+	if (settings.width&HY_COMPONENT_V_SCROLL) {
+		visWidth-=HY_SCROLLER_WIDTH;
+	}
+	if (settings.width&HY_COMPONENT_H_SCROLL) {
+		visHeight-=HY_SCROLLER_WIDTH;
+	}
+
+	if (dx>0) {
+		if (endColumn+dx>columnStrings.lLength) {
 			dx = columnStrings.lLength-endColumn;
+		}
 		adx = dx;
 		v = (startColumn+dx)/blockWidth-startColumn/blockWidth;
-		if (startColumn&&(startColumn%blockWidth==0)) v++;
-		if ((startColumn+dx)&&((startColumn+dx)%blockWidth==0)) v--;
-	}
-	else
-	{
-		if  (startColumn<-dx)
+		if (startColumn&&(startColumn%blockWidth==0)) {
+			v++;
+		}
+		if ((startColumn+dx)&&((startColumn+dx)%blockWidth==0)) {
+			v--;
+		}
+	} else {
+		if  (startColumn<-dx) {
 			dx=-startColumn;
+		}
 		adx = -dx;
 		v = startColumn/blockWidth-(startColumn+dx)/blockWidth;
-		if (startColumn&&(startColumn%blockWidth==0)) v--;
-		if ((startColumn+dx)&&((startColumn+dx)%blockWidth==0)) v++;
+		if (startColumn&&(startColumn%blockWidth==0)) {
+			v--;
+		}
+		if ((startColumn+dx)&&((startColumn+dx)%blockWidth==0)) {
+			v++;
+		}
 	}
-	if (!dx)
+	if (!dx) {
 		return;
-			
+	}
+
 	StartDraw();
-	
+
 	h = adx*charWidth+2*v;
 	_HYRect		r = {0,0,visHeight,0,1},
 				backCharRect;
-				
+
 	visWidth+=headerWidth;
 
 	startColumn+=dx;
 	endColumn+=dx;
 
-	if (dx>0)
-	{
+	if (dx>0) {
 		r.left = headerWidth+1;
 		r.right = visWidth;
 		_SlideRect (r,0,-h);
-	}
-	else
-	{
+	} else {
 		r.left = headerWidth+1;
 		r.right = visWidth;
 		_SlideRect (r,0,h);
 	}
-	
 
-	if (dx>0)
-	{
+
+	if (dx>0) {
 		r.right = visWidth;
 		r.left = r.right-h;
-	}
-	else
-	{
+	} else {
 		r.left = headerWidth+1;
 		r.right = headerWidth+h+1;
 	}
 	SetColor	(backColor);
 	FillRect	(r);
-	_HYColor    blackC = {0,0,0}, 
+	_HYColor    blackC = {0,0,0},
 				charColor = {0,0,0},
 				selectColor = highlightColor;
-				
+
 	r.top = 0;
-	if (numbers)
-	{
+	if (numbers) {
 		r.bottom = (GetSlotHeight()+1);
 		SetColor(headerColor);
 		FillRect(r);
 		r.top = r.bottom;
-	}
-	else
+	} else {
 		r.top = r.bottom = 0;
+	}
 	SetColor	(blackC);
 
-	if (settings.width&HY_COMPONENT_BORDER_T)
+	if (settings.width&HY_COMPONENT_BORDER_T) {
 		DrawLine 	(r);
+	}
 
-	if (settings.width&HY_COMPONENT_BORDER_B)
-	{
+	if (settings.width&HY_COMPONENT_BORDER_B) {
 		r.top = r.bottom = visHeight-1;
 		DrawLine (r);
 	}
 	r.top = 0;
-	if (dx<0)
-	{		
-		if (numbers)
-		{
+	if (dx<0) {
+		if (numbers) {
 			SetColor (headerColor);
 			r.bottom = (GetSlotHeight()+1);
 			r.left = 0;
-			r.right = headerWidth;	
+			r.right = headerWidth;
 			FillRect (r);
 		}
 		h = HY_SEQUENCE_PANE_CHAR_SPACING/2+headerWidth;
-	}
-	else
-	{
+	} else {
 		h = HY_SEQUENCE_PANE_CHAR_SPACING/2+headerWidth;
-		for (v=startColumn;v<endColumn-dx;v++,h+=charWidth)
-			if (v&&(v%blockWidth)==0)
+		for (v=startColumn; v<endColumn-dx; v++,h+=charWidth)
+			if (v&&(v%blockWidth)==0) {
 				h+=2;
+			}
 	}
 	r.bottom = visHeight;
 	loopStart = dx>0?endColumn-dx:startColumn;
 	loopEnd =  dx>0?endColumn:startColumn-dx;
-	
-	if (loopStart<0) loopStart = 0;
-	if (loopEnd<0) loopEnd = 0;
-	if (loopStart>columnStrings.lLength) loopStart = columnStrings.lLength;
-	if (loopEnd>columnStrings.lLength) loopEnd = columnStrings.lLength;
-	
-	for (long c = loopStart; c < loopEnd; c++,h+=charWidth)
-	{
+
+	if (loopStart<0) {
+		loopStart = 0;
+	}
+	if (loopEnd<0) {
+		loopEnd = 0;
+	}
+	if (loopStart>columnStrings.lLength) {
+		loopStart = columnStrings.lLength;
+	}
+	if (loopEnd>columnStrings.lLength) {
+		loopEnd = columnStrings.lLength;
+	}
+
+	for (long c = loopStart; c < loopEnd; c++,h+=charWidth) {
 		bool isColumnSelected = false;
-		if (selectionIndex<selection.lLength)
-		{
+		if (selectionIndex<selection.lLength) {
 			visWidth = selection.lData[selectionIndex];
-			while ((visWidth<c)&&(selectionIndex<selection.lLength))
-			{
+			while ((visWidth<c)&&(selectionIndex<selection.lLength)) {
 				selectionIndex++;
 				visWidth = selection.lData[selectionIndex];
 			}
-			if (c==visWidth)
-			{
-				if (!invertColors)
-				{
+			if (c==visWidth) {
+				if (!invertColors) {
 					_HYRect invR;
 					invR.top = (GetSlotHeight()+1)+1;
 					invR.bottom = visHeight-1;
 					invR.right = h+charWidth;
 					invR.left = h-2;
-					if (c&&(c%blockWidth==0))
+					if (c&&(c%blockWidth==0)) {
 						invR.right+=2;
+					}
 					/*else
 						if ((c+1==loopEnd)&&(dx>0))
 							invR.right+=3;
@@ -662,50 +648,49 @@ void	_HYSequencePane::HScrollPane (long dx)
 					charColor = GetColor();
 					SetColor (selectColor);
 					FillRect (invR);
-					SetColor (charColor);					
+					SetColor (charColor);
 				}
 				selectionIndex++;
 				isColumnSelected = true;
 			}
 		}
-		if (c&&(c%blockWidth==0))
-		{
+		if (c&&(c%blockWidth==0)) {
 			SetColor (blackC);
-			if (numbers)
-			{
+			if (numbers) {
 				_String number (c);
-				
-				#ifdef __MAC__
-					visWidth = h-2-GetVisibleStringWidth(number);
-				#else
-					visWidth = h-2-GetVisibleStringWidth(number, font);
-				#endif
-				
-				if (visWidth>headerWidth)
+
+#ifdef __MAC__
+				visWidth = h-2-GetVisibleStringWidth(number);
+#else
+				visWidth = h-2-GetVisibleStringWidth(number, font);
+#endif
+
+				if (visWidth>headerWidth) {
 					DisplayText (number,slotHeight-3,visWidth,true);
+				}
 			}
 			r.left = r.right = h;
 			DrawLine (r);
 			SetColor (charColor);
 			h+=2;
 		}
-		if (numbers)
+		if (numbers) {
 			v = slotHeight+(GetSlotHeight()+1);
-		else
+		} else {
 			v = slotHeight;
-		
+		}
+
 		_String *thisString = (_String*)columnStrings(c);
 		unsigned char topChar = showDots?thisString->sData[speciesIndex.lData[0]]:0;
-		
-		backCharRect = (_HYRect)
-		{
+
+		backCharRect = (_HYRect) {
 			v-slotHeight+1,h-1,v+1,h+charWidth-1,0
 		};
-		if ((c+1)%blockWidth == 0)
+		if ((c+1)%blockWidth == 0) {
 			backCharRect.right++;
-			
-		for (long r = startRow; r < endRow; r++,v+=slotHeight)
-		{
+		}
+
+		for (long r = startRow; r < endRow; r++,v+=slotHeight) {
 			/*unsigned char thisC = thisString->sData[speciesIndex.lData[r]];
 			if (r&&(thisC==topChar))
 				thisC = '.';
@@ -718,111 +703,103 @@ void	_HYSequencePane::HScrollPane (long dx)
 			DisplayChar (thisC,v,h);*/
 			unsigned char thisC = thisString->sData[speciesIndex.lData[r]];
 			long	 myColor	= colorMap[thisC];
-			
-			if (r && thisC==topChar)
+
+			if (r && thisC==topChar) {
 				thisC = '.';
-			
-			if (invertColors && !isColumnSelected)
-			{
+			}
+
+			if (invertColors && !isColumnSelected) {
 				charColor = LongToHYColor (characterColors.lData[myColor]);
-				if ((long)charColor.R+charColor.G+charColor.B > 100)
-				{
+				if ((long)charColor.R+charColor.G+charColor.B > 100) {
 					SetColor (charColor);
 					FillRect 	(backCharRect);
 				}
 				backCharRect.top += slotHeight;
 				backCharRect.bottom += slotHeight;
 				SetColor	(blackC);
+			} else if (colorMap[thisC]!=lastColor) {
+				lastColor = colorMap[thisC];
+				charColor = LongToHYColor(characterColors.lData[lastColor]);
+				SetColor (charColor);
 			}
-			else
-				if (colorMap[thisC]!=lastColor)
-				{
-					lastColor = colorMap[thisC];
-					charColor = LongToHYColor(characterColors.lData[lastColor]);
-					SetColor (charColor);
-				}
 			DisplayChar (thisC,v,h);
 		}
 	}
-	
-	if (numbers&&(dx<0))
-	{
+
+	if (numbers&&(dx<0)) {
 		loopEnd--;
 		v = loopEnd%blockWidth;
 		visWidth = blockWidth-log(double(loopEnd+blockWidth-1))/log((double)blockWidth);
 
-		if (adx<blockWidth)
-		{
+		if (adx<blockWidth) {
 			loopStart = (startColumn-dx)%blockWidth;
 			if ((startColumn-dx)/blockWidth!=startColumn/blockWidth)
-			// scrolled thru a block divider
+				// scrolled thru a block divider
 			{
-				if (loopStart==0)
+				if (loopStart==0) {
 					h += (blockWidth-v-1)*charWidth;
-				else
+				} else {
 					h = 0;
-			}
-			else
-			{
-				if (loopStart>visWidth)
+				}
+			} else {
+				if (loopStart>visWidth) {
 					h += (blockWidth-v-1)*charWidth;
-				else
+				} else {
 					h = 0;
+				}
 			}
-		}
-		else
-		{
+		} else {
 			loopStart = (startColumn-dx)%blockWidth;
-			
-			if (loopStart) 
-				if (loopStart>=visWidth)
+
+			if (loopStart)
+				if (loopStart>=visWidth) {
 					h -= (loopStart-blockWidth)*charWidth;
-				else
+				} else {
 					h = 0;
+				}
 
 		}
-		
-		if (h)
-		{
+
+		if (h) {
 			_String number (v?((loopEnd/blockWidth)+1)*blockWidth:loopEnd);
 			SetColor (blackC);
-			#ifdef __MAC__
-				visWidth = h-2-GetVisibleStringWidth(number);
-			#else
-				visWidth = h-2-GetVisibleStringWidth(number, font);
-			#endif
-			while ((visWidth < headerWidth)&&(number.sLength))
-			{
+#ifdef __MAC__
+			visWidth = h-2-GetVisibleStringWidth(number);
+#else
+			visWidth = h-2-GetVisibleStringWidth(number, font);
+#endif
+			while ((visWidth < headerWidth)&&(number.sLength)) {
 				number.Trim (1,-1);
-				#ifdef __MAC__
-					visWidth = h-2-GetVisibleStringWidth(number);
-				#else
-					visWidth = h-2-GetVisibleStringWidth(number, font);
-				#endif
+#ifdef __MAC__
+				visWidth = h-2-GetVisibleStringWidth(number);
+#else
+				visWidth = h-2-GetVisibleStringWidth(number, font);
+#endif
 			}
-			if (number.sLength)
+			if (number.sLength) {
 				DisplayText (number,slotHeight-3,visWidth,true);
+			}
 		}
 	}
-	
-	EndDraw();	
-	if (messageRecipient)
+
+	EndDraw();
+	if (messageRecipient) {
 		messageRecipient->ProcessEvent(generateScrollEvent(0,0));
+	}
 	_MarkForUpdate();
 }
 //__________________________________________________________________
 void	_HYSequencePane::ScrollToHSelection (void)
 {
-	if (selection.lLength)
-	{
+	if (selection.lLength) {
 		long 		dx = selection.lData[0]-startColumn;
-		if ((dx<0)&&(-dx>startColumn))	
+		if ((dx<0)&&(-dx>startColumn)) {
 			dx = -startColumn;
-		else
-			if ((dx>0)&&(endColumn+dx>columnStrings.lLength))
-				dx = columnStrings.lLength-endColumn;
-				
-	    HScrollPane (dx);
+		} else if ((dx>0)&&(endColumn+dx>columnStrings.lLength)) {
+			dx = columnStrings.lLength-endColumn;
+		}
+
+		HScrollPane (dx);
 	}
 }
 
@@ -830,65 +807,58 @@ void	_HYSequencePane::ScrollToHSelection (void)
 //__________________________________________________________________
 bool	_HYSequencePane::ProcessEvent(_HYEvent* e)
 {
-	if (e->EventClass() == _hyScrollingEvent)
-	{
+	if (e->EventClass() == _hyScrollingEvent) {
 		long h,v,k,t;
 		_String firstArg = e->EventCode().Cut (0,(v=e->EventCode().Find(','))-1);
 		h = firstArg.toNum();
 		firstArg = e->EventCode().Cut (v+1,-1);
 		DeleteObject(e);
 		v = firstArg.toNum();
-		if (h||v)
-		{
-			if (h)
-			{
-				if (settings.width&HY_COMPONENT_H_SCROLL)
-				{
+		if (h||v) {
+			if (h) {
+				if (settings.width&HY_COMPONENT_H_SCROLL) {
 					k = columnStrings.lLength-endColumn+startColumn+1;
 					t = _GetHScrollerPos()*(_Parameter)k/MAX_CONTROL_VALUE;
-					if (startColumn == t)
-					{
-						if (h>0)
+					if (startColumn == t) {
+						if (h>0) {
 							t++;
-						else
+						} else {
 							t--;
+						}
 						_SetHScrollerPos((MAX_CONTROL_VALUE*(_Parameter)t)/k);
 					}
-					if (!v)
-					{
+					if (!v) {
 						HScrollPane (t-startColumn);
 						return true;
 					}
 					startColumn = t;
-				}
-				else
+				} else {
 					HScrollPane (h);
-					//startColumn += v;
+				}
+				//startColumn += v;
 
-			}
-			else
-			{
-				if (settings.width&HY_COMPONENT_V_SCROLL)
-				{
+			} else {
+				if (settings.width&HY_COMPONENT_V_SCROLL) {
 					k = RowCount()-endRow+startRow+1;
 					t = (_GetVScrollerPos()*(_Parameter)k) /MAX_CONTROL_VALUE;
-					if (startRow != t)
+					if (startRow != t) {
 						startRow = t;
-					else
-					{
-						if (v>0)
+					} else {
+						if (v>0) {
 							startRow++;
-						else
+						} else {
 							startRow--;
+						}
 						_SetVScrollerPos((MAX_CONTROL_VALUE*(_Parameter)startRow)/k);
 					}
-				}
-				else
+				} else {
 					startRow += v;
+				}
 				BuildPane();
 			}
-			if (messageRecipient)
+			if (messageRecipient) {
 				messageRecipient->ProcessEvent (generateScrollEvent(0,0));
+			}
 
 			_MarkForUpdate();
 		}
@@ -903,10 +873,12 @@ int			_HYSequencePane::GetMaxW (void)
 {
 	int res = charWidth*(columnStrings.lLength)+headerWidth;
 	res+=(columnStrings.lLength/blockWidth)*2;
-	if (settings.width&HY_COMPONENT_V_SCROLL) 
+	if (settings.width&HY_COMPONENT_V_SCROLL) {
 		res+=2*HY_SCROLLER_WIDTH;
-	if (res<settings.right) 
+	}
+	if (res<settings.right) {
 		res = settings.right;
+	}
 	return res;
 }
 
@@ -914,12 +886,14 @@ int			_HYSequencePane::GetMaxW (void)
 int			_HYSequencePane::GetMaxH (void)
 {
 	int res = (GetFont().size+HY_SEQUENCE_PANE_CHAR_SPACING)*(RowCount())+3;
-	if (settings.width&HY_COMPONENT_H_SCROLL) 
+	if (settings.width&HY_COMPONENT_H_SCROLL) {
 		res+=2*HY_SCROLLER_WIDTH;
-	else	
+	} else {
 		res+=2;
-	if (numbers) 
+	}
+	if (numbers) {
 		res += (GetSlotHeight()+1);
+	}
 
 	return res;
 }
@@ -929,17 +903,19 @@ int			_HYSequencePane::GetMinH (void)
 {
 	int res = GetFont().size+HY_SEQUENCE_PANE_CHAR_SPACING*2;
 
-	if (numbers) 
+	if (numbers) {
 		res += (GetSlotHeight()+1)+HY_SEQUENCE_PANE_CHAR_SPACING+2;
+	}
 
 	return res;
 }
 //__________________________________________________________________
 long			_HYSequencePane::RowCount (void)
-{	
+{
 	int res = 0;
-	if (columnStrings.lLength)
+	if (columnStrings.lLength) {
 		res = speciesIndex.lLength;
+	}
 	return res;
 }
 //__________________________________________________________________
@@ -954,7 +930,7 @@ void		_HYSequencePane::SetVisibleSize (_HYRect r)
 {
 	int ht = r.bottom-r.top+5,
 		wd = r.right-r.left+5;
-		
+
 	SetPaneSize (ht,wd,32);
 	hOrigin = vOrigin = 0;
 	settings.right = hSize = wd;
@@ -966,33 +942,36 @@ void		_HYSequencePane::SetVisibleSize (_HYRect r)
 		 visHeight = _HYCanvas::GetMaxH()-5,
 		 rowCount = speciesIndex.lLength;
 
-	if (settings.width&HY_COMPONENT_V_SCROLL) visWidth-=HY_SCROLLER_WIDTH;
-	if (settings.width&HY_COMPONENT_H_SCROLL) visHeight-=HY_SCROLLER_WIDTH;
+	if (settings.width&HY_COMPONENT_V_SCROLL) {
+		visWidth-=HY_SCROLLER_WIDTH;
+	}
+	if (settings.width&HY_COMPONENT_H_SCROLL) {
+		visHeight-=HY_SCROLLER_WIDTH;
+	}
 
 	endColumn = startColumn+visWidth/charWidth;
 	ht = (endColumn-startColumn)/5;
 	endColumn = startColumn+(visWidth-ht)/charWidth;
 	endRow = startRow+visHeight/GetSlotHeight();
 
-	if (endColumn>columnStrings.lLength)
-	{
+	if (endColumn>columnStrings.lLength) {
 		startColumn -= endColumn-columnStrings.lLength-1;
-		if (startColumn<0)
+		if (startColumn<0) {
 			startColumn = 0;
-		endColumn = columnStrings.lLength;	
+		}
+		endColumn = columnStrings.lLength;
 	}
-	
-	if (endRow>rowCount)
-	{
+
+	if (endRow>rowCount) {
 		startRow -= endRow-rowCount-1;
-		if (startRow<0)
+		if (startRow<0) {
 			startRow = 0;
+		}
 		endRow = rowCount;
 	}
 
-	if (settings.width&HY_COMPONENT_V_SCROLL)
-	{
-		long k = RowCount()-endRow+startRow+1;			
+	if (settings.width&HY_COMPONENT_V_SCROLL) {
+		long k = RowCount()-endRow+startRow+1;
 		_SetVScrollerPos((MAX_CONTROL_VALUE*(_Parameter)startRow)/k);
 	}
 
@@ -1007,11 +986,11 @@ void		_HYSequencePane::SetVisibleSize (_HYRect r)
 
 void		_HYSequencePane::SetBlockWidth (long bw, bool update)
 {
-	if (bw!=blockWidth)
-	{
+	if (bw!=blockWidth) {
 		blockWidth = bw;
-		if (update)
+		if (update) {
 			BuildPane();
+		}
 	}
 }
 
@@ -1019,53 +998,53 @@ void		_HYSequencePane::SetBlockWidth (long bw, bool update)
 
 void		_HYSequencePane::SetHeaders (_List* newH, bool update)
 {
-	if (newH)
-	{
+	if (newH) {
 		rowHeaders.Clear();
 		rowHeaders.Duplicate (newH);
 		speciesIndex.Clear();
 	}
-	
+
 	headerWidth = 0;
 	shortHeaderWidth = 0;
 	StartDraw();
-	for (long k=0; k<rowHeaders.lLength; k++)
-	{
+	for (long k=0; k<rowHeaders.lLength; k++) {
 		_String * thisString = (_String*)rowHeaders(k);
-		#ifdef __MAC__
-			long lW = GetVisibleStringWidth(*thisString);
-		#else
-			long lW = GetVisibleStringWidth(*thisString, font);
-		#endif
-		if (lW>headerWidth)
+#ifdef __MAC__
+		long lW = GetVisibleStringWidth(*thisString);
+#else
+		long lW = GetVisibleStringWidth(*thisString, font);
+#endif
+		if (lW>headerWidth) {
 			headerWidth = lW;
-		if (thisString->sLength<=HY_SEQUENCE_PANE_SHORT_WIDTH)
-		{
-			if (lW>shortHeaderWidth)
-				shortHeaderWidth = lW;
 		}
-		else
-		{
+		if (thisString->sLength<=HY_SEQUENCE_PANE_SHORT_WIDTH) {
+			if (lW>shortHeaderWidth) {
+				shortHeaderWidth = lW;
+			}
+		} else {
 			_String chopped (*thisString);
 			chopped.Trim(0,HY_SEQUENCE_PANE_SHORT_WIDTH-1);
-			#ifdef __MAC__
-				long sW = GetVisibleStringWidth (chopped);
-			#else
-				long sW = GetVisibleStringWidth (chopped, font);
-			#endif
-			if (sW>shortHeaderWidth)
+#ifdef __MAC__
+			long sW = GetVisibleStringWidth (chopped);
+#else
+			long sW = GetVisibleStringWidth (chopped, font);
+#endif
+			if (sW>shortHeaderWidth) {
 				shortHeaderWidth = sW;
+			}
 		}
-		if (newH)
+		if (newH) {
 			speciesIndex  << k;
+		}
 	}
 	headerWidth			+= HY_SEQUENCE_PANE_CHAR_SPACING;
 	shortHeaderWidth	+= HY_SEQUENCE_PANE_CHAR_SPACING;
 	EndDraw();
 	fullHeaderWidth = headerWidth;
-	
-	if (update)
+
+	if (update) {
 		BuildPane();
+	}
 }
 
 //__________________________________________________________________
@@ -1081,19 +1060,17 @@ void		_HYSequencePane::ChangeHeaders (void)
 
 void		_HYSequencePane::SetNameDisplayMode (unsigned char newMode, bool update)
 {
-	if (nameDisplayFlags!=newMode)
-	{
+	if (nameDisplayFlags!=newMode) {
 		nameDisplayFlags = newMode;
-		if (newMode&HY_SEQUENCE_PANE_NAMES_SHORT)
+		if (newMode&HY_SEQUENCE_PANE_NAMES_SHORT) {
 			headerWidth = shortHeaderWidth;
-		else
-		if (newMode&HY_SEQUENCE_PANE_NAMES_ALL)
+		} else if (newMode&HY_SEQUENCE_PANE_NAMES_ALL) {
 			headerWidth = fullHeaderWidth;
-		else
+		} else {
 			headerWidth = 0;
+		}
 
-		if (update)
-		{
+		if (update) {
 			BuildPane();
 			_MarkForUpdate();
 		}
@@ -1103,18 +1080,15 @@ void		_HYSequencePane::SetNameDisplayMode (unsigned char newMode, bool update)
 //__________________________________________________________________
 void		_HYSequencePane::AddColumnToSelection (long c)
 {
-	if ((c>0)&&(c<columnStrings.lLength))
-	{
-		if (selection.lLength)
-		{
-			long f = selection.BinaryFind (c);	
-			if (f<0)
-			{
+	if ((c>0)&&(c<columnStrings.lLength)) {
+		if (selection.lLength) {
+			long f = selection.BinaryFind (c);
+			if (f<0) {
 				selection.InsertElement ((BaseRef)c,-f-2,false,false);
 			}
-		}
-		else
+		} else {
 			selection<<c;
+		}
 	}
 }
 
@@ -1122,16 +1096,14 @@ void		_HYSequencePane::AddColumnToSelection (long c)
 void		_HYSequencePane::AddSpeciesToSelection (long c)
 {
 	if (c>0 && c<speciesIndex.lLength)
-		if (vselection.lLength)
-		{
-			long f = vselection.BinaryFind (c);	
-			if (f<0)
-			{
+		if (vselection.lLength) {
+			long f = vselection.BinaryFind (c);
+			if (f<0) {
 				vselection.InsertElement ((BaseRef)c,-f-2,false,false);
 			}
-		}
-		else
+		} else {
 			vselection<<c;
+		}
 }
 
 
@@ -1140,42 +1112,39 @@ void		_HYSequencePane::SelectSequenceNames (_List& list, bool send)
 {
 	selection.Clear();
 	vselection.Clear();
-	
-	for (long k=0; k<rowHeaders.lLength; k++)
-	{
+
+	for (long k=0; k<rowHeaders.lLength; k++) {
 		_String * aSeq = (_String*)rowHeaders(speciesIndex.lData[k]);
-		if (list.BinaryFind (aSeq) >= 0)
+		if (list.BinaryFind (aSeq) >= 0) {
 			vselection << k;
+		}
 	}
-	
+
 	BuildPane();
 	_MarkForUpdate();
-	if (send)
+	if (send) {
 		SendSelectionChange (true);
+	}
 }
 
 
 //__________________________________________________________________
 void		_HYSequencePane::SelectAll (bool flag)
 {
-	if (flag)
-	{
-		if (selection.lLength!=columnStrings.lLength)
-		{
+	if (flag) {
+		if (selection.lLength!=columnStrings.lLength) {
 			selection.Clear();
 			vselection.Clear();
 			selection.RequestSpace (columnStrings.lLength);
-			for (long k=0;k<columnStrings.lLength;k++)
+			for (long k=0; k<columnStrings.lLength; k++) {
 				selection<<k;
+			}
 			BuildPane();
 			_MarkForUpdate();
 			SendSelectionChange();
 		}
-	}
-	else
-	{
-		if (selection.lLength)
-		{
+	} else {
+		if (selection.lLength) {
 			selection.Clear();
 			BuildPane();
 			_MarkForUpdate();
@@ -1187,19 +1156,16 @@ void		_HYSequencePane::SelectAll (bool flag)
 //__________________________________________________________________
 void		_HYSequencePane::SelectRange (_SimpleList& range, bool vert)
 {
-	if (vert)
-	{
+	if (vert) {
 		selection.Clear();
 		vselection.Clear();
 		vselection.Duplicate(&range);
-		vselection.Sort();	
-	}	
-	else
-	{
+		vselection.Sort();
+	} else {
 		vselection.Clear();
 		selection.Clear();
 		selection.Duplicate(&range);
-		selection.Sort();	
+		selection.Sort();
 	}
 	BuildPane();
 	_MarkForUpdate();
@@ -1208,12 +1174,10 @@ void		_HYSequencePane::SelectRange (_SimpleList& range, bool vert)
 //__________________________________________________________________
 void		_HYSequencePane::MoveSpecies (long oldIndex, long newIndex)
 {
-	if ((newIndex!=oldIndex)&&(newIndex>=-1))
-	{
+	if ((newIndex!=oldIndex)&&(newIndex>=-1)) {
 		long c = speciesIndex.lData[oldIndex];
 		speciesIndex.InsertElement ((BaseRef)c,newIndex+1,false,false);
-		if (oldIndex>newIndex)
-		{
+		if (oldIndex>newIndex) {
 			oldIndex++;
 			newIndex++;
 		}
@@ -1235,237 +1199,225 @@ void		_HYSequencePane::SetSequenceOrder (_SimpleList& no)
 //__________________________________________________________________
 void		_HYSequencePane::ProcessSelectionChange (long h, long v, bool shift, bool command, bool drag)
 {
-	if (vselection.lLength)
-	{
+	if (vselection.lLength) {
 		vselection.Clear();
 		SendSelectionChange(true);
 	}
-	if (drag)
-	{
+	if (drag) {
 		long k = columnStrings.lLength-endColumn+startColumn+1,
 			 scrollAmount = 0;
-			 
+
 		if ( h<headerWidth && v>GetSlotHeight()+1)
-		// scroll in columns from the left
+			// scroll in columns from the left
 		{
-			if (selection.lData[0]>startColumn)
-			{
+			if (selection.lData[0]>startColumn) {
 				h = selection.lData[0];
-				for (v=h-1;v>=startColumn;v--)
+				for (v=h-1; v>=startColumn; v--) {
 					selection.InsertElement((BaseRef)v,0,false,false);
-				BuildPane();
-				if (startColumn == 0)
-					_MarkForUpdate();
-			}
-			if (startColumn>0)
-			{
-				long dsc = abs(dragScrollCounter);
-				
-				if (dsc < 25)
-					scrollAmount = 1;
-				else
-					if (dsc < 50)
-						scrollAmount = 2;
-					else
-						if (dsc < 150)
-							scrollAmount = 3;
-						else
-							scrollAmount = 5;
-							
-				if (scrollAmount>startColumn)
-					scrollAmount = startColumn;
-					
-				if (selection.lData[0] >= startColumn)
-				{
-					for (dsc = startColumn-1; dsc>=startColumn-scrollAmount; dsc--)
-						selection.InsertElement((BaseRef)(dsc),0,false,false);
 				}
-				else
-				{
-					if (selection.lLength)
-					{
-						if (selection.lLength < scrollAmount)
+				BuildPane();
+				if (startColumn == 0) {
+					_MarkForUpdate();
+				}
+			}
+			if (startColumn>0) {
+				long dsc = abs(dragScrollCounter);
+
+				if (dsc < 25) {
+					scrollAmount = 1;
+				} else if (dsc < 50) {
+					scrollAmount = 2;
+				} else if (dsc < 150) {
+					scrollAmount = 3;
+				} else {
+					scrollAmount = 5;
+				}
+
+				if (scrollAmount>startColumn) {
+					scrollAmount = startColumn;
+				}
+
+				if (selection.lData[0] >= startColumn) {
+					for (dsc = startColumn-1; dsc>=startColumn-scrollAmount; dsc--) {
+						selection.InsertElement((BaseRef)(dsc),0,false,false);
+					}
+				} else {
+					if (selection.lLength) {
+						if (selection.lLength < scrollAmount) {
 							scrollAmount = selection.lLength;
-							
-						if (selection.lData[selection.lLength] >= startColumn)
-						{
-							while (selection.lLength && (selection.lData[selection.lLength] >= startColumn))
+						}
+
+						if (selection.lData[selection.lLength] >= startColumn) {
+							while (selection.lLength && (selection.lData[selection.lLength] >= startColumn)) {
 								selection.Delete (selection.lLength-1);
+							}
 							BuildPane();
 						}
-													
-						for (dsc = 0; (dsc<scrollAmount)&&(selection.lLength>1); dsc++)
+
+						for (dsc = 0; (dsc<scrollAmount)&&(selection.lLength>1); dsc++) {
 							selection.Delete (selection.lLength-1);
+						}
 					}
 				}
 
-					
+
 				HScrollPane(-scrollAmount);
-				
+
 				dragScrollCounter -= scrollAmount;
-				
+
 				_SetHScrollerPos(((double)MAX_CONTROL_VALUE*startColumn)/k);
-				SendSelectionChange();	
+				SendSelectionChange();
 
 				return;
 			}
-		}
-		else
-		{
+		} else {
 			if (h>=_HYCanvas::GetMaxW()-5 && v>GetSlotHeight()+1)
-			// scroll in columns from the right
+				// scroll in columns from the right
 			{
-				if (selection.lData[selection.lLength-1]<endColumn-1)
-				{
-					for (v=selection.lData[selection.lLength-1]+1;v<endColumn;v++)
+				if (selection.lData[selection.lLength-1]<endColumn-1) {
+					for (v=selection.lData[selection.lLength-1]+1; v<endColumn; v++) {
 						selection<<v;
+					}
 					BuildPane();
-					if (endColumn==columnStrings.lLength)
+					if (endColumn==columnStrings.lLength) {
 						_MarkForUpdate();
+					}
 				}
-				if (endColumn<columnStrings.lLength)
-				{
+				if (endColumn<columnStrings.lLength) {
 					long dsc = abs(dragScrollCounter);
-					
-					if (dsc < 25)
+
+					if (dsc < 25) {
 						scrollAmount = 1;
-					else
-						if (dsc < 50)
-							scrollAmount = 2;
-						else
-							if (dsc < 150)
-								scrollAmount = 3;
-							else
-								scrollAmount = 5;
-								
-					if (scrollAmount>columnStrings.lLength-endColumn)
+					} else if (dsc < 50) {
+						scrollAmount = 2;
+					} else if (dsc < 150) {
+						scrollAmount = 3;
+					} else {
+						scrollAmount = 5;
+					}
+
+					if (scrollAmount>columnStrings.lLength-endColumn) {
 						scrollAmount = columnStrings.lLength-endColumn;
-						
-						
+					}
+
+
 					if ((!selection.lLength)||(selection.lData[selection.lLength-1]<=endColumn))
-						for (dsc = endColumn; dsc<endColumn+scrollAmount; dsc++)
+						for (dsc = endColumn; dsc<endColumn+scrollAmount; dsc++) {
 							selection << dsc;
-					else
-					{
-						if (selection.lLength)
-						{
-							if (selection.lLength < scrollAmount)
+						}
+					else {
+						if (selection.lLength) {
+							if (selection.lLength < scrollAmount) {
 								scrollAmount = selection.lLength;
-								
-							if (selection.lData[0] < endColumn)
-							{
-								while (selection.lLength && (selection.lData[0] < endColumn))
+							}
+
+							if (selection.lData[0] < endColumn) {
+								while (selection.lLength && (selection.lData[0] < endColumn)) {
 									selection.Delete (0);
+								}
 								BuildPane();
 							}
-														
-							for (dsc = 0; (dsc<scrollAmount)&&(selection.lLength>1); dsc++)
+
+							for (dsc = 0; (dsc<scrollAmount)&&(selection.lLength>1); dsc++) {
 								selection.Delete (0);
+							}
 						}
 					}
 
-						
+
 					HScrollPane(scrollAmount);
-					
+
 					dragScrollCounter+= scrollAmount;
 
 					_SetHScrollerPos(((double)MAX_CONTROL_VALUE*startColumn)/k);
-					SendSelectionChange();	
+					SendSelectionChange();
 					return;
 				}
-			}
-			else
+			} else {
 				dragScrollCounter = 0;
+			}
 		}
-	}
-	else
+	} else {
 		dragScrollCounter = 0;
-		
-	if ( h>headerWidth && v>GetSlotHeight()+1 )
-	{
+	}
+
+	if ( h>headerWidth && v>GetSlotHeight()+1 ) {
 		v=startRow+(v-(GetSlotHeight()+1))/(GetFont().size+HY_SEQUENCE_PANE_CHAR_SPACING);
-		
-		long	k, 
+
+		long	k,
 				p = headerWidth+charWidth+HY_SEQUENCE_PANE_CHAR_SPACING/2;
-				
+
 		for (k=startColumn; k<endColumn; k++,p+=charWidth)
-		// find which column was clicked
+			// find which column was clicked
 		{
-			if (k&&(k%blockWidth==0))
-			{
+			if (k&&(k%blockWidth==0)) {
 				p+=2;
 			}
-			if (p>=h)
+			if (p>=h) {
 				break;
+			}
 		}
 		h = k;
-		if (shift)
-		{
-			if (recentClick!=-1)
-			{
-				if (h==recentClick) 
+		if (shift) {
+			if (recentClick!=-1) {
+				if (h==recentClick) {
 					return;
+				}
 
 				_SimpleList   * saveSelection = nil;
-				
-				if ( !command || drag)
-				{
+
+				if ( !command || drag) {
 					saveSelection = (_SimpleList*)selection.makeDynamic();
 					selection.Clear();
 				}
-					
-				if (h>recentClick)
-				{
+
+				if (h>recentClick) {
 					k=recentClick;
 					p=h;
-				}
-				else
-				{
+				} else {
 					p=recentClick;
 					k=h;
 				}
 				//if (!drag)
 				{
 					if (!command||!selection.lLength||drag)
-						for (v=k;v<=p;v++)
+						for (v=k; v<=p; v++) {
 							selection<<v;
-					else
-					{
-						for (v=k;v<=p;v++)
-						{
+						}
+					else {
+						for (v=k; v<=p; v++) {
 							AddColumnToSelection(v);
 						}
 					}
 				}
-				if (saveSelection)
-				{
+				if (saveSelection) {
 					bool doUpdate = false;
-					if (!saveSelection->Equal(selection))
+					if (!saveSelection->Equal(selection)) {
 						doUpdate = true;
+					}
 					DeleteObject (saveSelection);
-					if (!doUpdate)
+					if (!doUpdate) {
 						return;
+					}
 				}
 				BuildPane();
 				_MarkForUpdate();
-				SendSelectionChange();	
+				SendSelectionChange();
 				return;
 			}
-		}
-		else
-		{
-			if (command)
-			{
+		} else {
+			if (command) {
 				v = selection.BinaryFind (h);
-				if (v>=0)
+				if (v>=0) {
 					selection.Delete(v);
-				else
+				} else {
 					selection.InsertElement ((BaseRef)h,-v-2,false,false);
+				}
 				BuildPane();
 				_MarkForUpdate();
-				SendSelectionChange();	
+				SendSelectionChange();
 				return;
-			}		
+			}
 		}
 		//if (selection.BinaryFind(h)>0) return;
 		selection.Clear();
@@ -1473,31 +1425,28 @@ void		_HYSequencePane::ProcessSelectionChange (long h, long v, bool shift, bool 
 		recentClick = h;
 		BuildPane();
 		_MarkForUpdate();
-	}
-	else
-		if ((h<headerWidth)&&(v<(GetSlotHeight()+1)))
-		{
-			if ((!drag)&&selection.lLength)
-			{
-				selection.Clear();
-				vselection.Clear();
-				BuildPane();
-				_MarkForUpdate();
-			}
+	} else if ((h<headerWidth)&&(v<(GetSlotHeight()+1))) {
+		if ((!drag)&&selection.lLength) {
+			selection.Clear();
+			vselection.Clear();
+			BuildPane();
+			_MarkForUpdate();
 		}
-	SendSelectionChange();	
+	}
+	SendSelectionChange();
 }
 //__________________________________________________________________
 void		_HYSequencePane::AlphabetizeSpecies (void)
 {
 	_List currentActiveNames;
 	long  k;
-	
-	for (k=0; k<speciesIndex.lLength; k++)
+
+	for (k=0; k<speciesIndex.lLength; k++) {
 		currentActiveNames << rowHeaders (speciesIndex.lData[k]);
-		
+	}
+
 	SortLists (&currentActiveNames,&speciesIndex);
-	
+
 	BuildPane ();
 	_MarkForUpdate();
 }
@@ -1514,15 +1463,13 @@ void		_HYSequencePane::RevertFileOrder (void)
 void		_HYSequencePane::CleanUpSequenceNames (void)
 {
 	bool	doSomething = false;
-	
+
 	_List		namesl;
-	_AVLList	names (&namesl);	
-	
-	for    (long k=0; k<speciesIndex.lLength; k++)
-	{
+	_AVLList	names (&namesl);
+
+	for    (long k=0; k<speciesIndex.lLength; k++) {
 		_String * thisString = (_String*)rowHeaders (speciesIndex.lData[k]);
-		if (!thisString->IsValidIdentifier(false))
-		{
+		if (!thisString->IsValidIdentifier(false)) {
 			BufferToConsole ("Changed ");
 			StringToConsole(*thisString);
 			thisString->ConvertToAnIdent(false);
@@ -1531,22 +1478,21 @@ void		_HYSequencePane::CleanUpSequenceNames (void)
 			NLToConsole();
 			doSomething = true;
 		}
-		
+
 		_String * testString = new _String (*thisString);
-		
-		if (!testString)
+
+		if (!testString) {
 			checkPointer (testString);
-		
+		}
+
 		long	tryThisSuffix = 2;
-		
-		while (names.Find (testString)>=0)
-		{
+
+		while (names.Find (testString)>=0) {
 			*testString = *thisString & '_' & tryThisSuffix;
 			tryThisSuffix++;
 		}
-		
-		if (tryThisSuffix>2)
-		{
+
+		if (tryThisSuffix>2) {
 			BufferToConsole ("Changed ");
 			StringToConsole(*thisString);
 			BufferToConsole (" to ");
@@ -1554,16 +1500,15 @@ void		_HYSequencePane::CleanUpSequenceNames (void)
 			BufferToConsole (" to avoid duplicate identifiers\n");
 			doSomething  = true;
 			thisString->CopyDynamicString (testString,true);
-		}
-		else
+		} else {
 			DeleteObject (testString);
-		
+		}
+
 		names.Insert(thisString);
 		thisString->nInstances++;
 	}
-	
-	if (doSomething)
-	{
+
+	if (doSomething) {
 		SetHeaders (nil,true);
 		_MarkForUpdate();
 	}
@@ -1573,17 +1518,14 @@ void		_HYSequencePane::CleanUpSequenceNames (void)
 void		_HYSequencePane::BatchRenameSequences (_List& oldNames,_List& newNames)
 {
 	bool touched = false;
-	for (long k=0; k<oldNames.lLength; k++)
-	{
+	for (long k=0; k<oldNames.lLength; k++) {
 		long nID = rowHeaders.Find (oldNames(k));
-		if (nID >= 0 && rowHeaders.Find (newNames(k)) < 0)
-		{
+		if (nID >= 0 && rowHeaders.Find (newNames(k)) < 0) {
 			rowHeaders (nID)->Duplicate (newNames(k));
 			touched = true;
 		}
 	}
-	if (touched)
-	{
+	if (touched) {
 		SetHeaders (nil,true);
 		_MarkForUpdate();
 	}
@@ -1595,16 +1537,13 @@ void		_HYSequencePane::EditSequenceName (long k)
 {
 	_String prompt ("Edit Sequence Name"),
 			*present = ((_String*)rowHeaders (speciesIndex.lData[k])),
-			edited = *present;
-						
-	if (EnterStringDialog ( edited, prompt,(Ptr)messageRecipient))
-	{
-		if (!edited.Equal (present))
-		{
-			if (rowHeaders.Find (&edited)>=0)
-			{
+			 edited = *present;
+
+	if (EnterStringDialog ( edited, prompt,(Ptr)messageRecipient)) {
+		if (!edited.Equal (present)) {
+			if (rowHeaders.Find (&edited)>=0) {
 				prompt = _String("Another sequence is already named ") & edited & ". Please choose another name.";
-				ProblemReport (prompt, (Ptr)messageRecipient);	
+				ProblemReport (prompt, (Ptr)messageRecipient);
 				return;
 			}
 			present->Duplicate (&edited);
@@ -1617,57 +1556,50 @@ void		_HYSequencePane::EditSequenceName (long k)
 //__________________________________________________________________
 void		_HYSequencePane::ProcessVSelectionChange (long h, long v, bool shift, bool command, bool drag, bool editName)
 {
-	if (selection.lLength)
-	{
+	if (selection.lLength) {
 		selection.Clear();
 		BuildPane();
 		_MarkForUpdate();
 		SendSelectionChange();
 	}
 
-	if (drag)
+	if (drag) {
 		return;
+	}
 
-	if ((h<headerWidth)&&(v>(GetSlotHeight()+1)))
-	{
+	if ((h<headerWidth)&&(v>(GetSlotHeight()+1))) {
 		long k, p;
 		v = (v-(GetSlotHeight()+1))/(GetFont().size+HY_SEQUENCE_PANE_CHAR_SPACING)+startRow;
-		if (v>=endRow)
+		if (v>=endRow) {
 			return;
-			
-		if (editName)
-		{
+		}
+
+		if (editName) {
 			EditSequenceName (v);
 			return;
 		}
-		
-		if (shift)
-		{
-			if (recentClick!=-1)
-			{
-				if (v==recentClick) 
-				{
+
+		if (shift) {
+			if (recentClick!=-1) {
+				if (v==recentClick) {
 					return;
 				}
-				if ((!command)||drag)
+				if ((!command)||drag) {
 					vselection.Clear();
-				if (v>recentClick)
-				{
+				}
+				if (v>recentClick) {
 					k=recentClick;
 					p=v;
-				}
-				else
-				{
+				} else {
 					p=recentClick;
 					k=v;
 				}
 				if (!command||!vselection.lLength||drag)
-					for (h=k;h<=p;h++)
+					for (h=k; h<=p; h++) {
 						vselection<<h;
-				else
-				{
-					for (h=k;h<=p;h++)
-					{
+					}
+				else {
+					for (h=k; h<=p; h++) {
 						AddSpeciesToSelection(h);
 					}
 				}
@@ -1675,28 +1607,28 @@ void		_HYSequencePane::ProcessVSelectionChange (long h, long v, bool shift, bool
 				BuildHeaders();
 				EndDraw();
 				_MarkForUpdate();
-				SendSelectionChange();	
+				SendSelectionChange();
 				return;
 			}
-		}
-		else
-		{
-			if (command)
-			{
+		} else {
+			if (command) {
 				h = vselection.BinaryFind (v);
-				if (h>=0)
+				if (h>=0) {
 					vselection.Delete(h);
-				else
+				} else {
 					vselection.InsertElement ((BaseRef)v,-h-2,false,false);
+				}
 				StartDraw();
 				BuildHeaders();
 				EndDraw();
 				_MarkForUpdate();
 				SendSelectionChange(true);
 				return;
-			}		
+			}
 		}
-		if (vselection.BinaryFind(v)>0) return;
+		if (vselection.BinaryFind(v)>0) {
+			return;
+		}
 		vselection.Clear();
 		vselection<<v;
 		recentClick = v;
@@ -1705,8 +1637,8 @@ void		_HYSequencePane::ProcessVSelectionChange (long h, long v, bool shift, bool
 		EndDraw();
 		_MarkForUpdate();
 	}
-	
-	SendSelectionChange(true);	
+
+	SendSelectionChange(true);
 }
 
 
@@ -1714,18 +1646,20 @@ void		_HYSequencePane::ProcessVSelectionChange (long h, long v, bool shift, bool
 //__________________________________________________________________
 
 void		_HYSequencePane::SendSelectionChange (bool vert)
-{	
-	if (messageRecipient)
+{
+	if (messageRecipient) {
 		messageRecipient->ProcessEvent (generateMenuSelChangeEvent(GetID(),vert));
-}	
+	}
+}
 
 //__________________________________________________________________
 
 void		_HYSequencePane::ProcessContextualPopUp (long l, long t)
-{	
-	if (messageRecipient)
+{
+	if (messageRecipient) {
 		messageRecipient->ProcessEvent (generateContextPopUpEvent(GetID(),l,t));
-}	
+	}
+}
 
 
 

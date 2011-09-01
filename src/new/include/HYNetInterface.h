@@ -1,7 +1,7 @@
 /*
 
 	This is a file which declares NN interfacing with HBL model structures.
-	
+
 	September 2003, Sergei L Kosakovsky Pond
 
 */
@@ -16,10 +16,10 @@
 
 /*---------------------------------------------------------*/
 
-//class	 _MatrixNN: public _SimpleList 
+//class	 _MatrixNN: public _SimpleList
 //{
 
-//	Net * 
+//	Net *
 //}
 
 /*---------------------------------------------------------*/
@@ -34,7 +34,7 @@ _Matrix*	 ComputeModel	(long);
 void		 NNMatrixSampler(long, _Matrix&, _SimpleList&, _SimpleList&, _Matrix*, _List&, _List&);
 
 extern	 _String	  		ModelTrainNNFlag,
-					  		ModelLoadNNFlag;
-					  	
+				ModelLoadNNFlag;
+
 
 #endif

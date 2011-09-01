@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2006
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -40,36 +40,36 @@ extern  bool  isFixable;
 
 
 bool gStatus(void);
-	// global Error Status
+// global Error Status
 
 bool isError (long);
-	// checks ToolBox function return, and if it is abnormal,
-	// sets the error status to true;
+// checks ToolBox function return, and if it is abnormal,
+// sets the error status to true;
 
 //bool acknError (bool);
-	// function acknoledges Error with either fixable (True) or terminal (False)
-	// flag, the latter causes acknError to terminate the program
-	// writes error number to stderror 
-	
+// function acknoledges Error with either fixable (True) or terminal (False)
+// flag, the latter causes acknError to terminate the program
+// writes error number to stderror
+
 void acknError (const char*);
-	// function acknoledges Error with either fixable (True) or terminal (False)
-	// flag, the latter causes acknError to terminate the program
-	// writes error number to stderror 
+// function acknoledges Error with either fixable (True) or terminal (False)
+// flag, the latter causes acknError to terminate the program
+// writes error number to stderror
 
 void	warnError (const char*);
-	// warns user of current error with a supplied string
-	// writes to stderror
+// warns user of current error with a supplied string
+// writes to stderror
 
 void	warnError (long);
-	// warns user of current error with a built in string
-	// writes to stderror
-	
+// warns user of current error with a built in string
+// writes to stderror
+
 void*	checkPointer  (void*);
 
 #if !defined __UNIX__  && !defined __HEADLESS__
-	extern bool skipWarningMessages;
+extern bool skipWarningMessages;
 #endif
 
 #endif
 
-	
+

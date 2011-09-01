@@ -2,14 +2,14 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-This file implements shared and platform specific 
+This file implements shared and platform specific
 (via ifdefs) functions for reading/writing and
-setting preferences. 
+setting preferences.
 
 Written by SL Kosakovsky Pond
 June 8, 2007
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2006
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -31,7 +31,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-*/ 
+*/
 
 #ifndef __HYPHY_PREFERENCES__
 
@@ -44,43 +44,43 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include 	"hy_strings.h"
 
 #ifndef		__HEADLESS__
-	#include 	"HYBaseGUI.h"
+#include 	"HYBaseGUI.h"
 #endif
 
 void	  ReadPreferences 		(void);
-		  /* read HyPhy preferences from a platform - dependent location */
-		  
+/* read HyPhy preferences from a platform - dependent location */
+
 void  	  WritePreferences 		(void);
-		  /* write HyPhy preferences to a platform - dependent location */
+/* write HyPhy preferences to a platform - dependent location */
 
 void  	  ApplyPreferences 		(void);
-		  /* apply relevant settings before executing a batch file */
+/* apply relevant settings before executing a batch file */
 
 void  	  SetPreferences 		(void);
-		  /* immediately apply those preferences which can be set 
-		  	 interactively; e.g. console font */
+/* immediately apply those preferences which can be set
+	 interactively; e.g. console font */
 
 extern	  bool				   showDialogAtStartup,
-							   doAutoConsoleMove ;
+					doAutoConsoleMove ;
 
-extern    _List				   globalPreferencesList,	
-							   recentPaths,
-							   recentFiles;
+extern    _List				   globalPreferencesList,
+				   recentPaths,
+				   recentFiles;
 
 #ifndef		__HEADLESS__
-	extern	  _HYRect			   consolePositionRectangle;
+extern	  _HYRect			   consolePositionRectangle;
 #endif
 
 extern	  _String			   recentFilesList;
 
 void	  AddStringToRecentMenu (_String&, _String&);
-		  /* add a string/path to the recent analyses menu */
+/* add a string/path to the recent analyses menu */
 
 void	  AddItemToPreferences 	 (long,long,_String,_String,_String,_List*,_List&,bool);
-		  /* a function used to append items to a preferences list */
-		  
+/* a function used to append items to a preferences list */
+
 char	  AutoOpenTreeWindow	 (void);
-void	  SetShowDialogAtStartup (bool);	
+void	  SetShowDialogAtStartup (bool);
 
 #endif
 

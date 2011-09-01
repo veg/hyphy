@@ -37,23 +37,19 @@ void Net::init(int innum, int hiddennum, int outnum, _Parameter eps)
 	out= new _Parameter[outnum];
 	temp= new _Parameter[outnum];
 	int k, i;
-	for (k=0; k<=innum; k++)
-	{
+	for (k=0; k<=innum; k++) {
 		in[k].weights=new _Parameter[hiddennum];
 		in[k].lastDelta=new _Parameter[hiddennum];
-		for (i=0; i<hiddennum; i++)
-		{
+		for (i=0; i<hiddennum; i++) {
 			in[k].weights[i]=randReal(.1);
 			in[k].lastDelta[i]=0;
 //			in[k].weights[i]=.1;
 		}
 	}
-	for (k=0; k<=hiddennum; k++)
-	{
+	for (k=0; k<=hiddennum; k++) {
 		hidden[k].weights= new _Parameter[outnum];
 		hidden[k].lastDelta=new _Parameter[outnum];
-		for (i=0; i<outnum; i++)
-		{
+		for (i=0; i<outnum; i++) {
 			hidden[k].weights[i]=randReal(.1);
 			hidden[k].lastDelta[i]=0;
 //			hidden[k].weights[i]=.1;
@@ -70,20 +66,16 @@ void Net::init(int innum, int hiddennum, int outnum, _Parameter eps)
 void Net::randomize()
 {
 	//if (verbose)
-		//cout << "RANDING" << endl;
+	//cout << "RANDING" << endl;
 	int k,i;
-	for (k=0; k<=inNum; k++)
-	{
-		for (i=0; i<hiddenNum; i++)
-		{
+	for (k=0; k<=inNum; k++) {
+		for (i=0; i<hiddenNum; i++) {
 			in[k].weights[i]=randReal(.1);
 			in[k].lastDelta[i]=0;
 		}
 	}
-	for (k=0; k<=hiddenNum; k++)
-	{
-		for (i=0; i<outNum; i++)
-		{
+	for (k=0; k<=hiddenNum; k++) {
+		for (i=0; i<outNum; i++) {
 			hidden[k].weights[i]=randReal(.1);
 			hidden[k].lastDelta[i]=0;
 		}
@@ -93,14 +85,12 @@ void Net::randomize()
 void Net::destroy()
 {
 	int k;
-	for (k=0; k<=inNum; k++)
-	{
+	for (k=0; k<=inNum; k++) {
 		delete in[k].weights;
 		delete in[k].lastDelta;
 	}
 	delete in;
-	for (k=0; k<hiddenNum; k++)
-	{
+	for (k=0; k<hiddenNum; k++) {
 		delete hidden[k].weights;
 		delete hidden[k].lastDelta;
 	}
@@ -161,15 +151,17 @@ void Net::save(FILE* f)
 	int k, j;
 	for (k=0; k<=inNum; k++)
 		for (j=0; j<hiddenNum; j++)
-			if (k+j == 0)
+			if (k+j == 0) {
 				fprintf (f,"%g",in[k].weights[j]);
-			else
+			} else {
 				fprintf (f,",%g",in[k].weights[j]);
+			}
 
 	for (k=0; k<=hiddenNum; k++)
-		for (j=0; j<outNum; j++)
+		for (j=0; j<outNum; j++) {
 			fprintf (f,",%g",hidden[k].weights[j]);
-			
+		}
+
 	fprintf (f,"\n}}");
 }
 
@@ -178,7 +170,7 @@ void Net::load(FILE*)
 	/*inNum 	  = dim[0];
 	hiddenNum = dim[0];
 	outNum	  = (*dim)(2,0);
-	
+
 	hidden=new Node[hiddenNum+1];
 	out= new _Parameter[outNum];
 	temp= new _Parameter[outNum];
@@ -201,7 +193,7 @@ void Net::load(FILE*)
 			hidden[k].lastDelta[i]=0;
 		}
 	}
-	
+
 	hidden[hiddenNum].value=1;
 	in[inNum].value=1;
 	LR=learningRate= .25;
@@ -276,82 +268,78 @@ void Net::load(FILE*)
 void Net::learn(_Parameter * input, _Parameter * output)
 {
 	int k/*, j*/;
-	
-	if (outNum == 1)
-		eval1(input);	
-	else
+
+	if (outNum == 1) {
+		eval1(input);
+	} else {
 		eval(input);
-	
-	
-	for (k=0; k<outNum; k++)
-	{
+	}
+
+
+	for (k=0; k<outNum; k++) {
 		temp[k]=2.*(out[k]-output[k]);
 	}
-	
-	_Parameter *p1 = output, 
-		   *p2 = out, 
-		   *p3 = out+outNum, 
-		   *p4 = temp;
 
-	for (;p2!=p3;p1++,p2++,p4++)
+	_Parameter *p1 = output,
+				*p2 = out,
+				 *p3 = out+outNum,
+				  *p4 = temp;
+
+	for (; p2!=p3; p1++,p2++,p4++) {
 		*p4 = 2.*(*p2-*p1);
-	
-	
+	}
+
+
 	if (outNum == 1)
-		for (k=0; k<=inNum; k++)
-		{
+		for (k=0; k<=inNum; k++) {
 			_Parameter* t1   = in[k].weights,
-				  *	t2   = in[k].lastDelta,
-				  iv	 = in[k].value,
-				  * t5   = t1,
-				  * t5s  = t5+hiddenNum,
-				  * t6   = t2;
-					  
+						*	t2   = in[k].lastDelta,
+							iv	 = in[k].value,
+							 * t5   = t1,
+							   * t5s  = t5+hiddenNum,
+								 * t6   = t2;
+
 			Node  *hn= hidden;
-				  
- 			for (;t5!=t5s;t5++,t6++,hn++)
-			{
-			// changed
+
+			for (; t5!=t5s; t5++,t6++,hn++) {
+				// changed
 				_Parameter  delta = hn->value;
-				
+
 				delta	= (1.-delta)*delta*iv* * hn->weights
-								*learningRate * *temp +momentum* *t6;
+						  *learningRate * *temp +momentum* *t6;
 				*t5 -=	delta;
 				*t6 = 	delta;
 			}
 		}
 	else
-		for (k=0; k<=inNum; k++)
-		{
+		for (k=0; k<=inNum; k++) {
 			_Parameter* t1  = in[k].weights,
-				  *	t2  = in[k].lastDelta,
-				  * t3  = temp,
-				  * t3s = temp+outNum,
-				  iv	= in[k].value;
-				  
+						*	t2  = in[k].lastDelta,
+							* t3  = temp,
+							  * t3s = temp+outNum,
+								iv	= in[k].value;
+
 			long  outN = 0;
-			
-			for (; t3!=t3s; t3++, outN++)
-			{
+
+			for (; t3!=t3s; t3++, outN++) {
 				_Parameter*  t5  = t1,
-					  *  t5s = t5+hiddenNum,
-					  *  t6  = t2;
-					  
+							 *  t5s = t5+hiddenNum,
+								*  t6  = t2;
+
 				Node  *  hn  = hidden;
-					  
-	 			for (;t5!=t5s;t5++,t6++,hn++)
-				{
-				// changed
+
+				for (; t5!=t5s; t5++,t6++,hn++) {
+					// changed
 					_Parameter  delta = hn->value;
-					
+
 					delta	= (1.-delta)*delta*iv*hn->weights[outN]
-									*learningRate * *t3 +momentum* *t6;
+							  *learningRate * *t3 +momentum* *t6;
 					*t5 -=	delta;
 					*t6 = 	delta;
 				}
 			}
 		}
-	
+
 
 	/*for (k=0; k<=inNum; k++)
 	{
@@ -366,38 +354,32 @@ void Net::learn(_Parameter * input, _Parameter * output)
 			}
 		}
 	}*/
-	
+
 	Node   *hn 	= hidden,
-		   *hns = hidden+hiddenNum+1;
-		   
-	if (outNum > 1)
-	{
-		for (;hn!=hns;hn++)
-		{
+			*hns = hidden+hiddenNum+1;
+
+	if (outNum > 1) {
+		for (; hn!=hns; hn++) {
 			_Parameter *x1  = temp,
-				   *x1s = temp+outNum,
-				   *x2	= hn->weights,
-				   *x3  = hn->lastDelta,
-				   hcv	= hn->value;
-				   
-			for (;x1!=x1s;x1++,x2++,x3++)
-			{
+						*x1s = temp+outNum,
+						 *x2	= hn->weights,
+						  *x3  = hn->lastDelta,
+						   hcv	= hn->value;
+
+			for (; x1!=x1s; x1++,x2++,x3++) {
 				_Parameter delta	=	learningRate* hcv * *x1 +momentum* *x3;
 				*x2 -= delta;
 				*x3  = delta;
 			}
 		}
-	}
-	else
-	{
-		for (;hn!=hns;hn++)
-		{				   
+	} else {
+		for (; hn!=hns; hn++) {
 			_Parameter delta	= learningRate* hn->value * *temp +momentum* *hn->lastDelta;
 			*hn->weights   -= delta;
 			*hn->lastDelta  = delta;
 		}
 	}
-	
+
 
 
 	/*for (k=0; k<=hiddenNum; k++)
@@ -416,37 +398,34 @@ void Net::studyAll(_Parameter**input, _Parameter**output, int samp)
 	_Parameter  max = 1.; // to make sure we enter for loop
 
 	int 	rep;
-	
-	for (rep=0 ; max>epsilon && rep<timeout; rep++)
-	{
+
+	for (rep=0 ; max>epsilon && rep<timeout; rep++) {
 		max=-1;
-		for (int count=0; count<density; count++)
-		{
-			for (int k=0; k<samp; k++)
-			{
+		for (int count=0; count<density; count++) {
+			for (int k=0; k<samp; k++) {
 				learn(input[k],output[k]);
 			}
 		}
-		
-		for (int k=0; k<samp; k++)
-		{
+
+		for (int k=0; k<samp; k++) {
 			_Parameter err=error();
-			if (err>max)
+			if (err>max) {
 				max=err;
+			}
 			learn(input[k],output[k]);
 		}
-		
+
 		learningRate=sigmaF(2*(max-.45))*coef;
 		momentum=learningRate*mom;
 	}
-	
+
 	/*if (verbose)
 	{
 		if (rep>=timeout)
 			cout << "DIVERGE" << endl;
 		cout << "Cycles taken: " << rep << endl << "Largest Error: " << max << endl;
 	}*/
-	
+
 	cycles=rep;
 //	cout << endl;
 }
@@ -456,34 +435,33 @@ _Parameter Net::studyAll(_Parameter*input, _Parameter*output, int samp)
 	_Parameter  max = 1.; // to make sure we enter for loop
 
 	int 	rep;
-	
-	for (rep=0 ; max>epsilon && rep<timeout; rep++)
-	{
+
+	for (rep=0 ; max>epsilon && rep<timeout; rep++) {
 		max=-1;
-		for (int count=0; count<density; count++)
-		{
-			for (int k=0; k<samp; k++)
+		for (int count=0; count<density; count++) {
+			for (int k=0; k<samp; k++) {
 				learn(input + k*inNum ,output + k*outNum);
+			}
 		}
-		for (int k=0; k<samp; k++)
-		{
+		for (int k=0; k<samp; k++) {
 			_Parameter err=error();
-			if (err>max)
+			if (err>max) {
 				max = err;
+			}
 			learn(input + k*inNum ,output + k*outNum);
 		}
-		
+
 		learningRate=sigmaF(2*(max-.45))*coef;
 		momentum=learningRate*mom;
 	}
-	
+
 	/*if (verbose)
 	{
 		if (rep>=timeout)
 			cout << "DIVERGE" << endl;
 		cout << "Cycles taken: " << rep << endl << "Largest Error: " << max << endl;
 	}*/
-	
+
 	cycles=rep;
 	return max;
 //	cout << endl;
@@ -492,8 +470,7 @@ _Parameter Net::studyAll(_Parameter*input, _Parameter*output, int samp)
 _Parameter Net::sum(_Parameter * x, int p)
 {
 	_Parameter total=0;
-	for (int k=0; k<p; k++)
-	{
+	for (int k=0; k<p; k++) {
 		total+=x[k];
 	}
 	//cout << total << endl;
@@ -503,18 +480,17 @@ _Parameter Net::sum(_Parameter * x, int p)
 _Parameter Net::error()
 {
 	_Parameter tempTotal=0;
-	for (int y=0; y<outNum; y++)
+	for (int y=0; y<outNum; y++) {
 		tempTotal+=fabs(temp[y] * .5);
+	}
 	// this is the Mean Squared Error
 	return tempTotal;
 }
 
 bool Net::accurate(_Parameter **, _Parameter**output, int samp)
 {
-	for (int k=0; k<samp; k++)
-	{
-		if (!within(out,output[k]))
-		{
+	for (int k=0; k<samp; k++) {
+		if (!within(out,output[k])) {
 			return false;
 		}
 	}
@@ -523,10 +499,8 @@ bool Net::accurate(_Parameter **, _Parameter**output, int samp)
 
 bool Net::within(const _Parameter * pred, const _Parameter * act) const
 {
-	for (int k=0; k<outNum; k++)
-	{
-		if (fabs(pred[k]-act[k])>epsilon)
-		{
+	for (int k=0; k<outNum; k++) {
+		if (fabs(pred[k]-act[k])>epsilon) {
 			return false;
 		}
 	}
@@ -535,39 +509,34 @@ bool Net::within(const _Parameter * pred, const _Parameter * act) const
 
 const _Parameter * Net::eval(_Parameter * input)
 {
-	int 	k, 
+	int 	k,
 			i;
-			
+
 	/*for (k=0; k<inNum; k++)
 	{
 		in[k].value=input[k];
 	}*/
-	
+
 	_Parameter* in1 = input, *in2 = input+inNum;
 	Node*	np  = in;
-	
-	while (in1<in2)
-	{
+
+	while (in1<in2) {
 		np->value = *in1;
 		in1++;
 		np++;
 	}
-	
-	for (k=0; k<hiddenNum; k++)
-	{
+
+	for (k=0; k<hiddenNum; k++) {
 		_Parameter total = 0.;
-		for (i=0; i<=inNum; i++)
-		{
+		for (i=0; i<=inNum; i++) {
 			total+=in[i].value*in[i].weights[k];
 		}
 		hidden[k].value= sigmaF(total);
 	}
-	
-	for (k=0; k<outNum; k++)
-	{
+
+	for (k=0; k<outNum; k++) {
 		_Parameter total = 0.;
-		for (i=0; i<=hiddenNum; i++)
-		{
+		for (i=0; i<=hiddenNum; i++) {
 			total+=hidden[i].value*hidden[i].weights[k];
 		}
 		out[k]= total;
@@ -577,42 +546,43 @@ const _Parameter * Net::eval(_Parameter * input)
 
 const _Parameter * Net::eval1(_Parameter * input)
 {
-	int 	k, 
+	int 	k,
 			i;
-			
-	_Parameter* in1 = input, 
-		   *in2 = input+inNum,
-		   temp [100]; // hack for serial access
-		   
+
+	_Parameter* in1 = input,
+				*in2 = input+inNum,
+				 temp [100]; // hack for serial access
+
 	Node*	np  = in;
-	
-	while (in1<in2)
-	{
+
+	while (in1<in2) {
 		np->value = *in1;
 		in1++;
 		np++;
 	}
-	
+
 	np = in;
 	Node * nps = in+inNum+1;
-	
+
 	in2 = temp+hiddenNum;
-	
-	for (in1 = temp; in1 < in2; in1++)
+
+	for (in1 = temp; in1 < in2; in1++) {
 		*in1 = 0.0;
-	
-	for (;np<nps;np++)
-	{
-		_Parameter iv  = np->value,
-			  *w1  = np->weights;
-			  
-		for (in1 = temp; in1<in2; in1++, w1++)
-			*in1 += iv * *w1;			
 	}
 
-	for (k=0; k<hiddenNum; k++)
+	for (; np<nps; np++) {
+		_Parameter iv  = np->value,
+				   *w1  = np->weights;
+
+		for (in1 = temp; in1<in2; in1++, w1++) {
+			*in1 += iv * *w1;
+		}
+	}
+
+	for (k=0; k<hiddenNum; k++) {
 		hidden[k].value = sigmaF (temp[k]);
-	
+	}
+
 	/*for (k=0; k<hiddenNum; k++)
 	{
 		_Parameter total = 0.;
@@ -622,16 +592,15 @@ const _Parameter * Net::eval1(_Parameter * input)
 		}
 		hidden[k].value= sigmaF(total);
 	}*/
-	
+
 	{
 		_Parameter total = 0.;
-		for (i=0; i<=hiddenNum; i++)
-		{
+		for (i=0; i<=hiddenNum; i++) {
 			total+=hidden[i].value**hidden[i].weights;
 		}
 		out[0]= total;
 	}
-	
+
 	return out;
 }
 

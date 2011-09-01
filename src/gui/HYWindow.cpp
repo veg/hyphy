@@ -1,6 +1,6 @@
 /*
 	A general window object - a window/title/size-box/scroll-bars handler.
-	
+
 	Sergei L. Kosakovsky Pond, May 2000.
 */
 
@@ -10,28 +10,26 @@
 #include "HYEventTypes.h"
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 
 //__________________________________________________________________
 
 _HYWindow::_HYWindow(unsigned char windowFlag,_String wTitle,bool windowVisibility, Ptr p):
-				_HYPlatformWindow (windowFlag,wTitle,windowVisibility, p)
+	_HYPlatformWindow (windowFlag,wTitle,windowVisibility, p)
 {
 	top = left = 0;
 	right = 300;
 	bottom = 250;
-	if (windowFlag&HY_WINDOW_SCROLL)
-	{
+	if (windowFlag&HY_WINDOW_SCROLL) {
 		contentWidth = 300;
 		contentHeight = 250;
 	}
 	windowTitle = wTitle;
-	#ifdef __HYPHY_FLTK__
-		_SetTitle (windowTitle);
-	#endif
-	if (windowVisibility)
-	{
+#ifdef __HYPHY_FLTK__
+	_SetTitle (windowTitle);
+#endif
+	if (windowVisibility) {
 		Activate();
 		Paint(nil);
 	}
@@ -47,11 +45,11 @@ _HYWindow::~_HYWindow(void)
 //__________________________________________________________________
 
 void _HYWindow::SetTitle(_String windowT)
-{	
+{
 	windowTitle = windowT;
 	_SetTitle (windowTitle);
 }
-		
+
 //__________________________________________________________________
 
 void _HYWindow::Show(void)
@@ -72,24 +70,21 @@ void _HYWindow::Hide(void)
 bool	_HYWindow::ProcessGEvent (_HYEvent* e)
 {
 	long k;
-	if (e->EventClass()==_hyGlobalCloseWindow)
-	{
+	if (e->EventClass()==_hyGlobalCloseWindow) {
 		k = e->EventCode().toNum();
-		if (MatchID (k))
-		{
+		if (MatchID (k)) {
 			Close (nil);
 			return true;
 		}
 	}
-	return false;	
+	return false;
 }
 //__________________________________________________________________
 
 void _HYWindow::Grow(Ptr theData)
 {
 	unsigned long newSize = _Grow (theData);
-	if (newSize)
-	{
+	if (newSize) {
 		right = left+(newSize&0x0000ffff);
 		bottom = top+(((newSize&0xffff0000)>>16)&0xffff);
 		SetWindowRectangle (top,left,bottom,right);
@@ -129,8 +124,9 @@ void _HYWindow::SetFont(_HYFont&)
 
 bool _HYWindow::Close(Ptr theData)
 {
-	if (!_Close(theData))
+	if (!_Close(theData)) {
 		return false;
+	}
 
 	//Ptr p = GetOSWindowData();
 	DeleteObject (this);
@@ -142,7 +138,7 @@ bool _HYWindow::Close(Ptr theData)
 
 void _HYWindow::Activate(void)
 {
-	_Activate ();	
+	_Activate ();
 	Update(nil);
 }
 
@@ -150,7 +146,7 @@ void _HYWindow::Activate(void)
 
 void _HYWindow::Deactivate(void)
 {
-	_Deactivate ();	
+	_Deactivate ();
 }
 
 //__________________________________________________________________
@@ -162,7 +158,7 @@ void _HYWindow::SetWindowRectangle(int t, int l, int b, int r, bool ss)
 	left = l;
 	right = r;
 	bottom = b;
-}		
+}
 
 //__________________________________________________________________
 
@@ -171,7 +167,7 @@ void _HYWindow::SetContentSize(int w, int h)
 	contentWidth = w;
 	contentHeight = h;
 	_SetContentSize (w,h);
-}		
+}
 
 //__________________________________________________________________
 
@@ -186,8 +182,7 @@ _HYGWindow::_HYGWindow(_String windowTitle,int ih, int iw, int id, bool vis,bool
 
 bool	_HYGWindow::ProcessEvent (_HYEvent* e)
 {
-	if (e->EventClass() == _hyScrollingEvent)
-	{
+	if (e->EventClass() == _hyScrollingEvent) {
 		Update (nil);
 		DeleteObject (e);
 		return true;
@@ -199,8 +194,8 @@ bool	_HYGWindow::ProcessEvent (_HYEvent* e)
 //__________________________________________________________________
 
 _HYTWindow::_HYTWindow (_String title, char list, bool dlog, Ptr sheetParent):
-			_HYWindow ((list==2)?HY_WINDOW_SIZE:(list?(HY_WINDOW_CLOSE|HY_WINDOW_SIZE|HY_WINDOW_ZOOM):(dlog?(sheetParent?HY_WINDOW_SHEET:HY_WINDOW_DLOG):(HY_WINDOW_CLOSE|HY_WINDOW_SIZE|HY_WINDOW_NOLIST|HY_WINDOW_ZOOM))),title,false, sheetParent),
-			_HYPlatformTWindow ((Ptr)this)
+	_HYWindow ((list==2)?HY_WINDOW_SIZE:(list?(HY_WINDOW_CLOSE|HY_WINDOW_SIZE|HY_WINDOW_ZOOM):(dlog?(sheetParent?HY_WINDOW_SHEET:HY_WINDOW_DLOG):(HY_WINDOW_CLOSE|HY_WINDOW_SIZE|HY_WINDOW_NOLIST|HY_WINDOW_ZOOM))),title,false, sheetParent),
+	_HYPlatformTWindow ((Ptr)this)
 {
 	rows = columns = 0;
 	keyboardFocus = -1;
@@ -211,20 +206,15 @@ _HYTWindow::_HYTWindow (_String title, char list, bool dlog, Ptr sheetParent):
 
 void	_HYTWindow::SetTableDimensions (int r, int c)
 {
-	if (!cells.lLength)
-	{
+	if (!cells.lLength) {
 		rows = r;
 		columns = c;
-		for (long i=0;i<r;i++)
-			for (long j=0; j<c; j++)
-			{
+		for (long i=0; i<r; i++)
+			for (long j=0; j<c; j++) {
 				cells<<0;
 			}
-	}
-	else
-	{
-		if ((rows!=r)||(columns!=c))
-		{
+	} else {
+		if ((rows!=r)||(columns!=c)) {
 			cells.Clear();
 			SetTableDimensions(r,c);
 		}
@@ -236,27 +226,30 @@ void	_HYTWindow::SetTableDimensions (int r, int c)
 void	_HYTWindow::SetCell (int r, int c, _HYGuiObject* d)
 {
 	long f = components._SimpleList::Find ((long)d);
-	if (f>=0)
+	if (f>=0) {
 		cells.lData[r*columns+c] = f;
+	}
 }
 
 //__________________________________________________________________
 
 void	_HYTWindow::AddObject (_HYGuiObject* d, bool dup, long r, long c)
 {
-    if (r >= 0 && c >= 0)
-        cells.lData[r*columns+c] = components.lLength;
+	if (r >= 0 && c >= 0) {
+		cells.lData[r*columns+c] = components.lLength;
+	}
 
-    if (dup)
-        components << d;
-    else
-        components.AppendNewInstance(d);
-	
-    componentL<<0;
+	if (dup) {
+		components << d;
+	} else {
+		components.AppendNewInstance(d);
+	}
+
+	componentL<<0;
 	componentR<<0;
 	componentT<<0;
 	componentB<<0;
-    
+
 }
 
 //__________________________________________________________________
@@ -264,8 +257,9 @@ void	_HYTWindow::AddObject (_HYGuiObject* d, bool dup, long r, long c)
 void	_HYTWindow::AddKeyboardChainObject (_HYGuiObject* d)
 {
 	long f = components._SimpleList::Find ((long)d);
-	if (f>=0)
+	if (f>=0) {
 		keyboardFocusChain << f;
+	}
 }
 
 //__________________________________________________________
@@ -273,23 +267,22 @@ void	_HYTWindow::AddKeyboardChainObject (_HYGuiObject* d)
 bool	_HYTWindow::ProcessEvent (_HYEvent* e)
 {
 	long i;
-	if (e->EventClass()==_hyKeyboardFocusEvent)
-	{
+	if (e->EventClass()==_hyKeyboardFocusEvent) {
 		i = MatchComponentID (e->EventCode());
 
-		if (keyboardFocus>=0)
+		if (keyboardFocus>=0) {
 			((_HYComponent*)components(keyboardFocus))->UnfocusComponent();
-			
-		if (i<components.lLength)
-		{
-			keyboardFocus=i;
-			((_HYComponent*)components(keyboardFocus))->FocusComponent();			
 		}
-		else
+
+		if (i<components.lLength) {
+			keyboardFocus=i;
+			((_HYComponent*)components(keyboardFocus))->FocusComponent();
+		} else {
 			keyboardFocus=-1;
+		}
 	}
 	DeleteObject (e);
-	return false;	
+	return false;
 }
 
 
@@ -312,7 +305,7 @@ _HYGuiObject*	_HYTWindow::GetObject (int index)
 _HYRect			_HYTWindow::MinMaxWindowDimensions (void)
 {
 	_HYRect 	res = {0,0,30000,30000,0};
-	
+
 	long	i,
 			j,
 			t1,
@@ -320,87 +313,89 @@ _HYRect			_HYTWindow::MinMaxWindowDimensions (void)
 			f,
 			g,
 			minCont = rows;
-			
-	for (i=0;i<rows;i++)
-	{
+
+	for (i=0; i<rows; i++) {
 		t1 = t2 = 0;
-		for (j=0;j<columns;)
-		{
+		for (j=0; j<columns;) {
 			g = cells(i*columns+j);
-			do 
-			{
+			do {
 				f = g;
 				j++;
-				if (j==columns)
+				if (j==columns) {
 					break;
+				}
 				g = cells(i*columns+j);
-			}
-			while (f==g);
+			} while (f==g);
 			_HYComponent* thisCell = (_HYComponent*)components(f);
 			t1 += thisCell->GetMaxLW();
 			t2 += thisCell->GetMinW();
 		}
-		if (t1<res.right)
+		if (t1<res.right) {
 			res.right = t1;
-		if (t2>res.left)
+		}
+		if (t2>res.left) {
 			res.left = t2;
+		}
 	}
-	
-	for (j=0;j<columns;j++)
-	{
+
+	for (j=0; j<columns; j++) {
 		t1 = t2 = 0;
 		long thisCont = rows;
-		for (i=0;i<rows;)
-		{
+		for (i=0; i<rows;) {
 			g = cells(i*columns+j);
-			do 
-			{
+			do {
 				f = g;
 				i++;
-				if (i==rows)
+				if (i==rows) {
 					break;
+				}
 				g = cells(i*columns+j);
-				if (f==g)
+				if (f==g) {
 					thisCont --;
-				else
+				} else {
 					break;
-			}
-			while (1);
-			
+				}
+			} while (1);
+
 			_HYComponent* thisCell = (_HYComponent*)components(f);
 			t1 += thisCell->GetMaxLH();
 			t2 += thisCell->GetMinH();
-			
+
 
 		}
-		if (t1<res.bottom)
+		if (t1<res.bottom) {
 			res.bottom = t1;
-		if (t2>res.top)
+		}
+		if (t2>res.top) {
 			res.top = t2;
-			
-		if (thisCont<minCont)
+		}
+
+		if (thisCont<minCont) {
 			minCont = thisCont;
+		}
 	}
-	
-	if (res.left) 
+
+	if (res.left) {
 		res.left--;
-		
+	}
+
 	res.right--;
-	
-	if (res.top) 
+
+	if (res.top) {
 		res.top--;
-		
+	}
+
 	res.bottom--;
-	
-	if (minCont>3)
+
+	if (minCont>3) {
 		res.bottom-=minCont-3;
-			
-	if (!(flags&HY_WINDOW_DLOG))
-	{
+	}
+
+	if (!(flags&HY_WINDOW_DLOG)) {
 		res.bottom += HY_SCROLLER_WIDTH-1;
 		res.top    += HY_SCROLLER_WIDTH-1;
 	}
-	
+
 	contentHeight = res.bottom;
 	contentWidth  = res.right;
 	return res;
@@ -420,46 +415,43 @@ void	_HYTWindow::RecomputeCellRects (void)
 
 	_Parameter lf=(r-dim.left)/columns; // "extra" width per cell
 	_Parameter tf=(b-dim.top)/rows;     // "extra" height per cell
-	
-	if (!(flags&HY_WINDOW_DLOG))
+
+	if (!(flags&HY_WINDOW_DLOG)) {
 		b-=HY_SCROLLER_WIDTH;
-	
-	
+	}
+
+
 	_SimpleList		alreadyDone;
-	for (i=0;i<rows;i++)
-	{
+	for (i=0; i<rows; i++) {
 		c = 0;
 		p = -1;
-		for (j=0;j<columns;)
-		{
+		for (j=0; j<columns;) {
 			j2 = j;
 			f = cells.lData[i*columns+j];
 			thisCell = (_HYComponent*)components.lData[f];
-			if (alreadyDone.Find(f)>=0)
-			{
+			if (alreadyDone.Find(f)>=0) {
 				c = componentR.lData[f];
 				j++;
 				scroller = false;
 				continue;
 			}
-			do
-			{
+			do {
 				g = f;
-				
+
 				j++;
-				if (j==columns) break;
+				if (j==columns) {
+					break;
+				}
 				f = cells.lData[i*columns+j];
-			}
-			while (f==g);
+			} while (f==g);
 			_HYComponent* thisCell;
 			thisCell = (_HYComponent*)components.lData[g];
 			componentL.lData[g] = c;
 			f = lf*(j-j2)+thisCell->GetMinW()-1;
 			mw = thisCell->GetMaxLW()-1;
-			if (f>=mw)
+			if (f>=mw) {
 				f=mw;
-			else
-			{
+			} else {
 				p=g;
 				p2=j-1;
 			}
@@ -467,58 +459,53 @@ void	_HYTWindow::RecomputeCellRects (void)
 			componentR.lData[g] = c;
 			scroller = true;
 		}
-		if ((c<r)&&(p>=0))
-		{
+		if ((c<r)&&(p>=0)) {
 			int diff = r-c;
 			componentR.lData[p]+=diff;
 			_SimpleList localDone;
-			for (j=p2+1;j<columns;j++)
-			{
+			for (j=p2+1; j<columns; j++) {
 				f = cells.lData[i*columns+j];
-				if (localDone.Find(f)>=0)
+				if (localDone.Find(f)>=0) {
 					continue;
-				else
+				} else {
 					localDone<<f;
+				}
 				componentL.lData[f]+=diff;
 				componentR.lData[f]+=diff;
 			}
 		}
 	}
 	alreadyDone.Clear();
-	for (j=0;j<columns;j++)
-	{
+	for (j=0; j<columns; j++) {
 		c = 0;
 		p=-1;
 		_SimpleList stretch, stretchI,stretchW;
 		p2 = alreadyDone.lLength;
-		for (i=0;i<rows;)
-		{
+		for (i=0; i<rows;) {
 			j2 = i;
 			f = cells.lData[i*columns+j];
 			thisCell = (_HYComponent*)components.lData[f];
-			if (alreadyDone.Find(f)>=0)
-			{
+			if (alreadyDone.Find(f)>=0) {
 				c += componentB.lData[f]-componentT.lData[f];
 				i++;
 				scroller = false;
 				continue;
 			}
-			do
-			{
+			do {
 				g = f;
 				i++;
-				if (i==rows) break;
+				if (i==rows) {
+					break;
+				}
 				f = cells.lData[i*columns+j];
-			}
-			while (f==g);
+			} while (f==g);
 			_HYComponent* thisCell = (_HYComponent*)components.lData[g];
 			componentT.lData[g] = c;
 			f = tf*(i-j2)+thisCell->GetMinH();
 			mw = thisCell->GetMaxLH()-1;
-			if (f>mw)
+			if (f>mw) {
 				f=mw;
-			else
-			{	
+			} else {
 				stretch<<g;
 				stretchI<<i-1;
 				stretchW<<mw-f;
@@ -531,27 +518,28 @@ void	_HYTWindow::RecomputeCellRects (void)
 			alreadyDone<<g;
 			//c++;
 		}
-		while ((c<b)&&(stretch.lLength))
-		{
+		while ((c<b)&&(stretch.lLength)) {
 			int diff = b-c;
-			if (diff>stretchW.lData[stretch.lLength-1])
+			if (diff>stretchW.lData[stretch.lLength-1]) {
 				diff = stretchW.lData[stretch.lLength-1];
-				
+			}
+
 			componentB.lData[stretch.lData[stretch.lLength-1]]+=diff;
 			_SimpleList localDone;
-			for (i=stretchI.lData[stretch.lLength-1]+1;i<rows;i++)
-			{
+			for (i=stretchI.lData[stretch.lLength-1]+1; i<rows; i++) {
 				f = cells.lData[i*columns+j];
 				p = alreadyDone.Find(f);
 				if ((localDone.Find(f)>=0)||(j&&(p>=0)&&(p<p2)))
-				//if (localDone.Find(f)>=0)
+					//if (localDone.Find(f)>=0)
+				{
 					continue;
-				else
+				} else {
 					localDone<<f;
+				}
 				componentT.lData[f]+=diff;
 				componentB.lData[f]+=diff;
 			}
-			
+
 			c+=diff;
 			stretchI.Delete(stretch.lLength-1);
 			stretchW.Delete(stretch.lLength-1);
@@ -564,12 +552,12 @@ void	_HYTWindow::RecomputeCellRects (void)
 
 int		_HYTWindow::FindClickedCell (int h, int v)
 {
-	for (int i=0;i<components.lLength;i++)
-	{
+	for (int i=0; i<components.lLength; i++) {
 		if (cells.Find (i)>=0)
 			if ((h>=componentL.lData[i])&&(h<=componentR.lData[i])
-				&&(v>=componentT.lData[i])&&(v<=componentB.lData[i]))
-					return i;
+					&&(v>=componentT.lData[i])&&(v<=componentB.lData[i])) {
+				return i;
+			}
 	}
 	return -1;
 }
@@ -578,30 +566,29 @@ int		_HYTWindow::FindClickedCell (int h, int v)
 
 void		_HYTWindow::DoMouseWheel (long c, long delta)
 {
-	if (c>=0)
-	{
+	if (c>=0) {
 		_HYComponent * thisC = (_HYComponent*) components (c);
-		
-		if (thisC->HasVScroll())
-		{
+
+		if (thisC->HasVScroll()) {
 			long	invisPixels 	= thisC->GetMaxH()-(thisC->GetVSize()),
-					smallScrollStep = (double)10.*MAX_CONTROL_VALUE/invisPixels,
-					cv				= thisC->_GetVScrollerPos (),
-					cv2;
-			
-			if (!smallScrollStep)
+					   smallScrollStep = (double)10.*MAX_CONTROL_VALUE/invisPixels,
+					   cv				= thisC->_GetVScrollerPos (),
+								 cv2;
+
+			if (!smallScrollStep) {
 				smallScrollStep = 1;
-				
+			}
+
 			cv2 = cv - delta*smallScrollStep;
-			
-			if (cv2<0)
+
+			if (cv2<0) {
 				cv2 = 0;
-			else
-				if (cv2>MAX_CONTROL_VALUE)
-					cv2 = MAX_CONTROL_VALUE;
-					
+			} else if (cv2>MAX_CONTROL_VALUE) {
+				cv2 = MAX_CONTROL_VALUE;
+			}
+
 			thisC->_SetVScrollerPos (cv2);
-				
+
 			thisC->ProcessEvent (generateScrollEvent(0,cv2-cv));
 		}
 	}
@@ -644,9 +631,10 @@ long		_HYTWindow::MatchComponentID (_String& text)
 {
 	long k = text.toNum(),
 		 i;
-	for (i=0;i<components.lLength;i++)
-		if (((_HYGuiObject*)components(i))->MatchID(k))
+	for (i=0; i<components.lLength; i++)
+		if (((_HYGuiObject*)components(i))->MatchID(k)) {
 			return i;
+		}
 	return -1;
 }
 
@@ -654,59 +642,52 @@ long		_HYTWindow::MatchComponentID (_String& text)
 void		_HYTWindow::HandleCopyPaste (bool paste)
 {
 	int 		componentID = keyboardFocus;
-	
-	if 			(paste)
-	{
+
+	if 			(paste) {
 		BaseRef		 pastingReference = nil;
 		_String*  	 clipData = _GetPasteString();
-		
+
 		if (clipData->sLength)
-			if (componentID < 0)
-			{
-				for (componentID=0;componentID<components.lLength;componentID++)
+			if (componentID < 0) {
+				for (componentID=0; componentID<components.lLength; componentID++)
 					if (cells.Find(componentID)>=0)
-						if ((pastingReference = 	((_HYComponent*)components(componentID))->CanPaste (*clipData)))
+						if ((pastingReference = 	((_HYComponent*)components(componentID))->CanPaste (*clipData))) {
 							break;
-						
-			}
-			else
+						}
+
+			} else {
 				pastingReference = 	((_HYComponent*)components(componentID))->CanPaste (*clipData);
-		
+			}
+
 		DeleteObject (clipData);
-		if (pastingReference)
-		{
+		if (pastingReference) {
 			((_HYComponent*)components(componentID))->HandlePaste (pastingReference);
 			DeleteObject (pastingReference);
 		}
-	}
-	else
-	{
+	} else {
 		_String*  	 clipData = nil;
-		
-		if (componentID < 0)
-		{
-			for (componentID=0;componentID<components.lLength;componentID++)
-				if (cells.Find(componentID)>=0)
-					if (((_HYComponent*)components(componentID))->CanCopy())
-						break;
-					
-		}
-		else
-			if (!((_HYComponent*)components(componentID))->CanCopy())
-				componentID = components.lLength;
 
-		if (componentID < components.lLength)
-		{
+		if (componentID < 0) {
+			for (componentID=0; componentID<components.lLength; componentID++)
+				if (cells.Find(componentID)>=0)
+					if (((_HYComponent*)components(componentID))->CanCopy()) {
+						break;
+					}
+
+		} else if (!((_HYComponent*)components(componentID))->CanCopy()) {
+			componentID = components.lLength;
+		}
+
+		if (componentID < components.lLength) {
 			clipData = ((_HYComponent*)components(componentID))->HandleCopy ();
-			if (clipData)
-			{
+			if (clipData) {
 				_SetCopyString (clipData);
 				DeleteObject   (clipData);
 			}
 		}
-	
+
 	}
-	
+
 }
 
 //__________________________________________________________________
@@ -714,26 +695,28 @@ void		_HYTWindow::HandleCopyPaste (bool paste)
 void 		_HYTWindow::SetWindowRectangle(int t, int l, int b, int r, bool ss)
 {
 	dim = MinMaxWindowDimensions();
-	if (b-t>=dim.bottom)
+	if (b-t>=dim.bottom) {
 		b=t+dim.bottom-1;
+	}
 
-	if (b-t<=dim.top)
+	if (b-t<=dim.top) {
 		b=t+dim.top-1;
+	}
 
-	if (r-l>=dim.right)
+	if (r-l>=dim.right) {
 		r=l+dim.right-1;
+	}
 
-	if (r-l<=dim.left)
+	if (r-l<=dim.left) {
 		r=l+dim.left-1;
-		
+	}
+
 	_HYWindow::SetWindowRectangle (t,l,b,r,ss);
 	_HYPlatformTWindow::_SetWindowRectangle (t,l,b,r,ss);
 	RecomputeCellRects();
 	_HYRect  relRect;
-	for (int i=0;i<components.lLength;i++)
-	{
-		if (cells.Find(i)>=0)
-		{
+	for (int i=0; i<components.lLength; i++) {
+		if (cells.Find(i)>=0) {
 			relRect.left = componentL.lData[i];
 			relRect.right = componentR.lData[i];
 			relRect.top = componentT.lData[i];
@@ -760,17 +743,19 @@ _HYPWindow::_HYPWindow(_String windowTitle,int ih, int iw, int id, bool vis):_HY
 void	_HYPWindow::StartDraw(void)
 {
 	_HYGraphicPane::StartDraw();
-	if (!resizing)
+	if (!resizing) {
 		_StartPicture();
+	}
 }
 
 //__________________________________________________________________
 
 void	_HYPWindow::EndDraw(void)
 {
-	if (!resizing)
+	if (!resizing) {
 		_EndPicture();
-		
+	}
+
 	_HYGraphicPane::EndDraw();
 }
 
@@ -793,7 +778,7 @@ void	_HYPWindow::Zoom (_Parameter factor)
 {
 	long newW = contentWidth  * factor,
 		 newH = contentHeight * factor;
-		 
+
 	SetWindowRectangle (0,0,newH, newW);
 	SetContentSize	   (newW,newH);
 }
@@ -810,31 +795,33 @@ void	_HYPWindow::OriginalSize (void)
 
 void	HandleGlobalQueueEvent (void)
 {
-	long mSel, 
+	long mSel,
 		 menuChoice;
-		 
+
 	static	bool handling = false;
-	
+
 	_String evCode (((_HYEvent*)GlobalGUIEventQueue.lData[0])->EventCode());
-	
+
 	mSel = evCode.Find(',')-1;
-	if (mSel<-1)
+	if (mSel<-1) {
 		mSel = -1;
-		
+	}
+
 	mSel = evCode.Cut (0,mSel).toNum();
 	menuChoice = -1;
-	if (!handling)
-	{
+	if (!handling) {
 		handling = true;
 		for (long f=0; f<windowObjectRefs.countitems(); f++)
-			if (((_HYGuiObject*)windowObjectRefs.lData[f])->MatchID(mSel))
+			if (((_HYGuiObject*)windowObjectRefs.lData[f])->MatchID(mSel)) {
 				menuChoice = f;
-			else
+			} else {
 				((_HYGuiObject*)windowObjectRefs.lData[f])->ProcessGEvent((_HYEvent*)GlobalGUIEventQueue.lData[0]);
-				
-		if (menuChoice>=0)
-				((_HYGuiObject*)windowObjectRefs.lData[menuChoice])->ProcessGEvent((_HYEvent*)GlobalGUIEventQueue.lData[0]);
-				
+			}
+
+		if (menuChoice>=0) {
+			((_HYGuiObject*)windowObjectRefs.lData[menuChoice])->ProcessGEvent((_HYEvent*)GlobalGUIEventQueue.lData[0]);
+		}
+
 		GlobalGUIEventQueue.Delete(0);
 		handling = false;
 	}

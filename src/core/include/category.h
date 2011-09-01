@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2006
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -39,144 +39,177 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	   CONSTANT_ON_PARTITION 	1
 
 #ifndef	   __HYALTIVEC__
-	#define    INFINITE_BOUND 1e50
+#define    INFINITE_BOUND 1e50
 #else
-	#define    INFINITE_BOUND 1e10
+#define    INFINITE_BOUND 1e10
 #endif
 
 //__________________________________________________________________________________
 
-class	  _CategoryVariable: public _Variable {
+class	  _CategoryVariable: public _Variable
+{
 
-	public:
+public:
 	// c&d
-	
-	_CategoryVariable () {values = nil; intervalEnds = nil; weights = nil;conditionalWeights = nil;};
-	_CategoryVariable (_CategoryVariable& cv) {Duplicate (&cv);}
+
+	_CategoryVariable () {
+		values = nil;
+		intervalEnds = nil;
+		weights = nil;
+		conditionalWeights = nil;
+	};
+	_CategoryVariable (_CategoryVariable& cv) {
+		Duplicate (&cv);
+	}
 	_CategoryVariable (_String& name, _List* parms, _VariableContainer*);
-	
+
 	// std functions
-virtual
-	~_CategoryVariable () { DeleteObject (values); DeleteObject (intervalEnds); DeleteObject (weights);};
-virtual
+	virtual
+	~_CategoryVariable () {
+		DeleteObject (values);
+		DeleteObject (intervalEnds);
+		DeleteObject (weights);
+	};
+	virtual
 	BaseRef		makeDynamic				(void);
-virtual
+	virtual
 	void		Duplicate				(BaseRef);
-virtual
+	virtual
 	BaseRef		toStr 					(void);
-	
-virtual
+
+	virtual
 	bool		IsGlobal 				(void);
 
-virtual
+	virtual
 	bool		IsConstant 				(void);
-	
-virtual		
-	bool	    IsCategory 				(void) 
-											{ return true;}
-	
-virtual		
+
+	virtual
+	bool	    IsCategory 				(void) {
+		return true;
+	}
+
+	virtual
 	void	   ScanForVariables 	    (_AVLList&, bool = false);
-						   
-virtual		
+
+	virtual
 	void	   ScanForGVariables 		(_AVLList&);
-	
+
 	bool	   HaveParametersChanged 	(long = -1);
-						   
-/*virtual		
-	bool	   IsIndependent (void) { return false;} */  
+
+	/*virtual
+		bool	   IsIndependent (void) { return false;} */
 
 	// access functions
-	
-	long		GetNumberOfIntervals () {return intervals;}
-	
-	char		GetRepresentationType () {return representation;}
-	
+
+	long		GetNumberOfIntervals () {
+		return intervals;
+	}
+
+	char		GetRepresentationType () {
+		return representation;
+	}
+
 	_Parameter	SetIntervalValue (long, bool recacl = true);
-				// set interval value is returned
-    
-    _Parameter  Mean (void);
-	
+	// set interval value is returned
+
+	_Parameter  Mean (void);
+
 	_Parameter	GetIntervalValue (long);
 
 	_Parameter	GetIntervalWeight(long);
 
-	_Parameter*	GetIntervalWeights(void) {return weights->fastIndex();}
+	_Parameter*	GetIntervalWeights(void) {
+		return weights->fastIndex();
+	}
 
 	_Matrix*	GetValues (void);
-	
+
 	_Matrix*	GetWeights(bool = false);
-	
+
 	_Matrix*	GetIntervalEnds (void);
-	
+
 	_Matrix*	ComputeHiddenMarkov (void);
 	_Matrix*	ComputeHiddenMarkovFreqs (void);
 	_Matrix*	GetHiddenMarkov (void);
 	_Matrix*	GetHiddenMarkovFreqs (void);
-	
-	_Formula&	GetDensity(void) {return density;}
-	
-	_Formula&	GetCumulative(void) {return cumulative;}
-	
-	
-	bool		Refresh(bool force=false) {return UpdateIntervalsAndValues(force);}
-	
-	_Parameter	GetMinX (void)	{return x_min;}
-	_Parameter	GetMaxX (void)	{return x_max;}
+
+	_Formula&	GetDensity(void) {
+		return density;
+	}
+
+	_Formula&	GetCumulative(void) {
+		return cumulative;
+	}
+
+
+	bool		Refresh(bool force=false) {
+		return UpdateIntervalsAndValues(force);
+	}
+
+	_Parameter	GetMinX (void)	{
+		return x_min;
+	}
+	_Parameter	GetMaxX (void)	{
+		return x_max;
+	}
 	bool		IsHiddenMarkov
-						(void)	{return (hiddenMarkovModel!=-1);}
+	(void)	{
+		return (hiddenMarkovModel!=-1);
+	}
 
 	bool		IsConstantOnPartition
-						(void)	{return (flags&CONSTANT_ON_PARTITION);}
+	(void)	{
+		return (flags&CONSTANT_ON_PARTITION);
+	}
 
 	void		ChangeNumberOfIntervals (long);
-				// assumes a 'standard' category variable - i.e.
-				// EQUAL freqs, and density/cumulative
-				
+	// assumes a 'standard' category variable - i.e.
+	// EQUAL freqs, and density/cumulative
+
 	void		SerializeCategory		(_String&);
-	
+
 	long		GetCurrentState			(void);
 	bool		IsUncorrelated			(void);
 	bool		IsLayered				(void);
-	
-	private:
-		
-		bool		UpdateIntervalsAndValues (bool force = false);
-		void		Construct 	(_List&, _VariableContainer*);
-		void		Clear		(void);
-		bool		checkWeightMatrix (_Matrix&, long = -1);
-				
+
+private:
+
+	bool		UpdateIntervalsAndValues (bool force = false);
+	void		Construct 	(_List&, _VariableContainer*);
+	void		Clear		(void);
+	bool		checkWeightMatrix (_Matrix&, long = -1);
+
 	// data members
-	private:
-		
-		long 		intervals,	// number of intervals
-					hiddenMarkovModel,
-					covariant,
-					intervalSplitter;
-					
-					
-		char		flags;
-		_Formula	density, 
-					cumulative, 
-					meanC;		
-						// weights of intervals
-						// probability density function, in terms of parameters and _x_
-						// cumulative prob function, in terms of parameters and _x_
-		char 		representation; 
-						// how to represent intervals, by means or medians
-						
-		_Matrix		*values, 
-					*intervalEnds, 
-					*weights,
-					*conditionalWeights;
-					
-		_Parameter	x_min, 
-					x_max;		// distribution range
-	
-		_SimpleList	parameterList;
-		_List		affectedClasses; 
-					
-					
+private:
+
+	long 		intervals,	// number of intervals
+				hiddenMarkovModel,
+				covariant,
+				intervalSplitter;
+
+
+	char		flags;
+	_Formula	density,
+				cumulative,
+				meanC;
+	// weights of intervals
+	// probability density function, in terms of parameters and _x_
+	// cumulative prob function, in terms of parameters and _x_
+	char 		representation;
+	// how to represent intervals, by means or medians
+
+	_Matrix		*values,
+				*intervalEnds,
+				*weights,
+				*conditionalWeights;
+
+	_Parameter	x_min,
+				x_max;		// distribution range
+
+	_SimpleList	parameterList;
+	_List		affectedClasses;
+
+
 
 };
 

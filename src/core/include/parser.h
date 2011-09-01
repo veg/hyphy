@@ -2,7 +2,7 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-2006  
+Copyright (C) 1997-2006
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -49,7 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	 POLYNOMIAL			0x200
 #define  HY_ANY_OBJECT		0xFFFF
 
-#define	 DEFAULTLOWERBOUND 	-1e26 
+#define	 DEFAULTLOWERBOUND 	-1e26
 #define	 DEFAULTUPPERBOUND	1e26
 
 #define	 GLOBAL_VARIABLE   1
@@ -64,11 +64,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	 HY_DEP_V_MODIFIED	    0x10
 #define	 HY_DEP_V_MODIFIED_CATS	0x20
 #define	 HY_VC_NO_CHECK			0x40 // do not check this variable container in 
-									 // NeedToExponentiate
-#define	 HY_VARIABLE_NOTSET 	0x80 
+// NeedToExponentiate
+#define	 HY_VARIABLE_NOTSET 	0x80
 #define	 HY_VARIABLE_SET		0x7F
 
-#define	 HY_VC_CLR_NO_CHECK		0xBF 
+#define	 HY_VC_CLR_NO_CHECK		0xBF
 
 #define  HY_DEP_CLEAR_MASK		0xC7
 
@@ -171,93 +171,265 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 class   _Variable;
 class   _VariableContainer;
 
-class	_MathObject : public BaseObj{ //abstract math operations class
+class	_MathObject : public BaseObj  //abstract math operations class
+{
 
-	public:
+public:
 
-	virtual	_MathObject* Add 		(_MathObject*) 	   {warnError (-666); ; return new _MathObject;}
-	virtual	_MathObject* Sub 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Minus 		(void) 		   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Sum 		(void) 		   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Mult 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Div 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* lDiv 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* longDiv 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Raise 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual void		 Assign 	(_MathObject*) 	   {warnError (-666); }
-	virtual	bool		 Equal 		(_MathObject*) 	   {warnError (-666); return false;}
-	virtual	_MathObject* Abs 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Sin 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Cos 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Tan 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Exp 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Log 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Sqrt 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Gamma 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Erf 		(void) 			   {warnError (-666); return new _MathObject;}
-	virtual _MathObject* LnGamma	(void)			   {warnError (-666); return new _MathObject;}	// <-- added by afyp, February 7, 2007
-	virtual	_MathObject* Beta  		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* IGamma		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* CChi2		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual _MathObject* IBeta		(_MathObject*,_MathObject*)
-													   {warnError (-666); return new _MathObject;}
-	virtual _MathObject* Simplex	(void)			   {warnError (-666); return new _MathObject;}
-	virtual _MathObject* Min		(_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual _MathObject* Max		(_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* InvChi2	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* ZCDF		(void)		 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Time 		(void) 		   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Arctan 	(void) 		   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Less 		(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Random 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* Greater	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* LessEq 	(_MathObject*) 	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* GreaterEq 	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* AreEqual 	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* NotEqual 	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* LAnd	 	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* LOr	 	(_MathObject*)     {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* GammaDist  (_MathObject*,_MathObject*)  
-													   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* CGammaDist (_MathObject*,_MathObject*) 
-													   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* LNot  		(void)	 		   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* TipCount  	(void)		   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* BranchCount (void)        	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* TipName	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* BranchName	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* BranchLength(_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* RerootTree	 (_MathObject*)	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* TEXTreeString(_MathObject*)
-												   	   {warnError (-666); return new _MathObject;}
+	virtual	_MathObject* Add 		(_MathObject*) 	   {
+		warnError (-666); ;
+		return new _MathObject;
+	}
+	virtual	_MathObject* Sub 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Minus 		(void) 		   	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Sum 		(void) 		   	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Mult 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Div 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* lDiv 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* longDiv 	(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Raise 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual void		 Assign 	(_MathObject*) 	   {
+		warnError (-666);
+	}
+	virtual	bool		 Equal 		(_MathObject*) 	   {
+		warnError (-666);
+		return false;
+	}
+	virtual	_MathObject* Abs 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Sin 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Cos 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Tan 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Exp 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Log 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Sqrt 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Gamma 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Erf 		(void) 			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual _MathObject* LnGamma	(void)			   {
+		warnError (-666);    // <-- added by afyp, February 7, 2007
+		return new _MathObject;
+	}
+	virtual	_MathObject* Beta  		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* IGamma		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* CChi2		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual _MathObject* IBeta		(_MathObject*,_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual _MathObject* Simplex	(void)			   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual _MathObject* Min		(_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual _MathObject* Max		(_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* InvChi2	(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* ZCDF		(void)		 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Time 		(void) 		   	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Arctan 	(void) 		   	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Less 		(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Random 	(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* Greater	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* LessEq 	(_MathObject*) 	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* GreaterEq 	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* AreEqual 	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* NotEqual 	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* LAnd	 	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* LOr	 	(_MathObject*)     {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* GammaDist  (_MathObject*,_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* CGammaDist (_MathObject*,_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* LNot  		(void)	 		   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* TipCount  	(void)		   	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* BranchCount (void)        	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* TipName	 (_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* BranchName	 (_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* BranchLength(_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* RerootTree	 (_MathObject*)	   {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* TEXTreeString(_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
 	virtual	_MathObject* Type						   (void);
-	virtual	_MathObject* PlainTreeString(_MathObject*)
-						 						   	   {warnError (-666); return new _MathObject;}
-	virtual	_MathObject* FormatNumberString (_MathObject*,_MathObject*)
-												   {warnError (-666); return new _MathObject;}
-	virtual	_Parameter	 Value (void) 			   {warnError (-666); return 0.0;}
-	virtual	_MathObject* Compute (void) 		   {return new _MathObject;}
-	virtual	void	     ScanForVariables (_AVLList&,bool = false)			
-													{}
-	
-	virtual		 BaseRef makeDynamic			   (void);
-	virtual	bool		 IsVariable (void)		   {return false;}
-	virtual	bool		 IsObjectEmpty (void)	   {return true;}
-	virtual	bool		 IsPrintable (void)		   {return false;}
-	
-	virtual	bool		 IsIndependent (void) 		{ return true; } 
-	virtual	long		 ObjectClass (void) 		{ return HY_UNDEFINED; } 
-			// returns a unique ID for this object
-			// 0 - undefined
-			// 1 - number
-			// 4 - matrix
-											
-	virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);   
-						 // execute this operation with the list of Args
-	
-	virtual	bool		 HasChanged (void) { return false; }
+	virtual	_MathObject* PlainTreeString(_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_MathObject* FormatNumberString (_MathObject*,_MathObject*) {
+		warnError (-666);
+		return new _MathObject;
+	}
+	virtual	_Parameter	 Value (void) 			   {
+		warnError (-666);
+		return 0.0;
+	}
+	virtual	_MathObject* Compute (void) 		   {
+		return new _MathObject;
+	}
+	virtual	void	     ScanForVariables (_AVLList&,bool = false)
+	{}
 
-	virtual   bool		 IsConstant	(void) { return true;  }
+	virtual		 BaseRef makeDynamic			   (void);
+	virtual	bool		 IsVariable (void)		   {
+		return false;
+	}
+	virtual	bool		 IsObjectEmpty (void)	   {
+		return true;
+	}
+	virtual	bool		 IsPrintable (void)		   {
+		return false;
+	}
+
+	virtual	bool		 IsIndependent (void) 		{
+		return true;
+	}
+	virtual	long		 ObjectClass (void) 		{
+		return HY_UNDEFINED;
+	}
+	// returns a unique ID for this object
+	// 0 - undefined
+	// 1 - number
+	// 4 - matrix
+
+	virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);
+	// execute this operation with the list of Args
+
+	virtual	bool		 HasChanged (void) {
+		return false;
+	}
+
+	virtual   bool		 IsConstant	(void) {
+		return true;
+	}
 };
 
 typedef	_MathObject* _PMathObj ;
@@ -266,41 +438,43 @@ typedef	_MathObject* _PMathObj ;
 
 //__________________________________________________________________________________
 
-class	_Stack { //computational stack
+class	_Stack   //computational stack
+{
 
 	friend class _Formula;
 	friend class _Operation;
 	friend class _Variable;
 
-	public:
-	
+public:
+
 	_Stack (void);
 	~_Stack (void);
-	
+
 	bool	  Push (_PMathObj); 	// push object onto the stack
 	_PMathObj Pop (bool del = true); 			// pop object from the top of the stack
 	long	  StackDepth (void); 	// returns the depth of the stack
 	void	  Reset (void); 		// clear the stack
-	
-	virtual	  void	  Initialize (void); 
-	virtual	  void	  Duplicate (BaseRef); 
-	
-	protected:
-	
-		_List  theStack;
+
+	virtual	  void	  Initialize (void);
+	virtual	  void	  Duplicate (BaseRef);
+
+protected:
+
+	_List  theStack;
 };
-	
+
 //__________________________________________________________________________________
 
-class _Constant : public _MathObject { // a numerical constant
-	
-	public:
+class _Constant : public _MathObject   // a numerical constant
+{
+
+public:
 
 	_Constant (_Parameter);
 	_Constant (_String&);
 	_Constant (void);
 	~_Constant (void) {}
-	
+
 	virtual	_PMathObj Add 			(_PMathObj);
 	virtual	_PMathObj Sub 			(_PMathObj);
 	virtual	_PMathObj Minus	 		(void) ;
@@ -345,118 +519,132 @@ class _Constant : public _MathObject { // a numerical constant
 	virtual	_PMathObj LNot	 		();
 	virtual	_PMathObj Random 		(_PMathObj);
 	virtual	_Parameter
-					  Value 		(void);
-	virtual	_PMathObj FormatNumberString 
-									(_PMathObj,_PMathObj);
-	virtual	_PMathObj Compute 		(void) 
-									{return this;};
-	
-	virtual	  void	  Initialize 			(void); 
-	virtual	  void	  Duplicate 			(BaseRef); 
+	Value 		(void);
+	virtual	_PMathObj FormatNumberString
+	(_PMathObj,_PMathObj);
+	virtual	_PMathObj Compute 		(void) {
+		return this;
+	};
+
+	virtual	  void	  Initialize 			(void);
+	virtual	  void	  Duplicate 			(BaseRef);
 	virtual	  BaseRef makeDynamic			(void);
 	virtual	  BaseRef toStr 				(void);
-	virtual	  long 	  ObjectClass 			(void) 
-						{ return NUMBER;}
-	virtual	  void	  SetValue 				(_Parameter pl) 
-						{theValue = pl;} 
-	
-	public:
-		
-		_Parameter theValue;
-		
+	virtual	  long 	  ObjectClass 			(void) {
+		return NUMBER;
+	}
+	virtual	  void	  SetValue 				(_Parameter pl) {
+		theValue = pl;
+	}
+
+public:
+
+	_Parameter theValue;
+
 };
 
 extern	_List BuiltInFunctions;
 
 //__________________________________________________________________________________
 
-class	_Operation : public BaseObj {
+class	_Operation : public BaseObj
+{
 
-	friend class _Formula; 
-	friend class _Variable; 
-	friend class _VariableContainer; 
+	friend class _Formula;
+	friend class _Variable;
+	friend class _VariableContainer;
 
-	public:
+public:
 
-	
+
 	_Operation 	(void);
-	_Operation 	(_String&, long); 
-							// construct the operation by its symbol and, if relevant -
-						    // number of operands
-	
-	_Operation	(bool, _String&, bool isG = false, _VariableContainer*  = nil); 
-							// store a variable or a constant
-	_Operation	(_PMathObj); 		
-							// store a non-numeric constant
-	
+	_Operation 	(_String&, long);
+	// construct the operation by its symbol and, if relevant -
+	// number of operands
+
+	_Operation	(bool, _String&, bool isG = false, _VariableContainer*  = nil);
+	// store a variable or a constant
+	_Operation	(_PMathObj);
+	// store a non-numeric constant
+
 	virtual	~_Operation	(void);
-	
-virtual	  BaseObj*		makeDynamic 		(void);
-	
-		  bool			Execute 			(_Stack&, _VariableContainer* = nil); //execute this operation
-		// see the commend for _Formula::ExecuteFormula for the second argument
-virtual   void			StackDepth			(long&);
-		  								
-		  bool			ExecutePolynomial 	(_Stack&);	
-virtual	  BaseObj*		toStr				(void);    //convert the op to string
-										
-virtual	  void			Initialize			(void); 
-virtual	  void			Duplicate 			(BaseRef); 
-		  _String&  	GetCode				(void) 
-		  					{return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;}
-		 long&  		TheCode 			(void) 
-		 					{return opCode;}
-virtual	 bool 			IsAVariable 		(bool = true) ;	// is this object a variable or not?	
-virtual	 bool			IsConstant			(void); 		// does this object depend on any independent variables or not?				 	
 
-virtual	 long			UserFunctionID		(void) { return numberOfTerms < 0 ? -numberOfTerms-1 : -1;};	
-						// return a non-neg number (function index) if this is a user function,
-						// otherwise, return -1
+	virtual	  BaseObj*		makeDynamic 		(void);
 
-virtual	 long    		GetAVariable 		(void) 		// return the index of the variable
-							{return theData>=-2?theData:-theData-3; } 
-									
-virtual	 void    		SetAVariable 		(long d) 	// return the index of the variable
-							{theData=d;} 	
-							
-virtual  bool			AssignmentVariable	(void)
-							{return theData<-2;}
-	
-virtual	 bool			HasChanged			(void);
-							
-virtual	 void   	 	SetTerms 			(long d) 
-							{numberOfTerms=d;} 
-								
-virtual	 _PMathObj 		GetANumber 			(void) 
-							{return theNumber;} 
-							
-virtual	 void   	 	SetNumber 			(_PMathObj d) 
-							{theNumber=d;} 
-																
-		long			GetNoTerms			(void) 
-							{return numberOfTerms;}
-		long			PrecedenceLevel		(void);
-	
-		bool			CanResultsBeCached (_Operation *);
+	bool			Execute 			(_Stack&, _VariableContainer* = nil); //execute this operation
+	// see the commend for _Formula::ExecuteFormula for the second argument
+	virtual   void			StackDepth			(long&);
 
-		
-virtual bool			EqualOp				(_Operation*);
-	
-	protected:
-	
-	
-		long	 	opCode; 		// internal operation code
-		long		numberOfTerms,  // 1 - unary, 2 - binary, etc
-				 	theData;
-		_PMathObj   theNumber;
+	bool			ExecutePolynomial 	(_Stack&);
+	virtual	  BaseObj*		toStr				(void);    //convert the op to string
+
+	virtual	  void			Initialize			(void);
+	virtual	  void			Duplicate 			(BaseRef);
+	_String&  	GetCode				(void) {
+		return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):empty;
+	}
+	long&  		TheCode 			(void) {
+		return opCode;
+	}
+	virtual	 bool 			IsAVariable 		(bool = true) ;	// is this object a variable or not?
+	virtual	 bool			IsConstant			(void); 		// does this object depend on any independent variables or not?
+
+	virtual	 long			UserFunctionID		(void) {
+		return numberOfTerms < 0 ? -numberOfTerms-1 : -1;
+	};
+	// return a non-neg number (function index) if this is a user function,
+	// otherwise, return -1
+
+	virtual	 long    		GetAVariable 		(void) {	// return the index of the variable
+		return theData>=-2?theData:-theData-3;
+	}
+
+	virtual	 void    		SetAVariable 		(long d) {	// return the index of the variable
+		theData=d;
+	}
+
+	virtual  bool			AssignmentVariable	(void) {
+		return theData<-2;
+	}
+
+	virtual	 bool			HasChanged			(void);
+
+	virtual	 void   	 	SetTerms 			(long d) {
+		numberOfTerms=d;
+	}
+
+	virtual	 _PMathObj 		GetANumber 			(void) {
+		return theNumber;
+	}
+
+	virtual	 void   	 	SetNumber 			(_PMathObj d) {
+		theNumber=d;
+	}
+
+	long			GetNoTerms			(void) {
+		return numberOfTerms;
+	}
+	long			PrecedenceLevel		(void);
+
+	bool			CanResultsBeCached (_Operation *);
+
+
+	virtual bool			EqualOp				(_Operation*);
+
+protected:
+
+
+	long	 	opCode; 		// internal operation code
+	long		numberOfTerms,  // 1 - unary, 2 - binary, etc
+				theData;
+	_PMathObj   theNumber;
 };
-	
-	
-	
+
+
+
 //__________________________________________________________________________________
 
-union		_SimpleFormulaDatum
-{
+union		_SimpleFormulaDatum {
 	_Parameter value;
 	Ptr		   reference;
 };
@@ -464,239 +652,256 @@ union		_SimpleFormulaDatum
 
 //__________________________________________________________________________________
 
-class 	_Formula { // a computational formula
+class 	_Formula   // a computational formula
+{
 
 	friend class _Variable;
-	friend class _VariableContainer; 
+	friend class _VariableContainer;
 
-	public:
-	
-			_Formula (void);
-			_Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
-			_Formula (_PMathObj, bool isAVar = false);
-	
-			~_Formula (void);
-	
-		_PMathObj 	Compute 			(long = 0, _VariableContainer* = nil); 
-					// compute the value of the formula
-					// 1st argument : execute from this instruction onwards 
-					// see the commend for ExecuteFormula for the second argument
-	
-		bool	 	IsEmpty				(void); // is there anything in the formula
-		long	 	NumberOperations 	(void); // how many ops in the formula?
-	
-friend	long	  	Parse 				(_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
-friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long, long, _VariableContainer* = nil); 
-										// the execution block for "compiled formulae
-	/*  
-	 SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference" 
+public:
+
+	_Formula (void);
+	_Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
+	_Formula (_PMathObj, bool isAVar = false);
+
+	~_Formula (void);
+
+	_PMathObj 	Compute 			(long = 0, _VariableContainer* = nil);
+	// compute the value of the formula
+	// 1st argument : execute from this instruction onwards
+	// see the commend for ExecuteFormula for the second argument
+
+	bool	 	IsEmpty				(void); // is there anything in the formula
+	long	 	NumberOperations 	(void); // how many ops in the formula?
+
+	friend	long	  	Parse 				(_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
+	friend	long	  	ExecuteFormula 		(_Formula*, _Formula*, long, long, _VariableContainer* = nil);
+	// the execution block for "compiled formulae
+	/*
+	 SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference"
 					arguments when calling ExecuteAFile within a namespace.
-	 
-					e.g. in  
-	 
+
+					e.g. in
+
 					function foo (var&)
 				    {
 						...
 					}
-	 
+
 					foo ("varID");
-					
+
 					varID may need to be prefixed by a namespace ID.
 	 */
-	
-		bool		CheckFormula 		(void); // check to see if this formula is valid and compute the obj class
-	
-		_MathObject*ConstructPolynomial (void);
-	
-virtual	void	  	Initialize 			(void); 
-virtual	void	  	Duplicate 			(BaseRef); 
-		void	  	DuplicateReference 	(_Formula*); 
-virtual	BaseRef		makeDynamic			(void);
-virtual BaseRef 	toStr 				(_List*	matchNames = nil, bool = false);
-	
-virtual	long	  	ObjectClass 		(void);
-					
-	
-virtual	void	  	ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
-virtual	void	  	ScanFForType		(_SimpleList&,  int);
-		/* SLKP 20100716: 
-				A simple utility function to retrieve all variables of a given type
-		 */
-	
-virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
-		_List&	  	GetList 			(void) 
-						{return theFormula;}	
-		
-		bool	  	HasChanged 			(bool = false); // does  the formula need recomputing
-		bool		HasChangedSimple	(_SimpleList&);
-		bool		EqualFormula		(_Formula*);
-		bool	  	IsAConstant 		(void); //  does this formula include variables, or is it just a constant? 
-		bool	  	IsConstant 			(void); //  does this formula depend on something other that constants and fixed parameters? 
-		bool	  	DependsOnVariable 	(long); 
-					/*  
-						SLKP 20090315: added a missing utility function
-						given a variable index as an argument, returns true if
-						the formula depends on a it; false otherwise
-					*/
-		_Operation*	GetIthTerm			(long); 
-					/*  
-						SLKP 20090315: added a missing utility function
-						given an index (i) as the argument, the function retrieves
-						the i-th term of the formula
-					*/
-		void	  	Clear 				(void);
-		_PMathObj 	GetTheMatrix		(void);
-	
-		bool	  	AmISimple	  		(long& stackDepth, _SimpleList& variableIndex);
-		void 	   	ConvertToSimple 	(_SimpleList& variableIndex);
-		void 	   	ConvertFromSimple 	(_SimpleList& variableIndex);
-		void	   	SimplifyConstants	(void);
-	
-		_Parameter	ComputeSimple 		(_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
-	
-		_Parameter	Newton 				(_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
-		_Parameter 	Newton 				(_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
-		_Parameter	Newton 				(_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
-		_Parameter 	Newton 				(_Variable*,_Parameter, _Parameter, _Parameter);
 
-		_Parameter 	Brent 				(_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
+	bool		CheckFormula 		(void); // check to see if this formula is valid and compute the obj class
 
-		_Parameter	Integral 			(_Variable*,_Parameter, _Parameter, bool inifinite = false);
-		_Parameter	MeanIntegral 		(_Variable*,_Parameter, _Parameter, bool inifinite = false);
-		_Formula*   Differentiate		(_String, bool = true);
-		node<long>*	InternalDifferentiate
-										(node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
-										
-		bool		InternalSimplify	(node<long>*);
-	
-		void	    LocalizeFormula 	(_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
-		void		ConvertMatrixArgumentsToSimpleOrComplexForm	(bool);
-		
-	protected:
-	
-		void		internalToStr 		(_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
-		void    	ConvertToTree 		(void);
-		void		ConvertFromTree 	(void);
-		bool		CheckSimpleTerm		(_PMathObj);
-		node<long>* DuplicateFormula 	(node<long>*,_Formula&);  
-		
-		_List  		theFormula,
-					*resultCache;
-	
-		_Stack 		theStack;
-		node<long>* theTree; // this formula converted to a tree for operation purposes
-							 // such as simplification, differentiation and printing.
-							 // trees store numbers referencing operations inside
-							 // "theFormula"
+	_MathObject*ConstructPolynomial (void);
+
+	virtual	void	  	Initialize 			(void);
+	virtual	void	  	Duplicate 			(BaseRef);
+	void	  	DuplicateReference 	(_Formula*);
+	virtual	BaseRef		makeDynamic			(void);
+	virtual BaseRef 	toStr 				(_List*	matchNames = nil, bool = false);
+
+	virtual	long	  	ObjectClass 		(void);
+
+
+	virtual	void	  	ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
+	virtual	void	  	ScanFForType		(_SimpleList&,  int);
+	/* SLKP 20100716:
+			A simple utility function to retrieve all variables of a given type
+	 */
+
+	virtual	bool	  	CheckFForDependence (long, bool checkAll = false);
+	_List&	  	GetList 			(void) {
+		return theFormula;
+	}
+
+	bool	  	HasChanged 			(bool = false); // does  the formula need recomputing
+	bool		HasChangedSimple	(_SimpleList&);
+	bool		EqualFormula		(_Formula*);
+	bool	  	IsAConstant 		(void); //  does this formula include variables, or is it just a constant?
+	bool	  	IsConstant 			(void); //  does this formula depend on something other that constants and fixed parameters?
+	bool	  	DependsOnVariable 	(long);
+	/*
+		SLKP 20090315: added a missing utility function
+		given a variable index as an argument, returns true if
+		the formula depends on a it; false otherwise
+	*/
+	_Operation*	GetIthTerm			(long);
+	/*
+		SLKP 20090315: added a missing utility function
+		given an index (i) as the argument, the function retrieves
+		the i-th term of the formula
+	*/
+	void	  	Clear 				(void);
+	_PMathObj 	GetTheMatrix		(void);
+
+	bool	  	AmISimple	  		(long& stackDepth, _SimpleList& variableIndex);
+	void 	   	ConvertToSimple 	(_SimpleList& variableIndex);
+	void 	   	ConvertFromSimple 	(_SimpleList& variableIndex);
+	void	   	SimplifyConstants	(void);
+
+	_Parameter	ComputeSimple 		(_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+
+	_Parameter	Newton 				(_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
+	_Parameter 	Newton 				(_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
+	_Parameter	Newton 				(_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
+	_Parameter 	Newton 				(_Variable*,_Parameter, _Parameter, _Parameter);
+
+	_Parameter 	Brent 				(_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
+
+	_Parameter	Integral 			(_Variable*,_Parameter, _Parameter, bool inifinite = false);
+	_Parameter	MeanIntegral 		(_Variable*,_Parameter, _Parameter, bool inifinite = false);
+	_Formula*   Differentiate		(_String, bool = true);
+	node<long>*	InternalDifferentiate
+	(node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
+
+	bool		InternalSimplify	(node<long>*);
+
+	void	    LocalizeFormula 	(_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
+	void		ConvertMatrixArgumentsToSimpleOrComplexForm	(bool);
+
+protected:
+
+	void		internalToStr 		(_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
+	void    	ConvertToTree 		(void);
+	void		ConvertFromTree 	(void);
+	bool		CheckSimpleTerm		(_PMathObj);
+	node<long>* DuplicateFormula 	(node<long>*,_Formula&);
+
+	_List  		theFormula,
+				*resultCache;
+
+	_Stack 		theStack;
+	node<long>* theTree; // this formula converted to a tree for operation purposes
+	// such as simplification, differentiation and printing.
+	// trees store numbers referencing operations inside
+	// "theFormula"
 
 };
-	
+
 //__________________________________________________________________________________
-	
-class _Variable : public _Constant {
+
+class _Variable : public _Constant
+{
 
 	friend class _Operation;
-	
-	public:
+
+public:
 
 	_Variable (void);
 	_Variable (_String&, bool isG = false); // name
 	_Variable (_String&, _String&, bool isG = false); // name and formula
-	
+
 	virtual ~_Variable (void);
-	
-	virtual	  void	  		Initialize (void); 
-	virtual	  void	  		Duplicate (BaseRef); 
+
+	virtual	  void	  		Initialize (void);
+	virtual	  void	  		Duplicate (BaseRef);
 	virtual	  BaseRef 		makeDynamic(void);
 	virtual	  BaseRef 		toStr (void);
 	virtual    void	 		toFileStr (FILE*);
 
-	virtual	  void	  		MarkDone (void); 
+	virtual	  void	  		MarkDone (void);
 
 	virtual		_PMathObj   Compute (void); 	  // compute or return the value
-	virtual		bool	    IsVariable (void); //  
-	virtual		bool	    IsIndependent (void) 
-									{ return (varFormula&&varFormula->theFormula.lLength)?
-														false:
-														(varValue?varValue->IsIndependent():true);
-									}   
+	virtual		bool	    IsVariable (void); //
+	virtual		bool	    IsIndependent (void) {
+		return (varFormula&&varFormula->theFormula.lLength)?
+			   false:
+			   (varValue?varValue->IsIndependent():true);
+	}
 	virtual		bool	    IsConstant (void);
-				void	    SetValue (_PMathObj, bool = true); // set the value of the variable
-				void	    SetNumericValue (_Parameter);
-				void	    CheckAndSet (_Parameter, bool = false); 
-									// set the value of the variable
-									// bool flag is used to indicate that out of bounds values should be rejected
-	
-				_PMathObj   GetValue (void) {return varValue;} // get the value of the variable
-				void	    SetFormula (_Formula&); // set the variable to a new formula
-	
+	void	    SetValue (_PMathObj, bool = true); // set the value of the variable
+	void	    SetNumericValue (_Parameter);
+	void	    CheckAndSet (_Parameter, bool = false);
+	// set the value of the variable
+	// bool flag is used to indicate that out of bounds values should be rejected
+
+	_PMathObj   GetValue (void) {
+		return varValue;   // get the value of the variable
+	}
+	void	    SetFormula (_Formula&); // set the variable to a new formula
+
 	virtual		bool	    HasChanged		(bool = false);
 	virtual     void	    PreMarkChanged  ();
 	virtual		void	    PostMarkChanged ();
-	virtual		bool	    IsGlobal (void) 
-											{ return varFlags & HY_VARIABLE_GLOBAL;}
-	virtual		bool	    IsCategory (void) 
-						 					{ return false;}
-	virtual		long	    GetAVariable (void) 
-											{ return theIndex;}
-	virtual		long	    ObjectClass (void) 
-											{ return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);}
-				void	    SetIndex (long i) 
-											{theIndex = i;}
-				long	    GetIndex (void) 
-											{ return theIndex;}
-	virtual		void	    ScanForVariables (_AVLList& l, bool globals = false)
-						  					{ 
-						  						if (varValue) 
-						  							varValue->ScanForVariables (l, globals);
-						   						if (varFormula && varFormula->theFormula.lLength) 
-						   							varFormula->ScanFForVariables(l,globals);
-						  					}
-						   
-	virtual		bool	    IsContainer (void) 
-											{ return false;}
-	
-				void	    SetBounds (_Parameter lb, _Parameter ub);
-                void        EnsureTheValueIsInBounds (void);
-					
-        
-				_Parameter 	GetLowerBound (void) 
-											{ return lowerBound; }
-				_Parameter 	GetUpperBound (void) 
-											{ return upperBound; }
-				
+	virtual		bool	    IsGlobal (void) {
+		return varFlags & HY_VARIABLE_GLOBAL;
+	}
+	virtual		bool	    IsCategory (void) {
+		return false;
+	}
+	virtual		long	    GetAVariable (void) {
+		return theIndex;
+	}
+	virtual		long	    ObjectClass (void) {
+		return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
+	}
+	void	    SetIndex (long i) {
+		theIndex = i;
+	}
+	long	    GetIndex (void) {
+		return theIndex;
+	}
+	virtual		void	    ScanForVariables (_AVLList& l, bool globals = false) {
+		if (varValue) {
+			varValue->ScanForVariables (l, globals);
+		}
+		if (varFormula && varFormula->theFormula.lLength) {
+			varFormula->ScanFForVariables(l,globals);
+		}
+	}
+
+	virtual		bool	    IsContainer (void) {
+		return false;
+	}
+
+	void	    SetBounds (_Parameter lb, _Parameter ub);
+	void        EnsureTheValueIsInBounds (void);
+
+
+	_Parameter 	GetLowerBound (void) {
+		return lowerBound;
+	}
+	_Parameter 	GetUpperBound (void) {
+		return upperBound;
+	}
+
 	virtual		void		ClearConstraints 	(void);
 	virtual		bool	  	CheckFForDependence (long, bool = false);
-				
-				_String*	GetName					(void)	
-							{ return theName;}
-				_String*	GetFormulaString		(void)	
-							{return varFormula?(_String*)varFormula->toStr():(_String*)empty.makeDynamic();}
-							
+
+	_String*	GetName					(void) {
+		return theName;
+	}
+	_String*	GetFormulaString		(void) {
+		return varFormula?(_String*)varFormula->toStr():(_String*)empty.makeDynamic();
+	}
+
 	virtual		void		CompileListOfDependents (_SimpleList&);
-				
-	
+
+
 	friend		void	    ResetVariables			(void);
 	friend		_Variable*  LocateVar 				(long);
 	friend		void	    InsertVar 				(_Variable*);
-				
-	public:
-	
-		_String*   theName;
-		
-		_PMathObj  varValue;
-		
-		long	   theIndex; // index of this variable in the global variable pool
 
-		// the class of this variable - i.e global, local, category or random
-		char	   varFlags;
-		
-		_Parameter lowerBound, 
-				   upperBound;
-				   // dynamic lower and upper bounds here
-				   
-		_Formula*  varFormula;
-		
+public:
+
+	_String*   theName;
+
+	_PMathObj  varValue;
+
+	long	   theIndex; // index of this variable in the global variable pool
+
+	// the class of this variable - i.e global, local, category or random
+	char	   varFlags;
+
+	_Parameter lowerBound,
+			   upperBound;
+	// dynamic lower and upper bounds here
+
+	_Formula*  varFormula;
+
 };
 
 #include "matrix.h"
@@ -708,107 +913,110 @@ class _Variable : public _Constant {
 //__________________________________________________________________________________
 
 // this class defines a computational (or storage) class which, as a variable, may contain
-// other variables locally. 
+// other variables locally.
 
-class	_VariableContainer: public _Variable {
+class	_VariableContainer: public _Variable
+{
 
 	friend class _Operation;
 	friend class _Variable;
-	
-	public:
-	
+
+public:
+
 	_VariableContainer (void);
 	_VariableContainer (_String theName, _String theTmplt = "", _VariableContainer* theP = nil);
 	// name, matrix constructor, the parent (if there is one)
 	virtual ~_VariableContainer(void);
 
 	void					InitializeVarCont (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
-	
-	virtual	    void		MarkDone (void); 
+
+	virtual	    void		MarkDone (void);
 
 	// variable access/operation functions
-	
-	virtual		bool	    IsContainer 				(void) 
-														{return true;}
-					
+
+	virtual		bool	    IsContainer 				(void) {
+		return true;
+	}
+
 	virtual		bool	    HasChanged 					(void);
 	virtual		bool	    NeedToExponentiate 			(bool = false);
-	
-				void 	    ScanAndAttachVariables 		(void); 
-	
-	virtual		void	    ScanForVariables 			(_AVLList&,_AVLList&); 
-	virtual		void	    ScanForDVariables 			(_AVLList&,_AVLList&); 
-	virtual		void	    ScanForGVariables 			(_AVLList&,_AVLList&); 
-	
+
+	void 	    ScanAndAttachVariables 		(void);
+
+	virtual		void	    ScanForVariables 			(_AVLList&,_AVLList&);
+	virtual		void	    ScanForDVariables 			(_AVLList&,_AVLList&);
+	virtual		void	    ScanForGVariables 			(_AVLList&,_AVLList&);
+
 	virtual		bool	    IsModelVar					(long);
 	virtual		bool	    IsConstant					(void);
 	virtual		BaseRef	    makeDynamic 				(void);
 	virtual		void	    Duplicate   				(BaseRef);
-	
+
 	virtual	    BaseRef	    toStr						(void);
-	
-				bool	    HasLocals 					(void);
-	
+
+	bool	    HasLocals 					(void);
+
 	virtual		bool		RemoveDependance 			(long);
 	virtual		long		SetDependance  				(long);
-				bool		SetMDependance 				(_SimpleList&);
-	
-				void		Clear 						(void);
+	bool		SetMDependance 				(_SimpleList&);
+
+	void		Clear 						(void);
 	virtual		void		ClearConstraints 			(void);
-	
-				long		CountIndependents 			(void);	
-				long		CountAll 					(void);
-			
-	virtual		_Variable*  GetIthIndependent 			(long);	
-	virtual		_Variable*  GetIthDependent 			(long);	
-	virtual		_Variable*  GetIthParameter 			(long);	
-	
-				long		CheckAndAddUserExpression 	(_String&, long startWith = 0);
-				void		KillUserExpression 			(long);
+
+	long		CountIndependents 			(void);
+	long		CountAll 					(void);
+
+	virtual		_Variable*  GetIthIndependent 			(long);
+	virtual		_Variable*  GetIthDependent 			(long);
+	virtual		_Variable*  GetIthParameter 			(long);
+
+	long		CheckAndAddUserExpression 	(_String&, long startWith = 0);
+	void		KillUserExpression 			(long);
 	virtual		void		CompileListOfDependents 	(_SimpleList&);
-	
-				void		MatchParametersToList		(_List&, bool doAll = false, bool indOnly = false);
-				_Matrix*	GetModelMatrix 				(void);	
-				_Matrix*	GetFreqMatrix 				(void);	
-				bool		HasExplicitFormModel		(void);
-				_Formula*	GetExplicitFormModel		(void);
 
-				long		GetModelIndex 				(void) 
-														{ return theModel; }
-				long		GetModelDimension			(void);
-					/* 20100316 SLKP
-						return the dimension of the model; needed to handle the case
-						of explicit model exponentials
-					 */
-	
-				void		CopyMatrixParameters 		(_VariableContainer*);
-				void		GetListOfModelParameters 	(_List&);
-				_String*	GetSaveableListOfUserParameters 		
-														(void);
-				void		TrimMemory 					(void);
-		_VariableContainer* GetTheParent				(void)
-														{
-															return theParent;
-														}
+	void		MatchParametersToList		(_List&, bool doAll = false, bool indOnly = false);
+	_Matrix*	GetModelMatrix 				(void);
+	_Matrix*	GetFreqMatrix 				(void);
+	bool		HasExplicitFormModel		(void);
+	_Formula*	GetExplicitFormModel		(void);
 
-	protected: // data members
-			
-		_SimpleList		    *iVariables, 
-							*dVariables,
-							*gVariables;
-		
-		void			   SortVars (void);
+	long		GetModelIndex 				(void) {
+		return theModel;
+	}
+	long		GetModelDimension			(void);
+	/* 20100316 SLKP
+		return the dimension of the model; needed to handle the case
+		of explicit model exponentials
+	 */
 
-		long				theModel; 	// model template for the container
-		_VariableContainer  *theParent; // a higher level container, if there is one.
+	void		CopyMatrixParameters 		(_VariableContainer*);
+	void		GetListOfModelParameters 	(_List&);
+	_String*	GetSaveableListOfUserParameters
+	(void);
+	void		TrimMemory 					(void);
+	_VariableContainer* GetTheParent				(void) {
+		return theParent;
+	}
 
-};					 
-		
+protected: // data members
+
+	_SimpleList		    *iVariables,
+						*dVariables,
+						*gVariables;
+
+	void			   SortVars (void);
+
+	long				theModel; 	// model template for the container
+	_VariableContainer  *theParent; // a higher level container, if there is one.
+
+};
+
 //__________________________________________________________________________________
 
-class _FString : public _MathObject { // strings encountered in formulas
-	
-	public:
+class _FString : public _MathObject   // strings encountered in formulas
+{
+
+public:
 
 	_FString (_String&, bool = true);
 	_FString (long);
@@ -816,7 +1024,7 @@ class _FString : public _MathObject { // strings encountered in formulas
 	_FString (void);
 	virtual	 ~_FString ();
 //	~_Constant (void);
-	
+
 	virtual	BaseRef	  makeDynamic 		(void);
 	virtual	void      Duplicate 		(BaseRef);
 	virtual	_PMathObj Add 				(_PMathObj);
@@ -837,63 +1045,68 @@ class _FString : public _MathObject { // strings encountered in formulas
 	virtual _PMathObj Evaluate			(void);
 	virtual _PMathObj Join				(_PMathObj);
 	virtual _PMathObj Differentiate		(_PMathObj);
-	virtual	long 	  ObjectClass 		(void) 
-					  					{ return STRING;}
-	virtual	_PMathObj Compute 			(void) 
-					  					{ return this; }
-	
+	virtual	long 	  ObjectClass 		(void) {
+		return STRING;
+	}
+	virtual	_PMathObj Compute 			(void) {
+		return this;
+	}
+
 	virtual _PMathObj MapStringToVector (_PMathObj);
 	virtual _PMathObj CharAccess		(_PMathObj,_PMathObj);
-	virtual _PMathObj Execute 			(long opCode, _MathObject* p = nil , _MathObject* p2 = nil);  
+	virtual _PMathObj Execute 			(long opCode, _MathObject* p = nil , _MathObject* p2 = nil);
 	virtual	BaseRef	  toStr 			(void);
-	
-	virtual	bool	  IsVariable		(void)
-					  					{ return true; }
-					  					
-	virtual	bool	  HasChanged		(void)
-					  					{ return true; }
-	
-	virtual bool	  IsEmpty			(void)
-											{return !theString || theString->sLength == 0;}
-		// SLKP 20100907: a simple utility function to check if the object is an empty string
-	
+
+	virtual	bool	  IsVariable		(void) {
+		return true;
+	}
+
+	virtual	bool	  HasChanged		(void) {
+		return true;
+	}
+
+	virtual bool	  IsEmpty			(void) {
+		return !theString || theString->sLength == 0;
+	}
+	// SLKP 20100907: a simple utility function to check if the object is an empty string
+
 	_String*	 	  theString;
-		
+
 };
 
 //__________________________________________________________________________________
 
-	
+
 extern		_List 			variablePtrs,
-                            hyReservedWords;
+				   hyReservedWords;
 
 extern		_SimpleList		BuiltInFunctionParameterCount,
-							*deferSetFormula;
+			   *deferSetFormula;
 
 extern		_AVLListX		variableNames;
 
 extern		_String			UnOps,
-							HalfOps;
+				  HalfOps;
 
 extern		_Parameter  	printDigits,
-							verbosityLevel;
+			   verbosityLevel;
 
 extern		long 	   		lastMatrixDeclared,
-							subNumericValues;
+				 subNumericValues;
 
 long 		LocateVarByName (_String&);
 _Variable*  LocateVar 		(long index);
 _Variable*  FetchVar 		(long index);
-_PMathObj	FetchObjectFromVariableByType 
-							(_String*, int);
-_PMathObj	FetchObjectFromVariableByTypeIndex 
-							(long, int);
+_PMathObj	FetchObjectFromVariableByType
+(_String*, int);
+_PMathObj	FetchObjectFromVariableByTypeIndex
+(long, int);
 _String&    AppendContainerName
-							(_String&, _VariableContainer*);
+(_String&, _VariableContainer*);
 
 void 		DeleteVariable 	(_String&, bool deleteself = true);
-void 		DeleteTreeVariable 	
-							(_String&, _SimpleList&,bool);
+void 		DeleteTreeVariable
+(_String&, _SimpleList&,bool);
 void 		checkParameter 	(_String& name, _Parameter& dest, _Parameter def, _VariableContainer* = nil);
 void 		stashParameter 	(_String& name, _Parameter  newVal, bool);
 void 		setParameter   	(_String& name, _Parameter def, _String* = nil);
@@ -902,46 +1115,46 @@ void 		setParameter   	(_String& name, _PMathObj  def, bool = true, _String* = n
 long	 	VerbosityLevel (void);
 void		ReplaceVar 		(_Variable*);
 void		RenameVariable 	(_String*,_String*);
-void		CompileListOfUserExpressions 
-							(_SimpleList&,_List&, bool doAll = false);
+void		CompileListOfUserExpressions
+(_SimpleList&,_List&, bool doAll = false);
 
-void  		FindUnusedObjectName 
-							(_String&, _String&, _List&, bool = false);
+void  		FindUnusedObjectName
+(_String&, _String&, _List&, bool = false);
 
-void  		FindUnusedObjectName 
-							(_String&, _String&, _AVLListX&, bool = false);
-							
-bool		ExpressionCalculator 
-							(void);
-							
+void  		FindUnusedObjectName
+(_String&, _String&, _AVLListX&, bool = false);
+
+bool		ExpressionCalculator
+(void);
+
 _Variable*  CheckReceptacle
-							(_String*,_String, bool = true, bool = false);
-							
-bool	    CheckReceptacleAndStore
-							(_String*,_String, bool, _PMathObj, bool = true);
+(_String*,_String, bool = true, bool = false);
 
 bool	    CheckReceptacleAndStore
-							(_String,_String, bool, _PMathObj, bool = true);
-		
+(_String*,_String, bool, _PMathObj, bool = true);
+
+bool	    CheckReceptacleAndStore
+(_String,_String, bool, _PMathObj, bool = true);
+
 void		FinishDeferredSF(void);
-							
+
 void		SetupOperationLists (void);
 void		ExportIndVariables
-							(_String&, _String&, _SimpleList*);
+(_String&, _String&, _SimpleList*);
 void		ExportDepVariables
-							(_String&, _String&, _SimpleList*);
+(_String&, _String&, _SimpleList*);
 void		ExportCatVariables
-							(_String&, _SimpleList*);
-							
+(_String&, _SimpleList*);
+
 void		SplitVariablesIntoClasses
-							(_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
+(_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
 bool		CheckEqual		(_Parameter,_Parameter);
 
 extern		_AVLListX		_hyApplicationGlobals;
 
 /**
     A utility function to take a list of variable indices and split them into local and global
-    
+
     @param   inList supplies the input list (all variable indices are assumed to be valid!)
     @param   outList a list of two _SimpleLists: index 0 for global variables, and index 1 for local variables
     @author  SLKP
@@ -969,7 +1182,7 @@ _Parameter	MinNumbers  (_Parameter, _Parameter);
 _Parameter  FastMxAccess(Ptr, _Parameter);
 
 void		PopulateArraysForASimpleFormula
-						(_SimpleList&, _SimpleFormulaDatum*);
+(_SimpleList&, _SimpleFormulaDatum*);
 
 void		WarnNotDefined (_PMathObj, long);
 

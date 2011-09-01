@@ -1,6 +1,6 @@
 /*
 	Pull-down menu component
-	
+
 	Sergei L. Kosakovsky Pond, May 2000 - November 2001.
 */
 
@@ -8,7 +8,7 @@
 #include "HYPullDown.h"
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 
 _String			menuSeparator 		("SEPARATOR");
@@ -23,11 +23,11 @@ _HYPullDown::_HYPullDown(_HYRect r,Ptr p):_HYComponent (r,p)
 }
 
 //__________________________________________________________________
-			
+
 _HYPullDown::~_HYPullDown()
 {
 }
-		
+
 //__________________________________________________________________
 BaseRef		_HYPullDown::makeDynamic()
 {
@@ -38,12 +38,11 @@ BaseRef		_HYPullDown::makeDynamic()
 	return res;*/
 	return nil;
 }
-		
+
 //__________________________________________________________________
 void		_HYPullDown::SetBackColor (_HYColor c)
 {
-	if ((c.R!=backColor.R)||(c.G!=backColor.G)||(c.B!=backColor.B))
-	{
+	if ((c.R!=backColor.R)||(c.G!=backColor.G)||(c.B!=backColor.B)) {
 		backColor = c;
 		_SetBackColor (c);
 		_MarkForUpdate();
@@ -70,8 +69,7 @@ void			_HYPullDown::AddMenuItem  (_String newItem, long loc)
 
 void			_HYPullDown::SetMenuItem  (_String newItem, long loc)
 {
-	if ((loc>=0)&&(loc<menuSelections.lLength))
-	{
+	if ((loc>=0)&&(loc<menuSelections.lLength)) {
 		menuSelections.Replace (loc,&newItem,true);
 		_SetMenuItem (newItem,loc);
 	}
@@ -81,8 +79,7 @@ void			_HYPullDown::SetMenuItem  (_String newItem, long loc)
 
 void			_HYPullDown::DeleteMenuItem  (long loc)
 {
-	if ((loc>=0)&&(loc<menuSelections.lLength))
-	{
+	if ((loc>=0)&&(loc<menuSelections.lLength)) {
 		menuSelections.Delete (loc);
 		_DeleteMenuItem (loc);
 	}
@@ -92,17 +89,17 @@ void			_HYPullDown::DeleteMenuItem  (long loc)
 
 void			_HYPullDown::DeleteAllItems  (void)
 {
-	for (long k=menuSelections.lLength-1; k>=0; k--)
+	for (long k=menuSelections.lLength-1; k>=0; k--) {
 		_DeleteMenuItem (k);
-		
+	}
+
 	menuSelections.Clear ();
 }
 
 //__________________________________________________________________
 _String*		_HYPullDown::GetMenuItem  (long loc)
 {
-	if ((loc>=0)&&(loc<menuSelections.lLength))
-	{
+	if ((loc>=0)&&(loc<menuSelections.lLength)) {
 		return (_String*)menuSelections (loc);
 	}
 	return nil;
@@ -119,8 +116,9 @@ long		_HYPullDown::GetSelection (void)
 void			_HYPullDown::Activate  (void)
 {
 	_HYComponent::Activate();
-	if (IsEnabled())
+	if (IsEnabled()) {
 		_MarkForUpdate();
+	}
 }
 
 //__________________________________________________________________
@@ -128,8 +126,9 @@ void			_HYPullDown::Activate  (void)
 void			_HYPullDown::Deactivate  (void)
 {
 	_HYComponent::Deactivate();
-	if (IsEnabled())
+	if (IsEnabled()) {
 		_MarkForUpdate();
+	}
 }
 
 
@@ -137,8 +136,7 @@ void			_HYPullDown::Deactivate  (void)
 //__________________________________________________________________
 void		_HYPullDown::SendSelectionChange (void)
 {
-	if (messageRecipient)
-	{
+	if (messageRecipient) {
 		messageRecipient->ProcessEvent (generateMenuSelChangeEvent (GetID(),GetSelection()));
 	}
 }
@@ -146,8 +144,7 @@ void		_HYPullDown::SendSelectionChange (void)
 //__________________________________________________________________
 void		_HYPullDown::EnableMenu 	 (bool flag)
 {
-	if (flag!=enabledFlag)
-	{
+	if (flag!=enabledFlag) {
 		enabledFlag = flag;
 		_EnableMenu    (flag);
 		_MarkForUpdate ();
@@ -170,11 +167,11 @@ void		_HYPullDown::SetVisibleSize	 (_HYRect rel)
 //__________________________________________________________________
 void		_HYPullDown::ChangeSelection	 (long newSel, bool eventSend)
 {
-	if ((newSel>=0)&&(newSel<menuSelections.lLength))
-	{
+	if ((newSel>=0)&&(newSel<menuSelections.lLength)) {
 		selection = newSel;
-		if (eventSend)
+		if (eventSend) {
 			SendSelectionChange();
+		}
 		_MarkForUpdate();
 	}
 }
@@ -182,15 +179,14 @@ void		_HYPullDown::ChangeSelection	 (long newSel, bool eventSend)
 //__________________________________________________________________
 void		_HYPullDown::EnableItem	 (long theItem, bool toggle)
 {
-	if ((theItem>=0)&&(theItem<menuSelections.lLength))
-	{
+	if ((theItem>=0)&&(theItem<menuSelections.lLength)) {
 		_EnableItem (theItem,toggle);
 	}
 }
 
 //__________________________________________________________________
-bool		_HYPullDown::ProcessEvent (_HYEvent* e) 
+bool		_HYPullDown::ProcessEvent (_HYEvent* e)
 {
-	DeleteObject (e); 
+	DeleteObject (e);
 	return false;
 }

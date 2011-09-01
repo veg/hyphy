@@ -7,7 +7,7 @@ This file defined shared function used by 'mains' in the GUI
 Written by SL Kosakovsky Pond
 June 11, 2007
 
-Copyright (C) 1997-2007 
+Copyright (C) 1997-2007
 Primary Development:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
 Significant contributions from:
@@ -29,7 +29,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-*/ 
+*/
 
 #ifndef _HY_SHARED_MAINS_
 #define	_HY_SHARED_MAINS_
@@ -73,36 +73,36 @@ void		ExecuteAPostProcessor		 (_String);
 // execute a post-processing module
 
 void		ReportAnalysisAsFinished	 (_String, bool = false);
-// reflect the fact that an analysis has finished 
+// reflect the fact that an analysis has finished
 // if appropriate for the platform
 
 /* GLOBALS */
 
 extern		_String* 					 argFileName,
-										 errorFileName,
-										 messageFileName;
-										 
-extern		bool						 isSuspended, 
-										 hasTemplates, 
-										 highLevelQuit, 
-										 isRerunAvailable, 
-										 updateTimer, 
-										 addToRecent,
-										 echoPaused,
-										 calculatorMode;
+						  errorFileName,
+						  messageFileName;
+
+extern		bool						 isSuspended,
+							  hasTemplates,
+							  highLevelQuit,
+							  isRerunAvailable,
+							  updateTimer,
+							  addToRecent,
+							  echoPaused,
+							  calculatorMode;
 
 extern		_ExecutionList				 ex;
 
-extern		_SimpleList					 windowPtrs, 
-							 			 windowObjects, 
-				 						 treeIDReferences, 
-							 			 windowObjectRefs;
+extern		_SimpleList					 windowPtrs,
+						windowObjects,
+						treeIDReferences,
+						windowObjectRefs;
 
 extern		_List						 availableTemplateFiles,
-										 availablePostProcessors;
-										 
+							 availablePostProcessors;
+
 #ifdef		__WINDOZE__
-	#define 		 UPDATE_TIMER 		  WM_USER + 4
+#define 		 UPDATE_TIMER 		  WM_USER + 4
 #endif
 #endif
 

@@ -1,6 +1,6 @@
 /*
 	GTK+ Portions of the chart window class
-	
+
 	Sergei L. Kosakovsky Pond, March 2005.
 */
 
@@ -13,7 +13,7 @@
 #include "math.h"
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 
 extern	 _Parameter 			   pi_const;
@@ -24,7 +24,7 @@ extern	 _Parameter 			   pi_const;
 static GtkItemFactoryEntry hyphy_char_window_menu[] = {
 	{ "/File/Save _Graphic", "<control><alt>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+3, "<Item>"},
 	{ "/File/Save _Table", "<control><shift>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+4, "<Item>"},
- 	{ "/File/Pri_nt Table", "<control><shift>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+5, "<Item>"},
+	{ "/File/Pri_nt Table", "<control><shift>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+5, "<Item>"},
 	{ "/_Chart",			NULL,         NULL,           0,					"<Branch>" },
 	{ "/Chart/Chart _Name", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+4, "<Item>"},
 	{ "/Chart/Chart _Options", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE, "<Item>"},
@@ -48,10 +48,9 @@ static GtkItemFactoryEntry hyphy_distro_window_menu[] = {
 
 void _HYChartWindow::_SetMenuBar(void)
 {
-	if (menu_items && !gtk_item_factory_get_widget(menu_items,"<HY_WINDOW>/Chart"))
-	{
+	if (menu_items && !gtk_item_factory_get_widget(menu_items,"<HY_WINDOW>/Chart")) {
 		gtk_item_factory_create_items (menu_items,  sizeof (hyphy_char_window_menu) / sizeof (hyphy_char_window_menu[0]), hyphy_char_window_menu, this);
-	
+
 		GtkMenu *fileMenu = GTK_MENU(gtk_item_factory_get_widget(menu_items,"<HY_WINDOW>/File"));
 		gtk_menu_reorder_child(fileMenu,gtk_item_factory_get_widget_by_action(menu_items,HY_WINDOW_MENU_ID_FILE+3),1);
 		gtk_menu_reorder_child(fileMenu,gtk_item_factory_get_widget_by_action(menu_items,HY_WINDOW_MENU_ID_FILE+4),2);
@@ -68,23 +67,22 @@ void _HYChartWindow::_SetMenuBar(void)
 		InsertMenu 	 	(printMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, HY_WINDOW_MENU_ID_FILE+5, "Print &Data");*/
 
 
-		
-		for (long k=0; k<chartProcessors.lLength; k++)
-		{
-			_String *thisItem = (_String*)chartProcessors (k), 
+
+		for (long k=0; k<chartProcessors.lLength; k++) {
+			_String *thisItem = (_String*)chartProcessors (k),
 					 chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
 					 type = "<Item>";
-					 
+
 			GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_CHART_WIN32_MENU_BASE+5+k,type.sData};
 			chopped = _String("/Chart/Data Processing/")&chopped;
 			aProcEntry.path = chopped.sData;
-			
+
 			gtk_item_factory_create_items (menu_items,  1, &aProcEntry, this);
 		}
-		
+
 		//ModifyMenu	 (chartMenu, 0, MF_BYPOSITION|MF_POPUP, (UINT) saveMenu , "&Save");
 		//ModifyMenu	 (chartMenu, 1, MF_BYPOSITION|MF_POPUP, (UINT) printMenu , "&Print");
-		
+
 	}
 }
 
@@ -109,46 +107,38 @@ void 		_HYChartWindow::_PrintChart(void)
 
 bool 		_HYChartWindow::_ProcessMenuSelection (long msel)
 {
-	switch (msel)
-	{
-		case HY_CHART_WIN32_MENU_BASE: // chart menu
-		{
-			HandleChartOptions ();
-			return true;
-		}	
-		case HY_WINDOW_MENU_ID_FILE+1: // save menu
-		case HY_WINDOW_MENU_ID_FILE+3: // save menu
-		case HY_WINDOW_MENU_ID_FILE+4: // save menu
-		{
-			DoSave ((msel==HY_WINDOW_MENU_ID_FILE-1)?0:msel-HY_WINDOW_MENU_ID_FILE-2);
-			return true;
-		}	
-		case HY_WINDOW_MENU_ID_FILE+2: // print menu
-		case HY_WINDOW_MENU_ID_FILE+5: // print menu
-		{
-			DoPrint ((msel==HY_WINDOW_MENU_ID_FILE+2)?0:-1);
-			return true;
-		}	
-		case HY_CHART_WIN32_MENU_BASE+1: // font menu
-		case HY_CHART_WIN32_MENU_BASE+2: // font menu
-		case HY_CHART_WIN32_MENU_BASE+3: // font menu
-		{
-			DoChangeFont (msel-HY_CHART_WIN32_MENU_BASE-1);
-			return true;
-		}	
-		case HY_CHART_WIN32_MENU_BASE+4: // chart name
-		{
-			RenameChartWindow ();
+	switch (msel) {
+	case HY_CHART_WIN32_MENU_BASE: { // chart menu
+		HandleChartOptions ();
+		return true;
+	}
+	case HY_WINDOW_MENU_ID_FILE+1: // save menu
+	case HY_WINDOW_MENU_ID_FILE+3: // save menu
+	case HY_WINDOW_MENU_ID_FILE+4: { // save menu
+		DoSave ((msel==HY_WINDOW_MENU_ID_FILE-1)?0:msel-HY_WINDOW_MENU_ID_FILE-2);
+		return true;
+	}
+	case HY_WINDOW_MENU_ID_FILE+2: // print menu
+	case HY_WINDOW_MENU_ID_FILE+5: { // print menu
+		DoPrint ((msel==HY_WINDOW_MENU_ID_FILE+2)?0:-1);
+		return true;
+	}
+	case HY_CHART_WIN32_MENU_BASE+1: // font menu
+	case HY_CHART_WIN32_MENU_BASE+2: // font menu
+	case HY_CHART_WIN32_MENU_BASE+3: { // font menu
+		DoChangeFont (msel-HY_CHART_WIN32_MENU_BASE-1);
+		return true;
+	}
+	case HY_CHART_WIN32_MENU_BASE+4: { // chart name
+		RenameChartWindow ();
+		return true;
+	}
+	default: { // proc menu
+		if (msel>=HY_CHART_WIN32_MENU_BASE+5) {
+			ExecuteProcessor (msel-HY_CHART_WIN32_MENU_BASE-5);
 			return true;
 		}
-		default: // proc menu
-		{
-			if (msel>=HY_CHART_WIN32_MENU_BASE+5)
-			{
-				ExecuteProcessor (msel-HY_CHART_WIN32_MENU_BASE-5);
-				return true;
-			}
-		}	
+	}
 	}
 
 	return _HYTWindow::_ProcessMenuSelection(msel);
@@ -160,133 +150,115 @@ bool _HYChartWindow::_ProcessOSEvent (Ptr vEvent)
 {
 	static long   lastH = -1,
 				  lastV = -1;
-				 
-	if (!_HYTWindow::_ProcessOSEvent (vEvent))
-	{	
-		if (components.lLength == 0) 
+
+	if (!_HYTWindow::_ProcessOSEvent (vEvent)) {
+		if (components.lLength == 0) {
 			return false;
-		
+		}
+
 		_HYPullDown *p1 = (_HYPullDown*)GetObject (4);
-				
-		if (p1&&(p1->GetSelection()>=8)&&(ySeries.lLength))
-		{
-			
+
+		if (p1&&(p1->GetSelection()>=8)&&(ySeries.lLength)) {
+
 			_HY_GTK_UI_Message *theMessage = (_HY_GTK_UI_Message*)vEvent;
 
-			gdouble   xc, 
+			gdouble   xc,
 					  yc;
 
 			gdk_event_get_coords (theMessage->theEvent,&xc,&yc);
-			switch (theMessage->theEvent->type)
-			{
-				case GDK_BUTTON_PRESS:
-				{
-					if (((GdkEventButton*)theMessage->theEvent)->button != 1)
-						return false;
-						
-					lastH = xc-theWindow->allocation.x-windowContent->allocation.x;
-					lastV = yc-theWindow->allocation.y-windowContent->allocation.y;					
-					
-					if (FindClickedCell(lastH, lastV)!=0) // the chart
-					{
-						lastH = -1;
-						lastV = -1;
-					}
-					else
-					{
-						gdk_pointer_grab (theWindow->window,false,
-										  GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
-										  theWindow->window, NULL, ((GdkEventButton*)theMessage->theEvent)->time);
-						return 		true;
-					}
-					break;
+			switch (theMessage->theEvent->type) {
+			case GDK_BUTTON_PRESS: {
+				if (((GdkEventButton*)theMessage->theEvent)->button != 1) {
+					return false;
 				}
-				
-				case GDK_BUTTON_RELEASE:
-				{
-					if (lastH>=0)
-					{
-						gdk_pointer_ungrab (((GdkEventButton*)theMessage->theEvent)->time);
-						lastH = -1;
-						lastV = -1;
-						return  true;
-					}
-					break;
+
+				lastH = xc-theWindow->allocation.x-windowContent->allocation.x;
+				lastV = yc-theWindow->allocation.y-windowContent->allocation.y;
+
+				if (FindClickedCell(lastH, lastV)!=0) { // the chart
+					lastH = -1;
+					lastV = -1;
+				} else {
+					gdk_pointer_grab (theWindow->window,false,
+									  GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+									  theWindow->window, NULL, ((GdkEventButton*)theMessage->theEvent)->time);
+					return 		true;
 				}
-				
-				case GDK_MOTION_NOTIFY:
-				{
-					if (lastH>=0)
-					{
-						long		newH = xc-theWindow->allocation.x-windowContent->allocation.x,
-									newV = yc-theWindow->allocation.y-windowContent->allocation.y;
-						
-						bool 	 	redraw = false;
-						
-						_Parameter  stepper = pi_const/180.;
-						
-						if (abs(newH-lastH)>abs(newV-lastV))
-						{
-							stepper *= 1+log (fabs(newH-lastH))/log(2.0);
-							if (newH-lastH<0)
-							{
-								if (xyAngle>0.0)
-								{
-									xyAngle -= stepper;
-									if (xyAngle<0) 
-										xyAngle = 0;
-									redraw = true;
+				break;
+			}
+
+			case GDK_BUTTON_RELEASE: {
+				if (lastH>=0) {
+					gdk_pointer_ungrab (((GdkEventButton*)theMessage->theEvent)->time);
+					lastH = -1;
+					lastV = -1;
+					return  true;
+				}
+				break;
+			}
+
+			case GDK_MOTION_NOTIFY: {
+				if (lastH>=0) {
+					long		newH = xc-theWindow->allocation.x-windowContent->allocation.x,
+								newV = yc-theWindow->allocation.y-windowContent->allocation.y;
+
+					bool 	 	redraw = false;
+
+					_Parameter  stepper = pi_const/180.;
+
+					if (abs(newH-lastH)>abs(newV-lastV)) {
+						stepper *= 1+log (fabs(newH-lastH))/log(2.0);
+						if (newH-lastH<0) {
+							if (xyAngle>0.0) {
+								xyAngle -= stepper;
+								if (xyAngle<0) {
+									xyAngle = 0;
 								}
+								redraw = true;
 							}
-							else
-								if (xyAngle<pi_const/2)
-								{
-									xyAngle += stepper;
-									if (xyAngle>pi_const/2) 
-										xyAngle = pi_const/2;
-									redraw = true;
-								}
+						} else if (xyAngle<pi_const/2) {
+							xyAngle += stepper;
+							if (xyAngle>pi_const/2) {
+								xyAngle = pi_const/2;
+							}
+							redraw = true;
 						}
-						else
-						{
-							if (newV==lastV)
-								return false;
-							stepper *= 1+log (fabs(newV-lastV))/log(2.0);
-							if (newV-lastV>0)
-							{
-								if (zAngle<pi_const/2)
-								{
-									zAngle += stepper;
-									if (zAngle>pi_const/2) 
-										zAngle = pi_const/2;
-									redraw = true;
+					} else {
+						if (newV==lastV) {
+							return false;
+						}
+						stepper *= 1+log (fabs(newV-lastV))/log(2.0);
+						if (newV-lastV>0) {
+							if (zAngle<pi_const/2) {
+								zAngle += stepper;
+								if (zAngle>pi_const/2) {
+									zAngle = pi_const/2;
 								}
+								redraw = true;
 							}
-							else
-								if (zAngle>0.0)
-								{
-									zAngle -= stepper;
-									if (zAngle<0) 
-										zAngle = 0;
-									redraw = true;
-								}
-						
+						} else if (zAngle>0.0) {
+							zAngle -= stepper;
+							if (zAngle<0) {
+								zAngle = 0;
+							}
+							redraw = true;
 						}
 
-						if (redraw)
-						{
-							ComputeProjectionSettings();
-							projectionMatrix = ComputeProjectionMatrix	 ();
-							forceUpdateForScrolling = true;
-							DrawChart();
-							forceUpdateForScrolling = false;
-						}	
-						
-						lastH = newH;
-						lastV = newV;				
 					}
-					break;
+
+					if (redraw) {
+						ComputeProjectionSettings();
+						projectionMatrix = ComputeProjectionMatrix	 ();
+						forceUpdateForScrolling = true;
+						DrawChart();
+						forceUpdateForScrolling = false;
+					}
+
+					lastH = newH;
+					lastV = newV;
 				}
+				break;
+			}
 			}
 		}
 		return false;
@@ -306,23 +278,20 @@ void _HYChartWindow::_CopyChart (void)
 
 void _HYDistributionChartWindow::_SetMenuBar(void)
 {
-	if (menu_items && !gtk_item_factory_get_widget(menu_items,"<HY_WINDOW>/Categories"))
-	{		
+	if (menu_items && !gtk_item_factory_get_widget(menu_items,"<HY_WINDOW>/Categories")) {
 		_HYChartWindow::_SetMenuBar();
 		gtk_item_factory_create_items (menu_items,  sizeof (hyphy_distro_window_menu) / sizeof (hyphy_distro_window_menu[0]), hyphy_distro_window_menu, this);
 
-		if (distribProcessors.lLength > 0)
-		{
-			for (long k=0; k<distribProcessors.lLength; k++)
-			{
-				_String *thisItem = (_String*)distribProcessors (k), 
-						chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
-						type = "<Item>";
-						 
+		if (distribProcessors.lLength > 0) {
+			for (long k=0; k<distribProcessors.lLength; k++) {
+				_String *thisItem = (_String*)distribProcessors (k),
+						 chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
+						 type = "<Item>";
+
 				GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_CHARTD_WIN32_MENU_BASE+3+k,type.sData};
 				chopped = _String("/Categories/")&chopped;
 				aProcEntry.path = chopped.sData;
-				
+
 				gtk_item_factory_create_items (menu_items,  1, &aProcEntry, this);
 			}
 		}
@@ -340,31 +309,25 @@ void _HYDistributionChartWindow::_UnsetMenuBar(void)
 
 bool _HYDistributionChartWindow::_ProcessMenuSelection (long msel)
 {
-	switch (msel)
-	{
-		case HY_CHARTD_WIN32_MENU_BASE: 
-		{
-			AddVariable ();
+	switch (msel) {
+	case HY_CHARTD_WIN32_MENU_BASE: {
+		AddVariable ();
+		return true;
+	}
+	case HY_CHARTD_WIN32_MENU_BASE+1: {
+		RemoveVariable ();
+		return true;
+	}
+	case HY_CHARTD_WIN32_MENU_BASE+2: {
+		ShowMarginals ();
+		return true;
+	}
+	default: {
+		if (msel>=HY_CHARTD_WIN32_MENU_BASE+3) {
+			HandleCatPostProcessor (msel-HY_CHARTD_WIN32_MENU_BASE-3);
 			return true;
-		}	
-		case HY_CHARTD_WIN32_MENU_BASE+1: 
-		{
-			RemoveVariable ();
-			return true;
-		}	
-		case HY_CHARTD_WIN32_MENU_BASE+2: 
-		{
-			ShowMarginals ();
-			return true;
-		}	
-		default: 
-		{
-			if (msel>=HY_CHARTD_WIN32_MENU_BASE+3)
-			{
-				HandleCatPostProcessor (msel-HY_CHARTD_WIN32_MENU_BASE-3);
-				return true;
-			}
-		}	
+		}
+	}
 	}
 
 	return _HYChartWindow::_ProcessMenuSelection(msel);

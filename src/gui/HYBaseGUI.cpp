@@ -2,9 +2,9 @@
 	Some general GUI object functionality.
 	Basic GUI object,
 	Basic Event.
-	
+
 	Global event queue, and object ID counter.
-	
+
 	Sergei L. Kosakovsky Pond, May 2000.
 */
 
@@ -12,14 +12,14 @@
 #include "baseobj.h"
 
 #ifdef 	  __HYPHYDMALLOC__
-	#include "dmalloc.h"
+#include "dmalloc.h"
 #endif
 //__________________________________________________________________
 
 unsigned long GUIObjectGlobalCounter = 0;
 _List	 GlobalGUIEventQueue;
-_String	 ReportThisError 
-		 (" Please report this error using a bug report form at http://peppercat.stat.ncsu.edu.");
+_String	 ReportThisError
+(" Please report this error using a bug report form at http://peppercat.stat.ncsu.edu.");
 
 //______________________________________________________________
 //  Function Definitions for _HYGuiObject
@@ -63,7 +63,7 @@ _HYEvent::_HYEvent(_HYEvent& he)
 {
 	Duplicate (&he);
 }
-		
+
 //______________________________________________________________
 
 _HYEvent::_HYEvent(_String eCl, _String eCo)
@@ -73,7 +73,7 @@ _HYEvent::_HYEvent(_String eCl, _String eCo)
 }
 
 //______________________________________________________________
-	
+
 _HYEvent::~_HYEvent(void) {}
 
 //______________________________________________________________
@@ -100,14 +100,14 @@ void	_HYEvent::Duplicate (BaseObj* ref)
 	eventClass.Duplicate (&he->eventClass);
 	eventCode.Duplicate(&he->eventCode);
 }
-		
+
 //______________________________________________________________
 
 _String& _HYEvent::EventClass (void)
 {
 	return eventClass;
 }
-		
+
 //______________________________________________________________
 
 _String& _HYEvent::EventCode (void)
@@ -157,9 +157,9 @@ long	_HYRect::Height (void)
 _String	_HYColor::HTMLColor (void)
 {
 	char out[7];
-	
+
 	sprintf (out, "%x%x%x", R, G, B);
-	
+
 	return _String (out);
 }
 
@@ -180,7 +180,7 @@ long	HYColorToLong (_HYColor c)
 //______________________________________________________________
 
 _HYColor
-		LongToHYColor (long c)
+LongToHYColor (long c)
 {
 	_HYColor hc;
 	hc.B = c%256;

@@ -1,6 +1,6 @@
 /*
 	Handy OS utils
-	
+
 	Sergei L. Kosakovsky Pond, June 2000-November 2004.
 */
 
@@ -37,35 +37,35 @@ void	PlaceStringInClipboard	(_String&,Ptr);
 
 
 #ifdef __MAC__
-	#include <Menus.h>
+#include <Menus.h>
 
-	void 	StringToStr255 		(_String&, Str255&);
-	void 	Str255ToStr 		(_String&, Str255&);
-	void	DrawMenuPlaceHolder (Rect&, _String&, bool enabled = true);
-	void	DrawEmbossedBox 	(Rect&);
-	void	DrawInfoBox 		(Rect&, _String&, _String&);
-	void	SetWindowFont 		(short,short,Style, bool);
-	void	TreeDependencies	(_SimpleList&, long);
-	void	DSDependencies	 	(_SimpleList&, long);
-	void	ModelDependencies	(_SimpleList&, long);
-	void	ListToPopUpMenu 	(_List&, MenuHandle);
-	void 	UpdateStatusLine	(Ptr theWindow);
-	long	HandleListSelection (_List&, _SimpleList&, _SimpleList&, Str63, _SimpleList&, long);
-	_String NewTreeWindow 		(long sourceDF = -1);
-	void	ConvertMovieFile	(bool);
+void 	StringToStr255 		(_String&, Str255&);
+void 	Str255ToStr 		(_String&, Str255&);
+void	DrawMenuPlaceHolder (Rect&, _String&, bool enabled = true);
+void	DrawEmbossedBox 	(Rect&);
+void	DrawInfoBox 		(Rect&, _String&, _String&);
+void	SetWindowFont 		(short,short,Style, bool);
+void	TreeDependencies	(_SimpleList&, long);
+void	DSDependencies	 	(_SimpleList&, long);
+void	ModelDependencies	(_SimpleList&, long);
+void	ListToPopUpMenu 	(_List&, MenuHandle);
+void 	UpdateStatusLine	(Ptr theWindow);
+long	HandleListSelection (_List&, _SimpleList&, _SimpleList&, Str63, _SimpleList&, long);
+_String NewTreeWindow 		(long sourceDF = -1);
+void	ConvertMovieFile	(bool);
 
-	#ifdef	__HYPHYXCODE__
-		_String	DoMacToPOSIX		(const _String&);
-	#endif	
+#ifdef	__HYPHYXCODE__
+_String	DoMacToPOSIX		(const _String&);
+#endif
 #endif
 
 #ifdef __WINDOZE__
 
 #include 	<Windows.h>
-	long		SaveFileFunction 				(_String&, _String&, _String&, char*, Ptr);
-	HMENU		ListToPopUpMenu 				(_List&,long base = 0);
-	char 		*ReturnFileDialogSelectionWin 	(bool write, _String* initDir = nil);
-	void		PlaceBitmapInClipboard			(HBITMAP,HWND);
+long		SaveFileFunction 				(_String&, _String&, _String&, char*, Ptr);
+HMENU		ListToPopUpMenu 				(_List&,long base = 0);
+char 		*ReturnFileDialogSelectionWin 	(bool write, _String* initDir = nil);
+void		PlaceBitmapInClipboard			(HBITMAP,HWND);
 
 #endif
 
@@ -73,10 +73,10 @@ _String 	ChooseAFolder 					(_String&);
 char		YesNoCancelPrompt 				(_String&);
 
 long		FindWindowByName  				(_String&);
-_HYGuiObject*	
-			FindWindowByNameAndOpen  		(_String&);
 _HYGuiObject*
-			FindWindowByID	  				(long);
+FindWindowByNameAndOpen  		(_String&);
+_HYGuiObject*
+FindWindowByID	  				(long);
 
 _HYColor	SelectAColor 	  				(_HYColor&,_String&);
 
@@ -90,13 +90,13 @@ char		ScanDirectoryForFileNames 		(_String&, _List&, bool);
 // directory to scan, list to receive full path names for each file,
 // scan recursively or not.
 _HYColor	GetDialogBackgroundColor 		(void);
-		
+
 void		StartBarTimer			 		(void);
 void		StopBarTimer			 		(void);
 
 void		GenerateFontList				(_List&);
 
 extern		_String			 				menuSeparator,
-											*argFileName;
+							 *argFileName;
 
 //EOF
