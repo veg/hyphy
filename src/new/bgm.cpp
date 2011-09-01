@@ -130,8 +130,8 @@ void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _Strin
 
 long integerPower (long base, long exponent)
 {
-    long    result = 1,
-            mask   = 1<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
+    long    result = 1L,
+            mask   = 1L<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
     // e.g. 100...0 (30 zeroes for signed long)
 
     while ((exponent & mask) == 0) {

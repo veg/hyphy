@@ -4747,7 +4747,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         while (sel.lLength<fixedLength) {
                             for (choice = 0; choice<theChoices->lLength; choice++) {
                                 if (sel.Find(choice)==-1) {
-                                    printf ("\n\t(%d):%s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
+                                    printf ("\n\t(%ld):%s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
                                 }
                             }
                             printf ("\n\n Please choose option %ld of %ld (or press q to cancel selection):",sel.lLength+1,fixedLength);
@@ -4772,7 +4772,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         while (1) {
                             for (choice = 0; choice<theChoices->lLength; choice++) {
                                 if (sel.Find(choice)==-1) {
-                                    printf ("\n\t(%d):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
+                                    printf ("\n\t(%ld):[%s] %s",choice+1,((_String*)(*(_List*)(*theChoices)(choice))(0))->getStr(),((_String*)(*(_List*)(*theChoices)(choice))(1))->getStr());
                                 }
                             }
                             printf ("\n\n Please choose option %ld, enter d to complete selection, enter q to cancel:",sel.lLength+1);

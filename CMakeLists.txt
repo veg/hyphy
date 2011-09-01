@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(HyPhy)
 
-set(DEFAULT_COMPILE_FLAGS "-w -c -fsigned-char -fast -O3")
+# make it fast, scotty
+set(DEFAULT_COMPILE_FLAGS "-c -fsigned-char -fast -O3 -flto")
 
 set(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 
@@ -76,6 +77,13 @@ install(TARGETS HYPHYMPI
 )
 add_custom_target(MPI DEPENDS HYPHYMPI)
 
+add_executable(HYPHYDEBUG
+    EXCLUDE_FROM_ALL
+    ${SRC_COMMON} ${SRC_UNIXMAIN}
+)
+target_link_libraries(HYPHYDEBUG curl ssl crypto)
+add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
+
 add_executable(HYPHYGTEST
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
@@ -116,7 +124,7 @@ set_property(
 )
 
 set_property(
-    TARGET HYPHYMP HYPHYMPI HYPHYGTEST
+    TARGET HYPHYMP HYPHYMPI HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
@@ -128,4 +136,9 @@ set_property(
 set_property(
     TARGET HYPHYGTEST
     PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+)
+
+set_property(
+    TARGET HYPHYDEBUG
+    PROPERTY COMPILE_FLAGS "-g -O0"
 )

@@ -356,17 +356,17 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
             char buffer [1024];
             if (optimization) {
                 if (outFile)
-                    fprintf (outFile,"Likelihood function optimization status\nCurrent Maximum: %-14.8g (%d %% done)\nLikelihood Function evaluations/second: %-8.4g", (double)max, pdone,
+                    fprintf (outFile,"Likelihood function optimization status\nCurrent Maximum: %-14.8g (%ld %% done)\nLikelihood Function evaluations/second: %-8.4g", (double)max, pdone,
                              (likeFuncEvalCallCount-lCount)/elapsed_time);
                 else {
-                    long written = snprintf (buffer,1024,"Current Max: %-14.8g (%d %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
+                    long written = snprintf (buffer,1024,"Current Max: %-14.8g (%ld %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
 
                     if (elapsed_time) {
                         snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*elapsed_time));
                     }
                 }
             } else {
-                snprintf (buffer, 1024, "Sites done: %g (%d %% done)", (double)max, pdone);
+                snprintf (buffer, 1024, "Sites done: %g (%ld %% done)", (double)max, pdone);
             }
 
 #ifndef _MINGW32_MEGA_

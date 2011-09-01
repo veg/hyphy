@@ -350,7 +350,7 @@ long    DisplayListOfPostChoices (void)
         printf ("\033[2J\033[H\n\t Available Result Processing Tools\n\t ---------------------------------\n\n");
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
-                printf ("\n\t(%d):%s",choice+1,
+                printf ("\n\t(%ld):%s",choice+1,
                         ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
