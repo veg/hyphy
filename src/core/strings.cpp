@@ -1159,29 +1159,12 @@ long _String::FindBackwards(_String s, long from, long to)
 long _String::FindBinary(char s)
 // -1, indicates that search term has not been found
 {
-    long top=Length()-1, bottom=0, middle;
-
-    if (top==-1) {
-        return top;
-    }
-    while (top>bottom) {
-        middle = (top+bottom)/2;
-        if (s<sData[middle]) {
-            top = middle==top?top-1:middle;
-        } else if (s<sData[middle]) {
-            bottom = middle==bottom?bottom+1:middle;
-        } else {
-            return middle;
+    for (long i=0; i < sLength; ++i) {
+        if (sData[i] == s) {
+            return i;
         }
-
-
     }
-    middle = top;
-    if (s==sData[middle]) {
-        return middle;
-    }
-
-    return -middle-2;
+    return -1;
 }
 
 //_______________________________________________________________________

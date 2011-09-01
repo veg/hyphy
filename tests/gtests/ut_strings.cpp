@@ -467,7 +467,7 @@ TEST_F(_StringTest,FindBinaryTest)
 
     long loc = haystack.FindBinary(needle);
 
-    EXPECT_EQ(3,loc);
+    EXPECT_EQ(4,loc);
 
 
     _String haystack2 = _String ("AABBCDDD");
