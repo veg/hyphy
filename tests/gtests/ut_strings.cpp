@@ -279,7 +279,7 @@ TEST_F(_StringTest,FinalizeTest)
 TEST_F(_StringTest,getStrTest)
 {
     _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
-    ASSERT_STREQ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", test.getStr());
+    ASSERT_STREQ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n", test.getStr());
 
     _String test2 = _String ("");
     ASSERT_STREQ("", test2.getStr());
