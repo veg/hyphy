@@ -19,7 +19,7 @@ By default, HyPhy installs into /usr/local,
 but can be made to install anywhere by passing
 `-DCMAKE_INSTALL_PREFIX=/wherever/you/want`
 to cmake during the configuration, e.g.
-`cmake -DCMAKE_INSTALL_PREFIX=/opt/hyphy .`
+`cmake -DCMAKE_INSTALL_PREFIX=/opt/hyphy .`.
 
 If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
