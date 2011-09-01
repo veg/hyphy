@@ -2,10 +2,10 @@
  * Module: semaphore.h
  *
  * Purpose:
- *	Semaphores aren't actually part of the PThreads standard.
- *	They are defined by the POSIX Standard:
+ *  Semaphores aren't actually part of the PThreads standard.
+ *  They are defined by the POSIX Standard:
  *
- *		POSIX 1003.1b-1993	(POSIX.1b)
+ *      POSIX 1003.1b-1993  (POSIX.1b)
  *
  * --------------------------------------------------------------------------
  *
@@ -117,50 +117,50 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif				/* __cplusplus */
+#endif              /* __cplusplus */
 
 #ifndef HAVE_MODE_T
-	typedef unsigned int mode_t;
+    typedef unsigned int mode_t;
 #endif
 
 
-	typedef struct sem_t_ * sem_t;
+    typedef struct sem_t_ * sem_t;
 
-	PTW32_DLLPORT int __cdecl sem_init (sem_t * sem,
-										int pshared,
-										unsigned int value);
+    PTW32_DLLPORT int __cdecl sem_init (sem_t * sem,
+                                        int pshared,
+                                        unsigned int value);
 
-	PTW32_DLLPORT int __cdecl sem_destroy (sem_t * sem);
+    PTW32_DLLPORT int __cdecl sem_destroy (sem_t * sem);
 
-	PTW32_DLLPORT int __cdecl sem_trywait (sem_t * sem);
+    PTW32_DLLPORT int __cdecl sem_trywait (sem_t * sem);
 
-	PTW32_DLLPORT int __cdecl sem_wait (sem_t * sem);
+    PTW32_DLLPORT int __cdecl sem_wait (sem_t * sem);
 
-	PTW32_DLLPORT int __cdecl sem_timedwait (sem_t * sem,
-			const struct timespec * abstime);
+    PTW32_DLLPORT int __cdecl sem_timedwait (sem_t * sem,
+            const struct timespec * abstime);
 
-	PTW32_DLLPORT int __cdecl sem_post (sem_t * sem);
+    PTW32_DLLPORT int __cdecl sem_post (sem_t * sem);
 
-	PTW32_DLLPORT int __cdecl sem_post_multiple (sem_t * sem,
-			int count);
+    PTW32_DLLPORT int __cdecl sem_post_multiple (sem_t * sem,
+            int count);
 
-	PTW32_DLLPORT int __cdecl sem_open (const char * name,
-										int oflag,
-										mode_t mode,
-										unsigned int value);
+    PTW32_DLLPORT int __cdecl sem_open (const char * name,
+                                        int oflag,
+                                        mode_t mode,
+                                        unsigned int value);
 
-	PTW32_DLLPORT int __cdecl sem_close (sem_t * sem);
+    PTW32_DLLPORT int __cdecl sem_close (sem_t * sem);
 
-	PTW32_DLLPORT int __cdecl sem_unlink (const char * name);
+    PTW32_DLLPORT int __cdecl sem_unlink (const char * name);
 
-	PTW32_DLLPORT int __cdecl sem_getvalue (sem_t * sem,
-											int * sval);
+    PTW32_DLLPORT int __cdecl sem_getvalue (sem_t * sem,
+                                            int * sval);
 
 #ifdef __cplusplus
-}				/* End of extern "C" */
-#endif				/* __cplusplus */
+}               /* End of extern "C" */
+#endif              /* __cplusplus */
 
 #undef PTW32_LEVEL
 #undef PTW32_LEVEL_MAX
 
-#endif				/* !SEMAPHORE_H */
+#endif              /* !SEMAPHORE_H */

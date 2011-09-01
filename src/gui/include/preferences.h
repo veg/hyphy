@@ -35,52 +35,52 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifndef __HYPHY_PREFERENCES__
 
-#define	 PREFITEM_TEXTBOX 0
-#define  PREFITEM_POPUP	  1
+#define  PREFITEM_TEXTBOX 0
+#define  PREFITEM_POPUP   1
 
-#define	 RECENT_FILE_ITEMS 10
+#define  RECENT_FILE_ITEMS 10
 
-#include 	"hy_lists.h"
-#include 	"hy_strings.h"
+#include    "hy_lists.h"
+#include    "hy_strings.h"
 
-#ifndef		__HEADLESS__
-#include 	"HYBaseGUI.h"
+#ifndef     __HEADLESS__
+#include    "HYBaseGUI.h"
 #endif
 
-void	  ReadPreferences 		(void);
+void      ReadPreferences       (void);
 /* read HyPhy preferences from a platform - dependent location */
 
-void  	  WritePreferences 		(void);
+void      WritePreferences      (void);
 /* write HyPhy preferences to a platform - dependent location */
 
-void  	  ApplyPreferences 		(void);
+void      ApplyPreferences      (void);
 /* apply relevant settings before executing a batch file */
 
-void  	  SetPreferences 		(void);
+void      SetPreferences        (void);
 /* immediately apply those preferences which can be set
-	 interactively; e.g. console font */
+     interactively; e.g. console font */
 
-extern	  bool				   showDialogAtStartup,
-					doAutoConsoleMove ;
+extern    bool                 showDialogAtStartup,
+          doAutoConsoleMove ;
 
-extern    _List				   globalPreferencesList,
-				   recentPaths,
-				   recentFiles;
+extern    _List                globalPreferencesList,
+          recentPaths,
+          recentFiles;
 
-#ifndef		__HEADLESS__
-extern	  _HYRect			   consolePositionRectangle;
+#ifndef     __HEADLESS__
+extern    _HYRect              consolePositionRectangle;
 #endif
 
-extern	  _String			   recentFilesList;
+extern    _String              recentFilesList;
 
-void	  AddStringToRecentMenu (_String&, _String&);
+void      AddStringToRecentMenu (_String&, _String&);
 /* add a string/path to the recent analyses menu */
 
-void	  AddItemToPreferences 	 (long,long,_String,_String,_String,_List*,_List&,bool);
+void      AddItemToPreferences   (long,long,_String,_String,_String,_List*,_List&,bool);
 /* a function used to append items to a preferences list */
 
-char	  AutoOpenTreeWindow	 (void);
-void	  SetShowDialogAtStartup (bool);
+char      AutoOpenTreeWindow     (void);
+void      SetShowDialogAtStartup (bool);
 
 #endif
 

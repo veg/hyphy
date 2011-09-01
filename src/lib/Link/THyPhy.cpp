@@ -41,17 +41,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /* declare some utility functions */
 
-void 	ReadPreferences 		(void);
-void	ApplyPreferences 		(void);
+void    ReadPreferences         (void);
+void    ApplyPreferences        (void);
 
 /* global variables */
 
-_String _tHYPHYAskFor			("_THyPhyAskFor"),
-				_tHYPHYNotHandled		("_THyPhy_NOT_HANDLED_"),
-				_tHYPHYCurrentStatus;
+_String _tHYPHYAskFor           ("_THyPhyAskFor"),
+        _tHYPHYNotHandled       ("_THyPhy_NOT_HANDLED_"),
+        _tHYPHYCurrentStatus;
 
-long	_tHYPHYDone				= 0;
-double  _tHYPHYValue			= 0.0;
+long    _tHYPHYDone             = 0;
+double  _tHYPHYValue            = 0.0;
 
 _THyPhy * globalInterfaceInstance = nil;
 
@@ -59,14 +59,14 @@ _THyPhy * globalInterfaceInstance = nil;
 // default callback hanlder
 bool _tHyPhyDefaultHandler (char*,int,double)
 {
-	return true;
+    return true;
 }
 
 //_________________________________________________________
 // default callback hanlder
 //void SetGlobalInterfaceInstance (const _THyPhy* hi)
 //{
-//	globalInterfaceInstance = hi;
+//  globalInterfaceInstance = hi;
 //}
 
 
@@ -75,95 +75,95 @@ bool _tHyPhyDefaultHandler (char*,int,double)
 //_________________________________________________________
 _THyPhyString* _THyPhyReturnObject::castToString(void)
 {
-	if (myType() == THYPHY_TYPE_STRING) {
-		return (_THyPhyString*)this;
-	}
-	return NULL;
+    if (myType() == THYPHY_TYPE_STRING) {
+        return (_THyPhyString*)this;
+    }
+    return NULL;
 }
 
 //_________________________________________________________
 _THyPhyNumber* _THyPhyReturnObject::castToNumber(void)
 {
-	if (myType() == THYPHY_TYPE_NUMBER) {
-		return (_THyPhyNumber*)this;
-	}
-	return NULL;
+    if (myType() == THYPHY_TYPE_NUMBER) {
+        return (_THyPhyNumber*)this;
+    }
+    return NULL;
 }
 
 //_________________________________________________________
 _THyPhyMatrix* _THyPhyReturnObject::castToMatrix(void)
 {
-	if (myType() == THYPHY_TYPE_MATRIX) {
-		return (_THyPhyMatrix*)this;
-	}
-	return NULL;
+    if (myType() == THYPHY_TYPE_MATRIX) {
+        return (_THyPhyMatrix*)this;
+    }
+    return NULL;
 }
 
 
 //_________________________________________________________
 _THyPhyString::_THyPhyString(const char* characters, long length)
 {
-	if (characters) {
-		if (length == 0) {
-			while (characters[length++]) ;
-			length --;
-		}
-		checkPointer (sData = (char*)MemAllocate (length+1));
-		memcpy 		 (sData,characters,length+1);
+    if (characters) {
+        if (length == 0) {
+            while (characters[length++]) ;
+            length --;
+        }
+        checkPointer (sData = (char*)MemAllocate (length+1));
+        memcpy       (sData,characters,length+1);
 
-	} else {
-		sData   = nil;
-	}
-	sLength = length;
+    } else {
+        sData   = nil;
+    }
+    sLength = length;
 }
 
 //_________________________________________________________
 _THyPhyString::~_THyPhyString(void)
 {
-	if (sData) {
-		free (sData);
-	}
+    if (sData) {
+        free (sData);
+    }
 };
 
 //_________________________________________________________
 _THyPhyNumber::_THyPhyNumber(double v)
 {
-	nValue = v;
+    nValue = v;
 }
 
 
 //_________________________________________________________
 _THyPhyMatrix::_THyPhyMatrix(void)
 {
-	mData = nil;
-	mRows = 0;
-	mCols = 0;
+    mData = nil;
+    mRows = 0;
+    mCols = 0;
 }
 
 //_________________________________________________________
 _THyPhyMatrix::_THyPhyMatrix(const long r, const long c, const double* d)
 {
-	checkPointer (mData = (double*)MemAllocate (r*c*sizeof(double)));
-	mRows = r;
-	mCols = c;
-	for (long i = 0; i < r*c; i++,d++) {
-		mData[i] = *d;
-	}
+    checkPointer (mData = (double*)MemAllocate (r*c*sizeof(double)));
+    mRows = r;
+    mCols = c;
+    for (long i = 0; i < r*c; i++,d++) {
+        mData[i] = *d;
+    }
 
 }
 
 //_________________________________________________________
 _THyPhyMatrix::~_THyPhyMatrix(void)
 {
-	if (mData) {
-		free (mData);
-	}
+    if (mData) {
+        free (mData);
+    }
 };
 
 //_________________________________________________________
 double _THyPhyMatrix::MatrixCell(long r, long c)
 {
-	return mData[mCols*r+c];
+    return mData[mCols*r+c];
 }
 
 //_________________________________________________________
@@ -172,7 +172,7 @@ double _THyPhyMatrix::MatrixCell(long r, long c)
 
 _THyPhy::_THyPhy(_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
-	InitTHyPhy (mHandler, baseDirPath, cpuCount);
+    InitTHyPhy (mHandler, baseDirPath, cpuCount);
 }
 
 //_________________________________________________________
@@ -180,48 +180,48 @@ _THyPhy::_THyPhy(_ProgressCancelHandler* mHandler, const char* baseDirPath, long
 
 _THyPhy::_THyPhy(const char* baseDirPath, long cpuCount)
 {
-	InitTHyPhy (_tHyPhyDefaultHandler, baseDirPath, cpuCount);
+    InitTHyPhy (_tHyPhyDefaultHandler, baseDirPath, cpuCount);
 }
 
 //_________________________________________________________
 
-_THyPhy::~_THyPhy			(void)
+_THyPhy::~_THyPhy           (void)
 {
-	if (currentResultHolder) {
-		delete (_THyPhyReturnObject*)currentResultHolder;
-	}
-	if (baseDirectoryInstance) {
-		delete (baseDirectoryInstance);
-	}
-	ClearAll();
-	DeleteObject		((_String*)errors);
-	DeleteObject		((_String*)warnings);
-	DeleteObject		((_String*)textout);
-	if (globalInterfaceInstance == this) {
-		globalInterfaceInstance = nil;
-	}
+    if (currentResultHolder) {
+        delete (_THyPhyReturnObject*)currentResultHolder;
+    }
+    if (baseDirectoryInstance) {
+        delete (baseDirectoryInstance);
+    }
+    ClearAll();
+    DeleteObject        ((_String*)errors);
+    DeleteObject        ((_String*)warnings);
+    DeleteObject        ((_String*)textout);
+    if (globalInterfaceInstance == this) {
+        globalInterfaceInstance = nil;
+    }
 }
 
 //_________________________________________________________
 
 void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
-	systemCPUCount						= cpuCount;
-	SetCallbackHandler (mHandler);
-	checkPointer (currentResultHolder	= new _THyPhyString);
-	askFID								= -1;
-	if (baseDirPath)
-		// set base directory
-	{
-		baseDirectoryInstance = new _THyPhyString (baseDirPath);
-		baseDirectory		= baseDirectoryInstance->sData;
-		ReadPreferences ();
-	}
-	GlobalStartup();
-	errors   = nil;
-	warnings = nil;
-	textout  = nil;
-	globalInterfaceInstance = this;
+    systemCPUCount                      = cpuCount;
+    SetCallbackHandler (mHandler);
+    checkPointer (currentResultHolder   = new _THyPhyString);
+    askFID                              = -1;
+    if (baseDirPath)
+        // set base directory
+    {
+        baseDirectoryInstance = new _THyPhyString (baseDirPath);
+        baseDirectory       = baseDirectoryInstance->sData;
+        ReadPreferences ();
+    }
+    GlobalStartup();
+    errors   = nil;
+    warnings = nil;
+    textout  = nil;
+    globalInterfaceInstance = this;
 
 }
 
@@ -229,241 +229,241 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 
 _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
 {
-	if (doPurge) {
-		PurgeAll			(true);    // cleanup results of previous analysis
-	}
-	_String 	  		commandString (buffer);
+    if (doPurge) {
+        PurgeAll            (true);    // cleanup results of previous analysis
+    }
+    _String             commandString (buffer);
 
-	if (commandString.beginswith ("#NEXUS"),false) {
-		lastNexusDataMatrix = ReadDataSetFile (nil, 2, &commandString);
-		commandString = nexusBFBody;
-	}
+    if (commandString.beginswith ("#NEXUS"),false) {
+        lastNexusDataMatrix = ReadDataSetFile (nil, 2, &commandString);
+        commandString = nexusBFBody;
+    }
 
-	_ExecutionList		compiledCode  (commandString);
+    _ExecutionList      compiledCode  (commandString);
 
-	baseDirectory		= baseDirectoryInstance->sData;
-	pathNames			&& & baseDirectory;
-	ApplyPreferences	();
+    baseDirectory       = baseDirectoryInstance->sData;
+    pathNames           && & baseDirectory;
+    ApplyPreferences    ();
 
-	DeleteObject		((_String*)errors);
-	DeleteObject		((_String*)warnings);
-	DeleteObject		((_String*)textout);
+    DeleteObject        ((_String*)errors);
+    DeleteObject        ((_String*)warnings);
+    DeleteObject        ((_String*)textout);
 
-	errors				= new _String (128L,true);
-	warnings			= new _String (128L,true);
-	textout				= new _String (128L,true);
+    errors              = new _String (128L,true);
+    warnings            = new _String (128L,true);
+    textout             = new _String (128L,true);
 
-	askFID				= compiledCode.ExecuteAndClean (0x7ffffff,&_tHYPHYAskFor);
-	_PMathObj bfReturn  = compiledCode.GetResult ();
+    askFID              = compiledCode.ExecuteAndClean (0x7ffffff,&_tHYPHYAskFor);
+    _PMathObj bfReturn  = compiledCode.GetResult ();
 
-	((_String*)errors)->Finalize();
-	((_String*)warnings)->Finalize();
-	((_String*)textout)->Finalize();
+    ((_String*)errors)->Finalize();
+    ((_String*)warnings)->Finalize();
+    ((_String*)textout)->Finalize();
 
-	if (currentResultHolder->sData) {
-		free (currentResultHolder->sData);
-		currentResultHolder->sData = nil;
-	}
-	if (bfReturn) {
-		_String * serializedReturn   = (_String*) bfReturn->toStr();
-		currentResultHolder->sData   = serializedReturn->sData;
-		serializedReturn->sData		 = nil;
-		currentResultHolder->sLength = serializedReturn->sLength;
-	}
-	return currentResultHolder;
+    if (currentResultHolder->sData) {
+        free (currentResultHolder->sData);
+        currentResultHolder->sData = nil;
+    }
+    if (bfReturn) {
+        _String * serializedReturn   = (_String*) bfReturn->toStr();
+        currentResultHolder->sData   = serializedReturn->sData;
+        serializedReturn->sData      = nil;
+        currentResultHolder->sLength = serializedReturn->sLength;
+    }
+    return currentResultHolder;
 }
 
 //_________________________________________________________
 
 void _THyPhy::ClearAll (void)
 {
-	PurgeAll(true);
+    PurgeAll(true);
 }
 
 //_________________________________________________________
 
 void* _THyPhy::AskFor (const char* resultID)
 {
-	if (resultID && askFID >= 0) {
-		_String theCommand (128L,true);
-		theCommand << "return ";
-		theCommand <<  _tHYPHYAskFor;
-		theCommand << "(\"";
-		theCommand.EscapeAndAppend (resultID);
-		theCommand << "\");";
-		theCommand.Finalize();
-		_ExecutionList		compiledCode  (theCommand);
-		compiledCode.ExecuteAndClean (0x7ffffff);
-		_PMathObj retResult = compiledCode.GetResult ();
-		if (retResult && retResult->ObjectClass() == STRING) {
-			_FString * checkHandled = (_FString*)retResult;
-			if (checkHandled->theString->Equal (&_tHYPHYNotHandled)) {
-				return nil;
-			}
-		}
-		return retResult->makeDynamic();
-	}
-	return nil;
+    if (resultID && askFID >= 0) {
+        _String theCommand (128L,true);
+        theCommand << "return ";
+        theCommand <<  _tHYPHYAskFor;
+        theCommand << "(\"";
+        theCommand.EscapeAndAppend (resultID);
+        theCommand << "\");";
+        theCommand.Finalize();
+        _ExecutionList      compiledCode  (theCommand);
+        compiledCode.ExecuteAndClean (0x7ffffff);
+        _PMathObj retResult = compiledCode.GetResult ();
+        if (retResult && retResult->ObjectClass() == STRING) {
+            _FString * checkHandled = (_FString*)retResult;
+            if (checkHandled->theString->Equal (&_tHYPHYNotHandled)) {
+                return nil;
+            }
+        }
+        return retResult->makeDynamic();
+    }
+    return nil;
 }
 
 //_________________________________________________________
 
 void _THyPhy::DumpResult (void* aResult)
 {
-	if (aResult) {
-		DeleteObject ((BaseRef)aResult);
-	}
+    if (aResult) {
+        DeleteObject ((BaseRef)aResult);
+    }
 }
 
 //_________________________________________________________
 
 void _THyPhy::SetCallbackHandler (_ProgressCancelHandler* newHandler)
 {
-	theHandler = newHandler;
+    theHandler = newHandler;
 }
 
 //_________________________________________________________
 
 _ProgressCancelHandler* _THyPhy::GetCallbackHandler (void)
 {
-	return theHandler;
+    return theHandler;
 }
 
 //_________________________________________________________
 
-void		_THyPhy::PushWarning (void * o)
+void        _THyPhy::PushWarning (void * o)
 {
-	if (warnings) {
-		*((_String*)warnings) << *(_String*)o;
-	}
+    if (warnings) {
+        *((_String*)warnings) << *(_String*)o;
+    }
 }
 
 //_________________________________________________________
 
-void		_THyPhy::PushError (void * o)
+void        _THyPhy::PushError (void * o)
 {
-	if (errors) {
-		*((_String*)errors) << *(_String*)o;
-	}
+    if (errors) {
+        *((_String*)errors) << *(_String*)o;
+    }
 }
 
 //_________________________________________________________
 
-void		_THyPhy::PushOutString (void * o)
+void        _THyPhy::PushOutString (void * o)
 {
-	if (textout) {
-		*((_String*)textout) << *(_String*)o;
-	}
+    if (textout) {
+        *((_String*)textout) << *(_String*)o;
+    }
 }
 
 //_________________________________________________________
 
-_THyPhyString	* _THyPhy::ConvertHyPhyString (void * o)
+_THyPhyString   * _THyPhy::ConvertHyPhyString (void * o)
 {
-	return new _THyPhyString (((_String*)o)->sData,((_String*)o)->sLength);
+    return new _THyPhyString (((_String*)o)->sData,((_String*)o)->sLength);
 }
 
 //_________________________________________________________
 
 bool _THyPhy::CanCast (const void* theObject, const int requestedType)
 {
-	if (theObject) {
-		_PMathObj mo = (_PMathObj) theObject;
-		switch (((_PMathObj)theObject)->ObjectClass()) {
-		case NUMBER:
-			return true;
-			// can cast a number to everything
-		case STRING:
-			return requestedType!=THYPHY_TYPE_MATRIX;
-			// can cast anything to a string
-		case MATRIX:
-			return requestedType!=THYPHY_TYPE_NUMBER;
-			// can not cast matrix to number
+    if (theObject) {
+        _PMathObj mo = (_PMathObj) theObject;
+        switch (((_PMathObj)theObject)->ObjectClass()) {
+        case NUMBER:
+            return true;
+            // can cast a number to everything
+        case STRING:
+            return requestedType!=THYPHY_TYPE_MATRIX;
+            // can cast anything to a string
+        case MATRIX:
+            return requestedType!=THYPHY_TYPE_NUMBER;
+            // can not cast matrix to number
 
-		case TREE:
-		case TOPOLOGY:
-			return requestedType==THYPHY_TYPE_STRING;
+        case TREE:
+        case TOPOLOGY:
+            return requestedType==THYPHY_TYPE_STRING;
 
-		}
-	}
-	return false;
+        }
+    }
+    return false;
 }
 
 //_________________________________________________________
 
 _THyPhyReturnObject* _THyPhy::CastResult (const void* theObject, const int requestedType)
 {
-	_THyPhyReturnObject * convertedObject = nil;
-	if (CanCast(theObject,requestedType)) {
-		int hyphyObjClass = ((_PMathObj)theObject)->ObjectClass();
-		switch (hyphyObjClass) {
-		case NUMBER: {
-			if (hyphyObjClass == NUMBER) {
-				return new _THyPhyNumber (((_PMathObj)theObject)->Compute()->Value());
-			}
-			if (hyphyObjClass == STRING) {
-				_String sV ((_String*)((_FString*)theObject)->toStr());
-				return new _THyPhyNumber (sV.toNum());
-			}
-		}
-		case STRING: {
-			_String sV ((_String*)((_PMathObj)theObject)->toStr());
-			return new _THyPhyString (sV.sData,sV.sLength);
-		}
-		case MATRIX: {
-			if (hyphyObjClass == NUMBER) {
-				double evaluate = ((_PMathObj)theObject)->Compute()->Value();
-				return new _THyPhyMatrix (1,1,&evaluate);
-			}
+    _THyPhyReturnObject * convertedObject = nil;
+    if (CanCast(theObject,requestedType)) {
+        int hyphyObjClass = ((_PMathObj)theObject)->ObjectClass();
+        switch (hyphyObjClass) {
+        case NUMBER: {
+            if (hyphyObjClass == NUMBER) {
+                return new _THyPhyNumber (((_PMathObj)theObject)->Compute()->Value());
+            }
+            if (hyphyObjClass == STRING) {
+                _String sV ((_String*)((_FString*)theObject)->toStr());
+                return new _THyPhyNumber (sV.toNum());
+            }
+        }
+        case STRING: {
+            _String sV ((_String*)((_PMathObj)theObject)->toStr());
+            return new _THyPhyString (sV.sData,sV.sLength);
+        }
+        case MATRIX: {
+            if (hyphyObjClass == NUMBER) {
+                double evaluate = ((_PMathObj)theObject)->Compute()->Value();
+                return new _THyPhyMatrix (1,1,&evaluate);
+            }
 
-			if (hyphyObjClass == MATRIX) {
-				_Matrix * evalutedNumeric =  (_Matrix*)((_Matrix*)(((_PMathObj)theObject)->Compute()))
-											 ->ComputeNumeric();
+            if (hyphyObjClass == MATRIX) {
+                _Matrix * evalutedNumeric =  (_Matrix*)((_Matrix*)(((_PMathObj)theObject)->Compute()))
+                                             ->ComputeNumeric();
 
-				return new _THyPhyMatrix (evalutedNumeric->GetHDim(),evalutedNumeric->GetVDim(),evalutedNumeric->theData);
-			}
-		}
-		}
-	}
+                return new _THyPhyMatrix (evalutedNumeric->GetHDim(),evalutedNumeric->GetVDim(),evalutedNumeric->theData);
+            }
+        }
+        }
+    }
 
-	return convertedObject;
+    return convertedObject;
 }
 
 //_________________________________________________________________________
 
-void	SetStatusLine (_String arg)
+void    SetStatusLine (_String arg)
 {
-	_tHYPHYCurrentStatus = arg;
-	yieldCPUTime();
+    _tHYPHYCurrentStatus = arg;
+    yieldCPUTime();
 }
 
 //_________________________________________________________________________
 
-void	SetStatusBarValue (long l,_Parameter max, _Parameter rate)
+void    SetStatusBarValue (long l,_Parameter max, _Parameter rate)
 {
-	_tHYPHYDone = l;
-	_tHYPHYCurrentStatus   = _String ("LF Optimization. Value=") & _String (max) &", "&_String (rate) & " evals/sec.";
-	_tHYPHYValue = max;
-	yieldCPUTime();
+    _tHYPHYDone = l;
+    _tHYPHYCurrentStatus   = _String ("LF Optimization. Value=") & _String (max) &", "&_String (rate) & " evals/sec.";
+    _tHYPHYValue = max;
+    yieldCPUTime();
 }
 
 //_________________________________________________________________________
 
-long	_THyPhyGetLongStatus		(void)
+long    _THyPhyGetLongStatus        (void)
 {
-	return _tHYPHYDone;
+    return _tHYPHYDone;
 }
 
 //_________________________________________________________________________
 
-double	_THyPhyGetDoubleStatus		(void)
+double  _THyPhyGetDoubleStatus      (void)
 {
-	return _tHYPHYValue;
+    return _tHYPHYValue;
 }
 
 //_________________________________________________________________________
 
-char*	_THyPhyGetStringStatus		(void)
+char*   _THyPhyGetStringStatus      (void)
 {
-	return _tHYPHYCurrentStatus.getStr();
+    return _tHYPHYCurrentStatus.getStr();
 }

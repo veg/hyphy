@@ -32,77 +32,77 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #ifndef _HY_SHARED_MAINS_
-#define	_HY_SHARED_MAINS_
+#define _HY_SHARED_MAINS_
 
-#include	"likefunc.h"
+#include    "likefunc.h"
 #include    "preferences.h"
-#include	<time.h>
+#include    <time.h>
 
-void		PrepareToExecuteBatchFile 	 (void);
+void        PrepareToExecuteBatchFile    (void);
 // set up menus and such prior to executing a batch file
-bool		ExecuteBatchFile 		  	 (void);
+bool        ExecuteBatchFile             (void);
 // execute the file with the path name stored in argFileName
-void		DoneWithExecutionOfBatchFile (bool = true);
+void        DoneWithExecutionOfBatchFile (bool = true);
 // set up menus and such following the execution of a batch file
 
-void		updateTimerF 				 (_String&, time_t);
+void        updateTimerF                 (_String&, time_t);
 // converts a long seconds field into hrs:mins:secs format
 
-bool		OpenBatchFile				 (bool = true, _String* = nil);
+bool        OpenBatchFile                (bool = true, _String* = nil);
 // propmt for a file (if flag = true), read it and set paths
 
-void    	ReadInTemplateFiles			 (void);
+void        ReadInTemplateFiles          (void);
 // scan and read in TemplateBatchFiles and result processors
 
-long    	SelectATemplate				 (void);
+long        SelectATemplate              (void);
 // choose a standard analysis to run
 
-void		RunStandardAnalyses			 (void);
+void        RunStandardAnalyses          (void);
 // Choose and run a standard analysis
 
-_String		MatrixExpCounter			 (void);
+_String     MatrixExpCounter             (void);
 // run a very simple benchmark (shown in the About Box)
 
-void		SpoolFile					 (void);
+void        SpoolFile                    (void);
 // display a text file (path in argFileName) in the console window
 
-void		RunTemplate 				 (long);
+void        RunTemplate                  (long);
 
-void		ExecuteAPostProcessor		 (_String);
+void        ExecuteAPostProcessor        (_String);
 
 // execute a post-processing module
 
-void		ReportAnalysisAsFinished	 (_String, bool = false);
+void        ReportAnalysisAsFinished     (_String, bool = false);
 // reflect the fact that an analysis has finished
 // if appropriate for the platform
 
 /* GLOBALS */
 
-extern		_String* 					 argFileName,
-						  errorFileName,
-						  messageFileName;
+extern      _String*                     argFileName,
+            errorFileName,
+            messageFileName;
 
-extern		bool						 isSuspended,
-							  hasTemplates,
-							  highLevelQuit,
-							  isRerunAvailable,
-							  updateTimer,
-							  addToRecent,
-							  echoPaused,
-							  calculatorMode;
+extern      bool                         isSuspended,
+            hasTemplates,
+            highLevelQuit,
+            isRerunAvailable,
+            updateTimer,
+            addToRecent,
+            echoPaused,
+            calculatorMode;
 
-extern		_ExecutionList				 ex;
+extern      _ExecutionList               ex;
 
-extern		_SimpleList					 windowPtrs,
-						windowObjects,
-						treeIDReferences,
-						windowObjectRefs;
+extern      _SimpleList                  windowPtrs,
+            windowObjects,
+            treeIDReferences,
+            windowObjectRefs;
 
-extern		_List						 availableTemplateFiles,
-							 availablePostProcessors;
+extern      _List                        availableTemplateFiles,
+            availablePostProcessors;
 
-#ifdef		__WINDOZE__
-#define 		 UPDATE_TIMER 		  WM_USER + 4
+#ifdef      __WINDOZE__
+#define          UPDATE_TIMER         WM_USER + 4
 #endif
 #endif
 

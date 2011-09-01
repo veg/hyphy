@@ -53,134 +53,134 @@
 
 
 
-#define		DIRICHLET_FLATTENING_CONST	0.5
+#define     DIRICHLET_FLATTENING_CONST  0.5
 
 
 class _BayesianGraphicalModel : public _LikelihoodFunction
 {
 public:
-	/* constructors */
-	_BayesianGraphicalModel () { }
-	_BayesianGraphicalModel (_AssociativeList *);
+    /* constructors */
+    _BayesianGraphicalModel () { }
+    _BayesianGraphicalModel (_AssociativeList *);
 
-	/* destructor */
-	virtual ~_BayesianGraphicalModel (void);
-
-
-	/* network initialization */
-	bool			SetDataMatrix	(_Matrix *),	// via SetParameter HBL
-					  SetWeightMatrix (_Matrix *),
-					  SetConstraints	(_Matrix *),	//	"		"
-					  SetStructure	(_Matrix *),
-					  SetParameters	(_AssociativeList *),
-					  SetNodeOrder	(_SimpleList *);
+    /* destructor */
+    virtual ~_BayesianGraphicalModel (void);
 
 
-	/* computation */
-	virtual	_Parameter		Compute (void);
-	_Parameter		Compute (_Matrix &),
-					Compute (_SimpleList &, _List *);
-
-	virtual _Matrix *		Optimize ();
-
-	void			GraphMetropolis (bool, long, long, long, _Parameter, _Matrix *),
-					OrderMetropolis (bool, long, long, _Parameter, _Matrix *),
-					K2Search (bool, long, long, _Matrix *);
+    /* network initialization */
+    bool            SetDataMatrix   (_Matrix *),    // via SetParameter HBL
+                    SetWeightMatrix (_Matrix *),
+                    SetConstraints    (_Matrix *),    //  "       "
+                    SetStructure  (_Matrix *),
+                    SetParameters (_AssociativeList *),
+                    SetNodeOrder  (_SimpleList *);
 
 
-	void			CacheNodeScores (void);
-	void			MPIReceiveScores (_Matrix *, bool, long);
-	void			ReleaseCache (void);
+    /* computation */
+    virtual _Parameter      Compute (void);
+    _Parameter      Compute (_Matrix &),
+                    Compute (_SimpleList &, _List *);
 
-	_Parameter		ComputeDiscreteScore (long node_id),
-					ComputeDiscreteScore (long, _Matrix &),
-					ComputeDiscreteScore (long, _SimpleList &),
+    virtual _Matrix *       Optimize ();
 
-					ComputeContinuousScore (long node_id),
-					ComputeContinuousScore (long, _Matrix &),
-					ComputeContinuousScore (long, _SimpleList &);
-
-
-	_Parameter		ImputeNodeScore (long, _SimpleList &);
-
-	void			ComputeParameters (void),
-					ComputeParameters (_Matrix *);
+    void            GraphMetropolis (bool, long, long, long, _Parameter, _Matrix *),
+                    OrderMetropolis (bool, long, long, _Parameter, _Matrix *),
+                    K2Search (bool, long, long, _Matrix *);
 
 
+    void            CacheNodeScores (void);
+    void            MPIReceiveScores (_Matrix *, bool, long);
+    void            ReleaseCache (void);
+
+    _Parameter      ComputeDiscreteScore (long node_id),
+                    ComputeDiscreteScore (long, _Matrix &),
+                    ComputeDiscreteScore (long, _SimpleList &),
+
+                    ComputeContinuousScore (long node_id),
+                    ComputeContinuousScore (long, _Matrix &),
+                    ComputeContinuousScore (long, _SimpleList &);
 
 
-	/* input/output */
-	void				SerializeBGM (_String &);
-	bool				ImportModel (_AssociativeList *),
+    _Parameter      ImputeNodeScore (long, _SimpleList &);
 
-						ExportCache (_AssociativeList *),
-						ImportCache (_AssociativeList *);
+    void            ComputeParameters (void),
+                    ComputeParameters (_Matrix *);
 
 
-	/* utility */
-	void			InitMarginalVectors (_List *);
-	void			DumpMarginalVectors (_List *);
 
-	void			SerializeBGMtoMPI (_String &);
 
-	void			RandomizeGraph (_Matrix *, _SimpleList *, _Parameter, long, long, bool);
-	_SimpleList *	GetOrderFromGraph (_Matrix &);
-	bool			GraphObeysOrder (_Matrix &, _SimpleList &);
+    /* input/output */
+    void                SerializeBGM (_String &);
+    bool                ImportModel (_AssociativeList *),
 
-	void			UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
+                        ExportCache (_AssociativeList *),
+                        ImportCache (_AssociativeList *);
 
-	_Parameter		K2Score (long, _Matrix &, _Matrix &),
-					BDeScore (long,	_Matrix &, _Matrix &),
-					BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
 
-	long			GetNumNodes (void)	{
-		return num_nodes;
-	}
-	long			GetNumCases (void)	{
-		return theData.GetHDim();
-	}
+    /* utility */
+    void            InitMarginalVectors (_List *);
+    void            DumpMarginalVectors (_List *);
 
-	void			GetNodeOrder (_Matrix * order);
-	void			GetStructure (_Matrix * graph);
-	void			GetConstraints (_Matrix * graph) {
-		graph = (_Matrix *) constraint_graph.makeDynamic();
-	}
+    void            SerializeBGMtoMPI (_String &);
+
+    void            RandomizeGraph (_Matrix *, _SimpleList *, _Parameter, long, long, bool);
+    _SimpleList *   GetOrderFromGraph (_Matrix &);
+    bool            GraphObeysOrder (_Matrix &, _SimpleList &);
+
+    void            UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
+
+    _Parameter      K2Score (long, _Matrix &, _Matrix &),
+                    BDeScore (long, _Matrix &, _Matrix &),
+                    BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
+
+    long            GetNumNodes (void)  {
+        return num_nodes;
+    }
+    long            GetNumCases (void)  {
+        return theData.GetHDim();
+    }
+
+    void            GetNodeOrder (_Matrix * order);
+    void            GetStructure (_Matrix * graph);
+    void            GetConstraints (_Matrix * graph) {
+        graph = (_Matrix *) constraint_graph.makeDynamic();
+    }
 
 protected:
 
-	long			num_nodes;
+    long            num_nodes;
 
-	/* ------------------------------------------- */
+    /* ------------------------------------------- */
 
-	_Matrix			theData,
-					theWeights;
+    _Matrix         theData,
+                    theWeights;
 
-	_List			node_names;		// list of strings
+    _List           node_names;     // list of strings
 
-	_SimpleList		node_type,		// boolean, 0 = discrete, 1 = continuous
-					num_levels,		// integer, if discrete, number of levels
-					max_parents,	// integer, maximum number of parents
-					has_missing;	// boolean, 0 = complete data, 1 = missing, (2 = latent, i.e., all missing)
+    _SimpleList     node_type,      // boolean, 0 = discrete, 1 = continuous
+                    num_levels,     // integer, if discrete, number of levels
+                    max_parents,    // integer, maximum number of parents
+                    has_missing;    // boolean, 0 = complete data, 1 = missing, (2 = latent, i.e., all missing)
 
-	_Matrix			prior_sample_size,
-					prior_mean,			// for continuous (Gaussian) nodes
-					prior_precision,
-					prior_scale;
+    _Matrix         prior_sample_size,
+                    prior_mean,         // for continuous (Gaussian) nodes
+                    prior_precision,
+                    prior_scale;
 
-	_Parameter		continuous_missing_value;		// some arbitrary value set in HBL to indicate just that
+    _Parameter      continuous_missing_value;       // some arbitrary value set in HBL to indicate just that
 
-	/* ------------------------------------------- */
+    /* ------------------------------------------- */
 
-	_Matrix			theStructure;
+    _Matrix         theStructure;
 
-	_Matrix			constraint_graph;	// integer, 0 = no constraint, -1 = banned edge, 1 = enforced edge
+    _Matrix         constraint_graph;   // integer, 0 = no constraint, -1 = banned edge, 1 = enforced edge
 
-	_List			node_score_cache;
-	bool			scores_cached;
+    _List           node_score_cache;
+    bool            scores_cached;
 
-	_SimpleList		node_order_arg;		// provides access to node ordering functionality as HBL argument
+    _SimpleList     node_order_arg;     // provides access to node ordering functionality as HBL argument
 
-	/* ------------------------------------------- */
+    /* ------------------------------------------- */
 
 };
 
