@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(HyPhy)
 
-set(DEFAULT_COMPILE_FLAGS "-w -c -fsigned-char -fast -O3")
+set(DEFAULT_COMPILE_FLAGS "-w -c -fsigned-char -fast -O3 -flto")
 
 set(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 
