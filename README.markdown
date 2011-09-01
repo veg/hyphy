@@ -7,28 +7,19 @@ Installation
 HyPhy now uses CMake for its build system.
 To install, make sure you have CMake installed,
 then configure the project from the source directory using
-
 `cmake .`
-
 By default, CMake produces Makefiles (I think),
 so if you prefer other build systems, such as Xcode,
 configure using the -G switch, e.g.
-
-`cmake -G Xcode .`.
-
+`cmake -G Xcode .`
 CMake has a number of build system generators,
 feel free to peruse these and use them if you wish.
 
-
 By default, HyPhy installs into /usr/local,
 but can be made to install anywhere by passing
-
 `-DCMAKE_INSTALL_PREFIX=/wherever/you/want`
-
 to cmake during the configuration, e.g.
-
 `cmake -DCMAKE_INSTALL_PREFIX=/opt/hyphy .`
-
 
 If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
