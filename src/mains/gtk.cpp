@@ -260,18 +260,41 @@ int main( int   argc, char *argv[] )
     getcwd (curWd,4096);
 
     _String baseDir (curWd);
-    baseDir=baseDir&'/';
+    baseDir=baseDir & '/';
+
+#ifdef _HYPHY_LIBDIRECTORY_
+    _String libDir (_HYPHY_LIBDIRECTORY_);
+    pathNames&& &libDir;
+#else
+    _String libDir (baseDir);
+#endif
+
+    if (libDir.sData[libDir.sLength-1] != '/') {
+        libDir = libDir & "/";
+    }
 
     pathNames&& &baseDir;
     baseDirectory = baseDir;
+    libDirectory = libDir;
     for (long i=1; i<argc; i++) {
         _String thisArg (argv[i]);
         if (thisArg.beginswith ("BASEPATH=")) {
             baseDirectory = thisArg.Cut(9,-1);
             if (baseDirectory.sLength) {
                 if (baseDirectory.sData[baseDirectory.sLength-1]!='/') {
-                    baseDirectory = baseDirectory&"/";
+                    baseDirectory = baseDirectory & "/";
                 }
+            } else {
+                baseDirectory = baseDir;
+            }
+        } else if (thisArg.beginswith ("LIBPATH=")) {
+            libDirectory = thisArg.Cut(8,-1);
+            if (libDirectory.sLength) {
+                if (libDirector.sData[baseDirectory.sLength-1] != '/') {
+                    libDirectory = libDirectory & "/";
+                }
+            } else {
+                libDirectory = libDir;
             }
         } else if (thisArg.beginswith ("USEPATH=")) {
             _String     baseArgDir          (thisArg,8,-1);

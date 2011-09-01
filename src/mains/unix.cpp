@@ -67,6 +67,7 @@ _List   availableTemplateFiles,
         loggedUserInputs;
 
 _String baseArgDir,
+        libArgDir,
         loggedFileEntry ("__USER_ENTRY__");
 
 void    ReadInTemplateFiles         (void);
@@ -85,6 +86,7 @@ extern  _String         VerbosityLevelString,
         errorFileName,
         messageFileName,
         baseDirectory,
+        libDirectory,
         shortMPIReturn,
         dialogPrompt;
 
@@ -490,19 +492,11 @@ int main (int argc, char* argv[])
     }
 #endif
 
-    char    curWd[4096];
+    char    curWd[4096],
+            dirSlash = GetPlatformDirectoryChar ();
     getcwd (curWd,4096);
 
-#if defined _HYPHY_BASEDIRECTORY_
-    _String baseDir (_HYPHY_BASEDIRECTORY_);
-#else
     _String baseDir (curWd);
-#endif
-
-
-    char dirSlash = GetPlatformDirectoryChar ();
-
-    _String argFile;
 
     if (baseDir.getChar (baseDir.sLength-1) != dirSlash) {
         baseDir=baseDir & dirSlash;
@@ -510,6 +504,22 @@ int main (int argc, char* argv[])
 
     pathNames&& &baseDir;
 
+#if defined _HYPHY_LIBDIRECTORY_
+    _String libDir (_HYPHY_LIBDIRECTORY_);
+
+    if (libDir.getChar (libDir.sLength-1) != dirSlash) {
+        libDir=libDir & dirSlash;
+    }
+
+    pathNames&& &libDir;
+#else
+    _String libDir = baseDir;
+#endif
+
+    _String argFile;
+
+    libDirectory  = libDir;
+    libArgDir     = libDirectory;
     baseDirectory = baseDir;
     baseArgDir    = baseDirectory;
 
@@ -554,6 +564,14 @@ int main (int argc, char* argv[])
                 }
 
                 baseDirectory = baseArgDir;
+            }
+        } else if (thisArg.beginswith ("LIBPATH=")) {
+            libArgDir = thisArg.Cut(8,-1);
+            if (libArgDir.sLength) {
+                if (libArgDir.sData[libArgDir.sLength-1] != dirSlash) {
+                    libArgDir = libArgDir & dirSlash;
+                }
+                libDirectory = libArgDir;
             }
         } else if (thisArg.beginswith ("USEPATH=")) {
             baseDir             = thisArg.Cut(8,-1);

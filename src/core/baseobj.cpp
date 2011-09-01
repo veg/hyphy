@@ -162,11 +162,11 @@ bool    GlobalStartup (void)
 
     _String             dd (GetPlatformDirectoryChar());
 
-    standardLibraryPaths.AppendNewInstance      (new _String(baseDirectory & "TemplateBatchFiles" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(baseDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
-    standardLibraryPaths.AppendNewInstance      (new _String(baseDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(baseDirectory & "UserAddIns" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(baseDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
+    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
+    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
+    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
+    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
 
     standardLibraryExtensions.AppendNewInstance (new _String (""));
     standardLibraryExtensions.AppendNewInstance (new _String (".bf"));

@@ -226,6 +226,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 dialogPrompt,
                                 lastModelUsed,
                                 baseDirectory,
+                                libDirectory,
                                 scanfLastFilePath,
                                 defFileNameValue;
 
@@ -596,16 +597,16 @@ void    ReadModelList(void)
 {
     _String modelListFile;
 #ifdef  __MAC__
-    modelListFile = baseDirectory&_String("TemplateBatchFiles:TemplateModels:models.lst");
+    modelListFile = libDirectory&_String("TemplateBatchFiles:TemplateModels:models.lst");
 #endif
 #ifdef  __WINDOZE__
-    modelListFile = baseDirectory &"TemplateBatchFiles\\TemplateModels\\models.lst";
+    modelListFile = libDirectory &"TemplateBatchFiles\\TemplateModels\\models.lst";
 #endif
 #ifdef __HYPHY_GTK__
-    modelListFile = baseDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
+    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
 #endif
 #ifdef __UNIX__
-    modelListFile = baseDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
+    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
 #endif
 
     FILE* modelList = doFileOpen (modelListFile.getStr(),"rb");
@@ -3956,7 +3957,7 @@ void      _ElementaryCommand::ExecuteCase24 (_ExecutionList& chain)
 #endif
 #endif
         }
-        modelFile = baseDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar()
+        modelFile = libDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar()
                     & "TemplateModels" & GetPlatformDirectoryChar();
 
         errMsg = modelFile;

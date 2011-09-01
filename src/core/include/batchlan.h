@@ -454,6 +454,7 @@ extern  _String
 getDString,
 getFString,
 baseDirectory,
+libDirectory,
 useLastFString,
 mpiMLELFValue,
 lf2SendBack,
