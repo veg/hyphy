@@ -29,13 +29,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __MAC__
 #include "preferences.h"
 #endif
 
 #ifdef __MAC__
 #include <Dialogs.h>
 #include "HYUtils.h"
+#include "HYConsoleWindow.h"
 #endif
 
 #ifdef __WINDOZE__

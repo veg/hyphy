@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef __MAC__
 #include     "timer.h"
+extern bool handleGUI(bool);
 #endif
 
 #ifdef      __MACPROFILE__

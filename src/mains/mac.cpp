@@ -856,7 +856,7 @@ void DisplayAbout (bool splash)
 
 //____________________________________________________________________________________________
 
-bool    handleGUI (bool useGet)
+bool    handleGUI (bool useGet=false)
 {
     static              _HYPlatformWindow*  lastWindow = nil;
     short                whatW,

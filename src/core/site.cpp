@@ -34,6 +34,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "math.h"
 
+#ifdef __MAC__
+extern bool handleGUI(bool);
+#endif
+
 #if !defined  __UNIX__ && !defined __HEADLESS__
 #include "HYDataPanel.h"
 #endif

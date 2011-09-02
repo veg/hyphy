@@ -149,7 +149,11 @@ typedef     double       _Parameter; // standard number type - used everywhere i
 #endif
 #endif
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#ifdef __MAC__
+extern bool handleGUI (bool=false);
+#endif
+
+#ifdef __HEADLESS__
 void    yieldCPUTime        (void);
 bool    handleGUI           (bool = false);
 #endif

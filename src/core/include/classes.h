@@ -97,9 +97,9 @@ public:
     void                detach_child    (int k) {
         nodes.delete_entry(k);
     }
-#ifndef __UNIX__
+
     int                 tree_depth      (void);
-#endif
+
     void                detach_parent   (void) {
         parent = NULL;
     }

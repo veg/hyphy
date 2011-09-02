@@ -416,8 +416,6 @@ template <class node_data> long NodePathTraverser (_SimpleList& history, node<no
 
 
 
-#ifndef __UNIX__
-
 //-------------------------------------------------------------
 template <class node_data> int node<node_data>::tree_depth(void)
 {
@@ -430,8 +428,6 @@ template <class node_data> int node<node_data>::tree_depth(void)
 	 }
 	 return res+1;
 }
-
-#endif
 
 //-------------------------------------------------------------
 template <class node_data>

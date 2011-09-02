@@ -32,19 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include      "bgm.h"
 #endif
 
-#if defined       __UNIX__ && !defined __HEADLESS__ && !defined __HYPHY_NO_SQLITE__
-#include "sqlite3.h"
-#else
-#if defined  __HEADLESS__ && !defined __HYPHY_NO_SQLITE__
-#include      "sqlite3.h"
-#else
 #ifndef __HYPHY_NO_SQLITE__
-#include      "sqlite3.h"
+#include "sqlite3.h"
 #endif
-#if !defined          __UNIX__  && !defined __HEADLESS__
+
+#if !defined __HEADLESS__
 #include      "HYUtils.h"
-#endif
-#endif
 #endif
 
 #ifdef    __HYPHYDMALLOC__

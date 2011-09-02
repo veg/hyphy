@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 44;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -455,7 +455,7 @@
 		2FD4BC1213B5098600814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BC1313B5098600814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BC1413B5098600814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BC1513B5098600814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BC1513B5098600814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BC1613B5098600814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BC4913B509CD00814827 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = baseobj.cpp; sourceTree = "<group>"; };
 		2FD4BC4A13B509CD00814827 /* baseobj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = baseobj.h; sourceTree = "<group>"; };
@@ -497,7 +497,7 @@
 		2FD4BC6E13B509CD00814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BC6F13B509CD00814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BC7013B509CD00814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BC7113B509CD00814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BC7113B509CD00814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BC7213B509CD00814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BC8E13B52B7900814827 /* bayesgraph.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bayesgraph.cpp; sourceTree = "<group>"; };
 		2FD4BC8F13B52B7900814827 /* bayesgraph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bayesgraph.h; sourceTree = "<group>"; };
@@ -551,7 +551,7 @@
 		2FD4BCC913B52BE000814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BCCA13B52BE000814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BCCB13B52BE000814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BCCC13B52BE000814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BCCC13B52BE000814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BCCD13B52BE000814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BD1F13B52E9400814827 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = baseobj.cpp; sourceTree = "<group>"; };
 		2FD4BD2013B52E9400814827 /* baseobj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = baseobj.h; sourceTree = "<group>"; };
@@ -593,7 +593,7 @@
 		2FD4BD4413B52E9500814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BD4513B52E9500814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BD4613B52E9500814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BD4713B52E9500814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BD4713B52E9500814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BD4813B52E9500814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BD8A13B5320100814827 /* baseobj.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = baseobj.cpp; sourceTree = "<group>"; };
 		2FD4BD8B13B5320100814827 /* baseobj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = baseobj.h; sourceTree = "<group>"; };
@@ -635,7 +635,7 @@
 		2FD4BDAF13B5320100814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BDB013B5320100814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BDB113B5320200814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BDB213B5320200814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BDB213B5320200814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BDB313B5320200814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BDD813B5329900814827 /* main-unix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "main-unix.cpp"; path = "../trunk/Mains/main-unix.cpp"; sourceTree = SOURCE_ROOT; };
 		2FD4BF1813B5606500814827 /* Unit_Test_3 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Unit_Test_3; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -680,7 +680,7 @@
 		2FD4BF4913B560EF00814827 /* site.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = site.cpp; sourceTree = "<group>"; };
 		2FD4BF4A13B560EF00814827 /* site.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = site.h; sourceTree = "<group>"; };
 		2FD4BF4B13B560EF00814827 /* SQDll.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = SQDll.lib; sourceTree = "<group>"; };
-		2FD4BF4C13B560EF00814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SQLite Carbon"; sourceTree = "<group>"; };
+		2FD4BF4C13B560EF00814827 /* SQLite Carbon */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SQLite Carbon"; sourceTree = "<group>"; };
 		2FD4BF4D13B560EF00814827 /* strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = strings.cpp; sourceTree = "<group>"; };
 		2FD4BF6713B5615000814827 /* hyphyunixutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hyphyunixutils.cpp; sourceTree = "<group>"; };
 		2FD4BF6813B5615000814827 /* main-GTK.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "main-GTK.cpp"; sourceTree = "<group>"; };
@@ -889,8 +889,8 @@
 		2FD4C06713B5622900814827 /* pbxindex.header */ = {isa = PBXFileReference; lastKnownFileType = file; path = pbxindex.header; sourceTree = "<group>"; };
 		2FD4C06813B5622900814827 /* protocols.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = protocols.pbxbtree; sourceTree = "<group>"; };
 		2FD4C06913B5622900814827 /* refs.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = refs.pbxbtree; sourceTree = "<group>"; };
-		2FD4C06B13B5622900814827 /* control */ = {isa = PBXFileReference; lastKnownFileType = file; path = control; sourceTree = "<group>"; };
-		2FD4C06C13B5622900814827 /* strings */ = {isa = PBXFileReference; lastKnownFileType = file; path = strings; sourceTree = "<group>"; };
+		2FD4C06B13B5622900814827 /* control */ = {isa = PBXFileReference; lastKnownFileType = text; path = control; sourceTree = "<group>"; };
+		2FD4C06C13B5622900814827 /* strings */ = {isa = PBXFileReference; lastKnownFileType = text; path = strings; sourceTree = "<group>"; };
 		2FD4C06D13B5622900814827 /* subclasses.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = subclasses.pbxbtree; sourceTree = "<group>"; };
 		2FD4C06E13B5622900814827 /* symbols0.pbxsymbols */ = {isa = PBXFileReference; lastKnownFileType = file; path = symbols0.pbxsymbols; sourceTree = "<group>"; };
 		2FD4C07113B5622900814827 /* build-state.dat */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "build-state.dat"; sourceTree = "<group>"; };
@@ -2726,8 +2726,11 @@
 /* Begin PBXProject section */
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0410;
+			};
 			buildConfigurationList = C0E91AC908A95435008D54AB /* Build configuration list for PBXProject "HyPhyXCode" */;
-			compatibilityVersion = "Xcode 3.0";
+			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -3088,7 +3091,6 @@
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_CPP_RTTI = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3109,7 +3111,6 @@
 					"-lssl",
 					"-lcrypto",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../ $(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS)";
 			};
@@ -3123,7 +3124,6 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -3141,7 +3141,6 @@
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/gtest.build/Release/gtest_main-static.build/Objects-normal/x86_64\"",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 			};
 			name = "Debug + GCOV";
@@ -3154,7 +3153,6 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -3172,7 +3170,6 @@
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/gtest.build/Release/gtest_main-static.build/Objects-normal/x86_64\"",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 			};
 			name = "Debug MPI";
@@ -3187,7 +3184,6 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -3205,7 +3201,6 @@
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/gtest.build/Release/gtest_main-static.build/Objects-normal/x86_64\"",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 				ZERO_LINK = NO;
 			};
@@ -3219,7 +3214,6 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -3237,7 +3231,6 @@
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/gtest.build/Release/gtest_main-static.build/Objects-normal/x86_64\"",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 			};
 			name = "Optimized + Debug Info";
@@ -3250,7 +3243,6 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -3268,7 +3260,6 @@
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/gtest.build/Release/gtest_main-static.build/Objects-normal/x86_64\"",
 					"\"$(SRCROOT)/../trunk/UnitTests/gtest-1.6.0/xcode/build/Release\"",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unit_Test_3;
 			};
 			name = "Release 64 bit Intel";
@@ -3279,7 +3270,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3316,8 +3306,7 @@
 		853F265C133C048D00190D5E /* Optimized + Debug Info */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CURRENT_PROJECT_VERSION = 2.00beta;
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -3350,10 +3339,9 @@
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HYPHYProfiled;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = "Optimized + Debug Info";
@@ -3411,7 +3399,6 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_TEST_COVERAGE_FILES = YES;
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = YES;
 				GCC_MODEL_TUNING = "";
@@ -3437,10 +3424,9 @@
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				OTHER_LDFLAGS = "-lgcov";
-				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = "Debug + GCOV";
@@ -3451,7 +3437,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3471,7 +3456,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3493,7 +3477,6 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3513,10 +3496,9 @@
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				OTHER_LDFLAGS = "-lmpi";
-				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = "Debug MPI";
@@ -3527,7 +3509,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3547,7 +3528,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3563,8 +3543,7 @@
 		85F02DA0129B0075001A56E0 /* Release 64 bit Intel */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_64_BIT_PRE_XCODE_3_1 = x86_64;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CURRENT_PROJECT_VERSION = 2.00beta;
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -3598,9 +3577,8 @@
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
 				PRODUCT_NAME = HYPHY;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = "Release 64 bit Intel";
@@ -3644,7 +3622,7 @@
 				INFOPLIST_FILE = "/Volumes/TeraMonkey/Users/sergei/hyphy/HyPhyXCode/../trunk/GUIElements/Platform Source/MacOS/Info copy.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = HyPhy;
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
+				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS/** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include/** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 				WRAPPER_EXTENSION = app;
 			};
 			name = "Release 64 bit Intel";
@@ -3655,7 +3633,6 @@
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3701,7 +3678,6 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_CPP_EXCEPTIONS = NO;
 				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3724,10 +3700,9 @@
 				);
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Debug;
@@ -3735,8 +3710,7 @@
 		C0E91ACB08A95435008D54AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CURRENT_PROJECT_VERSION = 2.00beta;
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -3769,9 +3743,8 @@
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Source/MacOS/Info.plist";
 				LLVM_LTO = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
 				PRODUCT_NAME = HYPHY;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../trunk/GUIElements/Platform\\ Include/MacOS//** $(PROJECT_DIR)/../trunk/GUIElements/Shared\\ Include//** $(USER_HEADER_SEARCH_PATHS) $(PROJECT_DIR)/../SQLLite";
 			};
 			name = Release;
