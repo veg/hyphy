@@ -689,10 +689,12 @@
 				);
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = HyPhy;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
+				VALID_ARCHS = i386;
 				WRAPPER_EXTENSION = app;
 			};
 			name = "Optimized + Debug Info";
@@ -756,10 +758,12 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = HyPhy;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
+				VALID_ARCHS = i386;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
 			};
@@ -818,10 +822,12 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = HyPhy;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
+				VALID_ARCHS = i386;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
 			};
@@ -840,10 +846,12 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = HyPhy;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
+				VALID_ARCHS = i386;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
 			};
@@ -860,16 +868,19 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				HEADER_SEARCH_PATHS = (
 					/Developer/Headers/FlatCarbon,
 					"$(HEADER_SEARCH_PATHS)",
 				);
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = HyPhy;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
+				VALID_ARCHS = i386;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
