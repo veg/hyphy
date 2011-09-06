@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesStackState
+   version = "1.0">
+   <StackStates>
+      <StackState
+         stackFrameDescription = "_ElementaryCommand::ExecuteCase8(_ExecutionList&amp;):batchlan.cpp">
+         <expressions>
+         </expressions>
+      </StackState>
+      <StackState
+         stackFrameDescription = "_ElementaryCommand::ConstructFprintf(_String&amp;, _ExecutionList&amp;):batchlan.cpp">
+         <expressions>
+            <expression
+               value = "(_String**)fpr-&gt;parameters.lData">
+            </expression>
+            <expression
+               value = "_String*">
+            </expression>
+            <expression
+               value = "(_String** *)fpr-&gt;parameters.lData">
+            </expression>
+         </expressions>
+      </StackState>
+      <StackState
+         stackFrameDescription = "_Matrix::operator()(long, long):matrix.cpp">
+         <expressions>
+         </expressions>
+      </StackState>
+   </StackStates>
+</VariablesStackState>
