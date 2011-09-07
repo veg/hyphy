@@ -4,30 +4,15 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>HyPhyXCode.xcscheme</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>0</integer>
-		</dict>
-		<key>Optimized Binary.xcscheme</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>4</integer>
-		</dict>
-		<key>RunDebug.xcscheme</key>
+		<key>Debug Binary.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
-		<key>RunProfile.xcscheme</key>
+		<key>Optimized Binary.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
-		</dict>
-		<key>UnitTests.xcscheme</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>3</integer>
+			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
@@ -38,6 +23,11 @@
 			<true/>
 		</dict>
 		<key>850513B31028C532009668C9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>850AA8571416E6AD007BDE55</key>
 		<dict>
 			<key>primary</key>
 			<true/>

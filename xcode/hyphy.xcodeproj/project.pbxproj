@@ -627,216 +627,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		853F265C133C048D00190D5E /* Optimized + Debug Info */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
-				CURRENT_PROJECT_VERSION = 3.00beta;
-				DEAD_CODE_STRIPPING = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				ENABLE_OPENMP_SUPPORT = YES;
-				GCC_AUTO_VECTORIZATION = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_SSE3_EXTENSIONS = YES;
-				GCC_ENABLE_SSE41_EXTENSIONS = YES;
-				GCC_ENABLE_SSE42_EXTENSIONS = YES;
-				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					_SLKP_LFENGINE_REWRITE_,
-					__HYPHYXCODE__,
-					__MAC__,
-					__MP__,
-				);
-				GCC_STRICT_ALIASING = NO;
-				GCC_UNROLL_LOOPS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/Platform\\ Source/MacOS/Info.plist";
-				LLVM_LTO = NO;
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				ONLY_ACTIVE_ARCH = NO;
-				PREBINDING = NO;
-				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_NAME = HYPHYProfiled;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include $(PROJECT_DIR)/../src/gui/include $(PROJECT_DIR)/../src/gui/mac/include $(PROJECT_DIR)/../src/new/include";
-			};
-			name = "Optimized + Debug Info";
-		};
-		853F265D133C048D00190D5E /* Optimized + Debug Info */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/HYPHYOSX";
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					/Developer/Headers/FlatCarbon,
-					"$(HEADER_SEARCH_PATHS)",
-				);
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				PRODUCT_NAME = HyPhy;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
-				VALID_ARCHS = i386;
-				WRAPPER_EXTENSION = app;
-			};
-			name = "Optimized + Debug Info";
-		};
-		85748615122746750001A77A /* Debug + GCOV */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
-				CURRENT_PROJECT_VERSION = 3.00beta;
-				DEAD_CODE_STRIPPING = YES;
-				ENABLE_OPENMP_SUPPORT = YES;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_GENERATE_TEST_COVERAGE_FILES = YES;
-				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = YES;
-				GCC_MODEL_TUNING = "";
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					__HYPHYXCODE__,
-					__MAC__,
-					"ACCESSOR_CALLS_ARE_FUNCTIONS=1",
-					"OPAQUE_TOOLBOX_STRUCTS=1",
-					"TARGET_API_MAC_CARBON=1",
-					__MP__,
-					"SQLITE_PTR_SZ=4",
-					_SLKP_LFENGINE_REWRITE_,
-				);
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					/Developer/Headers/FlatCarbon,
-					"$(HEADER_SEARCH_PATHS)",
-				);
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/Platform\\ Source/MacOS/Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = "-lgcov";
-				PREBINDING = NO;
-				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include $(PROJECT_DIR)/../src/gui/include $(PROJECT_DIR)/../src/gui/mac/include $(PROJECT_DIR)/../src/new/include";
-			};
-			name = "Debug + GCOV";
-		};
-		85748616122746750001A77A /* Debug + GCOV */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				PRODUCT_NAME = HyPhy;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
-				VALID_ARCHS = i386;
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = YES;
-			};
-			name = "Debug + GCOV";
-		};
-		85ED8D19103A12A400DFE4EE /* Debug MPI */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
-				CURRENT_PROJECT_VERSION = 3.00beta;
-				DEAD_CODE_STRIPPING = YES;
-				ENABLE_OPENMP_SUPPORT = YES;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = "";
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					__HYPHYXCODE__,
-					__MAC__,
-					__HYPHYMPI__,
-					_SLKP_LFENGINE_REWRITE_,
-				);
-				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					/Developer/Headers/FlatCarbon,
-					"$(HEADER_SEARCH_PATHS)",
-				);
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/Platform\\ Source/MacOS/Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = "-lmpi";
-				PREBINDING = NO;
-				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_NAME = HyPhyDebug;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include $(PROJECT_DIR)/../src/gui/include $(PROJECT_DIR)/../src/gui/mac/include $(PROJECT_DIR)/../src/new/include";
-			};
-			name = "Debug MPI";
-		};
-		85ED8D1A103A12A400DFE4EE /* Debug MPI */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				PRODUCT_NAME = HyPhy;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
-				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include/** $(PROJECT_DIR)/../src/gui/include/** $(PROJECT_DIR)/../src/gui/mac/include/** $(PROJECT_DIR)/../src/new/include";
-				VALID_ARCHS = i386;
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = YES;
-			};
-			name = "Debug MPI";
-		};
 		C0E91AC608A95435008D54AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -922,7 +717,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_NAME = HyPhyDebug;
+				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include $(PROJECT_DIR)/../src/gui/include $(PROJECT_DIR)/../src/gui/mac/include $(PROJECT_DIR)/../src/new/include";
 			};
@@ -968,7 +763,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
-				PRODUCT_NAME = HYPHY;
+				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../src/core/include $(PROJECT_DIR)/../src/gui/include $(PROJECT_DIR)/../src/gui/mac/include $(PROJECT_DIR)/../src/new/include";
 			};
@@ -981,10 +776,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0E91AC608A95435008D54AB /* Debug */,
-				85748616122746750001A77A /* Debug + GCOV */,
-				85ED8D1A103A12A400DFE4EE /* Debug MPI */,
 				C0E91AC708A95435008D54AB /* Release */,
-				853F265D133C048D00190D5E /* Optimized + Debug Info */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -993,10 +785,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0E91ACA08A95435008D54AB /* Debug */,
-				85748615122746750001A77A /* Debug + GCOV */,
-				85ED8D19103A12A400DFE4EE /* Debug MPI */,
 				C0E91ACB08A95435008D54AB /* Release */,
-				853F265C133C048D00190D5E /* Optimized + Debug Info */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
