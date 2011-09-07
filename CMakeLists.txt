@@ -30,7 +30,7 @@ add_custom_target(uninstall
 file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
-file(GLOB SRC_MACGUI src/gui/mac/*.cpp src/gui/mac/Components/HYPlatformList.cpp)
+file(GLOB SRC_MACGUI src/gui/mac/*.cpp src/gui/mac/Components/*.cpp src/gui/mac/WindowClasses/*.cpp src/gui/mac/Components/HYPlatformList.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
@@ -111,34 +111,73 @@ add_custom_target(GTEST DEPENDS HYPHYGTEST)
 include_directories(src/core/include src/lib/Link src/new/include contrib src/gui/include src/gui/include/Components src/gui/include/WindowClasses contrib/gtest-1.6.0/include tests/gtests)
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -DINTPTR_TYPE=long)
 
-if(APPLE AND FALSE)
+if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES i386)
-    add_executable(HYPHYMACOSX
+    set(CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.6.sdk/")
+    set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    add_executable(HyPhy
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${RES_MACGUI}
+    )
+    add_custom_command(
+        TARGET HyPhy
+        PRE_BUILD
+        COMMAND rm -r ${CMAKE_CURRENT_BINARY_DIR}/HyPhy.app/Contents/Resources/HBL
+    )
+    add_custom_command(
+        TARGET HyPhy
+        POST_BUILD
+        COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/res ${CMAKE_CURRENT_BINARY_DIR}/HyPhy.app/Contents/Resources/HBL
     )
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
-    target_link_libraries(HYPHYMACOSX curl ssl crypto)
-    add_custom_target(MAC DEPENDS HYPHYMACOSX)
+    find_library(CARBON NAMES Carbon)
+    find_library(QUICKTIME NAMES Quicktime)
+    target_link_libraries(HyPhy curl ssl crypto ${CARBON} ${QUICKTIME})
+    add_custom_target(MAC DEPENDS HyPhy)
     set_property(
-        TARGET HYPHYMACOSX
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__
+        TARGET HyPhy
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __BUNDLE__
     )
     set_property(
-        SOURCE src/gui/preferences.cpp src/gui/mac/hydialogs.cpp
+        TARGET HyPhy
+        PROPERTY COMPILE_FLAGS "-Wno-sign-compare -Wno-deprecated -Wno-deprecated-declarations"
+    )
+    set_property(
+        SOURCE
+        src/gui/mac/hydialogs.cpp
+        src/gui/mac/HYPlatformComponent.cpp
+        src/gui/mac/HYPlatformUtils.cpp
+        src/gui/mac/HYPlatformWindow.cpp
+        src/gui/mac/Components/HYPlatformCheckBox.cpp
+        src/gui/mac/Components/HYPlatformPullDown.cpp
+        src/gui/mac/WindowClasses/HYPlatformChartWindow.cpp
+        src/gui/mac/WindowClasses/HYPlatformConsoleWindow.cpp
+        src/gui/mac/WindowClasses/HYPlatformDataPanel.cpp
+        src/gui/mac/WindowClasses/HYPlatformModelWindow.cpp
+        src/gui/mac/WindowClasses/HYPlatformParameterTable.cpp
+        src/gui/mac/WindowClasses/HYPlatformPWindow.cpp
+        src/gui/mac/WindowClasses/HYPlatformTreePanel.cpp
+        src/gui/preferences.cpp
+        src/mains/mac.cpp
         PROPERTY COMPILE_FLAGS "-fpascal-strings"
     )
-    set_target_properties(
-        HYPHYMACOSX
-        PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
-        MACOSX_BUNDLE_ICON_FILE src/gui/mac/HYPHY.icns
+    set_source_files_properties(
+        ${RES_MACGUI}
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
     )
-endif(APPLE AND FALSE)
+    set_target_properties(
+        HyPhy
+        PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
+    )
+endif(APPLE)
 
 if(UNIX)
-    add_definitions(-D__UNIX__)
+    set_property(
+        TARGET HYPHYMP HYPHYMPI hyphy_mp HYPHYGTEST HYPHYDEBUG
+        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
+    )
 endif(UNIX)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)

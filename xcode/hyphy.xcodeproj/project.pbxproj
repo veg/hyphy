@@ -689,7 +689,7 @@
 				);
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
@@ -758,7 +758,7 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
@@ -822,7 +822,7 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
@@ -846,7 +846,7 @@
 				GCC_PREFIX_HEADER = "";
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
@@ -875,7 +875,7 @@
 				);
 				INFOPLIST_FILE = "$(PROJECT_DIR)/../src/gui/mac/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = HyPhy;
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
 				SYMROOT = "$(PROJECT_DIR)/../../hyphybuilds";
