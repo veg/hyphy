@@ -1,23 +1,55 @@
 cmake_minimum_required(VERSION 2.8.1)
 project(HyPhy)
 
-# make it fast, scotty
-set(DEFAULT_COMPILE_FLAGS "-c -fsigned-char -fast -O3 -flto")
 
+#-------------------------------------------------------------------------------
+# make it fast, scotty
+#-------------------------------------------------------------------------------
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    execute_process(
+        COMMAND ${CMAKE_C_COMPILER} -dumpversion
+        OUTPUT_VARIABLE GCC_VERSION
+    )
+
+    set(GCC45 false)
+
+    if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
+        set(GCC45 true)
+    endif(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
+
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+            set(GCC45 true)
+        endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+    endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+    if(${GCC45})
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -fast -O3 -flto")
+    else(${GCC45})
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -fast -O3")
+    endif(${GCC45})
+endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+
+
+#-------------------------------------------------------------------------------
+# default installation prefix
+#-------------------------------------------------------------------------------
 set(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 
+
+#-------------------------------------------------------------------------------
+# gtest dependency
+#-------------------------------------------------------------------------------
 add_subdirectory(contrib/gtest-1.6.0)
 set_property(
     TARGET gtest gtest_main
     PROPERTY EXCLUDE_FROM_ALL true
 )
 
-# file(GLOB_RECURSE HYPHY_STDLIB res/)
-# add_custom_command(OUTPUT ${HYPHY_STDLIB}
 
-install(DIRECTORY res/ DESTINATION lib/hyphy)
-
+#-------------------------------------------------------------------------------
 # uninstall target
+#-------------------------------------------------------------------------------
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
@@ -27,10 +59,13 @@ add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
 )
 
+
+#-------------------------------------------------------------------------------
+# setup the files we'll be using
+#-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
-file(GLOB SRC_MACGUI src/gui/mac/*.cpp src/gui/mac/Components/*.cpp src/gui/mac/WindowClasses/*.cpp src/gui/mac/Components/HYPlatformList.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
@@ -42,6 +77,10 @@ set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
+
+#-------------------------------------------------------------------------------
+# setup some source properties so that we don't spam stdout
+#-------------------------------------------------------------------------------
 set_property(
     SOURCE ${SRC_SQLITE3}
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
@@ -52,6 +91,37 @@ set_property(
     PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
 )
 
+
+#-------------------------------------------------------------------------------
+# shared compilation definitions and header includes
+#-------------------------------------------------------------------------------
+add_definitions(-D_SLKP_LFENGINE_REWRITE_ -DINTPTR_TYPE=long)
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    add_definitions(-D__HYPHY_64__)
+endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+
+include_directories(
+    src/core/include
+    src/lib/Link src/new/include
+    contrib # SQLite
+    src/gui/include
+    src/gui/include/Components
+    src/gui/include/WindowClasses
+    contrib/gtest-1.6.0/include
+    tests/gtests
+)
+
+
+#-------------------------------------------------------------------------------
+# shared hyphy hbl stdlib target
+#-------------------------------------------------------------------------------
+install(DIRECTORY res/ DESTINATION lib/hyphy)
+
+
+#-------------------------------------------------------------------------------
+# hyphy library target
+#-------------------------------------------------------------------------------
 add_library(
     hyphy_mp SHARED
     EXCLUDE_FROM_ALL
@@ -65,6 +135,15 @@ install(
 )
 add_custom_target(LIB DEPENDS hyphy_mp)
 
+set_property(
+    TARGET hyphy_mp
+    APPEND PROPERTY COMPILE_DEFINITIONS __HEADLESS__
+)
+
+
+#-------------------------------------------------------------------------------
+# hyphy mp2 target
+#-------------------------------------------------------------------------------
 add_executable(
     HYPHYMP
     EXCLUDE_FROM_ALL
@@ -78,6 +157,10 @@ install(
 )
 add_custom_target(MP2 DEPENDS HYPHYMP)
 
+
+#-------------------------------------------------------------------------------
+# hyphy mpi target
+#-------------------------------------------------------------------------------
 add_executable(
     HYPHYMPI
     EXCLUDE_FROM_ALL
@@ -91,6 +174,15 @@ install(
 )
 add_custom_target(MPI DEPENDS HYPHYMPI)
 
+set_property(
+    TARGET HYPHYMPI
+    PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__
+)
+
+
+#-------------------------------------------------------------------------------
+# hyphy debug target
+#-------------------------------------------------------------------------------
 add_executable(
     HYPHYDEBUG
     EXCLUDE_FROM_ALL
@@ -99,6 +191,15 @@ add_executable(
 target_link_libraries(HYPHYDEBUG curl ssl crypto)
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
+set_property(
+    TARGET HYPHYDEBUG
+    PROPERTY COMPILE_FLAGS "-g -O0"
+)
+
+
+#-------------------------------------------------------------------------------
+# hyphy gtest target
+#-------------------------------------------------------------------------------
 add_executable(
     HYPHYGTEST
     EXCLUDE_FROM_ALL
@@ -108,19 +209,79 @@ add_dependencies(HYPHYGTEST gtest)
 target_link_libraries(HYPHYGTEST curl ssl crypto gtest)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
-include_directories(src/core/include src/lib/Link src/new/include contrib src/gui/include src/gui/include/Components src/gui/include/WindowClasses contrib/gtest-1.6.0/include tests/gtests)
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -DINTPTR_TYPE=long)
+set_property(
+    TARGET HYPHYGTEST
+    APPEND PROPERTY COMPILE_DEFINITIONS __UNITTEST__
+)
+set_property(
+    TARGET HYPHYGTEST
+    PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+)
 
+
+#-------------------------------------------------------------------------------
+# target-specific and occasionally-shared properties
+#-------------------------------------------------------------------------------
+if(UNIX)
+    set_property(
+        TARGET HYPHYMP HYPHYMPI hyphy_mp HYPHYGTEST HYPHYDEBUG
+        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
+    )
+endif(UNIX)
+
+set_property(
+    TARGET hyphy_mp HYPHYMP
+    APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
+)
+set_property(
+    TARGET HYPHYMP HYPHYMPI HYPHYGTEST HYPHYDEBUG
+    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+)
+set_property(
+    TARGET hyphy_mp HYPHYMP HYPHYMPI
+    PROPERTY COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
+)
+
+
+#-------------------------------------------------------------------------------
+# hyphy MacOSX gui target
+#-------------------------------------------------------------------------------
 if(APPLE)
+    #---------------------------------------------------------------------------
+    # MacOSX gui architecture and SDK
+    #---------------------------------------------------------------------------
     set(CMAKE_OSX_ARCHITECTURES i386)
     set(CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.6.sdk/")
+
+    #---------------------------------------------------------------------------
+    # MacOSX gui files
+    #---------------------------------------------------------------------------
     set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    file(
+        GLOB SRC_MACGUI
+        src/gui/mac/*.cpp
+        src/gui/mac/Components/*.cpp
+        src/gui/mac/WindowClasses/*.cpp
+    )
+
+    #---------------------------------------------------------------------------
+    # MacOSX gui executable and directives
+    #---------------------------------------------------------------------------
     add_executable(HyPhy
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
+    include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
+    find_library(CARBON NAMES Carbon)
+    find_library(QUICKTIME NAMES Quicktime)
+    target_link_libraries(HyPhy curl ssl crypto ${CARBON} ${QUICKTIME})
+    add_custom_target(MAC DEPENDS HyPhy)
+
+    #---------------------------------------------------------------------------
+    # install the hyphy hbl stdlib into the .app
+    #---------------------------------------------------------------------------
     get_target_property(HYPHY_APPEXE HyPhy LOCATION)
     get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
     add_custom_command(
@@ -133,18 +294,17 @@ if(APPLE)
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
-    include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
-    find_library(CARBON NAMES Carbon)
-    find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(HyPhy curl ssl crypto ${CARBON} ${QUICKTIME})
-    add_custom_target(MAC DEPENDS HyPhy)
+
+    #---------------------------------------------------------------------------
+    # MacOSX gui-specific properties
+    #---------------------------------------------------------------------------
     set_property(
         TARGET HyPhy
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __BUNDLE__
     )
     set_property(
         TARGET HyPhy
-        PROPERTY COMPILE_FLAGS "-Wno-sign-compare -Wno-deprecated -Wno-deprecated-declarations"
+        PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-sign-compare -Wno-deprecated -Wno-deprecated-declarations"
     )
     set_property(
         SOURCE
@@ -174,54 +334,3 @@ if(APPLE)
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
     )
 endif(APPLE)
-
-if(UNIX)
-    set_property(
-        TARGET HYPHYMP HYPHYMPI hyphy_mp HYPHYGTEST HYPHYDEBUG
-        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
-    )
-endif(UNIX)
-
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    add_definitions(-D__HYPHY_64__)
-endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-
-set_property(
-    TARGET hyphy_mp
-    APPEND PROPERTY COMPILE_DEFINITIONS __HEADLESS__
-)
-
-set_property(
-    TARGET hyphy_mp HYPHYMP
-    APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
-)
-
-set_property(
-    TARGET HYPHYMPI
-    PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__
-)
-
-set_property(
-    TARGET HYPHYGTEST
-    APPEND PROPERTY COMPILE_DEFINITIONS __UNITTEST__
-)
-
-set_property(
-    TARGET HYPHYMP HYPHYMPI HYPHYGTEST HYPHYDEBUG
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
-)
-
-set_property(
-    TARGET hyphy_mp HYPHYMP HYPHYMPI
-    PROPERTY COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
-)
-
-set_property(
-    TARGET HYPHYGTEST
-    PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
-)
-
-set_property(
-    TARGET HYPHYDEBUG
-    PROPERTY COMPILE_FLAGS "-g -O0"
-)
