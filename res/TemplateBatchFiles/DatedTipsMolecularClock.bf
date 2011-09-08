@@ -8,7 +8,7 @@ LoadFunctionLibrary ("TreeTools");
 
 /*-----------------------------------------------------------*/
 
-function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateAVL, rateAVL)
+function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateAVL, rateAVL, initialGuesses)
 {
 	DT_String = "";
 	DT_String * 8192;
@@ -115,11 +115,19 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 		{
 			nodeNameS	= nodeInfo["Name"];
 			pName		= timeStops[(treePreOrderAVL[(nodeInfo["Parent"])])["Name"]];
-			rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
-			DT_String * (treeNameID+"_"+nodeNameS+"_BL = " + rateClass + ";");
+    
+    
+            rateClass = initialGuesses[nodeNameS] - pName;
+
+            if (rateClass < 0 || initialGuesses[nodeNameS] >= timeStops[nodeNameS])
+            {
+                rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
+            }
+			DT_String * (treeNameID+"_"+nodeNameS+"_BL = " + rateClass + ";\n");
 			timeStops[nodeNameS] = pName + rateClass;			
 		}
 	}
+
 
 	rateClass = Rows (descendantsList); 
 	for (nodeIndex = 0; nodeIndex < Columns (rateClass); nodeIndex = nodeIndex + 1)
@@ -395,9 +403,7 @@ for (k = 0; k < Abs (_initialGuesses); k += 1)
 
 
 
-ExecuteCommands (generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0));
-
-return 0;
+ExecuteCommands (generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0,_initialGuesses));
 
 if (byPosition)
 {
@@ -409,15 +415,12 @@ else
 }
 
 
-
-
-
 sud  	= USE_DISTANCES;
 sulr 	= USE_LAST_RESULTS;
 slfo	= LIKELIHOOD_FUNCTION_OUTPUT;
 
 USE_DISTANCES 	 				= 0;
-/*USE_LAST_RESULTS 				= 1;*/
+USE_LAST_RESULTS 				= 1;
 MAXIMUM_ITERATIONS_PER_VARIABLE = 100000;
 LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
