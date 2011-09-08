@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8.1)
 project(HyPhy)
 
 
+set(CMAKE_CONFIGURATION_TYPES Release)
+
+
 #-------------------------------------------------------------------------------
 # make it fast, scotty
 #-------------------------------------------------------------------------------
@@ -191,9 +194,11 @@ add_executable(
 target_link_libraries(HYPHYDEBUG curl ssl crypto)
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
-set_property(
-    TARGET HYPHYDEBUG
-    PROPERTY COMPILE_FLAGS "-g -O0"
+set_target_properties(
+    HYPHYDEBUG
+    PROPERTIES
+    COMPILE_FLAGS "-g -O0"
+    LINK_FLAGS "-g -O0"
 )
 
 
@@ -213,9 +218,11 @@ set_property(
     TARGET HYPHYGTEST
     APPEND PROPERTY COMPILE_DEFINITIONS __UNITTEST__
 )
-set_property(
-    TARGET HYPHYGTEST
-    PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+set_target_properties(
+    HYPHYGTEST
+    PROPERTIES
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
 )
 
 
@@ -237,9 +244,11 @@ set_property(
     TARGET HYPHYMP HYPHYMPI HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
-set_property(
-    TARGET hyphy_mp HYPHYMP HYPHYMPI
-    PROPERTY COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
+set_target_properties(
+    hyphy_mp HYPHYMP HYPHYMPI
+    PROPERTIES
+    COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
+    LINK_FLAGS ${DEFAULT_COMPILE_FLAGS}
 )
 
 
@@ -248,10 +257,10 @@ set_property(
 #-------------------------------------------------------------------------------
 if(APPLE)
     #---------------------------------------------------------------------------
-    # MacOSX gui architecture and SDK
+    # set this or blow up
     #---------------------------------------------------------------------------
-    set(CMAKE_OSX_ARCHITECTURES i386)
     set(CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.6.sdk/")
+
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -302,9 +311,11 @@ if(APPLE)
         TARGET HyPhy
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __BUNDLE__
     )
-    set_property(
-        TARGET HyPhy
-        PROPERTY COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-sign-compare -Wno-deprecated -Wno-deprecated-declarations"
+    set_target_properties(
+        HyPhy
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
     )
     set_property(
         SOURCE
@@ -332,5 +343,10 @@ if(APPLE)
     set_target_properties(
         HyPhy
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
+    )
+    set_target_properties(
+        HyPhy MAC
+        PROPERTIES
+        OSX_ARCHITECTURES i386
     )
 endif(APPLE)
