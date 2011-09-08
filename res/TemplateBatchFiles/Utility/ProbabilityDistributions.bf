@@ -67,9 +67,9 @@ function linearFit (xy)
     for (count = 0; count<data_rows; count += 1)
     {
         xt = xy[count][0]-ax;
-        yt = xy[count][0]-ay;
+        yt = xy[count][1]-ay;
         sxx += (xt)^2;
-        syy += syy+(yt)^2;
+        syy += (yt)^2;
         sxy += xt*yt;
         t    = xy[count][0]-sxoss;
         st2  = st2+t*t;

@@ -55,7 +55,7 @@ if (NON_EMPTY_SELECTION)
 				SELECTED_CHART_DATA = SELECTED_CHART_ROWS;
 				
                 LoadFunctionLibrary ("ProbabilityDistributions");
-                lfit = linearFit (SELECTED_CHART_DATA);
+                lfit = linearFit (Transpose(SELECTED_CHART_DATA));
                         
                  
 							
