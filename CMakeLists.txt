@@ -126,12 +126,12 @@ if(APPLE)
     add_custom_command(
         TARGET HyPhy
         PRE_BUILD
-        COMMAND -rm -R ${HYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_APPDIR}/../Resources/HBL
     )
     add_custom_command(
         TARGET HyPhy
         POST_BUILD
-        COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
