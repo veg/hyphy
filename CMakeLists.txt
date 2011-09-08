@@ -121,15 +121,17 @@ if(APPLE)
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
+    get_target_property(HYPHY_APPEXE HyPhy LOCATION)
+    get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
     add_custom_command(
         TARGET HyPhy
         PRE_BUILD
-        COMMAND rm -r ${CMAKE_CURRENT_BINARY_DIR}/HyPhy.app/Contents/Resources/HBL
+        COMMAND -rm -R ${HYPHY_APPDIR}/../Resources/HBL
     )
     add_custom_command(
         TARGET HyPhy
         POST_BUILD
-        COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/res ${CMAKE_CURRENT_BINARY_DIR}/HyPhy.app/Contents/Resources/HBL
+        COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
