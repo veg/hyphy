@@ -1573,6 +1573,7 @@ int main (void)
         ProblemReport (errMsg);
         exit(1);
     }
+    libDirectory = baseDirectory;
 
 
     SetMenuBar(menuBar);
