@@ -27,9 +27,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -fast -O3 -flto")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -flto")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -fast -O3")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     endif(${GCC45})
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
@@ -37,7 +37,8 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 #-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------
-set(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
+set(INSTALL_PREFIX /opt/hyphy-3.00a CACHE PATH "Installation prefix")
+set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 
 
 #-------------------------------------------------------------------------------
@@ -85,6 +86,11 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 # setup some source properties so that we don't spam stdout
 #-------------------------------------------------------------------------------
 set_property(
+    SOURCE ${SRC_CORE}
+    PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null"
+)
+
+set_property(
     SOURCE ${SRC_SQLITE3}
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 )
@@ -130,7 +136,7 @@ add_library(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
 )
-target_link_libraries(hyphy_mp curl ssl crypto)
+target_link_libraries(hyphy_mp crypto curl pthread ssl)
 install(
     TARGETS hyphy_mp
     LIBRARY DESTINATION lib
@@ -152,7 +158,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYMP curl ssl crypto)
+target_link_libraries(HYPHYMP crypto curl pthread ssl)
 install(
     TARGETS HYPHYMP
     RUNTIME DESTINATION bin
@@ -164,23 +170,30 @@ add_custom_target(MP2 DEPENDS HYPHYMP)
 #-------------------------------------------------------------------------------
 # hyphy mpi target
 #-------------------------------------------------------------------------------
-add_executable(
-    HYPHYMPI
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_UNIXMAIN}
-)
-target_link_libraries(HYPHYMPI curl ssl crypto)
-install(
-    TARGETS HYPHYMPI
-    RUNTIME DESTINATION bin
-    OPTIONAL
-)
-add_custom_target(MPI DEPENDS HYPHYMPI)
+find_package(MPI)
+if(${MPI_FOUND})
+    add_executable(
+        HYPHYMPI
+        EXCLUDE_FROM_ALL
+        ${SRC_COMMON} ${SRC_UNIXMAIN}
+    )
+    include_directories(${MPI_INCLUDE_PATH})
+    target_link_libraries(HYPHYMPI crypto curl pthread ssl ${MPI_LIBRARIES})
+    install(
+        TARGETS HYPHYMPI
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+    add_custom_target(MPI DEPENDS HYPHYMPI)
 
-set_property(
-    TARGET HYPHYMPI
-    PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__
-)
+    set_target_properties(
+        HYPHYMPI
+        PROPERTIES
+        COMPILE_DEFINITIONS __HYPHYMPI__
+        COMPILE_FLAGS "${MPI_COMPILE_FLAGS}"
+        LINK_FLAGS "${MPI_LINK_FLAGS}"
+    )
+endif(${MPI_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -191,7 +204,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYDEBUG curl ssl crypto)
+target_link_libraries(HYPHYDEBUG crypto curl pthread ssl)
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
 set_target_properties(
@@ -211,7 +224,7 @@ add_executable(
     ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
 )
 add_dependencies(HYPHYGTEST gtest)
-target_link_libraries(HYPHYGTEST curl ssl crypto gtest)
+target_link_libraries(HYPHYGTEST crypto curl gtest pthread ssl)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
 set_property(
@@ -285,7 +298,7 @@ if(APPLE)
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
     find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(HyPhy curl ssl crypto ${CARBON} ${QUICKTIME})
+    target_link_libraries(HyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
     add_custom_target(MAC DEPENDS HyPhy)
 
     #---------------------------------------------------------------------------
