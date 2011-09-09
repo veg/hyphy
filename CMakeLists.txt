@@ -37,7 +37,7 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 #-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------
-set(INSTALL_PREFIX /opt/hyphy-3.00a CACHE PATH "Installation prefix")
+set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 
 
