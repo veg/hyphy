@@ -15,10 +15,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     )
 
     set(GCC45 false)
+    set(GCC46 false)
 
     if(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
         set(GCC45 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.5 OR ${GCC_VERSION} VERSION_EQUAL 4.5)
+
+    if(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
+        set(GCC46 true)
+    endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
@@ -31,9 +36,25 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     else(${GCC45})
         set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     endif(${GCC45})
+
+    if(${GCC46})
+        set(DEFAULT_WARNING_FLAGS "-Wno-error=int-to-pointer-cast -Wno-error=conversion-null")
+    endif(${GCC46})
+
+    set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
-set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
+    set(DEFAULT_COMPILE_FLAGS "")
+endif(NOT DEFINED DEFAULT_COMPILE_FLAGS)
+
+if(NOT DEFINED DEFAULT_LINK_FLAGS)
+    set(DEFAULT_LINK_FLAGS "")
+endif(NOT DEFINED DEFAULT_LINK_FLAGS)
+
+if(NOT DEFINED DEFAULT_WARNING_FLAGS)
+    set(DEFAULT_WARNING_FLAGS "")
+endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 
 
 #-------------------------------------------------------------------------------
@@ -89,7 +110,7 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 #-------------------------------------------------------------------------------
 set_property(
     SOURCE ${SRC_CORE}
-    PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null"
+    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
 )
 
 set_property(
