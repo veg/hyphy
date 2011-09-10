@@ -251,6 +251,7 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
 
     // attach the variables to the lists inside the node
     ScanAndAttachVariables();
+    
     // check for category variables
     if (iVariables) {
         for (f = iVariables->lLength-2; f>=0 && iVariables->lData[f+1] >= 0; f-=2) {
@@ -4991,10 +4992,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
                 (*res)<<"] >> setpagedevice\n";
             }
 
-            if (prefixPS) {
-                (*res) << prefixPS->theString->Replace (treeOutputFSPlaceH, _String(fontSize), true);
-            }
-
+ 
             long        xtraChars = 0;
 
             if (toptions) {
@@ -5215,6 +5213,10 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
 
             (*res) << _String(lw);
             (*res) << " setlinewidth\n1 setlinecap\n";
+
+             if (prefixPS) {
+                (*res) << prefixPS->theString->Replace (treeOutputFSPlaceH, _String(fontSize), true);
+            }
 
             if (treeLayout == 1) {
                 //newRoot->in_object.h = -plotBounds[1];
@@ -6286,6 +6288,17 @@ void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2)
     _CalcNode* curNode = DepthWiseTraversal (true);
     while (curNode) {
         curNode->ScanForVariables(l,l2);
+        curNode = DepthWiseTraversal();
+    }
+}
+
+//__________________________________________________________________________________
+
+void _TheTree::ScanAndAttachVariables (void)
+{
+    _CalcNode* curNode = DepthWiseTraversal (true);
+    while (curNode) {
+        curNode->ScanAndAttachVariables();
         curNode = DepthWiseTraversal();
     }
 }

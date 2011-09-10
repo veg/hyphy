@@ -2505,12 +2505,13 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
 
         _String* theFla     = (_String*)parameters(0);
 
+        bool    doNotCompileThisFormula = false;
 
         long    varRef,
-                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2);
+                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,true,&doNotCompileThisFormula);
 
         if (parseCode != HY_FORMULA_FAILED ) {
-            if (theFla->sData[theFla->sLength-1]!='}') { // not a matrix constant
+            if (doNotCompileThisFormula == false) { // not a matrix constant
                 simpleParameters    <<parseCode;
                 simpleParameters    <<long (f.makeDynamic());
                 simpleParameters    <<long (f2.makeDynamic());

@@ -558,6 +558,7 @@ public:
         return flatNodes.lLength    ;
     }
 
+    void        ScanAndAttachVariables          (void);
     void        ScanForVariables                (_AVLList& l, _AVLList& l2);
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
     void        ScanForGVariables               (_AVLList&, _AVLList&);

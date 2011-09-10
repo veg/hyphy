@@ -42,7 +42,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * ("\n\n`treeNameID`_`nodeNameS`_T = 1;\n`treeNameID`_`nodeNameS`_T:>(-10000);\n`treeNameID`_`nodeNameS`_BL = 0.0001;\n`treeNameID`_`nodeNameS`_BL :> 0;\n");
+			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -55,7 +55,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 					minV = minV*2;
 				}
                 
-				DT_String * ("`treeNameID`_`nodeNameS`_T = " + minV + ";");
+				DT_String * ("`treeNameID`.`nodeNameS`.T = " + minV + ";");
 				timeStops[nodeNameS] = minV;
 			}
 		}
@@ -91,17 +91,16 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 						
 			if (Abs(nodeInfo["Children"]))
 			{
-				DT_String * ("\n" + treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
-							 treeNameID+"_"+nodeNameS+"_BL);\n"+
-							 treeNameID+"_"+nodeNameS+"_T:="+treeNameID+"_"+nodeParent["Name"]+"_T+"+treeNameID+"_"+nodeNameS+"_BL;\n");
+				DT_String * ("\n`treeNameID`.`nodeNameS`.`parameterToConstrain`:=`treeNameID`_scaler_"+rateClass+"*("+
+							 "`treeNameID`.`nodeNameS`.BL);\n`treeNameID`.`nodeNameS`.T:=`treeNameID`."+nodeParent["Name"]+".T+`treeNameID`."+nodeNameS+".BL;\n");
 							 
-				(descendantsList[pName])[insIndex] = treeNameID+"_"+nodeNameS+"_T";
+				(descendantsList[pName])[insIndex] = treeNameID+"."+nodeNameS+".T";
 				timeStops[pName] = Min (timeStops[pName],timeStops[nodeNameS]);
 			}
 			else
 			{
 				DT_String * ("\n" + treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
-							 tipDateAVL[nodeNameS]+"-"+treeNameID+"_"+nodeParent["Name"]+"_T);\n");			
+							 tipDateAVL[nodeNameS]+"-"+treeNameID+"."+nodeParent["Name"]+".T);\n");			
 				(descendantsList[pName])[insIndex] = tipDateAVL[nodeNameS];
 				timeStops[pName] = Min (timeStops[pName],tipDateAVL[nodeNameS]);
 			}
@@ -123,7 +122,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
             {
                 rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
             }
-			DT_String * (treeNameID+"_"+nodeNameS+"_BL = " + rateClass + ";\n");
+			DT_String * (treeNameID+"."+nodeNameS+".BL = " + rateClass + ";\n");
 			timeStops[nodeNameS] = pName + rateClass;			
 		}
 	}
@@ -149,7 +148,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 		}
 		if (nodeInfo == Abs (nodePT))
 		{
-			DT_String * (treeNameID+"_"+pName+"_T:<"+doneAssignment+";\n");
+			DT_String * (treeNameID+"."+pName+".T:<"+doneAssignment+";\n");
 		}
 	}
 	
@@ -179,7 +178,7 @@ function generateBLVector (treeNameID)
 			pName    = nodeParent["Name"];
 			if (Abs(nodeInfo["Children"]))
 			{
-				ExecuteCommands ("_thisBL = " + treeNameID+"_"+nodeNameS+"_BL;tipDateAVL[\""+nodeNameS+"\"]="+ treeNameID+"_"+nodeNameS+"_T;");
+				ExecuteCommands ("_thisBL = `treeNameID`.`nodeNameS`.BL;tipDateAVL[\"`nodeNameS`\"]=`treeNameID`.`nodeNameS`.T;");
 			}
 			else
 			{
@@ -493,7 +492,7 @@ datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
 UseModel (USE_NO_MODEL);
 Tree	dT = datedTree;
 
-COVARIANCE_PARAMETER = "clockTree_Node0_T";
+COVARIANCE_PARAMETER = "clockTree.Node0.T";
 COVARIANCE_PRECISION = 0.95;
 CovarianceMatrix (cmxT0,lfConstrained);
 cmxT0 = cmxT0 * (1/maxV);
