@@ -38,7 +38,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${GCC45})
 
     if(${GCC46})
-        set(DEFAULT_WARNING_FLAGS "-Wno-error=int-to-pointer-cast -Wno-error=conversion-null")
+        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
     endif(${GCC46})
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
