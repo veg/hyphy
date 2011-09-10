@@ -58,6 +58,16 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 
 
 #-------------------------------------------------------------------------------
+# OpenMP support 
+#-------------------------------------------------------------------------------
+find_package(OpenMP)
+
+if(NOT DEFINED OpenMP_CXX_FLAGS)
+    set(OpenMP_CXX_FLAGS "")
+endif(NOT DEFINED OpenMP_CXX_FLAGS)
+
+
+#-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
@@ -233,8 +243,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "-g -O0"
-    LINK_FLAGS "-g -O0"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
 )
 
 
@@ -257,8 +267,8 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
 )
 
 
@@ -283,8 +293,8 @@ set_property(
 set_target_properties(
     hyphy_mp HYPHYMP
     PROPERTIES
-    COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
-    LINK_FLAGS ${DEFAULT_LINK_FLAGS}
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+    LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
 )
 
 
