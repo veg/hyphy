@@ -33,6 +33,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${GCC45})
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
+set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+
 
 #-------------------------------------------------------------------------------
 # default installation prefix
@@ -189,9 +191,9 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_DEFINITIONS __HYPHYMPI__
-        COMPILE_FLAGS "${MPI_COMPILE_FLAGS}"
-        LINK_FLAGS "${MPI_LINK_FLAGS}"
+        COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
     )
 endif(${MPI_FOUND})
 
@@ -244,7 +246,7 @@ set_target_properties(
 #-------------------------------------------------------------------------------
 if(UNIX)
     set_property(
-        TARGET HYPHYMP HYPHYMPI hyphy_mp HYPHYGTEST HYPHYDEBUG
+        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
@@ -254,14 +256,14 @@ set_property(
     APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
 )
 set_property(
-    TARGET HYPHYMP HYPHYMPI HYPHYGTEST HYPHYDEBUG
+    TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 set_target_properties(
-    hyphy_mp HYPHYMP HYPHYMPI
+    hyphy_mp HYPHYMP
     PROPERTIES
     COMPILE_FLAGS ${DEFAULT_COMPILE_FLAGS}
-    LINK_FLAGS ${DEFAULT_COMPILE_FLAGS}
+    LINK_FLAGS ${DEFAULT_LINK_FLAGS}
 )
 
 
