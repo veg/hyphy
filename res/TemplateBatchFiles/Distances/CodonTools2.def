@@ -1,18 +1,1 @@
-/* positional character frequencies. init to all .25*/
-
-_EFV_MATRIX0_ = {{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}
-				{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}};
-
-_EFV_MATRIX1_ = {{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}
-				{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}};
-
-_EFV_MATRIX2_ = {{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}
-				{1,_distance_tv_ts,1,_distance_tv_ts}
-				{_distance_tv_ts,1,_distance_tv_ts,1}};
-
-#include "CodonToolsMain.def";
+/* positional character frequencies. init to all .25*/_EFV_MATRIX0_ = {{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}				{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}};_EFV_MATRIX1_ = {{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}				{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}};_EFV_MATRIX2_ = {{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}				{1,_distance_tv_ts,1,_distance_tv_ts}				{_distance_tv_ts,1,_distance_tv_ts,1}};#include "CodonToolsMain.def";

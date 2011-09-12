@@ -1,26 +1,1 @@
-pCount = 0;
-if (ds.species>2)
-{
-	dummyTS = "";
-	dummyTS * 256;
-	dummyTS * "(";
-	for (k=0; k<ds.species; k=k+1)
-	{
-		GetString (sName, ds, k);
-		if (k)
-		{
-			dummyTS * ",";
-		}
-		dummyTS * sName;
-	}
-	dummyTS * ")";
-	dummyTS * 0;
-	
-	Tree dummyT 					= dummyTS;
-	LikelihoodFunction lf		    = (filteredData, dummyT);
-	GetString (params, lf, -1);
-	globalParamList	= params["Global Independent"];
-	pCount 			= Columns (globalParamList);
-	Export    (lf_prefix, lf);
-	lf_prefix = lf_prefix ^ {{"Tree dummyT.+",""}};
-}
+pCount = 0;if (ds.species>2){	dummyTS = "";	dummyTS * 256;	dummyTS * "(";	for (k=0; k<ds.species; k=k+1)	{		GetString (sName, ds, k);		if (k)		{			dummyTS * ",";		}		dummyTS * sName;	}	dummyTS * ")";	dummyTS * 0;		Tree dummyT 					= dummyTS;	LikelihoodFunction lf		    = (filteredData, dummyT);	GetString (params, lf, -1);	globalParamList	= params["Global Independent"];	pCount 			= Columns (globalParamList);	Export    (lf_prefix, lf);	lf_prefix = lf_prefix ^ {{"Tree dummyT.+",""}};}

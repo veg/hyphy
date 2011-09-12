@@ -1,33 +1,1 @@
-function InitializeDistances (dummy)
-{
-	summingVector = {4,1}["1"];
-	return 0;
-}
-
-function ComputeDistanceFormula (s1,s2)
-{
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
-	
-	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector))[0];
-	if (totalSitesCompared)
-	{
-		_dTransitionCounts 	 =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */
-								 +siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */
-							
-		_dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3])+_dTransitionCounts;
-		
-		_dTransitionCounts	 = _dTransitionCounts/totalSitesCompared;
-		_dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;
-		_d1					 = 1-2*_dTransitionCounts-_dTransversionCounts;
-		_d2					 = 1-2*_dTransversionCounts;
-		if (_d1 > 0 && _d2 > 0)
-		{
-			return -(0.5*Log(_d1)+.25*Log(_d2));
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return 1000;
-}
+function InitializeDistances (dummy){	summingVector = {4,1}["1"];	return 0;}function ComputeDistanceFormula (s1,s2){	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);		totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector))[0];	if (totalSitesCompared)	{		_dTransitionCounts 	 =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */								 +siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */									_dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3])+_dTransitionCounts;				_dTransitionCounts	 = _dTransitionCounts/totalSitesCompared;		_dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;		_d1					 = 1-2*_dTransitionCounts-_dTransversionCounts;		_d2					 = 1-2*_dTransversionCounts;		if (_d1 > 0 && _d2 > 0)		{			return -(0.5*Log(_d1)+.25*Log(_d2));		}	}	else	{		return 0;	}	return 1000;}

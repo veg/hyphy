@@ -1,26 +1,1 @@
-function InitializeDistances (dummy)
-{
-	summingVector = {4,1}["1"];
-	return 0;
-}
-
-function ComputeDistanceFormula (s1,s2)
-{
-	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, DIST_OPTION);
-	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector))[0];
-	
-	if (totalSitesCompared)
-	{
-		totalDifference    = totalSitesCompared-(siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3]);
-		totalDifference    = 1-4*totalDifference/(3*totalSitesCompared);
-		if (totalDifference > 0)
-		{
-			return -.75*Log(totalDifference);
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return 1000;
-}
+function InitializeDistances (dummy){	summingVector = {4,1}["1"];	return 0;}function ComputeDistanceFormula (s1,s2){	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, DIST_OPTION);	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector))[0];		if (totalSitesCompared)	{		totalDifference    = totalSitesCompared-(siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3]);		totalDifference    = 1-4*totalDifference/(3*totalSitesCompared);		if (totalDifference > 0)		{			return -.75*Log(totalDifference);		}	}	else	{		return 0;	}	return 1000;}

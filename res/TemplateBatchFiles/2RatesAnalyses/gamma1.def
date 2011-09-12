@@ -1,35 +1,1 @@
-if (randomizeInitValues)
-{
-	global alpha = Random (0.1,10);	
-}
-else
-{
-	global alpha = 1;	
-}
-
-alpha:>0.01;
-alpha:<100;
-
-categDef1 = " ";
-
-if (USE_CONST_ON_PART)
-{
-	category c = (resp, EQUAL, MEAN, 
-					GammaDist(_x_,alpha,alpha), 
-					CGammaDist(_x_,alpha,alpha), 
-					0 , 
-					1e25,
-					CGammaDist(_x_,alpha+1,alpha),
-					CONSTANT_ON_PARTITION);
-}
-else
-{
-	category c = (resp, EQUAL, MEAN, 
-					GammaDist(_x_,alpha,alpha), 
-					CGammaDist(_x_,alpha,alpha), 
-					0 , 
-					1e25,
-					CGammaDist(_x_,alpha+1,alpha)
-				 );
-
-}
+if (randomizeInitValues){	global alpha = Random (0.1,10);	}else{	global alpha = 1;	}alpha:>0.01;alpha:<100;categDef1 = " ";if (USE_CONST_ON_PART){	category c = (resp, EQUAL, MEAN, 					GammaDist(_x_,alpha,alpha), 					CGammaDist(_x_,alpha,alpha), 					0 , 					1e25,					CGammaDist(_x_,alpha+1,alpha),					CONSTANT_ON_PARTITION);}else{	category c = (resp, EQUAL, MEAN, 					GammaDist(_x_,alpha,alpha), 					CGammaDist(_x_,alpha,alpha), 					0 , 					1e25,					CGammaDist(_x_,alpha+1,alpha)				 );}

@@ -1,149 +1,1 @@
-CodonMatrixB = {ModelMatrixDimension,ModelMatrixDimension};
-
-hshift = 0;
-
-for (h=0; h<64; h=h+1)
-{
-	if (_Genetic_Code[h]==10) 
-	{
-		hshift = hshift+1;
-		continue; 
-	}
-	vshift = hshift;
-	for (v = h+1; v<64; v=v+1)
-	{
-		diff = v-h;
-		if (_Genetic_Code[v]==10) 
-		{
-			vshift = vshift+1;
-			continue; 
-		}
-		nucPosInCodon = 2;
-		if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
-		{
-			if (h$4==v$4)
-			{
-				transition = v%4;
-				transition2= h%4;
-			}
-			else
-			{
-				if(diff%16==0)
-				{
-					transition = v$16;
-					transition2= h$16;
-					nucPosInCodon = 0;
-				}
-				else
-				{
-					transition = v%16$4;
-					transition2= h%16$4;
-					nucPosInCodon = 1;
-				}
-			}
-			if (transition<transition2)
-			{
-				trSM = transition;
-				trLG = transition2;
-			}
-			else
-			{
-				trSM = transition2;
-				trLG = transition;
-			}
-			
-			if (trSM==0)
-			{
-				if (trLG==1)
-				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-					{
-						CodonMatrixB[h-hshift][v-vshift] := AC__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
-						CodonMatrixB[v-vshift][h-hshift] := AC__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-					}
-					else
-					{
-						CodonMatrixB[h-hshift][v-vshift] := AC__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-						CodonMatrixB[v-vshift][h-hshift] := AC__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-					}
-				}
-				else
-				{
-					if (trLG==2)
-					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-							CodonMatrixB[h-hshift][v-vshift] := synRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}
-						else
-						{
-							CodonMatrixB[h-hshift][v-vshift] := nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
-					}
-					else
-					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-							CodonMatrixB[h-hshift][v-vshift] := AT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := AT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}
-						else
-						{
-							CodonMatrixB[h-hshift][v-vshift] := AT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := AT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
-					}
-				}
-			}
-			else
-			{
-				if (trSM==1)
-				{
-					if (trLG==2)
-					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-							CodonMatrixB[h-hshift][v-vshift] := CG__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := CG__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}
-						else
-						{
-							CodonMatrixB[h-hshift][v-vshift] := CG__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := CG__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}
-					}
-					else
-					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-							CodonMatrixB[h-hshift][v-vshift] := CT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := CT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}
-						else
-						{
-							CodonMatrixB[h-hshift][v-vshift] := CT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-							CodonMatrixB[v-vshift][h-hshift] := CT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
-					}
-				}
-				else
-				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-					{
-						CodonMatrixB[h-hshift][v-vshift] := GT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
-						CodonMatrixB[v-vshift][h-hshift] := GT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
-					}
-					else
-					{
-						CodonMatrixB[h-hshift][v-vshift] := GT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
-						CodonMatrixB[v-vshift][h-hshift] := GT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-					}							
-				}
-			}
-		}
-   }
-}		
-
-Model MGModelB	= (CodonMatrixB,codonFrequencies,0);
+CodonMatrixB = {ModelMatrixDimension,ModelMatrixDimension};hshift = 0;for (h=0; h<64; h=h+1){	if (_Genetic_Code[h]==10) 	{		hshift = hshift+1;		continue; 	}	vshift = hshift;	for (v = h+1; v<64; v=v+1)	{		diff = v-h;		if (_Genetic_Code[v]==10) 		{			vshift = vshift+1;			continue; 		}		nucPosInCodon = 2;		if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))		{			if (h$4==v$4)			{				transition = v%4;				transition2= h%4;			}			else			{				if(diff%16==0)				{					transition = v$16;					transition2= h$16;					nucPosInCodon = 0;				}				else				{					transition = v%16$4;					transition2= h%16$4;					nucPosInCodon = 1;				}			}			if (transition<transition2)			{				trSM = transition;				trLG = transition2;			}			else			{				trSM = transition2;				trLG = transition;			}						if (trSM==0)			{				if (trLG==1)				{					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 					{						CodonMatrixB[h-hshift][v-vshift] := AC__*synRate*positionFrequencies__[transition__][nucPosInCodon__];						CodonMatrixB[v-vshift][h-hshift] := AC__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];					}					else					{						CodonMatrixB[h-hshift][v-vshift] := AC__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];						CodonMatrixB[v-vshift][h-hshift] := AC__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];					}				}				else				{					if (trLG==2)					{						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{							CodonMatrixB[h-hshift][v-vshift] := synRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := synRate*positionFrequencies__[transition2__][nucPosInCodon__];						}						else						{							CodonMatrixB[h-hshift][v-vshift] := nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];						}												}					else					{						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{							CodonMatrixB[h-hshift][v-vshift] := AT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := AT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];						}						else						{							CodonMatrixB[h-hshift][v-vshift] := AT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := AT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];						}												}				}			}			else			{				if (trSM==1)				{					if (trLG==2)					{						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{							CodonMatrixB[h-hshift][v-vshift] := CG__*synRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := CG__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];						}						else						{							CodonMatrixB[h-hshift][v-vshift] := CG__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := CG__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];						}					}					else					{						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{							CodonMatrixB[h-hshift][v-vshift] := CT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := CT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];						}						else						{							CodonMatrixB[h-hshift][v-vshift] := CT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];							CodonMatrixB[v-vshift][h-hshift] := CT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];						}												}				}				else				{					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 					{						CodonMatrixB[h-hshift][v-vshift] := GT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];						CodonMatrixB[v-vshift][h-hshift] := GT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];					}					else					{						CodonMatrixB[h-hshift][v-vshift] := GT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];						CodonMatrixB[v-vshift][h-hshift] := GT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];					}											}			}		}   }}		Model MGModelB	= (CodonMatrixB,codonFrequencies,0);

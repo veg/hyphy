@@ -1,238 +1,1 @@
-/* defines a sparse transition probabilities matrix 
- now we'll go through the matrix and assign the elements based on syn/non-syn status*/
-
-function PopulateModelMatrix (ModelMatrixName&, EFV)
-{
-	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
-
-	hshift = 0;
-
-	if (!ModelMatrixDimension)
-	{
-		ModelMatrixDimension = 64;
-		for (h = 0 ;h<64; h=h+1)
-		{
-			if (_Genetic_Code[h]==10)
-			{
-				ModelMatrixDimension = ModelMatrixDimension-1;
-			}
-		}
-	}
-	
-	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
-
-	hshift = 0;
-
-	if (modelType == 0)
-	{
-		for (h=0; h<64; h=h+1)
-		{
-			if (_Genetic_Code[h]==10) 
-			{
-				hshift = hshift+1;
-				continue; 
-			}
-			vshift = hshift;
-			for (v = h+1; v<64; v=v+1)
-			{
-				diff = v-h;
-				if (_Genetic_Code[v]==10) 
-				{
-					vshift = vshift+1;
-					continue; 
-				}
-
-				if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
-				{
-					if (h$4==v$4)
-					{
-						transition = v%4;
-						transition2= h%4;
-					}
-					else
-					{
-						if(diff%16==0)
-						{
-							transition = v$16;
-							transition2= h$16;
-						}
-						else
-						{
-							transition = v%16$4;
-							transition2= h%16$4;
-						}
-					}
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-					{
-			  			if (Abs(transition-transition2)%2)
-			  			{
-							ModelMatrixName[h-hshift][v-vshift] := synRate*kappa;
-							ModelMatrixName[v-vshift][h-hshift] := synRate*kappa;
-			  			}
-			  			else
-			  			{
-							ModelMatrixName[h-hshift][v-vshift] := synRate;
-							ModelMatrixName[v-vshift][h-hshift] := synRate;
-			  			}
-					}
-					else
-					{
-			  			if (Abs(transition-transition2)%2)
-			  			{
-							ModelMatrixName[h-hshift][v-vshift] := nonSynRate*kappa;
-							ModelMatrixName[v-vshift][h-hshift] := nonSynRate*kappa;
-			  			}
-			  			else
-			  			{
-							ModelMatrixName[h-hshift][v-vshift] := nonSynRate;
-							ModelMatrixName[v-vshift][h-hshift] := nonSynRate;
-			  			}
-					}
-				}
-		   }
-	    }		
-	}
-	else
-	{
-		if (modelType == 1)
-		{
-			for (h=0; h<64; h=h+1)
-			{
-				if (_Genetic_Code[h]==10) 
-				{
-					hshift = hshift+1;
-					continue; 
-				}
-				vshift = hshift;
-				for (v = h+1; v<64; v=v+1)
-				{
-					diff = v-h;
-					if (_Genetic_Code[v]==10) 
-					{
-						vshift = vshift+1;
-						continue; 
-					}
-					nucPosInCodon = 2;
-					if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
-					{
-						if (h$4==v$4)
-						{
-							transition = v%4;
-							transition2= h%4;
-						}
-						else
-						{
-							if(diff%16==0)
-							{
-								transition = v$16;
-								transition2= h$16;
-							}
-							else
-							{
-								transition = v%16$4;
-								transition2= h%16$4;
-							}
-						}
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-				  			if (Abs(transition-transition2)%2)
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := synRate*kappa;
-								ModelMatrixName[v-vshift][h-hshift] := synRate*kappa;
-				  			}
-				  			else
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := synRate;
-								ModelMatrixName[v-vshift][h-hshift] := synRate;
-				  			}
-						}
-						else
-						{
-				  			if (Abs(transition-transition2)%2)
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := R*synRate*kappa;
-								ModelMatrixName[v-vshift][h-hshift] := R*synRate*kappa;
-				  			}
-				  			else
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := R*synRate;
-								ModelMatrixName[v-vshift][h-hshift] := R*synRate;
-				  			}
-						}
-					}
-			   }
-			 }
-		}
-		else
-		{
-			for (h=0; h<64; h=h+1)
-			{
-				if (_Genetic_Code[h]==10) 
-				{
-					hshift = hshift+1;
-					continue; 
-				}
-				vshift = hshift;
-				for (v = h+1; v<64; v=v+1)
-				{
-					diff = v-h;
-					if (_Genetic_Code[v]==10) 
-					{
-						vshift = vshift+1;
-						continue; 
-					}
-					nucPosInCodon = 2;
-					if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
-					{
-						if (h$4==v$4)
-						{
-							transition = v%4;
-							transition2= h%4;
-						}
-						else
-						{
-							if(diff%16==0)
-							{
-								transition = v$16;
-								transition2= h$16;
-							}
-							else
-							{
-								transition = v%16$4;
-								transition2= h%16$4;
-							}
-						}
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
-						{
-				  			if (Abs(transition-transition2)%2)
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := c*synRate*kappa;
-								ModelMatrixName[v-vshift][h-hshift] := c*synRate*kappa;
-				  			}
-				  			else
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := c*synRate;
-								ModelMatrixName[v-vshift][h-hshift] := c*synRate;
-				  			}
-						}
-						else
-						{
-				  			if (Abs(transition-transition2)%2)
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate*kappa;
-								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate*kappa;
-				  			}
-				  			else
-				  			{
-								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate;
-								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate;
-				  			}
-						}
-					}
-			   }
-			 }
-		}
-	}
-	
-	return 1;
-}
+/* defines a sparse transition probabilities matrix  now we'll go through the matrix and assign the elements based on syn/non-syn status*/function PopulateModelMatrix (ModelMatrixName&, EFV){	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 	hshift = 0;	if (!ModelMatrixDimension)	{		ModelMatrixDimension = 64;		for (h = 0 ;h<64; h=h+1)		{			if (_Genetic_Code[h]==10)			{				ModelMatrixDimension = ModelMatrixDimension-1;			}		}	}		ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 	hshift = 0;	if (modelType == 0)	{		for (h=0; h<64; h=h+1)		{			if (_Genetic_Code[h]==10) 			{				hshift = hshift+1;				continue; 			}			vshift = hshift;			for (v = h+1; v<64; v=v+1)			{				diff = v-h;				if (_Genetic_Code[v]==10) 				{					vshift = vshift+1;					continue; 				}				if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))				{					if (h$4==v$4)					{						transition = v%4;						transition2= h%4;					}					else					{						if(diff%16==0)						{							transition = v$16;							transition2= h$16;						}						else						{							transition = v%16$4;							transition2= h%16$4;						}					}					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 					{			  			if (Abs(transition-transition2)%2)			  			{							ModelMatrixName[h-hshift][v-vshift] := synRate*kappa;							ModelMatrixName[v-vshift][h-hshift] := synRate*kappa;			  			}			  			else			  			{							ModelMatrixName[h-hshift][v-vshift] := synRate;							ModelMatrixName[v-vshift][h-hshift] := synRate;			  			}					}					else					{			  			if (Abs(transition-transition2)%2)			  			{							ModelMatrixName[h-hshift][v-vshift] := nonSynRate*kappa;							ModelMatrixName[v-vshift][h-hshift] := nonSynRate*kappa;			  			}			  			else			  			{							ModelMatrixName[h-hshift][v-vshift] := nonSynRate;							ModelMatrixName[v-vshift][h-hshift] := nonSynRate;			  			}					}				}		   }	    }			}	else	{		if (modelType == 1)		{			for (h=0; h<64; h=h+1)			{				if (_Genetic_Code[h]==10) 				{					hshift = hshift+1;					continue; 				}				vshift = hshift;				for (v = h+1; v<64; v=v+1)				{					diff = v-h;					if (_Genetic_Code[v]==10) 					{						vshift = vshift+1;						continue; 					}					nucPosInCodon = 2;					if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))					{						if (h$4==v$4)						{							transition = v%4;							transition2= h%4;						}						else						{							if(diff%16==0)							{								transition = v$16;								transition2= h$16;							}							else							{								transition = v%16$4;								transition2= h%16$4;							}						}						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{				  			if (Abs(transition-transition2)%2)				  			{								ModelMatrixName[h-hshift][v-vshift] := synRate*kappa;								ModelMatrixName[v-vshift][h-hshift] := synRate*kappa;				  			}				  			else				  			{								ModelMatrixName[h-hshift][v-vshift] := synRate;								ModelMatrixName[v-vshift][h-hshift] := synRate;				  			}						}						else						{				  			if (Abs(transition-transition2)%2)				  			{								ModelMatrixName[h-hshift][v-vshift] := R*synRate*kappa;								ModelMatrixName[v-vshift][h-hshift] := R*synRate*kappa;				  			}				  			else				  			{								ModelMatrixName[h-hshift][v-vshift] := R*synRate;								ModelMatrixName[v-vshift][h-hshift] := R*synRate;				  			}						}					}			   }			 }		}		else		{			for (h=0; h<64; h=h+1)			{				if (_Genetic_Code[h]==10) 				{					hshift = hshift+1;					continue; 				}				vshift = hshift;				for (v = h+1; v<64; v=v+1)				{					diff = v-h;					if (_Genetic_Code[v]==10) 					{						vshift = vshift+1;						continue; 					}					nucPosInCodon = 2;					if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))					{						if (h$4==v$4)						{							transition = v%4;							transition2= h%4;						}						else						{							if(diff%16==0)							{								transition = v$16;								transition2= h$16;							}							else							{								transition = v%16$4;								transition2= h%16$4;							}						}						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 						{				  			if (Abs(transition-transition2)%2)				  			{								ModelMatrixName[h-hshift][v-vshift] := c*synRate*kappa;								ModelMatrixName[v-vshift][h-hshift] := c*synRate*kappa;				  			}				  			else				  			{								ModelMatrixName[h-hshift][v-vshift] := c*synRate;								ModelMatrixName[v-vshift][h-hshift] := c*synRate;				  			}						}						else						{				  			if (Abs(transition-transition2)%2)				  			{								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate*kappa;								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate*kappa;				  			}				  			else				  			{								ModelMatrixName[h-hshift][v-vshift] := c*R*synRate;								ModelMatrixName[v-vshift][h-hshift] := c*R*synRate;				  			}						}					}			   }			 }		}	}		return 1;}

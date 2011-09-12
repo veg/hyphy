@@ -1,68 +1,1 @@
-function InitializeDistances (dummy)
-{
-	GetInformation (actualSequences,filteredData);
-	/* preprocess sequences */
-	
-	totalSeqCount = Rows(actualSequences);
-	
-	LZContent 			  = {2*totalSeqCount,1};
-	complementedSequences = {totalSeqCount,1};
-	charComplement		  = {};
-	charComplement ["A"]  = "T";
-	charComplement ["C"]  = "G";
-	charComplement ["G"]  = "C";
-	charComplement ["A"]  = "T";
-
-	for (seqCounter = 0; seqCounter < totalSeqCount; seqCounter = seqCounter+1)
-	{
-		aSeq = actualSequences[seqCounter];
-		for (siteCounter = Abs(aSeq)-1; siteCounter>0; siteCounter=siteCounter-1)
-		{
-			if (aSeq[siteCounter]!="?")
-			{
-				break;
-			}
-		}
-		actualSequences[seqCounter] = aSeq[0][siteCounter];
-		complementedSequence = "";
-		complementedSequence * (siteCounter+1);
-		for (charCounter = siteCounter; charCounter >=0 ; charCounter = charCounter - 1)
-		{
-			compChar 	   = aSeq[charCounter];
-			compCharMapped = charComplement[compChar];
-			if (compCharMapped == 0)
-			{
-				compCharMapped = compChar;
-			}
-			complementedSequence * compCharMapped;
-		}
-		complementedSequence * 0;
-		complementedSequences [seqCounter] = complementedSequence;
-		LZContent [2*seqCounter]    = Exp (actualSequences[seqCounter]);
-		LZContent [2*seqCounter+1]  = Exp (complementedSequences[seqCounter]);
-	}
-	return 0;	
-}
-
-function ComputeDistanceFormula (s1,s2)
-{
-	dS1S2 = Exp (actualSequences[s1]+actualSequences[s2]);
-	dS2S1 = Exp (actualSequences[s2]+actualSequences[s1]);
-	
-	a1I    = complementedSequences[s1];
-	a2I    = complementedSequences[s2];
-	
-	dS1iS2 = Exp (a1I+actualSequences[s2]);
-	dS2S1i = Exp (actualSequences[s2]+a1I);
-
-	dS2iS1 = Exp (a2I+actualSequences[s1]);
-	dS1S2i = Exp (actualSequences[s1]+a2I);
-
-	dS2iS1i= Exp (a2I+a1I);
-	dS1iS2i= Exp (a1I+a2I);
-	
-	return Min((dS1S2+dS2S1-LZContent[2*s1]-LZContent[2*s2])/(.5*(dS1S2+dS2S1)),
-	       Min((dS1iS2+dS2S1i-LZContent[2*s1+1]-LZContent[2*s2])/(.5*(dS1iS2+dS2S1i)),
-	       Min((dS1S2i+dS2iS1-LZContent[2*s2+1]-LZContent[2*s1])/(.5*(dS1S2i+dS2iS1)),
-	           (dS1iS2i+dS2iS1i-LZContent[2*s2+1]-LZContent[2*s1+1])/(.5*(dS1iS2i+dS2iS1i)))));
-}
+function InitializeDistances (dummy){	GetInformation (actualSequences,filteredData);	/* preprocess sequences */		totalSeqCount = Rows(actualSequences);		LZContent 			  = {2*totalSeqCount,1};	complementedSequences = {totalSeqCount,1};	charComplement		  = {};	charComplement ["A"]  = "T";	charComplement ["C"]  = "G";	charComplement ["G"]  = "C";	charComplement ["A"]  = "T";	for (seqCounter = 0; seqCounter < totalSeqCount; seqCounter = seqCounter+1)	{		aSeq = actualSequences[seqCounter];		for (siteCounter = Abs(aSeq)-1; siteCounter>0; siteCounter=siteCounter-1)		{			if (aSeq[siteCounter]!="?")			{				break;			}		}		actualSequences[seqCounter] = aSeq[0][siteCounter];		complementedSequence = "";		complementedSequence * (siteCounter+1);		for (charCounter = siteCounter; charCounter >=0 ; charCounter = charCounter - 1)		{			compChar 	   = aSeq[charCounter];			compCharMapped = charComplement[compChar];			if (compCharMapped == 0)			{				compCharMapped = compChar;			}			complementedSequence * compCharMapped;		}		complementedSequence * 0;		complementedSequences [seqCounter] = complementedSequence;		LZContent [2*seqCounter]    = Exp (actualSequences[seqCounter]);		LZContent [2*seqCounter+1]  = Exp (complementedSequences[seqCounter]);	}	return 0;	}function ComputeDistanceFormula (s1,s2){	dS1S2 = Exp (actualSequences[s1]+actualSequences[s2]);	dS2S1 = Exp (actualSequences[s2]+actualSequences[s1]);		a1I    = complementedSequences[s1];	a2I    = complementedSequences[s2];		dS1iS2 = Exp (a1I+actualSequences[s2]);	dS2S1i = Exp (actualSequences[s2]+a1I);	dS2iS1 = Exp (a2I+actualSequences[s1]);	dS1S2i = Exp (actualSequences[s1]+a2I);	dS2iS1i= Exp (a2I+a1I);	dS1iS2i= Exp (a1I+a2I);		return Min((dS1S2+dS2S1-LZContent[2*s1]-LZContent[2*s2])/(.5*(dS1S2+dS2S1)),	       Min((dS1iS2+dS2S1i-LZContent[2*s1+1]-LZContent[2*s2])/(.5*(dS1iS2+dS2S1i)),	       Min((dS1S2i+dS2iS1-LZContent[2*s2+1]-LZContent[2*s1])/(.5*(dS1S2i+dS2iS1)),	           (dS1iS2i+dS2iS1i-LZContent[2*s2+1]-LZContent[2*s1+1])/(.5*(dS1iS2i+dS2iS1i)))));}

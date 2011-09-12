@@ -1,155 +1,1 @@
-function InitializeDistances (dummy)
-{
-	if (DISTANCE_PROMPTS)
-	{		
-		_distance_tv_ts = -1;
-		while (_distance_tv_ts<=0)
-		{
-			fprintf (stdout, "\nSelect transversion/transition ratio (R=1 reduces to standard NG):");
-			fscanf  (stdin,"Number",_distance_tv_ts);
-		}
-
-		ChoiceList (distChoice, "Distance computation",1,SKIP_NONE,
-					"Joint p-distance(Default)","Observed N/E[N]+Observed S/E[S]",
-					"Syn p-distance","Observed S/E[S]",
-					"Non-syn p-distance","Observed N/E[N]",
-					"JC+joint p-distance","Observed N/E[N]+Observed S/E[S], corrected for multiple hits",
-					"JC+syn p-distance","Observed S/E[S], corrected for multiple hits",
-					"JC+non-syn p-distance","Observed N/E[N], corrected for multiple hits",
-					"dN-dS","Observed N/E[N]-Observed S/E[S]");
-					
-		if (distChoice<0)
-		{
-			distChoice = 0;
-		}	
-		
-		#include "CodonTools2.def";
-
-		matrixTrick  = {1,stateCharCount};
-		matrixTrick2 = {1,stateCharCount};
-
-		for (h=Columns(matrixTrick)-1; h>=0; h=h-1)
-		{
-			matrixTrick  [h] = h;
-			matrixTrick2 [h] = 1;
-		}
-	}
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-
-function ComputeDistanceFormula (s1,s2)
-{	
-	_SITE_ES_COUNT = {stateCharCount,stateCharCount};
-	_SITE_EN_COUNT = {stateCharCount,stateCharCount};
-	_SITE_OS_COUNT = {stateCharCount,stateCharCount};
-	_SITE_ON_COUNT = {stateCharCount,stateCharCount};
-	
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
-	
-	_SITE_OS_COUNT = matrixTrick2*(_OBSERVED_S_$siteDifferenceCount)*Transpose(matrixTrick2);
-	_SITE_ON_COUNT = matrixTrick2*(_OBSERVED_NS_$siteDifferenceCount)*Transpose(matrixTrick2);
-	_SITE_ES_COUNT = matrixTrick2*(_PAIRWISE_S_$siteDifferenceCount)*Transpose(matrixTrick2);
-	_SITE_EN_COUNT = matrixTrick2*(_PAIRWISE_NS_$siteDifferenceCount)*Transpose(matrixTrick2);
-	
-
-	if (_SITE_ES_COUNT[0])
-	{
-		if (_SITE_EN_COUNT[0])
-		{
-			if (distChoice == 0)
-			{
-				return (_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]+_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]);
-			}
-			if (distChoice == 1)
-			{
-				return _SITE_OS_COUNT[0]/_SITE_ES_COUNT[0];
-			}
-			if (distChoice == 2)
-			{
-				return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];
-			}
-			if (distChoice == 3)
-			{
-				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]+_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);
-			}
-			if (distChoice == 4)
-			{
-				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);
-			}
-			if (distChoice == 5)
-			{
-				return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);
-			}
-			if (distChoice == 6)
-			{
-				return (_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]-_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);
-			}
-		}
-		else
-		{
-			if (distChoice == 0)
-			{
-				return (_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);
-			}
-			if (distChoice == 1)
-			{
-				return _SITE_OS_COUNT[0]/_SITE_ES_COUNT[0];
-			}
-			if (distChoice == 2)
-			{
-				return 0;
-			}
-			if (distChoice == 3)
-			{
-				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);
-			}
-			if (distChoice == 4)
-			{
-				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);
-			}
-			if (distChoice == 5)
-			{
-				return 0;
-			}
-			if (distChoice == 6)
-			{
-				return -(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);
-			}
-		}
-	}
-	else
-	{
-		if (distChoice == 0)
-		{
-			return (_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]);
-		}
-		if (distChoice == 1)
-		{
-			return 0;
-		}
-		if (distChoice == 2)
-		{
-			return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];
-		}
-		if (distChoice == 3)
-		{
-			return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);
-		}
-		if (distChoice == 4)
-		{
-			return 0;
-		}
-		if (distChoice == 5)
-		{
-			return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);
-		}
-		if (distChoice == 6)
-		{
-			return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];
-		}
-	}
-	
-	return 0;
-}
+function InitializeDistances (dummy){	if (DISTANCE_PROMPTS)	{				_distance_tv_ts = -1;		while (_distance_tv_ts<=0)		{			fprintf (stdout, "\nSelect transversion/transition ratio (R=1 reduces to standard NG):");			fscanf  (stdin,"Number",_distance_tv_ts);		}		ChoiceList (distChoice, "Distance computation",1,SKIP_NONE,					"Joint p-distance(Default)","Observed N/E[N]+Observed S/E[S]",					"Syn p-distance","Observed S/E[S]",					"Non-syn p-distance","Observed N/E[N]",					"JC+joint p-distance","Observed N/E[N]+Observed S/E[S], corrected for multiple hits",					"JC+syn p-distance","Observed S/E[S], corrected for multiple hits",					"JC+non-syn p-distance","Observed N/E[N], corrected for multiple hits",					"dN-dS","Observed N/E[N]-Observed S/E[S]");							if (distChoice<0)		{			distChoice = 0;		}					#include "CodonTools2.def";		matrixTrick  = {1,stateCharCount};		matrixTrick2 = {1,stateCharCount};		for (h=Columns(matrixTrick)-1; h>=0; h=h-1)		{			matrixTrick  [h] = h;			matrixTrick2 [h] = 1;		}	}	return 0;}/*----------------------------------------------------------------------------*/function ComputeDistanceFormula (s1,s2){		_SITE_ES_COUNT = {stateCharCount,stateCharCount};	_SITE_EN_COUNT = {stateCharCount,stateCharCount};	_SITE_OS_COUNT = {stateCharCount,stateCharCount};	_SITE_ON_COUNT = {stateCharCount,stateCharCount};		GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);		_SITE_OS_COUNT = matrixTrick2*(_OBSERVED_S_$siteDifferenceCount)*Transpose(matrixTrick2);	_SITE_ON_COUNT = matrixTrick2*(_OBSERVED_NS_$siteDifferenceCount)*Transpose(matrixTrick2);	_SITE_ES_COUNT = matrixTrick2*(_PAIRWISE_S_$siteDifferenceCount)*Transpose(matrixTrick2);	_SITE_EN_COUNT = matrixTrick2*(_PAIRWISE_NS_$siteDifferenceCount)*Transpose(matrixTrick2);		if (_SITE_ES_COUNT[0])	{		if (_SITE_EN_COUNT[0])		{			if (distChoice == 0)			{				return (_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]+_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]);			}			if (distChoice == 1)			{				return _SITE_OS_COUNT[0]/_SITE_ES_COUNT[0];			}			if (distChoice == 2)			{				return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];			}			if (distChoice == 3)			{				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]+_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);			}			if (distChoice == 4)			{				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);			}			if (distChoice == 5)			{				return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);			}			if (distChoice == 6)			{				return (_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]-_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);			}		}		else		{			if (distChoice == 0)			{				return (_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);			}			if (distChoice == 1)			{				return _SITE_OS_COUNT[0]/_SITE_ES_COUNT[0];			}			if (distChoice == 2)			{				return 0;			}			if (distChoice == 3)			{				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);			}			if (distChoice == 4)			{				return -0.75*Log(1-4*(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0])/3);			}			if (distChoice == 5)			{				return 0;			}			if (distChoice == 6)			{				return -(_SITE_OS_COUNT[0]/_SITE_ES_COUNT[0]);			}		}	}	else	{		if (distChoice == 0)		{			return (_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0]);		}		if (distChoice == 1)		{			return 0;		}		if (distChoice == 2)		{			return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];		}		if (distChoice == 3)		{			return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);		}		if (distChoice == 4)		{			return 0;		}		if (distChoice == 5)		{			return -0.75*Log(1-4*(_SITE_ON_COUNT[0]/_SITE_EN_COUNT[0])/3);		}		if (distChoice == 6)		{			return _SITE_ON_COUNT[0]/_SITE_EN_COUNT[0];		}	}		return 0;}

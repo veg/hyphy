@@ -490,7 +490,9 @@ OpenWindow (CHARTWINDOW,{{"Inferred Dates"}
 		
 datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
 UseModel (USE_NO_MODEL);
+ACCEPT_ROOTED_TREES = 1;
 Tree	dT = datedTree;
+ACCEPT_ROOTED_TREES = 0;
 
 COVARIANCE_PARAMETER = "clockTree.Node0.T";
 COVARIANCE_PRECISION = 0.95;
