@@ -10,7 +10,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
-        COMMAND ${CMAKE_C_COMPILER} -dumpversion
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
         OUTPUT_VARIABLE GCC_VERSION
     )
 
