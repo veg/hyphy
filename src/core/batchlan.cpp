@@ -194,6 +194,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 prefixLF                        ("LF_"),
                                 replaceTreeStructure            ("REPLACE_TREE_STRUCTURE"),
                                 hyphyBaseDirectory              ("HYPHY_BASE_DIRECTORY"),
+                                hyphyLibDirectory               ("HYPHY_LIB_DIRECTORY"),
                                 platformDirectorySeparator      ("DIRECTORY_SEPARATOR"),
                                 covarianceParameterList         ("COVARIANCE_PARAMETER"),
                                 matrixEvalCount                 ("MATRIX_EXPONENTIATION_COUNTS"),
@@ -1183,12 +1184,14 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     _String             dd (GetPlatformDirectoryChar());
 
     _FString            bp  (baseDirectory, false),
+                        lp  (libDirectory, false),
                         ds  (dd),
                         cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
                         * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
 
     setParameter        (platformDirectorySeparator, &ds);
     setParameter        (hyphyBaseDirectory, &bp);
+    setParameter        (hyphyLibDirectory, &lp);
 
     if (stashed) {
         stashed = (_FString*)stashed->makeDynamic();
