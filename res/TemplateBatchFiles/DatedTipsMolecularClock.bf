@@ -1,7 +1,7 @@
 RequireVersion ("0.9920060524");
 VERBOSITY_LEVEL = -1;
 
-maxV = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TreeTools.ibf";
+maxV = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TreeTools.ibf";
 ExecuteAFile (maxV);
 #include "_tipDater.ibf";
 
@@ -201,7 +201,7 @@ if (dataType<0)
 
 if (dataType)
 {
-	incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
+	incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
 	ExecuteCommands  ("#include \""+incFileName+"\";");
 }
 
@@ -234,7 +234,7 @@ else
 }
 
 
-incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf";
+incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf";
 ExecuteCommands  ("#include \""+incFileName+"\";");
 
 UseModel 		 		 (USE_NO_MODEL);

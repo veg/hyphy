@@ -1,6 +1,6 @@
 RequireVersion ("0.9920060426");
 
-_idx = "`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf";
+_idx = "`HYPHY_LIB_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf";
 ExecuteCommands ("#include\"`_idx`\";");
 
 _seqCount 		= Columns(_DATAPANEL_SELECTED_SEQUENCES_);

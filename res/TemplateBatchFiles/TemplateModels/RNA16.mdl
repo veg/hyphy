@@ -51,7 +51,7 @@ if (dinucModelType >= Rows(DiNucClasses)-2)
 }
 else
 {
-	W_MATRIX_FILE = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+SELECTION_STRINGS;
+	W_MATRIX_FILE = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+SELECTION_STRINGS;
 	fscanf (W_MATRIX_FILE,"Matrix",diNucRateMatrix);
 }
 

@@ -89,10 +89,10 @@ fprintf ( stdout, "\n\nAllow multiple substitutions between codons? (Y/N)" );
 fscanf ( stdin, "String", msubs );
 
 if ( ( msubs == "Y" ) || ( msubs == "y" )  ) {
-	incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECMu";
+	incFileName = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECMu";
 }
 else {
-	incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECM";
+	incFileName = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECM";
 }
 
 fscanf ( incFileName, "Matrix,NMatrix,NMatrix", KHG_codonOrder, KHG_RateMatrix, KHG_vof );

@@ -121,7 +121,7 @@ else
 		masterReferenceSequence = UnalignedSeqs[longestSequenceIDX];
 	}
 	
-	incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
+	incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
 	ExecuteCommands  ("#include \""+incFileName+"\";");
 
 	doLongestSequence		= (refSeq==1);

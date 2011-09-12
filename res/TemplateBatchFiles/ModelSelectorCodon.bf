@@ -921,11 +921,11 @@ GT:=GT__;
 
 if (reprFlag)
 {
-	ibfPath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "GA_CHC_Binary.ibf";
+	ibfPath = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "GA_CHC_Binary.ibf";
 }
 else
 {
-	ibfPath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "GA_CHC.ibf";
+	ibfPath = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "GA_CHC.ibf";
 }
 
 byBPImprovement		  = {};

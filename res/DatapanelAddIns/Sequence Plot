@@ -14,9 +14,9 @@ if (_idx == 0)
 	ExecuteCommands ("#include \"ibfs/char_colors.def\";");
 }
 
-_idx = "`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf";
+_idx = "`HYPHY_LIB_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf";
 ExecuteCommands ("#include\"`_idx`\";");
-_idx = "`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf";
+_idx = "`HYPHY_LIB_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf";
 ExecuteCommands ("#include\"`_idx`\";");
 
 _seqCount 		= Columns(_DATAPANEL_SELECTED_SEQUENCES_);

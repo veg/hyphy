@@ -82,7 +82,7 @@ if (globalParametersOption == 1)
 	distanceMatrix = {_NUMBER_OF_SEQUENCES,_NUMBER_OF_SEQUENCES};
 	
 	DISTANCE_PROMPTS = 1;
-	incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def";
+	incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def";
 	ExecuteCommands  ("#include \""+incFileName+"\";");
 	InitializeDistances (0);
 	DISTANCE_PROMPTS = 0;

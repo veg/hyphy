@@ -60,8 +60,8 @@ function echoCovariance (ps,values1,values2)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def");
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PS_Plotters.bf");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PS_Plotters.bf");
 
 SetDialogPrompt		("Choose a model fit:");
 ExecuteAFile		(PROMPT_FOR_FILE);
@@ -217,7 +217,7 @@ for (h1 = 0; h1<64; h1=h1+1)
 
 /* make syn and non-syn template matrices */
 
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Distances"+DIRECTORY_SEPARATOR+"CodonTools.def");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Distances"+DIRECTORY_SEPARATOR+"CodonTools.def");
 
 for (fileID = 1; fileID <= fileCount; fileID = fileID+1)
 {
@@ -278,7 +278,7 @@ for (fileID = 1; fileID <= fileCount; fileID = fileID+1)
 	}
 
 
-	ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TreeTools.ibf");
+	ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TreeTools.ibf");
 
 	fprintf (stdout, "\nTotal nucleotide sites :", codonCount*3,
 					 "\nSynonymous  sites      :", sSites, 

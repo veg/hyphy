@@ -21,20 +21,20 @@ ExecuteAFile  ("ModelSelectorCodon.ibf");
 
 autoSave = 1; /* do not prompt the user for file names */
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "DBTools.ibf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "DBTools.ibf");
 /* need this include to generate output tables file paths */
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
 /* need this include to process file paths */
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "DescriptiveStatistics.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "DescriptiveStatistics.bf");
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "_MSCOneStep.ibf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "_MSCOneStep.ibf");
 /* need this include to determine all 1-to-1 substitutions */
 
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PostScript.bf");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PostScript.bf");
 	
-lcapFile = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"EmpiricalAA" + DIRECTORY_SEPARATOR+"LCAP";
+lcapFile = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"EmpiricalAA" + DIRECTORY_SEPARATOR+"LCAP";
 fscanf (lcapFile,"NMatrix,NMatrix,NMatrix,NMatrix,NMatrix", lcap1,lcap2,lcap3,lcap4,lcap5);
 
 

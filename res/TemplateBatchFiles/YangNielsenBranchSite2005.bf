@@ -3,7 +3,7 @@
    independent of directory placement
  */
 
-incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
+incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
 ExecuteCommands  ("#include \""+incFileName+"\";");
 
 /* 2. load a codon partition  */
@@ -17,7 +17,7 @@ fprintf (stdout, "\nLoaded a ", filteredData.species, " sequence alignment with 
 
 /* 3. include a file to prompt for a tree */
 
-incFileName = HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf";
+incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf";
 ExecuteCommands  ("#include \""+incFileName+"\";");
 
 /* 4. Compute nucleotide counts by position for the F3x4 estimator */
@@ -493,8 +493,8 @@ OpenWindow (DISTRIBUTIONWINDOW,{{"Conditional probabilities by site"}
 _MARGINAL_MATRIX_ = Transpose(posteriorMatrix);
 _CATEGORY_VARIABLE_CDF_ = siteProfile[1][-1];
 
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"ChartAddIns"+DIRECTORY_SEPARATOR+"DistributionAddIns"+DIRECTORY_SEPARATOR+"Includes"+DIRECTORY_SEPARATOR+"posteriors.ibf");
-ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"WriteDelimitedFiles.bf");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"ChartAddIns"+DIRECTORY_SEPARATOR+"DistributionAddIns"+DIRECTORY_SEPARATOR+"Includes"+DIRECTORY_SEPARATOR+"posteriors.ibf");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"WriteDelimitedFiles.bf");
 siteCount = Columns(_MARGINAL_MATRIX_);
 siteCounter = {};
 for (k=0; k<siteCount; k=k+1)

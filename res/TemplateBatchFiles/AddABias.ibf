@@ -190,31 +190,31 @@ function promptModel (dummy)
 
 	if (pickAModel == 0)
 	{
-		modelSTDINoverload["0"] = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
+		modelSTDINoverload["0"] = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
 								  DIRECTORY_SEPARATOR + "HIVWithin";
 	}
 
 	if (pickAModel == 1)
 	{
-		modelSTDINoverload["0"] = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
+		modelSTDINoverload["0"] = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
 								  DIRECTORY_SEPARATOR + "HIVBetween";
 	}
 
 	if (pickAModel == 2)
 	{
-		modelSTDINoverload["0"] = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
+		modelSTDINoverload["0"] = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
 								  DIRECTORY_SEPARATOR + "JTT";
 	}
 
 	if (pickAModel == 3)
 	{
-		modelSTDINoverload["0"] = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
+		modelSTDINoverload["0"] = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
 								  DIRECTORY_SEPARATOR + "H5N1";
 	}
 	
 	if (pickAModel == 4)
 	{
-		modelSTDINoverload["0"] = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
+		modelSTDINoverload["0"] = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalAA" + 
 								  DIRECTORY_SEPARATOR + "LG";
 	}
 
@@ -222,12 +222,12 @@ function promptModel (dummy)
 	{
 		/* estimate base frequencies as model parameters */
 		modelSTDINoverload["1"]	= "ML Estimates";
-		modelPath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "Custom_AA_empirical.mdl";
+		modelPath = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "Custom_AA_empirical.mdl";
 	}
 	else
 	{
 		modelNameString = "mtREVMatrix";
-		modelPath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "mtREV.mdl";	
+		modelPath = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "mtREV.mdl";	
 	}
 	
 	ExecuteAFile (modelPath,modelSTDINoverload);

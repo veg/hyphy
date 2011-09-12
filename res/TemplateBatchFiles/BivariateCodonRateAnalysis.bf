@@ -4,7 +4,7 @@ SetDialogPrompt ("Datafile:");
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 _bivariateFilePath = LAST_FILE_PATH;
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + 
+ExecuteAFile (HYPHY_LIB_DIRECTORY + 
 				"TemplateBatchFiles" + 
 				DIRECTORY_SEPARATOR  + 
 				"TemplateModels" + 
@@ -78,7 +78,7 @@ while (currentCAIC < bestCAICsoFar)
 
 	DeleteObject (lf);
 
-	ExecuteAFile (  HYPHY_BASE_DIRECTORY + 
+	ExecuteAFile (  HYPHY_LIB_DIRECTORY + 
 				"TemplateBatchFiles" + 
 				DIRECTORY_SEPARATOR  + 
 				"GateauxMR.bf",
@@ -99,7 +99,7 @@ while (currentCAIC < bestCAICsoFar)
 	bivariateFitOptions ["01"] = currentLFSpool;
 	bivariateFitOptions ["02"] = "Unconstrained";
 
-	ExecuteAFile (  HYPHY_BASE_DIRECTORY + 
+	ExecuteAFile (  HYPHY_LIB_DIRECTORY + 
 				"TemplateBatchFiles" + 
 				DIRECTORY_SEPARATOR  + 
 				"dNdSBivariateRateAnalysis.bf",

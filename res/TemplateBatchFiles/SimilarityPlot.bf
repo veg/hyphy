@@ -1,7 +1,7 @@
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" 
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" 
 								   + DIRECTORY_SEPARATOR + "GrabBag.bf"); 
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" 
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" 
 								   + DIRECTORY_SEPARATOR + "NJ.bf"); 
 
 SetDialogPrompt ("Please select a data set to process:");
@@ -22,7 +22,7 @@ if (whichSequence < 0)
 
 GetString	 			(seqNames, ds, -1);
 DISTANCE_PROMPTS 		= 1;
-ExecuteAFile 			(HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "chooseDistanceFormula.def");
+ExecuteAFile 			(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "chooseDistanceFormula.def");
 
 querySequenceName 	= seqNames[whichSequence] && 1;
 

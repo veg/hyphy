@@ -48,7 +48,7 @@ if (treeCount > 0 && lf_Count > 0)
 		
 	}
 		
-	ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def");
+	ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def");
 
 	ChoiceList  (response,"Output options",1,NO_SKIP,
 				 "Display","Display trees on the console (and graphically if GUI is present).",
@@ -68,7 +68,7 @@ if (treeCount > 0 && lf_Count > 0)
 	/* make syn and non-syn template matrices */
 
 	nonStopCount = Columns (aRateMx);
-	ExecuteAFile(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Distances"+DIRECTORY_SEPARATOR+"CodonTools.def"");
+	ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Distances"+DIRECTORY_SEPARATOR+"CodonTools.def"");
 
 	sSites  = 0;
 	nsSites = 0;

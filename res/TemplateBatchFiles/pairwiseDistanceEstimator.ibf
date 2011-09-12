@@ -24,7 +24,7 @@ if (Abs(_Genetic_Code) && dataType == 1)
 	
 	if (_pddSNS > 0)
 	{
-		ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"dSdNTreeTools.ibf");
+		ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"dSdNTreeTools.ibf");
 		if (_pddSNS == 1)
 		{
 			BRANCH_LENGTH_STENCIL = (ComputeScalingStencils (0))["Syn"];

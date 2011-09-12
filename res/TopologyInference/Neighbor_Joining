@@ -79,7 +79,7 @@ if (methodIndex < 0)
 distanceMatrix = {_NUMBER_OF_SEQUENCES,_NUMBER_OF_SEQUENCES};
 
 DISTANCE_PROMPTS		= 1;
-ExecuteAFile			(HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def");
+ExecuteAFile			(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def");
 InitializeDistances		(0);
 DISTANCE_PROMPTS		= 0;
 

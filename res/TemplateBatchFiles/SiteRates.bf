@@ -83,7 +83,7 @@ else
 	
 	ReplicateConstraint ("this1.?.?:=siteRate*this2.?.?__",siteTree,givenTree);
 	
-	ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
+	ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "GrabBag.bf");
 	fixGlobalParameters  ("lf");
 		
 	labels = {{"Rate","Log[L]"}};

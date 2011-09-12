@@ -486,7 +486,7 @@ if (resample)
 		maxSampleCount = maxSampleCount - 1;
 	} 
 
-	ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + 
+	ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + 
 										 "DescriptiveStatistics.bf");
 										 
 	fprintf (stdout, "\n\nBootstrapped estimator statistics.\n",

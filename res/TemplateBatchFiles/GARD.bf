@@ -56,7 +56,7 @@ totalBitSize					= 0;
 LIKELIHOOD_FUNCTION_OUTPUT 		= 0;
 FILE_SEPARATOR			   		= "__FILE_SEPARATOR__";
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"NJ.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"NJ.bf");
 
 /* ________________________________________________________________________________________________*/
 
@@ -1129,7 +1129,7 @@ if (baseParams>3)
 _mpiPrefixString = "";
 _mpiPrefixString * 256;
 
-_mpiPrefixString * ("ExecuteAFile (HYPHY_BASE_DIRECTORY+\"TemplateBatchFiles\"+DIRECTORY_SEPARATOR+\"Utility\"+DIRECTORY_SEPARATOR+\"NJ.bf\");");
+_mpiPrefixString * ("ExecuteAFile (HYPHY_LIB_DIRECTORY+\"TemplateBatchFiles\"+DIRECTORY_SEPARATOR+\"Utility\"+DIRECTORY_SEPARATOR+\"NJ.bf\");");
 _mpiPrefixString * ("DataSet 	ds    = ReadDataFile (\""+baseFilePath+"\");");
 Export (modelString, USE_LAST_MODEL);
 _mpiPrefixString * modelString;

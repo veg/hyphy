@@ -2,8 +2,8 @@ RequireVersion ("0.9920060501");
 
 #include "ibfs/char_colors.def";
 
-ExecuteAFile ("`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf");
-ExecuteAFile ("`HYPHY_BASE_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf");
+ExecuteAFile ("`HYPHY_LIB_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`GrabBag.bf");
+ExecuteAFile ("`HYPHY_LIB_DIRECTORY`TemplateBatchFiles`DIRECTORY_SEPARATOR`Utility`DIRECTORY_SEPARATOR`PostScript.bf");
 
 if (_selFilters == 1)
 {

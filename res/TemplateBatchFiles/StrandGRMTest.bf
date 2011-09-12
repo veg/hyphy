@@ -61,12 +61,12 @@ if ( strandGTR ) {
 SetDialogPrompt ("Select a nucleotide alignment");
 DataSet 		ds = ReadDataFile(PROMPT_FOR_FILE);
 fprintf			(stdout, "Read an alignment with ", ds.species, " sequences and ", ds.sites, " sites\n");
-ExecuteAFile 	(HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
+ExecuteAFile 	(HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "queryTree.bf");
 
 DataSetFilter filteredData = CreateFilter (ds,1);
 
 fprintf ( stdout, "Select parameter settings for GRM model:\n" );
-incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "GRM.mdl";
+incFileName = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "GRM.mdl";
 ExecuteCommands ( "#include  \"" + incFileName + "\";" );
 Export ( Modelstring, USE_LAST_MODEL );
 fprintf ( stdout, Modelstring, "\n" );
@@ -85,7 +85,7 @@ if ( modelType >= 1 ) {
 }
 
 fprintf ( stdout, "Select parameter settings for stGRM model:\n" );
-incFileName = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "STGRM.mdl";
+incFileName = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "STGRM.mdl";
 ExecuteCommands ( "#include  \"" + incFileName + "\";" );
 Export ( Modelstring, USE_LAST_MODEL );
 fprintf ( stdout, Modelstring, "\n" );

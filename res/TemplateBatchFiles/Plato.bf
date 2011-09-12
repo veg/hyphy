@@ -25,7 +25,7 @@ fprintf (stdout, "\nBase composition:\n\tA: ", Format (observedFreqs[0],10,5),
 									"\n\tG: ", Format (observedFreqs[2],10,5),
 									"\n\tT: ", Format (observedFreqs[3],10,5), "\n\n");
 									
-ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf");
 SelectTemplateModel(filteredData);
 
 /*CALCULATE ML PARAMETERS AND LIKELIHOOD PER SITES*/

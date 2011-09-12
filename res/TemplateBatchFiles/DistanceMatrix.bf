@@ -194,7 +194,7 @@ else
 				toSend	= mpiPrefix + "vecSize = " + accumulator + ";" +
 												  "fromRow = " + lastRowSent + ";" + 
 												  "toRow   = " + i + ";" +
-												  "ExecuteAFile (HYPHY_BASE_DIRECTORY + \"TemplateBatchFiles\" + DIRECTORY_SEPARATOR + \"pairwiseDistanceEstimatorCounter.ibf\"); return result;";
+												  "ExecuteAFile (HYPHY_LIB_DIRECTORY + \"TemplateBatchFiles\" + DIRECTORY_SEPARATOR + \"pairwiseDistanceEstimatorCounter.ibf\"); return result;";
 												  
 				MPISend (totalSent+1, toSend);
 				

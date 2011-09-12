@@ -215,7 +215,7 @@ function handleMPIBGM (_bgm_data, jobID)
 		jobToSend = "";
 		if (jobID >= 0)
 		{
-			bgmFilePath = HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BGM.bf";
+			bgmFilePath = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "BGM.bf";
 			jobToSend * 128;
 			jobToSend * ("ExecuteAFile (\""+bgmFilePath+"\");");
 			jobToSend * (""+_bgm_data);

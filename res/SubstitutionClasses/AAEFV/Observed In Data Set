@@ -1,1 +1,1 @@
-function GUIHandleFrequenciesCollection (dummy_parameter){	HarvestFrequencies (Model_EFV_Vector,Data_Set_ID,1,1,1);	MULTIPLY_BY_FREQS = 1;	return 	0;}
+function GUIHandleFrequenciesCollection (dummy_parameter){	HarvestFrequencies (Model_EFV_Vector,Data_Set_ID,1,1,1);	MULTIPLY_BY_FREQS = 1;	return 	0;}

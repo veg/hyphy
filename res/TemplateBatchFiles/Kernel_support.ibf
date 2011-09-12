@@ -73,7 +73,7 @@ function table (vec1, vec2)
 function read_kernel_matrix (dummy)
 {
 	SetDialogPrompt ("Please locate a .csv with the kernel matrix");
-	ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "ReadDelimitedFiles.bf");
+	ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "ReadDelimitedFiles.bf");
 	kern_AVL = ReadCSVTable ("",2);
 	
 	kernel_matrix = kern_AVL[1];

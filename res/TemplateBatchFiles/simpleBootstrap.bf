@@ -12,7 +12,7 @@ function PadString (padLength,padChar)
 
 /* mod 11/10/2005 to spool branch lengths as well */
 #include 	"dSdNTreeTools.ibf";
-ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"CodonTools.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"CodonTools.bf");
 /* end mod */
 
 /*----------------------------------------------------------------------------------------------------------------------------*/

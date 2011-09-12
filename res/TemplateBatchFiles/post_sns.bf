@@ -18,7 +18,7 @@ dSAVL	   = {};
 nsSubsAVL  = {};
 dNAVL	   = {};
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"CodonTools.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"CodonTools.bf");
 _snsAVL	   = _computeSNSSites ("filteredData", _Genetic_Code, vectorOfFrequencies, 0);
 
 ExecuteAFile ("TreeTools.ibf");
