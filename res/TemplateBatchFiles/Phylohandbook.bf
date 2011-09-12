@@ -1,1 +1,2 @@
-GetURL (thePage,"http://www.hyphy.org/phylohandbook/AnalysesIndex.bf");ExecuteCommands (thePage);
+GetURL (thePage,"http://www.hyphy.org/phylohandbook/AnalysesIndex.bf");
+ExecuteCommands (thePage);

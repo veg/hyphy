@@ -1637,16 +1637,14 @@ _Parameter  _String::ProcessTreeBranchLength (void)
 
 //_______________________________________________________________________
 
-bool    _String::IsALiteralArgument (bool stripQuotes)
+bool    _String::IsALiteralArgument (bool stipQuotes)
 {
     if (sLength >= 2) {
         long from = 0,
              to = ExtractEnclosedExpression (from,'"','"',false,true);
 
         if (from == 0 && to == sLength - 1) {
-            if (stripQuotes){
-                Trim (1, sLength-2);
-            }
+            Trim (1, sLength-2);
             return true;
         }
     }

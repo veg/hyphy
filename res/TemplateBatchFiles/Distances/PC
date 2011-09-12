@@ -1,1 +1,15 @@
-function InitializeDistances (dummy){	summingVector = {20,1}["1"];	tracingVector = {20,20}["_MATRIX_ELEMENT_ROW_ == _MATRIX_ELEMENT_COLUMN_"];	return 0;}function ComputeDistanceFormula (s1,s2){	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector));	totalDifference    = Transpose(summingVector)*(siteDifferenceCount$tracingVector*summingVector);		return -Log(totalDifference[0]/totalSitesCompared[0]);}
+function InitializeDistances (dummy)
+{
+	summingVector = {20,1}["1"];
+	tracingVector = {20,20}["_MATRIX_ELEMENT_ROW_ == _MATRIX_ELEMENT_COLUMN_"];
+	return 0;
+}
+
+function ComputeDistanceFormula (s1,s2)
+{
+	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector));
+	totalDifference    = Transpose(summingVector)*(siteDifferenceCount$tracingVector*summingVector);
+	
+	return -Log(totalDifference[0]/totalSitesCompared[0]);
+}

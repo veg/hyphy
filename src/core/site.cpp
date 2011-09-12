@@ -2690,7 +2690,7 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
 
     _String input (input2);
 
-    if (!input.IsALiteralArgument(true)) { // not a literal argument
+    if (!input.IsALiteralArgument()) { // not a literal argument
         _Formula fmla, lhs;
 
         long     varRef = 0,
@@ -2712,10 +2712,10 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
             _DataSet::MatchIndices (fmla, target, isVertical, totalLength);
         }
     } else { // an explicit enumeration or a regular expression
-        if (input.getChar(0)=='/' && input.getChar(input.sLength-1)=='/')
+        if (input.getChar(1)=='/' && input.getChar(input.sLength-2)=='/')
             // a regular expression
         {
-            input.Trim(1,input.sLength-2);
+            input.Trim(2,input.sLength-3);
             int   errCode;
             Ptr   regex = PrepRegExp (&input, errCode, true);
             if (errCode) {
@@ -2815,7 +2815,16 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
             }
             FlushRegExp (regex);
         } else {
-            input.KillSpaces (input);
+            input2.KillSpaces (input);
+            if (input[input.sLength-1]!='"') {
+                _String errMsg ("Missing \" detected in dataset specification");
+                ReportWarning (errMsg);
+                input.Trim (1,-1);
+                //return;
+            } else {
+                input.Trim (1,input.sLength-2);
+            }
+
             // now process the string
             long count = 0,anchor,k;
 
