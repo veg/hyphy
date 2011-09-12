@@ -16,7 +16,7 @@
                BlueprintIdentifier = "8D0C4E890486CD37000505A6"
                BuildableName = "HyPhy.app"
                BlueprintName = "HyPhyXCode"
-               ReferencedContainer = "container:HyPhyXCode.xcodeproj">
+               ReferencedContainer = "container:hyphy.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -37,26 +37,19 @@
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Debug">
-      <BuildableProductRunnable>
+      <PathRunnable
+         FilePath = "/Volumes/TeraMonkey/Users/sergei/hyphybuilds/Debug/HyPhy.app">
+      </PathRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D0C4E890486CD37000505A6"
             BuildableName = "HyPhy.app"
             BlueprintName = "HyPhyXCode"
-            ReferencedContainer = "container:HyPhyXCode.xcodeproj">
+            ReferencedContainer = "container:hyphy.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "MallocGuardEdges"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
@@ -72,7 +65,7 @@
             BlueprintIdentifier = "8D0C4E890486CD37000505A6"
             BuildableName = "HyPhy.app"
             BlueprintName = "HyPhyXCode"
-            ReferencedContainer = "container:HyPhyXCode.xcodeproj">
+            ReferencedContainer = "container:hyphy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

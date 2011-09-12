@@ -674,7 +674,7 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true); // the parser
+    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true, bool* isVolatile = nil); // the parser
     friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil);
     // the execution block for "compiled formulae
     /*
@@ -859,7 +859,8 @@ public:
 
     void        SetBounds (_Parameter lb, _Parameter ub);
     void        EnsureTheValueIsInBounds (void);
-
+    bool        IsValueInBounds (_Parameter v)
+                           { return v >= lowerBound && v <= upperBound; }
 
     _Parameter  GetLowerBound (void) {
         return lowerBound;
@@ -928,7 +929,8 @@ public:
     // name, matrix constructor, the parent (if there is one)
     virtual ~_VariableContainer(void);
 
-    void                    InitializeVarCont (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
+    void                    InitializeVarCont       (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
+    void                    ScanModelBasedVariables (_String&, _AVLListXL*);
 
     virtual     void        MarkDone (void);
 

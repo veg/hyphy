@@ -700,6 +700,8 @@ function _parsimonyAncestralMapping (treeAVL&, label)
 	return totalCost;
 }
 
+
+
 /*************************************************************************************/
 /* 
   	Center of Tree (COT) calculation 
@@ -789,3 +791,35 @@ function ComputeCOT (_treeID, _filePath)
 	return _returnList;
 	
 }
+
+
+/*************************************************************************************/
+/* 
+    Computes the distance from each node to the root of the tree.
+    By default, uses the "Length" key, but this can be redefined by passing an argument  
+*/
+
+function PathDistanceToRoot (_treeAVL, _distanceKey)
+/* IN 	: the identifier of a post-order tree AVL (dictionary)
+		  _distanceKey : if not an empty string, use this key to retrieve branch lengths
+          		  			  
+   OUT	: an associative array keyed on branch names with paths stored as values
+                
+*/ 
+{
+    _distances = {};
+    
+    if (Abs (_distanceKey) == 0)
+    {
+        _distanceKey = "Length";
+    }
+    
+    for (_k = Abs (_treeAVL)-2; _k > 0; _k = _k-1)
+    {
+        _nodeName   = (_treeAVL[_k])["Name"];
+        _distances[_nodeName] = _distances[(_treeAVL[(_treeAVL[_k])["Parent"]])["Name"]] + (_treeAVL[_k])[_distanceKey];
+    }
+    
+    return _distances;
+}
+

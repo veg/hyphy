@@ -1,38 +1,40 @@
-RequireVersion ("0.9920060524");
+RequireVersion ("2.0020110101");
 VERBOSITY_LEVEL = -1;
 
-maxV = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TreeTools.ibf";
-ExecuteAFile (maxV);
+
+LoadFunctionLibrary ("TreeTools");
 #include "_tipDater.ibf";
 
 
 /*-----------------------------------------------------------*/
 
-function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateAVL, rateAVL)
+function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateAVL, rateAVL, initialGuesses)
 {
 	DT_String = "";
 	DT_String * 8192;
 	
 
-	ExecuteCommands ("treePostOrderAVL = "+treeNameID+"^0;");
-	ExecuteCommands ("treePreOrderAVL = "+treeNameID+"^1;");
-	nodeCount 	=  Abs(treePostOrderAVL);
-	doneAssignment = {};
+	treePostOrderAVL = Eval(treeNameID+"^0");
+	treePreOrderAVL  = Eval(treeNameID+"^1");
+	nodeCount        =  Abs(treePostOrderAVL);
 	
-	rateAVL = {};
-	for (nodeIndex = 0; nodeIndex < nodeCount-1; nodeIndex = nodeIndex+1)
+	rateAVL          = {};
+	doneAssignment   = {};
+
+    // define separate global variables for each rate class (currently not used)
+	for (nodeIndex = 0; nodeIndex < nodeCount-1; nodeIndex += 1)
 	{
 		aRate = rateAVL[nodeIndex];
 		if (doneAssignment[aRate] == 0)
 		{
 			doneAssignment[aRate] = 1;
-			DT_String * ("global "+treeNameID+"_scaler_"+aRate+" = 1.0;\n"+treeNameID+"_scaler_"+aRate+"_ :> 0.0;");
+			DT_String * ("global "+treeNameID+"_scaler_"+aRate+" = 1.0;\n"+treeNameID+"_scaler_"+aRate+"_ :> 0.0;\n");
 		}
 	}
 
 	timeStops				  = {};
 
-	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
+	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex += 1)
 	{
 		nodeInfo 	= treePostOrderAVL[nodeIndex];
 		nodeNameS	= nodeInfo["Name"];
@@ -40,7 +42,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * ("global "+treeNameID+"_"+nodeNameS+"_T = 1; "+treeNameID+"_"+nodeNameS+"_T:>(-10000); "+treeNameID+"_"+nodeNameS+"_BL = 0.0001; "+treeNameID+"_"+nodeNameS+"_BL :> 0;\n");
+			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -52,7 +54,8 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 				{
 					minV = minV*2;
 				}
-				DT_String * (treeNameID+"_"+nodeNameS+"_T = " + minV + ";");
+                
+				DT_String * ("`treeNameID`.`nodeNameS`.T = " + minV + ";");
 				timeStops[nodeNameS] = minV;
 			}
 		}
@@ -88,17 +91,16 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 						
 			if (Abs(nodeInfo["Children"]))
 			{
-				DT_String * (treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
-							 treeNameID+"_"+nodeNameS+"_BL);"+
-							 treeNameID+"_"+nodeNameS+"_T:="+treeNameID+"_"+nodeParent["Name"]+"_T+"+treeNameID+"_"+nodeNameS+"_BL;\n");
+				DT_String * ("\n`treeNameID`.`nodeNameS`.`parameterToConstrain`:=`treeNameID`_scaler_"+rateClass+"*("+
+							 "`treeNameID`.`nodeNameS`.BL);\n`treeNameID`.`nodeNameS`.T:=`treeNameID`."+nodeParent["Name"]+".T+`treeNameID`."+nodeNameS+".BL;\n");
 							 
-				(descendantsList[pName])[insIndex] = treeNameID+"_"+nodeNameS+"_T";
+				(descendantsList[pName])[insIndex] = treeNameID+"."+nodeNameS+".T";
 				timeStops[pName] = Min (timeStops[pName],timeStops[nodeNameS]);
 			}
 			else
 			{
-				DT_String * (treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
-							 tipDateAVL[nodeNameS]+"-"+treeNameID+"_"+nodeParent["Name"]+"_T);\n");			
+				DT_String * ("\n" + treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
+							 tipDateAVL[nodeNameS]+"-"+treeNameID+"."+nodeParent["Name"]+".T);\n");			
 				(descendantsList[pName])[insIndex] = tipDateAVL[nodeNameS];
 				timeStops[pName] = Min (timeStops[pName],tipDateAVL[nodeNameS]);
 			}
@@ -112,11 +114,19 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 		{
 			nodeNameS	= nodeInfo["Name"];
 			pName		= timeStops[(treePreOrderAVL[(nodeInfo["Parent"])])["Name"]];
-			rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
-			DT_String * (treeNameID+"_"+nodeNameS+"_BL = " + rateClass + ";");
+    
+    
+            rateClass = initialGuesses[nodeNameS] - pName;
+
+            if (rateClass < 0 || initialGuesses[nodeNameS] >= timeStops[nodeNameS])
+            {
+                rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
+            }
+			DT_String * (treeNameID+"."+nodeNameS+".BL = " + rateClass + ";\n");
 			timeStops[nodeNameS] = pName + rateClass;			
 		}
 	}
+
 
 	rateClass = Rows (descendantsList); 
 	for (nodeIndex = 0; nodeIndex < Columns (rateClass); nodeIndex = nodeIndex + 1)
@@ -138,7 +148,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 		}
 		if (nodeInfo == Abs (nodePT))
 		{
-			DT_String * (treeNameID+"_"+pName+"_T:<"+doneAssignment+";\n");
+			DT_String * (treeNameID+"."+pName+".T:<"+doneAssignment+";\n");
 		}
 	}
 	
@@ -168,7 +178,7 @@ function generateBLVector (treeNameID)
 			pName    = nodeParent["Name"];
 			if (Abs(nodeInfo["Children"]))
 			{
-				ExecuteCommands ("_thisBL = " + treeNameID+"_"+nodeNameS+"_BL;tipDateAVL[\""+nodeNameS+"\"]="+ treeNameID+"_"+nodeNameS+"_T;");
+				ExecuteCommands ("_thisBL = `treeNameID`.`nodeNameS`.BL;tipDateAVL[\"`nodeNameS`\"]=`treeNameID`.`nodeNameS`.T;");
 			}
 			else
 			{
@@ -199,17 +209,14 @@ if (dataType<0)
 	return;
 }
 
-if (dataType)
+if (dataType == 1)
 {
-	incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def";
-	ExecuteCommands  ("#include \""+incFileName+"\";");
+	LoadFunctionLibrary ("chooseGeneticCode");
 }
 
 SetDialogPrompt ("Choose the data file:");
-
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-
-fprintf (stdout,"The following data was read:\n",ds,"\n");
+fprintf (stdout,"The following data were read:\n",ds,"\n");
 
 byPosition = 0;
 
@@ -224,7 +231,7 @@ else
 	if (Columns (_charHandles) == 4)
 	{
 		ChoiceList (byPosition,"By codon position",1,SKIP_NONE,"Single Partition","Do not split the alignment into codon positions.",
-				    		   "Three Partitions","Allow each codon position to evolve at their own rates");
+				    		   "Three Partitions","Allow each codon position to evolve at its own rates");
 
 		if (byPosition<0) 
 		{
@@ -234,8 +241,7 @@ else
 }
 
 
-incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"queryTree.bf";
-ExecuteCommands  ("#include \""+incFileName+"\";");
+LoadFunctionLibrary ("queryTree");
 
 UseModel 		 		 (USE_NO_MODEL);
 Tree			 		 aTree = treeString;
@@ -250,20 +256,9 @@ if (df<0)
 	return 0;
 }			
 else
-{				
-	if (df == 0)
-	{							
-		tipDateAVL 			   = getTipDatesFromNames1 ("aTree");
-	}
-	else
-	{
-		tipDateAVL 			   = getTipDatesFromNames2 ("aTree");	
-	}
+{	
+    tipDateAVL = Eval ("getTipDatesFromNames" + (df+1) + "(\"aTree\")");
 }
-
-fprintf (stdout, "What units are the dates measured in (e.g. months; this is only used for reporting the results):");
-fscanf  (stdin,"String", dateUnit);
-
 
 if (Abs(tipDateAVL) == 0)
 {
@@ -271,14 +266,15 @@ if (Abs(tipDateAVL) == 0)
 					  "Branch lengths for internal nodes are ignored.\n");
 	return 0;
 }
-else
+
+fprintf (stdout, "What units are the dates measured in (e.g. months; this is only used for reporting the results):");
+fscanf  (stdin,   "String", dateUnit);
+
+fprintf (stdout, "Read the following dates: \n");
+seqNames = Rows (tipDateAVL);
+for (sid = 0; sid < Columns (seqNames); sid += 1)
 {
-	fprintf (stdout, "Read the following dates: \n");
-	seqNames = Rows (tipDateAVL);
-	for (sid = 0; sid < Columns (seqNames); sid = sid + 1)
-	{
-		fprintf (stdout, seqNames[sid], ":\t", retAVL[seqNames[sid]]/maxV,"\t",dateUnit,"\n");
-	}
+    fprintf (stdout, seqNames[sid], ":\t", retAVL[seqNames[sid]]/maxV,"\t",dateUnit,"\n");
 }
 
 
@@ -346,14 +342,13 @@ else
 {
 	GetString (parameter2ConstrainString,LAST_MODEL_PARAMETER_LIST,0);	
 }
-dtConstraintString = generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0);
+
 
 
 timer = Time(0);
 if (byPosition)
 {
 	LikelihoodFunction lf = (filteredData,givenTree,filteredData2,givenTree2,filteredData3,givenTree3);
-
 }
 else
 {
@@ -361,15 +356,53 @@ else
 }
 Optimize (res,lf);
 
+
+
 separator = "*-----------------------------------------------------------*";
 
 fprintf (stdout, "\nCPU time taken: ", Time(0)-timer, " seconds.\n");
-fprintf (stdout, "\n", separator, "\nRESULTS WITHOUT THE CLOCK:\n",lf);
+fprintf (stdout, "\n", separator, "\nRESULTS WITHOUT THE CLOCK CONSTRAINT:\n",lf);
 
 fullModelLik = res[1][0];
 fullVars 	 = res[1][1];
 
 /* now specify the constraint */
+
+_initialGuesses = PathDistanceToRoot (givenTree^0, "");
+
+// SLKP -- this needs to be updated to deal with partitions 
+
+linearXY = {filteredData.species, 2};
+
+//--------------------------------------------------------------------------
+
+function popXY (key,value)
+{
+    linearXY [_k][1] = value;
+    linearXY [_k][0] = _initialGuesses[key];
+    _k += 1;
+    return 0;
+}
+
+//--------------------------------------------------------------------------
+
+_k = 0;
+tipDateAVL["popXY"][""];
+
+LoadFunctionLibrary ("ProbabilityDistributions");
+
+lfit           = linearFit (linearXY);
+ExecuteCommands ("predictor:="+lfit["Slope"]+"*d+"+lfit["Intercept"]);
+
+for (k = 0; k < Abs (_initialGuesses); k += 1)
+{
+    d = _initialGuesses [_initialGuesses["INDEXORDER"][k]];
+    _initialGuesses [_initialGuesses["INDEXORDER"][k]] = predictor;
+}
+
+
+
+ExecuteCommands (generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0,_initialGuesses));
 
 if (byPosition)
 {
@@ -380,20 +413,17 @@ else
 	LikelihoodFunction lfConstrained = (filteredData, clockTree);
 }
 
-ExecuteCommands (dtConstraintString);
 
 sud  	= USE_DISTANCES;
 sulr 	= USE_LAST_RESULTS;
 slfo	= LIKELIHOOD_FUNCTION_OUTPUT;
 
 USE_DISTANCES 	 				= 0;
-/*USE_LAST_RESULTS 				= 1;*/
+USE_LAST_RESULTS 				= 1;
 MAXIMUM_ITERATIONS_PER_VARIABLE = 100000;
 LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
-
-VERBOSITY_LEVEL = 10;
 
 Optimize (res1,lfConstrained);
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);
@@ -460,9 +490,11 @@ OpenWindow (CHARTWINDOW,{{"Inferred Dates"}
 		
 datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
 UseModel (USE_NO_MODEL);
+ACCEPT_ROOTED_TREES = 1;
 Tree	dT = datedTree;
+ACCEPT_ROOTED_TREES = 0;
 
-COVARIANCE_PARAMETER = "clockTree_Node0_T";
+COVARIANCE_PARAMETER = "clockTree.Node0.T";
 COVARIANCE_PRECISION = 0.95;
 CovarianceMatrix (cmxT0,lfConstrained);
 cmxT0 = cmxT0 * (1/maxV);

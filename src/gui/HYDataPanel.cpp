@@ -168,7 +168,7 @@ _String  nucDataType         ("Nucleotide"),
 extern   _String dataFilePrintFormat,
          aminoAcidOneCharCodes,
          donotWarnAgain,
-         libDirectory,
+         baseDirectory,
          dataPanelSourcePath,
          dialogPrompt,
          likefuncOutput,
@@ -2566,7 +2566,7 @@ void    _HYDataPanel::InferTopologies (bool useConstr)
 {
     if (!cantDeleteLF) {
         bool    needToDoFixed = false;
-        _String pathToFiles = libDirectory&"TopologyInference";
+        _String pathToFiles = baseDirectory&"TopologyInference";
 
         _List   receptacle,
                 fNames,
@@ -8765,7 +8765,7 @@ void ReadGeneticCodes (void)
     codeIndex << 0;
 
     _String pathToGeneticCodes;
-    pathToGeneticCodes = libDirectory&"GeneticCodes";
+    pathToGeneticCodes = baseDirectory&"GeneticCodes";
 
     ScanDirectoryForFileNames (pathToGeneticCodes,receptacle,true);
 
@@ -8866,7 +8866,7 @@ void ReadModelTemplates (void)
     _String pathToModelTemplates;
     _SimpleList modelParams;
 
-    pathToModelTemplates = libDirectory & "SubstitutionModels";
+    pathToModelTemplates = baseDirectory&"SubstitutionModels";
 
     ScanDirectoryForFileNames (pathToModelTemplates,receptacle,true);
 
@@ -9055,10 +9055,10 @@ void  NewGeneticCodeTable (long starting)
         // save the code to a file
 
 #ifdef __MAC__
-        as = libDirectory & "GeneticCodes:";
+        as = baseDirectory & "GeneticCodes:";
 #endif
 #ifdef __WINDOZE__
-        as = libDirectory & "GeneticCodes\\";
+        as = baseDirectory & "GeneticCodes\\";
 #endif
 
         as = as & line1;
@@ -9223,7 +9223,7 @@ void ReadDataPanelProcessors (void)
     _String     pathToModelTemplates;
     _List       receptacle;
 
-    pathToModelTemplates     = libDirectory&"DatapanelAddIns";
+    pathToModelTemplates     = baseDirectory&"DatapanelAddIns";
     ScanDirectoryForFileNames (pathToModelTemplates,receptacle,false);
 
     for (long k=0; k<receptacle.lLength; k++) {

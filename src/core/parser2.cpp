@@ -3845,8 +3845,15 @@ _String     alpha   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
 
 //__________________________________________________________________________________
 
-long        Parse (_Formula* f, _String& s, long& variableReference, _VariableContainer* theParent, _Formula* f2, bool flagErrors)
-// SLKP 20100817: decoupled return code from variable reference return
+long        Parse (_Formula* f, _String& s, long& variableReference, _VariableContainer* theParent, _Formula* f2, bool flagErrors, bool* isVolatile)
+/* SLKP 20110908: added the concept of a 'volatile' formula, i.e. something that should be reparsed every time in ExecuteCase0
+                : currently those include
+                :    inline constructors (matrices, dictionaries)
+                :    `` substitutions in strings
+                
+    
+   SLKP 20100817: decoupled return code from variable reference return
+*/
 
 // returns:
 
@@ -3881,15 +3888,14 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
     _List           operations,
                     operands,
                     *levelOps,
-                    *levelData,
-                    dummy;
+                    *levelData;
 
     /*04252006*/
 
     _SimpleList     squareBrackets,
                     mergeMAccess,
                     mergeMAccessLevel;
-
+                    
 
 
     long            level                 = 0;
@@ -3905,8 +3911,8 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
     char            storage     = 0;
 
 
-    operations && (&dummy);
-    operands   && (&dummy);
+    operations.AppendNewInstance (new _List);
+    operands.AppendNewInstance (new _List);
 
     levelOps  = (_List*)(operations(level));
     levelData = (_List*)(operands(level));
@@ -4085,7 +4091,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             _String ss (s,i+1,-1);
             _Formula  newF;
             long      refV;
-            if (Parse(&newF,ss,refV,theParent,f2,flagErrors) != HY_FORMULA_EXPRESSION) {
+            if (Parse(&newF,ss,refV,theParent,f2,flagErrors,isVolatile) != HY_FORMULA_EXPRESSION) {
                 inAssignment = false;
                 return HY_FORMULA_FAILED;
             }
@@ -4239,7 +4245,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             long     refV;
 
-            if (Parse(&newF,ss,refV,theParent,f2,flagErrors) != HY_FORMULA_EXPRESSION) {
+            if (Parse(&newF,ss,refV,theParent,f2,flagErrors,isVolatile) != HY_FORMULA_EXPRESSION) {
                 inAssignment = false;
                 return HY_FORMULA_FAILED;
             }
@@ -4278,6 +4284,9 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                  fixed the code to deal with
             */
         {
+        
+            if (isVolatile) *isVolatile = true;
+            
             if (flagErrors) {
                 int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
 
@@ -4440,6 +4449,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
                         (*literal) << inPlaceValue->theString;
                         inPlaceID = -1;
+                        if (isVolatile) *isVolatile = true;
                         j++;
                     }
 
@@ -4932,8 +4942,9 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
         char    str[4096];
 
         /* first we have to reorder global variables, so that dependent global variables which depend
-           on other dependent global variables are written afterwards. The algorithm is very ugly,
-           but since there are only a few global dependent variables (in general...) */
+           on other dependent global variables are written afterwards (lest they be implicitly declared 
+           as local).
+           The algorithm is very ugly, but since there are only a few global dependent variables (in general...) */
 
         _SimpleList     _globalVariablesList,
                         lfDepGlobs,

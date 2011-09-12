@@ -1674,7 +1674,7 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index)
 bool    _LikelihoodFunction::PreCompute         (void)
 {
 
-    //useGlobalUpdateFlag = true;
+    useGlobalUpdateFlag = true;
     // mod 20060125 to only update large globals once
     long i = 0;
 
@@ -1682,13 +1682,12 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     for (; i < arrayToCheck->lLength; i++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[i]);
-        _Parameter result    = ((_Constant*) cornholio->Compute())->Value();
-        if (result<cornholio->GetLowerBound() || result>cornholio->GetUpperBound()) {
+        if (!cornholio->IsValueInBounds(((_Constant*) cornholio->Compute())->Value())){
             break;
         }
     }
 
-    //useGlobalUpdateFlag = false;
+    useGlobalUpdateFlag = false;
     // mod 20060125 to only update large globals once
 
     for (long j=0; j<arrayToCheck->lLength; j++) {
@@ -1708,11 +1707,13 @@ void    _LikelihoodFunction::PostCompute        (void)
 {
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
+    //useGlobalUpdateFlag = true;
     for (long i=0; i<arrayToCheck->lLength; i++)
         //LocateVar (indexDep.lData[i])->PostMarkChanged();
     {
         LocateVar (arrayToCheck->lData[i])->Compute();
     }
+    //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
     {
         for (long i=0; i<indexInd.lLength; i++) {
@@ -7189,6 +7190,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         }
 
         for (long i=0; i<theTrees.lLength; i++) {
+            ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
             ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid);
         }
 
@@ -8729,14 +8731,9 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
         unique_sites << 0;
         _SimpleList * esl  = new _SimpleList;
         checkPointer (esl);
-        _AVLListX   * invS = new _AVLListX (esl);
-        avlSupport << esl;
-        involvedSites << invS;
-        DeleteObject (esl);
-        checkPointer (esl  = new _SimpleList);
-        dV << esl;
-        DeleteObject (esl);
-        DeleteObject (invS);
+        avlSupport.AppendNewInstance (esl);
+        involvedSites.AppendNewInstance (new _AVLListX (esl));
+        dV.AppendNewInstance (new _SimpleList);
     }
 
     // create a dummy data filter and spool the data to a file
@@ -8797,8 +8794,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
             rec << (_String*)dataSetNamesList (indexedDataSets.lData[idx5]);
             rec << " = ReadFromString (_tdsstring_);\n_tdsstring_=0;\n";
         } else {
-            rec << *cs;
-            DeleteObject (cs);
+            rec.AppendNewInstance (cs);
         }
         DeleteObject (entireSet);
         stashParameter (dataFilePrintFormat,0.0,false);

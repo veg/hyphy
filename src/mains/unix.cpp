@@ -114,10 +114,16 @@ void            mpiOptimizerLoop (int, int);
 void    ReadInTemplateFiles(void)
 {
     _String fileIndex;
-    fileIndex = libArgDir & "TemplateBatchFiles/files.lst";
+    fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/files.lst";
     FILE* modelList = fopen (fileIndex.getStr(),"r");
     if (!modelList) {
-        return;
+        fileIndex = baseArgDir&"TemplateBatchFiles/files.lst";
+        modelList = fopen (fileIndex.getStr(),"r");
+        if (!modelList) {
+            return;
+        }
+    } else {
+        baseArgDir = *((_String*)pathNames(0));
     }
 
     fseek (modelList,0,SEEK_END);
@@ -151,11 +157,10 @@ void    ReadInPostFiles(void)
     //if (!likeFuncList.lLength)
     //  return;
 
-    _String fileIndex = libArgDir & "TemplateBatchFiles/postprocessors.lst";
+    _String fileIndex;
     FILE* modelList = fopen (fileIndex.getStr(),"r");
-    if (!modelList) {
-        return;
-    }
+    fileIndex = baseArgDir &"TemplateBatchFiles/postprocessors.lst";
+    modelList = fopen (fileIndex.getStr(),"r");
 
     fseek (modelList,0,SEEK_END);
     unsigned long  fLength = ftell(modelList);
@@ -179,10 +184,10 @@ void    ReadInPostFiles(void)
                 ((_String*)thisFile(j))->StripQuotes();
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
-                fileIndex = libArgDir & "TemplateBatchFiles/" & *(_String*)thisFile(1);
+                fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex = libArgDir & "TemplateBatchFiles/" & *(_String*)thisFile(1);
+                    fileIndex =baseArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
@@ -557,6 +562,7 @@ int main (int argc, char* argv[])
                 if (baseArgDir.sData[baseArgDir.sLength-1]!=dirSlash) {
                     baseArgDir = baseArgDir&dirSlash;
                 }
+
                 baseDirectory = baseArgDir;
             }
         } else if (thisArg.beginswith ("LIBPATH=")) {
@@ -648,9 +654,13 @@ int main (int argc, char* argv[])
                 _String templ;
 
                 if (selection >= 0) {
-                    templ = libArgDir & "TemplateBatchFiles" & dirSlash & *(_String*)(*(_List*)availableTemplateFiles(selection))(2);
+                    templ = baseArgDir &"TemplateBatchFiles" & dirSlash;
                 } else {
-                    templ = libArgDir & "TemplateBatchFiles" & dirSlash & "WebUpdate.bf";
+                    templ = baseArgDir & "TemplateBatchFiles" & dirSlash & "WebUpdate.bf";
+                }
+
+                if (selection >= 0) {
+                    templ= templ&*(_String*)(*(_List*)availableTemplateFiles(selection))(2);
                 }
 
                 PushFilePath (templ);

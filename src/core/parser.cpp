@@ -2109,6 +2109,7 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
 
         varValue =  new _Constant(theValue);
     } else {
+        //printf ("Recomputing value of %s\n", theName->sData);
         if (useGlobalUpdateFlag) {
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
                 return varValue;
@@ -2706,42 +2707,14 @@ _Matrix* _VariableContainer::GetFreqMatrix (void)
 }
 
 //__________________________________________________________________________________
-void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
+void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLListXL* varCache)
 {
-    _String fullName (aName),
-            varName;
-
-    theModel  = FindModelName(theTmplt);
-    theParent = theP;
-
-
-    if (aName.sLength) {
-        long f = aName.Find('.');
-
-        while (theP) {
-            if (f!=-1) {
-                f = aName.Find('.',f+1,-1);
-            } else {
-                break;
-            }
-
-            theP = theP->theParent;
-        }
-
-        if (theP) {
-            fullName = (*(theP->theName))&'.'&fullName;
-        }
-
-        theName = (_String*)(fullName.makeDynamic());
-        InsertVar (this);
-    } else {
-        fullName = *theName;
-    }
-
-
     if (theModel!= HY_NO_MODEL) { // build the matrix variables
         _SimpleList       mVars;
+        _String           varName;
+        
         {
+            
             long cachedID = -1;
             bool doScan   = !varCache || (cachedID = varCache->Find ((BaseRef) theModel)) < 0 ;
 
@@ -2813,6 +2786,41 @@ void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt
             }
         }
     }
+}
+
+//__________________________________________________________________________________
+void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
+{
+    _String fullName (aName);
+    
+    theModel  = FindModelName(theTmplt);
+    theParent = theP;
+
+
+    if (aName.sLength) {
+        long f = aName.Find('.');
+
+        while (theP) {
+            if (f!=-1) {
+                f = aName.Find('.',f+1,-1);
+            } else {
+                break;
+            }
+
+            theP = theP->theParent;
+        }
+
+        if (theP) {
+            fullName = (*(theP->theName))&'.'&fullName;
+        }
+
+        theName = (_String*)(fullName.makeDynamic());
+        InsertVar (this);
+    } else {
+        fullName = *theName;
+    }
+
+    ScanModelBasedVariables (fullName, varCache);
     SortVars();
 }
 
@@ -2830,8 +2838,6 @@ void _VariableContainer::ScanAndAttachVariables (void)
 
     _String theNameAndADot (*theName);
     theNameAndADot = theNameAndADot&'.';
-
-
 
     for (f = variableNames.Next (f, travcache); f>=0; f = variableNames.Next (f, travcache)) {
         curVar = FetchVar (f);

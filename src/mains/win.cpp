@@ -775,6 +775,7 @@ int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , PSTR , int )
     }
 
     baseDirectory = baseDir;
+    libDirectory  = baseDir;
     pathNames&&     &baseDir;
 
     statusBarPlain = CreateFont (9,0,0,0,400,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,

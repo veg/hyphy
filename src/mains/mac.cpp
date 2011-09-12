@@ -1560,13 +1560,7 @@ int main (void)
         FSSpec   baseDirSpec;
         FSGetCatalogInfo(&myBundleRef, kFSCatInfoNone,NULL, NULL, &baseDirSpec, NULL);
         GetFullPathName (baseDirSpec, baseDirectory);
-#ifdef __BUNDLE__
-        libDirectory = baseDirectory & ":Contents:Resources:HBL:";
         baseDirectory.Trim(0,baseDirectory.FindBackwards (':',0,-1));
-#else
-        baseDirectory.Trim(0,baseDirectory.FindBackwards (':',0,-1));
-        libDirectory = baseDirectory;
-#endif
     }
 #else
     getcwd (buffer,4095);
@@ -1579,6 +1573,7 @@ int main (void)
         ProblemReport (errMsg);
         exit(1);
     }
+    libDirectory = baseDirectory;
 
 
     SetMenuBar(menuBar);
