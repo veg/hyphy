@@ -219,10 +219,15 @@ if(${MPI_FOUND})
     )
     add_custom_target(MPI DEPENDS HYPHYMPI)
 
+    # set definitions here 'cause "s_t_p" below doesn't like lists
+    set_property(
+        TARGET HYPHYMPI
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    )
+
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
     )
