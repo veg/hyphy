@@ -1,1 +1,78 @@
-if (NON_EMPTY_SELECTION){	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	if (data_rows % 2 == 0)	{		temp = -1;		data_columns = -1;				for (count = 0; count<data_rows; count = count+1)		{			temp2 = SELECTED_CHART_COLS[count];			if (temp<0)			{				temp = temp2;			}			else			{				if (temp!=temp2)				{					if (data_columns<0)					{						data_columns = temp2;					}					else					{						if (temp2!=data_columns)						{							break;						}					}				}			}		}				if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))		{			for (count = 0; count < data_rows; count = count+2)			{				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])				{					break;				}			}					if (count==data_rows)			{							SELECTED_CHART_ROWS = {2,data_rows/2};				sumX  = 0;				sumY  = 0;				sumXY = 0;				for (count = 0; count < data_rows; count = count+2)				{					x_v = SELECTED_CHART_DATA[count];					y_v = SELECTED_CHART_DATA[count+1];					sumX  = sumX + x_v;					sumY  = sumY + y_v;					sumXY = sumXY + y_v*x_v;				}				data_rows = data_rows/2;								fprintf (stdout, "\nEstimated covariance: ", sumXY/data_rows - sumX*sumY/data_rows^2 , "\n");								return 0;			}		}	}	fprintf (stdout, "Please select two columns to compute the covariance of.\n");}else{	NON_EMPTY_SELECTION = -1;}
+if (NON_EMPTY_SELECTION)
+{
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	if (data_rows % 2 == 0)
+	{
+		temp = -1;
+		data_columns = -1;
+		
+		for (count = 0; count<data_rows; count = count+1)
+		{
+			temp2 = SELECTED_CHART_COLS[count];
+			if (temp<0)
+			{
+				temp = temp2;
+			}
+			else
+			{
+				if (temp!=temp2)
+				{
+					if (data_columns<0)
+					{
+						data_columns = temp2;
+					}
+					else
+					{
+						if (temp2!=data_columns)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))
+		{
+			for (count = 0; count < data_rows; count = count+2)
+			{
+				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])
+				{
+					break;
+				}
+			}
+		
+			if (count==data_rows)
+			{
+			
+				SELECTED_CHART_ROWS = {2,data_rows/2};
+
+				sumX  = 0;
+				sumY  = 0;
+				sumXY = 0;
+
+				for (count = 0; count < data_rows; count = count+2)
+				{
+					x_v = SELECTED_CHART_DATA[count];
+					y_v = SELECTED_CHART_DATA[count+1];
+					sumX  = sumX + x_v;
+					sumY  = sumY + y_v;
+					sumXY = sumXY + y_v*x_v;
+				}
+				data_rows = data_rows/2;
+				
+				fprintf (stdout, "\nEstimated covariance: ", sumXY/data_rows - sumX*sumY/data_rows^2 , "\n");
+				
+				return 0;
+			}
+		}
+	}
+
+	fprintf (stdout, "Please select two columns to compute the covariance of.\n");
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}
+

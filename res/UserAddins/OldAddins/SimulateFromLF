@@ -1,1 +1,37 @@
-avLFCount = Rows ("LikelihoodFunction");if (avLFCount>=1){	choices = {avLFCount,2};	for (k=0; k<avLFCount;k=k+1)	{		GetString (tName, LikelihoodFunction, k);		choices[k][0] = tName;		choices[k][1] = "Function "+tName;	}		ChoiceList (tIndex,"Simulate from this likelihood function:",1,SKIP_NONE,choices);	if (tIndex>=0)	{		simCounter = 0;		while (simCounter<1)		{			fprintf (stdout,"\nHow many simulants should be generated (>=1)?");			fscanf  (stdin,"Number", simCounter);		}			GetString (tName, LikelihoodFunction, tIndex);				SetDialogPrompt ("Save files to:");		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);		pathPrefix = LAST_FILE_PATH;				for (k=0; k<simCounter; k=k+1)		{			ExecuteCommands ("DataSet _sData = SimulateDataSet("+tName+");");			DataSetFilter _sFilter = CreateFilter (_sData,1);			outFile = pathPrefix + "." + k;			fprintf (outFile,CLEAR_FILE,_sFilter);		}	}}
+avLFCount = Rows ("LikelihoodFunction");
+
+if (avLFCount>=1)
+{
+	choices = {avLFCount,2};
+	for (k=0; k<avLFCount;k=k+1)
+	{
+		GetString (tName, LikelihoodFunction, k);
+		choices[k][0] = tName;
+		choices[k][1] = "Function "+tName;
+	}
+	
+	ChoiceList (tIndex,"Simulate from this likelihood function:",1,SKIP_NONE,choices);
+	if (tIndex>=0)
+	{
+		simCounter = 0;
+		while (simCounter<1)
+		{
+			fprintf (stdout,"\nHow many simulants should be generated (>=1)?");
+			fscanf  (stdin,"Number", simCounter);
+		}	
+
+		GetString (tName, LikelihoodFunction, tIndex);
+		
+		SetDialogPrompt ("Save files to:");
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
+		pathPrefix = LAST_FILE_PATH;
+		
+		for (k=0; k<simCounter; k=k+1)
+		{
+			ExecuteCommands ("DataSet _sData = SimulateDataSet("+tName+");");
+			DataSetFilter _sFilter = CreateFilter (_sData,1);
+			outFile = pathPrefix + "." + k;
+			fprintf (outFile,CLEAR_FILE,_sFilter);
+		}
+	}
+}

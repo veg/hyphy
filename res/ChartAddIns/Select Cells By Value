@@ -1,1 +1,96 @@
-if (NON_EMPTY_SELECTION){	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	temp = SELECTED_CHART_COLS[0];	for (count = 1; count<data_rows; count = count+1)	{		temp2 = SELECTED_CHART_COLS[count];		if (temp!=temp2)		{			break;		}	}	if (count == data_rows)	{		cell_selector = "";		while (Abs(cell_selector) == 0)		{			fprintf (stdout, "\nSelection criterion in terms of cell_value:");			fscanf  (stdin,  "String", cell_selector);		}				ExecuteCommands ("cell_selector:="+cell_selector+";");				selectedData   = {data_rows,2};		actualSelected = 0;				for (count = 0;  count < data_rows; count = count + 1)		{			cell_value = SELECTED_CHART_DATA[count];			if (cell_selector)			{				selectedData [actualSelected][1] = cell_value;				selectedData [actualSelected][0] = SELECTED_CHART_ROWS[count]+1;				actualSelected = actualSelected + 1;			}		}				if (actualSelected == 0)		{			fprintf (stdout, "\nNo cells matched selection criteria\n");		}		else		{			reallySelectedData = {actualSelected,2};									/*reallySelectedData[0][0] = selectedData[0][0];			reallySelectedData[0][1] = selectedData[0][1];			fprintf (stdout, "\nSelection String:\n", reallySelectedData[0][0]-1);*/						for (count = 0; count < actualSelected; count = count + 1)			{				reallySelectedData[count][0] = selectedData[count][0];				reallySelectedData[count][1] = selectedData[count][1];				/*fprintf (stdout, ",", reallySelectedData[count][0]-1);*/			}						/*fprintf (stdout, "\n");*/						labels = {{"Cell Index", "Value"}};						selectedData = "Selected Data";			OpenWindow (CHARTWINDOW,{{selectedData}								   {"labels"},								   {"reallySelectedData"},								   {"Bar Chart"},								   {labels[0]},								   {labels[1]},								   {"Index"},								   {""},								   {"Value"},								   {"0"}								   {""}								   {"-1;-1"}								   {"10;1.309;0.785398"}								   {"Times:12:0;Times:10:0;Times:12:2"}								   {"0;0;16777215;1644825;0;0;6579300;11842740;13158600;14474460;0;3947580;4294967295;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}								   {"16"}								   },								   "SCREEN_WIDTH-60;SCREEN_HEIGHT-50;30;50");		}			}	else	{		fprintf (stdout, "Please select a single column of data.\n");	}}else{	NON_EMPTY_SELECTION = -1;}
+if (NON_EMPTY_SELECTION)
+{
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	temp = SELECTED_CHART_COLS[0];
+
+	for (count = 1; count<data_rows; count = count+1)
+	{
+		temp2 = SELECTED_CHART_COLS[count];
+		if (temp!=temp2)
+		{
+			break;
+		}
+	}
+
+	if (count == data_rows)
+	{
+		cell_selector = "";
+		while (Abs(cell_selector) == 0)
+		{
+			fprintf (stdout, "\nSelection criterion in terms of cell_value:");
+			fscanf  (stdin,  "String", cell_selector);
+		}
+		
+		ExecuteCommands ("cell_selector:="+cell_selector+";");
+		
+		selectedData   = {data_rows,2};
+		actualSelected = 0;
+		
+		for (count = 0;  count < data_rows; count = count + 1)
+		{
+			cell_value = SELECTED_CHART_DATA[count];
+			if (cell_selector)
+			{
+				selectedData [actualSelected][1] = cell_value;
+				selectedData [actualSelected][0] = SELECTED_CHART_ROWS[count]+1;
+				actualSelected = actualSelected + 1;
+			}
+		}
+		
+		if (actualSelected == 0)
+		{
+			fprintf (stdout, "\nNo cells matched selection criteria\n");
+		}
+		else
+		{
+			reallySelectedData = {actualSelected,2};
+			
+			
+			/*reallySelectedData[0][0] = selectedData[0][0];
+			reallySelectedData[0][1] = selectedData[0][1];
+			fprintf (stdout, "\nSelection String:\n", reallySelectedData[0][0]-1);*/
+			
+			for (count = 0; count < actualSelected; count = count + 1)
+			{
+				reallySelectedData[count][0] = selectedData[count][0];
+				reallySelectedData[count][1] = selectedData[count][1];
+				/*fprintf (stdout, ",", reallySelectedData[count][0]-1);*/
+			}
+			
+			/*fprintf (stdout, "\n");*/
+			
+			labels = {{"Cell Index", "Value"}};
+			
+			selectedData = "Selected Data";
+			OpenWindow (CHARTWINDOW,{{selectedData}
+								   {"labels"},
+								   {"reallySelectedData"},
+								   {"Bar Chart"},
+								   {labels[0]},
+								   {labels[1]},
+								   {"Index"},
+								   {""},
+								   {"Value"},
+								   {"0"}
+								   {""}
+								   {"-1;-1"}
+								   {"10;1.309;0.785398"}
+								   {"Times:12:0;Times:10:0;Times:12:2"}
+								   {"0;0;16777215;1644825;0;0;6579300;11842740;13158600;14474460;0;3947580;4294967295;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
+								   {"16"}
+								   },
+								   "SCREEN_WIDTH-60;SCREEN_HEIGHT-50;30;50");
+		}
+		
+
+	}
+	else
+	{
+		fprintf (stdout, "Please select a single column of data.\n");
+	}
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}

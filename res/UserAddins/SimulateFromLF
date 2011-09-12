@@ -1,1 +1,27 @@
-_ChooseCaption = "Simulate from this likelihood function:";#include "Includes/ChooseALF.ibf";if (tIndex>=0){	simCounter = 0;	while (simCounter<1)	{		fprintf (stdout,"\nHow many simulants should be generated (>=1)?");		fscanf  (stdin,"Number", simCounter);	}		GetString (tName, LikelihoodFunction, tIndex);		SetDialogPrompt ("Save files to:");	fprintf (PROMPT_FOR_FILE,CLEAR_FILE);	pathPrefix = LAST_FILE_PATH;		for (k=0; k<simCounter; k=k+1)	{		ExecuteCommands ("DataSet _sData = SimulateDataSet("+tName+");");		DataSetFilter _sFilter = CreateFilter (_sData,1);		outFile = pathPrefix + "." + k;		fprintf (outFile,CLEAR_FILE,_sFilter);	}}
+_ChooseCaption = "Simulate from this likelihood function:";
+
+#include "Includes/ChooseALF.ibf";
+
+if (tIndex>=0)
+{
+	simCounter = 0;
+	while (simCounter<1)
+	{
+		fprintf (stdout,"\nHow many simulants should be generated (>=1)?");
+		fscanf  (stdin,"Number", simCounter);
+	}	
+
+	GetString (tName, LikelihoodFunction, tIndex);
+	
+	SetDialogPrompt ("Save files to:");
+	fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
+	pathPrefix = LAST_FILE_PATH;
+	
+	for (k=0; k<simCounter; k=k+1)
+	{
+		ExecuteCommands ("DataSet _sData = SimulateDataSet("+tName+");");
+		DataSetFilter _sFilter = CreateFilter (_sData,1);
+		outFile = pathPrefix + "." + k;
+		fprintf (outFile,CLEAR_FILE,_sFilter);
+	}
+}

@@ -1,1 +1,153 @@
-if (NON_EMPTY_SELECTION){	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	if (data_rows % 2 == 0)	{		temp = -1;		data_columns = -1;				for (count = 0; count<data_rows; count = count+1)		{			temp2 = SELECTED_CHART_COLS[count];			if (temp<0)			{				temp = temp2;			}			else			{				if (temp!=temp2)				{					if (data_columns<0)					{						data_columns = temp2;					}					else					{						if (temp2!=data_columns)						{							break;						}					}				}			}		}				if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))		{			for (count = 0; count < data_rows; count = count+2)			{				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])				{					break;				}			}					if (count==data_rows)			{							SELECTED_CHART_ROWS = {2,data_rows/2};				for (count = 0; count < data_rows; count = count+2)				{					SELECTED_CHART_ROWS[0][count/2]=SELECTED_CHART_DATA[count];					SELECTED_CHART_ROWS[1][count/2]=SELECTED_CHART_DATA[count+1];				}				SELECTED_CHART_DATA = SELECTED_CHART_ROWS;				data_rows = data_rows/2;								/* decide what the weight column is: weights or cum. distr and whether the 1st or the 2nd column has weights */								data_col   = 0;				weight_col = 1;				rm1 = 0;								for (count = 0; count < data_rows; count = count + 1)				{					rm2 = SELECTED_CHART_DATA[weight_col][count];					if ((rm2<0)||(rm2>1))					{						break;					}					rm1 = rm1 + SELECTED_CHART_DATA[weight_col][count];				}								if (Abs(rm1-1)>=0.00001 && Abs(rm2-1) >= 0.00001)				{					data_col   = 1;					weight_col = 0;					for (count = 0; count < data_rows; count = count + 1)					{						rm2 = SELECTED_CHART_DATA[weight_col][count];						if ((rm2<0)||(rm2>1))						{							fprintf (stdout, "Weight column must contain numbers between 0 and 1.\n");							return;						}						rm1 = rm1 + SELECTED_CHART_DATA[weight_col][count];					}								}								if (Abs(rm1-1)<0.00001)				/* weights */				{					rm1 = 0;					rm2  = 0;					rm3 = 0;					rm4 = 0;					for (count = 0; count < data_rows; count = count + 1)					{						temp = SELECTED_CHART_DATA[weight_col][count]*SELECTED_CHART_DATA[data_col][count];						rm1 = rm1 + temp;						rm2 = rm2+temp*SELECTED_CHART_DATA[data_col][count];						rm3 = rm3+temp*(SELECTED_CHART_DATA[data_col][count])^2;						rm4 = rm4+temp*(SELECTED_CHART_DATA[data_col][count])^3;					}				}				else				{					if (Abs(rm2-1)<0.00001)					/* cum distr */					{						rm1 =  SELECTED_CHART_DATA[weight_col][0]*SELECTED_CHART_DATA[data_col][0];						rm2  = rm1*SELECTED_CHART_DATA[data_col][0];						rm3 = rm2*SELECTED_CHART_DATA[data_col][0];						rm4 = rm3*SELECTED_CHART_DATA[data_col][0];												for (count = 1; count < data_rows; count = count + 1)						{							temp = SELECTED_CHART_DATA[weight_col][count]-SELECTED_CHART_DATA[weight_col][count-1];							temp = temp*SELECTED_CHART_DATA[data_col][count];							rm1 = rm1 + temp;							temp = temp*SELECTED_CHART_DATA[data_col][count];							rm2 = rm2+temp;							temp = temp*SELECTED_CHART_DATA[data_col][count];							rm3 = rm3+temp;							rm4 = rm4+temp*SELECTED_CHART_DATA[data_col][count];						}								}					else					{						fprintf (stdout, "Weight column is neither a collection of weights nor a cumulative probability.\n");						return;					}				}				var_value = rm2-rm1*rm1;								fprintf (stdout, "\nMean     = ", rm1,								 "\nVariance = ", var_value,								 "\nSkewness = ", (2*rm1^3-3*rm1*rm2+rm3)/var_value^1.5,								 "\nKurtosis = ", (6*rm1^2*rm2-3*rm1^4-4*rm1*rm3+rm4)/var_value^2, 								 "\n");				return;			}		}	}	fprintf (stdout, "Please select two columns with distribution values (1st column) and weights (2nd columns).\n");}else{	NON_EMPTY_SELECTION = -1;}
+if (NON_EMPTY_SELECTION)
+{
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	if (data_rows % 2 == 0)
+	{
+		temp = -1;
+		data_columns = -1;
+		
+		for (count = 0; count<data_rows; count = count+1)
+		{
+			temp2 = SELECTED_CHART_COLS[count];
+			if (temp<0)
+			{
+				temp = temp2;
+			}
+			else
+			{
+				if (temp!=temp2)
+				{
+					if (data_columns<0)
+					{
+						data_columns = temp2;
+					}
+					else
+					{
+						if (temp2!=data_columns)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))
+		{
+			for (count = 0; count < data_rows; count = count+2)
+			{
+				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])
+				{
+					break;
+				}
+			}
+		
+			if (count==data_rows)
+			{
+			
+				SELECTED_CHART_ROWS = {2,data_rows/2};
+				for (count = 0; count < data_rows; count = count+2)
+				{
+					SELECTED_CHART_ROWS[0][count/2]=SELECTED_CHART_DATA[count];
+					SELECTED_CHART_ROWS[1][count/2]=SELECTED_CHART_DATA[count+1];
+				}
+				SELECTED_CHART_DATA = SELECTED_CHART_ROWS;
+				data_rows = data_rows/2;
+				
+				/* decide what the weight column is: weights or cum. distr and whether the 1st or the 2nd column has weights */
+				
+				data_col   = 0;
+				weight_col = 1;
+				rm1 = 0;
+				
+				for (count = 0; count < data_rows; count = count + 1)
+				{
+					rm2 = SELECTED_CHART_DATA[weight_col][count];
+					if ((rm2<0)||(rm2>1))
+					{
+						break;
+					}
+					rm1 = rm1 + SELECTED_CHART_DATA[weight_col][count];
+				}
+				
+				if (Abs(rm1-1)>=0.00001 && Abs(rm2-1) >= 0.00001)
+				{
+					data_col   = 1;
+					weight_col = 0;
+					for (count = 0; count < data_rows; count = count + 1)
+					{
+						rm2 = SELECTED_CHART_DATA[weight_col][count];
+						if ((rm2<0)||(rm2>1))
+						{
+							fprintf (stdout, "Weight column must contain numbers between 0 and 1.\n");
+							return;
+						}
+						rm1 = rm1 + SELECTED_CHART_DATA[weight_col][count];
+					}
+				
+				}
+				
+				if (Abs(rm1-1)<0.00001)
+				/* weights */
+				{
+					rm1 = 0;
+					rm2  = 0;
+					rm3 = 0;
+					rm4 = 0;
+					for (count = 0; count < data_rows; count = count + 1)
+					{
+						temp = SELECTED_CHART_DATA[weight_col][count]*SELECTED_CHART_DATA[data_col][count];
+						rm1 = rm1 + temp;
+						rm2 = rm2+temp*SELECTED_CHART_DATA[data_col][count];
+						rm3 = rm3+temp*(SELECTED_CHART_DATA[data_col][count])^2;
+						rm4 = rm4+temp*(SELECTED_CHART_DATA[data_col][count])^3;
+					}
+				}
+				else
+				{
+					if (Abs(rm2-1)<0.00001)
+					/* cum distr */
+					{
+						rm1 =  SELECTED_CHART_DATA[weight_col][0]*SELECTED_CHART_DATA[data_col][0];
+						rm2  = rm1*SELECTED_CHART_DATA[data_col][0];
+						rm3 = rm2*SELECTED_CHART_DATA[data_col][0];
+						rm4 = rm3*SELECTED_CHART_DATA[data_col][0];
+						
+						for (count = 1; count < data_rows; count = count + 1)
+						{
+							temp = SELECTED_CHART_DATA[weight_col][count]-SELECTED_CHART_DATA[weight_col][count-1];
+							temp = temp*SELECTED_CHART_DATA[data_col][count];
+							rm1 = rm1 + temp;
+							temp = temp*SELECTED_CHART_DATA[data_col][count];
+							rm2 = rm2+temp;
+							temp = temp*SELECTED_CHART_DATA[data_col][count];
+							rm3 = rm3+temp;
+							rm4 = rm4+temp*SELECTED_CHART_DATA[data_col][count];
+						}			
+					}
+					else
+					{
+						fprintf (stdout, "Weight column is neither a collection of weights nor a cumulative probability.\n");
+						return;
+					}
+				}
+				var_value = rm2-rm1*rm1;
+				
+				fprintf (stdout, "\nMean     = ", rm1,
+								 "\nVariance = ", var_value,
+								 "\nSkewness = ", (2*rm1^3-3*rm1*rm2+rm3)/var_value^1.5,
+								 "\nKurtosis = ", (6*rm1^2*rm2-3*rm1^4-4*rm1*rm3+rm4)/var_value^2, 
+								 "\n");
+				return;
+			}
+		}
+	}
+
+	fprintf (stdout, "Please select two columns with distribution values (1st column) and weights (2nd columns).\n");
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}
+

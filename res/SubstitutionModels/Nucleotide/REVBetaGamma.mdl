@@ -1,1 +1,86 @@
-Model_Name  		= "REV_BG";Model_Options 		= 7;Model_Dimension 	= 4;Model_EFV_Type		= "Observed In Partition";function GUIPopulateModelMatrix (ModelMatrixName&, EFV){	if (modelType == 0)	{		ModelMatrixName = {{*,a,b,c}						   {a,*,d,e}						   {b,d,*,f}						   {c,e,f,*}};	}	else	{		global			globalVariableAC;		global			globalVariableAT;		global			globalVariableCG;		global			globalVariableCT;		global			globalVariableGT;				if (modelType<2)		{				ModelMatrixName = {{*,globalVariableAC*mu,mu,globalVariableAT*mu}							   {globalVariableAC*mu,*,globalVariableCG*mu,globalVariableCT*mu}							   {mu,globalVariableCG*mu,*,globalVariableGT*mu}							   {globalVariableAT*mu,globalVariableCT*mu,globalVariableGT*mu,*}};		}		else		{			global shapeParameter_betaP = 1;			global shapeParameter_betaQ = 1;			shapeParameter_betaP:>0.05;shapeParameter_betaP:<85;			shapeParameter_betaQ:>0.05;shapeParameter_betaQ:<85;						category categoryVariable_pc = (rateClassCount-1, EQUAL, MEAN, 							_x_^(shapeParameter_betaP-1)*(1-_x_)^(shapeParameter_betaQ-1)/Beta(shapeParameter_betaP,shapeParameter_betaQ), /* density */							IBeta(_x_,shapeParameter_betaP,shapeParameter_betaQ), /*CDF*/							0, 				   /*left bound*/							1, 			   /*right bound*/							IBeta(_x_,shapeParameter_betaP+1,shapeParameter_betaQ)*shapeParameter_betaP/(shapeParameter_betaP+shapeParameter_betaQ));			global shapeParameter = .5;			shapeParameter:>0.01;shapeParameter:<100;			category     categoryVariable = 						(rateClassCount, categoryVariable_pc, MEAN, GammaDist(_x_,shapeParameter,shapeParameter), CGammaDist(_x_,shapeParameter,shapeParameter), 0 , 				  							1e25,CGammaDist(_x_,shapeParameter+1,shapeParameter));			ModelMatrixName = {{*,globalVariableAC*mu*categoryVariable,mu*categoryVariable,globalVariableAT*mu*categoryVariable}							   {globalVariableAC*mu*categoryVariable,*,globalVariableCG*mu*categoryVariable,globalVariableCT*mu*categoryVariable}							   {mu*categoryVariable,globalVariableCG*mu*categoryVariable,*,globalVariableGT*mu*categoryVariable}							   {globalVariableAT*mu*categoryVariable,globalVariableCT*mu*categoryVariable,globalVariableGT*mu*categoryVariable,*}};		}	}	return 1;}/*-------------------------------------------------------------------------------*/function	EFVEstimated	(EFVector&, EFVApproximations){	global frequencyVariableA;	global frequencyVariableC;	global frequencyVariableG;	global frequencyVariableT;	global frequencyVariableSum;	frequencyVariableA:<1;	frequencyVariableC:<1;	frequencyVariableG:<1;	frequencyVariableT	 :=	Abs(1-frequencyVariableA-frequencyVariableC-frequencyVariableG);	frequencyVariableSum := frequencyVariableA+frequencyVariableC+frequencyVariableG+frequencyVariableT;	frequencyVariableA = EFVApproximations[0];	frequencyVariableC = EFVApproximations[1];	frequencyVariableG = EFVApproximations[2];	EFVector = {{frequencyVariableA/frequencyVariableSum},				{frequencyVariableC/frequencyVariableSum},				{frequencyVariableG/frequencyVariableSum},				{frequencyVariableT/frequencyVariableSum}};					return	1;}
+Model_Name  		= "REV_BG";
+Model_Options 		= 7;
+Model_Dimension 	= 4;
+Model_EFV_Type		= "Observed In Partition";
+
+function GUIPopulateModelMatrix (ModelMatrixName&, EFV)
+{
+	if (modelType == 0)
+	{
+		ModelMatrixName = {{*,a,b,c}
+						   {a,*,d,e}
+						   {b,d,*,f}
+						   {c,e,f,*}};
+	}
+	else
+	{
+		global			globalVariableAC;
+		global			globalVariableAT;
+		global			globalVariableCG;
+		global			globalVariableCT;
+		global			globalVariableGT;
+		
+		if (modelType<2)
+		{
+	
+			ModelMatrixName = {{*,globalVariableAC*mu,mu,globalVariableAT*mu}
+							   {globalVariableAC*mu,*,globalVariableCG*mu,globalVariableCT*mu}
+							   {mu,globalVariableCG*mu,*,globalVariableGT*mu}
+							   {globalVariableAT*mu,globalVariableCT*mu,globalVariableGT*mu,*}};
+		}
+		else
+		{
+			global shapeParameter_betaP = 1;
+			global shapeParameter_betaQ = 1;
+			shapeParameter_betaP:>0.05;shapeParameter_betaP:<85;
+			shapeParameter_betaQ:>0.05;shapeParameter_betaQ:<85;
+			
+			category categoryVariable_pc = (rateClassCount-1, EQUAL, MEAN, 
+							_x_^(shapeParameter_betaP-1)*(1-_x_)^(shapeParameter_betaQ-1)/Beta(shapeParameter_betaP,shapeParameter_betaQ), /* density */
+							IBeta(_x_,shapeParameter_betaP,shapeParameter_betaQ), /*CDF*/
+							0, 				   /*left bound*/
+							1, 			   /*right bound*/
+							IBeta(_x_,shapeParameter_betaP+1,shapeParameter_betaQ)*shapeParameter_betaP/(shapeParameter_betaP+shapeParameter_betaQ));
+
+			global shapeParameter = .5;
+			shapeParameter:>0.01;shapeParameter:<100;
+			category     categoryVariable = 
+						(rateClassCount, categoryVariable_pc, MEAN, GammaDist(_x_,shapeParameter,shapeParameter), CGammaDist(_x_,shapeParameter,shapeParameter), 0 , 
+				  							1e25,CGammaDist(_x_,shapeParameter+1,shapeParameter));
+
+			ModelMatrixName = {{*,globalVariableAC*mu*categoryVariable,mu*categoryVariable,globalVariableAT*mu*categoryVariable}
+							   {globalVariableAC*mu*categoryVariable,*,globalVariableCG*mu*categoryVariable,globalVariableCT*mu*categoryVariable}
+							   {mu*categoryVariable,globalVariableCG*mu*categoryVariable,*,globalVariableGT*mu*categoryVariable}
+							   {globalVariableAT*mu*categoryVariable,globalVariableCT*mu*categoryVariable,globalVariableGT*mu*categoryVariable,*}};
+		}
+	}
+	return 1;
+}
+
+/*-------------------------------------------------------------------------------*/
+
+function	EFVEstimated	(EFVector&, EFVApproximations)
+{
+	global frequencyVariableA;
+	global frequencyVariableC;
+	global frequencyVariableG;
+	global frequencyVariableT;
+	global frequencyVariableSum;
+
+	frequencyVariableA:<1;
+	frequencyVariableC:<1;
+	frequencyVariableG:<1;
+	frequencyVariableT	 :=	Abs(1-frequencyVariableA-frequencyVariableC-frequencyVariableG);
+	frequencyVariableSum := frequencyVariableA+frequencyVariableC+frequencyVariableG+frequencyVariableT;
+
+	frequencyVariableA = EFVApproximations[0];
+	frequencyVariableC = EFVApproximations[1];
+	frequencyVariableG = EFVApproximations[2];
+
+	EFVector = {{frequencyVariableA/frequencyVariableSum},
+				{frequencyVariableC/frequencyVariableSum},
+				{frequencyVariableG/frequencyVariableSum},
+				{frequencyVariableT/frequencyVariableSum}};
+				
+	return	1;
+}

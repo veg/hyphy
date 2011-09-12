@@ -1,1 +1,229 @@
-/*****************************************************************************/function  DoNCategoryFit (weightMatrix){	weightClasses	 = Rows(weightMatrix);		logLikelihood	= 0;	allMeasurements = Columns(SELECTED_CHART_DATA);		for (measureCount = 0; measureCount < allMeasurements; measureCount = measureCount+1)	{		siteLikelihood = 0;		measVal  = SELECTED_CHART_DATA[0][measureCount];				for (classCounter = 0; classCounter < weightClasses; classCounter = classCounter + 1)		{			classVal = weightMatrix[classCounter][1];			if (measVal==classVal)			{				siteLikelihood = siteLikelihood + weightMatrix[classCounter][0];			}			else			{				siteLikelihood = siteLikelihood + Exp(-(measVal-classVal)^2/(2*classVal)) * weightMatrix[classCounter][0]			}					}				if (siteLikelihood > 0)		{			logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][measureCount]*Log(siteLikelihood);				}		else		{			logLikelihood = logLikelihood-1e10;		}	}		return logLikelihood;}/*****************************************************************************/function  DoOneCategoryFit (theRate){	logLikelihood	= 0;	allMeasurements = Columns(SELECTED_CHART_DATA);				for (measureCount = 0; measureCount < allMeasurements; measureCount = measureCount+1)	{		siteLikelihood = 0;		measVal  = SELECTED_CHART_DATA[0][measureCount];				if (measVal!=theRate)		{			siteLikelihood = siteLikelihood + Exp(-(measVal-theRate)^2/(2*theRate));		}							if (siteLikelihood > 0)		{			logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][measureCount]*Log(siteLikelihood);				}		else		{			logLikelihood = logLikelihood-1e10;		}	}		return logLikelihood;}/*****************************************************************************/if (NON_EMPTY_SELECTION){	UPDATE_CELL_DATE = 0;		data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	temp = SELECTED_CHART_COLS[0];	for (count = 1; count<data_rows; count = count+1)	{		temp2 = SELECTED_CHART_COLS[count];		if (temp!=temp2)		{			break;		}		if (SELECTED_CHART_DATA[count]<SELECTED_CHART_DATA[count-1])		{			break;		}	}		if (count == data_rows)	{		/* compress the data vector to account for repeated observations */				dataPoints = Columns(SELECTED_CHART_DATA);		temp_data_vector = {2, dataPoints};		currentIndex = 0;				temp_data_vector[0][0] = SELECTED_CHART_DATA[0];		temp_data_vector[1][0] = 1;		for (nextIndex = 1; nextIndex < dataPoints; nextIndex = nextIndex + 1)		{			if (SELECTED_CHART_DATA[nextIndex]!=SELECTED_CHART_DATA[nextIndex-1])			{				currentIndex = currentIndex+1;				temp_data_vector[0][currentIndex] = SELECTED_CHART_DATA[nextIndex];			}			temp_data_vector[1][currentIndex] = temp_data_vector[1][currentIndex] + 1;		}				SELECTED_CHART_DATA = {2, currentIndex+1};				upperBound = 0;				for (nextIndex = 0; nextIndex <= currentIndex; nextIndex = nextIndex + 1)		{			SELECTED_CHART_DATA[0][nextIndex] = temp_data_vector[0][nextIndex];			SELECTED_CHART_DATA[1][nextIndex] = temp_data_vector[1][nextIndex];		}						temp_data_vector = 0;		lastMax 		 = -100000000000;		oneRate = 1;				oneRate:>1e-10;				Optimize (bestFit, DoOneCategoryFit(oneRate));				lastMax = bestFit [1][0];		fprintf (stdout, Format (1,3,0), " rate classes: Log(L) = ", bestFit[1][0],"  \n");		for (resp = 2; resp <= Columns(SELECTED_CHART_DATA); resp = resp+1)		{			freqStrMx    = {resp,1};			freqStrMx[0] = "PS_1";			ratesMx    = {resp,1};			ratesMx[0] = "CR1*CR2";			ratesMx[1] = "CR2";			for (mi=1; mi<resp-1; mi=mi+1)			{				freqStrMx[mi] = "";				for (mi2=1;mi2<=mi;mi2=mi2+1)				{					freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";						}				freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);				}				freqStrMx[mi] = "";			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";				for (mi2=1;mi2<mi;mi2=mi2+1)			{				freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";					}			for (mi=2; mi<resp; mi=mi+1)			{				ratesMx[mi] = ratesMx [mi-1]+"*CR"+(mi+1);			}				mx = {resp,2};						execString  = "";			execString2 = "CR1=0;CR1:>1e-10;CR1:<0.99;CR2:>0;CR2=1;";			for (resp2 = 0; resp2 < resp; resp2 = resp2 + 1)			{				if (resp2)				{					execString = execString + "PS_"+resp2+":>0;PS_"+resp2+":<1;PS_"+resp2+"=1/"+(resp-resp2+1)+";";				}				execString  = execString + "mx[" + resp2 + "][0]:=" + freqStrMx[resp2] + ";";				execString2 = execString2 + "mx[" + resp2 + "][1]:=" + ratesMx[resp2] + ";";				if (resp2>=2)				{					execString2 = execString2 + "CR" + (resp2+1) + "=CR" + resp2 + "*1.5;CR" + (resp2+1) + ":>1.01;"				}			}						ExecuteCommands (execString);			ExecuteCommands (execString2);						Optimize (bestFit, DoNCategoryFit(mx));						fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", bestFit[1][0],"  \n");			if (bestFit[1][0] - lastMax < 2)			{				break;			}						saveMx	= mx;			lastMax = bestFit[1][0];		}				resp = resp-1;				if (resp==1)		{			fprintf (stdout, "\n\nFit a single rate to the data: ", oneRate, "\n\n");				}		else		{			fprintf (stdout, "\n\nFit ", resp, " categories to the data\n\n");						for (resp2 = 0; resp2 < resp; resp2 = resp2+1)			{				fprintf (stdout, "Class ", Format (resp2+1,3,0), " : ",  Format (saveMx[resp2][1], 8, 5), " weight = ", Format (saveMx[resp2][0], 8, 5), "\n");			}		}	}	else	{		fprintf (stdout, "Please select a single sorted column to fit a profile to.\n");	}}else{	NON_EMPTY_SELECTION = -1;}
+/*****************************************************************************/
+
+function  DoNCategoryFit (weightMatrix)
+{
+	weightClasses	 = Rows(weightMatrix);
+	
+	logLikelihood	= 0;
+
+	allMeasurements = Columns(SELECTED_CHART_DATA);
+	
+	for (measureCount = 0; measureCount < allMeasurements; measureCount = measureCount+1)
+	{
+		siteLikelihood = 0;
+		measVal  = SELECTED_CHART_DATA[0][measureCount];
+		
+		for (classCounter = 0; classCounter < weightClasses; classCounter = classCounter + 1)
+		{
+			classVal = weightMatrix[classCounter][1];
+			if (measVal==classVal)
+			{
+				siteLikelihood = siteLikelihood + weightMatrix[classCounter][0];
+			}
+			else
+			{
+				siteLikelihood = siteLikelihood + Exp(-(measVal-classVal)^2/(2*classVal)) * weightMatrix[classCounter][0]
+			}			
+		}
+		
+		if (siteLikelihood > 0)
+		{
+			logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][measureCount]*Log(siteLikelihood);		
+		}
+		else
+		{
+			logLikelihood = logLikelihood-1e10;
+		}
+	}
+	
+	return logLikelihood;
+}
+
+/*****************************************************************************/
+
+function  DoOneCategoryFit (theRate)
+{
+	logLikelihood	= 0;
+
+	allMeasurements = Columns(SELECTED_CHART_DATA);
+			
+	for (measureCount = 0; measureCount < allMeasurements; measureCount = measureCount+1)
+	{
+		siteLikelihood = 0;
+		measVal  = SELECTED_CHART_DATA[0][measureCount];
+		
+		if (measVal!=theRate)
+		{
+			siteLikelihood = siteLikelihood + Exp(-(measVal-theRate)^2/(2*theRate));
+		}			
+		
+		if (siteLikelihood > 0)
+		{
+			logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][measureCount]*Log(siteLikelihood);		
+		}
+		else
+		{
+			logLikelihood = logLikelihood-1e10;
+		}
+	}
+	
+	return logLikelihood;
+}
+
+/*****************************************************************************/
+
+if (NON_EMPTY_SELECTION)
+{
+	UPDATE_CELL_DATE = 0;
+	
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	temp = SELECTED_CHART_COLS[0];
+
+	for (count = 1; count<data_rows; count = count+1)
+	{
+		temp2 = SELECTED_CHART_COLS[count];
+		if (temp!=temp2)
+		{
+			break;
+		}
+		if (SELECTED_CHART_DATA[count]<SELECTED_CHART_DATA[count-1])
+		{
+			break;
+		}
+	}
+	
+	if (count == data_rows)
+	{
+		/* compress the data vector to account for repeated observations */
+		
+		dataPoints = Columns(SELECTED_CHART_DATA);
+		temp_data_vector = {2, dataPoints};
+		currentIndex = 0;
+		
+		temp_data_vector[0][0] = SELECTED_CHART_DATA[0];
+		temp_data_vector[1][0] = 1;
+		for (nextIndex = 1; nextIndex < dataPoints; nextIndex = nextIndex + 1)
+		{
+			if (SELECTED_CHART_DATA[nextIndex]!=SELECTED_CHART_DATA[nextIndex-1])
+			{
+				currentIndex = currentIndex+1;
+				temp_data_vector[0][currentIndex] = SELECTED_CHART_DATA[nextIndex];
+			}
+			temp_data_vector[1][currentIndex] = temp_data_vector[1][currentIndex] + 1;
+		}
+		
+		SELECTED_CHART_DATA = {2, currentIndex+1};
+		
+		upperBound = 0;
+		
+		for (nextIndex = 0; nextIndex <= currentIndex; nextIndex = nextIndex + 1)
+		{
+			SELECTED_CHART_DATA[0][nextIndex] = temp_data_vector[0][nextIndex];
+			SELECTED_CHART_DATA[1][nextIndex] = temp_data_vector[1][nextIndex];
+		}
+		
+		
+		temp_data_vector = 0;
+		lastMax 		 = -100000000000;
+
+		oneRate = 1;
+		
+		oneRate:>1e-10;
+		
+		Optimize (bestFit, DoOneCategoryFit(oneRate));
+		
+		lastMax = bestFit [1][0];
+
+		fprintf (stdout, Format (1,3,0), " rate classes: Log(L) = ", bestFit[1][0],"  \n");
+
+		for (resp = 2; resp <= Columns(SELECTED_CHART_DATA); resp = resp+1)
+		{
+			freqStrMx    = {resp,1};
+			freqStrMx[0] = "PS_1";
+
+			ratesMx    = {resp,1};
+			ratesMx[0] = "CR1*CR2";
+			ratesMx[1] = "CR2";
+
+			for (mi=1; mi<resp-1; mi=mi+1)
+			{
+				freqStrMx[mi] = "";
+				for (mi2=1;mi2<=mi;mi2=mi2+1)
+				{
+					freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+				}
+				freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);	
+			}	
+
+			freqStrMx[mi] = "";
+			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";	
+			for (mi2=1;mi2<mi;mi2=mi2+1)
+			{
+				freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+			}
+
+			for (mi=2; mi<resp; mi=mi+1)
+			{
+				ratesMx[mi] = ratesMx [mi-1]+"*CR"+(mi+1);
+			}	
+
+			mx = {resp,2};
+			
+			execString  = "";
+			execString2 = "CR1=0;CR1:>1e-10;CR1:<0.99;CR2:>0;CR2=1;";
+			for (resp2 = 0; resp2 < resp; resp2 = resp2 + 1)
+			{
+				if (resp2)
+				{
+					execString = execString + "PS_"+resp2+":>0;PS_"+resp2+":<1;PS_"+resp2+"=1/"+(resp-resp2+1)+";";
+				}
+				execString  = execString + "mx[" + resp2 + "][0]:=" + freqStrMx[resp2] + ";";
+				execString2 = execString2 + "mx[" + resp2 + "][1]:=" + ratesMx[resp2] + ";";
+				if (resp2>=2)
+				{
+					execString2 = execString2 + "CR" + (resp2+1) + "=CR" + resp2 + "*1.5;CR" + (resp2+1) + ":>1.01;"
+				}
+			}
+			
+			ExecuteCommands (execString);
+			ExecuteCommands (execString2);
+			
+			Optimize (bestFit, DoNCategoryFit(mx));
+			
+			fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", bestFit[1][0],"  \n");
+			if (bestFit[1][0] - lastMax < 2)
+			{
+				break;
+			}
+			
+			saveMx	= mx;
+			lastMax = bestFit[1][0];
+		}
+		
+		resp = resp-1;
+		
+		if (resp==1)
+		{
+			fprintf (stdout, "\n\nFit a single rate to the data: ", oneRate, "\n\n");
+		
+		}
+		else
+		{
+			fprintf (stdout, "\n\nFit ", resp, " categories to the data\n\n");
+			
+			for (resp2 = 0; resp2 < resp; resp2 = resp2+1)
+			{
+				fprintf (stdout, "Class ", Format (resp2+1,3,0), " : ",  Format (saveMx[resp2][1], 8, 5), " weight = ", Format (saveMx[resp2][0], 8, 5), "\n");
+			}
+		}
+	}
+	else
+	{
+		fprintf (stdout, "Please select a single sorted column to fit a profile to.\n");
+	}
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}

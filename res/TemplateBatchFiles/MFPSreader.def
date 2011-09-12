@@ -1,1 +1,103 @@
-SetDialogPrompt ("Please select the file with subset lengths:");errorHeader = "\n\n************ ERROR **************\n";fscanf (PROMPT_FOR_FILE,"Number",thisLine);counter = 0;while (1){	if (END_OF_FILE)	{		break;	}	fscanf (LAST_FILE_PATH,"Number",thisLine);	if (thisLine>0)	{		counter = counter+1;	}}if (counter==0){	fprintf (stdout, errorHeader, "At least 1 data subset must be present in the index file.\n");	return;}fprintf (stdout,"\n>There are ",counter, " subsets specified in the index file.\n\n");partitionLengths = {counter,1};partitionTrees = {counter,1};counter = 0;expectedTipCounter = 0;fscanf (LAST_FILE_PATH,"Number",thisLine);while (1){	if (END_OF_FILE)	{		break;	}	if (thisLine>0)	{		partitionLengths[counter] = thisLine;		expectedTipCounter = expectedTipCounter+thisLine;		counter = counter+1;		fprintf (stdout,"\tSubset ",counter, " has ", thisLine, " sequences.\n");		}	fscanf (LAST_FILE_PATH,"Number",thisLine);}SetDialogPrompt ("Please select a codon data file:");DataSet 		ds = ReadDataFile (PROMPT_FOR_FILE);DataSetFilter   filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);if (ds.species!=expectedTipCounter){	fprintf (stdout, errorHeader, "The number of expected and actual sequences do not match (Read ",ds.species," sequences; expected ",expectedTipCounter, " sequences).");	return;}fprintf (stdout, "\n\n>Data\n\n",ds);SetDialogPrompt ("Please select the file with trees:");thisLine = "subsetTree0";fscanf (PROMPT_FOR_FILE,"Tree",thisLine&);PATHTOTREEFILE = LAST_FILE_PATH;counter = 1;fprintf (stdout, "\n\n>Trees\n\n");while (1){	if (END_OF_FILE)	{		break;	}	fprintf(stdout,"\n\tTree ",counter," ", thisLine&);	ExecuteCommands ("partitionTrees[counter-1]:=\"\"+"+thisLine+";");	ExecuteCommands ("tipCount = tipCount+TipCount("+thisLine+");");	thisLine = "subsetTree"+counter;	fscanf (LAST_FILE_PATH,"Tree",thisLine&);	counter = counter+1;}if (counter-1!=Rows(partitionLengths)){	fprintf (stdout, errorHeader, "The number of trees and data subsets do not match (Read ",counter-1," trees).");	return;}if (tipCount!=expectedTipCounter){	fprintf (stdout, errorHeader, "The total number of trees leaves and sequences do not match (Read ",tipCount," leaves and ",expectedTipCounter, " sequences).");	return;}numberOfSubsets = Rows (partitionLengths);
+SetDialogPrompt ("Please select the file with subset lengths:");
+
+errorHeader = "\n\n************ ERROR **************\n";
+
+fscanf (PROMPT_FOR_FILE,"Number",thisLine);
+
+counter = 0;
+
+while (1)
+{
+	if (END_OF_FILE)
+	{
+		break;
+	}
+	fscanf (LAST_FILE_PATH,"Number",thisLine);
+	if (thisLine>0)
+	{
+		counter = counter+1;
+	}
+}
+
+if (counter==0)
+{
+	fprintf (stdout, errorHeader, "At least 1 data subset must be present in the index file.\n");
+	return;
+}
+
+fprintf (stdout,"\n>There are ",counter, " subsets specified in the index file.\n\n");
+
+partitionLengths = {counter,1};
+partitionTrees = {counter,1};
+
+counter = 0;
+expectedTipCounter = 0;
+
+fscanf (LAST_FILE_PATH,"Number",thisLine);
+
+while (1)
+{
+	if (END_OF_FILE)
+	{
+		break;
+	}
+	if (thisLine>0)
+	{
+		partitionLengths[counter] = thisLine;
+		expectedTipCounter = expectedTipCounter+thisLine;
+		counter = counter+1;
+		fprintf (stdout,"\tSubset ",counter, " has ", thisLine, " sequences.\n");	
+	}
+	fscanf (LAST_FILE_PATH,"Number",thisLine);
+}
+
+SetDialogPrompt ("Please select a codon data file:");
+
+DataSet 		ds = ReadDataFile (PROMPT_FOR_FILE);
+
+DataSetFilter   filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
+
+if (ds.species!=expectedTipCounter)
+{
+	fprintf (stdout, errorHeader, "The number of expected and actual sequences do not match (Read ",ds.species," sequences; expected ",expectedTipCounter, " sequences).");
+	return;
+}
+
+fprintf (stdout, "\n\n>Data\n\n",ds);
+
+SetDialogPrompt ("Please select the file with trees:");
+
+thisLine = "subsetTree0";
+fscanf (PROMPT_FOR_FILE,"Tree",thisLine&);
+PATHTOTREEFILE = LAST_FILE_PATH;
+counter = 1;
+
+fprintf (stdout, "\n\n>Trees\n\n");
+
+while (1)
+{
+	if (END_OF_FILE)
+	{
+		break;
+	}
+	fprintf(stdout,"\n\tTree ",counter," ", thisLine&);
+	ExecuteCommands ("partitionTrees[counter-1]:=\"\"+"+thisLine+";");
+	ExecuteCommands ("tipCount = tipCount+TipCount("+thisLine+");");
+	thisLine = "subsetTree"+counter;
+	fscanf (LAST_FILE_PATH,"Tree",thisLine&);
+	counter = counter+1;
+}
+
+if (counter-1!=Rows(partitionLengths))
+{
+	fprintf (stdout, errorHeader, "The number of trees and data subsets do not match (Read ",counter-1," trees).");
+	return;
+}
+
+if (tipCount!=expectedTipCounter)
+{
+	fprintf (stdout, errorHeader, "The total number of trees leaves and sequences do not match (Read ",tipCount," leaves and ",expectedTipCounter, " sequences).");
+	return;
+}
+
+numberOfSubsets = Rows (partitionLengths);

@@ -1,1 +1,32 @@
-avLFCount = Rows ("LikelihoodFunction");tIndex = -1;if (avLFCount>=1){	choices = {avLFCount,2};	for (k=0; k<avLFCount;k=k+1)	{		GetString (tName, LikelihoodFunction, k);		choices[k][0] = tName;		choices[k][1] = "Function "+tName;	}		if (avLFCount > 1)	{		ChoiceList (tIndex,_ChooseCaption,1,SKIP_NONE,choices);	}	else	{		tIndex = 0;	}		if (tIndex >= 0)	{		_chosenLFName = choices[tIndex][0];	}}else{	fprintf (stdout, "[ERROR] No likelihood functions found in memory\n");}
+avLFCount = Rows ("LikelihoodFunction");
+
+tIndex = -1;
+
+if (avLFCount>=1)
+{
+	choices = {avLFCount,2};
+	for (k=0; k<avLFCount;k=k+1)
+	{
+		GetString (tName, LikelihoodFunction, k);
+		choices[k][0] = tName;
+		choices[k][1] = "Function "+tName;
+	}
+	
+	if (avLFCount > 1)
+	{
+		ChoiceList (tIndex,_ChooseCaption,1,SKIP_NONE,choices);
+	}
+	else
+	{
+		tIndex = 0;
+	}
+	
+	if (tIndex >= 0)
+	{
+		_chosenLFName = choices[tIndex][0];
+	}
+}
+else
+{
+	fprintf (stdout, "[ERROR] No likelihood functions found in memory\n");
+}

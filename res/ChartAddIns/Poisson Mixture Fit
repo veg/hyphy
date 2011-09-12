@@ -1,1 +1,265 @@
-/*****************************************************************************/function  DoNExpCategoryFit (weightMatrix, coeffMatrix){	weightClasses	 = Rows(weightMatrix);		logLikelihood    = 0;		normCoeffs		 = {weightClasses,1};		for (currentModel = 0; currentModel < weightClasses; currentModel = currentModel + 1)	{		gamma = coeffMatrix[currentModel];		if (gamma != savedLambdas [currentModel][0])		{			Integrate(int, Exp(_x_*Log(gamma)-Log(Gamma(_x_+1))-gamma), _x_, 0, 150);			normCoeffs[currentModel] 		= int;			savedLambdas [currentModel][0]  = gamma;			savedLambdas [currentModel][1]  = int;		}		else		{			normCoeffs[currentModel] = savedLambdas [currentModel][1];		}		/*fprintf (stdout, "\nNorm ", gamma, "\t", int);*/	}		/*fprintf (stdout, "\n\n", coeffMatrix, normCoeffs, "\n");*/		for (currentIndex = 0; currentIndex < measCount; currentIndex = currentIndex + 1)	{		currentValue = SELECTED_CHART_DATA[0][currentIndex];				currentContrib = 0;				for (currentModel = 0; currentModel < weightClasses; currentModel = currentModel + 1)		{			gamma = coeffMatrix[currentModel];			currentContrib = currentContrib + weightMatrix[currentModel] * Exp(currentValue*Log(gamma)- Log(Gamma(gamma+1))-gamma)/normCoeffs[currentModel];		}				logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][currentIndex] * Log (currentContrib);		/*fprintf (stdout, "\n", currentIndex, "\t", logLikelihood);*/	}			return logLikelihood;}/*****************************************************************************/if (NON_EMPTY_SELECTION){	UPDATE_CELL_DATE = 0;		data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	temp = SELECTED_CHART_COLS[0];	for (count = 1; count<data_rows; count = count+1)	{		temp2 = SELECTED_CHART_COLS[count];		if (temp!=temp2)		{			break;		}		if (SELECTED_CHART_DATA[count]<SELECTED_CHART_DATA[count-1])		{			break;		}	}	if (count == data_rows)	{		/* compress the data vector to account for repeated observations */				dataPoints = Columns(SELECTED_CHART_DATA);		temp_data_vector = {2, dataPoints};		currentIndex = 0;				temp_data_vector[0][0] = SELECTED_CHART_DATA[0];		temp_data_vector[1][0] = 1;		for (nextIndex = 1; nextIndex < dataPoints; nextIndex = nextIndex + 1)		{			if (SELECTED_CHART_DATA[nextIndex]!=SELECTED_CHART_DATA[nextIndex-1])			{				currentIndex = currentIndex+1;				temp_data_vector[0][currentIndex] = SELECTED_CHART_DATA[nextIndex];			}			temp_data_vector[1][currentIndex] = temp_data_vector[1][currentIndex] + 1;		}				SELECTED_CHART_DATA = {2, currentIndex+1};				upperBound = 0;				for (nextIndex = 0; nextIndex <= currentIndex; nextIndex = nextIndex + 1)		{			SELECTED_CHART_DATA[0][nextIndex] = temp_data_vector[0][nextIndex];			SELECTED_CHART_DATA[1][nextIndex] = temp_data_vector[1][nextIndex];			upperBound = upperBound + temp_data_vector[1][nextIndex] * Log(temp_data_vector[1][nextIndex]/dataPoints);		}						temp_data_vector = 0;		normal_sigma 	 = .25;		lastMax 		 = -100000000000;				_x_ = 0;		ES_1:>0;		ES_1:<1;				ES_2:>0;		ES_2:<20;				measCount		 = Columns (SELECTED_CHART_DATA);		for (resp = 2; resp <= Columns(SELECTED_CHART_DATA); resp = resp+1)		{			freqStrMx    = {resp,1};			freqStrMx[0] = "PS_1";			for (mi=1; mi<resp-1; mi=mi+1)			{				freqStrMx[mi] = "";				for (mi2=1;mi2<=mi;mi2=mi2+1)				{					freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";						}				freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);				}				freqStrMx[mi] = "";			for (mi2=1;mi2<mi;mi2=mi2+1)			{				freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";					}			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";				mx = {resp,1};			ex = {resp,1};						execString = "";						for (resp2 = 0; resp2 < resp; resp2 = resp2 + 1)			{				if (resp2)				{					execString = execString + "PS_"+resp2+":>0.0001;PS_"+resp2+":<.9999;PS_"+resp2+"=1/"+(resp-resp2+1)+";";				}				execString = execString + "mx[" + resp2 + "]:=" + freqStrMx[resp2] + ";";			}						ex[0] := ES_1;			ex[1] := ES_2;									for (resp2 = 3; resp2 <= resp; resp2 = resp2 + 1)			{				multString = multString+"+ES_"+resp2;								execString = execString + "ES_"+resp2+":>0;ES_"+resp2+":<20;PS_"+resp2+"="+(resp2-1)+";"+							 "ex[" + (resp2-1) + "]:=ES_"+resp2+";";			}									/* initialize the settings to conditional interval means */						currentBin	  = 1;			currentTarget = dataPoints/resp;			currentIndex  = 1;			currentSum	  = SELECTED_CHART_DATA[1][0];			currentSpan	  = SELECTED_CHART_DATA[1][0];			currentValue  = SELECTED_CHART_DATA[0][0]*currentSpan;						while (currentIndex < measCount)			{				if (currentSum>=currentTarget)				{					execString  = execString + "ES_" +currentBin + "=" + currentValue/currentSpan + ";";					currentSpan = 0;					currenValue = 0;					currentBin  = currentBin+1;					currentTarget = currentTarget+dataPoints/resp;				}				cv 			 = SELECTED_CHART_DATA[1][currentIndex];				currentSum   = currentSum   + cv;				currentValue = currentValue + SELECTED_CHART_DATA[0][currentIndex] * cv;				currentSpan  = currentSpan  + cv;				currentIndex = currentIndex + 1;			}						execString  = execString + "ES_" +currentBin + "=" + currentValue/currentSpan;						ExecuteCommands (execString);			savedLambdas = {resp,2};						/*fprintf (stdout, "\nStarting values for ", resp, " rate classes.\n");			for (resp2 = 1; resp2 <= resp; resp2 = resp2+1)			{				ExecuteCommands ("fprintf(stdout,\"Class \", resp2, \" = \", ES_"+resp2+");");				fprintf (stdout, "\n");			}*/						Optimize (bestFit, DoNExpCategoryFit(mx,ex));						localMax = bestFit[1][0];			saveMxL	 = mx;			sameExL	 = ex;						/*execString = "";						fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");			for (itcount = 0; itcount < 3; itcount = itcount + 1)			{				for (vcount = 1; vcount <= resp; vcount = vcount + 1)				{					execString = execString + "ES_"+ vcount + "=" + Random(0,20) + ";PS_"+ vcount + "=" + Random(0,1) + ";"; 				}				ExecuteCommands (execString);				Optimize (bestFit, DoNExpCategoryFit(mx,ex));				if (bestFit[1][0] > localMax)				{					itcount = 0;					localMax = bestFit[1][0];					saveMxL	 = mx;					sameExL	 = ex;					fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");				}			}*/									fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");						if (localMax - lastMax < 2)			{				break;			}						saveMx	= saveMxL;			saveEx	= sameExL;			lastMax = localMax;		}				resp = resp-1;				fprintf (stdout, "\n\nFit ", resp, " categories to the data\n\n");				for (resp2 = 0; resp2 < resp; resp2 = resp2+1)		{			fprintf (stdout, "Class ", Format (resp2+1,3,0), " : ",  Format (saveEx[resp2], 8, 5), " weight = ", Format (saveMx[resp2], 8, 5), "\n");		}	}	else	{		fprintf (stdout, "Please select a single sorted column to fit a profile to.\n");	}}else{	NON_EMPTY_SELECTION = -1;}
+/*****************************************************************************/
+
+function  DoNExpCategoryFit (weightMatrix, coeffMatrix)
+{
+	weightClasses	 = Rows(weightMatrix);
+	
+	logLikelihood    = 0;
+	
+	normCoeffs		 = {weightClasses,1};
+	
+	for (currentModel = 0; currentModel < weightClasses; currentModel = currentModel + 1)
+	{
+		gamma = coeffMatrix[currentModel];
+		if (gamma != savedLambdas [currentModel][0])
+		{
+			Integrate(int, Exp(_x_*Log(gamma)-Log(Gamma(_x_+1))-gamma), _x_, 0, 150);
+			normCoeffs[currentModel] 		= int;
+			savedLambdas [currentModel][0]  = gamma;
+			savedLambdas [currentModel][1]  = int;
+		}
+		else
+		{
+			normCoeffs[currentModel] = savedLambdas [currentModel][1];
+		}
+		/*fprintf (stdout, "\nNorm ", gamma, "\t", int);*/
+	}
+	
+	/*fprintf (stdout, "\n\n", coeffMatrix, normCoeffs, "\n");*/
+	
+	for (currentIndex = 0; currentIndex < measCount; currentIndex = currentIndex + 1)
+	{
+		currentValue = SELECTED_CHART_DATA[0][currentIndex];
+		
+		currentContrib = 0;
+		
+		for (currentModel = 0; currentModel < weightClasses; currentModel = currentModel + 1)
+		{
+			gamma = coeffMatrix[currentModel];
+			currentContrib = currentContrib + weightMatrix[currentModel] * Exp(currentValue*Log(gamma)- Log(Gamma(gamma+1))-gamma)/normCoeffs[currentModel];
+		}
+		
+		logLikelihood = logLikelihood + SELECTED_CHART_DATA[1][currentIndex] * Log (currentContrib);
+		/*fprintf (stdout, "\n", currentIndex, "\t", logLikelihood);*/
+	}
+	
+	
+	return logLikelihood;
+}
+
+/*****************************************************************************/
+
+if (NON_EMPTY_SELECTION)
+{
+	UPDATE_CELL_DATE = 0;
+	
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	temp = SELECTED_CHART_COLS[0];
+
+	for (count = 1; count<data_rows; count = count+1)
+	{
+		temp2 = SELECTED_CHART_COLS[count];
+		if (temp!=temp2)
+		{
+			break;
+		}
+		if (SELECTED_CHART_DATA[count]<SELECTED_CHART_DATA[count-1])
+		{
+			break;
+		}
+	}
+
+	if (count == data_rows)
+	{
+		/* compress the data vector to account for repeated observations */
+		
+		dataPoints = Columns(SELECTED_CHART_DATA);
+		temp_data_vector = {2, dataPoints};
+		currentIndex = 0;
+		
+		temp_data_vector[0][0] = SELECTED_CHART_DATA[0];
+		temp_data_vector[1][0] = 1;
+		for (nextIndex = 1; nextIndex < dataPoints; nextIndex = nextIndex + 1)
+		{
+			if (SELECTED_CHART_DATA[nextIndex]!=SELECTED_CHART_DATA[nextIndex-1])
+			{
+				currentIndex = currentIndex+1;
+				temp_data_vector[0][currentIndex] = SELECTED_CHART_DATA[nextIndex];
+			}
+			temp_data_vector[1][currentIndex] = temp_data_vector[1][currentIndex] + 1;
+		}
+		
+		SELECTED_CHART_DATA = {2, currentIndex+1};
+		
+		upperBound = 0;
+		
+		for (nextIndex = 0; nextIndex <= currentIndex; nextIndex = nextIndex + 1)
+		{
+			SELECTED_CHART_DATA[0][nextIndex] = temp_data_vector[0][nextIndex];
+			SELECTED_CHART_DATA[1][nextIndex] = temp_data_vector[1][nextIndex];
+			upperBound = upperBound + temp_data_vector[1][nextIndex] * Log(temp_data_vector[1][nextIndex]/dataPoints);
+		}
+		
+		
+		temp_data_vector = 0;
+		normal_sigma 	 = .25;
+		lastMax 		 = -100000000000;
+		
+		_x_ = 0;
+
+		ES_1:>0;
+		ES_1:<1;
+		
+		ES_2:>0;
+		ES_2:<20;
+		
+		measCount		 = Columns (SELECTED_CHART_DATA);
+
+		for (resp = 2; resp <= Columns(SELECTED_CHART_DATA); resp = resp+1)
+		{
+			freqStrMx    = {resp,1};
+			freqStrMx[0] = "PS_1";
+
+			for (mi=1; mi<resp-1; mi=mi+1)
+			{
+				freqStrMx[mi] = "";
+				for (mi2=1;mi2<=mi;mi2=mi2+1)
+				{
+					freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+				}
+				freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);	
+			}	
+
+			freqStrMx[mi] = "";
+			for (mi2=1;mi2<mi;mi2=mi2+1)
+			{
+				freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+			}
+			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";	
+			mx = {resp,1};
+			ex = {resp,1};
+			
+			execString = "";
+			
+			for (resp2 = 0; resp2 < resp; resp2 = resp2 + 1)
+			{
+				if (resp2)
+				{
+					execString = execString + "PS_"+resp2+":>0.0001;PS_"+resp2+":<.9999;PS_"+resp2+"=1/"+(resp-resp2+1)+";";
+				}
+				execString = execString + "mx[" + resp2 + "]:=" + freqStrMx[resp2] + ";";
+			}
+			
+			ex[0] := ES_1;
+			ex[1] := ES_2;
+			
+			
+			for (resp2 = 3; resp2 <= resp; resp2 = resp2 + 1)
+			{
+				multString = multString+"+ES_"+resp2;
+				
+				execString = execString + "ES_"+resp2+":>0;ES_"+resp2+":<20;PS_"+resp2+"="+(resp2-1)+";"+
+							 "ex[" + (resp2-1) + "]:=ES_"+resp2+";";
+			}
+			
+			
+			/* initialize the settings to conditional interval means */
+			
+			currentBin	  = 1;
+			currentTarget = dataPoints/resp;
+			currentIndex  = 1;
+			currentSum	  = SELECTED_CHART_DATA[1][0];
+			currentSpan	  = SELECTED_CHART_DATA[1][0];
+			currentValue  = SELECTED_CHART_DATA[0][0]*currentSpan;
+			
+			while (currentIndex < measCount)
+			{
+				if (currentSum>=currentTarget)
+				{
+					execString  = execString + "ES_" +currentBin + "=" + currentValue/currentSpan + ";";
+					currentSpan = 0;
+					currenValue = 0;
+					currentBin  = currentBin+1;
+					currentTarget = currentTarget+dataPoints/resp;
+				}
+				cv 			 = SELECTED_CHART_DATA[1][currentIndex];
+				currentSum   = currentSum   + cv;
+				currentValue = currentValue + SELECTED_CHART_DATA[0][currentIndex] * cv;
+				currentSpan  = currentSpan  + cv;
+				currentIndex = currentIndex + 1;
+			}
+			
+			execString  = execString + "ES_" +currentBin + "=" + currentValue/currentSpan;
+			
+			ExecuteCommands (execString);
+
+			savedLambdas = {resp,2};
+
+			
+			/*fprintf (stdout, "\nStarting values for ", resp, " rate classes.\n");
+			for (resp2 = 1; resp2 <= resp; resp2 = resp2+1)
+			{
+				ExecuteCommands ("fprintf(stdout,\"Class \", resp2, \" = \", ES_"+resp2+");");
+				fprintf (stdout, "\n");
+			}*/
+			
+			Optimize (bestFit, DoNExpCategoryFit(mx,ex));
+			
+			localMax = bestFit[1][0];
+			saveMxL	 = mx;
+			sameExL	 = ex;
+			
+			/*execString = "";
+			
+			fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");
+
+			for (itcount = 0; itcount < 3; itcount = itcount + 1)
+			{
+				for (vcount = 1; vcount <= resp; vcount = vcount + 1)
+				{
+					execString = execString + "ES_"+ vcount + "=" + Random(0,20) + ";PS_"+ vcount + "=" + Random(0,1) + ";"; 
+				}
+				ExecuteCommands (execString);
+				Optimize (bestFit, DoNExpCategoryFit(mx,ex));
+				if (bestFit[1][0] > localMax)
+				{
+					itcount = 0;
+					localMax = bestFit[1][0];
+					saveMxL	 = mx;
+					sameExL	 = ex;
+					fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");
+				}
+			}*/
+			
+			
+			fprintf (stdout, Format (resp,3,0), " rate classes: Log(L) = ", localMax, "\n");
+			
+			if (localMax - lastMax < 2)
+			{
+				break;
+			}
+			
+			saveMx	= saveMxL;
+			saveEx	= sameExL;
+			lastMax = localMax;
+		}
+		
+		resp = resp-1;
+		
+		fprintf (stdout, "\n\nFit ", resp, " categories to the data\n\n");
+		
+		for (resp2 = 0; resp2 < resp; resp2 = resp2+1)
+		{
+			fprintf (stdout, "Class ", Format (resp2+1,3,0), " : ",  Format (saveEx[resp2], 8, 5), " weight = ", Format (saveMx[resp2], 8, 5), "\n");
+		}
+	}
+	else
+	{
+		fprintf (stdout, "Please select a single sorted column to fit a profile to.\n");
+	}
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}

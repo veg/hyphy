@@ -1,1 +1,311 @@
-#include "Includes/MappersHelp.ibf";/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/function mapSiteToTree (site){	TREE_OUTPUT_OPTIONS = {};	k = specCount+1;		countSubstitutionsInt  = {};	countSubstitutionsLeaf = {};		/* first sequence is always the root */	c1 = dupInfoA[site];	for (h=1; h<filteredDataA.species; h=h+1)	{		p1  = seqToBranchMap[k][0];		pid = flatTreeRep[p1];		parentName = branchNames [pid];				if (Abs(TREE_OUTPUT_OPTIONS[parentName])==0)		{			parentName = 0;		}		p2  = seqToBranchMap[pid][1]-specCount;				cd1 = residueInfo2[h] [c1];		cd2 = residueInfo2[p2][c1];						if (cd1 == cd2)		{			nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[2];			nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = ""+cd3;		}		else		{			nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+cd3+") show";						if (Abs(parentName))			{				pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];				pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];				if (Abs (pbname) < 3)				{					pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";					TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;				}			}						if (_GC_[cd1] == _GC_[cd2])			{				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];			}			else			{				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];					nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};					}			aa1 = _GC_[cd1];			aa1 = codonTo3[aa1];			aa2 = _GC_[cd2];			aa2 = codonTo3[aa2];			cd1 = codeToLetters(correctCode[cd1]);			cd2 = codeToLetters(correctCode[cd2]);			aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";			countSubstitutionsInt[aa1] = countSubstitutionsInt[aa1] + 1;					}				cd1 = branchNames[p1];		TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;				k=k+1;	}		/* now do the leaves */		c2 = dupInfo[site];	for (h=0; h<specCount; h=h+1)	{		p1 = seqToBranchMap[h][0];		pid = flatTreeRep[p1];		parentName = branchNames [pid];		if (Abs(TREE_OUTPUT_OPTIONS[parentName])==0)		{			parentName = 0;		}		p2 = seqToBranchMap[pid][1]-specCount;				cd2 = residueInfo2[p2][c1];		cd1 = residueInfo[h] [c2];				if (cd1>=0)		/* no ambiguities */		{			nodeSpec  = {};			if (mapToAA)			{				cd3 = _GC_[cd1];				cd3 = codonTo3 [cd3];			}					else			{				cd3 = codeToLetters(correctCode[cd1]);			}									if (cd1 == cd2)			{				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[2];				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "";			}			else			{				if (Abs(parentName))				{					pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];					pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];					if (Abs (pbname) < 3)					{						pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";						TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;					}				}				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+cd3+") show";				if (_GC_[cd1] == _GC_[cd2])				{					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];				}				else				{					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];								nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};						}				aa1 = _GC_[cd1];				aa1 = codonTo3[aa1];				aa2 = _GC_[cd2];				aa2 = codonTo3[aa2];				cd1 = codeToLetters(correctCode[cd1]);				cd2 = codeToLetters(correctCode[cd2]);				aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";				countSubstitutionsLeaf[aa1] = countSubstitutionsLeaf[aa1] + 1;			}						cd1 = branchNames[p1];			TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;		}			else		/* ambiguities here */		{			seqString = seqStrings[h];			ExecuteCommands ("GetDataInfo    (ambInfo, `dfID`, h, c2);");			nodeSpec  = {};			haveSyn = 0;			haveNS  = 0;						if (Abs(parentName))			{				pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];				pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];				if (Abs (pbname) < 3)				{					pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";					TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;				}			}									ambBName = "";			alreadyDone = {};			for (k=0; k<stateCharCount; k=k+1)			{				if (ambInfo[k])				{					if (k == cd2)					{						haveSyn = 1;					} 					else					{						haveNS = 1;					}					aa1 = _GC_[k];					aa1 = codonTo3[aa1];					if (alreadyDone[aa1] == 0)					{							alreadyDone[aa1] = 1;						if (Abs(ambBName))						{							ambBName = ambBName+"/"+aa1;						}							else						{								ambBName = aa1;						}					}				}			}				if (mapToAA)			{				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+ambBName+") show";			}			else			{				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+seqString[3*site][3*site+2]+" ) show";			}			if (haveSyn || haveNS)			{				aa2 = _GC_[cd2];				aa2 = codonTo3[aa2];				if (Abs(alreadyDone)>1)				{					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[3];					aa1 = "AMB";					nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};						}				else				{					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];					aa1 = aa2;				}				cd1 = seqString[3*site][3*site+2];				cd2 = codeToLetters(correctCode[cd2]);				aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";				countSubstitutionsLeaf[aa1] = countSubstitutionsLeaf[aa1] + 1;			}			else			{				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];						}			cd1 = branchNames[p1];			TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;		}	}			for (aa2 = 0; aa2 < Columns (branchNames); aa2=aa2+1)	{		parentName = branchNames[aa2];		pinfoavl   = TREE_OUTPUT_OPTIONS[parentName];		if (Abs(pinfoavl))		{			pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];			if (Abs (pbname) < 3)			{				pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "";				TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;			}		}	}				ExecuteCommands ("psString = PSTreeString (`treeID`,\"EXPECTED_NUMBER_OF_SUBSTITUTIONS\",{{300,600}});");	repMx = {{"setfont"}{"setfont\n3 setlinewidth\n1 setlinecap"}};	psString = psString ^ repMx;	repMx = {{"[0-9] scalefont"}{"11 scalefont"}};	psString = psString ^ repMx;	outResult = {};	outResult ["Tree string"] 	  = psString;	outResult ["Leaf subs"]   	  = countSubstitutionsLeaf;	outResult ["Internal subs"]   = countSubstitutionsInt;		return outResult;}/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/_ChooseCaption = "Select a likelihood function to use";#include "Includes/ChooseALF.ibf";if (tIndex < 0){	return 1;}if (setupMapToTree(0) < 0){	return 1;}pairwiseMap       = {190,filteredDataA.sites};pairToCounterMap  = {20,20};idx = 0;pairwiseString = "";for (h=0; h<20; h=h+1){	for (v=h+1; v<20; v=v+1)	{		pairToCounterMap[h][v] = idx;		pairToCounterMap[v][h] = idx;		pairwiseString = pairwiseString + ";" + characterOrder[h] + characterOrder[v];		idx = idx+1;	}}/*while (1){	fprintf (stdout, "0-based site to map (-1 to stop:):");	fscanf  (stdin, "Number", siteToMap);	if (siteToMap < 0)	{		break;	}	z = mapSiteToTree (siteToMap$1, 1);	SetDialogPrompt ("Write tree to:");	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,z["Tree string"]);	fprintf (stdout, "\nLeaf: ", z["Leaf subs"], "\nInternal: ", z["Internal subs"], "\n");}*/
+#include "Includes/MappersHelp.ibf";
+
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+function mapSiteToTree (site)
+{
+	TREE_OUTPUT_OPTIONS = {};
+	k = specCount+1;
+	
+	countSubstitutionsInt  = {};
+	countSubstitutionsLeaf = {};
+	
+	/* first sequence is always the root */
+	c1 = dupInfoA[site];
+	for (h=1; h<filteredDataA.species; h=h+1)
+	{
+		p1  = seqToBranchMap[k][0];
+		pid = flatTreeRep[p1];
+		parentName = branchNames [pid];
+		
+		if (Abs(TREE_OUTPUT_OPTIONS[parentName])==0)
+		{
+			parentName = 0;
+		}
+		p2  = seqToBranchMap[pid][1]-specCount;
+		
+		cd1 = residueInfo2[h] [c1];
+		cd2 = residueInfo2[p2][c1];
+				
+		if (cd1 == cd2)
+		{
+			nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[2];
+			nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = ""+cd3;
+		}
+		else
+		{
+			nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+cd3+") show";
+			
+			if (Abs(parentName))
+			{
+				pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];
+				pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];
+				if (Abs (pbname) < 3)
+				{
+					pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";
+					TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;
+				}
+			}
+			
+			if (_GC_[cd1] == _GC_[cd2])
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];
+			}
+			else
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];	
+				nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};		
+			}
+			aa1 = _GC_[cd1];
+			aa1 = codonTo3[aa1];
+			aa2 = _GC_[cd2];
+			aa2 = codonTo3[aa2];
+			cd1 = codeToLetters(correctCode[cd1]);
+			cd2 = codeToLetters(correctCode[cd2]);
+			aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";
+			countSubstitutionsInt[aa1] = countSubstitutionsInt[aa1] + 1;			
+		}
+		
+		cd1 = branchNames[p1];
+		TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;
+		
+		k=k+1;
+	}
+	
+	/* now do the leaves */
+	
+	c2 = dupInfo[site];
+	for (h=0; h<specCount; h=h+1)
+	{
+		p1 = seqToBranchMap[h][0];
+		pid = flatTreeRep[p1];
+		parentName = branchNames [pid];
+		if (Abs(TREE_OUTPUT_OPTIONS[parentName])==0)
+		{
+			parentName = 0;
+		}
+		p2 = seqToBranchMap[pid][1]-specCount;
+		
+		cd2 = residueInfo2[p2][c1];
+		cd1 = residueInfo[h] [c2];
+		
+
+		if (cd1>=0)
+		/* no ambiguities */
+		{
+			nodeSpec  = {};
+			if (mapToAA)
+			{
+				cd3 = _GC_[cd1];
+				cd3 = codonTo3 [cd3];
+			}		
+			else
+			{
+				cd3 = codeToLetters(correctCode[cd1]);
+			}
+			
+			
+			if (cd1 == cd2)
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[2];
+				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "";
+			}
+			else
+			{
+				if (Abs(parentName))
+				{
+					pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];
+					pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];
+					if (Abs (pbname) < 3)
+					{
+						pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";
+						TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;
+					}
+				}
+				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+cd3+") show";
+				if (_GC_[cd1] == _GC_[cd2])
+				{
+					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];
+				}
+				else
+				{
+					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];			
+					nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};		
+				}
+				aa1 = _GC_[cd1];
+				aa1 = codonTo3[aa1];
+				aa2 = _GC_[cd2];
+				aa2 = codonTo3[aa2];
+				cd1 = codeToLetters(correctCode[cd1]);
+				cd2 = codeToLetters(correctCode[cd2]);
+				aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";
+				countSubstitutionsLeaf[aa1] = countSubstitutionsLeaf[aa1] + 1;
+			}
+			
+			cd1 = branchNames[p1];
+			TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;
+		}	
+		else
+		/* ambiguities here */
+		{
+			seqString = seqStrings[h];
+			ExecuteCommands ("GetDataInfo    (ambInfo, `dfID`, h, c2);");
+			nodeSpec  = {};
+			haveSyn = 0;
+			haveNS  = 0;
+			
+			if (Abs(parentName))
+			{
+				pinfoavl  = TREE_OUTPUT_OPTIONS[parentName];
+				pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];
+				if (Abs (pbname) < 3)
+				{
+					pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+pbname+") show";
+					TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;
+				}
+			}
+			
+			
+			ambBName = "";
+			alreadyDone = {};
+			for (k=0; k<stateCharCount; k=k+1)
+			{
+				if (ambInfo[k])
+				{
+					if (k == cd2)
+					{
+						haveSyn = 1;
+					} 
+					else
+					{
+						haveNS = 1;
+					}
+					aa1 = _GC_[k];
+					aa1 = codonTo3[aa1];
+					if (alreadyDone[aa1] == 0)
+					{	
+						alreadyDone[aa1] = 1;
+						if (Abs(ambBName))
+						{
+							ambBName = ambBName+"/"+aa1;
+						}	
+						else
+						{	
+							ambBName = aa1;
+						}
+					}
+				}
+			}	
+
+			if (mapToAA)
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+ambBName+") show";
+			}
+			else
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_LABEL"] = "__FONT_SIZE__ 2 idiv\n__FONT_SIZE__ 3 idiv\nneg\nrmoveto\n("+seqString[3*site][3*site+2]+" ) show";
+			}
+
+			if (haveSyn || haveNS)
+			{
+				aa2 = _GC_[cd2];
+				aa2 = codonTo3[aa2];
+				if (Abs(alreadyDone)>1)
+				{
+					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[3];
+					aa1 = "AMB";
+					nodeSpec ["TREE_OUTPUT_BRANCH_DASH"] = {{1,4,1}};		
+				}
+				else
+				{
+					nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[1];
+					aa1 = aa2;
+				}
+				cd1 = seqString[3*site][3*site+2];
+				cd2 = codeToLetters(correctCode[cd2]);
+				aa1 = cd2+"("+aa2+") to " + cd1 + "(" + aa1 + ")";
+				countSubstitutionsLeaf[aa1] = countSubstitutionsLeaf[aa1] + 1;
+			}
+			else
+			{
+				nodeSpec ["TREE_OUTPUT_BRANCH_COLOR"] = branchColors[0];			
+			}
+			cd1 = branchNames[p1];
+			TREE_OUTPUT_OPTIONS[cd1] = nodeSpec;
+		}
+	}
+		
+	for (aa2 = 0; aa2 < Columns (branchNames); aa2=aa2+1)
+	{
+		parentName = branchNames[aa2];
+		pinfoavl   = TREE_OUTPUT_OPTIONS[parentName];
+		if (Abs(pinfoavl))
+		{
+			pbname    = pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"];
+			if (Abs (pbname) < 3)
+			{
+				pinfoavl ["TREE_OUTPUT_BRANCH_LABEL"] = "";
+				TREE_OUTPUT_OPTIONS[parentName] = pinfoavl;
+			}
+		}
+	}	
+		
+	ExecuteCommands ("psString = PSTreeString (`treeID`,\"EXPECTED_NUMBER_OF_SUBSTITUTIONS\",{{300,600}});");
+	repMx = {{"setfont"}{"setfont\n3 setlinewidth\n1 setlinecap"}};
+	psString = psString ^ repMx;
+	repMx = {{"[0-9] scalefont"}{"11 scalefont"}};
+	psString = psString ^ repMx;
+
+	outResult = {};
+	outResult ["Tree string"] 	  = psString;
+	outResult ["Leaf subs"]   	  = countSubstitutionsLeaf;
+	outResult ["Internal subs"]   = countSubstitutionsInt;
+	
+	return outResult;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+_ChooseCaption = "Select a likelihood function to use";
+#include "Includes/ChooseALF.ibf";
+if (tIndex < 0)
+{
+	return 1;
+}
+
+if (setupMapToTree(0) < 0)
+{
+	return 1;
+}
+
+pairwiseMap       = {190,filteredDataA.sites};
+pairToCounterMap  = {20,20};
+idx = 0;
+pairwiseString = "";
+for (h=0; h<20; h=h+1)
+{
+	for (v=h+1; v<20; v=v+1)
+	{
+		pairToCounterMap[h][v] = idx;
+		pairToCounterMap[v][h] = idx;
+		pairwiseString = pairwiseString + ";" + characterOrder[h] + characterOrder[v];
+		idx = idx+1;
+	}
+}
+
+
+
+/*while (1)
+{
+	fprintf (stdout, "0-based site to map (-1 to stop:):");
+	fscanf  (stdin, "Number", siteToMap);
+	if (siteToMap < 0)
+	{
+		break;
+	}
+	z = mapSiteToTree (siteToMap$1, 1);
+	SetDialogPrompt ("Write tree to:");
+	fprintf (PROMPT_FOR_FILE,CLEAR_FILE,z["Tree string"]);
+	fprintf (stdout, "\nLeaf: ", z["Leaf subs"], "\nInternal: ", z["Internal subs"], "\n");
+}*/

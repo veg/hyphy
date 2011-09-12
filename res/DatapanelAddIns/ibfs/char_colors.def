@@ -1,1 +1,28 @@
-_charColorList = {};_charColorList["A"] = {{102,51,51}}*(1/255);_charColorList["C"] = {{153,204,153}}*(1/255);_charColorList["D"] = {{102,0,153}}*(1/255);_charColorList["E"] = {{153,0,153}}*(1/255);_charColorList["F"] = {{255,51,51}}*(1/255);_charColorList["G"] = {{102,0,153}}*(1/255);_charColorList["H"] = {{255,204,0}}*(1/255);_charColorList["I"] = {{153,255,153}}*(1/255);_charColorList["K"] = {{102,153,51}}*(1/255);_charColorList["L"] = {{102,204,102}}*(1/255);_charColorList["M"] = {{0,51,153}}*(1/255);_charColorList["N"] = {{255,102,0}}*(1/255);_charColorList["P"] = {{153,153,51}}*(1/255);_charColorList["Q"] = {{255,153,0}}*(1/255);_charColorList["R"] = {{153,51,102}}*(1/255);_charColorList["S"] = {{153,153,153}}*(1/255);_charColorList["T"] = {{102,102,153}}*(1/255);_charColorList["V"] = {{153,51,51}}*(1/255);_charColorList["W"] = {{204,51,51}}*(1/255);_charColorList["Y"] = {{102,153,102}}*(1/255);_font_size = Rows (_charColorList);for (_idx = 0; _idx < Abs(_charColorList); _idx = _idx + 1){	_sidx = _charColorList[_font_size[_idx]];	_charColorList[_font_size[_idx]] = ""+_sidx[0]+" "+_sidx[1]+" "+_sidx[2];}
+_charColorList = {};
+_charColorList["A"] = {{102,51,51}}*(1/255);
+_charColorList["C"] = {{153,204,153}}*(1/255);
+_charColorList["D"] = {{102,0,153}}*(1/255);
+_charColorList["E"] = {{153,0,153}}*(1/255);
+_charColorList["F"] = {{255,51,51}}*(1/255);
+_charColorList["G"] = {{102,0,153}}*(1/255);
+_charColorList["H"] = {{255,204,0}}*(1/255);
+_charColorList["I"] = {{153,255,153}}*(1/255);
+_charColorList["K"] = {{102,153,51}}*(1/255);
+_charColorList["L"] = {{102,204,102}}*(1/255);
+_charColorList["M"] = {{0,51,153}}*(1/255);
+_charColorList["N"] = {{255,102,0}}*(1/255);
+_charColorList["P"] = {{153,153,51}}*(1/255);
+_charColorList["Q"] = {{255,153,0}}*(1/255);
+_charColorList["R"] = {{153,51,102}}*(1/255);
+_charColorList["S"] = {{153,153,153}}*(1/255);
+_charColorList["T"] = {{102,102,153}}*(1/255);
+_charColorList["V"] = {{153,51,51}}*(1/255);
+_charColorList["W"] = {{204,51,51}}*(1/255);
+_charColorList["Y"] = {{102,153,102}}*(1/255);
+
+_font_size = Rows (_charColorList);
+for (_idx = 0; _idx < Abs(_charColorList); _idx = _idx + 1)
+{
+	_sidx = _charColorList[_font_size[_idx]];
+	_charColorList[_font_size[_idx]] = ""+_sidx[0]+" "+_sidx[1]+" "+_sidx[2];
+}

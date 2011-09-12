@@ -1,1 +1,29 @@
-if (NON_EMPTY_SELECTION){	UPDATE_CELL_DATA = 1;	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	temp = SELECTED_CHART_COLS[0];	for (count = 1; count<data_rows; count = count+1)	{		temp2 = SELECTED_CHART_COLS[count];		if (temp!=temp2)		{			break;		}	}	if (count == data_rows)	{		SELECTED_CHART_DATA = Transpose(Transpose(SELECTED_CHART_DATA)%0);		return 0;	}	fprintf (stdout, "Please select a single column to sort.\n");}else{	NON_EMPTY_SELECTION = -1;}
+if (NON_EMPTY_SELECTION)
+{
+	UPDATE_CELL_DATA = 1;
+
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	temp = SELECTED_CHART_COLS[0];
+
+	for (count = 1; count<data_rows; count = count+1)
+	{
+		temp2 = SELECTED_CHART_COLS[count];
+		if (temp!=temp2)
+		{
+			break;
+		}
+	}
+
+	if (count == data_rows)
+	{
+		SELECTED_CHART_DATA = Transpose(Transpose(SELECTED_CHART_DATA)%0);
+		return 0;
+	}
+
+	fprintf (stdout, "Please select a single column to sort.\n");
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}

@@ -1,1 +1,21 @@
-global shapeParameterP = 1;global shapeParameterQ = 1;shapeParameterP:>0.05;shapeParameterP:<85;shapeParameterQ:>0.05;shapeParameterQ:<85;category categoryPlaceholderPC = (rateClassCount-1, EQUAL, MEAN, 							 _x_^(shapeParameterP-1)*(1-_x_)^(shapeParameterQ-1)/Beta(shapeParameterP,shapeParameterQ), /* density */							 IBeta(_x_,shapeParameterP,shapeParameterQ), /*CDF*/							 0, 				   /*left bound*/							 1, 			   /*right bound*/							 IBeta(_x_,shapeParameterP+1,shapeParameterQ)*shapeParameterP/(shapeParameterP+shapeParameterQ)		  	 				);global shapeParameter_alpha = .5;shapeParameter_alpha:>0.01;shapeParameter_alpha:<100;category categoryPlaceholder = (rateClassCount, categoryPlaceholderPC, MEAN, 								GammaDist(_x_,shapeParameter_alpha,shapeParameter_alpha), 								CGammaDist(_x_,shapeParameter_alpha,shapeParameter_alpha), 								0 , 						  	    1e25,						  	    CGammaDist(_x_,shapeParameter_alpha+1,shapeParameter_alpha)						  	 );
+global shapeParameterP = 1;
+global shapeParameterQ = 1;
+shapeParameterP:>0.05;shapeParameterP:<85;
+shapeParameterQ:>0.05;shapeParameterQ:<85;
+category categoryPlaceholderPC = (rateClassCount-1, EQUAL, MEAN, 
+							 _x_^(shapeParameterP-1)*(1-_x_)^(shapeParameterQ-1)/Beta(shapeParameterP,shapeParameterQ), /* density */
+							 IBeta(_x_,shapeParameterP,shapeParameterQ), /*CDF*/
+							 0, 				   /*left bound*/
+							 1, 			   /*right bound*/
+							 IBeta(_x_,shapeParameterP+1,shapeParameterQ)*shapeParameterP/(shapeParameterP+shapeParameterQ)
+		  	 				);
+
+global shapeParameter_alpha = .5;
+shapeParameter_alpha:>0.01;shapeParameter_alpha:<100;
+category categoryPlaceholder = (rateClassCount, categoryPlaceholderPC, MEAN, 
+								GammaDist(_x_,shapeParameter_alpha,shapeParameter_alpha), 
+								CGammaDist(_x_,shapeParameter_alpha,shapeParameter_alpha), 
+								0 , 
+						  	    1e25,
+						  	    CGammaDist(_x_,shapeParameter_alpha+1,shapeParameter_alpha)
+						  	 );

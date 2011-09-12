@@ -1,1 +1,21 @@
-ufc = Rows("UserFunction");if (ufc){	fprintf (stdout, "\n\n*** There are ", ufc, " user functions in memory ***");	for (ufi = 0; ufi < ufc; ufi = ufi + 1)	{		GetString (finfo,UserFunction,ufi);		fargs = finfo["Arguments"];		fprintf (stdout, "\n\n\tFunction ", finfo["ID"], " with ", Columns (fargs), " arguments\n");		for (uac = 0; uac < Columns (fargs); uac = uac+1)		{			fprintf (stdout, "\n\t\tArgument ", Format (uac+1,5,0), ": ", fargs[uac]);		}		fprintf (stdout, "\n");	}}else{	fprintf (stdout, "\n\nNo user functions have been defined\n\n");}					  
+ufc = Rows("UserFunction");
+if (ufc)
+{
+	fprintf (stdout, "\n\n*** There are ", ufc, " user functions in memory ***");
+	for (ufi = 0; ufi < ufc; ufi = ufi + 1)
+	{
+		GetString (finfo,UserFunction,ufi);
+		fargs = finfo["Arguments"];
+		fprintf (stdout, "\n\n\tFunction ", finfo["ID"], " with ", Columns (fargs), " arguments\n");
+		for (uac = 0; uac < Columns (fargs); uac = uac+1)
+		{
+			fprintf (stdout, "\n\t\tArgument ", Format (uac+1,5,0), ": ", fargs[uac]);
+		}
+		fprintf (stdout, "\n");
+	}
+}
+else
+{
+	fprintf (stdout, "\n\nNo user functions have been defined\n\n");
+}
+					  

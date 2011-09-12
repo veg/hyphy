@@ -1,1 +1,23 @@
-function GUIHandleFrequenciesCollection (dummy_parameter){	HarvestFrequencies (Model_EFV_Vector,Data_Partition_ID,1,1,1);	global frequencyVariable_1;	global frequencyVariable_2;	global frequencyVariable_3;	/* Initial Guesses */	frequencyVariable_1 = Model_EFV_Vector[0];	frequencyVariable_2 = Model_EFV_Vector[1]/(1-frequencyVariable_1);	frequencyVariable_3 = Model_EFV_Vector[2]/(1-frequencyVariable_1)/(1-frequencyVariable_2);	Model_EFV_Vector = {{frequencyVariable_1},					 {(1-frequencyVariable_1)*frequencyVariable_2},					 {(1-frequencyVariable_1)*(1-frequencyVariable_2)*frequencyVariable_3},					 {(1-frequencyVariable_1)*(1-frequencyVariable_2)*(1-frequencyVariable_3)}};						MULTIPLY_BY_FREQS = 1;	return 	0;}
+function GUIHandleFrequenciesCollection (dummy_parameter)
+{
+	HarvestFrequencies (Model_EFV_Vector,Data_Partition_ID,1,1,1);
+
+	global frequencyVariable_1;
+	global frequencyVariable_2;
+	global frequencyVariable_3;
+
+	/* Initial Guesses */
+
+	frequencyVariable_1 = Model_EFV_Vector[0];
+	frequencyVariable_2 = Model_EFV_Vector[1]/(1-frequencyVariable_1);
+	frequencyVariable_3 = Model_EFV_Vector[2]/(1-frequencyVariable_1)/(1-frequencyVariable_2);
+
+
+	Model_EFV_Vector = {{frequencyVariable_1},
+					 {(1-frequencyVariable_1)*frequencyVariable_2},
+					 {(1-frequencyVariable_1)*(1-frequencyVariable_2)*frequencyVariable_3},
+					 {(1-frequencyVariable_1)*(1-frequencyVariable_2)*(1-frequencyVariable_3)}};
+					
+	MULTIPLY_BY_FREQS = 1;
+	return 	0;
+}

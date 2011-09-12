@@ -1,1 +1,83 @@
-NICETY_LEVEL = 2;#include "modelParameters2.mdl";aaNames = {{"Alanine","Cysteine","Aspartic_Acid","Glutamic_Acid","Phenylalanine","Glycine","Histidine","Isoleucine","Lysine","Leucine","Methionine","Asparagine","Proline","Glutamine","Arginine","Serine","Threonine","Valine","Tryptophan","Tyrosine"}};if (!SKIP_MODEL_PARAMETER_LIST){	if (modelType == 1)	{		#include "defineGamma.mdl";	}	if (modelType == 2)	{		#include "defineHM.mdl";	}}function PopulateModelMatrix (ModelMatrixName&, EFV){	ModelMatrixName = {20,20};	if (categoriesUsed)	{		for (k=0; k<19; k=k+1)		{			for (k2 = k+1; k2 < 20; k2=k2+1)			{				subString = aaNames[k]+aaNames[k2];				ExecuteCommands("global "+subString +"=1; ModelMatrixName[k][k2]:= c*t*"+subString+								";ModelMatrixName[k2][k]:= c*t*"+subString+";");			}		}       	}	else	{		for (k=0; k<19; k=k+1)		{			for (k2 = k+1; k2 < 20; k2=k2+1)			{				subString = aaNames[k]+aaNames[k2];				ExecuteCommands("global "+subString +"=1; ModelMatrixName[k][k2]:= t*"+subString+								";ModelMatrixName[k2][k]:= t*"+subString+";");			}		}       	}		subString = aaNames[7]+aaNames[9];	ExecuteCommands(subString +":=1;");	return 1;}mtREVMatrix = 0;HarvestFrequencies (vectorOfFrequencies,filteredData,1,1,0);MULTIPLY_BY_FREQS = PopulateModelMatrix ("mtREVMatrix",equalFreqs);Model mtREVModel = (mtREVMatrix, vectorOfFrequencies, MULTIPLY_BY_FREQS);FREQUENCY_SENSITIVE = 1;
+NICETY_LEVEL = 2;
+
+#include "modelParameters2.mdl";
+
+aaNames = {{"Alanine",
+"Cysteine",
+"Aspartic_Acid",
+"Glutamic_Acid",
+"Phenylalanine",
+"Glycine",
+"Histidine",
+"Isoleucine",
+"Lysine",
+"Leucine",
+"Methionine",
+"Asparagine",
+"Proline",
+"Glutamine",
+"Arginine",
+"Serine",
+"Threonine",
+"Valine",
+"Tryptophan",
+"Tyrosine"}};
+
+
+if (!SKIP_MODEL_PARAMETER_LIST)
+{
+	if (modelType == 1)
+	{
+		#include "defineGamma.mdl";
+	}
+	if (modelType == 2)
+	{
+		#include "defineHM.mdl";
+	}
+}
+
+function PopulateModelMatrix (ModelMatrixName&, EFV)
+{
+
+	ModelMatrixName = {20,20};
+	if (categoriesUsed)
+	{
+		for (k=0; k<19; k=k+1)
+		{
+			for (k2 = k+1; k2 < 20; k2=k2+1)
+			{
+				subString = aaNames[k]+aaNames[k2];
+				ExecuteCommands("global "+subString +"=1; ModelMatrixName[k][k2]:= c*t*"+subString+
+								";ModelMatrixName[k2][k]:= c*t*"+subString+";");
+			}
+		}       
+	}
+	else
+	{
+		for (k=0; k<19; k=k+1)
+		{
+			for (k2 = k+1; k2 < 20; k2=k2+1)
+			{
+				subString = aaNames[k]+aaNames[k2];
+				ExecuteCommands("global "+subString +"=1; ModelMatrixName[k][k2]:= t*"+subString+
+								";ModelMatrixName[k2][k]:= t*"+subString+";");
+			}
+		}       
+	}
+	
+	subString = aaNames[7]+aaNames[9];
+	ExecuteCommands(subString +":=1;");
+	return 1;
+}
+
+
+
+mtREVMatrix = 0;
+
+HarvestFrequencies (vectorOfFrequencies,filteredData,1,1,0);
+
+MULTIPLY_BY_FREQS = PopulateModelMatrix ("mtREVMatrix",equalFreqs);
+
+Model mtREVModel = (mtREVMatrix, vectorOfFrequencies, MULTIPLY_BY_FREQS);
+
+FREQUENCY_SENSITIVE = 1;

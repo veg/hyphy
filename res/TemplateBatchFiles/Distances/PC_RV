@@ -1,1 +1,23 @@
-function InitializeDistances (dummy){	if (DISTANCE_PROMPTS)	{		_distance_alpha = -1;		while (_distance_alpha<=0)		{			fprintf (stdout, "\nSelect the shape parameter Alpha of the gamma distribution (Var = 1/Alpha):");			fscanf  (stdin,"Number",_distance_alpha);		}	}	summingVector = {20,1}["1"];	tracingVector = {20,20}["_MATRIX_ELEMENT_ROW_ == _MATRIX_ELEMENT_COLUMN_"];	return 0;}function ComputeDistanceFormula (s1,s2){	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);	totalDifference    = Transpose(summingVector)*(siteDifferenceCount$tracingVector*summingVector);	totalSitesCompared = Transpose(summingVector)*(siteDifferenceCount*summingVector);	return _distance_alpha*((totalDifference[0]/totalSitesCompared[0])^(-1/_distance_alpha)-1);}
+function InitializeDistances (dummy)
+{
+	if (DISTANCE_PROMPTS)
+	{
+		_distance_alpha = -1;
+		while (_distance_alpha<=0)
+		{
+			fprintf (stdout, "\nSelect the shape parameter Alpha of the gamma distribution (Var = 1/Alpha):");
+			fscanf  (stdin,"Number",_distance_alpha);
+		}
+	}
+	summingVector = {20,1}["1"];
+	tracingVector = {20,20}["_MATRIX_ELEMENT_ROW_ == _MATRIX_ELEMENT_COLUMN_"];
+	return 0;
+}
+
+function ComputeDistanceFormula (s1,s2)
+{
+	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	totalDifference    = Transpose(summingVector)*(siteDifferenceCount$tracingVector*summingVector);
+	totalSitesCompared = Transpose(summingVector)*(siteDifferenceCount*summingVector);
+	return _distance_alpha*((totalDifference[0]/totalSitesCompared[0])^(-1/_distance_alpha)-1);
+}

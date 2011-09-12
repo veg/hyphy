@@ -1,1 +1,105 @@
-function  ComputeScalingStencils (dummy){	scalingStencils = {};		if (Columns(_Genetic_Code) != 64)	{		fprintf (stdout, "\nError: _Genetic_Code is not properly defined\n");	}	else	{		nonStopCodonCount = 64;		for (k=0; k<64; k=k+1)		{			if (_Genetic_Code[k] == 10)			{				nonStopCodonCount = nonStopCodonCount - 1;			}		}		stencilMatrixNS = {nonStopCodonCount,nonStopCodonCount};		stencilMatrixS  = {nonStopCodonCount,nonStopCodonCount};		hshift = 0;		for (h=0; h<64; h=h+1)		{			if (_Genetic_Code[h]==10) 			{				hshift = hshift+1;				continue; 			}			vshift = hshift;			for (v = h+1; v<64; v=v+1)			{				if (_Genetic_Code[v]==10) 				{					vshift = vshift+1;					continue; 				}				if (_Genetic_Code[h] == _Genetic_Code[v])				{					stencilMatrixS [h-hshift][v-vshift] = 1;					stencilMatrixS [v-vshift][h-hshift] = 1;				}				else				{					stencilMatrixNS [h-hshift][v-vshift] = 1;					stencilMatrixNS [v-vshift][h-hshift] = 1;						}			}		}		scalingStencils ["Syn"]     = stencilMatrixS;		scalingStencils ["NonSyn"]  = stencilMatrixNS;	}	return scalingStencils;}/*----------------------------------------------------------------------------------*/function  ReturnSandNSTrees (theStencil, treeID){	scaledTreeStrings = {};	BRANCH_LENGTH_STENCIL = theStencil["Syn"];	ExecuteCommands("scaledTreeStrings[\"Syn\"] = Format ("+treeID+", 1, 1);");	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];	ExecuteCommands("scaledTreeStrings[\"NonSyn\"] = Format ("+treeID+", 1, 1);");		BRANCH_LENGTH_STENCIL = 0;	return scaledTreeStrings;}/*----------------------------------------------------------------------------------*/function  ReturnVectorsOfCodonLengths (theStencil, treeID){	scaledVectors = {};	BRANCH_LENGTH_STENCIL = theStencil["Syn"];	ExecuteCommands("scaledVectors[\"Syn\"] = BranchLength ("+treeID+", -1);");	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];	ExecuteCommands("scaledVectors[\"NonSyn\"] = BranchLength ("+treeID+", -1);");		BRANCH_LENGTH_STENCIL = 0;	ExecuteCommands("scaledVectors[\"Total\"] = BranchLength ("+treeID+", -1);");	return scaledVectors;}/*----------------------------------------------------------------------------------*/function  ReturnCodonFormulas (theStencil, modelID){	scaledVectors = {};	BRANCH_LENGTH_STENCIL = theStencil["Syn"];	ExecuteCommands("GetString(_synFormula,`modelID`,-1);");	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];	ExecuteCommands("GetString(_nonSynFormula,`modelID`,-1);");		BRANCH_LENGTH_STENCIL = 0;	scaledVectors ["Syn"] = _synFormula;	scaledVectors ["NonSyn"] = _nonSynFormula;		return scaledVectors;}
+function  ComputeScalingStencils (dummy)
+{
+	scalingStencils = {};
+	
+	if (Columns(_Genetic_Code) != 64)
+	{
+		fprintf (stdout, "\nError: _Genetic_Code is not properly defined\n");
+	}
+	else
+	{
+		nonStopCodonCount = 64;
+		for (k=0; k<64; k=k+1)
+		{
+			if (_Genetic_Code[k] == 10)
+			{
+				nonStopCodonCount = nonStopCodonCount - 1;
+			}
+		}
+
+		stencilMatrixNS = {nonStopCodonCount,nonStopCodonCount};
+		stencilMatrixS  = {nonStopCodonCount,nonStopCodonCount};
+
+		hshift = 0;
+		for (h=0; h<64; h=h+1)
+		{
+			if (_Genetic_Code[h]==10) 
+			{
+				hshift = hshift+1;
+				continue; 
+			}
+			vshift = hshift;
+			for (v = h+1; v<64; v=v+1)
+			{
+				if (_Genetic_Code[v]==10) 
+				{
+					vshift = vshift+1;
+					continue; 
+				}
+				if (_Genetic_Code[h] == _Genetic_Code[v])
+				{
+					stencilMatrixS [h-hshift][v-vshift] = 1;
+					stencilMatrixS [v-vshift][h-hshift] = 1;
+				}
+				else
+				{
+					stencilMatrixNS [h-hshift][v-vshift] = 1;
+					stencilMatrixNS [v-vshift][h-hshift] = 1;		
+				}
+			}
+		}
+		scalingStencils ["Syn"]     = stencilMatrixS;
+		scalingStencils ["NonSyn"]  = stencilMatrixNS;
+	}
+	return scalingStencils;
+}
+
+/*----------------------------------------------------------------------------------*/
+
+function  ReturnSandNSTrees (theStencil, treeID)
+{
+	scaledTreeStrings = {};
+	BRANCH_LENGTH_STENCIL = theStencil["Syn"];
+	ExecuteCommands("scaledTreeStrings[\"Syn\"] = Format ("+treeID+", 1, 1);");
+
+	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];
+	ExecuteCommands("scaledTreeStrings[\"NonSyn\"] = Format ("+treeID+", 1, 1);");
+	
+	BRANCH_LENGTH_STENCIL = 0;
+	return scaledTreeStrings;
+}
+
+/*----------------------------------------------------------------------------------*/
+
+function  ReturnVectorsOfCodonLengths (theStencil, treeID)
+{
+	scaledVectors = {};
+	BRANCH_LENGTH_STENCIL = theStencil["Syn"];
+	ExecuteCommands("scaledVectors[\"Syn\"] = BranchLength ("+treeID+", -1);");
+
+	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];
+	ExecuteCommands("scaledVectors[\"NonSyn\"] = BranchLength ("+treeID+", -1);");
+	
+	BRANCH_LENGTH_STENCIL = 0;
+	ExecuteCommands("scaledVectors[\"Total\"] = BranchLength ("+treeID+", -1);");
+	return scaledVectors;
+}
+
+/*----------------------------------------------------------------------------------*/
+
+function  ReturnCodonFormulas (theStencil, modelID)
+{
+	scaledVectors = {};
+	BRANCH_LENGTH_STENCIL = theStencil["Syn"];
+	ExecuteCommands("GetString(_synFormula,`modelID`,-1);");
+
+	BRANCH_LENGTH_STENCIL = theStencil["NonSyn"];
+	ExecuteCommands("GetString(_nonSynFormula,`modelID`,-1);");
+	
+	BRANCH_LENGTH_STENCIL = 0;
+	scaledVectors ["Syn"] = _synFormula;
+	scaledVectors ["NonSyn"] = _nonSynFormula;
+	
+	return scaledVectors;
+}
+

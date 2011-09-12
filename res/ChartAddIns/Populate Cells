@@ -1,1 +1,25 @@
-if (NON_EMPTY_SELECTION){	fprintf (stdout, "Formula to populate with (row_index and col_index will be replaced with actual cell row and column - both 0 based):");	fscanf  (stdin,  "String", cell_populator);	count = Columns (SELECTED_CHART_DATA);	cell_populator = "new_cell_value:=" + cell_populator;	ExecuteCommands (cell_populator);	for (counter=0; counter < count; counter = counter+1)	{		row_index 					 = SELECTED_CHART_ROWS[counter];		col_index 					 = SELECTED_CHART_COLS[counter];		SELECTED_CHART_DATA[counter] = new_cell_value;	}	UPDATE_CELL_DATA = 1;}else{	NON_EMPTY_SELECTION = -1;}
+if (NON_EMPTY_SELECTION)
+{
+	fprintf (stdout, "Formula to populate with (row_index and col_index will be replaced with actual cell row and column - both 0 based):");
+	fscanf  (stdin,  "String", cell_populator);
+
+	count = Columns (SELECTED_CHART_DATA);
+
+	cell_populator = "new_cell_value:=" + cell_populator;
+
+	ExecuteCommands (cell_populator);
+
+	for (counter=0; counter < count; counter = counter+1)
+	{
+		row_index 					 = SELECTED_CHART_ROWS[counter];
+		col_index 					 = SELECTED_CHART_COLS[counter];
+		SELECTED_CHART_DATA[counter] = new_cell_value;
+	}
+
+	UPDATE_CELL_DATA = 1;
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}
+
