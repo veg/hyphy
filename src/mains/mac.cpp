@@ -33,16 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 
-
-#ifdef   __MACHACKMP__
-#undef __MACHACKMP__
-#include <time.h>
-#include <unix.h>
-#define __MACHACKMP__
-#else
-//#include <stdio.h>
-#endif
-
 #include <events.h>
 #include <AppleEvents.h>
 #include <Aliases.h>
@@ -145,11 +135,6 @@ pascal  void        DialogTimerAnimateAction        (EventLoopTimerRef,void*);
 pascal  void        DialogTimerAnimateCornholio     (EventLoopTimerRef,void*);
 pascal OSStatus     PrefAction                      (EventHandlerCallRef, EventRef event, void*);
 
-#ifdef  __MACHACKMP__
-
-OSStatus LoadFrameworkBundle                            (CFStringRef, CFBundleRef*);
-void    *MachOFunctionPointerForCFMFunctionPointer      ( void * );
-#endif
 
 
 
@@ -471,73 +456,6 @@ pascal OSStatus PrefAction (EventHandlerCallRef, EventRef event, void*)
     }
     return eventNotHandledErr;
 }
-
-
-//____________________________________________________________________________________________
-
-#ifdef    __MACHACKMP__
-void    ImportBundle (void);
-
-//__________________________________________________________________________________
-OSStatus LoadFrameworkBundle(CFStringRef framework, CFBundleRef *bundlePtr)
-{
-    OSStatus  err;
-    FSRef   frameworksFolderRef;
-    CFURLRef baseURL;
-    CFURLRef bundleURL;
-
-    *bundlePtr = nil;
-
-    baseURL = nil;
-    bundleURL = nil;
-
-    err = FSFindFolder(kOnAppropriateDisk, kFrameworksFolderType, true, &frameworksFolderRef);
-    if (err == noErr) {
-        baseURL = CFURLCreateFromFSRef(kCFAllocatorSystemDefault, &frameworksFolderRef);
-        if (baseURL == nil) {
-            err = coreFoundationUnknownErr;
-        }
-    }
-
-    if (err == noErr) {
-        bundleURL = CFURLCreateCopyAppendingPathComponent(kCFAllocatorSystemDefault,
-                    baseURL, framework, false);
-        if (bundleURL == nil) {
-            err = coreFoundationUnknownErr;
-        }
-    }
-
-    if (err == noErr) {
-        *bundlePtr = CFBundleCreate(kCFAllocatorSystemDefault, bundleURL);
-        if (*bundlePtr == nil) {
-            err = coreFoundationUnknownErr;
-        }
-    }
-
-    if (err == noErr) {
-        if ( ! CFBundleLoadExecutable( *bundlePtr ) ) {
-            err = coreFoundationUnknownErr;
-        }
-    }
-
-    // Clean up.
-
-    if (err != noErr && *bundlePtr != nil) {
-        CFRelease(*bundlePtr);
-        *bundlePtr = nil;
-    }
-
-    if (bundleURL != nil) {
-        CFRelease(bundleURL);
-    }
-
-    if (baseURL != nil) {
-        CFRelease(baseURL);
-    }
-
-    return err;
-}
-#endif
 
 //__________________________________________________________________________________
 
@@ -1403,111 +1321,6 @@ bool        HandleFirstDialog (long& choice)
 }
 
 
-//________________________________________________________
-
-#ifdef __MACHACKMP__
-
-#include "MoreSetup.h"
-#include "CFMLateImport.h"
-#define  USE_CFM_LATE_IMPORT 1
-
-// Mac OS interfaces
-
-#if ! MORE_FRAMEWORK_INCLUDES
-#include <MacTypes.h>
-#include <CFBundle.h>
-#include <Gestalt.h>
-#include <Folders.h>
-#endif
-
-// Standard C interfaces
-
-#if USE_CFM_LATE_IMPORT
-
-// The CFMLateImport approach requires that you define a fragment
-// initialisation routine that latches the fragment's connection
-// ID and locator.  If your code already has a fragment initialiser
-// you will have to integrate the following into it.
-
-static CFragConnectionID            gFragToFixConnID;
-static FSSpec                       gFragToFixFile;
-static CFragSystem7DiskFlatLocator  gFragToFixLocator;
-
-extern "C"
-{
-
-    extern OSErr FragmentInit(const CFragInitBlock *initBlock);
-    extern OSErr FragmentInit(const CFragInitBlock *initBlock)
-    {
-        MoreAssertQ(initBlock->fragLocator.where == kDataForkCFragLocator);
-        gFragToFixConnID    = (CFragConnectionID) initBlock->closureID;
-        gFragToFixFile      = *(initBlock->fragLocator.u.onDisk.fileSpec);
-        gFragToFixLocator   = initBlock->fragLocator.u.onDisk;
-        gFragToFixLocator.fileSpec = &gFragToFixFile;
-
-        return noErr;
-    }
-}
-#endif
-
-
-void ImportBundle (void)
-{
-    OSStatus            err = noErr;
-    CFBundleRef         sysBundle;
-
-    //MoreAssertQ( (void *) pthread_create == (void *) kUnresolvedCFragSymbolAddress );
-    if (err == noErr) {
-        err = LoadFrameworkBundle(CFSTR("System.framework"), &sysBundle);
-    }
-
-    if (err == noErr) {
-        //printf("Using CFMLateImport approach.\n");
-        //MoreAssertQ( (void *) gethostname == (void *) kUnresolvedCFragSymbolAddress );
-        err = CFMLateImportBundle(&gFragToFixLocator, gFragToFixConnID, FragmentInit, "\pSystemFrameworkLib", sysBundle);
-    }
-
-}
-
-UInt32 templateArray[6] = {0x3D800000, 0x618C0000, 0x800C0000, 0x804C0004, 0x7C0903A6, 0x4E800420};
-
-void    *MachOFunctionPointerForCFMFunctionPointer( void *cfmfp )
-{
-    UInt32  *mfp = (UInt32*) NewPtr( sizeof(templateArray) );       //  Must later dispose of allocated memory
-    mfp[0] = templateArray[0] | ((UInt32)cfmfp >> 16);
-    mfp[1] = templateArray[1] | ((UInt32)cfmfp & 0xFFFF);
-    mfp[2] = templateArray[2];
-    mfp[3] = templateArray[3];
-    mfp[4] = templateArray[4];
-    mfp[5] = templateArray[5];
-    MakeDataExecutable( mfp, sizeof(templateArray) );
-    return( mfp );
-}
-
-typedef void*  (*PThreadHook)      ( void* data );
-
-void*   ThreadReleafFunctionAA      (void* arg);
-void*   ThreadReleafFunctionCodon   (void* arg);
-void*   ThreadReleafFunctionNuc     (void* arg);
-void*   ThreadReleafFunctionMNuc    (void* arg);
-void*   ThreadReleafFunctionMAA     (void* arg);
-void*   ThreadReleafFunctionMCodon  (void* arg);
-void*   MatrixUpdateFunction        (void* arg);
-void*   StateCounterMP              (void* arg);
-
-PThreadHook
-ThreadReleafFunctionAAHook,
-ThreadReleafFunctionCodonHook,
-ThreadReleafFunctionNucHook,
-ThreadReleafFunctionMNucHook,
-ThreadReleafFunctionMAAHook,
-ThreadReleafFunctionMCodonHook,
-MatrixUpdateFunctionHook,
-StateCounterMPHook;
-
-#endif
-
-
 //_________________________________________________________________________
 
 int main (void)
@@ -1573,7 +1386,8 @@ int main (void)
         ProblemReport (errMsg);
         exit(1);
     }
-    libDirectory = baseDirectory;
+    libDirectory = baseDirectory & "HyPhy.app" & GetPlatformDirectoryChar() & "Contents" & GetPlatformDirectoryChar() & "Resources" & GetPlatformDirectoryChar() & "HBL" & GetPlatformDirectoryChar();
+    pathNames && & libDirectory;
 
 
     SetMenuBar(menuBar);
@@ -1583,17 +1397,7 @@ int main (void)
         systemCPUCount = 1;
     }
 #endif
-#ifdef __MACHACKMP__
-    ImportBundle();
-    ThreadReleafFunctionNucHook         = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionNuc );
-    ThreadReleafFunctionMNucHook        = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionMNuc );
-    ThreadReleafFunctionAAHook          = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionAA );
-    ThreadReleafFunctionMAAHook         = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionMAA );
-    ThreadReleafFunctionCodonHook       = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionCodon );
-    ThreadReleafFunctionMCodonHook      = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( ThreadReleafFunctionMCodon );
-    MatrixUpdateFunctionHook            = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( MatrixUpdateFunction );
-    StateCounterMPHook                  = (PThreadHook)MachOFunctionPointerForCFMFunctionPointer( StateCounterMP );
-#endif
+
 
 
     OSErr           status;
@@ -1635,7 +1439,7 @@ int main (void)
         BufferToConsole (buffer);
     }
 #endif
-
+    
 
     MoveConsoleWindow       (consolePositionRectangle);
     SetPreferences          ();

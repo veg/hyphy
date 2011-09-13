@@ -1940,7 +1940,7 @@ void    _HYModelWindow::DoSave (char mode)
 
     if (EFVChoice != 0) {
 
-        pathToModelTemplates = baseDirectory&"SubstitutionClasses"&directorySep;
+        pathToModelTemplates = libDirectory&"SubstitutionClasses"&directorySep;
 
         switch (type) {
         case 0:
@@ -2048,7 +2048,7 @@ void    _HYModelWindow::DoSave (char mode)
 
     if (categoryVariables.lLength) {
         if (rateChoice) {
-            pathToModelTemplates = baseDirectory&"SubstitutionClasses"&directorySep&"Heterogeneity"&directorySep& *(_String*)rateOptions(rateChoice);
+            pathToModelTemplates = libDirectory&"SubstitutionClasses"&directorySep&"Heterogeneity"&directorySep& *(_String*)rateOptions(rateChoice);
 
             F = doFileOpen (pathToModelTemplates.sData,"rb");
 
@@ -2260,7 +2260,7 @@ void    _HYModelWindow::DoSave (char mode)
     modelOut.Finalize();
 
     if (mode==-1) {
-        pathToModelTemplates = baseDirectory&"SubstitutionModels"&directorySep&"User"&directorySep;
+        pathToModelTemplates = libDirectory&"SubstitutionModels"&directorySep&"User"&directorySep;
 
         switch (type) {
         case 0:
@@ -2589,7 +2589,7 @@ void    _HYModelWindow::BuildTemplates (_SimpleList* geneticCode, char type)
     _String pathToModelTemplates;
     long    k;
 
-    pathToModelTemplates = baseDirectory&"SubstitutionClasses";
+    pathToModelTemplates = libDirectory&"SubstitutionClasses";
 
     _String ending;
 
@@ -2747,7 +2747,7 @@ void    _HYModelWindow::BuildTemplates (_SimpleList* geneticCode, char type)
 void    _HYModelWindow::GrabEFVs (char type)
 {
     _List   receptacle;
-    _String pathToModelTemplates = baseDirectory&"SubstitutionClasses"&directorySep;
+    _String pathToModelTemplates = libDirectory&"SubstitutionClasses"&directorySep;
     long    k;
 
     _String ending;
@@ -2795,7 +2795,7 @@ void    _HYModelWindow::GrabRateVariation (void)
     _String pathToModelTemplates;
     long    k;
 
-    pathToModelTemplates =   baseDirectory&"SubstitutionClasses" & directorySep & "Heterogeneity";
+    pathToModelTemplates =   libDirectory&"SubstitutionClasses" & directorySep & "Heterogeneity";
     ScanDirectoryForFileNames (pathToModelTemplates,receptacle,true);
 
     for (k=0; k<receptacle.lLength; k++) {

@@ -309,7 +309,7 @@ bool    _HYConsoleWindow::ProcessEvent (_HYEvent* e)
                 break;
 
             case 3: {
-                _String webUpdate = baseDirectory&"TemplateBatchFiles"&baseDirectory.sData[baseDirectory.sLength-1]&"WebUpdate.bf";
+                _String webUpdate = libDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar()&"WebUpdate.bf";
                 _ExecutionList wbl;
                 k = PushFilePath  (webUpdate);
                 ReadBatchFile (webUpdate, wbl);
@@ -753,7 +753,7 @@ void    SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c)
 
 void    LoadUserHookins (void)
 {
-    _String baseDir = baseDirectory & userHookinDir;
+    _String baseDir = libDirectory & userHookinDir;
     ScanDirectoryForFileNames (baseDir,userHookins,false);
 }
 
