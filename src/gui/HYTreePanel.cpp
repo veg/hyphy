@@ -7740,7 +7740,7 @@ void ReadTreeProcessors (void)
     _String     pathToModelTemplates;
     _List       receptacle;
 
-    pathToModelTemplates = baseDirectory&"TreeAddIns";
+    pathToModelTemplates = libDirectory&"TreeAddIns";
 
     ScanDirectoryForFileNames (pathToModelTemplates,receptacle,false);
 

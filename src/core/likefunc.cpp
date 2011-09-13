@@ -55,10 +55,10 @@ extern bool handleGUI(bool);
 #endif
 
 #if !defined __UNIX__ || defined __HEADLESS__
-#ifndef __HEADLESS__
-#include     "HYTreePanel.h"
-extern       _HYTreePanel*  feedbackTreePanel;
-#endif
+    #ifndef __HEADLESS__
+        #include     "HYTreePanel.h"
+        extern       _HYTreePanel*  feedbackTreePanel;
+    #endif
 
 _Parameter   nicetyLevel    =   1.0;
 _String nicetyMacLevel   ("NICETY_LEVEL");
@@ -68,17 +68,9 @@ long         siteEvalCount  =   0,
 
 void    DecideOnDivideBy (_LikelihoodFunction*);
 
-#endif
-
-
-
 #ifdef __MP__
-#ifndef __MACHACKMP__
-#include <pthread.h>
-#else
-#include "mypthread.h"
+    #include <pthread.h>
 #endif
-
 struct   WancReleafTask {
     _TheTree    *tree;
 
@@ -97,8 +89,8 @@ struct   WancReleafTask {
 
 };
 
-
 #endif
+
 
 #ifdef  __HYPHYMPI__
 
@@ -849,7 +841,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
             templateKind = _hyphyLFComputationalTemplateNone;
             long            templateFormulaOpCount = templateFormula.NumberOperations();
 
-            if ( hasBlkMx && hasSiteMx || !(hasBlkMx||hasSiteMx) ) {
+            if ( (hasBlkMx && hasSiteMx) || !(hasBlkMx||hasSiteMx) ) {
                 if (hasBlkMx||hasSiteMx == false) {
                     if (templateFormulaOpCount==1)
                         // potentially an HMM
@@ -9556,88 +9548,6 @@ void    _LikelihoodFunction::StateCounter (long functionCallback)
             tree->WeightedCharacterDifferences (siteLikelihood, &res1, &res2, offset);
             StateCounterResultHandler (fla, dSites,doneSites,lastDone,totalUniqueSites,res1,res2);
         }
-
-        // mp stuff begins here
-
-        /*#ifdef __MP__
-
-            pthread_t       *countingThreads = nil;
-            WancReleafTask  *wancTasks       = nil;
-
-            if (tree->HasCache())
-            {
-                countingThreads = new pthread_t      [systemCPUCount-1];
-                wancTasks       = new WancReleafTask [systemCPUCount-1];
-
-                for (long tc = 0; tc<systemCPUCount-1; tc++)
-                {
-                    wancTasks[tc].tree   =  tree;
-                    wancTasks[tc].dupList =     &duplicateMatches;
-
-                    wancTasks[tc].startAt = 1+tstep*(tc+1);
-                    wancTasks[tc].endAt   = 1+tstep*(tc+2);
-                    wancTasks[tc].dsf = dsf;
-
-                    wancTasks[tc].totalUniqueSites = totalUniqueSites;
-                    wancTasks[tc].lastDone        = &lastDone;
-                    wancTasks[tc].doneSites       = &doneSites;
-
-                    wancTasks[tc].fla             = &fla;
-                    wancTasks[tc].threadIndex     = tc+1;
-
-                    if (tc == systemCPUCount-2)
-                        wancTasks[tc].endAt = dsf->NumberDistinctSites();
-
-                    #ifdef __MACHACKMP__
-                    if ( pthread_create( countingThreads+tc, NULL, StateCounterMPHook,(void*)(wancTasks+tc)))
-                    #else
-                    if ( pthread_create( countingThreads+tc, NULL, StateCounterMP,(void*)(wancTasks+tc)))
-                    #endif
-                    {
-                        FlagError("Failed to initialize a POSIX thread in StateCounter()");
-                        exit(1);
-                    }
-                }
-
-                _Parameter      vls = 0.0;
-                checkParameter (VerbosityLevelString, vls, 0.0);
-
-                for (long sites = 1; sites < 1+tstep; sites++)
-                {
-                    //pthread_mutex_lock(&wancMutex);
-                    _Matrix  res1(tree->GetCodeBase() , tree->GetCodeBase(), false, true),
-                             res2(tree->GetCodeBase(),  tree->GetCodeBase(), false, true);
-
-                    //pthread_mutex_unlock(&wancMutex);
-
-                    dSites = (_SimpleList*)duplicateMatches(sites);
-                    siteLikelihood = tree->ThreadReleafTreeCache (dsf, sites, sites-1, 0, tree->flatCLeaves.lLength-1,sites);
-                    if (vls>9.99)
-                    {
-                        char   buffer[64];
-                        sprintf (buffer,"WeightedCharacterDifferences at site %ld\n", sites);
-                        BufferToConsole (buffer);
-                    }
-                    tree->WeightedCharacterDifferences (siteLikelihood, &res1, &res2,0);
-                    StateCounterResultHandler (fla, dSites,doneSites,lastDone,totalUniqueSites,res1,res2);
-                }
-
-                for (long wc = 0; wc<systemCPUCount-1; wc++)
-                    if ( pthread_join ( countingThreads[wc], NULL ) )
-                    {
-                        FlagError("Failed to join POSIX threads in StateCounter()");
-                        exit(1);
-                    }
-
-                tree->KillTopLevelCache();
-
-                delete countingThreads;
-                delete wancTasks;
-            }
-            else
-            {
-        #endif*/
-
 
         for (long sites = 1; sites < dsf->theFrequencies.lLength; sites++) {
             dSites = (_SimpleList*)duplicateMatches(sites);

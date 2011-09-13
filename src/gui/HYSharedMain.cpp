@@ -212,7 +212,7 @@ bool    ExecuteBatchFile (void)
 void    RunTemplate (long idx)
 {
     PurgeAll        (windowPtrs.lLength==0);
-    _String         pathName = baseDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar();
+    _String         pathName = libDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar();
     pathNames&&     &pathName;
     pathName    = pathName&*(_String*)(*(_List*)availableTemplateFiles(idx))(2);
 
@@ -249,7 +249,7 @@ void    ExecuteAPostProcessor (_String justTheName)
     PrepareToExecuteBatchFile ();
     _ExecutionList postEx;
 
-    _String        postFile    = baseDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar() & justTheName,
+    _String        postFile    = libDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar() & justTheName,
                    pathName (postFile);
 
 #ifdef __MAC__
@@ -279,7 +279,7 @@ void    updateTimerF (_String& rec, long time_diff)
 //__________________________________________________________________________________
 void    ReadInTemplateFiles(void)
 {
-    _String     fileIndex = baseDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar()&"files.lst";
+    _String     fileIndex = libDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar()&"files.lst";
     FILE      * modelList = doFileOpen (fileIndex.getStr(), "r");
 
     if (!modelList) {
@@ -313,7 +313,7 @@ void    ReadInTemplateFiles(void)
 
     // try reading post processing files
 
-    fileIndex = baseDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar()&"postprocessors.lst";
+    fileIndex = libDirectory&"TemplateBatchFiles"&GetPlatformDirectoryChar()&"postprocessors.lst";
     if (! (modelList = doFileOpen (fileIndex.getStr(),"r"))) {
         return;
     }
@@ -345,7 +345,7 @@ void    ReadInTemplateFiles(void)
                 continue;
             }
             postItem = (_String*)(*(_List*)availablePostProcessors(counter))(1);
-            _String tryFileName = baseDirectory & "TemplateBatchFiles"& GetPlatformDirectoryChar() & (*postItem);
+            _String tryFileName = libDirectory & "TemplateBatchFiles"& GetPlatformDirectoryChar() & (*postItem);
             FILE    * tryFile = doFileOpen (tryFileName.getStr(), "r");
             if (tryFile) {
                 fclose(tryFile);

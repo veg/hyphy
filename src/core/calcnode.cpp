@@ -60,28 +60,18 @@ long*       nonZeroNodes = nil,
             nonZeroNodesDim = 0;
 
 #ifdef      __MP__
-#ifndef   __MACHACKMP__
-#include <pthread.h>
-#else
-#include "mypthread.h"
-#define  _STDINT_H_
-bool     threadSafe = false;
-#ifndef  __HEADLESS__
-#include <CGBase.h>
-#include "HYChartWindow.h"
-#endif
-#endif
-struct   ThreadMatrixTask {
-    long   cID,
-           tcat,
-           startAt,
-           endAt;
-    _SimpleList* updateCN;
+    #include <pthread.h>
+    struct   ThreadMatrixTask {
+        long   cID,
+               tcat,
+               startAt,
+               endAt;
+        _SimpleList* updateCN;
 
-};
-pthread_t*       matrixThreads = nil;
-ThreadMatrixTask*matrixTasks = nil;
-pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
+    };
+    pthread_t*       matrixThreads = nil;
+    ThreadMatrixTask*matrixTasks = nil;
+    pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 char        isDefiningATree         = false,
@@ -6485,7 +6475,7 @@ _Parameter   _TheTree::ReleafTreeAndCheck (_DataSetFilter* dsf, long index, bool
 // for first entry into a datafilter
 {
 
-#if defined     __MP__ && ! defined __MACHACKMP__
+#if defined     __MP__
     if (systemCPUCount>1) {
         ThreadMatrixUpdate (categID, cache);
     } else
@@ -6576,11 +6566,8 @@ void        _TheTree::ThreadMatrixUpdate (long categID, bool cache)
                 matrixTasks[k].endAt = (*taintedNodes).lLength;
             }
             matrixTasks[k].updateCN = taintedNodes;
-#ifdef __MACHACKMP__
-            if ( pthread_create( matrixThreads+k, NULL, MatrixUpdateFunctionHook ,(void*)(matrixTasks+k)))
-#else
+
             if ( pthread_create( matrixThreads+k, NULL, MatrixUpdateFunction ,(void*)(matrixTasks+k)))
-#endif
             {
                 FlagError("Failed to initialize a POSIX thread in ReleafTreeAndCheck()");
                 exit(1);
@@ -7779,40 +7766,7 @@ _Parameter   _TheTree::ThreadReleafTreeCache (_DataSetFilter* dsf, long index, l
                 B = ccodes[B-40];
                 C = ccodes[C-40];
                 fastIndex = mlc+cBase*nodeCount;
-#ifdef __MACHACKMP__
-                char codon[3];
-                if (A==-1 || B==-1 || C==-1) {
-                    dsf->GrabSite (index,nodeCount,codon);
-                    ns[nodeCount] = dsf->Translate2Frequencies (codon, fastIndex, true);
-#if USE_SCALING_TO_FIX_UNDERFLOW
-                    if (scalingFactor != 1.0)
-                        for (nMap = 0; nMap < cBase; nMap ++) {
-                            fastIndex[nMap] *= scalingFactor;
-                        }
-#endif
-                } else {
-                    long nState = ns[nodeCount] = tcodes[A*ccount2+B*ccount+C];
-                    if (nState < 0) {
-                        dsf->GrabSite (index,nodeCount,codon);
-                        ns[nodeCount] = dsf->Translate2Frequencies (codon,fastIndex, true);
-#if USE_SCALING_TO_FIX_UNDERFLOW
-                        if (scalingFactor != 1.0)
-                            for (nMap = 0; nMap < cBase; nMap ++) {
-                                fastIndex[nMap] *= scalingFactor;
-                            }
-#endif
-                    } else {
-                        for (long z = 0; z< cBase; z++) {
-                            fastIndex[z] = 0.0;
-                        }
-#if USE_SCALING_TO_FIX_UNDERFLOW
-                        fastIndex [nState] = scalingFactor;
-#else
-                        fastIndex [nState] = 1.0;
-#endif
-                    }
-                }
-#else
+
                 if (A==-1 || B==-1 || C==-1) {
                     _String codon (3,false);
                     dsf->GrabSite (index,nodeCount,codon);
@@ -7846,7 +7800,6 @@ _Parameter   _TheTree::ThreadReleafTreeCache (_DataSetFilter* dsf, long index, l
 #endif
                     }
                 }
-#endif
                 theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)
                                 [((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object]);
                 nm[theChildNode->nodeIndex-flatLeaves.lLength] = -1;
@@ -7880,28 +7833,7 @@ _Parameter   _TheTree::ThreadReleafTreeCache (_DataSetFilter* dsf, long index, l
                     B = ccodes[B-40];
 
                     fastIndex = mlc+cBase*nodeCount;
-#ifdef __MACHACKMP__
-                    char di[2];
-                    if ((A==-1)||(B==-1)) {
-                        dsf->GrabSite (index,nodeCount,di);
-                        ns[nodeCount] = dsf->Translate2Frequencies (di, fastIndex, true);
-                    } else {
-                        long nState = ns[nodeCount] = tcodes[A*ccount+B];
 
-                        if (nState < 0) {
-                            dsf->GrabSite (index,nodeCount,di);
-                            ns[nodeCount] = dsf->Translate2Frequencies (di, fastIndex, true);
-                        } else {
-                            for (nMap=0; nMap<nState; nMap++) {
-                                fastIndex [nMap] = 0.0;
-                            }
-                            fastIndex [nMap++] = 1.;
-                            for (; nMap<cBase; nMap++) {
-                                fastIndex [nMap] = 0.0;
-                            }
-                        }
-                    }
-#else
                     if ((A==-1)||(B==-1)) {
                         _String di (2,false);
                         dsf->GrabSite (index,nodeCount,di);
@@ -7923,7 +7855,6 @@ _Parameter   _TheTree::ThreadReleafTreeCache (_DataSetFilter* dsf, long index, l
                             }
                         }
                     }
-#endif
                     theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)
                                     [((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object]);
                     nm[theChildNode->nodeIndex-flatLeaves.lLength] = -1;
@@ -7933,11 +7864,7 @@ _Parameter   _TheTree::ThreadReleafTreeCache (_DataSetFilter* dsf, long index, l
             for (nodeCount = startLeaf; nodeCount<=endLeaf; nodeCount++) {
                 //travNode = (_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]);
                 if ((lastIndex<0)||(!dsf->CompareTwoSites(lastIndex,index,nodeCount))) {
-#ifdef      __MACHACKMP__
-                    char          dPoint[16];
-#else
                     _String         dPoint (unitSize,false);
-#endif
                     dsf->GrabSite (index,nodeCount,dPoint);
                     ns[nodeCount] = dsf->Translate2Frequencies (dPoint, mlc+cBase*nodeCount, true);
                     theChildNode = ((_CalcNode*)((BaseRef*)variablePtrs.lData)

@@ -31,16 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "matrix.h"
 #include "stdlib.h"
 #include "string.h"
-#ifdef   __MACHACKMP__
-#undef   __MACHACKMP__
-#define  _BSD_CLOCK_T_DEFINED_
-#include <stdio.h>
-#define  __MACHACKMP__
-#include "time.h"
-#else
+
 #include <stdio.h>
 #include "time.h"
-#endif
+
 #include "ctype.h"
 #include "polynoml.h"
 #include "batchlan.h"
