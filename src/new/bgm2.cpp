@@ -38,11 +38,8 @@ _String     _HYBgm_NThreads ("BGM_NTHREADS");
 
 
 #ifdef __MP__
-#ifndef __MACHACKMP__
 #include <pthread.h>
-#else
-#include "mypthread.h"
-#endif
+
 struct  ThreadCacheTask {
     Bgm     * b;
 

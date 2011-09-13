@@ -4278,10 +4278,10 @@ void ReadChartProcessors (bool distribs)
     _String     pathToModelTemplates;
     _List       receptacle;
 
-    pathToModelTemplates = baseDirectory&"ChartAddIns";
+    pathToModelTemplates =libDirectory&"ChartAddIns";
 
     if (distribs) {
-        pathToModelTemplates = pathToModelTemplates&baseDirectory.sData[baseDirectory.sLength-1]&"DistributionAddIns";
+        pathToModelTemplates = pathToModelTemplates&GetPlatformDirectoryChar()&"DistributionAddIns";
     }
 
     ScanDirectoryForFileNames (pathToModelTemplates,receptacle,false);

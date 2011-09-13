@@ -3559,7 +3559,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
             for (long r = 0; r < keys; r++) {
                 _FString* aKey = (_FString*)factoringMatrix->GetFormula(byRows?r:0,byRows?0:r)->Compute();
                 if (aKey->theString->sLength == 1) {
-                    char thisChar = aKey->theString->sData[0];
+                    unsigned char thisChar = aKey->theString->sData[0];
                     if (mapper[thisChar] < 0) {
                         mapper[thisChar] = r;
                     }
@@ -3568,7 +3568,7 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 
             _SimpleList mapped;
             for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[theString->sData[s]];
+                mapped << mapper[(unsigned char)theString->sData[s]];
             }
 
             return new _Matrix (mapped);
@@ -3828,7 +3828,7 @@ struct      characterChecker {
             isAllowed [r] = false;
         }
         for (long r2 = 0; r2<s.sLength; r2++) {
-            isAllowed [s.sData[r2]] = true;
+            isAllowed [(unsigned char)s.sData[r2]] = true;
         }
     }
     bool     isAllowed [256];
@@ -3961,7 +3961,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 return HY_FORMULA_FAILED;
             }
 
-            if (lookAtMe ==',' && (level<1 || squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level)) {
+            if (lookAtMe ==',' && (level<1 || (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level))) {
                 if (flagErrors) {
                     WarnError (_String("Parameter list is out of context:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
                 }
@@ -4583,7 +4583,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 continue;
             }
         }
-        if ( BinOps.Find (s.getChar(i))!=-1 || twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1) ) {
+        if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1)) ) {
             if (!twoToken && BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1) {
                 twoToken = true;
                 continue;

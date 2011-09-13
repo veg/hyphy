@@ -3177,7 +3177,7 @@ void    _HYParameterTable::HandleVarianceEstimates (void)
                 }
             } else {
                 /* try to read the plug-in - should be in ChartAddIns/SIR/sampler.bf */
-                errStr = baseDirectory & "ChartAddIns" & baseDirectory.sData[baseDirectory.sLength-1]&"Samplers" & baseDirectory.sData[baseDirectory.sLength-1]& (options==6?"sir.bf":"lhc.bf");
+                errStr = libDirectory & "ChartAddIns" & GetPlatformDirectoryChar() &"Samplers" & GetPlatformDirectoryChar() & (options==6?"sir.bf":"lhc.bf");
 
                 FILE *    procFile = doFileOpen (errStr.sData,"rb");
                 if (!procFile) {

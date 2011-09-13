@@ -502,7 +502,6 @@ int main (int argc, char* argv[])
         baseDir=baseDir & dirSlash;
     }
 
-    pathNames&& &baseDir;
 
 #if defined _HYPHY_LIBDIRECTORY_
     _String libDir (_HYPHY_LIBDIRECTORY_);
@@ -513,6 +512,7 @@ int main (int argc, char* argv[])
 
     pathNames&& &libDir;
 #else
+     pathNames&& &baseDir;
     _String libDir = baseDir;
 #endif
 
