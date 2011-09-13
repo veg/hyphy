@@ -67,29 +67,30 @@ long         siteEvalCount  =   0,
              divideBy      =   10000000;
 
 void    DecideOnDivideBy (_LikelihoodFunction*);
+#endif
+
 
 #ifdef __MP__
     #include <pthread.h>
+    struct   WancReleafTask {
+        _TheTree    *tree;
+
+        long        startAt,
+                    endAt,
+                    *doneSites,
+                    *lastDone,
+                    totalUniqueSites,
+                    threadIndex;
+
+        _DataSetFilter*
+        dsf;
+
+        _List      *dupList;
+        _Formula   *fla;
+
+    };
 #endif
-struct   WancReleafTask {
-    _TheTree    *tree;
 
-    long        startAt,
-                endAt,
-                *doneSites,
-                *lastDone,
-                totalUniqueSites,
-                threadIndex;
-
-    _DataSetFilter*
-    dsf;
-
-    _List      *dupList;
-    _Formula   *fla;
-
-};
-
-#endif
 
 
 #ifdef  __HYPHYMPI__
