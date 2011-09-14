@@ -6,6 +6,17 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 
 
 #-------------------------------------------------------------------------------
+# figure out some system-stuff for compile-time workarounds
+#-------------------------------------------------------------------------------
+set(MACOSX_LION false)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+        set(MACOSX_LION true)
+    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+
+#-------------------------------------------------------------------------------
 # make it fast, scotty
 #-------------------------------------------------------------------------------
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -25,11 +36,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC46 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-        if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-            set(GCC45 true)
-        endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
-    endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if(${MACOSX_LION})
+        set(GCC45 true)
+    endif(${MACOSX_LION})
 
     if(${GCC45})
         set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -flto")
@@ -62,9 +71,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(NOT DEFINED OpenMP_CXX_FLAGS)
+if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(NOT DEFINED OpenMP_CXX_FLAGS)
+endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -291,10 +300,12 @@ set_property(
     TARGET hyphy_mp HYPHYMP
     APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
 )
+
 set_property(
-    TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
+    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
+
 set_target_properties(
     hyphy_mp HYPHYMP
     PROPERTIES
