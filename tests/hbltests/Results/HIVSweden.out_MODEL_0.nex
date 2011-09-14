@@ -1,1 +1,684 @@
-0
+#NEXUS
+
+BEGIN TAXA;
+	DIMENSIONS NTAX = 13;
+	TAXLABELS
+		'U68496' 'U68497' 'U68498' 'U68499' 'U68500' 'U68501' 'U68502' 'U68503' 'U68504' 'U68505' 'U68506' 'U68507' 'U68508' ;
+END;
+
+BEGIN CHARACTERS;
+	DIMENSIONS NCHAR = 273;
+	FORMAT
+		DATATYPE = DNA
+		GAP=-
+		MISSING=?
+	;
+
+MATRIX
+	'U68496'  GTAGTAATTAGATCTGAAAACTTCTCGAACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAATTGTACAAGACCCAACAACAATACAAGAAGAAGTATACATTTTGGACCAGGGAAAGCATTTTATGCAGGAGAAATAATAGGAGATATAAGACAAGCATATTGTACCCTTAATGGAACAGAATGGAATAACACTTTAAAACAGGTAGCTGAAAAATTAAGAGAACAATTTATTAAAACAATAGTTTTTAATCAATCC
+	'U68497'  ATAGTAATTAGATCTGAAAACTTCTCGAACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAATTGTACAAGACCCAACAACAATACAAGAAGAAGTATACATTTCGGACCAGGGAAAGCATTTTATGCAGGAGAAATAATAGGAGATATAAGACAAGCATATTGTACTCTTAATGGAGCAGAATGGAATAACACTGTAAAACAGGTAGCTGCAAAATTAAGAGAACAATTTAATAAAACAATAATCTTTAATCAATCC
+	'U68498'  GTAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAATTGTGTAAGACCCGGCAACAATACAAGAAGAAGTATACATATAGGACCAGGGAGAGCATATTATACAGGAGAAGTAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAACAGACTGGAATAAAACTTTAAAACAGGTAGCTGAAAAATTAAGAGAACAATTTAATACAACAATAGTCTTTAATCAATCC
+	'U68499'  ATAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAAGTGTGAAAGACCCAACAACAATACAAGAAAAAGTGTACATATAGGACCAGGGAGAGCATATTATACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTGGAACAGAATGGAGGGAAACTTTAAAACAGGTAGCTGAAAAATTAAGAGAACAATTTAATAAAACAATAGTCTTTAATCAATCC
+	'U68500'  ATAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAAACCATAATAGTACATCTAAATGAATCTGTAGAAATTATTTGTGAAAGACCCAACAACAATACAAGAAAAAGTGTACATATGGGACCAGGGAGAGCATATTACACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACATTAGTAGAACAAATTGGACGGAAACTTTAAAACAGGTAGCTGAAAAATTAAGAGAACAATTTAATAAAACAATAGTCTTTAATCAATCC
+	'U68501'  GTAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAGACCATAATAGTACAGCTAAATAAACCTGTAAAAATTAATTGTACAAGACCCAACAACAATGCAAAAATAAGAATACATATAGGACCAGGGAGACCATTTTATACAGCAGGAGAAATAGGAAATATAAGACAAGCACATTGTAACCTTAGTAGAACAGACTGGAATAACACTTTAAAACTGGTAGCTGAAAAATTAAGAGAACAATTTAATAAAACAATAGTCTTTAATCAATCC
+	'U68502'  GTAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAGACCATAATAGTACAGCTAAATAACTCTGTAGCAATTAAGTGTGAAAGACCCAACAACAATACAAGAAAAAGTATACCTATAGGACCAGGGAGAGCCTTTTATACAACAGGAGACATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAAAAGACTGGAATGACACTTTAAGACAGGTAGTTGGAAAGTTAAGAGAACAATTTGGAAGAACAATAATCTTTAATCAATCC
+	'U68503'  ATAGTAATTAGATCTGAAAACTTCACGAACAATGCTAAAACCATAATAGTACAGCTAAAGGAACCTGTAGACATTACTTGTGAAAGACCCAGCAACAATACAAGAAAAAGTATACATATAGGACCAGGAAAAGCATTTTATGCAACAGGAGAAATAGGAGATATAAGACGAGCACATTGTAACCTTAATAGAACAGCATGGAATAAAACTTTAAAACAGGTAGTTGAAAAATTAAGAGAACAATTTAAGAAAACAATAACCTTTAACCAATCC
+	'U68504'  ATAGTAATTAGATCTGAAAACTTCACAGACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAATTGTACAAGACCCAACAACAATACAAGAAAAAGTATACATATAGGACCAGGGAGAGCTTTTTATACAACAGGTGAAATAGGAGATTTAAGACAAGCACATTGTAACCTTAGTAGAACAGCATGGAATGAAACTTTAAGACAAGTAGCTCAAAAATTAAAAGAACAATTTAATAGAACAATAGTTTTTAATCAATCC
+	'U68505'  ATAGTAATTAGATCTGAAAACTTCACAGACAATGCTAAAACCATAATAGTACAGCTAAACAAATCTGTAGAAATTAATTGTATAAGACCCAACAACAATACAAGAAAAAGTATACATATAGGACCAGGGAGAGCATTTTATACAACAGGAGACATAGGAGATATAAGACAAGCATATTGTAACCTTAGTAGAACAGCATGGAATGAAACTTTAAGACAAGTAGCTCAAAAATTAAAAGAACAATTTAATAGAACAATAGTCTTTAATCAATCC
+	'U68506'  ATAGTAATTAGATCTGAAAACTTCACGGACAATGCTAAAACCATAATAGTACAGCTAAATAAATCTGTAGAAATTAATTGTACAAGACCCAACAACAATACAAGAAAAAGTATAAATTTTGGACCAGGGAGAGCATTTTATACAACAGGTGAAATAGGAAATTTAAGACAAGCACATTGTAACCTTAGTAGAACAGCATGGAATGAAACTTTAAGACAAGTAGCTAAAAAACTAAAAGAACAATTTAATAGAACAATAGTTTTTAATCAATCC
+	'U68507'  GTAGTAATTCGATCTGAAAACTTCACGGACAATGCTAAAACCATAATAGTACAGCTAAACAAATCTGTAGAAATTACTTGTGTAAGACCCAACAACAATACAAGAAAAAGTATAAATATAAGACCAGGGAGAGCATTTTATACAACAGGAGAAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAACAGCATGGAATGAAGCTTTAAGACAAGTAGCTAAAAAATTAAAAGAACAATTTAATAGAACAATAGTCTTTAATCAATCC
+	'U68508'  ATAGTAATCAGATCTGAAAACTTCTCGGACAATGCTAAAACCATAATAGTACAGCTAAACAACACTGTAAACATTACTTGTGAAAGACCCAACAACAATACAAGAAAAAGGATACATATAGGACCAGGGAGAGCAGTTTATACAACAGGACAAATAGGAGATATAAGAAAAGCACATTGTAACCTTAGTAGAACAAATTGGACTGAAACTTTAAGACAAGTAGCTGAAAAATTAAAAGAACAATTTAATAAAACAATAATCTTTAATAATTCC;
+END;
+
+BEGIN TREES;
+	TREE tree = (U68496:0.023746,U68497:0.079178,((U68498:0.050407,(U68499:0.028429,U68500:0.099890):0.083460):0.023647,(U68501:0.131681,(U68502:0.191150,(U68503:0.193336,((((U68504:0.018984,U68506:0.070370):0.055603,U68505:0.030301):0.036688,U68507:0.061120):0.034773,U68508:0.198346):0.050591):0.064013):0.033695):0.048101):0.152813);
+END;
+
+BEGIN HYPHY;
+
+
+global P=0.4839838770135494;
+P:<1;
+global W=0.0787988448640472;
+W:<1;
+global kappa=0.3856574495146643;
+
+c.weights={1,2};
+c.weights[0][0]:=P;
+c.weights[0][1]:=1-P;
+
+
+c.points={1,2};
+c.points[0][0]:=W;
+c.points[0][1]:=1;
+
+
+category c=(2,c.weights,MEAN,,c.points,0,1,);
+
+modelMatrix={61,61};
+modelMatrix[0][1]:=kappa*c*t;
+modelMatrix[0][2]:=t;
+modelMatrix[0][3]:=kappa*c*t;
+modelMatrix[0][4]:=kappa*c*t;
+modelMatrix[0][8]:=c*t;
+modelMatrix[0][12]:=kappa*c*t;
+modelMatrix[0][16]:=kappa*c*t;
+modelMatrix[0][32]:=c*t;
+modelMatrix[1][0]:=kappa*c*t;
+modelMatrix[1][2]:=kappa*c*t;
+modelMatrix[1][3]:=t;
+modelMatrix[1][5]:=kappa*c*t;
+modelMatrix[1][9]:=c*t;
+modelMatrix[1][13]:=kappa*c*t;
+modelMatrix[1][17]:=kappa*c*t;
+modelMatrix[1][33]:=c*t;
+modelMatrix[1][48]:=kappa*c*t;
+modelMatrix[2][0]:=t;
+modelMatrix[2][1]:=kappa*c*t;
+modelMatrix[2][3]:=kappa*c*t;
+modelMatrix[2][6]:=kappa*c*t;
+modelMatrix[2][10]:=c*t;
+modelMatrix[2][14]:=kappa*c*t;
+modelMatrix[2][18]:=kappa*c*t;
+modelMatrix[2][34]:=c*t;
+modelMatrix[3][0]:=kappa*c*t;
+modelMatrix[3][1]:=t;
+modelMatrix[3][2]:=kappa*c*t;
+modelMatrix[3][7]:=kappa*c*t;
+modelMatrix[3][11]:=c*t;
+modelMatrix[3][15]:=kappa*c*t;
+modelMatrix[3][19]:=kappa*c*t;
+modelMatrix[3][35]:=c*t;
+modelMatrix[3][49]:=kappa*c*t;
+modelMatrix[4][0]:=kappa*c*t;
+modelMatrix[4][5]:=kappa*t;
+modelMatrix[4][6]:=t;
+modelMatrix[4][7]:=kappa*t;
+modelMatrix[4][8]:=kappa*c*t;
+modelMatrix[4][12]:=c*t;
+modelMatrix[4][20]:=kappa*c*t;
+modelMatrix[4][36]:=c*t;
+modelMatrix[4][50]:=kappa*c*t;
+modelMatrix[5][1]:=kappa*c*t;
+modelMatrix[5][4]:=kappa*t;
+modelMatrix[5][6]:=kappa*t;
+modelMatrix[5][7]:=t;
+modelMatrix[5][9]:=kappa*c*t;
+modelMatrix[5][13]:=c*t;
+modelMatrix[5][21]:=kappa*c*t;
+modelMatrix[5][37]:=c*t;
+modelMatrix[5][51]:=kappa*c*t;
+modelMatrix[6][2]:=kappa*c*t;
+modelMatrix[6][4]:=t;
+modelMatrix[6][5]:=kappa*t;
+modelMatrix[6][7]:=kappa*t;
+modelMatrix[6][10]:=kappa*c*t;
+modelMatrix[6][14]:=c*t;
+modelMatrix[6][22]:=kappa*c*t;
+modelMatrix[6][38]:=c*t;
+modelMatrix[6][52]:=kappa*c*t;
+modelMatrix[7][3]:=kappa*c*t;
+modelMatrix[7][4]:=kappa*t;
+modelMatrix[7][5]:=t;
+modelMatrix[7][6]:=kappa*t;
+modelMatrix[7][11]:=kappa*c*t;
+modelMatrix[7][15]:=c*t;
+modelMatrix[7][23]:=kappa*c*t;
+modelMatrix[7][39]:=c*t;
+modelMatrix[7][53]:=kappa*c*t;
+modelMatrix[8][0]:=c*t;
+modelMatrix[8][4]:=kappa*c*t;
+modelMatrix[8][9]:=kappa*c*t;
+modelMatrix[8][10]:=t;
+modelMatrix[8][11]:=kappa*c*t;
+modelMatrix[8][12]:=kappa*c*t;
+modelMatrix[8][24]:=kappa*t;
+modelMatrix[8][40]:=c*t;
+modelMatrix[9][1]:=c*t;
+modelMatrix[9][5]:=kappa*c*t;
+modelMatrix[9][8]:=kappa*c*t;
+modelMatrix[9][10]:=kappa*c*t;
+modelMatrix[9][11]:=t;
+modelMatrix[9][13]:=kappa*c*t;
+modelMatrix[9][25]:=kappa*c*t;
+modelMatrix[9][41]:=c*t;
+modelMatrix[9][54]:=kappa*c*t;
+modelMatrix[10][2]:=c*t;
+modelMatrix[10][6]:=kappa*c*t;
+modelMatrix[10][8]:=t;
+modelMatrix[10][9]:=kappa*c*t;
+modelMatrix[10][11]:=kappa*c*t;
+modelMatrix[10][14]:=kappa*c*t;
+modelMatrix[10][26]:=kappa*t;
+modelMatrix[10][42]:=c*t;
+modelMatrix[10][55]:=kappa*c*t;
+modelMatrix[11][3]:=c*t;
+modelMatrix[11][7]:=kappa*c*t;
+modelMatrix[11][8]:=kappa*c*t;
+modelMatrix[11][9]:=t;
+modelMatrix[11][10]:=kappa*c*t;
+modelMatrix[11][15]:=kappa*c*t;
+modelMatrix[11][27]:=kappa*c*t;
+modelMatrix[11][43]:=c*t;
+modelMatrix[11][56]:=kappa*c*t;
+modelMatrix[12][0]:=kappa*c*t;
+modelMatrix[12][4]:=c*t;
+modelMatrix[12][8]:=kappa*c*t;
+modelMatrix[12][13]:=kappa*t;
+modelMatrix[12][14]:=c*t;
+modelMatrix[12][15]:=kappa*t;
+modelMatrix[12][28]:=kappa*c*t;
+modelMatrix[12][44]:=c*t;
+modelMatrix[12][57]:=kappa*c*t;
+modelMatrix[13][1]:=kappa*c*t;
+modelMatrix[13][5]:=c*t;
+modelMatrix[13][9]:=kappa*c*t;
+modelMatrix[13][12]:=kappa*t;
+modelMatrix[13][14]:=kappa*c*t;
+modelMatrix[13][15]:=t;
+modelMatrix[13][29]:=kappa*c*t;
+modelMatrix[13][45]:=c*t;
+modelMatrix[13][58]:=kappa*c*t;
+modelMatrix[14][2]:=kappa*c*t;
+modelMatrix[14][6]:=c*t;
+modelMatrix[14][10]:=kappa*c*t;
+modelMatrix[14][12]:=c*t;
+modelMatrix[14][13]:=kappa*c*t;
+modelMatrix[14][15]:=kappa*c*t;
+modelMatrix[14][30]:=kappa*c*t;
+modelMatrix[14][46]:=c*t;
+modelMatrix[14][59]:=kappa*c*t;
+modelMatrix[15][3]:=kappa*c*t;
+modelMatrix[15][7]:=c*t;
+modelMatrix[15][11]:=kappa*c*t;
+modelMatrix[15][12]:=kappa*t;
+modelMatrix[15][13]:=t;
+modelMatrix[15][14]:=kappa*c*t;
+modelMatrix[15][31]:=kappa*c*t;
+modelMatrix[15][47]:=c*t;
+modelMatrix[15][60]:=kappa*c*t;
+modelMatrix[16][0]:=kappa*c*t;
+modelMatrix[16][17]:=kappa*c*t;
+modelMatrix[16][18]:=t;
+modelMatrix[16][19]:=kappa*c*t;
+modelMatrix[16][20]:=kappa*c*t;
+modelMatrix[16][24]:=c*t;
+modelMatrix[16][28]:=kappa*c*t;
+modelMatrix[16][32]:=kappa*c*t;
+modelMatrix[17][1]:=kappa*c*t;
+modelMatrix[17][16]:=kappa*c*t;
+modelMatrix[17][18]:=kappa*c*t;
+modelMatrix[17][19]:=t;
+modelMatrix[17][21]:=kappa*c*t;
+modelMatrix[17][25]:=c*t;
+modelMatrix[17][29]:=kappa*c*t;
+modelMatrix[17][33]:=kappa*c*t;
+modelMatrix[17][48]:=c*t;
+modelMatrix[18][2]:=kappa*c*t;
+modelMatrix[18][16]:=t;
+modelMatrix[18][17]:=kappa*c*t;
+modelMatrix[18][19]:=kappa*c*t;
+modelMatrix[18][22]:=kappa*c*t;
+modelMatrix[18][26]:=c*t;
+modelMatrix[18][30]:=kappa*c*t;
+modelMatrix[18][34]:=kappa*c*t;
+modelMatrix[19][3]:=kappa*c*t;
+modelMatrix[19][16]:=kappa*c*t;
+modelMatrix[19][17]:=t;
+modelMatrix[19][18]:=kappa*c*t;
+modelMatrix[19][23]:=kappa*c*t;
+modelMatrix[19][27]:=c*t;
+modelMatrix[19][31]:=kappa*c*t;
+modelMatrix[19][35]:=kappa*c*t;
+modelMatrix[19][49]:=c*t;
+modelMatrix[20][4]:=kappa*c*t;
+modelMatrix[20][16]:=kappa*c*t;
+modelMatrix[20][21]:=kappa*t;
+modelMatrix[20][22]:=t;
+modelMatrix[20][23]:=kappa*t;
+modelMatrix[20][24]:=kappa*c*t;
+modelMatrix[20][28]:=c*t;
+modelMatrix[20][36]:=kappa*c*t;
+modelMatrix[20][50]:=c*t;
+modelMatrix[21][5]:=kappa*c*t;
+modelMatrix[21][17]:=kappa*c*t;
+modelMatrix[21][20]:=kappa*t;
+modelMatrix[21][22]:=kappa*t;
+modelMatrix[21][23]:=t;
+modelMatrix[21][25]:=kappa*c*t;
+modelMatrix[21][29]:=c*t;
+modelMatrix[21][37]:=kappa*c*t;
+modelMatrix[21][51]:=c*t;
+modelMatrix[22][6]:=kappa*c*t;
+modelMatrix[22][18]:=kappa*c*t;
+modelMatrix[22][20]:=t;
+modelMatrix[22][21]:=kappa*t;
+modelMatrix[22][23]:=kappa*t;
+modelMatrix[22][26]:=kappa*c*t;
+modelMatrix[22][30]:=c*t;
+modelMatrix[22][38]:=kappa*c*t;
+modelMatrix[22][52]:=c*t;
+modelMatrix[23][7]:=kappa*c*t;
+modelMatrix[23][19]:=kappa*c*t;
+modelMatrix[23][20]:=kappa*t;
+modelMatrix[23][21]:=t;
+modelMatrix[23][22]:=kappa*t;
+modelMatrix[23][27]:=kappa*c*t;
+modelMatrix[23][31]:=c*t;
+modelMatrix[23][39]:=kappa*c*t;
+modelMatrix[23][53]:=c*t;
+modelMatrix[24][8]:=kappa*t;
+modelMatrix[24][16]:=c*t;
+modelMatrix[24][20]:=kappa*c*t;
+modelMatrix[24][25]:=kappa*t;
+modelMatrix[24][26]:=t;
+modelMatrix[24][27]:=kappa*t;
+modelMatrix[24][28]:=kappa*c*t;
+modelMatrix[24][40]:=kappa*c*t;
+modelMatrix[25][9]:=kappa*c*t;
+modelMatrix[25][17]:=c*t;
+modelMatrix[25][21]:=kappa*c*t;
+modelMatrix[25][24]:=kappa*t;
+modelMatrix[25][26]:=kappa*t;
+modelMatrix[25][27]:=t;
+modelMatrix[25][29]:=kappa*c*t;
+modelMatrix[25][41]:=kappa*c*t;
+modelMatrix[25][54]:=c*t;
+modelMatrix[26][10]:=kappa*t;
+modelMatrix[26][18]:=c*t;
+modelMatrix[26][22]:=kappa*c*t;
+modelMatrix[26][24]:=t;
+modelMatrix[26][25]:=kappa*t;
+modelMatrix[26][27]:=kappa*t;
+modelMatrix[26][30]:=kappa*c*t;
+modelMatrix[26][42]:=kappa*c*t;
+modelMatrix[26][55]:=c*t;
+modelMatrix[27][11]:=kappa*c*t;
+modelMatrix[27][19]:=c*t;
+modelMatrix[27][23]:=kappa*c*t;
+modelMatrix[27][24]:=kappa*t;
+modelMatrix[27][25]:=t;
+modelMatrix[27][26]:=kappa*t;
+modelMatrix[27][31]:=kappa*c*t;
+modelMatrix[27][43]:=kappa*c*t;
+modelMatrix[27][56]:=c*t;
+modelMatrix[28][12]:=kappa*c*t;
+modelMatrix[28][16]:=kappa*c*t;
+modelMatrix[28][20]:=c*t;
+modelMatrix[28][24]:=kappa*c*t;
+modelMatrix[28][29]:=kappa*t;
+modelMatrix[28][30]:=t;
+modelMatrix[28][31]:=kappa*t;
+modelMatrix[28][44]:=kappa*c*t;
+modelMatrix[28][57]:=t;
+modelMatrix[29][13]:=kappa*c*t;
+modelMatrix[29][17]:=kappa*c*t;
+modelMatrix[29][21]:=c*t;
+modelMatrix[29][25]:=kappa*c*t;
+modelMatrix[29][28]:=kappa*t;
+modelMatrix[29][30]:=kappa*t;
+modelMatrix[29][31]:=t;
+modelMatrix[29][45]:=kappa*c*t;
+modelMatrix[29][58]:=c*t;
+modelMatrix[30][14]:=kappa*c*t;
+modelMatrix[30][18]:=kappa*c*t;
+modelMatrix[30][22]:=c*t;
+modelMatrix[30][26]:=kappa*c*t;
+modelMatrix[30][28]:=t;
+modelMatrix[30][29]:=kappa*t;
+modelMatrix[30][31]:=kappa*t;
+modelMatrix[30][46]:=kappa*c*t;
+modelMatrix[30][59]:=t;
+modelMatrix[31][15]:=kappa*c*t;
+modelMatrix[31][19]:=kappa*c*t;
+modelMatrix[31][23]:=c*t;
+modelMatrix[31][27]:=kappa*c*t;
+modelMatrix[31][28]:=kappa*t;
+modelMatrix[31][29]:=t;
+modelMatrix[31][30]:=kappa*t;
+modelMatrix[31][47]:=kappa*c*t;
+modelMatrix[31][60]:=c*t;
+modelMatrix[32][0]:=c*t;
+modelMatrix[32][16]:=kappa*c*t;
+modelMatrix[32][33]:=kappa*c*t;
+modelMatrix[32][34]:=t;
+modelMatrix[32][35]:=kappa*c*t;
+modelMatrix[32][36]:=kappa*c*t;
+modelMatrix[32][40]:=c*t;
+modelMatrix[32][44]:=kappa*c*t;
+modelMatrix[33][1]:=c*t;
+modelMatrix[33][17]:=kappa*c*t;
+modelMatrix[33][32]:=kappa*c*t;
+modelMatrix[33][34]:=kappa*c*t;
+modelMatrix[33][35]:=t;
+modelMatrix[33][37]:=kappa*c*t;
+modelMatrix[33][41]:=c*t;
+modelMatrix[33][45]:=kappa*c*t;
+modelMatrix[33][48]:=kappa*c*t;
+modelMatrix[34][2]:=c*t;
+modelMatrix[34][18]:=kappa*c*t;
+modelMatrix[34][32]:=t;
+modelMatrix[34][33]:=kappa*c*t;
+modelMatrix[34][35]:=kappa*c*t;
+modelMatrix[34][38]:=kappa*c*t;
+modelMatrix[34][42]:=c*t;
+modelMatrix[34][46]:=kappa*c*t;
+modelMatrix[35][3]:=c*t;
+modelMatrix[35][19]:=kappa*c*t;
+modelMatrix[35][32]:=kappa*c*t;
+modelMatrix[35][33]:=t;
+modelMatrix[35][34]:=kappa*c*t;
+modelMatrix[35][39]:=kappa*c*t;
+modelMatrix[35][43]:=c*t;
+modelMatrix[35][47]:=kappa*c*t;
+modelMatrix[35][49]:=kappa*c*t;
+modelMatrix[36][4]:=c*t;
+modelMatrix[36][20]:=kappa*c*t;
+modelMatrix[36][32]:=kappa*c*t;
+modelMatrix[36][37]:=kappa*t;
+modelMatrix[36][38]:=t;
+modelMatrix[36][39]:=kappa*t;
+modelMatrix[36][40]:=kappa*c*t;
+modelMatrix[36][44]:=c*t;
+modelMatrix[36][50]:=kappa*c*t;
+modelMatrix[37][5]:=c*t;
+modelMatrix[37][21]:=kappa*c*t;
+modelMatrix[37][33]:=kappa*c*t;
+modelMatrix[37][36]:=kappa*t;
+modelMatrix[37][38]:=kappa*t;
+modelMatrix[37][39]:=t;
+modelMatrix[37][41]:=kappa*c*t;
+modelMatrix[37][45]:=c*t;
+modelMatrix[37][51]:=kappa*c*t;
+modelMatrix[38][6]:=c*t;
+modelMatrix[38][22]:=kappa*c*t;
+modelMatrix[38][34]:=kappa*c*t;
+modelMatrix[38][36]:=t;
+modelMatrix[38][37]:=kappa*t;
+modelMatrix[38][39]:=kappa*t;
+modelMatrix[38][42]:=kappa*c*t;
+modelMatrix[38][46]:=c*t;
+modelMatrix[38][52]:=kappa*c*t;
+modelMatrix[39][7]:=c*t;
+modelMatrix[39][23]:=kappa*c*t;
+modelMatrix[39][35]:=kappa*c*t;
+modelMatrix[39][36]:=kappa*t;
+modelMatrix[39][37]:=t;
+modelMatrix[39][38]:=kappa*t;
+modelMatrix[39][43]:=kappa*c*t;
+modelMatrix[39][47]:=c*t;
+modelMatrix[39][53]:=kappa*c*t;
+modelMatrix[40][8]:=c*t;
+modelMatrix[40][24]:=kappa*c*t;
+modelMatrix[40][32]:=c*t;
+modelMatrix[40][36]:=kappa*c*t;
+modelMatrix[40][41]:=kappa*t;
+modelMatrix[40][42]:=t;
+modelMatrix[40][43]:=kappa*t;
+modelMatrix[40][44]:=kappa*c*t;
+modelMatrix[41][9]:=c*t;
+modelMatrix[41][25]:=kappa*c*t;
+modelMatrix[41][33]:=c*t;
+modelMatrix[41][37]:=kappa*c*t;
+modelMatrix[41][40]:=kappa*t;
+modelMatrix[41][42]:=kappa*t;
+modelMatrix[41][43]:=t;
+modelMatrix[41][45]:=kappa*c*t;
+modelMatrix[41][54]:=kappa*c*t;
+modelMatrix[42][10]:=c*t;
+modelMatrix[42][26]:=kappa*c*t;
+modelMatrix[42][34]:=c*t;
+modelMatrix[42][38]:=kappa*c*t;
+modelMatrix[42][40]:=t;
+modelMatrix[42][41]:=kappa*t;
+modelMatrix[42][43]:=kappa*t;
+modelMatrix[42][46]:=kappa*c*t;
+modelMatrix[42][55]:=kappa*c*t;
+modelMatrix[43][11]:=c*t;
+modelMatrix[43][27]:=kappa*c*t;
+modelMatrix[43][35]:=c*t;
+modelMatrix[43][39]:=kappa*c*t;
+modelMatrix[43][40]:=kappa*t;
+modelMatrix[43][41]:=t;
+modelMatrix[43][42]:=kappa*t;
+modelMatrix[43][47]:=kappa*c*t;
+modelMatrix[43][56]:=kappa*c*t;
+modelMatrix[44][12]:=c*t;
+modelMatrix[44][28]:=kappa*c*t;
+modelMatrix[44][32]:=kappa*c*t;
+modelMatrix[44][36]:=c*t;
+modelMatrix[44][40]:=kappa*c*t;
+modelMatrix[44][45]:=kappa*t;
+modelMatrix[44][46]:=t;
+modelMatrix[44][47]:=kappa*t;
+modelMatrix[44][57]:=kappa*c*t;
+modelMatrix[45][13]:=c*t;
+modelMatrix[45][29]:=kappa*c*t;
+modelMatrix[45][33]:=kappa*c*t;
+modelMatrix[45][37]:=c*t;
+modelMatrix[45][41]:=kappa*c*t;
+modelMatrix[45][44]:=kappa*t;
+modelMatrix[45][46]:=kappa*t;
+modelMatrix[45][47]:=t;
+modelMatrix[45][58]:=kappa*c*t;
+modelMatrix[46][14]:=c*t;
+modelMatrix[46][30]:=kappa*c*t;
+modelMatrix[46][34]:=kappa*c*t;
+modelMatrix[46][38]:=c*t;
+modelMatrix[46][42]:=kappa*c*t;
+modelMatrix[46][44]:=t;
+modelMatrix[46][45]:=kappa*t;
+modelMatrix[46][47]:=kappa*t;
+modelMatrix[46][59]:=kappa*c*t;
+modelMatrix[47][15]:=c*t;
+modelMatrix[47][31]:=kappa*c*t;
+modelMatrix[47][35]:=kappa*c*t;
+modelMatrix[47][39]:=c*t;
+modelMatrix[47][43]:=kappa*c*t;
+modelMatrix[47][44]:=kappa*t;
+modelMatrix[47][45]:=t;
+modelMatrix[47][46]:=kappa*t;
+modelMatrix[47][60]:=kappa*c*t;
+modelMatrix[48][1]:=kappa*c*t;
+modelMatrix[48][17]:=c*t;
+modelMatrix[48][33]:=kappa*c*t;
+modelMatrix[48][49]:=t;
+modelMatrix[48][51]:=kappa*c*t;
+modelMatrix[48][54]:=c*t;
+modelMatrix[48][58]:=kappa*c*t;
+modelMatrix[49][3]:=kappa*c*t;
+modelMatrix[49][19]:=c*t;
+modelMatrix[49][35]:=kappa*c*t;
+modelMatrix[49][48]:=t;
+modelMatrix[49][53]:=kappa*c*t;
+modelMatrix[49][56]:=c*t;
+modelMatrix[49][60]:=kappa*c*t;
+modelMatrix[50][4]:=kappa*c*t;
+modelMatrix[50][20]:=c*t;
+modelMatrix[50][36]:=kappa*c*t;
+modelMatrix[50][51]:=kappa*t;
+modelMatrix[50][52]:=t;
+modelMatrix[50][53]:=kappa*t;
+modelMatrix[50][57]:=c*t;
+modelMatrix[51][5]:=kappa*c*t;
+modelMatrix[51][21]:=c*t;
+modelMatrix[51][37]:=kappa*c*t;
+modelMatrix[51][48]:=kappa*c*t;
+modelMatrix[51][50]:=kappa*t;
+modelMatrix[51][52]:=kappa*t;
+modelMatrix[51][53]:=t;
+modelMatrix[51][54]:=kappa*c*t;
+modelMatrix[51][58]:=c*t;
+modelMatrix[52][6]:=kappa*c*t;
+modelMatrix[52][22]:=c*t;
+modelMatrix[52][38]:=kappa*c*t;
+modelMatrix[52][50]:=t;
+modelMatrix[52][51]:=kappa*t;
+modelMatrix[52][53]:=kappa*t;
+modelMatrix[52][55]:=kappa*c*t;
+modelMatrix[52][59]:=c*t;
+modelMatrix[53][7]:=kappa*c*t;
+modelMatrix[53][23]:=c*t;
+modelMatrix[53][39]:=kappa*c*t;
+modelMatrix[53][49]:=kappa*c*t;
+modelMatrix[53][50]:=kappa*t;
+modelMatrix[53][51]:=t;
+modelMatrix[53][52]:=kappa*t;
+modelMatrix[53][56]:=kappa*c*t;
+modelMatrix[53][60]:=c*t;
+modelMatrix[54][9]:=kappa*c*t;
+modelMatrix[54][25]:=c*t;
+modelMatrix[54][41]:=kappa*c*t;
+modelMatrix[54][48]:=c*t;
+modelMatrix[54][51]:=kappa*c*t;
+modelMatrix[54][55]:=kappa*c*t;
+modelMatrix[54][56]:=t;
+modelMatrix[54][58]:=kappa*c*t;
+modelMatrix[55][10]:=kappa*c*t;
+modelMatrix[55][26]:=c*t;
+modelMatrix[55][42]:=kappa*c*t;
+modelMatrix[55][52]:=kappa*c*t;
+modelMatrix[55][54]:=kappa*c*t;
+modelMatrix[55][56]:=kappa*c*t;
+modelMatrix[55][59]:=kappa*c*t;
+modelMatrix[56][11]:=kappa*c*t;
+modelMatrix[56][27]:=c*t;
+modelMatrix[56][43]:=kappa*c*t;
+modelMatrix[56][49]:=c*t;
+modelMatrix[56][53]:=kappa*c*t;
+modelMatrix[56][54]:=t;
+modelMatrix[56][55]:=kappa*c*t;
+modelMatrix[56][60]:=kappa*c*t;
+modelMatrix[57][12]:=kappa*c*t;
+modelMatrix[57][28]:=t;
+modelMatrix[57][44]:=kappa*c*t;
+modelMatrix[57][50]:=c*t;
+modelMatrix[57][58]:=kappa*c*t;
+modelMatrix[57][59]:=t;
+modelMatrix[57][60]:=kappa*c*t;
+modelMatrix[58][13]:=kappa*c*t;
+modelMatrix[58][29]:=c*t;
+modelMatrix[58][45]:=kappa*c*t;
+modelMatrix[58][48]:=kappa*c*t;
+modelMatrix[58][51]:=c*t;
+modelMatrix[58][54]:=kappa*c*t;
+modelMatrix[58][57]:=kappa*c*t;
+modelMatrix[58][59]:=kappa*c*t;
+modelMatrix[58][60]:=t;
+modelMatrix[59][14]:=kappa*c*t;
+modelMatrix[59][30]:=t;
+modelMatrix[59][46]:=kappa*c*t;
+modelMatrix[59][52]:=c*t;
+modelMatrix[59][55]:=kappa*c*t;
+modelMatrix[59][57]:=t;
+modelMatrix[59][58]:=kappa*c*t;
+modelMatrix[59][60]:=kappa*c*t;
+modelMatrix[60][15]:=kappa*c*t;
+modelMatrix[60][31]:=c*t;
+modelMatrix[60][47]:=kappa*c*t;
+modelMatrix[60][49]:=kappa*c*t;
+modelMatrix[60][53]:=c*t;
+modelMatrix[60][56]:=kappa*c*t;
+modelMatrix[60][57]:=kappa*c*t;
+modelMatrix[60][58]:=t;
+modelMatrix[60][59]:=kappa*c*t;
+
+
+vectorOfFrequencies={
+{    0.098104213161}
+{   0.0227824949995}
+{   0.0103838582651}
+{   0.0520742742845}
+{    0.054502340645}
+{   0.0126569416664}
+{  0.00576881014726}
+{   0.0289301523803}
+{   0.0500957684227}
+{   0.0116336144678}
+{  0.00530239570982}
+{   0.0265911187836}
+{   0.0716647798269}
+{   0.0166425318081}
+{  0.00758537164044}
+{   0.0380400727043}
+{   0.0242295379655}
+{   0.0056267647408}
+{  0.00256457984785}
+{   0.0128611765504}
+{   0.0134608544253}
+{  0.00312598041156}
+{  0.00142476658214}
+{  0.00714509808356}
+{   0.0123725300249}
+{  0.00287324156977}
+{  0.00130957268826}
+{  0.00656740930234}
+{   0.0176995915635}
+{  0.00411033169009}
+{   0.0018734164846}
+{  0.00939504386307}
+{   0.0486285132594}
+{   0.0112928774868}
+{  0.00514709382051}
+{   0.0258122913984}
+{   0.0270158406997}
+{  0.00627382082599}
+{  0.00285949656695}
+{    0.014340161888}
+{   0.0248315812389}
+{  0.00576657573793}
+{  0.00262830322749}
+{   0.0131807445439}
+{   0.0355229564945}
+{  0.00824940695843}
+{  0.00375993378378}
+{   0.0188557873336}
+{   0.0068465529014}
+{   0.0156492637746}
+{   0.0163789417482}
+{  0.00380364050078}
+{  0.00173363206498}
+{  0.00869403543035}
+{  0.00349611211986}
+{  0.00159346606824}
+{  0.00799111341683}
+{   0.0215365659583}
+{  0.00500138261592}
+{  0.00227954173651}
+{   0.0114317316935}
+}
+;
+Model theModel=(modelMatrix,vectorOfFrequencies);
+
+UseModel (theModel);
+Tree givenTree=(U68496,U68497,((U68498,(U68499,U68500)Node7)Node5,(U68501,(U68502,(U68503,((((U68504,U68506)Node19,U68505)Node18,U68507)Node17,U68508)Node16)Node14)Node12)Node10)Node4);
+
+givenTree.Node17.t=0.2757424450018054;
+givenTree.U68508.t=2.854906402838268;
+givenTree.Node16.t=0.7491356155539504;
+givenTree.Node18.t=0.5009089422703659;
+givenTree.U68507.t=0.7750484265511058;
+givenTree.Node19.t=0.7163793148090726;
+givenTree.U68505.t=0.3962551569286348;
+givenTree.Node14.t=0.8242709855964357;
+givenTree.Node4.t=2.087307992532514;
+givenTree.Node10.t=0.6418362807585604;
+givenTree.Node12.t=0.3100267607721904;
+givenTree.U68506.t=0.9054020627730018;
+givenTree.U68499.t=0.3599441791933922;
+givenTree.U68500.t=1.322588062757455;
+givenTree.U68498.t=0.6397347450685901;
+givenTree.U68496.t=0.3019567398923403;
+givenTree.U68497.t=1.06028021022105;
+givenTree.Node7.t=1.138764385940299;
+givenTree.U68503.t=2.70912157902427;
+givenTree.U68504.t=0.2434775537996678;
+givenTree.U68502.t=2.680015689151392;
+givenTree.Node5.t=0.3048428278636682;
+givenTree.U68501.t=1.770358113740408;
+DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
+DataSetFilter filteredData = CreateFilter(ds,3,"0-272","0-8,10,9,11,12","TAA,TAG,TGA");
+ASSUME_REVERSIBLE_MODELS=0;
+LikelihoodFunction lf = (filteredData,givenTree);
+
+END;

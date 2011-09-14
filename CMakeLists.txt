@@ -317,6 +317,7 @@ if(APPLE)
     # MacOSX gui files
     #---------------------------------------------------------------------------
     set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    set(RES_MACGUIDEBUG src/gui/mac/HyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
     file(
         GLOB SRC_MACGUI
         src/gui/mac/*.cpp
@@ -329,21 +330,32 @@ if(APPLE)
     #---------------------------------------------------------------------------
     add_executable(HyPhy
         MACOSX_BUNDLE
-        EXCLUDE_FROM_ALL
+		EXCLUDE_FROM_ALL
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
+
+    add_executable(HyPhyDebug
+        MACOSX_BUNDLE
+        EXCLUDE_FROM_ALL
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${RES_MACGUIDEBUG}
+    )
+
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
     find_library(QUICKTIME NAMES Quicktime)
     target_link_libraries(HyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
+    target_link_libraries(HyPhyDebug crypto curl pthread ssl ${CARBON} ${QUICKTIME})
     add_custom_target(MAC DEPENDS HyPhy)
+    add_custom_target(MACDebug DEPENDS HyPhyDebug)
 
     #---------------------------------------------------------------------------
     # install the hyphy hbl stdlib into the .app
     #---------------------------------------------------------------------------
     get_target_property(HYPHY_APPEXE HyPhy LOCATION)
     get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
+    
     add_custom_command(
         TARGET HyPhy
         PRE_BUILD
@@ -355,6 +367,17 @@ if(APPLE)
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
 
+    add_custom_command(
+        TARGET HyPhyDebug
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_APPDIR}/../Resources/HBL
+    )
+    add_custom_command(
+        TARGET HyPhyDebug
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
+    )
+
     #---------------------------------------------------------------------------
     # MacOSX gui-specific properties
     #---------------------------------------------------------------------------
@@ -362,12 +385,24 @@ if(APPLE)
         TARGET HyPhy
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __BUNDLE__
     )
+    set_property(
+        TARGET HyPhyDebug
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __BUNDLE__
+    )
     set_target_properties(
         HyPhy
         PROPERTIES
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-    )
+		XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES            
+		XCODE_GCC_AUTO_VECTORIZATION YES    
+	)
+    set_target_properties(
+        HyPhyDebug
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
+	)
     set_property(
         SOURCE
         src/gui/mac/hydialogs.cpp
@@ -391,12 +426,27 @@ if(APPLE)
         ${RES_MACGUI}
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources
     )
+
+    set_source_files_properties(
+        ${RES_MACGUIDEBUG}
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
+    )
+
     set_target_properties(
         HyPhy
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
     )
     set_target_properties(
         HyPhy MAC
+        PROPERTIES
+        OSX_ARCHITECTURES i386
+    )
+    set_target_properties(
+        HyPhyDebug
+        PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
+    )
+    set_target_properties(
+        HyPhyDebug MACDebug
         PROPERTIES
         OSX_ARCHITECTURES i386
     )

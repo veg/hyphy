@@ -6106,7 +6106,11 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                     long unitSize = ((_FString*)alphabetMatrix->GetFormula(1,0)->Compute())->theString->toNum();
 
                     if (unitSize >= 1) {
-                        _String* theExclusions = ((_FString*)alphabetMatrix->GetFormula(1,1)->Compute())->theString;
+                        _Formula* exclusionFormula = alphabetMatrix->GetFormula(1,1);
+                        _String* theExclusions = &empty;
+                        
+                        if (exclusionFormula)
+                            theExclusions = ((_FString*)exclusionFormula->Compute())->theString;
 
                         if (treeVar->ObjectClass() == TREE) {
                             if (freqVar->ObjectClass() == MATRIX) {

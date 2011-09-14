@@ -9,7 +9,7 @@
 
 DataSet 		ds = ReadDataFile("../data/HIVenvSweden.seq");
 DataSetFilter  filteredData = CreateFilter (ds,1);
-ExecuteAFile   ( HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "NRM+Freqs.mdl");
+ExecuteAFile   ( HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +  "TemplateModels" + DIRECTORY_SEPARATOR + "NRM+Freqs.mdl");
 Tree NREVTree = DATAFILE_TREE;
 
 LikelihoodFunction lf = ( filteredData, NREVTree );	
