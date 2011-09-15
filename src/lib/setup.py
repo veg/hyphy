@@ -14,7 +14,7 @@ print get_platform()
 
 global sourceFiles, currentWDir
 
-dirFiles 	= ("../core", "../new","../../contrib/SQLite-3.6.17/","Link", "../core/include", "../new/include")
+dirFiles 	= ("../core", "../new","../../contrib/SQLite-3.6.17/","Link", "../core/include", "../new/include", "../gui/include", "../utils")
 sourceFiles = []
 currentWDir	= getcwd()
 
