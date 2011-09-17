@@ -41,7 +41,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${MACOSX_LION})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -flto")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     else(${GCC45})
         set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     endif(${GCC45})

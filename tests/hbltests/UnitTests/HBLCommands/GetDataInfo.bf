@@ -19,14 +19,18 @@ function runTest ()
 	DataSetFilter		nucF	 = CreateFilter (fiveSeqs,1);
 	
 	GetDataInfo 		(seqInfo, nucF, -1);
-	assert (seqInfo["UNIQUE_SEQUENCES"] == 4, "Expected 4 unique sequences with strict filtering");
+	assert (seqInfo["UNIQUE_SEQUENCES"] == 5, "Expected 5 unique sequences with strict filtering");
 	GetDataInfo 		(seqInfo, nucF, -2);
 	assert (seqInfo["UNIQUE_SEQUENCES"] == 4, "Expected 4 unique sequences with strict+gap filtering");
 	GetDataInfo 		(seqInfo, nucF, -3);
-	assert (seqInfo["UNIQUE_SEQUENCES"] == 4, "Expected 4 unique sequences with superset filtering");
+	assert (seqInfo["UNIQUE_SEQUENCES"] == 3, "Expected 3 unique sequences with superset filtering");
 	GetDataInfo 		(seqInfo, nucF, -4);
-	assert (seqInfo["UNIQUE_SEQUENCES"] == 4, "Expected 4 unique sequences with partial match filtering");
+	assert (seqInfo["UNIQUE_SEQUENCES"] == 2, "Expected 2 unique sequences with partial match filtering");
+
+	DataSetFilter		dinucF	 = CreateFilter (fiveSeqs,2);
 		
+	GetDataInfo 		(seqInfo, dinucF, -2);
+	assert (seqInfo["UNIQUE_SEQUENCES"] == 5, "Expected 5 unique sequences with strict+gap filtering (dinuc)");
 		
 	testResult = 1;	
 	return testResult;

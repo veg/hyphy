@@ -2210,14 +2210,14 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
             bool checkState = false;
             for (long idx=0; idx<indices.countitems(); idx++) {
                 for (long m=0; m<sites; m++) {
-                    RetrieveState (m,sequenceIndex, state1);
-                    RetrieveState (m,indices.lData[idx], state2);
+                    RetrieveState (m,sequenceIndex, state1,false);
+                    RetrieveState (m,indices.lData[idx], state2,false);
                     
                     checkState = true;
                     long idx1 = Translate2Frequencies (state1, translatedVector,  true),
                     idx2 = Translate2Frequencies (state2, translatedVector2, true);
                     
-                    printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2); 
+                    //printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2); 
                     
                     if (idx2 >=0 && idx1 >=0) {
                         if (idx1==idx2) {
@@ -2232,11 +2232,14 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                         long k = 0;
                         for (; k < vd; k++){
                             if (translatedVector[k] != translatedVector2[k]){
-                                checkState = false;
                                 break;
                             }
-                        
-                        if (checkState){
+                        }
+                            
+                        if (k == vd)
+                            continue;
+                            
+                        if (mode == 1){
                             
                                 long count1 = 0,
                                      count2 = 0;
@@ -2268,7 +2271,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                                         break;
                                     }
                                 } else {
-                                    for (long t = 0; (first||second)&&(t<vd); t++) {
+                                    for (long t = 0; t<vd; t++) {
                                         if (translatedVector[t]>0.0) {
                                             second |= (translatedVector2[t]>0.0);
                                         }
@@ -2284,7 +2287,6 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                             }
                         }
                     }
-                }
                 
                 if (checkState) {
                     map << idx;
