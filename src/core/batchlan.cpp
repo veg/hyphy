@@ -5820,6 +5820,18 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
                         long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
                         if (seqID>=0 && seqID < dsf->NumberSpecies()) {
                             stVar->SetValue (new _FString (dsf->GetSequenceCharacters(seqID)),false);
+                        } else {
+                            // 20110916 SLKP : the option for filtering duplicate sequences
+                            if (seqID >= -4 && seqID <= -1) {
+                                _SimpleList indices, map, counts;
+                                long uniqueSequences = dsf->FindUniqueSequences(indices, map, counts, -seqID - 1);
+                                _AssociativeList * parameterInfo = new _AssociativeList;
+                                parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
+                                parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
+                                parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
+                                parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
+                                stVar->SetValue (parameterInfo,false);
+                            }
                         }
                     }
                 } else {
