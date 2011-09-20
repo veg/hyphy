@@ -5250,8 +5250,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                     _LikelihoodFunction * lkf = (_LikelihoodFunction *) scfgList (g);
                     g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
                     if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                        errMsg = *currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter";
-                        WarnError (errMsg);
+                        WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
                         return;
                     }
                     currentArgument = (_String*)parameters(2);
@@ -5265,8 +5264,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 _LikelihoodFunction * lkf = (_LikelihoodFunction *) likeFuncList (f);
                 f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
                 if (f<0 || f>=lkf->GetIndependentVars().lLength) {
-                    errMsg = *currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter";
-                    WarnError (errMsg);
+                    WarnError (*currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter");
                     return;
                 }
                 currentArgument = (_String*)parameters(2);
@@ -5275,21 +5273,33 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
             }
         }
     } else {
-        f = dataSetNamesList.Find (&nmspc);
-        if (f>=0) {
-            _DataSet * ds = (_DataSet*)dataSetList (f);
-            if (ds) {
-                currentArgument = (_String*)parameters(1);
-                f               = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                _List*  dsNames = &ds->GetNames();
-
-                if (f<0 || f>=dsNames->lLength) {
-                    WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
-                    return;
-                }
-
-                dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
+        _DataSet * ds = nil;
+        currentArgument = (_String*)parameters(1);
+        if ((f = FindDataSetName (nmspc)) >= 0){
+            ds = (_DataSet*)dataSetList (f);
+            f  =  ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+        }
+        else {
+            f = FindDataSetFilterName (nmspc);
+            if (f >= 0) {
+                _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (f);
+                if (dsf) {
+                    ds = dsf->GetData ();
+                    f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+                    if (f >= 0 && f < dsf->theNodeMap.lLength){
+                        f  = dsf->theNodeMap.lData[f];
+                    }
+               }
             }
+        }
+        if (ds) {
+           _List*  dsNames = &ds->GetNames();
+            if (f<0 || f>=dsNames->lLength) {
+                WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
+                return;
+            }
+
+             dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
         }
         /*else
         {
@@ -5325,8 +5335,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 }
             }*/
         else {
-            errMsg = *currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter";
-            WarnError (errMsg);
+            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter");
         }
         //}
     }
@@ -8912,13 +8921,19 @@ void        SetDataFilterParameters (_String& parName, _DataSetFilter* thedf, bo
     if (setOrKill) {
         if (thedf->theOriginalOrder.lLength < sizeCutoff) {
             receptacleVar = CheckReceptacle (&varName, empty, false);
-            _Matrix * siteFreqs = new _Matrix(1,thedf->theOriginalOrder.lLength,false,true);
-            checkPointer (siteFreqs);
-            for (long dsID=0; dsID < thedf->theOriginalOrder.lLength; dsID++) {
-                siteFreqs->theData[dsID] = thedf->theOriginalOrder.lData[dsID];
-            }
-            receptacleVar->SetValue (siteFreqs,false);
+            receptacleVar->SetValue (new _Matrix(thedf->theOriginalOrder),false);
         }
+    } else {
+        DeleteVariable (varName);
+    }
+
+
+    varName = parName&".sequence_map";
+    if (setOrKill) {
+        if (thedf->theOriginalOrder.lLength < sizeCutoff) {
+            receptacleVar = CheckReceptacle (&varName, empty, false);
+            receptacleVar->SetValue (new _Matrix(thedf->theNodeMap),false);
+       }
     } else {
         DeleteVariable (varName);
     }

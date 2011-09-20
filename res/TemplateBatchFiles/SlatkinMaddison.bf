@@ -339,6 +339,8 @@ for (node = 2; node < treeSize; node = node + 1)
 	nodeState [nodeName] = myState;
 }
 
+returnAVL = {"MIGRATIONS": Abs(transitions)};
+
 if (Abs(transitions))
 {
 	fprintf (stdout, "\nThe following branches have migration events:\n\n");
@@ -372,88 +374,90 @@ ChoiceList (resample,"Permutation Test",1,SKIP_NONE,
 				     "Most certainly","Randomly allocate sequences into classes and tabulate the distribution of migration events.");
 				 
 
-if (resample < 1)
+if (resample)
 {
-	return 0;
-}
-
-sampleCount = 0;
-totalPossible = factorial(leafCount);
-
-for (k=0; k<kindCount; k=k+1)
-{
-	totalPossible = totalPossible/factorial(Abs(clades[k]));
-}
-
-while (sampleCount < 1)
-{
-	fprintf (stdout, "\nHow many permutations would you like to perform (total of ", totalPossible, " unique permutations available)?");
-	fscanf (stdin,"Number",sampleCount);
-}
-
-histogram = {};
-
-step = sampleCount$20;
-for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
-{
-	aSample = Random(leafAllocs,0);
-	k = computeMigrationEvents(aSample);
-	histogram[k] = histogram[k] + 1;
-
-	if ((sampleID+1)%step == 0)
+	sampleCount = 0;
+	totalPossible = factorial(leafCount);
+	
+	for (k=0; k<kindCount; k=k+1)
 	{
-		fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
+		totalPossible = totalPossible/factorial(Abs(clades[k]));
 	}
+	
+	while (sampleCount < 1)
+	{
+		fprintf (stdout, "\nHow many permutations would you like to perform (total of ", totalPossible, " unique permutations available)?");
+		fscanf (stdin,"Number",sampleCount);
+	}
+	
+	histogram = {};
+	
+	step = sampleCount$20;
+	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
+	{
+		aSample = Random(leafAllocs,0);
+		k = computeMigrationEvents(aSample);
+		histogram[k] = histogram[k] + 1;
+	
+		if ((sampleID+1)%step == 0)
+		{
+			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
+		}
+	}
+	
+	k2 = Abs (histogram);
+	countMatrix = {k2,3};
+	s1 = Rows (histogram);
+	for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
+	{
+		s2 = 0+s1[sampleID];
+		countMatrix[sampleID][0] = s2;
+		countMatrix[sampleID][1] = histogram[s2];
+	}
+	
+	countMatrix = countMatrix % 0;
+	pVal = 0;
+	
+	for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
+	{
+		if (countMatrix[sampleID][0] <= observedEvents)
+		{
+			pVal = pVal+countMatrix[sampleID][1];
+		}
+		if (sampleID)
+		{
+			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount + countMatrix[sampleID-1][2];
+		}
+		else
+		{
+			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount;	
+		}
+	}
+	
+	fprintf (stdout, "\n\nProb{as many or fewer migration events by chance} = ", pVal/sampleCount,"\n\n");
+	
+	labels = {{"Events","Count","Cumulative Weight"}};
+	
+	OpenWindow (CHARTWINDOW,{{"Simulated distribution of migration events"}
+			{"labels"}
+			{"countMatrix"}
+			{"Bar Chart"}
+			{"Events"}
+			{"Count"}
+			{"Number of Events"}
+			{""}
+			{"Counts"}
+			{""}
+			{""}
+			{"-1;-1"}
+			{"10;1.309;0.785398"}
+			{"Times:14:0;Times:12:0;Times:14:1"}
+			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
+			{"16"}
+			},
+			"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
+			
+	returnAVL["p"] = pVal/sampleCount;
 }
 
-k2 = Abs (histogram);
-countMatrix = {k2,3};
-s1 = Rows (histogram);
-for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
-{
-	s2 = 0+s1[sampleID];
-	countMatrix[sampleID][0] = s2;
-	countMatrix[sampleID][1] = histogram[s2];
-}
-
-countMatrix = countMatrix % 0;
-pVal = 0;
-
-for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
-{
-	if (countMatrix[sampleID][0] <= observedEvents)
-	{
-		pVal = pVal+countMatrix[sampleID][1];
-	}
-	if (sampleID)
-	{
-		countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount + countMatrix[sampleID-1][2];
-	}
-	else
-	{
-		countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount;	
-	}
-}
-
-fprintf (stdout, "\n\nProb{as many or fewer migration events by chance} = ", pVal/sampleCount,"\n\n");
-
-labels = {{"Events","Count","Cumulative Weight"}};
-
-OpenWindow (CHARTWINDOW,{{"Simulated distribution of migration events"}
-		{"labels"}
-		{"countMatrix"}
-		{"Bar Chart"}
-		{"Events"}
-		{"Count"}
-		{"Number of Events"}
-		{""}
-		{"Counts"}
-		{""}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:12:0;Times:14:1"}
-		{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
+return returnAVL;

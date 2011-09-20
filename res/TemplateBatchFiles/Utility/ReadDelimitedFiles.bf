@@ -249,6 +249,32 @@ function extractSubexpressions (string, splitter, merge, spacer)
 	return splitBits;
 }
 
+/*----------------------------------------------------------------*/
+
+function findAllUniqueExpressions (list, regExp, isMatrix)
+{
+	uniqueExpressions = {};
+	if (isMatrix)
+	{
+		totalCount = Rows(list)*Columns(list);
+	}
+	else
+	{
+		totalCount = Abs (list);
+	}
+	
+	for (_k = 0; _k < totalCount; _k += 1)
+	{
+		matchRes = list[_k] $ regExp;
+		if (matchRes[0] >= 0)
+		{
+			matchRes = (list[_k])[matchRes[0]][matchRes[1]];
+			uniqueExpressions [matchRes] += 1;
+		}
+	}
+	
+	return uniqueExpressions;
+}
 
 
 /*----------------------------------------------------------------*/
@@ -332,6 +358,28 @@ function normalizeSequenceID (seqName, alreadyDefined&)
 
 /*----------------------------------------------------------------*/
 
+function normalizeSequenceNamesInAFilter (filterName)
+{
+	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
+	
+	_renamingBuffer = {};
+	
+	_totalRenamed = 0;
+	for (_k = 0; _k < Columns (_seqNames); _k+=1)
+	{
+		_seqName2 = normalizeSequenceID(_seqNames[_k],"_renamingBuffer");
+		if (_seqName2 != _seqNames[_k])
+		{
+			ExecuteCommands ("SetParameter (`filterName`,_k,_seqName2)");
+			_totalRenamed += 1;
+		}
+	}
+	
+	return _totalRenamed;
+}
+
+/*----------------------------------------------------------------*/
+
 function matchStringToSetOfPatterns (str, patterns)
 {
 	for (currentIndex = 0; currentIndex < Abs(patterns);currentIndex=currentIndex+1)
@@ -342,4 +390,40 @@ function matchStringToSetOfPatterns (str, patterns)
 		}
 	}
 	return -1;
+}
+
+/*----------------------------------------------------------------*/
+
+function splitFilterBasedOnRegExp (filterName, patterns)
+{
+	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
+	
+	sequenceByRegExp = {};
+	
+	for (_k = 0; _k < Abs(patterns); _k += 1)
+	{
+		aPattern = patterns["INDEXORDER"][_k];
+		subfilterName = patterns[aPattern];
+		ExecuteCommands ("DataSetFilter `subfilterName` = CreateFilter (`filterName`,1,\"\",(_seqNames[speciesIndex]$\"`aPattern`\")[0]>=0)");
+		sequenceByRegExp[subfilterName] = Eval ("`subfilterName`.species");
+	}
+	return sequenceByRegExp;
+}
+
+/*----------------------------------------------------------------*/
+
+function condenseFilterIntoUniqueSequences (filterName, returnName, matchMode)
+{
+	ExecuteCommands ("GetDataInfo(_uniquePatterns,`filterName`," + matchMode + ")");
+	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
+
+	_filterMeIn = {};
+	for (_k = 0; _k < Columns (_uniquePatterns["UNIQUE_INDICES"]); _k+=1)
+	{
+		_filterMeIn[(_uniquePatterns["UNIQUE_INDICES"])[_k]] = (_uniquePatterns["UNIQUE_COUNTS"])[_k];
+		ExecuteCommands ("SetParameter(`filterName`,(_uniquePatterns[\"UNIQUE_INDICES\"])[_k],_seqNames[_k] + \"_\" + (_uniquePatterns[\"UNIQUE_COUNTS\"])[_k]);");
+	}
+	ExecuteCommands ("DataSetFilter `returnName` = CreateFilter(`filterName`,1,,Abs(_filterMeIn[speciesIndex])>0)");
+	
+	return 0;
 }

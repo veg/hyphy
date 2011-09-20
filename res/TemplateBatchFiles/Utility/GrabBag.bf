@@ -896,3 +896,19 @@ function remapSequenceCoordinatesToReference (ref,seq)
 	}
 	return _coordMap;
 }
+
+/*---------------------------------------------------------------------*/
+
+function runModule (module,options,suppressStdout)
+{
+	if (suppressStdout)
+	{
+		_gfr = GLOBAL_FPRINTF_REDIRECT;
+		GLOBAL_FPRINTF_REDIRECT = "/dev/null";
+	}
+	LoadFunctionLibrary (module,options);
+	if (suppressStdout)
+	{
+		GLOBAL_FPRINTF_REDIRECT = _gfr;
+	}
+}
