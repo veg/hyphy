@@ -69,6 +69,9 @@ long         siteEvalCount  =   0,
 void    DecideOnDivideBy (_LikelihoodFunction*);
 #endif
 
+#ifdef MDSOCL
+	_OCLEvaluator *OCLEval;
+#endif
 
 #ifdef __MP__
     #include <pthread.h>
@@ -3646,6 +3649,10 @@ void            _LikelihoodFunction::SetupLFCaches              (void)
     overallScalingFactorsBackup.Populate                  (theTrees.lLength, 0,0);
     matricesToExponentiate.Clear();
 
+#ifdef MDSOCL
+	OCLEval = new _OCLEvaluator[theTrees.lLength]();
+#endif
+
     evalsSinceLastSetup = 0;
 
     for (long i=0; i<theTrees.lLength; i++) {
@@ -3736,6 +3743,10 @@ void            _LikelihoodFunction::SetupLFCaches              (void)
         conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
         delete [] columnBlock;
         delete [] translationCache;
+
+#ifdef MDSOCL
+		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
+#endif
     }
 }
 
@@ -7518,6 +7529,14 @@ void    _LikelihoodFunction::Cleanup (void)
 {
     DeleteObject (parameterValuesAndRanges);
     DeleteCaches();
+
+#ifdef MDSOCL
+	for (int i = 0; i < theTrees.lLength; i++)
+	{
+		OCLEval[i].~_OCLEvaluator();
+	}
+	delete [] OCLEval;
+#endif
 }
 
 
@@ -7808,11 +7827,23 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
             yieldCPUTime();
         }
 
+
+#ifdef MDSOCL
+
+        return t->OCLLikelihoodEvaluator (changedBranches, 
+              df, 
+              conditionalInternalNodeLikelihoodCaches[index],     
+              conditionalTerminalNodeStateFlag[index],
+              (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+              OCLEval[index]);
+#else
+
         return t->VerySimpleLikelihoodEvaluator (changedBranches,
                 df,
                 conditionalInternalNodeLikelihoodCaches[index],
                 conditionalTerminalNodeStateFlag[index],
                 (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index) );
+#endif
 
 #else
         long        catID            = siteRes?currentRateClass:-1;
