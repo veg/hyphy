@@ -62,8 +62,8 @@ int main(int argc, char * argv[])
                 last_is_slash = 0;
             }
 
-            // if we're a multi-line comment
-            // we need to check for the terminal part
+            /* if we're a multi-line comment
+               we need to check for the terminal part */
             if(is_mlc && ibuf[i] == '*') {
                 last_is_star = 1;
                 continue;
@@ -76,7 +76,8 @@ int main(int argc, char * argv[])
                 continue;
             }
 
-            // if it's a newline, escape it
+            /* if it's a newline, escape it, add it, and continue
+               ignoring comments, because we want to preserve line numbers */
             if (ibuf[i] == '\n') {
                 // get rid of trailing whitespace
                 for(; j > 0 && (obuf[j] == ' ' || obuf[j] == '\t'); --j);
