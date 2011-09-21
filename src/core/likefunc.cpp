@@ -7931,11 +7931,11 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 return sum;
             }
 
-            long np = 1, sitesPerP = df->NumberDistinctSites() / np + 1;
+            long np = 1;
 #ifdef _OPENMP
             np           = MIN(GetThreadCount(),omp_get_max_threads());
-            sitesPerP    = df->NumberDistinctSites() / np + 1;
 #endif
+            long sitesPerP    = df->NumberDistinctSites() / np + 1;
 
 
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
