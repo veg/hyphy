@@ -210,6 +210,37 @@ add_custom_target(MP2 DEPENDS HYPHYMP)
 
 
 #-------------------------------------------------------------------------------
+# hyphy opencl target
+#-------------------------------------------------------------------------------
+find_package(OpenCL)
+if(${OpenCL_FOUND})
+    add_executable(
+        HYPHYOCL
+        EXCLUDE_FROM_ALL
+        ${SRC_COMMON} ${SRC_UNIXMAIN}
+    )
+    target_link_libraries(HYPHYOCL crypto curl pthread ssl ${OpenCL_LIBRARIES})
+    install(
+        TARGETS HYPHYOCL
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+    add_custom_target(OCL DEPENDS HYPHYOCL)
+    set_property(
+        TARGET HYPHYOCL
+        APPEND PROPERTY COMPILE_DEFINITIONS _HY_GPU_EXAMPLE_CALCULATOR MDSOCL
+    )
+    set_target_properties(
+        HYPHYMPI
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenCL_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenCL_LINK_FLAGS}"
+    )
+
+endif(${OpenCL_FOUND})
+
+
+#-------------------------------------------------------------------------------
 # hyphy mpi target
 #-------------------------------------------------------------------------------
 find_package(MPI)
