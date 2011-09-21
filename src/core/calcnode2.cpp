@@ -38,6 +38,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern  long likeFuncEvalCallCount,
         matrixExpCount;
 
+#ifdef MDSOCL
+int launchmdsocl(long siteCount,
+                 long nodeCount,
+                 long alphabetDimension,
+                 _SimpleList& updateNodes,
+                 _SimpleList& flatParents,
+                 _SimpleList& flatNodes,
+                 _SimpleList& flatCLeaves,
+                 _SimpleList& flatLeaves,
+                 _SimpleList& flatTree,
+                 _Parameter* iNodeCache,
+                 long* lNodeFlags,
+                 _SimpleList taggedInternals,
+                 _GrowingVector* lNodeResolutions);
+#endif
+
 #ifdef  _SLKP_LFENGINE_REWRITE_
 
 
@@ -208,6 +224,33 @@ void        _TheTree::FillInConditionals        (_DataSetFilter*        theFilte
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+#ifdef MDSOCL
+_Parameter _TheTree::OCLLikelihoodEvaluator (			_SimpleList&		     updateNodes, 
+														_DataSetFilter*		 theFilter,
+                                                        _Parameter*			 iNodeCache,
+                                                        long	   *			 lNodeFlags,
+                                                        _GrowingVector*		 lNodeResolutions,
+														_OCLEvaluator& OCLEval)
+{
+
+	_SimpleList		taggedInternals					(flatNodes.lLength, 0, 0);
+	//printf("Launching a tree in OpenCL...\n");
+	return ((_Parameter) OCLEval.launchmdsocl(			updateNodes,
+														flatParents,
+														flatNodes,
+														flatCLeaves,
+														flatLeaves,
+														flatTree,
+														theProbs,
+														theFilter->theFrequencies,
+														lNodeFlags,
+														taggedInternals,
+														lNodeResolutions));
+}
+
+#endif
+
+/*----------------------------------------------------------------------------------------------------------*/
 
 _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          updateNodes,
         _DataSetFilter*      theFilter,

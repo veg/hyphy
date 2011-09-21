@@ -9,6 +9,7 @@
 
 #ifdef MDSOCL
 
+#include <string>
 #include <stdio.h>
 #include <assert.h>
 #include <sys/sysctl.h>
@@ -71,7 +72,7 @@ typedef cl_float clfp;
 #endif
 
 
-#define MIN(a,b) ((a)>(b)?(b):(a))
+// #define MIN(a,b) ((a)>(b)?(b):(a))
 
 // time stuff:
 #define BILLION 1E9
@@ -130,6 +131,8 @@ _GrowingVector* lNodeResolutions;
 float scalar;
 
 void *node_cache, *nodRes_cache, *nodFlag_cache, *scalings_cache, *prob_cache, *freq_cache, *root_cache, *result_cache, *root_scalings, *model;
+
+extern const char * KERNEL_STRING;
 
 void _OCLEvaluator::init(   long esiteCount,
                                     long ealphabetDimension,
@@ -198,17 +201,17 @@ int _OCLEvaluator::setupContext(void)
 
     //printf("Allocated all of the arrays!\n");
     //printf("setup the model, fixed tagged internals!\n");
-    printf("flatleaves: %i\n", flatLeaves.lLength);
-    printf("flatParents: %i\n", flatParents.lLength);
+    printf("flatleaves: %ld\n", flatLeaves.lLength);
+    printf("flatParents: %ld\n", flatParents.lLength);
     //printf("flatCleaves: %i\n", flatCLeaves.lLength);
-    printf("flatNodes: %i\n", flatNodes.lLength);
-    printf("updateNodes: %i\n", updateNodes.lLength);
-    printf("flatTree: %i\n", flatTree.lLength);
+    printf("flatNodes: %ld\n", flatNodes.lLength);
+    printf("updateNodes: %ld\n", updateNodes.lLength);
+    printf("flatTree: %ld\n", flatTree.lLength);
     //printf("nodeFlagCount: %i\n", nodeFlagCount);
     //printf("nodeResCount: %i\n", nodeResCount);
 
     //for (int i = 0; i < nodeCount*siteCount*alphabetDimension; i++)
-    printf("siteCount: %i, alphabetDimension: %i \n", siteCount, alphabetDimension);
+    printf("siteCount: %ld, alphabetDimension: %ld \n", siteCount, alphabetDimension);
     if (ambiguousNodes)
         for (int i = 0; i < nodeResCount; i++)
             ((float*)nodRes_cache)[i] = (float)(lNodeResolutions->theData[i]);
@@ -272,9 +275,9 @@ int _OCLEvaluator::setupContext(void)
     size_t maxConstSize;
     ciErr1 = clGetDeviceInfo(cdDevice, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, 
                              sizeof(size_t), &maxConstSize, NULL);
-    printf("LocalSize: %i, Const size: %i\n", maxLocalSize, maxConstSize);
+    printf("LocalSize: %ld, Const size: %ld\n", (long unsigned) maxLocalSize, (long unsigned) maxConstSize);
 
-    printf("sites: %d\n", siteCount);
+    printf("sites: %ld\n", siteCount);
     
     // set and log Global and Local work size dimensions
     
@@ -289,9 +292,12 @@ int _OCLEvaluator::setupContext(void)
     //szGlobalWorkSize[1] = ((siteCount + 16)/16)*16;
     szGlobalWorkSize[1] = roundUpToNextPowerOfTwo(siteCount);
     //szGlobalWorkSize[1] = roundUpToNextPowerOfTwo(siteCount);
-    printf("Global Work Size \t\t= %d, %d\nLocal Work Size \t\t= %d, %d\n# of Work Groups \t\t= %d\n\n", 
-           szGlobalWorkSize[0], szGlobalWorkSize[1], szLocalWorkSize[0], szLocalWorkSize[1], 
-           ((szGlobalWorkSize[0]*szGlobalWorkSize[1])/(szLocalWorkSize[0]*szLocalWorkSize[1]))); 
+    printf("Global Work Size \t\t= %ld, %ld\nLocal Work Size \t\t= %ld, %ld\n# of Work Groups \t\t= %ld\n\n", 
+           (long unsigned) szGlobalWorkSize[0],
+           (long unsigned) szGlobalWorkSize[1],
+           (long unsigned) szLocalWorkSize[0],
+           (long unsigned) szLocalWorkSize[1], 
+           (long unsigned) ((szGlobalWorkSize[0]*szGlobalWorkSize[1])/(szLocalWorkSize[0]*szLocalWorkSize[1]))); 
 
     
     size_t returned_size = 0;
@@ -412,325 +418,12 @@ int _OCLEvaluator::setupContext(void)
     
 //  "" FLOATPREC                                                                                                                        \
     // Create the program
-    const char *program_source = "\n" \
-    "" OCLTARGET                                                                                                                        \
-    "" PRAGMADEF                                                                                                                        \
-    "" FLOATPREC                                                                                                                        \
-    "" OCLGPUResults                                                                                                                    \
-    " #define MIN(a,b) ((a)>(b)?(b):(a))                                                                                            \n" \
-    "__kernel void LeafKernel(  __global float* node_cache,                 // argument 0                                           \n" \
-    "                           __global const float* model,                // argument 1                                           \n" \
-    "                           __global const float* nodRes_cache,         // argument 2                                           \n" \
-    "                           __global const long* nodFlag_cache,         // argument 3                                           \n" \
-    "                           long sites,                                 // argument 4                                           \n" \
-    "                           long characters,                            // argument 5                                           \n" \
-    "                           long childNodeIndex,                        // argument 6                                           \n" \
-    "                           long parentNodeIndex,                       // argument 7                                           \n" \
-    "                           long roundCharacters,                       // argument 8                                           \n" \
-    "                           int intTagState,                            // argument 9                                           \n" \
-    "                           int nodeID,                                 // argument 10                                          \n" \
-    "                           __global int* scalings,                     // argument 11                                          \n" \
-    "                           float scalar,                               // argument 12                                          \n" \
-    "                           float uFlowThresh                           // argument 13                                          \n" \
-    "                           )                                                                                                   \n" \
-    "{                                                                                                                              \n" \
-    "   int gx = get_global_id(0); // pchar                                                                                         \n" \
-    "   if (gx > characters) return;                                                                                                \n" \
-    "   int gy = get_global_id(1); // site                                                                                          \n" \
-    "   if (gy > sites) return;                                                                                                     \n" \
-    "   long parentCharacterIndex = parentNodeIndex*sites*roundCharacters + gy*roundCharacters + gx;                                \n" \
-    "   float privateParentScratch = 1.0f;                                                                                          \n" \
-    "   int scale = 0;                                                                                                              \n" \
-    "   if (intTagState == 1)                                                                                                       \n" \
-    "   {                                                                                                                           \n" \
-    "       privateParentScratch = node_cache[parentCharacterIndex];                                                                \n" \
-    "       scale = scalings[parentCharacterIndex];                                                                                 \n" \
-    "   }                                                                                                                           \n" \
-    "   long siteState = nodFlag_cache[childNodeIndex*sites + gy];                                                                  \n" \
-    "   privateParentScratch *= model[nodeID*roundCharacters*roundCharacters + siteState*roundCharacters + gx];                     \n" \
-    "   if (gy < sites && gx < characters)                                                                                          \n" \
-    "   {                                                                                                                           \n" \
-    "       node_cache[parentCharacterIndex] = privateParentScratch;                                                                \n" \
-    "       scalings[parentCharacterIndex] = scale;                                                                                 \n" \
-    "   }                                                                                                                           \n" \
-    "}                                                                                                                              \n" \
-    "__kernel void AmbigKernel(     __global float* node_cache,                 // argument 0                                       \n" \
-    "                               __global const float* model,                // argument 1                                       \n" \
-    "                               __global const float* nodRes_cache,         // argument 2                                       \n" \
-    "                               __global const long* nodFlag_cache,         // argument 3                                       \n" \
-    "                               long sites,                                 // argument 4                                       \n" \
-    "                               long characters,                            // argument 5                                       \n" \
-    "                               long childNodeIndex,                        // argument 6                                       \n" \
-    "                               long parentNodeIndex,                       // argument 7                                       \n" \
-    "                               long roundCharacters,                       // argument 8                                       \n" \
-    "                               int intTagState,                            // argument 9                                       \n" \
-    "                               int nodeID,                                 // argument 10                                      \n" \
-    "                               __global int* scalings,                     // argument 11                                      \n" \
-    "                               float scalar,                               // argument 12                                      \n" \
-    "                               float uFlowThresh                           // argument 13                                      \n" \
-    "                               )                                                                                               \n" \
-    "{                                                                                                                              \n" \
-    "   // thread index                                                                                                             \n" \
-    "   int tx = get_local_id(0);                                                                                                   \n" \
-    "   int ty = get_local_id(1);                                                                                                   \n" \
-    "   // global index                                                                                                             \n" \
-    "   int gx = get_global_id(0);                                                                                                  \n" \
-    "   int gy = get_global_id(1);                                                                                                  \n" \
-    "   long parentCharacterIndex = parentNodeIndex*sites*roundCharacters + gy*roundCharacters + gx;                                \n" \
-    "   float privateParentScratch = 1.0f;                                                                                          \n" \
-    "   int scale = 0;                                                                                                              \n" \
-    "   if (intTagState == 1 && gy < sites && gx < characters)                                                                      \n" \
-    "   {                                                                                                                           \n" \
-    "       privateParentScratch = node_cache[parentCharacterIndex];                                                                \n" \
-    "       scale = scalings[parentCharacterIndex];                                                                                 \n" \
-    "   }                                                                                                                           \n" \
-    "   float sum = 0.f;                                                                                                            \n" \
-    "   float childSum = 0.f;                                                                                                       \n" \
-    "   int scaleScratch = 0;                                                                                                       \n" \
-    "   __local float childScratch[BLOCK_SIZE][BLOCK_SIZE];                                                                         \n" \
-    "   __local float modelScratch[BLOCK_SIZE][BLOCK_SIZE];                                                                         \n" \
-    "   int siteState = nodFlag_cache[childNodeIndex*sites + gy];                                                                   \n" \
-    "   int ambig = 0;                                                                                                              \n" \
-    "   if (siteState < 0)                                                                                                          \n" \
-    "   {                                                                                                                           \n" \
-    "       ambig = 1;                                                                                                              \n" \
-    "       siteState = -siteState-1;                                                                                               \n" \
-    "   }                                                                                                                           \n" \
-    "   int cChar = 0;                                                                                                              \n" \
-    "   for (int charBlock = 0; charBlock < 64/BLOCK_SIZE; charBlock++)                                                             \n" \
-    "   {                                                                                                                           \n" \
-    "       if (ambig && gy < sites && gx < characters)                                                                                                              \n" \
-    "           childScratch[ty][tx] =  nodRes_cache[siteState*characters + (charBlock*BLOCK_SIZE) + tx];                                                         \n" \
-    "           //childScratch[ty][tx] =                                                                                              \n" \
-    "            //   nodRes_cache[siteState*characters + (charBlock*BLOCK_SIZE) + tx];                                               \n" \
-    "       else if (gy < sites && gx < characters)                                                                                                                   \n" \
-    "       {                                                                                                                       \n" \
-    "           if (charBlock*BLOCK_SIZE + tx == siteState)                                                                         \n" \
-    "               childScratch[ty][tx] = 1;                                                                                       \n" \
-    "           else                                                                                                                \n" \
-    "               childScratch[ty][tx] = 0;                                                                                       \n" \
-    "       }                                                                                                                       \n" \
-    "       else                                                                                                                       \n" \
-    "               childScratch[ty][tx] = 0;                                                                                       \n" \
-    "       modelScratch[ty][tx] = model[nodeID*roundCharacters*roundCharacters + roundCharacters*((charBlock*BLOCK_SIZE)+ty) + gx];\n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                           \n" \
-    "       for (int myChar = 0; myChar < MIN(BLOCK_SIZE, (characters-cChar)); myChar++)                                            \n" \
-    "       {                                                                                                                       \n" \
-    "           sum += childScratch[ty][myChar] * modelScratch[myChar][tx];                                                         \n" \
-    "           childSum += childScratch[ty][myChar];                                                                               \n" \
-    "       }                                                                                                                       \n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                           \n" \
-    "       cChar += BLOCK_SIZE;                                                                                                    \n" \
-    "   }                                                                                                                           \n" \
-    "   while (childSum < 1 && childSum != 0)                                                                                       \n" \
-    "   {                                                                                                                           \n" \
-    "       childSum *= scalar;                                                                                                     \n" \
-    "       sum *= scalar;                                                                                                          \n" \
-    "       scaleScratch++;                                                                                                         \n" \
-    "   }                                                                                                                           \n" \
-    "   scale += scaleScratch;                                                                                                      \n" \
-    "   privateParentScratch *= sum;                                                                                                \n" \
-    "   if (gy < sites && gx < characters)                                                                                          \n" \
-    "   {                                                                                                                           \n" \
-    "       scalings    [parentCharacterIndex]  = scale;                                                                            \n" \
-    "       node_cache  [parentCharacterIndex]  = privateParentScratch;                                                             \n" \
-    "   }                                                                                                                           \n" \
-    "   /*                                                                                                                           \n" \
-    "   */                                                                                                                           \n" \
-    "}                                                                                                                              \n" \
-    "__kernel void InternalKernel(  __global float* node_cache,                 // argument 0                                       \n" \
-    "                               __global const float* model,                // argument 1                                       \n" \
-    "                               __global const float* nodRes_cache,         // argument 2                                       \n" \
-    "                               long sites,                                 // argument 3                                       \n" \
-    "                               long characters,                            // argument 4                                       \n" \
-    "                               long childNodeIndex,                        // argument 5                                       \n" \
-    "                               long parentNodeIndex,                       // argument 6                                       \n" \
-    "                               long roundCharacters,                       // argument 7                                       \n" \
-    "                               int intTagState,                            // argument 8                                       \n" \
-    "                               int nodeID,                                 // argument 9                                       \n" \
-    "                               __global float* root_cache,                 // argument 10                                      \n" \
-    "                               __global int* scalings,                     // argument 11                                      \n" \
-    "                               float scalar,                               // argument 12                                      \n" \
-    "                               float uFlowThresh,                          // argument 13                                      \n" \
-    "                               __global int* root_scalings                 // argument 10                                      \n" \
-    "                               )                                                                                               \n" \
-    "{                                                                                                                              \n" \
-    "   // thread index                                                                                                             \n" \
-    "   short tx = get_local_id(0);   //local pchar                                                                                   \n" \
-    "   short ty = get_local_id(1);   //local site                                                                                    \n" \
-    "   // global index                                                                                                             \n" \
-    "   short gx = get_global_id(0);                                                                                                  \n" \
-    "   int gy = get_global_id(1);                                                                                                  \n" \
-    "   long parentCharacterIndex = parentNodeIndex*sites*roundCharacters + gy*roundCharacters + gx;                                \n" \
-    "   float privateParentScratch = 1.0f;                                                                                          \n" \
-    "   short scale = 0;                                                                                                              \n" \
-    "   if (intTagState == 1 && gy < sites && gx < characters)                                                                      \n" \
-    "   {                                                                                                                           \n" \
-    "       privateParentScratch = node_cache[parentCharacterIndex];                                                                \n" \
-    "       scale = scalings[parentCharacterIndex];                                                                                 \n" \
-    "   }                                                                                                                           \n" \
-    "   float sum = 0.f;                                                                                                                \n" \
-    "   float childSum = 0.f;                                                                                                       \n" \
-    "   int scaleScratch = scalings[childNodeIndex*sites*roundCharacters + gy*roundCharacters + gx];                                \n" \
-    "   __local float  childScratch[BLOCK_SIZE][BLOCK_SIZE];                                                                        \n" \
-    "   __local float  modelScratch[BLOCK_SIZE][BLOCK_SIZE];                                                                        \n" \
-    "   short cChar = 0;                                                                                                              \n" \
-    "   for (int charBlock = 0; charBlock < 64/BLOCK_SIZE; charBlock++)                                                             \n" \
-    "   {                                                                                                                           \n" \
-    "       childScratch[ty][tx] =                                                                                                  \n" \
-    "           node_cache[childNodeIndex*sites*roundCharacters + roundCharacters*gy + (charBlock*BLOCK_SIZE) + tx];                \n" \
-    "       modelScratch[ty][tx] = model[nodeID*roundCharacters*roundCharacters + roundCharacters*((charBlock*BLOCK_SIZE)+ty) + gx];\n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                           \n" \
-    "       for (int myChar = 0; myChar < MIN(BLOCK_SIZE, (characters-cChar)); myChar++)                                            \n" \
-    "       {                                                                                                                       \n" \
-    "           sum += childScratch[ty][myChar] * modelScratch[myChar][tx];                                                         \n" \
-    "           childSum += childScratch[ty][myChar];                                                                               \n" \
-    "       }                                                                                                                       \n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                           \n" \
-    "       cChar += BLOCK_SIZE;                                                                                                    \n" \
-    "   }                                                                                                                           \n" \
-    "   while (childSum < 1 && childSum != 0)                                                                                       \n" \
-    "   {                                                                                                                           \n" \
-    "       childSum *= scalar;                                                                                                     \n" \
-    "       sum *= scalar;                                                                                                          \n" \
-    "       scaleScratch++;                                                                                                         \n" \
-    "   }                                                                                                                           \n" \
-    "   scale += scaleScratch;                                                                                                      \n" \
-    "   privateParentScratch *= sum;                                                                                                \n" \
-    "   if (gy < sites && gx < characters)                                                                                          \n" \
-    "   {                                                                                                                           \n" \
-    "       scalings     [parentCharacterIndex]  = scale;                                                                           \n" \
-    "       root_scalings[gy*roundCharacters+gx] = scale;                                                                           \n" \
-    "       node_cache   [parentCharacterIndex]  = privateParentScratch;                                                            \n" \
-    "       root_cache   [gy*roundCharacters+gx] = privateParentScratch;                                                            \n" \
-    "   }                                                                                                                           \n" \
-    "}                                                                                                                              \n" \
-    "__kernel void ResultKernel (   __global int* freq_cache,                   // argument 0                                       \n" \
-    "                               __global float* prob_cache,                 // argument 1                                       \n" \
-    "                               __global fpoint* result_cache,              // argument 2                                       \n" \
-    "                               __global float* root_cache,                 // argument 3                                       \n" \
-    "                               __global int* root_scalings,                // argument 4                                       \n" \
-    "                               long sites,                                 // argument 5                                       \n" \
-    "                               long roundCharacters,                       // argument 6                                       \n" \
-    "                               float scalar,                               // argument 7                                       \n" \
-    "                               long characters                             // argument 8                                       \n" \
-    "                           )                                                                                                   \n" \
-    "{                                                                                                                              \n" \
-    "   // shrink the work group to sites, rather than sites x characters                                                           \n" \
-    "   #ifdef __GPUResults__                                                                                                       \n" \
-    "   int site = get_global_id(0);                                                                                                \n" \
-    "   int localSite = get_local_id(0);                                                                                            \n" \
-    "   __local fpoint resultScratch[BLOCK_SIZE*BLOCK_SIZE];                                                                        \n" \
-    "   resultScratch[localSite] = 0.0;                                                                                             \n" \
-    "   while (site < sites)                                                                                                        \n" \
-    "   {                                                                                                                           \n" \
-    "       result_cache[site] = 0.0;                                                                                               \n" \
-    "       fpoint acc = 0.0;                                                                                                       \n" \
-    "       int scale = root_scalings[site*roundCharacters];                                                                        \n" \
-    "       for (int rChar = 0; rChar < characters; rChar++)                                                                        \n" \
-    "       {                                                                                                                       \n" \
-    "           acc += root_cache[site*roundCharacters + rChar] * prob_cache[rChar];                                                \n" \
-    "       }                                                                                                                       \n" \
-    "       //resultScratch[localSite] += (native_log(acc)-scale*native_log(scalar)) * freq_cache[site];                            \n" \
-    "       resultScratch[localSite] += (log(acc)-scale*log(scalar)) * freq_cache[site];                                            \n" \
-    "       //result_cache[site] += (log(acc)-scale*log(scalar)) * freq_cache[site];                                                \n" \
-    "       site += get_global_size(0);                                                                                             \n" \
-    "   }                                                                                                                           \n" \
-    "   barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   for (int offset = get_local_size(0)/2; offset > 0; offset >>= 1)                                                            \n" \
-    "   {                                                                                                                           \n" \
-    "       if (localSite < offset)                                                                                                 \n" \
-    "       {                                                                                                                       \n" \
-    "           fpoint other = resultScratch[localSite + offset];                                                                   \n" \
-    "           fpoint mine  = resultScratch[localSite];                                                                            \n" \
-    "           resultScratch[localSite] = mine+other;                                                                              \n" \
-    "       }                                                                                                                       \n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                           \n" \
-    "   }                                                                                                                           \n" \
-    "   // TODO: this would probably be faster if I saved them further apart to reduce bank conflicts                               \n" \
-    "   if (localSite == 0) result_cache[get_group_id(0)] = resultScratch[0];                                                       \n" \
-    "   #else                                                                                                                       \n" \
-    "   if (get_global_id(0) != 0) return;                                                                                          \n" \
-    "   int site = get_global_id(1);                                                                                                \n" \
-    "   result_cache[site] = 0.0;                                                                                                \n" \
-    "   if (get_group_id(1) >= get_local_size(0)*get_local_size(1)) return;                                                         \n" \
-    "   while (site < sites)                                                                                                     \n" \
-    "   {                                                                                                                           \n" \
-    "       float acc = 0.0;                                                                                                           \n" \
-    "       int scale = root_scalings[site*roundCharacters];                                                                            \n" \
-    "       for (int rChar = 0; rChar < characters; rChar++)                                                                            \n" \
-    "       {                                                                                                                           \n" \
-    "           acc += root_cache[site*roundCharacters + rChar] * prob_cache[rChar];                                                    \n" \
-    "       }                                                                                                                           \n" \
-    "       result_cache[site] += (native_log(acc)-scale*native_log(scalar)) * freq_cache[site];                                     \n" \
-    "       site += get_local_size(0)*get_local_size(1);                                                                            \n" \
-    "   }                                                                                                                           \n" \
-    "   barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   #endif                                                                                               \n" \
-    "   /*                                                                                              \n" \
-    "   */                                                                                              \n" \
-    "}                                                                                                                              \n" \
-    "__kernel void ReductionKernel ( __global double* result_cache               // argument 1                                       \n" \
-    "                           )                                                                                                   \n" \
-    "{                                                                                                                              \n" \
-    "   int groupNum = get_local_id(0);                                                           \n" \
-    "   __local double resultScratch[BLOCK_SIZE*BLOCK_SIZE];                                                          \n" \
-    "   resultScratch[groupNum] = result_cache[groupNum];                                     \n" \
-    "   barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   for (int offset = get_local_size(0)/2; offset > 0; offset >>= 1)                                                            \n" \
-    "   {                                                                                                                           \n" \
-    "       if (groupNum < offset)                                                                                                      \n" \
-    "       {                                                                                                                       \n" \
-    "           double other = resultScratch[groupNum + offset];                                                                         \n" \
-    "           double mine  = resultScratch[groupNum];                                                                                  \n" \
-    "           double sum  = mine + other;                                                                                  \n" \
-	"			//if (offset > 1)											\n" \
-    "           	resultScratch[groupNum]  = sum;                                                                                 \n" \
-	"			//else											\n" \
-    "			//{                                                                                                                       \n" \
-    "           //	resultScratch[2]  = mine;                                                                                 \n" \
-    "           //	resultScratch[3]  = other;                                                                                 \n" \
-    "           //	resultScratch[4]  = (sum);                                                                                 \n" \
-    "       	//}                                                                                                                       \n" \
-    "       }                                                                                                                       \n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   }                                                                                                                           \n" \
-    "   result_cache[groupNum] = resultScratch[groupNum];                                     \n" \
-    "   //                                                                                              \n" \
-    "   /*                                                                                              \n" \
-    "   if (get_group_id(0) != 0) return;                                                                                                     \n" \
-    "   if (get_group_id(1) != 0) return;                                                                                                     \n" \
-    "   int groupDim = get_local_size(0)*get_local_size(1);                                                                         \n" \
-    "   int groupNum = get_local_id(1)*get_local_size(0)+get_local_id(0);                                                           \n" \
-    "   __local float resultScratch[BLOCK_SIZE*BLOCK_SIZE];                                                          \n" \
-    "   resultScratch[groupNum] = result_cache[groupNum];                                     \n" \
-    "   //result_cache[groupNum] = 0.f;                                     \n" \
-    "   barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   for (int offset = groupDim/2; offset > 0; offset >>= 1)                                                            \n" \
-    "   {                                                                                                                           \n" \
-    "   //int offset = groupDim/2;                                                            \n" \
-    "       if (groupNum < offset)                                                                                                      \n" \
-    "       {                                                                                                                       \n" \
-    "           float other = resultScratch[groupNum + offset];                                                                         \n" \
-    "           float mine  = resultScratch[groupNum];                                                                                  \n" \
-	"			if (offset > 1)											\n" \
-    "           	resultScratch[groupNum]  = mine + other;                                                                                 \n" \
-	"			else											\n" \
-    "			{                                                                                                                       \n" \
-    "           	resultScratch[2]  = mine;                                                                                 \n" \
-    "           	resultScratch[3]  = other;                                                                                 \n" \
-    "       	}                                                                                                                       \n" \
-    "           //resultScratch[groupNum + offset]  = 0.f;                                                                                 \n" \
-    "       }                                                                                                                       \n" \
-    "       barrier(CLK_LOCAL_MEM_FENCE);                                                                                               \n" \
-    "   }                                                                                                                           \n" \
-    "   //if (groupNum == 0) result_cache[0] = resultScratch[0];                                                                   \n" \
-    "   result_cache[groupNum] = resultScratch[groupNum];                                     \n" \
-    "   */                                                                                              \n" \
-    "}                                                                                                                              \n" \
-    "\n"; 
+    std::string program_source ("" OCLTARGET PRAGMADEF FLOATPREC OCLGPUResults);
+    program_source += KERNEL_STRING;
+    const char * psrc = program_source.c_str();
+
 // TODO: result_cache size can be reduced to siteCount/BLOCK_SIZE
-    cpMLProgram = clCreateProgramWithSource(cxGPUContext, 1, (const char**)&program_source,
+    cpMLProgram = clCreateProgramWithSource(cxGPUContext, 1, &psrc,
                                           NULL, &ciErr1);
     if (ciErr1 != CL_SUCCESS)
     {
@@ -834,19 +527,19 @@ int _OCLEvaluator::setupContext(void)
     size_t maxKernelSize;
     ciErr1 = clGetKernelWorkGroupInfo(ckLeafKernel, cdDevice, CL_KERNEL_WORK_GROUP_SIZE, 
                              sizeof(size_t), &maxKernelSize, NULL);
-    printf("Max Leaf Kernel Work Group Size: %i \n", maxKernelSize);
+    printf("Max Leaf Kernel Work Group Size: %ld \n", (long unsigned) maxKernelSize);
     ciErr1 = clGetKernelWorkGroupInfo(ckAmbigKernel, cdDevice, CL_KERNEL_WORK_GROUP_SIZE, 
                              sizeof(size_t), &maxKernelSize, NULL);
-    printf("Max Ambig Kernel Work Group Size: %i \n", maxKernelSize);
+    printf("Max Ambig Kernel Work Group Size: %ld \n", (long unsigned) maxKernelSize);
     ciErr1 = clGetKernelWorkGroupInfo(ckInternalKernel, cdDevice, CL_KERNEL_WORK_GROUP_SIZE, 
                              sizeof(size_t), &maxKernelSize, NULL);
-    printf("Max Internal Kernel Work Group Size: %i \n", maxKernelSize);
+    printf("Max Internal Kernel Work Group Size: %ld \n", (long unsigned) maxKernelSize);
     ciErr1 = clGetKernelWorkGroupInfo(ckResultKernel, cdDevice, CL_KERNEL_WORK_GROUP_SIZE, 
                              sizeof(size_t), &maxKernelSize, NULL);
-    printf("Max Result Kernel Work Group Size: %i \n", maxKernelSize);
+    printf("Max Result Kernel Work Group Size: %ld \n", (long unsigned) maxKernelSize);
     ciErr1 = clGetKernelWorkGroupInfo(ckReductionKernel, cdDevice, CL_KERNEL_WORK_GROUP_SIZE, 
                              sizeof(size_t), &maxKernelSize, NULL);
-    printf("Max Reduction Kernel Work Group Size: %i \n", maxKernelSize);
+    printf("Max Reduction Kernel Work Group Size: %ld \n", (long unsigned) maxKernelSize);
     
     long tempLeafState = 1;
     long tempSiteCount = siteCount;

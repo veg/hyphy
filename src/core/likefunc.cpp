@@ -7823,9 +7823,11 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
         */
 
         // this is to update the GUI.
+#if !defined __UNIX__ || defined __HEADLESS__
         if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
             yieldCPUTime();
         }
+#endif
 
 
 #ifdef MDSOCL

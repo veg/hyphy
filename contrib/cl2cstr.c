@@ -1,6 +1,6 @@
-   #include <stdio.h>
+#include <stdio.h>
 #include <string.h>
-
+    
 int main(int argc, char * argv[])
 {
     FILE *fpi, *fpo;
@@ -27,7 +27,7 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    fprintf(fpo, "%s", "#define KERNEL_STRING \"");
+    fprintf(fpo, "%s", "const char * KERNEL_STRING = \"");
 
     memset(&ibuf, 0, sizeof(ibuf));
 
@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
         memset(&ibuf, 0, sizeof(ibuf));
     }
 
-    fprintf(fpo, "%s", "\\n\"\n\n");
+    fprintf(fpo, "%s", "\\n\";\n\n");
 
     return 0;
 }
