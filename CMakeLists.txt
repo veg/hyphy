@@ -6,6 +6,18 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 
 
 #-------------------------------------------------------------------------------
+# set the CMAKE_MODULE_PATH so we can import OpenCL 
+#-------------------------------------------------------------------------------
+set(CMAKE_MODULE_PATH cmake)
+
+find_package(OpenCL)
+
+if(${OPENCL_FOUND})
+    message("OpenCL FOUND!!!")
+endif(${OPENCL_FOUND})
+
+
+#-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
 #-------------------------------------------------------------------------------
 set(MACOSX_LION false)
