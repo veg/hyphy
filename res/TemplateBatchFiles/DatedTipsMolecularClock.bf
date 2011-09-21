@@ -3,7 +3,7 @@ VERBOSITY_LEVEL = -1;
 
 
 LoadFunctionLibrary ("TreeTools");
-#include "_tipDater.ibf";
+ExecuteAFile 		("_tipDater.ibf");
 
 
 /*-----------------------------------------------------------*/
@@ -366,6 +366,10 @@ fprintf (stdout, "\n", separator, "\nRESULTS WITHOUT THE CLOCK CONSTRAINT:\n",lf
 fullModelLik = res[1][0];
 fullVars 	 = res[1][1];
 
+returnAVL = {"Free Log(L)": fullModelLik,
+			 "Free degrees of freedom": fullVars};
+
+
 /* now specify the constraint */
 
 _initialGuesses = PathDistanceToRoot (givenTree^0, "");
@@ -425,6 +429,7 @@ LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
 
+
 Optimize (res1,lfConstrained);
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);
 lnLikDiff = 2(fullModelLik-res1[1][0]);
@@ -432,7 +437,13 @@ degFDiff = fullVars - res1[1][1];
 fprintf (stdout, "\nCPU time taken: ", Time(0)-timer, " seconds.\n");
 
 fprintf (stdout, "\n", separator,"\n\n-2(Ln Likelihood Ratio)=",lnLikDiff,"\n","Constrained parameters:",Format(degFDiff,0,0));
-fprintf (stdout, "\nAsymptotic p-value:",1-CChi2(lnLikDiff,degFDiff));
+P = 1-CChi2(lnLikDiff,degFDiff);
+fprintf (stdout, "\nAsymptotic p-value:",P);
+
+
+returnAVL ["Clock Log(L)"] = res1[1][0];
+returnAVL ["Clock degrees of freedom"] = res1[1][1];
+returnAVL ["P"] = P;
 
 ExecuteCommands ("rateEstimate=clockTree_scaler_0*maxV;");
 COVARIANCE_PARAMETER = "clockTree_scaler_0";
@@ -489,6 +500,9 @@ OpenWindow (CHARTWINDOW,{{"Inferred Dates"}
 		"735;540;70;70");
 		
 datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
+
+returnAVL ["Dated Tree"] = datedTree;
+
 UseModel (USE_NO_MODEL);
 ACCEPT_ROOTED_TREES = 1;
 Tree	dT = datedTree;
@@ -501,6 +515,11 @@ cmxT0 = cmxT0 * (1/maxV);
 
 fprintf (stdout, "\nTree with branch lengths scaled in ",dateUnit,":\n",datedTree, "\n");
 fprintf (stdout, "\nRoot of the tree placed at ", cmxT0[1], "(95% CI: ", cmxT0[0],",", cmxT0[2],") ", dateUnit, "\n");
+
+returnAVL ["Root"] = cmxT0[1];
+returnAVL ["Root lower bound"] = cmxT0[0];
+returnAVL ["Root upper bound"] = cmxT0[2];
+
 if (byPosition)
 {
 	fprintf (stdout, "\nSubstitution rate for the first codon position estimated at ", bScaleFactor, "(95% CI: ", cmx[0]/rateEstimate*bScaleFactor,",", cmx[2]/rateEstimate*bScaleFactor,") subs per ",dateUnit," per site\n");
@@ -510,6 +529,10 @@ if (byPosition)
 else
 {
 	fprintf (stdout, "\nSubstitution rate estimated at ", bScaleFactor, "(95% CI: ", maxV*cmx[0]/rateEstimate*bScaleFactor,",", maxV*cmx[2]/rateEstimate*bScaleFactor,") subs per ",dateUnit," per site\n");
+	returnAVL ["Rate"] = bScaleFactor;
+	returnAVL ["Rate lower bound"] = maxV*cmx[0]/rateEstimate*bScaleFactor;
+	returnAVL ["Rate upper bound"] = maxV*cmx[2]/rateEstimate*bScaleFactor;
+
 }
 mxTreeSpec = {5,1};
 mxTreeSpec [0] = "dT";
@@ -519,8 +542,9 @@ mxTreeSpec [1] = "8211";
 mxTreeSpec [2] = "100,100,-300,-300,1";
 OpenWindow (TREEWINDOW, mxTreeSpec );
 
-
 VERBOSITY_LEVEL 				= 0;
 USE_DISTANCES 	 				= sud;
 USE_LAST_RESULTS 				= sulr;
 LIKELIHOOD_FUNCTION_OUTPUT		= slfo;
+
+return returnAVL;
