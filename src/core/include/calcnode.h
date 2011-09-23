@@ -39,6 +39,59 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ROOTED_RIGHT                    2
 
 
+#ifdef MDSOCL
+
+class _OCLEvaluator 
+{
+
+private:
+	// OpenCL Vars
+
+	// Forward Declarations
+	// *********************************************************************
+	void Cleanup (int iExitCode);
+	unsigned int roundUpToNextPowerOfTwo(unsigned int x);
+	double roundDoubleUpToNextPowerOfTwo(double x);
+	// So the only thing that needs to be passed as an update for each LF is flatTree and flatCLeaves
+	// as those are what goes into the new transition matrix stuff. 
+	// So I could have a launchmdsocl that takes everything and if stuff is not NULL than update, if it is
+	// null use the existing values. How about that?
+	// The problem is that I need to have essentially the first LF's information to properly set everything up. 
+	// And how do I have subsequent LF's not pass stuff. 
+	// Oi, how do I not have to convert this into an object...
+	// alright, I can probably keep all of this in likefunc. That is because the LFEvaluation is done in the
+	// calc node
+	double oclmain(void);
+	bool contextSet;
+	int setupContext(void);
+
+
+public:
+	void init(		long esiteCount,
+						long ealphabetDimension,
+						_Parameter* eiNodeCache);
+
+
+	double launchmdsocl(	_SimpleList& updateNodes,
+							_SimpleList& flatParents,
+							_SimpleList& flatNodes,
+							_SimpleList& flatCLeaves,
+							_SimpleList& flatLeaves,
+							_SimpleList& flatTree,
+							_Parameter* theProbs,
+							_SimpleList& theFrequencies,
+							long* lNodeFlags,
+							_SimpleList& taggedInternals,
+							_GrowingVector* lNodeResolutions);
+	~_OCLEvaluator()
+	{
+		Cleanup(EXIT_SUCCESS);
+	}
+
+
+};
+#endif
+
 
 
 
@@ -663,6 +716,15 @@ public:
             _Parameter*          iNodeCache,
             long       *             lNodeFlags,
             _GrowingVector*      lNodeResolutions);
+
+#ifdef MDSOCL
+			_Parameter OCLLikelihoodEvaluator (			_SimpleList&	     updateNodes, 
+                                                        _DataSetFilter*		 theFilter,
+                                                        _Parameter*			 iNodeCache,
+                                                         long	   *		 lNodeFlags,
+                                                        _GrowingVector*		 lNodeResolutions,
+														_OCLEvaluator& OCLEval);
+#endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     void            SampleAncestorsBySequence       (_DataSetFilter*, _SimpleList&, node<long>*, _AVLListX*, _Parameter*, _List&, _SimpleList*, _List&, _Parameter*, long);

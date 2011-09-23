@@ -10,12 +10,6 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 
-find_package(OpenCL)
-
-if(${OPENCL_FOUND})
-    message("OpenCL FOUND!!!")
-endif(${OPENCL_FOUND})
-
 
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
@@ -219,6 +213,49 @@ install(
     OPTIONAL
 )
 add_custom_target(MP2 DEPENDS HYPHYMP)
+
+
+#-------------------------------------------------------------------------------
+# hyphy opencl target
+#-------------------------------------------------------------------------------
+find_package(OpenCL)
+if(${OPENCL_FOUND})
+    add_executable(
+        HYPHYOCL
+        EXCLUDE_FROM_ALL
+        ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
+    )
+    
+    include_directories(${OPENCL_INCLUDE_DIR})
+    target_link_libraries(HYPHYOCL crypto curl pthread ssl ${OPENCL_LIBRARIES})
+    install(
+        TARGETS HYPHYOCL
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+    add_custom_target(OCL DEPENDS HYPHYOCL)
+    set_property(
+        TARGET HYPHYOCL
+        APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__ __UNIX__ _HY_GPU_EXAMPLE_CALCULATOR MDSOCL
+    )
+    set_target_properties(
+        HYPHYOCL
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
+    )
+    add_executable(
+        cl2cstr
+        EXCLUDE_FROM_ALL
+        contrib/cl2cstr.c
+    )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
+        COMMAND cl2cstr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
+        DEPENDS cl2cstr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl
+    )
+
+endif(${OPENCL_FOUND})
 
 
 #-------------------------------------------------------------------------------
