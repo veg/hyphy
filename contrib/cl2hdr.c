@@ -33,22 +33,33 @@ int main(int argc, char * argv[])
 
     while(fread(&ibuf, sizeof(char), 1024, fpi) > 0) {
         j = 0;
-        memset(&obuf, 0, sizeof(obuf));
-        for(i = 0; ibuf[i] != '\0'; ++i) {
+        memset(&obuf, '\0', sizeof(obuf));
+        for(i = 0; i < 1024 && ibuf[i] != '\0'; ++i) {
             // if we're a single-line comment
             if(last_is_slash && ibuf[i] == '/') {
                 is_slc = 1;
+                // only can be true if we're not a comment, which we are now
+                last_is_slash = 0;
+                continue;
             }
 
+            // if we're a multi-line comment
             if(last_is_slash && ibuf[i] == '*') {
                 is_mlc = 1;
+                // only can be true if we're not a comment, which we are now
+                last_is_slash = 0;
+                continue;
             }
 
             if(last_is_slash && !(is_mlc || is_slc)) {
                 obuf[j++] = '/';
             }
 
-            if(is_mlc && last_is_star && ibuf[i] == '/') {
+            /* last_is_star must also include is_mlc because
+               it can only be turned on during is_mlc,
+               and we don't print a '*' for last_is_star
+               because of just this fact. */
+            if(last_is_star && ibuf[i] == '/') {
                 is_mlc = 0;
                 continue;
             }
@@ -80,7 +91,7 @@ int main(int argc, char * argv[])
                ignoring comments, because we want to preserve line numbers */
             if (ibuf[i] == '\n') {
                 // get rid of trailing whitespace
-                for(; j > 0 && (obuf[j] == ' ' || obuf[j] == '\t'); --j);
+                for(; j > 1 && (obuf[j-1] == ' ' || obuf[j-1] == '\t'); --j);
                 obuf[j++] = '\\';
                 obuf[j++] = 'n';
                 is_line_start = 1;
@@ -103,8 +114,10 @@ int main(int argc, char * argv[])
 
             obuf[j++] = ibuf[i];
         }
+        // make sure we terminate the output buffer properly
+        obuf[j] = '\0';
         fprintf(fpo, "%s", obuf);
-        memset(&ibuf, 0, sizeof(ibuf));
+        memset(&ibuf, '\0', sizeof(ibuf));
     }
 
     fprintf(fpo, "%s", "\\n\"\n\n");
