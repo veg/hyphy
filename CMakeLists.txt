@@ -6,7 +6,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 
 
 #-------------------------------------------------------------------------------
-# set the CMAKE_MODULE_PATH so we can import OpenCL 
+# set the CMAKE_MODULE_PATH so we can import OpenCL
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 
@@ -73,7 +73,7 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 
 
 #-------------------------------------------------------------------------------
-# OpenMP support 
+# OpenMP support
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
@@ -216,17 +216,16 @@ add_custom_target(MP2 DEPENDS HYPHYMP)
 
 
 #-------------------------------------------------------------------------------
-# hyphy opencl target
+# hyphy OpenCL target
 #-------------------------------------------------------------------------------
 find_package(OpenCL)
 if(${OPENCL_FOUND})
     add_executable(
         HYPHYOCL
         EXCLUDE_FROM_ALL
-        ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
+        ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.h
     )
-    
-    include_directories(${OPENCL_INCLUDE_DIR})
+    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(HYPHYOCL crypto curl pthread ssl ${OPENCL_LIBRARIES})
     install(
         TARGETS HYPHYOCL
@@ -245,16 +244,15 @@ if(${OPENCL_FOUND})
         LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
     )
     add_executable(
-        cl2cstr
+        cl2hdr
         EXCLUDE_FROM_ALL
-        contrib/cl2cstr.c
+        contrib/cl2hdr.c
     )
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
-        COMMAND cl2cstr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.cpp
-        DEPENDS cl2cstr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.h
+        COMMAND cl2hdr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl ${CMAKE_CURRENT_BINARY_DIR}/opencl_kernels.h
+        DEPENDS cl2hdr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl
     )
-
 endif(${OPENCL_FOUND})
 
 
