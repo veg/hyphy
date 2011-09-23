@@ -38,11 +38,16 @@ int main(int argc, char * argv[])
             // if we're a single-line comment
             if(last_is_slash && ibuf[i] == '/') {
                 is_slc = 1;
+                // only can be true if we're not a comment, which we are now
+                last_is_slash = 0;
                 continue;
             }
 
+            // if we're a multi-line comment
             if(last_is_slash && ibuf[i] == '*') {
                 is_mlc = 1;
+                // only can be true if we're not a comment, which we are now
+                last_is_slash = 0;
                 continue;
             }
 
