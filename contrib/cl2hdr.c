@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-    
+
 int main(int argc, char * argv[])
 {
     FILE *fpi, *fpo;
@@ -11,7 +11,7 @@ int main(int argc, char * argv[])
     char ibuf[1024], obuf[2048];
 
     if(argc != 3) {
-        printf("usage: ocl_to_header <OCLFILE> <HEADERFILE>\n");
+        printf("usage: cl2hdr <CLFILE> <HEADERFILE>\n");
         return -1;
     }
 
@@ -27,7 +27,7 @@ int main(int argc, char * argv[])
         return -1;
     }
 
-    fprintf(fpo, "%s", "const char * KERNEL_STRING = \"");
+    fprintf(fpo, "%s", "#define KERNEL_STRING \"");
 
     memset(&ibuf, 0, sizeof(ibuf));
 
@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
         memset(&ibuf, 0, sizeof(ibuf));
     }
 
-    fprintf(fpo, "%s", "\\n\";\n\n");
+    fprintf(fpo, "%s", "\\n\"\n\n");
 
     return 0;
 }
