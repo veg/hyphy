@@ -42,7 +42,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
+			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -57,6 +57,10 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
                 
 				DT_String * ("`treeNameID`.`nodeNameS`.T = " + minV + ";");
 				timeStops[nodeNameS] = minV;
+			}
+			else
+			{
+				DT_String * ("`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
 			}
 		}
 		else
@@ -117,6 +121,8 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
     
     
             rateClass = initialGuesses[nodeNameS] - pName;
+            
+            fprintf (stdout, nodeNameS, " initial guess = ", initialGuesses[nodeNameS], ":", rateClass, "\n");
 
             if (rateClass < 0 || initialGuesses[nodeNameS] >= timeStops[nodeNameS])
             {
@@ -128,16 +134,19 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	}
 
 
-	rateClass = Rows (descendantsList); 
+	rateClass 			= Rows (descendantsList); 
+	minTimeByNode		= {};
+	
 	for (nodeIndex = 0; nodeIndex < Columns (rateClass); nodeIndex = nodeIndex + 1)
 	{
 		pName 				= rateClass[nodeIndex];
 		nodePT				= descendantsList[pName];
 		doneAssignment		= 1e100;
+		
 		for (nodeInfo = 0; nodeInfo< Abs (nodePT); nodeInfo = nodeInfo + 1)
 		{
 			nodeNameS = nodePT[nodeInfo];
-			if (0+nodeNameS == nodeNameS+0)
+			if (Type (nodeNameS) == "Number")
 			{
 				doneAssignment = Min (doneAssignment, nodeNameS);
 			}
@@ -146,13 +155,36 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 				break;
 			}
 		}
-		if (nodeInfo == Abs (nodePT))
+		minTimeByNode[pName]= doneAssignment;
+	}
+
+	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
+	{
+		nodeInfo 	= treePostOrderAVL[nodeIndex];
+		if (Abs(nodeInfo["Children"]) )
 		{
-			DT_String * (treeNameID+"."+pName+".T:<"+doneAssignment+";\n");
+			nodeNameS	= nodeInfo["Name"];
+			if (Abs (nodeInfo["Parent"]))
+			{
+				pName		= (treePostOrderAVL[nodeInfo["Parent"]])["Name"];
+				minTimeByNode[pName] = Min(minTimeByNode[pName], minTimeByNode[nodeNameS]);
+			}
+			
+			DT_String * (treeNameID+"."+nodeNameS+".T:<"+minTimeByNode[nodeNameS]+";\n");
 		}
 	}
 	
-	DT_String * 0;
+	if (initialGuesses["Root"] > 0.0)
+	{
+	    DT_String * ("\n`treeNameID`.Node0.T = 0.5*" + initialGuesses["Root"] + ";");
+ 	}
+ 	else
+ 	{
+	    DT_String * ("\n`treeNameID`.Node0.T = 2.0*" + initialGuesses["Root"] + ";");
+
+ 	}
+ 	DT_String * 0;
+ 	 	
 	return DT_String;
 }
 
@@ -404,7 +436,8 @@ for (k = 0; k < Abs (_initialGuesses); k += 1)
     _initialGuesses [_initialGuesses["INDEXORDER"][k]] = predictor;
 }
 
-
+d = 0;
+_initialGuesses["Root"] = predictor;
 
 ExecuteCommands (generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0,_initialGuesses));
 
@@ -424,11 +457,12 @@ slfo	= LIKELIHOOD_FUNCTION_OUTPUT;
 
 USE_DISTANCES 	 				= 0;
 USE_LAST_RESULTS 				= 1;
-MAXIMUM_ITERATIONS_PER_VARIABLE = 100000;
 LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
 
+//VERBOSITY_LEVEL = 10;
+//OPTIMIZATION_METHOD = 0;
 
 Optimize (res1,lfConstrained);
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);

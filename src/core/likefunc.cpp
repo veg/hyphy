@@ -2884,7 +2884,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void)
             for (index = indexDep.lLength-1; index>-1; index--)
                 // check whether any of the dependent variables are out of bounds
             {
-                currentValues[index]=GetIthIndependent(index);
+                currentValues[index]=GetIthDependent(index);
                 if (currentValues[index]<lowerBounds[index] || currentValues[index]>upperBounds[index]) {
                     break;
                 }
