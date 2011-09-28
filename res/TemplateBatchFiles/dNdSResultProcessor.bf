@@ -1,4 +1,4 @@
-ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"PS_Plotters.bf");
+LoadFunctionLibrary("PS_Plotters.bf");
 
 distributionM1 		= {{0}};
 distributionM2 		= {{0}};
@@ -363,16 +363,16 @@ function ComputePosteriorRates (modelID)
 				columnSum = 0;				
 				for (counter2 = 0; counter2 < rMMX; counter2 = counter2+1)
 				{
-					tempVal   = marginalMatrix [counter2][counter1];
-					columnSum = columnSum + tempVal*distribMX[1][counter2];
-					marginalMatrix [counter2][counter1] = tempVal * distribMX[1][counter2];
+					tempVal    = marginalMatrix [counter2][counter1]*distribMX[1][counter2];
+					columnSum += tempVal;
+					marginalMatrix [counter2][counter1] = tempVal;
 				}
 				
 				tempVal   = 0;
 				
 				for (counter2 = 0; counter2 < rMMX; counter2 = counter2+1)
 				{
-					tempVal   = tempVal + distribMX[0][counter2]*marginalMatrix [counter2][counter1]/columnSum;
+					tempVal   +=  distribMX[0][counter2]*marginalMatrix [counter2][counter1]/columnSum;
 				}
 				rateAssignmentMatrix[counter1][0] = tempVal;
 			}
@@ -387,62 +387,67 @@ function ComputePosteriorRates (modelID)
 		}
 		else
 		{
-			rateAssignmentMatrix = {Columns(marginalMatrix),2};
-			for (counter1 = 0; counter1 < Columns (marginalMatrix); counter1=counter1+1)
+			rateAssignmentMatrix = {Columns(marginalMatrix),3};
+			
+			for (counter1 = 0; counter1 < Columns (marginalMatrix); counter1+=1)
 			{
-				columnSum = 0;				
-				for (counter2 = 0; counter2 < rMMX; counter2 = counter2+1)
+				columnSum = 0;		
+				
+				for (counter2 = 0; counter2 < rMMX; counter2 += 1)
 				{
-					tempVal   = marginalMatrix [counter2][counter1];
-					entryWeight = distribMXS[1][counter2$divTerm] * distribMXN[1][counter2%divTerm];
-					columnSum = columnSum + tempVal*entryWeight;
-					marginalMatrix [counter2][counter1] = tempVal * entryWeight;
+					entryWeight    =  marginalMatrix [counter2][counter1] * distribMXS[1][counter2$divTerm] * distribMXN[1][counter2%divTerm];
+					columnSum      += entryWeight;
+					marginalMatrix [counter2][counter1] = entryWeight;
 				}
 				
-				for (counter2 = 0; counter2 < rMMX; counter2 = counter2+1)
+				dnds_post = 0;
+				for (counter2 = 0; counter2 < rMMX; counter2 += 1)
 				{
 					marginalMatrix [counter2][counter1] = marginalMatrix [counter2][counter1]/columnSum;
+					dnds_post      += distribMXN[0][counter2%divTerm] / distribMXS[0][counter2$divTerm] * marginalMatrix [counter2][counter1];
 				}
+				
+				rateAssignmentMatrix[counter1][2] = dnds_post;
 				
 				tempVal = 0;
 				
-				for (counter2 = 0; counter2 < rMMX; )
+				for (counter2 = 0; counter2 < rMMX; counter2 += divTerm)
 				{
 					columnSum = 0;
-					for (counter3 = counter2; counter3 < counter2+divTerm; counter3 = counter3+1)
+					for (counter3 = counter2; counter3 < counter2+divTerm; counter3 += 1)
 					{
-						columnSum = columnSum +  marginalMatrix [counter3][counter1];
+						columnSum += marginalMatrix [counter3][counter1];
 					}
-					tempVal = tempVal + columnSum * distribMXS[0][counter2$divTerm];
-					counter2 = counter2 + divTerm;
+					tempVal += columnSum * distribMXS[0][counter2$divTerm];
 				}
 				
 				rateAssignmentMatrix[counter1][0] = tempVal;
 				
 				tempVal = 0;
 				
-				for (counter2 = 0; counter2 < divTerm; counter2 = counter2+1)
+				for (counter2 = 0; counter2 < divTerm; counter2 += 1)
 				{
 					columnSum = 0;
-					for (counter3 = counter2; counter3 < rMMX; counter3 = counter3+divTerm)
+					for (counter3 = counter2; counter3 < rMMX; counter3 += divTerm)
 					{
-						columnSum = columnSum +  marginalMatrix [counter3][counter1];
+						columnSum +=  marginalMatrix [counter3][counter1];
 					}
-					tempVal = tempVal + columnSum * distribMXN[0][counter2];
+					tempVal += columnSum * distribMXN[0][counter2];
 				}
 				
+
 				rateAssignmentMatrix[counter1][1] = tempVal;
 			}
-			titleMatrix	= {{"Site Index","E[S|i]","E[N|i]"}};			
+			titleMatrix	= {{"Site Index","E[S|i]","E[N|i]","E[omega|i]"}};			
 		}
 		
 		if (outputChoice == 0)
 		{
-			dummy = PrintASCIITable (rateAssignmentMatrix, titleMatrix);
+			PrintASCIITable (rateAssignmentMatrix, titleMatrix);
 		}
 		if (outputChoice == 1)
 		{
-			dummy = PrintTableToFile (rateAssignmentMatrix, titleMatrix,1);
+			PrintTableToFile (rateAssignmentMatrix, titleMatrix,1);
 		}
 		if (outputChoice == 2)
 		{
@@ -1221,16 +1226,9 @@ function	PrintTableToFile (dataMatrix, titleMatrix, promptOrNot)
 		fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
 	}
 	
-	fprintf (LAST_FILE_PATH, titleMatrix[0][0]);
+	fprintf (LAST_FILE_PATH, Join("\t",titleMatrix), "\n");
 
-	for (counter1=1; counter1<Columns(titleMatrix); counter1 = counter1+1)
-	{
-		fprintf (LAST_FILE_PATH, "\t", titleMatrix[0][counter1]);
-	}
-	
-	fprintf (LAST_FILE_PATH, "\n");
-
-	for (counter1=0; counter1<Rows(dataMatrix); counter1 = counter1 + 1)
+	for (counter1=0; counter1<Rows(dataMatrix); counter1 += 1)
 	{
 		fprintf (LAST_FILE_PATH,counter1+1);
 		for (counter2 = 1; counter2 < Columns (titleMatrix); counter2 = counter2+1)
