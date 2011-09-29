@@ -32,17 +32,17 @@ namespace
 {
 
 // The fixture for testing class Foo.
-class _StringTest : public ::testing::Test
+class DISABLED_StringTest : public ::testing::Test
 {
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _StringTest() {
+    DISABLED_StringTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_StringTest() {
+    virtual ~DISABLED_StringTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -70,7 +70,7 @@ _String globalTest1 ("You're asking me to run MCMC without reporting any results
 
 /******************************************/
 
-TEST_F(_StringTest,DuplicateTest)
+TEST_F(DISABLED_StringTest,DuplicateTest)
 {
     /* 20110825: SLKP code coverage complete
 
@@ -92,7 +92,7 @@ TEST_F(_StringTest,DuplicateTest)
 
 /******************************************/
 
-TEST_F(_StringTest,DuplicateErasingTest)
+TEST_F(DISABLED_StringTest,DuplicateErasingTest)
 {
     /* 20110825: SLKP code coverage complete
 
@@ -115,7 +115,7 @@ TEST_F(_StringTest,DuplicateErasingTest)
 /******************************************/
 
 
-TEST_F(_StringTest,makeDynamicTest)
+TEST_F(DISABLED_StringTest,makeDynamicTest)
 {
     //What is the difference between this and dupicate?
 
@@ -135,7 +135,7 @@ TEST_F(_StringTest,makeDynamicTest)
 
 /******************************************/
 
-TEST_F(_StringTest,getCharTest)
+TEST_F(DISABLED_StringTest,getCharTest)
 {
 
     /* 20110825: SLKP code coverage complete */
@@ -152,7 +152,7 @@ TEST_F(_StringTest,getCharTest)
 /******************************************/
 
 
-TEST_F(_StringTest,setCharTest)
+TEST_F(DISABLED_StringTest,setCharTest)
 {
     _String test (globalTest1);
     test.setChar(5,'d');
@@ -166,7 +166,7 @@ TEST_F(_StringTest,setCharTest)
 
 /******************************************/
 
-TEST_F(_StringTest,CopyDynamicStringTest)
+TEST_F(DISABLED_StringTest,CopyDynamicStringTest)
 {
 
     /* 20110825: SLKP code coverage complete
@@ -197,7 +197,7 @@ TEST_F(_StringTest,CopyDynamicStringTest)
 /******************************************/
 
 
-TEST_F(_StringTest, LengthTest)
+TEST_F(DISABLED_StringTest, LengthTest)
 {
     _String test = new _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     EXPECT_EQ(99, test.Length());
@@ -206,7 +206,7 @@ TEST_F(_StringTest, LengthTest)
     EXPECT_EQ(0, test2.Length());
 }
 
-TEST_F(_StringTest,InsertTest)
+TEST_F(DISABLED_StringTest,InsertTest)
 {
     _String test = "AAGGCCTTA";
     _String expected_test = "CAAGGCCTTA";
@@ -220,7 +220,7 @@ TEST_F(_StringTest,InsertTest)
 
 }
 
-TEST_F(_StringTest,DeleteTest)
+TEST_F(DISABLED_StringTest,DeleteTest)
 {
     _String test = "AAGGCCTTA";
     test.Delete(3,4);
@@ -241,7 +241,7 @@ TEST_F(_StringTest,DeleteTest)
 
 }
 
-TEST_F(_StringTest,AppendNewInstanceTest)
+TEST_F(DISABLED_StringTest,AppendNewInstanceTest)
 {
     _String orig = _String ("hyphy");
     _String to_append = _String("-package");
@@ -258,7 +258,7 @@ TEST_F(_StringTest,AppendNewInstanceTest)
 }
 
 
-TEST_F(_StringTest,EscapeAndAppendTest)
+TEST_F(DISABLED_StringTest,EscapeAndAppendTest)
 {
     _String result = _String("AAGG");
     _String expected = _String("AAGG\\\\(&lt;\\[");
@@ -269,14 +269,14 @@ TEST_F(_StringTest,EscapeAndAppendTest)
     ASSERT_STREQ(expected.getStr(), result.getStr());
 }
 
-TEST_F(_StringTest,FinalizeTest)
+TEST_F(DISABLED_StringTest,FinalizeTest)
 {
     _String orig = _String ("hyphy");
     orig.Finalize();
     EXPECT_EQ(0, orig[orig.Length()]);
 }
 
-TEST_F(_StringTest,getStrTest)
+TEST_F(DISABLED_StringTest,getStrTest)
 {
     _String test = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     ASSERT_STREQ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n", test.getStr());
@@ -286,7 +286,7 @@ TEST_F(_StringTest,getStrTest)
 
 }
 
-TEST_F(_StringTest,ChopTest)
+TEST_F(DISABLED_StringTest,ChopTest)
 {
 
     _String test = _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
@@ -309,7 +309,7 @@ TEST_F(_StringTest,ChopTest)
      */
 }
 
-TEST_F(_StringTest,CutTest)
+TEST_F(DISABLED_StringTest,CutTest)
 {
     _String test = _String ("You're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     _String substr = test.Cut(0,2);
@@ -320,20 +320,20 @@ TEST_F(_StringTest,CutTest)
     ASSERT_STREQ("CC", substr2.getStr());
 }
 
-TEST_F(_StringTest,FlipTest)
+TEST_F(DISABLED_StringTest,FlipTest)
 {
     _String result = _String ("ABC");
     result.Flip();
     ASSERT_STREQ("CBA",result.getStr());
 }
 
-TEST_F(_StringTest,Adler32Test)
+TEST_F(DISABLED_StringTest,Adler32Test)
 {
     _String result = new _String ("Wikipedia");
     EXPECT_EQ(300286872, result.Adler32());
 }
 
-TEST_F(_StringTest,TrimTest)
+TEST_F(DISABLED_StringTest,TrimTest)
 {
     _String test = new _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     test.Trim(7,12);
@@ -345,7 +345,7 @@ TEST_F(_StringTest,TrimTest)
 
 }
 
-TEST_F(_StringTest,FirstNonSpaceIndexTest)
+TEST_F(DISABLED_StringTest,FirstNonSpaceIndexTest)
 {
     _String test = _String ("    lol");
     EXPECT_EQ(4, test.FirstNonSpaceIndex());
@@ -355,7 +355,7 @@ TEST_F(_StringTest,FirstNonSpaceIndexTest)
 
 }
 
-TEST_F(_StringTest,KillSpacesTest)
+TEST_F(DISABLED_StringTest,KillSpacesTest)
 {
     _String result = _String ("  l   o   l    ");
     _String r2;
@@ -373,7 +373,7 @@ TEST_F(_StringTest,KillSpacesTest)
     ASSERT_STREQ("", result_string3.getStr());
 }
 
-TEST_F(_StringTest,CompressSpacesTest)
+TEST_F(DISABLED_StringTest,CompressSpacesTest)
 {
     _String test = _String ("Beavis   and    Butthead");
     test.CompressSpaces();
@@ -389,7 +389,7 @@ TEST_F(_StringTest,CompressSpacesTest)
 
 }
 
-TEST_F(_StringTest,FirstSpaceIndexTest)
+TEST_F(DISABLED_StringTest,FirstSpaceIndexTest)
 {
     _String test = _String ("AA BB");
     EXPECT_EQ(2, test.FirstSpaceIndex());
@@ -402,7 +402,7 @@ TEST_F(_StringTest,FirstSpaceIndexTest)
 
 }
 
-TEST_F(_StringTest,FirstNonSpaceTest)
+TEST_F(DISABLED_StringTest,FirstNonSpaceTest)
 {
     _String test = _String ("  AA BB");
     EXPECT_EQ('A', test.FirstNonSpace());
@@ -412,7 +412,7 @@ TEST_F(_StringTest,FirstNonSpaceTest)
 
 }
 
-TEST_F(_StringTest,FindEndOfIdentTest)
+TEST_F(DISABLED_StringTest,FindEndOfIdentTest)
 {
     _String test = _String ("iden12&iden34");
     EXPECT_EQ(5, test.FindEndOfIdent(0,-1,'.'));
@@ -424,7 +424,7 @@ TEST_F(_StringTest,FindEndOfIdentTest)
     EXPECT_EQ(-1, test3.FindEndOfIdent(0,-1,'.'));
 }
 
-TEST_F(_StringTest,FindAnyCaseTest)
+TEST_F(DISABLED_StringTest,FindAnyCaseTest)
 {
     _String result = _String ("AABBCCDD");
     EXPECT_EQ(2, result.FindAnyCase("BBcCDD"));
@@ -433,7 +433,7 @@ TEST_F(_StringTest,FindAnyCaseTest)
     EXPECT_EQ(-1, test.FindAnyCase("cBcCDD"));
 }
 
-TEST_F(_StringTest,ContainsSubstringTest)
+TEST_F(DISABLED_StringTest,ContainsSubstringTest)
 {
 
     _String test = _String ("AABBCCDD");
@@ -450,7 +450,7 @@ TEST_F(_StringTest,ContainsSubstringTest)
 
 }
 
-TEST_F(_StringTest,FindBackwardsTest)
+TEST_F(DISABLED_StringTest,FindBackwardsTest)
 {
     _String test = _String ("AABBCCDD");
     EXPECT_EQ(-1, test.FindBackwards("DC",0,3));
@@ -460,7 +460,7 @@ TEST_F(_StringTest,FindBackwardsTest)
     EXPECT_EQ(5, test2.FindBackwards("CD",0,-1));
 }
 
-TEST_F(_StringTest,FindBinaryTest)
+TEST_F(DISABLED_StringTest,FindBinaryTest)
 {
     _String haystack = _String ("AABBCDDD");
     char needle = 'C';
@@ -479,7 +479,7 @@ TEST_F(_StringTest,FindBinaryTest)
 
 }
 
-TEST_F(_StringTest,EqualsTest)
+TEST_F(DISABLED_StringTest,EqualsTest)
 {
     _String* test = new _String ("AABBCCDD");
     _String* r2 = new _String ("AABBCCDD");
@@ -492,7 +492,7 @@ TEST_F(_StringTest,EqualsTest)
     delete r2;
 }
 
-TEST_F(_StringTest,CompareTest)
+TEST_F(DISABLED_StringTest,CompareTest)
 {
     //house precedes household
     //Household precedes house
@@ -507,7 +507,7 @@ TEST_F(_StringTest,CompareTest)
 
 }
 
-TEST_F(_StringTest,EqualWithWildCharTest)
+TEST_F(DISABLED_StringTest,EqualWithWildCharTest)
 {
 
     _String test = _String ("AABBCCDD");
@@ -521,7 +521,7 @@ TEST_F(_StringTest,EqualWithWildCharTest)
     delete t;
 }
 
-TEST_F(_StringTest,GreaterTest)
+TEST_F(DISABLED_StringTest,GreaterTest)
 {
     //This is a lexicographic comparison
     _String test = _String ("house");
@@ -536,7 +536,7 @@ TEST_F(_StringTest,GreaterTest)
     EXPECT_EQ(false, test2>t2);
 }
 
-TEST_F(_StringTest,LessTest)
+TEST_F(DISABLED_StringTest,LessTest)
 {
     _String test = _String ("house");
     _String t = _String ("household");
@@ -548,7 +548,7 @@ TEST_F(_StringTest,LessTest)
 
 }
 
-TEST_F(_StringTest,containsTest)
+TEST_F(DISABLED_StringTest,containsTest)
 {
 
     _String t = _String ("household");
@@ -561,7 +561,7 @@ TEST_F(_StringTest,containsTest)
 
 }
 
-TEST_F(_StringTest,beginswithTest)
+TEST_F(DISABLED_StringTest,beginswithTest)
 {
     //Why not have an overloaded function instead of beginsWith and startswith?
     _String test = _String ("household");
@@ -586,7 +586,7 @@ TEST_F(_StringTest,beginswithTest)
 
 }
 
-TEST_F(_StringTest,startswithTest)
+TEST_F(DISABLED_StringTest,startswithTest)
 {
     //Why not have an overloaded function instead of beginsWith and startswith?
     _String result = _String ("household");
@@ -595,14 +595,14 @@ TEST_F(_StringTest,startswithTest)
 
 }
 
-TEST_F(_StringTest,endswithTest)
+TEST_F(DISABLED_StringTest,endswithTest)
 {
     _String result = _String ("household");
     _String r2 = _String ("hold");
     EXPECT_EQ(true, result.endswith(r2));
 }
 
-TEST_F(_StringTest,FormatTimeStringTest)
+TEST_F(DISABLED_StringTest,FormatTimeStringTest)
 {
     //Takes seconds
     long time_diff = 459132;
@@ -612,7 +612,7 @@ TEST_F(_StringTest,FormatTimeStringTest)
     ASSERT_STREQ(result.getStr(), r2.getStr());
 }
 
-TEST_F(_StringTest,ReplaceTest)
+TEST_F(DISABLED_StringTest,ReplaceTest)
 {
 
     _String orig_string = _String("household");
@@ -625,7 +625,7 @@ TEST_F(_StringTest,ReplaceTest)
 }
 
 
-TEST_F(_StringTest,TokenizeTest)
+TEST_F(DISABLED_StringTest,TokenizeTest)
 {
     _String test_string = _String("house,condo,hyphy");
     _String* sub_string = new _String(",");
@@ -637,7 +637,7 @@ TEST_F(_StringTest,TokenizeTest)
     delete sub_string;
 }
 
-TEST_F(_StringTest,toNumTest)
+TEST_F(DISABLED_StringTest,toNumTest)
 {
     _String test_string = _String("3.14");
 
@@ -648,7 +648,7 @@ TEST_F(_StringTest,toNumTest)
 }
 
 
-TEST_F(_StringTest,UpCaseTest)
+TEST_F(DISABLED_StringTest,UpCaseTest)
 {
     _String result = _String("HOUSE");
     _String insert = _String("house");
@@ -657,7 +657,7 @@ TEST_F(_StringTest,UpCaseTest)
     ASSERT_STREQ(result.getStr(), insert.getStr());
 }
 
-TEST_F(_StringTest,LoCaseTest)
+TEST_F(DISABLED_StringTest,LoCaseTest)
 {
     _String insert = _String("HOUSE");
     _String result = _String("house");
@@ -666,7 +666,7 @@ TEST_F(_StringTest,LoCaseTest)
     ASSERT_STREQ(result.getStr(), insert.getStr());
 }
 
-TEST_F(_StringTest,ProcessTreeBranchLengthTest)
+TEST_F(DISABLED_StringTest,ProcessTreeBranchLengthTest)
 {
     //All this does is find the toNum, if it begins with a ':', just skip that.
     _String test_string = _String(":3.14");
@@ -675,7 +675,7 @@ TEST_F(_StringTest,ProcessTreeBranchLengthTest)
     EXPECT_EQ(expected, result);
 }
 
-TEST_F(_StringTest,ExtractEnclosedExpressionTest)
+TEST_F(DISABLED_StringTest,ExtractEnclosedExpressionTest)
 {
     //returns position
     _String test_string = _String("[hyp[house]hy]");
@@ -685,7 +685,7 @@ TEST_F(_StringTest,ExtractEnclosedExpressionTest)
     EXPECT_EQ(13, j);
 }
 
-TEST_F(_StringTest,IsALiteralArgumentTest)
+TEST_F(DISABLED_StringTest,IsALiteralArgumentTest)
 {
     _String test_string = _String("\"house\"");
     bool result = test_string.IsALiteralArgument(true);
@@ -693,7 +693,7 @@ TEST_F(_StringTest,IsALiteralArgumentTest)
     EXPECT_EQ(true, result);
 }
 
-TEST_F(_StringTest,StripQuotesTest)
+TEST_F(DISABLED_StringTest,StripQuotesTest)
 {
     //Only strips the outer quotes
     _String insert = _String("\"So this\"");
@@ -702,7 +702,7 @@ TEST_F(_StringTest,StripQuotesTest)
     ASSERT_STREQ(result.getStr(), insert.getStr());
 }
 
-TEST_F(_StringTest,IsValidIdentifierTest)
+TEST_F(DISABLED_StringTest,IsValidIdentifierTest)
 {
     // Valid Identifier must be "greater than 0, doesn't start with non-alpha character and doesn't start wtih "_" if strict, if not strict, accept number"
     // Also cannot have keyword
@@ -710,14 +710,14 @@ TEST_F(_StringTest,IsValidIdentifierTest)
     EXPECT_EQ(true, test_string.IsValidIdentifier(true));
 }
 
-TEST_F(_StringTest,IsValidRefIdentifierTest)
+TEST_F(DISABLED_StringTest,IsValidRefIdentifierTest)
 {
     //Same as IsValidIdentifier, but ends with a &
     _String test_string = _String("house&");
     EXPECT_EQ(true, test_string.IsValidRefIdentifier());
 }
 
-/*TEST_F(_StringTest,ProcessParameterTest) { */
+/*TEST_F(DISABLED_StringTest,ProcessParameterTest) { */
 ////This will be properly tested with batchlan
 //_String initial_path = _String("/home/sergei/hyphy");
 //initial_path.ProcessParameter();
@@ -725,14 +725,14 @@ TEST_F(_StringTest,IsValidRefIdentifierTest)
 //ASSERT_STREQ("/home/sergei/hyphy", initial_path);
 /*}*/
 
-//TEST_F(_StringTest,ProcessFileNameTest) {
+//TEST_F(DISABLED_StringTest,ProcessFileNameTest) {
 ////This will be properly tested with batchlan
 //_String* test_string = new _String("/Users/stevenweaver/Documents/sergei/hyphy/trunk/UnitTests/mtDNA.fas");
 //test_string->ProcessFileName();
 //EXPECT_EQ(2, 2);
 //}
 
-TEST_F(_StringTest,PathCompositionTest)
+TEST_F(DISABLED_StringTest,PathCompositionTest)
 {
     _String initial_path = _String("/home/sergei/hyphy");
     _String change_path = _String("../trunk");
@@ -743,7 +743,7 @@ TEST_F(_StringTest,PathCompositionTest)
 
 }
 
-TEST_F(_StringTest,PathSubtractionTest)
+TEST_F(DISABLED_StringTest,PathSubtractionTest)
 {
     _String initial_path = _String("/home/sergei/");
     _String sub_path = _String("/home/sergei/hyphy");
@@ -751,7 +751,7 @@ TEST_F(_StringTest,PathSubtractionTest)
     ASSERT_STREQ("hyphy", result_path.getStr());
 }
 
-TEST_F(_StringTest,ConvertToAnIdentTest)
+TEST_F(DISABLED_StringTest,ConvertToAnIdentTest)
 {
     //Takes a String and converts it to a valid hyphy ident test
     _String initial = _String("$house");
@@ -759,7 +759,7 @@ TEST_F(_StringTest,ConvertToAnIdentTest)
     ASSERT_STREQ("_house", initial.getStr());
 }
 
-TEST_F(_StringTest,ShortenVarIDTest)
+TEST_F(DISABLED_StringTest,ShortenVarIDTest)
 {
     _String initial = _String("house.room");
     _String container = _String("house");
@@ -767,7 +767,7 @@ TEST_F(_StringTest,ShortenVarIDTest)
     ASSERT_STREQ("room", result.getStr());
 }
 
-TEST_F(_StringTest,RegExpMatchOnceTest)
+TEST_F(DISABLED_StringTest,RegExpMatchOnceTest)
 {
     _String initial = new _String("hyphy");
     _String* pattern = new _String("hyph");
@@ -776,7 +776,7 @@ TEST_F(_StringTest,RegExpMatchOnceTest)
     EXPECT_EQ(0,matched_pairs.lData[0]);
 }
 
-TEST_F(_StringTest,RegExpMatchTest)
+TEST_F(DISABLED_StringTest,RegExpMatchTest)
 {
 
     _String initial = new _String("hyphy");
@@ -787,7 +787,7 @@ TEST_F(_StringTest,RegExpMatchTest)
     EXPECT_EQ(2,matched_pairs.lData[0]);
 }
 
-TEST_F(_StringTest,RegExpMatchAllTest)
+TEST_F(DISABLED_StringTest,RegExpMatchAllTest)
 {
 
     _String initial = new _String("hyphy");
@@ -800,7 +800,7 @@ TEST_F(_StringTest,RegExpMatchAllTest)
 
 }
 
-TEST_F(_StringTest,LempelZivProductionHistoryTest)
+TEST_F(DISABLED_StringTest,LempelZivProductionHistoryTest)
 {
     //{1,0,01,1110,1100, 0010}
     _String initial = _String("1001111011000010");
@@ -810,7 +810,7 @@ TEST_F(_StringTest,LempelZivProductionHistoryTest)
     EXPECT_EQ(6, result);
 }
 
-TEST_F(_StringTest,SortTest)
+TEST_F(DISABLED_StringTest,SortTest)
 {
     _String initial = _String("hgfedcba");
     _SimpleList* index = new _SimpleList();
@@ -818,7 +818,7 @@ TEST_F(_StringTest,SortTest)
     ASSERT_STREQ("abcdefgh", result->getStr());
 }
 
-TEST_F(_StringTest,FindTerminatorTest)
+TEST_F(DISABLED_StringTest,FindTerminatorTest)
 {
     _String initial = _String("dither");
     _String terminator = _String("h");
@@ -826,7 +826,7 @@ TEST_F(_StringTest,FindTerminatorTest)
     EXPECT_EQ(3, result);
 }
 
-TEST_F(_StringTest,AppendAnAssignmentToBufferTest)
+TEST_F(DISABLED_StringTest,AppendAnAssignmentToBufferTest)
 {
 
     _String initial = _String("dither");
@@ -839,7 +839,7 @@ TEST_F(_StringTest,AppendAnAssignmentToBufferTest)
 }
 
 /*
- *TEST_F(_StringTest,AppendVariableValueAVLTest) {
+ *TEST_F(DISABLED_StringTest,AppendVariableValueAVLTest) {
  *
  *    _String initial = _String("life");
  *    _String* append = new _String("answer");
@@ -861,21 +861,21 @@ TEST_F(_StringTest,AppendAnAssignmentToBufferTest)
 
 
 //Operator Tests
-TEST_F(_StringTest,BracketTest)
+TEST_F(DISABLED_StringTest,BracketTest)
 {
     //[]
     _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     EXPECT_EQ('e', result[5L]);
 }
 
-TEST_F(_StringTest,ParanthTest)
+TEST_F(DISABLED_StringTest,ParanthTest)
 {
     //()
     _String result = _String ("You're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     EXPECT_EQ('e', result(5));
 }
 
-TEST_F(_StringTest,EqualTest)
+TEST_F(DISABLED_StringTest,EqualTest)
 {
     //=
     _String result = _String ("hyphy");
@@ -883,7 +883,7 @@ TEST_F(_StringTest,EqualTest)
     ASSERT_STREQ(result.getStr(), dupe.getStr());
 }
 
-TEST_F(_StringTest, AmpersandTest)
+TEST_F(DISABLED_StringTest, AmpersandTest)
 {
 
     // &
@@ -895,7 +895,7 @@ TEST_F(_StringTest, AmpersandTest)
     ASSERT_STREQ(expected.getStr(), result.getStr());
 }
 
-TEST_F(_StringTest,DoubleLessTest)
+TEST_F(DISABLED_StringTest,DoubleLessTest)
 {
     _String orig = _String ("hyphy");
     _String to_append = _String("-package");
@@ -905,7 +905,7 @@ TEST_F(_StringTest,DoubleLessTest)
     ASSERT_STREQ(expected.getStr(), result.getStr());
 }
 
-TEST_F(_StringTest,DoubleEqualTest)
+TEST_F(DISABLED_StringTest,DoubleEqualTest)
 {
     _String* result = new _String ("AABBCCDD");
     _String* r2 = new _String ("AABBCCDD");
@@ -915,7 +915,7 @@ TEST_F(_StringTest,DoubleEqualTest)
     delete r2;
 }
 
-TEST_F(_StringTest,GreaterOpTest)
+TEST_F(DISABLED_StringTest,GreaterOpTest)
 {
     // >
     _String result = _String ("house");
@@ -924,7 +924,7 @@ TEST_F(_StringTest,GreaterOpTest)
     EXPECT_EQ(false, result>r2);
 }
 
-TEST_F(_StringTest,LesserOpTest)
+TEST_F(DISABLED_StringTest,LesserOpTest)
 {
     _String result = _String ("house");
     _String r2 = _String ("household");
@@ -932,7 +932,7 @@ TEST_F(_StringTest,LesserOpTest)
     EXPECT_EQ(true, result<r2);
 }
 
-TEST_F(_StringTest,LesserEqualOpTest)
+TEST_F(DISABLED_StringTest,LesserEqualOpTest)
 {
     //<=
     _String result = _String ("house");
@@ -941,7 +941,7 @@ TEST_F(_StringTest,LesserEqualOpTest)
     EXPECT_EQ(true, result<=r2);
 }
 
-TEST_F(_StringTest,GreaterEqualOpTest)
+TEST_F(DISABLED_StringTest,GreaterEqualOpTest)
 {
     // >=
     _String result = _String ("house");
@@ -950,7 +950,7 @@ TEST_F(_StringTest,GreaterEqualOpTest)
     EXPECT_EQ(false, result>=r2);
 }
 
-TEST_F(_StringTest,NotEqualOpTest)
+TEST_F(DISABLED_StringTest,NotEqualOpTest)
 {
     // !=
     _String result = _String ("house");
