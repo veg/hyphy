@@ -75,8 +75,6 @@ long    DisplayListOfChoices        (void);
 void    ProcessConfigStr            (_String&);
 void    ReadInPostFiles             (void);
 long    DisplayListOfPostChoices    (void);
-void    mpiOptimizerLoop            (int, int);
-void    mpiNormalLoop               (int, int, _String*);
 
 
 extern  long
@@ -629,7 +627,7 @@ int main (int argc, char* argv[])
         //if (mpiParallelOptimizer || mpiPartitionOptimizer)
         //  mpiOptimizerLoop (rank, size);
         //else
-        mpiNormalLoop (rank, size, baseDir);
+        mpiNormalLoop (rank, size, libDirectory);
         /*argFile = "SHUTDOWN_CONFIRM";
         MPISendString (argFile, senderID);*/
     } else {

@@ -1113,9 +1113,11 @@ _Parameter mapParameterToInverval (_Parameter in, char type, bool inverse)
     switch (type) {
     case _hyphyIntervalMapExpit:
         if (inverse) {
-            return log (in / (1-in));
+            //return log (in / (1-in));
+            return tan (M_PI * (in - 0.5));
         } else {
-            return 1. / (1. + exp(-in));
+            //return 1. / (1. + exp(-in));
+            return atan (in) * M_1_PI + 0.5;
         }
         break;
     case _hyphyIntervalMapSqueeze:
@@ -1137,7 +1139,7 @@ void _LikelihoodFunction::SetupParameterMapping (void)
     parameterTransformationFunction.Clear();
     parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
 
-    for (long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
+    for (unsigned long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
         _Variable* cv        = GetIthIndependentVar(pIndex);
         _Parameter thisLB    = cv->GetLowerBound(),
                    thisUB    = cv->GetUpperBound(),

@@ -1538,15 +1538,6 @@ int main (void)
     DisposeCIcon (pullDownArrowsIcon);
     DisposeCIcon (tablePDMenuIcon);
 
-#ifdef __MACHACKMP__
-    DisposePtr ( (Ptr)ThreadReleafFunctionNuc );
-    DisposePtr ( (Ptr)ThreadReleafFunctionMNuc );
-    DisposePtr ( (Ptr)ThreadReleafFunctionAA );
-    DisposePtr ( (Ptr)ThreadReleafFunctionMAA );
-    DisposePtr ( (Ptr)ThreadReleafFunctionCodon );
-    DisposePtr ( (Ptr)ThreadReleafFunctionMCodon );
-    DisposePtr ( (Ptr)MatrixUpdateFunction );
-#endif
 
 #ifdef TARGET_API_MAC_CARBON
     RemoveEventLoopTimer (theTimer);

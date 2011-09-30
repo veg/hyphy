@@ -174,6 +174,8 @@ f_2 = clBSize/bothCladesSize;
 fprintf (stdout, "\nProportion of sequence in population 1: ", f_1,
 				 "\nProportion of sequence in population 2: ", f_2, "\n");
 
+resultAVL = {"Proportion 1": f_1,
+			 "Proportion 2": f_2};
 
 p1vector = {};
 p2vector = {};
@@ -357,12 +359,22 @@ fprintf (stdout, "\n\nPopulation characterisitcs:",
 				 "\nMean subpopulation diversity (pi_S)   = ", resMx[1],
 				 "\nMean interpopulation diversity (pi_B) = ", resMx[2],
 				 "\n\nF_ST\n",
-				 "\nHudson, Slatkin and Madison (Genetics     132:583-589): ",F_ST_OBS[0],
-				 "\nSlatkin                     (Evolution    47:264-279) : ",F_ST_OBS[1],
-				 "\nHudson, Boos and Kaplan	    (Mol Bio Evol 9: 138-151) : ",F_ST_OBS[2],
-				 "\nHudson (S_nn)               (Genetics     155:2011-14): ",F_ST_OBS[3], "\n");
+				 "\nHudson, Slatkin and Maddison (Genetics     132:583-589): ",F_ST_OBS[0],
+				 "\nSlatkin                      (Evolution    47:264-279) : ",F_ST_OBS[1],
+				 "\nHudson, Boos and Kaplan	     (Mol Bio Evol 9: 138-151) : ",F_ST_OBS[2],
+				 "\nHudson (S_nn)                (Genetics     155:2011-14): ",F_ST_OBS[3], "\n");
 				 
 F_ST_OBS = F_ST_OBS;
+
+
+resultAVL ["pi_T"] = resMx[0];
+resultAVL ["pi_S"] = resMx[1];
+resultAVL ["pi_B"] = resMx[2];
+resultAVL ["Hudson, Slatkin and Maddison"] = F_ST_OBS[0];
+resultAVL ["Slatkin"] = F_ST_OBS[1];
+resultAVL ["Hudson, Boos and Kaplan"] = F_ST_OBS[2];
+resultAVL ["Hudson (S_nn)"] = F_ST_OBS[3];
+
 				 
 ChoiceList (resample,"Bootstrap Estimators",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
@@ -491,14 +503,24 @@ if (resample)
 										 
 	fprintf (stdout, "\n\nBootstrapped estimator statistics.\n",
 					 "\nHudson, Slatkin and Madison (Genetics     132:583-589)\n");
+	_stats = GatherDescriptiveStats (F_ST_1);				 
+	reportBSTRP (_stats, F_ST_OBS[0]);
+	resultAVL ["Bootstrap (Hudson, Slatkin and Maddison)"] = _stats;
 
-	reportBSTRP (GatherDescriptiveStats (F_ST_1), F_ST_OBS[0]);
 	fprintf (stdout, "\nSlatkin                     (Evolution    47:264-279)\n");
-	reportBSTRP (GatherDescriptiveStats (F_ST_2), F_ST_OBS[1]);
+	_stats = GatherDescriptiveStats (F_ST_2);				 
+	reportBSTRP (_stats, F_ST_OBS[1]);
+	resultAVL ["Bootstrap (Slatkin)"] = _stats;
+
 	fprintf (stdout, "\nHudson, Boos and Kaplan	    (Mol Bio Evol 9: 138-151)\n");
-	reportBSTRP (GatherDescriptiveStats (F_ST_3), F_ST_OBS[2]);
+	_stats = GatherDescriptiveStats (F_ST_3);				 
+	reportBSTRP (_stats, F_ST_OBS[2]);
+	resultAVL ["Bootstrap (Hudson, Boos and Kaplan)"] = _stats;
+
 	fprintf (stdout, "\nHudson (S_nn)               (Genetics     155:2011-14)\n");
-	reportBSTRP (GatherDescriptiveStats (F_ST_4), F_ST_OBS[3]);
+	_stats = GatherDescriptiveStats (F_ST_4);				 
+	reportBSTRP (_stats, F_ST_OBS[3]);
+	resultAVL ["Bootstrap (Hudson (S_nn))"] = _stats;
 	
 	distanceMatrix = saveDM;
 }
@@ -507,184 +529,189 @@ ChoiceList (resample,"Permutation Test",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "But of course","Randomly allocate sequences into subpopulations and tabulate the distribution of various F_ST statistics.");
 				 
-if (resample < 1)
+if (resample > 0)
 {
-	return 0;
-}
 
-sampleCount = 0;
-while (sampleCount < 1)
-{
-	fprintf (stdout, "\nHow many permutations would you like to perform?");
-	fscanf (stdin,"Number",sampleCount);
-}
-
-F_ST_1 = {sampleCount,2};
-F_ST_2 = {sampleCount,2};
-F_ST_3 = {sampleCount,2};
-F_ST_4 = {sampleCount,2};
-step   = sampleCount$20;
-
-fprintf (stdout, "Running the simulations...\n");
-
-for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
-{
-	aSample = Random(overallSample2,0);
-	p1_1 	= {};
-	p2_1 	= {};
-	for (k=0; k<bothCladesSize;k=k+1)
+	sampleCount = 0;
+	while (sampleCount < 1)
 	{
-		k2 = overallSample[k];
-		if (aSample[k] == 2)
-		{
-			p2_1[Abs(p2_1)] = k2;
-		}
-		else
-		{
-			p1_1[Abs(p1_1)] = k2;
-		}
+		fprintf (stdout, "\nHow many permutations would you like to perform?");
+		fscanf (stdin,"Number",sampleCount);
 	}
-	resMx = computeCompartmentValues (p1_1,p2_1);
-	pi_D = resMx[2]-resMx[1];	
-	F_ST_1[sampleID][1] = pi_D/(resMx[1]+pi_D);
-	F_ST_2[sampleID][1] = pi_D/(resMx[1]+resMx[2]);
-	F_ST_3[sampleID][1] = 1-resMx[1]/resMx[0];
-	F_ST_4[sampleID][1] = resMx[3];
 	
-	if ((sampleID+1)%step == 0)
+	F_ST_1 = {sampleCount,2};
+	F_ST_2 = {sampleCount,2};
+	F_ST_3 = {sampleCount,2};
+	F_ST_4 = {sampleCount,2};
+	step   = sampleCount$20;
+	
+	fprintf (stdout, "Running the simulations...\n");
+	
+	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
 	{
-		fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
-	}
-}
-
-F_ST_1 = F_ST_1%1;
-F_ST_2 = F_ST_2%1;
-F_ST_3 = F_ST_3%1;
-F_ST_4 = F_ST_4%1;
-
-pv = {{sampleCount,sampleCount,sampleCount,sampleCount}};
-
-for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
-{
-	step = sampleID/sampleCount;
-	F_ST_1[sampleID][0] = step;
-	F_ST_2[sampleID][0] = step;
-	F_ST_3[sampleID][0] = step;
-	F_ST_4[sampleID][0] = step;
-	if (pv[0]==sampleCount)
-	{
-		if (F_ST_1[sampleID][1] > F_ST_OBS[0])
+		aSample = Random(overallSample2,0);
+		p1_1 	= {};
+		p2_1 	= {};
+		for (k=0; k<bothCladesSize;k=k+1)
 		{
-			pv[0] = sampleID;
+			k2 = overallSample[k];
+			if (aSample[k] == 2)
+			{
+				p2_1[Abs(p2_1)] = k2;
+			}
+			else
+			{
+				p1_1[Abs(p1_1)] = k2;
+			}
 		}
-	}
-	if (pv[1]==sampleCount)
-	{
-		if (F_ST_2[sampleID][1] > F_ST_OBS[1])
-		{
-			pv[1] = sampleID;
-		}
-	}
-	if (pv[2]==sampleCount)
-	{
-		if (F_ST_3[sampleID][1] > F_ST_OBS[2])
-		{
-			pv[2] = sampleID;
-		}
-	}
-	if (pv[3]==sampleCount)
-	{
-		if (F_ST_4[sampleID][1] > F_ST_OBS[3])
-		{
-			pv[3] = sampleID;
-		}
-	}
-}
-
-
-fprintf (stdout, "\n\nProb {Random F_ST > Observed F_ST}\n",
-				 "\nHudson, Slatkin and Madison : ",(sampleCount-pv[0])/sampleCount,
-				 "\nSlatkin                     : ",(sampleCount-pv[1])/sampleCount,
-				 "\nHudson, Boos and Kaplan	    : ",(sampleCount-pv[2])/sampleCount,
-				 "\nHudson, S_nn                : ",(sampleCount-pv[3])/sampleCount, "\n");
-
-
-labels = {{"Cumulative Weight","F_ST"}};
-
-OpenWindow (CHARTWINDOW,{{"Hudson, Slatkin and Madison F_ST"}
-		{"labels"}
-		{"F_ST_1"}
-		{"Step Plot"}
-		{"F_ST"}
-		{"Cumulative Weight"}
-		{"F_ST"}
-		{""}
-		{"Cumulative Probability"}
-		{"3"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:12:0;Times:14:1"}
-		{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;50");
+		resMx = computeCompartmentValues (p1_1,p2_1);
+		pi_D = resMx[2]-resMx[1];	
+		F_ST_1[sampleID][1] = pi_D/(resMx[1]+pi_D);
+		F_ST_2[sampleID][1] = pi_D/(resMx[1]+resMx[2]);
+		F_ST_3[sampleID][1] = 1-resMx[1]/resMx[0];
+		F_ST_4[sampleID][1] = resMx[3];
 		
-OpenWindow (CHARTWINDOW,{{"Slatkin F_ST"}
-		{"labels"}
-		{"F_ST_2"}
-		{"Step Plot"}
-		{"F_ST"}
-		{"Cumulative Weight"}
-		{"F_ST"}
-		{""}
-		{"Cumulative Probability"}
-		{"3"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:12:0;Times:14:1"}
-		{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;50");
+		if ((sampleID+1)%step == 0)
+		{
+			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
+		}
+	}
+	
+	F_ST_1 = F_ST_1%1;
+	F_ST_2 = F_ST_2%1;
+	F_ST_3 = F_ST_3%1;
+	F_ST_4 = F_ST_4%1;
+	
+	pv = {{sampleCount,sampleCount,sampleCount,sampleCount}};
+	
+	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
+	{
+		step = sampleID/sampleCount;
+		F_ST_1[sampleID][0] = step;
+		F_ST_2[sampleID][0] = step;
+		F_ST_3[sampleID][0] = step;
+		F_ST_4[sampleID][0] = step;
+		if (pv[0]==sampleCount)
+		{
+			if (F_ST_1[sampleID][1] > F_ST_OBS[0])
+			{
+				pv[0] = sampleID;
+			}
+		}
+		if (pv[1]==sampleCount)
+		{
+			if (F_ST_2[sampleID][1] > F_ST_OBS[1])
+			{
+				pv[1] = sampleID;
+			}
+		}
+		if (pv[2]==sampleCount)
+		{
+			if (F_ST_3[sampleID][1] > F_ST_OBS[2])
+			{
+				pv[2] = sampleID;
+			}
+		}
+		if (pv[3]==sampleCount)
+		{
+			if (F_ST_4[sampleID][1] > F_ST_OBS[3])
+			{
+				pv[3] = sampleID;
+			}
+		}
+	}
+	
+	
+	fprintf (stdout, "\n\nProb {Random F_ST > Observed F_ST}\n",
+					 "\nHudson, Slatkin and Maddison : ",(sampleCount-pv[0])/sampleCount,
+					 "\nSlatkin                      : ",(sampleCount-pv[1])/sampleCount,
+					 "\nHudson, Boos and Kaplan	     : ",(sampleCount-pv[2])/sampleCount,
+					 "\nHudson, S_nn                 : ",(sampleCount-pv[3])/sampleCount, "\n");
+	
+	resultAVL ["P (Hudson, Slatkin and Maddison)"] = (sampleCount-pv[0])/sampleCount;
+	resultAVL ["P (nSlatkin)"] = (sampleCount-pv[1])/sampleCount;
+	resultAVL ["P (Hudson, Boos and Kaplan)"] = (sampleCount-pv[2])/sampleCount;
+	resultAVL ["P (Hudson (S_nn))"] = (sampleCount-pv[3])/sampleCount;
+	
+	labels = {{"Cumulative Weight","F_ST"}};
+	
+	OpenWindow (CHARTWINDOW,{{"Hudson, Slatkin and Madison F_ST"}
+			{"labels"}
+			{"F_ST_1"}
+			{"Step Plot"}
+			{"F_ST"}
+			{"Cumulative Weight"}
+			{"F_ST"}
+			{""}
+			{"Cumulative Probability"}
+			{"3"}
+			{""}
+			{"-1;-1"}
+			{"10;1.309;0.785398"}
+			{"Times:14:0;Times:12:0;Times:14:1"}
+			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
+			{"16"}
+			},
+			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;50");
+			
+	OpenWindow (CHARTWINDOW,{{"Slatkin F_ST"}
+			{"labels"}
+			{"F_ST_2"}
+			{"Step Plot"}
+			{"F_ST"}
+			{"Cumulative Weight"}
+			{"F_ST"}
+			{""}
+			{"Cumulative Probability"}
+			{"3"}
+			{""}
+			{"-1;-1"}
+			{"10;1.309;0.785398"}
+			{"Times:14:0;Times:12:0;Times:14:1"}
+			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
+			{"16"}
+			},
+			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;50");
+	
+	OpenWindow (CHARTWINDOW,{{"Hudson, Boos and Kaplan F_ST"}
+			{"labels"}
+			{"F_ST_3"}
+			{"Step Plot"}
+			{"F_ST"}
+			{"Cumulative Weight"}
+			{"F_ST"}
+			{""}
+			{"Cumulative Probability"}
+			{"3"}
+			{""}
+			{"-1;-1"}
+			{"10;1.309;0.785398"}
+			{"Times:14:0;Times:12:0;Times:14:1"}
+			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
+			{"16"}
+			},
+			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;100+SCREEN_HEIGHT/2");
+	
+	labels = {{"Cumulative Weight","S_NN"}};
+	
+	OpenWindow (CHARTWINDOW,{{"Hudson S_NN"}
+			{"labels"}
+			{"F_ST_4"}
+			{"Step Plot"}
+			{"S_NN"}
+			{"Cumulative Weight"}
+			{"S_NN"}
+			{""}
+			{"Cumulative Probability"}
+			{"3"}
+			{""}
+			{"-1;-1"}
+			{"10;1.309;0.785398"}
+			{"Times:14:0;Times:12:0;Times:14:1"}
+			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
+			{"16"}
+			},
+			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;100+SCREEN_HEIGHT/2");
+}
 
-OpenWindow (CHARTWINDOW,{{"Hudson, Boos and Kaplan F_ST"}
-		{"labels"}
-		{"F_ST_3"}
-		{"Step Plot"}
-		{"F_ST"}
-		{"Cumulative Weight"}
-		{"F_ST"}
-		{""}
-		{"Cumulative Probability"}
-		{"3"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:12:0;Times:14:1"}
-		{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;100+SCREEN_HEIGHT/2");
-
-labels = {{"Cumulative Weight","S_NN"}};
-
-OpenWindow (CHARTWINDOW,{{"Hudson S_NN"}
-		{"labels"}
-		{"F_ST_4"}
-		{"Step Plot"}
-		{"S_NN"}
-		{"Cumulative Weight"}
-		{"S_NN"}
-		{""}
-		{"Cumulative Probability"}
-		{"3"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:12:0;Times:14:1"}
-		{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;100+SCREEN_HEIGHT/2");
+return resultAVL;

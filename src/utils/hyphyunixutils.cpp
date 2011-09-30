@@ -39,7 +39,7 @@ size_t url2String (void *ptr, size_t size, size_t nmemb, void *stream)
     _String * s = (_String*)stream;
     char    * p = (char*)ptr;
 
-    for (long k=0; k<size*nmemb; k++) {
+    for (unsigned long k=0; k<size*nmemb; k++) {
         (*s) << p[k];
     }
 

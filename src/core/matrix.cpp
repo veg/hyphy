@@ -9107,7 +9107,6 @@ _List* _AssociativeList::GetKeys (void)
 
 //_____________________________________________________________________________________________
 void        _AssociativeList::FillInList (_List& fillMe)
-// check if a formula matrix contains strings
 {
     _SimpleList  hist;
     long         ls,
@@ -9148,6 +9147,43 @@ void        _AssociativeList::Merge (_PMathObj p)
     }
 }
 
+//_____________________________________________________________________________________________
+_PMathObj        _AssociativeList::Sum (void)
+{
+    _Parameter sum = 0.;
+        
+    _SimpleList  hist;
+    long         ls,
+    cn = avl.Traverser (hist,ls,avl.GetRoot());
+        
+    while (cn >= 0) {
+        _PMathObj value = (_PMathObj)avl.GetXtra (cn);
+        switch (value->ObjectClass()){
+            case NUMBER:
+                sum += ((_Constant*)value)->Value();
+                break;
+            case STRING:
+                sum += ((_FString*)value)->theString->toNum();
+                break;
+            case MATRIX: {
+                _Constant * sumOfValue = (_Constant*) ((_Matrix*)value->Compute())->Sum();
+                sum += sumOfValue->Value();
+                DeleteObject (sumOfValue);
+                break;
+            }
+            case ASSOCIATIVE_LIST: {
+                _Constant * sumOfValue = (_Constant*) ((_AssociativeList*)value->Compute())->Sum();
+                sum += sumOfValue->Value();
+                DeleteObject (sumOfValue);
+                break;
+            }
+        }
+        cn = avl.Traverser (hist,ls);
+    }
+    
+    return new _Constant (sum);
+}
+
 //__________________________________________________________________________________
 
 
@@ -9156,8 +9192,12 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2)   /
 
     switch (opCode) {
     case HY_OP_CODE_ADD: // +
-        MStore (_String((long)avl.countitems()), p, true);
-        return new _Constant (avl.countitems());
+        if (p){
+            MStore (_String((long)avl.countitems()), p, true);
+            return new _Constant (avl.countitems());
+        } else {
+            return Sum();
+        }
 
     case HY_OP_CODE_MUL: // merge
         Merge (p);

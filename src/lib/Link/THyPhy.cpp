@@ -242,7 +242,15 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
     _ExecutionList      compiledCode  (commandString);
 
     baseDirectory       = baseDirectoryInstance->sData;
+    
+#ifdef _HYPHY_LIBDIRECTORY_    
+    libDirectory        = _HYPHY_LIBDIRECTORY_;
+#else
+    libDirectory        = baseDirectory;
+#endif
+
     pathNames           && & baseDirectory;
+    pathNames           && & libDirectory;
     ApplyPreferences    ();
 
     DeleteObject        ((_String*)errors);
