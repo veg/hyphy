@@ -3207,8 +3207,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         if (code == 66) {
             bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
 
-            for (long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
-                for (long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
+            for (unsigned long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
+                for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     //printf ("%s\n", tryPath.sData);
@@ -3232,7 +3232,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         if (commandSource == nil) {
             filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
             if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
-                WarnError (_String("Could not read command file in ExecuteAFile from: ") & filePath);
+                WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
+                                    originalPath & "'.\nExpanded path: '" & filePath & "'");
                 return;
             }
         }
@@ -7541,7 +7542,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
     }
 
     if (!success) { // clean up
-        for (long index = beginning; index<target.lLength; index++) {
+        for (unsigned long index = beginning; index<target.lLength; index++) {
             target.Delete (beginning);
         }
         return false;
