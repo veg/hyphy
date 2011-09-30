@@ -714,8 +714,16 @@ public:
     _List*              GetKeys         (void);
     void                FillInList      (_List&);
     _String*            Serialize       (_String&);
+    
+    /**
+     * Traverse the dictionary, cast each value into a float and return their sum.
+     * Note that matrices and dictionary values will be processed recursively, i.e. "Sum" will be called on them.
+     * All values that cannot be cast to a float will be treated as 0.
+     * @return The sum of all dictionary elements.
+     */
+    _PMathObj           Sum             (void);
 
-    _AVLListXL      avl;
+    _AVLListXL          avl;
 
 private:
 

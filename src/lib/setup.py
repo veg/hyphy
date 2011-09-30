@@ -2,15 +2,19 @@
 
 from distutils.core 	 import setup,Extension
 from distutils.sysconfig import get_python_inc
+from distutils.util 	 import get_platform
 from os		 			 import listdir,getcwd,path
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
+
+
+print get_platform()
 
 #build the list of Source files
 
 global sourceFiles, currentWDir
 
-dirFiles 	= ("../Source", "../Source/SQLite/","../Source/Link")
+dirFiles 	= ("../core", "../new","../../contrib/SQLite-3.6.17/","Link", "../core/include", "../new/include", "../gui/include", "../utils")
 sourceFiles = []
 currentWDir	= getcwd()
 
@@ -23,10 +27,10 @@ for aDir in dirFiles:
 		
 #sourceFiles.append (path.normpath(path.join(currentWDir,"../Mains/hyphyunixutils.cpp")))
 sourceFiles.append (path.normpath(path.join(currentWDir,"SWIGWrappers/THyPhy_python.cpp")))
-sourceFiles.append (path.normpath(path.join(currentWDir,"../GUI/preferences.cpp")))
+sourceFiles.append (path.normpath(path.join(currentWDir,"../gui/preferences.cpp")))
 
 setup(name='HyPhy',
-      version='0.1',
+      version='1.1',
       description		='HyPhy package interface library',
       author			='Sergei L Kosakovsky Pond',
       author_email		='spond@ucsd.edu',
@@ -37,8 +41,7 @@ setup(name='HyPhy',
       ext_modules		= [Extension('_HyPhy', 
       		sourceFiles,
       		include_dirs 	= dirFiles,
-      		define_macros	= [('SQLITE_PTR_SIZE','sizeof(long)'),
-      						   ('__UNIX__',''),
+      		define_macros	= [('__UNIX__',''),
       						   ('__MP__',''),
       						   ('__MP2__',''),
       						   ('_SLKP_LFENGINE_REWRITE_',''),

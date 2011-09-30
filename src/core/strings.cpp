@@ -49,7 +49,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-_String   __KERNEL__VERSION__ ("2.0020110824beta");
+
+
+_String   compileDate = __DATE__,
+          __KERNEL__VERSION__ = _String ("2.00") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+                                                                                                  Replace("Feb", "02", true).
+                                                                                                 Replace("Mar", "03", true).
+                                                                                                 Replace("Apr", "04", true).
+                                                                                                 Replace("May", "05", true).
+                                                                                                 Replace("Jun", "06", true).
+                                                                                                 Replace("Jul", "07", true).
+                                                                                                 Replace("Aug", "08", true).
+                                                                                                 Replace("Sep", "09", true).
+                                                                                                 Replace("Oct", "10", true).
+                                                                                                 Replace("Nov", "11", true).
+                                                                                                 Replace("Dec", "12", true)
+                                                                                                 & compileDate.Cut (4,5) & "beta";
 
 
 _String     empty(""),
@@ -1589,7 +1604,7 @@ _List* _String::Tokenize (_String s)
 
 _Parameter      _String::toNum (void)
 {
-    if (sLength == 0.) {
+    if (sLength == 0) {
         return 0.;
     }
     char * endP;
@@ -1600,7 +1615,7 @@ _Parameter      _String::toNum (void)
 //_______________________________________________________________________
 void    _String::UpCase (void)
 {
-    for (long i = 0; i<sLength; i++) {
+    for (unsigned long i = 0; i<sLength; i++) {
         sData[i] = toupper (sData[i]);
     }
 }
@@ -1608,7 +1623,7 @@ void    _String::UpCase (void)
 //_______________________________________________________________________
 void    _String::LoCase (void)
 {
-    for (long i = 0; i<sLength; i++) {
+    for (unsigned long i = 0; i<sLength; i++) {
         sData[i] = tolower (sData[i]);
     }
 }
