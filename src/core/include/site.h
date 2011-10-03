@@ -466,6 +466,33 @@ public:
     // added this function to cache repeated character code -> string conversions
     // and to skip returning temp objects but simply writing to buffer
 
+    /**
+    * Find all unique sequences in the data filter. 
+    *
+    * \n Usage: FindDuplicateSequences(uniqueIndex, instanceCount, true);
+    * @author SLKP
+    * @param indices For each sequence - the list of indices corresponding to the unique strings
+                     For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
+                     will contain 0,1,3 
+    * @param map The index of the unique string to which the current string is mapped
+                     For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
+                     will contain 0,1,0,2,2 
+    * @param counts  The number of copies for each unique string found
+                     For example, if sequence 1 == sequence 3 and sequence 4 == sequence 5 this list 
+                     will contain 2,1,2
+    * @param strict  Controls is the strings must match exactly (0), exactly + gap (1), via the superset rule (2) or via the partial match rule (3).
+                     Nucleotide letters A and - (or ?) (IUPAC code for A or G) will count as mismatched for mode 0 and matched for mode 1.
+                     Nucleotide letters A and R (IUPAC code for A or G) will count as mismatched for mode 0 and matched for
+                     modes 2 and 3 because R is a superset of A. (note that R matches R in all modes, even though the letter is
+                     an ambiguous nucleotide).
+                     Nucleotide letters R (A or G) and M (A or C) will match under mode 3 (because they both encode A as an option), 
+                     but not under modes 0-2. 
+                     Match in mode (0) => match in mode (1) => match in mode (2) => match in mode (3).
+                    
+    * @return The number of unique sequences. 
+    */
+    unsigned long                   FindUniqueSequences      (_SimpleList&, _SimpleList&, _SimpleList&, short = 0);
+
 
     long                            CorrectCode                 (long code);
     virtual  bool                   CompareTwoSites             (unsigned long, unsigned long,unsigned long);
@@ -489,10 +516,10 @@ public:
     /*
         20090325: SLKP
         a function that takes per pattern values (source, argument 1)
-        and maps them ontp sites into target (argument 2)
+        and maps them onto sites into target (argument 2)
         the third argument is 0 to treat the pointers as _Parameter*
         1 to treat them as long*
-        2 and to treat them as _Parameter and long, respetively
+        2 and to treat them as _Parameter* and long*, respetively
         20090929: SLKP
         the fourth argument is used to speficy a padding-size,
             all values from the filter size up to that value are set to 1 (for mode 0) and 0 (for mode 1)

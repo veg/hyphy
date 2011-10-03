@@ -3,7 +3,7 @@ VERBOSITY_LEVEL = -1;
 
 
 LoadFunctionLibrary ("TreeTools");
-#include "_tipDater.ibf";
+ExecuteAFile 		("_tipDater.ibf");
 
 
 /*-----------------------------------------------------------*/
@@ -42,7 +42,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
+			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -57,6 +57,10 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
                 
 				DT_String * ("`treeNameID`.`nodeNameS`.T = " + minV + ";");
 				timeStops[nodeNameS] = minV;
+			}
+			else
+			{
+				DT_String * ("`treeNameID`.`nodeNameS`.BL = 0.0001;\n`treeNameID`.`nodeNameS`.BL :> 0;\n");
 			}
 		}
 		else
@@ -117,6 +121,8 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
     
     
             rateClass = initialGuesses[nodeNameS] - pName;
+            
+            fprintf (stdout, nodeNameS, " initial guess = ", initialGuesses[nodeNameS], ":", rateClass, "\n");
 
             if (rateClass < 0 || initialGuesses[nodeNameS] >= timeStops[nodeNameS])
             {
@@ -128,16 +134,19 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	}
 
 
-	rateClass = Rows (descendantsList); 
+	rateClass 			= Rows (descendantsList); 
+	minTimeByNode		= {};
+	
 	for (nodeIndex = 0; nodeIndex < Columns (rateClass); nodeIndex = nodeIndex + 1)
 	{
 		pName 				= rateClass[nodeIndex];
 		nodePT				= descendantsList[pName];
 		doneAssignment		= 1e100;
+		
 		for (nodeInfo = 0; nodeInfo< Abs (nodePT); nodeInfo = nodeInfo + 1)
 		{
 			nodeNameS = nodePT[nodeInfo];
-			if (0+nodeNameS == nodeNameS+0)
+			if (Type (nodeNameS) == "Number")
 			{
 				doneAssignment = Min (doneAssignment, nodeNameS);
 			}
@@ -146,13 +155,36 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 				break;
 			}
 		}
-		if (nodeInfo == Abs (nodePT))
+		minTimeByNode[pName]= doneAssignment;
+	}
+
+	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
+	{
+		nodeInfo 	= treePostOrderAVL[nodeIndex];
+		if (Abs(nodeInfo["Children"]) )
 		{
-			DT_String * (treeNameID+"."+pName+".T:<"+doneAssignment+";\n");
+			nodeNameS	= nodeInfo["Name"];
+			if (Abs (nodeInfo["Parent"]))
+			{
+				pName		= (treePostOrderAVL[nodeInfo["Parent"]])["Name"];
+				minTimeByNode[pName] = Min(minTimeByNode[pName], minTimeByNode[nodeNameS]);
+			}
+			
+			DT_String * (treeNameID+"."+nodeNameS+".T:<"+minTimeByNode[nodeNameS]+";\n");
 		}
 	}
 	
-	DT_String * 0;
+	if (initialGuesses["Root"] > 0.0)
+	{
+	    DT_String * ("\n`treeNameID`.Node0.T = 0.5*" + initialGuesses["Root"] + ";");
+ 	}
+ 	else
+ 	{
+	    DT_String * ("\n`treeNameID`.Node0.T = 2.0*" + initialGuesses["Root"] + ";");
+
+ 	}
+ 	DT_String * 0;
+ 	 	
 	return DT_String;
 }
 
@@ -366,6 +398,10 @@ fprintf (stdout, "\n", separator, "\nRESULTS WITHOUT THE CLOCK CONSTRAINT:\n",lf
 fullModelLik = res[1][0];
 fullVars 	 = res[1][1];
 
+returnAVL = {"Free Log(L)": fullModelLik,
+			 "Free degrees of freedom": fullVars};
+
+
 /* now specify the constraint */
 
 _initialGuesses = PathDistanceToRoot (givenTree^0, "");
@@ -400,7 +436,8 @@ for (k = 0; k < Abs (_initialGuesses); k += 1)
     _initialGuesses [_initialGuesses["INDEXORDER"][k]] = predictor;
 }
 
-
+d = 0;
+_initialGuesses["Root"] = predictor;
 
 ExecuteCommands (generateDatedTipConstraints  ("clockTree",parameter2ConstrainString,tipDateAVL,0,_initialGuesses));
 
@@ -420,10 +457,12 @@ slfo	= LIKELIHOOD_FUNCTION_OUTPUT;
 
 USE_DISTANCES 	 				= 0;
 USE_LAST_RESULTS 				= 1;
-MAXIMUM_ITERATIONS_PER_VARIABLE = 100000;
 LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
+
+//VERBOSITY_LEVEL = 10;
+//OPTIMIZATION_METHOD = 0;
 
 Optimize (res1,lfConstrained);
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);
@@ -432,7 +471,13 @@ degFDiff = fullVars - res1[1][1];
 fprintf (stdout, "\nCPU time taken: ", Time(0)-timer, " seconds.\n");
 
 fprintf (stdout, "\n", separator,"\n\n-2(Ln Likelihood Ratio)=",lnLikDiff,"\n","Constrained parameters:",Format(degFDiff,0,0));
-fprintf (stdout, "\nAsymptotic p-value:",1-CChi2(lnLikDiff,degFDiff));
+P = 1-CChi2(lnLikDiff,degFDiff);
+fprintf (stdout, "\nAsymptotic p-value:",P);
+
+
+returnAVL ["Clock Log(L)"] = res1[1][0];
+returnAVL ["Clock degrees of freedom"] = res1[1][1];
+returnAVL ["P"] = P;
 
 ExecuteCommands ("rateEstimate=clockTree_scaler_0*maxV;");
 COVARIANCE_PARAMETER = "clockTree_scaler_0";
@@ -489,6 +534,9 @@ OpenWindow (CHARTWINDOW,{{"Inferred Dates"}
 		"735;540;70;70");
 		
 datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
+
+returnAVL ["Dated Tree"] = datedTree;
+
 UseModel (USE_NO_MODEL);
 ACCEPT_ROOTED_TREES = 1;
 Tree	dT = datedTree;
@@ -501,6 +549,11 @@ cmxT0 = cmxT0 * (1/maxV);
 
 fprintf (stdout, "\nTree with branch lengths scaled in ",dateUnit,":\n",datedTree, "\n");
 fprintf (stdout, "\nRoot of the tree placed at ", cmxT0[1], "(95% CI: ", cmxT0[0],",", cmxT0[2],") ", dateUnit, "\n");
+
+returnAVL ["Root"] = cmxT0[1];
+returnAVL ["Root lower bound"] = cmxT0[0];
+returnAVL ["Root upper bound"] = cmxT0[2];
+
 if (byPosition)
 {
 	fprintf (stdout, "\nSubstitution rate for the first codon position estimated at ", bScaleFactor, "(95% CI: ", cmx[0]/rateEstimate*bScaleFactor,",", cmx[2]/rateEstimate*bScaleFactor,") subs per ",dateUnit," per site\n");
@@ -510,6 +563,10 @@ if (byPosition)
 else
 {
 	fprintf (stdout, "\nSubstitution rate estimated at ", bScaleFactor, "(95% CI: ", maxV*cmx[0]/rateEstimate*bScaleFactor,",", maxV*cmx[2]/rateEstimate*bScaleFactor,") subs per ",dateUnit," per site\n");
+	returnAVL ["Rate"] = bScaleFactor;
+	returnAVL ["Rate lower bound"] = maxV*cmx[0]/rateEstimate*bScaleFactor;
+	returnAVL ["Rate upper bound"] = maxV*cmx[2]/rateEstimate*bScaleFactor;
+
 }
 mxTreeSpec = {5,1};
 mxTreeSpec [0] = "dT";
@@ -519,8 +576,9 @@ mxTreeSpec [1] = "8211";
 mxTreeSpec [2] = "100,100,-300,-300,1";
 OpenWindow (TREEWINDOW, mxTreeSpec );
 
-
 VERBOSITY_LEVEL 				= 0;
 USE_DISTANCES 	 				= sud;
 USE_LAST_RESULTS 				= sulr;
 LIKELIHOOD_FUNCTION_OUTPUT		= slfo;
+
+return returnAVL;

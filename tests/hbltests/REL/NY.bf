@@ -28,7 +28,7 @@ inputOptions ["09"] = "GY94 3x4";
 inputOptions ["10"] = "0.9";
 inputOptions ["11"] = PATH_TO_CURRENT_BF + ".." + DIRECTORY_SEPARATOR + "Results" + DIRECTORY_SEPARATOR + "HIVSweden.out";
 
-ExecuteAFile (HYPHY_BASE_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "NielsenYang.bf", inputOptions);
+ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "NielsenYang.bf", inputOptions);
 
 
 fittedLL = {1,3};

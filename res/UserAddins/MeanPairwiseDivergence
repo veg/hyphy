@@ -59,6 +59,9 @@ if (treeCount > 0)
 				fprintf (stdout, "\nMultiplicative range ", cmx[0], "-", cmx[2], "\n");
 				fprintf (stdout, "Mean pairwise divergence: ", pInfo, " (", pInfo*cmx[0],",",pInfo*cmx[2],")\n");
 				fprintf (stdout, "Mean branch length divergence: ", currentDepth, " (", currentDepth*cmx[0],",",currentDepth*cmx[2],")\n");
+				
+				return {"MEAN PAIRWISE DIVERGENCE": {{pInfo, pInfo*cmx[0], pInfo*cmx[2]}},
+						"MEAN BRANCH LENGTH": {{currentDepth, currentDepth*cmx[0],currentDepth*cmx[2]}}}; 
 			}
 		}
 	}

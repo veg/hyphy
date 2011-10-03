@@ -3013,7 +3013,7 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                     break;
                 }
 
-
+#ifdef ALIGN_DEBUG
             _String     alignDebug ("alignScoreMatrix");
             _Variable * ad = CheckReceptacle (&alignDebug, empty, false);
             ad->SetValue (&scoreMatrix, true);
@@ -3025,7 +3025,7 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                 ad = CheckReceptacle (&alignDebug, empty, false);
                 ad->SetValue (gapScore2, true);
             }
-
+#endif
             DeleteObject (gapScore1);
             DeleteObject (gapScore2);
 

@@ -7937,86 +7937,22 @@ void  _HYDataPanel::ShowDuplicateSequences (bool relaxed)
     _HYTable        *pl = (_HYTable*)GetObject (5);
 
     _DataSetFilter  *df = (_DataSetFilter*)dataSetFilterList(dataPartitions.lData[pl->GetFirstRowSelection()]);
+    
+    _SimpleList     indices, map, counts,duplicateSequences,otherInstance;
 
-    _SimpleList     duplicateSequences,
-                    otherInstance,
-                    stillToCheck;
-
-    long            vd;
-
-    for (vd = 0; vd < df->NumberSpecies(); vd++) {
-        stillToCheck << vd;
-    }
-
-    long            sitesToCheck = df->GetFullLengthSpecies ()/df->GetUnitLength();
-
-    vd  = df->GetDimension(true);
-
-    _Parameter      *translatedVector = new _Parameter [vd],
-    *translatedVector2= new _Parameter [vd];
-
-    checkPointer    (translatedVector);
-    checkPointer    (translatedVector2);
-
-    _String         state1 (df->GetUnitLength(),false),
-                    state2 (df->GetUnitLength(),false);
-
-    for (long k=0; k<stillToCheck.countitems()-1; k++) {
-        for (long l=k+1; l<stillToCheck.countitems(); l++) {
-            bool checkState = true;
-            for (long m=0; m<sitesToCheck; m++) {
-                df->RetrieveState (m,stillToCheck.lData[l], state1);
-                df->RetrieveState (m,stillToCheck.lData[k], state2);
-                long idx1 = df->Translate2Frequencies (state1, translatedVector,  true),
-                     idx2 = df->Translate2Frequencies (state2, translatedVector2, true);
-
-                if (idx1>=0) {
-                    if (idx1==idx2) {
-                        continue;
-                    } else {
-                        checkState = false;
-                        break;
-                    }
-                } else {
-                    if (relaxed) {
-                        bool first  = true,
-                             second = true;
-
-                        for (long t = 0; (first||second)&&(t<vd); t++) {
-                            if (translatedVector[t]>0.0) {
-                                second &= (translatedVector2[t]>0.0);
-                            }
-                            if (translatedVector2[t]>0.0) {
-                                first  &= (translatedVector[t]>0.0);
-                            }
-                        }
-
-                        if (!(first||second)) {
-                            checkState = false;
-                            break;
-                        }
-                    } else {
-                        for (long t = 0; t<vd; t++)
-                            if (translatedVector[t]!=translatedVector2[t]) {
-                                checkState = false;
-                                break;
-                            }
-                    }
-                }
-            }
-
-            if (checkState) {
-                duplicateSequences << stillToCheck.lData[l];
-                otherInstance << stillToCheck.lData[k];
-                stillToCheck.Delete (l);
-                l--;
-            }
+    df->FindUniqueSequences (indices, map, counts, relaxed?2:0);
+    
+    long totalUnique = 0;
+                                   
+    for (long k = 0; k < map.lLength; k++)
+    {
+        if (map.lData[k] != totalUnique){
+            duplicateSequences << k;
+            otherInstance << map.lData[k];
         }
+        else
+            totalUnique ++;
     }
-
-    delete (translatedVector);
-    delete (translatedVector2);
-
 
     SortLists (&duplicateSequences, &otherInstance);
 
@@ -8034,7 +7970,7 @@ void  _HYDataPanel::ShowDuplicateSequences (bool relaxed)
     sp->BuildPane();
     sp->_MarkForUpdate();
 
-    char    buffer[128];
+    char    buffer[256];
     sprintf (buffer,"%lu(%4.4g%%) duplicate sequences found\n", duplicateSequences.lLength ,((_Parameter)duplicateSequences.lLength)/sp->speciesIndex.lLength*100.);
     BufferToConsole (buffer);
     for (long idx = 0; idx < duplicateSequences.lLength; idx++) {

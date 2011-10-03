@@ -3207,8 +3207,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         if (code == 66) {
             bool hasExtension    = filePath.FindBackwards (".",0,-1) > 0;
 
-            for (long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
-                for (long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
+            for (unsigned long p = 0; !commandSource && p < standardLibraryPaths.lLength; p++) {
+                for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     //printf ("%s\n", tryPath.sData);
@@ -3232,7 +3232,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         if (commandSource == nil) {
             filePath.ProcessFileName (false,false,(Ptr)chain.nameSpacePrefix);
             if ((commandSource = doFileOpen (filePath.getStr(), "rb")) == nil) {
-                WarnError (_String("Could not read command file in ExecuteAFile from: ") & filePath);
+                WarnError (_String("Could not read command file in ExecuteAFile.\nOriginal path: '") &
+                                    originalPath & "'.\nExpanded path: '" & filePath & "'");
                 return;
             }
         }
@@ -5250,8 +5251,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                     _LikelihoodFunction * lkf = (_LikelihoodFunction *) scfgList (g);
                     g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
                     if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                        errMsg = *currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter";
-                        WarnError (errMsg);
+                        WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
                         return;
                     }
                     currentArgument = (_String*)parameters(2);
@@ -5265,8 +5265,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 _LikelihoodFunction * lkf = (_LikelihoodFunction *) likeFuncList (f);
                 f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
                 if (f<0 || f>=lkf->GetIndependentVars().lLength) {
-                    errMsg = *currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter";
-                    WarnError (errMsg);
+                    WarnError (*currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter");
                     return;
                 }
                 currentArgument = (_String*)parameters(2);
@@ -5275,21 +5274,33 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
             }
         }
     } else {
-        f = dataSetNamesList.Find (&nmspc);
-        if (f>=0) {
-            _DataSet * ds = (_DataSet*)dataSetList (f);
-            if (ds) {
-                currentArgument = (_String*)parameters(1);
-                f               = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                _List*  dsNames = &ds->GetNames();
-
-                if (f<0 || f>=dsNames->lLength) {
-                    WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
-                    return;
-                }
-
-                dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
+        _DataSet * ds = nil;
+        currentArgument = (_String*)parameters(1);
+        if ((f = FindDataSetName (nmspc)) >= 0){
+            ds = (_DataSet*)dataSetList (f);
+            f  =  ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+        }
+        else {
+            f = FindDataSetFilterName (nmspc);
+            if (f >= 0) {
+                _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (f);
+                if (dsf) {
+                    ds = dsf->GetData ();
+                    f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+                    if (f >= 0 && f < dsf->theNodeMap.lLength){
+                        f  = dsf->theNodeMap.lData[f];
+                    }
+               }
             }
+        }
+        if (ds) {
+           _List*  dsNames = &ds->GetNames();
+            if (f<0 || f>=dsNames->lLength) {
+                WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
+                return;
+            }
+
+             dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
         }
         /*else
         {
@@ -5325,8 +5336,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 }
             }*/
         else {
-            errMsg = *currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter";
-            WarnError (errMsg);
+            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter");
         }
         //}
     }
@@ -5820,6 +5830,18 @@ void      _ElementaryCommand::ExecuteCase46 (_ExecutionList& chain)
                         long seqID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
                         if (seqID>=0 && seqID < dsf->NumberSpecies()) {
                             stVar->SetValue (new _FString (dsf->GetSequenceCharacters(seqID)),false);
+                        } else {
+                            // 20110916 SLKP : the option for filtering duplicate sequences
+                            if (seqID >= -4 && seqID <= -1) {
+                                _SimpleList indices, map, counts;
+                                long uniqueSequences = dsf->FindUniqueSequences(indices, map, counts, -seqID - 1);
+                                _AssociativeList * parameterInfo = new _AssociativeList;
+                                parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
+                                parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
+                                parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
+                                parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
+                                stVar->SetValue (parameterInfo,false);
+                            }
                         }
                     }
                 } else {
@@ -6106,7 +6128,11 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                     long unitSize = ((_FString*)alphabetMatrix->GetFormula(1,0)->Compute())->theString->toNum();
 
                     if (unitSize >= 1) {
-                        _String* theExclusions = ((_FString*)alphabetMatrix->GetFormula(1,1)->Compute())->theString;
+                        _Formula* exclusionFormula = alphabetMatrix->GetFormula(1,1);
+                        _String* theExclusions = &empty;
+                        
+                        if (exclusionFormula)
+                            theExclusions = ((_FString*)exclusionFormula->Compute())->theString;
 
                         if (treeVar->ObjectClass() == TREE) {
                             if (freqVar->ObjectClass() == MATRIX) {
@@ -7516,7 +7542,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
     }
 
     if (!success) { // clean up
-        for (long index = beginning; index<target.lLength; index++) {
+        for (unsigned long index = beginning; index<target.lLength; index++) {
             target.Delete (beginning);
         }
         return false;
@@ -8896,13 +8922,19 @@ void        SetDataFilterParameters (_String& parName, _DataSetFilter* thedf, bo
     if (setOrKill) {
         if (thedf->theOriginalOrder.lLength < sizeCutoff) {
             receptacleVar = CheckReceptacle (&varName, empty, false);
-            _Matrix * siteFreqs = new _Matrix(1,thedf->theOriginalOrder.lLength,false,true);
-            checkPointer (siteFreqs);
-            for (long dsID=0; dsID < thedf->theOriginalOrder.lLength; dsID++) {
-                siteFreqs->theData[dsID] = thedf->theOriginalOrder.lData[dsID];
-            }
-            receptacleVar->SetValue (siteFreqs,false);
+            receptacleVar->SetValue (new _Matrix(thedf->theOriginalOrder),false);
         }
+    } else {
+        DeleteVariable (varName);
+    }
+
+
+    varName = parName&".sequence_map";
+    if (setOrKill) {
+        if (thedf->theOriginalOrder.lLength < sizeCutoff) {
+            receptacleVar = CheckReceptacle (&varName, empty, false);
+            receptacleVar->SetValue (new _Matrix(thedf->theNodeMap),false);
+       }
     } else {
         DeleteVariable (varName);
     }
