@@ -1,49 +1,70 @@
 #!/usr/bin/python
 
-from distutils.core 	 import setup,Extension
+from distutils.core      import setup, Extension
 from distutils.sysconfig import get_python_inc
-from os		 			 import listdir,getcwd,path
+from os                  import listdir, getcwd, path
+from glob                import glob
+import sys
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
 
 #build the list of Source files
 
-global sourceFiles, currentWDir
+scriptPath = path.realpath(path.dirname(sys.argv[0]))
+srcPath, libDir = path.split(scriptPath)
+hyphyPath, srcDir = path.split(srcPath)
 
-dirFiles 	= ("../Source", "../Source/SQLite/","../Source/Link")
-sourceFiles = []
-currentWDir	= getcwd()
+contribPath = path.join(hyphyPath, 'contrib')
+sqlitePath = path.join(contribPath, 'SQLite-3.6.17')
+
+linkPath = path.join(scriptPath, 'Link')
+coreSrcPath = path.join(srcPath, 'core')
+newSrcPath = path.join(srcPath, 'new')
+guiSrcPath = path.join(srcPath, 'gui')
+prefFile = [path.join(guiSrcPath, 'preferences.cpp')]
+swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_python.cpp')]
+
+coreSrcFiles = glob(path.join(coreSrcPath, '*.cpp'))
+newSrcFiles = glob(path.join(newSrcPath, '*.cpp'))
+sqliteFiles = glob(path.join(sqlitePath, '*.c'))
+linkFiles = glob(path.join(linkPath, '*.cpp')) # + glob(path.join(linkPath, '*.cxx'))
+utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
+
+sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles + swigFile + utilFiles
+
+includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
+includePaths += [linkPath, contribPath]
 
 
-for aDir in dirFiles:
-	if len (sourceFiles):
-		sourceFiles.extend([path.normpath(path.join(currentWDir,aDir,aPath)) for aPath in listdir (aDir) if (aPath.endswith ('cpp') or aPath.endswith ('c'))])
-	else:
-		sourceFiles = [path.normpath(path.join(currentWDir,aDir,aPath)) for aPath in listdir (aDir) if (aPath.endswith ('cpp') or aPath.endswith ('c'))]
-		
-#sourceFiles.append (path.normpath(path.join(currentWDir,"../Mains/hyphyunixutils.cpp")))
-sourceFiles.append (path.normpath(path.join(currentWDir,"SWIGWrappers/THyPhy_python.cpp")))
-sourceFiles.append (path.normpath(path.join(currentWDir,"../GUI/preferences.cpp")))
-
-setup(name='HyPhy',
-      version='0.1',
-      description		='HyPhy package interface library',
-      author			='Sergei L Kosakovsky Pond',
-      author_email		='spond@ucsd.edu',
-      url				='http://www.hyphy.org/',
-      package_dir 		={'': 'LibraryModules/Python'},
-      packages			=['HyPhy'],
-      py_modules 		=['HyPhy.py'],
-      ext_modules		= [Extension('_HyPhy', 
-      		sourceFiles,
-      		include_dirs 	= dirFiles,
-      		define_macros	= [('SQLITE_PTR_SIZE','sizeof(long)'),
-      						   ('__UNIX__',''),
-      						   ('__MP__',''),
-      						   ('__MP2__',''),
-      						   ('_SLKP_LFENGINE_REWRITE_',''),
-      						   ('__HEADLESS__','')],
-      		libraries = ['pthread','ssl','crypto','curl'],
-      		extra_compile_args = ['-w','-c', '-fsigned-char', '-O3', '-fpermissive', '-fPIC']
-      	)]
-     )
+setup(
+    name = 'HyPhy',
+    version = '0.1',
+    description = 'HyPhy package interface library',
+    author = 'Sergei L Kosakovsky Pond',
+    author_email = 'spond@ucsd.edu',
+    url = 'http://www.hyphy.org/',
+    package_dir = {'': 'LibraryModules/Python'},
+    packages = ['HyPhy'],
+    # py_modules = ['HyPhy'],
+    ext_modules = [Extension('_HyPhy',
+            sourceFiles,
+            include_dirs = includePaths,
+            define_macros = [('SQLITE_PTR_SIZE','sizeof(long)'),
+                             ('__UNIX__', None),
+                             ('__MP__', None),
+                             ('__MP2__', None),
+                             ('_SLKP_LFENGINE_REWRITE_', None),
+                             ('__HEADLESS__', None)],
+            libraries = ['pthread', 'ssl', 'crypto', 'curl'],
+            extra_compile_args = [
+#                     '-Wno-int-to-pointer-cast',
+#                     '-Wno-pointer-to-int-cast',
+                    '-Wno-char-subscripts',
+                    '-Wno-sign-compare',
+                    '-fsigned-char',
+                    '-O3',
+                    '-fpermissive',
+                    '-fPIC'
+            ]
+    )]
+)
