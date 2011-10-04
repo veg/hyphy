@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // for storing longs
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 class _SimpleList:public BaseObj
 {
@@ -65,18 +65,33 @@ public:
     long operator ()                (unsigned long);
     // element location functions - read only
 
+    /**
+    * Checks if list is identical to other list 
+    * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
+    * @return true if equal. 
+    */
     bool        Equal                           (_SimpleList&);
 
     void        TrimMemory                      (void);
 
+    // 
+    /**
+    * Request space for a given # of elements 
+    * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
+    * @return true if equal. 
+    */
     void        RequestSpace                    (long);
-    // request space for a given # of elements
 
     virtual     _SimpleList operator =          (_SimpleList);
     // assignment operator
 
+
+    /**
+    //Lists length
+    * Example: SimpleList SimpleList([4, 1, 2]).countitems() = 4 
+    * @return Unsigned long of item length    
+    */
     unsigned long   countitems      (void);
-    // list length
 
     virtual     _SimpleList operator &          (_SimpleList);
     // append operator
@@ -89,86 +104,205 @@ public:
 
     virtual     void operator <<                (_SimpleList&);
 
+    /**
+    * Insert an element at a specific point
+    * Example: SimpleList sl.Populate(4, 1, 2).InsertElement(1,1,?,false)
+    * @param br The variable to insert 
+    * @param insertAt The position to insert into
+    * @param store 
+    * @param pointer 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     virtual     void InsertElement              (BaseRef br, long insertAt = -1, bool store = true, bool pointer = true);
 
     void Clear                      (bool = true);
 
+    /**
+    * Much like [] and () except negative indices return offsets from the end. Invalid indices return 0;
+    * Example: SimpleList(1,3,5,7).Element(1) = [3]
+    * @param index Which item you want.
+    * @return A long    
+    */
     long Element                    (long);
-    // much like [] and () except negative indices return offsets from the end
-    // invalid indices return 0
 
+    /**
+    * Retrive the last value and shorted the list by 1
+    * Example: SimpleList(1,3,5,7).Pop() = 7 
+    * @return Return last value from the list
+    */
     long Pop                        ();
-    // retrive the last value and shorted the list by 1
 
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
+    * @param s The integer to find
+    * @param startAt Index to start at 
+    * @return -1 if not found, index if found
+    */
     virtual     long  Find                      (long, long startAt = 0);
-    // find the position of a search string in the list of strings (ONLY)
-    // -1 if not found
-    virtual     void  FilterRange               (long, long);
-    // retain all those elements that are between (strictly) the 1st and the 2nd argument
 
+    // 
+
+    /**
+    * Retain all those elements that are between (strictly) the 1st and the 2nd argument
+    * Example: SimpleList(1,3,5,7).FilterRange(2,4) = [3,5,7] 
+    * @param lb Start of new list 
+    * @param ub End of new list 
+    * @return Nothing. Operates on class that called it. 
+    */
+    virtual     void  FilterRange               (long, long);
+
+    /**
+    * Same as find, but steps over indices 
+    * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
+    * @param s The integer to find
+    * @param step The number to skip between searches 
+    * @param startAt Index to start at 
+    * @return -1 if not found, index if found
+    */
     virtual     long  FindStepping              (long, long, long = 0);
 
+
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
+    * @param s The integer to find
+    * @param startAt Index to start at 
+    * @return -1 if not found, index if found
+    */
     virtual     long  BinaryFind                (long, long startAt = 0);
-    // find the position of a search string in the list of strings (ONLY)
-    // -1 if not found
 
-    long  BinaryInsert              (long);
     // insert an element into the sorted list preserving the sortedness
-    void  Delete                    (long, bool = true);
+    long  BinaryInsert              (long);
+
     // delete the item at a given poisiton
+    void  Delete                    (long, bool = true);
 
+    /**
+    * Delete all duplicates in a sorted list
+    * Example: SimpleList(1,3,3,5,7).DeleteDuplicates() = [1,3,5,7] 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  DeleteDuplicates          (void);
-    // delete all duplicates in a sorted list
 
+    /**
+    * Delete list of indices in a sorted list
+    * Example: SimpleList(1,3,5,7).DeleteList([0,1,2]) = [7] 
+    * @param toDelete SimpleList of indices to  
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     virtual     void  DeleteList                (const _SimpleList&);
 
     void  Displace                  (long,long,long);
     // shift a range of elements in the array
 
+
+    /**
+    * Add a number to each entry in the array
+    * Example: SimpleList(1,3,5,7).Offset(2) = [3, 5, 7, 9]
+    * @param shift Number to add 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Offset                    (long);
-    // add a number to each entry in the array
 
+    /**
+    * Initialize the function to select all k-element subsets of a given simple list
+    * @param state  a state-storing simple list; will be approximately the same length as (*this) _SimpleList;
+    * DO NOT MANIPULATE this list outside NChooseKInit; it must persist between calls to NChooseK
+    * @param store the receptacle list that will store k-tuples
+    * @param stride how many elements to choose; must be <= lLength
+    * @param algorithm which algorithm to use for k-tuple generation; false - lexicographic (in the sense of the original list order)
+    * : true - 'revolving door' method - TBA
+    * @return true if successfully initialized
+    */
     bool  NChooseKInit              (_SimpleList&, _SimpleList&, unsigned long, bool = false);
-    // initialize the function to select all k-element subsets of a given simple list
-    // arguments are:
-    // [SimpleList] a state-storing simple list; will be approximately the same length as (*this) _SimpleList;
-    // DO NOT MANIPULATE this list outside NChooseKInit; it must persist between calls to NChooseK
-    // [SimpleList] the receptacle list that will store k-tuples
-    // [unsigned long]: how many elements to choose; must be <= lLength
-    // [bool]: which algorithm to use for k-tuple generation; false - lexicographic (in the sense of the original list order)
-    //       : true - 'revolving door' method - TBA
-    // return [bool]: true if successfully initialized
 
+    /**
+    * Select the next k-tuple
+    * Example: SimpleList(1,3,5,7).DeleteList([0,1,2]) = [7] 
+    * @param state the state-storing list previously populated by NChooseKInit
+    * @param store the receptacle that will store k-tuples 
+    * @return [bool] true is more k-tuples are available; [false] if the last one has just been stored
+    */
     bool NChooseK                   (_SimpleList&, _SimpleList&);
-    // select the next k-tuple
-    // [SimpleList] the state-storing list previously populated by NChooseKInit
-    // [SimpleList] the receptacle that will store k-tuples
-    // returns [bool] true is more k-tuples are available; [false] if the last one has just been stored
 
+    /**
+    * TODO:Permute elements in blocks of given size
+    * Example: SimpleList(1,3,5,7).Offset(2) = [3, 5, 7, 9]
+    * @param shift Number to add 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Permute                   (long);
-    // permute elements in blocks of given size
 
+    /**
+    * TODO:Permute elements in blocks of given size with possible replacement
+    * Example: SimpleList(1,3,5,7).Offset(2) = [3, 5, 7, 9]
+    * @param shift Number to add 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  PermuteWithReplacement    (long);
-    // permute elements in blocks of given size with possible replacement
 
+    /**
+    * Performs union of two SimpleLists
+    * Example: SimpleList(1,3,5,7).Offset(2) = [3, 5, 7, 9]
+    * @param shift Number to add 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Union                     (_SimpleList&, _SimpleList&);
+
+
     void  Intersect                 (_SimpleList&, _SimpleList&);
+
     void  XOR                       (_SimpleList&, _SimpleList&);
+
     void  Subtract                  (_SimpleList&, _SimpleList&);
+
     long  CountCommonElements       (_SimpleList&, bool = false);
 
 
+    /**
+    * Populate a Simple List with integers incrementally.
+    * Example: SimpleList sl.Populate(4, 1, 2) = [1, 3, 5, 7]
+    * @param s The substring to find
+    * @param startat The index to start searching from
+    * @param increment by Pass true for a case sensitive search 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Merge                     (_SimpleList& l1, _SimpleList& l2, _SimpleList* mergeResults = nil, _SimpleList* mergeResults2 = nil);
 
+    /**
+    * Swaps two positions  
+    * Example: SimpleList sl[1,3,5].Swap(0, 1) = [3,1]
+    * @param i First index to swap 
+    * @param j Second index to swap with
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Swap                      (long, long); //swap two elements
-    void  Populate                  (long, long, long); // total elements,
-    // start at
-    // increment by
 
+    /**
+    * Populate a Simple List with integers incrementally.
+    * Example: SimpleList sl.Populate(4, 1, 2) = [1, 3, 5, 7]
+    * @param s The substring to find
+    * @param startat The index to start searching from
+    * @param increment by Pass true for a case sensitive search 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
+    void  Populate                  (long, long, long); 
+
+    /**
+    * Flips the list 
+    * Example: SimpleList sl(1,2,3).Flip() = [3,2,1]
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void  Flip                      (void); //flip the order of list elements
 
     virtual     BaseRef toStr                   (void);
 
+    /**
+    * TODO
+    * Example: SimpleList sl(1,2,3).Flip() = [3,2,1]
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void        RecursiveIndexSort              (long from, long to, _SimpleList* index);
 
     BaseRef     ListToPartitionString           (void);
@@ -179,39 +313,54 @@ public:
 
     virtual     void    Duplicate               (BaseRef);
 
+    /**
+    * Sorts List 
+    * Example: SimpleList sl.Sort([5,4,3,2,1]) = [1, 2, 3, 4, 5]
+    * @param ascending true if ascending, false for descending sort 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     void                Sort                    (bool ascending = true);
 
+    /**
+    * SLKP: 20090611    
+    * Print the names of variables whose indices are
+    * contained in the list
+    * @return Nothing. Prints out to screen 
+    */
     void                DebugVarList            (void);
-    /* SLKP: 20090611
-        print the names of variables whose indices are
-        contained in the list
-     */
 
     void                ClearFormulasInList     (void);
     /* SLKP: 20110209
         An UGLY hack to automate clearing lists that have pointers to formulas in them */
 
-
+    /**
+    * SLKP: 20090508
+    * Return the minimum value in the list 
+    * Example: _SimpleList([4, 1, 2]).Min() = 1 
+    * @return minimum value in the list 
+    */
     long                Min                     (void);
+
+    /**
+    * SLKP: 20090508
+    * Return the maximum value in the list 
+    * Example: _SimpleList([4, 1, 2]).Min() = 1 
+    * @return maximum value in the list 
+    */
     long                Max                     (void);
-    /* SLKP: 20090508
-        return the maximum
-        or the minimum
-        value in the list
-     */
+
+    /**
+    * SLKP: 20090508
+    * Implements a counting sort procedure, ASSUMING that all
+    * list values are in [0, upperBound-1]; if the 1st argument is <0, it is automatically
+    * determined
+    * @return a pointer to the sorted list
+    * if the second argument is not nil, then
+    * the new_order->old_order mapping is returned in the array pointed to
+    *
+    */
+
     _SimpleList*        CountingSort            (long, _SimpleList* = nil);
-    /* SLKP: 20090508
-
-     implements a counting sort procedure, ASSUMING that all
-     list values are in [0, upperBound-1]; if the 1st argument is <0, it is automatically
-     determined
-
-     returns a pointer to the sorted list
-     if the second argument is not nil, then
-     the new_order->old_order mapping is returned in the array pointed to
-
-     */
-
 
     void                BubbleSort              (void);
     void                QuickSort               (long, long);
@@ -220,26 +369,35 @@ public:
         return (long*)lData;
     }
 
+    /**
+    * Compares two parts of the list 
+    * Example: SimpleList sl(1,3,5).Compare(0,1) = -1 
+    * @param i The index to compare 
+    * @param j The second index to compare
+    * @return -1 if i<j, 0 if i==j, or 1 if i>j 
+    */
+
     virtual     long    Compare                 (long,long);
     virtual     long    Compare                 (BaseRef,long);
 
-    static      void    NormalizeCoordinates    (long&, long&, const unsigned long);
-    /* SLKP: 20090316
-
-
-       given a range [from,to] and a given list,
-       make the range conform to the list (e.g. resolve negative to and/or from coordinates)
-       clip the range to fit the list etc
-
-       the third argument is the length of the list to normalize with respect to
+    /**
+    * SLKP: 20090316
+    * Given a range [from,to] and a given list,
+    * make the range conform to the list (e.g. resolve negative to and/or from coordinates)
+    * clip the range to fit the list etc
+    * Example: SimpleList sl.NormalizeCoordinates(4, 1, 2) = [1, 3, 5, 7]
+    * @param from The substring to find
+    * @param to The index to start searching from
+    * @param refLength The third argument is the length of the list to normalize with respect to.
+    * @return Nothing. Acts on the List object it was called from. 
     */
+    static      void    NormalizeCoordinates    (long&, long&, const unsigned long);
 
     friend class _AVLList;
 
 protected:
 
     // data fields
-
     unsigned long laLength;
     //memory allocated enough for this many slots
 
@@ -250,7 +408,7 @@ public:
 
 };
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 class _List:public _SimpleList
 {
@@ -258,95 +416,220 @@ class _List:public _SimpleList
     // contructor/destructor methods
 public:
 
+    /**
+    * A constructor.
+    * A simple constructor that does nothing
+    */
     _List ();
-    //does nothing
+
+
+    /**
+    * Length constructor.
+    * @param sL Length of the string
+    */
     _List (unsigned long);
-    //length constructor
+
+
+    /**
+    * Stack copy contructor
+    * @param l List to be copied
+    * @param from Beginning index to copy from 
+    * @param to Last index to copy to  
+    */
     _List (const _List&, long = 0, long = -1);
-    // stack copy contructor
+
+    /**
+    * Construct a list of substrings from the original string separated by char
+    * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one,two,three"), ','); \endcode
+    * @param ss The substring to be parsed, remember to cast it as a BaseRef
+    * @param sep The separator for the string  
+    */
     _List (BaseRef, char);
-    // construct a list of substrings from the original string separated by char
+
+    /**
+    * Data constructor (1 member list)
+    * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
+    * @param br The object to be changed
+    */
     _List (BaseRef);
-    // data constructor (1 member list)
+
+    /**
+    * The deconstructor
+    */
     virtual     ~_List(void);
-    //destructor
 
+    /**
+    * Element location function - read/write
+    */
     BaseRef& operator [] (long);
-    // element location functions - read/write
 
+    /**
+    * Element location functions - read only
+    */
     BaseRef operator () (unsigned long);
-    // element location functions - read only
 
+    /**
+    * Element location functions - read only
+    */
     virtual     _List operator = (_List&);
-    // assignment operator
 
+    /**
+    * Append operator
+    * \n\n \b Example: \code _List result_list = list & append_list; \endcode 
+    * @return New concatenated list
+    */
     _List operator & (_List&);
-    // append operator
 
+    /**
+    * Append operator
+    * \n\n \b Example: \code _List result_list = list && new _String("one"); \endcode 
+    * @return Nothing. Acts on list that is being operated on
+    */
     void operator && (BaseRef);
-    // append duplicate to *this
 
+    /**
+    * Append operator
+    * TODO: need to check this works
+    * \n\n \b Example: \code _List result_list = list && "one"; \endcode 
+    */
     void operator && (const char*);
-    // append a string created from a literal
 
+    /**
+    * Append reference to *this
+    * \n\n \b Example: \code _List result_list << new _String("one"); \endcode 
+    * @return Nothing. Operates on the _List.
+    */
     void operator << (BaseRef);
-    // append reference to *this
 
+    /**
+    * Appends existing list to *this
+    * \n\n \b Example: \code _List result_list << existing_list \endcode 
+    * @param l2 The list to be appended
+    * @return Nothing. Operates on the _List.
+    * @sa AppendNewInstance()
+    */
     void operator << (_List&);
-    // append reference to *this
 
+    /**
+    * Append reference to *this
+    * \n\n \b Example: \code _List result_list << existing_list \endcode 
+    * @param br The object to be appended
+    * @return Nothing. Operates on the _List.
+    * @sa AppendNewInstance()
+    */
     void AppendNewInstance (BaseRef);
-    // append reference to *this
 
+    /**
+    * Checks if Lists are identical to each other. Must be _String castable 
+    * \n\n \b Example: \code list1.Equal(list2) \endcode 
+    * @return bool, true if identical.
+    * @sa AppendNewInstance()
+    */
     bool Equal       (_List&);
 
+    /**
+    * Identical to << operator. Places new value at the end of the list.
+    * \n\n \b Example: \code list1.Place(new _String("one")) \endcode 
+    * @return Nothing, manipulates *this.
+    * @sa InsertElement()
+    */
     void Place (BaseRef);
-    // append reference to *this
 
+
+    /**
+    * Replace an item
+    * \n\n \b Example: \code list.Replace(1, new _String("one"), false); \endcode 
+    * @param index The location in the list to be replaced
+    * @param newObj The object to be inserted
+    * @param dup Allows a duplication
+    * @return Nothing, manipulates *this.
+    */
     void  Replace (long, BaseRef,bool dup = true);
-    // replace an item
+
 
     virtual     long     FreeUpMemory (long);
 
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * SLKP: 20100811
+    * \n Equivalent to Python's join using the argument as the spacer
+    * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+    * @param spacer What you want to be the spacer 
+    * @return A pointer to the new list 
+    * @sa Find()
+    */
     BaseRef Join       (BaseRef);
-    /* SLKP: 20100811
-        Equivalent to Python's join using the argument as the spacer
-     */
 
 
+    /**
+    */
     void bumpNInst (void);
 
     virtual     void Clear     (bool = true);
 
-    _List operator & (BaseRef);
     // append operator
+    _List operator & (BaseRef);
 
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * \n\n \b Example: \code 
+    * _String* needle = new _String("two") 
+    * _List("zero","one,"two").Find((BaseRef)needle)
+    * \endcode
+    * @param s The integer to find
+    * @return -1 if not found, index if found
+    */
     virtual     long  Find (BaseRef, long startat = 0);
-    // find the position of a search string in the list of strings (ONLY)
-    // -1 if not found
 
     virtual     long  FindPointer (BaseRef b, long startat = 0) {
         return _SimpleList::Find ((long)b, startat);
     }
+
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * \n Faster than the Find(), since it assumes string entries
+    * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+    * @param s The substring to find
+    * @param startat The index to start searching from
+    * @param caseSensitive Pass true for a case sensitive search 
+    * @param upTo Upper limit for search index. 
+    * @return -1 if not found, the index if it is found.
+    * @sa Find()
+    * @sa BinaryFind()
+    */
     virtual     long  FindString          (BaseRef, long startat = 0, bool caseSensitive = true, long upTo = -1);
-    // find the position of a search string in the list of strings (ONLY)
-    // -1 if not found
-    // faster than the one above, since it assumes string entries
 
+    /**
+    * Find the position of a search string in the list of strings (ONLY)
+    * \n Faster than the Find(), since it assumes string entries
+    * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+    * @param s The substring to find
+    * @param startat The index to start searching from
+    * @param caseSensitive Pass true for a case sensitive search 
+    * @param upTo Upper limit for search index. 
+    * @return -1 if not found, the index if it is found.
+    * @sa Find()
+    * @sa BinaryFind()
+    */
     virtual     long  BinaryFind          (BaseRef );
-    // find the position of a search string in the list of strings (ONLY)
-    // uses binary sort on sorted lists
-    // -1 if not found
 
-    long  BinaryInsert        (BaseRef);
     // insert an element into the sorted list preserving the sortedness
+    long  BinaryInsert        (BaseRef);
 
+    // delete the item at a given poisiton
     void  Delete (long );
-    // delete the item at a given poisiton
 
+    // delete the item at a given poisiton
     virtual     void  DeleteList (const _SimpleList&);
-    // delete the item at a given poisiton
 
+    /**
+    * Populate a Simple List with integers incrementally.
+    * Example: SimpleList sl.Populate(4, 1, 2) = [1, 3, 5, 7]
+    * @param s The substring to find
+    * @param startat The index to start searching from
+    * @param increment by Pass true for a case sensitive search 
+    * @return Nothing. Acts on the List object it was called from. 
+    */
     virtual     void InsertElement (BaseRef br, long insertAt = -1, bool store = true);
 
 
@@ -366,7 +649,7 @@ public:
 
 };
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 class _AVLList: public BaseObj
 {
@@ -424,7 +707,7 @@ public:
 
 };
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 class _AVLListX: public _AVLList
 {
@@ -451,7 +734,7 @@ public:
 
 };
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 class _AVLListXL: public _AVLList
 {
@@ -473,7 +756,7 @@ public:
 
 };
 
-//_________________________________________________________________________________________
+//_____________________________________________________________________________
 
 void        SortLists (_SimpleList*, _SimpleList*);
 

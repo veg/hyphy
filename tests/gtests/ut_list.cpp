@@ -56,18 +56,18 @@ namespace
 {
 
 // The fixture for testing class Foo.
-class _ListTest : public ::testing::Test
+class ListTest : public ::testing::Test
 {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _ListTest() {
+    ListTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_ListTest() {
+    virtual ~ListTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -87,19 +87,18 @@ protected:
 };
 
 
-//does nothing
-TEST_F(_ListTest,_NothingListTest){
+TEST_F(ListTest,_NothingListTest){
     _List list = _List();
     EXPECT_EQ(list.lLength,0);
 }
 
-TEST_F(_ListTest,_LengthConstructorListTest){
+TEST_F(ListTest,_LengthConstructorListTest){
     _List str_list = createStrList();
     unsigned long l = 7;
     EXPECT_EQ(str_list.lLength,l);
 }
 
-TEST_F(_ListTest,_StackCopyConstructorListTest){
+TEST_F(ListTest,_StackCopyConstructorListTest){
     _List str_list = createStrList();
     _List list = _List(str_list, 0, 4); 
 
@@ -107,7 +106,7 @@ TEST_F(_ListTest,_StackCopyConstructorListTest){
     EXPECT_STREQ("four", return_str->getStr());
 }
 
-TEST_F(_ListTest,_SubStrConstructorListTest){
+TEST_F(ListTest,_SubStrConstructorListTest){
 
     _String* str = new _String("one,two,three");
     _List list = _List((BaseRef)str, ','); 
@@ -117,7 +116,7 @@ TEST_F(_ListTest,_SubStrConstructorListTest){
     EXPECT_STREQ("one", return_string->getStr());
 }
 
-TEST_F(_ListTest,_DataConstructorListTest){
+TEST_F(ListTest,_DataConstructorListTest){
     //one member list
     _String* string = new _String("one");
     _List list = _List((BaseRef)string);
@@ -128,7 +127,7 @@ TEST_F(_ListTest,_DataConstructorListTest){
 }
 
 
-TEST_F(_ListTest,paranthesisTest){
+TEST_F(ListTest,paranthesisTest){
 
     _List str_list = createStrList();
     _String* return_string = (_String*)str_list(4);
@@ -136,7 +135,7 @@ TEST_F(_ListTest,paranthesisTest){
     EXPECT_STREQ("four", return_string->getStr());
 }
 
-TEST_F(_ListTest,EqualOpTest){
+TEST_F(ListTest,EqualOpTest){
 
     _List str_list = createStrList();
     _List list = str_list;
@@ -146,16 +145,17 @@ TEST_F(_ListTest,EqualOpTest){
     EXPECT_STREQ("four", return_string->getStr());
 }
 
-TEST_F(_ListTest,EqualTest){
+TEST_F(ListTest,EqualTest){
 
     _List str_list = createStrList();
     _List list = str_list; 
+    _List l2;
 
     EXPECT_EQ(true,list.Equal(str_list));
-    EXPECT_EQ(false,str_list.Equal(str_list));
+    EXPECT_EQ(false,str_list.Equal(l2));
 }
 
-TEST_F(_ListTest,AmpersandOpTest){
+TEST_F(ListTest,AmpersandOpTest){
     //Append Operator
     _List str_list = createStrList();
 
@@ -175,7 +175,7 @@ TEST_F(_ListTest,AmpersandOpTest){
     EXPECT_STREQ("one", result_string->getStr());
 } 
 
-TEST_F(_ListTest,DoubleAmpersandOpTest){
+TEST_F(ListTest,DoubleAmpersandOpTest){
 
     _List str_list = createStrList();
 
@@ -189,7 +189,7 @@ TEST_F(_ListTest,DoubleAmpersandOpTest){
 }
 
 
-TEST_F(_ListTest,DoubleLessOpTest){
+TEST_F(ListTest,DoubleLessOpTest){
 
     //Insert Element
     _List str_list = createStrList();
@@ -200,7 +200,7 @@ TEST_F(_ListTest,DoubleLessOpTest){
     EXPECT_STREQ("one", result_string->getStr());
 }
 
-TEST_F(_ListTest,DoubleLess2OpTest){
+TEST_F(ListTest,DoubleLess2OpTest){
     //Append Operator
 
     _List str_list = createStrList();
@@ -211,7 +211,7 @@ TEST_F(_ListTest,DoubleLess2OpTest){
     _String append_string("four,five,six");
     _List* append_list = append_string.Tokenize(','); 
 
-    _String* expected_string = new _String("one,two,three,four,five,six");
+    _String* expected_string = new _String("six");
 
     *list << *append_list;
 
@@ -222,26 +222,26 @@ TEST_F(_ListTest,DoubleLess2OpTest){
 
 }
 
-TEST_F(_ListTest,AppendNewInstanceTest){
+TEST_F(ListTest,AppendNewInstanceTest){
 
     //Insert Element
     _List str_list = createStrList();
     str_list.AppendNewInstance(new _String("one"));
-    _String* result_string = (_String*)str_list[5];
+    _String* result_string = (_String*)str_list[7];
 
     EXPECT_STREQ("one", result_string->getStr());
 }
 
-TEST_F(_ListTest,PlaceTest){
+TEST_F(ListTest,PlaceTest){
     //Place Test
     _List str_list = createStrList();
     str_list.Place(new _String("one"));
 
-    _String* result_string = (_String*)str_list[5];
+    _String* result_string = (_String*)str_list[7];
     EXPECT_STREQ("one", result_string->getStr());
 }
 
-TEST_F(_ListTest,InsertElementTest){
+TEST_F(ListTest,InsertElementTest){
 
     _List str_list = createStrList();
 
@@ -251,23 +251,23 @@ TEST_F(_ListTest,InsertElementTest){
     EXPECT_STREQ("one", result_string->getStr());
 }
 
-TEST_F(_ListTest,getStrTest){
+TEST_F(ListTest,getStrTest){
     _List str_list = createStrList();
 
-    _String* str = new _String("{1,2,3,4,5,6,7,8,9,10,11,12,13,14}");
+    _String* str = new _String("{zero,one,two,three,four,five,six}");
     _String* result_string = (_String*)str_list.toStr();
 
     EXPECT_STREQ(str->getStr(), result_string->getStr());
 }
 
-//TEST_F(_ListTest,toFileStrTest){
+//TEST_F(ListTest,toFileStrTest){
     ////TODO
 
 //}
 
 
-TEST_F(_ListTest,bumpNInstTest){
-
+TEST_F(ListTest,bumpNInstTest){
+    //TODO
     _List str_list = createStrList();
     str_list.bumpNInst();
 
@@ -275,68 +275,73 @@ TEST_F(_ListTest,bumpNInstTest){
     EXPECT_STREQ("three", result_string->getStr());
 }
 
-TEST_F(_ListTest,FindTest){
+TEST_F(ListTest,FindTest){
     //This cast the object as a string and then checks if it's equal. 
+    //Why do we send in a BaseRef when we could just pass in a _String if it's strings only.
     _List str_list = createStrList();
+    
+    _String* needle = new _String("two");
 
-    int index = str_list.Find((BaseRef)"two");
+    int index = str_list.Find((BaseRef)needle);
     EXPECT_EQ(2, index);
 
     index = str_list.Find((BaseRef)"seventeen");
     EXPECT_EQ(-1, index);
 }
 
-TEST_F(_ListTest,FindStringTest){
+TEST_F(ListTest,FindStringTest){
     //Find the position of a search string in the list of strings (ONLY)
     long upTo = -1;
     _List str_list = createStrList();
+    
+    _String* needle = new _String("two");
 
-    int index = str_list.FindString((BaseRef)"two", 0, false, upTo); 
+    int index = str_list.FindString((BaseRef)needle, 0, false, upTo); 
     EXPECT_EQ(2, index);
 
-    index = str_list.FindString((BaseRef)"two", 0, true, upTo); 
+    index = str_list.FindString((BaseRef)needle, 0, true, upTo); 
     EXPECT_EQ(2, index);
 } 
 
-TEST_F(_ListTest,JoinTest){
+TEST_F(ListTest,JoinTest){
     //Append Operator
     _String* str = new _String("one,two,three");
+    _String* spacer = new _String(";");
     _List* list = new _List((BaseRef)str, ','); 
-    //_String* return_string = (_String*)list->Join((BaseRef)"1");
-    EXPECT_STREQ("1", str->getStr());
+    _String* return_string = (_String*)list->Join((BaseRef)spacer);
+    EXPECT_STREQ("one;two;three", return_string->getStr());
 }
 
-TEST_F(_ListTest,BinaryFindTest){
+TEST_F(ListTest,BinaryFindTest){
+    //TODO: I'm not sure if this works appropriately
     //Find the position of a search string in the list of strings (ONLY)
-    //Same as FindString
+   
     int upTo = -1;
     _List str_list = createStrList();
+    _String* needle = new _String("six");
+    
+    int index = str_list.BinaryFind((BaseRef)needle); 
+    EXPECT_EQ(4, index);
+}
 
-    int index = str_list.FindString((BaseRef)"two", 0, false, upTo); 
-    EXPECT_EQ(2, index);
-
-    index = str_list.FindString((BaseRef)"two", 0, true, upTo); 
-    EXPECT_EQ(2, index);
-} 
-
-TEST_F(_ListTest,BinaryInsertTest){
+TEST_F(ListTest,BinaryInsertTest){
     //Binary Insert 
     //TODO
 }
 
-TEST_F(_ListTest,CompareTest){
+TEST_F(ListTest,CompareTest){
     _List str_list = createStrList();
 
     _String* test = new _String("hyphy");
-    EXPECT_EQ(false, str_list.Compare((BaseRef)test,1));
+    EXPECT_EQ(-1, str_list.Compare((BaseRef)test,1));
 }
 
-TEST_F(_ListTest,FreeUpMemoryTest){
+TEST_F(ListTest,FreeUpMemoryTest){
     _List str_list = createStrList();
-    EXPECT_EQ(16,str_list.FreeUpMemory(16));
+    EXPECT_EQ(0,str_list.FreeUpMemory(16));
 } 
 
-TEST_F(_ListTest,ClearTest){
+TEST_F(ListTest,ClearTest){
 
     _List str_list = createStrList();
     str_list.Clear(true);
@@ -345,7 +350,7 @@ TEST_F(_ListTest,ClearTest){
 } 
 
 
-TEST_F(_ListTest,DeleteTest){
+TEST_F(ListTest,DeleteTest){
 
     _List str_list = createStrList();
     str_list.Delete(0);
@@ -353,7 +358,7 @@ TEST_F(_ListTest,DeleteTest){
     EXPECT_STREQ("two", return_string->getStr());
 } 
 
-TEST_F(_ListTest,DeleteListTest){
+TEST_F(ListTest,DeleteListTest){
     //See also Clear
     //It looks like this deletes a subset of a list based on a list of indices
     _List str_list = createStrList();
@@ -364,16 +369,27 @@ TEST_F(_ListTest,DeleteListTest){
     EXPECT_EQ(3,str_list.lLength);
 } 
 
-TEST_F(_ListTest,ReplaceTest){
-    _List str_list = createStrList();
-    str_list.Replace(1, new _String("help"), false);
-    _String* return_string = (_String*)str_list[1];
-    EXPECT_STREQ("help", return_string->getStr());
-} 
+/*
+ *TEST_F(ListTest,ReplaceTest){
+ *    _List str_list = createStrList();
+ *    str_list.Replace(1, new _String("help"), false);
+ *    _String* return_string = (_String*)str_list[1];
+ *    EXPECT_STREQ("help", return_string->getStr());
+ *
+ *    str_list.Replace(1, new _String("two"), false);
+ *    _String* return_string = (_String*)str_list[1];
+ *    EXPECT_STREQ("help", return_string->getStr());
+ *
+ *    str_list.Replace(1, new _String("two"), true);
+ *    _String* return_string = (_String*)str_list[1];
+ *    EXPECT_STREQ("two", return_string->getStr());
+ *} 
+ */
 
-TEST_F(_ListTest,IntersectTest){
+TEST_F(ListTest,IntersectTest){
 // compute the union of two sorted lists
 // each repeat appears exactly once
+    //TODO:
 
     _List str_list = createStrList();
 

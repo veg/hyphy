@@ -156,8 +156,8 @@ _List::_List (const _List& l, long from, long to)
     }
 }
 
-//______________________________________________________________
-// stack copy contructor
+//__________________________________________________________________________
+// construct a list of substrings from the original string separated by char
 _List::_List (BaseRef ss, char sep)
 {
     _String* s = (_String*)ss;
@@ -175,7 +175,6 @@ _List::_List (BaseRef ss, char sep)
         AppendNewInstance (new _String(*s,cp,-1));
     }
 }
-
 
 //______________________________________________________________
 // coordinate normalizer
@@ -839,6 +838,7 @@ void _List::operator << (BaseRef br)
             checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
         }
     }
+
     ((BaseRef*)lData)[lLength-1]=br;
     br->nInstances++;
 }
@@ -853,7 +853,6 @@ void _List::AppendNewInstance (BaseRef br)
         checkPointer (br);
     }
 }
-
 
 //______________________________________________________________
 void _List::operator << (_List& source)
@@ -1175,6 +1174,7 @@ long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
     }
     return -1;
 }
+
 //______________________________________________________________
 
 BaseRef  _List::Join (BaseRef spacer)
@@ -1232,6 +1232,7 @@ long  _List::BinaryFind (BaseRef s)
 
 long  _List::BinaryInsert (BaseRef s)
 {
+
     if (!lLength) {
         InsertElement (s,0,true);
         return 0;
@@ -1249,6 +1250,7 @@ long  _List::BinaryInsert (BaseRef s)
     DeleteObject(s2);
     InsertElement (s,pos,true);
     return pos>=lLength?lLength-1:pos;
+
 }
 
 //______________________________________________________________
@@ -2267,8 +2269,8 @@ long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
 // compute the number of shared of two sorted lists
 {
     long  c1    = 0,
-          c2  = 0,
-          res     = 0;
+          c2    = 0,
+          res   = 0;
 
 
     while (c1<l1.lLength && c2<lLength) {
@@ -2588,7 +2590,7 @@ long  _AVLList::Next (long d, _SimpleList& hist)
                 if (rightChild.lData[x] != d) {
                     return x;
                 }
-
+                //TODO:???
                 d = x;
             }
 
@@ -2681,7 +2683,7 @@ long  _AVLList::Prev (long d, _SimpleList& hist)
                 if (leftChild.lData[x] != d) {
                     return x;
                 }
-
+                //TODO:???
                 d = x;
             }
 
@@ -2719,8 +2721,11 @@ void  _AVLList::ReorderList (_SimpleList *s)
                 (*s) << curNode;
             }
             reorderMe.InsertElement (((BaseRef*)dataList->lData)[curNode],-1,false,false);
+
+            //TODO:???
             curNode = rightChild.lData[curNode];
             nodeStack.Delete (h, false);
+
         } else {
             break;
         }
@@ -2805,6 +2810,7 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
         nodeStack << t;
         t = leftChild.lData[t];
     }
+
     if (long h = nodeStack.lLength) {
         h--;
         t = nodeStack.lData[h];
@@ -2813,7 +2819,6 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
         nodeStack.Delete (h, false);
         return r;
     }
-
     return -1;
 }
 

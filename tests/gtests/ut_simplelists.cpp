@@ -32,18 +32,18 @@ namespace
 {
 
 // The fixture for testing class Foo.
-class _SimpleListTest : public ::testing::Test
+class SimpleListTest : public ::testing::Test
 {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _SimpleListTest() {
+    SimpleListTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_SimpleListTest() {
+    virtual ~SimpleListTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -63,7 +63,7 @@ protected:
 };
 
 
-TEST_F(_SimpleListTest, _PopulateTest){
+TEST_F(SimpleListTest, _PopulateTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -71,63 +71,77 @@ TEST_F(_SimpleListTest, _PopulateTest){
     EXPECT_EQ(7,sl[3]);
 }
 
-TEST_F(_SimpleListTest, _NormalizeCoordinatesTest){
+TEST_F(SimpleListTest, _NormalizeCoordinatesTest){
 // TODO: This function is questionable. 
 // It doesn't seem to really normalize anything and it's not used
 }
 
-TEST_F(_SimpleListTest, _OffsetTest){
+TEST_F(SimpleListTest, _OffsetTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(7,sl[3]);
 }
 
-TEST_F(_SimpleListTest, _ElementTest){
+TEST_F(SimpleListTest, _ElementTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(7,sl.Element(3));
 }
 
-TEST_F(_SimpleListTest, _PopTest){
+TEST_F(SimpleListTest, _PopTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(7,sl.Pop());
     EXPECT_EQ(3,sl.lLength);
 }
 
-TEST_F(_SimpleListTest, _countitemsTest){
+TEST_F(SimpleListTest, _countitemsTest){
     //TODO: Not camelcased
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(4,sl.countitems());
 }
 
-TEST_F(_SimpleListTest, _EqualTest){
+TEST_F(SimpleListTest, _EqualTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
     _SimpleList sl2; 
-    sl.Populate(4,1,2);
+    sl2.Populate(4,1,2);
 
     _SimpleList sl3; 
-    sl.Populate(4,1,3);
+    sl3.Populate(4,1,3);
 
     EXPECT_EQ(true,sl.Equal(sl2));
     EXPECT_EQ(false,sl.Equal(sl3));
 }
 
-TEST_F(_SimpleListTest, _MergeTest){
-//TODO: This seems like it could be optimized
+TEST_F(SimpleListTest, _MergeTest){
+    //Takes 4 parameters
+    _SimpleList sl; 
+
+    _SimpleList l1; 
+    l1.Populate(4,1,1);
+
+    _SimpleList l2; 
+    l2.Populate(4,5,1);
+
+    //List that are automatically going to be filled
+    _SimpleList m1; 
+    _SimpleList m2; 
+
+    sl.Merge(l1,l2,&m1,&m2);
+    EXPECT_EQ(8,sl[8]);
 }
 
 
-TEST_F(_SimpleListTest,AmpersandOpTest){}
-TEST_F(_SimpleListTest,DoubleLessOpTest){}
-TEST_F(_SimpleListTest,DoubleLess2OpTest){}
-TEST_F(_SimpleListTest,DoubleGreaterOpTest){}
+TEST_F(SimpleListTest,AmpersandOpTest){}
+TEST_F(SimpleListTest,DoubleLessOpTest){}
+TEST_F(SimpleListTest,DoubleLess2OpTest){}
+TEST_F(SimpleListTest,DoubleGreaterOpTest){}
 
 
-TEST_F(_SimpleListTest, _ListToPartitionStringTest){
+TEST_F(SimpleListTest, _ListToPartitionStringTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -135,11 +149,11 @@ TEST_F(_SimpleListTest, _ListToPartitionStringTest){
     EXPECT_STREQ("1,3,5,7", returned_string->getStr());
 }
 
-TEST_F(_SimpleListTest, _RequestSpaceTest){
+TEST_F(SimpleListTest, _RequestSpaceTest){
 //TODO
 }
 
-TEST_F(_SimpleListTest, _toStrTest){
+TEST_F(SimpleListTest, _toStrTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -147,11 +161,11 @@ TEST_F(_SimpleListTest, _toStrTest){
     EXPECT_STREQ("{1,3,5,7}", returned_string->getStr());
 }
 
-TEST_F(_SimpleListTest, _makeDynamicTest){
+TEST_F(SimpleListTest, _makeDynamicTest){
 //TODO
 }
 
-TEST_F(_SimpleListTest, _MinTest){
+TEST_F(SimpleListTest, _MinTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -159,7 +173,7 @@ TEST_F(_SimpleListTest, _MinTest){
     EXPECT_EQ(1, min);
 }
 
-TEST_F(_SimpleListTest, _MaxTest){
+TEST_F(SimpleListTest, _MaxTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -167,7 +181,7 @@ TEST_F(_SimpleListTest, _MaxTest){
     EXPECT_EQ(1, min);
 }
 
-TEST_F(_SimpleListTest, _ClearFormulasInListTest){
+TEST_F(SimpleListTest, _ClearFormulasInListTest){
     _SimpleList sl;
     sl.Populate(4,1,2);
 
@@ -175,11 +189,11 @@ TEST_F(_SimpleListTest, _ClearFormulasInListTest){
     EXPECT_EQ(7, max);
 }
 
-TEST_F(_SimpleListTest, _DebugVarListTest){
+TEST_F(SimpleListTest, _DebugVarListTest){
     //TODO, We don't have to do a UnitTest for this
 }
 
-TEST_F(_SimpleListTest, _CountingSortTest){
+TEST_F(SimpleListTest, _CountingSortTest){
     //TODO
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -192,7 +206,7 @@ TEST_F(_SimpleListTest, _CountingSortTest){
     EXPECT_EQ(1,1);
 }
 
-TEST_F(_SimpleListTest, _BinaryInsertTest){
+TEST_F(SimpleListTest, _BinaryInsertTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -203,7 +217,7 @@ TEST_F(_SimpleListTest, _BinaryInsertTest){
 
 }
 
-TEST_F(_SimpleListTest, _FindTest){
+TEST_F(SimpleListTest, _FindTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -216,7 +230,7 @@ TEST_F(_SimpleListTest, _FindTest){
 
 }
 
-TEST_F(_SimpleListTest, _FindSteppingTest){
+TEST_F(SimpleListTest, _FindSteppingTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -232,7 +246,7 @@ TEST_F(_SimpleListTest, _FindSteppingTest){
 
 }
 
-TEST_F(_SimpleListTest, _FilterRangeTest){
+TEST_F(SimpleListTest, _FilterRangeTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -241,7 +255,7 @@ TEST_F(_SimpleListTest, _FilterRangeTest){
     EXPECT_EQ(3, sl[0]);
 }
 
-TEST_F(_SimpleListTest, _BinaryFindTest){
+TEST_F(SimpleListTest, _BinaryFindTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,3);
@@ -250,7 +264,7 @@ TEST_F(_SimpleListTest, _BinaryFindTest){
 
 }
 
-TEST_F(_SimpleListTest, _SortTest){
+TEST_F(SimpleListTest, _SortTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     sl.Sort(false);
@@ -266,7 +280,7 @@ TEST_F(_SimpleListTest, _SortTest){
 }
 
 
-TEST_F(_SimpleListTest, _CompareTest){
+TEST_F(SimpleListTest, _CompareTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -280,26 +294,26 @@ TEST_F(_SimpleListTest, _CompareTest){
     EXPECT_EQ( 0, resp);
 }
 
-TEST_F(_SimpleListTest, _ClearTest){
+TEST_F(SimpleListTest, _ClearTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     sl.Clear(true);
     EXPECT_EQ(0, sl.lLength);
 }
 
-TEST_F(_SimpleListTest, _DeleteTest){
+TEST_F(SimpleListTest, _DeleteTest){
     _SimpleList sl;
     sl.Populate(4,1,2);
     sl.Delete(0,true);
     EXPECT_EQ(3, sl[0]);
 }
 
-//TEST_F(_SimpleListTest, _TrimMemoryTest){
+//TEST_F(SimpleListTest, _TrimMemoryTest){
 ////TODO
 
 //}
 
-TEST_F(_SimpleListTest, _DeleteDuplicatesTest){
+TEST_F(SimpleListTest, _DeleteDuplicatesTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     sl << 5;
@@ -311,7 +325,7 @@ TEST_F(_SimpleListTest, _DeleteDuplicatesTest){
     EXPECT_EQ(7, sl[3]);
 }
 
-TEST_F(_SimpleListTest, _DeleteListTest){
+TEST_F(SimpleListTest, _DeleteListTest){
 
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -323,7 +337,7 @@ TEST_F(_SimpleListTest, _DeleteListTest){
     EXPECT_EQ(7, sl[0]);
 }
 
-TEST_F(_SimpleListTest, _DisplaceTest){
+TEST_F(SimpleListTest, _DisplaceTest){
 
     _SimpleList sl; 
     sl.Populate(10,1,1);
@@ -334,7 +348,7 @@ TEST_F(_SimpleListTest, _DisplaceTest){
 
 }
 
-TEST_F(_SimpleListTest, _PermuteWithReplacementTest){
+TEST_F(SimpleListTest, _PermuteWithReplacementTest){
 
     //TODO
     _SimpleList sl; 
@@ -344,7 +358,7 @@ TEST_F(_SimpleListTest, _PermuteWithReplacementTest){
 
 }
 
-TEST_F(_SimpleListTest, _PermuteTest){
+TEST_F(SimpleListTest, _PermuteTest){
 
     //TODO
     _SimpleList sl; 
@@ -355,7 +369,7 @@ TEST_F(_SimpleListTest, _PermuteTest){
 
 }
 
-TEST_F(_SimpleListTest, _NChooseKTest){
+TEST_F(SimpleListTest, _NChooseKTest){
 
     _SimpleList sl; 
     sl.Populate(10,1,1);
@@ -377,7 +391,7 @@ TEST_F(_SimpleListTest, _NChooseKTest){
 
 }
 
-TEST_F(_SimpleListTest, _SwapTest){
+TEST_F(SimpleListTest, _SwapTest){
 
     _SimpleList sl; 
     sl.Populate(10,1,1);
@@ -387,7 +401,7 @@ TEST_F(_SimpleListTest, _SwapTest){
     EXPECT_EQ(1,sl[1]);
 }
 
-TEST_F(_SimpleListTest, _FlipTest){
+TEST_F(SimpleListTest, _FlipTest){
 
     _SimpleList sl; 
     sl.Populate(10,1,1);
@@ -398,12 +412,12 @@ TEST_F(_SimpleListTest, _FlipTest){
 
 }
 
-//TEST_F(_SimpleListTest, _RecursiveIndexSortTest){
+//TEST_F(SimpleListTest, _RecursiveIndexSortTest){
 ////TODO
 
 //}
 
-TEST_F(_SimpleListTest, _UnionTest){
+TEST_F(SimpleListTest, _UnionTest){
 
     _SimpleList sl; 
 
@@ -417,7 +431,7 @@ TEST_F(_SimpleListTest, _UnionTest){
 
 }
 
-TEST_F(_SimpleListTest, _IntersectTest){
+TEST_F(SimpleListTest, _IntersectTest){
 
     _SimpleList sl; 
 
@@ -431,7 +445,7 @@ TEST_F(_SimpleListTest, _IntersectTest){
 
 }
 
-TEST_F(_SimpleListTest, _CountCommonElementsTest){
+TEST_F(SimpleListTest, _CountCommonElementsTest){
 
     _SimpleList sl; 
 
@@ -445,7 +459,7 @@ TEST_F(_SimpleListTest, _CountCommonElementsTest){
 
 }
 
-TEST_F(_SimpleListTest, _XORTest){
+TEST_F(SimpleListTest, _XORTest){
 
     _SimpleList sl; 
 
@@ -459,7 +473,7 @@ TEST_F(_SimpleListTest, _XORTest){
 
 }
 
-TEST_F(_SimpleListTest, _SubtractTest){
+TEST_F(SimpleListTest, _SubtractTest){
 
     _SimpleList sl; 
 

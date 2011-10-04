@@ -18,8 +18,7 @@
 #include <time.h>
 #include <math.h>
 
-
-_List _AVcreateStrList() {
+_List createAVLStrList() {
 
     _List str_list;
 
@@ -38,18 +37,18 @@ namespace
 {
 
 // The fixture for testing class Foo.
-class _AVLListTest : public ::testing::Test
+class AVLListTest : public ::testing::Test
 {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _AVLListTest() {
+    AVLListTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_AVLListTest() {
+    virtual ~AVLListTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -68,18 +67,18 @@ protected:
 
 };
 
-class _AVLListXTest : public ::testing::Test
+class AVLListXTest : public ::testing::Test
 {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _AVLListXTest() {
+    AVLListXTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_AVLListXTest() {
+    virtual ~AVLListXTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -98,18 +97,18 @@ protected:
 
 };
 
-class _AVLListXLTest : public ::testing::Test
+class AVLListXLTest : public ::testing::Test
 {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
-    _AVLListXLTest() {
+    AVLListXLTest() {
         // You can do set-up work for each test here.
     }
 
-    virtual ~_AVLListXLTest() {
+    virtual ~AVLListXLTest() {
         // You can do clean-up work that doesn't throw exceptions here.
     }
 
@@ -128,7 +127,7 @@ protected:
 
 };
 
-TEST_F(_AVLListTest,FindTest){
+TEST_F(AVLListTest,FindTest){
     //AVL List always takes a pointer to a SimpleList
     //Keeps going down through right children until lData is 0
     long info; 
@@ -145,13 +144,12 @@ TEST_F(_AVLListTest,FindTest){
     EXPECT_EQ(3,info);
  }
 
-TEST_F(_AVLListTest,FindLongTest){
+TEST_F(AVLListTest,FindLongTest){
     //AVL List always takes a pointer to a SimpleList
     //Keeps going down through right children until lData is 0
     long info; 
     _SimpleList sl; 
 
-    //sl.Populate(4,1,2);
     _AVLList al(&sl);
 
     for(int i=0; i<=10; i++) {
@@ -162,107 +160,128 @@ TEST_F(_AVLListTest,FindLongTest){
     EXPECT_EQ(3,info);
 }
 
+TEST_F(AVLListTest,FindBestTest){
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through right children until lData is 0
+    long info; 
+    _SimpleList sl; 
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+    
+    info = al.FindLong(3);
+    EXPECT_EQ(3,info);
+}
+
+TEST_F(AVLListTest,NextTest){
+
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through right children until lData is 0
+    long info; 
+    _SimpleList sl; 
+    _SimpleList hist;
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+    
+    info = al.Next(3, hist);
+    EXPECT_EQ(4,info);
+
+}
+
+TEST_F(AVLListTest,PrevTest){
+
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through right children until lData is 0
+    long info; 
+    _SimpleList sl; 
+    _SimpleList hist;
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+    
+    info = al.Prev(3, hist);
+    EXPECT_EQ(2,info);
+
+}
+
+TEST_F(AVLListTest,FirstTest){
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through left children until lData is 0
+
+    long index; 
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    index = al.First();
+    EXPECT_EQ(0,index);
+
+}
+
+TEST_F(AVLListTest,LastTest){
+
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through left children until lData is 0
+    long index; 
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    index = al.Last();
+    EXPECT_EQ(10,index);
+}
+
+TEST_F(AVLListTest,GetByIndexTest){
+    //AVL List always takes a pointer to a SimpleList
+    //Keeps going down through right children until lData is 0
+    long info; 
+    _SimpleList sl; 
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+    
+    info = al.GetByIndex(3);
+    EXPECT_EQ(3,info);
+}
+
+TEST_F(AVLListTest,ReorderListTest){
+
+    long info; 
+    _SimpleList sl,sl2;
+    _AVLList al(&sl);
+    
+    al.Insert((BaseRef)5, 0, true, false);
+    al.Insert((BaseRef)3, 0, true, false);
+    al.Insert((BaseRef)7, 0, true, false);
+    al.Insert((BaseRef)1, 0, true, false);
+    al.Insert((BaseRef)9, 0, true, false);
+    
+    //A call to Reorderlist may be
+    al.ReorderList(&sl2);
+    EXPECT_EQ(3,sl2[0]);
+}
+
 /*
- *TEST_F(_AVLListTest,FindBestTest){
- *    //TODO. It seems like it would only keep going 
- *    //until we have a leftChild or 0
- *
- *}
- *
- *TEST_F(_AVLListTest,FindTest){
- *
- *    //AVL List always takes a pointer to a SimpleList
- *    long index; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *    index = al.Find(5);
- *    
- *    EXPECT_EQ(2,index);
- *
- *}
- *
- *TEST_F(_AVLListTest,NextTest){
- *    //TODO
- *
- *
- *}
- *
- *TEST_F(_AVLListTest,FirstTest){
- *    //TODO
- *    //AVL List always takes a pointer to a SimpleList
- *    //Keeps going down through left children until lData is 0
- *
- *    long index; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    index = al.First();
- *    EXPECT_EQ(1,index);
- *}
- *
- *TEST_F(_AVLListTest,LastTest){
- *    //TODO
- *    //AVL List always takes a pointer to a SimpleList
- *    //Keeps going down through right children until lData is 0
- *
- *    long index; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    index = al.Last();
- *    EXPECT_EQ(4,index);
- *}
- *
- *TEST_F(_AVLListTest,GetByIndexTest){
- *    //AVL List always takes a pointer to a SimpleList
- *    //Keeps going down through right children until lData is 0
- *    long info; 
- *    _SimpleList sl; 
- *
- *    //sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    for(int i=0; i<=10; i++) {
- *        al.Insert((BaseRef)i, 0, true, false);    
- *    }
- *    
- *    info = al.GetByIndex(3);
- *    EXPECT_EQ(7,info);
- * 
- *}
- *
- *TEST_F(_AVLListTest,PrevTest){
- *    //TODO
- *}
- *
- *TEST_F(_AVLListTest,ReorderListTest){
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *    EXPECT_EQ(1,1);
- *}
- *
- *TEST_F(_AVLListTest,ConsistencyCheckTest){
+ *TEST_F(AVLListTest,ConsistencyCheckTest){
  *    //Checks to see if it is a valid AVL tree
  *
  *    long info; 
@@ -272,215 +291,226 @@ TEST_F(_AVLListTest,FindLongTest){
  *    _AVLList al(&sl);
  *
  *    //A call to Reorderlist may be
- *    al.ReorderList();
  *    al.ConsistencyCheckTest();
  *
  *    EXPECT_EQ(1,1);
  *
  *}
- *
- *TEST_F(_AVLListTest,TraverserTest){
- *    //TODO
- *}
- *
- *TEST_F(_AVLListTest,toStrTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    EXPECT_STREQ("hi",(String*)al.toStr());
- *
- *}
- *
- *TEST_F(_AVLListTest,RetrieveTest) {
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    info = al.GetByIndexTest(3);
- *    EXPECT_EQ(7,info);
- *
- *}
- *
- *TEST_F(_AVLListTest,ClearTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    al.Clear(true);
- *
- *    EXPECT_EQ(-1,al.root);
- *
- *}
- *
- *TEST_F(_AVLListTest,InsertTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *    al.Insert((long)1,4,false);
- *    EXPECT_EQ(5,al.lLength);
- *
- *}
- *
- *TEST_F(_AVLListTest,InsertDataTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    long a = al.InsertData((long)1);
- *    EXPECT_EQ(1,a);
- *}
- *
- *TEST_F(_AVLListTest,HasDataTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    EXPECT_EQ(true, al.HasData());
- *}
- *
- *TEST_F(_AVLListTest,DeleteTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *
- *    al.Delete(0,true);
- *    EXPECT_EQ(3, al[0]);
- *
- *}
- *
- *TEST_F(_AVLListTest,countitemsTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLList al(&sl);
- *
- *    //A call to Reorderlist may be
- *    al.ReorderList();
- *
- *    al.countitemsTest();
- *    EXPECT_EQ(3, al[0]);
- *
- *}
- *
- *
- *TEST_F(_AVLListXTest,ClearTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLListX alx(&sl);
- *
- *    //A call to Reorderlist may be
- *    alx.ReorderList();
- *
- *    alx.Clear(true);
- *
- *    EXPECT_EQ(-1,alx.root);
- *
- *}
- *
- *TEST_F(_AVLListXTest,toStrTest){
+ */
+
+
+TEST_F(AVLListTest,TraverserTest){
+
+    long info; 
+    long t = 5;
+    long r = 0;
+
+    _SimpleList sl,sl2;
+    _AVLList al(&sl);
+
+    al.Insert((BaseRef)5, 0, true, false);
+    al.Insert((BaseRef)3, 0, true, false);
+    al.Insert((BaseRef)7, 0, true, false);
+    al.Insert((BaseRef)1, 0, true, false);
+    al.Insert((BaseRef)9, 0, true, false);
+
+    //A call to Reorderlist may be
+    al.Traverser(sl2, t, r);
+    EXPECT_EQ(0,sl2[0]);
+}
+
+TEST_F(AVLListTest,toStrTest){
+
+    long info;
+    _SimpleList sl;
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);
+    }
+
+    _String* return_str = (_String*)al.toStr();
+    EXPECT_STREQ("0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", return_str->getStr());
+}
+
+TEST_F(AVLListTest,RetrieveTest) {
+    
+    long info; 
+
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    info = (long)al.Retrieve(3);
+    EXPECT_EQ(3,info);
+}
+
+TEST_F(AVLListTest,ClearTest){
+
+    long info; 
+    _SimpleList sl; 
+
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    al.Clear(false);
+
+    EXPECT_EQ(-1,al.root);
+
+}
+
+TEST_F(AVLListTest,InsertTest){
+    long info; 
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    al.Insert((BaseRef)13,4,false);
+    EXPECT_EQ(13,al.dataList->lData[11]);
+    
+    al.Insert((BaseRef)13,4,false);
+    EXPECT_FALSE(al.dataList->lData[12]==13);
+}
+
+TEST_F(AVLListTest,InsertDataTest){
+    long info;
+    _SimpleList sl;
+    _AVLList al(&sl);
+
+    long a = al.InsertData((BaseRef)1, 1, false);
+    EXPECT_EQ(0,a);
+    
+    a = al.InsertData((BaseRef)1, 1, false);
+    EXPECT_EQ(1,a);
+}
+
+TEST_F(AVLListTest,HasDataTest){
+    long info; 
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    EXPECT_EQ(true, al.HasData(2));
+    //Do not understand the fail condition
+    //EXPECT_EQ(false, al.HasData(20));
+}
+
+
+TEST_F(AVLListTest,DeleteTest){
+    long info; 
+    _SimpleList sl; 
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    al.Delete((BaseRef)1,false);
+    EXPECT_EQ(0, al.dataList->lData[1]);
+}
+
+TEST_F(AVLListTest,countitemsTest){
+
+    long info; 
+    _SimpleList sl;
+    _AVLList al(&sl);
+
+    for(int i=0; i<=10; i++) {
+        al.Insert((BaseRef)i, 0, true, false);    
+    }
+    
+    EXPECT_EQ(11, al.countitems());
+}
+
+/*
+ *TEST_F(AVLListXTest,toStrTest){
+ *    //_AVLListX is supposed to be strings
  *
  *    long info; 
  *    _SimpleList sl; 
  *
- *    sl.Populate(4,1,2);
- *    _AVLListX alx(&sl);
+ *    _AVLListX al(&sl);
  *
- *    EXPECT_STREQ("hi",(String*)alx.toStr());
+ *    al.InsertData((BaseRef)"zero", 0, true, false);    
+ *    al.InsertData((BaseRef)"one", 0, true, false);    
+ *    al.InsertData((BaseRef)"two", 0, true, false);    
+ *    al.InsertData((BaseRef)"three", 0, true, false);    
+ *    al.Insert((BaseRef)"three", 0, true, false);    
+ *
+ *    _String* return_str = (_String*)al.toStr();
+ *    EXPECT_STREQ("0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", return_str->getStr());
  *
  *}
  *
- *TEST_F(_AVLListXLTest,toStrTest){
+ *TEST_F(AVLListXLTest,toStrTest){
  *
  *    long info; 
  *    _SimpleList sl; 
  *
- *    sl.Populate(4,1,2);
- *    _AVLListX alx(&sl);
+ *    _AVLListXL al(&sl);
  *
- *    EXPECT_STREQ("hi",(String*)alx.toStr());
+ *    for(int i=0; i<=10; i++) {
+ *        al.Insert((BaseRef)i, 0, true, false);    
+ *    }
  *
- *}
- *
- *TEST_F(_AVLListXLTest,ClearTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLListX alx(&sl);
- *
- *    //A call to Reorderlist may be
- *    alx.ReorderList();
- *
- *    alx.Clear(true);
- *
- *    EXPECT_EQ(-1,alx.root);
+ *    _String* return_str = (_String*)al.toStr();
+ *    EXPECT_STREQ("0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n", return_str->getStr());
  *
  *}
- *
- *TEST_F(_AVLListXTest,InsertDataTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLListX alx(&sl);
- *
- *    //A call to Reorderlist may be
- *    alx.ReorderList();
- *
- *    long a = alx.InsertData((long)1);
- *    EXPECT_EQ(1,a);
- *
- *}
- *
- *TEST_F(_AVLListXLTest,InsertDataTest){
+ */
+
+TEST_F(AVLListXLTest,ClearTest){
+
+    long info; 
+    _SimpleList sl; 
+    _AVLList alxl(&sl);
+
+    for(int i=0; i<=10; i++) {
+        alxl.Insert((BaseRef)i, 0, true, false);    
+    }
+
+    alxl.Clear(false);
+    EXPECT_EQ(-1,alxl.root);
+
+}
+
+TEST_F(AVLListXTest,InsertDataTest){
+
+    long info;
+    _SimpleList sl;
+    _AVLListX al(&sl);
+
+    long a = al.InsertData((BaseRef)1, 1, false);
+    EXPECT_EQ(0,a);
+
+}
+
+TEST_F(AVLListXLTest,InsertDataTest){
+
+    long info;
+    _SimpleList sl;
+    _AVLListX al(&sl);
+
+    long a = al.InsertData((BaseRef)1, 1, false);
+    EXPECT_EQ(0,a);
+
+}
+
+/*
+ *TEST_F(AVLListXLTest,DeleteXtraTest){
  *
  *    long info; 
  *    _SimpleList sl; 
@@ -491,28 +521,12 @@ TEST_F(_AVLListTest,FindLongTest){
  *    //A call to Reorderlist may be
  *    alxl.ReorderList();
  *
- *    long a = alxl.InsertData((long)1);
- *    EXPECT_EQ(1,a);
- *
- *}
- *
- *TEST_F(_AVLListXLTest,DeleteXtraTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLListXL alxl(&sl);
- *
- *    //A call to Reorderlist may be
- *    alxl.ReorderList();
- *
- *    alxl.DeleteXtra((long)0);
+ *    alxl.DeleteXtra(0);
  *    EXPECT_EQ(3,a);
  *
  *}
  *
- *TEST_F(_AVLListXTest,DeleteXtraTest){
+ *TEST_F(AVLListXTest,DeleteXtraTest){
  *
  *    long info; 
  *    _SimpleList sl; 
@@ -527,84 +541,67 @@ TEST_F(_AVLListTest,FindLongTest){
  *    EXPECT_EQ(3,a);
  *
  *}
+ */
+
+/*
+ *TEST_F(AVLListXTest,PopulateFromListTest){
  *
- *TEST_F(_AVLListXTest,PopulateFromListTest){
+ *    //It seems as though if you don't use a pointer to 
+ *    //a list, you are going to segfault
+ *    //segfaults on command line but not in xcode 
  *
- *    _List str_list = createStrList();
- *    _AVLListX alx;
- *
- *    alx.PopulateFromList(str_list)
- *
- *    _String* return_str = (_String*)list[4];
- *    EXPECT_STREQ("four", return_str->getStr());
- *}
- *
- *
- *TEST_F(_AVLListXTest,GetXtraTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
+ *    _SimpleList sl;
  *    _AVLListX alx(&sl);
- *
- *    //A call to Reorderlist may be
- *    alx.ReorderList();
- *
- *    long x = alx.GetXtra((long)0);
- *    EXPECT_EQ(1,x);
- *
+ *    
+ *    _String test_string = _String("house,condo,hyphy");
+ *    _String* sub_string = new _String(",");
+ *    
+ *    _List* result_list = test_string.Tokenize(sub_string);
+ *    
+ *    alx.PopulateFromList(*result_list);
+ *    _String* return_str = (_String*)alx.dataList->lData[2];
+ *    EXPECT_STREQ("hyphy", return_str->getStr());
  *}
- *
- *TEST_F(_AVLListXLTest,GetXtraTest){
+ */
+
+
+/*
+ *TEST_F(AVLListXTest,SetAndGetXtraTest){
+ *    //It seems as though if you don't use a pointer to 
+ *    //a list, you are going to segfault
  *
  *    long info; 
  *    _SimpleList sl; 
  *
- *    sl.Populate(4,1,2);
- *    _AVLListXL alxl(&sl);
- *
- *    //A call to Reorderlist may be
- *    alxl.ReorderList();
- *
- *    long x = alxl.GetXtra((long)0);
- *    EXPECT_EQ(1,x);
- *
- *}
- *
- *TEST_F(_AVLListXTest,SetXtraTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
  *    _AVLListX alx(&sl);
- *
- *    //A call to Reorderlist may be
- *    alx.ReorderList();
+ *    _String test_string = _String("house,condo,hyphy");
+ *    _String* sub_string = new _String(",");
+ *    _List* result_list = test_string.Tokenize(sub_string);
+ *    alx.PopulateFromList(*result_list);
  *
  *    alx.SetXtra(0,13);
- *
  *    long x = alx.GetXtra((long)0);
- *    EXPECT_EQ(13,x);
- *
- *}
- *
- *TEST_F(_AVLListXLTest,SetXtraTest){
- *
- *    long info; 
- *    _SimpleList sl; 
- *
- *    sl.Populate(4,1,2);
- *    _AVLListXL alxl(&sl);
- *
- *    //A call to Reorderlist may be
- *    alxl.ReorderList();
- *
- *    alxl.SetXtra(0,13);
- *    long x = alxl.GetXtra((long)0);
  *    EXPECT_EQ(13,x);
  *
  *}
  */
+
+/*
+ *TEST_F(AVLListXLTest,SetAndGetXtraTest){
+ *
+ *    long info; 
+ *    _SimpleList sl; 
+ *
+ *    _AVLListXL alxl(&sl);
+ *
+ *    for(int i=0; i<=10; i++) {
+ *        alxl.Insert((BaseRef)i, 0, true, false);    
+ *    }
+ *
+ *    alxl.SetXtra(0,13);
+ *    long x = alxl.GetXtra((long)0);
+ *    EXPECT_EQ(13,x);
+ *}
+ */
+
 }
