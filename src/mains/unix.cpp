@@ -627,7 +627,8 @@ int main (int argc, char* argv[])
         //if (mpiParallelOptimizer || mpiPartitionOptimizer)
         //  mpiOptimizerLoop (rank, size);
         //else
-        mpiNormalLoop (rank, size, libDirectory);
+        _String defaultBaseDirectory = *(_String*)pathNames(0);
+        mpiNormalLoop (rank, size, defaultBaseDirectory);
         /*argFile = "SHUTDOWN_CONFIRM";
         MPISendString (argFile, senderID);*/
     } else {
