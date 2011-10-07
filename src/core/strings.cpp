@@ -450,6 +450,7 @@ void _String::Delete (long from, long to)
     if (from<0) {
         from = 0;
     }
+
     if (to<0) {
         to = sLength-1;
     }
