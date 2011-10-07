@@ -5,6 +5,9 @@ from distutils.sysconfig import get_python_inc
 from os                  import listdir, getcwd, path
 from glob                import glob
 import sys
+
+from platform import architecture
+
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
 
@@ -36,6 +39,8 @@ sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles +
 includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
 includePaths += [linkPath, contribPath]
 
+# check for 64bit and define as such
+define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
 setup(
     name = 'HyPhy',
@@ -55,17 +60,26 @@ setup(
                              ('__MP__', None),
                              ('__MP2__', None),
                              ('_SLKP_LFENGINE_REWRITE_', None),
-                             ('__HEADLESS__', None)],
+                             ('__HEADLESS__', None)] + define_macros,
             libraries = ['pthread', 'ssl', 'crypto', 'curl'],
             extra_compile_args = [
-#                     '-Wno-int-to-pointer-cast',
-#                     '-Wno-pointer-to-int-cast',
+                    '-Wno-int-to-pointer-cast',
+                    # '-Wno-pointer-to-int-cast',
                     '-Wno-char-subscripts',
                     '-Wno-sign-compare',
+                    '-Wno-parentheses',
+                    '-Wno-uninitialized',
+                    '-Wno-conversion-null',
+                    '-Wno-unused-variable',
+                    '-Wno-unused-but-set-variable',
                     '-fsigned-char',
                     '-O3',
                     '-fpermissive',
-                    '-fPIC'
+                    '-fPIC',
+                    '-fopenmp'
+            ],
+            extra_link_args = [
+                    '-fopenmp'
             ]
     )]
 )
