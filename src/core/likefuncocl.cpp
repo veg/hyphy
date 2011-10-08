@@ -416,7 +416,7 @@ int _OCLEvaluator::setupContext(void)
         Cleanup(EXIT_FAILURE);
     }
 
-//  "" FLOATPREC                                                                                                                        \
+    //  "" FLOATPREC
     // Create the program
     const char * program_source = "" OCLTARGET PRAGMADEF FLOATPREC OCLGPUResults KERNEL_STRING;
 
