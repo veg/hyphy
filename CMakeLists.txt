@@ -374,8 +374,8 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------
-    set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
-    set(RES_MACGUIDEBUG src/gui/mac/HyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
+    set(RES_MACGUI src/gui/mac/iHyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    set(RES_MACGUIDEBUG src/gui/mac/iHyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
     file(
         GLOB SRC_MACGUI
         src/gui/mac/*.cpp
