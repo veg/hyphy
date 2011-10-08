@@ -53,6 +53,8 @@ _String _tHYPHYAskFor           ("_THyPhyAskFor"),
 long    _tHYPHYDone             = 0;
 double  _tHYPHYValue            = 0.0;
 
+extern long systemCPUCount;
+
 _THyPhy * globalInterfaceInstance = nil;
 
 //_________________________________________________________
