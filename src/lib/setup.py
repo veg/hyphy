@@ -6,7 +6,7 @@ from os                  import listdir, getcwd, path
 from glob                import glob
 import sys
 
-from platform import architecture
+from platform import architecture, mac_ver
 
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
@@ -42,6 +42,9 @@ includePaths += [linkPath, contribPath]
 # check for 64bit and define as such
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
+# openmp on Mac OS X Lion is broken
+openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' else []
+
 setup(
     name = 'HyPhy',
     version = '0.1',
@@ -69,17 +72,16 @@ setup(
                     '-Wno-sign-compare',
                     '-Wno-parentheses',
                     '-Wno-uninitialized',
-                    '-Wno-conversion-null',
+#                    '-Wno-conversion-null',
                     '-Wno-unused-variable',
-                    '-Wno-unused-but-set-variable',
+#                    '-Wno-unused-but-set-variable',
+                    '-Wno-shorten-64-to-32',
                     '-fsigned-char',
                     '-O3',
                     '-fpermissive',
                     '-fPIC',
-                    '-fopenmp'
-            ],
+            ] + openmp,
             extra_link_args = [
-                    '-fopenmp'
-            ]
+            ] + openmp
     )]
 )
