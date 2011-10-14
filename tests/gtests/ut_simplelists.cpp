@@ -119,6 +119,19 @@ TEST_F(SimpleListTest, _EqualOpTest){
     EXPECT_EQ(3,sl[1]);
 }
 
+TEST_F(SimpleListTest, _DoubleLessOpTest){
+
+    _SimpleList sl;
+    sl.Populate(4,1,2);
+
+    _SimpleList sl2;
+    sl2.Populate(4,1,2);
+
+    sl << sl2;
+    EXPECT_EQ(1,sl[5]);
+
+}
+
 TEST_F(SimpleListTest, _OffsetTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
@@ -160,15 +173,20 @@ TEST_F(SimpleListTest, _EqualTest){
     _SimpleList sl2; 
     sl2.Populate(4,1,2);
 
-    _SimpleList sl3; 
+    _SimpleList sl3;
     sl3.Populate(4,1,3);
 
-    _SimpleList sl4; 
-    sl3.Populate(9,1,3);
+    _SimpleList sl4;
+    sl4.Populate(9,1,3);
+
+    _SimpleList sl5;
+    sl5.Populate(4,15,3);
+
 
     EXPECT_EQ(true,sl.Equal(sl2));
     EXPECT_EQ(false,sl.Equal(sl3));
     EXPECT_EQ(false,sl.Equal(sl4));
+    EXPECT_EQ(false,sl.Equal(sl5));
 }
 
 TEST_F(SimpleListTest, _MergeTest){

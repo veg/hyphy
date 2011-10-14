@@ -157,9 +157,9 @@ TEST_F(ListTest,EqualTest){
 }
 
 TEST_F(ListTest,AmpersandOpTest){
+
     //Append Operator
     _List str_list = createStrList();
-
     _String string ("one,two,three");
     _List* list = string.Tokenize(','); 
 
@@ -167,14 +167,31 @@ TEST_F(ListTest,AmpersandOpTest){
     _List* append_list = append_string.Tokenize(','); 
 
     _String expected_string("one,two,three,four,five,six");
+
     _List* expected_list = expected_string.Tokenize(','); 
 
     _List result_list = *list & *append_list;
 
     _String* result_string = (_String*)result_list[0];
-
     EXPECT_STREQ("one", result_string->getStr());
-} 
+
+
+    _List* l2  = new _List(); 
+    _List* al2 = new _List();
+    _List rl2 = *l2 & *al2;
+    EXPECT_EQ(0, rl2.lLength);
+}
+
+TEST_F(ListTest,Ampersand2OpTest){
+
+    _List str_list = createStrList();
+    _String* str = new _String("one");
+
+    str_list & (_String*)str;
+
+    _String* result_string = (_String*)str_list[str_list.lLength-1];
+    EXPECT_STREQ("one",result_string->getStr());
+}
 
 TEST_F(ListTest,DoubleAmpersandOpTest){
 
@@ -189,6 +206,12 @@ TEST_F(ListTest,DoubleAmpersandOpTest){
 
 }
 
+TEST_F(ListTest,DoubleAmpersand2OpTest){
+    _List str_list = createStrList();
+    str_list && "one"; 
+    _String* result_string = (_String*)str_list[str_list.lLength-1];
+    EXPECT_STREQ("one",result_string->getStr());
+}
 
 TEST_F(ListTest,DoubleLessOpTest){
 
@@ -235,6 +258,8 @@ TEST_F(ListTest,AppendNewInstanceTest){
 
 TEST_F(ListTest,PlaceTest){
     //Place Test
+
+    //TODO: Figure out when laLength would be larger than lLength
     _List str_list = createStrList();
     str_list.Place(new _String("one"));
 
