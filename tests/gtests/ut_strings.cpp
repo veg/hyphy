@@ -636,7 +636,7 @@ TEST_F(StringTest,FindBackwardsTest)
     EXPECT_EQ(-1, test4.FindBackwards("CD",5,4));
 
     _String test5 = _String ("AABBCCDD");
-    EXPECT_EQ(-1, test5.FindBackwards("CD",8,9));
+    EXPECT_EQ(-1, test5.FindBackwards("CDAACC",8,9));
 
 }
 

@@ -108,11 +108,9 @@ TEST_F(ListTest,_StackCopyConstructorListTest){
 
 TEST_F(ListTest,_SubStrConstructorListTest){
 
-    _String* str = new _String("one,two,three");
+    _String* str = new _String(",one,two,three");
     _List list = _List((BaseRef)str, ','); 
-    _String* return_string = (_String*)list[0];
-
-    //TODO: Contemplate whether we should be getting information from this class in this manner
+    _String* return_string = (_String*)list[1];
     EXPECT_STREQ("one", return_string->getStr());
 }
 
@@ -126,7 +124,6 @@ TEST_F(ListTest,_DataConstructorListTest){
 
 }
 
-
 TEST_F(ListTest,paranthesisTest){
 
     _List str_list = createStrList();
@@ -138,7 +135,8 @@ TEST_F(ListTest,paranthesisTest){
 TEST_F(ListTest,EqualOpTest){
 
     _List str_list = createStrList();
-    _List list = str_list;
+    _List list = _List();
+    list = str_list;
 
     _String* return_string = (_String*)list[4];
 
@@ -153,6 +151,9 @@ TEST_F(ListTest,EqualTest){
 
     EXPECT_EQ(true,list.Equal(str_list));
     EXPECT_EQ(false,str_list.Equal(l2));
+
+    list.AppendNewInstance(new _String("zero"));
+    EXPECT_EQ(false,str_list.Equal(list));
 }
 
 TEST_F(ListTest,AmpersandOpTest){
@@ -260,10 +261,9 @@ TEST_F(ListTest,getStrTest){
     EXPECT_STREQ(str->getStr(), result_string->getStr());
 }
 
-//TEST_F(ListTest,toFileStrTest){
-    ////TODO
-
-//}
+TEST_F(ListTest,toFileStrTest){
+    //Doesn't need unit tested
+}
 
 
 TEST_F(ListTest,bumpNInstTest){
@@ -313,20 +313,25 @@ TEST_F(ListTest,JoinTest){
 }
 
 TEST_F(ListTest,BinaryFindTest){
-    //TODO: I'm not sure if this works appropriately
     //Find the position of a search string in the list of strings (ONLY)
-   
     int upTo = -1;
     _List str_list = createStrList();
     _String* needle = new _String("six");
-    
     int index = str_list.BinaryFind((BaseRef)needle); 
-    EXPECT_EQ(4, index);
+    EXPECT_EQ(-4, index);
 }
 
 TEST_F(ListTest,BinaryInsertTest){
-    //Binary Insert 
-    //TODO
+
+    //TODO: Debug Coverage
+
+    _List str_list = createStrList();
+
+    //Place Test
+    str_list.BinaryInsert((BaseRef)new _String("one"));
+
+    _String* result_string = (_String*)str_list[3];
+    EXPECT_STREQ("one", result_string->getStr());
 }
 
 TEST_F(ListTest,CompareTest){
@@ -334,6 +339,11 @@ TEST_F(ListTest,CompareTest){
 
     _String* test = new _String("hyphy");
     EXPECT_EQ(-1, str_list.Compare((BaseRef)test,1));
+}
+
+TEST_F(ListTest,Compare2Test){
+    _List str_list = createStrList();
+    EXPECT_EQ(1, str_list.Compare((long)0,(long)1));
 }
 
 TEST_F(ListTest,FreeUpMemoryTest){
@@ -344,6 +354,7 @@ TEST_F(ListTest,FreeUpMemoryTest){
 TEST_F(ListTest,ClearTest){
 
     _List str_list = createStrList();
+    str_list.InsertElement(new _String("one"),3,true);
     str_list.Clear(true);
 
     EXPECT_EQ(0,str_list.lLength);
@@ -369,40 +380,38 @@ TEST_F(ListTest,DeleteListTest){
     EXPECT_EQ(3,str_list.lLength);
 } 
 
-/*
- *TEST_F(ListTest,ReplaceTest){
- *    _List str_list = createStrList();
- *    str_list.Replace(1, new _String("help"), false);
- *    _String* return_string = (_String*)str_list[1];
- *    EXPECT_STREQ("help", return_string->getStr());
- *
- *    str_list.Replace(1, new _String("two"), false);
- *    _String* return_string = (_String*)str_list[1];
- *    EXPECT_STREQ("help", return_string->getStr());
- *
- *    str_list.Replace(1, new _String("two"), true);
- *    _String* return_string = (_String*)str_list[1];
- *    EXPECT_STREQ("two", return_string->getStr());
- *} 
- */
+
+TEST_F(ListTest,ReplaceTest){
+
+    _List str_list = createStrList();
+
+    str_list.Replace(1, new _String("help"), false);
+    _String* return_string = (_String*)str_list[1];
+    EXPECT_STREQ("help", return_string->getStr());
+
+    str_list.Replace(1, new _String("two"), false);
+    _String* return_string2 = (_String*)str_list[1];
+    EXPECT_STREQ("two", return_string2->getStr());
+} 
+
 
 TEST_F(ListTest,IntersectTest){
-// compute the union of two sorted lists
-// each repeat appears exactly once
-    //TODO:
+    // compute the union of two sorted lists
+    // each repeat appears exactly once
 
     _List str_list = createStrList();
 
     _List l1 = str_list;
     _List l2 = str_list;
-    _SimpleList* idx; 
-    _SimpleList* idx2;
+    _SimpleList idx; 
+    _SimpleList idx2;
 
     _List l3;
-    //l3.Intersect(l1, l2, idx, idx2);
+    l3.Intersect(l1, l2, &idx, &idx2);
 
     _String* return_string = (_String*)str_list[1];
     EXPECT_STREQ("one",return_string->getStr());
+
 }
 
 }

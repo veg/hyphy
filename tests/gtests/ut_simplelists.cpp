@@ -62,6 +62,21 @@ protected:
 
 };
 
+TEST_F(SimpleListTest,_StackCopyConstructorListTest){
+    _SimpleList sl;
+    sl.Populate(4,1,2);
+
+    _SimpleList sl2(sl,(long)-1,(long)-1); 
+    EXPECT_EQ(4,sl2.lLength);
+
+    _SimpleList sl3(sl,(long)1,(long)3); 
+    EXPECT_EQ(3,sl3[0]);
+}
+
+TEST_F(SimpleListTest,_LengthConstructorTest){
+    _SimpleList sl((long)7);
+    EXPECT_EQ(0,sl[0]);
+}
 
 TEST_F(SimpleListTest, _PopulateTest){
     _SimpleList sl; 
@@ -71,28 +86,64 @@ TEST_F(SimpleListTest, _PopulateTest){
     EXPECT_EQ(7,sl[3]);
 }
 
-TEST_F(SimpleListTest, _NormalizeCoordinatesTest){
-// TODO: This function is questionable. 
-// It doesn't seem to really normalize anything and it's not used
+//TEST_F(SimpleListTest, _NormalizeCoordinatesTest){
+//}
+
+TEST_F(SimpleListTest, _BracketOpTest){
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+
+    EXPECT_EQ(1,sl[0]);
+    EXPECT_EQ(7,sl[3]);
+
+    sl.lLength = 0;
+    EXPECT_EQ(1,sl[7]);
+
+}
+
+TEST_F(SimpleListTest, _ParenthOpTest){
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+    EXPECT_EQ(7,sl(3));
+
+    //TODO: I think we need a case for this
+    EXPECT_EQ(0,sl(10));
+}
+
+TEST_F(SimpleListTest, _EqualOpTest){
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+
+    _SimpleList sl2((long)0); 
+    sl2 = sl;
+    EXPECT_EQ(3,sl[1]);
 }
 
 TEST_F(SimpleListTest, _OffsetTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
-    EXPECT_EQ(7,sl[3]);
+    sl.Offset(3);
+    EXPECT_EQ(10,sl[3]);
 }
 
 TEST_F(SimpleListTest, _ElementTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(7,sl.Element(3));
+    EXPECT_EQ(3,sl.Element(-3));
+    EXPECT_EQ(0,sl.Element(-5));
 }
 
 TEST_F(SimpleListTest, _PopTest){
+
     _SimpleList sl; 
     sl.Populate(4,1,2);
     EXPECT_EQ(7,sl.Pop());
     EXPECT_EQ(3,sl.lLength);
+
+    //Returns a 0
+    _SimpleList sl2;
+    EXPECT_EQ(0,sl2.Pop());
 }
 
 TEST_F(SimpleListTest, _countitemsTest){
@@ -112,19 +163,28 @@ TEST_F(SimpleListTest, _EqualTest){
     _SimpleList sl3; 
     sl3.Populate(4,1,3);
 
+    _SimpleList sl4; 
+    sl3.Populate(9,1,3);
+
     EXPECT_EQ(true,sl.Equal(sl2));
     EXPECT_EQ(false,sl.Equal(sl3));
+    EXPECT_EQ(false,sl.Equal(sl4));
 }
 
 TEST_F(SimpleListTest, _MergeTest){
+    //TODO: Coverage Testing
+
     //Takes 4 parameters
     _SimpleList sl; 
 
-    _SimpleList l1; 
+    _SimpleList l1;
     l1.Populate(4,1,1);
 
-    _SimpleList l2; 
+    _SimpleList l2;
     l2.Populate(4,5,1);
+
+    _SimpleList l3;
+    l3.Populate(12,1,1);
 
     //List that are automatically going to be filled
     _SimpleList m1; 
@@ -132,13 +192,50 @@ TEST_F(SimpleListTest, _MergeTest){
 
     sl.Merge(l1,l2,&m1,&m2);
     EXPECT_EQ(8,sl[8]);
+
+    sl.Merge(l2,l1,&m1,&m2);
+    EXPECT_EQ(8,sl[8]);
+
+    sl.Merge(l2,l3,&m1,&m2);
+    EXPECT_EQ(8,sl[8]);
+
+    sl.Merge(l1,l1,&m1,&m2);
+    EXPECT_EQ(8,sl[8]);
+
 }
 
 
-TEST_F(SimpleListTest,AmpersandOpTest){}
-TEST_F(SimpleListTest,DoubleLessOpTest){}
-TEST_F(SimpleListTest,DoubleLess2OpTest){}
-TEST_F(SimpleListTest,DoubleGreaterOpTest){}
+TEST_F(SimpleListTest,AmpersandOpTest){
+
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+
+    _SimpleList sl2; 
+    sl2.Populate(4,11,2);
+
+    _SimpleList sl3;
+    sl3.Populate(12,1,1);
+
+    sl & sl2;
+
+    EXPECT_EQ(11,sl3[5]);
+}
+
+TEST_F(SimpleListTest,DoubleGreaterOpTest){
+    //Does the same as lesser than, but no dupes and returns bool
+    _SimpleList sl; 
+    bool r1, r2;
+
+    sl.Populate(4,1,2);
+
+    r1 = sl >> 1; 
+    r2 = sl >> 12; 
+    
+
+    EXPECT_FALSE(r1);
+    EXPECT_TRUE(r2);
+    EXPECT_EQ(12,sl[5]);
+}
 
 
 TEST_F(SimpleListTest, _ListToPartitionStringTest){
@@ -147,6 +244,12 @@ TEST_F(SimpleListTest, _ListToPartitionStringTest){
 
     _String* returned_string = (_String*)sl.ListToPartitionString();
     EXPECT_STREQ("1,3,5,7", returned_string->getStr());
+
+    _SimpleList sl2;
+    sl.Populate(4,1,1);
+
+    _String* returned_string2 = (_String*)sl.ListToPartitionString();
+    EXPECT_STREQ("1-4", returned_string2->getStr());
 }
 
 TEST_F(SimpleListTest, _RequestSpaceTest){
@@ -182,6 +285,7 @@ TEST_F(SimpleListTest, _MaxTest){
 }
 
 TEST_F(SimpleListTest, _ClearFormulasInListTest){
+    //TODO: Debug Coverage
     _SimpleList sl;
     sl.Populate(4,1,2);
 
@@ -190,31 +294,35 @@ TEST_F(SimpleListTest, _ClearFormulasInListTest){
 }
 
 TEST_F(SimpleListTest, _DebugVarListTest){
-    //TODO, We don't have to do a UnitTest for this
+    //We don't have to do a UnitTest for this
 }
 
 TEST_F(SimpleListTest, _CountingSortTest){
-    //TODO
     _SimpleList sl; 
+    _SimpleList ordering_list;
     sl.Populate(4,1,2);
 
     _SimpleList* returned_list;
-    _SimpleList* ordering_list;
 
-    //returned_list = sl.CountingSort(20, ordering_list);
-    //long ret = returned_list->Element(1);
+    returned_list = sl.CountingSort(20, &ordering_list);
+    long ret = returned_list->Element(1);
     EXPECT_EQ(1,1);
 }
 
 TEST_F(SimpleListTest, _BinaryInsertTest){
 
-    _SimpleList sl; 
-    sl.Populate(4,1,2);
+    _SimpleList sl,sl2;
+    long pos;
 
-    long pos = sl.BinaryInsert(4);
-    
+    sl.Populate(4,1,2);
+    pos = sl.BinaryInsert(4);
     EXPECT_EQ(2, pos);
 
+    pos = sl2.BinaryInsert(4);
+    EXPECT_EQ(0, pos);
+
+    pos = sl.BinaryInsert(1);
+    EXPECT_EQ(4, pos);
 }
 
 TEST_F(SimpleListTest, _FindTest){
@@ -253,13 +361,18 @@ TEST_F(SimpleListTest, _FilterRangeTest){
 
     sl.FilterRange(2,4);
     EXPECT_EQ(3, sl[0]);
+
+    sl.FilterRange(4,2);
+    EXPECT_EQ(0, sl.lLength);
 }
 
 TEST_F(SimpleListTest, _BinaryFindTest){
 
     _SimpleList sl; 
+    long pos;
+
     sl.Populate(4,1,3);
-    long pos = sl.BinaryFind(3,0);
+    pos = sl.BinaryFind(3,0);
     EXPECT_EQ( -3, pos);
 
 }
@@ -275,6 +388,10 @@ TEST_F(SimpleListTest, _SortTest){
 
     _SimpleList sl2; 
     sl2.Populate(20,1,2);
+    sl2.Sort(false);
+    EXPECT_EQ( 39, sl2[0]);
+
+    //Create a worst case scenario for Quick Sort (Already sorted)
     sl2.Sort(false);
     EXPECT_EQ( 39, sl2[0]);
 }
@@ -302,16 +419,21 @@ TEST_F(SimpleListTest, _ClearTest){
 }
 
 TEST_F(SimpleListTest, _DeleteTest){
+    //TODO: Debug Coverage
     _SimpleList sl;
     sl.Populate(4,1,2);
     sl.Delete(0,true);
     EXPECT_EQ(3, sl[0]);
 }
 
-//TEST_F(SimpleListTest, _TrimMemoryTest){
-////TODO
+TEST_F(SimpleListTest, _TrimMemoryTest){
 
-//}
+    _SimpleList sl;
+    sl.Populate(4,1,2);
+    sl.Delete(0,true);
+    EXPECT_EQ(3, sl[0]);
+
+}
 
 TEST_F(SimpleListTest, _DeleteDuplicatesTest){
     _SimpleList sl; 
@@ -339,53 +461,84 @@ TEST_F(SimpleListTest, _DeleteListTest){
 
 TEST_F(SimpleListTest, _DisplaceTest){
 
-    _SimpleList sl; 
+    _SimpleList sl, sl2, sl3;
     sl.Populate(10,1,1);
-    sl.Displace(0,5,1); 
+    sl2.Populate(10,1,1);
+    sl3.Populate(10,1,1);
 
+    sl.Displace(0,5,1); 
     EXPECT_EQ(7, sl[0]);
     EXPECT_EQ(5, sl[5]);
+
+    //Don't do anything
+    sl2.Displace(11,10,1); 
+    EXPECT_EQ(1, sl2[0]);
+
+    //This shouldn't do anything
+    sl3.Displace(-1,25,0);
+    EXPECT_EQ(1, sl3[0]);
 
 }
 
 TEST_F(SimpleListTest, _PermuteWithReplacementTest){
 
-    //TODO
-    _SimpleList sl; 
+    //TODO: Go through with debugger
+    _SimpleList sl, sl2;
     sl.Populate(10,1,1);
+    sl2.Populate(10,1,1);
+
     sl.PermuteWithReplacement(2);
+
+    //Cannot be zero
+    //sl2.PermuteWithReplacement(0);
+    sl2.PermuteWithReplacement(-1);
+
     EXPECT_EQ(1, 1);
 
 }
 
 TEST_F(SimpleListTest, _PermuteTest){
 
-    //TODO
-    _SimpleList sl; 
+    //TODO: Go through with debugger
+    _SimpleList sl, sl2; 
     sl.Populate(10,1,1);
+    sl2.Populate(10,1,1);
 
     sl.Permute(2);
+
+    //Cannot be zero
+    //sl2.Permute(0);
+
+    //Cannot be negative
+    //sl2.Permute(-1);
+
     EXPECT_EQ(1, 1);
 
 }
 
 TEST_F(SimpleListTest, _NChooseKTest){
 
-    _SimpleList sl; 
-    sl.Populate(10,1,1);
+    _SimpleList sl, sl2;
+    _SimpleList state, state2;
+    _SimpleList store, store2;
 
-    _SimpleList state; 
-    _SimpleList store; 
     long stride = 3;
+    long large_stride = 42;
+
     bool algorithm = true;
 
-    bool init_test = sl.NChooseKInit(state,store,stride,algorithm);
+    sl.Populate(10,1,1);
+
+    bool init_test = sl.NChooseKInit(state,store,large_stride,algorithm);
+    EXPECT_EQ(false, init_test);
+    init_test = sl.NChooseKInit(state,store,stride,algorithm);
     bool choose_test = sl.NChooseK(state,store);
+
 
     EXPECT_EQ(true, init_test);
     EXPECT_EQ(true, choose_test);
 
-    //This doesn't seem very tuple-ly
+    //TODO:This doesn't seem very tuple-ly
     EXPECT_EQ(1,store[0]);
     EXPECT_EQ(1,store[0]);
 
@@ -419,30 +572,37 @@ TEST_F(SimpleListTest, _FlipTest){
 
 TEST_F(SimpleListTest, _UnionTest){
 
-    _SimpleList sl; 
+    _SimpleList sl, sl2; 
+    _SimpleList l1, l2; 
 
-    _SimpleList l1; 
+    sl.Populate(10,1,1);
     l1.Populate(10,1,1);
-    _SimpleList l2; 
     l2.Populate(20,1,1);
 
     sl.Union(l1, l2);
+    EXPECT_EQ(20,sl[19]);
+
+    //For code coverage
+    sl2.Union(l2, l1);
     EXPECT_EQ(20,sl[19]);
 
 }
 
 TEST_F(SimpleListTest, _IntersectTest){
 
-    _SimpleList sl; 
+    _SimpleList sl, sl2; 
+    _SimpleList l1, l2; 
 
-    _SimpleList l1; 
+    sl.Populate(10,1,1);
     l1.Populate(10,1,1);
-    _SimpleList l2; 
     l2.Populate(10,1,2);
 
     sl.Intersect(l1, l2);
     EXPECT_EQ(9,sl[4]);
 
+    //For code coverage
+    sl2.Intersect(l2, l1);
+    EXPECT_EQ(9,sl2[4]);
 }
 
 TEST_F(SimpleListTest, _CountCommonElementsTest){
@@ -461,29 +621,39 @@ TEST_F(SimpleListTest, _CountCommonElementsTest){
 
 TEST_F(SimpleListTest, _XORTest){
 
-    _SimpleList sl; 
+    _SimpleList sl, sl2; 
 
-    _SimpleList l1; 
+    _SimpleList l1, l2; 
+
+    sl.Populate(10,1,1);
     l1.Populate(10,1,1);
-    _SimpleList l2; 
     l2.Populate(10,1,2);
 
     sl.XOR(l1, l2);
     EXPECT_EQ(10,sl[4]);
 
+    //For coverage
+    sl2.XOR(l2, l1);
+    EXPECT_EQ(10,sl2[4]);
 }
 
 TEST_F(SimpleListTest, _SubtractTest){
 
-    _SimpleList sl; 
+    _SimpleList sl, sl2; 
 
-    _SimpleList l1; 
+    _SimpleList l1, l2; 
+
+
+    sl.Populate(10,1,1);
     l1.Populate(10,1,1);
-    _SimpleList l2; 
     l2.Populate(10,1,2);
 
     sl.Subtract(l1, l2);
     EXPECT_EQ(10,sl[9]);
+
+    sl2.Subtract(l1, l2);
+    EXPECT_EQ(10,sl2[9]);
+
 
 }
 }

@@ -276,15 +276,14 @@ _List::~_List(void)
 
 long _SimpleList::Element (long index)
 {
-    if (index >= 0) {
-        if (index < lLength) {
-            return lData[index];
-        }
-    } else {
-        if (-index <= lLength) {
-            return lData[(long)lLength+index];
-        }
+    if (index >= 0 && index < lLength) {
+        return lData[index];
     }
+
+    else if(-index <= lLength) {
+        return lData[(long)lLength+index];
+    }
+
     return 0;
 }
 
@@ -339,6 +338,7 @@ BaseRef& _List::operator [] (long i)
 long _SimpleList::operator () (unsigned long i)
 {
     //if (lLength == 0) return 0;
+    //Is there a reason why this is commented out?
     //if (i>=lLength) i = lLength-1;
     return lData[i];
 }
@@ -1852,32 +1852,34 @@ void  _SimpleList::Displace (long start, long end, long delta)
         end = lLength-1;
     }
 
-    if ((end-start>=0)&&delta&&(end-start<lLength-1))
-        // stuff to do
+    if ((end-start>=0) && delta && (end-start<lLength-1))
     {
-        if (delta>0) { // shift up
-            if (lLength-end<=delta) {
-                delta = lLength-end-1;
-            }
-        } else {
-            if (start-delta<0) {
-                delta = start;
-            }
+        if (delta>0 && lLength-end <= delta) { // shift up
+            delta = lLength-end-1;
+        } else if (start-delta<0){
+            delta = start;
         }
+
         if (delta) {
             long i,j,delta2 = end-start+1;
             _SimpleList swapList ((unsigned long)(end-start+1));
+
             for (i=start; i<=end; i++) {
                 swapList << lData[i];
             }
-            if (delta>0)
+
+            if (delta>0) {
+
                 for (i=end+1; i<=end+delta; i++) {
                     lData[i-delta2] = lData[i];
                 }
-            else
+
+            } else {
                 for (i=start-1; i>=start+delta; i--) {
                     lData[i+delta2] = lData[i];
                 }
+            }
+
             for (i=start+delta, j=0; i<=end+delta; i++,j++) {
                 lData[i] = swapList.lData[j];
             }
@@ -1899,11 +1901,11 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
             for (long j = 0; j<blockLength; j++,sample++) {
                 result<<lData[sample];
             }
-        }
-    else
-        for (long i = 0; i<blockCount; i++) {
-            unsigned long sample = genrand_real2()*blockCount;
-            result<<lData[sample];
+        } else {
+            for (long i = 0; i<blockCount; i++) {
+                unsigned long sample = genrand_real2()*blockCount;
+                result<<lData[sample];
+            }
         }
 
     Clear();
@@ -3058,7 +3060,7 @@ void _AVLListX::DeleteXtra (long i)
 
 void _AVLListX::PopulateFromList (_List& src)
 {
-    Clear(true);
+    Clear(false);
     for (long k = 0; k < src.lLength; k++) {
         Insert (src(k)->makeDynamic(),k,false);
     }
