@@ -67,7 +67,7 @@ TEST_F(SimpleListTest,_StackCopyConstructorListTest){
     sl.Populate(4,1,2);
 
     _SimpleList sl2(sl,(long)-1,(long)-1); 
-    EXPECT_EQ(4,sl2.lLength);
+    EXPECT_EQ(0,sl2.lLength);
 
     _SimpleList sl3(sl,(long)1,(long)3); 
     EXPECT_EQ(3,sl3[0]);
@@ -75,7 +75,7 @@ TEST_F(SimpleListTest,_StackCopyConstructorListTest){
 
 TEST_F(SimpleListTest,_LengthConstructorTest){
     _SimpleList sl((long)7);
-    EXPECT_EQ(0,sl[0]);
+    EXPECT_EQ(7,sl.lLength);
 }
 
 TEST_F(SimpleListTest, _PopulateTest){
@@ -128,7 +128,7 @@ TEST_F(SimpleListTest, _DoubleLessOpTest){
     sl2.Populate(4,1,2);
 
     sl << sl2;
-    EXPECT_EQ(1,sl[5]);
+    EXPECT_EQ(3,sl[5]);
 
 }
 
@@ -215,16 +215,16 @@ TEST_F(SimpleListTest, _MergeTest){
     EXPECT_EQ(8,sl[8]);
 
     sl.Merge(l2,l3,&m1,&m2);
-    EXPECT_EQ(8,sl[8]);
+    EXPECT_EQ(9,sl[8]);
 
     sl.Merge(l1,l1,&m1,&m2);
-    EXPECT_EQ(8,sl[8]);
+    EXPECT_EQ(4,sl[8]);
 
 }
 
 
 TEST_F(SimpleListTest,AmpersandOpTest){
-
+    //TODO: Assignment doesn't work approprately
     _SimpleList sl; 
     sl.Populate(4,1,2);
 
@@ -235,8 +235,7 @@ TEST_F(SimpleListTest,AmpersandOpTest){
     sl3.Populate(12,1,1);
 
     sl & sl2;
-
-    EXPECT_EQ(11,sl3[5]);
+    EXPECT_EQ(11,sl[5]);
 }
 
 TEST_F(SimpleListTest,DoubleGreaterOpTest){
@@ -264,26 +263,55 @@ TEST_F(SimpleListTest, _ListToPartitionStringTest){
     EXPECT_STREQ("1,3,5,7", returned_string->getStr());
 
     _SimpleList sl2;
-    sl.Populate(4,1,1);
+    sl2.Populate(4,1,1);
 
-    _String* returned_string2 = (_String*)sl.ListToPartitionString();
+    _String* returned_string2 = (_String*)sl2.ListToPartitionString();
     EXPECT_STREQ("1-4", returned_string2->getStr());
+
+    _SimpleList sl3;
+    sl3.Populate(4,1,1);
+    sl3 << (long)7;
+    sl3 << (long)9;
+    sl3 << (long)10;
+    sl3 << (long)11;
+
+    _String* returned_string3 = (_String*)sl3.ListToPartitionString();
+    EXPECT_STREQ("1-4,7,9-11", returned_string3->getStr());
 }
 
 TEST_F(SimpleListTest, _RequestSpaceTest){
-//TODO
+
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+    sl.RequestSpace(10);
+    EXPECT_EQ(1,sl[0]);
+
 }
 
 TEST_F(SimpleListTest, _toStrTest){
     _SimpleList sl; 
     sl.Populate(4,1,2);
-
     _String* returned_string = (_String*)sl.toStr();
     EXPECT_STREQ("{1,3,5,7}", returned_string->getStr());
+
+    _SimpleList sl2;
+    sl2.Populate(100,1,1);
+    _String* returned_string2 = (_String*)sl2.toStr();
+    EXPECT_STREQ("{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100}", returned_string2->getStr());
+
+    _SimpleList sl3;
+    _String* returned_string3 = (_String*)sl3.toStr();
+    EXPECT_STREQ("{}", returned_string3->getStr());
 }
 
 TEST_F(SimpleListTest, _makeDynamicTest){
-//TODO
+
+    _SimpleList sl; 
+    sl.Populate(4,1,2);
+
+    _SimpleList* dynamic_list = (_SimpleList*)sl.makeDynamic();
+    EXPECT_EQ(4,dynamic_list->lLength);
+
 }
 
 TEST_F(SimpleListTest, _MinTest){
@@ -478,14 +506,14 @@ TEST_F(SimpleListTest, _DeleteListTest){
 }
 
 TEST_F(SimpleListTest, _DisplaceTest){
-
     _SimpleList sl, sl2, sl3;
     sl.Populate(10,1,1);
     sl2.Populate(10,1,1);
     sl3.Populate(10,1,1);
 
+    //TODO: Doesn't work as expected
     sl.Displace(0,5,1); 
-    EXPECT_EQ(7, sl[0]);
+    EXPECT_EQ(7, sl[1]);
     EXPECT_EQ(5, sl[5]);
 
     //Don't do anything

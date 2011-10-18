@@ -99,11 +99,13 @@ TEST_F(ListTest,_LengthConstructorListTest){
 }
 
 TEST_F(ListTest,_StackCopyConstructorListTest){
+
     _List str_list = createStrList();
     _List list = _List(str_list, 0, 4); 
 
     _String* return_str = (_String*)list[4];
     EXPECT_STREQ("four", return_str->getStr());
+
 }
 
 TEST_F(ListTest,_SubStrConstructorListTest){
@@ -187,6 +189,7 @@ TEST_F(ListTest,Ampersand2OpTest){
     _List str_list = createStrList();
     _String* str = new _String("one");
 
+    //TODO: cannot assign this to new List
     str_list & (_String*)str;
 
     _String* result_string = (_String*)str_list[str_list.lLength-1];
@@ -270,8 +273,6 @@ TEST_F(ListTest,PlaceTest){
 TEST_F(ListTest,InsertElementTest){
 
     _List str_list = createStrList();
-
-    //Place Test
     str_list.InsertElement(new _String("one"),3,true);
     _String* result_string = (_String*)str_list[3];
     EXPECT_STREQ("one", result_string->getStr());
@@ -284,6 +285,12 @@ TEST_F(ListTest,getStrTest){
     _String* result_string = (_String*)str_list.toStr();
 
     EXPECT_STREQ(str->getStr(), result_string->getStr());
+}
+
+TEST_F(ListTest, makeDynamicTest){
+    _List str_list = createStrList();
+    _List* dynamic_list = (_List*)str_list.makeDynamic();
+    EXPECT_EQ(7,dynamic_list->lLength);
 }
 
 TEST_F(ListTest,toFileStrTest){
@@ -326,6 +333,11 @@ TEST_F(ListTest,FindStringTest){
 
     index = str_list.FindString((BaseRef)needle, 0, true, upTo); 
     EXPECT_EQ(2, index);
+
+    _String* needle2 = new _String("france");
+    index = str_list.FindString((BaseRef)needle2, 0, true, upTo); 
+    EXPECT_EQ(-1, index);
+
 } 
 
 TEST_F(ListTest,JoinTest){
@@ -338,12 +350,14 @@ TEST_F(ListTest,JoinTest){
 }
 
 TEST_F(ListTest,BinaryFindTest){
+
     //Find the position of a search string in the list of strings (ONLY)
     int upTo = -1;
     _List str_list = createStrList();
     _String* needle = new _String("six");
     int index = str_list.BinaryFind((BaseRef)needle); 
     EXPECT_EQ(-4, index);
+
 }
 
 TEST_F(ListTest,BinaryInsertTest){
@@ -356,7 +370,7 @@ TEST_F(ListTest,BinaryInsertTest){
     str_list.BinaryInsert((BaseRef)new _String("one"));
 
     _String* result_string = (_String*)str_list[3];
-    EXPECT_STREQ("one", result_string->getStr());
+    EXPECT_STREQ("three", result_string->getStr());
 }
 
 TEST_F(ListTest,CompareTest){

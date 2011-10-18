@@ -285,7 +285,7 @@ TEST_F(StringTest,AppendNewInstanceTest)
 TEST_F(StringTest,EscapeAndAppendTest)
 {
     _String result = _String("AAGG");
-    _String expected = _String("AAGG\\\\(&lt;\\[''&quot;&apos;&gt;&amp;a\\\\a\\n\\t\"a\\");
+    _String expected = _String("AAGG\\\\(&lt;\\[''&quot;&apos;&gt;&amp;a\\\\a\\n\\t\"a\\0");
     result.EscapeAndAppend('\\',2);
     result.EscapeAndAppend('(',1);
     result.EscapeAndAppend('<',4);
