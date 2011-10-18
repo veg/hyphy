@@ -156,8 +156,8 @@ _List::_List (const _List& l, long from, long to)
     }
 }
 
-//______________________________________________________________
-// stack copy contructor
+//__________________________________________________________________________
+// construct a list of substrings from the original string separated by char
 _List::_List (BaseRef ss, char sep)
 {
     _String* s = (_String*)ss;
@@ -175,7 +175,6 @@ _List::_List (BaseRef ss, char sep)
         AppendNewInstance (new _String(*s,cp,-1));
     }
 }
-
 
 //______________________________________________________________
 // coordinate normalizer
@@ -277,15 +276,14 @@ _List::~_List(void)
 
 long _SimpleList::Element (long index)
 {
-    if (index >= 0) {
-        if (index < lLength) {
-            return lData[index];
-        }
-    } else {
-        if (-index <= lLength) {
-            return lData[(long)lLength+index];
-        }
+    if (index >= 0 && index < lLength) {
+        return lData[index];
     }
+
+    else if(-index <= lLength) {
+        return lData[(long)lLength+index];
+    }
+
     return 0;
 }
 
@@ -340,6 +338,7 @@ BaseRef& _List::operator [] (long i)
 long _SimpleList::operator () (unsigned long i)
 {
     //if (lLength == 0) return 0;
+    //Is there a reason why this is commented out?
     //if (i>=lLength) i = lLength-1;
     return lData[i];
 }
@@ -839,6 +838,7 @@ void _List::operator << (BaseRef br)
             checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
         }
     }
+
     ((BaseRef*)lData)[lLength-1]=br;
     br->nInstances++;
 }
@@ -853,7 +853,6 @@ void _List::AppendNewInstance (BaseRef br)
         checkPointer (br);
     }
 }
-
 
 //______________________________________________________________
 void _List::operator << (_List& source)
@@ -1175,6 +1174,7 @@ long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
     }
     return -1;
 }
+
 //______________________________________________________________
 
 BaseRef  _List::Join (BaseRef spacer)
@@ -1232,6 +1232,7 @@ long  _List::BinaryFind (BaseRef s)
 
 long  _List::BinaryInsert (BaseRef s)
 {
+
     if (!lLength) {
         InsertElement (s,0,true);
         return 0;
@@ -1249,6 +1250,7 @@ long  _List::BinaryInsert (BaseRef s)
     DeleteObject(s2);
     InsertElement (s,pos,true);
     return pos>=lLength?lLength-1:pos;
+
 }
 
 //______________________________________________________________
@@ -1850,32 +1852,34 @@ void  _SimpleList::Displace (long start, long end, long delta)
         end = lLength-1;
     }
 
-    if ((end-start>=0)&&delta&&(end-start<lLength-1))
-        // stuff to do
+    if ((end-start>=0) && delta && (end-start<lLength-1))
     {
-        if (delta>0) { // shift up
-            if (lLength-end<=delta) {
-                delta = lLength-end-1;
-            }
-        } else {
-            if (start-delta<0) {
-                delta = start;
-            }
+        if (delta>0 && lLength-end <= delta) { // shift up
+            delta = lLength-end-1;
+        } else if (start-delta<0){
+            delta = start;
         }
+
         if (delta) {
             long i,j,delta2 = end-start+1;
             _SimpleList swapList ((unsigned long)(end-start+1));
+
             for (i=start; i<=end; i++) {
                 swapList << lData[i];
             }
-            if (delta>0)
+
+            if (delta>0) {
+
                 for (i=end+1; i<=end+delta; i++) {
                     lData[i-delta2] = lData[i];
                 }
-            else
+
+            } else {
                 for (i=start-1; i>=start+delta; i--) {
                     lData[i+delta2] = lData[i];
                 }
+            }
+
             for (i=start+delta, j=0; i<=end+delta; i++,j++) {
                 lData[i] = swapList.lData[j];
             }
@@ -1897,11 +1901,11 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
             for (long j = 0; j<blockLength; j++,sample++) {
                 result<<lData[sample];
             }
-        }
-    else
-        for (long i = 0; i<blockCount; i++) {
-            unsigned long sample = genrand_real2()*blockCount;
-            result<<lData[sample];
+        } else {
+            for (long i = 0; i<blockCount; i++) {
+                unsigned long sample = genrand_real2()*blockCount;
+                result<<lData[sample];
+            }
         }
 
     Clear();
@@ -2267,8 +2271,8 @@ long    _SimpleList::CountCommonElements (_SimpleList& l1, bool yesNo)
 // compute the number of shared of two sorted lists
 {
     long  c1    = 0,
-          c2  = 0,
-          res     = 0;
+          c2    = 0,
+          res   = 0;
 
 
     while (c1<l1.lLength && c2<lLength) {
@@ -2588,7 +2592,7 @@ long  _AVLList::Next (long d, _SimpleList& hist)
                 if (rightChild.lData[x] != d) {
                     return x;
                 }
-
+                //TODO:???
                 d = x;
             }
 
@@ -2681,7 +2685,7 @@ long  _AVLList::Prev (long d, _SimpleList& hist)
                 if (leftChild.lData[x] != d) {
                     return x;
                 }
-
+                //TODO:???
                 d = x;
             }
 
@@ -2719,8 +2723,11 @@ void  _AVLList::ReorderList (_SimpleList *s)
                 (*s) << curNode;
             }
             reorderMe.InsertElement (((BaseRef*)dataList->lData)[curNode],-1,false,false);
+
+            //TODO:???
             curNode = rightChild.lData[curNode];
             nodeStack.Delete (h, false);
+
         } else {
             break;
         }
@@ -2805,6 +2812,7 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
         nodeStack << t;
         t = leftChild.lData[t];
     }
+
     if (long h = nodeStack.lLength) {
         h--;
         t = nodeStack.lData[h];
@@ -2813,7 +2821,6 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
         nodeStack.Delete (h, false);
         return r;
     }
-
     return -1;
 }
 
@@ -3053,7 +3060,7 @@ void _AVLListX::DeleteXtra (long i)
 
 void _AVLListX::PopulateFromList (_List& src)
 {
-    Clear(true);
+    Clear(false);
     for (long k = 0; k < src.lLength; k++) {
         Insert (src(k)->makeDynamic(),k,false);
     }

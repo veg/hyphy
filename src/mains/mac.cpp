@@ -1381,14 +1381,15 @@ int main (void)
 #endif
     pathNames && & baseDirectory;
 
+    libDirectory = baseDirectory & APPNAME ".app" & GetPlatformDirectoryChar() & "Contents" & GetPlatformDirectoryChar() & "Resources" & GetPlatformDirectoryChar() & "HBL" & GetPlatformDirectoryChar();
+    pathNames && & libDirectory;
+
     if (!(menuBar = GetNewMBar(128))) {
         _String        errMsg("Error reading menu resources. Quitting....");
         ProblemReport (errMsg);
         exit(1);
     }
-    libDirectory = baseDirectory & "HyPhy.app" & GetPlatformDirectoryChar() & "Contents" & GetPlatformDirectoryChar() & "Resources" & GetPlatformDirectoryChar() & "HBL" & GetPlatformDirectoryChar();
-    pathNames && & libDirectory;
-
+    // fprintf(stderr, "%s\n", libDirectory.sData);
 
     SetMenuBar(menuBar);
     GlobalStartup();
