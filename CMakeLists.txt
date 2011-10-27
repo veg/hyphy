@@ -152,7 +152,7 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -DINTPTR_TYPE=long)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
