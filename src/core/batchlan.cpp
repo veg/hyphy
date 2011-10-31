@@ -155,6 +155,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 getDString                      ("PROMPT_FOR_STRING"),
                                 useLastFString                  ("LAST_FILE_PATH"),
                                 getFString                      ("PROMPT_FOR_FILE"),
+                                tempFString                     ("TEMP_FILE_NAME"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
                                 useLastModel                    ("USE_LAST_MODEL"),
                                 VerbosityLevelString            ("VERBOSITY_LEVEL"),
@@ -4912,7 +4913,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
 
 #if defined __UNIX__
-        SetStatusLine     (sbar_value);
+        SetStatusLineUser     (sbar_value);
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif

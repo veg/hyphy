@@ -8659,6 +8659,8 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     // if more than one - output a NEXUS file where
     // data sets after the first one are embedded as strings.
 
+    RescanAllVariables();
+
     if (partitionList)
         // validate the list
     {

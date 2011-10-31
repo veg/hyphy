@@ -95,7 +95,8 @@ bool    usePostProcessors = false,
         updateMode       = false,
         pipeMode         = false,
         dropIntoDebugMode = false,
-        logInputMode   = false;
+        logInputMode   = false,
+        needExtraNL    = false;
 
 char    prefFileName[] = ".hyphyinit";
 
@@ -447,6 +448,15 @@ void    SetStatusLine               (_String s)
     }
 #endif
 
+}
+
+//__________________________________________________________________________________
+void    SetStatusLineUser   (_String s)
+{
+    setvbuf(stdout, NULL, _IONBF, 0);
+    BufferToConsole("\33[2K\r");
+    StringToConsole(s);
+    needExtraNL = true;
 }
 
 //__________________________________________________________________________________

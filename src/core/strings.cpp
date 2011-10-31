@@ -28,12 +28,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gnuregex.h"
 #else
 #include "regex.h"
+#include <unistd.h>
 #endif
 
 #ifdef   __UNIX__
 #if !defined __MINGW32__
 #include <sys/utsname.h>
 #endif
+#include <unistd.h>
 #endif
 
 #ifdef    __HYPHYDMALLOC__
@@ -100,7 +102,7 @@ struct _hyValidIDCharsType {
                 valid_chars[c] = true;
             }
         }
-        valid_chars['_'] = true;
+        valid_chars[(unsigned char)'_'] = true;
     }
 }
 _hyValidIDChars;
@@ -1695,7 +1697,7 @@ bool    _String::IsValidIdentifier (bool strict)
     }
 
 
-    for(long p = 1; p<sLength; p++) {
+    for(unsigned long p = 1; p<sLength; p++) {
         char c = sData[p];
         if (!(isalnum(c)|| c=='_' || strict&& c=='.')) {
             return false;
@@ -1733,13 +1735,35 @@ void    _String::ProcessParameter(void)
 
 void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 {
-    if (Equal(&getFString)) { // prompt user for file
-        if (!isWrite) {
-            *this = ReturnFileDialogInput();
+    if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
+    
+        if (Equal (&tempFString)) {
+            #if not defined __MINGW32__ && not defined __WINDOZE__
+                #ifdef __MAC__
+                    char tmpFileName[] = "HYPHY-XXXXXX";
+                #else
+                    char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
+                #endif
+                
+                int fileDescriptor = mkstemp(tmpFileName);
+                if (fileDescriptor == -1){
+                    WarnError ("Failed to create a temporary file name");
+                    return;
+                }
+                *this = tmpFileName;
+                CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+                close (fileDescriptor);
+                return;
+            #else
+                WarnError (tempFString & " is not implemented for this platform");
+            #endif
         } else {
-            *this = WriteFileDialogInput ();
+            if (!isWrite) {
+                *this = ReturnFileDialogInput();
+            } else {
+                *this = WriteFileDialogInput ();
+            }
         }
-
         ProcessFileName(false,false,theP);
         CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
         return;

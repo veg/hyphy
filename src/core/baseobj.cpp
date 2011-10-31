@@ -236,6 +236,11 @@ bool    GlobalStartup (void)
 bool    GlobalShutdown (void)
 {
     bool res = true;
+   
+#ifdef  __UNIX__
+    if (needExtraNL)
+        printf ("\n");
+#endif     
 
 #ifdef  __HYPHYMPI__
     int     size;
@@ -262,6 +267,7 @@ bool    GlobalShutdown (void)
 #endif
     ReportWarning ("Returned from MPI_Finalize");
 #endif
+
 
     if (globalErrorFile) {
         fflush (globalErrorFile);

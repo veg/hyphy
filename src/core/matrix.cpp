@@ -5803,6 +5803,10 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
         return new _Matrix (1,1);
     }
 
+    if (theData == nil) {
+        return new _Matrix (1,1);
+    }
+
     _SimpleList sortOn;
 
     if (mp->ObjectClass () != NUMBER || mp->Value() < 0.0 || mp->Value () > GetVDim()-1) {
@@ -5826,10 +5830,6 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
         }
     } else {
         sortOn << mp->Value();
-    }
-
-    if (theData == nil) {
-        return new _Matrix (1,1);
     }
 
     _SimpleList             idx (hDim,0,1);
