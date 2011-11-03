@@ -17,6 +17,8 @@ from platform import architecture, mac_ver
 scriptPath = path.realpath(path.dirname(sys.argv[0]))
 srcPath, libDir = path.split(scriptPath)
 hyphyPath, srcDir = path.split(srcPath)
+# with open('batchfiles.list') as fh:
+#     resFiles = [(f, path.join(*(['..'] * 5 + f.split('/')))) for f in fh.read().split('\n') if f != '']
 
 contribPath = path.join(hyphyPath, 'contrib')
 sqlitePath = path.join(contribPath, 'SQLite-3.6.17')
@@ -52,8 +54,9 @@ setup(
     author = 'Sergei L Kosakovsky Pond',
     author_email = 'spond@ucsd.edu',
     url = 'http://www.hyphy.org/',
-    package_dir = {'': 'LibraryModules/Python'},
     packages = ['HyPhy'],
+    package_dir = {'HyPhy': 'LibraryModules/Python/HyPhy'},
+#    data_files = resFiles,
     # py_modules = ['HyPhy'],
     ext_modules = [Extension('_HyPhy',
             sourceFiles,
@@ -63,7 +66,8 @@ setup(
                              ('__MP__', None),
                              ('__MP2__', None),
                              ('_SLKP_LFENGINE_REWRITE_', None),
-                             ('__HEADLESS__', None)] + define_macros,
+                             ('__HEADLESS__', None),
+                             ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] + define_macros,
             libraries = ['pthread', 'ssl', 'crypto', 'curl'],
             extra_compile_args = [
                     '-Wno-int-to-pointer-cast',
