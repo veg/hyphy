@@ -208,17 +208,35 @@ _THyPhy::~_THyPhy           (void)
 
 void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
-    systemCPUCount                      = cpuCount;
+    char dirSlash = GetPlatformDirectoryChar ();
+    systemCPUCount = cpuCount;
     SetCallbackHandler (mHandler);
-    checkPointer (currentResultHolder   = new _THyPhyString);
-    askFID                              = -1;
+    checkPointer (currentResultHolder = new _THyPhyString);
+    askFID = -1;
     if (baseDirPath)
         // set base directory
     {
-        baseDirectoryInstance = new _THyPhyString (baseDirPath);
-        baseDirectory       = baseDirectoryInstance->sData;
+        baseDirectory = baseDirPath;
+        if (baseDirectory.getChar(baseDirectory.sLength-1) != dirSlash) {
+            baseDirectory = baseDirectory & dirSlash;
+        }
+        baseDirectoryInstance = new _THyPhyString (baseDirectory.sData);
+        baseDirectory = baseDirectoryInstance->sData;
+        pathNames && &baseDirectory;
         ReadPreferences ();
     }
+
+#ifdef _HYPHY_LIBDIRECTORY_    
+    libDirectory = _HYPHY_LIBDIRECTORY_;
+    if (libDirectory.getChar(libDirectory.sLength-1) != dirSlash) {
+        libDirectory = libDirectory & dirSlash;
+    }
+    pathNames && &libDirectory;
+#else
+    if (baseDirectory)
+        libDirectory = baseDirectory;
+#endif
+
     GlobalStartup();
     errors   = nil;
     warnings = nil;
@@ -243,16 +261,6 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
 
     _ExecutionList      compiledCode  (commandString);
 
-    baseDirectory       = baseDirectoryInstance->sData;
-    
-#ifdef _HYPHY_LIBDIRECTORY_    
-    libDirectory        = _HYPHY_LIBDIRECTORY_;
-#else
-    libDirectory        = baseDirectory;
-#endif
-
-    pathNames           && & baseDirectory;
-    pathNames           && & libDirectory;
     ApplyPreferences    ();
 
     DeleteObject        ((_String*)errors);
