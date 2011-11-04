@@ -2665,7 +2665,8 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                                  *gapScore2 = nil;
 
             _SimpleList         editOps     (MAX(s1->sLength,s2->sLength));
-            long                colCount =  upto2+1;
+            long                rowCount =  upto1+1,
+                                colCount =  upto2+1;
 
             if (doAffine) {
                 gapScore1 = (_Matrix*)checkPointer(new _Matrix (s1->sLength+1,s2->sLength+1, false, true)),
@@ -2689,7 +2690,7 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                     gapScore1->theData[0] = -gopen;
                     gapScore2->theData[0] = -gopen2;
 
-                    for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount, cost-=gextend2) {
+                    for (long m=colCount; m < rowCount*colCount; m+=colCount, cost-=gextend2) {
                         scoreMatrix.theData[m] = cost;
                         gapScore1->theData [m] = cost;
                         gapScore2->theData [m] = cost;
@@ -2702,7 +2703,7 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                         }
 
                         cost = -gopen2;
-                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2) {
+                        for (long k=colCount; k < rowCount*colCount; k+=colCount, cost-=gopen2) {
                             scoreMatrix.theData[k] = cost;
                         }
                     } else {
@@ -2713,7 +2714,7 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
 
                         cost = -gopen2;
                         long cc = 1;
-                        for (long k=colCount; k < (s1->sLength+1)*colCount; k+=colCount, cost-=gopen2, cc++) {
+                        for (long k=colCount; k < rowCount*colCount; k+=colCount, cost-=gopen2, cc++) {
                             scoreMatrix.theData[k] = cost - ((cc%3 != 1)?gFrameshift:0);
                         }
                     }
@@ -2728,14 +2729,14 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
 
                         long cc = 1;
 
-                        for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount,cc++) {
+                        for (long m=colCount; m < rowCount*colCount; m+=colCount,cc++) {
                             gapScore1->theData[m] = -gopen - ((cc%3 != 1)?gFrameshift:0);
                         }
                     } else {
                         for (long m=1; m < colCount; m++) {
                             gapScore2->theData[m] = -gopen2;
                         }
-                        for (long m=colCount; m < (s1->sLength+1)*colCount; m+=colCount) {
+                        for (long m=colCount; m < rowCount*colCount; m+=colCount) {
                             gapScore1->theData[m] = -gopen;
                         }
                     }
@@ -2828,20 +2829,28 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                  p2 = upto2;
 
             if (doLocal) {
-                score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
+                score = scoreMatrix.theData[rowCount*colCount-1];
 
-                for (long mc2=colCount-1; mc2<s1->sLength*colCount; mc2+=colCount)
-                    if (scoreMatrix.theData[mc2]>score) {
-                        score = scoreMatrix.theData[mc2];
-                        p1 = mc2/colCount;
-                    }
+                for (long c = 1; c < 4; ++c) {
+                    for (long mc2=colCount-c; mc2<s1->sLength*colCount; mc2+=colCount)
+                        if (scoreMatrix.theData[mc2]>score) {
+                            score = scoreMatrix.theData[mc2];
+                            p1 = mc2/colCount;
+                        }
+                    if (!doCodon or 1)
+                        break;
+                }
 
-                for (long mc=s1->sLength*colCount; mc<(s1->sLength+1)*colCount-1; mc++)
-                    if (scoreMatrix.theData[mc]>score) {
-                        score = scoreMatrix.theData[mc];
-                        p1 = s1->sLength;
-                        p2 = mc-s1->sLength*colCount;
-                    }
+                for (long r = 0; r < 3; ++r) {
+                    for (long mc=(s1->sLength-r)*colCount; mc<(rowCount-r)*colCount-1; mc++)
+                        if (scoreMatrix.theData[mc]>score) {
+                            score = scoreMatrix.theData[mc];
+                            p1 = s1->sLength-r;
+                            p2 = mc-(s1->sLength-r)*colCount;
+                        }
+                    if (!doCodon or 1)
+                        break;
+                }
 
                 for (long mp = p1; mp<s1->sLength; mp++) {
                     editOps << -1;
@@ -2851,7 +2860,18 @@ _Parameter   AlignStrings   (_String* s1,_String* s2,_SimpleList& cmap,_Matrix* 
                 }
 
             } else {
-                score = scoreMatrix.theData[(s1->sLength+1)*colCount-1];
+                score = scoreMatrix.theData[rowCount*colCount-1];
+                if (doCodon and 0) {
+                    for (long r = 0; r < 3; ++r) {
+                        for (long c = 0; c < 3; ++c) {
+                            if (scoreMatrix.theData[(rowCount-r)*(colCount-c)-1] > score) {
+                                score = scoreMatrix.theData[(rowCount-r)*(colCount-c)-1];
+                                p1 = upto1-r;
+                                p2 = upto2-c;
+                            }
+                        }
+                    }
+                }
             }
 
             // backtrack now
