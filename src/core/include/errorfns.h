@@ -64,6 +64,11 @@ void    warnError (long);
 // warns user of current error with a built in string
 // writes to stderror
 
+void    flagError (long);
+// reports the text of current error to the user with a built in string
+// writes to stderror
+// terminates execution of current BF
+
 void*   checkPointer  (void*);
 
 #if !defined __UNIX__  && !defined __HEADLESS__

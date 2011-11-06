@@ -163,6 +163,14 @@ void    warnError (long errCode)
 
 //_____________________________________________________________
 
+void    flagError (long errCode)
+{
+    warnError (DecodeError (errCode));
+}
+
+
+//_____________________________________________________________
+
 void    warnError (const char* theError)
 {
     FlagError (theError);
