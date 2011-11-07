@@ -374,7 +374,7 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------
-    set(RES_MACGUI src/gui/mac/iHyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
     set(RES_MACGUIDEBUG src/gui/mac/iHyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
     file(
         GLOB SRC_MACGUI
@@ -386,7 +386,7 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # MacOSX gui executable and directives
     #---------------------------------------------------------------------------
-    add_executable(iHyPhy
+    add_executable(HyPhy
         MACOSX_BUNDLE
 		EXCLUDE_FROM_ALL
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
@@ -403,29 +403,30 @@ if(APPLE)
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
     find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(iHyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
+    target_link_libraries(HyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
     target_link_libraries(iHyPhyDebug crypto curl pthread ssl ${CARBON} ${QUICKTIME})
-    add_custom_target(MAC DEPENDS iHyPhy)
+    add_custom_target(MAC DEPENDS HyPhy)
     add_custom_target(MACDebug DEPENDS iHyPhyDebug)
 
     #---------------------------------------------------------------------------
     # install the hyphy hbl stdlib into the .app
     #---------------------------------------------------------------------------
-    get_target_property(IHYPHY_APPEXE iHyPhy LOCATION)
-    get_filename_component(IHYPHY_APPDIR ${IHYPHY_APPEXE} PATH)
+   
+   	get_target_property   (HYPHY_APPEXE HyPhy LOCATION)
+    get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
 
     add_custom_command(
-        TARGET iHyPhy
+        TARGET HyPhy
         PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_APPDIR}/../Resources/HBL
     )
     add_custom_command(
-        TARGET iHyPhy
+        TARGET HyPhy
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${IHYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
 
-    get_target_property(IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
+    get_target_property   (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
     get_filename_component(IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
 
     add_custom_command(
@@ -433,6 +434,18 @@ if(APPLE)
         PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
     )
+
+	add_custom_target(
+		HYPHY_DMG
+		DEPENDS HyPhy
+	)
+	
+	
+    add_custom_command(
+    	TARGET HYPHY_DMG
+		POST_BUILD
+		COMMAND hdiutil create -srcfolder ${HYPHY_APPDIR}/../../../ -format UDBZ ${HYPHY_APPDIR}/../../../hyphy.dmg)
+		
     add_custom_command(
         TARGET iHyPhyDebug
         POST_BUILD
@@ -443,18 +456,18 @@ if(APPLE)
     # MacOSX gui-specific properties
     #---------------------------------------------------------------------------
     set_property(
-        TARGET iHyPhy
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="iHyPhy"
+        TARGET HyPhy
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="HyPhy"
     )
     set_property(
         TARGET iHyPhyDebug
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="iHyPhyDebug"
     )
     set_target_properties(
-        iHyPhy
+        HyPhy
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
 		XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES
 		XCODE_GCC_AUTO_VECTORIZATION YES
 	)
@@ -494,14 +507,22 @@ if(APPLE)
     )
 
     set_target_properties(
-        iHyPhy
+        HyPhy
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
     )
+    
     set_target_properties(
-        iHyPhy MAC
+        HyPhy MAC
         PROPERTIES
         OSX_ARCHITECTURES i386
     )
+
+    set_target_properties(
+        HyPhy HYPHY_DMG
+        PROPERTIES
+        OSX_ARCHITECTURES i386
+    )
+
     set_target_properties(
         iHyPhyDebug
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
