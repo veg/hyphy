@@ -977,7 +977,8 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
         return LNot();
         break;
     case HY_OP_CODE_NEQ: // !=
-        return NotEqual(p);
+        if (p->ObjectClass() == NUMBER)
+            return NotEqual(p);
         break;
     case HY_OP_CODE_IDIV: // $
         return longDiv(p);
@@ -1015,7 +1016,8 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
         return LessEq(p);
         break;
     case HY_OP_CODE_EQ: // ==
-        return AreEqual(p);
+        if (p->ObjectClass() == NUMBER)
+            return AreEqual(p);
         break;
     case HY_OP_CODE_GREATER: // >
         return Greater(p);
@@ -1872,7 +1874,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
     _Parameter   a = theValue,
                  b = ((_Constant*)theObj)->theValue;
 
-    if (a==0) {
+    if (a==0.0) {
         return new _Constant (b!=0.0);
     }
 
@@ -1898,7 +1900,7 @@ _PMathObj _Constant::LOr (_PMathObj theObj)
 //__________________________________________________________________________________
 _PMathObj _Constant::LNot ()
 {
-    return new _Constant (!(long)(theValue));
+    return new _Constant (CheckEqual(theValue, 0.0));
 }
 
 //__________________________________________________________________________________

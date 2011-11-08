@@ -453,6 +453,7 @@ extern  _String
 
 getDString,
 getFString,
+tempFString,
 baseDirectory,
 libDirectory,
 useLastFString,

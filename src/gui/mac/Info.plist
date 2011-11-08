@@ -43,11 +43,11 @@
 	<key>CFBundleLongVersionString</key>
 	<string>1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.00beta</string>
+	<string>2.10beta</string>
 	<key>CFBundleURLTypes</key>
 	<array/>
 	<key>CFBundleVersion</key>
-	<string>3.00beta</string>
+	<string>2.10beta</string>
 	<key>NSServices</key>
 	<array/>
 	<key>UTExportedTypeDeclarations</key>

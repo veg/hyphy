@@ -125,6 +125,10 @@ fprintf (stdout,"\nPerforming pairwise alignment with reference sequences\n");
 
 //pairwiseDistances = {seqCount,1};
 
+fprintf (TEMP_FILE_NAME, CLEAR_FILE, KEEP_OPEN);
+checkPointFile = TEMP_FILE_NAME;
+	
+	
 for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 {
     if (seqCounter == refSeqID)
@@ -150,6 +154,10 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	
 	aligned = aligned[0];
 	SeqAlignments[seqCounter] = aligned;
+
+	GetString (seqName,unal,seqCounter);
+	fprintf (TEMP_FILE_NAME, ">ref\n", aligned[1], "\n>", seqName, aligned[2]); 
+
 	aligned = aligned[1];
 	
 	myStartingPosition = aligned$"[^-]";
@@ -163,10 +171,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	startingPosition[seqCounter][1] = myEndingPosition;
 	aligned = aligned[myStartingPosition][myEndingPosition];
 	cleanedAlignedSeq = ((SeqAlignments[seqCounter])[2])[myStartingPosition][myEndingPosition]^{{"N","-"}};
-	/*pairOfSequences = ">1\n" + cleanedAlignedSeq + "\n>2\n" + aligned;
-	DataSet 	  twoDS 			= ReadFromString (pairOfSequences);
-	DataSetFilter filteredData	    = CreateFilter (twoDS,1);
-	pairwiseDistances[seqCounter] = ComputeDistanceFormula (0,1);*/
+
 	refInsert = aligned||"-+";
 	if (refInsert[0]>0)
 	{
@@ -186,6 +191,8 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	}
 	SetParameter (STATUS_BAR_STATUS_STRING, "Performing pairwise alignment with reference sequences ("+seqCounter+"/"+seqCount+" done)",0);
 }
+
+fprintf (TEMP_FILE_NAME, CLOSE_FILE);
 
 /* produce a fully gapped reference sequence */
 

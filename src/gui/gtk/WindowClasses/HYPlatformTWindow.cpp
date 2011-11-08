@@ -286,7 +286,7 @@ void _HYTWindow::_Activate(void)
 
 
     if (!theTimer) {
-        theTimer = g_timeout_add  (500,IdleWindowTimer,(gpointer)this);
+        theTimer = g_timeout_add  (500,(GSourceFunc)IdleWindowTimer,(gpointer)this);
     }
 
     _HYPlatformWindow::_Activate();
