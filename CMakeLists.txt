@@ -438,7 +438,7 @@ if(APPLE)
 	
 	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})	
 	
-	find_program (HAZ_DMG_CANVAS "dmgcanvas" NO_DEFAULT_PATH)
+	find_program (HAZ_DMG_CANVAS "dmgcanvas")
 	
 	if (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
 		add_custom_command(
