@@ -3,6 +3,9 @@
 !define VERSION "2.1.0"
 !define PACKAGE_NAME "HyPhy"
 
+Icon "../../src/gui/res/Windows/desk.ico"
+UninstallIcon "../../src/gui/res/Windows/desk.ico"
+
 XPStyle on
 ShowInstDetails hide
 ShowUninstDetails hide

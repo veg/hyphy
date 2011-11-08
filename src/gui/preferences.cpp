@@ -266,7 +266,9 @@ void  ReadPreferences (void)
 #endif
 
 #ifdef __WINDOZE__
-    if ((prefFileHandle = fopen (prefFileTitle.getStr(),"r+"))) {
+    _String  prefFileName = baseDirectory&prefFileTitle;
+
+    if ((prefFileHandle = fopen (prefFileName.getStr(),"r+"))) {
         fileContents = new _String (prefFileHandle);
         fclose (prefFileHandle);
     }
@@ -414,7 +416,7 @@ void  WritePreferences (void)
 
 #ifdef __WINDOZE__
         _String  prefFileName = baseDirectory&prefFileTitle;
-    prefFileHandle = fopen (prefFileName.sData,"w+");
+        prefFileHandle = fopen (prefFileName.sData,"w+");
     if (prefFileHandle)
 #endif
 

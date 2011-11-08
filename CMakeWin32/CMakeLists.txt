@@ -75,7 +75,6 @@ include_directories(
 add_executable(
 	HYPHY.EXE
 	WIN32
-	EXCLUDE_FROM_ALL
 	${SRC_WINRES}
 	${SRC_WINMAIN}
 	${SRC_WIN32_GUI}
@@ -85,15 +84,23 @@ add_executable(
 	
 target_link_libraries(HYPHY.EXE comctl32 winspool wininet msimg32)
 
-install(
-	TARGETS HYPHY.EXE
-	RUNTIME DESTINATION bin
-	OPTIONAL
-)
 
 add_custom_target(WIN32 DEPENDS HYPHY.EXE
 				  COMMENT "Win32 GUI HyPhy"	
 )
+
+find_program (HAZ_NSIS "makensis" 
+			HINTS /usr/bin/ /usr/local/bin ENV PATH)
+
+
+if (${HAZ_NSIS} MATCHES ".+makensis$")
+	add_custom_command(
+		TARGET HYPHY.EXE
+		POST_BUILD
+		COMMAND makensis ${CMAKE_CURRENT_SOURCE_DIR}/../installers/Win/hyphy.nsi
+		)	
+endif (${HAZ_NSIS} MATCHES ".+makensis$")
+ 
 
 if (${CMAKE_SYSTEM} MATCHES "^Darwin.*")
 	set (CMAKE_CXX_LINK_FLAGS "")
@@ -102,7 +109,7 @@ endif (${CMAKE_SYSTEM} MATCHES "^Darwin.*")
 set_target_properties(
 	HYPHY.EXE
 	PROPERTIES
-	COMPILE_DEFINITIONS "__WINDOZE__;WINVER=0x0500;__HYPHY_NO_CURL__;_HYPHY_LIBDIRECTORY_=\"${CMAKE_INSTALL_PREFIX}/lib/hyphy\""
+	COMPILE_DEFINITIONS "__WINDOZE__;WINVER=0x0500;__HYPHY_NO_CURL__;"
 	COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mwindows "
 	LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -mwindows -v -static "
 	LINKER_LANGUAGE CXX
