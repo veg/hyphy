@@ -661,7 +661,7 @@ void        _HYPlatformTable::_FrameRect        (GdkRectangle& theRect)
                             theRect.width, theRect.height);
 
         gdk_gc_set_values (theContext, &saveGCValues,
-                           GDK_GC_FOREGROUND|GDK_GC_FUNCTION|GDK_GC_LINE_WIDTH|GDK_GC_LINE_STYLE|GDK_GC_CAP_STYLE|GDK_GC_JOIN_STYLE);
+                           (GdkGCValuesMask)(GDK_GC_FOREGROUND|GDK_GC_FUNCTION|GDK_GC_LINE_WIDTH|GDK_GC_LINE_STYLE|GDK_GC_CAP_STYLE|GDK_GC_JOIN_STYLE));
     }
 }
 
@@ -1147,7 +1147,7 @@ bool        _HYTable::_ProcessOSEvent (Ptr vEvent)
 
             //SetCapture      (parentWindow);
             gdk_pointer_grab (parentWindow->window,false,
-                              GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+                              (GdkEventMask)(GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK),
                               parentWindow->window, NULL, bevent->time);
 
             limits.x      = lastH;
@@ -1217,7 +1217,7 @@ bool        _HYTable::_ProcessOSEvent (Ptr vEvent)
                 activeColumn2 = -1;
                 if (messageRecipient) {
                     gdk_pointer_grab (parentWindow->window,false,
-                                      GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+                                      (GdkEventMask)(GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK),
                                       NULL, NULL, bevent->time);
                     ((_HYTWindow*)messageRecipient)->trackMouseComponent = (Ptr)this;
                 }
@@ -1242,7 +1242,7 @@ bool        _HYTable::_ProcessOSEvent (Ptr vEvent)
 
                 if (messageRecipient) {
                     gdk_pointer_grab (parentWindow->window,false,
-                                      GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+                                      (GdkEventMask)(GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK),
                                       NULL, NULL, bevent->time);
 
                     ((_HYTWindow*)messageRecipient)->trackMouseComponent = (Ptr)this;

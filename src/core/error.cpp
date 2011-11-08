@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __MAC__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __MAC__ || defined __HYPHY_GTK__
 #include "preferences.h"
 #endif
 
@@ -52,7 +52,9 @@ void WinErrorBox(_String&, bool);
 #if !defined __MINGW32__
 #include <sys/utsname.h>
 #endif
+#ifndef __HYPHY_GTK__
 extern  bool dropIntoDebugMode;
+#endif
 #else
 void    SaveConsole (void);
 #endif
@@ -289,7 +291,7 @@ void    FlagError (_String st)
     }
 #endif
 
-#ifdef __UNIX__
+#if defined __UNIX__ && !defined __HYPHY_GTK__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif
@@ -428,7 +430,7 @@ void    WarnError (_String st)
     }
     return;
 #endif
-#ifdef __UNIX__
+#if defined __UNIX__ && !defined __HYPHY_GTK__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif

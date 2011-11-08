@@ -729,7 +729,7 @@ void    AddStringToRecentMenu (_String& fName, _String& pName)
     for (long mi=0; mi<recentFiles.lLength; mi++) {
         itemFactoryStrings.AppendNewInstance(new _String(_String("/File/Open/Open Recent/") & *((_String*)recentFiles(mi))));
         itemFactoryHolder[mi] = (GtkItemFactoryEntry) {
-            ((_String*)(itemFactoryStrings(mi)))->sData,NULL,hyphy_menu_item_callback,2000+mi,"<Item>"
+            ((_String*)(itemFactoryStrings(mi)))->sData,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,2000+mi,"<Item>"
         };
         gtk_item_factory_create_items (hyphyConsoleWindow->menu_items,  1, &(itemFactoryHolder[mi]), hyphyConsoleWindow);
     }

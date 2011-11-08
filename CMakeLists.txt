@@ -11,7 +11,6 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
 
-
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
 #-------------------------------------------------------------------------------
@@ -125,6 +124,7 @@ set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.6.17/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
+set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
@@ -285,8 +285,8 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
 endif(${MPI_FOUND})
 
@@ -333,6 +333,55 @@ set_target_properties(
     LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
 )
 
+#-------------------------------------------------------------------------------
+# hyphy gtk+ target
+#-------------------------------------------------------------------------------
+
+
+find_package(GTK2 2.6 REQUIRED gtk)
+
+if(${GTK2_FOUND})
+      include_directories(${GTK2_INCLUDE_DIRS})
+
+	  file(GLOB SRC_GUI_GTK src/gui/gtk/*.cpp src/gui/gtk/Components/*.cpp src/gui/gtk/WindowClasses/*.cpp)
+
+	    include_directories(src/gui/gtk/include src/gui/gtk/include/Components /Developer/Headers/FlatCarbon)
+
+	  add_executable(
+        HYPHYGTK
+        EXCLUDE_FROM_ALL
+        ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON} 
+     )
+
+    target_link_libraries(HYPHYGTK crypto curl pthread ssl ${GTK2_LIBRARIES})
+
+	add_custom_target(GTK DEPENDS HYPHYGTK)
+
+	install(DIRECTORY src/gui/res/GTKResources/ DESTINATION lib/hyphy/GTKResources)
+
+	install(
+        TARGETS HYPHYGTK
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+    
+    set_property(
+        TARGET HYPHYGTK
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    )
+    
+   set_target_properties(
+        HYPHYGTK
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+    )
+    
+endif(${GTK2_FOUND})
+   
+
+
+ 
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
