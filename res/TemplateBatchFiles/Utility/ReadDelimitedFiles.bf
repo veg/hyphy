@@ -155,7 +155,7 @@ function ReadTabTable (fileName, haveHeader)
 	felMXString * "_tempMatrix={";
 	for (lineID = haveHeader; lineID < Columns(inData); lineID = lineID + 1)
 	{
-		felMXString * ("{" + inData[lineID]^{{"[^0-9eE\.\-\+]+",","}} + "}\n");
+		felMXString * ("{" + inData[lineID]^{{"[^0-9eE\.\+\-]+",","}} + "}\n");
 	}
 	felMXString * "}";
 	felMXString * 0;
