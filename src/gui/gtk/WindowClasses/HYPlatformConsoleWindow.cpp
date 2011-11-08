@@ -49,46 +49,46 @@ void             getUserFont         (void);
 
 static GtkItemFactoryEntry hyphy_console_window_menu_file[] = {
     { "/File/_New",             NULL,         NULL,         0, "<Branch>" },
-    { "/File/New/New _Tree",      "<control>N",       hyphy_menu_item_callback,         70, "<Item>" },
-    { "/File/New/New _Model",     "<control><mod>N",      hyphy_menu_item_callback,         71, "<Item>" },
-    { "/File/New/New _Chart",     "<control><shift>N",  hyphy_menu_item_callback,           72, "<Item>" },
+    { "/File/New/New _Tree",      "<control>N",       (GtkItemFactoryCallback)hyphy_menu_item_callback,         70, "<Item>" },
+    { "/File/New/New _Model",     "<control><mod>N",      (GtkItemFactoryCallback)hyphy_menu_item_callback,         71, "<Item>" },
+    { "/File/New/New _Chart",     "<control><shift>N",  (GtkItemFactoryCallback)hyphy_menu_item_callback,           72, "<Item>" },
     {
         "/File/New/New _Genetic Code",
-        NULL,         hyphy_menu_item_callback,         73, "<Item>"
+        NULL,         (GtkItemFactoryCallback)hyphy_menu_item_callback,         73, "<Item>"
     },
     {
         "/File/New/New S_QLite Database",
-        NULL,         hyphy_menu_item_callback,         74, "<Item>"
+        NULL,         (GtkItemFactoryCallback)hyphy_menu_item_callback,         74, "<Item>"
     },
 
     { "/File/_Open",                NULL,         NULL,         0, "<Branch>" },
-    { "/File/Open/Open _Batch File",      "<control>O",       hyphy_menu_item_callback,         80, "<Item>" },
-    { "/File/Open/Open _Data File",     "<control><alt>O",    hyphy_menu_item_callback,         81, "<Item>" },
-    { "/File/Open/Open _Tree File",     "<control><shift>O",    hyphy_menu_item_callback,           82, "<Item>" },
+    { "/File/Open/Open _Batch File",      "<control>O",       (GtkItemFactoryCallback)hyphy_menu_item_callback,         80, "<Item>" },
+    { "/File/Open/Open _Data File",     "<control><alt>O",    (GtkItemFactoryCallback)hyphy_menu_item_callback,         81, "<Item>" },
+    { "/File/Open/Open _Tree File",     "<control><shift>O",    (GtkItemFactoryCallback)hyphy_menu_item_callback,           82, "<Item>" },
     { "/File/Open/sep1",            NULL,         NULL,           0,                    "<Separator>" },
     { "/File/Open/Open _Recent",            NULL,         NULL,           0,                    "<Branch>" },
-    { "/File/Open/Open Recent/_Clear menu",      NULL,        hyphy_menu_item_callback,         1999, "<Item>" },
+    { "/File/Open/Open Recent/_Clear menu",      NULL,        (GtkItemFactoryCallback)hyphy_menu_item_callback,         1999, "<Item>" },
     { "/File/Open/Open Recent/sep1",            NULL,         NULL,           0,                    "<Separator>" },
     { "/File/Open/sep2",            NULL,         NULL,           0,                    "<Separator>" },
-    { "/File/Open/Open Te_xt File",     NULL,    hyphy_menu_item_callback,          83, "<Item>" },
-    { "/File/Open/Open Ta_ble",     NULL,    hyphy_menu_item_callback,              84, "<Item>" },
-    { "/File/Open/Open S_QLite Database",     NULL,    hyphy_menu_item_callback,                85, "<Item>" },
+    { "/File/Open/Open Te_xt File",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,          83, "<Item>" },
+    { "/File/Open/Open Ta_ble",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,              84, "<Item>" },
+    { "/File/Open/Open S_QLite Database",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,                85, "<Item>" },
     { "/File/sep1",         NULL,         NULL,           0,                    "<Separator>" },
-    { "/File/_Quit",     "<control>Q",    hyphy_menu_item_callback,             15, "<StockItem>",GTK_STOCK_QUIT },
+    { "/File/_Quit",     "<control>Q",    (GtkItemFactoryCallback)hyphy_menu_item_callback,             15, "<StockItem>",GTK_STOCK_QUIT },
     { "/Edit/sep_pref",     NULL,    NULL,              0, "<Separator>" },
-    { "/Edit/Pre_ferences",     NULL,    hyphy_menu_item_callback,              27, "<Item>" },
+    { "/Edit/Pre_ferences",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,              27, "<Item>" },
     { "/_Analysis",         NULL,         NULL,           0,                    "<Branch>" } ,
-    { "/Analysis/_Cancel execution",     "<control>.",    hyphy_menu_item_callback,             21, "<Item>"},
-    { "/Analysis/_Suspend execution",     "<control>;",    hyphy_menu_item_callback,                22, "<Item>"},
+    { "/Analysis/_Cancel execution",     "<control>.",    (GtkItemFactoryCallback)hyphy_menu_item_callback,             21, "<Item>"},
+    { "/Analysis/_Suspend execution",     "<control>;",    (GtkItemFactoryCallback)hyphy_menu_item_callback,                22, "<Item>"},
     { "/Analysis/sep1",         NULL,         NULL,           0,                    "<Separator>" },
-    { "/Analysis/_View messages.log",     NULL,    hyphy_menu_item_callback,                23, "<Item>"},
+    { "/Analysis/_View messages.log",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,                23, "<Item>"},
     { "/Analysis/sep2",         NULL,         NULL,           0,                    "<Separator>" },
-    { "/Analysis/_Standard analyses...",     "<control>E",    hyphy_menu_item_callback,             24, "<Item>"},
+    { "/Analysis/_Standard analyses...",     "<control>E",    (GtkItemFactoryCallback)hyphy_menu_item_callback,             24, "<Item>"},
     { "/Analysis/Results",          NULL,         NULL,           0,                    "<Branch>" } ,
-    { "/Analysis/_Rerun last analysis",     "<control>R",    hyphy_menu_item_callback,              30, "<Item>"},
+    { "/Analysis/_Rerun last analysis",     "<control>R",    (GtkItemFactoryCallback)hyphy_menu_item_callback,              30, "<Item>"},
     { "/Analysis/sep3",         NULL,         NULL,           0,                    "<Separator>" },
-    { "/Analysis/Co_mpute expression",     "<control>K",    hyphy_menu_item_callback,               60, "<Item>"},
-    { "/Analysis/_Execute selection",     NULL,    hyphy_menu_item_callback,                61, "<Item>"}
+    { "/Analysis/Co_mpute expression",     "<control>K",    (GtkItemFactoryCallback)hyphy_menu_item_callback,               60, "<Item>"},
+    { "/Analysis/_Execute selection",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,                61, "<Item>"}
 };
 
 //__________________________________________________________________
@@ -139,7 +139,7 @@ void _HYConsoleWindow::_SetMenuBar(void)
                     aProcEntry.path = chopped.sData;
                     gtk_item_factory_create_items (menu_items,  1, &aProcEntry, this);
                 } else {
-                    GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,1000+counter,"<Item>"};
+                    GtkItemFactoryEntry aProcEntry = {NULL,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,1000+counter,"<Item>"};
                     aProcEntry.path = chopped.sData;
                     gtk_item_factory_create_items (menu_items,  1, &aProcEntry, this);
                 }

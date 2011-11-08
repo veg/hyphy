@@ -182,7 +182,7 @@ gboolean GlobalQueueTimer (Ptr* userData)
 
 void SetUpStatusBarStuff (GtkWidget* aWindow)
 {
-    _String            fName = baseDirectory & "GTKResources/striped.xpm";
+    _String            fName = libDirectory & "GTKResources/striped.xpm";
     statusBarLayout          = pango_layout_new (screenPContext);
     statusBarFontDesc        = pango_font_description_new ();
     stripedFill              = gdk_pixmap_create_from_xpm (GDK_DRAWABLE(aWindow->window), NULL, NULL, fName.sData);
@@ -290,7 +290,7 @@ int main( int   argc, char *argv[] )
         } else if (thisArg.beginswith ("LIBPATH=")) {
             libDirectory = thisArg.Cut(8,-1);
             if (libDirectory.sLength) {
-                if (libDirector.sData[baseDirectory.sLength-1] != '/') {
+                if (libDirectory.sData[baseDirectory.sLength-1] != '/') {
                     libDirectory = libDirectory & "/";
                 }
             } else {
@@ -329,7 +329,7 @@ int main( int   argc, char *argv[] )
     if (rank == 0)
 #endif
     {
-        baseDir = baseDirectory & "GTKResources";
+        baseDir = libDirectory & "GTKResources";
         _List scanRes;
         ScanDirectoryForFileNames(baseDir,scanRes,false);
         if (scanRes.lLength == 0) {
@@ -391,8 +391,8 @@ int main( int   argc, char *argv[] )
         }
 #endif
 
-        g_timeout_add  (100,GlobalQueueTimer,nil);
-        g_timeout_add  (1000,progressTimerFunction,nil);
+        g_timeout_add  (100,(GSourceFunc)GlobalQueueTimer,nil);
+        g_timeout_add  (1000,(GSourceFunc)progressTimerFunction,nil);
         gtk_main ();
 
         WritePreferences();

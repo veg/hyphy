@@ -108,7 +108,7 @@ _String HandlePullDown (_List& menuOptions, long l, long t,long startPos)
         gtk_item_factory_create_items (menu_items,  menuOptions.lLength, lastPopupFactory, menu);
 
         menu = gtk_item_factory_get_widget (menu_items, "<HY_POPUP>/Popup");
-        g_signal_connect (menu, "selection-done", hyphy_popup_menu_close, menu_items);
+        g_signal_connect (menu, "selection-done", (GCallback)hyphy_popup_menu_close, menu_items);
 
         lastPopupMenuSelection = -1;
 
@@ -210,7 +210,7 @@ Ptr     ProcureIconResource (long id)
 {
     long cid = loadedXPMs.Find ((BaseRef)id);
     if (cid < 0) {
-        _String picFileName = baseDirectory & _String("GTKResources/") & id & ".png";
+        _String picFileName = libDirectory & _String("GTKResources/") & id & ".png";
         GError * pixBufError = nil;
         GdkPixbuf*  thePixMap = gdk_pixbuf_new_from_file  (picFileName.sData, &pixBufError);
         if (!thePixMap) {
@@ -222,7 +222,7 @@ Ptr     ProcureIconResource (long id)
         cid = loadedXPMs.Insert ((BaseRef)id, (long)thePixMap);
     }
 
-    return loadedXPMs.GetXtra(cid);
+    return (Ptr)loadedXPMs.GetXtra(cid);
 }
 
 //________________________________________________________
@@ -298,7 +298,7 @@ void    GenerateFontList (_List& fonts)
     pango_context_list_families ((screenPContext),&families, &n_families);
 
     for (i=0; i<n_families; i++) {
-        fonts && & _String(pango_font_family_get_name (families[i]));
+        fonts.AppendNewInstance(new _String(pango_font_family_get_name (families[i])));
     }
     fonts.Sort();
     g_free (families);

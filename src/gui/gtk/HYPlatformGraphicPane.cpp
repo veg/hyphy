@@ -10,7 +10,6 @@
 #include "HYPlatformWindow.h"
 #include "HYComponent.h"
 
-#define  GDK_PIXBUF_ENABLE_BACKEND
 #include <gdk/gdk.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
@@ -34,7 +33,7 @@ void add_if_writable (GdkPixbufFormat *data, _List *list)
 void        findGraphicsExporterComponents (_List& storeIn)
 {
     GSList *formats = gdk_pixbuf_get_formats ();
-    g_slist_foreach (formats, add_if_writable, &storeIn);
+    g_slist_foreach (formats, (GFunc)add_if_writable, &storeIn);
     g_slist_free (formats);
 }
 
@@ -112,7 +111,7 @@ void _HYPlatformGraphicPane::_ResetCharGlyphs(void)
     }
     for (long k=0; k<=60; k=k+1)
         if (cachedCharacterGlyphs[k]) {
-            pango_glyph_string_free (cachedCharacterGlyphs[k]);
+            pango_glyph_string_free ((PangoGlyphString* )cachedCharacterGlyphs[k]);
             cachedCharacterGlyphs[k] = NULL;
         }
 }
@@ -207,7 +206,7 @@ void _HYPlatformGraphicPane::_DisplayChar  (char c,int t, int l)
             pango_shape (&c, 1, &pitem->analysis, newString);
             cachedCharacterGlyphs[c-40] = newString;
         }
-        gdk_draw_glyphs (thePane, theContext, pitem->analysis.font,l,t,cachedCharacterGlyphs[c-40]);
+        gdk_draw_glyphs (thePane, theContext, pitem->analysis.font,l,t,(PangoGlyphString* )cachedCharacterGlyphs[c-40]);
     } else {
         _DisplayText (c, t, l, false);
     }

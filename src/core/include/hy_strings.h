@@ -873,6 +873,8 @@ extern _String volumeName;
 
 void    SetStatusBarValue           (long,_Parameter,_Parameter);
 void    SetStatusLine               (_String);
+void    SetStatusLineUser           (_String);
+
 
 Ptr     PrepRegExp                  (_String*, int&, bool);
 void    FlushRegExp                 (Ptr);
@@ -891,6 +893,10 @@ char    GetPlatformDirectoryChar    (void);
 
 
 extern  _String                     __KERNEL__VERSION__;
+
+#ifdef __UNIX__
+	extern bool	needExtraNL;
+#endif
 
 typedef bool (*_hyStringValidatorType) (_String*);
 bool    hyIDValidator (_String*);
