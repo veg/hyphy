@@ -285,8 +285,8 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
     )
 endif(${MPI_FOUND})
 
@@ -338,7 +338,7 @@ set_target_properties(
 #-------------------------------------------------------------------------------
 
 
-find_package(GTK2 2.6 REQUIRED gtk)
+find_package(GTK2 2.6)
 
 if(${GTK2_FOUND})
       include_directories(${GTK2_INCLUDE_DIRS})
@@ -373,8 +373,8 @@ if(${GTK2_FOUND})
    set_target_properties(
         HYPHYGTK
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
     
 endif(${GTK2_FOUND})
