@@ -54,19 +54,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 _String   compileDate = __DATE__,
-          __KERNEL__VERSION__ = _String ("2.00") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __KERNEL__VERSION__ = _String ("2.10") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
-                                                                                                 Replace("Mar", "03", true).
-                                                                                                 Replace("Apr", "04", true).
-                                                                                                 Replace("May", "05", true).
-                                                                                                 Replace("Jun", "06", true).
-                                                                                                 Replace("Jul", "07", true).
-                                                                                                 Replace("Aug", "08", true).
-                                                                                                 Replace("Sep", "09", true).
-                                                                                                 Replace("Oct", "10", true).
-                                                                                                 Replace("Nov", "11", true).
-                                                                                                 Replace("Dec", "12", true)
-                                                                                                 & compileDate.Cut (4,5) & "beta";
+                                                                                                  Replace("Mar", "03", true).
+                                                                                                  Replace("Apr", "04", true).
+                                                                                                  Replace("May", "05", true).
+                                                                                                  Replace("Jun", "06", true).
+                                                                                                  Replace("Jul", "07", true).
+                                                                                                  Replace("Aug", "08", true).
+                                                                                                  Replace("Sep", "09", true).
+                                                                                                  Replace("Oct", "10", true).
+                                                                                                  Replace("Nov", "11", true).
+                                                                                                  Replace("Dec", "12", true)
+                                                                                                  & compileDate.Cut (4,5).Replace (" ", "0", true) & "beta";
 
 
 _String     empty(""),

@@ -9,6 +9,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 # set the CMAKE_MODULE_PATH so we can import OpenCL
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
+set(HYPHY_VERSION 2.1)
 
 
 #-------------------------------------------------------------------------------
@@ -429,23 +430,45 @@ if(APPLE)
     get_target_property   (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
     get_filename_component(IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
 
-    add_custom_command(
-        TARGET iHyPhyDebug
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
-    )
 
 	add_custom_target(
 		HYPHY_DMG
 		DEPENDS HyPhy
 	)
 	
+	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})	
 	
-    add_custom_command(
-    	TARGET HYPHY_DMG
-		POST_BUILD
-		COMMAND hdiutil create -srcfolder ${HYPHY_APPDIR}/../../../ -format UDBZ ${HYPHY_APPDIR}/../../../hyphy.dmg)
+	find_program (HAZ_DMG_CANVAS "dmgcanvas")
+	
+	if (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+		add_custom_command(
+				TARGET HYPHY_DMG
+				POST_BUILD
+				COMMAND dmgcanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
+			)	
+	else (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+		add_custom_command(
+				TARGET HYPHY_DMG
+				POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_DISTRIBUTE_DIR}
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${HYPHY_DISTRIBUTE_DIR}/../HyPhy.app ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/help/SelectionAnalyses.pdf ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/help/Getting Started With HyPhy.pdf" ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E remove -f ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
+				COMMAND hdiutil create -srcfolder ${HYPHY_DISTRIBUTE_DIR} -format UDBZ ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
+			)	
+	endif (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+	
+    
 		
+     add_custom_command(
+        TARGET iHyPhyDebug
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
+    )
     add_custom_command(
         TARGET iHyPhyDebug
         POST_BUILD
