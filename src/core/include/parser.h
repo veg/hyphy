@@ -29,8 +29,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef     __PARSER__
 #define     __PARSER__
 
+#include "avllistx.h"
+#include "avllistxl.h"
 #include "baseobj.h"
-#include "hy_lists.h"
 #include "hy_strings.h"
 #include "errorfns.h"
 #include "stdio.h"
@@ -86,66 +87,68 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define  HY_OP_CODE_AND             (1+HY_OP_CODE_MOD)              // &&
 #define  HY_OP_CODE_MUL             (1+HY_OP_CODE_AND)              // *
 #define  HY_OP_CODE_ADD             (1+HY_OP_CODE_MUL)              // +
-#define  HY_OP_CODE_SUB             (1+HY_OP_CODE_ADD)          // -
+#define  HY_OP_CODE_SUB             (1+HY_OP_CODE_ADD)              // -
 #define  HY_OP_CODE_DIV             (1+HY_OP_CODE_SUB)              // /
-#define  HY_OP_CODE_LESS            (1+HY_OP_CODE_DIV)  // <
+#define  HY_OP_CODE_LESS            (1+HY_OP_CODE_DIV)              // <
 
-#define  HY_OP_CODE_LEQ             (1+HY_OP_CODE_LESS) // <=
-#define  HY_OP_CODE_EQ              (1+HY_OP_CODE_LEQ) // ==
-#define  HY_OP_CODE_GREATER         (1+HY_OP_CODE_EQ) // >
-#define  HY_OP_CODE_GEQ             (1+HY_OP_CODE_GREATER) // >=
-#define  HY_OP_CODE_ABS             (1+HY_OP_CODE_GEQ) // Abs
-#define  HY_OP_CODE_ARCTAN          (1+HY_OP_CODE_ABS) // Arctan
-#define  HY_OP_CODE_BETA            (1+HY_OP_CODE_ARCTAN) // Beta
-#define  HY_OP_CODE_BRANCHCOUNT     (1+HY_OP_CODE_BETA) // BranchCount
-#define  HY_OP_CODE_BRANCHLENGTH    (1+HY_OP_CODE_BRANCHCOUNT) // BranchLength
-#define  HY_OP_CODE_BRANCHNAME      (1+HY_OP_CODE_BRANCHLENGTH) // BranchName
+//Check for correctness, then move on
+#define  HY_OP_CODE_LEQ             (1+HY_OP_CODE_LESS)             // <=
+#define  HY_OP_CODE_EQ              (1+HY_OP_CODE_LEQ)              // ==
+#define  HY_OP_CODE_GREATER         (1+HY_OP_CODE_EQ)               // >
+#define  HY_OP_CODE_GEQ             (1+HY_OP_CODE_GREATER)          // >=
 
-#define  HY_OP_CODE_CCHI2           (1+HY_OP_CODE_BRANCHNAME) // CChi2
-#define  HY_OP_CODE_CGAMMADIST      (1+HY_OP_CODE_CCHI2) // CGammaDist
-#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CGAMMADIST) // Columns
-#define  HY_OP_CODE_COS             (1+HY_OP_CODE_COLUMNS) // Cos
-#define  HY_OP_CODE_DIFF            (1+HY_OP_CODE_COS) // D
-#define  HY_OP_CODE_EIGENSYSTEM     (1+HY_OP_CODE_DIFF) // Eigensystem
-#define  HY_OP_CODE_ERF             (1+HY_OP_CODE_EIGENSYSTEM) // Erf
-#define  HY_OP_CODE_EVAL            (1+HY_OP_CODE_ERF) // Eval
-#define  HY_OP_CODE_EXP             (1+HY_OP_CODE_EVAL) // Exp
-#define  HY_OP_CODE_FORMAT          (1+HY_OP_CODE_EXP) // Format
-#define  HY_OP_CODE_GAMMA           (1+HY_OP_CODE_FORMAT) // Gamma
+#define  HY_OP_CODE_ABS             (1+HY_OP_CODE_GEQ)              // Abs
+#define  HY_OP_CODE_ARCTAN          (1+HY_OP_CODE_ABS)              // Arctan
+#define  HY_OP_CODE_BETA            (1+HY_OP_CODE_ARCTAN)           // Beta
+#define  HY_OP_CODE_BRANCHCOUNT     (1+HY_OP_CODE_BETA)             // BranchCount
+#define  HY_OP_CODE_BRANCHLENGTH    (1+HY_OP_CODE_BRANCHCOUNT)      // BranchLength
+#define  HY_OP_CODE_BRANCHNAME      (1+HY_OP_CODE_BRANCHLENGTH)     // BranchName
 
-#define  HY_OP_CODE_GAMMADIST       (1+HY_OP_CODE_GAMMA) // GammaDist
-#define  HY_OP_CODE_IBETA           (1+HY_OP_CODE_GAMMADIST) // IBeta
-#define  HY_OP_CODE_IGAMMA          (1+HY_OP_CODE_IBETA) // IGamma
-#define  HY_OP_CODE_INVCHI2         (1+HY_OP_CODE_IGAMMA) // InvChi2
-#define  HY_OP_CODE_INVERSE         (1+HY_OP_CODE_INVCHI2) // Inverse
-#define  HY_OP_CODE_JOIN            (1+HY_OP_CODE_INVERSE) // Join
-#define  HY_OP_CODE_LUDECOMPOSE     (1+HY_OP_CODE_JOIN) // LUDecompose
-#define  HY_OP_CODE_LUSOLVE         (1+HY_OP_CODE_LUDECOMPOSE) // LUSolve
-#define  HY_OP_CODE_LNGAMMA         (1+HY_OP_CODE_LUSOLVE) // LnGamma
-#define  HY_OP_CODE_LOG             (1+HY_OP_CODE_LNGAMMA) // Log
-#define  HY_OP_CODE_MACCESS         (1+HY_OP_CODE_LOG) // MAccess
-#define  HY_OP_CODE_MCOORD          (1+HY_OP_CODE_MACCESS) // MCoord
+#define  HY_OP_CODE_CCHI2           (1+HY_OP_CODE_BRANCHNAME)       // CChi2
+#define  HY_OP_CODE_CGAMMADIST      (1+HY_OP_CODE_CCHI2)            // CGammaDist
+#define  HY_OP_CODE_COLUMNS         (1+HY_OP_CODE_CGAMMADIST)       // Columns
+#define  HY_OP_CODE_COS             (1+HY_OP_CODE_COLUMNS)          // Cos
+#define  HY_OP_CODE_DIFF            (1+HY_OP_CODE_COS)              // D
+#define  HY_OP_CODE_EIGENSYSTEM     (1+HY_OP_CODE_DIFF)             // Eigensystem
+#define  HY_OP_CODE_ERF             (1+HY_OP_CODE_EIGENSYSTEM)      // Erf
+#define  HY_OP_CODE_EVAL            (1+HY_OP_CODE_ERF)              // Eval
+#define  HY_OP_CODE_EXP             (1+HY_OP_CODE_EVAL)             // Exp
+#define  HY_OP_CODE_FORMAT          (1+HY_OP_CODE_EXP)              // Format
+#define  HY_OP_CODE_GAMMA           (1+HY_OP_CODE_FORMAT)           // Gamma
 
-#define  HY_OP_CODE_MAX             (1+HY_OP_CODE_MCOORD) // Max
-#define  HY_OP_CODE_MIN             (1+HY_OP_CODE_MAX) // Min
-#define  HY_OP_CODE_PSTREESTRING    (1+HY_OP_CODE_MIN) // PSTreeString
-#define  HY_OP_CODE_RANDOM          (1+HY_OP_CODE_PSTREESTRING) // Random
-#define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM) // RerootTree
-#define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE) // Rows
-#define  HY_OP_CODE_SIMPLEX         (1+HY_OP_CODE_ROWS) // Simplex
-#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLEX) // Sin
-#define  HY_OP_CODE_SQRT            (1+HY_OP_CODE_SIN) // Sqrt
-#define  HY_OP_CODE_TEXTREESTRING   (1+HY_OP_CODE_SQRT) // TEXTreeString
+#define  HY_OP_CODE_GAMMADIST       (1+HY_OP_CODE_GAMMA)            // GammaDist
+#define  HY_OP_CODE_IBETA           (1+HY_OP_CODE_GAMMADIST)        // IBeta
+#define  HY_OP_CODE_IGAMMA          (1+HY_OP_CODE_IBETA)            // IGamma
+#define  HY_OP_CODE_INVCHI2         (1+HY_OP_CODE_IGAMMA)           // InvChi2
+#define  HY_OP_CODE_INVERSE         (1+HY_OP_CODE_INVCHI2)          // Inverse
+#define  HY_OP_CODE_JOIN            (1+HY_OP_CODE_INVERSE)          // Join
+#define  HY_OP_CODE_LUDECOMPOSE     (1+HY_OP_CODE_JOIN)             // LUDecompose
+#define  HY_OP_CODE_LUSOLVE         (1+HY_OP_CODE_LUDECOMPOSE)      // LUSolve
+#define  HY_OP_CODE_LNGAMMA         (1+HY_OP_CODE_LUSOLVE)          // LnGamma
+#define  HY_OP_CODE_LOG             (1+HY_OP_CODE_LNGAMMA)          // Log
+#define  HY_OP_CODE_MACCESS         (1+HY_OP_CODE_LOG)              // MAccess
+#define  HY_OP_CODE_MCOORD          (1+HY_OP_CODE_MACCESS)          // MCoord
 
-#define  HY_OP_CODE_TAN             (1+HY_OP_CODE_TEXTREESTRING) // Tan
-#define  HY_OP_CODE_TIME            (1+HY_OP_CODE_TAN) // Time
-#define  HY_OP_CODE_TIPCOUNT        (1+HY_OP_CODE_TIME) // TipCount
-#define  HY_OP_CODE_TIPNAME         (1+HY_OP_CODE_TIPCOUNT) // TipName
-#define  HY_OP_CODE_TRANSPOSE       (1+HY_OP_CODE_TIPNAME) // Transpose
-#define  HY_OP_CODE_TYPE            (1+HY_OP_CODE_TRANSPOSE) // Type
-#define  HY_OP_CODE_ZCDF            (1+HY_OP_CODE_TYPE) // ZCDF
-#define  HY_OP_CODE_POWER           (1+HY_OP_CODE_ZCDF) // ^
-#define  HY_OP_CODE_OR              (1+HY_OP_CODE_POWER) // ||
+#define  HY_OP_CODE_MAX             (1+HY_OP_CODE_MCOORD)           // Max
+#define  HY_OP_CODE_MIN             (1+HY_OP_CODE_MAX)              // Min
+#define  HY_OP_CODE_PSTREESTRING    (1+HY_OP_CODE_MIN)              // PSTreeString
+#define  HY_OP_CODE_RANDOM          (1+HY_OP_CODE_PSTREESTRING)     // Random
+#define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM)           // RerootTree
+#define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE)       // Rows
+#define  HY_OP_CODE_SIMPLEX         (1+HY_OP_CODE_ROWS)             // Simplex
+#define  HY_OP_CODE_SIN             (1+HY_OP_CODE_SIMPLEX)          // Sin
+#define  HY_OP_CODE_SQRT            (1+HY_OP_CODE_SIN)              // Sqrt
+#define  HY_OP_CODE_TEXTREESTRING   (1+HY_OP_CODE_SQRT)             // TEXTreeString
+
+#define  HY_OP_CODE_TAN             (1+HY_OP_CODE_TEXTREESTRING)    // Tan
+#define  HY_OP_CODE_TIME            (1+HY_OP_CODE_TAN)              // Time
+#define  HY_OP_CODE_TIPCOUNT        (1+HY_OP_CODE_TIME)             // TipCount
+#define  HY_OP_CODE_TIPNAME         (1+HY_OP_CODE_TIPCOUNT)         // TipName
+#define  HY_OP_CODE_TRANSPOSE       (1+HY_OP_CODE_TIPNAME)          // Transpose
+#define  HY_OP_CODE_TYPE            (1+HY_OP_CODE_TRANSPOSE)        // Type
+#define  HY_OP_CODE_ZCDF            (1+HY_OP_CODE_TYPE)             // ZCDF
+#define  HY_OP_CODE_POWER           (1+HY_OP_CODE_ZCDF)             // ^
+#define  HY_OP_CODE_OR              (1+HY_OP_CODE_POWER)            // ||
 
 // END OPCODES
 
