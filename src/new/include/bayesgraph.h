@@ -28,7 +28,8 @@
 
 #if defined __AFYP_REWRITE_BGM__
 
-#include "hy_lists.h"
+#include "list.h"
+#include "simplelist.h"
 #include "classes.h"
 #include "likefunc.h"
 #include "parser.h"

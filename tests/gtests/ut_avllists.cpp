@@ -11,6 +11,9 @@
 #include <iostream>
 #include "gtest/gtest.h"
 #include "ut_avllists.h"
+#include "avllist.h"
+#include "avllistx.h"
+#include "avllistxl.h"
 #include "hy_strings.h"
 #include "baseobj.h"
 #include <stdio.h>

@@ -13,7 +13,7 @@
 #include "ut_lists.h"
 
 #include "hy_strings.h"
-#include "hy_lists.h"
+#include "list.h"
 
 #include "baseobj.h"
 

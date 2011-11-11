@@ -30,7 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define _HSTRINGS_
 //#pragma once
 #include "baseobj.h"
-#include "hy_lists.h"
+#include "simplelist.h"
+#include "list.h"
 
 
 class _String:public BaseObj
@@ -854,7 +855,7 @@ public:
 
 
     // Data Fields
-    unsigned      long sLength;
+    unsigned long sLength;
     Ptr           sData;
 };
 
