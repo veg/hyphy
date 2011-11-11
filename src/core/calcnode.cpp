@@ -11102,7 +11102,7 @@ _String _TreeTopology::MatchTreePattern (_TreeTopology* compareTo)
 
             // pass 2 - prune internal nodes with exactly one child
 
-
+            // >O
             padresStillSuck = DepthWiseStepTraverser (myCT);
 
             while (padresStillSuck) {

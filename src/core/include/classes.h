@@ -44,7 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SWAP(a,b,c) ((c)=(a),(a)=(b),(b)=(c))
 #define DEBUG 0
 
-#include "hy_lists.h"
+#include "simplelist.h"
 
 /*---------------------------------------------------------------------------*/
 
