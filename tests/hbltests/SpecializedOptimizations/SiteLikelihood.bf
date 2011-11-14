@@ -1201,13 +1201,18 @@ siteTree.Node366.synRate:=0.00272389;
 siteTree.Node364.synRate:=0.148099;
 siteTree.Node310.synRate:=0.0513432;
 siteTree.Node158.synRate:=0.0936503;
+
 DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter siteFilter = CreateFilter(ds,3,"0-2","43,25,73,72,0,60,71,38,44,58,21,49,15,45,19,35,34,61,26,24,23,27,13,22,31,42,55,39,47,56,57,75,12,64,63,50,52,51,66,62,29,16,69,70,1,5,40,17,41,53,30,32,33,2,3,20,36,37,48,8,7,9,28,18,11,65,10,68,59,46,67,14,6,4,54,74,94,164,93,133,144,141,146,97,99,135,98,121,122,129,130,118,117,112-114,109,119,111,110,126,131,125,123,104,124,128,116,115,106,120,127,105,108,107,147,103,149,101,102,100,151,150,152,148,96,138,158,95,166,192,191,190,174,177,181,183,161,87,173,168,88,189,157,156,86,83,81,82,132,154,155,159,153,160,193,185,182,179,184,162,167,169,142,143,175,170,163,172,187,91,140,145,171,165,79,92,176,186,188,178,180,134,80,137,85,76,136,90,84,89,78,139,77","TAA,TAG,TGA");
+
+ClearConstraints (siteTree);
+global alpha = 1;
+ReplicateConstraint ("this1.?.synRate:=alpha*this2.?.synRate__", siteTree, siteTree);
 
 /* test preamble */
 
 	_testDescription 		= " fit the MG94x012345 model to a single site alignment with 194 sequences ";
-	_expectedLL 			= -30.3360010092;
+	_expectedLL 			= -29.826;
 	ExecuteAFile ("../Shared/TestInstrumentation.bf");
 	startTestTimer (_testDescription);
 
