@@ -14,7 +14,8 @@
 
 
 #include "hy_strings.h"
-#include "hy_lists.h"
+#include "list.h"
+#include "simplelist.h"
 
 #include "baseobj.h"
 

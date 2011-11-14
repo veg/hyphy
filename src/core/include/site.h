@@ -31,7 +31,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#pragma once
 #include "sequence.h"
 #include "parser.h"
-#include "hy_lists.h"
+#include "simplelist.h"
+#include "list.h"
+#include "avllist.h"
+#include "avllistx.h"
+#include "avllistxl.h"
 #include "stdlib.h"
 
 #define   NUCLEOTIDEDATA 0

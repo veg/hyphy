@@ -1,4 +1,3 @@
-
 /*
 
 HyPhy - Hypothesis Testing Using Phylogenies.
@@ -712,7 +711,6 @@ _PMathObj   _Matrix::Eigensystem (void)
                 cpy->Balance ();
                 cpy->Schur   ();
                 cpy->EigenDecomp (*rl,*im);
-
 
                 key = "0";
                 {
@@ -1458,7 +1456,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
         break;
     case HY_OP_CODE_TRANSPOSE: { // Transpose
         _Matrix* result = (_Matrix*)makeDynamic();
-        result->Transpose ();
+        result->Transpose();
         return result;
     }
     case HY_OP_CODE_TYPE: // Type
@@ -5941,7 +5939,7 @@ _PMathObj       _Matrix::PoissonLL (_PMathObj mp)
     _Parameter     loglik = 0.0,
                    *logFactorials = new _Parameter [101],
     lambda        = mp->Value(),
-    logLambda      = log (lambda),
+    logLambda     = log (lambda),
     log2p         = log (sqrt(8.*atan(1.)));
 
     checkPointer (logFactorials);
@@ -6170,14 +6168,14 @@ _Parameter      _Matrix::computePFDR (_Parameter lambda, _Parameter gamma)
         _Parameter pi_0 = null/(lDim*(1.-lambda)),
                    pr_p = 0;
 
-
         if (rejected) {
             pr_p = rejected/(_Parameter)lDim;
         } else {
             pr_p = 1./(_Parameter)lDim;
         }
 
-        return     pi_0 * gamma / (pr_p /** (1.-exp(log(1.-gamma)*lDim))*/);
+        return pi_0 * gamma / (pr_p /** (1.-exp(log(1.-gamma)*lDim))*/);
+
     } else {
         return 1;
     }
@@ -6185,7 +6183,7 @@ _Parameter      _Matrix::computePFDR (_Parameter lambda, _Parameter gamma)
 
 //_____________________________________________________________________________________________
 
-_PMathObj       _Matrix::Random (_PMathObj kind)
+_PMathObj _Matrix::Random (_PMathObj kind)
 {
     _String     errMsg;
 
@@ -8173,7 +8171,7 @@ _Matrix*    _Matrix::SimplexSolve (_Parameter desiredPrecision )
 // and without goto labels
 
 // the of dimension RxC is interpreted as follows
-// R-1 constaints
+// R-1 constraints
 // C-2 variables
 
 // the first row:
@@ -8476,11 +8474,11 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
         return new _Matrix;
     }
 
-    long        kdim        = GetVDim();    // number of entries in this _Matrix object as vector of means
+    long kdim = GetVDim();    // number of entries in this _Matrix object as vector of means
 
     if (cov.GetHDim() == kdim && cov.GetVDim() == kdim) {
-        _Matrix     * cov_cd    = (_Matrix *) cov.CholeskyDecompose();
-        _Matrix     gaussvec (1, kdim, false, true);
+        _Matrix* cov_cd = (_Matrix *) cov.CholeskyDecompose();
+        _Matrix gaussvec (1, kdim, false, true);
 
         ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
 
