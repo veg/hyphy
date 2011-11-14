@@ -30,7 +30,10 @@
 
 using namespace std;
 #else
-#include "hy_lists.h"
+#include "list.h"
+#include "simplelist.h"
+#include "avllist.h"
+#include "avllistx.h"
 #include "classes.h"
 #include "likefunc.h"
 #endif

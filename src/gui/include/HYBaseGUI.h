@@ -12,7 +12,7 @@
 #define _HYBASEGUI_
 //#pragma once
 #include "hy_strings.h"
-#include "hy_lists.h"
+#include "list.h"
 
 //__________________________________________________________________
 
