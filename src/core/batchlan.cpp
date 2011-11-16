@@ -4912,8 +4912,12 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     if (currentArgument->Equal (&statusBarUpdateString)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
 
-#if defined __UNIX__ && !defined __HYPHY_GTK__ && ! defined __HEADLESS__
-        SetStatusLineUser     (sbar_value);
+#if defined __UNIX__ 
+        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
+            SetStatusLineUser     (sbar_value);
+        #else
+            SetStatusLine (sbar_value);
+        #endif 
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif
