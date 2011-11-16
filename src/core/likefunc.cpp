@@ -10737,10 +10737,9 @@ _Parameter _CustomFunction::Compute (void)
     likeFuncEvalCallCount++;
     _SimpleList * iv = &GetIndependentVars ();
     for (long i=0; i<iv->lLength; i++) {
-        _Variable* cornholio = LocateVar(iv->lData[i]);
         _Parameter result = GetIthIndependent(i);
 
-        if (result<cornholio->GetLowerBound() || result>cornholio->GetUpperBound()) {
+        if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
             return -A_LARGE_NUMBER;
         }
     }

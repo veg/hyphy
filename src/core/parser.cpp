@@ -979,6 +979,8 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
     case HY_OP_CODE_NEQ: // !=
         if (p->ObjectClass() == NUMBER)
             return NotEqual(p);
+        else
+            return new HY_CONSTANT_TRUE;
         break;
     case HY_OP_CODE_IDIV: // $
         return longDiv(p);
@@ -1018,6 +1020,7 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
     case HY_OP_CODE_EQ: // ==
         if (p->ObjectClass() == NUMBER)
             return AreEqual(p);
+        return new HY_CONSTANT_FALSE;
         break;
     case HY_OP_CODE_GREATER: // >
         return Greater(p);
