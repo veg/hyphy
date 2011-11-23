@@ -3212,7 +3212,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                 for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
-                    //printf ("%s\n", tryPath.sData);
+                    // printf ("%s\n", tryPath.sData);
 
                     if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
@@ -4912,8 +4912,12 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     if (currentArgument->Equal (&statusBarUpdateString)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
 
-#if defined __UNIX__
-        SetStatusLineUser     (sbar_value);
+#if defined __UNIX__ 
+        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
+            SetStatusLineUser     (sbar_value);
+        #else
+            SetStatusLine (sbar_value);
+        #endif 
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif

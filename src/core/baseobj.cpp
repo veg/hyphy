@@ -237,7 +237,7 @@ bool    GlobalShutdown (void)
 {
     bool res = true;
    
-#ifdef  __UNIX__
+#if defined __UNIX__ && !defined __HYPHY_GTK__ && ! defined __HEADLESS__
     if (needExtraNL)
         printf ("\n");
 #endif     
