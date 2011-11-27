@@ -72,7 +72,6 @@ static void activate_window_callback( GtkWidget *widget, gpointer   data )
 {
     _HYWindow * parentWindow = (_HYWindow*)(data);
     parentWindow->Activate();
-    return FALSE;
 }
 
 //__________________________________________________________________
@@ -405,22 +404,22 @@ void _HYPlatformWindow::_Deactivate(void)
 
 static GtkItemFactoryEntry hyphy_window_menu_file[] = {
     { "/_File",         NULL,         NULL,           0, "<Branch>" },
-    { "/File/_Save",     "<control>S", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE+1, "<StockItem>", GTK_STOCK_SAVE },
-    { "/File/_Print",    "<control>P", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE+2, "<StockItem>", GTK_STOCK_OPEN },
-    { "/File/_Close",    "<control>W", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE, "<StockItem>", GTK_STOCK_CLOSE },
+    { "/File/_Save",     "<control>S", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE+1, "<StockItem>", GTK_STOCK_SAVE },
+    { "/File/_Print",    "<control>P", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE+2, "<StockItem>", GTK_STOCK_OPEN },
+    { "/File/_Close",    "<control>W", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_FILE, "<StockItem>", GTK_STOCK_CLOSE },
     { "/File/sep1",     NULL,         NULL,           0,                    "<Separator>" },
-    { "/File/S_witch to console", "<control>0",         hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE-1, "<Item>" },
-    { "/File/Object _inspector", "<control>I",         hyphy_menu_item_callback,  HY_WINDOW_MENU_ID_FILE-2, "<Item>" }
+    { "/File/S_witch to console", "<control>0",         (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE-1, "<Item>" },
+    { "/File/Object _inspector", "<control>I",         (GtkItemFactoryCallback)hyphy_menu_item_callback,  HY_WINDOW_MENU_ID_FILE-2, "<Item>" }
 };
 static GtkItemFactoryEntry hyphy_window_menu_edit[] = {
     { "/_Edit",         NULL,         NULL,           0, "<Branch>" },
-    { "/Edit/_Undo",     "<control>Z", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT, "<StockItem>", GTK_STOCK_UNDO },
+    { "/Edit/_Undo",     "<control>Z", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT, "<StockItem>", GTK_STOCK_UNDO },
     { "/Edit/sep1",     NULL,         NULL,           0,                    "<Separator>" },
-    { "/Edit/_Copy",    "<control>C", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT+1, "<StockItem>", GTK_STOCK_COPY },
-    { "/Edit/_Cut",    "<control>X", hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT+2, "<StockItem>", GTK_STOCK_CUT },
-    { "/Edit/_Paste", "<control>V",         hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+3, "<StockItem>",GTK_STOCK_PASTE },
-    { "/Edit/_Clear", NULL ,         hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+4, "<StockItem>",GTK_STOCK_CLEAR },
-    { "/Edit/Select _All", "<control>A",         hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+5, "<Item>" },
+    { "/Edit/_Copy",    "<control>C", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT+1, "<StockItem>", GTK_STOCK_COPY },
+    { "/Edit/_Cut",    "<control>X", (GtkItemFactoryCallback)hyphy_menu_item_callback,    HY_WINDOW_MENU_ID_EDIT+2, "<StockItem>", GTK_STOCK_CUT },
+    { "/Edit/_Paste", "<control>V",         (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+3, "<StockItem>",GTK_STOCK_PASTE },
+    { "/Edit/_Clear", NULL ,         (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+4, "<StockItem>",GTK_STOCK_CLEAR },
+    { "/Edit/Select _All", "<control>A",         (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_EDIT+5, "<Item>" },
 };
 
 //__________________________________________________________________
@@ -530,7 +529,6 @@ void _HYPlatformWindow::_SetWindowRectangle(int top, int left, int bottom, int r
         savedLoc.bottom=savedLoc.top+bottom-top;
         savedLoc.right=savedLoc.left+right-left;
     }
-    return false;
 }
 
 //__________________________________________________________________

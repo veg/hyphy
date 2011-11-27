@@ -8659,6 +8659,8 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     // if more than one - output a NEXUS file where
     // data sets after the first one are embedded as strings.
 
+    RescanAllVariables();
+
     if (partitionList)
         // validate the list
     {
@@ -10735,10 +10737,9 @@ _Parameter _CustomFunction::Compute (void)
     likeFuncEvalCallCount++;
     _SimpleList * iv = &GetIndependentVars ();
     for (long i=0; i<iv->lLength; i++) {
-        _Variable* cornholio = LocateVar(iv->lData[i]);
         _Parameter result = GetIthIndependent(i);
 
-        if (result<cornholio->GetLowerBound() || result>cornholio->GetUpperBound()) {
+        if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
             return -A_LARGE_NUMBER;
         }
     }

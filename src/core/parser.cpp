@@ -977,7 +977,10 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
         return LNot();
         break;
     case HY_OP_CODE_NEQ: // !=
-        return NotEqual(p);
+        if (p->ObjectClass() == NUMBER)
+            return NotEqual(p);
+        else
+            return new HY_CONSTANT_TRUE;
         break;
     case HY_OP_CODE_IDIV: // $
         return longDiv(p);
@@ -1015,7 +1018,9 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2)   // exe
         return LessEq(p);
         break;
     case HY_OP_CODE_EQ: // ==
-        return AreEqual(p);
+        if (p->ObjectClass() == NUMBER)
+            return AreEqual(p);
+        return new HY_CONSTANT_FALSE;
         break;
     case HY_OP_CODE_GREATER: // >
         return Greater(p);
@@ -1505,14 +1510,15 @@ _PMathObj _Constant::Beta (_PMathObj arg)
     }
     _Constant argVal   = ((_Constant*)arg)->theValue;
     _Constant *result  = (_Constant *)Gamma(),
-               *result1 = (_Constant *)argVal.Gamma();
+              *result1 = (_Constant *)argVal.Gamma();
 
-    argVal.SetValue (theValue+argVal.theValue);
+    argVal.SetValue(theValue+argVal.theValue);
     _Constant *result2 = (_Constant *)argVal.Gamma();
-    argVal.SetValue (result->theValue*result1->theValue/result2->theValue);
-    DeleteObject (result);
-    DeleteObject (result1);
-    DeleteObject (result2);
+    argVal.SetValue(result->theValue*result1->theValue/result2->theValue);
+
+    DeleteObject(result);
+    DeleteObject(result1);
+    DeleteObject(result2);
     return (_PMathObj)argVal.makeDynamic();
 }
 
@@ -1783,14 +1789,14 @@ _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 //__________________________________________________________________________________
 _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    _Parameter     arg = theValue*((_Constant*)beta)->theValue;
+    _Parameter arg = theValue*((_Constant*)beta)->theValue;
     /*if (arg==0)
     {
         _Constant zer (0);
         return    (_PMathObj)zer.makeDynamic();
     }*/
     _Constant newX (arg);
-    return alpha->IGamma( &newX);
+    return alpha->IGamma(&newX);
 }
 
 //__________________________________________________________________________________
@@ -1872,7 +1878,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
     _Parameter   a = theValue,
                  b = ((_Constant*)theObj)->theValue;
 
-    if (a==0) {
+    if (a==0.0) {
         return new _Constant (b!=0.0);
     }
 
@@ -1898,7 +1904,7 @@ _PMathObj _Constant::LOr (_PMathObj theObj)
 //__________________________________________________________________________________
 _PMathObj _Constant::LNot ()
 {
-    return new _Constant (!(long)(theValue));
+    return new _Constant (CheckEqual(theValue, 0.0));
 }
 
 //__________________________________________________________________________________

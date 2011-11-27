@@ -172,9 +172,7 @@ void        _HYPlatformComponent::_SetScrollerPos (GtkWidget *theSB, long nv)
         //printf ("Setting adjustment value at %d (%d)\n",nv,lastVScroll);
         //gtk_range_set_value (GTK_RANGE(theSB),old->upper-old->page_size?nv*((old->upper-old->page_size)/old->upper):0.0);
         gtk_adjustment_set_value (old, old->upper-old->page_size?nv*((old->upper-old->page_size)/old->upper):0.0);
-    } else {
-        return 0;
-    }
+    } 
 }
 
 //__________________________________________________________________

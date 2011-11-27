@@ -18,67 +18,67 @@
 //__________________________________________________________________
 
 static GtkItemFactoryEntry hyphy_data_window_menu[] = {
-    { "/File/Save _as",     "<control>F",    hyphy_menu_item_callback,              HY_WINDOW_MENU_ID_FILE+3, "<Item>" },
-    { "/Edit/_Find",     "<control>F",    hyphy_menu_item_callback,             HY_WINDOW_MENU_ID_EDIT+6, "<Item>" },
-    { "/Edit/_Search and Replace",     NULL,    hyphy_menu_item_callback,               HY_WINDOW_MENU_ID_EDIT+7, "<Item>" },
+    { "/File/Save _as",     "<control>F",    (GtkItemFactoryCallback)hyphy_menu_item_callback,              HY_WINDOW_MENU_ID_FILE+3, "<Item>" },
+    { "/Edit/_Find",     "<control>F",    (GtkItemFactoryCallback)hyphy_menu_item_callback,             HY_WINDOW_MENU_ID_EDIT+6, "<Item>" },
+    { "/Edit/_Search and Replace",     NULL,    (GtkItemFactoryCallback)hyphy_menu_item_callback,               HY_WINDOW_MENU_ID_EDIT+7, "<Item>" },
     { "/_Data",         NULL,         NULL,           0,                    "<Branch>" },
-    { "/Data/_Partition->Selection", "<control>1", hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE, "<Item>"},
-    { "/Data/_Selection->Partition", "<control>2", hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+1, "<Item>"},
-    { "/Data/_Invert selection", "<control>3", hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+2, "<Item>"},
+    { "/Data/_Partition->Selection", "<control>1", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE, "<Item>"},
+    { "/Data/_Selection->Partition", "<control>2", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+1, "<Item>"},
+    { "/Data/_Invert selection", "<control>3", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+2, "<Item>"},
     { "/Data/sep1",         NULL,         NULL,           0,        "<Separator>" },
     { "/Data/_Block width",         NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Block width/_9", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+50, "<CheckItem>"},
-    { "/Data/Block width/_10", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+51, "<CheckItem>"},
+    { "/Data/Block width/_9", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+50, "<CheckItem>"},
+    { "/Data/Block width/_10", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+51, "<CheckItem>"},
     { "/Data/_Repeat characters",           NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Repeat characters/Display _actual character", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+60, "<CheckItem>"},
-    { "/Data/Repeat characters/_Display '.'", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+61, "<CheckItem>"},
+    { "/Data/Repeat characters/Display _actual character", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+60, "<CheckItem>"},
+    { "/Data/Repeat characters/_Display '.'", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+61, "<CheckItem>"},
     { "/Data/_Name Display",            NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Name Display/_None", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+70, "<CheckItem>"},
-    { "/Data/Name Display/_First 10 characters", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+71, "<CheckItem>"},
-    { "/Data/Name Display/F_ull names", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+72, "<CheckItem>"},
+    { "/Data/Name Display/_None", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+70, "<CheckItem>"},
+    { "/Data/Name Display/_First 10 characters", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+71, "<CheckItem>"},
+    { "/Data/Name Display/F_ull names", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+72, "<CheckItem>"},
     { "/Data/Name Display/sep1",            NULL,         NULL,           0,        "<Separator>" },
-    { "/Data/Name Display/_Alphabetize names", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+73, "<Item>"},
-    { "/Data/Name Display/_Revert to file order", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+74, "<Item>"},
-    { "/Data/Name Display/_Clean up sequence names", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+75, "<Item>"},
+    { "/Data/Name Display/_Alphabetize names", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+73, "<Item>"},
+    { "/Data/Name Display/_Revert to file order", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+74, "<Item>"},
+    { "/Data/Name Display/_Clean up sequence names", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+75, "<Item>"},
     { "/Data/_Omitted sequences",           NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Omitted sequences/_Restore all", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+10000, "<Item>"},
+    { "/Data/Omitted sequences/_Restore all", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+10000, "<Item>"},
     { "/Data/_Omitted sequences/sep1",          NULL,         NULL,           0,        "<Separator>" },
     { "/Data/_Additional information",          NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Additional information/_Consensus sequence", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+80, "<CheckItem>"},
-    { "/Data/Additional information/_Rate class", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+81, "<CheckItem>"},
-    { "/Data/Additional information/_Aminoacid translation", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+82, "<CheckItem>"},
-    { "/Data/Additional information/Re_ference sequence", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+83, "<CheckItem>"},
+    { "/Data/Additional information/_Consensus sequence", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+80, "<CheckItem>"},
+    { "/Data/Additional information/_Rate class", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+81, "<CheckItem>"},
+    { "/Data/Additional information/_Aminoacid translation", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+82, "<CheckItem>"},
+    { "/Data/Additional information/Re_ference sequence", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+83, "<CheckItem>"},
     { "/Data/sep2",         NULL,         NULL,           0,        "<Separator>" },
-    { "/Data/Part_ition properties", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+3, "<Item>"},
-    { "/Data/Inp_ut partition", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+4, "<Item>"},
+    { "/Data/Part_ition properties", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+3, "<Item>"},
+    { "/Data/Inp_ut partition", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+4, "<Item>"},
     { "/Data/sep3",         NULL,         NULL,           0,        "<Separator>" },
     { "/Data/_Simulation",          NULL,         NULL,           0,        "<Branch>" },
-    { "/Data/Simulation/_Simulate 1",NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+90, "<Item>"},
-    { "/Data/Simulation/Simulate 1 to _file",NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+91, "<Item>"},
-    { "/Data/Simulation/Simulate _many",NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+92, "<Item>"},
-    { "/Data/An_cestors", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+5, "<Item>"},
+    { "/Data/Simulation/_Simulate 1",NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+90, "<Item>"},
+    { "/Data/Simulation/Simulate 1 to _file",NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+91, "<Item>"},
+    { "/Data/Simulation/Simulate _many",NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+92, "<Item>"},
+    { "/Data/An_cestors", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+5, "<Item>"},
     { "/Data/sep4",         NULL,         NULL,           0,        "<Separator>" },
-    { "/Data/_Font options", NULL, hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+6, "<Item>"},
+    { "/Data/_Font options", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATA_WIN32_MENU_BASE+6, "<Item>"},
     { "/Data/sep5",         NULL,         NULL,           0,        "<Separator>" },
     { "/Data/_Data Processing",         NULL,         NULL,           0,                    "<Branch>" },
     { "/_Likelihood",           NULL,         NULL,           0,                    "<Branch>" },
-    { "/Likelihood/Build", "<control>L", hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE, "<Item>"},
+    { "/Likelihood/Build", "<control>L", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE, "<Item>"},
     { "/Likelihood/_Display",           NULL,         NULL,           0,                    "<Branch>" },
-    { "/Likelihood/Display/Log-Lkhd _only", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+50, "<CheckItem>"},
-    { "/Likelihood/Display/Log-Lkhd with &parameter values", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+51, "<CheckItem>"},
-    { "/Likelihood/Display/Log-Lkhd with &concise trees", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+52, "<CheckItem>"},
-    { "/Likelihood/Display/_Parameter Listing", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+53, "<CheckItem>"},
-    { "/Likelihood/Display/Log-Lkhd with complete &trees", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+54, "<CheckItem>"},
-    { "/Likelihood/_Optimize", "<control>T", hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+1, "<Item>"},
+    { "/Likelihood/Display/Log-Lkhd _only", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+50, "<CheckItem>"},
+    { "/Likelihood/Display/Log-Lkhd with &parameter values", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+51, "<CheckItem>"},
+    { "/Likelihood/Display/Log-Lkhd with &concise trees", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+52, "<CheckItem>"},
+    { "/Likelihood/Display/_Parameter Listing", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+53, "<CheckItem>"},
+    { "/Likelihood/Display/Log-Lkhd with complete &trees", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+54, "<CheckItem>"},
+    { "/Likelihood/_Optimize", "<control>T", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+1, "<Item>"},
     { "/Likelihood/sep4",           NULL,         NULL,           0,        "<Separator>" },
-    { "/Likelihood/_Show parameters", "<control>H", hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+2, "<Item>"},
-    { "/Likelihood/_General bootstrap", "<control>B", hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+3, "<Item>"}
+    { "/Likelihood/_Show parameters", "<control>H", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+2, "<Item>"},
+    { "/Likelihood/_General bootstrap", "<control>B", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+3, "<Item>"}
 };
 
 static GtkItemFactoryEntry hyphy_data_window_menu2[] = {
     { "/Likelihood/_Inference",         NULL,         NULL,           0,                    "<Branch>" },
-    { "/Likelihood/Inference/_Infer topology", "<control>L", hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+20, "<Item>"},
-    { "/Likelihood/Inference/Infer topology with _constraints", NULL, hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+21, "<Item>"}
+    { "/Likelihood/Inference/_Infer topology", "<control>L", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+20, "<Item>"},
+    { "/Likelihood/Inference/Infer topology with _constraints", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_DATALF_WIN32_MENU_BASE+21, "<Item>"}
 };
 
 //__________________________________________________________________
@@ -131,7 +131,7 @@ void _HYDataPanel::_SetMenuBar(void)
                      chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
                      type = "<Item>";
 
-            GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_DATA_WIN32_MENU_BASE+100+k,type.sData};
+            GtkItemFactoryEntry aProcEntry = {NULL,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,HY_DATA_WIN32_MENU_BASE+100+k,type.sData};
             chopped = _String("/Data/Data Processing/")&chopped;
             aProcEntry.path = chopped.sData;
 
@@ -592,7 +592,7 @@ void _HYDataPanel::_OmitSelectedSpecies (_SimpleList& idx)
             _String*        thisSpec = (_String*)sp->rowHeaders(idx.lData[k]),
                             entryPath = _String("/Data/Omitted sequences/") & *thisSpec;
 
-            GtkItemFactoryEntry anItem = {entryPath.sData, NULL, hyphy_menu_item_callback,  HY_DATA_WIN32_MENU_BASE+idxShift+k, "<Item>"};
+            GtkItemFactoryEntry anItem = {entryPath.sData, NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback,  HY_DATA_WIN32_MENU_BASE+idxShift+k, "<Item>"};
             gtk_item_factory_create_item(menu_items,&anItem,this,1);
         }
         gtk_widget_set_sensitive (gtk_item_factory_get_item(menu_items,"<HY_WINDOW>/Data/Omitted sequences"),true);
@@ -621,7 +621,7 @@ void _HYDataPanel::_RestoreOmittedSequence (long index)
 
         for (long k2 = 0; k2 < savedPaths.lLength; k2++) {
             GtkItemFactoryEntry anItem = {((_String*)savedPaths(k2))->sData,
-                                          NULL, hyphy_menu_item_callback,  HY_DATA_WIN32_MENU_BASE+10003+index+k2, "<Item>"
+                                          NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback,  HY_DATA_WIN32_MENU_BASE+10003+index+k2, "<Item>"
                                          };
             gtk_item_factory_create_item(menu_items,&anItem,this,1);
         }

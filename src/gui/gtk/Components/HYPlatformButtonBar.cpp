@@ -132,7 +132,7 @@ void        _HYButtonBar::_Activate (void)
         }
 
     if (!theTimer) {
-        theTimer = g_timeout_add  (1000,TooltipPopupTimer,(gpointer)this);
+        theTimer = g_timeout_add  (1000,(GSourceFunc)TooltipPopupTimer,(gpointer)this);
     }
 
     _HYPlatformComponent::_Activate();

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #ifndef __HYPHY_NO_SQLITE__
-#include "SQLite-3.6.17/sqlite3.h"
+#include "sqlite3.h"
 #endif
 
 #if !defined __HEADLESS__

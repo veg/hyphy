@@ -30,7 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define _HSTRINGS_
 //#pragma once
 #include "baseobj.h"
-#include "hy_lists.h"
+#include "simplelist.h"
+#include "list.h"
 
 
 class _String:public BaseObj
@@ -854,7 +855,7 @@ public:
 
 
     // Data Fields
-    unsigned      long sLength;
+    unsigned long sLength;
     Ptr           sData;
 };
 
@@ -873,6 +874,8 @@ extern _String volumeName;
 
 void    SetStatusBarValue           (long,_Parameter,_Parameter);
 void    SetStatusLine               (_String);
+void    SetStatusLineUser           (_String);
+
 
 Ptr     PrepRegExp                  (_String*, int&, bool);
 void    FlushRegExp                 (Ptr);
@@ -891,6 +894,10 @@ char    GetPlatformDirectoryChar    (void);
 
 
 extern  _String                     __KERNEL__VERSION__;
+
+#ifdef __UNIX__
+	extern bool	needExtraNL;
+#endif
 
 typedef bool (*_hyStringValidatorType) (_String*);
 bool    hyIDValidator (_String*);

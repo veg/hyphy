@@ -2990,10 +2990,11 @@ _PMathObj _FString::AreEqual (_PMathObj p)
         bool     equal = theString->Equal(theStr->theString);
         return new _Constant ((_Parameter)equal);
     } else {
-        _String* convStr = (_String*)p->toStr();
+        /*_String* convStr = (_String*)p->toStr();
         bool     equal = theString->Equal(convStr);
         DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
+        return new _Constant ((_Parameter)equal);*/
+        return new HY_CONSTANT_FALSE;
     }
 }
 
@@ -3146,10 +3147,11 @@ _PMathObj _FString::NotEqual (_PMathObj p)
         bool     equal = theString->Equal(theStr->theString);
         return new _Constant ((_Parameter)!equal);
     } else {
-        _String* convStr = (_String*)p->toStr();
+        /*_String* convStr = (_String*)p->toStr();
         bool     equal = theString->Equal(convStr);
         DeleteObject (convStr);
-        return new _Constant ((_Parameter)!equal);
+        return new _Constant ((_Parameter)!equal);*/
+        return new HY_CONSTANT_TRUE;
     }
 }
 

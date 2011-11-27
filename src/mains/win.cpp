@@ -697,7 +697,7 @@ bool    handleGUI (bool )
 
 //_________________________________________________________________________
 
-int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , PSTR , int )
+int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , LPSTR , int)
 {
     WNDCLASSEX  windowClass;
 
@@ -765,11 +765,18 @@ int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , PSTR , int )
         exit (0);
     }
 
-    char curWd[4096];
+    //char curWd[4096];
 
-    _getcwd (curWd,4096);
+    //_getcwd (curWd,4096);
+    
+    HMODULE hModule = GetModuleHandleW(NULL);
+    CHAR path[MAX_PATH];
+    GetModuleFileName(hModule, path, MAX_PATH);
 
-    _String baseDir (curWd);
+    _String baseDir = path;
+    
+    baseDir = baseDir.Cut(0,baseDir.FindBackwards ("\\",0,-1));
+    
     if (baseDir.sData[baseDir.sLength-1]!='\\') {
         baseDir = baseDir & '\\';
     }
@@ -800,6 +807,7 @@ int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , PSTR , int )
     ReadPreferences     ();
     MoveConsoleWindow   (consolePositionRectangle);
     hyphyConsoleWindow->BringToFront();
+    
 
     if (showDialogAtStartup) {
         long                  choice = 0;
@@ -826,11 +834,7 @@ int WINAPI WinMain (HINSTANCE thisInstance, HINSTANCE , PSTR , int )
             }
         }
 
-        if (showDialogAtStartup) {
-            *(((_String*)((_List*)globalPreferencesList.lData[4])->lData[18])) = "Yes";
-        } else {
-            *(((_String*)((_List*)globalPreferencesList.lData[4])->lData[18])) = "No";
-        }
+        SetShowDialogAtStartup (showDialogAtStartup);
     }
 
 

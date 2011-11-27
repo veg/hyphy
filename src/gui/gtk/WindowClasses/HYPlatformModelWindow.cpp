@@ -11,11 +11,11 @@
 
 static GtkItemFactoryEntry hyphy_parameter_model_window_menu[] = {
     { "/_Model",                        NULL,         NULL,           0,    "<Branch>" },
-    { "/Model/_Model name",             NULL,         hyphy_menu_item_callback,           HY_MDL_WIN32_MENU_BASE,   "<Item>" },
+    { "/Model/_Model name",             NULL,         (GtkItemFactoryCallback)hyphy_menu_item_callback,           HY_MDL_WIN32_MENU_BASE,   "<Item>" },
     { "/Model/_Rate variation",         NULL,         NULL,           0, "<Branch>" },
     { "/File/_Save",                    NULL,         NULL,           0, "<Branch>" },
-    { "/File/Save/Save",                "<control>S",         hyphy_menu_item_callback,           HY_WINDOW_MENU_ID_FILE+1, "<Item>" },
-    { "/File/Save/Save as...",          NULL,         hyphy_menu_item_callback,           HY_WINDOW_MENU_ID_FILE+3, "<Item>" }
+    { "/File/Save/Save",                "<control>S",         (GtkItemFactoryCallback)hyphy_menu_item_callback,           HY_WINDOW_MENU_ID_FILE+1, "<Item>" },
+    { "/File/Save/Save as...",          NULL,         (GtkItemFactoryCallback)hyphy_menu_item_callback,           HY_WINDOW_MENU_ID_FILE+3, "<Item>" }
 };
 
 //__________________________________________________________________
@@ -35,7 +35,7 @@ void _HYModelWindow::_SetMenuBar(void)
                      chopped,
                      type = "<CheckItem>";
 
-            GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_MDL_WIN32_MENU_BASE+100+k,type.sData};
+            GtkItemFactoryEntry aProcEntry = {NULL,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,HY_MDL_WIN32_MENU_BASE+100+k,type.sData};
             chopped = _String("/Model/Rate variation/")&*thisItem;
             aProcEntry.path = chopped.sData;
 
