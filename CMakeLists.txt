@@ -87,7 +87,7 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
-
+set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -185,7 +185,7 @@ add_library(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
 )
-target_link_libraries(hyphy_mp crypto curl pthread ssl)
+target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
 install(
     TARGETS hyphy_mp
     LIBRARY DESTINATION lib
@@ -207,7 +207,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYMP crypto curl pthread ssl)
+target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
 install(
     TARGETS HYPHYMP
     RUNTIME DESTINATION bin
@@ -227,7 +227,7 @@ if(${OPENCL_FOUND})
         ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
     )
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(HYPHYOCL crypto curl pthread ssl ${OPENCL_LIBRARIES})
+    target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
     install(
         TARGETS HYPHYOCL
         RUNTIME DESTINATION bin
@@ -268,7 +268,7 @@ if(${MPI_FOUND})
         ${SRC_COMMON} ${SRC_UNIXMAIN}
     )
     include_directories(${MPI_INCLUDE_PATH})
-    target_link_libraries(HYPHYMPI crypto curl pthread ssl ${MPI_LIBRARIES})
+    target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
     install(
         TARGETS HYPHYMPI
         RUNTIME DESTINATION bin
@@ -299,7 +299,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYDEBUG crypto curl pthread ssl)
+target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
 set_target_properties(
@@ -319,7 +319,7 @@ add_executable(
     ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
 )
 add_dependencies(HYPHYGTEST gtest)
-target_link_libraries(HYPHYGTEST crypto curl gtest pthread ssl)
+target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
 set_property(
@@ -353,7 +353,7 @@ if(${GTK2_FOUND})
         ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON} 
      )
 
-    target_link_libraries(HYPHYGTK crypto curl pthread ssl ${GTK2_LIBRARIES})
+    target_link_libraries(HYPHYGTK ${DEFAULT_LIBRARIES} ${GTK2_LIBRARIES})
 
 	add_custom_target(GTK DEPENDS HYPHYGTK)
 
@@ -453,8 +453,8 @@ if(APPLE)
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
     find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(HyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
-    target_link_libraries(iHyPhyDebug crypto curl pthread ssl ${CARBON} ${QUICKTIME})
+    target_link_libraries(HyPhy ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
+    target_link_libraries(iHyPhyDebug ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
     add_custom_target(MAC DEPENDS HyPhy)
     add_custom_target(MACDebug DEPENDS iHyPhyDebug)
 

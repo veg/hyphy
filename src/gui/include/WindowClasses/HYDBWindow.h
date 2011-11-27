@@ -10,7 +10,7 @@
 
 #include "HYTableWindow.h"
 #include "HYTableComponent.h"
-#include "sqlite3.h"
+#include "SQLite-3.6.17/sqlite3.h"
 
 
 //__________________________________________________________________
