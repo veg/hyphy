@@ -44,7 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 _Formula        *chi2 = nil,
-                 *derchi2 = nil;
+                *derchi2 = nil;
 
 
 extern
@@ -602,7 +602,10 @@ _SimpleList opPrecedence,
 
 //__________________________________________________________________________________
 
-void    SetupOperationLists (void)
+//SW : This should be a factory
+//Wed Nov 23 09:26:57 PST 2011
+
+void    SetupOperationLists (void)/*<!--{{{-->
 {
 
 
@@ -916,10 +919,11 @@ void    SetupOperationLists (void)
 
 
 
-}
+}<!--}}}-->*/
+
 //__________________________________________________________________________________
 
-
+//SW: Why do we need a string?
 _PMathObj _MathObject::Type (void)
 {
     _FString * ts = new _FString();
@@ -1505,15 +1509,14 @@ _PMathObj _Constant::Beta (_PMathObj arg)
     }
     _Constant argVal   = ((_Constant*)arg)->theValue;
     _Constant *result  = (_Constant *)Gamma(),
-              *result1 = (_Constant *)argVal.Gamma();
+               *result1 = (_Constant *)argVal.Gamma();
 
-    argVal.SetValue(theValue+argVal.theValue);
+    argVal.SetValue (theValue+argVal.theValue);
     _Constant *result2 = (_Constant *)argVal.Gamma();
-    argVal.SetValue(result->theValue*result1->theValue/result2->theValue);
-
-    DeleteObject(result);
-    DeleteObject(result1);
-    DeleteObject(result2);
+    argVal.SetValue (result->theValue*result1->theValue/result2->theValue);
+    DeleteObject (result);
+    DeleteObject (result1);
+    DeleteObject (result2);
     return (_PMathObj)argVal.makeDynamic();
 }
 
@@ -1784,14 +1787,14 @@ _PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
 //__________________________________________________________________________________
 _PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
 {
-    _Parameter arg = theValue*((_Constant*)beta)->theValue;
+    _Parameter     arg = theValue*((_Constant*)beta)->theValue;
     /*if (arg==0)
     {
         _Constant zer (0);
         return    (_PMathObj)zer.makeDynamic();
     }*/
     _Constant newX (arg);
-    return alpha->IGamma(&newX);
+    return alpha->IGamma( &newX);
 }
 
 //__________________________________________________________________________________
