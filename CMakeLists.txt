@@ -162,7 +162,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib # SQLite
+    contrib/SQLite-3.6.17 # SQLite
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
