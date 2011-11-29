@@ -43,10 +43,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "dmalloc.h"
 #endif
 
-_Formula        *chi2 = nil,
-                *derchi2 = nil;
-
-
 extern
 _SimpleList     simpleOperationCodes,
                 simpleOperationFunctions;
@@ -61,18 +57,11 @@ _AVLList        *lookAside = nil;
 _AVLListX       variableNames (&varNamesSupportList),
                 _hyApplicationGlobals (&globalNamesSupportList);
 
-_Parameter      sqrtPi                      = 1.77245385090551603,
-                maxRombergSteps          = 8.,
-                integrationPrecisionFactor  = 1.e-5,
-                printDigits;
+_Parameter printDigits;
 
 _String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
                 intMaxIter  ("INTEGRATION_MAX_ITERATES");
 
-long            lastMatrixDeclared = -1,
-                dummyVariable1,
-                dummyVariable2,
-                expressionsParsed = 0;
 
 // indices of all independent variables
 void            DeleteVariable (long dv);
@@ -82,18 +71,11 @@ _List           FunctionNameList,
 
 _SimpleList     FunctionArgumentCount,
                 freeSlots,
-                deferIsConstant;
-                *deferSetFormula = nil,
+                deferIsConstant,
+                *deferSetFormula = nil;
 
 bool            useGlobalUpdateFlag = false;
 
-#ifndef  __HYALTIVEC__
-_Parameter  machineEps = 1e-12,
-            tolerance  = DBL_EPSILON;
-#else
-_Parameter  machineEps = 1e-7,
-            tolerance  = FLT_EPSILON;
-#endif
 
 _String     UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,LnGamma,"),
             HalfOps (":<>=!&|");
@@ -102,34 +84,13 @@ _SimpleList opPrecedence,
             BinOps,
             associativeOps;
 
-long randomCount = 0;
-pi_const = 3.141592653589793,
+_Parameter pi_const = 3.141592653589793,
 long_max = (_Parameter)LONG_MAX;
 
 //__________________________________________________________________________________
-
-
-_Parameter      gammaCoeff [7] = {
-    2.50662827463100050,
-    190.9551718944012,
-    -216.8366818451899,
-    60.19441758801798,
-    -3.087513097785903,
-    0.003029460875352382,
-    -0.00001345152485367085
-},
-
-lngammaCoeff [6] = {
-    76.18009172947146,
-    -86.50532032941677,
-    24.01409824083091,
-    -1.231739572450155,
-    0.1208650973866179e-2,
-    -0.5395239384953e-5
-},
+//SW: Helper functions
 
 //__________________________________________________________________________________
-BaseRef         parameterToString       (_Parameter);
 void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
 //__________________________________________________________________________________
@@ -916,7 +877,6 @@ void    SetupOperationLists (void)
 }
 
 //__________________________________________________________________________________
-//SW: Helper functions
 void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAll)
 {
     rec.Clear();

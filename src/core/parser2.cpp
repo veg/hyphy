@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define  GOLDEN_RATIO 1.618034
 #define MAX_BRENT_ITERATES 100L
 
-extern   _SimpleList    BinOps,
+extern   _SimpleList BinOps,
          opPrecedence,
          FunctionArgumentCount,
          associativeOps;
@@ -72,15 +72,8 @@ _Parameter  verbosityLevel = 0.0,
 _SimpleList simpleOperationCodes,
             simpleOperationFunctions;
 
-_String     internalRerootTreeID ("_INTERNAL_REROOT_TREE_");
 
 long        subNumericValues = 0;
-
-//__________________________________________________________________________________
-
-_Parameter  InterpolateValue        (_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
-_Parameter  TrapezoidLevelK         (_Formula&, _Variable*, _Parameter, _Parameter, long);
-_Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
 
 //__________________________________________________________________________________
 _Parameter  AddNumbers  (_Parameter x, _Parameter y)

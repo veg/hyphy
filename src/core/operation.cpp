@@ -1,3 +1,18 @@
+#include "defines.h"
+#include "variable.h"
+#include "operation.h"
+
+#include "parser.h"
+#include "polynoml.h"
+#include "batchlan.h"
+
+extern _SimpleList BinOps,
+       opPrecedence,
+       FunctionArgumentCount,
+       batchLanguageFunctionParameters,
+       batchLanguageFunctionClassification,
+       associativeOps;
+
 //__________________________________________________________________________________
 
 _Operation::_Operation  (void)
@@ -8,7 +23,6 @@ _Operation::_Operation  (void)
 }
 
 //__________________________________________________________________________________
-
 void    _Operation::Initialize(void)
 {
     numberOfTerms = 0;
@@ -92,7 +106,6 @@ _Operation::_Operation  (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-
 bool _Operation::CanResultsBeCached (_Operation* prev)
 {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
@@ -175,7 +188,6 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
 
 //__________________________________________________________________________________
-
 _Operation::~_Operation (void)
 {
 
@@ -183,6 +195,7 @@ _Operation::~_Operation (void)
         DeleteObject (theNumber);
     }
 }
+
 //__________________________________________________________________________________
 bool _Operation::IsAVariable(bool deep)
 {
@@ -211,7 +224,6 @@ bool _Operation::IsConstant (void)
 }
 
 //__________________________________________________________________________________
-
 bool        _Operation::EqualOp (_Operation* otherOp)
 {
     if (theNumber) {
@@ -237,7 +249,6 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 }
 
 //__________________________________________________________________________________
-
 bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace)
 {
     if (theNumber) {
@@ -473,7 +484,6 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
 }
 
 //__________________________________________________________________________________
-
 void        _Operation::StackDepth (long& depth)
 {
     if (theNumber || theData > -1 || theData < -2) {
@@ -490,7 +500,6 @@ void        _Operation::StackDepth (long& depth)
 
 
 //__________________________________________________________________________________
-
 bool        _Operation::ExecutePolynomial (_Stack& theScrap)
 {
     if (theData<=-2 || numberOfTerms < 0) {

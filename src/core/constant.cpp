@@ -1,3 +1,53 @@
+#include <math.h>
+#include <float.h>
+#include <limits.h>
+#include <stdio.h>
+#include "string.h"
+#include "stdlib.h"
+#include "time.h"
+
+#include "constant.h"
+
+//SW: This should be just helper functions
+#include "parser.h"
+
+_Formula *chi2 = nil,
+         *derchi2 = nil;
+
+long randomCount = 0;
+
+#ifndef  __HYALTIVEC__
+extern _Parameter  machineEps = 1e-12,
+            tolerance  = DBL_EPSILON;
+#else
+extern _Parameter  machineEps = 1e-7,
+            tolerance  = FLT_EPSILON;
+#endif
+
+long            lastMatrixDeclared = -1,
+                dummyVariable1,
+                dummyVariable2,
+                expressionsParsed = 0;
+
+_Parameter gammaCoeff [7] = {
+    2.50662827463100050,
+    190.9551718944012,
+    -216.8366818451899,
+    60.19441758801798,
+    -3.087513097785903,
+    0.003029460875352382,
+    -0.00001345152485367085
+};
+
+_Parameter lngammaCoeff [6] = {
+    76.18009172947146,
+    -86.50532032941677,
+    24.01409824083091,
+    -1.231739572450155,
+    0.1208650973866179e-2,
+    -0.5395239384953e-5
+};
+
 //__________________________________________________________________________________
 _Constant::_Constant (_Parameter value)
 {

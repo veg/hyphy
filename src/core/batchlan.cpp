@@ -37,8 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bgm.h"
 #endif
 
-
-
 //#include "profiler.h"
 #ifndef __HEADLESS__
 #ifdef __HYPHY_GTK__
@@ -102,7 +100,6 @@ void        ReadModelList(void);
 // global variables
 
 _List
-
 dataSetList,
 dataSetNamesList,
 likeFuncList,   // list of all datasets

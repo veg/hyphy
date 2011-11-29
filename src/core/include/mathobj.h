@@ -2,6 +2,10 @@
 #define     __MATHOBJ__
 
 #include "baseobj.h"
+#include "defines.h"
+#include "errorfns.h"
+#include "hy_lists.h"
+#include "hy_strings.h"
 
 class   _MathObject : public BaseObj  //abstract math operations class
 {
@@ -264,3 +268,7 @@ public:
     }
 };
 
+// pointer to a math object
+typedef _MathObject* _PMathObj ;
+
+#endif

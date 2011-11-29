@@ -1,4 +1,44 @@
+#include <math.h>
+#include <float.h>
+#include "defines.h"
 #include "formula.h"
+
+//SW: This should be helper functions
+#include "parser.h"
+
+//Constants
+_Parameter sqrtPi = 1.77245385090551603;
+_Parameter twoOverSqrtPi   = 2./sqrtPi;
+
+extern _List batchLanguageFunctionNames,
+             batchLanguageFunctionParameterLists;
+
+extern _SimpleList BinOps,
+       opPrecedence,
+       FunctionArgumentCount,
+       batchLanguageFunctionParameters,
+       batchLanguageFunctionClassification,
+       associativeOps;
+
+extern
+_SimpleList     simpleOperationCodes,
+                simpleOperationFunctions;
+
+extern  _Variable*  _x_, *_n_;
+
+#ifndef  __HYALTIVEC__
+extern _Parameter  machineEps = 1e-12,
+            tolerance  = DBL_EPSILON;
+#else
+extern _Parameter  machineEps = 1e-7,
+            tolerance  = FLT_EPSILON;
+#endif
+
+_String intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
+        intMaxIter  ("INTEGRATION_MAX_ITERATES");
+
+_Parameter      maxRombergSteps = 8.,
+                integrationPrecisionFactor = 1.e-5;
 
 _Formula::_Formula (void)
 {
