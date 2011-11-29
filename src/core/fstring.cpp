@@ -13,12 +13,10 @@ extern _List likeFuncList,
              dataSetList,
              scfgList;
 
-
 extern _SimpleList modelMatrixIndices;
+extern _String lastModelParameterList;
 
 _String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
-_String lastModelParameterList("LAST_MODEL_PARAMETER_LIST");
-
 //__________________________________________________________________________________
 _FString::_FString (void)
 {

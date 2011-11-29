@@ -16,13 +16,8 @@ _Formula *chi2 = nil,
 
 long randomCount = 0;
 
-#ifndef  __HYALTIVEC__
-extern _Parameter  machineEps = 1e-12,
-            tolerance  = DBL_EPSILON;
-#else
-extern _Parameter  machineEps = 1e-7,
-            tolerance  = FLT_EPSILON;
-#endif
+extern _Parameter machineEps;
+extern _Parameter tolerance;
 
 long            lastMatrixDeclared = -1,
                 dummyVariable1,

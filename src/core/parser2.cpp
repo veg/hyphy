@@ -65,9 +65,9 @@ extern    _Parameter    tolerance,
 extern    _String       intPrecFact ,
           intMaxIter;
 
-_Parameter  verbosityLevel = 0.0,
-            twoOverSqrtPi   = 2./sqrtPi;
+_Parameter  verbosityLevel = 0.0;
 
+extern _Parameter twoOverSqrtPi;
 
 _SimpleList simpleOperationCodes,
             simpleOperationFunctions;

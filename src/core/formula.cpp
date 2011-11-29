@@ -7,8 +7,7 @@
 #include "parser.h"
 
 //Constants
-_Parameter sqrtPi = 1.77245385090551603;
-_Parameter twoOverSqrtPi   = 2./sqrtPi;
+extern _Parameter twoOverSqrtPi;
 
 extern _List batchLanguageFunctionNames,
              batchLanguageFunctionParameterLists;
@@ -26,16 +25,11 @@ _SimpleList     simpleOperationCodes,
 
 extern  _Variable*  _x_, *_n_;
 
-#ifndef  __HYALTIVEC__
-extern _Parameter  machineEps = 1e-12,
-            tolerance  = DBL_EPSILON;
-#else
-extern _Parameter  machineEps = 1e-7,
-            tolerance  = FLT_EPSILON;
-#endif
+extern _Parameter machineEps;
+extern _Parameter tolerance;
 
-_String intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
-        intMaxIter  ("INTEGRATION_MAX_ITERATES");
+extern _String intPrecFact;
+extern _String intMaxIter;
 
 _Parameter      maxRombergSteps = 8.,
                 integrationPrecisionFactor = 1.e-5;
