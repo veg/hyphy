@@ -28,7 +28,10 @@ coreSrcPath = path.join(srcPath, 'core')
 newSrcPath = path.join(srcPath, 'new')
 guiSrcPath = path.join(srcPath, 'gui')
 prefFile = [path.join(guiSrcPath, 'preferences.cpp')]
-swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_python.cpp')]
+if sys.version_info >= (3,0,0):
+    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_py3.cpp')]
+else:
+    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_python.cpp')]
 
 coreSrcFiles = glob(path.join(coreSrcPath, '*.cpp'))
 newSrcFiles = glob(path.join(newSrcPath, '*.cpp'))
