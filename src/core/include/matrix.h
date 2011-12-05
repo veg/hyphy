@@ -30,7 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define     __MATRIX__
 
 #include "hy_strings.h"
-#include "parser.h"
+#include "avllistx.h"
+#include "variablecontainer.h"
 
 #define     _POLYNOMIAL_TYPE 0
 #define     _NUMERICAL_TYPE  1
@@ -39,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define     HY_MATRIX_COLUMN_VECTOR     1
 #define     HY_MATRIX_ROW_VECTOR        2
 
+class _Formula;
 /*__________________________________________________________________________________________________________________________________________ */
 
 struct      _CompiledMatrixData {

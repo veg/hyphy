@@ -34,6 +34,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "polynoml.h"
 #include "likefunc.h"
 
+#include "avllist.h"
+#include "avllistx.h"
+#include "avllistxl.h"
+
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif

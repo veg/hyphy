@@ -219,4 +219,3 @@ extern  _Parameter  maxCategoryIntervals;
 extern  _Variable*  _x_, *_n_;
 
 #endif
-
