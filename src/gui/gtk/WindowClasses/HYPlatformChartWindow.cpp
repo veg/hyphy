@@ -22,25 +22,25 @@ extern   _Parameter                pi_const;
 #define  HY_CHARTD_WIN32_MENU_BASE  27000
 
 static GtkItemFactoryEntry hyphy_char_window_menu[] = {
-    { "/File/Save _Graphic", "<control><alt>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+3, "<Item>"},
-    { "/File/Save _Table", "<control><shift>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+4, "<Item>"},
-    { "/File/Pri_nt Table", "<control><shift>S", hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+5, "<Item>"},
+    { "/File/Save _Graphic", "<control><alt>S", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+3, "<Item>"},
+    { "/File/Save _Table", "<control><shift>S", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+4, "<Item>"},
+    { "/File/Pri_nt Table", "<control><shift>S", (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_WINDOW_MENU_ID_FILE+5, "<Item>"},
     { "/_Chart",            NULL,         NULL,           0,                    "<Branch>" },
-    { "/Chart/Chart _Name", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+4, "<Item>"},
-    { "/Chart/Chart _Options", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE, "<Item>"},
+    { "/Chart/Chart _Name", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+4, "<Item>"},
+    { "/Chart/Chart _Options", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE, "<Item>"},
     { "/Chart/_Fonts", NULL,         NULL,           0,                 "<Branch>" },
-    { "/Chart/Fonts/_Tickmark Font", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+1, "<Item>"},
-    { "/Chart/Fonts/_Legend Font", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+2, "<Item>"},
-    { "/Chart/Fonts/_Axis Label Font", NULL, hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+3, "<Item>"},
+    { "/Chart/Fonts/_Tickmark Font", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+1, "<Item>"},
+    { "/Chart/Fonts/_Legend Font", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+2, "<Item>"},
+    { "/Chart/Fonts/_Axis Label Font", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHART_WIN32_MENU_BASE+3, "<Item>"},
     { "/Chart/sep1",            NULL,         NULL,           0,        "<Separator>" },
     { "/Chart/_Data Processing",            NULL,         NULL,           0,                    "<Branch>" }
 };
 
 static GtkItemFactoryEntry hyphy_distro_window_menu[] = {
     { "/Cate_gories", NULL, NULL, 0, "<Branch>"},
-    { "/Categories/Define new _variable", NULL, hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE, "<Item>"},
-    { "/Categories/_Delete variable", NULL, hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE+1, "<Item>"},
-    { "/Categories/_Conditional Distribution", NULL, hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE+2, "<Item>"},
+    { "/Categories/Define new _variable", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE, "<Item>"},
+    { "/Categories/_Delete variable", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE+1, "<Item>"},
+    { "/Categories/_Conditional Distribution", NULL, (GtkItemFactoryCallback)hyphy_menu_item_callback, HY_CHARTD_WIN32_MENU_BASE+2, "<Item>"},
     { "/Categories/sep1",           NULL,         NULL,           0,        "<Separator>" }
 };
 
@@ -73,7 +73,7 @@ void _HYChartWindow::_SetMenuBar(void)
                      chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
                      type = "<Item>";
 
-            GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_CHART_WIN32_MENU_BASE+5+k,type.sData};
+            GtkItemFactoryEntry aProcEntry = {NULL,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,HY_CHART_WIN32_MENU_BASE+5+k,type.sData};
             chopped = _String("/Chart/Data Processing/")&chopped;
             aProcEntry.path = chopped.sData;
 
@@ -180,7 +180,7 @@ bool _HYChartWindow::_ProcessOSEvent (Ptr vEvent)
                     lastV = -1;
                 } else {
                     gdk_pointer_grab (theWindow->window,false,
-                                      GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK,
+                                      (GdkEventMask)(GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK),
                                       theWindow->window, NULL, ((GdkEventButton*)theMessage->theEvent)->time);
                     return      true;
                 }
@@ -288,7 +288,7 @@ void _HYDistributionChartWindow::_SetMenuBar(void)
                          chopped = thisItem->Cut (thisItem->FindBackwards ('/',0,-1)+1,-1),
                          type = "<Item>";
 
-                GtkItemFactoryEntry aProcEntry = {NULL,NULL,hyphy_menu_item_callback,HY_CHARTD_WIN32_MENU_BASE+3+k,type.sData};
+                GtkItemFactoryEntry aProcEntry = {NULL,NULL,(GtkItemFactoryCallback)hyphy_menu_item_callback,HY_CHARTD_WIN32_MENU_BASE+3+k,type.sData};
                 chopped = _String("/Categories/")&chopped;
                 aProcEntry.path = chopped.sData;
 

@@ -1,3 +1,15 @@
+#include "defines.h"
+#include "variable.h"
+#include "operation.h"
+
+#include "likefunc.h"
+#include "parser.h"
+#include "polynoml.h"
+#include "batchlan.h"
+
+extern _SimpleList freeSlots;
+extern _SimpleList deferIsConstant;
+
 //__________________________________________________________________________________
 
 _Variable::_Variable (void)

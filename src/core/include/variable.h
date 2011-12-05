@@ -1,11 +1,13 @@
 #ifndef     __VARIABLE__
 #define     __VARIABLE__
 
+#include "constant.h"
 #include "hy_strings.h"
-#include "simplelist.h"
+#include "list.h"
 #include "avllist.h"
-#include "variable.h"
 #include "operation.h"
+#include "formula.h"
+
 
 class _Variable : public _Constant
 {
@@ -128,3 +130,5 @@ public:
     _Formula*  varFormula;
 
 };
+
+#endif

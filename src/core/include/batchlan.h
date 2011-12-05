@@ -34,10 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "site.h"
 #include "stdio.h"
 
-#define   BL_FUNCTION_ALWAYS_UPDATE     0
-#define   BL_FUNCTION_NORMAL_UPDATE     1
-
-
 //!  Batch Language 'Object' type codes
 /*!
      20110608 SLKP introduced.
@@ -453,6 +449,7 @@ extern  _String
 
 getDString,
 getFString,
+tempFString,
 baseDirectory,
 libDirectory,
 useLastFString,

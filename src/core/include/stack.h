@@ -2,8 +2,6 @@
 #define     __STACK__
 
 #include "mathobj.h"
-#include "operation.h"
-#include "variable.h"
 
 //__________________________________________________________________________________
 class   _Stack   //computational stack
@@ -31,4 +29,4 @@ protected:
     _List  theStack;
 };
 
-
+#endif

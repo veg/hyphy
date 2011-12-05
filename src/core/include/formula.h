@@ -1,12 +1,20 @@
-#ifndef     __FORMULA__
-#define     __FORMULA__
+#ifndef     __FORMULAS__
+#define     __FORMULAS__
 
 #include "baseobj.h"
-#include "variable.h"
-#include "variablecontainer.h"
-#include "parser.h"
+#include "classes.h"
+#include "defines.h"
+#include "avllist.h"
+#include "stack.h"
+#include "operation.h"
 
-//__________________________________________________________________________________
+union       _SimpleFormulaDatum {
+    _Parameter value;
+    Ptr        reference;
+};
+
+class _Variable;
+class _VariableContainer;
 class   _Formula   // a computational formula
 {
 
@@ -133,3 +141,4 @@ protected:
 
 };
 
+#endif

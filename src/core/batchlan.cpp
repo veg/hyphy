@@ -37,8 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bgm.h"
 #endif
 
-
-
 //#include "profiler.h"
 #ifndef __HEADLESS__
 #ifdef __HYPHY_GTK__
@@ -102,7 +100,6 @@ void        ReadModelList(void);
 // global variables
 
 _List
-
 dataSetList,
 dataSetNamesList,
 likeFuncList,   // list of all datasets
@@ -155,6 +152,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 getDString                      ("PROMPT_FOR_STRING"),
                                 useLastFString                  ("LAST_FILE_PATH"),
                                 getFString                      ("PROMPT_FOR_FILE"),
+                                tempFString                     ("TEMP_FILE_NAME"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
                                 useLastModel                    ("USE_LAST_MODEL"),
                                 VerbosityLevelString            ("VERBOSITY_LEVEL"),
@@ -4911,8 +4909,12 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     if (currentArgument->Equal (&statusBarUpdateString)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
 
-#if defined __UNIX__
-        SetStatusLine     (sbar_value);
+#if defined __UNIX__ 
+        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
+            SetStatusLineUser     (sbar_value);
+        #else
+            SetStatusLine (sbar_value);
+        #endif 
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif

@@ -214,7 +214,7 @@ function generateBLVector (treeNameID)
 			}
 			else
 			{
-				ExecuteCommands ("_thisBL = "+ tipDateAVL[nodeNameS] +" -" + treeNameID+"_"+pName+"_T;");			
+				ExecuteCommands ("_thisBL = "+ tipDateAVL[nodeNameS] +" -" + treeNameID+"."+pName+".T;");			
 			}
 			_blVector [nodeNameS] = _thisBL;
 		}

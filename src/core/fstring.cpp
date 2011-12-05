@@ -1,4 +1,22 @@
+#include "defines.h"
 #include "fstring.h"
+#include "constant.h"
+#include "matrix.h"
+#include "calcnode.h"
+
+extern long lastMatrixDeclared;
+extern _AVLListX _HY_GetStringGlobalTypes;
+
+extern _List likeFuncList,
+             batchLanguageFunctionNames,
+             dataSetFilterList,
+             dataSetList,
+             scfgList;
+
+extern _SimpleList modelMatrixIndices;
+extern _String lastModelParameterList;
+
+_String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
 _FString::_FString (void)
 {
@@ -138,10 +156,11 @@ _PMathObj _FString::AreEqual (_PMathObj p)
         bool     equal = theString->Equal(theStr->theString);
         return new _Constant ((_Parameter)equal);
     } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Equal(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
+        /*_String* convStr = (_String*)p->toStr();
+         bool     equal = theString->Equal(convStr);
+         DeleteObject (convStr);
+         return new _Constant ((_Parameter)equal);*/
+         return new HY_CONSTANT_FALSE;
     }
 }
 
@@ -289,10 +308,11 @@ _PMathObj _FString::NotEqual (_PMathObj p)
         bool     equal = theString->Equal(theStr->theString);
         return new _Constant ((_Parameter)!equal);
     } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Equal(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)!equal);
+        //_String* convStr = (_String*)p->toStr();
+        //bool     equal = theString->Equal(convStr);
+        //DeleteObject (convStr);
+        //return new _Constant ((_Parameter)!equal);
+        return new HY_CONSTANT_TRUE;
     }
 }
 

@@ -1505,9 +1505,9 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeNa
                         _String * result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
                         if (result->sLength) {
                             expressionToSolveFor = new _Formula (*result);
-                            for (long cc = 0; cc < cNt.categoryVariables.lLength; cc++) {
+                            for (unsigned long cc = 0; cc < cNt.categoryVariables.lLength; cc++) {
                                 _CategoryVariable * thisCC = (_CategoryVariable *)LocateVar(cNt.categoryVariables.lData[cc]);
-                                thisCC -> SetNumericValue (thisCC->Mean());
+                                thisCC -> SetValue (new _Constant(thisCC->Mean()), false);
 
                             }
                         }

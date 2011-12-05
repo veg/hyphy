@@ -1,4 +1,38 @@
+#include <math.h>
+#include <float.h>
+#include "defines.h"
 #include "formula.h"
+
+//SW: This should be helper functions
+#include "parser.h"
+
+//Constants
+extern _Parameter twoOverSqrtPi;
+
+extern _List batchLanguageFunctionNames,
+             batchLanguageFunctionParameterLists;
+
+extern _SimpleList BinOps,
+       opPrecedence,
+       FunctionArgumentCount,
+       batchLanguageFunctionParameters,
+       batchLanguageFunctionClassification,
+       associativeOps;
+
+extern
+_SimpleList     simpleOperationCodes,
+                simpleOperationFunctions;
+
+extern  _Variable*  _x_, *_n_;
+
+extern _Parameter machineEps;
+extern _Parameter tolerance;
+
+extern _String intPrecFact;
+extern _String intMaxIter;
+
+_Parameter      maxRombergSteps = 8.,
+                integrationPrecisionFactor = 1.e-5;
 
 _Formula::_Formula (void)
 {

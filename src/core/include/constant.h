@@ -1,7 +1,7 @@
 #ifndef     __CONSTANT__
 #define     __CONSTANT__
 
-#include "parser.h"
+#include "mathobj.h"
 
 class _Constant : public _MathObject   // a numerical constant
 {
@@ -76,8 +76,7 @@ public:
     }
 
 public:
-
     _Parameter theValue;
-
 };
 
+#endif

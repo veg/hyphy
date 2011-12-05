@@ -150,7 +150,7 @@ typedef     double       _Parameter; // standard number type - used everywhere i
 #endif
 
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__
 void    yieldCPUTime        (void);
 bool    handleGUI           (bool = false);
 #endif
