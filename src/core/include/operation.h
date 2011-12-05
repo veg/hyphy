@@ -2,11 +2,16 @@
 #define     __OPERATION__
 
 #include "baseobj.h"
-#include "formula.h"
-#include "variable.h"
-#include "variablecontainer.h"
-#include "parser.h"
+#include "hy_lists.h"
+#include "hy_strings.h"
+#include "mathobj.h"
 
+extern  _List BuiltInFunctions;
+
+
+class _Stack;
+class _VariableContainer;
+class _Formula;
 //__________________________________________________________________________________
 class   _Operation : public BaseObj
 {
@@ -99,3 +104,4 @@ protected:
     _PMathObj   theNumber;
 };
 
+#endif

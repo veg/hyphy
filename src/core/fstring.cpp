@@ -1,4 +1,22 @@
+#include "defines.h"
 #include "fstring.h"
+#include "constant.h"
+#include "matrix.h"
+#include "calcnode.h"
+
+extern long lastMatrixDeclared;
+extern _AVLListX _HY_GetStringGlobalTypes;
+
+extern _List likeFuncList,
+             batchLanguageFunctionNames,
+             dataSetFilterList,
+             dataSetList,
+             scfgList;
+
+extern _SimpleList modelMatrixIndices;
+extern _String lastModelParameterList;
+
+_String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
 _FString::_FString (void)
 {

@@ -1,16 +1,17 @@
 #ifndef     __VARIABLECONTAINER__
 #define     __VARIABLECONTAINER__
 
-#include "baseobj.h"
-#include "avllist.h"
-#include "operation.h"
 #include "variable.h"
+#include "baseobj.h"
+#include "hy_lists.h"
+#include "operation.h"
 
 //__________________________________________________________________________________
 
 // this class defines a computational (or storage) class which, as a variable, may contain
 // other variables locally.
 
+class _Matrix;
 class   _VariableContainer: public _Variable
 {
 
@@ -108,4 +109,4 @@ protected: // data members
 
 };
 
-
+#endif

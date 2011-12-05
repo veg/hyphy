@@ -1,3 +1,13 @@
+#include "defines.h"
+#include "variablecontainer.h"
+#include "operation.h"
+
+#include "likefunc.h"
+#include "parser.h"
+#include "polynoml.h"
+#include "batchlan.h"
+
+
 //__________________________________________________________________________________
 
 _VariableContainer::_VariableContainer (void)
