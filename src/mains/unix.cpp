@@ -95,7 +95,8 @@ bool    usePostProcessors = false,
         updateMode       = false,
         pipeMode         = false,
         dropIntoDebugMode = false,
-        logInputMode   = false;
+        logInputMode   = false,
+        needExtraNL    = false;
 
 char    prefFileName[] = ".hyphyinit";
 
@@ -450,6 +451,15 @@ void    SetStatusLine               (_String s)
 }
 
 //__________________________________________________________________________________
+void    SetStatusLineUser   (_String s)
+{
+    setvbuf(stdout, NULL, _IONBF, 0);
+    BufferToConsole("\33[2K\r");
+    StringToConsole(s);
+    needExtraNL = true;
+}
+
+//__________________________________________________________________________________
 
 #ifndef __UNITTEST__
 int main (int argc, char* argv[])
@@ -627,7 +637,8 @@ int main (int argc, char* argv[])
         //if (mpiParallelOptimizer || mpiPartitionOptimizer)
         //  mpiOptimizerLoop (rank, size);
         //else
-        mpiNormalLoop (rank, size, libDirectory);
+        _String defaultBaseDirectory = *(_String*)pathNames(0);
+        mpiNormalLoop (rank, size, defaultBaseDirectory);
         /*argFile = "SHUTDOWN_CONFIRM";
         MPISendString (argFile, senderID);*/
     } else {

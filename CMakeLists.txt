@@ -9,7 +9,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 # set the CMAKE_MODULE_PATH so we can import OpenCL
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
-
+set(HYPHY_VERSION 2.1)
 
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
@@ -87,7 +87,7 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
-
+set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -124,6 +124,7 @@ set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.6.17/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
+set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
@@ -152,7 +153,7 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -DINTPTR_TYPE=long)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -161,7 +162,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib # SQLite
+    contrib/SQLite-3.6.17 # SQLite
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
@@ -184,7 +185,7 @@ add_library(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_LINK} ${SRC_PREFS}
 )
-target_link_libraries(hyphy_mp crypto curl pthread ssl)
+target_link_libraries(hyphy_mp ${DEFAULT_LIBRARIES})
 install(
     TARGETS hyphy_mp
     LIBRARY DESTINATION lib
@@ -206,7 +207,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYMP crypto curl pthread ssl)
+target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
 install(
     TARGETS HYPHYMP
     RUNTIME DESTINATION bin
@@ -226,7 +227,7 @@ if(${OPENCL_FOUND})
         ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
     )
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(HYPHYOCL crypto curl pthread ssl ${OPENCL_LIBRARIES})
+    target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
     install(
         TARGETS HYPHYOCL
         RUNTIME DESTINATION bin
@@ -267,7 +268,7 @@ if(${MPI_FOUND})
         ${SRC_COMMON} ${SRC_UNIXMAIN}
     )
     include_directories(${MPI_INCLUDE_PATH})
-    target_link_libraries(HYPHYMPI crypto curl pthread ssl ${MPI_LIBRARIES})
+    target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
     install(
         TARGETS HYPHYMPI
         RUNTIME DESTINATION bin
@@ -298,7 +299,7 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
-target_link_libraries(HYPHYDEBUG crypto curl pthread ssl)
+target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
 set_target_properties(
@@ -318,7 +319,7 @@ add_executable(
     ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
 )
 add_dependencies(HYPHYGTEST gtest)
-target_link_libraries(HYPHYGTEST crypto curl gtest pthread ssl)
+target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
 set_property(
@@ -332,6 +333,55 @@ set_target_properties(
     LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
 )
 
+#-------------------------------------------------------------------------------
+# hyphy gtk+ target
+#-------------------------------------------------------------------------------
+
+
+find_package(GTK2 2.6)
+
+if(${GTK2_FOUND})
+      include_directories(${GTK2_INCLUDE_DIRS})
+
+	  file(GLOB SRC_GUI_GTK src/gui/gtk/*.cpp src/gui/gtk/Components/*.cpp src/gui/gtk/WindowClasses/*.cpp)
+
+	    include_directories(src/gui/gtk/include src/gui/gtk/include/Components /Developer/Headers/FlatCarbon)
+
+	  add_executable(
+        HYPHYGTK
+        EXCLUDE_FROM_ALL
+        ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON} 
+     )
+
+    target_link_libraries(HYPHYGTK ${DEFAULT_LIBRARIES} ${GTK2_LIBRARIES})
+
+	add_custom_target(GTK DEPENDS HYPHYGTK)
+
+	install(DIRECTORY src/gui/res/GTKResources/ DESTINATION lib/hyphy/GTKResources)
+
+	install(
+        TARGETS HYPHYGTK
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+    
+    set_property(
+        TARGET HYPHYGTK
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    )
+    
+   set_target_properties(
+        HYPHYGTK
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
+    )
+    
+endif(${GTK2_FOUND})
+   
+
+
+ 
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
@@ -374,7 +424,7 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------
-    set(RES_MACGUI src/gui/mac/iHyPhy.rsrc src/gui/mac/HYPHYMP.icns)
+    set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
     set(RES_MACGUIDEBUG src/gui/mac/iHyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
     file(
         GLOB SRC_MACGUI
@@ -386,7 +436,7 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # MacOSX gui executable and directives
     #---------------------------------------------------------------------------
-    add_executable(iHyPhy
+    add_executable(HyPhy
         MACOSX_BUNDLE
 		EXCLUDE_FROM_ALL
         ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
@@ -403,32 +453,67 @@ if(APPLE)
     include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
     find_library(CARBON NAMES Carbon)
     find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(iHyPhy crypto curl pthread ssl ${CARBON} ${QUICKTIME})
-    target_link_libraries(iHyPhyDebug crypto curl pthread ssl ${CARBON} ${QUICKTIME})
-    add_custom_target(MAC DEPENDS iHyPhy)
+    target_link_libraries(HyPhy ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
+    target_link_libraries(iHyPhyDebug ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
+    add_custom_target(MAC DEPENDS HyPhy)
     add_custom_target(MACDebug DEPENDS iHyPhyDebug)
 
     #---------------------------------------------------------------------------
     # install the hyphy hbl stdlib into the .app
     #---------------------------------------------------------------------------
-    get_target_property(IHYPHY_APPEXE iHyPhy LOCATION)
-    get_filename_component(IHYPHY_APPDIR ${IHYPHY_APPEXE} PATH)
+   
+   	get_target_property   (HYPHY_APPEXE HyPhy LOCATION)
+    get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
 
     add_custom_command(
-        TARGET iHyPhy
+        TARGET HyPhy
         PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_APPDIR}/../Resources/HBL
     )
     add_custom_command(
-        TARGET iHyPhy
+        TARGET HyPhy
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${IHYPHY_APPDIR}/../Resources/HBL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
 
-    get_target_property(IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
+    get_target_property   (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
     get_filename_component(IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
 
-    add_custom_command(
+
+	add_custom_target(
+		HYPHY_DMG
+		DEPENDS HyPhy
+	)
+	
+	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})	
+	
+	find_program (HAZ_DMG_CANVAS "dmgcanvas")
+	
+	if (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+		add_custom_command(
+				TARGET HYPHY_DMG
+				POST_BUILD
+				COMMAND dmgcanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
+			)	
+	else (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+		add_custom_command(
+				TARGET HYPHY_DMG
+				POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_DISTRIBUTE_DIR}
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
+				COMMAND ${CMAKE_COMMAND} -E copy_directory ${HYPHY_DISTRIBUTE_DIR}/../HyPhy.app ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
+				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/help/SelectionAnalyses.pdf ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/help/Getting Started With HyPhy.pdf" ${HYPHY_DISTRIBUTE_DIR}/Documentation/
+				COMMAND ${CMAKE_COMMAND} -E remove -f ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
+				COMMAND hdiutil create -srcfolder ${HYPHY_DISTRIBUTE_DIR} -format UDBZ ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
+			)	
+	endif (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
+	
+    
+		
+     add_custom_command(
         TARGET iHyPhyDebug
         PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
@@ -443,18 +528,18 @@ if(APPLE)
     # MacOSX gui-specific properties
     #---------------------------------------------------------------------------
     set_property(
-        TARGET iHyPhy
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="iHyPhy"
+        TARGET HyPhy
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="HyPhy"
     )
     set_property(
         TARGET iHyPhyDebug
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="iHyPhyDebug"
     )
     set_target_properties(
-        iHyPhy
+        HyPhy
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
 		XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES
 		XCODE_GCC_AUTO_VECTORIZATION YES
 	)
@@ -494,14 +579,22 @@ if(APPLE)
     )
 
     set_target_properties(
-        iHyPhy
+        HyPhy
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
     )
+    
     set_target_properties(
-        iHyPhy MAC
+        HyPhy MAC
         PROPERTIES
         OSX_ARCHITECTURES i386
     )
+
+    set_target_properties(
+        HyPhy HYPHY_DMG
+        PROPERTIES
+        OSX_ARCHITECTURES i386
+    )
+
     set_target_properties(
         iHyPhyDebug
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist

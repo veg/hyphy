@@ -5801,18 +5801,26 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
         return new _Matrix (1,1);
     }
 
+    if (theData == nil) {
+        return new _Matrix (1,1);
+    }
+
     _SimpleList sortOn;
 
     if (mp->ObjectClass () != NUMBER || mp->Value() < 0.0 || mp->Value () > GetVDim()-1) {
         bool goodMe = false;
         if (mp->ObjectClass () == MATRIX) {
             _Matrix * sortOnM = (_Matrix*)((_Matrix*)mp)->ComputeNumeric();
-            long sortBy = sortOnM->GetHDim()*sortOnM->GetVDim();
+            long sortBy      = sortOnM->GetHDim()*sortOnM->GetVDim(),
+                 maxColumnID = GetVDim();
+                  
             for (long k=0; k<sortBy; k=k+1) {
                 long idx = (*sortOnM)[k];
-                if (idx>=0) {
-                    sortOn << idx;
+                if (idx < 0 || idx >= maxColumnID) {
+                    WarnError (_String("Invalid column index to sort on in call to ") & __func__ & " : " & idx); 
+                    return new _MathObject();               
                 }
+                sortOn << idx;
             }
             goodMe = sortOn.lLength;
         }
@@ -5826,10 +5834,9 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
         sortOn << mp->Value();
     }
 
-    if (theData == nil) {
-        return new _Matrix (1,1);
-    }
-
+    // SLKP 20111109 -- replace with a generic sort function
+                     // the code below is BROKEN
+    
     _SimpleList             idx (hDim,0,1);
     for (long col2Sort = 0; col2Sort < sortOn.lLength; col2Sort++) {
         long colIdx = sortOn.lData[col2Sort];

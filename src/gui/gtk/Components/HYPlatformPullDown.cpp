@@ -84,9 +84,9 @@ _HYPlatformPullDown::_HYPlatformPullDown(void)
     gtk_container_add(GTK_CONTAINER(parent->parentWindow),theMenu);
     gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(theMenu)->entry),false);
     GList* children = gtk_container_get_children(GTK_CONTAINER(theMenu));
-    g_signal_connect (GTK_WIDGET(children->next->data),"event",hy_pulldown_selection_start_callback_event,(_HYPullDown*)this);
-    g_signal_connect (GTK_COMBO(theMenu)->entry,"changed",hy_pulldown_selection_callback,(_HYPullDown*)this);
-    g_signal_connect (GTK_COMBO(theMenu)->popwin,"hide",hy_pulldown_unmap_event,(_HYPullDown*)this);
+    g_signal_connect (GTK_WIDGET(children->next->data),"event",(GCallback)hy_pulldown_selection_start_callback_event,(_HYPullDown*)this);
+    g_signal_connect (GTK_COMBO(theMenu)->entry,"changed",(GCallback)hy_pulldown_selection_callback,(_HYPullDown*)this);
+    g_signal_connect (GTK_COMBO(theMenu)->popwin,"hide",(GCallback)hy_pulldown_unmap_event,(_HYPullDown*)this);
     g_list_free (children);
     //gtk_container_set_resize_mode(GTK_CONTAINER(theMenu), GTK_RESIZE_IMMEDIATE);
     selection      = 0;
@@ -143,9 +143,9 @@ void        _HYPlatformPullDown::_AddMenuItem   (_String& newItem, long index)
             GtkWidget * itemContents = gtk_separator_menu_item_new ();
             gtk_widget_show (itemContents);
             singleItem->data = gtk_list_item_new();
-            gtk_container_add(singleItem->data,itemContents);
+            gtk_container_add((GtkContainer*)singleItem->data,itemContents);
             gtk_combo_set_item_string (GTK_COMBO (theMenu), GTK_ITEM (singleItem->data), "");
-            gtk_widget_set_sensitive(singleItem->data,false);
+            gtk_widget_set_sensitive((GtkWidget*)singleItem->data,false);
             widgetList.InsertElement ((BaseRef)itemContents,2*index,false,false);
         } else {
             _String inItem = newItem;
@@ -156,14 +156,16 @@ void        _HYPlatformPullDown::_AddMenuItem   (_String& newItem, long index)
             GtkWidget * itemContents = gtk_menu_item_new_with_label (inItem.sData);
             gtk_widget_show (itemContents);
             singleItem->data = gtk_list_item_new();
-            gtk_container_add(singleItem->data,itemContents);
+            gtk_container_add((GtkContainer*)singleItem->data,itemContents);
             gtk_combo_set_item_string (GTK_COMBO (theMenu), GTK_ITEM (singleItem->data), inItem.sData);
-            gtk_widget_set_sensitive(singleItem->data,inItem.sLength == newItem.sLength);
+            gtk_widget_set_sensitive((GtkWidget*)singleItem->data,inItem.sLength == newItem.sLength);
             widgetList.InsertElement ((BaseRef)itemContents,2*index,false,false);
         }
         widgetList.InsertElement ((BaseRef)singleItem->data,2*index,false,false);
-        gtk_widget_modify_bg (singleItem->data, GTK_STATE_INSENSITIVE, &HYColorToGDKColor(_hyGTKMenuBackground));
-        gtk_widget_show (singleItem->data);
+        GdkColor convColor = HYColorToGDKColor(_hyGTKMenuBackground);
+        gtk_widget_modify_bg ((GtkWidget*)singleItem->data, GTK_STATE_INSENSITIVE, 
+        	&convColor);
+        gtk_widget_show ((GtkWidget*)singleItem->data);
         if (index<0) {
             gtk_list_append_items (GTK_LIST (GTK_COMBO (theMenu)->list), singleItem);
         } else {

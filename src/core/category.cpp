@@ -262,10 +262,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                     if(scannedVarsList.lLength==1) {
                         if (scannedVarsList[0]==_n_->GetAVariable()) {
                             check = true;
-                            _Constant iterate;
-                            for (_Parameter i=0; i<intervals; i+=1.0) {
-                                iterate.SetValue (i);
-                                _n_->SetValue(&iterate);
+                              for (unsigned long i=0; i<intervals; i++) {
+                                _n_->SetValue(new _Constant ((_Parameter)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
                             }
                             check = checkWeightMatrix (*weights);

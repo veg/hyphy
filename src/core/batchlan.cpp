@@ -152,6 +152,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 getDString                      ("PROMPT_FOR_STRING"),
                                 useLastFString                  ("LAST_FILE_PATH"),
                                 getFString                      ("PROMPT_FOR_FILE"),
+                                tempFString                     ("TEMP_FILE_NAME"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
                                 useLastModel                    ("USE_LAST_MODEL"),
                                 VerbosityLevelString            ("VERBOSITY_LEVEL"),
@@ -3208,7 +3209,7 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                 for (unsigned long e = 0; !commandSource && e < standardLibraryExtensions.lLength; e++) {
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
-                    //printf ("%s\n", tryPath.sData);
+                    // printf ("%s\n", tryPath.sData);
 
                     if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
@@ -4908,8 +4909,12 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     if (currentArgument->Equal (&statusBarUpdateString)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
 
-#if defined __UNIX__
-        SetStatusLine     (sbar_value);
+#if defined __UNIX__ 
+        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
+            SetStatusLineUser     (sbar_value);
+        #else
+            SetStatusLine (sbar_value);
+        #endif 
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif
