@@ -156,7 +156,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define  HY_FORMULA_FORMULA_VALUE_INCREMENT             7
 // END FORMULA RETURN CODES
 
+//Some useful defines
 #define  HY_INVALID_RETURN_VALUE                        NAN
+#define  HY_CONSTANT_FALSE                              _Constant (0.0);
+#define  HY_CONSTANT_TRUE                               _Constant (1.0);
 
 #define   BL_FUNCTION_ALWAYS_UPDATE     0
 #define   BL_FUNCTION_NORMAL_UPDATE     1

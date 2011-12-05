@@ -30,7 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define     __PARSER__
 
 #include "baseobj.h"
-#include "hy_lists.h"
+#include "list.h"
+#include "avllistx.h"
 #include "hy_strings.h"
 #include "errorfns.h"
 #include "stdio.h"

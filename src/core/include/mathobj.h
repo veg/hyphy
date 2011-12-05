@@ -4,7 +4,8 @@
 #include "baseobj.h"
 #include "defines.h"
 #include "errorfns.h"
-#include "hy_lists.h"
+#include "list.h"
+#include "avllist.h"
 #include "hy_strings.h"
 
 class   _MathObject : public BaseObj  //abstract math operations class

@@ -3,7 +3,9 @@
 
 #include "variable.h"
 #include "baseobj.h"
-#include "hy_lists.h"
+#include "list.h"
+#include "avllist.h"
+#include "avllistxl.h"
 #include "operation.h"
 
 //__________________________________________________________________________________

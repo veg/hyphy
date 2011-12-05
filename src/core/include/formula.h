@@ -4,6 +4,7 @@
 #include "baseobj.h"
 #include "classes.h"
 #include "defines.h"
+#include "avllist.h"
 #include "stack.h"
 #include "operation.h"
 

@@ -2,7 +2,7 @@
 #define     __OPERATION__
 
 #include "baseobj.h"
-#include "hy_lists.h"
+#include "list.h"
 #include "hy_strings.h"
 #include "mathobj.h"
 

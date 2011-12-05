@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define     __MATRIX__
 
 #include "hy_strings.h"
+#include "avllistx.h"
 #include "variablecontainer.h"
 
 #define     _POLYNOMIAL_TYPE 0

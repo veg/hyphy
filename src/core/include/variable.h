@@ -3,7 +3,8 @@
 
 #include "constant.h"
 #include "hy_strings.h"
-#include "hy_lists.h"
+#include "list.h"
+#include "avllist.h"
 #include "operation.h"
 #include "formula.h"
 
