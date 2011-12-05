@@ -73,7 +73,6 @@ _String     empty(""),
             ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
 char        defaultReturn = 0;
-
 unsigned    long _String::storageIncrement = 32;
 
 
