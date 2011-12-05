@@ -585,7 +585,6 @@ void  ReplaceVar (_Variable* theV)
 }
 
 //__________________________________________________________________________________
-//SW : This should be a factory
 void    SetupOperationLists (void)
 {
 

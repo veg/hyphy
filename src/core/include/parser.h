@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "stdio.h"
 #include "classes.h"
 
-//New includes
+//Parser specific includes
 #include "constant.h"
 #include "defines.h"
 #include "formula.h"
@@ -46,7 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "stack.h"
 #include "variable.h"
 #include "variablecontainer.h"
-//End new includes
+//End parser specific includes
 
 #include "matrix.h"
 
