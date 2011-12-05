@@ -35,10 +35,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef SWIG
 %module HyPhy
-% {
+%{
 #include "THyPhy.h"
-    %
-}
+%}
 #endif
 
 #ifndef _THYPHY_
