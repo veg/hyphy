@@ -354,7 +354,7 @@ public:
     virtual  _PMathObj      Compute                             (void);
     virtual  BaseRef        makeDynamic                         (void);
     node<long>* CopyTreeStructure                   (node<long>*, bool);
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&);
+    virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
 
 
     bool            IsCurrentNodeATip                   (void);
@@ -528,7 +528,7 @@ public:
     _CalcNode*      LeafWiseTraversal           (bool = false);
     //iterate through the leaves (left-to-right)
 
-    virtual  bool           FinalizeNode                (node<long>*, long, _String&, _String&, _String&);
+    virtual  bool           FinalizeNode                (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
     virtual  BaseRef        makeDynamic                 (void);
 
     virtual  BaseRef        makeDynamicCopy             (_String*);
