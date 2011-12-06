@@ -340,7 +340,7 @@ set_target_properties(
 
 find_package(GTK2 2.6)
 
-if(${GTK2_FOUND})
+if(${GTK2_FOUND} AND NOT APPLE)
       include_directories(${GTK2_INCLUDE_DIRS})
 
 	  file(GLOB SRC_GUI_GTK src/gui/gtk/*.cpp src/gui/gtk/Components/*.cpp src/gui/gtk/WindowClasses/*.cpp)
@@ -377,7 +377,7 @@ if(${GTK2_FOUND})
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
     
-endif(${GTK2_FOUND})
+endif(${GTK2_FOUND} AND NOT APPLE)
    
 
 
