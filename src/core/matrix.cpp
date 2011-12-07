@@ -7935,6 +7935,12 @@ _Matrix*        _Matrix::MakeTreeFromParent (long specCount)
         return new _Matrix;
     }
 
+    if(specCount<0) {
+        _String errMsg = "Parameter must be greater than or equal to 0";
+        WarnError (errMsg);
+        return new _Matrix (1,1,false,true);
+    }
+
     _Matrix     *tree = new _Matrix (2*(specCount+1),5,false,true),
     CI  (2*(specCount+1),1,false,true);
 
