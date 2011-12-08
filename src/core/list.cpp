@@ -291,6 +291,11 @@ void _List::operator << (_List& source)
     }
 }
 
+unsigned long _List::Count()
+{
+    return lLength;
+}
+
 //______________________________________________________________
 void _List::Place (BaseRef br)
 {

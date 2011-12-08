@@ -155,7 +155,7 @@ function ReadTabTable (fileName, haveHeader)
 	felMXString * "_tempMatrix={";
 	for (lineID = haveHeader; lineID < Columns(inData); lineID = lineID + 1)
 	{
-		felMXString * ("{" + inData[lineID]^{{"[^0-9eE\.\-\+]+",","}} + "}\n");
+		felMXString * ("{" + inData[lineID]^{{"[^0-9eE\.\+\-]+",","}} + "}\n");
 	}
 	felMXString * "}";
 	felMXString * 0;
@@ -421,7 +421,9 @@ function condenseFilterIntoUniqueSequences (filterName, returnName, matchMode)
 	for (_k = 0; _k < Columns (_uniquePatterns["UNIQUE_INDICES"]); _k+=1)
 	{
 		_filterMeIn[(_uniquePatterns["UNIQUE_INDICES"])[_k]] = (_uniquePatterns["UNIQUE_COUNTS"])[_k];
-		ExecuteCommands ("SetParameter(`filterName`,(_uniquePatterns[\"UNIQUE_INDICES\"])[_k],_seqNames[_k] + \"_\" + (_uniquePatterns[\"UNIQUE_COUNTS\"])[_k]);");
+		ExecuteCommands ("SetParameter(`filterName`,
+				(_uniquePatterns[\"UNIQUE_INDICES\"])[_k],
+				_seqNames[(_uniquePatterns[\"UNIQUE_INDICES\"])[_k]] + \"_\" + (_uniquePatterns[\"UNIQUE_COUNTS\"])[_k]);");
 	}
 	ExecuteCommands ("DataSetFilter `returnName` = CreateFilter(`filterName`,1,,Abs(_filterMeIn[speciesIndex])>0)");
 	
