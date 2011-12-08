@@ -9153,7 +9153,7 @@ void        _AssociativeList::Merge (_PMathObj p)
        unsigned long num_items = p_keys->Count();
 
        for (unsigned long i=0; i<num_items;i++) {
-           MStore(*(_String*)p_keys[i][0],rhs->GetByKey(*(_String*)p_keys[i][0]),false);
+           MStore(*(_String*)p_keys[0][i],rhs->GetByKey(*(_String*)p_keys[0][i]),false);
        }
     }
     else {
