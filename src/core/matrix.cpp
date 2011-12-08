@@ -9141,6 +9141,9 @@ void        _AssociativeList::Merge (_PMathObj p)
     //SW20111207: I don't think we should ever have to worry about avl traversing 
     //here as long as the other methods are implemented properly
 
+    unsigned long num_items;
+    unsigned long i;
+
     if(p==this){
         return;
     }
@@ -9150,11 +9153,13 @@ void        _AssociativeList::Merge (_PMathObj p)
         _AssociativeList *rhs = (_AssociativeList*) p;
         _List* p_keys = rhs->GetKeys();
 
-       unsigned long num_items = p_keys->Count();
+       num_items = p_keys->Count();
 
-       for (unsigned long i=0; i<num_items;i++) {
+       for (i=0; i<num_items;i++) {
            MStore(*(_String*)p_keys[0][i],rhs->GetByKey(*(_String*)p_keys[0][i]),false);
        }
+
+       delete p_keys;
     }
     else {
         WarnError ("Associative list merge operation requires an associative list argument.");
