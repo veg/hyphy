@@ -9051,8 +9051,6 @@ void _AssociativeList::MStore (_PMathObj p, _PMathObj inObject, bool repl, long 
     }
 }
 
-
-
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (_String obj, _PMathObj inObject, bool repl)
 {
@@ -9140,24 +9138,25 @@ void        _AssociativeList::FillInList (_List& fillMe)
 //_____________________________________________________________________________________________
 void        _AssociativeList::Merge (_PMathObj p)
 {
+    //SW20111207: I don't think we should ever have to worry about avl traversing 
+    //here as long as the other methods are implemented properly
+
+    if(p==this){
+        return;
+    }
+
     if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
-        _AssociativeList    * rhs = (_AssociativeList*) p;
 
-        _SimpleList  hist;
-        long         ls,
-                     cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
+        _AssociativeList *rhs = (_AssociativeList*) p;
+        _List* p_keys = rhs->GetKeys();
 
-        while (cn >= 0) {
-            _String* aKey = new _String(*((_String**)rhs->avl.dataList->lData)[cn]);
-            long insAt = 0;
-            if ((insAt = avl.Insert (aKey, (long)rhs->avl.GetXtra(cn)->makeDynamic(), false)) < 0) { // already exists
-                avl.SetXtra (-insAt-1,new _MathObject(), false);
-                DeleteObject (aKey);
-            }
+       unsigned long num_items = p_keys->Count();
 
-            cn = rhs->avl.Traverser (hist,ls);
-        }
-    } else {
+       for (unsigned long i=0; i<num_items;i++) {
+           MStore(*(_String*)p_keys[i][0],rhs->GetByKey(*(_String*)p_keys[i][0]),false);
+       }
+    }
+    else {
         WarnError ("Associative list merge operation requires an associative list argument.");
     }
 }

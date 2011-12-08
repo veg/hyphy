@@ -139,6 +139,11 @@ class _List:public _SimpleList
         // append operator
         _List operator & (BaseRef);
 
+
+        //Return number of elements 
+        unsigned long Count();
+
+
         /**
         * Append reference to *this
         * \n\n \b Example: \code _List result_list << existing_list \endcode 
