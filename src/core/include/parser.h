@@ -174,5 +174,6 @@ void        WarnNotDefined (_PMathObj, long);
 
 extern      _Parameter  pi_const;
 extern      bool        useGlobalUpdateFlag;
+extern      _String     noneToken;
 
 #endif

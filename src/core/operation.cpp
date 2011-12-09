@@ -174,12 +174,15 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
             f = variableNames.GetXtra(f);
         }
 
-        theData = f;
-        theNumber = nil;
+        theData       = f;
+        theNumber     = nil;
         numberOfTerms = 0;
     } else {
         numberOfTerms = 0;
-        theNumber = new _Constant (stuff);
+        if (stuff.Equal (&noneToken))
+            theNumber = new _MathObject;            
+        else
+            theNumber = new _Constant (stuff);
         theData = -1;
     }
     opCode = -1;
