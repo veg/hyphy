@@ -508,7 +508,8 @@ struct      characterChecker {
 alpha       ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
             numeric     (".0123456789eE");
 
-_String     globalToken ("global");
+_String     globalToken ("global"),
+            noneToken   ("None");
 
 /*
 _String     alpha   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"),
@@ -1167,13 +1168,19 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 globalKey = true;
                 continue;
             }
-
+            
+            bool noneObject = false;
+            if (curOp.Equal(&noneToken)) {
+                noneObject = true;
+                globalKey  = true;
+            }
+                
             if (UnOps.contains (_String(',')&curOp&',')) { // a standard function
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;
             } else { // a variable
                 // check if this is a function defined  in the list of "standard functions"
-                long bLang = FunctionNameList.BinaryFind(&curOp);
+                long bLang = noneObject?-1:FunctionNameList.BinaryFind(&curOp);
                 if (bLang>=0) {
                     levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
                     continue;
@@ -1181,9 +1188,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
                 // check if this is a function defined in the batch language
 
-
-
-                if ((bLang = FindBFFunctionName (curOp, theParent))>=0) {
+                if ((bLang =  noneObject?-1:FindBFFunctionName (curOp, theParent))>=0) {
                     levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
                     continue;
                 }
@@ -1212,11 +1217,14 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                         (*levelData) && (&theVar);
                     }
                 } else {
-                    if (theParent && _hyApplicationGlobals.Find(&curOp) >= 0) {
-                        levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil));
-                    } else {
-                        levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, theParent));
-                    }
+                    if (noneObject)
+                        levelData->AppendNewInstance (new _Operation (false, curOp));
+                    else
+                        if (theParent && _hyApplicationGlobals.Find(&curOp) >= 0) {
+                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil));
+                        } else {
+                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, theParent));
+                        }
                 }
                 globalKey = false;
                 if (impliedMult) {
