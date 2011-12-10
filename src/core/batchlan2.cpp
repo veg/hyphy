@@ -2315,9 +2315,8 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 
             if (bgmIndex == bgmNamesList.lLength) {
                 // reached end of list without finding empty string, append new string
-                bgmList << bgm;
+                bgmList.AppendNewInstance(bgm);
                 bgmNamesList && (&bgmName);
-                DeleteObject (bgm);
             } else {
                 // replace empty string in list
                 bgmNamesList.Replace (bgmIndex, &bgmName, true);
