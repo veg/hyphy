@@ -99,6 +99,7 @@ class _List:public _SimpleList
         */
         virtual _List operator = (_List&);
 
+
         /**
         * Append operator
         * \n\n \b Example: \code _List result_list = list & append_list; \endcode 
@@ -115,7 +116,6 @@ class _List:public _SimpleList
 
         /**
         * Append operator
-        * TODO: need to check this works
         * \n\n \b Example: \code _List result_list = list && "one"; \endcode 
         */
         void operator && (const char*);
@@ -136,13 +136,15 @@ class _List:public _SimpleList
         */
         void operator << (_List&);
 
-        // append operator
+        /**
+        * Append operator
+        */
         _List operator & (BaseRef);
 
-
-        //Return number of elements 
-        unsigned long Count();
-
+        /**
+        * @sa Equal()
+        */
+        bool operator == (_List&);
 
         /**
         * Append reference to *this
@@ -154,52 +156,66 @@ class _List:public _SimpleList
         void AppendNewInstance(BaseRef);
 
         /**
+        * Find the position of a search string in the list of strings (ONLY)
+        * \n Faster than the Find(), since it assumes string entries
+        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+        * @param s The substring to find
+        * @param startat The index to start searching from
+        * @param caseSensitive Pass true for a case sensitive search 
+        * @param upTo Upper limit for search index. 
+        * @return -1 if not found, the index if it is found.
+        * @sa Find()
+        * @sa BinaryFind()
+        */
+        virtual long BinaryFind(BaseRef);
+
+        /**
+        * Insert an element into the sorted list preserving the sortedness
+        */
+        long BinaryInsert(BaseRef);
+
+        /**
+        */
+        void bumpNInst(void);
+
+        /**
+        */
+        virtual long Compare(long,long);
+
+        /**
+        */
+        virtual long Compare(BaseRef,long);
+
+        /**
+        * Return number of elements 
+        */
+        unsigned long Count();
+
+        /**
+        */
+        virtual void Clear(bool=true);
+
+        /**
+        * Delete the item at a given poisiton
+        */
+        void Delete(long);
+
+        /**
+        */
+        virtual void Duplicate(const BaseRef);
+
+        /**
+        * Delete the item at a given poisiton
+        */
+        virtual void DeleteList(const _SimpleList&);
+
+        /**
         * Checks if Lists are identical to each other. Must be _String castable 
         * \n\n \b Example: \code list1.Equal(list2) \endcode 
         * @return bool, true if identical.
         * @sa AppendNewInstance()
         */
         bool Equal(_List&);
-
-        /**
-        * Identical to << operator. Places new value at the end of the list.
-        * \n\n \b Example: \code list1.Place(new _String("one")) \endcode 
-        * @return Nothing, manipulates *this.
-        * @sa InsertElement()
-        */
-        void Place(BaseRef);
-
-
-        /**
-        * Replace an item
-        * \n\n \b Example: \code list.Replace(1, new _String("one"), false); \endcode 
-        * @param index The location in the list to be replaced
-        * @param newObj The object to be inserted
-        * @param dup Allows a duplication
-        * @return Nothing, manipulates *this.
-        */
-        void Replace(long,BaseRef,bool dup=true);
-
-
-        virtual long FreeUpMemory(long);
-
-        /**
-        * Find the position of a search string in the list of strings (ONLY)
-        * SLKP: 20100811
-        * \n Equivalent to Python's join using the argument as the spacer
-        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
-        * @param spacer What you want to be the spacer 
-        * @return A pointer to the new list 
-        * @sa Find()
-        */
-        BaseRef Join(BaseRef);
-
-        /**
-        */
-        void bumpNInst(void);
-
-        virtual void Clear(bool=true);
-
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -212,6 +228,8 @@ class _List:public _SimpleList
         */
         virtual long Find(BaseRef, long startat = 0);
 
+        /**
+        */
         virtual long FindPointer(BaseRef b, long startat = 0) {
 
             return _SimpleList::Find((long)b, startat);
@@ -233,27 +251,9 @@ class _List:public _SimpleList
         virtual long FindString(BaseRef,long startat=0,bool caseSensitive=true,long upTo=-1);
 
         /**
-        * Find the position of a search string in the list of strings (ONLY)
-        * \n Faster than the Find(), since it assumes string entries
-        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
-        * @param s The substring to find
-        * @param startat The index to start searching from
-        * @param caseSensitive Pass true for a case sensitive search 
-        * @param upTo Upper limit for search index. 
-        * @return -1 if not found, the index if it is found.
-        * @sa Find()
-        * @sa BinaryFind()
         */
-        virtual long BinaryFind(BaseRef);
+        virtual long FreeUpMemory(long);
 
-        // insert an element into the sorted list preserving the sortedness
-        long BinaryInsert(BaseRef);
-
-        // delete the item at a given poisiton
-        void Delete(long);
-
-        // delete the item at a given poisiton
-        virtual void DeleteList(const _SimpleList&);
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -265,13 +265,51 @@ class _List:public _SimpleList
         */
         virtual void InsertElement(BaseRef br,long insertAt=-1, bool store=true);
 
-        virtual BaseRef toStr(void);
-        virtual void toFileStr(FILE*);
-        virtual BaseRef makeDynamic(void);
-        virtual void Duplicate(const BaseRef);
-        virtual long Compare(long,long);
-        virtual long Compare(BaseRef,long);
+        /**
+        */
         void Intersect(_List&, _List&, _SimpleList* = nil, _SimpleList* = nil);
+
+        /**
+        * Find the position of a search string in the list of strings (ONLY)
+        * SLKP: 20100811
+        * \n Equivalent to Python's join using the argument as the spacer
+        * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
+        * @param spacer What you want to be the spacer 
+        * @return A pointer to the new list 
+        * @sa Find()
+        */
+        BaseRef Join(BaseRef);
+
+        /**
+        * Identical to << operator. Places new value at the end of the list.
+        * \n\n \b Example: \code list1.Place(new _String("one")) \endcode 
+        * @return Nothing, manipulates *this.
+        * @sa InsertElement()
+        */
+        void Place(BaseRef);
+
+        /**
+        */
+        virtual BaseRef makeDynamic(void);
+
+        /**
+        * Replace an item
+        * \n\n \b Example: \code list.Replace(1, new _String("one"), false); \endcode 
+        * @param index The location in the list to be replaced
+        * @param newObj The object to be inserted
+        * @param dup Allows a duplication
+        * @return Nothing, manipulates *this.
+        */
+        void Replace(long,BaseRef,bool dup=true);
+
+        /**
+        */
+        virtual BaseRef toStr(void);
+
+        /**
+        */
+        virtual void toFileStr(FILE*);
+
 };
 
 //TODO:Can we avoid using this extern?

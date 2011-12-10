@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+
 #include "hy_strings.h"
 
 #ifndef __HYPHYXCODE__
@@ -51,7 +52,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-
+#define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
           __KERNEL__VERSION__ = _String ("2.10") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
@@ -77,8 +78,9 @@ _String     empty(""),
 char        defaultReturn = 0;
 unsigned    long _String::storageIncrement = 32;
 
-
-//_______________________________________________________________________
+/*extern int _hy_mpi_node_rank;
+long  loopCount      = 3;
+char* addrBreak      = 0x583088;*/
 
 struct _hyValidIDCharsType {
     bool valid_chars[256];
@@ -106,20 +108,21 @@ struct _hyValidIDCharsType {
 }
 _hyValidIDChars;
 
-//_______________________________________________________________________
-//does nothing
+
+/*
+==============================================================
+Constructors
+==============================================================
+*/
+
+//Does nothing
 _String::_String (void)
 {
     sLength = 0;
     sData = nil;
 }
 
-/*extern int _hy_mpi_node_rank;
-long  loopCount      = 3;
-char* addrBreak      = 0x583088;*/
-
-//_______________________________________________________________________
-//length constructor
+//Length constructor
 _String::_String (unsigned long sL, bool flag)
 {
 
@@ -152,8 +155,16 @@ _String::_String (unsigned long sL, bool flag)
     }
 }
 
+//Length constructor
+_String::_String (long sL)
+{
 
-//_______________________________________________________________________
+    char s [32];
+    sprintf (s,"%ld", sL);
+    for(sLength=0; s[sLength]; sLength++) ;
+    checkPointer (sData = (char*)MemAllocate(sLength+1));
+    memcpy       (sData, s, sLength+1);
+}
 
 _String::_String (const _String& source, long from, long to)
 {
@@ -190,83 +201,18 @@ _String::_String (const _String& source, long from, long to)
     sData[0] = 0;
 }
 
-//_______________________________________________________________________
-//length constructor
-_String::_String (long sL)
-{
-
-    char s [32];
-    sprintf (s,"%ld", sL);
-    for(sLength=0; s[sLength]; sLength++) ;
-    checkPointer (sData = (char*)MemAllocate(sLength+1));
-    memcpy       (sData, s, sLength+1);
-}
-
-//_______________________________________________________________________
-void    _String::Initialize (void)
-{
-    BaseObj::Initialize();
-    sLength = 0;
-    sData = 0;
-}
-
-//_______________________________________________________________________
-void    _String::Duplicate (BaseRef ref)
-{
-    _String * s = (_String*)ref;
-
-    sLength = s->sLength;
-    sData   = s->sData;
-
-    if (sData) {
-        checkPointer (sData = (char*)MemAllocate (sLength+1));
-        memcpy (sData, s->sData, sLength+1);
-    }
-
-}
-
-
-//_______________________________________________________________________
-// stack copy contructor
+//Stack copy contructor
 _String::_String (const _String& s)
 {
     Duplicate ((BaseRef)&s);
 }
-
-//_______________________________________________________________________
 
 _String::_String (_String* s)
 {
     CopyDynamicString (s, false);
 }
 
-//_______________________________________________________________________
-void _String::CopyDynamicString (_String *s, bool flushMe)
-{
-    if (flushMe && sData) {
-        free (sData);
-    }
-
-    sLength     = s->sLength;
-
-    if (s->nInstances == 1) {
-        sData       = s->sData;
-        s->sData    = nil;
-        DeleteObject (s);
-    } else {
-        checkPointer (sData = (char*)MemAllocate (sLength+1));
-        if (s->sData) {
-            memcpy (sData, s->sData, sLength+1);
-        } else {
-            sData[0] = 0;
-        }
-        s->nInstances --;
-    }
-}
-
-
-//_______________________________________________________________________
-// data constructor
+//Data constructor
 _String::_String (const char* s)
 {
     for(sLength=0; s[sLength]; sLength++) ;
@@ -274,8 +220,7 @@ _String::_String (const char* s)
     memcpy (sData, s, sLength+1);
 }
 
-//_______________________________________________________________________
-// data constructor
+//Data constructor
 _String::_String (const char s)
 {
     sLength = 1;
@@ -284,8 +229,7 @@ _String::_String (const char s)
     sData[1]=0;
 }
 
-//_______________________________________________________________________
-// data constructor
+//Data constructor
 _String::_String (_Parameter val)
 {
     char s_val[128];
@@ -297,8 +241,7 @@ _String::_String (_Parameter val)
     }
 }
 
-//_______________________________________________________________________
-//does nothing
+//Does nothing
 _String::_String (FILE* F)
 {
     sLength = 0;
@@ -313,10 +256,7 @@ _String::_String (FILE* F)
     }
 }
 
-
-//_______________________________________________________________________
-//destructor
-
+//Destructor
 _String::~_String(void)
 {
     if (nInstances<=1) {
@@ -330,24 +270,14 @@ _String::~_String(void)
     }
 }
 
-//_______________________________________________________________________
-// make dynamic copy
-BaseRef _String::makeDynamic (void)
-{
-    _String * r = new _String;
-    if (!r) {
-        checkPointer(r);
-    }
-    //memcpy ((char*)r, (char*)this, sizeof (_String));
-    //r->nInstances = 1;
-    r->Duplicate(this);
-    return r;
-}
 
+/*
+==============================================================
+Operator Overloads
+==============================================================
+*/
 
-//_______________________________________________________________________
-// element location functions
-
+// Element location functions
 char& _String::operator [] (long index)
 {
     if (((unsigned long)index)<sLength) {
@@ -356,30 +286,7 @@ char& _String::operator [] (long index)
     return defaultReturn;
 }
 
-//_______________________________________________________________________
-// element location functions
-
-const char _String::getChar (long index)
-{
-    if (((unsigned long)index)<sLength) {
-        return sData[index];
-    }
-    return defaultReturn;
-}
-
-//_______________________________________________________________________
-// element location functions
-
-void _String::setChar (long index, char c)
-{
-    if (((unsigned long)index)<sLength) {
-        sData[index] = c;
-    }
-}
-
-//_______________________________________________________________________
-// element location functions
-
+//Element location functions
 char _String::operator () (unsigned long index)
 {
     if (index<sLength) {
@@ -389,19 +296,7 @@ char _String::operator () (unsigned long index)
     return 0;
 }
 
-//_______________________________________________________________________
-void    _String::DuplicateErasing (BaseRef ref)
-{
-    if (sData) {
-        free (sData);
-    }
-
-    Duplicate(ref);
-
-}
-//_______________________________________________________________________
-// assignment operator
-
+// Assignment operator
 void _String::operator = (_String s)
 {
     if (sData) {
@@ -411,16 +306,13 @@ void _String::operator = (_String s)
     Duplicate (&s);
 }
 
-//_______________________________________________________________________
-// string length
-
-unsigned long _String::Length(void)
+// lexicographic comparison
+bool _String::operator == (_String s)
 {
-    return sLength;
+    return Equal(&s);
 }
 
-//_______________________________________________________________________
-// append operator
+//Append operator
 _String _String::operator & (_String s)
 {
     if (sLength+s.sLength == 0) {
@@ -441,45 +333,6 @@ _String _String::operator & (_String s)
     return res;
 }
 
-//_______________________________________________________________________
-// insert char operator
-void _String::Insert (char c, long pos)
-{
-    if (pos<0) {
-        pos = sLength;
-    }
-
-    sData = MemReallocate (sData,sizeof(char)*(sLength+2));
-
-    if (pos<sLength) {
-        memmove(sData+pos+1,sData+pos, sLength-pos);
-    }
-    sData[pos] = c;
-    sLength++;
-    sData[sLength] = 0;
-}
-
-//_______________________________________________________________________
-// delete range char operator
-void _String::Delete (long from, long to)
-{
-    if (from<0) {
-        from = 0;
-    }
-
-    if (to<0) {
-        to = sLength-1;
-    }
-
-    if (to<sLength-1) {
-        memmove (sData+from, sData+to+1, sLength-to-1);
-    }
-    sLength -= to-from+1;
-    sData = MemReallocate (sData,sizeof(char)*(sLength+1));
-    sData[sLength]=0;
-}
-
-//_______________________________________________________________________
 // append operator
 void _String::operator << (const _String* s)
 {
@@ -513,24 +366,14 @@ void _String::operator << (const _String* s)
     }
 }
 
-//_______________________________________________________________________
-// append and delete operator
-void _String::AppendNewInstance (_String* s)
-{
-    (*this) << s;
-    DeleteObject (s);
-}
-
-//_______________________________________________________________________
-// append operator
+//Append operator
 void _String::operator << (const char* str)
 {
     _String conv (str);
     (*this)<<&conv;
 }
 
-//_______________________________________________________________________
-// append operator
+//Append operator
 void _String::operator << (const char c)
 {
     if (nInstances <= sLength) {
@@ -541,8 +384,271 @@ void _String::operator << (const char c)
     sData[sLength++]=c;
 }
 
-//_______________________________________________________________________
-// append operator
+//Return good ole char*
+_String::operator const char* (void)
+{
+    return sData;
+}
+
+//Lexicographic comparison
+bool _String::operator > (_String s)
+{
+    return Greater(&s);
+}
+
+//Lexicographic comparison
+bool _String::operator <= (_String s)
+{
+    return !((*this)>s);
+}
+
+//Lexicographic comparison
+bool _String::operator >= (_String s)
+{
+    return (((*this)>s)||(*this==s));
+}
+
+//Lexicographic comparison
+bool _String::operator != (_String s)
+{
+    return !(*this==s);
+}
+
+//Lexicographic comparison
+bool _String::operator < (_String s)
+{
+    return Less(&s);
+}
+
+
+/*
+==============================================================
+Methods
+==============================================================
+*/
+
+// Compute Adler-32 CRC for a string
+// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
+long _String::Adler32(void)
+{
+    unsigned char  *data = (unsigned char*)sData;
+
+    unsigned long len = sLength,
+                  a   = 1,
+                  b      = 0;
+
+    while (len) {
+        unsigned tlen = len > 5550 ? 5550 : len;
+        len -= tlen;
+        do {
+            a += *data++;
+            b += a;
+        } while (--tlen);
+        a = (a & 0xffff) + (a >> 16) * (65536-MOD_ADLER);
+        b = (b & 0xffff) + (b >> 16) * (65536-MOD_ADLER);
+    }
+
+    if (a >= MOD_ADLER) {
+        a -= MOD_ADLER;
+    }
+
+    b = (b & 0xffff) + (b >> 16) * (65536-MOD_ADLER);
+
+    if (b >= MOD_ADLER) {
+        b -= MOD_ADLER;
+    }
+
+    return b << 16 | a;
+}
+
+//Append and delete operator
+void _String::AppendNewInstance (_String* s)
+{
+    (*this) << s;
+    DeleteObject (s);
+}
+
+void _String::AppendAnAssignmentToBuffer(_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
+{
+    (*this) << id;
+    if (doBind) {
+        (*this) << ':';
+    }
+    (*this) << '=';
+    if (doQuotes) {
+        (*this) << '"';
+    }
+    (*this) << value;
+    if (doQuotes) {
+        (*this) << '"';
+    }
+    (*this) << ";\n";
+    if (doFree) {
+        DeleteObject (value);
+    }
+}
+
+void _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
+{
+    for (long k=0; k<varNumbers.lLength; k++) {
+        _Variable *tiv = LocateVar(varNumbers.lData[k]);
+        if (tiv) {
+            (*this) << id;
+            (*this) << "[\"";
+            (*this) << tiv->GetName();
+            (*this) << "\"]=";
+            _PMathObj varValue = tiv->Compute();
+            switch (varValue->ObjectClass()) {
+            case NUMBER:
+                (*this) << _String (varValue->Value());
+                break;
+            case STRING:
+                (*this) << '"';
+                EscapeAndAppend (*((_FString*)varValue)->theString);
+                (*this) << '"';
+                break;
+            default:
+                AppendNewInstance ((_String*)(varValue->toStr()));
+                break;
+
+            }
+            (*this) << ";\n";
+        }
+    }
+}
+
+_String _String::Chop(long from, long to)
+{
+    if (!sLength) {
+        return empty;
+    }
+    if (from == -1) {
+        from = 0;
+    }
+    if (to == -1) {
+        to = ((long)sLength)-1;
+    }
+    if (to<from) {
+        return empty;
+    }
+    _String res ((unsigned long)(sLength+from-to+1));
+    if (from) {
+        memcpy (res.sData,sData, from);
+    }
+    if ((to<((long)sLength)-1)&&(to>from)) {
+        memcpy (res.sData+from,sData+to+1, sLength-to-1);
+    }
+    return res;
+}
+
+// find first occurence of the string between from and to
+bool _String::ContainsSubstring(_String& s)
+// -1, indicates that search term has not been found
+{
+    if (!sLength) {
+        return false;
+    }
+    if (sLength<s.sLength) {
+        return false;
+    }
+    char *sP = sData, *ssP = s.sData;
+    for (long i=0; i<sLength-s.sLength; i++,sP++) {
+        long j = 0;
+        for (; (sP[j]==ssP[j])&&(j<s.sLength); j++) ;
+        if (j==s.sLength) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void _String::CopyDynamicString (_String *s, bool flushMe)
+{
+    if (flushMe && sData) {
+        free (sData);
+    }
+    sLength     = s->sLength;
+    if (s->nInstances == 1) {
+        sData       = s->sData;
+        s->sData    = nil;
+        DeleteObject (s);
+    } else {
+        checkPointer (sData = (char*)MemAllocate (sLength+1));
+        if (s->sData) {
+            memcpy (sData, s->sData, sLength+1);
+        } else {
+            sData[0] = 0;
+        }
+        s->nInstances --;
+    }
+}
+
+//Cut string from, to (-1 for any means from beginning/to end)
+_String _String::Cut(long from, long to)
+{
+    if (!sLength) {
+        return empty;
+    }
+    if (from == -1) {
+        from = 0;
+    }
+    if (to == -1 || to >= sLength) {
+        to = ((long)sLength)-1;
+    }
+    if (to<from) {
+        return empty;
+    }
+    _String res ((unsigned long)(to-from+1));
+    if (to-from+1) {
+        memcpy (res.sData,sData+from,  to-from+1);
+    }
+    return res;
+}
+
+//Delete range char operator
+void _String::Delete (long from, long to)
+{
+    if (from<0) {
+        from = 0;
+    }
+
+    if (to<0) {
+        to = sLength-1;
+    }
+
+    if (to<sLength-1) {
+        memmove (sData+from, sData+to+1, sLength-to-1);
+    }
+    sLength -= to-from+1;
+    sData = MemReallocate (sData,sizeof(char)*(sLength+1));
+    sData[sLength]=0;
+}
+
+void    _String::Duplicate (BaseRef ref)
+{
+    _String * s = (_String*)ref;
+
+    sLength = s->sLength;
+    sData   = s->sData;
+
+    if (sData) {
+        checkPointer (sData = (char*)MemAllocate (sLength+1));
+        memcpy (sData, s->sData, sLength+1);
+    }
+
+}
+
+void    _String::DuplicateErasing (BaseRef ref)
+{
+    if (sData) {
+        free (sData);
+    }
+
+    Duplicate(ref);
+
+}
+
+//Append operator
 void _String::EscapeAndAppend (const char c, char mode)
 {
     if (mode == 2) {
@@ -634,8 +740,7 @@ void _String::EscapeAndAppend (const char c, char mode)
     }
 }
 
-//_______________________________________________________________________
-// append operator
+//Append operator
 void _String::EscapeAndAppend (const _String & s, char mode)
 {
     for (long i=0; i<s.sLength;  i++) {
@@ -643,9 +748,35 @@ void _String::EscapeAndAppend (const _String & s, char mode)
     }
 }
 
+//Replace string 1 with string 2, all occurences true/false
+void _String::FormatTimeString(long time_diff)
+{
+    long secs = time_diff,
+         mins = secs/60,
+         hrs  = mins/60;
 
-//_______________________________________________________________________
-// finalize buffer string
+    mins = mins%60;
+    secs = secs%60;
+    if (hrs<10) {
+        (*this) = _String('0')&hrs;
+    } else {
+        (*this) = _String(hrs);
+    }
+    (*this) = (*this) &':';
+    if (mins<10) {
+        (*this) = (*this)&_String('0')&mins;
+    } else {
+        (*this) = (*this)&_String(mins);
+    }
+    (*this) = (*this) &':';
+    if (secs<10) {
+        (*this) = (*this)&_String('0')&secs;
+    } else {
+        (*this) = (*this)&_String(secs);
+    }
+}
+
+//Finalize buffer string
 void _String::Finalize (void)
 {
 
@@ -658,262 +789,12 @@ void _String::Finalize (void)
 
 }
 
-
-//_______________________________________________________________________
-// return good ole char*
-_String::operator const char* (void)
-{
-    return sData;
-}
-
-//_______________________________________________________________________
-// return good ole char*
-char * _String::getStr (void)
-{
-    return sData;
-}
-//_______________________________________________________________________
-// return good ole char*
-BaseRef _String::toStr (void)
-{
-    nInstances++;
-    return this;
-}
-//_______________________________________________________________________
-
-_String _String::Chop(long from, long to)
-{
-    if (!sLength) {
-        return empty;
-    }
-    if (from == -1) {
-        from = 0;
-    }
-    if (to == -1) {
-        to = ((long)sLength)-1;
-    }
-    if (to<from) {
-        return empty;
-    }
-    _String res ((unsigned long)(sLength+from-to+1));
-    if (from) {
-        memcpy (res.sData,sData, from);
-    }
-    if ((to<((long)sLength)-1)&&(to>from)) {
-        memcpy (res.sData+from,sData+to+1, sLength-to-1);
-    }
-    return res;
-}
-
-//_______________________________________________________________________
-// cut string from, to (-1 for any means from beginning/to end)
-_String _String::Cut(long from, long to)
-{
-    if (!sLength) {
-        return empty;
-    }
-    if (from == -1) {
-        from = 0;
-    }
-    if (to == -1 || to >= sLength) {
-        to = ((long)sLength)-1;
-    }
-    if (to<from) {
-        return empty;
-    }
-    _String res ((unsigned long)(to-from+1));
-    if (to-from+1) {
-        memcpy (res.sData,sData+from,  to-from+1);
-    }
-    return res;
-}
-
-//_______________________________________________________________________
-// s[0]...s[sLength-1] => s[sLength-1]...s[0]
-void _String::Flip(void)
-{
-    for (long i = 0; i < sLength/2; i++) {
-        char c = sData[i];
-        sData[i] = sData[sLength-1-i];
-        sData[sLength-1-i] = c;
-    }
-}
-
-//_______________________________________________________________________
-// compute Adler-32 CRC for a string
-// implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
-
-#define MOD_ADLER 65521
-
-long _String::Adler32(void)
-{
-    unsigned char  *data = (unsigned char*)sData;
-
-    unsigned long len = sLength,
-                  a   = 1,
-                  b      = 0;
-
-    while (len) {
-        unsigned tlen = len > 5550 ? 5550 : len;
-        len -= tlen;
-        do {
-            a += *data++;
-            b += a;
-        } while (--tlen);
-        a = (a & 0xffff) + (a >> 16) * (65536-MOD_ADLER);
-        b = (b & 0xffff) + (b >> 16) * (65536-MOD_ADLER);
-    }
-
-    if (a >= MOD_ADLER) {
-        a -= MOD_ADLER;
-    }
-
-    b = (b & 0xffff) + (b >> 16) * (65536-MOD_ADLER);
-
-    if (b >= MOD_ADLER) {
-        b -= MOD_ADLER;
-    }
-
-    return b << 16 | a;
-}
-
-//_______________________________________________________________________
-// cut string from, to (-1 for any means from beginning/to end)
-void _String::Trim(long from, long to, bool softTrim)
-{
-    if (!sLength) {
-        return;
-    }
-    if (from < 0) {
-        from = 0;
-    } else if (from>=sLength) {
-        from = ((long)sLength)-1;
-    }
-    if (to < 0) {
-        to = ((long)sLength)-1;
-    } else if (to>=sLength) {
-        to = ((long)sLength)-1;
-    }
-
-    if (softTrim) {
-        sData += from;
-        sLength = to-from+1;
-    } else if (to-from+1>0) {
-        if (from) {
-            memmove (sData,sData+from,  to-from+1);
-        }
-
-        sLength = to-from+1;
-        sData = MemReallocate (sData, to-from+2);
-        sData[to-from+1]=0;
-    } else {
-        sLength = 0;
-        sData = MemReallocate (sData, 1);
-        sData [0] = 0;
-    }
-}
-
-//_______________________________________________________________________
-// locate the first non-space charachter of the string
-long _String::FirstNonSpaceIndex(long start, long end, char direction)
-{
-    if (start == -1) {
-        start = ((long)sLength)-1;
-    }
-    if (end == -1) {
-        end = ((long)sLength)-1;
-    }
-    if (direction<0) {
-        //long t = start;
-        start = end;
-        end = start;
-    }
-    if (sLength&&(start<sLength)&&(!isspace (sData[start]))) {
-        return start;    // first char is non-space
-    }
-    char* str = sData+start;
-    for (int i = start; i<=end; i+=direction, str+=direction)
-        if (!(((*str>=9)&&(*str<=13))||(*str==' '))) {
-            return i;
-        }
-
-    return -1;
-}
-
-//_______________________________________________________________________
-// remove all spaces
-void _String::KillSpaces (_String& result)
-{
-    _String temp (sLength+1,true);
-    for (long k=0; k<sLength; k++)
-        if (!isspace (sData[k])) {
-            temp << sData[k];
-        }
-    temp.Finalize();
-    result = temp;
-}
-
-//_______________________________________________________________________
-// replace all space runs with a single space
-
-void _String::CompressSpaces (void)
-{
-    _String temp (sLength+1,true);
-    bool    skipping = false;
-
-    for (long k=0; k<sLength; k++)
-        if (isspace (sData[k])) {
-            if (!skipping) {
-                skipping = true;
-                temp << ' ';
-            }
-        } else {
-            temp << sData[k];
-            skipping = false;
-        }
-    temp.Finalize();
-    *this = temp;
-}
-
-//_______________________________________________________________________
-// locate the first non-space charachter of the string
-long _String::FirstSpaceIndex(long start, long end, char direction)
-{
-    if (start == -1) {
-        start = ((long)sLength)-1;
-    }
-    if (end == -1) {
-        end = ((long)sLength)-1;
-    }
-    if (direction<0) {
-        //long t = start;
-        start = end;
-        end = start;
-    }
-    if (sLength&&(isspace (sData[start]))) {
-        return start;    // first char is non-space
-    }
-    char* str = sData+start;
-    for (int i = start; i<=end; i+=direction, str+=direction)
-        if ((((*str>=9)&&(*str<=13))||(*str==' '))) {
-            return i;
-        }
-
-    return -1;
-}
-
-//_______________________________________________________________________
-// locate the first non-space charachter of the string
-char _String::FirstNonSpace(long start, long end, char direction)
-{
-    long r = FirstNonSpaceIndex(start,end,direction);
-    return r==-1?0:sData[r];
-}
-
-//_______________________________________________________________________
-
 long _String::FindEndOfIdent(long start, long end, char wild)
 {
+    if(sLength==0) {
+        return -1;
+    }
+
     if (start == -1) {
         start = ((long)sLength)-1;
     }
@@ -935,10 +816,7 @@ long _String::FindEndOfIdent(long start, long end, char wild)
     return i-1;
 }
 
-
-//_______________________________________________________________________
 // find first occurence of the string between from and to
-
 long _String::Find(_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
@@ -967,7 +845,6 @@ long _String::Find(_String s, long from, long to)
     }
     return -1;
 }
-
 
 long _String::FindKMP(_String s, long from, long to)
 // -1, indicates that search term has not been found
@@ -1016,8 +893,6 @@ long _String::FindKMP(_String s, long from, long to)
     return -1;
 }
 
-
-//_______________________________________________________________________
 // Construct a KMP table
 void _String::buildKmpTable(_String s)
 {
@@ -1050,11 +925,8 @@ void _String::buildKmpTable(_String s)
     }
 }
 
-
-//_______________________________________________________________________
 // find first occurence of the string between from and to
 // case insensitive
-
 long _String::FindAnyCase (_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
@@ -1086,32 +958,54 @@ long _String::FindAnyCase (_String s, long from, long to)
     return -1;
 }
 
-//_______________________________________________________________________
-// find first occurence of the string between from and to
-
-bool _String::ContainsSubstring(_String& s)
-// -1, indicates that search term has not been found
+long _String::ExtractEnclosedExpression (long& from, char open, char close, bool respectQuote, bool respectEscape)
 {
-    if (!sLength) {
-        return false;
-    }
-    if (sLength<s.sLength) {
-        return -1;
-    }
-    char *sP = sData, *ssP = s.sData;
-    for (long i=0; i<sLength-s.sLength; i++,sP++) {
-        long j = 0;
-        for (; (sP[j]==ssP[j])&&(j<s.sLength); j++) ;
-        if (j==s.sLength) {
-            return true;
+    long   currentPosition = from,
+           currentLevel    = 0;
+
+    bool   isQuote = false,
+           doEscape = false;
+
+    while (currentPosition < sLength) {
+        char thisChar = sData[currentPosition];
+
+        if (!doEscape) {
+            if (thisChar == '"' && respectQuote && !doEscape) {
+                isQuote = !isQuote;
+            } else if (thisChar == open && !isQuote) {
+                // handle the case when close and open are the same
+                if (currentLevel == 1 && open == close && from < currentPosition) {
+                    return currentPosition;
+                }
+                currentLevel++;
+                if (currentLevel == 1) {
+                    from = currentPosition;
+                }
+            } else if (thisChar == close && !isQuote) {
+                currentLevel--;
+                if (currentLevel == 0 && from < currentPosition) {
+                    return currentPosition;
+                }
+                if (currentLevel < 0) {
+                    return -1;
+                }
+            } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
+                doEscape = true;
+            }
         }
+
+        else {
+            doEscape = false;
+        }
+
+        currentPosition++;
     }
-    return false;
+
+    return -1;
 }
 
-//_______________________________________________________________________
-// find first occurence of the string between from and to
 
+//Find first occurence of the string between from and to
 long _String::Find(char s, long from, long to)
 {
     if (!sLength) {
@@ -1136,9 +1030,7 @@ long _String::Find(char s, long from, long to)
     return -1;
 }
 
-//_______________________________________________________________________
-// find first occurence of the string between from and to
-
+//Find first occurence of the string between from and to
 long _String::FindBackwards(_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
@@ -1168,11 +1060,7 @@ long _String::FindBackwards(_String s, long from, long to)
     return -1;
 }
 
-
-
-//_______________________________________________________________________
-// find first occurence of the string
-
+//Find first occurence of the string
 long _String::FindBinary(char s)
 // -1, indicates that search term has not been found
 {
@@ -1184,308 +1072,180 @@ long _String::FindBinary(char s)
     return -1;
 }
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator == (_String s)
+long _String::FindTerminator (long from, _String& terminators)
 {
-    return Equal(&s);
-}
+    long   currentPosition  = from,
+           currentCurly     = 0,
+           currentSquare    = 0,
+           currentParen = 0;
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::Equal (_String* s)
-{
-    if  (sLength!=s->sLength) {
-        return false;
-    }
+    bool   isQuote = false,
+           doEscape = false;
 
-    for (long i=0; i<sLength; i++)
-        if (sData[i]!=s->sData[i]) {
-            return false;
+    while (currentPosition < sLength) {
+        char thisChar = sData[currentPosition];
+        if (!doEscape) {
+            if (thisChar == '"' && !doEscape) {
+                isQuote = !isQuote;
+            } else {
+                if (!isQuote) {
+                    if (thisChar == '{') {
+                        currentCurly ++;
+                    } else if (thisChar == '[') {
+                        currentSquare ++;
+                    } else if (thisChar == '(') {
+                        currentParen ++;
+                    }
+                    if (currentCurly > 0 && thisChar == '}') {
+                        currentCurly --;
+                    } else if (currentSquare > 0 && thisChar == ']') {
+                        currentSquare --;
+                    } else if (currentParen > 0 && thisChar == ')') {
+                        currentParen --;
+                    } else if (currentParen == 0 && currentSquare == 0 && currentCurly == 0)
+                        for (long s = 0; s < terminators.sLength; s++)
+                            if (thisChar == terminators.sData[s]) {
+                                return currentPosition;
+                            }
+                } else {
+                    if (thisChar == '\\' && isQuote && !doEscape) {
+                        doEscape = true;
+                    }
+                }
+            }
+        } else {
+            doEscape = false;
         }
 
-    return true;
+        currentPosition++;
+    }
+
+    return -1;
 }
 
-//_______________________________________________________________________
-// lexicographic comparison
-char    _String::Compare (_String* s)
+//s[0]...s[sLength-1] => s[sLength-1]...s[0]
+void _String::Flip(void)
 {
-    long upTo;
+    for (long i = 0; i < sLength/2; i++) {
+        char c = sData[i];
+        sData[i] = sData[sLength-1-i];
+        sData[sLength-1-i] = c;
+    }
+}
 
-    if  (sLength>s->sLength) {
-        upTo = s->sLength;
-    } else {
-        upTo = sLength;
+// Return good ole char*
+char * _String::getStr (void)
+{
+    return sData;
+}
+
+//Element location functions
+const char _String::getChar (long index)
+{
+    if (((unsigned long)index)<sLength) {
+        return sData[index];
+    }
+    return defaultReturn;
+}
+
+void    _String::Initialize (void)
+{
+    BaseObj::Initialize();
+    sLength = 0;
+    sData = 0;
+}
+
+//Insert char operator
+void _String::Insert (char c, long pos)
+{
+    if (pos<0) {
+        pos = sLength;
     }
 
-    for (long i=0; i<upTo; i++) {
-        int res = (sData[i]-s->sData[i]);
-        if (res < 0) {
-            return -1;
-        } else if (res>0) {
-            return 1;
-        }
+    sData = MemReallocate (sData,sizeof(char)*(sLength+2));
+
+    if (pos<sLength) {
+        memmove(sData+pos+1,sData+pos, sLength-pos);
+    }
+    sData[pos] = c;
+    sLength++;
+    sData[sLength] = 0;
+}
+
+long _String::LempelZivProductionHistory (_SimpleList* rec)
+{
+    if (rec) {
+        rec->Clear();
     }
 
-    if (sLength == s->sLength) {
+    if (sLength == 0) {
         return 0;
     }
 
-    return 1-2*(sLength<s->sLength);
-}
+    if (rec) {
+        (*rec) << 0;
+    }
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::EqualWithWildChar (_String* s, char wildchar)
-// s may contain a wild char
-{
-    char *sP = sData, *ssP = (s->sData); // optimize
-    // we start comparing the strings until we run into a wildchar.
-    long matchLength, t, q, p, curPos = 0;
-    while (*ssP) {
-        if (*ssP!=wildchar) {
-            if (*ssP==*sP) {
-                ssP++;
-                sP++;
-                curPos++;
-                continue;
+    long   cp = 1,
+           pH = 1;
+
+    while (cp<sLength) {
+        long maxExtension = 0;
+
+        for (long ip = 0; ip < cp; ip++) {
+            long sp = ip,
+                 mp = cp;
+
+            while ((mp<sLength) && (sData[mp] == sData[sp])) {
+                mp++;
+                sp++;
+            }
+
+            if (mp==sLength) {
+                maxExtension = sLength-cp;
+                break;
             } else {
-                return false;
-            }
-        }
-        // wildchar found
-        // skip the wildchar and scroll the 1st string until match is found
-        matchLength = 0;
-        ssP++;
-        while (*ssP&&(*ssP!=wildchar)) {
-            ssP++;
-            matchLength++;
-        }
-        if (!matchLength) { // wildchar is the last symbol in expression
-            if (!*ssP) {
-                return true; // expressions matched
-            }
-        } else { // check sP for a possible match
-            t = matchLength-1;
-            q = matchLength+curPos-1;
-            ssP--;
-            while (q<sLength) {
-                if (sP[t]==*ssP) {
-                    p = 1;
-                    while (p<matchLength) {
-                        char c = *(ssP-p);
-                        if (sP[t-p]!=c) {
-                            break;
-                        }
-                        p++;
-                    }
-                    if (p==matchLength) {
-                        sP += t+1;
-                        curPos = q+1;
-                        ssP++;
-                        break;
-//                      ssP++;
-                    }
+                if ((mp = mp-cp+1)>maxExtension) {
+                    maxExtension = mp;
                 }
-                t++;
-                q++;
             }
-            if (q==sLength) {
-                return false;
-            }
+        }
+
+        cp = cp+maxExtension;
+        if (rec) {
+            (*rec) << cp-1;
+        } else {
+            pH ++;
         }
     }
 
-    return (*sP==0);
-}
-
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator > (_String s)
-{
-    return Greater(&s);
-}
-
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::Greater (_String *s)
-{
-    unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
-
-    for (long i=0; i<top; i++) {
-        int j = sData[i]-s->sData[i];
-        if (j>0) {
-            return true;
-        }
-        if (j<0) {
-            return false;
-        }
+    if (rec) {
+        return rec->lLength;
     }
 
-    return (sLength>s->sLength);
+    return pH;
 }
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator <= (_String s)
+//String length
+unsigned long _String::Length(void)
 {
-    return !((*this)>s);
+    return sLength;
 }
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator >= (_String s)
+//Make dynamic copy
+BaseRef _String::makeDynamic (void)
 {
-    return (((*this)>s)||(*this==s));
-}
-
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator != (_String s)
-{
-    return !(*this==s);
-}
-
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::Less (_String *s)
-{
-    unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
-
-    for (long i=0; i<top; i++) {
-        int j= sData[i]-s->sData[i];
-        if (j>0) {
-            return false;
-        }
-        if (j<0) {
-            return true;
-        }
+    _String * r = new _String;
+    if (!r) {
+        checkPointer(r);
     }
-
-    return (sLength<s->sLength);
-
+    //memcpy ((char*)r, (char*)this, sizeof (_String));
+    //r->nInstances = 1;
+    r->Duplicate(this);
+    return r;
 }
 
-//_______________________________________________________________________
-// lexicographic comparison
-bool _String::operator < (_String s)
-{
-    return Less(&s);
-}
-
-//_______________________________________________________________________
-// lexicographic inclusion
-bool _String::contains (_String s)
-{
-    return Find(s)!=-1;
-}
-
-//_______________________________________________________________________
-// lexicographic inclusion
-bool _String::contains (char c)
-{
-    return Find(c)!=-1;
-}
-
-//_______________________________________________________________________
-// begins with string
-bool _String::beginswith (_String s, bool caseSensitive)
-{
-    if (sLength<s.sLength) {
-        return FALSE;
-    }
-    char *sP = sData, *ssP = (s.sData);
-    if (caseSensitive) {
-        for (long i=0; i<s.sLength; i++)
-            if (sP[i]!=ssP[i]) {
-                return FALSE;
-            }
-    } else
-        for (long i=0; i<s.sLength; i++)
-            if (toupper(sP[i])!=toupper(ssP[i])) {
-                return FALSE;
-            }
-
-
-    return TRUE;
-}
-
-//_______________________________________________________________________
-// begins with string
-bool _String::startswith (_String& s)
-{
-    if (sLength<s.sLength) {
-        return FALSE;
-    }
-
-    char *sP  = sData,
-          *ssP = s.sData;
-
-    for (; *ssP; sP++,ssP++)
-        if (*sP!=*ssP) {
-            return false;
-        }
-
-    return true;
-}
-
-//_______________________________________________________________________
-// ends with string
-bool _String::endswith (_String s, bool caseSensitive)
-{
-    if (sLength<s.sLength) {
-        return FALSE;
-    }
-    char *sP = sData+sLength-s.sLength,
-          *ssP = (s.sData),
-           *ssP2 = s.sData+s.sLength;
-
-    if (caseSensitive) {
-        for (; ssP!=ssP2; ssP++,sP++)
-            if (*sP-*ssP) {
-                return FALSE;
-            }
-    } else
-        for (; ssP!=ssP2; ssP++,sP++)
-            if (toupper(*sP)!=toupper(*ssP)) {
-                return FALSE;
-            }
-
-    return TRUE;
-}
-
-//_______________________________________________________________________
-// replace string 1 with string 2, all occurences true/false
-void _String::FormatTimeString(long time_diff)
-{
-    long secs = time_diff,
-         mins = secs/60,
-         hrs  = mins/60;
-
-    mins = mins%60;
-    secs = secs%60;
-    if (hrs<10) {
-        (*this) = _String('0')&hrs;
-    } else {
-        (*this) = _String(hrs);
-    }
-    (*this) = (*this) &':';
-    if (mins<10) {
-        (*this) = (*this)&_String('0')&mins;
-    } else {
-        (*this) = (*this)&_String(mins);
-    }
-    (*this) = (*this) &':';
-    if (secs<10) {
-        (*this) = (*this)&_String('0')&secs;
-    } else {
-        (*this) = (*this)&_String(secs);
-    }
-}
-
-//_______________________________________________________________________
-// replace string 1 with string 2, all occurences true/false
+//Replace string 1 with string 2, all occurences true/false
 _String _String::Replace(_String s, _String d, bool flag)
 {
     if (!sLength) {
@@ -1579,8 +1339,55 @@ _String _String::Replace(_String s, _String d, bool flag)
 
 }
 
+//Element location functions
+void _String::setChar (long index, char c)
+{
+    if (((unsigned long)index)<sLength) {
+        sData[index] = c;
+    }
+}
 
-//_______________________________________________________________________
+_String* _String::Sort (_SimpleList* index)
+{
+    if (index) {
+        index->Clear();
+    }
+
+    if (sLength) {
+        _SimpleList charList (sLength);
+        if (index) {
+            for (unsigned long i=0; i<sLength; i++) {
+                charList << sData[i];
+                (*index) << i;
+            }
+            SortLists (&charList, index);
+        } else {
+            for (unsigned long i=0; i<sLength; i++) {
+                charList << sData[i];
+            }
+
+            charList.Sort();
+        }
+        _String * sorted = new _String (sLength);
+        checkPointer (sorted);
+        for (unsigned long i=0; i<sLength; i++) {
+            sorted->sData[i] = charList.lData[i];
+        }
+
+        return sorted;
+    }
+
+    return new _String;
+}
+
+void    _String::StripQuotes (void)
+{
+    if (sLength&&(sData[sLength-1]=='"')&&(sData[0]=='"')) {
+        Trim(1,sLength-2);
+    }    
+}
+
+
 _List* _String::Tokenize (_String s)
 {
     _List *res = new _List;
@@ -1601,10 +1408,7 @@ _List* _String::Tokenize (_String s)
     return res;
 }
 
-
-//_______________________________________________________________________
-
-_Parameter      _String::toNum (void)
+_Parameter _String::toNum (void)
 {
     if (sLength == 0) {
         return 0.;
@@ -1613,8 +1417,419 @@ _Parameter      _String::toNum (void)
     return strtod(sData,&endP);
 }
 
+//Return good ole char*
+BaseRef _String::toStr (void)
+{
+    nInstances++;
+    return this;
+}
 
-//_______________________________________________________________________
+_Parameter  _String::ProcessTreeBranchLength (void)
+{
+    _Parameter res = -1.; 
+
+    if (sLength) {
+        if (sData[0]==':') {
+            res = Cut(1,-1).toNum();
+        } else {
+            res = toNum();
+        }    
+
+
+        if (res < 1e-10) {
+            res = 1e-10;
+        }    
+    }    
+
+    return res; 
+}
+
+
+bool    _String::IsALiteralArgument (bool stripQuotes)
+{
+    if (sLength >= 2) { 
+        long from = 0, 
+             to = ExtractEnclosedExpression (from,'"','"',false,true);
+
+        if (from == 0 && to == sLength - 1) { 
+            if (stripQuotes){
+                Trim (1, sLength-2);
+            }    
+            return true;
+        }    
+    }    
+    return false;
+}
+
+//TODO: This is a global function.
+bool    hyIDValidator (_String* s)
+{
+    return s->IsValidIdentifier(false);
+}
+
+/*
+==============================================================
+Space Methods
+==============================================================
+*/
+
+//Replace all space runs with a single space
+void _String::CompressSpaces (void)
+{
+    _String temp (sLength+1,true);
+    bool    skipping = false;
+
+    for (long k=0; k<sLength; k++)
+        if (isspace (sData[k])) {
+            if (!skipping) {
+                skipping = true;
+                temp << ' ';
+            }
+        } else {
+            temp << sData[k];
+            skipping = false;
+        }
+    temp.Finalize();
+    *this = temp;
+}
+
+//Locate the first non-space charachter of the string
+char _String::FirstNonSpace(long start, long end, char direction)
+{
+    long r = FirstNonSpaceIndex(start,end,direction);
+    return r==-1?0:sData[r];
+}
+
+//Locate the first non-space charachter of the string
+long _String::FirstNonSpaceIndex(long start, long end, char direction)
+{
+    if (start == -1) {
+        start = ((long)sLength)-1;
+    }
+    if (end == -1) {
+        end = ((long)sLength)-1;
+    }
+    if (direction<0) {
+        //long t = start;
+        start = end;
+        end = start;
+    }
+    if (sLength&&(start<sLength)&&(!isspace (sData[start]))) {
+        return start;    // first char is non-space
+    }
+    char* str = sData+start;
+    for (int i = start; i<=end; i+=direction, str+=direction)
+        if (!(((*str>=9)&&(*str<=13))||(*str==' '))) {
+            return i;
+        }
+
+    return -1;
+}
+
+//Locate the first non-space charachter of the string
+long _String::FirstSpaceIndex(long start, long end, char direction)
+{
+    if (start == -1) {
+        start = ((long)sLength)-1;
+    }
+    if (end == -1) {
+        end = ((long)sLength)-1;
+    }
+    if (direction<0) {
+        //long t = start;
+        start = end;
+        end = start;
+    }
+    if (sLength&&(isspace (sData[start]))) {
+        return start;    // first char is non-space
+    }
+    char* str = sData+start;
+    for (int i = start; i<=end; i+=direction, str+=direction)
+        if ((((*str>=9)&&(*str<=13))||(*str==' '))) {
+            return i;
+        }
+
+    return -1;
+}
+
+//Remove all spaces
+void _String::KillSpaces (_String& result)
+{
+    _String temp (sLength+1,true);
+    for (long k=0; k<sLength; k++)
+        if (!isspace (sData[k])) {
+            temp << sData[k];
+        }
+    temp.Finalize();
+    result = temp;
+}
+
+//Cut string from, to (-1 for any means from beginning/to end)
+void _String::Trim(long from, long to, bool softTrim)
+{
+    if (!sLength) {
+        return;
+    }
+    if (from < 0) {
+        from = 0;
+    } else if (from>=sLength) {
+        from = ((long)sLength)-1;
+    }
+    if (to < 0) {
+        to = ((long)sLength)-1;
+    } else if (to>=sLength) {
+        to = ((long)sLength)-1;
+    }
+
+    if (softTrim) {
+        sData += from;
+        sLength = to-from+1;
+    } else if (to-from+1>0) {
+        if (from) {
+            memmove (sData,sData+from,  to-from+1);
+        }
+
+        sLength = to-from+1;
+        sData = MemReallocate (sData, to-from+2);
+        sData[to-from+1]=0;
+    } else {
+        sLength = 0;
+        sData = MemReallocate (sData, 1);
+        sData [0] = 0;
+    }
+}
+
+/*
+==============================================================
+Lexicographic Comparison Methods
+==============================================================
+*/
+
+bool _String::contains (_String s)
+{
+    return Find(s)!=-1;
+}
+
+bool _String::contains (char c)
+{
+    return Find(c)!=-1;
+}
+
+char    _String::Compare (_String* s)
+{
+    long upTo;
+
+    if  (sLength>s->sLength) {
+        upTo = s->sLength;
+    } else {
+        upTo = sLength;
+    }
+
+    for (long i=0; i<upTo; i++) {
+        int res = (sData[i]-s->sData[i]);
+        if (res < 0) {
+            return -1;
+        } else if (res>0) {
+            return 1;
+        }
+    }
+
+    if (sLength == s->sLength) {
+        return 0;
+    }
+
+    return 1-2*(sLength<s->sLength);
+}
+
+bool _String::Equal (_String* s)
+{
+    if  (sLength!=s->sLength) {
+        return false;
+    }
+
+    for (long i=0; i<sLength; i++)
+        if (sData[i]!=s->sData[i]) {
+            return false;
+        }
+
+    return true;
+}
+
+//S may contain a wild char
+bool _String::EqualWithWildChar (_String* s, char wildchar)
+{
+    char *sP = sData, *ssP = (s->sData); // optimize
+    // we start comparing the strings until we run into a wildchar.
+    long matchLength, t, q, p, curPos = 0;
+    while (*ssP) {
+        if (*ssP!=wildchar) {
+            if (*ssP==*sP) {
+                ssP++;
+                sP++;
+                curPos++;
+                continue;
+            } else {
+                return false;
+            }
+        }
+        // wildchar found
+        // skip the wildchar and scroll the 1st string until match is found
+        matchLength = 0;
+        ssP++;
+        while (*ssP&&(*ssP!=wildchar)) {
+            ssP++;
+            matchLength++;
+        }
+        if (!matchLength) { // wildchar is the last symbol in expression
+            if (!*ssP) {
+                return true; // expressions matched
+            }
+        } else { // check sP for a possible match
+            t = matchLength-1;
+            q = matchLength+curPos-1;
+            ssP--;
+            while (q<sLength) {
+                if (sP[t]==*ssP) {
+                    p = 1;
+                    while (p<matchLength) {
+                        char c = *(ssP-p);
+                        if (sP[t-p]!=c) {
+                            break;
+                        }
+                        p++;
+                    }
+                    if (p==matchLength) {
+                        sP += t+1;
+                        curPos = q+1;
+                        ssP++;
+                        break;
+//                      ssP++;
+                    }
+                }
+                t++;
+                q++;
+            }
+            if (q==sLength) {
+                return false;
+            }
+        }
+    }
+
+    return (*sP==0);
+}
+
+bool _String::Greater (_String *s)
+{
+    unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
+
+    for (long i=0; i<top; i++) {
+        int j = sData[i]-s->sData[i];
+        if (j>0) {
+            return true;
+        }
+        if (j<0) {
+            return false;
+        }
+    }
+
+    return (sLength>s->sLength);
+}
+
+bool _String::Less (_String *s)
+{
+    unsigned long top = ((s->sLength>sLength)?sLength:s->sLength);
+
+    for (long i=0; i<top; i++) {
+        int j= sData[i]-s->sData[i];
+        if (j>0) {
+            return false;
+        }
+        if (j<0) {
+            return true;
+        }
+    }
+
+    return (sLength<s->sLength);
+
+}
+
+
+/*
+==============================================================
+Begins and Ends With Methods
+==============================================================
+*/
+
+//Begins with string
+bool _String::beginswith (_String s, bool caseSensitive)
+{
+    if (sLength<s.sLength) {
+        return FALSE;
+    }
+    char *sP = sData, *ssP = (s.sData);
+    if (caseSensitive) {
+        for (long i=0; i<s.sLength; i++)
+            if (sP[i]!=ssP[i]) {
+                return FALSE;
+            }
+    } else
+        for (long i=0; i<s.sLength; i++)
+            if (toupper(sP[i])!=toupper(ssP[i])) {
+                return FALSE;
+            }
+
+
+    return TRUE;
+}
+
+//Begins with string
+bool _String::startswith (_String& s)
+{
+    if (sLength<s.sLength) {
+        return FALSE;
+    }
+
+    char *sP  = sData,
+          *ssP = s.sData;
+
+    for (; *ssP; sP++,ssP++)
+        if (*sP!=*ssP) {
+            return false;
+        }
+
+    return true;
+}
+
+//Ends with string
+bool _String::endswith (_String s, bool caseSensitive)
+{
+    if (sLength<s.sLength) {
+        return FALSE;
+    }
+    char *sP = sData+sLength-s.sLength,
+          *ssP = (s.sData),
+           *ssP2 = s.sData+s.sLength;
+
+    if (caseSensitive) {
+        for (; ssP!=ssP2; ssP++,sP++)
+            if (*sP-*ssP) {
+                return FALSE;
+            }
+    } else
+        for (; ssP!=ssP2; ssP++,sP++)
+            if (toupper(*sP)!=toupper(*ssP)) {
+                return FALSE;
+            }
+
+    return TRUE;
+}
+
+/*
+==============================================================
+Case Methods
+==============================================================
+*/
+
 void    _String::UpCase (void)
 {
     for (unsigned long i = 0; i<sLength; i++) {
@@ -1622,106 +1837,12 @@ void    _String::UpCase (void)
     }
 }
 
-//_______________________________________________________________________
 void    _String::LoCase (void)
 {
     for (unsigned long i = 0; i<sLength; i++) {
         sData[i] = tolower (sData[i]);
     }
 }
-
-//_______________________________________________________________________
-_Parameter  _String::ProcessTreeBranchLength (void)
-{
-    _Parameter res = -1.;
-
-    if (sLength) {
-        if (sData[0]==':') {
-            res = Cut(1,-1).toNum();
-        } else {
-            res = toNum();
-        }
-
-
-        if (res < 1e-10) {
-            res = 1e-10;
-        }
-    }
-
-    return res;
-}
-
-
-//_______________________________________________________________________
-
-bool    _String::IsALiteralArgument (bool stripQuotes)
-{
-    if (sLength >= 2) {
-        long from = 0,
-             to = ExtractEnclosedExpression (from,'"','"',false,true);
-
-        if (from == 0 && to == sLength - 1) {
-            if (stripQuotes){
-                Trim (1, sLength-2);
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
-//_______________________________________________________________________
-
-void    _String::StripQuotes (void)
-{
-    if (sLength&&(sData[sLength-1]=='"')&&(sData[0]=='"')) {
-        Trim(1,sLength-2);
-    }
-}
-
-//_______________________________________________________________________
-
-bool    _String::IsValidIdentifier (bool strict)
-{
-    if (sLength == 0) {
-        return false;
-    }
-
-    if (strict) {
-        if (!(isalpha(sData[0]) || sData[0]=='_' )) {
-            return false;
-        }
-    } else if (!(isalnum(sData[0]) || sData[0]=='_' )) {
-        return false;
-    }
-
-
-    for(unsigned long p = 1; p<sLength; p++) {
-        char c = sData[p];
-        if (!(isalnum(c)|| c=='_' || strict&& c=='.')) {
-            return false;
-        }
-    }
-
-    // check to see if it's not a keyword / function name etc
-
-    return hyReservedWords.Find (this) == -1;
-}
-
-//_______________________________________________________________________
-
-bool    _String::IsValidRefIdentifier (void)
-{
-    if (sLength<2) {
-        return false;
-    }
-    if (sData[sLength-1]=='&') {
-        return Cut(0,sLength-2).IsValidIdentifier();
-    }
-    return false;
-}
-
-//_______________________________________________________________________
 
 void    _String::ProcessParameter(void)
 {
@@ -1730,9 +1851,14 @@ void    _String::ProcessParameter(void)
     }
 }
 
-//_______________________________________________________________________
 
-void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
+/*
+==============================================================
+Filename and Platform Methods
+==============================================================
+*/
+
+void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 {
     if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
     
@@ -1946,10 +2072,8 @@ void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 #endif
 }
 
-//_______________________________________________________________________
-
+//Compose two UNIX paths (abs+rel)
 _String _String::PathComposition (_String relPath)
-// compose two UNIX paths (abs+rel)
 {
     if (relPath.sData[0]!='/') { // relative path
         long f = -1, k = 0;
@@ -1980,25 +2104,8 @@ _String _String::PathComposition (_String relPath)
     return empty;
 }
 
-//_________________________________________________________________________
-
-char    GetPlatformDirectoryChar (void)
-{
-    char c = '/';
-#ifdef __MAC__
-    c = ':';
-#endif
-#if defined __WINDOZE__ || defined __MINGW32__
-    c = '\\';
-#endif
-
-    return c;
-}
-
-//_______________________________________________________________________
-
+//Mac only so far
 _String _String::PathSubtraction (_String& p2, char)
-// mac only so far
 {
     _String result;
     char separator = GetPlatformDirectoryChar();
@@ -2031,10 +2138,119 @@ _String _String::PathSubtraction (_String& p2, char)
     return empty;
 }
 
-//_______________________________________________________________________
+//TODO: These are global methods. Should they even be here?
+char GetPlatformDirectoryChar (void)
+{
+    char c = '/';
+#ifdef __MAC__
+    c = ':';
+#endif
+#if defined __WINDOZE__ || defined __MINGW32__
+    c = '\\';
+#endif
 
-void    _String::ConvertToAnIdent (bool strict)
-// convert a string to a valid ident
+    return c;
+}
+
+_String GetVersionString (void)
+{
+    _String theMessage = _String("HYPHY ")&__KERNEL__VERSION__;
+#ifdef __MP__
+    theMessage = theMessage & "(MP)";
+#endif
+#ifdef __HYPHYMPI__
+    theMessage = theMessage & "(MPI)";
+#endif
+    theMessage = theMessage & " for ";
+#ifdef __MAC__
+    theMessage = theMessage & "MacOS";
+#ifdef __HYPHYXCODE__
+    theMessage = theMessage & "(Universal Binary)";
+#else
+#ifdef TARGET_API_MAC_CARBON
+    theMessage = theMessage & "(Carbon)";
+#endif
+#endif
+#endif
+#ifdef __WINDOZE__
+    theMessage = theMessage & "Windows (Win32)";
+#endif
+#ifdef __UNIX__
+#if !defined __HEADLESS_WIN32__ && ! defined __MINGW32__
+    struct      utsname      name;
+    uname       (&name);
+    theMessage = theMessage & name.sysname & " on " & name.machine;
+#endif
+#if defined __MINGW32__
+    theMessage = theMessage & "MinGW ";// " & __MINGW32_VERSION;
+#endif
+#endif
+    return theMessage;
+}
+
+_String GetTimeStamp (bool doGMT)
+{
+    time_t cTime;
+    time (&cTime);
+
+    if (doGMT) {
+        tm* gmt = gmtime (&cTime);
+        return _String ((long)1900+gmt->tm_year) & '/' & _String (1+(long)gmt->tm_mon) & '/'
+               & _String ((long)gmt->tm_mday) & ' ' & _String ((long)gmt->tm_hour) & ':' & _String ((long)gmt->tm_min);
+    }
+
+    tm*     localTime = localtime (&cTime);
+
+    return  asctime (localTime);
+
+}
+
+/*
+==============================================================
+Identifier Methods
+==============================================================
+*/
+
+bool    _String::IsValidIdentifier (bool strict)
+{
+    if (sLength == 0) { 
+        return false;
+    }    
+
+    if (strict) {
+        if (!(isalpha(sData[0]) || sData[0]=='_' )) { 
+            return false;
+        }    
+    } else if (!(isalnum(sData[0]) || sData[0]=='_' )) { 
+        return false;
+    }    
+
+
+    for(unsigned long p = 1; p<sLength; p++) {
+        char c = sData[p];
+        if (!(isalnum(c)|| c=='_' || strict&& c=='.')) {
+            return false;
+        }    
+    }    
+
+    // check to see if it's not a keyword / function name etc
+
+    return hyReservedWords.Find (this) == -1;
+}
+
+bool    _String::IsValidRefIdentifier (void)
+{
+    if (sLength<2) {
+        return false;
+    }
+    if (sData[sLength-1]=='&') {
+        return Cut(0,sLength-2).IsValidIdentifier();
+    }
+    return false;
+}
+
+//Convert a string to a valid ident
+void _String::ConvertToAnIdent (bool strict)
 {
     _String * result = new _String ((unsigned long)sLength+1,true);
     if (!result) {
@@ -2073,8 +2289,6 @@ void    _String::ConvertToAnIdent (bool strict)
     CopyDynamicString (result, true);
 }
 
-//_______________________________________________________________________
-
 _String _String::ShortenVarID (_String& containerID)
 {
     long matched=-1,
@@ -2096,81 +2310,41 @@ _String _String::ShortenVarID (_String& containerID)
     return Cut (matched+1,-1);
 }
 
-//_______________________________________________________________________
+/*
+==============================================================
+Regular Expression Methods
+==============================================================
+*/
 
-_String     GetVersionString (void)
+_String GetRegExpError(int error)
 {
-    _String theMessage = _String("HYPHY ")&__KERNEL__VERSION__;
-#ifdef __MP__
-    theMessage = theMessage & "(MP)";
-#endif
-#ifdef __HYPHYMPI__
-    theMessage = theMessage & "(MPI)";
-#endif
-    theMessage = theMessage & " for ";
-#ifdef __MAC__
-    theMessage = theMessage & "MacOS";
-#ifdef __HYPHYXCODE__
-    theMessage = theMessage & "(Universal Binary)";
-#else
-#ifdef TARGET_API_MAC_CARBON
-    theMessage = theMessage & "(Carbon)";
-#endif
-#endif
-#endif
-#ifdef __WINDOZE__
-    theMessage = theMessage & "Windows (Win32)";
-#endif
-#ifdef __UNIX__
-#if !defined __HEADLESS_WIN32__ && ! defined __MINGW32__
-    struct      utsname      name;
-    uname       (&name);
-    theMessage = theMessage & name.sysname & " on " & name.machine;
-#endif
-#if defined __MINGW32__
-    theMessage = theMessage & "MinGW ";// " & __MINGW32_VERSION;
-#endif
-#endif
-    return theMessage;
+    char buffer [512];
+    buffer[regerror (error, nil, buffer, 511)] = 0;
+    return _String("Regular Expression error:")&buffer;
 }
 
-//_______________________________________________________________________
-
-_String     GetTimeStamp (bool doGMT)
+void FlushRegExp(Ptr regExpP)
 {
-    time_t cTime;
-    time (&cTime);
+    regex_t*        regEx = (regex_t*)regExpP;
+    regfree        (regEx);
+    delete          regEx;
+}
 
-    if (doGMT) {
-        tm* gmt = gmtime (&cTime);
-        return _String ((long)1900+gmt->tm_year) & '/' & _String (1+(long)gmt->tm_mon) & '/'
-               & _String ((long)gmt->tm_mday) & ' ' & _String ((long)gmt->tm_hour) & ':' & _String ((long)gmt->tm_min);
+Ptr PrepRegExp(_String* source, int& errCode, bool caseSensitive)
+{
+    regex_t  * res = new regex_t;
+    checkPointer (res);
+
+    errCode = regcomp (res, source->sData, REG_EXTENDED|(caseSensitive?0:REG_ICASE));
+
+    if (errCode) {
+        FlushRegExp ((Ptr)res);
+        return nil;
     }
-
-    tm*     localTime = localtime (&cTime);
-
-    return  asctime (localTime);
-
+    return (Ptr)res;
 }
 
-//_______________________________________________________________________
-void    _String::RegExpMatchOnce (_String* pattern, _SimpleList& matchedPairs, bool caseSensitive, bool handleErrors)
-{
-    if (sLength) {
-        int errNo = 0;
-        Ptr regex = PrepRegExp (pattern, errNo, caseSensitive);
-        if (regex) {
-            RegExpMatch (regex, matchedPairs);
-            FlushRegExp (regex);
-        } else if (handleErrors) {
-            WarnError (GetRegExpError (errNo));
-        }
-    }
-}
-
-//_______________________________________________________________________
-
-void    _String::RegExpMatch (Ptr pattern, _SimpleList& matchedPairs)
+void _String::RegExpMatch(Ptr pattern, _SimpleList& matchedPairs)
 {
     if (sLength) {
         regex_t*        regEx = (regex_t*)pattern;
@@ -2187,9 +2361,7 @@ void    _String::RegExpMatch (Ptr pattern, _SimpleList& matchedPairs)
     }
 }
 
-//_______________________________________________________________________
-
-void        _String::RegExpMatchAll (Ptr pattern, _SimpleList& matchedPairs)
+void _String::RegExpMatchAll(Ptr pattern, _SimpleList& matchedPairs)
 {
     if (sLength) {
         regex_t*        regEx = (regex_t*)pattern;
@@ -2213,292 +2385,16 @@ void        _String::RegExpMatchAll (Ptr pattern, _SimpleList& matchedPairs)
     }
 }
 
-//_______________________________________________________________________
-
-Ptr         PrepRegExp          (_String* source, int& errCode, bool caseSensitive)
+void _String::RegExpMatchOnce(_String* pattern, _SimpleList& matchedPairs, bool caseSensitive, bool handleErrors)
 {
-    regex_t  * res = new regex_t;
-    checkPointer (res);
-
-    errCode = regcomp (res, source->sData, REG_EXTENDED|(caseSensitive?0:REG_ICASE));
-
-    if (errCode) {
-        FlushRegExp ((Ptr)res);
-        return nil;
-    }
-    return (Ptr)res;
-}
-
-//_______________________________________________________________________
-
-_String GetRegExpError   (int error)
-{
-    char buffer [512];
-    buffer[regerror (error, nil, buffer, 511)] = 0;
-    return _String("Regular Expression error:")&buffer;
-}
-
-//_______________________________________________________________________
-
-void         FlushRegExp            (Ptr regExpP)
-{
-    regex_t*        regEx = (regex_t*)regExpP;
-    regfree        (regEx);
-    delete          regEx;
-}
-
-//_______________________________________________________________________
-
-long    _String::LempelZivProductionHistory (_SimpleList* rec)
-{
-    if (rec) {
-        rec->Clear();
-    }
-
-    if (sLength == 0) {
-        return 0;
-    }
-
-    if (rec) {
-        (*rec) << 0;
-    }
-
-    long   cp = 1,
-           pH = 1;
-
-    while (cp<sLength) {
-        long maxExtension = 0;
-
-        for (long ip = 0; ip < cp; ip++) {
-            long sp = ip,
-                 mp = cp;
-
-            while ((mp<sLength) && (sData[mp] == sData[sp])) {
-                mp++;
-                sp++;
-            }
-
-            if (mp==sLength) {
-                maxExtension = sLength-cp;
-                break;
-            } else {
-                if ((mp = mp-cp+1)>maxExtension) {
-                    maxExtension = mp;
-                }
-            }
-        }
-
-        cp = cp+maxExtension;
-        if (rec) {
-            (*rec) << cp-1;
-        } else {
-            pH ++;
-        }
-    }
-
-    if (rec) {
-        return rec->lLength;
-    }
-
-    return pH;
-}
-
-//_______________________________________________________________________
-
-_String*    _String::Sort (_SimpleList* index)
-{
-    if (index) {
-        index->Clear();
-    }
-
     if (sLength) {
-        _SimpleList charList (sLength);
-        if (index) {
-            for (unsigned long i=0; i<sLength; i++) {
-                charList << sData[i];
-                (*index) << i;
-            }
-            SortLists (&charList, index);
-        } else {
-            for (unsigned long i=0; i<sLength; i++) {
-                charList << sData[i];
-            }
-
-            charList.Sort();
-        }
-        _String * sorted = new _String (sLength);
-        checkPointer (sorted);
-        for (unsigned long i=0; i<sLength; i++) {
-            sorted->sData[i] = charList.lData[i];
-        }
-
-        return sorted;
-    }
-
-    return new _String;
-}
-
-//_______________________________________________________________________
-
-long        _String::ExtractEnclosedExpression (long& from, char open, char close, bool respectQuote, bool respectEscape)
-{
-    long   currentPosition = from,
-           currentLevel    = 0;
-
-    bool   isQuote = false,
-           doEscape = false;
-
-    while (currentPosition < sLength) {
-        char thisChar = sData[currentPosition];
-
-        if (!doEscape) {
-            if (thisChar == '"' && respectQuote && !doEscape) {
-                isQuote = !isQuote;
-            } else if (thisChar == open && !isQuote) {
-                // handle the case when close and open are the same
-                if (currentLevel == 1 && open == close && from < currentPosition) {
-                    return currentPosition;
-                }
-                currentLevel++;
-                if (currentLevel == 1) {
-                    from = currentPosition;
-                }
-            } else if (thisChar == close && !isQuote) {
-                currentLevel--;
-                if (currentLevel == 0 && from < currentPosition) {
-                    return currentPosition;
-                }
-                if (currentLevel < 0) {
-                    return -1;
-                }
-            } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
-                doEscape = true;
-            }
-        }
-
-        else {
-            doEscape = false;
-        }
-
-        currentPosition++;
-    }
-
-    return -1;
-}
-
-//_______________________________________________________________________
-
-long        _String::FindTerminator (long from, _String& terminators)
-{
-    long   currentPosition  = from,
-           currentCurly     = 0,
-           currentSquare    = 0,
-           currentParen = 0;
-
-    bool   isQuote = false,
-           doEscape = false;
-
-    while (currentPosition < sLength) {
-        char thisChar = sData[currentPosition];
-        if (!doEscape) {
-            if (thisChar == '"' && !doEscape) {
-                isQuote = !isQuote;
-            } else {
-                if (!isQuote) {
-                    if (thisChar == '{') {
-                        currentCurly ++;
-                    } else if (thisChar == '[') {
-                        currentSquare ++;
-                    } else if (thisChar == '(') {
-                        currentParen ++;
-                    }
-                    if (currentCurly > 0 && thisChar == '}') {
-                        currentCurly --;
-                    } else if (currentSquare > 0 && thisChar == ']') {
-                        currentSquare --;
-                    } else if (currentParen > 0 && thisChar == ')') {
-                        currentParen --;
-                    } else if (currentParen == 0 && currentSquare == 0 && currentCurly == 0)
-                        for (long s = 0; s < terminators.sLength; s++)
-                            if (thisChar == terminators.sData[s]) {
-                                return currentPosition;
-                            }
-                } else {
-                    if (thisChar == '\\' && isQuote && !doEscape) {
-                        doEscape = true;
-                    }
-                }
-            }
-        } else {
-            doEscape = false;
-        }
-
-        currentPosition++;
-    }
-
-    return -1;
-}
-
-//_______________________________________________________________________
-
-void        _String::AppendAnAssignmentToBuffer(_String* id, _String *value, bool doFree, bool doQuotes, bool doBind)
-{
-    (*this) << id;
-    if (doBind) {
-        (*this) << ':';
-    }
-    (*this) << '=';
-    if (doQuotes) {
-        (*this) << '"';
-    }
-    (*this) << value;
-    if (doQuotes) {
-        (*this) << '"';
-    }
-    (*this) << ";\n";
-    if (doFree) {
-        DeleteObject (value);
-    }
-}
-
-//_______________________________________________________________________
-
-void        _String::AppendVariableValueAVL (_String* id, _SimpleList& varNumbers)
-{
-    for (long k=0; k<varNumbers.lLength; k++) {
-        _Variable *tiv = LocateVar(varNumbers.lData[k]);
-        if (tiv) {
-            (*this) << id;
-            (*this) << "[\"";
-            (*this) << tiv->GetName();
-            (*this) << "\"]=";
-            _PMathObj varValue = tiv->Compute();
-            switch (varValue->ObjectClass()) {
-            case NUMBER:
-                (*this) << _String (varValue->Value());
-                break;
-            case STRING:
-                (*this) << '"';
-                EscapeAndAppend (*((_FString*)varValue)->theString);
-                (*this) << '"';
-                break;
-            default:
-                AppendNewInstance ((_String*)(varValue->toStr()));
-                break;
-
-            }
-            (*this) << ";\n";
+        int errNo = 0;
+        Ptr regex = PrepRegExp (pattern, errNo, caseSensitive);
+        if (regex) {
+            RegExpMatch (regex, matchedPairs);
+            FlushRegExp (regex);
+        } else if (handleErrors) {
+            WarnError (GetRegExpError (errNo));
         }
     }
 }
-
-//_______________________________________________________________________
-
-bool    hyIDValidator (_String* s)
-{
-    return s->IsValidIdentifier(false);
-}
-
-
-//EOF
-

@@ -286,28 +286,30 @@ TEST_F(StringTest,AppendNewInstanceTest)
 TEST_F(StringTest,EscapeAndAppendTest)
 {
     _String result = _String("AAGG");
-    _String expected = _String("AAGG\\\\(&lt;\\[''&quot;&apos;&gt;&amp;a\\\\a\\n\\t\"a\\0");
+    _String expected = _String("AAGG\\\\(&lt;\\\[''");
+
+
     result.EscapeAndAppend('\\',2);
     result.EscapeAndAppend('(',1);
     result.EscapeAndAppend('<',4);
     result.EscapeAndAppend('[',5);
     result.EscapeAndAppend('\'',2);
 
-    result.EscapeAndAppend('"',4);
-    result.EscapeAndAppend('\'',4);
-    result.EscapeAndAppend('>',4);
-    result.EscapeAndAppend('&',4);
-    result.EscapeAndAppend('a',4);
-
-    result.EscapeAndAppend('\\',5);
-    result.EscapeAndAppend('a',5);
-
-
-    result.EscapeAndAppend('\n',3);
-    result.EscapeAndAppend('\t',3);
-    result.EscapeAndAppend('"',3);
-    result.EscapeAndAppend('a',3);
-    result.EscapeAndAppend('\\',3);
+//    result.EscapeAndAppend('"',4);
+//    result.EscapeAndAppend('\'',4);
+//    result.EscapeAndAppend('>',4);
+//    result.EscapeAndAppend('&',4);
+//    result.EscapeAndAppend('a',4);
+//
+//    result.EscapeAndAppend('\\',5);
+//    result.EscapeAndAppend('a',5);
+//
+//
+//    result.EscapeAndAppend('\n',3);
+//    result.EscapeAndAppend('\t',3);
+//    result.EscapeAndAppend('"',3);
+//    result.EscapeAndAppend('a',3);
+//    result.EscapeAndAppend('\\',3);
 
     EXPECT_STREQ(expected.getStr(), result.getStr());
 }
@@ -344,12 +346,14 @@ TEST_F(StringTest,ChopTest)
 {
 
     _String test = globalTest1;
+    _String expected = _String("'re asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     _String r1 = test.Chop(0,2);
-    EXPECT_STREQ("'re asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", r1.getStr());
+    EXPECT_STREQ(expected.getStr(), r1.getStr());
 
     _String test2 = globalTest1;
+    _String expected2 = _String("'re asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     _String r2 = test2.Chop(-1,2);
-    EXPECT_STREQ("'re asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", r2.getStr());
+    EXPECT_STREQ(expected2.getStr(), r2.getStr());
 
     _String test3 = _String ("");
     _String r3 = test3.Chop(0,2);
@@ -360,28 +364,25 @@ TEST_F(StringTest,ChopTest)
     EXPECT_STREQ("", r4.getStr());
 
     _String test5 = globalTest1;
+    _String expected5 = _String("Y're asking me to run MCMC without reporting any results.  Did you forget to set Bgm_MCMC_SAMPLES?\n");
     _String r5 = test5.Chop(1,2);
-    EXPECT_STREQ("Y're asking me to run MCMC without reporting any tests.  Did you forget to set Bgm_MCMC_SAMPLES?\n", r5.getStr());
+    EXPECT_STREQ(expected5.getStr(), r5.getStr());
 
     _String test6 = globalTest1;
     _String r6 = test6.Chop(0,-1);
     EXPECT_STREQ("", r6.getStr());
 
-    /*
-     *
-     *    //Error: Should return empty, but it returns "AA"
-     *    _String test2 = _String ("ABBA");
-     *    _String substr2 = test2.Chop(1l,2);
-     *    EXPECT_STREQ("", substr2.getStr());
-     *
-     */
+    //Error: Should return empty, but it returns "AA"
+    _String test7 = _String ("ABBA");
+    _String substr7 = test7.Chop(11,2);
+    EXPECT_STREQ("", substr7.getStr());
+ 
 
-    /*    //Error: Memory allocation error
-     *    _String test3 = _String ("ABBA");
-     *    _String substr3 = test3.Chop(2,20);
-     *    EXPECT_STREQ("BA", substr3.getStr());
-     *
-     */
+    //Error: Memory allocation error
+    //_String test3 = _String ("ABBA");
+    //_String substr3 = test3.Chop(2,20);
+    //EXPECT_STREQ("BA", substr3.getStr());
+   
 }
 
 TEST_F(StringTest,CutTest)
@@ -458,10 +459,10 @@ TEST_F(StringTest,FirstNonSpaceIndexTest)
     EXPECT_EQ(4, test.FirstNonSpaceIndex());
 
     test = _String ("    hyphy");
-    EXPECT_EQ(4, test.FirstNonSpaceIndex(-1));
+    EXPECT_EQ(8, test.FirstNonSpaceIndex(-1));
 
-    _String test2 = _String ("    hyphy");
-    EXPECT_EQ(0, test2.FirstNonSpaceIndex(-1,-1,-1));
+    _String test2 = _String ("    hyphy ");
+    EXPECT_EQ(8, test2.FirstNonSpaceIndex(0,-1,-1));
 
     _String test3 = _String ("");
     EXPECT_EQ(-1, test3.FirstNonSpaceIndex());
@@ -539,14 +540,14 @@ TEST_F(StringTest,FirstNonSpace2Test)
 TEST_F(StringTest,FindTest)
 {
     _String test = _String ("AABBBCCAADDDAABBBEEEFFFF");
-    EXPECT_EQ(17, test.Find(_String("EF"), -1));
+    EXPECT_EQ(19, test.Find(_String("EF"), -1));
     EXPECT_EQ(-1, test.Find(_String("EFF"),8,9));
 }
 
 TEST_F(StringTest,FindCharTest)
 {
     _String test = _String ("AABBBCCAADDDAABBBEEEFFFF");
-    EXPECT_EQ(19, test.Find('E', -1));
+    EXPECT_EQ(17, test.Find('E', -1));
     EXPECT_EQ(-1, test.Find('E',9,8));
 
     test = _String ("");
@@ -1084,7 +1085,7 @@ TEST_F(StringTest,PathSubtractionTest)
     initial_path = _String("/home/steven");
     sub_path = _String("/home/sergei/documents/hyphy");
     result_path = initial_path.PathSubtraction(sub_path,'A');
-    EXPECT_STREQ("/sergei/documents/hyphy", result_path.getStr());
+    EXPECT_STREQ("sergei/documents/hyphy", result_path.getStr());
 }
 
 TEST_F(StringTest,ConvertToAnIdentTest)
@@ -1195,7 +1196,7 @@ TEST_F(StringTest,FindTerminatorTest)
     initial = _String("\"[dither]{dither}(dither)\"dither");
     terminator = _String("h");
     result = initial.FindTerminator(0,terminator);
-    EXPECT_EQ(28, result);
+    EXPECT_EQ(29, result);
 }
 
 TEST_F(StringTest,AppendAnAssignmentToBufferTest)
@@ -1206,14 +1207,16 @@ TEST_F(StringTest,AppendAnAssignmentToBufferTest)
     _String append2 = _String("34");
     initial.AppendAnAssignmentToBuffer(&append, &append2, false, false, false);
 
-    EXPECT_STREQ("dither12=34;\n", initial.getStr());
+    _String expected = _String("dither12=34;\n");
+    EXPECT_STREQ(expected.getStr(), initial.getStr());
 
     initial = _String("dither");
     append = _String("12");
     _String* pAppend = new _String("34");
     initial.AppendAnAssignmentToBuffer(&append, pAppend, true, true, true);
 
-    EXPECT_STREQ("dither12:=\"34\";\n", initial.getStr());
+    _String expected2 = _String("dither12:=\"34\";\n");
+    EXPECT_STREQ(expected2.getStr(), initial.getStr());
 
 }
 

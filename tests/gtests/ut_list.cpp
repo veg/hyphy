@@ -152,8 +152,9 @@ TEST_F(ListTest,EqualTest){
     _List l2;
 
     EXPECT_EQ(true,list.Equal(str_list));
-    EXPECT_EQ(false,str_list.Equal(l2));
+    EXPECT_EQ(true,list==str_list);
 
+    EXPECT_EQ(false,str_list.Equal(l2));
     list.AppendNewInstance(new _String("zero"));
     EXPECT_EQ(false,str_list.Equal(list));
 }
@@ -189,10 +190,10 @@ TEST_F(ListTest,Ampersand2OpTest){
     _List str_list = createStrList();
     _String* str = new _String("one");
 
-    //TODO: cannot assign this to new List
-    str_list & (_String*)str;
+    _List result_list = str_list & (_String*)str;
 
-    _String* result_string = (_String*)str_list[str_list.lLength-1];
+    _String* result_string = (_String*)result_list[result_list.lLength-1];
+
     EXPECT_STREQ("one",result_string->getStr());
 }
 
