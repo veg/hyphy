@@ -1840,7 +1840,7 @@ long     _Formula::NumberOperations(void)
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace) // compute the value of the formula
 {
     if (theFormula.lLength == 0) {
-        return nil;
+        return new _MathObject;
     }
 
     bool wellDone = true;
