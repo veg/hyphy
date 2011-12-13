@@ -840,6 +840,7 @@ void      _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
                         return;
                     }
                 }
+                break;
             }
             case HY_BL_BGM: {
 #if defined __AFYP_REWRITE_BGM__

@@ -1596,6 +1596,9 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         if (!currentLine.Length()) {
             continue;
         }
+        
+        // 20111212: this horrendous switch statement should be replaced with a 
+        // prefix tree lookup 
 
         if (currentLine.startswith (blFor)) { // for statement
             _ElementaryCommand::BuildFor (currentLine, *this);
@@ -1780,6 +1783,11 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 }
             }
         }
+        
+        /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
+            WarnError (_String ("Missing semicolon before ") & currentLine);
+            return false;
+        }*/
     }
     s.sData = savePointer;
     s.DuplicateErasing (&empty);
@@ -8370,7 +8378,7 @@ bool    _ElementaryCommand::ConstructFindRoot (_String&source, _ExecutionList&ta
     _List pieces;
     long    mark1 = source.Find ('(');
     _String oper (source,0,mark1);
-    ExtractConditions (source,mark1+1,pieces,',');
+    source.Trim(ExtractConditions (source,mark1+1,pieces,','),-1);
     if (pieces.lLength!=5) {
         WarnError ("Expected: FindRoot|Integrate (receptacle, expression, variable, left bound, right bound).");
         return false;
