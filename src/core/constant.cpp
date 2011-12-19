@@ -391,21 +391,22 @@ _PMathObj _Constant::LnGamma (void)
 _PMathObj _Constant::Beta (_PMathObj arg)
 {
     if (arg->ObjectClass()!=NUMBER) {
-        _String errMsg ("A non-numerical argument passed to Beta(x,y)");
-        WarnError (errMsg.sData);
+        WarnError ("A non-numerical argument passed to Beta(x,y)");
         return    nil;
     }
-    _Constant argVal   = ((_Constant*)arg)->theValue;
-    _Constant *result  = (_Constant *)Gamma(),
-               *result1 = (_Constant *)argVal.Gamma();
-
-    argVal.SetValue (theValue+argVal.theValue);
-    _Constant *result2 = (_Constant *)argVal.Gamma();
-    argVal.SetValue (result->theValue*result1->theValue/result2->theValue);
-    DeleteObject (result);
-    DeleteObject (result1);
-    DeleteObject (result2);
-    return (_PMathObj)argVal.makeDynamic();
+    
+    _Constant xy         = _Constant (theValue + ((_Constant*)arg)->theValue);
+    
+    _Constant * lnGammaX    = (_Constant *)LnGamma(),
+              * lnGammaY    = (_Constant *)arg->LnGamma(),
+              * lnGammaXY   = (_Constant *)xy.LnGamma(),
+              * result      = new _Constant (exp (lnGammaX->theValue + lnGammaY->theValue - lnGammaXY->theValue));
+         
+    DeleteObject (lnGammaX);
+    DeleteObject (lnGammaY);
+    DeleteObject (lnGammaXY);
+    
+    return result;
 }
 
 //__________________________________________________________________________________
