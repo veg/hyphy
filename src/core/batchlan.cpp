@@ -4888,8 +4888,10 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 {
     chain.currentCommand++;
-    // first check to see if matrix parameters here are valid
-
+    /*
+        first check to see if matrix parameters here are valid
+    */
+    
     _String *currentArgument = (_String*)parameters(0),
              nmspc           = AppendContainerName(*currentArgument,chain.nameSpacePrefix),
              errMsg,
@@ -4935,16 +4937,16 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     }
 
 
-    long    f         = likeFuncNamesList.Find(&nmspc),
-            g         = (f>=0?-1:scfgNamesList.Find (&nmspc)),
-            bgm_index = ((f>=0||g>=0)?-1:bgmNamesList.Find (&nmspc));
-
-    if (f>=0 || g>=0 || bgm_index >= 0) {
-        currentArgument          = (_String*)parameters(1);
-
-        if (f<0 && g<0) { // BGM Branch
-#if defined __AFYP_REWRITE_BGM__
-            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) bgmList (bgm_index);
+    long objectIndex,
+         typeFlag    = HY_BL_ANY;
+    
+    BaseRef theObject      = _HYRetrieveBLObjectByName (nmspc, typeFlag, &objectIndex);
+    
+    switch (typeFlag)
+    {
+        case HY_BL_BGM: { // BGM Branch
+        #if defined __AFYP_REWRITE_BGM__
+            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
 
             // set data matrix
             if (currentArgument->Equal (&bgmData)) {
@@ -5095,14 +5097,6 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                     return;
                 }
 
-#ifdef __NEVER_DEFINED__
-                // read data matrix from comma-delimited file at path specified in 2nd argument
-                _Matrix * data   = new _Matrix;
-                ReadDataFromFile (',', *data);
-
-                ((Bgm *)lkf)->SetDataMatrix (data);
-#endif
-
             } else if (currentArgument->Equal (&bgmWeights)) {
                 _Matrix     * weightMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
 
@@ -5132,23 +5126,6 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                         return;
                     }
                 }
-#ifdef __NEVER_DEFINED__
-                _String *   lastArgument    = (_String *) parameters (2);
-                long        val             = ProcessNumericArgument (lastArgument, chain.nameSpacePrefix);
-
-                if (val > 0.) {
-                    // default weight matrix filled with 1's
-                    _Matrix *   weights = new _Matrix ( val, 1, false, true);
-                    for (long wm = 0; wm < val; wm++) {
-                        weights->Store (wm, 0, 1.);
-                    }
-                } else {
-                    // read in weight matrix from comma-delimited file
-                    _Matrix *   weights = new _Matrix;
-                    ReadDataFromFile (',', *weights);
-                    ((Bgm *)lkf)->SetWeightMatrix (weights);
-                }
-#endif
             } else if (currentArgument->Equal (&bgmScores)) {
                 _Matrix * scores = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
                 if (scores) {
@@ -5255,106 +5232,81 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 return;
             }
 #endif
-        }
-
-        else {
-            // SCFG Branch
-            if (f<0) {
-                if (currentArgument->Equal (&scfgCorpus)) {
-                    ((Scfg*)scfgList(g))->SetStringCorpus ((_String*)parameters(2));
-                } else {
-                    _LikelihoodFunction * lkf = (_LikelihoodFunction *) scfgList (g);
-                    g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                        WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
-                        return;
-                    }
-                    currentArgument = (_String*)parameters(2);
-                    _Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    lkf->SetIthIndependent (g,val);
-                }
-            }
-
-            // LF Branch
-            else {
-                _LikelihoodFunction * lkf = (_LikelihoodFunction *) likeFuncList (f);
-                f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                if (f<0 || f>=lkf->GetIndependentVars().lLength) {
-                    WarnError (*currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter");
+        } // end BGM
+        break;
+        
+        case HY_BL_SCFG:
+        case HY_BL_LIKELIHOOD_FUNCTION:
+        {
+            if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
+                ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
+            } else {
+                _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
+                long g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+                if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
+                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
                     return;
                 }
                 currentArgument = (_String*)parameters(2);
                 _Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                lkf->SetIthIndependent (f,val);
+                lkf->SetIthIndependent (g,val);
             }
         }
-    } else {
-        _DataSet * ds = nil;
-        currentArgument = (_String*)parameters(1);
-        if ((f = FindDataSetName (nmspc)) >= 0){
-            ds = (_DataSet*)dataSetList (f);
-            f  =  ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-        }
-        else {
-            f = FindDataSetFilterName (nmspc);
-            if (f >= 0) {
-                _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (f);
-                if (dsf) {
-                    ds = dsf->GetData ();
-                    f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    if (f >= 0 && f < dsf->theNodeMap.lLength){
-                        f  = dsf->theNodeMap.lData[f];
-                    }
-               }
+        break;
+        // end SCFG and LF
+        
+        case HY_BL_DATASET:
+        case HY_BL_DATASET_FILTER: {
+            _DataSet * ds = nil;
+            
+            long f  = ProcessNumericArgument ((_String*)parameters(1),chain.nameSpacePrefix);
+            if (typeFlag == HY_BL_DATASET) {
+                ds = (_DataSet*) theObject;
             }
-        }
-        if (ds) {
-           _List*  dsNames = &ds->GetNames();
+            else {
+                _DataSetFilter *dsf = (_DataSetFilter*)theObject;
+                ds = dsf->GetData ();
+                if (f >= 0 && f < dsf->theNodeMap.lLength){
+                    f  = dsf->theNodeMap.lData[f];
+                }
+                else
+                    f = -1;
+            }
+            
+        
+            _List*  dsNames = &ds->GetNames();
+            
             if (f<0 || f>=dsNames->lLength) {
-                WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
+                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to SetParameter");
                 return;
             }
 
-             dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
-        }
-        /*else
-        {
-            _Variable* top = FetchVar (LocateVarByName (*currentArgument));
-            if (top && top->ObjectClass () == TOPOLOGY)
-            {
-                _TreeTopology * tt = (_TreeTopology*)top;
-
-                currentArgument = (_String*)parameters(1);
-                f               = ProcessNumericArgument(currentArgument);
-
-                _Constant*      c = (_Constant*)tt->TipCount();
-                if ((f<0)||(f>=c->Value()))
-                {
-                    errMsg = *currentArgument & " (=" & f & ") is not a valid leaf index in call to SetParameter";
-                    DeleteObject (c);
-                    WarnError (errMsg);
-                    return;
+            dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
+        } // end data set and data set filter
+        break; 
+        // Dataset and Datasetfilter
+        
+        default:
+            // check to see if this is a calcnode
+            _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
+            if (treeNode) { 
+                if (*((_String*)parameters(1)) == _String("MODEL")) {
+                    _String modelName = AppendContainerName(*((_String*)parameters(2)),chain.nameSpacePrefix);
+                    long modelType = HY_BL_MODEL, modelIndex;
+                    BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex);
+                    if (modelObject) {
+                        //treeNode->SetModel ();
+                    }
+                    else {
+                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to SetParameter");
+                    }
                 }
-
-                DeleteObject (c);
-
-                _String nn (ProcessLiteralArgument ((_String*)parameters(2)));
-
-                if (nn.IsValidIdentifier (false))
-                {
-
-                }
-                else
-                {
-                    errMsg = nn & " is not a valid leaf name in call to SetParameter";
-                    WarnError (errMsg);
-                }
-            }*/
-        else {
+            }
+            
             WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter");
-        }
-        //}
-    }
+
+    
+    } // end cases
 }
 
 //____________________________________________________________________________________
@@ -8609,7 +8561,7 @@ bool    _ElementaryCommand::ConstructSetParameter (_String&source, _ExecutionLis
     _List pieces;
     ExtractConditions (source,blSetParameter.sLength,pieces,',');
     if (pieces.lLength!=3) {
-        WarnError ("Expected: syntax: SetParameter(lkfuncID, index, value)");
+        WarnError ("Expected: syntax: SetParameter(object, index, value)");
         return false;
     }
 

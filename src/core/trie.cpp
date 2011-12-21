@@ -37,67 +37,96 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HY_TRIE_
-#define _HY_TRIE_
+#include "trie.h"
 
-#include "simplelist.h"
-#include "hy_strings.h"
-#include "list.h"
+//----------------------------------------------------------------------------------------------------------------------
 
-/*_____________________________________________________________________________
-    This is a simple class for representing prefix tries with integer values 
-    attached to each string key.
-*/
-
-//_____________________________________________________________________________
-class _Trie: public _List
-{
-    protected:
-        // data members
-        _SimpleList charMap,
-            /** charMap[c] maps a valid character to the internal index (0..validChars.sLength)
-             invalid characters are mapped to -1
-             e.g. if the alphabet is "CGTA", then charMap ['A']  = 3, and charMap['z'] = -1 
-             */
-            emptySlots,
-            /** allocated entries in the 'nodes' list that can be reused (e.g. those created by delete operations)
-             */
-            payload;
-            /** the values associated with each key in 'nodes' 
-             */
-            
-    
-        /* base class will store the lunear representation of this trie */
-        
-            /** a linear representation of this trie    
-             each node is a _SimpleList that contains N pairs of entries 
-                (character index, integer index of the child node in 'nodes')
-                for each extension of the prefix encoded by the node
-             
-             for example, if the alphabet is "ABC" and if nodes[1] has children nodes[5] for "B" and nodes[7] for "A", then the _SimpleList for nodes[1] will be 1 (index of B),5 ('B' child index),0 (index of A),7 ('A' child index).
-             
-             */
-        
-
-    public:
-        _Trie (const _String* alphabet = nil);
-        /**
-         * Construct an empty trie over a given alphabet
-         * @param alphabet -- a string listing all valid characters (e.g. "ACGT"). By default (or if an empty string is passed), all ASCII characters are allowed
-         * @return Nothing. 
-         */
+_Trie::_Trie (const _String* alphabet) {
+    SetAlphabet (alphabet, false);
+}
        
-        virtual BaseRef toStr(void);
+//----------------------------------------------------------------------------------------------------------------------
+
+_Trie::~_Trie (void){
+    
+}
+       
+//----------------------------------------------------------------------------------------------------------------------
+
+void _Trie::Clear (bool all){
+    _List::Clear (all);
+    payload.Clear(all);
+    emptySlots.Clear(all);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+_String _Trie::Alphabet (void)
+{
+    _String result (256L, true);
+    for (unsigned long charIndex = 1; charIndex < 255; charIndex++) {
+        if (charMap.lData[charIndex] >= 0)
+            result << char (charIndex+1);
+    }
+    result.Finalize();
+    return result;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void _Trie::SetAlphabet (const _String* alphabet, bool doClear)
+{
+    if (doClear) {
+        Clear (true);
+        charMap.Clear();
+    }
+
+    if (alphabet) {
+        charMap.Populate (0,256,-1);
+        unsigned long charCounter = 0;
+        for (unsigned long charIndex = 0; charIndex < alphabet->sLength; charIndex++) {
+            charMap.lData [(unsigned char)alphabet->sData[charIndex]] = 1;
+        }
+        // now sort alphabetically
+        for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
+            if (charMap.lData[charIndex] == 1)
+                charMap.lData[charIndex] = charCounter++;
+        }
+    } else {
+        charMap.Populate (-1,256,1);
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+BaseRef _Trie::makeDynamic (void) {
+    _Trie *newTrie = new _Trie ();
+    newTrie->Duplicate (newTrie);
+    return newTrie;
+          
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void _Trie::Duplicate (BaseRef storage) {
+    _Trie* newTrie = (_Trie*)storage;
+    _String myAlphabet = Alphabet();
+    newTrie->SetAlphabet (&myAlphabet, true);
+    newTrie->_List::Duplicate ((_List*)this);
+    newTrie->charMap.Duplicate (&charMap);
+    newTrie->emptySlots.Duplicate (&emptySlots);
+    newTrie->payload.Duplicate(&payload);
+          
+}        
+        
+//----------------------------------------------------------------------------------------------------------------------
+ 
+                        virtual BaseRef toStr(void);
         /**
          * Return a string representation of this object
          * @return A _String reference to the list of strings (one per line) currently stored in the trie 
          */
-        
-        virtual BaseRef makeDynamic(void);
-        /**
-         * Return a dynamic representation of this object
-         * @return A _Trie reference created on the heap which is 'deep-copied' (i.e. all dynamic objects have a reference count of 1)
-         */
+
        
         virtual void    Duplicate(BaseRef storage);
         /**
@@ -106,20 +135,7 @@ class _Trie: public _List
          * @return Nothing. 
          */
        
-    
-        virtual void    Clear(bool all = TRUE);
-        /**
-         * Clear this trie; everything except the alphabet will be deleted
-         * @param all -- whether or not to clear out the lists completely
-         * @return Nothing
-         */
-   
-        virtual ~_Trie (void);
-        /**
-         * The destructor 
-         * @return Nothing. 
-         */
-        
+
         long     Find (const _String& key);
         /**
          * Determine if 'key' is in the trie
@@ -165,19 +181,4 @@ class _Trie: public _List
          * @return the number of elements successfully deleted (including those not present)
          */
 
-        
-        _String  Alphabet (void);
-        /**
-         * Return the valid alphabet for this Trie
-         * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
-         */
-    
- private:
-        
-        void SetAlphabet (const _String*, bool);
-           
 
-     
-};
-
-#endif

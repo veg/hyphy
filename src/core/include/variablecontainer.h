@@ -68,6 +68,7 @@ public:
 
     void                    InitializeVarCont       (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
     void                    ScanModelBasedVariables (_String&, _AVLListXL*);
+    virtual     void        SetModel                (long,_AVLListXL*);
 
     virtual     void        MarkDone (void);
 
