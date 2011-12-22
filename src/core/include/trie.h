@@ -44,6 +44,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "list.h"
 
+#define  HY_TRIE_NOTFOUND       -1L 
+#define  HY_TRIE_INVALID_LETTER -2L
+
 /*_____________________________________________________________________________
     This is a simple class for representing prefix tries with integer values 
     attached to each string key.
@@ -60,7 +63,7 @@ class _Trie: public _List
              e.g. if the alphabet is "CGTA", then charMap ['A']  = 3, and charMap['z'] = -1 
              */
             emptySlots,
-            /** allocated entries in the 'nodes' list that can be reused (e.g. those created by delete operations)
+            /** allocated entries in the 'this' list that can be reused (e.g. those created by delete operations)
              */
             payload;
             /** the values associated with each key in 'nodes' 
@@ -120,11 +123,12 @@ class _Trie: public _List
          * @return Nothing. 
          */
         
-        long     Find (const _String& key);
+        long     Find (const _String& key, _SimpleList* path = nil);
         /**
          * Determine if 'key' is in the trie
-         * @param  key -- the string to search for
-         * @return the index of the key in 'nodes' if found, -1 otherwise  
+         * @param  key  -- the string to search for
+         * @param  path -- store the indices for the trie traversal history (if supplied)
+         * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
          */
         
         long    Insert (const _String& key, const long value);
@@ -132,7 +136,7 @@ class _Trie: public _List
          * Insert the key into the trie
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise -1 
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER 
          */
     
         void     UpdateValue (const long key, const long value);
@@ -143,7 +147,15 @@ class _Trie: public _List
          * @return None
          */
         
-        unsigned long    Insert (const _List& key, const _SimpleList* values = nil);
+         long     GetValue (const long key);
+        /**
+         * Retrieve the value associated with the key _index_
+         * @param  key -- the index of the key (returned by Find for example); if key < 0 or key >= nodes.lLength, nothing is done
+         * @return the value associated with the key
+
+         */
+        
+                      unsigned long    Insert (const _List& key, const _SimpleList* values = nil);
         /**
          * Insert all keys in the list into the trie
          * @param key -- the list of strings (non string objects will be cast to strings) to insert
@@ -174,8 +186,27 @@ class _Trie: public _List
     
  private:
         
-        void SetAlphabet (const _String*, bool);
-           
+        void SetAlphabet        (const _String*, bool);
+        long FindNextLetter     (const char letter, const unsigned long currentIndex);
+        /**
+         * Given a current position in the trie (current_index), try to walk down the next character
+         * @param  letter -- the next letter
+         * @param  current_index -- where in the trie are we currently located 
+         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         */
+        long InsertNextLetter     (const char letter, const unsigned long currentIndex);
+        /**
+         * Given a current position in the trie (current_index), insert the character (this assumes that the character is NOT present)
+         * @param  letter -- the next letter
+         * @param  current_index -- where in the trie are we currently located 
+         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         */
+         long FindNextUnusedIndex (void);
+         /**
+             Find the next index to store something to: place an empty _SimpleList there
+             This will either go to the end the list or to the last freed block (in emptySlots)
+             @return the index of the new empty _SimpleList in (this) List
+           */
 
      
 };
