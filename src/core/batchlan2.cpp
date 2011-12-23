@@ -27,6 +27,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include      "trie.h"
 #include      "likefunc.h"
 #include      "scfg.h"
 #include      <ctype.h>
@@ -105,6 +106,8 @@ _List       scfgList,
             bgmList,
             bgmNamesList,
             _HY_GetStringGlobalTypesAux;
+            
+_Trie       _HY_ValidHBLExpressions;
 
 _AVLListX    _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
 
@@ -138,6 +141,17 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), 4);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), 6);
+    
+    _HY_ValidHBLExpressions.Insert ("for(",       HY_HBL_COMMAND_FOR);
+    _HY_ValidHBLExpressions.Insert ("while(",     HY_HBL_COMMAND_WHILE);
+    _HY_ValidHBLExpressions.Insert ("function ",  HY_HBL_COMMAND_FUNCTION);
+    _HY_ValidHBLExpressions.Insert ("ffunction ", HY_HBL_COMMAND_FFUNCTION);
+    _HY_ValidHBLExpressions.Insert ("return ",    HY_HBL_COMMAND_RETURNSPACE);
+    _HY_ValidHBLExpressions.Insert ("return(",    HY_HBL_COMMAND_RETURNPAREN);
+    _HY_ValidHBLExpressions.Insert ("if(",        HY_HBL_COMMAND_IF);
+    _HY_ValidHBLExpressions.Insert ("else",       HY_HBL_COMMAND_ELSE);
+    _HY_ValidHBLExpressions.Insert ("do{",        HY_HBL_COMMAND_DO);
+    
 }
 
 //____________________________________________________________________________________

@@ -175,4 +175,104 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   BL_FUNCTION_ALWAYS_UPDATE     0
 #define   BL_FUNCTION_NORMAL_UPDATE     1
 
+//!  Batch Language 'Object' type codes
+/*!
+     20110608 SLKP introduced.
+
+     Bit flag style type tags and masks
+     This is primarily to be used for object retrieval
+     using the _HYRetrieveBLObjectByName function
+*/
+
+#define   HY_BL_NOT_DEFINED             0
+#define   HY_BL_DATASET                 1
+#define   HY_BL_DATASET_FILTER          2
+#define   HY_BL_LIKELIHOOD_FUNCTION     4
+#define   HY_BL_SCFG                    8
+#define   HY_BL_BGM                     16
+#define   HY_BL_MODEL                   32
+#define   HY_BL_HBL_FUNCTION            64
+
+#define   HY_BL_ANY                     1023
+
+//!  Batch Lanuage Command Codes 
+/*!
+     20111222 SLKP introduced.
+     Define tags to replace ExecuteCaseWhatever
+
+*/
+
+#define   HY_HBL_COMMAND_FORMULA                                        0L
+
+#define   HY_HBL_COMMAND_FOR                                            500L
+#define   HY_HBL_COMMAND_WHILE                                          501L
+#define   HY_HBL_COMMAND_FUNCTION                                       502L
+#define   HY_HBL_COMMAND_FFUNCTION                                      503L
+#define   HY_HBL_COMMAND_RETURNSPACE                                    504L
+#define   HY_HBL_COMMAND_RETURNPAREN                                    505L
+#define   HY_HBL_COMMAND_IF                                             506L
+#define   HY_HBL_COMMAND_ELSE                                           507L
+#define   HY_HBL_COMMAND_DO                                             508L
+#define   HY_HBL_COMMAND_BREAK                                          509L
+#define   HY_HBL_COMMAND_CONTINUE                                       510L
+#define   HY_HBL_COMMAND_INCLUDE                                        511L
+#define   HY_HBL_COMMAND_DATA_SET                                       512L
+#define   HY_HBL_COMMAND_DATA_SET_FILTER                                513L
+#define   HY_HBL_COMMAND_HARVEST_FREQUENCIES                            514L
+#define   HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX                      515L
+#define   HY_HBL_COMMAND_TREE                                           516L
+#define   HY_HBL_COMMAND_LIKELIHOOD_FUNCTION                            517L
+#define   HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3                          518L
+#define   HY_HBL_COMMAND_OPTIMIZE                                       519L
+#define   HY_HBL_COMMAND_COVARIANCE_MATRIX                              520L
+#define   HY_HBL_COMMAND_MOLECULAR_CLOCK                                521L
+#define   HY_HBL_COMMAND_FPRINTF                                        522L
+#define   HY_HBL_COMMAND_FSCANF                                         523L
+#define   HY_HBL_COMMAND_SSCANF                                         524L
+#define   HY_HBL_COMMAND_GET_STRING                                     525L
+#define   HY_HBL_COMMAND_EXPORT                                         526L
+#define   HY_HBL_COMMAND_IMPORT                                         527L
+#define   HY_HBL_COMMAND_CATEGORY                                       528L
+#define   HY_HBL_COMMAND_CLEAR_CONSTRAINTS                              529L
+#define   HY_HBL_COMMAND_SET_DIALOG_PROMPT                              530L
+#define   HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL                          531L
+#define   HY_HBL_COMMAND_USE_MODEL                                      532L
+#define   HY_HBL_COMMAND_MODEL                                          533L
+#define   HY_HBL_COMMAND_SET_PARAMETER                                  534L
+#define   HY_HBL_COMMAND_SET_CHOICE_LIST                                535L
+#define   HY_HBL_COMMAND_OPEN_DATA_PANEL                                536L
+#define   HY_HBL_COMMAND_GET_INFORMATION                                537L
+#define   HY_HBL_COMMAND_EXECUTE_COMMANDS                               538L
+#define   HY_HBL_COMMAND_EXECUTE_A_FILE                                 539L
+#define   HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY                          541L
+#define   HY_HBL_COMMAND_OPEN_WINDOW                                    542L
+#define   HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION                      543L
+#define   HY_HBL_COMMAND_DIFFERENTIATE                                  544L
+#define   HY_HBL_COMMAND_FIND_ROOT                                      545L
+#define   HY_HBL_COMMAND_MPI_RECEIVE                                    546L
+#define   HY_HBL_COMMAND_MPI_SEND                                       547L
+#define   HY_HBL_COMMAND_GET_DATA_INFO                                  548L
+#define   HY_HBL_COMMAND_STATE_COUNTER                                  549L
+#define   HY_HBL_COMMAND_INTEGRATE                                      550L
+#define   HY_HBL_COMMAND_LFCOMPUTE                                      551L
+#define   HY_HBL_COMMAND_GET_URL                                        552L
+#define   HY_HBL_COMMAND_DO_SQL                                         553L
+#define   HY_HBL_COMMAND_TOPOLOGY                                       554L
+#define   HY_HBL_COMMAND_ALIGN_SEQUENCES                                555L
+#define   HY_HBL_COMMAND_GET_NEUTRAL_NULL                               556L
+#define   HY_HBL_COMMAND_PROFILE                                        557L
+#define   HY_HBL_COMMAND_DELETE_OBJECT                                  558L
+#define   HY_HBL_COMMAND_REQUIRE_VERSION                                559L
+#define   HY_HBL_COMMAND_SCFG                                           560L
+#define   HY_HBL_COMMAND_NEURAL_NET                                     561L
+#define   HY_HBL_COMMAND_BGM                                            562L
+#define   HY_HBL_COMMAND_SIMULATE_DATA_SET                              563L
+#define   HY_HBL_COMMAND_ASSERT                                         564L
+
+
+
+
+
+
+
 #endif

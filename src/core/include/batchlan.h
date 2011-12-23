@@ -45,25 +45,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "site.h"
 #include "stdio.h"
 
-//!  Batch Language 'Object' type codes
-/*!
-     20110608 SLKP introduced.
-
-     Bit flag style type tags and masks
-     This is primarily to be used for object retrieval
-     using the _HYRetrieveBLObjectByName function
-*/
-
-#define   HY_BL_NOT_DEFINED             0
-#define   HY_BL_DATASET                 1
-#define   HY_BL_DATASET_FILTER          2
-#define   HY_BL_LIKELIHOOD_FUNCTION     4
-#define   HY_BL_SCFG                    8
-#define   HY_BL_BGM                     16
-#define   HY_BL_MODEL                   32
-#define   HY_BL_HBL_FUNCTION            64
-
-#define   HY_BL_ANY                     1023
 
 
 //____________________________________________________________________________________
@@ -455,7 +436,6 @@ modelTypeList,
 modelFrequenciesIndices,
 listOfCompiledFormulae;
 
-
 extern  _String
 
 getDString,
@@ -548,8 +528,7 @@ hfCountGap                      ;
 
 extern  _ExecutionList              *currentExecutionList;
 
-extern  _AVLList
-loadedLibraryPaths;
+extern  _AVLList                    loadedLibraryPaths;
 
 
 long    FindDataSetName              (_String&);
@@ -606,6 +585,7 @@ _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);
 
 void    _HBL_Init_Const_Arrays       (void);
+
 void    ReturnCurrentCallStack       (_List&, _List&);
 
 /**
