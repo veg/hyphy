@@ -1513,19 +1513,19 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 
 //____________________________________________________________________________________
 
-_String  blFor                  ("for("),
-         blWhile                    ("while("),
-         blFunction                 ("function "),
-         blFFunction                ("ffunction "),
-         blReturn                   ("return "),
-         blReturn2              ("return("),
-         blIf                       ("if("),
-         blElse                     ("else"),
-         blDo                       ("do{"),
-         blBreak                    ("break;"),
-         blContinue             ("continue;"),
-         blInclude              ("#include"),
-         blDataSet              ("DataSet "),
+_String  blFor                  ("for("),               // moved
+         blWhile                    ("while("),         // moved
+         blFunction                 ("function "),      // moved
+         blFFunction                ("ffunction "),     // moved
+         blReturn                   ("return "),        // moved
+         blReturn2              ("return("),            // moved
+         blIf                       ("if("),            // moved
+         blElse                     ("else"),           // moved
+         blDo                       ("do{"),            // moved
+         blBreak                    ("break;"),         // moved
+         blContinue             ("continue;"),          // moved
+         blInclude              ("#include"),           // moved
+         blDataSet              ("DataSet "),           // moved
          blDataSetFilter            ("DataSetFilter "),
          blHarvest              ("HarvestFrequencies"),
          blConstructCM          ("ConstructCategoryMatrix("),
@@ -1590,6 +1590,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
     }
 
     char * savePointer = s.sData;
+    
+    _SimpleList          triePath;
 
     while (s.Length()) { // repeat while there is stuff left in the buffer
         _String currentLine (_ElementaryCommand::FindNextCommand (s,true));
@@ -1602,14 +1604,63 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             continue;
         }
         
+        triePath.Clear(false);
+        long prefixTreeCode = _HY_ValidHBLExpressions.Find (currentLine, &triePath, true);
+        
+        _List *pieces = nil;
+        
+        if (prefixTreeCode != HY_TRIE_NOTFOUND) {
+            prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
+            long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
+            if (commandExtra >= 0) { // pre-trim all strings as needed
+                _HBLCommandExtras *commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
+                if (commandExtraInfo->extractConditions.lLength > 0) {
+                    pieces = new _List;
+                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cutString,*pieces);
+                    if (commandExtraInfo->extractConditions.Find(pieces->lLength) < 0) {
+                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extractConditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                        DeleteObject (pieces);
+                        return false;
+                    }
+                    if (commandExtraInfo->doTrim) {
+                        currentLine.Trim (upto, -1);
+                    }
+                }
+            }
+        }
+        
+        bool handled = false;
+               
+        switch (prefixTreeCode) {
+            case HY_HBL_COMMAND_FOR:
+                _ElementaryCommand::BuildFor (currentLine, *this, *pieces);
+                handled = true;
+                break;
+            case HY_HBL_COMMAND_WHILE:
+                _ElementaryCommand::BuildWhile (currentLine, *this, *pieces);
+                handled = true;
+                break;
+            case HY_HBL_COMMAND_BREAK:
+            case HY_HBL_COMMAND_CONTINUE:
+                if (bc) {
+                    AppendNewInstance(new _ElementaryCommand);
+                    (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
+                } else {
+                    WarnError (currentLine & " only makes sense in the context of a loop.");
+                    return false;
+                }
+                handled = true;
+                break;
+        }
+        
+        if (handled)
+            DeleteObject (pieces);
+        
         // 20111212: this horrendous switch statement should be replaced with a 
         // prefix tree lookup 
 
-        if (currentLine.startswith (blFor)) { // for statement
-            _ElementaryCommand::BuildFor (currentLine, *this);
-        } else if (currentLine.startswith (blWhile)) { // while statement
-            _ElementaryCommand::BuildWhile (currentLine, *this);
-        } else if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
+        if (!handled)
+        if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
             _ElementaryCommand::ConstructFunction (currentLine, *this);
         } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
             _ElementaryCommand::ConstructReturn (currentLine, *this);
@@ -1658,17 +1709,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
         } else if (currentLine.startswith (blDo)) { // do {} while statement
             _ElementaryCommand::BuildDoWhile (currentLine, *this);
-        } else if (currentLine.Equal(&blBreak)) { // a break statement
-            if (bc) {
-                AppendNewInstance(new _ElementaryCommand);
-                (*bc)<<(countitems()-1);
-            }
-        } else if (currentLine.Equal(&blContinue)) { // a continue statement
-            if (bc) {
-                AppendNewInstance(new _ElementaryCommand);
-                (*bc)<<(-(long)countitems()+1);
-            }
-        } else if (currentLine.startswith (blInclude)) { // #include
+        }  else if (currentLine.startswith (blInclude)) { // #include
             _ElementaryCommand::ProcessInclude (currentLine, *this);
         } else if (currentLine.startswith (blDataSet)) { // data set definition
             _ElementaryCommand::ConstructDataSet (currentLine, *this);
@@ -7456,7 +7497,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
 //____________________________________________________________________________________
 
 
-bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target)
+bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target,  _List & pieces)
 
 // the for loop becomes this:
 // initialize
@@ -7467,20 +7508,14 @@ bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target)
 // goto if(condition)
 
 {
-
-    // extract the for enclosure
-    _List pieces;
-    long upto = ExtractConditions (source,4,pieces);
-
-    if (pieces.lLength!=3) {
-        _String errMsg ("'for' header appears incomplete");
-        acknError (errMsg);
-        return false;
-    }
-
-    source.Trim (upto,-1);
-
     return MakeGeneralizedLoop ((_String*)pieces(0),(_String*)pieces(1),(_String*)pieces(2),true,source,target);
+}
+
+//____________________________________________________________________________________
+
+bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target,  _List &pieces)
+{
+    return MakeGeneralizedLoop (nil,(_String*)pieces(0),nil,true,source,target);
 }
 
 //____________________________________________________________________________________
@@ -7525,24 +7560,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
     return target.BuildList(source,bc,true);
 }
 
-//____________________________________________________________________________________
 
-bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target)
-{
-
-    _List pieces;
-    long upto = ExtractConditions (source,6,pieces);
-
-    if (pieces.lLength!=1) {
-        _String errMsg ("'while' header appears incomplete");
-        acknError (errMsg);
-        return false;
-    }
-
-    source.Trim (upto,-1);
-
-    return MakeGeneralizedLoop (nil,(_String*)pieces(0),nil,true,source,target);
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionList&target)

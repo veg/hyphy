@@ -204,9 +204,13 @@ long     _Trie::GetValue(const long key) {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-long    _Trie::Insert (const char* key, const long value) {
+long    _Trie::Insert (const char* key, const long value, bool return_index) {
     _String key_string(key);
-    return Insert  (key_string, value);
+    long ret_value = Insert  (key_string, value);
+    if (ret_value >= 0 && return_index == false) {
+        return key_string.sLength;
+    }
+    return ret_value;
 }
 
 

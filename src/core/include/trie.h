@@ -140,12 +140,13 @@ class _Trie: public _List
          * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER 
          */
     
-        long    Insert (const char *key, const long value);
+        long    Insert (const char *key, const long value, bool return_index = true);
         /**
          * Insert the key into the trie
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER 
+         * @param return_index - whether or not to return the index of the string in the trie (if true) or the length of the key (if false)
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER; if return_index == false, return strlen (key) if insert was successful
          */
 
         void     UpdateValue (const long key, const long value);

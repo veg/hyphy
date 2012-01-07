@@ -43,7 +43,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "parser.h"
 #include "site.h"
-#include "stdio.h"
+#include "trie.h"
+#include <stdio.h>
 
 
 
@@ -55,6 +56,14 @@ struct    _CELInternals {
     _SimpleList       varList,
                       storeResults;
 
+};
+
+//____________________________________________________________________________________
+struct    _HBLCommandExtras {
+    long cutString;
+    char extractConditionSeparator;
+    _SimpleList extractConditions;
+    bool doTrim;
 };
 
 //____________________________________________________________________________________
@@ -147,8 +156,7 @@ public:
     void      ExecuteCase0   (_ExecutionList&);
     void      ExecuteCase4   (_ExecutionList&);
     void      ExecuteCase5   (_ExecutionList&);
-    void      ExecuteDataFilterCases
-    (_ExecutionList&);
+    void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
@@ -196,7 +204,7 @@ public:
     static  long      ExtractConditions     (_String& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
-    static  bool      BuildFor              (_String&, _ExecutionList&);
+    static  bool      BuildFor              (_String&, _ExecutionList&, _List&);
     // builds the for loop starting from
     // the beginning of input
     // this will process the loop header
@@ -208,7 +216,7 @@ public:
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildWhile            (_String&, _ExecutionList&);
+    static  bool      BuildWhile            (_String&, _ExecutionList&, _List&);
     // builds the while(..) construct starting from
     // the beginning of input
     // this will process the loop header
@@ -529,7 +537,9 @@ hfCountGap                      ;
 extern  _ExecutionList              *currentExecutionList;
 
 extern  _AVLList                    loadedLibraryPaths;
-
+extern  _AVLListX                   _HY_HBLCommandHelper;
+                                    
+extern  _Trie                       _HY_ValidHBLExpressions;
 
 long    FindDataSetName              (_String&);
 long    FindDataSetFilterName        (_String&);
@@ -609,7 +619,10 @@ void    ReturnCurrentCallStack       (_List&, _List&);
     @version 20110608
 */
 
-BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long* index = nil);
+BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil);
+
+
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const char = ';', const bool = true);
 
 
 extern  bool                        numericalParameterSuccessFlag;

@@ -99,19 +99,20 @@ extern      _String                 blDoSQL,
             blRequireVersion,
             blAssert;
 
-_SimpleList sqlDatabases;
-
-_List       scfgList,
-            scfgNamesList,
-            bgmList,
-            bgmNamesList,
-            _HY_GetStringGlobalTypesAux;
+_SimpleList sqlDatabases,
+            _HY_HBLCommandHelperAux;
             
-_Trie       _HY_ValidHBLExpressions;
+_List        scfgList,
+             scfgNamesList,
+             bgmList,
+             bgmNamesList,
+             _HY_GetStringGlobalTypesAux;
+            
+_Trie        _HY_ValidHBLExpressions;
 
-_AVLListX    _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux);
-
-
+_AVLListX    _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux),
+             _HY_HBLCommandHelper     (&_HY_HBLCommandHelperAux);
+             
 
 //____________________________________________________________________________________
 
@@ -130,6 +131,18 @@ long         CodonAlignStringsStep              (_Matrix& ,_SimpleList& ,  _Simp
 
 //____________________________________________________________________________________
 
+_HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, const char sep, const bool doTrim) {
+    struct _HBLCommandExtras * commandInfo = new _HBLCommandExtras();
+    commandInfo->cutString         = cut;
+    commandInfo->extractConditions << conditions;
+    commandInfo->extractConditionSeparator         = sep;
+    commandInfo->doTrim         = doTrim;
+    return commandInfo;
+    
+}
+
+//____________________________________________________________________________________
+
 
 void        _HBL_Init_Const_Arrays  (void)
 {
@@ -141,17 +154,84 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), 4);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), 6);
+
     
-    _HY_ValidHBLExpressions.Insert ("for(",       HY_HBL_COMMAND_FOR);
-    _HY_ValidHBLExpressions.Insert ("while(",     HY_HBL_COMMAND_WHILE);
-    _HY_ValidHBLExpressions.Insert ("function ",  HY_HBL_COMMAND_FUNCTION);
-    _HY_ValidHBLExpressions.Insert ("ffunction ", HY_HBL_COMMAND_FFUNCTION);
-    _HY_ValidHBLExpressions.Insert ("return ",    HY_HBL_COMMAND_RETURNSPACE);
-    _HY_ValidHBLExpressions.Insert ("return(",    HY_HBL_COMMAND_RETURNPAREN);
-    _HY_ValidHBLExpressions.Insert ("if(",        HY_HBL_COMMAND_IF);
-    _HY_ValidHBLExpressions.Insert ("else",       HY_HBL_COMMAND_ELSE);
-    _HY_ValidHBLExpressions.Insert ("do{",        HY_HBL_COMMAND_DO);
     
+/*struct    _HBLCommandExtras {
+    long cutString;
+    long extractConditions;
+    char extractConditionSeparator;
+};*/
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FOR, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("for(", HY_HBL_COMMAND_FOR,false),3));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_WHILE,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("while(", HY_HBL_COMMAND_WHILE,false),1));
+                                                            
+    _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
+    _HY_ValidHBLExpressions.Insert ("ffunction ",                           HY_HBL_COMMAND_FFUNCTION);
+    _HY_ValidHBLExpressions.Insert ("return ",                              HY_HBL_COMMAND_RETURNSPACE);
+    _HY_ValidHBLExpressions.Insert ("return(",                              HY_HBL_COMMAND_RETURNPAREN);
+    _HY_ValidHBLExpressions.Insert ("if(",                                  HY_HBL_COMMAND_IF);
+    _HY_ValidHBLExpressions.Insert ("else",                                 HY_HBL_COMMAND_ELSE);
+    _HY_ValidHBLExpressions.Insert ("do{",                                  HY_HBL_COMMAND_DO);
+    _HY_ValidHBLExpressions.Insert ("break;",                               HY_HBL_COMMAND_BREAK);
+    _HY_ValidHBLExpressions.Insert ("continue;",                            HY_HBL_COMMAND_CONTINUE);
+    _HY_ValidHBLExpressions.Insert ("#include",                             HY_HBL_COMMAND_INCLUDE);
+    _HY_ValidHBLExpressions.Insert ("DataSet ",                             HY_HBL_COMMAND_DATA_SET);
+    _HY_ValidHBLExpressions.Insert ("DataSetFilter ",                       HY_HBL_COMMAND_DATA_SET_FILTER);
+    _HY_ValidHBLExpressions.Insert ("HarvestFrequencies",					HY_HBL_COMMAND_HARVEST_FREQUENCIES);
+    _HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(",				HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX);
+    _HY_ValidHBLExpressions.Insert ("Tree ",                                HY_HBL_COMMAND_TREE);
+    _HY_ValidHBLExpressions.Insert ("LikelihoodFunction ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION);
+    _HY_ValidHBLExpressions.Insert ("LikelihoodFunction3 ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3);
+    _HY_ValidHBLExpressions.Insert ("Optimize(",                            HY_HBL_COMMAND_OPTIMIZE);
+    _HY_ValidHBLExpressions.Insert ("CovarianceMatrix(",					HY_HBL_COMMAND_COVARIANCE_MATRIX);
+    _HY_ValidHBLExpressions.Insert ("MolecularClock(",                      HY_HBL_COMMAND_MOLECULAR_CLOCK);
+    _HY_ValidHBLExpressions.Insert ("fprintf(",                             HY_HBL_COMMAND_FPRINTF);
+    _HY_ValidHBLExpressions.Insert ("GetString(",                           HY_HBL_COMMAND_GET_STRING);
+    _HY_ValidHBLExpressions.Insert ("fscanf(",                              HY_HBL_COMMAND_FSCANF);
+    _HY_ValidHBLExpressions.Insert ("sscanf(",                              HY_HBL_COMMAND_SSCANF);
+    _HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
+    _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT);
+    _HY_ValidHBLExpressions.Insert ("Import",                               HY_HBL_COMMAND_IMPORT);
+    _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
+    _HY_ValidHBLExpressions.Insert ("ClearConstraints(",					HY_HBL_COMMAND_CLEAR_CONSTRAINTS);
+    _HY_ValidHBLExpressions.Insert ("SetDialogPrompt(",                     HY_HBL_COMMAND_SET_DIALOG_PROMPT);
+    _HY_ValidHBLExpressions.Insert ("SelectTemplateModel(",					HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL);
+    _HY_ValidHBLExpressions.Insert ("UseModel(",                            HY_HBL_COMMAND_USE_MODEL);
+    _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
+    _HY_ValidHBLExpressions.Insert ("SetParameter(",                        HY_HBL_COMMAND_SET_PARAMETER);
+    _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_SET_CHOICE_LIST);
+    _HY_ValidHBLExpressions.Insert ("OpenDataPanel(",                       HY_HBL_COMMAND_OPEN_DATA_PANEL);
+    _HY_ValidHBLExpressions.Insert ("GetInformation(",                      HY_HBL_COMMAND_GET_INFORMATION);
+    _HY_ValidHBLExpressions.Insert ("ExecuteCommands(",                     HY_HBL_COMMAND_EXECUTE_COMMANDS);
+    _HY_ValidHBLExpressions.Insert ("ExecuteAFile(",                        HY_HBL_COMMAND_EXECUTE_A_FILE);
+    _HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(",					HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
+    _HY_ValidHBLExpressions.Insert ("OpenWindow(",                          HY_HBL_COMMAND_OPEN_WINDOW);
+    _HY_ValidHBLExpressions.Insert ("SpawnLikelihoodFunction(",				HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION);
+    _HY_ValidHBLExpressions.Insert ("Differentiate(",                       HY_HBL_COMMAND_DIFFERENTIATE);
+    _HY_ValidHBLExpressions.Insert ("FindRoot(",                            HY_HBL_COMMAND_FIND_ROOT);
+    _HY_ValidHBLExpressions.Insert ("MPIReceive(",                          HY_HBL_COMMAND_MPI_RECEIVE);
+    _HY_ValidHBLExpressions.Insert ("MPISend(",                             HY_HBL_COMMAND_MPI_SEND);
+    _HY_ValidHBLExpressions.Insert ("GetDataInfo(",                         HY_HBL_COMMAND_GET_DATA_INFO);
+    _HY_ValidHBLExpressions.Insert ("StateCounter(",                        HY_HBL_COMMAND_STATE_COUNTER);
+    _HY_ValidHBLExpressions.Insert ("Integrate(",                           HY_HBL_COMMAND_INTEGRATE);
+    _HY_ValidHBLExpressions.Insert ("LFCompute(",                           HY_HBL_COMMAND_LFCOMPUTE);
+    _HY_ValidHBLExpressions.Insert ("GetURL(",                              HY_HBL_COMMAND_GET_URL);
+    _HY_ValidHBLExpressions.Insert ("DoSQL(",                               HY_HBL_COMMAND_DO_SQL);
+    _HY_ValidHBLExpressions.Insert ("Topology ",                            HY_HBL_COMMAND_TOPOLOGY);
+    _HY_ValidHBLExpressions.Insert ("AlignSequences(",                      HY_HBL_COMMAND_ALIGN_SEQUENCES);
+    _HY_ValidHBLExpressions.Insert ("GetNeutralNull(",                      HY_HBL_COMMAND_GET_NEUTRAL_NULL);
+    _HY_ValidHBLExpressions.Insert ("#profile",                             HY_HBL_COMMAND_PROFILE);
+    _HY_ValidHBLExpressions.Insert ("DeleteObject(",                        HY_HBL_COMMAND_DELETE_OBJECT);
+    _HY_ValidHBLExpressions.Insert ("RequireVersion(",                      HY_HBL_COMMAND_REQUIRE_VERSION);
+    _HY_ValidHBLExpressions.Insert ("SCFG ",                                HY_HBL_COMMAND_SCFG);
+    _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
+    _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
+    _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
+    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);    
 }
 
 //____________________________________________________________________________________

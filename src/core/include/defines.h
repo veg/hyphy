@@ -268,7 +268,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_BGM                                            562L
 #define   HY_HBL_COMMAND_SIMULATE_DATA_SET                              563L
 #define   HY_HBL_COMMAND_ASSERT                                         564L
-
+#define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 
 
 
