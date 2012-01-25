@@ -59,7 +59,7 @@ define_macros += [
     ]
 
 # openmp on Mac OS X Lion is broken
-openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' else []
+openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' and not MPI else []
 
 setup(
     name = 'HyPhy',
