@@ -11,7 +11,7 @@ from platform import architecture, mac_ver
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
 
-MPI = getenv('MPI', False)
+MPI = int(getenv('MPI', False)) == 1
 
 #build the list of Source files
 
