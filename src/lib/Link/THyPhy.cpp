@@ -210,6 +210,12 @@ _THyPhy::~_THyPhy           (void)
     if (globalInterfaceInstance == this) {
         globalInterfaceInstance = nil;
     }
+
+    PurgeAll(true);
+    GlobalShutdown();
+#ifdef __HYPHYMPI__
+    // MPI_Finalize();
+#endif
 }
 
 //_________________________________________________________
@@ -276,8 +282,6 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
         _String defaultBaseDirectory = *(_String*) pathNames(0);
         mpiNormalLoop(rank, size, defaultBaseDirectory);
     }
-
-    // MPI_Finalize();
 #endif
 }
 
