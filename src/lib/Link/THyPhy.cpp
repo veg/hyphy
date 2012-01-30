@@ -55,6 +55,12 @@ double  _tHYPHYValue            = 0.0;
 
 extern long systemCPUCount;
 
+#ifdef __HYPHYMPI__
+extern int _hy_mpi_node_rank;
+void       mpiNormalLoop(int, int, _String &);
+void       mpiOptimizerLoop(int, int);
+#endif
+
 _THyPhy * globalInterfaceInstance = nil;
 
 //_________________________________________________________
@@ -208,6 +214,23 @@ _THyPhy::~_THyPhy           (void)
 
 void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
+#ifdef __HYPHYMPI__
+    int rank, size;
+    if (!mpi_inited) {
+        MPI_Init(NULL, NULL);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+        setParameter(mpiNodeID, (_Parameter) rank);
+        setParameter(mpiNodeCount, (_Parameter) size);
+        _hy_mpi_node_rank = rank;
+
+        if (rank == 0) {
+            mpiNodesThatCantSwitch.Populate(size, 1, 0);
+        }
+    }
+#endif
+
     char dirSlash = GetPlatformDirectoryChar ();
     systemCPUCount = cpuCount;
     SetCallbackHandler (mHandler);
@@ -243,6 +266,12 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
     textout  = nil;
     globalInterfaceInstance = this;
 
+#ifdef __HYPHYMPI__
+    if (rank > 0) {
+        _String defaultBaseDirectory = *(_String*) pathNames(0);
+        mpiNormalLoop(rank, size, defaultBaseDirectory);
+    }
+#endif
 }
 
 //_________________________________________________________
