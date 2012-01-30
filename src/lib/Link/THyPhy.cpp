@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "THyPhy.h"
 #include "batchlan.h"
+#include "likefunc.h"
 #include "string.h"
 
 
@@ -59,6 +60,7 @@ extern long systemCPUCount;
 extern int _hy_mpi_node_rank;
 void       mpiNormalLoop(int, int, _String &);
 void       mpiOptimizerLoop(int, int);
+int        _mpi_inited = 0;
 #endif
 
 _THyPhy * globalInterfaceInstance = nil;
@@ -216,7 +218,7 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 {
 #ifdef __HYPHYMPI__
     int rank, size;
-    if (!mpi_inited) {
+    if (!_mpi_inited) {
         MPI_Init(NULL, NULL);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -228,6 +230,8 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
         if (rank == 0) {
             mpiNodesThatCantSwitch.Populate(size, 1, 0);
         }
+
+        _mpi_inited = 1;
     }
 #endif
 
