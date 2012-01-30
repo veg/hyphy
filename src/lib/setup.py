@@ -52,7 +52,8 @@ define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
 # again the MPI if we want
 define_macros += [
-        ('__HYPHYMPI__', None)
+        ('__HYPHYMPI__', None),
+        ('__PYMPICH1__', None)
     ] if MPI == True else [
         ('__MP__', None),
         ('__MP2__', None)

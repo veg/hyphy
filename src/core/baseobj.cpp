@@ -262,7 +262,7 @@ bool    GlobalShutdown (void)
     ReportWarning ("Calling MPI_Finalize");
 #ifdef __USE_ABORT_HACK__
     MPI_Abort(MPI_COMM_WORLD,0);
-#else
+#elif !defined __PYMPICH1__
     MPI_Finalize();
 #endif
     ReportWarning ("Returned from MPI_Finalize");

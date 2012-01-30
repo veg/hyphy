@@ -219,7 +219,9 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 #ifdef __HYPHYMPI__
     int rank, size;
     if (!_mpi_inited) {
+#ifndef __PYMPICH1__
         MPI_Init(NULL, NULL);
+#endif
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -275,6 +277,8 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
         _String defaultBaseDirectory = *(_String*) pathNames(0);
         mpiNormalLoop(rank, size, defaultBaseDirectory);
     }
+
+    // MPI_Finalize();
 #endif
 }
 
