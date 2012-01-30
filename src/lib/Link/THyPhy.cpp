@@ -218,22 +218,21 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 {
 #ifdef __HYPHYMPI__
     int rank, size;
-    if (!_mpi_inited) {
 #ifndef __PYMPICH1__
+    if (!_mpi_inited) {
         MPI_Init(NULL, NULL);
-#endif
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-        setParameter(mpiNodeID, (_Parameter) rank);
-        setParameter(mpiNodeCount, (_Parameter) size);
-        _hy_mpi_node_rank = rank;
-
-        if (rank == 0) {
-            mpiNodesThatCantSwitch.Populate(size, 1, 0);
-        }
-
         _mpi_inited = 1;
+    }
+#endif
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    setParameter(mpiNodeID, (_Parameter) rank);
+    setParameter(mpiNodeCount, (_Parameter) size);
+    _hy_mpi_node_rank = rank;
+
+    if (rank == 0) {
+        mpiNodesThatCantSwitch.Populate(size, 1, 0);
     }
 #endif
 

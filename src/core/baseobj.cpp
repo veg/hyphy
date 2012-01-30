@@ -355,7 +355,7 @@ void    PurgeAll (bool all)
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = false;
     isDefiningATree     = false;
-#if defined __HYPHYMPI__ && defined __HYPHY_GTK__
+#ifdef __HYPHYMPI__
     int            size;
 
     MPI_Comm_size   (MPI_COMM_WORLD, &size);
