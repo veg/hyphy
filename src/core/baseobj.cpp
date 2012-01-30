@@ -243,7 +243,7 @@ bool    GlobalShutdown (void)
 #endif
 
 #ifdef  __HYPHYMPI__
-    int     size;
+    int     flag, size;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     PurgeAll (true);
@@ -262,8 +262,10 @@ bool    GlobalShutdown (void)
     ReportWarning ("Calling MPI_Finalize");
 #ifdef __USE_ABORT_HACK__
     MPI_Abort(MPI_COMM_WORLD,0);
-#elif !defined __PYMPICH1__
-    MPI_Finalize();
+#else
+    MPI_Finalized(&flag);
+    if (!flag)
+        MPI_Finalize();
 #endif
     ReportWarning ("Returned from MPI_Finalize");
 #endif

@@ -213,9 +213,6 @@ _THyPhy::~_THyPhy           (void)
 
     PurgeAll(true);
     GlobalShutdown();
-#ifdef __HYPHYMPI__
-    // MPI_Finalize();
-#endif
 }
 
 //_________________________________________________________
@@ -223,13 +220,10 @@ _THyPhy::~_THyPhy           (void)
 void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
 #ifdef __HYPHYMPI__
-    int rank, size;
-#ifndef __PYMPICH1__
-    if (!_mpi_inited) {
-        MPI_Init(NULL, NULL);
-        _mpi_inited = 1;
-    }
-#endif
+    int flag, rank, size;
+    MPI_Initialized(&flag);
+    if (!flag)
+        MPI_Init(0, 0);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
