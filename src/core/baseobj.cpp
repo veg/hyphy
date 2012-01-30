@@ -181,7 +181,6 @@ bool    GlobalStartup (void)
     _hyApplicationGlobals.Insert(new _String (mpiNodeID));
     _hyApplicationGlobals.Insert(new _String (mpiNodeCount));
     _hyApplicationGlobals.Insert(new _String (mpiLastSentMsg));
-
 #endif
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
@@ -236,11 +235,12 @@ bool    GlobalStartup (void)
 bool    GlobalShutdown (void)
 {
     bool res = true;
-   
-#if defined __UNIX__ && !defined __HYPHY_GTK__ && ! defined __HEADLESS__
+
+#if defined (__HYPHY_GTK__) || defined (__HEADLESS__)
+#elif defined __UNIX__
     if (needExtraNL)
         printf ("\n");
-#endif     
+#endif
 
 #ifdef  __HYPHYMPI__
     int     size;
