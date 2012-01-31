@@ -1,31 +1,41 @@
 /*
-
-HyPhy - Hypothesis Testing Using Phylogenies.
-
-Copyright (C) 1997-2009
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon              (apoon@cfenet.ubc.ca)
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
+ 
+ HyPhy - Hypothesis Testing Using Phylogenies.
+ 
+ Copyright (C) 1997-now
+ Core Developers:
+ Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
+ Steven Weaver (sweaver@ucsd.edu)
+ 
+ Module Developers:
+ Lance Hepler (nlhepler@gmail.com)
+ Martin Smith (martin.audacis@gmail.com)
+ 
+ Significant contributions from:
+ Spencer V Muse (muse@stat.ncsu.edu)
+ Simon DW Frost (sdf22@cam.ac.uk)
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ */
 
 #include "likefunc.h"
 #include "batchlan.h"
@@ -1608,21 +1618,23 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         long prefixTreeCode = _HY_ValidHBLExpressions.Find (currentLine, &triePath, true);
         
         _List *pieces = nil;
+        _HBLCommandExtras *commandExtraInfo = nil;
         
         if (prefixTreeCode != HY_TRIE_NOTFOUND) {
             prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
             long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
             if (commandExtra >= 0) { // pre-trim all strings as needed
-                _HBLCommandExtras *commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
-                if (commandExtraInfo->extractConditions.lLength > 0) {
+                commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
+                if (commandExtraInfo->extract_conditions.lLength > 0) {
                     pieces = new _List;
-                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cutString,*pieces);
-                    if (commandExtraInfo->extractConditions.Find(pieces->lLength) < 0) {
-                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extractConditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces),
+                    condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
+                    if (condition_index_match < 0) {
+                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
                         DeleteObject (pieces);
                         return false;
                     }
-                    if (commandExtraInfo->doTrim) {
+                    if (commandExtraInfo->do_trim) {
                         currentLine.Trim (upto, -1);
                     }
                 }
@@ -1651,6 +1663,9 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 }
                 handled = true;
                 break;
+            case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
+                _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
+                
         }
         
         if (handled)
@@ -1745,8 +1760,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructCategory (currentLine, *this);
         } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
             _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
-        } else if (currentLine.startswith (blSetDialogPrompt)) { //set dialog prompt
-            _ElementaryCommand::SetDialogPrompt (currentLine, *this);
         } else if (currentLine.startswith (blSelectTemplateModel)) { // select a template model
             _ElementaryCommand::SelectTemplateModel (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
@@ -2157,7 +2170,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = _String("Clear contstraints on: ")&(*converted);
         break;
     }
-    case 23: { // set dialog prompt
+    case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         converted = (_String*)parameters.toStr();
         result = _String("Set dialog prompt to: ")&(*converted);
         break;
@@ -6929,7 +6942,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 23: { // set dialog prompt
+    case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         chain.currentCommand++;
         dialogPrompt = ProcessLiteralArgument((_String*)parameters(0),chain.nameSpacePrefix);
     }
@@ -7887,22 +7900,6 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::SetDialogPrompt(_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,16,args,',');
-    if (args.lLength!=1) {
-        _String errMsg ("Expected SetDialogPrompt(\"prompt\");");
-        acknError (errMsg);
-        return false;
-    }
-    _ElementaryCommand cv;
-    cv.code = 23;
-    cv.parameters<< args(0);
-    target&& &cv;
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::SelectTemplateModel(_String&source, _ExecutionList&target)

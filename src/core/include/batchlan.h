@@ -60,10 +60,14 @@ struct    _CELInternals {
 
 //____________________________________________________________________________________
 struct    _HBLCommandExtras {
-    long cutString;
-    char extractConditionSeparator;
-    _SimpleList extractConditions;
-    bool doTrim;
+    long                cut_string;
+    char                extract_condition_separator;
+    _SimpleList         extract_conditions;
+    _List               command_invocation;
+    
+    bool                do_trim,
+                        is_assignment,
+                        needs_verb;
 };
 
 //____________________________________________________________________________________
@@ -204,6 +208,18 @@ public:
     static  long      ExtractConditions     (_String& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
+    static  bool      ExtractValidateAddHBLCommand (_String& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
+    /**
+     * Take a command from the current command stream, extract it, make an _ElementaryCommand and add it to the execution list
+     * @param current_stream -- the current command text stream
+     * @param command_code   -- the numerical code (from HY_HBL_COMMAND_*)
+     * @param pieces         -- the list of parameters extracted from the () part of the command
+     * @param command_spec   -- command specification structure
+     * @param command_list   -- the command list object to append the command to
+     * @return success/failure. 
+     */
+   
+
     static  bool      BuildFor              (_String&, _ExecutionList&, _List&);
     // builds the for loop starting from
     // the beginning of input
@@ -323,8 +339,6 @@ public:
     static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      SetDialogPrompt       (_String&, _ExecutionList&);
 
     static  bool      ConstructGetURL       (_String&, _ExecutionList&);
 
@@ -622,7 +636,7 @@ void    ReturnCurrentCallStack       (_List&, _List&);
 BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil);
 
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const char = ';', const bool = true);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false);
 
 
 extern  bool                        numericalParameterSuccessFlag;
