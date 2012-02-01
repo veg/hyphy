@@ -60,7 +60,8 @@ extern long systemCPUCount;
 extern int _hy_mpi_node_rank;
 void       mpiNormalLoop(int, int, _String &);
 void       mpiOptimizerLoop(int, int);
-int        _mpi_inited = 0;
+int        argc;
+char**     argv;
 #endif
 
 _THyPhy * globalInterfaceInstance = nil;
@@ -213,6 +214,14 @@ _THyPhy::~_THyPhy           (void)
 
     PurgeAll(true);
     GlobalShutdown();
+
+#ifdef __HYPHYMPI__
+    if (argv != NULL) {
+        if (argv[0] != NULL)
+            free(argv[0]);
+        free(argv);
+    }
+#endif
 }
 
 //_________________________________________________________
@@ -221,9 +230,12 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 {
 #ifdef __HYPHYMPI__
     int flag, rank, size;
+    argc = 1;
+    argv = calloc(2, sizeof(char*));
+    argv[0] = strdup("noprogramname");
     MPI_Initialized(&flag);
     if (!flag)
-        MPI_Init(0, 0);
+        MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
