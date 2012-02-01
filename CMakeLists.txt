@@ -350,7 +350,7 @@ if(${GTK2_FOUND})
 	  add_executable(
         HYPHYGTK
         EXCLUDE_FROM_ALL
-        ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON} 
+        ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON}
      )
 
     target_link_libraries(HYPHYGTK ${DEFAULT_LIBRARIES} ${GTK2_LIBRARIES})
@@ -364,24 +364,24 @@ if(${GTK2_FOUND})
         RUNTIME DESTINATION bin
         OPTIONAL
     )
-    
+
     set_property(
         TARGET HYPHYGTK
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
     )
-    
+
    set_target_properties(
         HYPHYGTK
         PROPERTIES
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
-    
+
 endif(${GTK2_FOUND})
-   
 
 
- 
+
+
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
@@ -403,6 +403,11 @@ set_property(
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
+set_property(
+    TARGET HYPHYDEBUG HYPHYGTEST
+    APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
+)
+
 set_target_properties(
     hyphy_mp HYPHYMP
     PROPERTIES
@@ -419,7 +424,6 @@ if(APPLE)
     # set this or blow up
     #---------------------------------------------------------------------------
     set(CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.6.sdk/")
-
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -461,8 +465,8 @@ if(APPLE)
     #---------------------------------------------------------------------------
     # install the hyphy hbl stdlib into the .app
     #---------------------------------------------------------------------------
-   
-   	get_target_property   (HYPHY_APPEXE HyPhy LOCATION)
+
+    get_target_property   (HYPHY_APPEXE HyPhy LOCATION)
     get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
 
     add_custom_command(
@@ -479,22 +483,21 @@ if(APPLE)
     get_target_property   (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
     get_filename_component(IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
 
-
 	add_custom_target(
 		HYPHY_DMG
 		DEPENDS HyPhy
 	)
-	
-	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})	
-	
+
+	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})
+
 	find_program (HAZ_DMG_CANVAS "dmgcanvas")
-	
+
 	if (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
 		add_custom_command(
 				TARGET HYPHY_DMG
 				POST_BUILD
 				COMMAND dmgcanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
-			)	
+			)
 	else (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
 		add_custom_command(
 				TARGET HYPHY_DMG
@@ -508,12 +511,10 @@ if(APPLE)
 				COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/help/Getting Started With HyPhy.pdf" ${HYPHY_DISTRIBUTE_DIR}/Documentation/
 				COMMAND ${CMAKE_COMMAND} -E remove -f ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
 				COMMAND hdiutil create -srcfolder ${HYPHY_DISTRIBUTE_DIR} -format UDBZ ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
-			)	
+			)
 	endif (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
-	
-    
-		
-     add_custom_command(
+
+    add_custom_command(
         TARGET iHyPhyDebug
         PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
@@ -533,7 +534,7 @@ if(APPLE)
     )
     set_property(
         TARGET iHyPhyDebug
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="iHyPhyDebug"
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __HYPHYDEBUG__ APPNAME="iHyPhyDebug"
     )
     set_target_properties(
         HyPhy
@@ -582,7 +583,7 @@ if(APPLE)
         HyPhy
         PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
     )
-    
+
     set_target_properties(
         HyPhy MAC
         PROPERTIES
