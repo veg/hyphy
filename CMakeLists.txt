@@ -153,7 +153,7 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -340,19 +340,24 @@ set_target_properties(
 
 find_package(GTK2 2.6)
 
-if(${GTK2_FOUND})
-      include_directories(${GTK2_INCLUDE_DIRS})
-
-	  file(GLOB SRC_GUI_GTK src/gui/gtk/*.cpp src/gui/gtk/Components/*.cpp src/gui/gtk/WindowClasses/*.cpp)
-
-	    include_directories(src/gui/gtk/include src/gui/gtk/include/Components /Developer/Headers/FlatCarbon)
-
-	  add_executable(
+if((${GTK2_FOUND}) AND (NOT ${APPLE}))
+	file(
+        GLOB SRC_GUI_GTK
+        src/gui/gtk/*.cpp
+        src/gui/gtk/Components/*.cpp
+        src/gui/gtk/WindowClasses/*.cpp
+    )
+	include_directories(
+        ${GTK_INCLUDE_DIRS}
+        src/gui/gtk/include
+        src/gui/gtk/include/Components
+        /Developer/Headers/FlatCarbon
+    )
+	add_executable(
         HYPHYGTK
         EXCLUDE_FROM_ALL
         ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON}
-     )
-
+    )
     target_link_libraries(HYPHYGTK ${DEFAULT_LIBRARIES} ${GTK2_LIBRARIES})
 
 	add_custom_target(GTK DEPENDS HYPHYGTK)
@@ -364,23 +369,17 @@ if(${GTK2_FOUND})
         RUNTIME DESTINATION bin
         OPTIONAL
     )
-
     set_property(
         TARGET HYPHYGTK
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
     )
-
-   set_target_properties(
+    set_target_properties(
         HYPHYGTK
         PROPERTIES
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
-
-endif(${GTK2_FOUND})
-
-
-
+endif((${GTK2_FOUND}) AND (NOT ${APPLE}))
 
 
 #-------------------------------------------------------------------------------

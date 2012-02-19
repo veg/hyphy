@@ -58,7 +58,7 @@ _String     _HYBgm_NODE_INDEX   ("NodeID"),
 void        ConsoleBGMStatus (_String, _Parameter, _String * fileName = nil);
 
 
-void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName = nil)
+void        ConsoleBGMStatus (_String statusLine, _Parameter percentDone, _String * fileName)
 {
     FILE           *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
     _String        reportLine (statusLine);
@@ -209,13 +209,25 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
         //                                      "PriorPrecision" - hyperparameter for Gaussian node
         //                                      "PriorScale"    - fourth hyperparameter for Gaussian node
 
-        _String name = (_String *) (this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING))->toStr();
-
-        node_names && (const char *) name;  // append a pointer to _String duplicate
+        _FString *name = (_FString*)this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING);
+        if (!name){
+            WarnError("Invalid node name (expected a string) passed to a BGM constructor");
+            return;
+        }
+        
+        node_names.AppendNewInstance(new _String (*name->theString));  // append a pointer to _String duplicate
 
         // DEBUGGING
-        ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
-
+        /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
+         20111210 SLKP : _String (_String*) contstructor will actually assume that the argument is 
+                       : 'unencumbered' i.e. not a member of _Lists etc
+                       : this function call will create a stack copy of node_names.lData[node]
+                       : print it to messages.log and then kill the dynamic portion of the object (sData)
+                       : this will create all kinds of havoc downstream
+         */
+        // bug fix:
+        ReportWarning (_String("node_name[") & node & "]=" & *((_String *)node_names.lData[node]));
+        
 
         // node type (0 = discrete, 1 = continuous)
         if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER))) {
