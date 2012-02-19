@@ -36,7 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "THyPhy.h"
 #include "batchlan.h"
-#include "likefunc.h"
 #include "string.h"
 
 
@@ -55,14 +54,6 @@ long    _tHYPHYDone             = 0;
 double  _tHYPHYValue            = 0.0;
 
 extern long systemCPUCount;
-
-#ifdef __HYPHYMPI__
-extern int _hy_mpi_node_rank;
-void       mpiNormalLoop(int, int, _String &);
-void       mpiOptimizerLoop(int, int);
-int        argc;
-char**     argv;
-#endif
 
 _THyPhy * globalInterfaceInstance = nil;
 
@@ -214,40 +205,12 @@ _THyPhy::~_THyPhy           (void)
 
     PurgeAll(true);
     GlobalShutdown();
-
-#ifdef __HYPHYMPI__
-    if (argv != NULL) {
-        if (argv[0] != NULL)
-            free(argv[0]);
-        free(argv);
-    }
-#endif
 }
 
 //_________________________________________________________
 
 void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirPath, long cpuCount)
 {
-#ifdef __HYPHYMPI__
-    int flag, rank, size;
-    argc = 1;
-    argv = calloc(2, sizeof(char*));
-    argv[0] = strdup("noprogramname");
-    MPI_Initialized(&flag);
-    if (!flag)
-        MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    setParameter(mpiNodeID, (_Parameter) rank);
-    setParameter(mpiNodeCount, (_Parameter) size);
-    _hy_mpi_node_rank = rank;
-
-    if (rank == 0) {
-        mpiNodesThatCantSwitch.Populate(size, 1, 0);
-    }
-#endif
-
     char dirSlash = GetPlatformDirectoryChar ();
     systemCPUCount = cpuCount;
     SetCallbackHandler (mHandler);
@@ -283,12 +246,6 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
     textout  = nil;
     globalInterfaceInstance = this;
 
-#ifdef __HYPHYMPI__
-    if (rank > 0) {
-        _String defaultBaseDirectory = *(_String*) pathNames(0);
-        mpiNormalLoop(rank, size, defaultBaseDirectory);
-    }
-#endif
 }
 
 //_________________________________________________________

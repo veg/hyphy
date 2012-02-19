@@ -2,7 +2,7 @@
 
 from distutils.core      import setup, Extension
 from distutils.sysconfig import get_python_inc
-from os                  import getenv, listdir, getcwd, path
+from os                  import listdir, getcwd, path
 from glob                import glob
 import sys
 
@@ -11,7 +11,6 @@ from platform import architecture, mac_ver
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
 
-MPI = int(getenv('MPI', False)) == 1
 
 #build the list of Source files
 
@@ -45,21 +44,11 @@ sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles +
 includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
 includePaths += [linkPath, contribPath]
 
-define_libs = ['mpich++-gnu', 'mpich-gnu', 'bproc'] if MPI else []
-
 # check for 64bit and define as such
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
-# again the MPI if we want
-define_macros += [
-        ('__HYPHYMPI__', None)
-    ] if MPI == True else [
-        ('__MP__', None),
-        ('__MP2__', None)
-    ]
-
 # openmp on Mac OS X Lion is broken
-openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' and not MPI else []
+openmp = ['-fopenmp'] if mac_ver()[0] < '10.7.0' else []
 
 setup(
     name = 'HyPhy',
@@ -77,10 +66,12 @@ setup(
             include_dirs = includePaths,
             define_macros = [('SQLITE_PTR_SIZE','sizeof(long)'),
                              ('__UNIX__', None),
+                             ('__MP__', None),
+                             ('__MP2__', None),
                              ('_SLKP_LFENGINE_REWRITE_', None),
                              ('__HEADLESS__', None),
                              ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] + define_macros,
-            libraries = ['pthread', 'ssl', 'crypto', 'curl'] + define_libs,
+            libraries = ['pthread', 'ssl', 'crypto', 'curl'],
             extra_compile_args = [
                     '-Wno-int-to-pointer-cast',
                     # '-Wno-pointer-to-int-cast',
