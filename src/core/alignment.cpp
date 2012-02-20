@@ -328,7 +328,8 @@ long CodonAlignStringsStep( double * score_matrix
 
 //____________________________________________________________________________________
 
-inline void BacktrackAlign( _SimpleList & edit_ops
+inline void BacktrackAlign( signed char * edit_ops
+                          , long & edit_ptr
                           , long & r
                           , long & q
                           , _Parameter deletion
@@ -339,19 +340,20 @@ inline void BacktrackAlign( _SimpleList & edit_ops
     if ( match >= deletion && match >= insertion ) {
         --r;
         --q;
-        edit_ops << 0;
+        edit_ops[ edit_ptr++ ] = 0;
     } else if ( deletion >= insertion ) {
         --r;
-        edit_ops << -1;
+        edit_ops[ edit_ptr++ ] = -1;
     } else {
         --q;
-        edit_ops << 1;
+        edit_ops[ edit_ptr++ ] = 1;
     }
 }
 
 //____________________________________________________________________________________
 
-inline void BacktrackAlignCodon( _SimpleList & edit_ops
+inline void BacktrackAlignCodon( signed char * edit_ops
+                               , long & edit_ptr
                                , long & r
                                , long & q
                                , const long code
@@ -491,14 +493,14 @@ inline void BacktrackAlignCodon( _SimpleList & edit_ops
             if ( q_str[ idx ] ) {
                 --r;
                 --q;
-                edit_ops << 0;
+                edit_ops[ edit_ptr++ ] = 0;
             } else {
                 --r;
-                edit_ops << -( frameshift ? 2 : 1 );
+                edit_ops[ edit_ptr++ ] = -( frameshift ? 2 : 1 );
             }
         } else {
             --q;
-            edit_ops << ( frameshift ? 2 : 1 );
+            edit_ops[ edit_ptr++ ] = ( frameshift ? 2 : 1 );
         }
     }
 }
@@ -597,7 +599,8 @@ _Parameter AlignStrings( _String * r_str
                     score = -open_deletion * r_len;
             }
         } else {
-            _SimpleList edit_ops( MAX( r_len, q_len ) );
+            long edit_ptr = 0;
+            signed char * edit_ops = new signed char[ r_len + q_len ];
 
             double * score_matrix = new double[ score_rows * score_cols ],
                    * insertion_matrix = NULL,
@@ -812,12 +815,12 @@ _Parameter AlignStrings( _String * r_str
                 // fill in the edit_ops with the difference
                 // between r_len and i
                 for ( k = i; k < r_len; ++k )
-                    edit_ops << -1;
+                    edit_ops[ edit_ptr++ ] = -1;
 
                 // fill in the edit_ops with the difference
                 // between q_len and j
                 for ( k = j; k < q_len; ++k )
-                    edit_ops << 1;
+                    edit_ops[ edit_ptr++ ] = 1;
             }
 
             // backtrack now
@@ -864,7 +867,7 @@ _Parameter AlignStrings( _String * r_str
 
                     // alter edit_ops and decrement i and j
                     // according to the step k we took
-                    BacktrackAlignCodon( edit_ops, i, j, code );
+                    BacktrackAlignCodon( edit_ops, edit_ptr, i, j, code );
 
                     // if anything drops below 0, something bad happened
                     if ( i < 0 || j < 0 ) {
@@ -884,9 +887,9 @@ _Parameter AlignStrings( _String * r_str
                                  <= deletion_matrix[ k ] - extend_deletion ) {
                                 // take a codon out of the reference
                                 i -= 3;
-                                edit_ops << -1;
-                                edit_ops << -1;
-                                edit_ops << -1;
+                                edit_ops[ edit_ptr++ ] = -1;
+                                edit_ops[ edit_ptr++ ] = -1;
+                                edit_ops[ edit_ptr++ ] = -1;
                                 // move up a row in the score_matrix
                                 // which is a codon in the reference
                                 k -= score_cols;
@@ -899,9 +902,9 @@ _Parameter AlignStrings( _String * r_str
                                  <= insertion_matrix[ k ] - extend_insertion ) {
                                 // take a codon out of the query
                                 j -= 3;
-                                edit_ops << 1;
-                                edit_ops << 1;
-                                edit_ops << 1;
+                                edit_ops[ edit_ptr++ ] = 1;
+                                edit_ops[ edit_ptr++ ] = 1;
+                                edit_ops[ edit_ptr++ ] = 1;
                                 // move up 3 in the score_matrix
                                 // which is a codon in the query
                                 k -= 3;
@@ -936,7 +939,7 @@ _Parameter AlignStrings( _String * r_str
                         case 0:
                             // we have at least 1 deletion
                             --i;
-                            edit_ops << -1;
+                            edit_ops[ edit_ptr++ ] = -1;
                             // deletion is travel in the reference but not query,
                             // look at scores back in the reference,
                             // and while they are better for the deletion case,
@@ -946,7 +949,7 @@ _Parameter AlignStrings( _String * r_str
                                  <= deletion_matrix[ curr - score_cols ] - extend_deletion
                                   ) {
                                 --i;
-                                edit_ops << -1;
+                                edit_ops[ edit_ptr++ ] = -1;
                                 curr -= score_cols;
                             }
                             break;
@@ -954,7 +957,7 @@ _Parameter AlignStrings( _String * r_str
                         case 1:
                             // we have at least 1 insertion
                             --j;
-                            edit_ops << 1;
+                            edit_ops[ edit_ptr++ ] = 1;
                             // insertion is travel in the query but not the reference,
                             // look at scores back in the query,
                             // and while they are better than for the insertion case,
@@ -964,7 +967,7 @@ _Parameter AlignStrings( _String * r_str
                                  <= insertion_matrix[ curr - 1 ] - extend_insertion
                                   ) {
                                 --j;
-                                edit_ops << 1;
+                                edit_ops[ edit_ptr++ ] = 1;
                                 --curr;
                             }
                             break;
@@ -973,7 +976,7 @@ _Parameter AlignStrings( _String * r_str
                             // it's a match! move back in both
                             --i;
                             --j;
-                            edit_ops << 0;
+                            edit_ops[ edit_ptr++ ] = 0;
                             break;
                         }
                     }
@@ -988,7 +991,7 @@ _Parameter AlignStrings( _String * r_str
                                    match     = score_matrix[ prev - 1 ];
 
                         MatchScore( r_str, q_str, i, j, char_map, cost_matrix, cost_stride, match );
-                        BacktrackAlign( edit_ops, i, j, deletion, insertion, match );
+                        BacktrackAlign( edit_ops, edit_ptr, i, j, deletion, insertion, match );
                     }
                 }
             }
@@ -999,18 +1002,18 @@ _Parameter AlignStrings( _String * r_str
             // reference
             while ( i > 0 ) {
                 --i;
-                edit_ops << -1;
+                edit_ops[ edit_ptr++ ] = -1;
             }
 
             // then query
             while ( j > 0 ) {
                 --j;
-                edit_ops << 1;
+                edit_ops[ edit_ptr++ ] = 1;
             }
 
             // rebuild the strings from the edit_ops
-            for ( k = edit_ops.lLength - 1; k >= 0; --k ) {
-                switch ( edit_ops.lData[ k ] ) {
+            for ( --edit_ptr; edit_ptr >= 0; --edit_ptr ) {
+                switch ( edit_ops[ edit_ptr ] ) {
                         // match! include characters from both strings
                     case 0:
                         ( * r_res ) << r_str->sData[ i++ ];
@@ -1052,12 +1055,13 @@ _Parameter AlignStrings( _String * r_str
                 ad->SetValue( deletion_matrix, true );
             }
 #endif
+            delete edit_ops;
+            delete score_matrix;
+
             if ( do_affine ) {
                 delete insertion_matrix;
                 delete deletion_matrix;
             }
-
-            delete score_matrix;
         }
     }
 
