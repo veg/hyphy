@@ -54,8 +54,7 @@
 
 //____________________________________________________________________________________
 
-long CodonAlignStringsStep( _Matrix & choices
-                          , double * score_matrix
+long CodonAlignStringsStep( double * score_matrix
                           , _SimpleList & reference
                           , _SimpleList & query
                           , const long r
@@ -120,14 +119,14 @@ long CodonAlignStringsStep( _Matrix & choices
         { 3, 2, 1 }  // 0111
     };
     // for computing edge case miscall penalties
-    double penalty;
+    double penalty, choices[ HY_ALIGNMENT_TYPES_COUNT ];
     // for finding the best choice
     _Parameter max_score = -A_LARGE_NUMBER;
 
     // store the scores of our choices in choices,
     // pre-initialize to -infinity
     for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
-        choices.theData[ i ] = -A_LARGE_NUMBER;
+        choices[ i ] = -A_LARGE_NUMBER;
     }
 
     // if we're at least a CODON away from the edge...
@@ -135,13 +134,13 @@ long CodonAlignStringsStep( _Matrix & choices
     if ( r >= 1 ) {
         // if we're doing affine gaps (deletions)
         if ( deletion_matrix ) {
-            choices.theData[ HY_111_000 ] = MAX(
+            choices[ HY_111_000 ] = MAX(
                 score_matrix[ prev ] - open_deletion,
                 deletion_matrix[ prev ] - ( r > 1 ? extend_deletion : open_deletion )
             );
-            deletion_matrix[ curr ] = choices.theData[ HY_111_000 ];
+            deletion_matrix[ curr ] = choices[ HY_111_000 ];
         } else {
-            choices.theData[ HY_111_000 ] = score_matrix[ prev ] - open_deletion;
+            choices[ HY_111_000 ] = score_matrix[ prev ] - open_deletion;
         }
 
         r_codon = ( reference.lData[ rpos - 3 ]   * char_count
@@ -157,13 +156,13 @@ long CodonAlignStringsStep( _Matrix & choices
     if ( q >= 3 ) {
         // if we're doing affine gaps (insertions)
         if ( insertion_matrix ) {
-            choices.theData[ HY_000_111 ] = MAX(
+            choices[ HY_000_111 ] = MAX(
                 score_matrix[ curr - 3 ] - open_insertion,
                 insertion_matrix[ curr - 3 ] - ( q > 3 ? extend_insertion : open_insertion )
             );
-            insertion_matrix[ curr ] = choices.theData[ HY_000_111 ];
+            insertion_matrix[ curr ] = choices[ HY_000_111 ];
         } else {
-            choices.theData[ HY_000_111 ] = score_matrix[ curr - 3 ] - open_insertion;
+            choices[ HY_000_111 ] = score_matrix[ curr - 3 ] - open_insertion;
         }
 
         q_codon = ( query.lData[ q - 3 ]   * char_count
@@ -225,8 +224,8 @@ long CodonAlignStringsStep( _Matrix & choices
                     // the miscall penalty is double (as we're matching 3 to 5)
                     else
                         penalty = 2. * miscall_cost;
-                    choices.theData[ choice ] = score_matrix[ prev - 5 ] - penalty
-                                              + codon3x5->theData[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
+                    choices[ choice ] = score_matrix[ prev - 5 ] - penalty
+                                      + codon3x5->theData[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
                 }
             }
         }
@@ -251,8 +250,8 @@ long CodonAlignStringsStep( _Matrix & choices
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices.theData[ choice ] = score_matrix[ prev - 4 ] - penalty
-                                              + codon3x4->theData[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
+                    choices[ choice ] = score_matrix[ prev - 4 ] - penalty
+                                      + codon3x4->theData[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
                 }
             }
         }
@@ -274,8 +273,8 @@ long CodonAlignStringsStep( _Matrix & choices
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices.theData[ choice ] = score_matrix[ prev - 2 ] - penalty
-                                              + codon3x2->theData[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
+                    choices[ choice ] = score_matrix[ prev - 2 ] - penalty
+                                      + codon3x2->theData[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
         }
@@ -302,8 +301,8 @@ long CodonAlignStringsStep( _Matrix & choices
                     // for the two positions we're inserting
                     else
                         penalty = 2. * miscall_cost;
-                    choices.theData[ choice ] = score_matrix[ prev - 1 ] - penalty
-                                              + codon3x1->theData[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
+                    choices[ choice ] = score_matrix[ prev - 1 ] - penalty
+                                      + codon3x1->theData[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
         }
@@ -313,10 +312,10 @@ long CodonAlignStringsStep( _Matrix & choices
     for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; ++i ) {
         /* if ( i > 0 )
          fprintf( stderr, ", " );
-         fprintf( stderr, "( %ld, %.3g )", i, choices.theData[ i ] ); */
-        if ( choices.theData[ i ] > max_score ) {
+         fprintf( stderr, "( %ld, %.3g )", i, choices[ i ] ); */
+        if ( choices[ i ] > max_score ) {
             best_choice = i;
-            max_score = choices.theData[ i ];
+            max_score = choices[ i ];
         }
     }
     /* fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice ); */
@@ -712,11 +711,9 @@ _Parameter AlignStrings( _String * r_str
             }
 
             if ( do_codon ) {
-                _Matrix choices ( HY_ALIGNMENT_TYPES_COUNT, 1, false, true );
                 for ( i = 1; i < score_rows; ++i )
                     for ( j = 1; j < score_cols; ++j )
-                        CodonAlignStringsStep( choices
-                                             , score_matrix
+                        CodonAlignStringsStep( score_matrix
                                              , r_enc
                                              , q_enc
                                              , i
@@ -839,13 +836,11 @@ _Parameter AlignStrings( _String * r_str
              */
 
             if ( do_codon ) {
-                _Matrix choices( HY_ALIGNMENT_TYPES_COUNT, 1, false, true );
                 // if either index hits 0, we're done
                 // or if both indices fall below 3, we're done
                 while ( i && j && ( i >= 3 || j >= 3 ) ) {
                     // perform a step
-                    const long code = CodonAlignStringsStep( choices
-                                                           , score_matrix
+                    const long code = CodonAlignStringsStep( score_matrix
                                                            , r_enc
                                                            , q_enc
                                                            // divide by 3 to index into codon space
