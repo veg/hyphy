@@ -3943,17 +3943,17 @@ inline void BacktrackAlignCodon( _SimpleList& editOps
         break;
 
     // 3x1
-    case HY_111_001:
+    case HY_111_100:
         inStr1[0] = inStr1[1] = inStr1[2] = 1;
-        inStr2[2] = 1;
+        inStr2[0] = 1;
         break;
     case HY_111_010:
         inStr1[0] = inStr1[1] = inStr1[2] = 1;
         inStr2[1] = 1;
         break;
-    case HY_111_100:
+    case HY_111_001:
         inStr1[0] = inStr1[1] = inStr1[2] = 1;
-        inStr2[0] = 1;
+        inStr2[2] = 1;
         break;
 
     // 3x4
