@@ -55,7 +55,7 @@
 //____________________________________________________________________________________
 
 long CodonAlignStringsStep( _Matrix & choices
-                          , _Matrix * score_matrix
+                          , double * score_matrix
                           , _SimpleList & reference
                           , _SimpleList & query
                           , const long r
@@ -68,8 +68,8 @@ long CodonAlignStringsStep( _Matrix & choices
                           , _Parameter extend_insertion
                           , _Parameter extend_deletion
                           , _Matrix * cost_matrix
-                          , _Matrix * insertion_matrix
-                          , _Matrix * deletion_matrix
+                          , double * insertion_matrix
+                          , double * deletion_matrix
                           , _Matrix * codon3x5
                           , _Matrix * codon3x4
                           , _Matrix * codon3x2
@@ -136,12 +136,12 @@ long CodonAlignStringsStep( _Matrix & choices
         // if we're doing affine gaps (deletions)
         if ( deletion_matrix ) {
             choices.theData[ HY_111_000 ] = MAX(
-                score_matrix->theData[ prev ] - open_deletion,
-                deletion_matrix->theData[ prev ] - ( r > 1 ? extend_deletion : open_deletion )
+                score_matrix[ prev ] - open_deletion,
+                deletion_matrix[ prev ] - ( r > 1 ? extend_deletion : open_deletion )
             );
-            deletion_matrix->theData[ curr ] = choices.theData[ HY_111_000 ];
+            deletion_matrix[ curr ] = choices.theData[ HY_111_000 ];
         } else {
-            choices.theData[ HY_111_000 ] = score_matrix->theData[ prev ] - open_deletion;
+            choices.theData[ HY_111_000 ] = score_matrix[ prev ] - open_deletion;
         }
 
         r_codon = ( reference.lData[ rpos - 3 ]   * char_count
@@ -158,12 +158,12 @@ long CodonAlignStringsStep( _Matrix & choices
         // if we're doing affine gaps (insertions)
         if ( insertion_matrix ) {
             choices.theData[ HY_000_111 ] = MAX(
-                score_matrix->theData[ curr - 3 ] - open_insertion,
-                insertion_matrix->theData[ curr - 3 ] - ( q > 3 ? extend_insertion : open_insertion )
+                score_matrix[ curr - 3 ] - open_insertion,
+                insertion_matrix[ curr - 3 ] - ( q > 3 ? extend_insertion : open_insertion )
             );
-            insertion_matrix->theData[ curr ] = choices.theData[ HY_000_111 ];
+            insertion_matrix[ curr ] = choices.theData[ HY_000_111 ];
         } else {
-            choices.theData[ HY_000_111 ] = score_matrix->theData[ curr - 3 ] - open_insertion;
+            choices.theData[ HY_000_111 ] = score_matrix[ curr - 3 ] - open_insertion;
         }
 
         q_codon = ( query.lData[ q - 3 ]   * char_count
@@ -178,7 +178,7 @@ long CodonAlignStringsStep( _Matrix & choices
     // if q_codon and r_codon both exist, set the score equal to match
     if ( q_codon >= 0 ) {
         if ( r_codon >= 0 ) {
-            choices[ HY_111_111 ] = score_matrix->theData[ prev - 3 ]
+            choices[ HY_111_111 ] = score_matrix[ prev - 3 ]
                                   + cost_matrix->theData[ r_codon * cost_stride + q_codon ];
         }
     }
@@ -225,7 +225,7 @@ long CodonAlignStringsStep( _Matrix & choices
                     // the miscall penalty is double (as we're matching 3 to 5)
                     else
                         penalty = 2. * miscall_cost;
-                    choices.theData[ choice ] = score_matrix->theData[ prev - 5 ] - penalty
+                    choices.theData[ choice ] = score_matrix[ prev - 5 ] - penalty
                                               + codon3x5->theData[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
                 }
             }
@@ -251,7 +251,7 @@ long CodonAlignStringsStep( _Matrix & choices
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices.theData[ choice ] = score_matrix->theData[ prev - 4 ] - penalty
+                    choices.theData[ choice ] = score_matrix[ prev - 4 ] - penalty
                                               + codon3x4->theData[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
                 }
             }
@@ -274,7 +274,7 @@ long CodonAlignStringsStep( _Matrix & choices
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices.theData[ choice ] = score_matrix->theData[ prev - 2 ] - penalty
+                    choices.theData[ choice ] = score_matrix[ prev - 2 ] - penalty
                                               + codon3x2->theData[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
@@ -302,7 +302,7 @@ long CodonAlignStringsStep( _Matrix & choices
                     // for the two positions we're inserting
                     else
                         penalty = 2. * miscall_cost;
-                    choices.theData[ choice ] = score_matrix->theData[ prev - 1 ] - penalty
+                    choices.theData[ choice ] = score_matrix[ prev - 1 ] - penalty
                                               + codon3x1->theData[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
@@ -322,7 +322,7 @@ long CodonAlignStringsStep( _Matrix & choices
     /* fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice ); */
 
     // assign the score to the current position
-    score_matrix->theData[ curr ] = max_score;
+    score_matrix[ curr ] = max_score;
 
     return best_choice;
 }
@@ -600,13 +600,17 @@ _Parameter AlignStrings( _String * r_str
         } else {
             _SimpleList edit_ops( MAX( r_len, q_len ) );
 
-            _Matrix * score_matrix = ( _Matrix * ) checkPointer( new _Matrix( score_rows, score_cols, false, true ) ),
-                    * insertion_matrix = nil,
-                    * deletion_matrix  = nil;
+            double * score_matrix = new double[ score_rows * score_cols ],
+                   * insertion_matrix = NULL,
+                   * deletion_matrix  = NULL;
 
             // encode each string using the character map (char_map)
             _SimpleList r_enc( r_len ),
                         q_enc( q_len );
+
+            // zero manually, memset not guaranteed to work
+            for ( i = 0; i < score_rows * score_cols; ++i )
+                score_matrix[ i ] = 0.;
 
             if ( do_codon ) {
                 for ( i = 0; i < r_len; ++i )
@@ -616,8 +620,14 @@ _Parameter AlignStrings( _String * r_str
             }
 
             if ( do_affine ) {
-                insertion_matrix = ( _Matrix * ) checkPointer( new _Matrix( score_rows, score_cols, false, true ) ),
-                deletion_matrix  = ( _Matrix * ) checkPointer( new _Matrix( score_rows, score_cols, false, true ) );
+                insertion_matrix = new double[ score_rows * score_cols ];
+                deletion_matrix  = new double[ score_rows * score_cols ];
+
+                // zero manually, memset not guaranteed to work
+                for ( i = 0; i < score_rows * score_cols; ++i ) {
+                    insertion_matrix[ i ] = 0.;
+                    deletion_matrix[ i ] = 0.;
+                }
             }
 
             // pre-initialize the values in the various matrices
@@ -629,44 +639,44 @@ _Parameter AlignStrings( _String * r_str
                     // first handle insertions
                     cost = -open_insertion;
 
-                    insertion_matrix->theData[ 0 ] = cost;
+                    insertion_matrix[ 0 ] = cost;
 
                     for ( i = 1; i < score_cols; ++i, cost -= extend_insertion ) {
-                        score_matrix->theData[ i ] = cost;
-                        insertion_matrix->theData[ i ]  = cost;
-                        deletion_matrix->theData[ i ]  = cost;
+                        score_matrix[ i ] = cost;
+                        insertion_matrix[ i ] = cost;
+                        deletion_matrix[ i ] = cost;
                     }
 
                     // then deletions
                     cost = -open_deletion;
 
-                    deletion_matrix->theData[ 0 ] = cost;
+                    deletion_matrix[ 0 ] = cost;
 
                     for ( i = score_cols; i < score_rows * score_cols; i += score_cols, cost -= extend_deletion ) {
-                        score_matrix->theData[ i ] = cost;
-                        insertion_matrix->theData[ i ] = cost;
-                        deletion_matrix->theData[ i ] = cost;
+                        score_matrix[ i ] = cost;
+                        insertion_matrix[ i ] = cost;
+                        deletion_matrix[ i ] = cost;
                     }
                 } else {
                     // handle the do_local, regular (non codon-alignment) case
                     if ( ! do_codon ) {
                         cost = -open_insertion;
                         for ( i = 1; i < score_cols; ++i, cost -= open_insertion )
-                            score_matrix->theData[ i ] = cost;
+                            score_matrix[ i ] = cost;
 
                         cost = -open_deletion;
                         for ( i = score_cols; i < score_rows * score_cols; i += score_cols, cost -= open_deletion )
-                            score_matrix->theData[ i ] = cost;
+                            score_matrix[ i ] = cost;
 
                         // handle the do_local, do_codon case
                     } else {
                         cost = -open_insertion;
                         for ( i = 1; i < score_cols; ++i, cost -= open_insertion )
-                            score_matrix->theData[ i ] = cost - ( i % 3 != 1 ? miscall_cost : 0 );
+                            score_matrix[ i ] = cost - ( i % 3 != 1 ? miscall_cost : 0 );
 
                         cost = -open_deletion;
                         for ( i = score_cols, j = 0; i < score_rows * score_cols; i += score_cols, cost -= open_insertion, ++j )
-                            score_matrix->theData[ i ] = cost - ( j % 3 != 0 ? miscall_cost : 0 );
+                            score_matrix[ i ] = cost - ( j % 3 != 0 ? miscall_cost : 0 );
                     }
                 }
                 // if we're doing a local alignment,
@@ -680,23 +690,23 @@ _Parameter AlignStrings( _String * r_str
                         // fill in the first row of the affine deletion matrix
                         // with the deletion cost plus the miscall penalty
                         for ( i = 1; i < score_cols; ++i )
-                            deletion_matrix->theData[ i ] = -open_deletion - ( i % 3 != 1 ? miscall_cost : 0 );
+                            deletion_matrix[ i ] = -open_deletion - ( i % 3 != 1 ? miscall_cost : 0 );
 
                         // fill in the first column of the affine insertion matrix
                         // with the insertion cost plus the miscall penalty
                         for ( i = score_cols, j = 0; i < score_rows * score_cols; i += score_cols, ++j )
-                            insertion_matrix->theData[ i ] = -open_insertion - ( j % 3 != 0 ? miscall_cost : 0 );
+                            insertion_matrix[ i ] = -open_insertion - ( j % 3 != 0 ? miscall_cost : 0 );
 
                     } else {
                         // fill in the first row of the affine deletion matrix
                         // with the deletion cost
                         for ( i = 1; i < score_cols; ++i )
-                            deletion_matrix->theData[ i ] = -open_deletion;
+                            deletion_matrix[ i ] = -open_deletion;
 
                         // fill in the first column of the affine insertion matrix
                         // with the insertion cost
                         for ( i = score_cols; i < score_rows * score_cols; i += score_cols )
-                            insertion_matrix->theData[ i ] = -open_insertion;
+                            insertion_matrix[ i ] = -open_insertion;
                     }
                 }
             }
@@ -736,9 +746,9 @@ _Parameter AlignStrings( _String * r_str
 
                         // ref but not query is deletion
                         // query but not ref is insertion
-                        _Parameter deletion  = score_matrix->theData[ prev ] - open_deletion,
-                                   insertion = score_matrix->theData[ curr - 1 ] - open_insertion,
-                                   match     = score_matrix->theData[ prev - 1 ];
+                        _Parameter deletion  = score_matrix[ prev ] - open_deletion,
+                                   insertion = score_matrix[ curr - 1 ] - open_insertion,
+                                   match     = score_matrix[ prev - 1 ];
 
                         // if there is a match bonus or penalty, add it in
                         if ( r_char >= 0 ) {
@@ -752,15 +762,15 @@ _Parameter AlignStrings( _String * r_str
                         // look up potential moves in the affine gap matrices
                         if ( do_affine ) {
                             deletion  = MAX( deletion,
-                                             deletion_matrix->theData[ prev ] - ( i > 1 ? extend_deletion : open_deletion ) ),
+                                             deletion_matrix[ prev ] - ( i > 1 ? extend_deletion : open_deletion ) ),
                             insertion = MAX( insertion,
-                                             insertion_matrix->theData[ curr - 1 ] - ( j > 1 ? extend_insertion : open_insertion ) ),
+                                             insertion_matrix[ curr - 1 ] - ( j > 1 ? extend_insertion : open_insertion ) ),
                             // store the values back in the gap matrices
-                            deletion_matrix->theData[ curr ] = deletion;
-                            insertion_matrix->theData[ curr ] = insertion;
+                            deletion_matrix[ curr ] = deletion;
+                            insertion_matrix[ curr ] = insertion;
                         }
 
-                        score_matrix->theData[ curr ] = MAX( match, MAX( deletion, insertion ) );
+                        score_matrix[ curr ] = MAX( match, MAX( deletion, insertion ) );
                     }
                 }
             }
@@ -771,7 +781,7 @@ _Parameter AlignStrings( _String * r_str
             j = q_len;
 
             // grab maximum score from the last entry in the table
-            score = score_matrix->theData[ score_rows * score_cols - 1 ];
+            score = score_matrix[ score_rows * score_cols - 1 ];
 
             // if we're doing a local alignment,
             // find the best score in the last row and column of the scoring matrix
@@ -781,8 +791,8 @@ _Parameter AlignStrings( _String * r_str
                 // grab the best score from the last column of the score matrix,
                 // skipping the very last entry ( we already checked it )
                 for ( k = score_cols - 1; k < score_rows * score_cols - 1; k += score_cols )
-                    if ( score_matrix->theData[ k ] > score ) {
-                        score = score_matrix->theData[ k ];
+                    if ( score_matrix[ k ] > score ) {
+                        score = score_matrix[ k ];
                         // if do_codon, k / score_cols indexes into the codon space
                         // of the reference, which is resolved by multiplication
                         // by ref_stride ( which is 3 ), otherwise this
@@ -793,8 +803,8 @@ _Parameter AlignStrings( _String * r_str
                 // grab the best score from the last row of the score matrix,
                 // skipping the very last entry ( we already checked it )
                 for ( k = ( score_rows - 1 ) * score_cols; k < score_rows * score_cols - 1; ++k )
-                    if ( score_matrix->theData[ k ] > score ) {
-                        score = score_matrix->theData[ k ];
+                    if ( score_matrix[ k ] > score ) {
+                        score = score_matrix[ k ];
                         // if we've found a better score here,
                         // don't forget to reset the ref index
                         i = r_len;
@@ -821,7 +831,7 @@ _Parameter AlignStrings( _String * r_str
              for ( long n = 0; n < score_cols; ++n ) {
              if ( n > 0 )
              fprintf( stderr, "," );
-             fprintf( stderr, "% 3.3g", score_matrix->theData[ m * score_cols + n ] );
+             fprintf( stderr, "% 3.3g", score_matrix[ m * score_cols + n ] );
              }
              fprintf( stderr, "\n" );
              }
@@ -875,8 +885,8 @@ _Parameter AlignStrings( _String * r_str
                         if ( code == HY_111_000 ) {
                             // while deletion is preferential to match
                             while ( i >= 3
-                                 && score_matrix->theData[ k ] - open_deletion
-                                 <= deletion_matrix->theData[ k ] - extend_deletion ) {
+                                 && score_matrix[ k ] - open_deletion
+                                 <= deletion_matrix[ k ] - extend_deletion ) {
                                 // take a codon out of the reference
                                 i -= 3;
                                 edit_ops << -1;
@@ -890,8 +900,8 @@ _Parameter AlignStrings( _String * r_str
                         } else if ( code == HY_000_111 ) {
                             // while insertion is preferential to match
                             while ( j >= 3
-                                 && score_matrix->theData[ k ] - open_insertion
-                                 <= insertion_matrix->theData[ k ] - extend_insertion ) {
+                                 && score_matrix[ k ] - open_insertion
+                                 <= insertion_matrix[ k ] - extend_insertion ) {
                                 // take a codon out of the query
                                 j -= 3;
                                 edit_ops << 1;
@@ -913,9 +923,9 @@ _Parameter AlignStrings( _String * r_str
 
                         // check the current affine scores and the match score
                         _Parameter scores[ 3 ] = {
-                            deletion_matrix->theData[ curr ],
-                            insertion_matrix->theData[ curr ],
-                            score_matrix->theData[ prev - 1 ]
+                            deletion_matrix[ curr ],
+                            insertion_matrix[ curr ],
+                            score_matrix[ prev - 1 ]
                         }, max_score = scores[ best_choice ];
 
                         MatchScore( r_str, q_str, i, j, char_map, cost_matrix, cost_stride, scores[2] );
@@ -937,8 +947,8 @@ _Parameter AlignStrings( _String * r_str
                             // and while they are better for the deletion case,
                             // move backwards in the reference
                             while ( i
-                                 && score_matrix->theData[ curr - score_cols ] - open_deletion
-                                 <= deletion_matrix->theData[ curr - score_cols ] - extend_deletion
+                                 && score_matrix[ curr - score_cols ] - open_deletion
+                                 <= deletion_matrix[ curr - score_cols ] - extend_deletion
                                   ) {
                                 --i;
                                 edit_ops << -1;
@@ -955,8 +965,8 @@ _Parameter AlignStrings( _String * r_str
                             // and while they are better than for the insertion case,
                             // move backwards in the query
                             while ( j
-                                 && score_matrix->theData[ curr - 1 ] - open_insertion
-                                 <= insertion_matrix->theData[ curr - 1 ] - extend_insertion
+                                 && score_matrix[ curr - 1 ] - open_insertion
+                                 <= insertion_matrix[ curr - 1 ] - extend_insertion
                                   ) {
                                 --j;
                                 edit_ops << 1;
@@ -978,9 +988,9 @@ _Parameter AlignStrings( _String * r_str
                         const long curr = ( i - 0 ) * score_cols + j,
                                    prev = ( i - 1 ) * score_cols + j;
 
-                        _Parameter deletion  = score_matrix->theData[ prev ] - open_deletion,
-                                   insertion = score_matrix->theData[ curr - 1 ] - open_insertion,
-                                   match     = score_matrix->theData[ prev - 1 ];
+                        _Parameter deletion  = score_matrix[ prev ] - open_deletion,
+                                   insertion = score_matrix[ curr - 1 ] - open_insertion,
+                                   match     = score_matrix[ prev - 1 ];
 
                         MatchScore( r_str, q_str, i, j, char_map, cost_matrix, cost_stride, match );
                         BacktrackAlign( edit_ops, i, j, deletion, insertion, match );
@@ -1047,9 +1057,12 @@ _Parameter AlignStrings( _String * r_str
                 ad->SetValue( deletion_matrix, true );
             }
 #endif
-            DeleteObject( score_matrix );
-            DeleteObject( insertion_matrix );
-            DeleteObject( deletion_matrix );
+            if ( do_affine ) {
+                delete insertion_matrix;
+                delete deletion_matrix;
+            }
+
+            delete score_matrix;
         }
     }
 
@@ -1070,27 +1083,28 @@ _Parameter AlignStrings( _String * r_str
 
 //____________________________________________________________________________________
 
-_Parameter   CostOnly   (_String* s1,               // first string
-                         _String* s2,               // second string
-                         long     from1,            // start here in string1
-                         long     from2,            // start here in string2
-                         long     to1,              // up to here in string1 // not inclusive
-                         long     to2,              // up to here in string2 // not inclusive
-                         bool     rev1,             // reverse string1
-                         bool     rev2,             // reverse string2
-                         _SimpleList& cmap,         // char -> position in scoring matrix mapper
-                         _Matrix* ccost,            // NxN matrix of edit distances on characters
+_Parameter   CostOnly   (_String * s1,               // first string
+                         _String * s2,               // second string
+                         long from1,            // start here in string1
+                         long from2,            // start here in string2
+                         long to1,              // up to here in string1 // not inclusive
+                         long to2,              // up to here in string2 // not inclusive
+                         bool rev1,             // reverse string1
+                         bool rev2,             // reverse string2
+                         _SimpleList & cmap,         // char -> position in scoring matrix mapper
+                         _Matrix * ccost,            // NxN matrix of edit distances on characters
                          _Parameter gopen,          // the cost of opening a gap in sequence 1
                          _Parameter gextend,        // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
                          _Parameter gopen2,         // the cost of opening a gap in sequence 2
                          _Parameter gextend2,       // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                          bool doLocal,              // ignore prefix and suffix gaps
                          bool doAffine,             // use affine gap penalties
-                         _Matrix& scoreMatrix,      // where to write the last row of the scoring matrix
+                         _Matrix & scoreMatrix,      // where to write the last row of the scoring matrix
                          _Matrix * gapScore1,       // where to write the last row of open gap in 1st sequence matrix (ignored unless doAffine == true)
                          _Matrix * gapScore2,       // same but for open gap in 2nd sequence matrix
-                         char      secondGap,
-                         char   * howAchieved)
+                         char secondGap,
+                         char * howAchieved
+                        )
 {
     _Parameter   score    = 0.;
 
