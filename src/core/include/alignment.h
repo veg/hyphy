@@ -4,8 +4,8 @@
 #include "matrix.h"
 #include "simplelist.h"
 
-_Parameter AlignStrings( _String * r_str
-                       , _String * q_str
+_Parameter AlignStrings( char * r_str
+                       , char * q_str
                        , _SimpleList & char_map
                        , double * cost_matrix
                        , const long cost_stride

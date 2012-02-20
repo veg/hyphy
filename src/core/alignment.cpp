@@ -508,8 +508,8 @@ inline void BacktrackAlignCodon( signed char * edit_ops
 
 //____________________________________________________________________________________
 
-inline void MatchScore( _String * r_str
-                      , _String * q_str
+inline void MatchScore( char * r_str
+                      , char * q_str
                       , const long r
                       , const long q
                       , _SimpleList & char_map
@@ -518,9 +518,9 @@ inline void MatchScore( _String * r_str
                       , _Parameter & score
                       )
 {
-    const long r_char = char_map.lData[ r_str->sData[ r - 1] ];
+    const long r_char = char_map.lData[ r_str[ r - 1 ] ];
     if ( r_char >= 0 ) {
-        const long q_char = char_map.lData[ q_str->sData[ q - 1 ] ];
+        const long q_char = char_map.lData[ q_str[ q - 1 ] ];
         if ( q_char >= 0 )
             score += cost_matrix[ r_char * cost_stride + q_char ];
     }
@@ -528,8 +528,8 @@ inline void MatchScore( _String * r_str
 
 //____________________________________________________________________________________
 
-_Parameter AlignStrings( _String * r_str
-                       , _String * q_str
+_Parameter AlignStrings( char * r_str
+                       , char * q_str
                        , _SimpleList & char_map
                        , double * cost_matrix
                        , const long cost_stride
@@ -550,18 +550,18 @@ _Parameter AlignStrings( _String * r_str
                        , double * codon3x1
                        )
 {
-    _String * r_res = ( _String * ) checkPointer( new _String( r_str->sLength + 1, true ) ),
-            * q_res = ( _String * ) checkPointer( new _String( q_str->sLength + 1, true ) );
-
-    _Parameter score = 0.;
-
-    const unsigned long r_len = r_str->sLength,
-                        q_len = q_str->sLength,
+    const unsigned long r_len = strlen( r_str ),
+                        q_len = strlen( q_str ),
                         ref_stride = ( do_codon ? 3 : 1 ),
                         score_rows = r_len / ref_stride + 1,
                         score_cols = q_len + 1;
 
     long i, j, k;
+
+    _String * r_res = ( _String * ) checkPointer( new _String( r_len + 1, true ) ),
+            * q_res = ( _String * ) checkPointer( new _String( q_len + 1, true ) );
+
+    _Parameter score = 0.;
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
         WarnError( "string 1 length must be a multiple of 3 for codon alignment" );
@@ -616,9 +616,9 @@ _Parameter AlignStrings( _String * r_str
 
             if ( do_codon ) {
                 for ( i = 0; i < r_len; ++i )
-                    r_enc[ i ] = char_map.lData[ r_str->sData[ i ] ];
+                    r_enc[ i ] = char_map.lData[ r_str[ i ] ];
                 for ( i = 0; i < q_len; ++i )
-                    q_enc[ i ] = char_map.lData[ q_str->sData[ i ] ];
+                    q_enc[ i ] = char_map.lData[ q_str[ i ] ];
             }
 
             if ( do_affine ) {
@@ -740,7 +740,7 @@ _Parameter AlignStrings( _String * r_str
                 // not doing codon alignment
             } else {
                 for ( i = 1; i < score_rows; ++i ) {
-                    const long r_char = char_map.lData[ r_str->sData[ i - 1 ] ];
+                    const long r_char = char_map.lData[ r_str[ i - 1 ] ];
                     for ( j = 1; j < score_cols; ++j ) {
                         const long curr = ( i - 0 ) * score_cols + j,
                         prev = ( i - 1 ) * score_cols + j;
@@ -753,7 +753,7 @@ _Parameter AlignStrings( _String * r_str
 
                         // if there is a match bonus or penalty, add it in
                         if ( r_char >= 0 ) {
-                            const long q_char = char_map.lData[ q_str->sData[ j - 1 ] ];
+                            const long q_char = char_map.lData[ q_str[ j - 1 ] ];
                             if ( q_char >= 0 ) {
                                 match += cost_matrix[ r_char * cost_stride + q_char ];
                             }
@@ -1018,24 +1018,24 @@ _Parameter AlignStrings( _String * r_str
                 switch ( edit_ops[ edit_ptr ] ) {
                         // match! include characters from both strings
                     case 0:
-                        ( * r_res ) << r_str->sData[ i++ ];
-                        ( * q_res ) << q_str->sData[ j++ ];
+                        ( * r_res ) << r_str[ i++ ];
+                        ( * q_res ) << q_str[ j++ ];
                         break;
                         // insertion!
                     case 1:
                         ( * r_res ) << gap;
-                        ( * q_res ) << q_str->sData[ j++ ];
+                        ( * q_res ) << q_str[ j++ ];
                         break;
                     case 2:
                         ( * r_res ) << gap;
-                        ( * q_res ) << tolower( q_str->sData[ j++ ] );
+                        ( * q_res ) << tolower( q_str[ j++ ] );
                         break;
                     case -1:
-                        ( * r_res ) << r_str->sData[ i++ ];
+                        ( * r_res ) << r_str[ i++ ];
                         ( * q_res ) << gap;
                         break;
                     case -2:
-                        ( * r_res ) << tolower( r_str->sData[ i++ ] );
+                        ( * r_res ) << tolower( r_str[ i++ ] );
                         ( * q_res ) << gap;
                         break;
                 }
