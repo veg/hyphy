@@ -70,10 +70,10 @@ long CodonAlignStringsStep( double * score_matrix
                           , const long cost_stride
                           , double * insertion_matrix
                           , double * deletion_matrix
-                          , _Matrix * codon3x5
-                          , _Matrix * codon3x4
-                          , _Matrix * codon3x2
-                          , _Matrix * codon3x1
+                          , double * codon3x5
+                          , double * codon3x4
+                          , double * codon3x2
+                          , double * codon3x1
                           )
 {
     /**
@@ -225,7 +225,7 @@ long CodonAlignStringsStep( double * score_matrix
                     else
                         penalty = 2. * miscall_cost;
                     choices[ choice ] = score_matrix[ prev - 5 ] - penalty
-                                      + codon3x5->theData[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
+                                      + codon3x5[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
                 }
             }
         }
@@ -251,7 +251,7 @@ long CodonAlignStringsStep( double * score_matrix
                     else
                         penalty = miscall_cost;
                     choices[ choice ] = score_matrix[ prev - 4 ] - penalty
-                                      + codon3x4->theData[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
+                                      + codon3x4[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
                 }
             }
         }
@@ -274,7 +274,7 @@ long CodonAlignStringsStep( double * score_matrix
                     else
                         penalty = miscall_cost;
                     choices[ choice ] = score_matrix[ prev - 2 ] - penalty
-                                      + codon3x2->theData[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
+                                      + codon3x2[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
         }
@@ -302,7 +302,7 @@ long CodonAlignStringsStep( double * score_matrix
                     else
                         penalty = 2. * miscall_cost;
                     choices[ choice ] = score_matrix[ prev - 1 ] - penalty
-                                      + codon3x1->theData[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
+                                      + codon3x1[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
                 }
             }
         }
@@ -544,10 +544,10 @@ _Parameter AlignStrings( _String * r_str
                        , const bool do_codon
                        , _List & store
                        , const long char_count
-                       , _Matrix * codon3x5
-                       , _Matrix * codon3x4
-                       , _Matrix * codon3x2
-                       , _Matrix * codon3x1
+                       , double * codon3x5
+                       , double * codon3x4
+                       , double * codon3x2
+                       , double * codon3x1
                        )
 {
     _String * r_res = ( _String * ) checkPointer( new _String( r_str->sLength + 1, true ) ),

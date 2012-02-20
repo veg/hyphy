@@ -20,10 +20,10 @@ _Parameter AlignStrings( _String * r_str
                        , const bool do_codon
                        , _List & store
                        , const long char_count
-                       , _Matrix * codon3x5
-                       , _Matrix * codon3x4
-                       , _Matrix * codon3x2
-                       , _Matrix * codon3x1
+                       , double * codon3x5
+                       , double * codon3x4
+                       , double * codon3x2
+                       , double * codon3x1
                        );
 
 _Parameter LinearSpaceAlign( _String * s1           // first string
