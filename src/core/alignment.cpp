@@ -55,8 +55,8 @@
 //____________________________________________________________________________________
 
 long CodonAlignStringsStep( double * score_matrix
-                          , _SimpleList & reference
-                          , _SimpleList & query
+                          , long * reference
+                          , long * query
                           , const long r
                           , const long q
                           , const long score_cols
@@ -143,9 +143,9 @@ long CodonAlignStringsStep( double * score_matrix
             choices[ HY_111_000 ] = score_matrix[ prev ] - open_deletion;
         }
 
-        r_codon = ( reference.lData[ rpos - 3 ]   * char_count
-                  + reference.lData[ rpos - 2 ] ) * char_count
-                  + reference.lData[ rpos - 1 ] ;
+        r_codon = ( reference[ rpos - 3 ]   * char_count
+                  + reference[ rpos - 2 ] ) * char_count
+                  + reference[ rpos - 1 ] ;
 
         if ( r_codon < 0 ) {
             r_codon = cost_stride - 1;
@@ -165,9 +165,9 @@ long CodonAlignStringsStep( double * score_matrix
             choices[ HY_000_111 ] = score_matrix[ curr - 3 ] - open_insertion;
         }
 
-        q_codon = ( query.lData[ q - 3 ]   * char_count
-                  + query.lData[ q - 2 ] ) * char_count
-                  + query.lData[ q - 1 ] ;
+        q_codon = ( query[ q - 3 ]   * char_count
+                  + query[ q - 2 ] ) * char_count
+                  + query[ q - 1 ] ;
 
         if ( q_codon < 0 ) {
             q_codon = cost_stride - 1;
@@ -194,9 +194,9 @@ long CodonAlignStringsStep( double * score_matrix
             // use a 10x1 array to allow for load hoisting,
             // we don't want to be bouncing cachelines in this critical inner loop
             for ( i = 0; i < HY_3X5_COUNT; ++i ) {
-                partial_codons[ i ] = ( query.lData[ q - codon_spec_3x5[ i ][ 0 ] ]   * char_count
-                                      + query.lData[ q - codon_spec_3x5[ i ][ 1 ] ] ) * char_count
-                                      + query.lData[ q - codon_spec_3x5[ i ][ 2 ] ] ;
+                partial_codons[ i ] = ( query[ q - codon_spec_3x5[ i ][ 0 ] ]   * char_count
+                                      + query[ q - codon_spec_3x5[ i ][ 1 ] ] ) * char_count
+                                      + query[ q - codon_spec_3x5[ i ][ 2 ] ] ;
             }
             // go over each choice, fill it in
             for ( i = 0; i < HY_3X5_COUNT; ++i ) {
@@ -234,9 +234,9 @@ long CodonAlignStringsStep( double * score_matrix
         if ( q >= 4 ) {
             // fill in partial codons table
             for ( i = 0; i < HY_3X4_COUNT; ++i ) {
-                partial_codons[ i ] = ( query.lData[ q - codon_spec_3x4[ i ][ 0 ] ]   * char_count
-                                      + query.lData[ q - codon_spec_3x4[ i ][ 1 ] ] ) * char_count
-                                      + query.lData[ q - codon_spec_3x4[ i ][ 2 ] ] ;
+                partial_codons[ i ] = ( query[ q - codon_spec_3x4[ i ][ 0 ] ]   * char_count
+                                      + query[ q - codon_spec_3x4[ i ][ 1 ] ] ) * char_count
+                                      + query[ q - codon_spec_3x4[ i ][ 2 ] ] ;
             }
             // fill in choices
             for ( i = 0; i < HY_3X4_COUNT; ++i ) {
@@ -259,8 +259,8 @@ long CodonAlignStringsStep( double * score_matrix
         // 3x2
         if ( q >= 2 ) {
             // only a single partial codon
-            partial_codons[ 0 ] = query.lData[ q - 2 ] * char_count
-                                + query.lData[ q - 1 ] ;
+            partial_codons[ 0 ] = query[ q - 2 ] * char_count
+                                + query[ q - 1 ] ;
             // fill in choices
             if ( partial_codons[ 0 ] >= 0 ) {
                 for ( i = 0; i < HY_3X2_COUNT; ++i ) {
@@ -282,7 +282,7 @@ long CodonAlignStringsStep( double * score_matrix
         // 3x1
         if ( q >= 1 ) {
             // only a single partial codon
-            partial_codons[ 0 ] = query.lData[ q - 1 ];
+            partial_codons[ 0 ] = query[ q - 1 ];
             // fill in choices
             if ( partial_codons[ 0 ] >= 0 ) {
                 for ( i = 0; i < HY_3X1_COUNT; ++i ) {
@@ -607,8 +607,8 @@ _Parameter AlignStrings( _String * r_str
                    * deletion_matrix  = NULL;
 
             // encode each string using the character map (char_map)
-            _SimpleList r_enc( r_len ),
-                        q_enc( q_len );
+            long * r_enc = new long[ r_len ],
+                 * q_enc = new long[ q_len ];
 
             // zero manually, memset not guaranteed to work
             for ( i = 0; i < score_rows * score_cols; ++i )
@@ -616,9 +616,9 @@ _Parameter AlignStrings( _String * r_str
 
             if ( do_codon ) {
                 for ( i = 0; i < r_len; ++i )
-                    r_enc << char_map.lData[ r_str->sData[ i ] ];
+                    r_enc[ i ] = char_map.lData[ r_str->sData[ i ] ];
                 for ( i = 0; i < q_len; ++i )
-                    q_enc << char_map.lData[ q_str->sData[ i ] ];
+                    q_enc[ i ] = char_map.lData[ q_str->sData[ i ] ];
             }
 
             if ( do_affine ) {
@@ -1064,6 +1064,9 @@ _Parameter AlignStrings( _String * r_str
                 delete insertion_matrix;
                 delete deletion_matrix;
             }
+
+            delete r_enc;
+            delete q_enc;
         }
     }
 
