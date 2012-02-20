@@ -2493,17 +2493,17 @@ bool    _ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&targ
 #define HY_000_111 2
 
 // match 3 in the ref to 1 in the query
-#define HY_111_001 3
+#define HY_111_100 3
 #define HY_111_010 4
-#define HY_111_100 5
+#define HY_111_001 5
 
 #define HY_3X1_START 3
 #define HY_3X1_COUNT 3
 
 // match 3 in the ref to 2 in the query
-#define HY_111_011 6
+#define HY_111_110 6
 #define HY_111_101 7
-#define HY_111_110 8
+#define HY_111_011 8
 
 #define HY_3X2_START 6
 #define HY_3X2_COUNT 3
@@ -2798,11 +2798,15 @@ long CodonAlignStringsStep( _Matrix & choices
 
     // find the best possible choice
     for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; ++i ) {
+        /* if ( i > 0 )
+            fprintf( stderr, ", " );
+        fprintf( stderr, "( %ld, %.3g )", i, choices.theData[ i ] ); */
         if ( choices.theData[ i ] > max_score ) {
             best_choice = i;
             max_score = choices.theData[ i ];
         }
     }
+    /* fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice ); */
 
     // assign the score to the current position
     score_matrix->theData[ curr ] = max_score;
@@ -3101,11 +3105,11 @@ _Parameter AlignStrings( _String * r_str // s1
 
             /*
             // prints the score matrix
-            for ( long i = 0; i <= upto1; ++i ) {
-                for ( long j = 0; j <= upto2; ++j ) {
-                    if ( j > 0 )
+            for ( long m = 0; m < score_rows; ++m ) {
+                for ( long n = 0; n < score_cols; ++n ) {
+                    if ( n > 0 )
                         fprintf( stderr, "," );
-                    fprintf( stderr, "% 3.3g", scoreMatrix.theData[ i * colCount + j ] );
+                    fprintf( stderr, "% 3.3g", score_matrix->theData[ m * score_cols + n ] );
                 }
                 fprintf( stderr, "\n" );
             }
@@ -3930,13 +3934,13 @@ inline void BacktrackAlignCodon( _SimpleList& editOps
         break;
 
     // 3x2
-    case HY_111_101:
-        inStr1[0] = inStr1[1] = inStr1[2] = 1;
-        inStr2[0] = inStr2[2] = 1;
-        break;
     case HY_111_110:
         inStr1[0] = inStr1[1] = inStr1[2] = 1;
         inStr2[0] = inStr2[1] = 1;
+        break;
+    case HY_111_101:
+        inStr1[0] = inStr1[1] = inStr1[2] = 1;
+        inStr2[0] = inStr2[2] = 1;
         break;
     case HY_111_011:
         inStr1[0] = inStr1[1] = inStr1[2] = 1;
