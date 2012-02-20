@@ -2626,11 +2626,10 @@ long CodonAlignStringsStep( _Matrix & choices
             choices.theData[ HY_111_000 ] = score_matrix->theData[ prev ] - open_deletion;
         }
 
-        // Rcodon is indexing into something 3D with dim strides of alph_stride
         r_codon = ( reference.lData[ rpos - 3 ]   * alph_stride
                   + reference.lData[ rpos - 2 ] ) * alph_stride
                   + reference.lData[ rpos - 1 ] ;
-        // if it doesn't exist? make it something huge?
+
         if ( r_codon < 0 ) {
             r_codon = cost_stride - 1;
         }
@@ -2649,11 +2648,10 @@ long CodonAlignStringsStep( _Matrix & choices
             choices.theData[ HY_000_111 ] = score_matrix->theData[ curr - 3 ] - open_insertion;
         }
 
-        // again indexing into some 3D thing with strides of alph_stride
         q_codon = ( query.lData[ q - 3 ]   * alph_stride
                   + query.lData[ q - 2 ] ) * alph_stride
                   + query.lData[ q - 1 ] ;
-        // huge?
+
         if ( q_codon < 0 ) {
             q_codon = cost_stride - 1;
         }
@@ -2669,11 +2667,7 @@ long CodonAlignStringsStep( _Matrix & choices
 
     // we disallow partial moves in the reference, so those use to be here but are now gone
 
-    /**
-     * HERE BE DRAGONS!!!!
-     * This section is extremely tedious.
-     * Choices are enumerated explicitly, which is irritating.
-     */
+    // HERE BE DRAGONS!!!!
 
     // miscall matches, starting with 3x5, then 3x4, then 3x2, finally 3x1
     if ( r_codon >= 0 ) {
@@ -2697,7 +2691,8 @@ long CodonAlignStringsStep( _Matrix & choices
                         penalty = 0.;
                     // if we have a single ragged edge, penalize by a single miscall
                     // we don't have to worry about specifying each case here,
-                    // as the 11100_11111 case takes preference above
+                    // as the 00111_11111 case takes preference above,
+                    // so we don't have to explicitly avoid it
                     else if ( q == 5 && choice >= HY_01110_11111 )
                         penalty = miscall_cost;
                     // if we have a single ragged edge, penalize by a single miscall
