@@ -512,15 +512,15 @@ inline void MatchScore( char * r_str
                       , char * q_str
                       , const long r
                       , const long q
-                      , _SimpleList & char_map
+                      , long * char_map
                       , double * cost_matrix
                       , const long cost_stride
                       , _Parameter & score
                       )
 {
-    const long r_char = char_map.lData[ r_str[ r - 1 ] ];
+    const long r_char = char_map[ r_str[ r - 1 ] ];
     if ( r_char >= 0 ) {
-        const long q_char = char_map.lData[ q_str[ q - 1 ] ];
+        const long q_char = char_map[ q_str[ q - 1 ] ];
         if ( q_char >= 0 )
             score += cost_matrix[ r_char * cost_stride + q_char ];
     }
@@ -530,7 +530,7 @@ inline void MatchScore( char * r_str
 
 _Parameter AlignStrings( char * r_str
                        , char * q_str
-                       , _SimpleList & char_map
+                       , long * char_map
                        , double * cost_matrix
                        , const long cost_stride
                        , const char gap
@@ -616,9 +616,9 @@ _Parameter AlignStrings( char * r_str
 
             if ( do_codon ) {
                 for ( i = 0; i < r_len; ++i )
-                    r_enc[ i ] = char_map.lData[ r_str[ i ] ];
+                    r_enc[ i ] = char_map[ r_str[ i ] ];
                 for ( i = 0; i < q_len; ++i )
-                    q_enc[ i ] = char_map.lData[ q_str[ i ] ];
+                    q_enc[ i ] = char_map[ q_str[ i ] ];
             }
 
             if ( do_affine ) {
@@ -740,7 +740,7 @@ _Parameter AlignStrings( char * r_str
                 // not doing codon alignment
             } else {
                 for ( i = 1; i < score_rows; ++i ) {
-                    const long r_char = char_map.lData[ r_str[ i - 1 ] ];
+                    const long r_char = char_map[ r_str[ i - 1 ] ];
                     for ( j = 1; j < score_cols; ++j ) {
                         const long curr = ( i - 0 ) * score_cols + j,
                         prev = ( i - 1 ) * score_cols + j;
@@ -753,7 +753,7 @@ _Parameter AlignStrings( char * r_str
 
                         // if there is a match bonus or penalty, add it in
                         if ( r_char >= 0 ) {
-                            const long q_char = char_map.lData[ q_str[ j - 1 ] ];
+                            const long q_char = char_map[ q_str[ j - 1 ] ];
                             if ( q_char >= 0 ) {
                                 match += cost_matrix[ r_char * cost_stride + q_char ];
                             }

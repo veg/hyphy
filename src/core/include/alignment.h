@@ -6,7 +6,7 @@
 
 _Parameter AlignStrings( char * r_str
                        , char * q_str
-                       , _SimpleList & char_map
+                       , long * char_map
                        , double * cost_matrix
                        , const long cost_stride
                        , const char gap
