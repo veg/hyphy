@@ -10,11 +10,11 @@ _Parameter AlignStrings( char * r_str
                        , double * cost_matrix
                        , const long cost_stride
                        , const char gap
-                       , _Parameter open_insertion
-                       , _Parameter extend_insertion
-                       , _Parameter open_deletion
-                       , _Parameter extend_deletion
-                       , _Parameter miscall_cost
+                       , double open_insertion
+                       , double extend_insertion
+                       , double open_deletion
+                       , double extend_deletion
+                       , double miscall_cost
                        , const bool do_local
                        , const bool do_affine
                        , const bool do_codon
