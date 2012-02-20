@@ -1490,7 +1490,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                                     if (doLinear == false) {
                                         _List         store;
-                                        score = AlignStrings (str1,string2,ccount,scoreMatrix,gapCharacter,
+                                        score = AlignStrings (str1,string2,ccount,scoreMatrix->theData,scoreMatrix->GetVDim(),gapCharacter,
                                                               gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,store, charCount, codon3x5, codon3x4, codon3x2, codon3x1);
                                         store.bumpNInst();
 

@@ -66,7 +66,8 @@ long CodonAlignStringsStep( double * score_matrix
                           , _Parameter open_deletion
                           , _Parameter extend_insertion
                           , _Parameter extend_deletion
-                          , _Matrix * cost_matrix
+                          , double * cost_matrix
+                          , const long cost_stride
                           , double * insertion_matrix
                           , double * deletion_matrix
                           , _Matrix * codon3x5
@@ -87,7 +88,6 @@ long CodonAlignStringsStep( double * score_matrix
      */
     const long curr = ( r - 0 ) * score_cols + q, // where we currently are
                prev = ( r - 1 ) * score_cols + q, // up a codon in the reference
-               cost_stride = cost_matrix->GetVDim(),
                offset3x5 = HY_3X5_COUNT * char_count * char_count * char_count, // both 3x5 and 3x4 are
                offset3x4 = HY_3X4_COUNT * char_count * char_count * char_count, // full codons
                offset3x2 = HY_3X2_COUNT * char_count * char_count,
@@ -178,7 +178,7 @@ long CodonAlignStringsStep( double * score_matrix
     if ( q_codon >= 0 ) {
         if ( r_codon >= 0 ) {
             choices[ HY_111_111 ] = score_matrix[ prev - 3 ]
-                                  + cost_matrix->theData[ r_codon * cost_stride + q_codon ];
+                                  + cost_matrix[ r_codon * cost_stride + q_codon ];
         }
     }
 
@@ -513,7 +513,7 @@ inline void MatchScore( _String * r_str
                       , const long r
                       , const long q
                       , _SimpleList & char_map
-                      , _Matrix * cost_matrix
+                      , double * cost_matrix
                       , const long cost_stride
                       , _Parameter & score
                       )
@@ -522,7 +522,7 @@ inline void MatchScore( _String * r_str
     if ( r_char >= 0 ) {
         const long q_char = char_map.lData[ q_str->sData[ q - 1 ] ];
         if ( q_char >= 0 )
-            score += cost_matrix->theData[ r_char * cost_stride + q_char ];
+            score += cost_matrix[ r_char * cost_stride + q_char ];
     }
 }
 
@@ -531,7 +531,8 @@ inline void MatchScore( _String * r_str
 _Parameter AlignStrings( _String * r_str
                        , _String * q_str
                        , _SimpleList & char_map
-                       , _Matrix * cost_matrix
+                       , double * cost_matrix
+                       , const long cost_stride
                        , const char gap
                        , _Parameter open_insertion
                        , _Parameter extend_insertion
@@ -558,8 +559,7 @@ _Parameter AlignStrings( _String * r_str
                         q_len = q_str->sLength,
                         ref_stride = ( do_codon ? 3 : 1 ),
                         score_rows = r_len / ref_stride + 1,
-                        score_cols = q_len + 1,
-                        cost_stride = cost_matrix->GetVDim();
+                        score_cols = q_len + 1;
 
     long i, j, k;
 
@@ -729,6 +729,7 @@ _Parameter AlignStrings( _String * r_str
                                              , extend_insertion
                                              , extend_deletion
                                              , cost_matrix
+                                             , cost_stride
                                              , insertion_matrix
                                              , deletion_matrix
                                              , codon3x5
@@ -754,7 +755,7 @@ _Parameter AlignStrings( _String * r_str
                         if ( r_char >= 0 ) {
                             const long q_char = char_map.lData[ q_str->sData[ j - 1 ] ];
                             if ( q_char >= 0 ) {
-                                match += cost_matrix->theData[ r_char * cost_stride + q_char ];
+                                match += cost_matrix[ r_char * cost_stride + q_char ];
                             }
                         }
 
@@ -857,6 +858,7 @@ _Parameter AlignStrings( _String * r_str
                                                            , extend_insertion
                                                            , extend_deletion
                                                            , cost_matrix
+                                                           , cost_stride
                                                            , insertion_matrix
                                                            , deletion_matrix
                                                            , codon3x5

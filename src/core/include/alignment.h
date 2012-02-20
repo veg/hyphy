@@ -7,7 +7,8 @@
 _Parameter AlignStrings( _String * r_str
                        , _String * q_str
                        , _SimpleList & char_map
-                       , _Matrix * cost_matrix
+                       , double * cost_matrix
+                       , const long cost_stride
                        , const char gap
                        , _Parameter open_insertion
                        , _Parameter extend_insertion
