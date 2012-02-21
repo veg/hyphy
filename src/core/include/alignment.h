@@ -6,6 +6,8 @@
 
 _Parameter AlignStrings( char * r_str
                        , char * q_str
+                       , char * & r_res
+                       , char * & q_res
                        , long * char_map
                        , double * cost_matrix
                        , const long cost_stride
@@ -18,7 +20,6 @@ _Parameter AlignStrings( char * r_str
                        , const bool do_local
                        , const bool do_affine
                        , const bool do_codon
-                       , _List & store
                        , const long char_count
                        , double * codon3x5
                        , double * codon3x4

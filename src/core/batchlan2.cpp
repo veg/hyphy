@@ -1489,10 +1489,25 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                     _Parameter    score = 0.0;
 
                                     if (doLinear == false) {
+                                        char * str1r = NULL,
+                                             * str2r = NULL;
                                         _List         store;
-                                        score = AlignStrings (str1->sData,string2->sData,ccount.lData,scoreMatrix->theData,scoreMatrix->GetVDim(),gapCharacter,
-                                                              gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,
-                                                              store, charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData);
+                                        score = AlignStrings (str1->sData,string2->sData,str1r,str2r,ccount.lData,scoreMatrix->theData,scoreMatrix->GetVDim(),
+                                                              gapCharacter,gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,
+                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData);
+
+                                        if ( str1r && str2r ) {
+                                            _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),
+                                                    * q_res = ( _String * ) checkPointer( new _String( str2r ) );
+                                            delete str1r;
+                                            delete str2r;
+                                            r_res->Finalize();
+                                            q_res->Finalize();
+                                            store.AppendNewInstance( r_res );
+                                            store.AppendNewInstance( q_res );
+                                        } else
+                                            WarnError( "Internal Error in AlignStrings" );
+
                                         store.bumpNInst();
 
                                         if (store.lLength == 0) {

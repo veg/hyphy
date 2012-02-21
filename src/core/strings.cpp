@@ -220,7 +220,8 @@ _String::_String (_String* s)
 //Data constructor
 _String::_String (const char* s)
 {
-    for(sLength=0; s[sLength]; sLength++) ;
+    // room for the null terminator
+    sLength = strlen( s );
     checkPointer (sData = (char*)MemAllocate (sLength+1));
     memcpy (sData, s, sLength+1);
 }

@@ -1,5 +1,6 @@
 
 #include <cctype>
+#include <cstring>
 
 #include "alignment.h"
 
@@ -530,6 +531,8 @@ inline void MatchScore( char * r_str
 
 _Parameter AlignStrings( char * r_str
                        , char * q_str
+                       , char * & r_res
+                       , char * & q_res
                        , long * char_map
                        , double * cost_matrix
                        , const long cost_stride
@@ -542,7 +545,6 @@ _Parameter AlignStrings( char * r_str
                        , const bool do_local
                        , const bool do_affine
                        , const bool do_codon
-                       , _List & store
                        , const long char_count
                        , double * codon3x5
                        , double * codon3x4
@@ -558,13 +560,9 @@ _Parameter AlignStrings( char * r_str
 
     long i, j, k;
 
-    _String * r_res = ( _String * ) checkPointer( new _String( r_len + 1, true ) ),
-            * q_res = ( _String * ) checkPointer( new _String( q_len + 1, true ) );
-
     _Parameter score = 0.;
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
-        WarnError( "string 1 length must be a multiple of 3 for codon alignment" );
         return -A_LARGE_NUMBER;
     }
 
@@ -572,11 +570,16 @@ _Parameter AlignStrings( char * r_str
     // return early if possible
     if ( score_rows <= 1 ) {
         if ( score_cols > 1 ) {
+            r_res = new char[ q_len + 1 ];
+            q_res = new char[ q_len + 1 ];
             // no ref, just query, which remains untouched
-            ( * q_res ) << ( * q_str );
+            memcpy( q_res, q_str, q_len + 1 );
             // ref full of gaps
-            for ( i = 0; i < q_len; ++i )
-                ( * r_res ) << gap;
+            memset( r_res, gap, sizeof( char ) * q_len );
+            // null terminate
+            r_res[ q_len ] = '\0';
+            q_res[ q_len ] = '\0';
+            // compute score
             if ( ! do_local ) {
                 if ( do_affine )
                     score = -open_insertion - ( q_len - 1 ) * extend_insertion;
@@ -586,11 +589,15 @@ _Parameter AlignStrings( char * r_str
         }
     } else {
         if ( score_rows <= 1 ) {
+            r_res = new char[ r_len + 1 ];
+            q_res = new char[ r_len + 1 ];
             // no query, just ref, which remains untouched
-            ( * r_res ) << ( * r_str );
+            memcpy( r_res, r_str, r_len + 1 );
             // ref full of gaps
-            for ( i = 0; i < r_len; ++i )
-                ( * q_res ) << gap;
+            memset( q_res, gap, sizeof( char ) * r_len );
+            // null terminate
+            r_res[ r_len ] = '\0';
+            q_res[ r_len ] = '\0';
             // if do local, score is 0
             if ( ! do_local ) {
                 if ( do_affine )
@@ -873,7 +880,6 @@ _Parameter AlignStrings( char * r_str
 
                     // if anything drops below 0, something bad happened
                     if ( i < 0 || j < 0 ) {
-                        WarnError( "Internal Error in AlignStrings" );
                         return -A_LARGE_NUMBER;
                     }
 
@@ -1014,32 +1020,38 @@ _Parameter AlignStrings( char * r_str
             }
 
             // rebuild the strings from the edit_ops
-            for ( --edit_ptr; edit_ptr >= 0; --edit_ptr ) {
+            // with room for the null terminator
+            r_res = new char[ edit_ptr ];
+            q_res = new char[ edit_ptr ];
+            for ( --edit_ptr, k = 0; edit_ptr >= 0; --edit_ptr, ++k ) {
                 switch ( edit_ops[ edit_ptr ] ) {
                         // match! include characters from both strings
                     case 0:
-                        ( * r_res ) << r_str[ i++ ];
-                        ( * q_res ) << q_str[ j++ ];
+                        r_res[ k ] = r_str[ i++ ];
+                        q_res[ k ] = q_str[ j++ ];
                         break;
                         // insertion!
                     case 1:
-                        ( * r_res ) << gap;
-                        ( * q_res ) << q_str[ j++ ];
+                        r_res[ k ] = gap;
+                        q_res[ k ] = q_str[ j++ ];
                         break;
                     case 2:
-                        ( * r_res ) << gap;
-                        ( * q_res ) << tolower( q_str[ j++ ] );
+                        r_res[ k ] = gap;
+                        q_res[ k ] = tolower( q_str[ j++ ] );
                         break;
                     case -1:
-                        ( * r_res ) << r_str[ i++ ];
-                        ( * q_res ) << gap;
+                        r_res[ k ] = r_str[ i++ ];
+                        q_res[ k ] = gap;
                         break;
                     case -2:
-                        ( * r_res ) << tolower( r_str[ i++ ] );
-                        ( * q_res ) << gap;
+                        r_res[ k ] = tolower( r_str[ i++ ] );
+                        q_res[ k ] = gap;
                         break;
                 }
             }
+            // make sure to null-terminate
+            r_res[ k ] = '\0';
+            q_res[ k ] = '\0';
 
 #ifdef ALIGN_DEBUG
             _String alignDebug( "alignScoreMatrix" );
@@ -1069,12 +1081,6 @@ _Parameter AlignStrings( char * r_str
             delete q_enc;
         }
     }
-
-    r_res->Finalize();
-    q_res->Finalize();
-
-    store.AppendNewInstance( r_res );
-    store.AppendNewInstance( q_res );
 
     return score;
 }
