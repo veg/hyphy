@@ -62,11 +62,11 @@ long CodonAlignStringsStep( double * score_matrix
                           , const long q
                           , const long score_cols
                           , const long char_count
-                          , _Parameter miscall_cost
-                          , _Parameter open_insertion
-                          , _Parameter open_deletion
-                          , _Parameter extend_insertion
-                          , _Parameter extend_deletion
+                          , double miscall_cost
+                          , double open_insertion
+                          , double open_deletion
+                          , double extend_insertion
+                          , double extend_deletion
                           , double * cost_matrix
                           , const long cost_stride
                           , double * insertion_matrix
@@ -119,10 +119,10 @@ long CodonAlignStringsStep( double * score_matrix
         { 4, 2, 1 }, // 1011
         { 3, 2, 1 }  // 0111
     };
-    // for computing edge case miscall penalties
-    double penalty, choices[ HY_ALIGNMENT_TYPES_COUNT ];
-    // for finding the best choice
-    _Parameter max_score = -A_LARGE_NUMBER;
+
+    double choices[ HY_ALIGNMENT_TYPES_COUNT ],
+           max_score = -A_LARGE_NUMBER,
+           penalty;
 
     // store the scores of our choices in choices,
     // pre-initialize to -infinity
@@ -333,9 +333,9 @@ inline void BacktrackAlign( signed char * edit_ops
                           , long & edit_ptr
                           , long & r
                           , long & q
-                          , _Parameter deletion
-                          , _Parameter insertion
-                          , _Parameter match
+                          , double deletion
+                          , double insertion
+                          , double match
                           )
 {
     if ( match >= deletion && match >= insertion ) {
@@ -516,7 +516,7 @@ inline void MatchScore( char * r_str
                       , long * char_map
                       , double * cost_matrix
                       , const long cost_stride
-                      , _Parameter & score
+                      , double & score
                       )
 {
     const long r_char = char_map[ r_str[ r - 1 ] ];
@@ -529,28 +529,28 @@ inline void MatchScore( char * r_str
 
 //____________________________________________________________________________________
 
-_Parameter AlignStrings( char * r_str
-                       , char * q_str
-                       , char * & r_res
-                       , char * & q_res
-                       , long * char_map
-                       , double * cost_matrix
-                       , const long cost_stride
-                       , const char gap
-                       , double open_insertion
-                       , double extend_insertion
-                       , double open_deletion
-                       , double extend_deletion
-                       , double miscall_cost
-                       , const bool do_local
-                       , const bool do_affine
-                       , const bool do_codon
-                       , const long char_count
-                       , double * codon3x5
-                       , double * codon3x4
-                       , double * codon3x2
-                       , double * codon3x1
-                       )
+double AlignStrings( char * r_str
+                   , char * q_str
+                   , char * & r_res
+                   , char * & q_res
+                   , long * char_map
+                   , double * cost_matrix
+                   , const long cost_stride
+                   , const char gap
+                   , double open_insertion
+                   , double extend_insertion
+                   , double open_deletion
+                   , double extend_deletion
+                   , double miscall_cost
+                   , const bool do_local
+                   , const bool do_affine
+                   , const bool do_codon
+                   , const long char_count
+                   , double * codon3x5
+                   , double * codon3x4
+                   , double * codon3x2
+                   , double * codon3x1
+                   )
 {
     const unsigned long r_len = strlen( r_str ),
                         q_len = strlen( q_str ),
@@ -560,7 +560,7 @@ _Parameter AlignStrings( char * r_str
 
     long i, j, k;
 
-    _Parameter score = 0.;
+    double score = 0.;
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
         return -A_LARGE_NUMBER;
@@ -641,7 +641,7 @@ _Parameter AlignStrings( char * r_str
 
             // pre-initialize the values in the various matrices
             if ( ! do_local ) {
-                _Parameter cost;
+                double cost;
                 // initialize gap costs in first column and first row
                 // they are 0 for local alignments, so ignore
                 if ( do_affine ) {
@@ -754,9 +754,9 @@ _Parameter AlignStrings( char * r_str
 
                         // ref but not query is deletion
                         // query but not ref is insertion
-                        _Parameter deletion  = score_matrix[ prev ] - open_deletion,
-                                   insertion = score_matrix[ curr - 1 ] - open_insertion,
-                                   match     = score_matrix[ prev - 1 ];
+                        double deletion  = score_matrix[ prev ] - open_deletion,
+                               insertion = score_matrix[ curr - 1 ] - open_insertion,
+                               match     = score_matrix[ prev - 1 ];
 
                         // if there is a match bonus or penalty, add it in
                         if ( r_char >= 0 ) {
@@ -928,7 +928,7 @@ _Parameter AlignStrings( char * r_str
                              best_choice = 0;
 
                         // check the current affine scores and the match score
-                        _Parameter scores[ 3 ] = {
+                        double scores[ 3 ] = {
                             deletion_matrix[ curr ],
                             insertion_matrix[ curr ],
                             score_matrix[ prev - 1 ]
@@ -994,9 +994,9 @@ _Parameter AlignStrings( char * r_str
                         const long curr = ( i - 0 ) * score_cols + j,
                                    prev = ( i - 1 ) * score_cols + j;
 
-                        _Parameter deletion  = score_matrix[ prev ] - open_deletion,
-                                   insertion = score_matrix[ curr - 1 ] - open_insertion,
-                                   match     = score_matrix[ prev - 1 ];
+                        double deletion  = score_matrix[ prev ] - open_deletion,
+                               insertion = score_matrix[ curr - 1 ] - open_insertion,
+                               match     = score_matrix[ prev - 1 ];
 
                         MatchScore( r_str, q_str, i, j, char_map, cost_matrix, cost_stride, match );
                         BacktrackAlign( edit_ops, edit_ptr, i, j, deletion, insertion, match );

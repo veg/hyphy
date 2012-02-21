@@ -4,28 +4,28 @@
 #include "matrix.h"
 #include "simplelist.h"
 
-_Parameter AlignStrings( char * r_str
-                       , char * q_str
-                       , char * & r_res
-                       , char * & q_res
-                       , long * char_map
-                       , double * cost_matrix
-                       , const long cost_stride
-                       , const char gap
-                       , double open_insertion
-                       , double extend_insertion
-                       , double open_deletion
-                       , double extend_deletion
-                       , double miscall_cost
-                       , const bool do_local
-                       , const bool do_affine
-                       , const bool do_codon
-                       , const long char_count
-                       , double * codon3x5
-                       , double * codon3x4
-                       , double * codon3x2
-                       , double * codon3x1
-                       );
+double AlignStrings( char * r_str
+                   , char * q_str
+                   , char * & r_res
+                   , char * & q_res
+                   , long * char_map
+                   , double * cost_matrix
+                   , const long cost_stride
+                   , const char gap
+                   , double open_insertion
+                   , double extend_insertion
+                   , double open_deletion
+                   , double extend_deletion
+                   , double miscall_cost
+                   , const bool do_local
+                   , const bool do_affine
+                   , const bool do_codon
+                   , const long char_count
+                   , double * codon3x5
+                   , double * codon3x4
+                   , double * codon3x2
+                   , double * codon3x1
+                   );
 
 _Parameter LinearSpaceAlign( _String * s1           // first string
                            , _String * s2           // second string
