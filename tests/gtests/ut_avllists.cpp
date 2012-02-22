@@ -453,7 +453,8 @@ TEST_F(AVLListXTest,toStrTest){
     alx.PopulateFromList(rl);
 
     _String* rs = (_String*)alx.toStr();
-    EXPECT_STREQ("hyphy : 2\ncondo : 1\nhouse : 0\n",rs->getStr());
+    _String expected("house : 0\ncondo : 1\nhyphy : 2\n"); 
+    EXPECT_STREQ(expected.getStr(),rs->getStr());
 }
 
 

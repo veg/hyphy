@@ -1249,12 +1249,12 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 }
             }
         }
+
         if (numeric.isAllowed [s.getChar(i)]) {
             if (twoToken) {
                 _String thisOp (s.getChar(i-1));
                 levelOps->AppendNewInstance (new _Operation (thisOp,1L));
             }
-            
             long j = 1;
 
             while ( i+j<s.sLength && (numeric.isAllowed [s.getChar(i+j)] || ((s.getChar(i+j)=='-' || s.getChar(i+j)=='+' )&& tolower(s.getChar(i+j-1))=='e')) ) {
