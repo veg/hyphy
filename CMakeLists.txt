@@ -153,7 +153,8 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
+#add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -308,6 +309,13 @@ set_target_properties(
     COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
     LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
 )
+
+install(
+	TARGETS HYPHYDEBUG
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+
 
 
 #-------------------------------------------------------------------------------
