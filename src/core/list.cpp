@@ -45,35 +45,23 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #endif
 
 
-//______________________________________________________________
-//does nothing
+/*
+==============================================================
+Constructors
+==============================================================
+*/
 
+// Does nothing
 _List::_List ()
 {
 }
 
-//______________________________________________________________
-
-void    _List::Duplicate (const BaseRef theRef)
-{
-    _SimpleList::Duplicate (theRef);
-    if (lData)
-        for (unsigned long i = 0; i<lLength; i++) {
-            if (((BaseRef*)lData)[i]) {
-                (((BaseRef*)lData)[i])->nInstances++;
-            }
-        }
-}
-
-//______________________________________________________________
-//length constructor
-
+// Length constructor
 _List::_List (unsigned long l):_SimpleList(l)
 {
 }
 
-//______________________________________________________________
-// stack copy contructor
+// Stack Copy contructor
 _List::_List (const _List& l, long from, long to)
 {
     if (from == 0 && to == -1) { // copy the whole thing
@@ -89,8 +77,7 @@ _List::_List (const _List& l, long from, long to)
     }
 }
 
-//__________________________________________________________________________
-// construct a list of substrings from the original string separated by char
+// Construct a list of substrings from the original string separated by char
 _List::_List (BaseRef ss, char sep)
 {
     _String* s = (_String*)ss;
@@ -109,8 +96,7 @@ _List::_List (BaseRef ss, char sep)
     }
 }
 
-//______________________________________________________________
-// data constructor (1 member list)
+// Data constructor (1 member list)
 _List::_List (BaseRef br)
 {
     lLength = 1;
@@ -118,9 +104,9 @@ _List::_List (BaseRef br)
     lData = (long*)MemAllocate (laLength * sizeof(Ptr));
     ((BaseRef*)lData)[0]= br->makeDynamic();
 }
-//______________________________________________________________
+
+//Destructor
 _List::~_List(void)
-//destructor
 {
     if (nInstances<=1) {
         for (unsigned long i = 0; i<lLength; i++) {
@@ -138,9 +124,13 @@ _List::~_List(void)
 
 }
 
-//______________________________________________________________
-// element location functions (0,llength - 1)
+/*
+==============================================================
+Operator Overloads
+==============================================================
+*/
 
+// Element location functions (0,llength - 1)
 BaseRef& _List::operator [] (long i)
 {
     BaseRef t = BaseRef(_SimpleList::operator[] (i));
@@ -153,16 +143,13 @@ BaseRef& _List::operator [] (long i)
     return ((BaseRef*)(lData))[i];
 }
 
-//______________________________________________________________
-// element location functions (0,llength - 1)
-
+// Element location functions (0,llength - 1)
 BaseRef _List::operator () (unsigned long i)
 {
     return ((BaseRef*)lData)[i];
 }
 
-//______________________________________________________________
-// assignment operator
+// Assignment operator
 _List _List::operator = (_List& l)
 {
     this->~_List();
@@ -176,25 +163,13 @@ _List _List::operator = (_List& l)
     return *this;
 }
 
-//______________________________________________________________
-
-bool _List::Equal(_List& l2)
+// Assignment compare 
+bool _List::operator == (_List& l2)
 {
-    if (lLength!=l2.lLength) {
-        return false;
-    }
-
-
-    for (long i=0; i<lLength; i++)
-        if (!((_String*)lData[i])->Equal ((_String*)l2.lData[i])) {
-            return false;
-        }
-
-    return true;
+    return this->Equal(l2);
 }
 
-//______________________________________________________________
-// append operator
+// Append operator
 _List _List::operator & (_List& l)
 {
     _List res (l.lLength + lLength);
@@ -220,8 +195,7 @@ _List _List::operator & (_List& l)
     return res;
 }
 
-//______________________________________________________________
-// append operator
+// Append operator
 _List _List::operator & (BaseRef br)
 {
     _List res (lLength+1);
@@ -240,13 +214,11 @@ _List _List::operator & (BaseRef br)
     return res;
 }
 
-//______________________________________________________________
 void _List::operator && (BaseRef br)
 {
     InsertElement (br);
 }
 
-//______________________________________________________________
 void _List::operator && (const char * buffer)
 {
     _String*        newString = new _String (buffer);
@@ -255,8 +227,6 @@ void _List::operator && (const char * buffer)
     DeleteObject    (newString);
 }
 
-
-//______________________________________________________________
 void _List::operator << (BaseRef br)
 {
 //  InsertElement (br, -1, false);
@@ -277,7 +247,20 @@ void _List::operator << (BaseRef br)
     br->nInstances++;
 }
 
-//______________________________________________________________
+void _List::operator << (_List& source)
+{
+    for (long k=0; k<source.lLength; k++) {
+        (*this) << ((BaseRef*)source.lData)[k];
+    }
+}
+
+
+/*
+==============================================================
+Methods
+==============================================================
+*/
+
 void _List::AppendNewInstance (BaseRef br)
 {
     if (br) {
@@ -287,173 +270,6 @@ void _List::AppendNewInstance (BaseRef br)
         checkPointer (br);
     }
 }
-
-//______________________________________________________________
-void _List::operator << (_List& source)
-{
-    for (long k=0; k<source.lLength; k++) {
-        (*this) << ((BaseRef*)source.lData)[k];
-    }
-}
-
-unsigned long _List::Count()
-{
-    return lLength;
-}
-
-//______________________________________________________________
-void _List::Place (BaseRef br)
-{
-//  InsertElement (br, -1, false);
-    lLength++;
-    if (lLength>laLength) {
-        laLength+=MEMORYSTEP;
-        if (lData) {
-            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
-        } else {
-            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
-        }
-    }
-    ((BaseRef*)lData)[lLength-1]=br;
-}
-
-//______________________________________________________________
-// append & store operator
-void _List::InsertElement (BaseRef br, long insertAt, bool store)
-{
-    _SimpleList::InsertElement (br, insertAt, store);
-}
-
-
-//______________________________________________________________
-// char* conversion
-
-BaseRef _List::toStr(void)
-{
-    _String * s = new _String((unsigned long)20*(lLength+1),true);
-
-    checkPointer (s);
-
-    (*s)<<'{';
-
-    for (unsigned long i = 0; (i<lLength); i++) {
-        _String* t = (_String*)(((BaseRef*)lData)[i]->toStr());
-        if (t) {
-            (*s)<<t;
-            DeleteObject (t);
-        }
-        if (i<lLength-1) {
-            (*s)<<',';
-        }
-    }
-    (*s)<<'}';
-    s->Finalize();
-    return s;
-}
-
-//______________________________________________________________
-// char* conversion
-
-void _List::toFileStr(FILE* dest)
-{
-    fprintf (dest,"{");
-
-    for (unsigned long i = 0; (i<lLength); i++) {
-        ((BaseRef*)lData)[i]->toFileStr(dest);
-        if (i<lLength-1) {
-            fprintf (dest,",");
-        }
-    }
-    fprintf (dest,"}");
-}
-
-//______________________________________________________________
-
-BaseRef _List::makeDynamic(void)
-{
-    _List * Res = new _List;
-    checkPointer(Res);
-    //lData = nil;
-    memcpy ((char*)Res, (char*)this, sizeof (_List));
-    Res->nInstances = 1;
-    Res->lData = nil;
-    Res->Duplicate (this);
-    return Res;
-}
-
-//______________________________________________________________
-
-void    _List::bumpNInst (void)
-{
-    for (unsigned long i = 0; i<lLength; i++) {
-        ((BaseRef*)lData)[i]->nInstances++;
-    }
-}
-
-//______________________________________________________________
-
-long  _List::Find (BaseRef s, long startat)
-{
-    _String * st = (_String*)s;
-    for (unsigned long i = startat; i<lLength; i++) {
-        _String * sp = (_String*)(((BaseRef*)lData)[i]->toStr());
-
-        if (st->Equal(sp)) {
-            DeleteObject(sp);
-            return i;
-        }
-        DeleteObject(sp);
-    }
-    return -1;
-}
-
-//______________________________________________________________
-
-long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
-{
-    char * s1, *s2;
-    long t = ((_String*)s)->sLength;
-
-    if (upTo < 0 || upTo >= lLength) {
-        upTo = lLength-1;
-    }
-
-    for (long i = startat; i<= upTo; i++) {
-        s1 = ((_String*)s)->sData;
-        if (((_String*)(((BaseRef*)lData)[i]))->sLength==t) {
-            s2 = ((_String*)(((BaseRef*)lData)[i]))->sData;
-            long j = 0;
-            if (caseSensitive)
-                for (j=0; (*s1==*s2)&&(j<t); j++,s1++,s2++) ;
-            else
-                for (j=0; (toupper(*s1)==toupper(*s2))&&(j<t); j++,s1++,s2++) ;
-
-            if (j==t) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-//______________________________________________________________
-
-BaseRef  _List::Join (BaseRef spacer)
-{
-    _String *joined = new _String (256L,true);
-
-    for (long k = 0; k < lLength; k++) {
-        if (k) {
-            (*joined) << *(_String*)spacer;
-        }
-        joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
-    }
-
-    joined->Finalize();
-    return joined;
-}
-
-//______________________________________________________________
 
 long  _List::BinaryFind (BaseRef s)
 {
@@ -489,8 +305,6 @@ long  _List::BinaryFind (BaseRef s)
     return -middle-2;
 }
 
-//______________________________________________________________
-
 long  _List::BinaryInsert (BaseRef s)
 {
 
@@ -514,43 +328,12 @@ long  _List::BinaryInsert (BaseRef s)
 
 }
 
-//______________________________________________________________
-
-long  _List::Compare (long i, long j)
+void    _List::bumpNInst (void)
 {
-    _String             *si = (_String*)lData[i],
-                         *sj = (_String*)lData[j];
-
-    return  si->Compare(sj);
-}
-
-//______________________________________________________________
-
-long  _List::Compare (BaseRef i, long j)
-{
-    _String             *sj = (_String*)lData[j],
-                         *si = (_String*)i;
-
-    return  si->Compare(sj);
-}
-
-//______________________________________________________________
-
-long  _List::FreeUpMemory (long requestedBytes)
-{
-    long freed = 0;
     for (unsigned long i = 0; i<lLength; i++) {
-        BaseRef t = ((BaseRef*)lData)[i];
-        freed+=t->FreeUpMemory(requestedBytes-freed);
-        if (freed>=requestedBytes) {
-            return freed;
-        }
+        ((BaseRef*)lData)[i]->nInstances++;
     }
-    return freed;
 }
-
-
-//______________________________________________________________
 
 void  _List::Clear (bool completeClear)
 {
@@ -565,10 +348,29 @@ void  _List::Clear (bool completeClear)
     }
 }
 
-//______________________________________________________________
+long  _List::Compare (long i, long j)
+{
+    _String             *si = (_String*)lData[i],
+                         *sj = (_String*)lData[j];
 
+    return  si->Compare(sj);
+}
+
+long  _List::Compare (BaseRef i, long j)
+{
+    _String             *sj = (_String*)lData[j],
+                         *si = (_String*)i;
+
+    return  si->Compare(sj);
+}
+
+unsigned long _List::Count()
+{
+    return lLength;
+}
+
+// Delete item at index (>=0)
 void  _List::Delete (long index)
-//delete item at index (>=0)
 {
     if ((index>=0)&&(index<lLength)) {
         BaseRef theObj = ((BaseRef*)lData)[index];
@@ -587,10 +389,8 @@ void  _List::Delete (long index)
 
 }
 
-//______________________________________________________________
-
+// Delete item at index (>=0)
 void  _List::DeleteList (const _SimpleList& toDelete)
-//delete item at index (>=0)
 {
     if (toDelete.lLength) {
         long k = 0;
@@ -611,25 +411,96 @@ void  _List::DeleteList (const _SimpleList& toDelete)
     }
 }
 
-
-//______________________________________________________________
-
-void  _List::Replace (long index, BaseRef newObj, bool dup)
+void    _List::Duplicate (const BaseRef theRef)
 {
-    if ((index>=0)&&(index<lLength)) {
-        BaseRef theObj = ((BaseRef*)lData)[index];
-        DeleteObject (theObj);
-        ((BaseRef*)lData)[index] = dup?newObj->makeDynamic():newObj;
-    }
+    _SimpleList::Duplicate (theRef);
+    if (lData)
+        for (unsigned long i = 0; i<lLength; i++) {
+            if (((BaseRef*)lData)[i]) {
+                (((BaseRef*)lData)[i])->nInstances++;
+            }
+        }
 }
 
+bool _List::Equal(_List& l2)
+{
+    if (lLength!=l2.lLength) {
+        return false;
+    }
 
-//______________________________________________________________
+    for (long i=0; i<lLength; i++)
+        if (!((_String*)lData[i])->Equal ((_String*)l2.lData[i])) {
+            return false;
+        }
+
+    return true;
+}
+
+long  _List::Find (BaseRef s, long startat)
+{
+    _String * st = (_String*)s;
+    for (unsigned long i = startat; i<lLength; i++) {
+        _String * sp = (_String*)(((BaseRef*)lData)[i]->toStr());
+
+        if (st->Equal(sp)) {
+            DeleteObject(sp);
+            return i;
+        }
+        DeleteObject(sp);
+    }
+    return -1;
+}
+
+long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
+{
+    char * s1, *s2;
+    long t = ((_String*)s)->sLength;
+
+    if (upTo < 0 || upTo >= lLength) {
+        upTo = lLength-1;
+    }
+
+    for (long i = startat; i<= upTo; i++) {
+        s1 = ((_String*)s)->sData;
+        if (((_String*)(((BaseRef*)lData)[i]))->sLength==t) {
+            s2 = ((_String*)(((BaseRef*)lData)[i]))->sData;
+            long j = 0;
+            if (caseSensitive)
+                for (j=0; (*s1==*s2)&&(j<t); j++,s1++,s2++) ;
+            else
+                for (j=0; (toupper(*s1)==toupper(*s2))&&(j<t); j++,s1++,s2++) ;
+
+            if (j==t) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+long  _List::FreeUpMemory (long requestedBytes)
+{
+    long freed = 0;
+    for (unsigned long i = 0; i<lLength; i++) {
+        BaseRef t = ((BaseRef*)lData)[i];
+        freed+=t->FreeUpMemory(requestedBytes-freed);
+        if (freed>=requestedBytes) {
+            return freed;
+        }
+    }
+    return freed;
+}
+
+// Append & store operator
+void _List::InsertElement (BaseRef br, long insertAt, bool store)
+{
+    _SimpleList::InsertElement (br, insertAt, store);
+}
 
 void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2)
-// compute the union of two sorted lists
-// each repeat appears exactly once
 {
+    // compute the union of two sorted lists
+    // each repeat appears exactly once
     if (lLength) {
         Clear();
     }
@@ -664,3 +535,96 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
         }
     }
 }
+
+BaseRef  _List::Join (BaseRef spacer)
+{
+    _String *joined = new _String (256L,true);
+
+    for (long k = 0; k < lLength; k++) {
+        if (k) {
+            (*joined) << *(_String*)spacer;
+        }
+        joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
+    }
+
+    joined->Finalize();
+    return joined;
+}
+
+void _List::Place (BaseRef br)
+{
+//  InsertElement (br, -1, false);
+    lLength++;
+    if (lLength>laLength) {
+        laLength+=MEMORYSTEP;
+        if (lData) {
+            checkPointer (lData = (long*)MemReallocate((char*)lData, laLength*sizeof(void*)));
+        } else {
+            checkPointer (lData = (long*)MemAllocate(laLength*sizeof(void*)));
+        }
+    }
+    ((BaseRef*)lData)[lLength-1]=br;
+}
+
+//TODO: makeDynamic should be MakeDynamic to follow convention.
+BaseRef _List::makeDynamic(void)
+{
+    _List * Res = new _List;
+    checkPointer(Res);
+    //lData = nil;
+    memcpy ((char*)Res, (char*)this, sizeof (_List));
+    Res->nInstances = 1;
+    Res->lData = nil;
+    Res->Duplicate (this);
+    return Res;
+}
+
+void  _List::Replace (long index, BaseRef newObj, bool dup)
+{
+    if ((index>=0)&&(index<lLength)) {
+        BaseRef theObj = ((BaseRef*)lData)[index];
+        DeleteObject (theObj);
+        ((BaseRef*)lData)[index] = dup?newObj->makeDynamic():newObj;
+    }
+}
+
+// Char* conversion
+//TODO: toFileStr should be ToFileStr to follow convention.
+void _List::toFileStr(FILE* dest)
+{
+    fprintf (dest,"{");
+
+    for (unsigned long i = 0; (i<lLength); i++) {
+        ((BaseRef*)lData)[i]->toFileStr(dest);
+        if (i<lLength-1) {
+            fprintf (dest,",");
+        }
+    }
+    fprintf (dest,"}");
+}
+
+// Char* conversion
+//TODO: toFileStr should be ToStr to follow convention.
+BaseRef _List::toStr(void)
+{
+    _String * s = new _String((unsigned long)20*(lLength+1),true);
+
+    checkPointer (s);
+
+    (*s)<<'{';
+
+    for (unsigned long i = 0; (i<lLength); i++) {
+        _String* t = (_String*)(((BaseRef*)lData)[i]->toStr());
+        if (t) {
+            (*s)<<t;
+            DeleteObject (t);
+        }
+        if (i<lLength-1) {
+            (*s)<<',';
+        }
+    }
+    (*s)<<'}';
+    s->Finalize();
+    return s;
+}
+
