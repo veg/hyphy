@@ -9146,8 +9146,6 @@ void        _AssociativeList::Merge (_PMathObj p)
     //SW20111207: I don't think we should ever have to worry about avl traversing 
     //here as long as the other methods are implemented properly
 
-    unsigned long num_items;
-    unsigned long i;
 
     if(p==this){
         return;
@@ -9155,16 +9153,21 @@ void        _AssociativeList::Merge (_PMathObj p)
 
     if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
 
-        _AssociativeList *rhs = (_AssociativeList*) p;
-        _List* p_keys = rhs->GetKeys();
+       _AssociativeList *rhs = (_AssociativeList*) p;
+       
+        _SimpleList  hist;
+        long         ls,
+                     cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
 
-       num_items = p_keys->Count();
 
-       for (i=0; i<num_items;i++) {
-           MStore(*(_String*)p_keys[0][i],rhs->GetByKey(*(_String*)p_keys[0][i]),false);
-       }
-
-       delete p_keys;
+  
+       /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
+            here; using the traversal of the second list is the easiest way to go. */
+        
+        while (cn >= 0) {
+            MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
+            cn = avl.Traverser (hist,ls);
+        }
     }
     else {
         WarnError ("Associative list merge operation requires an associative list argument.");

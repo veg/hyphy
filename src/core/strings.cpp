@@ -1737,10 +1737,9 @@ void    _String::ProcessParameter(void)
 
 //_______________________________________________________________________
 
-void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
+void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP, bool assume_platform_specific)
 {
     if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
-    
         if (Equal (&tempFString)) {
             #if not defined __MINGW32__ && not defined __WINDOZE__
                 #ifdef __MAC__
@@ -1768,7 +1767,13 @@ void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
                 *this = WriteFileDialogInput ();
             }
         }
-        ProcessFileName(false,false,theP);
+        ProcessFileName(false,false,theP,
+        #if defined __MAC__ || defined __WINDOZE__
+            true
+        #else
+            false
+        #endif
+        );
         CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
         return;
     }
@@ -1888,7 +1893,7 @@ void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 #endif
 
 #ifdef __MAC__
-    if (Find('/')!=-1) { // UNIX PATH
+    if (!assume_platform_specific && Find('/')!=-1) { // UNIX PATH
         bool rootPath = false;
         if (sData[0]=='/') {
             rootPath = true;
@@ -1906,7 +1911,7 @@ void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
             *this = _String(':')&*this;
         }
     } else {
-        if (Find('\\')!=-1) { // DOS PATH (ASSUME PARTIAL)
+        if (!assume_platform_specific && Find('\\')!=-1) { // DOS PATH (ASSUME PARTIAL)
             if (beginswith("..")) {
                 *this = _String('\\')&Cut(2,-1);
             }
