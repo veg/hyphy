@@ -139,10 +139,11 @@ long _SimpleList::operator () (unsigned long i)
     //if (lLength == 0) return 0;
     //Is there a reason why this is commented out?
     //if (i>=lLength) i = lLength-1;
-    if(i>=lLength) {
-        warnError("List index out of range");
+    if(i < lLength) {
+        return lData[i];
     }
-    return lData[i];
+    warnError("List index out of range");
+    return -1;
 }
 
 //Assignment operator
