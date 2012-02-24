@@ -672,7 +672,7 @@ public:
     /**
     * TODO: With batchlan
     */
-    void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil);
+    void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false);
 
     /**
     * TODO: With batchlan

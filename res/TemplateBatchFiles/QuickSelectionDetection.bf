@@ -1115,6 +1115,10 @@ else
                                 Model       MGFEL   =         (MGMatrix2,codonFrequencies,0);
                                 Tree        felTree =  treeString;
                                 
+                                Model 		MGLocalMix		=		  ("Exp(MGMatrix1)*lmp+Exp(MGMatrix2)*(1-lmp)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
+                                Tree        perBranchTree 			= treeString;
+
+
                                 global      sFactor   =  1;
                                 global      nsFactor1 =  1;
                                 nsFactor1               :< 1;
@@ -1137,6 +1141,8 @@ else
                                 
  								ReplicateConstraint ("this1.?.alpha:=sFactor*this2.?.synRate__",felTree,codonTree);
  								ReplicateConstraint ("this1.?.beta2:=nsFactor2*this2.?.synRate__",felTree,codonTree);
+						   
+						        bySiteBranchReports = {};
                             }
 						}
 					
@@ -1174,8 +1180,6 @@ else
                                         }
                                         
  										Optimize (site_res, siteLikelihood);
-                                       // LIKELIHOOD_FUNCTION_OUTPUT = 7;
-                                       // fprintf ("/Users/sergei/Desktop/alt.fit", CLEAR_FILE, siteLikelihood);
                                         
                                         if (cOptions == 10)
                                         {
@@ -1184,9 +1188,10 @@ else
                                             doneSites[siteMap][2] = mixingP;
                                             doneSites[siteMap][6] = 1-mixingP;                                        
                                             doneSites[siteMap][7] = sFactor;
-                                            
+                                                                                        
                                             if (nsFactor2 > sFactor && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
+                                                bySiteBranchReports [siteMap] = obtainBranchWiseEBEstimates (sFactor, nsFactor1, nsFactor2, mixingP);
                                                 omega2     = 1;
                                                 nsFactor2 := omega2 * sFactor;
                                                 if (sFactor == 0)
@@ -1293,6 +1298,22 @@ else
                                 {
                                     fprintf (stdout, toDoList);
                                 }   
+                                GetString (funcInfo, obtainBranchWiseEBEstimatesMPI, -1);
+                                funcText = "function " + funcInfo["ID"] + "(" + Join (",", funcInfo["Arguments"]) + ") { " + funcInfo ["Body"] + "}";
+
+                                //debugVerboseFlag = 1;
+        
+                                 _memeExtra = funcText + 
+                                "MPI_NEXUS_FILE_RETURN = {};
+                                 MPI_NEXUS_FILE_RETURN [\"MLES\"]     = siteLikelihood_MLES;
+                                 _vtr = {{\"nsFactor1\", \"nsFactor2\", \"sFactor1\", \"mixingP\"}};
+                                 MPI_NEXUS_FILE_RETURN [\"VALUES\"]   = {};
+                                 for (_k = 0; _k < Columns (_vtr); _k += 1) {
+                                    (MPI_NEXUS_FILE_RETURN [\"VALUES\"])[_vtr[_k]] = Eval (_vtr[_k]);
+                                 }
+                                 MPI_NEXUS_FILE_RETURN [\"BRANCHES\"] = obtainBranchWiseEBEstimatesMPI (sFactor, nsFactor1, nsFactor2, mixingP);
+                                ";
+                                
                                 while (MPISendJobMEME ()) 
                                 {
                                 
@@ -1407,6 +1428,7 @@ else
                                     ReportSite2 (siteCount, siteMap);				 
                                 }
                             }
+                            
 						}
 					}
 					
@@ -1454,6 +1476,23 @@ else
 					
 					siteCount = Columns (fullSites);
 					fprintf (PROMPT_FOR_FILE,CLEAR_FILE,labels[0]);
+					csvFILE = LAST_FILE_PATH;
+					if (cOptions == 10) {
+					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
+					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
+                        for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
+                        {
+                            siteMap = dupInfo[siteCount];
+                            if (Abs (byBranchEstimates [siteMap])) {
+                                bNames = Rows (byBranchEstimates [siteMap]);
+                                for (branchCount = 0; branchCount < Columns(bNames); branchCount += 1) {
+                                    fprintf (byBranchResultsFile, "\n", siteCount+1, ",", ",".Join ((byBranchEstimates [siteMap])[bNames[branchCount]]));
+                                }
+                            }
+                        }
+                        fprintf (byBranchResultsFile, CLOSE_FILE);
+                       			
+                    }
 					
 					outString = "";
 					outString * 8192;
@@ -1472,7 +1511,7 @@ else
 						}
 					}
 					outString * 0;
-					fprintf (LAST_FILE_PATH, outString);
+					fprintf (csvFILE, outString);
 					outString = 0;
 				}
 			}

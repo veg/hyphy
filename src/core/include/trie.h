@@ -41,7 +41,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HY_TRIE_
 
 #include "simplelist.h"
+#include "hy_strings.h"
 #include "list.h"
+
+#define  HY_TRIE_NOTFOUND       -1L 
+#define  HY_TRIE_INVALID_LETTER -2L
 
 /*_____________________________________________________________________________
     This is a simple class for representing prefix tries with integer values 
@@ -49,7 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 //_____________________________________________________________________________
-class _Trie: public BaseObj
+class _Trie: public _List
 {
     protected:
         // data members
@@ -59,16 +63,17 @@ class _Trie: public BaseObj
              e.g. if the alphabet is "CGTA", then charMap ['A']  = 3, and charMap['z'] = -1 
              */
             emptySlots,
-            /** allocated entries in the 'nodes' list that can be reused (e.g. those created by delete operations)
+            /** allocated entries in the 'this' list that can be reused (e.g. those created by delete operations)
              */
             payload;
             /** the values associated with each key in 'nodes' 
              */
             
     
-        _List       nodes;
+        /* base class will store the lunear representation of this trie */
+        
             /** a linear representation of this trie    
-             each node is a _SimpleList that contains pairs of entries 
+             each node is a _SimpleList that contains N pairs of entries 
                 (character index, integer index of the child node in 'nodes')
                 for each extension of the prefix encoded by the node
              
@@ -88,7 +93,7 @@ class _Trie: public BaseObj
         virtual BaseRef toStr(void);
         /**
          * Return a string representation of this object
-         * @return A _String reference to the list of strings (one per line) currently stored in the trie 
+         * @return An dictionary representation of the trie, i.e. {"key1":"value1", "key2":"value2", ...} pairs
          */
         
         virtual BaseRef makeDynamic(void);
@@ -105,23 +110,26 @@ class _Trie: public BaseObj
          */
        
     
-        virtual void    Clear(void);
+        virtual void    Clear(bool all = TRUE);
         /**
          * Clear this trie; everything except the alphabet will be deleted
+         * @param all -- whether or not to clear out the lists completely
          * @return Nothing
          */
    
-        virtual ~_Trie ();
+        virtual ~_Trie (void);
         /**
          * The destructor 
          * @return Nothing. 
          */
         
-        long     Find (const _String& key);
+        long     Find (const _String& key, _SimpleList* path = nil, bool prefixOK = false);
         /**
          * Determine if 'key' is in the trie
-         * @param  key -- the string to search for
-         * @return the index of the key in 'nodes' if found, -1 otherwise  
+         * @param  key      -- the string to search for
+         * @param  path     -- store the indices for the trie traversal history (if supplied)
+         * @param  prefixOK -- 
+         * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
          */
         
         long    Insert (const _String& key, const long value);
@@ -129,9 +137,18 @@ class _Trie: public BaseObj
          * Insert the key into the trie
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise -1 
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER 
          */
     
+        long    Insert (const char *key, const long value, bool return_index = true);
+        /**
+         * Insert the key into the trie
+         * @param key -- the string to insert
+         * @param value -- the value to associate with the key
+         * @param return_index - whether or not to return the index of the string in the trie (if true) or the length of the key (if false)
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER; if return_index == false, return strlen (key) if insert was successful
+         */
+
         void     UpdateValue (const long key, const long value);
         /**
          * Update the value associated with the key _index_
@@ -140,6 +157,14 @@ class _Trie: public BaseObj
          * @return None
          */
         
+        long     GetValue (const long key);
+        /**
+         * Retrieve the value associated with the key _index_
+         * @param  key -- the index of the key (returned by Find for example); if key < 0 or key >= nodes.lLength, nothing is done
+         * @return the value associated with the key
+
+         */
+         
         unsigned long    Insert (const _List& key, const _SimpleList* values = nil);
         /**
          * Insert all keys in the list into the trie
@@ -155,23 +180,60 @@ class _Trie: public BaseObj
          * @return True if the delete was successful (also returned if key is not in this trie), otherwise False 
          */
     
-        unsigned long    Delete (const _List& key);
+        bool    Delete (const char* key);
+        /**
+         * Delete the key from the trie
+         * @param key -- the string to delete
+         * @return True if the delete was successful (also returned if key is not in this trie), otherwise False 
+         */
+                 unsigned long    Delete (const _List& key);
         /**
          * Delete all keys in the list from the trie
          * @param key -- the list of strings (non string objects will be cast to strings) to delete
          * @return the number of elements successfully deleted (including those not present)
          */
 
-        
+        _String*          RetrieveStringFromPath (const _SimpleList& path, _String* alphabet);
+         /**
+         * Given a traversal path of the trie (and an optional cached alphabet), retrive the _String object spelling the path
+         * @param path -- the traversal path (pairs of node index, character index)
+         * @param 
+         * @return the number of elements successfully deleted (including those not present)
+         */
+       
         _String  Alphabet (void);
         /**
          * Return the valid alphabet for this Trie
          * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
          */
     
-    
+ private:
+        
+        void SetAlphabet        (const _String*, bool);
+        long FindNextLetter     (const char letter, const unsigned long currentIndex);
+        /**
+         * Given a current position in the trie (current_index), try to walk down the next character
+         * @param  letter -- the next letter
+         * @param  current_index -- where in the trie are we currently located 
+         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         */
+        long InsertNextLetter     (const char letter, const unsigned long currentIndex);
+        /**
+         * Given a current position in the trie (current_index), insert the character (this assumes that the character is NOT present)
+         * @param  letter -- the next letter
+         * @param  current_index -- where in the trie are we currently located 
+         * @return A non-negative index (next position) in the trie; HY_TRIE_NOTFOUND/ if the letter were valid but no extension could be found, and HY_TRIE_INVALID_LETTER if the letter were invalid
+         */
+         long FindNextUnusedIndex (bool alloc = TRUE);
+         /**
+             Find the next index to store something to: place an empty _SimpleList there
+             This will either go to the end the list or to the last freed block (in emptySlots)
+             @param alloc -- allocate a new _SimpleList storage object
+             @return the index of the new empty _SimpleList in (this) List
+           */
            
-
+        void    DumpRaw           (void);
+         
      
 };
 

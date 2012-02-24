@@ -1856,17 +1856,13 @@ void    _String::ProcessParameter(void)
     }
 }
 
+//==============================================================
+//Filename and Platform Methods
+//==============================================================
 
-/*
-==============================================================
-Filename and Platform Methods
-==============================================================
-*/
-
-void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
+void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP, bool assume_platform_specific)
 {
     if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
-    
         if (Equal (&tempFString)) {
             #if not defined __MINGW32__ && not defined __WINDOZE__
                 #ifdef __MAC__
@@ -1894,7 +1890,13 @@ void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
                 *this = WriteFileDialogInput ();
             }
         }
-        ProcessFileName(false,false,theP);
+        ProcessFileName(false,false,theP,
+        #if defined __MAC__ || defined __WINDOZE__
+            true
+        #else
+            false
+        #endif
+        );
         CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
         return;
     }
@@ -1923,24 +1925,25 @@ void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
     }
 
     if (getChar(0) != '/') { // relative path
-        _String*    lastPath = (_String*)pathNames(pathNames.lLength-1);
-        long        f = lastPath->sLength-2,
-                    k = 0;
+        if (pathNames.lLength) {
+            _String*    lastPath = (_String*)pathNames(pathNames.lLength-1);
+            long        f = lastPath->sLength-2,
+                        k = 0;
 
-        // check the last stored absolute path and reprocess this relative path into an absolute.
-        while (beginswith("../")) {
-            if ( (f = lastPath->FindBackwards('/',0,f)-1) ==-1) {
-                return;
+            // check the last stored absolute path and reprocess this relative path into an absolute.
+            while (beginswith("../")) {
+                if ( (f = lastPath->FindBackwards('/',0,f)-1) ==-1) {
+                    return;
+                }
+                Trim(3,-1);
+                k++;
             }
-            Trim(3,-1);
-            k++;
-        }
-        if (k==0) {
-            *this = *lastPath& (*this);
-        } else {
-            *this = lastPath->Cut(0,f+1)& (*this);
-        }
-
+            if (k==0) {
+                *this = *lastPath& (*this);
+            } else {
+                *this = lastPath->Cut(0,f+1)& (*this);
+            }
+        } 
     }
 #endif
 
@@ -1962,26 +1965,29 @@ void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
     }
 
     if (Find(':')==-1 && Find("\\\\",0,1)==-1) { // relative path
-        _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
-        long f = lastPath->sLength-2, k = 0;
-        // check the last stored absolute path and reprocess this relative path into an absolute.
-        while (beginswith("..\\")) {
-            f = lastPath->FindBackwards('\\',0,f)-1;
-            if (f==-1) {
-                return;
+
+        if (pathNames.lLength) {
+            _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
+            long f = lastPath->sLength-2, k = 0;
+            // check the last stored absolute path and reprocess this relative path into an absolute.
+            while (beginswith("..\\")) {
+                f = lastPath->FindBackwards('\\',0,f)-1;
+                if (f==-1) {
+                    return;
+                }
+                Trim(3,-1);
+                k++;
             }
-            Trim(3,-1);
-            k++;
-        }
-        if (k==0) {
-            if (lastPath->sData[lastPath->sLength-1]!='\\') {
-                *this = *lastPath&'\\'& (*this);
+            if (k==0) {
+                if (lastPath->sData[lastPath->sLength-1]!='\\') {
+                    *this = *lastPath&'\\'& (*this);
+                } else {
+                    *this = *lastPath& (*this);
+                }
             } else {
-                *this = *lastPath& (*this);
+                *this = lastPath->Cut(0,f+1)& (*this);
             }
-        } else {
-            *this = lastPath->Cut(0,f+1)& (*this);
-        }
+        } 
 
     }
 
@@ -2010,7 +2016,7 @@ void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
 #endif
 
 #ifdef __MAC__
-    if (Find('/')!=-1) { // UNIX PATH
+    if (!assume_platform_specific && Find('/')!=-1) { // UNIX PATH
         bool rootPath = false;
         if (sData[0]=='/') {
             rootPath = true;
@@ -2028,7 +2034,7 @@ void _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP)
             *this = _String(':')&*this;
         }
     } else {
-        if (Find('\\')!=-1) { // DOS PATH (ASSUME PARTIAL)
+        if (!assume_platform_specific && Find('\\')!=-1) { // DOS PATH (ASSUME PARTIAL)
             if (beginswith("..")) {
                 *this = _String('\\')&Cut(2,-1);
             }

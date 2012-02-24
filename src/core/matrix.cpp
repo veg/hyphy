@@ -9143,6 +9143,10 @@ void        _AssociativeList::FillInList (_List& fillMe)
 //_____________________________________________________________________________________________
 void        _AssociativeList::Merge (_PMathObj p)
 {
+    //SW20111207: I don't think we should ever have to worry about avl traversing 
+    //here as long as the other methods are implemented properly
+
+
     if(p==this){
         return;
     }
@@ -9150,15 +9154,16 @@ void        _AssociativeList::Merge (_PMathObj p)
     if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
 
        _AssociativeList *rhs = (_AssociativeList*) p;
-
+       
         _SimpleList  hist;
         long         ls,
                      cn = rhs->avl.Traverser (hist,ls,rhs->avl.GetRoot());
 
 
+  
        /*   SLKP20120111: we need to skip over "blanks" (e.g. resulting from previous delete operations)
             here; using the traversal of the second list is the easiest way to go. */
-
+        
         while (cn >= 0) {
             MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
             cn = avl.Traverser (hist,ls);

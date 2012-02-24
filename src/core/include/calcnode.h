@@ -154,6 +154,7 @@ public:
 
     virtual bool        HasChanged       (void);
     virtual bool        NeedToExponentiate(long = -1);
+    virtual void        SetModel         (long, _AVLListXL*);
 
     bool                IsFlagged        (void) {
         return theProbs[0]==-3.1415296;
