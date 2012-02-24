@@ -1082,6 +1082,7 @@ else
                                 LoadFunctionLibrary("BranchSiteTemplate");
                                 
                                 ClearConstraints (codonTree,AC,AT,CG,CT,GT); 
+                                LoadFunctionLibrary ("CodonTools.def");
     
                                 ASSUME_REVERSIBLE_MODELS = 1;
                                  
@@ -1191,7 +1192,7 @@ else
                                                                                         
                                             if (nsFactor2 > sFactor && mixingP < 1) // only test for selection if the point estimate is > 1
                                             {
-                                                bySiteBranchReports [siteMap] = obtainBranchWiseEBEstimates (sFactor, nsFactor1, nsFactor2, mixingP);
+                                                bySiteBranchReports [siteMap] = obtainBranchWiseEBEstimates (sFactor, nsFactor1, nsFactor2, mixingP,filterString);
                                                 omega2     = 1;
                                                 nsFactor2 := omega2 * sFactor;
                                                 if (sFactor == 0)
@@ -1260,7 +1261,7 @@ else
                                 toDoList         = {};
                                 
                                 lfSpawnDone      = 0;
-                                debugVerboseFlag = 0;
+                                //debugVerboseFlag = 0;
                                 
                                 // populate the initial queue of things to do
                                 
@@ -1304,15 +1305,19 @@ else
                                 //debugVerboseFlag = 1;
         
                                  _memeExtra = funcText + 
+                                "_OBSERVED_S_ = " + _OBSERVED_S_ + ";\n" +
+                                "_OBSERVED_NS_ = " + _OBSERVED_NS_ + ";\n" +
                                 "MPI_NEXUS_FILE_RETURN = {};
                                  MPI_NEXUS_FILE_RETURN [\"MLES\"]     = siteLikelihood_MLES;
-                                 _vtr = {{\"nsFactor1\", \"nsFactor2\", \"sFactor1\", \"mixingP\"}};
+                                 _vtr = {{\"nsFactor1\", \"nsFactor2\", \"sFactor\", \"mixingP\"}};
                                  MPI_NEXUS_FILE_RETURN [\"VALUES\"]   = {};
                                  for (_k = 0; _k < Columns (_vtr); _k += 1) {
                                     (MPI_NEXUS_FILE_RETURN [\"VALUES\"])[_vtr[_k]] = Eval (_vtr[_k]);
                                  }
                                  MPI_NEXUS_FILE_RETURN [\"BRANCHES\"] = obtainBranchWiseEBEstimatesMPI (sFactor, nsFactor1, nsFactor2, mixingP);
                                 ";
+                                
+                                
                                 
                                 while (MPISendJobMEME ()) 
                                 {
@@ -1475,24 +1480,10 @@ else
 					SetDialogPrompt ("Save site-by-site LRT results to:");
 					
 					siteCount = Columns (fullSites);
+					
 					fprintf (PROMPT_FOR_FILE,CLEAR_FILE,labels[0]);
 					csvFILE = LAST_FILE_PATH;
-					if (cOptions == 10) {
-					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
-					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
-                        for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
-                        {
-                            siteMap = dupInfo[siteCount];
-                            if (Abs (byBranchEstimates [siteMap])) {
-                                bNames = Rows (byBranchEstimates [siteMap]);
-                                for (branchCount = 0; branchCount < Columns(bNames); branchCount += 1) {
-                                    fprintf (byBranchResultsFile, "\n", siteCount+1, ",", ",".Join ((byBranchEstimates [siteMap])[bNames[branchCount]]));
-                                }
-                            }
-                        }
-                        fprintf (byBranchResultsFile, CLOSE_FILE);
-                       			
-                    }
+					
 					
 					outString = "";
 					outString * 8192;
@@ -1513,7 +1504,24 @@ else
 					outString * 0;
 					fprintf (csvFILE, outString);
 					outString = 0;
-				}
+					
+                    if (cOptions == 10) {
+					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
+					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
+                        for (siteCount = 0; siteCount < Rows (fullSites); siteCount = siteCount+1)
+                        {
+                            siteMap = dupInfo[siteCount];
+                            if (Abs (bySiteBranchReports [siteMap])) {
+                                bNames = Rows (bySiteBranchReports [siteMap]);
+                                for (branchCount = 0; branchCount < Columns(bNames); branchCount += 1) {
+                                    fprintf (byBranchResultsFile, "\n", siteCount+1, ",", bNames[branchCount], ",", Join (",",(bySiteBranchReports [siteMap])[bNames[branchCount]]));
+                                }
+                            }
+                        }
+                        fprintf (byBranchResultsFile, CLOSE_FILE);
+                       			
+                    }
+                }
 			}
 		}
 	}
