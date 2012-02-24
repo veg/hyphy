@@ -139,7 +139,7 @@ void _AVLListX::DeleteXtra (long i)
 void _AVLListX::PopulateFromList (_List& src)
 {
     Clear(false);
-    for (long k = 0; k < src.lLength; k++) {
+    for (unsigned long k = 0; k < src.lLength; k++) {
         Insert (src(k)->makeDynamic(),k,false);
     }
 }

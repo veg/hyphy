@@ -251,7 +251,10 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
     if (iVariables) {
         for (f = iVariables->lLength-2; f>=0 && iVariables->lData[f+1] >= 0; f-=2) {
             _Variable *theV = LocateVar(iVariables->lData[f+1]);
-            if (theV->IsCategory()) {
+            if (theV->IsCategory()) { 
+                        /* this has to do with local category variables; 
+                           NOT TESTED and could be BROKEN
+                        */
                 _CategoryVariable* theCV = (_CategoryVariable*)theV;
 
                 _Formula           newDensity,
@@ -322,6 +325,13 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
     DeleteObject(temp);
 
 }
+
+//__________________________________________________________________________________
+void    _CalcNode::SetModel (long modelID, _AVLListXL* varCache)
+{
+   _VariableContainer::SetModel (modelID, varCache);
+}
+
 //_______________________________________________________________________________________________
 
 long      _CalcNode::SetDependance (long varIndex)

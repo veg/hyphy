@@ -69,6 +69,7 @@ setup(
                              ('__MP__', None),
                              ('__MP2__', None),
                              ('_SLKP_LFENGINE_REWRITE_', None),
+                             ('__AFYP_REWRITE_BGM__', None),
                              ('__HEADLESS__', None),
                              ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] + define_macros,
             libraries = ['pthread', 'ssl', 'crypto', 'curl'],

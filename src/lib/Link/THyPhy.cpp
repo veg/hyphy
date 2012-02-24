@@ -242,12 +242,12 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
     if (libDirectory.getChar(libDirectory.sLength-1) != dirSlash) {
         libDirectory = libDirectory & dirSlash;
     }
-    pathNames && &libDirectory;
 #else
     if (baseDirectory)
         libDirectory = baseDirectory;
 #endif
 
+    pathNames && &libDirectory;
     GlobalStartup();
     errors   = nil;
     warnings = nil;
@@ -263,6 +263,24 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
     if (doPurge) {
         PurgeAll            (true);    // cleanup results of previous analysis
     }
+
+    _String             dd (GetPlatformDirectoryChar());
+
+    _FString            bp  (baseDirectory, false),
+                        lp  (libDirectory, false),
+                        ds  (dd),
+                        cfp (pathNames.lLength?*(_String*)pathNames(pathNames.lLength-1):empty),
+                        * stashed = (_FString*)FetchObjectFromVariableByType (&pathToCurrentBF, STRING);
+
+    setParameter        (platformDirectorySeparator, &ds);
+    setParameter        (hyphyBaseDirectory, &bp);
+    setParameter        (hyphyLibDirectory, &lp);
+
+    if (stashed) {
+        stashed = (_FString*)stashed->makeDynamic();
+    }
+    setParameter        (pathToCurrentBF,&cfp);
+
     _String             commandString (buffer);
 
     if (commandString.beginswith ("#NEXUS"),false) {
@@ -397,7 +415,6 @@ _THyPhyString   * _THyPhy::ConvertHyPhyString (void * o)
 bool _THyPhy::CanCast (const void* theObject, const int requestedType)
 {
     if (theObject) {
-        _PMathObj mo = (_PMathObj) theObject;
         switch (((_PMathObj)theObject)->ObjectClass()) {
         case NUMBER:
             return true;
