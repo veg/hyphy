@@ -5296,6 +5296,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
             } else {
                 _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
+                currentArgument = (_String*)parameters(1);
                 long g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
                 if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
                     WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
