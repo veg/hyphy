@@ -445,6 +445,8 @@ function MPISendJobMEME ()
                 OPTIMIZATION_METHOD = 0;
                 LF_NEXUS_EXPORT_EXTRA = _memeExtra;
                 MPISend (mpiNode+1, siteLikelihood);
+                //fName = "/Users/sergei/Desktop/" + theJob[0];
+                //fprintf (fName, CLEAR_FILE, MPI_LAST_SENT_MSG);
                 LF_NEXUS_EXPORT_EXTRA = "";
                 if (debugVerboseFlag)
                 {
