@@ -609,6 +609,52 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 		}
 		return _result;
 	}
+
+
+
+/*******************************************
+	
+	_tabulateSubstitutionsAtSiteByBranch returns
+	a dictionary with keys = branch names and
+	values = counts of synonymous and non-synonymous
+	substitutions.
+
+*******************************************/
+
+	function _tabulateSubstitutionsAtSiteByBranch (_ancID, _siteID)
+	{
+		_result = {};
+		if (Abs (_ancestralRecoveryCache[_ancID]))
+		{
+			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
+			{
+				_thisColumn 		= ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
+				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
+				_bacSiteDim 		= Columns (_bacSiteC);
+				_bacCounter 		= Rows (_thisColumn)-1;
+
+
+				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
+				{
+					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
+					_myState	   = _thisColumn[_bacTreeIterator];
+					_pState		   = _thisColumn[_bacParentID];
+					
+					if (_pState >= 0 && _myState >=0) {
+					    haveS 	= _OBSERVED_S_	[_pState][_myState];
+					    haveNS	= _OBSERVED_NS_	[_pState][_myState];
+					} else {
+					    haveS = 0;
+					    haveNS = 0;
+					}
+					_result [(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Name"]] = {{haveS__,haveNS__}};
+                }
+				
+			}
+		}
+		return _result;
+	}
+	
 	
 /*******************************************/
 	
