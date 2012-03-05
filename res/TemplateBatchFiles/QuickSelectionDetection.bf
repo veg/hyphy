@@ -1077,6 +1077,18 @@ else
                             }
                             else // MEME
                             {
+                            
+                                fprintf (stdout, "Save individual fit files to disk (CAUTION: will create 3x the number of sites files, [Y/N])");
+                                fscanf  (stdin, "String", saveFiles);
+                                if (saveFiles[0] == "Y") {
+                                    SetDialogPrompt ("Enter a prefix path for the fit files. Each file will be suffixed as .site.[alt|null]");
+                                    fscanf (PROMPT_FOR_FILE, CLEAR_FILE);
+                                    SAVE_FIT_TO_FILE = LAST_FILE_PATH;
+                                }
+                                else {
+                                    SAVE_FIT_TO_FILE = "";
+                                }
+                            
                                 // save AC, AT, CG, CT and GT
                                 saveNucs = {{AC__,AT__,CG__,CT__,GT__}};
                                 LoadFunctionLibrary("BranchSiteTemplate");
@@ -1092,7 +1104,9 @@ else
                                 
                                 T0 = Time(1);
                                 
+                                //AUTO_PARALLELIZE_OPTIMIZE = 4;
                                 Optimize (codonLF, lf);
+                                //AUTO_PARALLELIZE_OPTIMIZE = 0;
                                 
                                 OPTIMIZATION_TIME_HARD_LIMIT = (Time(1)-T0)*4;
                                 
@@ -1304,7 +1318,16 @@ else
 
                                 //debugVerboseFlag = 1;
         
-                                 _memeExtra = funcText + 
+                                _memeExtraNull = "SAVE_FIT_TO_FILE = \"`SAVE_FIT_TO_FILE`\"
+                                if (Abs (SAVE_FIT_TO_FILE)) {
+                                    LIKELIHOOD_FUNCTION_OUTPUT = 7;
+                                    saveLFTo = SAVE_FIT_TO_FILE + \".\" + siteID + \".\" + jobSuffix;
+                                    fprintf (saveLFTo, CLEAR_FILE, siteLikelihood);
+                                    LIKELIHOOD_FUNCTION_OUTPUT = 2;
+                                }
+                                ";
+
+                                 _memeExtra = _memeExtraNull + funcText + 
                                 "_OBSERVED_S_ = " + _OBSERVED_S_ + ";\n" +
                                 "_OBSERVED_NS_ = " + _OBSERVED_NS_ + ";\n" +
                                 "MPI_NEXUS_FILE_RETURN = {};
@@ -1316,9 +1339,6 @@ else
                                  }
                                  MPI_NEXUS_FILE_RETURN [\"BRANCHES\"] = obtainBranchWiseEBEstimatesMPI (sFactor, nsFactor1, nsFactor2, mixingP);
                                 ";
-                                
-                                
-                                
                                 while (MPISendJobMEME ()) 
                                 {
                                 
@@ -1507,7 +1527,7 @@ else
 					
                     if (cOptions == 10) {
 					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
-					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
+					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, Format (codonTree,1,1), "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", _Genetic_Code, "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
                         for (siteCount = 0; siteCount < Rows (fullSites); siteCount = siteCount+1)
                         {
                             siteMap = dupInfo[siteCount];
