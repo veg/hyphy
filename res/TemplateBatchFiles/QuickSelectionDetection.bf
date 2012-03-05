@@ -1092,7 +1092,9 @@ else
                                 
                                 T0 = Time(1);
                                 
+                                //AUTO_PARALLELIZE_OPTIMIZE = 4;
                                 Optimize (codonLF, lf);
+                                //AUTO_PARALLELIZE_OPTIMIZE = 0;
                                 
                                 OPTIMIZATION_TIME_HARD_LIMIT = (Time(1)-T0)*4;
                                 
@@ -1507,7 +1509,7 @@ else
 					
                     if (cOptions == 10) {
 					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
-					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
+					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, Format (codonTree,1,1), "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", _Genetic_Code, "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
                         for (siteCount = 0; siteCount < Rows (fullSites); siteCount = siteCount+1)
                         {
                             siteMap = dupInfo[siteCount];
