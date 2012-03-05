@@ -1080,9 +1080,9 @@ else
                             
                                 fprintf (stdout, "Save individual fit files to disk (CAUTION: will create 3x the number of sites files, [Y/N])");
                                 fscanf  (stdin, "String", saveFiles);
-                                if (saveFiles[0] == "Y") {
+                                if ((saveFiles[0]&&1) == "Y") {
                                     SetDialogPrompt ("Enter a prefix path for the fit files. Each file will be suffixed as .site.[alt|null]");
-                                    fscanf (PROMPT_FOR_FILE, CLEAR_FILE);
+                                    fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
                                     SAVE_FIT_TO_FILE = LAST_FILE_PATH;
                                 }
                                 else {
@@ -1318,10 +1318,10 @@ else
 
                                 //debugVerboseFlag = 1;
         
-                                _memeExtraNull = "SAVE_FIT_TO_FILE = \"`SAVE_FIT_TO_FILE`\"
+                                _memeExtraNull = "SAVE_FIT_TO_FILE = \"`SAVE_FIT_TO_FILE`\";
                                 if (Abs (SAVE_FIT_TO_FILE)) {
                                     LIKELIHOOD_FUNCTION_OUTPUT = 7;
-                                    saveLFTo = SAVE_FIT_TO_FILE + \".\" + siteID + \".\" + jobSuffix;
+                                    saveLFTo = SAVE_FIT_TO_FILE + \".\" + siteID + jobSuffix;
                                     fprintf (saveLFTo, CLEAR_FILE, siteLikelihood);
                                     LIKELIHOOD_FUNCTION_OUTPUT = 2;
                                 }
@@ -1527,7 +1527,7 @@ else
 					
                     if (cOptions == 10) {
 					    byBranchResultsFile = LAST_FILE_PATH + ".branches";
-					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, Format (codonTree,1,1), "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", _Genetic_Code, "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
+					    fprintf (byBranchResultsFile, CLEAR_FILE, KEEP_OPEN, Format (codonTree,1,1), "\n<<<<<<<<<<<<<<<<<<<<<<<<\n", "Site,Branch,PosteriorProbability,EmpiricalBayesFactor,SynSubs,NonsynSubs");
                         for (siteCount = 0; siteCount < Rows (fullSites); siteCount = siteCount+1)
                         {
                             siteMap = dupInfo[siteCount];
