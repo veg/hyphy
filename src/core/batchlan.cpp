@@ -4999,9 +4999,9 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     switch (typeFlag)
     {
         case HY_BL_BGM: { // BGM Branch
+            currentArgument = (_String*)parameters(1);
 #if defined __AFYP_REWRITE_BGM__
             _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
-
             // set data matrix
             if (currentArgument->Equal (&bgmData)) {
                 _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
