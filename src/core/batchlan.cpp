@@ -4999,7 +4999,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     switch (typeFlag)
     {
         case HY_BL_BGM: { // BGM Branch
-        #if defined __AFYP_REWRITE_BGM__
+#if defined __AFYP_REWRITE_BGM__
             _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
 
             // set data matrix
@@ -5130,7 +5130,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 return;
             }
 #else
-            Bgm * lkf = (Bgm *) bgmList (bgm_index);
+            Bgm * lkf = (Bgm *) theObject;
             if (currentArgument->Equal (&bgmData)) {
                 _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
                 if (dataMx) {

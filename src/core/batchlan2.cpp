@@ -4019,7 +4019,7 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index)
     if (type & HY_BL_BGM) {
         loc = FindBgmName (name);
         if (loc >= 0) {
-            type = HY_BL_SCFG;
+            type = HY_BL_BGM;
             if (index) {
                 *index = loc;
             }
