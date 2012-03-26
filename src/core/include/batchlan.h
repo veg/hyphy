@@ -200,7 +200,10 @@ public:
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     void      ExecuteCase65  (_ExecutionList&); // assert
-
+    
+    bool      HandleHarvestFrequencies              (_ExecutionList&);
+    bool      HandleOptimizeCovaruanceMatrix        (_ExecutionList&, bool);
+    
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
@@ -280,15 +283,9 @@ public:
     (_String&, _ExecutionList&);
     // construct a replicate constraint command
 
-    static  bool      ConstructOptimize     (_String&, _ExecutionList&);
-
-
     static  bool      ConstructLF           (_String&, _ExecutionList&);
     // construct a likelihood function
 
-
-    static  bool      ConstructHarvestFreq  (_String&, _ExecutionList&);
-    // construct a fprintf command
 
     static  bool      ConstructFunction     (_String&, _ExecutionList&);
     // construct a fprintf command
@@ -628,15 +625,16 @@ void    ReturnCurrentCallStack       (_List&, _List&);
     @param   type [in] which types of objects will be searched.
                  [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
     @param   index (if not nil) will receive the index of the found object in the corresponding array
+    @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
     @return  pointer to the retrieved object or nil if not found
     @author  SLKP
-    @version 20110608
+    @version 20120324
 */
 
-BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil);
+BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false);
 
 
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;

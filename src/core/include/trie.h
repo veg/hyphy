@@ -65,8 +65,11 @@ class _Trie: public _List
             emptySlots,
             /** allocated entries in the 'this' list that can be reused (e.g. those created by delete operations)
              */
-            payload;
+            payload,
             /** the values associated with each key in 'nodes' 
+             */
+            parents;
+            /** the index of the parent nodes (in 'nodes') for each node
              */
             
     
@@ -206,7 +209,14 @@ class _Trie: public _List
          * Return the valid alphabet for this Trie
          * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
          */
-    
+
+        _String  RetrieveKeyByPayload (const long key);
+        /**
+         * Return the string spelling the pay to the 'key'
+         * @param key -- the key for which we fish to retrieve the path
+         * @return The string spelling the path from the root to the node tagged with value 'key'. Empty string is returned if 'key' is not in this trie
+         */
+
  private:
         
         void SetAlphabet        (const _String*, bool);

@@ -45,6 +45,7 @@ _Trie::_Trie (const _String* alphabet) {
     SetAlphabet (alphabet, false);
     AppendNewInstance(new _SimpleList);
     payload << 0L;
+    parents <<-1L;
 }
        
 //----------------------------------------------------------------------------------------------------------------------
@@ -60,6 +61,8 @@ void _Trie::Clear (bool all){
     payload.Clear(all);
     emptySlots.Clear(all);
     AppendNewInstance(new _SimpleList);
+    payload << 0L;
+    parents <<-1L;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -120,6 +123,7 @@ void _Trie::Duplicate (BaseRef storage) {
     newTrie->charMap.Duplicate (&charMap);
     newTrie->emptySlots.Duplicate (&emptySlots);
     newTrie->payload.Duplicate(&payload);
+    newTrie->parents.Duplicate(&parents);
           
 }        
     
@@ -147,6 +151,7 @@ long  _Trie::FindNextUnusedIndex (bool alloc){
         return newIndex;
     }  
     payload << 0;
+    parents << 0;
     if (alloc)
         AppendNewInstance(new _SimpleList);
     else
@@ -164,6 +169,7 @@ long    _Trie::InsertNextLetter (const char letter, const unsigned long current_
         _SimpleList * currentList = ((_SimpleList**)lData)[current_index];
         (*currentList) << letter_key;
         (*currentList) << next_index;
+        parents.lData[next_index] = current_index;
         return next_index;
     }
     return HY_TRIE_INVALID_LETTER;
@@ -218,8 +224,8 @@ long    _Trie::Insert (const char* key, const long value, bool return_index) {
 
 long    _Trie::Insert (const _String& key, const long value) {
     // the root is always at index 0
-    long current_index = 0, 
-         current_char = 0,
+    long current_index  = 0, 
+         current_char   = 0,
          next_index     = FindNextLetter(key.sData[current_char++], current_index);
     
     while (next_index >= 0 && current_char <= key.sLength) {
@@ -280,6 +286,7 @@ bool    _Trie::Delete (const _String& key){
             if (current_list == nil || current_list->lLength <= 1){
                 emptySlots << history.lData[k];
                 payload.lData[history.lData[k]] = 0L;
+                parents.lData[history.lData[k]] = -1L;
                 _SimpleList * parentList = ((_SimpleList**)lData)[history.lData[k-1]];
                 unsigned long parentNode = parentList->FindStepping (history.lData[k],2, 1) - 1;
                 parentList->Delete (parentNode);
@@ -402,4 +409,34 @@ BaseRef     _Trie::toStr() {
     return serialized;
 }
  
+//----------------------------------------------------------------------------------------------------------------------
+
+_String  _Trie::RetrieveKeyByPayload (const long key){
+    long key_index = payload.Find (key);
+    if (key_index >= 0) {
+        _SimpleList parent_indices,
+                    traversal_history;
+        long keyer = key_index;
+        do{
+            parent_indices << keyer;
+            keyer = parents.lData[keyer];
+        }
+        while (keyer > 0);
+        parent_indices << 0;
+        parent_indices.Flip();
+        
+        
+        for (long i = 0; i < parent_indices.lLength-1; i++) {
+            traversal_history << parent_indices.lData[i];
+            traversal_history << (((_SimpleList**)lData)[parent_indices.lData[i]])->FindStepping (parent_indices.lData[i+1],2,1)-1;
+        }
+        traversal_history << key_index;
+        traversal_history << 0L;
+        _String alph = Alphabet();
+        return _String(RetrieveStringFromPath(traversal_history, &alph));
+        
+    }
+    return empty;
+}
+
 
