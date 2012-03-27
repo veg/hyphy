@@ -100,7 +100,7 @@ public:
     virtual     long        GetAVariable (void) {
         return theIndex;
     }
-    virtual     long        ObjectClass (void) {
+    virtual unsigned long        ObjectClass (void) {
         return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
     }
     void        SetIndex (long i) {

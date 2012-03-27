@@ -147,7 +147,7 @@ public:
     _MathObject*            IsANumber           (bool = false);
     virtual  bool           IsObjectEmpty       (void);
 
-    virtual long            ObjectClass (void) {
+    virtual unsigned long            ObjectClass (void) {
         return POLYNOMIAL;
     }
     virtual _Parameter      Value (void) {

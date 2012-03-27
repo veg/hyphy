@@ -186,7 +186,6 @@ public:
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
     void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
-    void      ExecuteCase49  (_ExecutionList&); // LFCompute
     void      ExecuteCase51  (_ExecutionList&); // GetURL
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
@@ -202,7 +201,8 @@ public:
     void      ExecuteCase65  (_ExecutionList&); // assert
     
     bool      HandleHarvestFrequencies              (_ExecutionList&);
-    bool      HandleOptimizeCovaruanceMatrix        (_ExecutionList&, bool);
+    bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
+    bool      HandleComputeLFFunction               (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -626,13 +626,14 @@ void    ReturnCurrentCallStack       (_List&, _List&);
                  [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
     @param   index (if not nil) will receive the index of the found object in the corresponding array
     @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
+    @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
     @return  pointer to the retrieved object or nil if not found
     @author  SLKP
     @version 20120324
 */
 
-BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false);
-
+BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+_String _HYHBLTypeToText                (long type);
 
 _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 

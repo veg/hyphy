@@ -76,7 +76,7 @@ public:
     virtual _PMathObj Evaluate          (void);
     virtual _PMathObj Join              (_PMathObj);
     virtual _PMathObj Differentiate     (_PMathObj);
-    virtual long      ObjectClass       (void) {
+    virtual unsigned long      ObjectClass       (void) {
         return STRING;
     }
     virtual _PMathObj Compute           (void) {

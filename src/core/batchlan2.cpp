@@ -4035,7 +4035,7 @@ _String _HYHBLTypeToText (long type) {
 
 //____________________________________________________________________________________
 
-BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bool errMsg)
+BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bool errMsg, bool tryLiteralLookup)
 {
     long loc = -1;
     if (type & HY_BL_DATASET) {
@@ -4117,10 +4117,16 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
             return batchLanguageFunctions (loc);
         }
     }
+    
+    if (tryLiteralLookup) {
+        _String nameIDRef = ProcessLiteralArgument(&name, nil);
+        return _HYRetrieveBLObjectByName (nameIDRef, type, index, errMsg, false);
+    }
 
     if (errMsg) {
         WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
     }
+    type = HY_BL_NOT_DEFINED;
     return nil;
 }
 

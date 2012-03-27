@@ -1537,13 +1537,10 @@ _String  blFor                  ("for("),               // moved
          blInclude              ("#include"),           // moved
          blDataSet              ("DataSet "),           // moved
          blDataSetFilter            ("DataSetFilter "),
-         blHarvest              ("HarvestFrequencies"),
          blConstructCM          ("ConstructCategoryMatrix("),
          blTree                     ("Tree "),
          blLF                       ("LikelihoodFunction "),
          blLF3                  ("LikelihoodFunction3 "),
-         blOptimize                 ("Optimize("),
-         blCovMatrix                ("CovarianceMatrix("),
          blMolClock                 ("MolecularClock("),
          blfprintf              ("fprintf("),
          blGetString                ("GetString("),
@@ -2446,7 +2443,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result& _String(" using the callback: ")&(*converted);
         break;
     }
-    case 49: { //Compute LF
+    case HY_HBL_COMMAND_LFCOMPUTE: { //Compute LF
         converted = (_String*)parameters(0)->toStr();
         result = blLFCompute&(*converted);
         DeleteObject(converted);
@@ -5962,93 +5959,6 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
     }
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase49 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String *arg1       = (_String*)parameters(0),
-             *arg2     = (_String*)parameters(1),
-              name2Find   = AppendContainerName(*arg1,chain.nameSpacePrefix),
-              errMsg;
-
-    // bool isSCFG  = false;
-
-
-    long    k       = FindLikeFuncName(name2Find),
-            mode   = 0;
-
-    if (k < 0) {
-        mode = ((k = FindSCFGName(name2Find)) >= 0) ? 1 : 2;
-        if (mode == 2) {
-            k = FindBgmName(name2Find);
-        }
-    }
-
-    if (k < 0) {
-        _String  litArg = ProcessLiteralArgument (arg1,chain.nameSpacePrefix);
-        k = likeFuncNamesList.Find (&litArg);
-        if (k<0) {
-            k = scfgNamesList.Find (&litArg);
-            if (k<0) {
-                k = bgmNamesList.Find  (&litArg);
-                if (k < 0) {
-                    errMsg = *arg1 & " is not an existing likelihood function, SCFG, or BGM identifier ";
-                } else {
-                    mode = 2;
-                }
-            } else {
-                mode = 1;
-            }
-        } else {
-            mode = 0;
-        }
-    }
-
-    if (errMsg.sLength == 0) {
-        _LikelihoodFunction *lf;
-        switch (mode) {
-        case 0:
-            lf = (_LikelihoodFunction *) likeFuncList (k);
-            break;
-        case 1:
-            lf = (_LikelihoodFunction *) scfgList (k);
-            break;
-        case 2:
-            lf = (_LikelihoodFunction *) bgmList (k);
-            break;
-        default:
-            errMsg = "Something really weird just happened in ExecuteCase49()...";
-            break;
-        }
-
-        // _LikelihoodFunction *lf = (_LikelihoodFunction*)(isSCFG?scfgList(k):likeFuncList (k));
-        if (*arg2 == lfStartCompute) {
-            lf->PrepareToCompute(true);
-        } else if (*arg2 == lfDoneCompute) {
-            lf->DoneComputing (true);
-        } else {
-            if (!lf->HasBeenSetup()) {
-                errMsg = _String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function";
-            } else {
-                _Variable* rec = CheckReceptacle(&AppendContainerName(*arg2,chain.nameSpacePrefix), blLFCompute, true);
-                if (!rec) {
-                    return;
-                }
-                rec->SetValue(new _Constant (lf->Compute()),false);
-            }
-        }
-    }
-
-    if (errMsg.sLength) {
-        errMsg = errMsg & " in call to LFCompute.";
-        WarnError (errMsg);
-    }
-
-    //setParameter (matrixEvalCount, matrixExpCount);
-}
-
 
 //____________________________________________________________________________________
 
@@ -6785,8 +6695,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase43 (chain);
         break;
 
-    case 49:
-        ExecuteCase49 (chain);
+    case HY_HBL_COMMAND_LFCOMPUTE:
+        HandleComputeLFFunction(chain);
         break;
 
     case 50:

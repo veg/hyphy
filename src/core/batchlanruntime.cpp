@@ -89,7 +89,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::HandleOptimizeCovaruanceMatrix (_ExecutionList& currentProgram, bool doOptimize) {
+bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& currentProgram, bool doOptimize) {
     currentProgram.currentCommand++;
     // construct the receptacle matrix
     
@@ -106,168 +106,120 @@ bool      _ElementaryCommand::HandleOptimizeCovaruanceMatrix (_ExecutionList& cu
 
     long       objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
     _LikelihoodFunction    *lkf = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (lfNameID, objectType,nil,doOptimize==false);
+    _Matrix                * optRes;
     
-    _Matrix     * optRes;
-    
-    if (lkf == nil) {
+    if (lkf == nil) { // will only happen if the object is a custom function 
         lkf = (_LikelihoodFunction*)checkPointer(new _CustomFunction (&lfNameID));
     }
+    
     if (!doOptimize) { 
         // COVARIANCE_MATRIX 
+        SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
         _String              cpl = currentProgram.AddNameSpaceToID(covarianceParameterList);
         _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
         _SimpleList          *  restrictor       = nil;
         
-        if (restrictVariable) { // only consider some variables
-            _SimpleList variableIDs;
-            if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
-                // a list of variables stored as keys in an associative array
-            {
-                checkPointer (restrictor = new _SimpleList);
-                _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
-                    variableIDs << LocateVarByName (currentProgram.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid)));
-                }
-            } else if (restrictVariable->ObjectClass () == STRING)
-                // a single variable stored in a string
-            {
-                _String varID = currentProgram.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
-                long vID = LocateVarByName (varID);
-                if (vID >= 0) {
-                    vID = lkf->GetIndependentVars().Find(vID);
-                }
-                if (vID >= 0) {
-                    checkPointer(restrictor = new _SimpleList (vID));
-                }
-            }
-            if (variableIDs.lLength > 0) {
-                checkPointer(restrictor = new _SimpleList ());
-                for (long var_index = 0; var_index < variableIDs.lLength; var_index++) {
-                    long vID = lkf->GetIndependentVars().Find(variableIDs.lData[var_index]);
-                    if (vID >= 0) (*restrictor) << vID;
-                }
-                if (restrictor->lLength == 0) {
-                    DeleteObject (restrictor);
-                    restrictor = nil;
-                }
-           }
-        }   
-    }
-    else {    // COVARIANCE_MATRIX
-            ff = FindBgmName (lfNameID);
-            if (ff < 0) {   // not a BGM
-                ff = FindSCFGName (lfNameID);
-                if (ff < 0) {   // not an SCFG either
-                    errMsg = (((_String)("Likelihood function/BGM ID ")&lfNameID&" has not been defined."));
-                    WarnError (errMsg);
-                    return false;
-                } else {    // Scfg::CovarianceMatrix
-                    lkf    = (_LikelihoodFunction*) scfgList  (ff);
-                    
-                     
-                    
-                    
-                    optRes = (_Matrix*)lkf->CovarianceMatrix(restrictor);
-                    if (restrictor) {
-                        DeleteObject (restrictor);
+        if (objectType == HY_BL_LIKELIHOOD_FUNCTION || objectType == HY_BL_SCFG){ 
+        // not a BGM
+            if (restrictVariable) { // only consider some variables
+                _SimpleList variableIDs;
+                if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
+                    // a list of variables stored as keys in an associative array
+                {
+                    checkPointer (restrictor = new _SimpleList);
+                    _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
+                    for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
+                        _String varID = currentProgram.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
+                        variableIDs << LocateVarByName (varID);
                     }
-                    
+                } else if (restrictVariable->ObjectClass () == STRING)
+                    // a single variable stored in a string
+                {
+                    _String varID = currentProgram.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
+                    variableIDs << LocateVarByName (varID);
+                }
+                if (variableIDs.lLength > 0) {
+                    checkPointer(restrictor = new _SimpleList ());
+                    for (long var_index = 0; var_index < variableIDs.lLength; var_index++) {
+                        long vID = lkf->GetIndependentVars().Find(variableIDs.lData[var_index]);
+                        if (vID >= 0) (*restrictor) << vID;
+                    }
+                    if (restrictor->lLength == 0) {
+                        DeleteObject (restrictor);
+                        restrictor = nil;
+                    }
+               }
+            }   
+            if (optRes) {
+                result->SetValue( (_Matrix*)lkf->CovarianceMatrix(restrictor),false);
+            }
+            DeleteObject (restrictor);
+        } else {
+        // BGM
+            #if not defined __AFYP_REWRITE_BGM__
+                #ifdef __AFYP_DEVELOPMENT__
+                    _SimpleList *   first_order = nil;
+                     optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
+                        
+                #else
+                    optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
+                #endif
                     if (optRes) {
                         result->SetValue(optRes,false);
                     }
-                    
-                    break;
-                }
-            }
-    #if not defined __AFYP_REWRITE_BGM__
-            else {      // BGM::CovarianceMatrix, i.e. MCMC
-                lkf    = (_LikelihoodFunction*)bgmList  (ff);
-    #ifdef __AFYP_DEVELOPMENT__
-                _SimpleList *   first_order = nil;
-                 optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
-                
-    #else
-                optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
-    #endif
-                if (optRes) {
-                    result->SetValue(optRes,false);
-                }
-                
-                break;
-            }
-    #endif
+             #endif            
         }
     } else {
-        lkf = (_LikelihoodFunction*)likeFuncList(ff);
-    }
-
-    if (code == HY_HBL_COMMAND_OPTIMIZE) {
-        SetStatusLine (_String("Optimizing likelihood function ")&lfNameID);
-    } else {
-        SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
-    }
-
-
-    if (code == HY_HBL_COMMAND_OPTIMIZE) {
+        // OPTIMIZE
+        if (objectType != HY_BL_NOT_DEFINED) {
+            SetStatusLine (_String("Optimizing ") & _HYHBLTypeToText (objectType) & ' ' &lfNameID);
+        } else {
+            SetStatusLine (_String("Optimizing user function ") &lfNameID);        
+        }
         optRes = lkf->Optimize();
-    } else { 
-        _String              cpl = chain.AddNameSpaceToID(covarianceParameterList);
-        _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
-        _SimpleList          *  restrictor       = nil;
-        
-        if (restrictVariable) { // only consider some variables
-            if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
-                // a list of variables stored as keys in an associative array
-            {
-                checkPointer (restrictor = new _SimpleList);
-                _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
-                    _String     varID = chain.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
-                    long vID = LocateVarByName (varID);
-                    if (vID >= 0) {
-                        vID = lkf->GetIndependentVars().Find(vID);
-                    }
-                    if (vID >= 0) {
-                        (*restrictor) << vID;
-                    }
-                }
-                if (restrictor->lLength == 0) {
-                    DeleteObject (restrictor);
-                    restrictor = nil;
-                }
-            } else if (restrictVariable->ObjectClass () == STRING)
-                // a single variable stored in a string
-            {
-                _String varID = chain.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
-                long vID = LocateVarByName (varID);
-                if (vID >= 0) {
-                    vID = lkf->GetIndependentVars().Find(vID);
-                }
-                if (vID >= 0) {
-                    checkPointer(restrictor = new _SimpleList (vID));
-                }
-            }
-        }
-        
-        optRes = (_Matrix*)lkf->CovarianceMatrix(restrictor);
-        if (restrictor) {
-            DeleteObject (restrictor);
-        }
     }
 
-    if (optRes) {
-        result->SetValue(optRes,false);
-    }
-
-    if (ff < 0) {
+    if (objectType == HY_BL_NOT_DEFINED) {
         DeleteObject (lkf);    // delete the custom function object
     }
+    
+    SetStatusLine ("Finished with the optimization");
 
-    if (code == HY_HBL_COMMAND_OPTIMIZE) {
-        SetStatusLine (_String("Done optimizing likelihood function ")&lfNameID);
-    } else {
-        SetStatusLine (_String("Finished with cov. matrix/profile CI for ")&lfNameID);
-    }
     return true;
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentProgram) {
+        
+    currentProgram.currentCommand++;
+
+    _String *arg1       = (_String*)parameters(0),
+            *arg2      = (_String*)parameters(1),
+            name2Find   = AppendContainerName(*arg1,currentProgram.nameSpacePrefix);
+            
+    // bool isSCFG  = false;
+
+    long                   objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
+    _LikelihoodFunction    *lf       = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (name2Find, objectType,nil, true, true);
+
+    if (*arg2 == lfStartCompute) {
+            lf->PrepareToCompute(true);
+    } else if (*arg2 == lfDoneCompute) {
+            lf->DoneComputing (true);
+    } else {
+        if (!lf->HasBeenSetup()) {
+            WarnError (_String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function");
+            return false;
+        } else {
+            _Variable* rec = CheckReceptacleCommandID (&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE,true);
+             if (!rec) {
+                return false;
+            }
+            rec->SetValue(new _Constant (lf->Compute()),false);
+        }
+    }
+
+    return true;
+    
+}
