@@ -348,7 +348,7 @@ set_target_properties(
 
 find_package(GTK2 2.6)
 
-if((${GTK2_FOUND}) AND (NOT ${APPLE}))
+if(${GTK2_FOUND})
 	  MESSAGE ("GTK found")
       include_directories(${GTK2_INCLUDE_DIRS})
 
@@ -386,7 +386,7 @@ if((${GTK2_FOUND}) AND (NOT ${APPLE}))
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
     
-endif((${GTK2_FOUND}) AND (NOT ${APPLE}))
+endif(${GTK2_FOUND})
 
 
  
