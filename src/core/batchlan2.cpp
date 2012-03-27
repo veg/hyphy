@@ -1499,8 +1499,8 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                         if ( str1r && str2r ) {
                                             _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),
                                                     * q_res = ( _String * ) checkPointer( new _String( str2r ) );
-                                            delete str1r;
-                                            delete str2r;
+                                            delete [] str1r;
+                                            delete [] str2r;
                                             r_res->Finalize();
                                             q_res->Finalize();
                                             store.AppendNewInstance( r_res );

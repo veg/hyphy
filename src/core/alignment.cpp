@@ -55,26 +55,26 @@
 
 //____________________________________________________________________________________
 
-long CodonAlignStringsStep( double * score_matrix
-                          , long * reference
-                          , long * query
+long CodonAlignStringsStep( double * const score_matrix
+                          , long * const reference
+                          , long * const query
                           , const long r
                           , const long q
                           , const long score_cols
                           , const long char_count
-                          , double miscall_cost
-                          , double open_insertion
-                          , double open_deletion
-                          , double extend_insertion
-                          , double extend_deletion
-                          , double * cost_matrix
+                          , const double miscall_cost
+                          , const double open_insertion
+                          , const double open_deletion
+                          , const double extend_insertion
+                          , const double extend_deletion
+                          , double * const cost_matrix
                           , const long cost_stride
-                          , double * insertion_matrix
-                          , double * deletion_matrix
-                          , double * codon3x5
-                          , double * codon3x4
-                          , double * codon3x2
-                          , double * codon3x1
+                          , double * const insertion_matrix
+                          , double * const deletion_matrix
+                          , double * const codon3x5
+                          , double * const codon3x4
+                          , double * const codon3x2
+                          , double * const codon3x1
                           )
 {
     /**
@@ -329,7 +329,7 @@ long CodonAlignStringsStep( double * score_matrix
 
 //____________________________________________________________________________________
 
-inline void BacktrackAlign( signed char * edit_ops
+inline void BacktrackAlign( signed char * const edit_ops
                           , long & edit_ptr
                           , long & r
                           , long & q
@@ -353,7 +353,7 @@ inline void BacktrackAlign( signed char * edit_ops
 
 //____________________________________________________________________________________
 
-inline void BacktrackAlignCodon( signed char * edit_ops
+inline void BacktrackAlignCodon( signed char * const edit_ops
                                , long & edit_ptr
                                , long & r
                                , long & q
@@ -529,12 +529,12 @@ inline void MatchScore( char * r_str
 
 //____________________________________________________________________________________
 
-double AlignStrings( char * r_str
-                   , char * q_str
+double AlignStrings( char * const r_str
+                   , char * const q_str
                    , char * & r_res
                    , char * & q_res
-                   , long * char_map
-                   , double * cost_matrix
+                   , long * const char_map
+                   , double * const cost_matrix
                    , const long cost_stride
                    , const char gap
                    , double open_insertion
@@ -546,10 +546,10 @@ double AlignStrings( char * r_str
                    , const bool do_affine
                    , const bool do_codon
                    , const long char_count
-                   , double * codon3x5
-                   , double * codon3x4
-                   , double * codon3x2
-                   , double * codon3x1
+                   , double * const codon3x5
+                   , double * const codon3x4
+                   , double * const codon3x2
+                   , double * const codon3x1
                    )
 {
     const unsigned long r_len = strlen( r_str ),
@@ -607,15 +607,16 @@ double AlignStrings( char * r_str
             }
         } else {
             long edit_ptr = 0;
-            signed char * edit_ops = new signed char[ r_len + q_len ];
+            // don't forget the optional termination character
+            signed char * const edit_ops = new signed char[ r_len + q_len ];
 
-            double * score_matrix = new double[ score_rows * score_cols ],
-                   * insertion_matrix = NULL,
-                   * deletion_matrix  = NULL;
+            double * const score_matrix = new double[ score_rows * score_cols ],
+                   * const insertion_matrix = do_affine ? new double[ score_rows * score_cols ] : NULL,
+                   * const deletion_matrix  = do_affine ? new double[ score_rows * score_cols ] : NULL;
 
             // encode each string using the character map (char_map)
-            long * r_enc = new long[ r_len ],
-                 * q_enc = new long[ q_len ];
+            long * const r_enc = new long[ r_len ],
+                 * const q_enc = new long[ q_len ];
 
             // zero manually, memset not guaranteed to work
             for ( i = 0; i < score_rows * score_cols; ++i )
@@ -629,9 +630,6 @@ double AlignStrings( char * r_str
             }
 
             if ( do_affine ) {
-                insertion_matrix = new double[ score_rows * score_cols ];
-                deletion_matrix  = new double[ score_rows * score_cols ];
-
                 // zero manually, memset not guaranteed to work
                 for ( i = 0; i < score_rows * score_cols; ++i ) {
                     insertion_matrix[ i ] = 0.;
@@ -834,17 +832,17 @@ double AlignStrings( char * r_str
             // backtrack now
 
             /*
-             // prints the score matrix
-             for ( long m = 0; m < score_rows; ++m ) {
-             for ( long n = 0; n < score_cols; ++n ) {
-             if ( n > 0 )
-             fprintf( stderr, "," );
-             fprintf( stderr, "% 3.3g", score_matrix[ m * score_cols + n ] );
-             }
-             fprintf( stderr, "\n" );
-             }
-             fprintf( stderr, "\n" );
-             */
+            // prints the score matrix
+            for ( long m = 0; m < score_rows; ++m ) {
+               for ( long n = 0; n < score_cols; ++n ) {
+                   if ( n > 0 )
+                       fprintf( stderr, "," );
+                   fprintf( stderr, "% 3.3g", score_matrix[ m * score_cols + n ] );
+               }
+               fprintf( stderr, "\n" );
+            }
+            fprintf( stderr, "\n" );
+            */
 
             if ( do_codon ) {
                 // if either index hits 0, we're done
@@ -1008,50 +1006,51 @@ double AlignStrings( char * r_str
             // don't forget it!!!
 
             // reference
-            while ( i > 0 ) {
-                --i;
+            while ( --i >= 0 )
                 edit_ops[ edit_ptr++ ] = -1;
-            }
 
             // then query
-            while ( j > 0 ) {
-                --j;
+            while ( --j >= 0 )
                 edit_ops[ edit_ptr++ ] = 1;
-            }
 
-            // rebuild the strings from the edit_ops
-            // with room for the null terminator
-            r_res = new char[ edit_ptr ];
-            q_res = new char[ edit_ptr ];
-            for ( --edit_ptr, k = 0; edit_ptr >= 0; --edit_ptr, ++k ) {
-                switch ( edit_ops[ edit_ptr ] ) {
-                        // match! include characters from both strings
-                    case 0:
-                        r_res[ k ] = r_str[ i++ ];
-                        q_res[ k ] = q_str[ j++ ];
-                        break;
-                        // insertion!
-                    case 1:
-                        r_res[ k ] = gap;
-                        q_res[ k ] = q_str[ j++ ];
-                        break;
-                    case 2:
-                        r_res[ k ] = gap;
-                        q_res[ k ] = tolower( q_str[ j++ ] );
-                        break;
-                    case -1:
-                        r_res[ k ] = r_str[ i++ ];
-                        q_res[ k ] = gap;
-                        break;
-                    case -2:
-                        r_res[ k ] = tolower( r_str[ i++ ] );
-                        q_res[ k ] = gap;
-                        break;
+            if ( edit_ptr > 0 ) {
+                // reset indices to 0
+                i = j = 0;
+
+                // rebuild the strings from the edit_ops
+                // with room for the null terminator
+                r_res = new char[ edit_ptr + 1 ];
+                q_res = new char[ edit_ptr + 1 ];
+                for ( --edit_ptr, k = 0; edit_ptr >= 0; --edit_ptr, ++k ) {
+                    switch ( edit_ops[ edit_ptr ] ) {
+                            // match! include characters from both strings
+                        case 0:
+                            r_res[ k ] = r_str[ i++ ];
+                            q_res[ k ] = q_str[ j++ ];
+                            break;
+                            // insertion!
+                        case 1:
+                            r_res[ k ] = gap;
+                            q_res[ k ] = q_str[ j++ ];
+                            break;
+                        case 2:
+                            r_res[ k ] = gap;
+                            q_res[ k ] = tolower( q_str[ j++ ] );
+                            break;
+                        case -1:
+                            r_res[ k ] = r_str[ i++ ];
+                            q_res[ k ] = gap;
+                            break;
+                        case -2:
+                            r_res[ k ] = tolower( r_str[ i++ ] );
+                            q_res[ k ] = gap;
+                            break;
+                    }
                 }
+                // make sure to null-terminate
+                r_res[ k ] = '\0';
+                q_res[ k ] = '\0';
             }
-            // make sure to null-terminate
-            r_res[ k ] = '\0';
-            q_res[ k ] = '\0';
 
 #ifdef ALIGN_DEBUG
             _String alignDebug( "alignScoreMatrix" );
@@ -1069,16 +1068,16 @@ double AlignStrings( char * r_str
                 ad->SetValue( deletion_matrix, true );
             }
 #endif
-            delete edit_ops;
-            delete score_matrix;
+            delete [] edit_ops;
+            delete [] score_matrix;
 
             if ( do_affine ) {
-                delete insertion_matrix;
-                delete deletion_matrix;
+                delete [] insertion_matrix;
+                delete [] deletion_matrix;
             }
 
-            delete r_enc;
-            delete q_enc;
+            delete [] r_enc;
+            delete [] q_enc;
         }
     }
 
