@@ -1,31 +1,41 @@
 /*
-
-HyPhy - Hypothesis Testing Using Phylogenies.
-
-Copyright (C) 1997-2009
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon              (apoon@cfenet.ubc.ca)
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
+ 
+ HyPhy - Hypothesis Testing Using Phylogenies.
+ 
+ Copyright (C) 1997-now
+ Core Developers:
+ Sergei L Kosakovsky Pond (spond@ucsd.edu)
+ Art FY Poon    (apoon@cfenet.ubc.ca)
+ Steven Weaver (sweaver@ucsd.edu)
+ 
+ Module Developers:
+ Lance Hepler (nlhepler@gmail.com)
+ Martin Smith (martin.audacis@gmail.com)
+ 
+ Significant contributions from:
+ Spencer V Muse (muse@stat.ncsu.edu)
+ Simon DW Frost (sdf22@cam.ac.uk)
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ */
 
 #include "likefunc.h"
 #include "batchlan.h"
@@ -1513,19 +1523,19 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 
 //____________________________________________________________________________________
 
-_String  blFor                  ("for("),
-         blWhile                    ("while("),
-         blFunction                 ("function "),
-         blFFunction                ("ffunction "),
-         blReturn                   ("return "),
-         blReturn2              ("return("),
-         blIf                       ("if("),
-         blElse                     ("else"),
-         blDo                       ("do{"),
-         blBreak                    ("break;"),
-         blContinue             ("continue;"),
-         blInclude              ("#include"),
-         blDataSet              ("DataSet "),
+_String  blFor                  ("for("),               // moved
+         blWhile                    ("while("),         // moved
+         blFunction                 ("function "),      // moved
+         blFFunction                ("ffunction "),     // moved
+         blReturn                   ("return "),        // moved
+         blReturn2              ("return("),            // moved
+         blIf                       ("if("),            // moved
+         blElse                     ("else"),           // moved
+         blDo                       ("do{"),            // moved
+         blBreak                    ("break;"),         // moved
+         blContinue             ("continue;"),          // moved
+         blInclude              ("#include"),           // moved
+         blDataSet              ("DataSet "),           // moved
          blDataSetFilter            ("DataSetFilter "),
          blHarvest              ("HarvestFrequencies"),
          blConstructCM          ("ConstructCategoryMatrix("),
@@ -1590,6 +1600,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
     }
 
     char * savePointer = s.sData;
+    
+    _SimpleList          triePath;
 
     while (s.Length()) { // repeat while there is stuff left in the buffer
         _String currentLine (_ElementaryCommand::FindNextCommand (s,true));
@@ -1602,14 +1614,68 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             continue;
         }
         
+        triePath.Clear(false);
+        long prefixTreeCode = _HY_ValidHBLExpressions.Find (currentLine, &triePath, true);
+        
+        _List *pieces = nil;
+        _HBLCommandExtras *commandExtraInfo = nil;
+        
+        if (prefixTreeCode != HY_TRIE_NOTFOUND) {
+            prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
+            long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
+            if (commandExtra >= 0) { // pre-trim all strings as needed
+                commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
+                if (commandExtraInfo->extract_conditions.lLength > 0) {
+                    pieces = new _List;
+                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces),
+                    condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
+                    if (condition_index_match < 0) {
+                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                        DeleteObject (pieces);
+                        return false;
+                    }
+                    if (commandExtraInfo->do_trim) {
+                        currentLine.Trim (upto, -1);
+                    }
+                }
+            }
+        }
+        
+        bool handled = false;
+               
+        switch (prefixTreeCode) {
+            case HY_HBL_COMMAND_FOR:
+                _ElementaryCommand::BuildFor (currentLine, *this, *pieces);
+                handled = true;
+                break;
+            case HY_HBL_COMMAND_WHILE:
+                _ElementaryCommand::BuildWhile (currentLine, *this, *pieces);
+                handled = true;
+                break;
+            case HY_HBL_COMMAND_BREAK:
+            case HY_HBL_COMMAND_CONTINUE:
+                if (bc) {
+                    AppendNewInstance(new _ElementaryCommand);
+                    (*bc) << ((prefixTreeCode == HY_HBL_COMMAND_BREAK) ? (countitems()-1) : (-(long)countitems()+1));
+                } else {
+                    WarnError (currentLine & " only makes sense in the context of a loop.");
+                    return false;
+                }
+                handled = true;
+                break;
+            case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
+                _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
+                
+        }
+        
+        if (handled)
+            DeleteObject (pieces);
+        
         // 20111212: this horrendous switch statement should be replaced with a 
         // prefix tree lookup 
 
-        if (currentLine.startswith (blFor)) { // for statement
-            _ElementaryCommand::BuildFor (currentLine, *this);
-        } else if (currentLine.startswith (blWhile)) { // while statement
-            _ElementaryCommand::BuildWhile (currentLine, *this);
-        } else if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
+        if (!handled)
+        if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
             _ElementaryCommand::ConstructFunction (currentLine, *this);
         } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
             _ElementaryCommand::ConstructReturn (currentLine, *this);
@@ -1658,17 +1724,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
         } else if (currentLine.startswith (blDo)) { // do {} while statement
             _ElementaryCommand::BuildDoWhile (currentLine, *this);
-        } else if (currentLine.Equal(&blBreak)) { // a break statement
-            if (bc) {
-                AppendNewInstance(new _ElementaryCommand);
-                (*bc)<<(countitems()-1);
-            }
-        } else if (currentLine.Equal(&blContinue)) { // a continue statement
-            if (bc) {
-                AppendNewInstance(new _ElementaryCommand);
-                (*bc)<<(-(long)countitems()+1);
-            }
-        } else if (currentLine.startswith (blInclude)) { // #include
+        }  else if (currentLine.startswith (blInclude)) { // #include
             _ElementaryCommand::ProcessInclude (currentLine, *this);
         } else if (currentLine.startswith (blDataSet)) { // data set definition
             _ElementaryCommand::ConstructDataSet (currentLine, *this);
@@ -1704,8 +1760,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructCategory (currentLine, *this);
         } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
             _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
-        } else if (currentLine.startswith (blSetDialogPrompt)) { //set dialog prompt
-            _ElementaryCommand::SetDialogPrompt (currentLine, *this);
         } else if (currentLine.startswith (blSelectTemplateModel)) { // select a template model
             _ElementaryCommand::SelectTemplateModel (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
@@ -2116,7 +2170,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = _String("Clear contstraints on: ")&(*converted);
         break;
     }
-    case 23: { // set dialog prompt
+    case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         converted = (_String*)parameters.toStr();
         result = _String("Set dialog prompt to: ")&(*converted);
         break;
@@ -4888,8 +4942,10 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
 {
     chain.currentCommand++;
-    // first check to see if matrix parameters here are valid
-
+    /*
+        first check to see if matrix parameters here are valid
+    */
+    
     _String *currentArgument = (_String*)parameters(0),
              nmspc           = AppendContainerName(*currentArgument,chain.nameSpacePrefix),
              errMsg,
@@ -4935,16 +4991,16 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     }
 
 
-    long    f         = likeFuncNamesList.Find(&nmspc),
-            g         = (f>=0?-1:scfgNamesList.Find (&nmspc)),
-            bgm_index = ((f>=0||g>=0)?-1:bgmNamesList.Find (&nmspc));
-
-    if (f>=0 || g>=0 || bgm_index >= 0) {
-        currentArgument          = (_String*)parameters(1);
-
-        if (f<0 && g<0) { // BGM Branch
-#if defined __AFYP_REWRITE_BGM__
-            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) bgmList (bgm_index);
+    long objectIndex,
+         typeFlag    = HY_BL_ANY;
+    
+    BaseRef theObject      = _HYRetrieveBLObjectByName (nmspc, typeFlag, &objectIndex);
+    
+    switch (typeFlag)
+    {
+        case HY_BL_BGM: { // BGM Branch
+        #if defined __AFYP_REWRITE_BGM__
+            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
 
             // set data matrix
             if (currentArgument->Equal (&bgmData)) {
@@ -5095,14 +5151,6 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                     return;
                 }
 
-#ifdef __NEVER_DEFINED__
-                // read data matrix from comma-delimited file at path specified in 2nd argument
-                _Matrix * data   = new _Matrix;
-                ReadDataFromFile (',', *data);
-
-                ((Bgm *)lkf)->SetDataMatrix (data);
-#endif
-
             } else if (currentArgument->Equal (&bgmWeights)) {
                 _Matrix     * weightMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
 
@@ -5132,23 +5180,6 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                         return;
                     }
                 }
-#ifdef __NEVER_DEFINED__
-                _String *   lastArgument    = (_String *) parameters (2);
-                long        val             = ProcessNumericArgument (lastArgument, chain.nameSpacePrefix);
-
-                if (val > 0.) {
-                    // default weight matrix filled with 1's
-                    _Matrix *   weights = new _Matrix ( val, 1, false, true);
-                    for (long wm = 0; wm < val; wm++) {
-                        weights->Store (wm, 0, 1.);
-                    }
-                } else {
-                    // read in weight matrix from comma-delimited file
-                    _Matrix *   weights = new _Matrix;
-                    ReadDataFromFile (',', *weights);
-                    ((Bgm *)lkf)->SetWeightMatrix (weights);
-                }
-#endif
             } else if (currentArgument->Equal (&bgmScores)) {
                 _Matrix * scores = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
                 if (scores) {
@@ -5255,106 +5286,82 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 return;
             }
 #endif
-        }
-
-        else {
-            // SCFG Branch
-            if (f<0) {
-                if (currentArgument->Equal (&scfgCorpus)) {
-                    ((Scfg*)scfgList(g))->SetStringCorpus ((_String*)parameters(2));
-                } else {
-                    _LikelihoodFunction * lkf = (_LikelihoodFunction *) scfgList (g);
-                    g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                        WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
-                        return;
-                    }
-                    currentArgument = (_String*)parameters(2);
-                    _Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    lkf->SetIthIndependent (g,val);
-                }
-            }
-
-            // LF Branch
-            else {
-                _LikelihoodFunction * lkf = (_LikelihoodFunction *) likeFuncList (f);
-                f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                if (f<0 || f>=lkf->GetIndependentVars().lLength) {
-                    WarnError (*currentArgument & " (=" & f & ") is not a valid parameter index in call to SetParameter");
+        } // end BGM
+        break;
+        
+        case HY_BL_SCFG:
+        case HY_BL_LIKELIHOOD_FUNCTION:
+        {
+            if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
+                ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
+            } else {
+                _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
+                currentArgument = (_String*)parameters(1);
+                long g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
+                if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
+                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
                     return;
                 }
                 currentArgument = (_String*)parameters(2);
                 _Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                lkf->SetIthIndependent (f,val);
+                lkf->SetIthIndependent (g,val);
             }
         }
-    } else {
-        _DataSet * ds = nil;
-        currentArgument = (_String*)parameters(1);
-        if ((f = FindDataSetName (nmspc)) >= 0){
-            ds = (_DataSet*)dataSetList (f);
-            f  =  ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-        }
-        else {
-            f = FindDataSetFilterName (nmspc);
-            if (f >= 0) {
-                _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (f);
-                if (dsf) {
-                    ds = dsf->GetData ();
-                    f = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                    if (f >= 0 && f < dsf->theNodeMap.lLength){
-                        f  = dsf->theNodeMap.lData[f];
-                    }
-               }
+        break;
+        // end SCFG and LF
+        
+        case HY_BL_DATASET:
+        case HY_BL_DATASET_FILTER: {
+            _DataSet * ds = nil;
+            
+            long f  = ProcessNumericArgument ((_String*)parameters(1),chain.nameSpacePrefix);
+            if (typeFlag == HY_BL_DATASET) {
+                ds = (_DataSet*) theObject;
             }
-        }
-        if (ds) {
-           _List*  dsNames = &ds->GetNames();
+            else {
+                _DataSetFilter *dsf = (_DataSetFilter*)theObject;
+                ds = dsf->GetData ();
+                if (f >= 0 && f < dsf->theNodeMap.lLength){
+                    f  = dsf->theNodeMap.lData[f];
+                }
+                else
+                    f = -1;
+            }
+            
+        
+            _List*  dsNames = &ds->GetNames();
+            
             if (f<0 || f>=dsNames->lLength) {
-                WarnError (*currentArgument & " (=" & f & ") is not a valid sequence index in call to SetParameter");
+                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to SetParameter");
                 return;
             }
 
-             dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
-        }
-        /*else
-        {
-            _Variable* top = FetchVar (LocateVarByName (*currentArgument));
-            if (top && top->ObjectClass () == TOPOLOGY)
-            {
-                _TreeTopology * tt = (_TreeTopology*)top;
-
-                currentArgument = (_String*)parameters(1);
-                f               = ProcessNumericArgument(currentArgument);
-
-                _Constant*      c = (_Constant*)tt->TipCount();
-                if ((f<0)||(f>=c->Value()))
-                {
-                    errMsg = *currentArgument & " (=" & f & ") is not a valid leaf index in call to SetParameter";
-                    DeleteObject (c);
-                    WarnError (errMsg);
-                    return;
+            dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
+        } // end data set and data set filter
+        break; 
+        // Dataset and Datasetfilter
+        
+        default:
+            // check to see if this is a calcnode
+            _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
+            if (treeNode) { 
+                if (*((_String*)parameters(1)) == _String("MODEL")) {
+                    _String modelName = AppendContainerName(*((_String*)parameters(2)),chain.nameSpacePrefix);
+                    long modelType = HY_BL_MODEL, modelIndex;
+                    BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex);
+                    if (modelObject) {
+                        //treeNode->SetModel ();
+                    }
+                    else {
+                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to SetParameter");
+                    }
                 }
-
-                DeleteObject (c);
-
-                _String nn (ProcessLiteralArgument ((_String*)parameters(2)));
-
-                if (nn.IsValidIdentifier (false))
-                {
-
-                }
-                else
-                {
-                    errMsg = nn & " is not a valid leaf name in call to SetParameter";
-                    WarnError (errMsg);
-                }
-            }*/
-        else {
+            }
+            
             WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter");
-        }
-        //}
-    }
+
+    
+    } // end cases
 }
 
 //____________________________________________________________________________________
@@ -6936,7 +6943,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 23: { // set dialog prompt
+    case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         chain.currentCommand++;
         dialogPrompt = ProcessLiteralArgument((_String*)parameters(0),chain.nameSpacePrefix);
     }
@@ -7504,7 +7511,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
 //____________________________________________________________________________________
 
 
-bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target)
+bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target,  _List & pieces)
 
 // the for loop becomes this:
 // initialize
@@ -7515,20 +7522,14 @@ bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target)
 // goto if(condition)
 
 {
-
-    // extract the for enclosure
-    _List pieces;
-    long upto = ExtractConditions (source,4,pieces);
-
-    if (pieces.lLength!=3) {
-        _String errMsg ("'for' header appears incomplete");
-        acknError (errMsg);
-        return false;
-    }
-
-    source.Trim (upto,-1);
-
     return MakeGeneralizedLoop ((_String*)pieces(0),(_String*)pieces(1),(_String*)pieces(2),true,source,target);
+}
+
+//____________________________________________________________________________________
+
+bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target,  _List &pieces)
+{
+    return MakeGeneralizedLoop (nil,(_String*)pieces(0),nil,true,source,target);
 }
 
 //____________________________________________________________________________________
@@ -7573,24 +7574,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
     return target.BuildList(source,bc,true);
 }
 
-//____________________________________________________________________________________
 
-bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target)
-{
-
-    _List pieces;
-    long upto = ExtractConditions (source,6,pieces);
-
-    if (pieces.lLength!=1) {
-        _String errMsg ("'while' header appears incomplete");
-        acknError (errMsg);
-        return false;
-    }
-
-    source.Trim (upto,-1);
-
-    return MakeGeneralizedLoop (nil,(_String*)pieces(0),nil,true,source,target);
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionList&target)
@@ -7917,22 +7901,6 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::SetDialogPrompt(_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,16,args,',');
-    if (args.lLength!=1) {
-        _String errMsg ("Expected SetDialogPrompt(\"prompt\");");
-        acknError (errMsg);
-        return false;
-    }
-    _ElementaryCommand cv;
-    cv.code = 23;
-    cv.parameters<< args(0);
-    target&& &cv;
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::SelectTemplateModel(_String&source, _ExecutionList&target)
@@ -8609,7 +8577,7 @@ bool    _ElementaryCommand::ConstructSetParameter (_String&source, _ExecutionLis
     _List pieces;
     ExtractConditions (source,blSetParameter.sLength,pieces,',');
     if (pieces.lLength!=3) {
-        WarnError ("Expected: syntax: SetParameter(lkfuncID, index, value)");
+        WarnError ("Expected: syntax: SetParameter(object, index, value)");
         return false;
     }
 

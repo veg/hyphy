@@ -2,20 +2,18 @@
 
 function computeTotalDivergence (treeID)
 {
-	ExecuteCommands ("bNames = BranchName   ("+treeID+",-1);");
-	ExecuteCommands ("bLen   = BranchLength ("+treeID+",-1);");
+	bNames = Eval("BranchName   (`treeID`,-1);");
+	bLen   = Eval("BranchLength (`treeID`,-1);");
 	
 	sum  = 0;
-	sum2 = 0;
+	sum2 = +bLen;
 	
 	
-	for (_k=0; _k<Columns(bNames); _k=_k+1)
+	for (_k=0; _k<Columns(bNames); _k += 1)
 	{
-		aNodeName = bNames[_k];
-		sum  = sum + bLen[_k]*multFactors[aNodeName];
-		sum2 = sum2 + bLen[_k];
+		sum += bLen[_k]*multFactors[bNames[_k]];
 	}	
-	return {{sum,sum2}};
+	return {{sum__,sum2__}};
 }
 
 /*---------------------------------------------------------*/

@@ -443,7 +443,11 @@ function MPISendJobMEME ()
                     }
                 }
                 OPTIMIZATION_METHOD = 0;
+                LF_NEXUS_EXPORT_EXTRA = _memeExtra;
                 MPISend (mpiNode+1, siteLikelihood);
+                //fName = "/Users/sergei/Desktop/" + theJob[0];
+                //fprintf (fName, CLEAR_FILE, MPI_LAST_SENT_MSG);
+                LF_NEXUS_EXPORT_EXTRA = "";
                 if (debugVerboseFlag)
                 {
                     fprintf (stdout, "[DEBUG: Sending MEME fit of site ", theJob[0], " to node ", mpiNode+1, "]");
@@ -514,7 +518,18 @@ function ReceiveJobsMEME ()
 	
 	siteMap = dupInfo[siteIndex];
 		
-	ExecuteCommands (result_String);
+	if (siteNAF == 1)
+	{	
+	    res = Eval (result_String);
+	    siteLikelihood_MLES = res["MLES"];
+	    siteLikelihood_MLE_VALUES = res["VALUES"];
+	    byBranchEstimates    = res["BRANCHES"];
+	    bySiteBranchReports [siteMap] = byBranchEstimates;
+	}
+	else
+	{
+	    ExecuteCommands (result_String);
+	}
 	
     if (siteNAF < 2)
     {

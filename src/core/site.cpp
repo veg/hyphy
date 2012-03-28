@@ -69,15 +69,15 @@ extern _Parameter dFPrintFormat,
 
 //_________________________________________________________
 
-_String           dataFileTree              ("IS_TREE_PRESENT_IN_DATA"),
+_String           dataFileTree             ("IS_TREE_PRESENT_IN_DATA"),
                   dataFileTreeString       ("DATAFILE_TREE"),
                   aminoAcidOneCharCodes    ("ACDEFGHIKLMNPQRSTVWY"),
                   dnaOneCharCodes          ("ACGT"),
                   rnaOneCharCodes          ("ACGU"),
                   binaryOneCharCodes       ("01"),
                   nexusFileTreeMatrix      ("NEXUS_FILE_TREE_MATRIX"),
-                  dataFilePartitionMatrix   ("DATA_FILE_PARTITION_MATRIX"),
-                  useTraversalHeuristic        ("USE_TRAVERSAL_HEURISTIC"),
+                  dataFilePartitionMatrix  ("DATA_FILE_PARTITION_MATRIX"),
+                  useTraversalHeuristic    ("USE_TRAVERSAL_HEURISTIC"),
                   defaultLargeFileCutoff   ("USE_MEMORY_SAVING_DATA_STRUCTURES"),
                   fileTreeString;
 

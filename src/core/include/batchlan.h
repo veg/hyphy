@@ -43,27 +43,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "parser.h"
 #include "site.h"
-#include "stdio.h"
+#include "trie.h"
+#include <stdio.h>
 
-//!  Batch Language 'Object' type codes
-/*!
-     20110608 SLKP introduced.
-
-     Bit flag style type tags and masks
-     This is primarily to be used for object retrieval
-     using the _HYRetrieveBLObjectByName function
-*/
-
-#define   HY_BL_NOT_DEFINED             0
-#define   HY_BL_DATASET                 1
-#define   HY_BL_DATASET_FILTER          2
-#define   HY_BL_LIKELIHOOD_FUNCTION     4
-#define   HY_BL_SCFG                    8
-#define   HY_BL_BGM                     16
-#define   HY_BL_MODEL                   32
-#define   HY_BL_HBL_FUNCTION            64
-
-#define   HY_BL_ANY                     1023
 
 
 //____________________________________________________________________________________
@@ -74,6 +56,18 @@ struct    _CELInternals {
     _SimpleList       varList,
                       storeResults;
 
+};
+
+//____________________________________________________________________________________
+struct    _HBLCommandExtras {
+    long                cut_string;
+    char                extract_condition_separator;
+    _SimpleList         extract_conditions;
+    _List               command_invocation;
+    
+    bool                do_trim,
+                        is_assignment,
+                        needs_verb;
 };
 
 //____________________________________________________________________________________
@@ -166,8 +160,7 @@ public:
     void      ExecuteCase0   (_ExecutionList&);
     void      ExecuteCase4   (_ExecutionList&);
     void      ExecuteCase5   (_ExecutionList&);
-    void      ExecuteDataFilterCases
-    (_ExecutionList&);
+    void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
@@ -215,7 +208,19 @@ public:
     static  long      ExtractConditions     (_String& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
-    static  bool      BuildFor              (_String&, _ExecutionList&);
+    static  bool      ExtractValidateAddHBLCommand (_String& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
+    /**
+     * Take a command from the current command stream, extract it, make an _ElementaryCommand and add it to the execution list
+     * @param current_stream -- the current command text stream
+     * @param command_code   -- the numerical code (from HY_HBL_COMMAND_*)
+     * @param pieces         -- the list of parameters extracted from the () part of the command
+     * @param command_spec   -- command specification structure
+     * @param command_list   -- the command list object to append the command to
+     * @return success/failure. 
+     */
+   
+
+    static  bool      BuildFor              (_String&, _ExecutionList&, _List&);
     // builds the for loop starting from
     // the beginning of input
     // this will process the loop header
@@ -227,7 +232,7 @@ public:
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildWhile            (_String&, _ExecutionList&);
+    static  bool      BuildWhile            (_String&, _ExecutionList&, _List&);
     // builds the while(..) construct starting from
     // the beginning of input
     // this will process the loop header
@@ -334,8 +339,6 @@ public:
     static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      SetDialogPrompt       (_String&, _ExecutionList&);
 
     static  bool      ConstructGetURL       (_String&, _ExecutionList&);
 
@@ -455,7 +458,6 @@ modelTypeList,
 modelFrequenciesIndices,
 listOfCompiledFormulae;
 
-
 extern  _String
 
 getDString,
@@ -548,9 +550,10 @@ hfCountGap                      ;
 
 extern  _ExecutionList              *currentExecutionList;
 
-extern  _AVLList
-loadedLibraryPaths;
-
+extern  _AVLList                    loadedLibraryPaths;
+extern  _AVLListX                   _HY_HBLCommandHelper;
+                                    
+extern  _Trie                       _HY_ValidHBLExpressions;
 
 long    FindDataSetName              (_String&);
 long    FindDataSetFilterName        (_String&);
@@ -606,6 +609,7 @@ _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);
 
 void    _HBL_Init_Const_Arrays       (void);
+
 void    ReturnCurrentCallStack       (_List&, _List&);
 
 /**
@@ -629,7 +633,10 @@ void    ReturnCurrentCallStack       (_List&, _List&);
     @version 20110608
 */
 
-BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long* index = nil);
+BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil);
+
+
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false);
 
 
 extern  bool                        numericalParameterSuccessFlag;

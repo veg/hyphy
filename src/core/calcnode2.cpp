@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "likefunc.h"
 #include "scfg.h"
 #include <math.h>
+#include <float.h>
 
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
@@ -652,8 +653,23 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
 
 #ifndef _SLKP_SSE_VECTORIZATION_
 
-                if (alphabetDimension > alphabetDimensionmod4)
+                if (alphabetDimension > alphabetDimensionmod4){
+                    
+                    /*_Parameter maxParentP = _lfScalingFactorThreshold;
+                    
+                    for (long p = 0; p < alphabetDimension; p++)
+                        if (parentConditionals[p] > maxParentP) {
+                            maxParentP = parentConditionals[p];
+                        } 
+                        
+                    maxParentP *= DBL_EPSILON;  */      
+                    
                     for (long p = 0; p < alphabetDimension; p++) {
+                        /*if (parentConditionals[p] < maxParentP) {
+                            tMatrix               += alphabetDimension;
+                            continue;
+                        }*/
+                        
                         _Parameter      accumulator = 0.0;
 
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
@@ -669,6 +685,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         tMatrix               += alphabetDimension;
                         sum += (parentConditionals[p] *= accumulator);
                     }
+                }
                 else
                     for (long p = 0; p < alphabetDimension; p++) {
                         _Parameter      accumulator = 0.0;

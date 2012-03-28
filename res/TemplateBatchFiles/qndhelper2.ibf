@@ -291,3 +291,141 @@ else
 	fprintf (stdout, "\nTree scaling factor(S): ", rConstr/blNuc);
 	fprintf (stdout,"\n\nUsing dN/dS=", dNdS, "\nCodon model:", lf);
 }
+
+// ------ MEME helper function --------
+
+function obtainBranchWiseEBEstimates (_sFactor,_nsFactor1,_nsFactor2, _mixingP,filterString) {
+
+        ClearConstraints    (perBranchTree);
+        ReplicateConstraint ("this1.?.alpha:=_sFactor*this2.?.synRate__",perBranchTree,codonTree);
+        ReplicateConstraint ("this1.?.beta1:=_nsFactor1*sFactor*this2.?.synRate__",perBranchTree,codonTree);
+        ReplicateConstraint ("this1.?.beta2:=_nsFactor2*this2.?.synRate__",perBranchTree,codonTree);
+        ReplicateConstraint ("this1.?.lmp:=_mixingP", perBranchTree);
+        
+        
+        LoadFunctionLibrary ("AncestralMapper");
+        ancID = _buildAncestralCache ("siteLikelihood",0);
+        subMap = _tabulateSubstitutionsAtSiteByBranch (ancID,0);
+        _destroyAncestralCache (ancID);
+
+       _bn = BranchName (perBranchTree, -1);
+        
+        DataSetFilter locSiteFilter = CreateFilter (ds,3,filterString,"",GeneticCodeExclusions);
+        
+		LikelihoodFunction siteLikelihoodLoc = (locSiteFilter, perBranchTree);
+        LFCompute (siteLikelihoodLoc,LF_START_COMPUTE);
+        LFCompute (siteLikelihoodLoc,baseline);
+        
+        _totalBranchCount  = Columns (_bn) - 1;
+        posteriorEstimates = {};
+        
+        if (_mixingP != 1 && _mixingP != 0) {
+            _priorOdds = (1-_mixingP)/_mixingP;
+        } else {
+            _priorOdds = 0;
+        }
+        
+        for (k = 0; k < _totalBranchCount; k+=1)
+        {
+             _pname = "perBranchTree." + _bn[k] + ".lmp";
+            ExecuteCommands ("`_pname`=1");
+            LFCompute (siteLikelihoodLoc,LOGL0);
+            
+            MaxL     = -Max (LOGL0,baseline);
+            
+            baseline += MaxL;
+            LOGL0 = Exp(MaxL+LOGL0);
+            LOGL1 = (Exp(baseline) - _mixingP * LOGL0) / (1-_mixingP);
+            
+            ExecuteCommands ("`_pname`=_mixingP");
+            _posteriorProb = {{LOGL0 * _mixingP, LOGL1 * (1-_mixingP)}};
+            _posteriorProb = _posteriorProb * (1/(+_posteriorProb));
+            if ( _priorOdds != 0) {
+                eBF = _posteriorProb[1] / (1 - _posteriorProb[1]) / _priorOdds;
+            } else {
+                eBF = 1;
+            }
+            posteriorEstimates [_bn[k]] = {1,4};
+            (posteriorEstimates [_bn[k]])[0] = _posteriorProb[1];
+            (posteriorEstimates [_bn[k]])[1] = eBF;
+            (posteriorEstimates [_bn[k]])[2] = (subMap[_bn[k]])[0];
+            (posteriorEstimates [_bn[k]])[3] = (subMap[_bn[k]])[1];
+            baseline += -MaxL;
+        } 
+        LFCompute (siteLikelihoodLoc,LF_DONE_COMPUTE);
+        
+        return posteriorEstimates;
+}
+
+// ------ MEME helper function --------
+
+function obtainBranchWiseEBEstimatesMPI (_sFactor,_nsFactor1,_nsFactor2,_mixingP) {
+        if (_nsFactor2 <= _sFactor || _mixingP == 1 || _mixingP == 0)
+        {
+            return {};
+        }
+        
+        sFactor   = _sFactor;
+        nsFactor1 = _nsFactor1;
+        nsFactor2 = _nsFactor2;
+        mixingP   = _mixingP;
+        
+        treeString = Format (siteTree,1,1);
+        
+        LoadFunctionLibrary ("AncestralMapper");
+        ancID = _buildAncestralCache ("siteLikelihood",0);
+        subMap = _tabulateSubstitutionsAtSiteByBranch (ancID,0);
+        _destroyAncestralCache (ancID);
+
+        Model 		MGLocalMix		=		  ("Exp(MGMatrix1)*lmp+Exp(MGMatrix2)*(1-lmp)",codonFrequencies,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
+        Tree        perBranchTree 			= treeString;
+        ClearConstraints    (perBranchTree);
+        ReplicateConstraint ("this1.?.alpha:=this2.?.alpha__",perBranchTree,siteTree);
+        ReplicateConstraint ("this1.?.beta1:=this2.?.beta1__",perBranchTree,siteTree);
+        ReplicateConstraint ("this1.?.beta2:=this2.?.beta2__",perBranchTree,siteTree);
+        ReplicateConstraint ("this1.?.lmp:=_mixingP", perBranchTree);
+        
+        _bn = BranchName (perBranchTree, -1);
+        
+		LikelihoodFunction siteLikelihoodLoc = (siteFilter, perBranchTree);
+        LFCompute (siteLikelihoodLoc,LF_START_COMPUTE);
+        LFCompute (siteLikelihoodLoc,baseline);
+        
+        _totalBranchCount  = Columns (_bn) - 1;
+        posteriorEstimates = {};
+        
+        _priorOdds = (1-_mixingP)/_mixingP;
+        
+        for (k = 0; k < _totalBranchCount; k+=1)
+        {
+             _pname = "perBranchTree." + _bn[k] + ".lmp";
+            ExecuteCommands ("`_pname`=1");
+            LFCompute (siteLikelihoodLoc,LOGL0);
+            
+            MaxL     = -Max (LOGL0,baseline);
+            
+            baseline += MaxL;
+            LOGL0 = Exp(MaxL+LOGL0);
+            LOGL1 = (Exp(baseline) - _mixingP * LOGL0) / (1-_mixingP);
+            
+            ExecuteCommands ("`_pname`=_mixingP");
+            _posteriorProb = {{LOGL0 * _mixingP, LOGL1 * (1-_mixingP)}};
+            _posteriorProb = _posteriorProb * (1/(+_posteriorProb));
+            if ( _priorOdds != 0) {
+                eBF = _posteriorProb[1] / (1 - _posteriorProb[1]) / _priorOdds;
+            } else {
+                eBF = 1;
+            }
+            posteriorEstimates [_bn[k]] = {1,4};
+            (posteriorEstimates [_bn[k]])[0] = _posteriorProb[1];
+            (posteriorEstimates [_bn[k]])[1] = eBF;
+            (posteriorEstimates [_bn[k]])[2] = (subMap[_bn[k]])[0];
+            (posteriorEstimates [_bn[k]])[3] = (subMap[_bn[k]])[1];
+            baseline += -MaxL;
+        } 
+        
+        LFCompute (siteLikelihoodLoc,LF_DONE_COMPUTE);
+        
+         
+        return posteriorEstimates;
+}

@@ -340,11 +340,18 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
 }
 
 //__________________________________________________________________________________
+void    _VariableContainer::SetModel (long modelID, _AVLListXL* varCache)
+{
+    theModel = modelID;
+    ScanModelBasedVariables (*theName, varCache);
+    SortVars();
+}
+
+//__________________________________________________________________________________
 void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt, _VariableContainer* theP, _AVLListXL* varCache)
 {
     _String fullName (aName);
     
-    theModel  = FindModelName(theTmplt);
     theParent = theP;
 
 
@@ -370,9 +377,8 @@ void    _VariableContainer::InitializeVarCont (_String& aName, _String& theTmplt
     } else {
         fullName = *theName;
     }
-
-    ScanModelBasedVariables (fullName, varCache);
-    SortVars();
+    
+    SetModel (FindModelName(theTmplt), varCache);
 }
 
 //__________________________________________________________________________________
