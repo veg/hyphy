@@ -148,7 +148,8 @@ _Operation::_Operation  (_PMathObj theObj)
 bool _Operation::CanResultsBeCached (_Operation* prev)
 {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
-        if (prev->theNumber && prev->theNumber->ObjectClass() == MATRIX || prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX) {
+        if ((prev->theNumber && prev->theNumber->ObjectClass() == MATRIX)
+           || (prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)) {
             return true;
         }
     }

@@ -139,7 +139,7 @@ bool    ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine
         while (newPos<CurrentLine.sLength) {
             c = CurrentLine.sData[newPos];
             if (isspace(c)) {
-                if (stopOnSpace && startedReading && (!insideLiteral) && (!NLonly || NLonly && (c==10 || c==13))) {
+                if (stopOnSpace && startedReading && (!insideLiteral) && (!NLonly || (NLonly && (c==10 || c==13)))) {
                     done = true;
                     break;
                 } else {
@@ -419,7 +419,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                                 for (long k=0; k<blank.sLength; k++) {
                                     char ch = blank.sData[k];
 
-                                    if (ch>='0'&&ch<='9' || ch=='.') {
+                                    if ((ch>='0' && ch<='9') || ch=='.') {
                                         if (spoolInto2nd) {
                                             numberTwo = numberTwo & ch;
                                         } else if (spoolInto3rd) {

@@ -1473,7 +1473,7 @@ _Parameter      LinearSpaceAlign (_String *s1,                  // first string
                 currentScoreWithGap2  = buffer[2]->theData[k] + buffer[5]->theData[span-k] + gapOffsetScore;
 
 
-                if (doAffine && ((from1 == 0 || from2==0) && k == 0 || (to1 == s1->sLength || to2 == s2->sLength) && k == span)) {
+                if (doAffine && (((from1 == 0 || from2==0) && k == 0) || ((to1 == s1->sLength || to2 == s2->sLength) && k == span))) {
                     currentScoreWithGap2 -= gapOffsetScore;
                 }
 

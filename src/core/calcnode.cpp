@@ -1372,7 +1372,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                 }
 
             if ( lastNode<parms.sLength )
-                while ( c<='9'&& c>='0' || c=='.' ||c=='-' ||c=='+' || c=='e' || c=='E') {
+                while ( (c<='9' && c>='0') || c=='.' ||c=='-' ||c=='+' || c=='e' || c=='E') {
                     if (lastNode<parms.sLength) {
                         c = parms[++lastNode];
                     } else {
@@ -9701,7 +9701,7 @@ void _TheTree::MapPostOrderToInOderTraversal (_SimpleList& storeHere, bool doINo
 
     while (traversalNode) {
         bool isTip = IsCurrentNodeATip();
-        if (isTip && !doINodes || !isTip && doINodes) {
+        if ((isTip && !doINodes) || (!isTip && doINodes)) {
             storeHere.lData[nodeMapper->GetXtra (nodeMapper->Find((BaseRef)(&GetCurrentNode())))] = allNodeCount++;
         }
 
