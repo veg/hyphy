@@ -100,8 +100,6 @@ extern  long    lastFileTypeSelection;
 
 
 
-void        ReadModelList(void);
-
 #ifdef      __MACPROFILE__
 #include "profiler.h"
 #endif
@@ -238,8 +236,8 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfDevNull                ("/dev/null"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
                                 dialogPrompt,
-                                lastModelUsed,
                                 baseDirectory,
+                                lastModelUsed,
                                 libDirectory,
                                 scanfLastFilePath,
                                 defFileNameValue;
@@ -605,49 +603,6 @@ long    FindBgmName (_String&s)
 }
 
 
-//____________________________________________________________________________________
-
-void    ReadModelList(void)
-{
-    _String modelListFile;
-#ifdef  __MAC__
-    modelListFile = libDirectory&_String("TemplateBatchFiles:TemplateModels:models.lst");
-#endif
-#ifdef  __WINDOZE__
-    modelListFile = libDirectory &"TemplateBatchFiles\\TemplateModels\\models.lst";
-#endif
-#ifdef __HYPHY_GTK__
-    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
-#endif
-#ifdef __UNIX__
-    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
-#endif
-
-    FILE* modelList = doFileOpen (modelListFile.getStr(),"rb");
-    if (!modelList) {
-        return;
-    }
-    _String theData (modelList);
-    fclose (modelList);
-    if (theData.sLength) {
-        _ElementaryCommand::ExtractConditions(theData,0,theModelList);
-        for (long i = 0; i<theModelList.countitems(); i++) {
-            _String* thisString = (_String*)theModelList(i);
-            _List   thisModel;
-            _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisModel,',');
-            if (thisModel.lLength!=5) {
-                theModelList.Delete(i);
-                i--;
-                continue;
-            }
-            for (long j = 0; j<5; j++) {
-                ((_String*)thisModel(j))->StripQuotes();
-            }
-            ((_String*)thisModel(0))->UpCase();
-            theModelList.Replace(i,&thisModel,true);
-        }
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -1552,7 +1507,6 @@ _String  blFor                  ("for("),               // moved
          blCategory             ("category "),
          blClearConstraints         ("ClearConstraints("),
          blSetDialogPrompt      ("SetDialogPrompt("),
-         blSelectTemplateModel  ("SelectTemplateModel("),
          blUseModel                 ("UseModel("),
          blModel                    ("Model "),
          blSetParameter             ("SetParameter("),
@@ -1665,6 +1619,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_OPTIMIZE:
             case HY_HBL_COMMAND_COVARIANCE_MATRIX:
             case HY_HBL_COMMAND_LFCOMPUTE:
+            case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1757,8 +1712,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructCategory (currentLine, *this);
         } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
             _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
-        } else if (currentLine.startswith (blSelectTemplateModel)) { // select a template model
-            _ElementaryCommand::SelectTemplateModel (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
             _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
         } else if (currentLine.startswith (blUseModel)) { // use model
@@ -3897,155 +3850,6 @@ void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
 #endif
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase24 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    SetStatusLine ("Waiting for model selection");
-
-    _String     modelFile,
-                errMsg;
-
-    if (!theModelList.lLength) {
-        ReadModelList();
-    }
-
-    if (((_String*)parameters(0))->Equal(&useLastModel)) {
-        if (lastModelUsed.sLength) {
-            modelFile = lastModelUsed;
-            errMsg    = modelFile;
-            PushFilePath (errMsg);
-        } else {
-            WarnError ("First call to SelectTemplateModel. USE_LAST_MODEL is meaningless.");
-            return ;
-        }
-    } else {
-        _String filterName (chain.AddNameSpaceToID(*(_String*)parameters(0)));
-        long fd = FindDataSetFilterName(filterName);
-        if (fd == -1) {
-            WarnError ((_String)("DataSetFilter ")&filterName&" is invalid in call to " & blSelectTemplateModel.Cut(0,blSelectTemplateModel.sLength-2));
-            return ;
-        }
-        _DataSetFilter* thisDF = (_DataSetFilter*)dataSetFilterList (fd);
-        // decide what this DF is comprised of
-
-        _String             dataType;
-
-        long                dataDimension   = thisDF->GetDimension(),
-                            unitLength         = thisDF->GetUnitLength();
-
-        _TranslationTable*  thisTT = thisDF->GetData()->GetTT();
-        if (unitLength==1) {
-            if (thisTT->IsStandardNucleotide()) {
-                dataType = "nucleotide";
-            } else if (thisTT->IsStandardAA()) {
-                dataType = "aminoacid";
-            }
-        } else {
-            if (thisTT->IsStandardNucleotide())
-                if (unitLength==3) {
-                    dataType = "codon";
-                } else if (unitLength==2) {
-                    dataType = "dinucleotide";
-                }
-        }
-
-        if (!dataType.sLength) {
-            WarnError (_String("DataSetFilter ")&filterName&" contains non-standard data and SelectTemplateModel is not applicable.");
-            return ;
-        }
-
-        _SimpleList matchingModels;
-
-        for (fd = 0; fd<theModelList.lLength; fd++)
-            if (dataType.Equal((_String*)(*(_List*)theModelList(fd))(3))) {
-                if ((*((_String*)(*(_List*)theModelList(fd))(2))==_String("*"))||
-                        (dataDimension ==((_String*)(*(_List*)theModelList(fd))(2))->toNum())) {
-                    matchingModels << fd;
-                }
-            }
-
-        if (!matchingModels.lLength) {
-            WarnError ((_String)("DataSetFilter ")&filterName&" could not be matched with any template models.");
-            return ;
-        }
-        fd = -1;
-
-        if (chain.stdinRedirect) {
-            errMsg = chain.FetchFromStdinRedirect ();
-            for (fd = 0; fd<matchingModels.lLength; fd++)
-                if (errMsg.Equal((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))) {
-                    break;
-                }
-
-            if (fd >= matchingModels.lLength) {
-                WarnError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
-                return ;
-            }
-        } else {
-#ifdef __HEADLESS__
-            WarnError ("Unhandled standard input interaction in Select Model for headless HyPhy");
-            return;
-#else
-#ifdef __UNIX__
-            while (fd == -1) {
-                printf ("\n\n               +--------------------------+\n");
-                printf     ("               | Select a standard model. |\n");
-                printf ("               +--------------------------+\n\n\n");
-                for (fd = 0; fd<matchingModels.lLength; fd++) {
-                    printf ("\n\t(%s):%s",((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))->getStr(),
-                            ((_String*)(*(_List*)theModelList(matchingModels(fd)))(1))->getStr());
-                }
-                printf ("\n\n Please type in the abbreviation for the model you want to use:");
-                dataType.CopyDynamicString(StringFromConsole());
-                dataType.UpCase();
-                for (fd = 0; fd<matchingModels.lLength; fd++) {
-                    if (dataType.Equal((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))) {
-                        break;
-                    }
-                }
-                if (fd==matchingModels.lLength) {
-                    fd=-1;
-                }
-            }
-#endif
-#ifndef __UNIX__
-            _SimpleList choiceDummy, selDummy;
-            choiceDummy << 0;
-            choiceDummy << 1;
-            fd = HandleListSelection (theModelList, choiceDummy, matchingModels, "Choose one of the standard models",selDummy,1);
-            if (fd==-1) {
-                terminateExecution = true;
-                return ;
-            }
-#endif
-#endif
-        }
-        modelFile = libDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar()
-                    & "TemplateModels" & GetPlatformDirectoryChar();
-
-        errMsg = modelFile;
-        PushFilePath (errMsg);
-        modelFile = modelFile&*((_String*)(*(_List*)theModelList(matchingModels(fd)))(4));
-    }
-
-    _ExecutionList      stdModel;
-    if (chain.nameSpacePrefix) {
-        stdModel.SetNameSpace (*chain.nameSpacePrefix->GetName());
-    }
-
-    ReadBatchFile       (modelFile,stdModel);
-    PopFilePath         ();
-    lastModelUsed       = modelFile;
-
-    stdModel.stdinRedirectAux = chain.stdinRedirectAux;
-    stdModel.stdinRedirect    = chain.stdinRedirect;
-    stdModel.Execute();
-    stdModel.stdinRedirectAux = nil;
-    stdModel.stdinRedirect    = nil;
-}
 
 //____________________________________________________________________________________
 
@@ -6420,11 +6224,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     case HY_HBL_COMMAND_HARVEST_FREQUENCIES: { // or HarvestFrequencies
         return HandleHarvestFrequencies(chain);
     }
-    break;
+
     case HY_HBL_COMMAND_OPTIMIZE: // optimize the likelihood function
     case HY_HBL_COMMAND_COVARIANCE_MATRIX: {
         return HandleOptimizeCovarianceMatrix (chain, code == HY_HBL_COMMAND_OPTIMIZE);
-        break;
     }
 
     case 11: // build the likelihood function
@@ -6597,10 +6400,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 24: // prompt for a model file
-
-        ExecuteCase24(chain);
-        break;
+    case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL: // prompt for a model file
+        return HandleSelectTemplateModel(chain);
 
     case 25: // fscanf
     case 56: // sscanf
@@ -6696,8 +6497,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         break;
 
     case HY_HBL_COMMAND_LFCOMPUTE:
-        HandleComputeLFFunction(chain);
-        break;
+        return HandleComputeLFFunction(chain);
 
     case 50:
         ExecuteCase38 (chain, true);
@@ -7549,23 +7349,6 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
     return true;
 }
 
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::SelectTemplateModel(_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,20,args,',');
-    if (args.lLength!=1) {
-        _String errMsg ("Expected SelectTemplateModel(DataSetFilter);");
-        acknError (errMsg);
-        return false;
-    }
-    _ElementaryCommand cv;
-    cv.code = 24;
-    cv.parameters<< args(0);
-    target&& &cv;
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target)

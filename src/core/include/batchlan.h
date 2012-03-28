@@ -166,7 +166,6 @@ public:
     void      ExecuteCase12  (_ExecutionList&);
     void      ExecuteCase17  (_ExecutionList&);
     void      ExecuteCase21  (_ExecutionList&);
-    void      ExecuteCase24  (_ExecutionList&);
     void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
     void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
@@ -203,6 +202,7 @@ public:
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
     bool      HandleComputeLFFunction               (_ExecutionList&);
+    bool      HandleSelectTemplateModel             (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -430,6 +430,7 @@ dataSetNamesList,
 likeFuncList,
 dataSetFilterList,
 dataSetFilterNamesList,
+templateModelList,
 scfgNamesList,
 scfgList,
 
@@ -537,6 +538,7 @@ errorReportFormatExpression     ,
 errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
 errorReportFormatExpressionStdin,
+lastModelUsed                   ,
 
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
@@ -593,7 +595,7 @@ void    KillLFRecord                 (long, bool = true);
 void    KillDataSetRecord            (long);
 void    KillModelRecord              (long);
 void    KillExplicitModelFormulae    (void);
-bool    PushFilePath                 (_String&);
+bool    PushFilePath                 (_String&, bool = true);
 void    PopFilePath                  (void);
 _Matrix*CheckMatrixArg               (_String*, bool);
 _AssociativeList *
@@ -601,6 +603,7 @@ CheckAssociativeListArg      (_String*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
+void    ReadModelList                (void);
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);
@@ -634,6 +637,7 @@ void    ReturnCurrentCallStack       (_List&, _List&);
 
 BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 _String _HYHBLTypeToText                (long type);
+_String _HYStandardDirectory            (const unsigned long);
 
 _HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = empty, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 

@@ -62,9 +62,12 @@ _Stack::~_Stack (void)
 }
 
 //__________________________________________________________________________________
-bool _Stack::Push (_PMathObj newObj)    // push object onto the stack
+bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
 {
-    theStack<<(newObj);
+    if (dup)
+        theStack<<(newObj);
+    else
+        theStack.AppendNewInstance(newObj);
     return true;
 }
 

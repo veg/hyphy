@@ -271,7 +271,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 
 
+//!  HyPhy standard directory locations 
+/*!
+    retrieve using _HYStandardDirectory
 
+*/
+
+#define   HY_HBL_DIRECTORY_TEMPLATE_MODELS                              1000L
 
 
 

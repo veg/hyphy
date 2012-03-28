@@ -1840,72 +1840,73 @@ long     _Formula::NumberOperations(void)
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace) // compute the value of the formula
 {
     if (theFormula.lLength == 0) {
-        return new _MathObject;
-    }
-
-    bool wellDone = true;
-
-    if (startAt == 0) {
         theStack.theStack.Clear();
-    }
+        theStack.Push (new _MathObject, false);
+    } else {
+        bool wellDone = true;
 
-    if (startAt == 0 && resultCache && resultCache->lLength) {
-        long cacheID     = 0;
-        bool cacheResult = false;
+        if (startAt == 0) {
+            theStack.theStack.Clear();
+        }
 
-        for (long i=0; i<theFormula.lLength; i++) {
-            _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-            if (i < theFormula.lLength-1) {
-                _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
+        if (startAt == 0 && resultCache && resultCache->lLength) {
+            long cacheID     = 0;
+            bool cacheResult = false;
 
-                if (! cacheResult && nextOp->CanResultsBeCached(thisOp)) {
-                    if (!thisOp->Execute(theStack,nameSpace)) {
-                        wellDone = false;
-                        break;
+            for (long i=0; i<theFormula.lLength; i++) {
+                _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+                if (i < theFormula.lLength-1) {
+                    _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
+
+                    if (! cacheResult && nextOp->CanResultsBeCached(thisOp)) {
+                        if (!thisOp->Execute(theStack,nameSpace)) {
+                            wellDone = false;
+                            break;
+                        }
+
+                        _Matrix *currentArg = (_Matrix*)theStack.Pop(false),
+                                 *cachedArg  = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
+                                  *diff     = nil;
+
+                        if (cachedArg->ObjectClass() == MATRIX) {
+                            diff =  (_Matrix*)cachedArg->SubObj(currentArg);
+                        }
+
+                        if (diff && diff->MaxElement() <= 1e-12) {
+                            DeleteObject  (theStack.Pop  ());
+                            theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
+                            cacheID += 2;
+                            i ++;
+                        } else {
+                            cacheResult = true;
+                            resultCache->Replace(cacheID++,theStack.Pop(false),true);
+                        }
+                        DeleteObject (diff);
+                        continue;
                     }
-
-                    _Matrix *currentArg = (_Matrix*)theStack.Pop(false),
-                             *cachedArg  = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
-                              *diff     = nil;
-
-                    if (cachedArg->ObjectClass() == MATRIX) {
-                        diff =  (_Matrix*)cachedArg->SubObj(currentArg);
-                    }
-
-                    if (diff && diff->MaxElement() <= 1e-12) {
-                        DeleteObject  (theStack.Pop  ());
-                        theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
-                        cacheID += 2;
-                        i ++;
-                    } else {
-                        cacheResult = true;
-                        resultCache->Replace(cacheID++,theStack.Pop(false),true);
-                    }
-                    DeleteObject (diff);
-                    continue;
+                }
+                if (!thisOp->Execute(theStack,nameSpace)) {
+                    wellDone = false;
+                    break;
+                }
+                if (cacheResult) {
+                    resultCache->Replace(cacheID++,theStack.Pop(false),true);
+                    cacheResult = false;
                 }
             }
-            if (!thisOp->Execute(theStack,nameSpace)) {
-                wellDone = false;
-                break;
-            }
-            if (cacheResult) {
-                resultCache->Replace(cacheID++,theStack.Pop(false),true);
-                cacheResult = false;
-            }
+        } else {
+            for (long i=startAt; i<theFormula.lLength; i++)
+                if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace)) {
+                    wellDone = false;
+                    break;
+                }
         }
-    } else {
-        for (long i=startAt; i<theFormula.lLength; i++)
-            if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace)) {
-                wellDone = false;
-                break;
-            }
+        if (theStack.theStack.lLength != 1 || !wellDone) {
+            WarnError (_String((_String*)toStr()) & _String(" contains errors."));
+            theStack.theStack.Clear();
+            theStack.Push (new _Constant (0.0), false);
+         }
     }
-    if (theStack.theStack.lLength != 1 || !wellDone) {
-        WarnError (_String((_String*)toStr()) & _String(" contains errors."));
-        return    new _Constant (0.0);
-    }
-
 
     return theStack.Pop(false);
 }

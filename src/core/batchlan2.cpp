@@ -295,6 +295,12 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "CovarianceMatrix (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
      
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SelectTemplateModel(", HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,false),
+                                    1, 
+                                    "SelectTemplateModel(<DataSetFilter>);"));
+
+
 }
 
 //____________________________________________________________________________________
@@ -1307,93 +1313,6 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
     }
 }
 
-//_________________________________________________________________________
-
-bool    ExpressionCalculator (void)
-{
-    _String data (StringFromConsole(false));
-
-#ifndef __UNIX__
-    if (terminateExecution) {
-        return false;
-    }
-    BufferToConsole (">");
-    StringToConsole (data);
-    BufferToConsole ("\n");
-#endif
-
-    if (data.sLength == 4) {
-        _String checkForExit (data);
-        checkForExit.LoCase();
-        if (checkForExit == _String ("exit")) {
-            return false;
-        }
-    }
-
-    _Formula  lhs,
-              rhs;
-
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil);
-
-    if (!terminateExecution) {
-        if (retCode == HY_FORMULA_EXPRESSION) {
-            _PMathObj formRes = lhs.Compute();
-            if (!formRes) {
-                BufferToConsole ("NULL\n");
-            } else {
-                _String * objValue = (_String*)formRes->toStr();
-                StringToConsole (*objValue);
-                BufferToConsole ("\n");
-                DeleteObject    (objValue);
-            }
-        } else {
-            BufferToConsole ("NO RETURN VALUE\n");
-        }
-    }
-    terminateExecution = false;
-    return true;
-}
-
-//_________________________________________________________________________
-
-bool    PushFilePath (_String& pName)
-{
-    char c = GetPlatformDirectoryChar();
-
-    long    f = pName.FindBackwards(_String(c),0,-1);
-    if (f>=0) {
-        _String newP = pName.Cut(0,f);
-        pathNames && & newP;
-        pName.Trim (f+1,-1);
-        return true;
-    } else if (pathNames.lLength) {
-        pathNames && pathNames(pathNames.lLength-1);
-    } else {
-        pathNames && & empty;
-    }
-
-    return false;
-}
-
-//_________________________________________________________________________
-void   PopFilePath (void)
-{
-    pathNames.Delete (pathNames.lLength-1);
-}
-
-//_________________________________________________________________________
-void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
-{
-    _ExecutionList ex;
-    if (theP) {
-        ex.SetNameSpace(*theP->GetName());
-    }
-    ex.BuildList   (BLCommand);
-    terminateExecution = false;
-    ex.Execute      ();
-    terminateExecution = false;
-}
 
 //____________________________________________________________________________________
 

@@ -41,6 +41,12 @@
 #include      "batchlan.h"
 #include      "likefunc.h"
 
+#if defined __MAC__ || defined __WINDOZE__ || defined HYPHY_GTK
+    #include "HYConsoleWindow.h"
+    #include "HYDialogs.h"
+
+#endif
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
@@ -95,7 +101,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
     
     _String  lfResName  (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
              lfNameID   (currentProgram.AddNameSpaceToID(*(_String*)parameters(1)));
-
+             
     _Variable* result = CheckReceptacleCommandID (&lfResName, doOptimize?HY_HBL_COMMAND_OPTIMIZE:HY_HBL_COMMAND_COVARIANCE_MATRIX,true);
 
     // Handle string variables passed as likefunc IDs?
@@ -114,6 +120,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
     
     if (!doOptimize) { 
         // COVARIANCE_MATRIX 
+ 
         SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
         _String              cpl = currentProgram.AddNameSpaceToID(covarianceParameterList);
         _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
@@ -128,7 +135,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                 {
                     checkPointer (restrictor = new _SimpleList);
                     _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                    for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
+                    for (unsigned long iid = 0; iid < restrictedVariables->lLength; iid++) {
                         _String varID = currentProgram.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
                         variableIDs << LocateVarByName (varID);
                     }
@@ -140,7 +147,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                 }
                 if (variableIDs.lLength > 0) {
                     checkPointer(restrictor = new _SimpleList ());
-                    for (long var_index = 0; var_index < variableIDs.lLength; var_index++) {
+                    for (unsigned long var_index = 0; var_index < variableIDs.lLength; var_index++) {
                         long vID = lkf->GetIndependentVars().Find(variableIDs.lData[var_index]);
                         if (vID >= 0) (*restrictor) << vID;
                     }
@@ -150,9 +157,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                     }
                }
             }   
-            if (optRes) {
-                result->SetValue( (_Matrix*)lkf->CovarianceMatrix(restrictor),false);
-            }
+            result->SetValue( (_Matrix*)lkf->CovarianceMatrix(restrictor),false);
             DeleteObject (restrictor);
         } else {
         // BGM
@@ -176,12 +181,13 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
         } else {
             SetStatusLine (_String("Optimizing user function ") &lfNameID);        
         }
-        optRes = lkf->Optimize();
+        result -> SetValue(lkf->Optimize(),false);
     }
 
     if (objectType == HY_BL_NOT_DEFINED) {
         DeleteObject (lkf);    // delete the custom function object
     }
+    
     
     SetStatusLine ("Finished with the optimization");
 
@@ -223,3 +229,146 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
     return true;
     
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& currentProgram) {
+        
+    currentProgram.currentCommand++;
+
+    SetStatusLine ("Waiting for model selection");
+
+    _String     modelFile,
+                errMsg;
+
+    ReadModelList();
+
+    if (((_String*)parameters(0))->Equal(&useLastModel)) {
+        if (lastModelUsed.sLength) {
+            PushFilePath (lastModelUsed);
+        } else {
+            WarnError (_String("First call to SelectTemplateModel. ") & useLastModel &" is meaningless.");
+            return false;
+        }
+    } else {
+        _String filterName (currentProgram.AddNameSpaceToID(*(_String*)parameters(0)));
+        long            objectType = HY_BL_DATASET_FILTER;
+        _DataSetFilter* thisDF = (_DataSetFilter*)_HYRetrieveBLObjectByName (filterName, objectType,nil,true);
+                // decide what this DF is comprised of
+
+        _String             dataType;
+        long                dataDimension   = thisDF->GetDimension(),
+                            unitLength      = thisDF->GetUnitLength();
+
+        _TranslationTable*  thisTT = thisDF->GetData()->GetTT();
+        
+        if (unitLength==1) {
+            if (thisTT->IsStandardNucleotide()) {
+                dataType = "nucleotide";
+            } else if (thisTT->IsStandardAA()) {
+                dataType = "aminoacid";
+            }
+        } else {
+            if (thisTT->IsStandardNucleotide())
+                if (unitLength==3) {
+                    dataType = "codon";
+                } else if (unitLength==2) {
+                    dataType = "dinucleotide";
+                }
+        }
+
+        if (!dataType.sLength) {
+            WarnError (_String("DataSetFilter '")&filterName&"' contains non-standard data and SelectTemplateModel is not applicable.");
+            return false;
+        }
+
+        _SimpleList matchingModels;
+
+        for (unsigned long model_index = 0; model_index < templateModelList.lLength; model_index++) {
+            _List *model_components = (_List*)templateModelList(model_index);
+            
+            if (dataType.Equal((_String*)model_components->GetItem(3))) {
+                _String * dim = (_String*)model_components->GetItem(2);
+                if (*dim==_String("*")|| dataDimension == dim->toNum()) {
+                    matchingModels << model_index;
+                }
+            }
+        }
+
+        if (!matchingModels.lLength) {
+            WarnError ((_String)("DataSetFilter '")&filterName&"' could not be matched with any template models.");
+            return false;
+        }
+        unsigned long model_id = -1;
+
+        if (currentProgram.stdinRedirect) {
+            errMsg = currentProgram.FetchFromStdinRedirect ();
+            for (model_id = 0; model_id<matchingModels.lLength; model_id++)
+                if (errMsg.Equal((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))) {
+                    break;
+                }
+
+            if (model_id >= matchingModels.lLength) {
+                WarnError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
+                return false;
+            }
+        } else {
+#ifdef __HEADLESS__
+            WarnError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+            return;
+#else
+#ifdef __UNIX__
+            while (model_id == -1) {
+                printf ("\n\n               +--------------------------+\n");
+                printf     ("               | Select a standard model. |\n");
+                printf ("               +--------------------------+\n\n\n");
+                for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
+                    printf ("\n\t(%s):%s",((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))->getStr(),
+                            ((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(1))->getStr());
+                }
+                printf ("\n\n Please type in the abbreviation for the model you want to use:");
+                dataType.CopyDynamicString(StringFromConsole());
+                dataType.UpCase();
+                for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
+                    if (dataType.Equal((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))) {
+                        break;
+                    }
+                }
+                if (model_id==matchingModels.lLength) {
+                    model_id=-1;
+                }
+            }
+#endif
+#ifndef __UNIX__
+            _SimpleList choiceDummy (2,0,1), selDummy;
+            model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard models",selDummy,1);
+            if (model_id==-1) {
+                terminateExecution = true;
+                return false;
+            }
+#endif
+#endif
+        }
+        modelFile = _HYStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) &*((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(4));
+        PushFilePath (modelFile, false);
+    }
+
+    _ExecutionList      stdModel;
+    if (currentProgram.nameSpacePrefix) {
+        stdModel.SetNameSpace (*currentProgram.nameSpacePrefix->GetName());
+    }
+
+    ReadBatchFile       (modelFile,stdModel);
+    PopFilePath         ();
+    lastModelUsed       = modelFile;
+
+    stdModel.stdinRedirectAux = currentProgram.stdinRedirectAux;
+    stdModel.stdinRedirect    = currentProgram.stdinRedirect;
+    stdModel.Execute();
+    stdModel.stdinRedirectAux = nil;
+    stdModel.stdinRedirect    = nil;   
+
+    return true;
+    
+}
+
