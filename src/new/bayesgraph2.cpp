@@ -312,19 +312,19 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
             keyString = _String("Node") & node & "NumParents" & num_parents;
 
             if (num_parents == 0) {
-                if (valuePtr = cache_import->GetByKey(keyString, NUMBER)) {
+                if ((valuePtr = cache_import->GetByKey(keyString, NUMBER))) {
                     (*node_scores) && (_Constant *) valuePtr;    // append duplicate
                 } else {
                     errMsg = _String ("Expecting numerical value in associative list for key ") & keyString;
                 }
             } else if (num_parents == 1) {
-                if (valuePtr = cache_import->GetByKey(keyString, MATRIX)) {
+                if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
                     (*node_scores) && (_Matrix *) valuePtr;
                 } else {
                     errMsg = _String ("Expecting matrix in associative list for key ") & keyString;
                 }
             } else {
-                if (valuePtr = cache_import->GetByKey(keyString, MATRIX)) {
+                if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
                     (*node_scores) && (_NTupleStorage *) valuePtr;
                 } else {
                     errMsg = _String("Expecting matrix (_NTupleStorage) object in associative list for key ") & keyString;

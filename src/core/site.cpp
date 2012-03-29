@@ -5264,7 +5264,7 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
 
     tempBuffer.Finalize();
 
-    if ( fp&&feof(fp) || fs->theSource&& fs->pInSrc>=fs->theSource->sLength )
+    if ( (fp && feof(fp)) || (fs->theSource && fs->pInSrc >= fs->theSource->sLength) )
         if (tempBuffer.sLength == 0) {
             *s = "";
             return;

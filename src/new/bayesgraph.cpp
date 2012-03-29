@@ -95,7 +95,7 @@ long        integerPower (long base, long exponent)
 {
     //  Rapid computation of an integer power.
     long    result = 1,
-            mask   = 1<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
+            mask   = 1L<<(sizeof(long)*8-2); // left shift to left-most position of binary sequence for long integer
     // e.g. 100...0 (30 zeroes for signed long)
 
     while ((exponent & mask) == 0) {
@@ -230,7 +230,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
         
 
         // node type (0 = discrete, 1 = continuous)
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER)))) {
             node_type.lData[node] = (long)(avl_val->Value());
             if (node_type.lData[node] < 0 || node_type.lData[node] > 2) {
                 errorMessage = _String("Unsupported NodeType ") & node_type.lData[node] & " for node " & node;
@@ -243,7 +243,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // number of levels (discrete nodes)
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NUM_LEVELS, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NUM_LEVELS, NUMBER)))) {
             num_levels.lData[node] = (long)(avl_val->Value());
 
             if (num_levels.lData[node] <= 1) {
@@ -259,7 +259,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // max parents
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_MAX_PARENT, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_MAX_PARENT, NUMBER)))) {
             max_parents.lData[node] = (long)(avl_val->Value());
 
             if (max_parents.lData[node] > global_max_parents) {
@@ -282,7 +282,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // prior sample size
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SIZE, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SIZE, NUMBER)))) {
             prior_sample_size.Store (node, 0, (_Parameter) (avl_val->Value()));
 
             if (prior_sample_size(node,0) < 0) {
@@ -296,7 +296,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // prior mean (Gaussian)
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_MEAN, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_MEAN, NUMBER)))) {
             prior_mean.Store (node, 0, (_Parameter) (avl_val->Value()));
         } else if (!avl_val && node_type.lData[node] == 1) {
             errorMessage = _String ("Missing PriorMean in associative array for node ") & node;
@@ -305,7 +305,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // prior precision (Gaussian)
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))) {
             prior_precision.Store (node, 0, (_Parameter) (avl_val->Value()));
 
             if (avl_val <= 0) {
@@ -320,7 +320,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
 
 
         // prior scale (Gaussian)
-        if (avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER))) {
+        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))) {
             prior_scale.Store (node, 0, (_Parameter) (avl_val->Value()));
 
             if (avl_val <= 0) {
