@@ -172,7 +172,6 @@ public:
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
     void      ExecuteCase33  (_ExecutionList&); // index string selector
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
-    void      ExecuteCase35  (_ExecutionList&); // SetParameter
     void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
     void      ExecuteCase37  (_ExecutionList&); // GetInformation
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
@@ -203,6 +202,8 @@ public:
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
     bool      HandleComputeLFFunction               (_ExecutionList&);
     bool      HandleSelectTemplateModel             (_ExecutionList&);
+    bool      HandleUseModel                        (_ExecutionList&);
+    bool      HandleSetParameter                    (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -313,8 +314,6 @@ public:
 
     static  bool      ConstructOpenDataPanel (_String&, _ExecutionList&);
     // open data panel with given settings
-
-    static  bool      ConstructUseMatrix    (_String&, _ExecutionList&);
 
     static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
 
@@ -539,6 +538,13 @@ errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
 errorReportFormatExpressionStdin,
 lastModelUsed                   ,
+deferConstrainAssignment        ,
+bgmData                         ,
+bgmScores                       ,
+bgmGraph                        ,
+bgmNodeOrder                    ,
+bgmConstraintMx                 ,
+bgmParameters                   ,
 
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
@@ -553,6 +559,10 @@ extern  _AVLList                    loadedLibraryPaths;
 extern  _AVLListX                   _HY_HBLCommandHelper;
                                     
 extern  _Trie                       _HY_ValidHBLExpressions;
+
+extern  long                        globalRandSeed,
+                                    matrixExpCount;
+ 
 
 long    FindDataSetName              (_String&);
 long    FindDataSetFilterName        (_String&);

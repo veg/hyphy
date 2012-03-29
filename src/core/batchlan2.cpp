@@ -294,6 +294,16 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     "SelectTemplateModel(<DataSetFilter>);"));
 
 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_USE_MODEL, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("UseModel(", HY_HBL_COMMAND_USE_MODEL,false),
+                                                                1, 
+                                                                "UseModel (<model ID>)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_PARAMETER, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetParameter(", HY_HBL_COMMAND_SET_PARAMETER,false),
+                                                                3, 
+                                                                "SetParameter(<object>, <parameter index>, <value>)",','));
+
 }
 
 //____________________________________________________________________________________
