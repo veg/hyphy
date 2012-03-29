@@ -88,10 +88,9 @@ extern      long            lastMatrixDeclared,
 long        LocateVarByName (_String&);
 _Variable*  LocateVar       (long index);
 _Variable*  FetchVar        (long index);
-_PMathObj   FetchObjectFromVariableByType
-(_String*, int);
-_PMathObj   FetchObjectFromVariableByTypeIndex
-(long, int);
+_PMathObj   FetchObjectFromVariableByType       (_String*, const unsigned long, long = -1, _String* = nil);
+_PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
+_String     FetchObjectNameFromType (const unsigned long);
 _String&    AppendContainerName
 (_String&, _VariableContainer*);
 

@@ -37,9 +37,12 @@
  
  */
 
+#include      "baseobj.h"
 #include      "defines.h"
 #include      "batchlan.h"
 #include      "likefunc.h"
+#include      "bayesgraph.h"
+#include      "scfg.h"
 
 #if defined __MAC__ || defined __WINDOZE__ || defined HYPHY_GTK
     #include "HYConsoleWindow.h"
@@ -112,7 +115,6 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
 
     long       objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
     _LikelihoodFunction    *lkf = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (lfNameID, objectType,nil,doOptimize==false);
-    _Matrix                * optRes;
     
     if (lkf == nil) { // will only happen if the object is a custom function 
         lkf = (_LikelihoodFunction*)checkPointer(new _CustomFunction (&lfNameID));
@@ -162,6 +164,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
         } else {
         // BGM
             #if not defined __AFYP_REWRITE_BGM__
+                _Matrix                * optRes;
                 #ifdef __AFYP_DEVELOPMENT__
                     _SimpleList *   first_order = nil;
                      optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
@@ -299,7 +302,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
             WarnError ((_String)("DataSetFilter '")&filterName&"' could not be matched with any template models.");
             return false;
         }
-        unsigned long model_id = -1;
+        unsigned long model_id = HY_MAX_LONG_VALUE;
 
         if (currentProgram.stdinRedirect) {
             errMsg = currentProgram.FetchFromStdinRedirect ();
@@ -318,10 +321,11 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
             return;
 #else
 #ifdef __UNIX__
-            while (model_id == -1) {
+            while (model_id == HY_MAX_LONG_VALUE) {
                 printf ("\n\n               +--------------------------+\n");
                 printf     ("               | Select a standard model. |\n");
-                printf ("               +--------------------------+\n\n\n");
+                printf     ("               +--------------------------+\n\n\n");
+                
                 for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
                     printf ("\n\t(%s):%s",((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))->getStr(),
                             ((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(1))->getStr());
@@ -335,13 +339,13 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                     }
                 }
                 if (model_id==matchingModels.lLength) {
-                    model_id=-1;
+                    model_id=HY_MAX_LONG_VALUE;
                 }
             }
 #endif
 #ifndef __UNIX__
             _SimpleList choiceDummy (2,0,1), selDummy;
-            model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard models",selDummy,1);
+            model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1);
             if (model_id==-1) {
                 terminateExecution = true;
                 return false;
@@ -372,3 +376,273 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
     
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleUseModel (_ExecutionList& currentProgram) {
+    
+    currentProgram.currentCommand++;
+    _String namedspacedMM (currentProgram.AddNameSpaceToID(*(_String*)parameters(0)));
+    long mID = FindModelName(namedspacedMM);
+
+    if (mID<0 && !useNoModel.Equal((_String*)parameters(0))) {
+        WarnError(*(_String*)parameters(0) & " does not refer to a valid defined substitution model in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_USE_MODEL));
+        return false;
+    } else {
+        lastMatrixDeclared = mID;
+    }
+
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram) {
+
+    currentProgram.currentCommand++;
+    /*
+        first check to see if matrix parameters here are valid
+    */
+    
+    _String *currentArgument = (_String*)parameters(0),
+             nmspc           = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix),
+             errMsg,
+             result;
+
+    if (currentArgument->Equal (&randomSeed)) {
+        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+        init_genrand (globalRandSeed);
+        setParameter (randomSeed, ((long)globalRandSeed));
+        return true;
+    }
+
+    if (currentArgument->Equal (&deferConstrainAssignment)) {
+        bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+        if (on) {
+            deferSetFormula = (_SimpleList*)checkPointer(new _SimpleList);
+        } else if (deferSetFormula) {
+            FinishDeferredSF ();
+        }
+        return true;
+    }
+
+    if (currentArgument->Equal (&statusBarProgressValue)) {
+#if !defined __UNIX__
+        SetStatusLine     (empty,empty, empty,  ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix), HY_SL_PERCENT);
+#endif
+        return true;
+    }
+
+    if (currentArgument->Equal (&statusBarUpdateString)) {
+        _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+
+#if defined __UNIX__ 
+        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
+            SetStatusLineUser     (sbar_value);
+        #else
+            SetStatusLine (sbar_value);
+        #endif 
+#else
+        SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
+#endif
+        return true;
+    }
+
+
+    long objectIndex,
+         typeFlag    = HY_BL_ANY;
+    
+    BaseRef theObject      = _HYRetrieveBLObjectByName (nmspc, typeFlag, &objectIndex);
+    
+    switch (typeFlag)
+    {
+        case HY_BL_BGM: { // BGM Branch
+            currentArgument = (_String*)parameters(1);
+
+            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
+            // set data matrix
+            if (currentArgument->Equal (&bgmData)) {
+                _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+                if (dataMx) {
+                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+
+                    if (dataMx->GetVDim() == num_nodes) {
+                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
+                    } else {
+                        WarnError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").");
+                        return false;
+                    }
+                } else {
+                     return false;
+                }
+
+            }
+
+            // restore node score cache
+            else if (currentArgument->Equal (&bgmScores)) {
+                _AssociativeList * cacheAVL = (_AssociativeList *)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+                if (cacheAVL) {
+                    ((_BayesianGraphicalModel *)lkf)->ImportCache (cacheAVL);
+                } else {
+                    return false;
+                }
+            }
+
+            // set structure to user-specified adjacency matrix
+            else if (currentArgument->Equal (&bgmGraph)) {
+                _Matrix     * graphMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+
+                if (graphMx) {
+                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+
+                    if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
+                        ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
+                    } else {
+                        WarnError("Dimension of graph does not match current graph.");
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            // set constraint matrix
+            else if (currentArgument->Equal (&bgmConstraintMx)) {
+                _Matrix     * constraintMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+
+                if (constraintMx) {
+                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+
+                    if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
+                        ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
+                    } else {
+                        WarnError ("Dimensions of constraint matrix do not match current graph.");
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            // set node order
+            else if (currentArgument->Equal (&bgmNodeOrder)) {
+                _Matrix     * orderMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+
+                if (orderMx) {
+                    // UNDER DEVELOPMENT  April 17, 2008 afyp
+                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
+
+                    _SimpleList     * orderList = new _SimpleList();
+
+                    orderList->Populate (num_nodes, 0, 0);
+
+                    if (orderMx->GetVDim() == num_nodes) {
+                        for (long i = 0; i < num_nodes; i++) {
+                            orderList->lData[i] = (long) ((*orderMx) (0, i));
+                        }
+
+                        ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
+                    } else {
+                        WarnError("Length of order vector doesn't match number of nodes in graph.");
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+
+            // set network parameters
+            else if (currentArgument->Equal (&bgmParameters)) {
+                    _AssociativeList* inAVL = (_AssociativeList*)FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), currentProgram.nameSpacePrefix), ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+                if (inAVL) {
+                    ((_BayesianGraphicalModel *)lkf)->ImportCache (inAVL);
+                } else {
+                    return false;
+                }
+            }
+
+
+            // anything else
+            else {
+                WarnError (*currentArgument & " is not a valid BGM parameter in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                return false;
+            }
+        } // end BGM
+        break;
+        
+        case HY_BL_SCFG:
+        case HY_BL_LIKELIHOOD_FUNCTION:
+        {
+            if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
+                ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
+            } else {
+                _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
+                currentArgument = (_String*)parameters(1);
+                long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
+                if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
+                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                    return false;
+                }
+                currentArgument = (_String*)parameters(2);
+                lkf->SetIthIndependent (g,ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix));
+            }
+        }
+        break;
+        // end SCFG and LF
+        
+        case HY_BL_DATASET:
+        case HY_BL_DATASET_FILTER: {
+            _DataSet * ds = nil;
+            
+            long f  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
+            if (typeFlag == HY_BL_DATASET) {
+                ds = (_DataSet*) theObject;
+            }
+            else {
+                _DataSetFilter *dsf = (_DataSetFilter*)theObject;
+                ds = dsf->GetData ();
+                if (f >= 0 && f < dsf->theNodeMap.lLength){
+                    f  = dsf->theNodeMap.lData[f];
+                }
+                else
+                    f = -1;
+            }
+            
+        
+            _List*  dsNames = &ds->GetNames();
+            
+            if (f<0 || f>=dsNames->lLength) {
+                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                return false;
+            }
+
+            dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix)), false);
+        } // end data set and data set filter
+        break; 
+        // Dataset and Datasetfilter
+        
+        default:
+            // check to see if this is a calcnode
+            _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
+            if (treeNode) { 
+                if (*((_String*)parameters(1)) == _String("MODEL")) {
+                    _String modelName = AppendContainerName(*((_String*)parameters(2)),currentProgram.nameSpacePrefix);
+                    long modelType = HY_BL_MODEL, modelIndex;
+                    BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex, true);
+                    if (modelObject) {
+                        //treeNode->SetModel ();
+                    }
+                    else {
+                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                        return false;
+                    }
+                }
+            }
+            
+            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+            return false;
+
+    
+    } // end cases
+    return true;
+}

@@ -263,8 +263,7 @@ _Parameter  explicitFormMatrixExponential = 0.0,
 long        scanfLastReadPosition         = 0;
 
 extern      _String             MATRIX_AGREEMENT,
-            ANAL_COMP_FLAG,
-            deferConstrainAssignment;
+            ANAL_COMP_FLAG;
 
 
 extern      _Parameter          toPolyOrNot,
@@ -272,9 +271,6 @@ extern      _Parameter          toPolyOrNot,
             ANALYTIC_COMPUTATION_FLAG;
 
 extern      _SimpleList         freeSlots;
-
-extern      long                globalRandSeed,
-            matrixExpCount;
 
 
 _AVLListX   openFileHandles     (&openFileHandlesBackend);
@@ -1507,9 +1503,7 @@ _String  blFor                  ("for("),               // moved
          blCategory             ("category "),
          blClearConstraints         ("ClearConstraints("),
          blSetDialogPrompt      ("SetDialogPrompt("),
-         blUseModel                 ("UseModel("),
          blModel                    ("Model "),
-         blSetParameter             ("SetParameter("),
          blChoiceList               ("ChoiceList("),
          blOpenDataPanel            ("OpenDataPanel("),
          blGetInformation           ("GetInformation("),
@@ -1620,6 +1614,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_COVARIANCE_MATRIX:
             case HY_HBL_COMMAND_LFCOMPUTE:
             case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
+            case HY_HBL_COMMAND_USE_MODEL:
+            case HY_HBL_COMMAND_SET_PARAMETER:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1714,12 +1710,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
             _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
-        } else if (currentLine.startswith (blUseModel)) { // use model
-            _ElementaryCommand::ConstructUseMatrix (currentLine, *this);
         } else if (currentLine.startswith (blModel)) { // Model declaration
             _ElementaryCommand::ConstructModel (currentLine, *this);
-        } else if (currentLine.startswith (blSetParameter)) { // set a LF parameter
-            _ElementaryCommand::ConstructSetParameter (currentLine, *this);
         } else if (currentLine.startswith (blChoiceList)) { // choice list
             _ElementaryCommand::ConstructChoiceList (currentLine, *this);
         } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
@@ -2157,7 +2149,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
     }
 
-    case 30: { // use matrix
+    case HY_HBL_COMMAND_USE_MODEL: { // use matrix
         converted = (_String*)parameters(0);
         result = _String ("Use the matrix ")&*converted;
         converted = nil;
@@ -2202,7 +2194,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         converted = nil;
         break;
     }
-    case 35: { // set parameter value
+    case HY_HBL_COMMAND_SET_PARAMETER: { // set parameter value
         converted = (_String*)parameters(1)->toStr();
         result = _String ("Set parameter ")&*converted;
         DeleteObject (converted);
@@ -4739,433 +4731,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    /*
-        first check to see if matrix parameters here are valid
-    */
-    
-    _String *currentArgument = (_String*)parameters(0),
-             nmspc           = AppendContainerName(*currentArgument,chain.nameSpacePrefix),
-             errMsg,
-             result;
-
-    if (currentArgument->Equal (&randomSeed)) {
-        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix);
-        init_genrand (globalRandSeed);
-        setParameter (randomSeed, ((long)globalRandSeed));
-        return;
-    }
-
-    if (currentArgument->Equal (&deferConstrainAssignment)) {
-        bool on = ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix);
-        if (on) {
-            deferSetFormula = (_SimpleList*)checkPointer(new _SimpleList);
-        } else if (deferSetFormula) {
-            FinishDeferredSF ();
-        }
-        return;
-    }
-
-    if (currentArgument->Equal (&statusBarProgressValue)) {
-#if !defined __UNIX__
-        SetStatusLine     (empty,empty, empty,  ProcessNumericArgument ((_String*)parameters(1), chain.nameSpacePrefix), HY_SL_PERCENT);
-#endif
-        return;
-    }
-
-    if (currentArgument->Equal (&statusBarUpdateString)) {
-        _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), chain.nameSpacePrefix);
-
-#if defined __UNIX__ 
-        #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
-            SetStatusLineUser     (sbar_value);
-        #else
-            SetStatusLine (sbar_value);
-        #endif 
-#else
-        SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
-#endif
-        return;
-    }
-
-
-    long objectIndex,
-         typeFlag    = HY_BL_ANY;
-    
-    BaseRef theObject      = _HYRetrieveBLObjectByName (nmspc, typeFlag, &objectIndex);
-    
-    switch (typeFlag)
-    {
-        case HY_BL_BGM: { // BGM Branch
-            currentArgument = (_String*)parameters(1);
-#if defined __AFYP_REWRITE_BGM__
-            _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
-            // set data matrix
-            if (currentArgument->Equal (&bgmData)) {
-                _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-                if (dataMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (dataMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").";
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-
-            }
-
-            // restore node score cache
-            else if (currentArgument->Equal (&bgmScores)) {
-                _PMathObj inAVL = FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-                if (inAVL) {
-                    _AssociativeList * cacheAVL = (_AssociativeList*)inAVL;
-                    ((_BayesianGraphicalModel *)lkf)->ImportCache (cacheAVL);
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid associative list variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            // set structure to user-specified adjacency matrix
-            else if (currentArgument->Equal (&bgmGraph)) {
-                _Matrix     * graphMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (graphMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Dimension of graph does not match current graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            // set constraint matrix
-            else if (currentArgument->Equal (&bgmConstraintMx)) {
-                _Matrix     * constraintMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (constraintMx) {
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Dimensions of constraint matrix does not match current graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            // set node order
-            else if (currentArgument->Equal (&bgmNodeOrder)) {
-                _Matrix     * orderMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (orderMx) {
-                    // UNDER DEVELOPMENT  April 17, 2008 afyp
-                    long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
-
-                    _SimpleList     * orderList = new _SimpleList();
-
-                    orderList->Populate (num_nodes, 0, 0);
-
-                    if (orderMx->GetVDim() == num_nodes) {
-                        for (long i = 0; i < num_nodes; i++) {
-                            orderList->lData[i] = (long) ((*orderMx) (0, i));
-                        }
-
-                        ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
-                    } else {
-                        errMsg = _String("Length of order vector doesn't match number of nodes in graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-
-            // set network parameters
-            else if (currentArgument->Equal (&bgmParameters)) {
-                _PMathObj inAVL = FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-                if (inAVL) {
-                    _AssociativeList * paramAVL = (_AssociativeList*)inAVL;
-                    ((_BayesianGraphicalModel *)lkf)->ImportCache (paramAVL);
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid associative list variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-
-            // anything else
-            else {
-                errMsg = *currentArgument & " is not a valid BGM parameter in call to SetParameter";
-                WarnError (errMsg);
-                return;
-            }
-#else
-            Bgm * lkf = (Bgm *) theObject;
-            if (currentArgument->Equal (&bgmData)) {
-                _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-                if (dataMx) {
-                    long    num_nodes = ((Bgm *)lkf)->GetNumNodes();
-
-                    if (dataMx->GetVDim() == num_nodes) {
-                        ((Bgm *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
-                    } else if (dataMx->GetVDim() == 2*num_nodes) {  // dynamic BGM
-                        ((_DynamicBgm *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").";
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-
-            } else if (currentArgument->Equal (&bgmWeights)) {
-                _Matrix     * weightMx  = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (weightMx) {
-                    if (weightMx->GetHDim() == ((Bgm *)lkf)->GetNumCases() ) {
-                        ((Bgm *)lkf)->SetWeightMatrix ((_Matrix *) weightMx->makeDynamic());
-                    } else {
-                        WarnError ("Number of weights does not match number of observations in current data set.");
-                        return;
-                    }
-                } else {
-                    _String *   lastArgument    = (_String *) parameters (2);
-                    long        val             = ProcessNumericArgument (lastArgument, chain.nameSpacePrefix);
-
-                    if (val > 0.) { // support deprecated argument
-                        long num_cases = (long) ((Bgm *)lkf->GetNumCases());
-
-
-                        _Matrix *   weights = new _Matrix (num_cases , 1, false, true);
-
-                        for (long wm = 0; wm < num_cases; wm++) {
-                            weights->Store (wm, 0, 1.);
-                        }
-                        ((Bgm *)lkf)->SetWeightMatrix ((_Matrix *) weights->makeDynamic());
-                    } else {
-                        WarnError (_String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable");
-                        return;
-                    }
-                }
-            } else if (currentArgument->Equal (&bgmScores)) {
-                _Matrix * scores = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-                if (scores) {
-                    ((Bgm *)lkf)->ImportNodeScores (scores);
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            else if (currentArgument->Equal (&bgmGraph)) {  // set DAG to user-defined configuration
-                _Matrix     * graphMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (graphMx) {
-                    long    num_nodes = ((Bgm *)lkf)->GetNumNodes();
-
-                    if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
-                        ((Bgm *)lkf)->SetGraphMatrix ((_Matrix *) graphMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Dimension of graph does not match current graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            else if (currentArgument->Equal (&bgmBanMx)) {  // set banned edges matrix
-                _Matrix     * banMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (banMx) {
-                    long    num_nodes = ((Bgm *)lkf)->GetNumNodes();
-
-                    if (banMx->GetHDim() == num_nodes && banMx->GetVDim() == num_nodes) {
-                        ((Bgm *)lkf)->SetBanMatrix ((_Matrix *) banMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Dimensions of banned edge matrix does not match current graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            else if (currentArgument->Equal (&bgmEnforceMx)) {  // set enforced edges matrix
-                _Matrix     * enforceMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (enforceMx) {
-                    long    num_nodes = ((Bgm *)lkf)->GetNumNodes();
-
-                    if (enforceMx->GetHDim() == num_nodes && enforceMx->GetVDim() == num_nodes) {
-                        ((Bgm *)lkf)->SetEnforceMatrix ((_Matrix *) enforceMx->makeDynamic());
-                    } else {
-                        errMsg = _String("Dimensions of enforced edge matrix does not match current graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            else if (currentArgument->Equal (&bgmNodeOrder)) {
-                _Matrix     * orderMx   = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
-
-                if (orderMx) {
-                    // UNDER DEVELOPMENT  April 17, 2008 afyp
-                    long    num_nodes = ((Bgm *)lkf)->GetNumNodes();
-
-                    _SimpleList     * orderList = new _SimpleList();
-
-                    orderList->Populate (num_nodes, 0, 0);
-
-                    if (orderMx->GetVDim() == num_nodes) {
-                        for (long i = 0; i < num_nodes; i++) {
-                            orderList->lData[i] = (long) ((*orderMx) (0, i));
-                        }
-
-                        ((Bgm *)lkf)->SetBestOrder ( (_SimpleList *) orderList->makeDynamic() );
-                    } else {
-                        errMsg = _String("Length of order vector doesn't match number of nodes in graph.");
-                        acknError (errMsg);
-                        return;
-                    }
-                } else {
-                    errMsg =  _String("Identifier ")&*(_String*)parameters(2)&" does not refer to a valid matrix variable";
-                    acknError (errMsg);
-                    return;
-                }
-            }
-
-            else {
-                errMsg = *currentArgument & " is not a valid BGM parameter in call to SetParameter";
-                WarnError (errMsg);
-                return;
-            }
-#endif
-        } // end BGM
-        break;
-        
-        case HY_BL_SCFG:
-        case HY_BL_LIKELIHOOD_FUNCTION:
-        {
-            if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
-                ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
-            } else {
-                _LikelihoodFunction * lkf = (_LikelihoodFunction *) theObject;
-                currentArgument = (_String*)parameters(1);
-                long g = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to SetParameter");
-                    return;
-                }
-                currentArgument = (_String*)parameters(2);
-                _Parameter val = ProcessNumericArgument(currentArgument,chain.nameSpacePrefix);
-                lkf->SetIthIndependent (g,val);
-            }
-        }
-        break;
-        // end SCFG and LF
-        
-        case HY_BL_DATASET:
-        case HY_BL_DATASET_FILTER: {
-            _DataSet * ds = nil;
-            
-            long f  = ProcessNumericArgument ((_String*)parameters(1),chain.nameSpacePrefix);
-            if (typeFlag == HY_BL_DATASET) {
-                ds = (_DataSet*) theObject;
-            }
-            else {
-                _DataSetFilter *dsf = (_DataSetFilter*)theObject;
-                ds = dsf->GetData ();
-                if (f >= 0 && f < dsf->theNodeMap.lLength){
-                    f  = dsf->theNodeMap.lData[f];
-                }
-                else
-                    f = -1;
-            }
-            
-        
-            _List*  dsNames = &ds->GetNames();
-            
-            if (f<0 || f>=dsNames->lLength) {
-                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to SetParameter");
-                return;
-            }
-
-            dsNames->Replace(f, new _String(ProcessLiteralArgument ((_String*)parameters(2),chain.nameSpacePrefix)), false);
-        } // end data set and data set filter
-        break; 
-        // Dataset and Datasetfilter
-        
-        default:
-            // check to see if this is a calcnode
-            _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
-            if (treeNode) { 
-                if (*((_String*)parameters(1)) == _String("MODEL")) {
-                    _String modelName = AppendContainerName(*((_String*)parameters(2)),chain.nameSpacePrefix);
-                    long modelType = HY_BL_MODEL, modelIndex;
-                    BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex);
-                    if (modelObject) {
-                        //treeNode->SetModel ();
-                    }
-                    else {
-                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to SetParameter");
-                    }
-                }
-            }
-            
-            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to SetParameter");
-
-    
-    } // end cases
-}
-
-//____________________________________________________________________________________
-
 void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -6413,18 +5978,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase26 (chain);
         break;
 
-    case 30: { //use matrix
-        chain.currentCommand++;
-        _String namedspacedMM (chain.AddNameSpaceToID(*(_String*)parameters(0)));
-        long mID = FindModelName(namedspacedMM);
-
-        if (mID<0 && !useNoModel.Equal((_String*)parameters(0))) {
-            WarnError(*(_String*)parameters(0) & " is not a valid model ident in call to UseModel.");
-        } else {
-            lastMatrixDeclared = mID;
-        }
-    }
-    break;
+    case HY_HBL_COMMAND_USE_MODEL:
+        return HandleUseModel(chain);
 
     case 31:
         ExecuteCase31 (chain);
@@ -6438,9 +5993,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase33 (chain);
         break;
 
-    case 35:
-        ExecuteCase35 (chain);
-        break;
+    case HY_HBL_COMMAND_SET_PARAMETER:
+        return HandleSetParameter(chain);
 
     case 36:
         ExecuteCase36 (chain);
@@ -7317,21 +6871,6 @@ bool    _ElementaryCommand::ConstructClearConstraints (_String&source, _Executio
     return true;
 }
 
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructUseMatrix (_String&source, _ExecutionList&target)
-// UseMatrix (matrixIdent)
-{
-    _List args;
-    ExtractConditions (source,blUseModel.sLength,args,',');
-    if (args.lLength!=1) {
-        WarnError ("Expected: UseModel (matrixID)");
-        return false;
-    }
-    _ElementaryCommand * cc = new _ElementaryCommand(30);
-    cc->addAndClean (target,&args,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 
@@ -7961,23 +7500,6 @@ bool    _ElementaryCommand::ConstructGetString (_String&source, _ExecutionList&t
     }
     _ElementaryCommand * gs = new _ElementaryCommand (33);
     gs->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructSetParameter (_String&source, _ExecutionList&target)
-// syntax: SetParameter(lkfuncID, index, value)
-{
-    _List pieces;
-    ExtractConditions (source,blSetParameter.sLength,pieces,',');
-    if (pieces.lLength!=3) {
-        WarnError ("Expected: syntax: SetParameter(object, index, value)");
-        return false;
-    }
-
-    _ElementaryCommand * sp = new _ElementaryCommand (35);
-    checkPointer(sp);
-    sp->addAndClean(target,&pieces,0);
     return true;
 }
 
