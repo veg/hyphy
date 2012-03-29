@@ -160,31 +160,75 @@ void SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& theList, _List& spli
     splitStorage.AppendNewInstance(new _SimpleList);
     splitStorage.AppendNewInstance(new _SimpleList);
 
-    for (long k=0; k<theList.lLength; k++) {
+    for (unsigned long k=0; k<theList.lLength; k++) {
         long varID = theList.lData[k];
         (*(_SimpleList*)splitStorage(1-LocateVar (varID)->IsGlobal())) << varID;
     }
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByType (_String* id, int objectClass)
+_String FetchObjectNameFromType (const unsigned long objectClass) {
+    switch (objectClass) {
+        case HY_UNDEFINED:
+            return "Undefined";
+        case NUMBER:
+            return "Number";
+        case MATRIX:
+            return "Container variable";
+        case TREE_NODE:
+            return "Tree node";
+        case TREE:
+            return "Tree";
+        case STRING:
+            return "String";
+        case ASSOCIATIVE_LIST:
+            return "Associative Array";
+        case TOPOLOGY:
+            return "Topology";
+        case POLYNOMIAL:
+            return "Polynomial";
+        case HY_ANY_OBJECT:
+            return "Any HyPhy object";
+    }
+    
+    return empty;
+}
+
+//__________________________________________________________________________________
+_PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
         if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
             return v->Compute();
         }
+        if (command_id >= 0 || errMsg) {
+            if (command_id >= 0) {
+                WarnError (_String ("'") & *id & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                                         &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
+            } else {
+                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *id, true));
+            }
+        }
     }
     return nil;
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, int objectClass)
+_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     _Variable * v = FetchVar (idx);
     if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
         return v->GetValue();
     }
+    if (command_id >= 0 || errMsg) {
+        if (command_id >= 0) {
+            WarnError (_String ("'") & *v->GetName() & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                                     &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
+        } else {
+            WarnError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
+        }
+    }    
     return nil;
 }
 
@@ -461,7 +505,7 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool is
 _Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        WarnError (_String ("'") & *name & "' is not a variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_HARVEST_FREQUENCIES) & '.');
+        WarnError (_String ("'") & *name & "' is not a variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
         return nil;
     }
     

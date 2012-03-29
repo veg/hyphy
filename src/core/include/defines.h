@@ -40,17 +40,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __DEFINES__
 #define     __DEFINES__
 
-#define  HY_UNDEFINED       0x00
-#define  NUMBER             0x01
-#define  MATRIX             0x04
-#define  CONTAINER          0x08
-#define  TREE_NODE          0x10
-#define  TREE               0x20
-#define  STRING             0x40
-#define  ASSOCIATIVE_LIST   0x80
-#define  TOPOLOGY           0x100
-#define  POLYNOMIAL         0x200
-#define  HY_ANY_OBJECT      0xFFFF
+#define  HY_UNDEFINED       0x00UL
+#define  NUMBER             0x01UL
+#define  MATRIX             0x04UL
+#define  CONTAINER          0x08UL
+#define  TREE_NODE          0x10UL
+#define  TREE               0x20UL
+#define  STRING             0x40UL
+#define  ASSOCIATIVE_LIST   0x80UL
+#define  TOPOLOGY           0x100UL
+#define  POLYNOMIAL         0x200UL
+#define  HY_ANY_OBJECT      0xFFFFUL
 
 #define  DEFAULTLOWERBOUND  -1e26
 #define  DEFAULTUPPERBOUND  1e26
@@ -278,6 +278,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #define   HY_HBL_DIRECTORY_TEMPLATE_MODELS                              1000L
+
+#define   HY_MAX_LONG_VALUE                                             0xffffffffL
 
 
 
