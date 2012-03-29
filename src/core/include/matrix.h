@@ -175,7 +175,7 @@ public:
     // used to determine whether the matrix contains references
     // to other unknowns
 
-    virtual long        ObjectClass (void)      {
+    virtual unsigned long        ObjectClass (void)      {
         return MATRIX;
     }
 
@@ -721,7 +721,7 @@ public:
 
     void                MStore          (_String  , _PMathObj, bool = true);
     void                MStore          (_String  , _String);
-    virtual long        ObjectClass     (void)      {
+    virtual unsigned long        ObjectClass     (void)      {
         return ASSOCIATIVE_LIST;
     }
     _List*              GetKeys         (void);

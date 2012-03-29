@@ -141,11 +141,14 @@ long         CodonAlignStringsStep              (_Matrix& ,_SimpleList& ,  _Simp
 
 //____________________________________________________________________________________
 
-_HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, _String commandInvocation, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb) {
+_HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, _String commandInvocation, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, _SimpleList * conditionList) {
     
     struct _HBLCommandExtras * commandInfo           = new _HBLCommandExtras();
     commandInfo->cut_string                          = cut;
-    commandInfo->extract_conditions                  << conditions;
+    if (conditions < 0 && conditionList) 
+        commandInfo->extract_conditions              << *conditionList;
+    else
+        commandInfo->extract_conditions              << conditions;
     commandInfo->extract_condition_separator         = sep;
     commandInfo->do_trim                             = doTrim;
     commandInfo->is_assignment                       = isAssignment;
@@ -187,23 +190,7 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), 6);
 
-    
-    
-/*
-const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb
-*/
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FOR, 
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("for(", HY_HBL_COMMAND_FOR,false),3, "for (<initialization>;<condition>;<increment>) {loop body}"));
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_WHILE,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("while(", HY_HBL_COMMAND_WHILE,false),1, "while (<condition>) {loop body}"));
-                                                            
-
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_DIALOG_PROMPT, 
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetDialogPrompt(", HY_HBL_COMMAND_SET_DIALOG_PROMPT,false),1, "SetDialogPrompt(<prompt string>);"));
-    
-    
     _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("ffunction ",                           HY_HBL_COMMAND_FFUNCTION);
     _HY_ValidHBLExpressions.Insert ("return ",                              HY_HBL_COMMAND_RETURNSPACE);
@@ -216,13 +203,10 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_ValidHBLExpressions.Insert ("#include",                             HY_HBL_COMMAND_INCLUDE);
     _HY_ValidHBLExpressions.Insert ("DataSet ",                             HY_HBL_COMMAND_DATA_SET);
     _HY_ValidHBLExpressions.Insert ("DataSetFilter ",                       HY_HBL_COMMAND_DATA_SET_FILTER);
-    _HY_ValidHBLExpressions.Insert ("HarvestFrequencies",					HY_HBL_COMMAND_HARVEST_FREQUENCIES);
     _HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(",				HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX);
     _HY_ValidHBLExpressions.Insert ("Tree ",                                HY_HBL_COMMAND_TREE);
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction3 ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3);
-    _HY_ValidHBLExpressions.Insert ("Optimize(",                            HY_HBL_COMMAND_OPTIMIZE);
-    _HY_ValidHBLExpressions.Insert ("CovarianceMatrix(",					HY_HBL_COMMAND_COVARIANCE_MATRIX);
     _HY_ValidHBLExpressions.Insert ("MolecularClock(",                      HY_HBL_COMMAND_MOLECULAR_CLOCK);
     _HY_ValidHBLExpressions.Insert ("fprintf(",                             HY_HBL_COMMAND_FPRINTF);
     _HY_ValidHBLExpressions.Insert ("GetString(",                           HY_HBL_COMMAND_GET_STRING);
@@ -252,7 +236,6 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_ValidHBLExpressions.Insert ("GetDataInfo(",                         HY_HBL_COMMAND_GET_DATA_INFO);
     _HY_ValidHBLExpressions.Insert ("StateCounter(",                        HY_HBL_COMMAND_STATE_COUNTER);
     _HY_ValidHBLExpressions.Insert ("Integrate(",                           HY_HBL_COMMAND_INTEGRATE);
-    _HY_ValidHBLExpressions.Insert ("LFCompute(",                           HY_HBL_COMMAND_LFCOMPUTE);
     _HY_ValidHBLExpressions.Insert ("GetURL(",                              HY_HBL_COMMAND_GET_URL);
     _HY_ValidHBLExpressions.Insert ("DoSQL(",                               HY_HBL_COMMAND_DO_SQL);
     _HY_ValidHBLExpressions.Insert ("Topology ",                            HY_HBL_COMMAND_TOPOLOGY);
@@ -265,7 +248,59 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
-    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);    
+    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);   
+    
+/*
+const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb
+*/
+
+    _SimpleList lengthOptions;
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FOR, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("for(", HY_HBL_COMMAND_FOR,false),3, "for (<initialization>;<condition>;<increment>) {loop body}"));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_WHILE,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("while(", HY_HBL_COMMAND_WHILE,false),1, "while (<condition>) {loop body}"));
+                                                            
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_DIALOG_PROMPT, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetDialogPrompt(", HY_HBL_COMMAND_SET_DIALOG_PROMPT,false),
+                                    1, 
+                                    "SetDialogPrompt(<prompt string>);"));
+    
+    lengthOptions.Clear();lengthOptions.Populate (3,5,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_HARVEST_FREQUENCIES, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("HarvestFrequencies(", HY_HBL_COMMAND_HARVEST_FREQUENCIES,false),
+                                    -1, 
+                                    "HarvestFrequencies(<receptacle>, <DataSet or DataSetFilter>, <atom INTEGER>, <unit INTEGER <= atom>, <position aware 0 or 1>, [optional site partion], [optional sequence partition] (only for DataSetArguments)",
+                                        ',',
+                                        true,
+                                        false,
+                                        false,
+                                        &lengthOptions));
+    
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),
+                                                                2, 
+                                                                "Optimize (<receptacle>, <likelihood function/scfg/bgm>)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_LFCOMPUTE, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("LFCompute(", HY_HBL_COMMAND_LFCOMPUTE,false),
+                                                                2, 
+                                                                "LFCompute (<likelihood function/scfg/bgm>,<LF_START_COMPUTE|LF_DONE_COMPUTE|receptacle>)",','));
+
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_COVARIANCE_MATRIX, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("CovarianceMatrix(", HY_HBL_COMMAND_COVARIANCE_MATRIX,false),
+                                                                2, 
+                                                                "CovarianceMatrix (<receptacle>, <likelihood function/scfg/bgm>)",','));
+
+     
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SelectTemplateModel(", HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL,false),
+                                    1, 
+                                    "SelectTemplateModel(<DataSetFilter>);"));
+
+
 }
 
 //____________________________________________________________________________________
@@ -1278,93 +1313,6 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain)
     }
 }
 
-//_________________________________________________________________________
-
-bool    ExpressionCalculator (void)
-{
-    _String data (StringFromConsole(false));
-
-#ifndef __UNIX__
-    if (terminateExecution) {
-        return false;
-    }
-    BufferToConsole (">");
-    StringToConsole (data);
-    BufferToConsole ("\n");
-#endif
-
-    if (data.sLength == 4) {
-        _String checkForExit (data);
-        checkForExit.LoCase();
-        if (checkForExit == _String ("exit")) {
-            return false;
-        }
-    }
-
-    _Formula  lhs,
-              rhs;
-
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil);
-
-    if (!terminateExecution) {
-        if (retCode == HY_FORMULA_EXPRESSION) {
-            _PMathObj formRes = lhs.Compute();
-            if (!formRes) {
-                BufferToConsole ("NULL\n");
-            } else {
-                _String * objValue = (_String*)formRes->toStr();
-                StringToConsole (*objValue);
-                BufferToConsole ("\n");
-                DeleteObject    (objValue);
-            }
-        } else {
-            BufferToConsole ("NO RETURN VALUE\n");
-        }
-    }
-    terminateExecution = false;
-    return true;
-}
-
-//_________________________________________________________________________
-
-bool    PushFilePath (_String& pName)
-{
-    char c = GetPlatformDirectoryChar();
-
-    long    f = pName.FindBackwards(_String(c),0,-1);
-    if (f>=0) {
-        _String newP = pName.Cut(0,f);
-        pathNames && & newP;
-        pName.Trim (f+1,-1);
-        return true;
-    } else if (pathNames.lLength) {
-        pathNames && pathNames(pathNames.lLength-1);
-    } else {
-        pathNames && & empty;
-    }
-
-    return false;
-}
-
-//_________________________________________________________________________
-void   PopFilePath (void)
-{
-    pathNames.Delete (pathNames.lLength-1);
-}
-
-//_________________________________________________________________________
-void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
-{
-    _ExecutionList ex;
-    if (theP) {
-        ex.SetNameSpace(*theP->GetName());
-    }
-    ex.BuildList   (BLCommand);
-    terminateExecution = false;
-    ex.Execute      ();
-    terminateExecution = false;
-}
 
 //____________________________________________________________________________________
 
@@ -3969,7 +3917,44 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
 
 //____________________________________________________________________________________
 
-BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index)
+_String _HYHBLTypeToText (long type) {
+    _String result (128L,true);
+    if (type & HY_BL_DATASET) {
+        result << "DataSet|";
+    }
+    
+    if (type & HY_BL_DATASET_FILTER) {
+        result << "DataSetFilter|";
+    }
+    
+    if (type & HY_BL_LIKELIHOOD_FUNCTION) {
+        result << "LikelihoodFunction|";
+    }
+    
+    if (type & HY_BL_SCFG) {
+        result << "SCFG|";
+    }
+    
+    if (type & HY_BL_BGM) {
+        result << "BGM|";
+    }
+    
+    if (type & HY_BL_MODEL) {
+        result << "Model|";
+    }
+    
+    if (type & HY_BL_HBL_FUNCTION) {
+        result << "function|";
+    }
+    
+    result.Finalize();
+    result.Trim (0,result.sLength-2);
+    return result;
+}
+
+//____________________________________________________________________________________
+
+BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bool errMsg, bool tryLiteralLookup)
 {
     long loc = -1;
     if (type & HY_BL_DATASET) {
@@ -4019,7 +4004,7 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index)
     if (type & HY_BL_BGM) {
         loc = FindBgmName (name);
         if (loc >= 0) {
-            type = HY_BL_SCFG;
+            type = HY_BL_BGM;
             if (index) {
                 *index = loc;
             }
@@ -4051,7 +4036,16 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index)
             return batchLanguageFunctions (loc);
         }
     }
+    
+    if (tryLiteralLookup) {
+        _String nameIDRef = ProcessLiteralArgument(&name, nil);
+        return _HYRetrieveBLObjectByName (nameIDRef, type, index, errMsg, false);
+    }
 
+    if (errMsg) {
+        WarnError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+    }
+    type = HY_BL_NOT_DEFINED;
     return nil;
 }
 
