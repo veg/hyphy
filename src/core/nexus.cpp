@@ -59,7 +59,7 @@ void    ProcessNexusTaxa            (FileState&,long, FILE*, _String&, _DataSet&
 void    ProcessNexusTrees           (FileState&, long, FILE*, _String&, _DataSet&);
 bool    FindNextNexusToken          (FileState& fState, FILE* f, _String& CurrentLine, long pos);
 bool    SkipUntilNexusBlockEnd      (FileState& fState, FILE* f, _String& CurrentLine, long pos);
-bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _String&, bool, bool = true, bool = true, bool = false, bool = false);
+bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _String&, bool, bool = true, bool = true, bool = false, bool = false, bool = false);
 long    ReadNextNexusEquate         (FileState&, FILE* , _String&, long, _String&, bool = false, bool = true);
 void    NexusParseEqualStatement    (_String&);
 
@@ -126,7 +126,7 @@ void    NexusParseEqualStatement (_String& source)
 }
 //_________________________________________________________
 
-bool    ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces)
+bool    ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _String& blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes)
 {
     bool done          = false,
          insideLiteral = false,
@@ -156,7 +156,7 @@ bool    ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine
                     done = true;
                     newPos++;
                     break;
-                } else if (c=='\'' || c=='"' ) {
+                } else if (! preserveQuotes && (c=='\'' || c=='"') ) {
                     if (c=='\'') {
                         if (newPos+1<CurrentLine.sLength)
                             // check for a double quote
@@ -641,7 +641,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
             } while (1);
         } else if (CurrentLine.beginswith (key2)) { // actual tree strings & idents
             _String blank ((unsigned long)10, true);
-            if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.sLength, blank, false, false, false,false,false)) {
+            if (!ReadNextNexusStatement (fState, f, CurrentLine, key2.sLength, blank, false, false, false,false,false, true)) {
                 errMsg = _String("TREE construct not followed by ';'.");
                 ReportWarning (errMsg);
                 done = true;

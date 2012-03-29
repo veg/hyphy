@@ -171,7 +171,7 @@ for (k=0; k<varCount; k=k+1)
 	variableValues[k]   = thisVarValues;
 }
 
-if (availableComputeNodes)
+if (useMPIFlag && availableComputeNodes)
 {
 	leftOver = +MPI_NODE_STATUS["_MATRIX_ELEMENT_VALUE_>=0"];
 

@@ -443,7 +443,7 @@ function MPISendJobMEME ()
                     }
                 }
                 OPTIMIZATION_METHOD = 0;
-                LF_NEXUS_EXPORT_EXTRA = _memeExtra;
+                LF_NEXUS_EXPORT_EXTRA = "siteID = " + theJob[0] + "; jobSuffix = \".alt\";" + _memeExtra;
                 MPISend (mpiNode+1, siteLikelihood);
                 //fName = "/Users/sergei/Desktop/" + theJob[0];
                 //fprintf (fName, CLEAR_FILE, MPI_LAST_SENT_MSG);
@@ -470,7 +470,9 @@ function MPISendJobMEME ()
                     sFactor = 0.001;
                 }
                 OPTIMIZATION_METHOD = 0;
+                LF_NEXUS_EXPORT_EXTRA =  "siteID = " + theJob[0] + "; jobSuffix = \".null\";" + _memeExtraNull;
                 MPISend (mpiNode+1, siteLikelihood);
+                LF_NEXUS_EXPORT_EXTRA = "";
                 if (debugVerboseFlag)
                 {
                     fprintf (stdout, "[DEBUG: Sending MEME NULL fit of site ", theJob[0], " to node ", mpiNode+1, "]");

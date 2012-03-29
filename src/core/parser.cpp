@@ -457,6 +457,37 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool is
 
     return FetchVar(f);
 }
+//__________________________________________________________________________________
+_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal)
+{
+    if (checkValid && (!name->IsValidIdentifier())) {
+        WarnError (_String ("'") & *name & "' is not a variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_HARVEST_FREQUENCIES) & '.');
+        return nil;
+    }
+    
+    long    f = LocateVarByName (*name);
+    if (f<0) {
+        _Variable dummy (*name, isGlobal);
+        f = LocateVarByName (*name);
+    }
+    
+    return FetchVar(f);
+}
+
+//__________________________________________________________________________________
+bool CheckReceptacleCommandIDAndStore (_String* name, const long id, bool checkValid, _PMathObj v, bool dup, bool isGlobal)
+{
+    _Variable *theV = CheckReceptacleCommandID (name, id, checkValid, isGlobal);
+    if (theV) {
+        theV->SetValue (v, dup);
+        return true;
+    }
+    if (!dup) {
+        DeleteObject (v);
+    }
+    return false;
+}
+
 
 //__________________________________________________________________________________
 bool CheckReceptacleAndStore (_String* name, _String fID, bool checkValid, _PMathObj v, bool dup)

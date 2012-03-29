@@ -314,6 +314,15 @@ bool    GlobalShutdown (void)
 #endif
         }
     }
+    
+    _SimpleList  hist;
+    long         ls,
+                 cn = _HY_HBLCommandHelper.Traverser (hist,ls,_HY_HBLCommandHelper.GetRoot());
+
+    while (cn >= 0) {
+        delete ((_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra(cn));
+        cn = _HY_HBLCommandHelper.Traverser (hist,ls);
+    }
 
     return res;
 }

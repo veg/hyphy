@@ -124,7 +124,7 @@ public:
 
     virtual             ~_CalcNode      (void);
 
-    virtual long        ObjectClass     (void) {
+    virtual unsigned long        ObjectClass     (void) {
         return TREE_NODE;
     }
 
@@ -382,7 +382,7 @@ public:
     virtual _PMathObj       TipCount                            (void);
     virtual _PMathObj       BranchCount                         (void);
     virtual _PMathObj       AVLRepresentation                   (_PMathObj);
-    virtual long            ObjectClass                         (void) {
+    virtual unsigned long            ObjectClass                         (void) {
         return TOPOLOGY;
     }
     virtual _AssociativeList*
@@ -546,7 +546,7 @@ public:
     virtual  BaseRef        makeDynamicCopy             (_String*);
     node<long>* DuplicateTreeStructure      (node<long>*, _String*, bool);
     virtual  BaseRef        toStr                       (void);
-    virtual  long           ObjectClass                 (void) {
+    virtual unsigned long           ObjectClass                 (void) {
         return TREE;
     }
 
