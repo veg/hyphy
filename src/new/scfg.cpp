@@ -163,7 +163,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                                     }
                                 }
 
-                            if (availableNodes || addedRootStub && charP == 1) // no error set
+                            if (availableNodes || (addedRootStub && charP == 1)) // no error set
                                 // SLKP: 20100630
                                 // looks like there was a bug here, when a partial prefix would
                                 // not simply be reused, but rather re-added to the parent node

@@ -205,6 +205,7 @@ void*   checkPointer (void* p)
 //_______________________________________________________________________
 void    ReportWarning (_String st)
 {
+#ifdef __HYPHYDEBUG__
     checkParameter          (MessageLogging, messageLogFlag, 1.0);
 
 #ifdef  __HEADLESS__
@@ -220,6 +221,7 @@ void    ReportWarning (_String st)
     fwrite (str, 1, 1, globalMessageFile);
     fwrite (st.getStr(), 1, st.Length(), globalMessageFile);
     fflush (globalMessageFile);
+#endif
 #endif
 }
 

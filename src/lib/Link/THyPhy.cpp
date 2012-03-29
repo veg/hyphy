@@ -213,6 +213,9 @@ _THyPhy::~_THyPhy           (void)
     if (globalInterfaceInstance == this) {
         globalInterfaceInstance = nil;
     }
+
+    PurgeAll(true);
+    GlobalShutdown();
 }
 
 //_________________________________________________________
