@@ -107,7 +107,7 @@ public:
     virtual   void    Duplicate             (BaseRef);
     virtual   BaseRef makeDynamic           (void);
     virtual   BaseRef toStr                 (void);
-    virtual   long    ObjectClass           (void) {
+    virtual   unsigned long    ObjectClass           (void) {
         return NUMBER;
     }
     virtual   void    SetValue              (_Parameter pl) {

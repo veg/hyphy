@@ -53,6 +53,7 @@ function _HYPSTextCommands (dummy)
 	_res_string * "/centertext {dup newpath 0 0 moveto false charpath closepath pathbbox pop exch pop exch sub 2 div 4 -1 roll exch sub 3 -1 roll newpath moveto show} def\n";
 	_res_string * "/vcentertext {90 rotate centertext -90 rotate} def\n";
 	_res_string * "/lefttext   {newpath 3 1 roll moveto show} def\n";
+	_res_string * "/drawletter {2 2 rmoveto 1 copy false charpath pathbbox 2 index 3 sub sub exch 3 index 3 sub sub exch  0.85 setgray 4 copy rectfill 0 setgray  3 index 3 index currentlinewidth 0.5 setlinewidth 7 3 roll rectstroke setlinewidth exch 1.5 add exch 1.5 add moveto show} def\n";
 	_res_string * "/righttext  {dup newpath 0 0 moveto false charpath closepath pathbbox pop exch pop exch sub       4 -1 roll exch sub 3 -1 roll newpath moveto show} def\n";
 	_res_string * "/vrighttext  {3 -2 roll moveto 90 rotate show -90 rotate} def\n";
 	_res_string * ("/scalecentertext {dup newpath 0 0 moveto false charpath closepath pathbbox 3 -1 roll sub 3 1 roll exch sub dup 5 -1 roll exch div dup 1 lt " +

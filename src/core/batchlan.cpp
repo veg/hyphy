@@ -100,8 +100,6 @@ extern  long    lastFileTypeSelection;
 
 
 
-void        ReadModelList(void);
-
 #ifdef      __MACPROFILE__
 #include "profiler.h"
 #endif
@@ -238,8 +236,8 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfDevNull                ("/dev/null"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
                                 dialogPrompt,
-                                lastModelUsed,
                                 baseDirectory,
+                                lastModelUsed,
                                 libDirectory,
                                 scanfLastFilePath,
                                 defFileNameValue;
@@ -605,49 +603,6 @@ long    FindBgmName (_String&s)
 }
 
 
-//____________________________________________________________________________________
-
-void    ReadModelList(void)
-{
-    _String modelListFile;
-#ifdef  __MAC__
-    modelListFile = libDirectory&_String("TemplateBatchFiles:TemplateModels:models.lst");
-#endif
-#ifdef  __WINDOZE__
-    modelListFile = libDirectory &"TemplateBatchFiles\\TemplateModels\\models.lst";
-#endif
-#ifdef __HYPHY_GTK__
-    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
-#endif
-#ifdef __UNIX__
-    modelListFile = libDirectory &"TemplateBatchFiles/TemplateModels/models.lst";
-#endif
-
-    FILE* modelList = doFileOpen (modelListFile.getStr(),"rb");
-    if (!modelList) {
-        return;
-    }
-    _String theData (modelList);
-    fclose (modelList);
-    if (theData.sLength) {
-        _ElementaryCommand::ExtractConditions(theData,0,theModelList);
-        for (long i = 0; i<theModelList.countitems(); i++) {
-            _String* thisString = (_String*)theModelList(i);
-            _List   thisModel;
-            _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisModel,',');
-            if (thisModel.lLength!=5) {
-                theModelList.Delete(i);
-                i--;
-                continue;
-            }
-            for (long j = 0; j<5; j++) {
-                ((_String*)thisModel(j))->StripQuotes();
-            }
-            ((_String*)thisModel(0))->UpCase();
-            theModelList.Replace(i,&thisModel,true);
-        }
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -1537,13 +1492,10 @@ _String  blFor                  ("for("),               // moved
          blInclude              ("#include"),           // moved
          blDataSet              ("DataSet "),           // moved
          blDataSetFilter            ("DataSetFilter "),
-         blHarvest              ("HarvestFrequencies"),
          blConstructCM          ("ConstructCategoryMatrix("),
          blTree                     ("Tree "),
          blLF                       ("LikelihoodFunction "),
          blLF3                  ("LikelihoodFunction3 "),
-         blOptimize                 ("Optimize("),
-         blCovMatrix                ("CovarianceMatrix("),
          blMolClock                 ("MolecularClock("),
          blfprintf              ("fprintf("),
          blGetString                ("GetString("),
@@ -1555,7 +1507,6 @@ _String  blFor                  ("for("),               // moved
          blCategory             ("category "),
          blClearConstraints         ("ClearConstraints("),
          blSetDialogPrompt      ("SetDialogPrompt("),
-         blSelectTemplateModel  ("SelectTemplateModel("),
          blUseModel                 ("UseModel("),
          blModel                    ("Model "),
          blSetParameter             ("SetParameter("),
@@ -1627,8 +1578,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
                 if (commandExtraInfo->extract_conditions.lLength > 0) {
                     pieces = new _List;
-                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces),
-                    condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
+                    long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
+                         condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                     if (condition_index_match < 0) {
                         acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
                         DeleteObject (pieces);
@@ -1664,7 +1615,14 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 handled = true;
                 break;
             case HY_HBL_COMMAND_SET_DIALOG_PROMPT:
+            case HY_HBL_COMMAND_HARVEST_FREQUENCIES:
+            case HY_HBL_COMMAND_OPTIMIZE:
+            case HY_HBL_COMMAND_COVARIANCE_MATRIX:
+            case HY_HBL_COMMAND_LFCOMPUTE:
+            case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
+                handled = true;
+                break;
                 
         }
         
@@ -1730,18 +1688,12 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructDataSet (currentLine, *this);
         } else if (currentLine.startswith (blDataSetFilter)) { // data set filter definition
             _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
-        } else if (currentLine.startswith (blHarvest)) { // harvest frequencies call
-            _ElementaryCommand::ConstructHarvestFreq (currentLine, *this);
         } else if (currentLine.startswith (blConstructCM)) { // construct category assignments matrix
             _ElementaryCommand::ConstructCategoryMatrix (currentLine, *this);
         } else if (currentLine.startswith (blTree) || currentLine.startswith (blTopology)) { // tree definition
             _ElementaryCommand::ConstructTree (currentLine, *this);
         } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
             _ElementaryCommand::ConstructLF (currentLine, *this);
-        } else if (currentLine.startswith (blOptimize)||currentLine.startswith (blLFCompute)) { // optimization or compute call
-            _ElementaryCommand::ConstructOptimize (currentLine, *this);
-        } else if (currentLine.beginswith (blCovMatrix)) { // construct covariance matrix
-            _ElementaryCommand::ConstructOptimize (currentLine, *this);
         } else if (currentLine.startswith (blMolClock)) { // molecular clock definition
             _ElementaryCommand::ConstructMolecularClock (currentLine, *this);
         } else if (currentLine.startswith (blfprintf)) { // fpintf call
@@ -1760,8 +1712,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructCategory (currentLine, *this);
         } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
             _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
-        } else if (currentLine.startswith (blSelectTemplateModel)) { // select a template model
-            _ElementaryCommand::SelectTemplateModel (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
             _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
         } else if (currentLine.startswith (blUseModel)) { // use model
@@ -1976,8 +1926,8 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
 
     case 6:  // data set filter construction
-    case 9:  // or HarvestFrequencies
-        if (code == 9) {
+    case HY_HBL_COMMAND_HARVEST_FREQUENCIES:  // or HarvestFrequencies
+        if (code == HY_HBL_COMMAND_HARVEST_FREQUENCIES) {
             result = "Harvest Frequencies into matrix ";
             converted = (_String*)(parameters(0)->toStr());
             result = result&*converted;
@@ -2044,11 +1994,10 @@ BaseRef   _ElementaryCommand::toStr      (void)
 
         break;
 
-    case 10: // optimize the likelihood function
-    case 34:
-
+    case HY_HBL_COMMAND_OPTIMIZE: // optimize the likelihood function
+    case HY_HBL_COMMAND_COVARIANCE_MATRIX: // compute the covariance matrix
         converted = (_String*)parameters(0)->toStr();
-        if (code == 10) {
+        if (code == HY_HBL_COMMAND_OPTIMIZE) {
             result = _String("Optimize storing into, ");
         } else {
             result = _String("Calculate the Covariance Matrix storing into, ");
@@ -2447,7 +2396,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result& _String(" using the callback: ")&(*converted);
         break;
     }
-    case 49: { //Compute LF
+    case HY_HBL_COMMAND_LFCOMPUTE: { //Compute LF
         converted = (_String*)parameters(0)->toStr();
         result = blLFCompute&(*converted);
         DeleteObject(converted);
@@ -3901,155 +3850,6 @@ void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
 #endif
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase24 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    SetStatusLine ("Waiting for model selection");
-
-    _String     modelFile,
-                errMsg;
-
-    if (!theModelList.lLength) {
-        ReadModelList();
-    }
-
-    if (((_String*)parameters(0))->Equal(&useLastModel)) {
-        if (lastModelUsed.sLength) {
-            modelFile = lastModelUsed;
-            errMsg    = modelFile;
-            PushFilePath (errMsg);
-        } else {
-            WarnError ("First call to SelectTemplateModel. USE_LAST_MODEL is meaningless.");
-            return ;
-        }
-    } else {
-        _String filterName (chain.AddNameSpaceToID(*(_String*)parameters(0)));
-        long fd = FindDataSetFilterName(filterName);
-        if (fd == -1) {
-            WarnError ((_String)("DataSetFilter ")&filterName&" is invalid in call to " & blSelectTemplateModel.Cut(0,blSelectTemplateModel.sLength-2));
-            return ;
-        }
-        _DataSetFilter* thisDF = (_DataSetFilter*)dataSetFilterList (fd);
-        // decide what this DF is comprised of
-
-        _String             dataType;
-
-        long                dataDimension   = thisDF->GetDimension(),
-                            unitLength         = thisDF->GetUnitLength();
-
-        _TranslationTable*  thisTT = thisDF->GetData()->GetTT();
-        if (unitLength==1) {
-            if (thisTT->IsStandardNucleotide()) {
-                dataType = "nucleotide";
-            } else if (thisTT->IsStandardAA()) {
-                dataType = "aminoacid";
-            }
-        } else {
-            if (thisTT->IsStandardNucleotide())
-                if (unitLength==3) {
-                    dataType = "codon";
-                } else if (unitLength==2) {
-                    dataType = "dinucleotide";
-                }
-        }
-
-        if (!dataType.sLength) {
-            WarnError (_String("DataSetFilter ")&filterName&" contains non-standard data and SelectTemplateModel is not applicable.");
-            return ;
-        }
-
-        _SimpleList matchingModels;
-
-        for (fd = 0; fd<theModelList.lLength; fd++)
-            if (dataType.Equal((_String*)(*(_List*)theModelList(fd))(3))) {
-                if ((*((_String*)(*(_List*)theModelList(fd))(2))==_String("*"))||
-                        (dataDimension ==((_String*)(*(_List*)theModelList(fd))(2))->toNum())) {
-                    matchingModels << fd;
-                }
-            }
-
-        if (!matchingModels.lLength) {
-            WarnError ((_String)("DataSetFilter ")&filterName&" could not be matched with any template models.");
-            return ;
-        }
-        fd = -1;
-
-        if (chain.stdinRedirect) {
-            errMsg = chain.FetchFromStdinRedirect ();
-            for (fd = 0; fd<matchingModels.lLength; fd++)
-                if (errMsg.Equal((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))) {
-                    break;
-                }
-
-            if (fd >= matchingModels.lLength) {
-                WarnError (errMsg & " is not a valid model (with input redirect) in call to SelectTemplateModel");
-                return ;
-            }
-        } else {
-#ifdef __HEADLESS__
-            WarnError ("Unhandled standard input interaction in Select Model for headless HyPhy");
-            return;
-#else
-#ifdef __UNIX__
-            while (fd == -1) {
-                printf ("\n\n               +--------------------------+\n");
-                printf     ("               | Select a standard model. |\n");
-                printf ("               +--------------------------+\n\n\n");
-                for (fd = 0; fd<matchingModels.lLength; fd++) {
-                    printf ("\n\t(%s):%s",((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))->getStr(),
-                            ((_String*)(*(_List*)theModelList(matchingModels(fd)))(1))->getStr());
-                }
-                printf ("\n\n Please type in the abbreviation for the model you want to use:");
-                dataType.CopyDynamicString(StringFromConsole());
-                dataType.UpCase();
-                for (fd = 0; fd<matchingModels.lLength; fd++) {
-                    if (dataType.Equal((_String*)(*(_List*)theModelList(matchingModels(fd)))(0))) {
-                        break;
-                    }
-                }
-                if (fd==matchingModels.lLength) {
-                    fd=-1;
-                }
-            }
-#endif
-#ifndef __UNIX__
-            _SimpleList choiceDummy, selDummy;
-            choiceDummy << 0;
-            choiceDummy << 1;
-            fd = HandleListSelection (theModelList, choiceDummy, matchingModels, "Choose one of the standard models",selDummy,1);
-            if (fd==-1) {
-                terminateExecution = true;
-                return ;
-            }
-#endif
-#endif
-        }
-        modelFile = libDirectory & "TemplateBatchFiles" & GetPlatformDirectoryChar()
-                    & "TemplateModels" & GetPlatformDirectoryChar();
-
-        errMsg = modelFile;
-        PushFilePath (errMsg);
-        modelFile = modelFile&*((_String*)(*(_List*)theModelList(matchingModels(fd)))(4));
-    }
-
-    _ExecutionList      stdModel;
-    if (chain.nameSpacePrefix) {
-        stdModel.SetNameSpace (*chain.nameSpacePrefix->GetName());
-    }
-
-    ReadBatchFile       (modelFile,stdModel);
-    PopFilePath         ();
-    lastModelUsed       = modelFile;
-
-    stdModel.stdinRedirectAux = chain.stdinRedirectAux;
-    stdModel.stdinRedirect    = chain.stdinRedirect;
-    stdModel.Execute();
-    stdModel.stdinRedirectAux = nil;
-    stdModel.stdinRedirect    = nil;
-}
 
 //____________________________________________________________________________________
 
@@ -4999,9 +4799,9 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
     switch (typeFlag)
     {
         case HY_BL_BGM: { // BGM Branch
-        #if defined __AFYP_REWRITE_BGM__
+            currentArgument = (_String*)parameters(1);
+#if defined __AFYP_REWRITE_BGM__
             _BayesianGraphicalModel * lkf = (_BayesianGraphicalModel *) theObject;
-
             // set data matrix
             if (currentArgument->Equal (&bgmData)) {
                 _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
@@ -5130,7 +4930,7 @@ void      _ElementaryCommand::ExecuteCase35 (_ExecutionList& chain)
                 return;
             }
 #else
-            Bgm * lkf = (Bgm *) bgmList (bgm_index);
+            Bgm * lkf = (Bgm *) theObject;
             if (currentArgument->Equal (&bgmData)) {
                 _Matrix     * dataMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters (2), chain.nameSpacePrefix), MATRIX);
                 if (dataMx) {
@@ -5963,93 +5763,6 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
     }
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase49 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String *arg1       = (_String*)parameters(0),
-             *arg2     = (_String*)parameters(1),
-              name2Find   = AppendContainerName(*arg1,chain.nameSpacePrefix),
-              errMsg;
-
-    // bool isSCFG  = false;
-
-
-    long    k       = FindLikeFuncName(name2Find),
-            mode   = 0;
-
-    if (k < 0) {
-        mode = ((k = FindSCFGName(name2Find)) >= 0) ? 1 : 2;
-        if (mode == 2) {
-            k = FindBgmName(name2Find);
-        }
-    }
-
-    if (k < 0) {
-        _String  litArg = ProcessLiteralArgument (arg1,chain.nameSpacePrefix);
-        k = likeFuncNamesList.Find (&litArg);
-        if (k<0) {
-            k = scfgNamesList.Find (&litArg);
-            if (k<0) {
-                k = bgmNamesList.Find  (&litArg);
-                if (k < 0) {
-                    errMsg = *arg1 & " is not an existing likelihood function, SCFG, or BGM identifier ";
-                } else {
-                    mode = 2;
-                }
-            } else {
-                mode = 1;
-            }
-        } else {
-            mode = 0;
-        }
-    }
-
-    if (errMsg.sLength == 0) {
-        _LikelihoodFunction *lf;
-        switch (mode) {
-        case 0:
-            lf = (_LikelihoodFunction *) likeFuncList (k);
-            break;
-        case 1:
-            lf = (_LikelihoodFunction *) scfgList (k);
-            break;
-        case 2:
-            lf = (_LikelihoodFunction *) bgmList (k);
-            break;
-        default:
-            errMsg = "Something really weird just happened in ExecuteCase49()...";
-            break;
-        }
-
-        // _LikelihoodFunction *lf = (_LikelihoodFunction*)(isSCFG?scfgList(k):likeFuncList (k));
-        if (*arg2 == lfStartCompute) {
-            lf->PrepareToCompute(true);
-        } else if (*arg2 == lfDoneCompute) {
-            lf->DoneComputing (true);
-        } else {
-            if (!lf->HasBeenSetup()) {
-                errMsg = _String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function";
-            } else {
-                _Variable* rec = CheckReceptacle(&AppendContainerName(*arg2,chain.nameSpacePrefix), blLFCompute, true);
-                if (!rec) {
-                    return;
-                }
-                rec->SetValue(new _Constant (lf->Compute()),false);
-            }
-        }
-    }
-
-    if (errMsg.sLength) {
-        errMsg = errMsg & " in call to LFCompute.";
-        WarnError (errMsg);
-    }
-
-    //setParameter (matrixEvalCount, matrixExpCount);
-}
-
 
 //____________________________________________________________________________________
 
@@ -6376,6 +6089,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
 }
 
 
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this command in a given list
@@ -6507,276 +6221,13 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase8(chain);
         break;
 
-    case 9: { // or HarvestFrequencies
-        chain.currentCommand++;
-        SetStatusLine           ("Gathering Frequencies");
-        _String  freqStorageID = chain.AddNameSpaceToID(*(_String*)parameters(0)),
-                 dataID        = chain.AddNameSpaceToID(*(_String*)parameters(1));
-
-        long dsID = FindDataSetName (dataID);
-
-        if (dsID == -1) {
-            dsID = FindDataSetFilterName (dataID);
-            if (dsID==-1) {
-                errMsg = (((_String)("DataSet/DataSetFilter ")&dataID&_String(" has not been initialized")));
-                WarnError (errMsg);
-                return false;
-            } else {
-                dsID=-dsID-1;
-            }
-        }
-
-        char      unit      = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix),
-                  posspec    = ProcessNumericArgument((_String*)parameters(4),chain.nameSpacePrefix),
-                  atom        = ProcessNumericArgument((_String*)parameters(3),chain.nameSpacePrefix);
-
-        _Matrix*            receptacle = nil;
-
-        _Parameter          cghf = 1.0;
-        checkParameter      (hfCountGap,cghf,1.0, chain.nameSpacePrefix);
-
-        if (dsID>=0) { // harvest directly from a DataSet
-            _String         vSpecs,
-                            hSpecs;
-
-            if (parameters.lLength>5)   {
-                vSpecs = *(_String*)parameters(5);
-            }
-            if (parameters.lLength>6)   {
-                hSpecs = *(_String*)parameters(6);
-            }
-
-            _DataSet * dataset = (_DataSet*)dataSetList(dsID);
-            _SimpleList     hL,
-                            vL;
-
-            hL.RequestSpace (1024);
-            vL.RequestSpace (1024);
-            dataset->ProcessPartition (hSpecs,hL,false);
-            dataset->ProcessPartition (vSpecs,vL,true);
-
-            receptacle = dataset->HarvestFrequencies(unit,atom,posspec,hL, vL,cghf>0.5);
-        } else { // harvest from a DataSetFilter
-            receptacle = ((_DataSetFilter*)dataSetFilterList (-dsID-1))->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
-        }
-
-        return CheckReceptacleAndStore(&freqStorageID,blHarvest.Cut(0,blHarvest.sLength-2),true, receptacle, false);
+    case HY_HBL_COMMAND_HARVEST_FREQUENCIES: { // or HarvestFrequencies
+        return HandleHarvestFrequencies(chain);
     }
-    break;
-    case 10: // optimize the likelihood function
-    case 34: {
-        chain.currentCommand++;
-        // construct the receptacle matrix
 
-        checkParameter      (explicitFormMExp ,explicitFormMatrixExponential,0.0, chain.nameSpacePrefix);
-
-        _String  lfResName  (chain.AddNameSpaceToID(*(_String*)parameters(0))),
-                 lfNameID  (chain.AddNameSpaceToID(*(_String*)parameters(1)));
-
-        _Variable* result = CheckReceptacle (&lfResName, _String("Matrix identifier is invalid in call to Optimize/CovarianceMatrix"),true);
-
-        _String temp = ProcessStringArgument(&lfNameID);
-        if (temp.sLength) {
-            lfNameID = temp;
-        }
-
-        long  ff = FindLikeFuncName (lfNameID);
-        _LikelihoodFunction* lkf = nil;
-        _Matrix            * optRes;
-
-        if (ff==-1) {   // did not find likelihood function by name
-            if (code == 10) {
-                ff = FindSCFGName (lfNameID);
-                if (ff<0) { // couldn't find SCFG with this name either
-                    ff = FindBgmName (lfNameID);
-                    if (ff < 0) {   // not a BGM either
-                        lkf = new _CustomFunction (&lfNameID);
-                        checkPointer (lkf);
-                    } else {
-                        lkf = (_LikelihoodFunction*)bgmList(ff);
-                    }
-                } else {
-                    lkf = (_LikelihoodFunction*)scfgList(ff);
-                }
-            } else {    // code == 34
-                ff = FindBgmName (lfNameID);
-                if (ff < 0) {   // not a BGM
-                    ff = FindSCFGName (lfNameID);
-                    if (ff < 0) {   // not an SCFG either
-                        errMsg = (((_String)("Likelihood function/BGM ID ")&lfNameID&" has not been defined."));
-                        WarnError (errMsg);
-                        return false;
-                    } else {    // Scfg::CovarianceMatrix
-                        lkf    = (_LikelihoodFunction*) scfgList  (ff);
-
-                        _String              cpl = chain.AddNameSpaceToID(covarianceParameterList);
-                        _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
-                        _SimpleList          *  restrictor       = nil;
-
-                        if (restrictVariable) { // only consider some variables
-                            if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
-                                // a list of variables stored as keys in an associative array
-                            {
-                                checkPointer (restrictor = new _SimpleList);
-                                _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                                for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
-                                    _String     varID = chain.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
-                                    long vID = LocateVarByName (varID);
-                                    if (vID >= 0) {
-                                        vID = lkf->GetIndependentVars().Find(vID);
-                                    }
-                                    if (vID >= 0) {
-                                        (*restrictor) << vID;
-                                    }
-                                }
-                                if (restrictor->lLength == 0) {
-                                    DeleteObject (restrictor);
-                                    restrictor = nil;
-                                }
-                            } else if (restrictVariable->ObjectClass () == STRING)
-                                // a single variable stored in a string
-                            {
-                                _String varID = chain.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
-                                long vID = LocateVarByName (varID);
-                                if (vID >= 0) {
-                                    vID = lkf->GetIndependentVars().Find(vID);
-                                }
-                                if (vID >= 0) {
-                                    checkPointer(restrictor = new _SimpleList (vID));
-                                }
-                            }
-                        }
-
-                        optRes = (_Matrix*)lkf->CovarianceMatrix(restrictor);
-                        if (restrictor) {
-                            DeleteObject (restrictor);
-                        }
-
-                        if (optRes) {
-                            result->SetValue(optRes,false);
-                        }
-
-                        break;
-                    }
-                }
-#if not defined __AFYP_REWRITE_BGM__
-                else {      // BGM::CovarianceMatrix, i.e. MCMC
-                    lkf    = (_LikelihoodFunction*)bgmList  (ff);
-#ifdef __AFYP_DEVELOPMENT__
-                    /*
-                    _Matrix     * orderMx = (_Matrix *) FetchObjectFromVariableByType ( &AppendContainerName ( *(_String *) parameters(2), chain.nameSpacePrefix), MATRIX);
-                    _SimpleList * first_order = nil;
-
-                    if (orderMx)
-                    {
-                        checkPointer (first_order = new _SimpleList);
-
-                        for (long klee = 0; klee < orderMx->GetHDim(); klee++)
-                        {
-                            (*first_order) << (long) (*orderMx) (0, klee);
-                        }
-
-                        if (first_order->lLength == 0)
-                        {
-                            DeleteObject (first_order);
-                            first_order = nil;
-                        }
-                    }
-                    */
-                    _SimpleList *   first_order = nil;
-                    /*
-                    if (last_order.lLength > 0)
-                    {
-                        checkPointer (first_order = new _SimpleList ((_SimpleList &) last_order));  // duplucate
-                    }
-                    */
-                    optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
-
-                    // _SimpleList pointer will be deleted in CovarianceMatrix()
-#else
-                    optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
-#endif
-                    if (optRes) {
-                        result->SetValue(optRes,false);
-                    }
-
-                    break;
-                }
-#endif
-            }
-        } else {
-            lkf = (_LikelihoodFunction*)likeFuncList(ff);
-        }
-
-        if (code == 10) {
-            SetStatusLine (_String("Optimizing likelihood function ")&lfNameID);
-        } else {
-            SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
-        }
-
-
-        if (code == 10) {
-            optRes = lkf->Optimize();
-        } else {    // code 34, CovarianceMatrix(lf)
-            _String              cpl = chain.AddNameSpaceToID(covarianceParameterList);
-            _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
-            _SimpleList          *  restrictor       = nil;
-
-            if (restrictVariable) { // only consider some variables
-                if (restrictVariable->ObjectClass () == ASSOCIATIVE_LIST)
-                    // a list of variables stored as keys in an associative array
-                {
-                    checkPointer (restrictor = new _SimpleList);
-                    _List*  restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
-                    for (long iid = 0; iid < restrictedVariables->lLength; iid++) {
-                        _String     varID = chain.AddNameSpaceToID(*(_String*)(*restrictedVariables)(iid));
-                        long vID = LocateVarByName (varID);
-                        if (vID >= 0) {
-                            vID = lkf->GetIndependentVars().Find(vID);
-                        }
-                        if (vID >= 0) {
-                            (*restrictor) << vID;
-                        }
-                    }
-                    if (restrictor->lLength == 0) {
-                        DeleteObject (restrictor);
-                        restrictor = nil;
-                    }
-                } else if (restrictVariable->ObjectClass () == STRING)
-                    // a single variable stored in a string
-                {
-                    _String varID = chain.AddNameSpaceToID(*((_FString*)restrictVariable->Compute())->theString);
-                    long vID = LocateVarByName (varID);
-                    if (vID >= 0) {
-                        vID = lkf->GetIndependentVars().Find(vID);
-                    }
-                    if (vID >= 0) {
-                        checkPointer(restrictor = new _SimpleList (vID));
-                    }
-                }
-            }
-
-            optRes = (_Matrix*)lkf->CovarianceMatrix(restrictor);
-            if (restrictor) {
-                DeleteObject (restrictor);
-            }
-        }
-
-        if (optRes) {
-            result->SetValue(optRes,false);
-        }
-
-        if (ff < 0) {
-            DeleteObject (lkf);    // delete the custom function object
-        }
-
-        if (code == 10) {
-            SetStatusLine (_String("Done optimizing likelihood function ")&lfNameID);
-        } else {
-            SetStatusLine (_String("Finished with cov. matrix/profile CI for ")&lfNameID);
-        }
-
-        break;
+    case HY_HBL_COMMAND_OPTIMIZE: // optimize the likelihood function
+    case HY_HBL_COMMAND_COVARIANCE_MATRIX: {
+        return HandleOptimizeCovarianceMatrix (chain, code == HY_HBL_COMMAND_OPTIMIZE);
     }
 
     case 11: // build the likelihood function
@@ -6949,10 +6400,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 24: // prompt for a model file
-
-        ExecuteCase24(chain);
-        break;
+    case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL: // prompt for a model file
+        return HandleSelectTemplateModel(chain);
 
     case 25: // fscanf
     case 56: // sscanf
@@ -7047,9 +6496,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase43 (chain);
         break;
 
-    case 49:
-        ExecuteCase49 (chain);
-        break;
+    case HY_HBL_COMMAND_LFCOMPUTE:
+        return HandleComputeLFFunction(chain);
 
     case 50:
         ExecuteCase38 (chain, true);
@@ -7903,23 +7351,6 @@ bool    _ElementaryCommand::ConstructStateCounter (_String&source, _ExecutionLis
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::SelectTemplateModel(_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,20,args,',');
-    if (args.lLength!=1) {
-        _String errMsg ("Expected SelectTemplateModel(DataSetFilter);");
-        acknError (errMsg);
-        return false;
-    }
-    _ElementaryCommand cv;
-    cv.code = 24;
-    cv.parameters<< args(0);
-    target&& &cv;
-    return true;
-}
-
-//____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target)
 {
     _List args;
@@ -8287,43 +7718,6 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
         simpleParameters<<oldFla;
     }
 
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructHarvestFreq (_String&source, _ExecutionList&target)
-// syntax: HarvestFrequencies (receptacle, datasetid, atom, unit, position spec)
-{
-    _List pieces;
-    ExtractConditions (source,blHarvest.sLength+1 ,pieces,',');
-    if (pieces.lLength!=5) {
-        _String errMsg ("Expected: HarvestFrequencies (receptacle, datasetid or datasetfilterid, atom, unit, position spec)");
-        WarnError (errMsg);
-        return false;
-    }
-    _ElementaryCommand * dsf = new _ElementaryCommand(9);
-    checkPointer(dsf);
-    dsf->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructOptimize (_String&source, _ExecutionList&target)
-// syntax: Optimize (receptacle, <tree, datasetfilter, frequency matrix>)
-{
-
-    _List pieces;
-    long mark1 = source.Find ('(');
-    _String oper = source.Cut (0,mark1);
-    ExtractConditions (source,mark1+1,pieces,',');
-
-    if (pieces.lLength!=2) {
-        WarnError ("Expected: Optimize (receptacle, lik fn) or CovarianceMatrix (receptacle, lik fn) or LFCompute (lik fn, option)");
-        return false;
-    }
-
-    _ElementaryCommand * lfC = new _ElementaryCommand ((oper == blOptimize)?10:((oper == blLFCompute)?49:34));
-    lfC->addAndClean(target,&pieces,0);
     return true;
 }
 

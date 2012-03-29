@@ -40,6 +40,8 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+#include <stdarg.h>
+
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
@@ -105,6 +107,19 @@ _List::_List (BaseRef br)
     ((BaseRef*)lData)[0]= br->makeDynamic();
 }
 
+// Data constructor (variable number of string constants)
+_List::_List (char* firstString, const unsigned long number, ...)
+{
+    va_list vl;
+    AppendNewInstance (new _String (firstString));
+    va_start(vl,number);
+    for (unsigned long arg_id =0;arg_id<number;arg_id++) {
+        char * val=va_arg(vl,char *);
+        AppendNewInstance (new _String (val));
+    }
+    va_end(vl);
+}
+
 //Destructor
 _List::~_List(void)
 {
@@ -144,7 +159,13 @@ BaseRef& _List::operator [] (long i)
 }
 
 // Element location functions (0,llength - 1)
-BaseRef _List::operator () (unsigned long i)
+BaseRef _List::operator () (const unsigned long i)
+{
+    return ((BaseRef*)lData)[i];
+}
+
+// Element location functions (0,llength - 1)
+BaseRef _List::GetItem (const unsigned long i)
 {
     return ((BaseRef*)lData)[i];
 }
@@ -540,7 +561,7 @@ BaseRef  _List::Join (BaseRef spacer)
 {
     _String *joined = new _String (256L,true);
 
-    for (long k = 0; k < lLength; k++) {
+    for (unsigned long k = 0; k < lLength; k++) {
         if (k) {
             (*joined) << *(_String*)spacer;
         }

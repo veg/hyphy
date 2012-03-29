@@ -288,7 +288,7 @@ public:
     virtual bool         IsIndependent (void)       {
         return true;
     }
-    virtual long         ObjectClass (void)         {
+    virtual unsigned long  ObjectClass (void)       {
         return HY_UNDEFINED;
     }
     // returns a unique ID for this object

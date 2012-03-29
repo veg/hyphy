@@ -91,6 +91,15 @@ class _List:public _SimpleList
         _List(BaseRef);
 
         /**
+        * Data constructor list of char* supplied as a variable 
+        * \n\n \b Example: \code _List list = _List((BaseRef)new _String("one")); \endcode
+        * @param char* the first string to add to the list
+        * @param const unsigned long the number of additional char* arguments supplied to the constructor
+        * @param 2-N: char* to be added to the list
+        */
+        _List(char*, const unsigned long, ...);
+        
+        /**
         * The deconstructor
         */
         virtual ~_List(void);
@@ -103,7 +112,13 @@ class _List:public _SimpleList
         /**
         * Element location functions - read only
         */
-        BaseRef operator () (unsigned long);
+        BaseRef operator () (const unsigned long);
+
+        /**
+        * Element location functions - read only
+        * used to avoid (*list)(3) which are hard to read
+        */
+        virtual BaseRef GetItem     (const unsigned long);
 
         /**
         * Element location functions - read only

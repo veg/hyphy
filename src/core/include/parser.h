@@ -127,6 +127,12 @@ bool        CheckReceptacleAndStore
 bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
+_Variable*  CheckReceptacleCommandID
+(_String* name, const long id, bool checkValid, bool isGlobal = false);
+
+bool        CheckReceptacleCommandIDAndStore
+(_String* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);
+
 void        FinishDeferredSF(void);
 
 void        SetupOperationLists (void);
