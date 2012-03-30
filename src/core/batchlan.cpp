@@ -4595,7 +4595,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                         }
                         choice = buffer.toNum();
                         if (choice<1 || choice>theChoices->lLength) {
-                            choice =- 1;
+                            choice = -1;
                             if (loopits++ > 10) {
                                 FlagError ("Failed to make a valid selection in ChoiceList after 10 tries");
                                 return;

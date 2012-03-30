@@ -145,20 +145,8 @@ double        TimerDifferenceFunction   (bool);
 #define       USE_AVL_NAMES
 #define       HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
 
-#ifdef __HYALTIVEC__
-#include    "altivec.h"
-char*   VecMemAllocate (long);
-typedef     float  _Parameter; // standard number type - used everywhere in matrices.
-// Adjust if extra precision or memory savings are in order
-#else
-#ifdef      __USE_LONG_DOUBLE__
-#define     PRINTF_FORMAT_STRING    "%Lg"
-typedef     long double  _Parameter; // standard number type - used everywhere in matrices.
-#else
 #define     PRINTF_FORMAT_STRING    "%g"
 typedef     double       _Parameter; // standard number type - used everywhere in matrices.
-#endif
-#endif
 
 
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__

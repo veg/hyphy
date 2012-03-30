@@ -220,7 +220,8 @@ _String::_String (_String* s)
 //Data constructor
 _String::_String (const char* s)
 {
-    for(sLength=0; s[sLength]; sLength++) ;
+    // room for the null terminator
+    sLength = strlen( s );
     checkPointer (sData = (char*)MemAllocate (sLength+1));
     memcpy (sData, s, sLength+1);
 }
@@ -2239,7 +2240,7 @@ bool    _String::IsValidIdentifier (bool strict)
 
     for(unsigned long p = 1; p<sLength; p++) {
         char c = sData[p];
-        if (!(isalnum(c)|| c=='_' || strict&& c=='.')) {
+        if (!(isalnum(c)|| c=='_' || (strict && c == '.'))) {
             return false;
         }    
     }    

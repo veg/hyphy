@@ -372,8 +372,8 @@ long    DisplayListOfPostChoices (void)
                 choice = -1;
             }
         }
-        return choice;
     }
+    return choice;
 }
 
 

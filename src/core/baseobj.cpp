@@ -186,7 +186,6 @@ bool    GlobalStartup (void)
     _hyApplicationGlobals.Insert(new _String (mpiNodeID));
     _hyApplicationGlobals.Insert(new _String (mpiNodeCount));
     _hyApplicationGlobals.Insert(new _String (mpiLastSentMsg));
-
 #endif
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
@@ -241,14 +240,15 @@ bool    GlobalStartup (void)
 bool    GlobalShutdown (void)
 {
     bool res = true;
-   
-#if defined __UNIX__ && !defined __HYPHY_GTK__ && ! defined __HEADLESS__
+
+#if defined (__HYPHY_GTK__) || defined (__HEADLESS__)
+#elif defined __UNIX__
     if (needExtraNL)
         printf ("\n");
-#endif     
+#endif
 
 #ifdef  __HYPHYMPI__
-    int     size;
+    int     flag, size;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     PurgeAll (true);
@@ -268,7 +268,9 @@ bool    GlobalShutdown (void)
 #ifdef __USE_ABORT_HACK__
     MPI_Abort(MPI_COMM_WORLD,0);
 #else
-    MPI_Finalize();
+    MPI_Finalized(&flag);
+    if (!flag)
+        MPI_Finalize();
 #endif
     ReportWarning ("Returned from MPI_Finalize");
 #endif
@@ -369,7 +371,7 @@ void    PurgeAll (bool all)
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = false;
     isDefiningATree     = false;
-#if defined __HYPHYMPI__ && defined __HYPHY_GTK__
+#ifdef __HYPHYMPI__
     int            size;
 
     MPI_Comm_size   (MPI_COMM_WORLD, &size);
