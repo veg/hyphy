@@ -1098,8 +1098,9 @@ else
     
                                 ASSUME_REVERSIBLE_MODELS = 1;
                                  
-                                OPTIMIZATION_METHOD = 0;
-                                USE_LAST_RESULTS   = 1;
+                                OPTIMIZATION_METHOD     = 0;
+                                USE_LAST_RESULTS        = 1;
+                                
                                 fprintf (stdout, "\n[RETUNING BRANCH LENGTHS AND NUCLEOTIDE RATES UNDER THE CODON MODEL]\n");
                                 
                                 T0 = Time(1);
@@ -1147,8 +1148,8 @@ else
                                 sFactor   :> 0;
 
                                 doneSites    = {filteredData.unique_sites,8};
-                                fullSites    = {filteredData.sites,8};						
-                                labels       = {{"beta1","beta2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
+                                fullSites    = {filteredData.sites,9};						
+                                labels       = {{"beta1","beta2","weight1","weight2","Length_scaler","LRT","p-value","q-value","Full Log(L)"}};
 
  								ReplicateConstraint ("this1.?.alpha:=sFactor*this2.?.synRate__",siteTree,codonTree);
  								ReplicateConstraint ("this1.?.beta1:=nsFactor1*sFactor*this2.?.synRate__",siteTree,codonTree);
@@ -1257,7 +1258,7 @@ else
                                 
                                 if (cOptions == 10)
                                 {
-                                    ReportSiteMEME (siteCount, siteMap);
+                                    ReportSiteMEME (siteCount, siteMap, -1);
                                 }
                                 else
                                 {
@@ -1441,19 +1442,32 @@ else
                             }		
                             
 							fprintf (stdout, "\n\n\n");
-							for (siteCount = 0; siteCount < filteredData.sites; siteCount = siteCount+1)
-							{
-								siteMap = dupInfo[siteCount];
-                                if (cOptions == 10)
-                                {
-                                    ReportSiteMEME (siteCount, siteMap);
+                            if (cOptions == 10) {
+                                qValues = {filteredData.sites,2};
+                                
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1){
+                                    qValues [siteCount][0] = siteCount;
+                                    qValues [siteCount][1] = doneSites[dupInfo[siteCount]][4];
                                 }
-                                else
+                                
+                                qValues = qValues % 1;
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1){
+                                    qValues [siteCount][1] = Min(1,qValues [siteCount][1] * (filteredData.sites-siteCount));
+                                }
+                                
+                                qValues = qValues % 0;
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1) {
+                                    ReportSiteMEME (siteCount, dupInfo[siteCount], qValues[siteCount][1]);				 
+                                }
+                                
+                            
+                            } else {
+                                for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1)
                                 {
+                                    siteMap = dupInfo[siteCount];
                                     ReportSite2 (siteCount, siteMap);				 
                                 }
                             }
-                            
 						}
 					}
 					
