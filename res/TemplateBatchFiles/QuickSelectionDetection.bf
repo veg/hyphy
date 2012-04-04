@@ -1452,7 +1452,7 @@ else
                                 
                                 qValues = qValues % 1;
                                 for (siteCount = 0; siteCount < filteredData.sites; siteCount += 1){
-                                    qValues [siteCount][1] = Min(1,qValues [siteCount][1] * (filteredData.sites-siteCount));
+                                    qValues [siteCount][1] = Min(1,qValues [siteCount][1] * (filteredData.sites)/(1+siteCount));
                                 }
                                 
                                 qValues = qValues % 0;
