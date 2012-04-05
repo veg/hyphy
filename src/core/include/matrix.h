@@ -62,6 +62,7 @@ struct      _CompiledMatrixData {
     _Parameter         * formulaValues;
 
     long      * formulaRefs;
+    bool        has_volatile_entries;
 
     _SimpleList varIndex,
                 formulasToEval;

@@ -348,7 +348,7 @@ set_target_properties(
 
 find_package(GTK2 2.6)
 
-if((${GTK2_FOUND}) AND (NOT ${APPLE}))
+if((${GTK2_FOUND}))
 	file(
         GLOB SRC_GUI_GTK
         src/gui/gtk/*.cpp
@@ -356,7 +356,7 @@ if((${GTK2_FOUND}) AND (NOT ${APPLE}))
         src/gui/gtk/WindowClasses/*.cpp
     )
 	include_directories(
-        ${GTK_INCLUDE_DIRS}
+        ${GTK2_INCLUDE_DIRS}
         src/gui/gtk/include
         src/gui/gtk/include/Components
         /Developer/Headers/FlatCarbon
@@ -387,7 +387,7 @@ if((${GTK2_FOUND}) AND (NOT ${APPLE}))
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
         LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
     )
-endif((${GTK2_FOUND}) AND (NOT ${APPLE}))
+endif((${GTK2_FOUND}))
 
 
 #-------------------------------------------------------------------------------
@@ -503,7 +503,7 @@ if(APPLE)
 		add_custom_command(
 				TARGET HYPHY_DMG
 				POST_BUILD
-				COMMAND dmgcanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
+				COMMAND ${HAZ_DMG_CANVAS} ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
 			)
 	else (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
 		add_custom_command(

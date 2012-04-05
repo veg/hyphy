@@ -355,7 +355,9 @@ bool        _Matrix::HasChanged(void)
         }
 
     } else if (storageType == 3) {
-        for (long vid = 0; vid < cmd->varIndex.lLength; vid++) {
+        if (cmd->has_volatile_entries) return true;
+    
+        for (unsigned long vid = 0; vid < cmd->varIndex.lLength; vid++) {
             if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[cmd->varIndex.lData[vid]]))->HasChanged ())
                 return true;
         }
@@ -2729,11 +2731,12 @@ void        _Matrix::MakeMeSimple (void)
         if (isGood) {
             storageType = 3;
 
-            for (long k = 0; k < newFormulas.lLength; k++) {
-                ((_Formula*)newFormulas.lData[k])->ConvertToSimple(varList);
+            cmd                         = new _CompiledMatrixData;
+            cmd->has_volatile_entries   = false;
+            for (unsigned long k = 0; k < newFormulas.lLength; k++) {
+                cmd->has_volatile_entries = cmd->has_volatile_entries || ((_Formula*)newFormulas.lData[k])->ConvertToSimple(varList);
             }
 
-            cmd                         = new _CompiledMatrixData;
             cmd->varIndex.Duplicate (&varList);
             cmd->theStack               = (_SimpleFormulaDatum*)MatrixMemAllocate (stackLength*sizeof(_SimpleFormulaDatum));
             cmd->varValues              = (_SimpleFormulaDatum*)MatrixMemAllocate ((cmd->varIndex.lLength>0?varList.lLength:1)*sizeof(_SimpleFormulaDatum));
