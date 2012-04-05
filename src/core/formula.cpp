@@ -2032,8 +2032,9 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-void _Formula::ConvertToSimple (_SimpleList& variableIndex)
+bool _Formula::ConvertToSimple (_SimpleList& variableIndex)
 {
+    bool has_volatiles = false;
     if (theFormula.lLength)
         for (int i=0; i<theFormula.lLength; i++) {
             _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
@@ -2047,10 +2048,13 @@ void _Formula::ConvertToSimple (_SimpleList& variableIndex)
                 if (thisOp->opCode == HY_OP_CODE_MACCESS) {
                     thisOp->numberOfTerms = -2;
                 }
+                if (thisOp->opCode == HY_OP_CODE_RANDOM || thisOp->opCode == HY_OP_CODE_TIME)
+                    has_volatiles = true;
                 thisOp->opCode = simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
             }
 
         }
+    return has_volatiles;
 }
 
 //__________________________________________________________________________________
@@ -2208,8 +2212,7 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
                 return true;
             }
         } else {
-            long codeOp = simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
-            if (codeOp == HY_OP_CODE_RANDOM || codeOp == HY_OP_CODE_TIME) {
+            if (thisOp->opCode == (long) RandomNumber) {
                 return true;
             }
         }
