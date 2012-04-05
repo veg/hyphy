@@ -355,10 +355,15 @@ bool        _Matrix::HasChanged(void)
         }
 
     } else if (storageType == 3) {
-        for (long fid = 0; fid < cmd->formulasToEval.lLength; fid++)
+        for (long vid = 0; vid < cmd->varIndex.lLength; vid++) {
+            if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[cmd->varIndex.lData[vid]]))->HasChanged ())
+                return true;
+        }
+        // SLKP 20120404 need to add a check for "volatile" formulae, i.e. Time and Random
+        /*for (long fid = 0; fid < cmd->formulasToEval.lLength; fid++)
             if (((_Formula*)cmd->formulasToEval.lData[fid])->HasChangedSimple(cmd->varIndex)) {
                 return true;
-            }
+            }*/
     }
     return false;
 }

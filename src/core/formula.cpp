@@ -2208,8 +2208,7 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
                 return true;
             }
         } else {
-            long codeOp = simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
-            if (codeOp == HY_OP_CODE_RANDOM || codeOp == HY_OP_CODE_TIME) {
+            if (thisOp->opCode == (long) RandomNumber) {
                 return true;
             }
         }
