@@ -168,7 +168,7 @@ function ReceiveJobs1 (sendOrNot)
 }
 /*------------------------------------------------------------------------*/
 
-function ReportSiteMEME (siteI, siteM)
+function ReportSiteMEME (siteI, siteM, doQ)
 {
     // labels       = {{"omega1","omega2","weight1","weight2","Length_scaler","LRT","p-value","Full Log(L)"}};
 	fullSites[siteI][0] = doneSites[siteM][0];
@@ -178,9 +178,15 @@ function ReportSiteMEME (siteI, siteM)
 	fullSites[siteI][4] = doneSites[siteM][7];
 	fullSites[siteI][5] = doneSites[siteM][3];
 	fullSites[siteI][6] = doneSites[siteM][4];
-	fullSites[siteI][7] = doneSites[siteM][5];
+	fullSites[siteI][8] = doneSites[siteM][5];
 	
-
+    if (doQ >= 0) {
+       fullSites[siteI][7] = doQ;
+       qStr = "| q: " + Format(fullSites[siteI][7],5,2);
+    } else {
+       qStr = "";
+    }
+    
 
 	fprintf (stdout, "| Codon: ", 		Format(siteI+1,4,0),
 					 "| Beta1: ", 		Format(fullSites[siteI][0],10,2),
@@ -189,8 +195,9 @@ function ReportSiteMEME (siteI, siteM)
 					 "| P(Beta2): ",	Format(fullSites[siteI][3],5,2),
 					 "| alpha: ",		Format(fullSites[siteI][4],10,2),
 					 "| LRT: ",			Format(fullSites[siteI][5],6,2),
-					 "| p: ",			Format(fullSites[siteI][6],5,2),		
-					 "| Log(L): ",		Format(fullSites[siteI][7],5,2));		
+					 "| p: ",			Format(fullSites[siteI][6],5,2),	
+                     qStr,	
+					 "| Log(L): ",		Format(fullSites[siteI][8],5,2));		
 
 	if (fullSites[siteI][6]<pValue)
 	{
@@ -629,8 +636,8 @@ function ReceiveJobsMEME ()
         {
             if (doneSites[siteMap][4] == (-1))
             {
-                doneSites[siteMap][4] = (1-CChi2(doneSites[siteMap][3],1));						
-                ReportSiteMEME (siteIndex, siteMap);
+                doneSites[siteMap][4] = 2/3-2/3*(0.45*CChi2(doneSites[siteMap][3],1)+0.55*CChi2(doneSites[siteMap][3],2));						
+                ReportSiteMEME (siteIndex, siteMap, -1);
             }
         }
     }

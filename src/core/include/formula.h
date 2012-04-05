@@ -137,7 +137,7 @@ public:
     _PMathObj   GetTheMatrix        (void);
 
     bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
-    void        ConvertToSimple     (_SimpleList& variableIndex);
+    bool        ConvertToSimple     (_SimpleList& variableIndex);
     void        ConvertFromSimple   (_SimpleList& variableIndex);
     void        SimplifyConstants   (void);
 

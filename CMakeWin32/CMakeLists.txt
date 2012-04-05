@@ -34,7 +34,7 @@ SET(CMAKE_CXX_COMPILER ${CMAKE_FIND_ROOT_PATH}/bin/i386-mingw32-g++)
 ENABLE_LANGUAGE(CXX)
 
 set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
-add_definitions(-D_SLKP_LFENGINE_REWRITE_)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
 
 set(CMAKE_RC_COMPILER_INIT ${CMAKE_FIND_ROOT_PATH}/bin/i386-mingw32-windres)
@@ -51,7 +51,7 @@ file(GLOB SRC_GTESTS ../tests/gtests/*.cpp)
 file(GLOB SRC_NEW ../src/new/*.cpp)
 file(GLOB SRC_WIN32_GUI ../src/gui/win/*.cpp ../src/gui/win/Components/*.cpp ../src/gui/win/WindowClasses/*.cpp)
 
-set(SRC_SQLITE3 ../contrib/SQLite-3.6.17/sqlite3.c)
+set(SRC_SQLITE3 ../contrib/SQLite-3.7.11/sqlite3.c)
 set(SRC_WINMAIN ../src/mains/win.cpp)
 set(SRC_WINRES  ../src/gui/res/Windows/Win.rc)
 
@@ -61,7 +61,7 @@ include_directories(
 	../src/core/include
 	../src/lib/Link 
 	../src/new/include
-	../contrib/SQLite-3.6.17
+	../contrib/SQLite-3.7.11
 	../src/gui/include
 	../src/gui/include/Components
 	../src/gui/win/include
