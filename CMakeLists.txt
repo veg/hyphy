@@ -122,7 +122,7 @@ file(GLOB SRC_NEW src/new/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
-set(SRC_SQLITE3 contrib/SQLite-3.6.17/sqlite3.c)
+set(SRC_SQLITE3 contrib/SQLite-3.7.11/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
@@ -163,7 +163,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib/SQLite-3.6.17 # SQLite
+    contrib/SQLite-3.7.11 # SQLite
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
