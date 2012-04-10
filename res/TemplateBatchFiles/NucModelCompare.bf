@@ -145,7 +145,7 @@ function ReceiveJobs (sendOrNot)
 					fprintf (stdout," | (",0, resultCache[h][0], resultCache[h][1], resultCache[h][2], resultCache[h][3], resultCache[h][4],") | ");
 					fprintf (stdout,Format (np,5,0));
 					PRINT_DIGITS = 8;
-					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ");
 					
 					PRINT_DIGITS = 15;
 					if (LRT==0)
@@ -226,7 +226,7 @@ function ReceiveJobs (sendOrNot)
 	fprintf (stdout," | (",vv1,vv2,vv3,vv4,vv5,vv6,") | ");
 	fprintf (stdout,Format (np,5,0));
 	PRINT_DIGITS = 8;
-	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ");
 		
 	if (doFitSave)
 	{
