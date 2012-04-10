@@ -31,7 +31,7 @@ SetDialogPrompt ("Save results to:");
 
 if (RESTORE_GLOBALS)
 {
-	dumb = RestoreGlobalValues (likelihoodFnChoice);
+	RestoreGlobalValues (likelihoodFnChoice);
 }
 
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, likelihoodFunctionName__ ,"\n");
+ExecuteCommands ("fprintf (PROMPT_FOR_FILE, CLEAR_FILE, `likelihoodFunctionName`,\"\n\");");
