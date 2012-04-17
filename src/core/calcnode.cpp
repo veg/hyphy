@@ -5484,7 +5484,7 @@ long    _TheTree::CountTreeCategories (void)
         cVA.ReorderList   ();
     }
     categoryCount = 1;
-    for (long k=0; k<categoryVariables.lLength; k++) {
+    for (unsigned long k=0; k<categoryVariables.lLength; k++) {
         categoryCount *= ((_CategoryVariable*)LocateVar(categoryVariables.lData[k]))->GetNumberOfIntervals();
     }
     return categoryCount;

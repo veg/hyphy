@@ -3542,7 +3542,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
+void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 // multiplication operation on matrices
 // internal function
 // storage is assumed to NOT be *this
@@ -3626,36 +3626,73 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 #endif
             } else
                 /* rectangular matrices */
-            {
-                /*long  off1 = secondArg.vDim,
-                        off2 = 2*secondArg.vDim,
-                        off3 = 3*secondArg.vDim,
-                        off4 = 4*secondArg.vDim;*/
-
-                _Parameter *rD,
-                           *fD,
-                           *sD,
-                           *stop,
-                           resCell;
-
-                for (long i=0; i<hDim; i++) {
-                    rD = storage.theData+i*secondArg.vDim;
-                    for (long j=0; j<secondArg.vDim; j++,rD++) {
-                        resCell = 0.0;
-                        fD = theData+i*vDim;
-                        stop = fD+vDim;
-                        sD = secondArg.theData+j;
-                        //for (k=0; k<vDim; k++, fD++, sD+=secondArg.vDim)
-                        //for (; stop!=fD; fD++, sD+=secondArg.vDim)
-                        for (; fD!=stop;)
-                            //resCell+=*fD**sD;
-                        {
-                            resCell += *(fD++)**sD;
-                            sD += secondArg.vDim;
+            {   
+                /*if (vDim >= 2048) {
+                    // transpose the second matrix
+                    _Parameter *tpose = new _Parameter[secondArg.lDim];
+                    
+                    for (long r = 0; r < secondArg.hDim; r ++) 
+                        for (long c = 0; c < secondArg.vDim; c++) 
+                            tpose[c*secondArg.hDim + r] = secondArg.theData[r*secondArg.vDim + c];
+                            
+                    long mod4 = vDim-vDim%4;
+                    for (long i=0; i<hDim; i++) {
+                        for (long j=0; j<secondArg.vDim; j++) {
+                            _Parameter resCell = 0.0;
+                            long k = 0;
+                            for (; k < mod4; k+=4) {
+                                resCell += theData[i*vDim + k] * secondArg.theData[j*secondArg.hDim + k] +
+                                        theData[i*vDim + k + 1] * secondArg.theData[j*secondArg.hDim + k+1] +
+                                        theData[i*vDim + k + 2] * secondArg.theData[j*secondArg.hDim + k+2] +
+                                        theData[i*vDim + k + 3] * secondArg.theData[j*secondArg.hDim + k+3];
+                            }
+                            for (; k < vDim; k++) {
+                                resCell += theData[i*vDim + k] * tpose[j*secondArg.hDim + k];
+                            }
+                            
+                            storage.theData[i*secondArg.vDim + j] = resCell;
                         }
-                        *rD = resCell;
+                    }
+                    
+                    delete [] tpose;
+                 } else */{
+                    if (vDim % 4) {
+                        long mod4 = vDim-vDim%4;
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                long k = 0;
+                                for (; k < mod4; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[k*(1+secondArg.vDim) + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[k*(2+secondArg.vDim) + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[k*(3+secondArg.vDim) + j];
+                                }
+                                for (; k < vDim; k++) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j];
+                                }
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
+                        }
+                    } else {
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                for (long k = 0; k < vDim; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[k*(1+secondArg.vDim) + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[k*(2+secondArg.vDim) + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[k*(3+secondArg.vDim) + j];
+                                }
+                                
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
+                        }
                     }
                 }
+                
             }
         }
 
@@ -6774,15 +6811,16 @@ _Matrix     _Matrix::operator * (_Parameter c)
 //_____________________________________________________________________________________________
 void        _Matrix::operator *= (_Matrix& m)
 {
-    CheckDimensions     (m);
-    AgreeObjects        (m);
-    _Matrix   result    (hDim, m.vDim, false, storageType);
-    Multiply            (result,m);
-    //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
-    if (theIndex!=nil && m.theIndex!=nil) {
-        result.AmISparse();
+    if (CheckDimensions     (m)) {
+        AgreeObjects        (m);
+        _Matrix   result    (hDim, m.vDim, false, storageType);
+        Multiply            (result,m);
+        //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
+        if (theIndex!=nil && m.theIndex!=nil) {
+            result.AmISparse();
+        }
+        Swap                (result);
     }
-    Swap                (result);
 }
 
 //_____________________________________________________________________________________________
@@ -6834,11 +6872,12 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
         }
 
     _Matrix*        m = (_Matrix*)mp;
-    CheckDimensions (*m);
+    if (!CheckDimensions (*m)) return new _MathObject;
     AgreeObjects    (*m);
 
     _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
     checkPointer  (result);
+    
     Multiply      (*result,*m);
     return        result;
 
@@ -6906,7 +6945,7 @@ _PMathObj       _Matrix::MultElements (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-void    _Matrix::CheckDimensions (_Matrix& secondArg)
+bool    _Matrix::CheckDimensions (_Matrix& secondArg)
 // check matrix dimensions to ensure that they are multipliable
 {
     if (vDim!=secondArg.hDim) {
@@ -6915,16 +6954,21 @@ void    _Matrix::CheckDimensions (_Matrix& secondArg)
         } else {
             char str[255];
             sprintf (str,"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
-            ReportWarning (str);
-            return;
+            WarnError (str);
+            return false;
         }
     }
+    return true;
 }
 
 //_____________________________________________________________________________________________
 _Matrix     _Matrix::operator * (_Matrix& m)
 {
-    CheckDimensions (m);
+    if (!CheckDimensions (m)) {   
+        _Matrix d;
+        return d;
+    }
+    
     AgreeObjects (m);
     _Matrix result (hDim, m.vDim, false, storageType);
     Multiply (result,m);
