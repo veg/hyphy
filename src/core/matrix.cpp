@@ -3684,10 +3684,10 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                          cacheBlockInMatrix2[p][p2] = secondArg.theData [(r2+p2)*secondArg.vDim+c+p];
                                      }
                                  }
-                                 if (upto_p2 % 8 == 0) {
+                                 if (upto_p2 % 4 == 0) {
                                      for (long p = 0; p < upto_p; p++) {
                                          _Parameter updater = 0.;
-                                         for (long p2 = 0; p2 < upto_p2; p2+=8) {
+                                         for (long p2 = 0; p2 < upto_p2; p2+=4) {
                                              _Parameter pr1 = theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2],
                                                         pr2 = theData[r*vDim + r2 + p2+1]*cacheBlockInMatrix2[p][p2+1],
                                                         pr3 = theData[r*vDim + r2 + p2+2]*cacheBlockInMatrix2[p][p2+2],
