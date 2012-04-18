@@ -3669,11 +3669,10 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             {   
 #define _HY_MATRIX_CACHE_BLOCK 64
                  if (vDim >= 256) {
-                     
-                     _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
-                                
                      for (long r = 0; r < hDim; r ++) {
+#pragma omp parallel for default(none) shared(r) 
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
+                             _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
                              const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
                              for (long r2 = 0; r2 < secondArg.hDim; r2+= _HY_MATRIX_CACHE_BLOCK) {
                                  const long upto_p2 = (secondArg.hDim-r2)>=_HY_MATRIX_CACHE_BLOCK?_HY_MATRIX_CACHE_BLOCK:(secondArg.hDim-r2);
