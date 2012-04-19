@@ -27,7 +27,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "batchlan.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -36,6 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 #include <limits.h>
 
+#include "batchlan.h"
 #include "polynoml.h"
 #include "likefunc.h"
 
@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistxl.h"
 
 #ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
+    #include "dmalloc.h"
 #endif
 
 /*SLKP 20110209; include progress report updates */
@@ -3667,17 +3667,19 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             } else
                 /* rectangular matrices */
             {   
-#define _HY_MATRIX_CACHE_BLOCK 64
+#define _HY_MATRIX_CACHE_BLOCK 128
                  if (vDim >= 256) {
+#ifdef _OPENMP
+                     long nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
+#endif
                      for (long r = 0; r < hDim; r ++) {
-#pragma omp parallel for default(none) shared(r) 
+                     
+#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
                              const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
                              for (long r2 = 0; r2 < secondArg.hDim; r2+= _HY_MATRIX_CACHE_BLOCK) {
                                  const long upto_p2 = (secondArg.hDim-r2)>=_HY_MATRIX_CACHE_BLOCK?_HY_MATRIX_CACHE_BLOCK:(secondArg.hDim-r2);
-                                 
-                                 
                                  for (long p = 0; p < upto_p; p++) {
                                      for (long p2 = 0; p2 < upto_p2; p2++) {
                                          cacheBlockInMatrix2[p][p2] = secondArg.theData [(r2+p2)*secondArg.vDim+c+p];
