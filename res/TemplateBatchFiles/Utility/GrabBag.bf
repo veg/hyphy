@@ -912,3 +912,38 @@ function runModule (module,options,suppressStdout)
 		GLOBAL_FPRINTF_REDIRECT = _gfr;
 	}
 }
+
+/*---------------------------------------------------------------------*/
+
+function _formatTimeString (secondCount)
+{
+	_hours = secondCount $3600;
+	if (_hours < 10)
+	{
+		_timeString = "0"+_hours;
+	}
+	else
+	{
+		_timeString = ""+_hours;
+	}
+	_minutes = (secondCount%3600)$60;
+	if (_minutes < 10)
+	{
+		_timeString = _timeString+":0"+_minutes;
+	}
+	else
+	{
+		_timeString = _timeString+":"+_minutes;
+	}
+	_seconds = (secondCount%60);
+	if (_seconds < 10)
+	{
+		_timeString = _timeString+":0"+_seconds;
+	}
+	else
+	{
+		_timeString = _timeString+":"+_seconds;
+	}
+	return _timeString;
+}	
+

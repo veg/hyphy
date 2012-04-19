@@ -484,7 +484,7 @@ private:
     void        Multiply            (_Matrix&, _Matrix&);
     bool        IsNonEmpty          (long);
     // checks to see if the i-th position in the storage is non-empty
-    void        CheckDimensions     (_Matrix&);
+    bool        CheckDimensions     (_Matrix&);
     // compare dims of 2 matrices to see if they can be multiplied
     long        HashBack            (long);
     // hashing function, which finds matrix

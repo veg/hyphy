@@ -3542,7 +3542,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
+void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 // multiplication operation on matrices
 // internal function
 // storage is assumed to NOT be *this
@@ -3575,29 +3575,69 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                long cumulativeIndex = 0;
+                long cumulativeIndex = 0,
+                     dimm4 = vDim - vDim%4;
 
                 _Parameter * row = theData;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
-                if (vDim % 4 == 0)
-                    // manual loop unroll
-                {
-                    for (long i=0; i<hDim; i++, row += vDim) {
-                        for (long j=0; j<secondArg.vDim; j++) {
-                            _Parameter resCell  = 0.0;
+                
+               
+                for (long i=0; i<hDim; i++, row += vDim) {
+                    for (long j=0; j<secondArg.vDim; j++) {
+                        _Parameter resCell  = 0.0;
 
-                            for (long k = 0, column = j; k < vDim; k+=4, column += (secondArg.vDim<<2))
-                                resCell += row[k]   * secondArg.theData [column]                         +
-                                           row[k+1] * secondArg.theData [column + secondArg.vDim ]       +
-                                           row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)] +
-                                           row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
-
-                            storage.theData[cumulativeIndex++] = resCell;
-
+                        long k = 0, 
+                             column = j;
+                        
+                        for (; k < dimm4; k+=4, column += (secondArg.vDim<<2)) {
+                            _Parameter pr1 = row[k]   * secondArg.theData [column],                         
+                                       pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
+                                       pr3 = row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)],
+                                       pr4 = row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
+                            pr1 += pr2;
+                            pr3 += pr4;
+                            resCell += pr1 + pr3;
                         }
+                        
+                        if (dimm4 < vDim)
+                            for (; k < vDim; k++, column += secondArg.vDim) {
+                                resCell += row[k] * secondArg.theData[column];
+                            }
+
+                        storage.theData[cumulativeIndex++] = resCell;
+
                     }
-                } else {
+                }
+                /*_Parameter cache [128];
+                for (long i=0; i<hDim; i++, row += vDim) {
+                    for (long j=0; j<secondArg.vDim; j++) {
+                        _Parameter resCell  = 0.0;
+                        for (long l = 0, m = j; l < secondArg.vDim; l++, m += secondArg.vDim)
+                            cache[l] = secondArg.theData [m ];
+                            
+                        long k = 0;
+                        
+                        for (; k < dimm4; k+=4) {
+                            _Parameter pr1 = row[k]   * cache[k],                         
+                            pr2 = row[k+1] * cache[k+1],      
+                            pr3 = row[k+2] * cache[k+2],
+                            pr4 = row[k+3] * cache[k+3];
+                            pr1 += pr2;
+                            pr3 += pr4;
+                            resCell += pr1 + pr3;
+                        }
+                        
+                        if (dimm4 < vDim)
+                            for (; k < vDim; k++) {
+                                resCell += row[k] * cache[k];
+                            }
+                        
+                        storage.theData[cumulativeIndex++] = resCell;
+                        
+                    }
+                }*/
+                /*} else {
                     for (long i=0; i<hDim; i++, row += vDim) {
                         for (long j=0; j<secondArg.vDim; j++) {
                             _Parameter resCell = 0.0;
@@ -3609,7 +3649,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
                             storage.theData[cumulativeIndex++] = resCell;
                         }
                     }
-                }
+                }*/
 #else
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
@@ -3626,36 +3666,89 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 #endif
             } else
                 /* rectangular matrices */
-            {
-                /*long  off1 = secondArg.vDim,
-                        off2 = 2*secondArg.vDim,
-                        off3 = 3*secondArg.vDim,
-                        off4 = 4*secondArg.vDim;*/
-
-                _Parameter *rD,
-                           *fD,
-                           *sD,
-                           *stop,
-                           resCell;
-
-                for (long i=0; i<hDim; i++) {
-                    rD = storage.theData+i*secondArg.vDim;
-                    for (long j=0; j<secondArg.vDim; j++,rD++) {
-                        resCell = 0.0;
-                        fD = theData+i*vDim;
-                        stop = fD+vDim;
-                        sD = secondArg.theData+j;
-                        //for (k=0; k<vDim; k++, fD++, sD+=secondArg.vDim)
-                        //for (; stop!=fD; fD++, sD+=secondArg.vDim)
-                        for (; fD!=stop;)
-                            //resCell+=*fD**sD;
-                        {
-                            resCell += *(fD++)**sD;
-                            sD += secondArg.vDim;
+            {   
+#define _HY_MATRIX_CACHE_BLOCK 64
+                 if (vDim >= 256) {
+                     for (long r = 0; r < hDim; r ++) {
+#pragma omp parallel for default(none) shared(r) 
+                         for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
+                             _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
+                             const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
+                             for (long r2 = 0; r2 < secondArg.hDim; r2+= _HY_MATRIX_CACHE_BLOCK) {
+                                 const long upto_p2 = (secondArg.hDim-r2)>=_HY_MATRIX_CACHE_BLOCK?_HY_MATRIX_CACHE_BLOCK:(secondArg.hDim-r2);
+                                 
+                                 
+                                 for (long p = 0; p < upto_p; p++) {
+                                     for (long p2 = 0; p2 < upto_p2; p2++) {
+                                         cacheBlockInMatrix2[p][p2] = secondArg.theData [(r2+p2)*secondArg.vDim+c+p];
+                                     }
+                                 }
+                                 if (upto_p2 % 4 == 0) {
+                                     for (long p = 0; p < upto_p; p++) {
+                                         _Parameter updater = 0.;
+                                         for (long p2 = 0; p2 < upto_p2; p2+=4) {
+                                             _Parameter pr1 = theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2],
+                                                        pr2 = theData[r*vDim + r2 + p2+1]*cacheBlockInMatrix2[p][p2+1],
+                                                        pr3 = theData[r*vDim + r2 + p2+2]*cacheBlockInMatrix2[p][p2+2],
+                                                        pr4 = theData[r*vDim + r2 + p2+3]*cacheBlockInMatrix2[p][p2+3];
+                                             pr1 += pr2;
+                                             pr3 += pr4;
+                                             updater += pr1 + pr3;
+                                         }
+                                         storage.theData[r*secondArg.vDim + c + p] += updater;
+                                     } 
+                                 } else
+                                     for (long p = 0; p < upto_p; p++) {
+                                         _Parameter updater = 0.;
+                                         for (long p2 = 0; p2 < upto_p2; p2++) {
+                                             updater += theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2];
+                                         }
+                                         storage.theData[r*secondArg.vDim + c + p] += updater;
+                                     } 
+                             }
+                         }
+                     }
+                     
+                 } else {
+                     
+                     
+                    if (vDim % 4) {
+                        long mod4 = vDim-vDim%4;
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                long k = 0;
+                                for (; k < mod4; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[(k+1)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[(k+2)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[(k+3)*secondArg.vDim + j];
+                                }
+                                for (; k < vDim; k++) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j];
+                                }
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
                         }
-                        *rD = resCell;
+                    } else {
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                for (long k = 0; k < vDim; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[(k+1)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[(k+2)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[(k+3)*secondArg.vDim + j];
+                                }
+                                
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
+                        }
                     }
                 }
+                
             }
         }
 
@@ -6774,15 +6867,16 @@ _Matrix     _Matrix::operator * (_Parameter c)
 //_____________________________________________________________________________________________
 void        _Matrix::operator *= (_Matrix& m)
 {
-    CheckDimensions     (m);
-    AgreeObjects        (m);
-    _Matrix   result    (hDim, m.vDim, false, storageType);
-    Multiply            (result,m);
-    //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
-    if (theIndex!=nil && m.theIndex!=nil) {
-        result.AmISparse();
+    if (CheckDimensions     (m)) {
+        AgreeObjects        (m);
+        _Matrix   result    (hDim, m.vDim, false, storageType);
+        Multiply            (result,m);
+        //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
+        if (theIndex!=nil && m.theIndex!=nil) {
+            result.AmISparse();
+        }
+        Swap                (result);
     }
-    Swap                (result);
 }
 
 //_____________________________________________________________________________________________
@@ -6834,11 +6928,12 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
         }
 
     _Matrix*        m = (_Matrix*)mp;
-    CheckDimensions (*m);
+    if (!CheckDimensions (*m)) return new _MathObject;
     AgreeObjects    (*m);
 
     _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
     checkPointer  (result);
+    
     Multiply      (*result,*m);
     return        result;
 
@@ -6906,7 +7001,7 @@ _PMathObj       _Matrix::MultElements (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-void    _Matrix::CheckDimensions (_Matrix& secondArg)
+bool    _Matrix::CheckDimensions (_Matrix& secondArg)
 // check matrix dimensions to ensure that they are multipliable
 {
     if (vDim!=secondArg.hDim) {
@@ -6915,16 +7010,21 @@ void    _Matrix::CheckDimensions (_Matrix& secondArg)
         } else {
             char str[255];
             sprintf (str,"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
-            ReportWarning (str);
-            return;
+            WarnError (str);
+            return false;
         }
     }
+    return true;
 }
 
 //_____________________________________________________________________________________________
 _Matrix     _Matrix::operator * (_Matrix& m)
 {
-    CheckDimensions (m);
+    if (!CheckDimensions (m)) {   
+        _Matrix d;
+        return d;
+    }
+    
     AgreeObjects (m);
     _Matrix result (hDim, m.vDim, false, storageType);
     Multiply (result,m);

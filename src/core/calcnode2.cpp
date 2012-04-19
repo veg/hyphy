@@ -673,10 +673,15 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         _Parameter      accumulator = 0.0;
 
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-                            accumulator +=  tMatrix[c]   * childVector[c] +
-                                            tMatrix[c+1] * childVector[c+1] +
-                                            tMatrix[c+2] * childVector[c+2] +
-                                            tMatrix[c+3] * childVector[c+3];
+                        {
+                             _Parameter pr1 =    tMatrix[c]   * childVector[c],
+                                        pr2 =    tMatrix[c+1] * childVector[c+1],
+                                        pr3 =    tMatrix[c+2] * childVector[c+2],
+                                        pr4 =    tMatrix[c+3] * childVector[c+3];
+                            pr1 += pr2;
+                            pr3 += pr4;
+                            accumulator += pr1+pr3;
+                        }
 
                         for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                             accumulator +=  tMatrix[c] * childVector[c];
@@ -1117,10 +1122,15 @@ void            _TheTree::ComputeBranchCache    (
                     _Parameter      accumulator = 0.0;
 
                     for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-                        accumulator +=  tMatrix[c]   * childVector[c] +
-                                        tMatrix[c+1] * childVector[c+1] +
-                                        tMatrix[c+2] * childVector[c+2] +
-                                        tMatrix[c+3] * childVector[c+3];
+                    {
+                        _Parameter  pr1 =    tMatrix[c]   * childVector[c],
+                                    pr2 =    tMatrix[c+1] * childVector[c+1],
+                                    pr3 =    tMatrix[c+2] * childVector[c+2],
+                                    pr4 =    tMatrix[c+3] * childVector[c+3];
+                         pr1 += pr2;
+                         pr3 += pr4;
+                         accumulator += pr1+pr3;
+                    }
 
                     for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                         accumulator +=  tMatrix[c] * childVector[c];
@@ -1221,25 +1231,26 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _Parameter  *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
 
     for (long siteID = siteFrom; siteID < siteTo; siteID++) {
-        _Parameter accumulator = 0.,
-                   *rmx        = transitionMatrix;
+        _Parameter accumulator = 0.;
+        
 
 
         if (alphabetDimension == 4) {
             accumulator =    rootConditionals[0] * theProbs[0] *
-                             (branchConditionals[0] *  rmx[0] + branchConditionals[1] *  rmx[1] + branchConditionals[2] *  rmx[2] + branchConditionals[3] *  rmx[3]) +
+                             (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
                              rootConditionals[1] * theProbs[1] *
-                             (branchConditionals[0] *  rmx[4] + branchConditionals[1] *  rmx[5] + branchConditionals[2] *  rmx[6] + branchConditionals[3] *  rmx[7]) +
+                             (branchConditionals[0] *  transitionMatrix[4] + branchConditionals[1] *  transitionMatrix[5] + branchConditionals[2] *  transitionMatrix[6] + branchConditionals[3] *  transitionMatrix[7]) +
                              rootConditionals[2] * theProbs[2] *
-                             (branchConditionals[0] *  rmx[8] + branchConditionals[1] *  rmx[9] + branchConditionals[2] *  rmx[10] + branchConditionals[3] *  rmx[11]) +
+                             (branchConditionals[0] *  transitionMatrix[8] + branchConditionals[1] *  transitionMatrix[9] + branchConditionals[2] *  transitionMatrix[10] + branchConditionals[3] *  transitionMatrix[11]) +
                              rootConditionals[3] * theProbs[3] *
-                             (branchConditionals[0] *  rmx[12] + branchConditionals[1] *  rmx[13] + branchConditionals[2] *  rmx[14] + branchConditionals[3] *  rmx[15]);
+                             (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
             rootConditionals += 4;
         } else {
+            long       rmx = 0;
             for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
                 _Parameter     r2 = 0.;
                 for (long c = 0; c < alphabetDimension; c++, rmx++) {
-                    r2 += branchConditionals[c] *  *rmx;
+                    r2 += branchConditionals[c] *  transitionMatrix[rmx];
                 }
                 accumulator += *rootConditionals * theProbs[p] * r2;
             }
