@@ -32,6 +32,7 @@ and you're comfortable with GNU make,
 then just `make` away with one of the following targets:
 
 +   MAC - build a Mac Carbon application
++   HYPHYGTK - HYPHY with GTK
 +   MP2 - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing
