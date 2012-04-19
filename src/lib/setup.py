@@ -21,7 +21,7 @@ hyphyPath, srcDir = path.split(srcPath)
 #     resFiles = [(f, path.join(*(['..'] * 5 + f.split('/')))) for f in fh.read().split('\n') if f != '']
 
 contribPath = path.join(hyphyPath, 'contrib')
-sqlitePath = path.join(contribPath, 'SQLite-3.6.17')
+sqlitePath = path.join(contribPath, 'SQLite-3.7.11')
 
 linkPath = path.join(scriptPath, 'Link')
 coreSrcPath = path.join(srcPath, 'core')
