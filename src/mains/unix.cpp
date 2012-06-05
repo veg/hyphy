@@ -163,8 +163,12 @@ void    ReadInPostFiles(void)
 
     _String fileIndex;
     FILE* modelList = fopen (fileIndex.getStr(),"r");
-    fileIndex = baseArgDir &"TemplateBatchFiles/postprocessors.lst";
+    fileIndex = libArgDir &"TemplateBatchFiles/postprocessors.lst";
     modelList = fopen (fileIndex.getStr(),"r");
+    
+    if (modelList == NULL) {
+        return;
+    }
 
     fseek (modelList,0,SEEK_END);
     unsigned long  fLength = ftell(modelList);
@@ -191,7 +195,7 @@ void    ReadInPostFiles(void)
                 fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =baseArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
+                    fileIndex =libArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {
