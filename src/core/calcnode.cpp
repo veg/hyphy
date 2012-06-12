@@ -3992,6 +3992,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
                                 _String bl;
                                 GetBranchLength (n1, bl, true);
                                 if (bl.sLength) {
+                                    DeleteObject(twoIDs);
                                     return new _FString (bl);
                                 }
                             }

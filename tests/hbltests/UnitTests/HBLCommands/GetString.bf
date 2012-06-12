@@ -28,6 +28,7 @@ function runTest ()
 	GetString (versionString, HYPHY_VERSION, 2);
 	assert ((versionString$"^.+\\ [0-9]+\\.[0-9a-zA-Z]+$")[0]==0, "The intermediate version string must be of the form build type major.minor[beta]. Had " + versionString);
 
+
 	//-----------------------------------------------------------------------------------------------------------------
 	// TIME STAMPS
 	//-----------------------------------------------------------------------------------------------------------------
@@ -52,6 +53,7 @@ function runTest ()
 
 	GetString (sequenceName, _testDataSet, 1024);
 	assert (Type (sequenceName) == "Unknown", "Retrieve an invalid sequence index from a DataSet");
+    return 1;
 
 	//-----------------------------------------------------------------------------------------------------------------
 	// DATA SET FILTER

@@ -191,12 +191,9 @@ public:
     void      ExecuteCase55  (_ExecutionList&); // AlignSequences
     void      ExecuteCase57  (_ExecutionList&); // GetNeutralNull
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
-    void      ExecuteCase59  (_ExecutionList&); // DeleteObject
-    void      ExecuteCase60  (_ExecutionList&); // RequireVersion
     void      ExecuteCase61  (_ExecutionList&); // SCFG
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
-    void      ExecuteCase65  (_ExecutionList&); // assert
     
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
@@ -204,6 +201,9 @@ public:
     bool      HandleSelectTemplateModel             (_ExecutionList&);
     bool      HandleUseModel                        (_ExecutionList&);
     bool      HandleSetParameter                    (_ExecutionList&);
+    bool      HandleAssert                          (_ExecutionList&);
+    bool      HandleRequireVersion                  (_ExecutionList&);
+    bool      HandleDeleteObject                    (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -350,9 +350,6 @@ public:
     (_String&, _ExecutionList&);
 
     static  bool      ConstructDeleteObject
-    (_String&, _ExecutionList&);
-
-    static  bool      ConstructRequireVersion
     (_String&, _ExecutionList&);
 
     static  bool      ConstructSCFG         (_String&, _ExecutionList&);
@@ -545,7 +542,7 @@ bgmGraph                        ,
 bgmNodeOrder                    ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
-
+assertionBehavior               ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,

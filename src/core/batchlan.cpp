@@ -1575,9 +1575,19 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                     long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
                          condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                     if (condition_index_match < 0) {
-                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
-                        DeleteObject (pieces);
-                        return false;
+                        // try to see if the command accepts a variable number of arguments (at least X)
+                        if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
+                            if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
+                                 acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                                 DeleteObject (pieces);
+                                 return false;
+                           
+                            }
+                        } else {
+                            acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                            DeleteObject (pieces);
+                            return false;
+                        }
                     }
                     if (commandExtraInfo->do_trim) {
                         currentLine.Trim (upto, -1);
@@ -1616,6 +1626,9 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
             case HY_HBL_COMMAND_USE_MODEL:
             case HY_HBL_COMMAND_SET_PARAMETER:
+            case HY_HBL_COMMAND_ASSERT:
+            case HY_HBL_COMMAND_REQUIRE_VERSION:
+            case HY_HBL_COMMAND_DELETE_OBJECT:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1749,19 +1762,13 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
         } else if (currentLine.startswith (blHBLProfile)) { // #profile
             _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
-        } else if (currentLine.startswith (blDeleteObject)) { // DeleteObject
-            _ElementaryCommand::ConstructDeleteObject (currentLine, *this);
-        } else if (currentLine.startswith (blRequireVersion)) { // RequireVersion
-            _ElementaryCommand::ConstructRequireVersion (currentLine, *this);
         } else if (currentLine.startswith (blSCFG)) { // SCFG definition
             _ElementaryCommand::ConstructSCFG (currentLine, *this);
         } else if (currentLine.startswith (blNN)) { // Neural Net definition
             _ElementaryCommand::ConstructNN (currentLine, *this);
         } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
             _ElementaryCommand::ConstructBGM (currentLine, *this);
-        } else if (currentLine.startswith (blAssert)) { // ConstructAssert
-            _ElementaryCommand::ConstructAssert (currentLine, *this);
-        }
+        } 
         // plain ol' formula - parse it as such!
         else {
             _String checker (currentLine);
@@ -2442,12 +2449,12 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = blHBLProfile & " " & *converted;
         break;
     }
-    case 59: {
+    case HY_HBL_COMMAND_DELETE_OBJECT: {
         converted = (_String*)parameters.toStr();
         result = blDeleteObject & '(' & *converted & ')';
         break;
     }
-    case 60: {
+    case HY_HBL_COMMAND_REQUIRE_VERSION: {
         converted = (_String*)parameters(0)->toStr();
         result = blRequireVersion & '(' & *converted & ')';
         break;
@@ -2482,7 +2489,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         }
         result = result & ')';
         break;
-    case 65: {
+    case HY_HBL_COMMAND_ASSERT: {
         converted = (_String*)parameters(0)->toStr();
         result = _String ("Assert ") & "'" & *converted & "'";
         break;
@@ -6085,12 +6092,12 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase58 (chain);
         break;
 
-    case 59:
-        ExecuteCase59 (chain);
+    case HY_HBL_COMMAND_DELETE_OBJECT:
+        HandleDeleteObject (chain);
         break;
 
-    case 60:
-        ExecuteCase60 (chain);
+    case HY_HBL_COMMAND_REQUIRE_VERSION:
+        HandleRequireVersion(chain);
         break;
 
     case 61:
@@ -6105,8 +6112,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase64 (chain);
         break;
 
-    case 65:
-        ExecuteCase65 (chain);
+    case HY_HBL_COMMAND_ASSERT:
+        HandleAssert (chain);
         break;
 
     default:

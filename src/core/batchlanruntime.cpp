@@ -318,7 +318,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         } else {
 #ifdef __HEADLESS__
             WarnError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
-            return;
+            return false;
 #else
 #ifdef __UNIX__
             while (model_id == HY_MAX_LONG_VALUE) {
@@ -646,3 +646,75 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
     } // end cases
     return true;
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
+    currentProgram.currentCommand++;
+
+    _String assertion (*(_String*)parameters(0));
+
+    _Formula rhs, lhs;
+    long     varRef;
+    if (Parse (&rhs,assertion,varRef,currentProgram.nameSpacePrefix,&lhs) == HY_FORMULA_EXPRESSION) {
+        _PMathObj assertionResult = rhs.Compute();
+        if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
+            if (CheckEqual(assertionResult->Value(),0.0)) {
+                _Parameter whatToDo;
+                checkParameter (assertionBehavior, whatToDo, 0.0);
+
+                _String errMsg;
+
+                if (parameters.lLength == 1) {
+                    errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.";
+                } else {
+                    errMsg = ProcessLiteralArgument((_String*)parameters(1),currentProgram.nameSpacePrefix);
+                }
+
+                if (CheckEqual (whatToDo, 1.)) {
+                    StringToConsole (errMsg);
+                    NLToConsole();
+                    currentProgram.GoToLastInstruction ();
+                } else {
+                    WarnError (errMsg);
+                }
+            }
+            return true;
+        }
+    }
+ 
+    WarnError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric. " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_ASSERT));
+    
+    return false;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
+
+    if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
+        WarnError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
+        return false;
+    }
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    for (unsigned long objCount = 0; objCount < parameters.lLength; objCount++) {
+        long       objectType = HY_BL_LIKELIHOOD_FUNCTION,
+                   f = -1;
+        BaseRef    sourceObject = _HYRetrieveBLObjectByName (AppendContainerName(*(_String*)parameters(objCount),currentProgram.nameSpacePrefix), objectType,&f,false);
+
+        if  (sourceObject) {
+            KillLFRecord (f,true);
+        }
+    }
+    return true;
+}
+
+

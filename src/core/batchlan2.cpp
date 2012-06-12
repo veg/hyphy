@@ -241,10 +241,9 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
-    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);   
-    
+    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);      
 /*
-const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb
+const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, length options
 */
 
     _SimpleList lengthOptions;
@@ -304,6 +303,29 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 3, 
                                                                 "SetParameter(<object>, <parameter index>, <value>)",','));
 
+
+    lengthOptions.Clear();lengthOptions.Populate (2,1,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_ASSERT, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("assert(", HY_HBL_COMMAND_ASSERT,false),
+                                    -1, 
+                                    "assert (<statement>,[optional message on failure]>",
+                                        ',',
+                                        true,
+                                        false,
+                                        false,
+                                        &lengthOptions));
+
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_REQUIRE_VERSION, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("RequireVersion(", HY_HBL_COMMAND_REQUIRE_VERSION,false),
+                                                                1, 
+                                                                "RequireVersion (<version string>)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_DELETE_OBJECT, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("DeleteObject(", HY_HBL_COMMAND_DELETE_OBJECT,false),
+                                                                -1, 
+                                                                "DeleteObject(<object 1> [optional ,<object 2>, <object 3>, ..., <object N>])",','));
+    
 }
 
 //____________________________________________________________________________________
@@ -473,44 +495,6 @@ bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _Executio
     sp->addAndClean(target,&pieces,0);
     return true;
 }
-
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructDeleteObject (_String&source, _ExecutionList&target)
-// syntax: DeleteObject (object);
-{
-    _List pieces;
-    ExtractConditions (source,blDeleteObject.sLength,pieces,';');
-    if (pieces.lLength<1) {
-        WarnError (_String ("Expected syntax:")& blDeleteObject &"comma separated list of objects to delete)");
-        return false;
-    }
-    _ElementaryCommand *dobj = new _ElementaryCommand (59);
-    dobj->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructRequireVersion (_String&source, _ExecutionList&target)
-// syntax: RequireVersion (stringObject);
-{
-
-    _List pieces;
-    ExtractConditions (source,blRequireVersion.sLength,pieces,';');
-
-    if (pieces.lLength != 1) {
-        WarnError (_String ("Expected syntax:")& blRequireVersion &"a string object with HyPhy version)");
-        return false;
-    }
-
-    _ElementaryCommand *rv = new _ElementaryCommand (60);
-    rv->addAndClean(target,&pieces,0);
-
-    return true;
-}
-
-
 
 
 //____________________________________________________________________________________
@@ -2225,72 +2209,6 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
 
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase59 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    for (long objCount = 0; objCount < parameters.lLength; objCount++) {
-        long      f;
-        if  ((f = FindLikeFuncName(AppendContainerName(*(_String*)parameters(objCount),chain.nameSpacePrefix))) >= 0) {
-            KillLFRecord (f,true);
-        }
-
-
-    }
-}
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase60 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),chain.nameSpacePrefix);
-
-    if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
-        WarnError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
-    }
-}
-
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase65 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String assertion (*(_String*)parameters(0));
-
-    _Formula rhs, lhs;
-    long     varRef;
-    if (Parse (&rhs,assertion,varRef,chain.nameSpacePrefix,&lhs) == HY_FORMULA_EXPRESSION) {
-        _PMathObj assertionResult = rhs.Compute();
-        if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
-            if (CheckEqual(assertionResult->Value(),0.0)) {
-                _Parameter whatToDo;
-                checkParameter (assertionBehavior, whatToDo, 0.0);
-
-                _String errMsg;
-
-                if (parameters.lLength == 1) {
-                    errMsg = _String("Assertion '") & *(_String*)parameters(0) & "' failed.";
-                } else {
-                    errMsg = ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix);
-                }
-
-                if (CheckEqual (whatToDo, 1.)) {
-                    StringToConsole (errMsg);
-                    NLToConsole();
-                    chain.GoToLastInstruction ();
-                } else {
-                    WarnError (errMsg);
-                }
-            }
-            return;
-        }
-    }
-    WarnError ("Assertion statement could not be computed or was not numeric.");
-}
 
 //____________________________________________________________________________________
 
@@ -2558,26 +2476,6 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
     return true;
 }
 
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructAssert (_String&source, _ExecutionList&target)
-// syntax: assert (statement,message on failure)
-{
-
-    // extract arguments from remainder of HBL string
-    _List pieces;
-
-    ExtractConditions (source,blAssert.sLength,pieces,',');
-
-    if (pieces.lLength != 2 && pieces.lLength != 1) {
-        WarnError ("Expected: assert (statement,<message on failure>");
-        return false;
-    }
-
-    _ElementaryCommand * bgm = new _ElementaryCommand (65);
-    bgm->addAndClean(target,&pieces,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 
