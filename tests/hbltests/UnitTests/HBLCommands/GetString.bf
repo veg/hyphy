@@ -53,7 +53,6 @@ function runTest ()
 
 	GetString (sequenceName, _testDataSet, 1024);
 	assert (Type (sequenceName) == "Unknown", "Retrieve an invalid sequence index from a DataSet");
-    return 1;
 
 	//-----------------------------------------------------------------------------------------------------------------
 	// DATA SET FILTER

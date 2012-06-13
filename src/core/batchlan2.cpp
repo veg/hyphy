@@ -1360,12 +1360,12 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector) {
                     for (long cc = 0; cc < charVector->theString->sLength; cc++)
-                        if (ccount.lData[charVector->theString->sData[cc]]>=0) {
+                        if (ccount.lData[(unsigned char)charVector->theString->sData[cc]]>=0) {
                             charCount = 0; // this is an error condition for
                             // duplicate characters in the string
                             break;
                         } else {
-                            ccount.lData[charVector->theString->sData[cc]] = cc;
+                            ccount.lData[(unsigned char)charVector->theString->sData[cc]] = cc;
                             charCount ++;
                         }
                 }

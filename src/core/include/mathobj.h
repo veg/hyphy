@@ -54,39 +54,39 @@ public:
 
     virtual _MathObject* Add        (_MathObject*)     {
         warnError (-666); ;
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Sub        (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Minus      (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Sum        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Mult       (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Div        (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* lDiv       (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* longDiv    (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Raise      (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual void         Assign     (_MathObject*)     {
         warnError (-666);
@@ -97,179 +97,179 @@ public:
     }
     virtual _MathObject* Abs        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Sin        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Cos        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Tan        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Exp        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Log        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Sqrt       (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Gamma      (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Erf        (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* LnGamma    (void)             {
         warnError (-666);    // <-- added by afyp, February 7, 2007
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Beta       (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* IGamma     (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* CChi2      (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* IBeta      (_MathObject*,_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Simplex    (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Min        (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Max        (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* InvChi2    (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* ZCDF       (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Time       (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Arctan     (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Less       (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Random     (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Greater    (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* LessEq     (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* GreaterEq  (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* AreEqual   (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* NotEqual   (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* LAnd       (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* LOr        (_MathObject*)     {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* GammaDist  (_MathObject*,_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* CGammaDist (_MathObject*,_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* LNot       (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* TipCount   (void)             {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* BranchCount (void)            {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* TipName     (_MathObject*)    {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* BranchName  (_MathObject*)    {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* BranchLength(_MathObject*)    {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* RerootTree  (_MathObject*)    {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* TEXTreeString(_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* Type                          (void);
     virtual _MathObject* PlainTreeString(_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*) {
         warnError (-666);
-        return new _MathObject;
+        return this;
     }
     virtual _Parameter   Value (void)              {
         warnError (-666);
         return 0.0;
     }
     virtual _MathObject* Compute (void)            {
-        return new _MathObject;
+        return this;
     }
     virtual void         ScanForVariables (_AVLList&,bool = false)
     {}
@@ -310,5 +310,6 @@ public:
 
 // pointer to a math object
 typedef _MathObject* _PMathObj ;
+
 
 #endif

@@ -64,7 +64,7 @@ public:
     _Formula (void);
     _Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
     _Formula (_PMathObj, bool isAVar = false);
-    ~_Formula (void);
+    virtual ~_Formula (void);
     _PMathObj   Compute             (long = 0, _VariableContainer* = nil);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
