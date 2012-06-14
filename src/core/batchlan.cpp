@@ -1629,6 +1629,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_ASSERT:
             case HY_HBL_COMMAND_REQUIRE_VERSION:
             case HY_HBL_COMMAND_DELETE_OBJECT:
+            case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1719,8 +1720,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructImport (currentLine, *this);
         } else if (currentLine.startswith (blCategory)) { // category variable declaration
             _ElementaryCommand::ConstructCategory (currentLine, *this);
-        } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
-            _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
             _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
         } else if (currentLine.startswith (blModel)) { // Model declaration
@@ -2113,7 +2112,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
 
         break;
     }
-    case 22: { // clear constraints
+    case HY_HBL_COMMAND_CLEAR_CONSTRAINTS: { // clear constraints
         converted = (_String*)parameters.toStr();
         result = _String("Clear contstraints on: ")&(*converted);
         break;
@@ -5954,17 +5953,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase21 (chain);
         break;
 
-    case 22: { // clear constraints
-        chain.currentCommand++;
-        for (long i = 0; i<parameters.lLength; i++) {
-            _String cName (chain.AddNameSpaceToID(*(_String*)parameters(i)));
-            long cID = LocateVarByName (cName);
-            if (cID>=0) { // variable exists
-                FetchVar(cID)->ClearConstraints();
-            }
-        }
-    }
-    break;
+    case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:  // clear constraints
+        HandleClearConstraints(chain);
+        break;
 
     case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         chain.currentCommand++;
@@ -6863,21 +6854,6 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     WarnError (errMsg);
     return false;
 }
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructClearConstraints (_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,blClearConstraints.sLength,args,',');
-    if (args.lLength<1) {
-        WarnError ("Expected: ClearConstraints (var1<,var 2,var 3,...>)");
-        return false;
-    }
-    _ElementaryCommand * cc = new _ElementaryCommand(22);
-    cc->addAndClean (target,&args,0);
-    return true;
-}
-
 
 //____________________________________________________________________________________
 

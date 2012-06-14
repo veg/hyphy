@@ -204,6 +204,7 @@ public:
     bool      HandleAssert                          (_ExecutionList&);
     bool      HandleRequireVersion                  (_ExecutionList&);
     bool      HandleDeleteObject                    (_ExecutionList&);
+    bool      HandleClearConstraints                (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -302,9 +303,6 @@ public:
 
     static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
     // construct a category variable
-
-    static  bool      ConstructClearConstraints (_String&, _ExecutionList&);
-    // construct a clear constraints command
 
     static  bool      ConstructMolecularClock (_String&, _ExecutionList&);
     // construct a molecular clock constraint

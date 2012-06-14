@@ -131,6 +131,7 @@ int          _HYSQLCallBack                     (void* data,int callCount);
 //int        _HYSQLBusyCallBack                 (void* exList,int cc,char** rd,char** cn);
 _String      ProcessStringArgument              (_String*);
 bool         RecurseDownTheTree                 (_SimpleList&, _List&, _List&, _List&, _SimpleList&);
+// this is a ReplicateConstraint helper
 
 //____________________________________________________________________________________
 
@@ -326,6 +327,10 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 -1, 
                                                                 "DeleteObject(<object 1> [optional ,<object 2>, <object 3>, ..., <object N>])",','));
     
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CLEAR_CONSTRAINTS, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ClearConstraints(", HY_HBL_COMMAND_CLEAR_CONSTRAINTS,false),
+                                                                -1, 
+                                                                "ClearConstraints(<object 1> [optional ,<object 2>, <object 3>, ..., <object N>])",','));
 }
 
 //____________________________________________________________________________________

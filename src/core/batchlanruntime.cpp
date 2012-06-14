@@ -717,4 +717,19 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& currentProgram)
     return true;
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleClearConstraints(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    for (unsigned long i = 0; i<parameters.lLength; i++) {
+        _String cName (currentProgram.AddNameSpaceToID(*(_String*)parameters(i)));
+        long cID = LocateVarByName (cName);
+        if (cID>=0) { // variable exists
+            FetchVar(cID)->ClearConstraints();
+        }
+    }    
+    return true;
+}
+
+
 
