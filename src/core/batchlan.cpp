@@ -1630,6 +1630,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_REQUIRE_VERSION:
             case HY_HBL_COMMAND_DELETE_OBJECT:
             case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
+            case HY_HBL_COMMAND_MOLECULAR_CLOCK:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1704,8 +1705,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructTree (currentLine, *this);
         } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
             _ElementaryCommand::ConstructLF (currentLine, *this);
-        } else if (currentLine.startswith (blMolClock)) { // molecular clock definition
-            _ElementaryCommand::ConstructMolecularClock (currentLine, *this);
         } else if (currentLine.startswith (blfprintf)) { // fpintf call
             _ElementaryCommand::ConstructFprintf (currentLine, *this);
         } else if (currentLine.startswith (blGetString)) { // get string from an object
@@ -2075,16 +2074,11 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
 
 
-    case 19: // a call to MolecularClock
+    case HY_HBL_COMMAND_MOLECULAR_CLOCK: // a call to MolecularClock
         converted = (_String*)parameters(0)->toStr();
-        result = _String("Molecular clock imposed starting at ")&(*converted);
-        result = result & " on variables ";
-        for (k=1; k<parameters.lLength; k++) {
-            result = result & *((_String*)parameters(k));
-            if (k<parameters.lLength-1) {
-                result = result & _String(",");
-            }
-        }
+        result    = ",";
+        result = _String("Molecular clock imposed starting at ")&(*converted)
+               & " on variables " & _String((_String*)parameters.Join (&result, 1, -1));
         break;
 
     case 20: // category variable construction
@@ -5903,39 +5897,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 19: // molecular_clock constraint
-
-    {
-        chain.currentCommand++;
-
-        _String    theBaseNode          (chain.AddNameSpaceToID(*(_String*)parameters(0))),
-                   treeName;
-
-        _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
-
-        if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
-            WarnError (_String("Undefined tree/node object ") & theBaseNode & " in call to " & blMolClock.Cut(0,blMolClock.sLength-2));
-        }
-
-        _TheTree *theTree = nil;
-        if (theObject->ObjectClass() == TREE_NODE) {
-            theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
-            if (!theTree) {
-                WarnError (_String("Internal error - orphaned tree node ") & theBaseNode & " in call to " & blMolClock.Cut(0,blMolClock.sLength-2));
-                return false;
-
-            }
-            treeName    = *theTree->GetName();
-            theBaseNode = theObject->GetName()->Cut(treeName.sLength+1,-1);
-        } else {
-            treeName    = *theObject->GetName();
-            theTree     = (_TheTree*)theObject;
-            theBaseNode = empty;
-        }
-
-        theTree->MolecularClock(theBaseNode,parameters);
-    }
-    break;
+    case HY_HBL_COMMAND_MOLECULAR_CLOCK: // molecular_clock constraint
+        HandleMolecularClock(chain);
+        break;
 
     case 20: // category variable construction
 
@@ -7359,24 +7323,6 @@ bool    _ElementaryCommand::ConstructImport (_String&source, _ExecutionList&targ
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructMolecularClock (_String&source, _ExecutionList&target)
-// syntax: MolecularClock(base node, var1, ...)
-{
-
-    _List pieces;
-    ExtractConditions (source,blMolClock.sLength,pieces,',');
-    if (pieces.lLength<2) {
-        _String errMsg ("Expected: MolecularClock (base node, var1, ...)");
-        acknError (errMsg);
-        return false;
-    }
-
-    _ElementaryCommand * dsf = new _ElementaryCommand (19);
-    checkPointer        (dsf);
-    dsf->addAndClean(target,&pieces,0);
-    return true;
-}
 
 
 //____________________________________________________________________________________

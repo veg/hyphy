@@ -731,5 +731,39 @@ bool      _ElementaryCommand::HandleClearConstraints(_ExecutionList& currentProg
     return true;
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    
+    _String    theBaseNode          (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
+               treeName;
+    
+    _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
+    
+    if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
+        WarnError (_String("Not a defined tree/tree node object '") & theBaseNode & "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
+        return false;
+    }
+    
+    _TheTree *theTree = nil;
+    if (theObject->ObjectClass() == TREE_NODE) {
+        theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
+        if (!theTree) {
+            WarnError (_String("Internal error - orphaned tree node '") & theBaseNode & "' in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
+            return false;
+            
+        }
+        treeName    = *theTree->GetName();
+        theBaseNode = theObject->GetName()->Cut(treeName.sLength+1,-1);
+    } else {
+        treeName    = *theObject->GetName();
+        theTree     = (_TheTree*)theObject;
+        theBaseNode = empty;
+    }
+    
+    theTree->MolecularClock(theBaseNode,parameters);
+    return true;
+}
 
 

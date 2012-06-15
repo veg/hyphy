@@ -205,6 +205,7 @@ public:
     bool      HandleRequireVersion                  (_ExecutionList&);
     bool      HandleDeleteObject                    (_ExecutionList&);
     bool      HandleClearConstraints                (_ExecutionList&);
+    bool      HandleMolecularClock                  (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -303,9 +304,6 @@ public:
 
     static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
     // construct a category variable
-
-    static  bool      ConstructMolecularClock (_String&, _ExecutionList&);
-    // construct a molecular clock constraint
 
     static  bool      ConstructCategoryMatrix (_String&, _ExecutionList&);
     // construct a category matrix for the optimized like func

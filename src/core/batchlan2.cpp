@@ -331,6 +331,11 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ClearConstraints(", HY_HBL_COMMAND_CLEAR_CONSTRAINTS,false),
                                                                 -1, 
                                                                 "ClearConstraints(<object 1> [optional ,<object 2>, <object 3>, ..., <object N>])",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MOLECULAR_CLOCK, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MolecularClock(", HY_HBL_COMMAND_MOLECULAR_CLOCK,false),
+                                                                -2, 
+                                                                "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
 }
 
 //____________________________________________________________________________________

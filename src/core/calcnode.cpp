@@ -10451,18 +10451,15 @@ void    _TheTree::MolecularClock (_String& baseNode, _List& varsToConstrain)
     }
 
     if (!topNode) {
-        _String errMsg = _String ("Molecular clock constraint has failed, since node ")
-                         &baseNode
-                         &" is not a part of tree "
-                         &*GetName();
-
-        WarnError (errMsg);
+        WarnError (_String ("Molecular clock constraint has failed, since node '")
+                   &baseNode
+                   &"' is not a part of tree '"
+                   &*GetName() & "'");
     } else
-        for (long k=1; k<varsToConstrain.lLength; k++) {
+        for (unsigned long k=1; k<varsToConstrain.lLength; k++) {
             long varIndex = LocateVarByName (*(_String*)varsToConstrain (k));
             if (varIndex<0) {
-                _String errMsg = _String ("Molecular clock constraint has failed, since variable ") &*(_String*)varsToConstrain (k) &" is undefined.";
-                WarnError (errMsg);
+                WarnError (_String ("Molecular clock constraint has failed, since variable' ") &*(_String*)varsToConstrain (k) &"' is undefined.");
                 return ;
             }
             curNode->RecurseMC (variableNames.GetXtra(varIndex), topNode, true, rooted);
