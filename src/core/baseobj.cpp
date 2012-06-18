@@ -146,10 +146,26 @@ FILE *      doFileOpen (const char * fileName, const char * mode, bool warn)
 bool    GlobalStartup (void)
 {
     SetupOperationLists     ();
+    unsigned long seed_init = 0L;
     time_t                  k;
     time                    (&k);
-    init_genrand            (k);
-    globalRandSeed          = k;
+    seed_init               = k;
+    
+#ifdef __HYPHYMPI__
+    _hyApplicationGlobals.Insert(new _String (mpiNodeID));
+    _hyApplicationGlobals.Insert(new _String (mpiNodeCount));
+    _hyApplicationGlobals.Insert(new _String (mpiLastSentMsg));
+    seed_init += _hy_mpi_node_rank;
+#endif
+
+    
+#ifndef __WINDOZE__
+    seed_init               += getpid();
+#else
+    seed_init               += GetProcessId(GetCurrentProcess());
+#endif
+    init_genrand            (seed_init);
+    globalRandSeed          = seed_init;
     setParameter            (randomSeed,globalRandSeed);
     long                    p   = 1;
 
@@ -182,11 +198,7 @@ bool    GlobalStartup (void)
 
     _HBL_Init_Const_Arrays  ();
 
-#ifdef __HYPHYMPI__
-    _hyApplicationGlobals.Insert(new _String (mpiNodeID));
-    _hyApplicationGlobals.Insert(new _String (mpiNodeCount));
-    _hyApplicationGlobals.Insert(new _String (mpiLastSentMsg));
-#endif
+
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
 #ifndef __HYPHYMPI__
