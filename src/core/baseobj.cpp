@@ -51,6 +51,7 @@ extern int _hy_mpi_node_rank;
 
 #if defined   __UNIX__ || defined __HYPHY_GTK__
 #include <sys/time.h>
+#include <unistd.h>
 #endif
 
 #ifdef    __HYPHYDMALLOC__
