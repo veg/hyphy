@@ -346,7 +346,7 @@ void         InsertVarIDsInList     (_AssociativeList* theList , _String theKey,
 
     if (varIDs.lLength) {
         _List     varNames;
-        for (long i=0; i < varIDs.lLength; i++) {
+        for (unsigned long i=0; i < varIDs.lLength; i++) {
             _Variable* v = LocateVar (varIDs.lData[i]);
             if (v) {
                 varNames << v->GetName();
@@ -369,7 +369,7 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String the
 
     if (stringsToPick.lLength) {
         _List     theNames;
-        for (long i=0; i < stringsToPick.lLength; i++) {
+        for (unsigned long i=0; i < stringsToPick.lLength; i++) {
             _String * v = (_String*)theStrings (stringsToPick.lData[i]);
             if (v) {
                 theNames << v;

@@ -191,7 +191,7 @@ public:
 
     virtual _PMathObj    MultObj (_PMathObj);   // multiplication operation on matrices
 
-    virtual _PMathObj    MultElements (_PMathObj);  // element wise multiplication operation on matrices
+    virtual _PMathObj    MultElements (_PMathObj, bool elementWiseDivide = false);  // element wise multiplication/division operation on matrices
 
     virtual _PMathObj    Sum          (void);
 
