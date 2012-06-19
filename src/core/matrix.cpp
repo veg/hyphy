@@ -104,6 +104,8 @@ long        matrixExpCount = 0,
 
 extern      _String         printDigitsSpec;
 
+_Trie        _HY_MatrixRandomValidPDFs;
+
 //__________________________________________________________________________________
 
 int         fexact_                 (long , long , double *, double , double , double , double *, double *);
@@ -6320,13 +6322,13 @@ _PMathObj _Matrix::Random (_PMathObj kind)
             checkPointer (res);
 
             if (!theIndex)
-                for (long vv = 0; vv<lDim; vv+=myVDim)
-                    for (long k2=0; k2<remapped.lLength; k2++) {
+                for (unsigned long vv = 0; vv<lDim; vv+=myVDim)
+                    for (unsigned long k2=0; k2<remapped.lLength; k2++) {
                         res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
                     }
             else {
-                for (long vv = 0; vv<myHDim; vv++)
-                    for (long k=0; k<remapped.lLength; k++) {
+                for (unsigned long vv = 0; vv<myHDim; vv++)
+                    for (unsigned long k=0; k<remapped.lLength; k++) {
                         long ki = remapped.lData[k];
                         if ((ki = Hash (vv,ki)) >= 0) {
                             res->Store (vv,k,theData[ki]);
@@ -6339,8 +6341,8 @@ _PMathObj _Matrix::Random (_PMathObj kind)
                 _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
                 checkPointer (res);
 
-                for (long vv = 0; vv<myHDim; vv++)
-                    for (long k=0; k<remapped.lLength; k++) {
+                for (unsigned long vv = 0; vv<myHDim; vv++)
+                    for (unsigned long k=0; k<remapped.lLength; k++) {
                         long ki = remapped.lData[k];
                         _Formula * ff = GetFormula (vv,ki);
                         if (ff) {
@@ -6358,6 +6360,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         // Associative list should contain following arguments:
         //  "PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
         //  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
+        
         _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
         _List               * keys      = pdfArgs->GetKeys();
         _String             pdfkey      ("PDF"),
@@ -6366,19 +6369,22 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         if (arg0->Equal(&pdfkey)) {
             _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
                         arg ("ARG0");
-
-            if (pdf == _String("Dirichlet")) {
-                return (_Matrix *) DirichletDeviate();
-            } else if (pdf == _String("Gaussian")) {
-                return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("Wishart")) {
-                return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("InverseWishart")) {
-                return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("Multinomial")) {
-                return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
-            } else {
-                errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
+                        
+            long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
+            
+             switch (pdfCode) {
+                case _HY_MATRIX_RANDOM_DIRICHLET:
+                    return (_Matrix *) DirichletDeviate();
+                case _HY_MATRIX_RANDOM_GAUSSIAN:
+                    return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_WISHART:
+                    return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_INVERSE_WISHART:
+                    return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_MULTINOMIAL:
+                    return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
+                default:
+                    errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
             }
         } else {
             errMsg = _String("Expecting \"PDF\" key in associative list argument passed to Random(), received: ") & ((_String *)(*keys)(0))->getStr();
@@ -8672,8 +8678,8 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
     unsigned long samples     = replicates?replicates->Value ():0;
 
     _Matrix     *eval    = (_Matrix*)Compute (),
-                 * sorted = nil,
-                   * result = nil;
+                * sorted = nil,
+                * result = nil;
 
     if (samples < 1) {
         errMsg = "Expected a numerical (>=1) value for the number of replicates";
@@ -8759,10 +8765,11 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #endif
             }
 
-            result = new _Matrix (1, values, false, true);
+            result = new _Matrix (values, 2, false, true);
 
             for (long v = 0; v < values; v++) {
-                result->theData[(long)sorted->theData[2*(values-1-v)]] = raw_result->theData[v];
+                result->theData[2*v]   = (long)sorted->theData[2*(values-1-v)];
+                result->theData[2*v+1] = raw_result->theData[v];
             }
 
             DeleteObject (raw_result);

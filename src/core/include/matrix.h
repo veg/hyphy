@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "avllistx.h"
 #include "variablecontainer.h"
+#include "trie.h"
 
 #define     _POLYNOMIAL_TYPE 0
 #define     _NUMERICAL_TYPE  1
@@ -50,6 +51,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define     HY_MATRIX_COLUMN_VECTOR     1
 #define     HY_MATRIX_ROW_VECTOR        2
+
+//_____________________________________________________________________________________________
+
+#define      _HY_MATRIX_RANDOM_DIRICHLET         01L
+#define      _HY_MATRIX_RANDOM_GAUSSIAN          02L
+#define      _HY_MATRIX_RANDOM_WISHART           03L
+#define      _HY_MATRIX_RANDOM_INVERSE_WISHART   04L
+#define      _HY_MATRIX_RANDOM_MULTINOMIAL       05L
+
+extern        _Trie        _HY_MatrixRandomValidPDFs;
+
+//_____________________________________________________________________________________________
 
 class _Formula;
 /*__________________________________________________________________________________________________________________________________________ */

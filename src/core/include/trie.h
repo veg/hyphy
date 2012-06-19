@@ -131,11 +131,18 @@ class _Trie: public _List
          * Determine if 'key' is in the trie
          * @param  key      -- the string to search for
          * @param  path     -- store the indices for the trie traversal history (if supplied)
-         * @param  prefixOK -- 
+         * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
          * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
          */
         
-        long    Insert (const _String& key, const long value);
+        long     GetValueFromString (const _String& key);
+        /**
+         * A convenience function which calls Find and then GetValue if teh key is found
+         * @param  key      -- the string to search for
+         * @return the value associated with the key if found, HY_TRIE_NOTFOUND otherwise  
+         */
+
+       long    Insert (const _String& key, const long value);
         /**
          * Insert the key into the trie
          * @param key -- the string to insert

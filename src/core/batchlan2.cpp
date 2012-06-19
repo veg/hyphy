@@ -336,6 +336,16 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MolecularClock(", HY_HBL_COMMAND_MOLECULAR_CLOCK,false),
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
+// matrix global arrays
+
+
+    _HY_MatrixRandomValidPDFs.Insert ("Dirichlet", _HY_MATRIX_RANDOM_DIRICHLET);
+    _HY_MatrixRandomValidPDFs.Insert ("Gaussian", _HY_MATRIX_RANDOM_GAUSSIAN);
+    _HY_MatrixRandomValidPDFs.Insert ("Wishart", _HY_MATRIX_RANDOM_WISHART);
+    _HY_MatrixRandomValidPDFs.Insert ("InverseWishart", _HY_MATRIX_RANDOM_INVERSE_WISHART);
+    _HY_MatrixRandomValidPDFs.Insert ("Multinomial", _HY_MATRIX_RANDOM_MULTINOMIAL);
+
+
 }
 
 //____________________________________________________________________________________
