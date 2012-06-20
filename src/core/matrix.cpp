@@ -9298,7 +9298,7 @@ void        _AssociativeList::Merge (_PMathObj p)
         
         while (cn >= 0) {
             MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
-            cn = avl.Traverser (hist,ls);
+            cn = rhs->avl.Traverser (hist,ls);
         }
     }
     else {
