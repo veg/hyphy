@@ -5806,80 +5806,77 @@ long    _Matrix::CompareRows (const long row1, const long row2) {
         _Parameter v1 = theData[row1*vDim+column_id],
                    v2 = theData[row2*vDim+column_id];
         if (!CheckEqual (v1,v2)) {
-            return 1-2*(v1 < v2);
+            return (v1 < v2)?-1L:1L;
         }
     }
-    return 0;
+    return 0L;
 }
 
 //______________________________________________________________
 
 void    _Matrix::SwapRows (const long row1, const long row2) {
+    long idx1 = row1*vDim,
+         idx2 = row2*vDim;
     for (long column_id = 0; column_id < vDim; column_id ++) {
-        _Parameter t = theData[row1*vDim+column_id];
-        theData[row1*vDim+column_id] = theData[row2*vDim+column_id];
-        theData[row2*vDim+column_id] = t;
+        _Parameter t = theData[idx1];
+        theData[idx1++] = theData[idx2];
+        theData[idx2++] = t;
     }
 }
 //______________________________________________________________
 
 void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 {
-    long            middle          = (from+to)/2L,
+    long            middle          = (from+to) >> 1,
                     bottommove      = 1L,
-                    topmove         = 1L,
-                    imiddleV        = index->lData[middle];
+                    topmove         = 1L;
 
-    //_Parameter middleV = theData[middle];
+    /*
+        Use '+' to denote an element that is gretae than 'M' (the 'middle' element)
+        and '-' to denote an element than is less than 'M'
+     
+        Initially we may have something like
+     
+        --++--+M--+++--++-
+        and we want to end up with
+        ---------M+++++++
+     
+        Initially, we arrange the elements as
+     
+        ----+++M-----++++++, and then swap 'bottommove' pluses (of which there are 3 in this case)
+                            with 'topmove' minuses (of which there are 5)
+    
+     */
+    
 
     if (middle)
-        //while (middle-bottommove>=from &&(theData[middle-bottommove]>=theData[middle])) {
         while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
             bottommove++;
         }
     if (from<to)
-        //while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
-        while (middle+topmove<=to && CompareRows (theData[middle+topmove],theData[middle]) <= 0L) {
+        while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
             topmove++;
         }
 
     for (long i=from; i<middle-bottommove; i++)
-        //if (theData[i]>=theData[middle]) {
-        if (CompareRows (i, middle)>=0) {
-            /*_Parameter temp = theData[middle-bottommove];
-            theData[middle-bottommove] = theData[i];
-            theData[i]=temp;*/
+        if (CompareRows (i, middle) >= 0L) {
             SwapRows (middle-bottommove, i);
-            
-            /*long       ltemp = index->lData[middle-bottommove];
-            index->lData[middle-bottommove] = index->lData[i];
-            index->lData[i]=ltemp;*/
             index->Swap(middle-bottommove,i);
-            
             bottommove++;
-            //while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
-            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0) {
+
+            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
                 bottommove++;
             }
         }
 
     {
         for (long i=middle+topmove+1; i<=to; i++)
-            //if (theData[i]<=theData[middle]) {
-            if (CompareRows(i,middle) <= 0) {
-                /*_Parameter temp = theData[middle+topmove];
-                theData[middle+topmove] = theData[i];
-                theData[i]=temp; */
-                SwapRows (i, middle+topmove);
-                
-                /*long ltemp = index->lData[middle+topmove];
-                index->lData[middle+topmove] = index->lData[i];
-                index->lData[i]=ltemp;*/
+            if (CompareRows(i,middle) <= 0L) {
+                SwapRows   (i, middle+topmove);
                 index->Swap(i, middle+topmove);
                 
                 topmove++;
-                //while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
-                while (middle+topmove<=to && CompareRows (middle+topmove,middle) <=0) {
+                while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
                    topmove++;
                 }
             }
@@ -5887,74 +5884,34 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 
     if (topmove==bottommove) {
         for (long i=1; i<bottommove; i++) {
-            /*_Parameter temp = theData[middle+i];
-            theData[middle+i] = theData[middle-i];
-            theData[middle-i]=temp;*/
-            
             SwapRows(middle+i, middle-i);
-            
-            /*long ltemp = index->lData[middle+i];
-            index->lData[middle+i] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;*/
-            
             index->Swap (middle+i, middle-i);
         }
     } else if (topmove>bottommove) {
         long shift = topmove-bottommove;
-        for (long i=1; i<bottommove; i++) {
-            /*_Parameter temp = theData[middle+i+shift];
-            theData[middle+i+shift] = theData[middle-i];
-            theData[middle-i]=temp;*/
-            SwapRows (middle-i, middle+i+shift);
+        // in the example above, shift = 2
         
-            /*long ltemp = index->lData[middle+i+shift];
-            index->lData[middle+i+shift] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;*/
-            index->Swap(middle-i, middle+i+shift);
+        for (long i=1; i<bottommove; i++) {
+             SwapRows (middle-i, middle+i+shift);
+             index->Swap(middle-i, middle+i+shift);
         }
+        // at the end of this loop, the example above will look like 
+        // -------M--+++++++++, so now if we swap 'M' with the last '-', we'll arrive at the desired configuration
         
         SwapRows    (middle, middle+shift);
         index->Swap (middle, middle+shift);
-        
-        for (long i2=1; i2<shift-1; i2++) {
-            for (long column_id = 0; column_id < vDim; column_id ++) {
-                theData[(middle+i2)*vDim + column_id] = theData[(middle+i2+1)*vDim + column_id];
-            }
-            index->lData[middle+i2]  =   index->lData[middle+i2+1];
-        }
-        
         middle+=shift;
-        /*theData[middle]=middleV;
-        index->lData[middle]=imiddleV;*/
         
     } else {
         long shift = bottommove-topmove;
         for (long i=1; i<topmove; i++) {
-            /*_Parameter temp = theData[middle-i-shift];
-            theData[middle-i-shift] = theData[middle+i];
-            theData[middle+i]=temp;*/
             SwapRows (middle+i, middle-i-shift);
-            
-            /*long ltemp = index->lData[middle-i-shift];
-            index->lData[middle-i-shift] = index->lData[middle+i];
-            index->lData[middle+i]=ltemp;*/
             index->Swap (middle+i, middle-i-shift);
         }
 
         SwapRows    (middle, middle-shift);
         index->Swap (middle, middle-shift);
-
-        for (long i2=2; i2<shift; i2++) {
-            //theData[middle-i2]=theData[middle-i2-1];
-            for (long column_id = 0; column_id < vDim; column_id ++) {
-                theData[(middle-i2)*vDim + column_id] = theData[(middle-i2-1)*vDim + column_id];
-            }
-            index->lData[middle-i2]=index->lData[middle-i2-1];
-        }
-        
         middle-=shift;
-        /*theData[middle]=middleV;
-        index->lData[middle]=imiddleV;*/
     }
 
     if (to>middle+1) {
@@ -5969,13 +5926,12 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
 {
     if (storageType!=1) {
-        _String    errMsg ("Only numeric matrices can be sorted");
-        WarnError  (errMsg);
-        return new _Matrix (1,1);
+        WarnError  ("Only numeric matrices can be sorted");
+        return new _MathObject();
     }
 
     if (theData == nil) {
-        return new _Matrix (1,1);
+        return new _Matrix (0,0);
     }
 
     _SimpleList sortOn;
@@ -6011,56 +5967,23 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
                      // the code below is BROKEN
     
     _SimpleList             idx (hDim,0,1);
-    for (long col2Sort = 0; col2Sort < sortOn.lLength; col2Sort++) {
-        long colIdx = sortOn.lData[col2Sort];
+    _Matrix theColumn   (hDim,sortOn.lLength,false,true);
 
-        _Matrix theColumn   (1,hDim,false,true);
+    for (unsigned long col2Sort = 0; col2Sort < sortOn.lLength; col2Sort++) {
+        long colIdx = sortOn.lData[col2Sort];
 
         if (theIndex)
             for (long k=0; k<hDim; k++) {
-                theColumn.theData[k] = (*this)(k, colIdx);
+                theColumn.theData[col2Sort+k*sortOn.lLength] = (*this)(k, colIdx);
             }
         else
             for (long k=0, j = colIdx; k<hDim; k++, j+=vDim) {
-                theColumn.theData[k] = theData[j];
+                theColumn.theData[col2Sort+k*sortOn.lLength] = theData[j];
             }
 
-        if (col2Sort == 0) {
-            theColumn.RecursiveIndexSort (0, hDim-1, &idx);
-        } else {
-            long currentFrom = 0,
-                 currentTo   = 1;
-
-            bool didSort     = false;
-
-            _SimpleList    revIdx (hDim,0,1),
-                           cpyIdx (idx);
-
-            SortLists      (&cpyIdx, &revIdx);
-
-            while (currentFrom < vDim-1) {
-                currentTo = currentFrom + 1;
-                while (currentTo < vDim) {
-                    if ((*this)(revIdx.lData[currentTo], colIdx) > (*this)(revIdx.lData[currentFrom], colIdx)) {
-                        break;
-                    } else {
-                        currentTo ++;
-                    }
-                }
-                if (currentTo-currentFrom>2) {
-                    theColumn.RecursiveIndexSort (currentFrom, currentTo-1, &idx);
-                    didSort = true;
-                }
-
-                currentFrom = currentTo;
-            }
-
-            if (!didSort) {
-                break;
-            }
-        }
     }
 
+    theColumn.RecursiveIndexSort (0, hDim-1, &idx);
     _Matrix                 *result     = new _Matrix (hDim, vDim, theIndex, 1);
 
     if (theIndex) {
