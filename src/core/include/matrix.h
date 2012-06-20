@@ -263,6 +263,9 @@ public:
     _Parameter  AbsValue                        (void);
     virtual     _PMathObj Log                   (void);
     // return the matrix of logs of every matrix element
+    
+    void        SwapRows (const long, const long);
+    long        CompareRows (const long, const long);
 
     _Parameter  operator () (long, long);       // read access to an element in a matrix
     _Parameter& operator [] (long);             // read/write access to an element in a matrix

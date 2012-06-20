@@ -5801,101 +5801,160 @@ void        _Matrix::operator += (_Matrix& m)
 
 //______________________________________________________________
 
+long    _Matrix::CompareRows (const long row1, const long row2) {
+    for (long column_id = 0; column_id < vDim; column_id ++) {
+        _Parameter v1 = theData[row1*vDim+column_id],
+                   v2 = theData[row2*vDim+column_id];
+        if (!CheckEqual (v1,v2)) {
+            return 1-2*(v1 < v2);
+        }
+    }
+    return 0;
+}
+
+//______________________________________________________________
+
+void    _Matrix::SwapRows (const long row1, const long row2) {
+    for (long column_id = 0; column_id < vDim; column_id ++) {
+        _Parameter t = theData[row1*vDim+column_id];
+        theData[row1*vDim+column_id] = theData[row2*vDim+column_id];
+        theData[row2*vDim+column_id] = t;
+    }
+}
+//______________________________________________________________
+
 void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 {
-    long            middle          = (from+to)/2,
-                    bottommove        = 1,
-                    topmove        = 1,
-                    imiddleV         = index->lData[middle];
+    long            middle          = (from+to)/2L,
+                    bottommove      = 1L,
+                    topmove         = 1L,
+                    imiddleV        = index->lData[middle];
 
-    _Parameter middleV = theData[middle];
+    //_Parameter middleV = theData[middle];
 
     if (middle)
-        while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
+        //while (middle-bottommove>=from &&(theData[middle-bottommove]>=theData[middle])) {
+        while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
             bottommove++;
         }
     if (from<to)
-        while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
+        //while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
+        while (middle+topmove<=to && CompareRows (theData[middle+topmove],theData[middle]) <= 0L) {
             topmove++;
         }
 
     for (long i=from; i<middle-bottommove; i++)
-        if (theData[i]>=theData[middle]) {
-            _Parameter temp = theData[middle-bottommove];
+        //if (theData[i]>=theData[middle]) {
+        if (CompareRows (i, middle)>=0) {
+            /*_Parameter temp = theData[middle-bottommove];
             theData[middle-bottommove] = theData[i];
-            theData[i]=temp;
-            long       ltemp = index->lData[middle-bottommove];
+            theData[i]=temp;*/
+            SwapRows (middle-bottommove, i);
+            
+            /*long       ltemp = index->lData[middle-bottommove];
             index->lData[middle-bottommove] = index->lData[i];
-            index->lData[i]=ltemp;
+            index->lData[i]=ltemp;*/
+            index->Swap(middle-bottommove,i);
+            
             bottommove++;
-            while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
+            //while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
+            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0) {
                 bottommove++;
             }
         }
 
     {
         for (long i=middle+topmove+1; i<=to; i++)
-            if (theData[i]<=theData[middle]) {
-                _Parameter temp = theData[middle+topmove];
+            //if (theData[i]<=theData[middle]) {
+            if (CompareRows(i,middle) <= 0) {
+                /*_Parameter temp = theData[middle+topmove];
                 theData[middle+topmove] = theData[i];
-                theData[i]=temp;
-                long ltemp = index->lData[middle+topmove];
+                theData[i]=temp; */
+                SwapRows (i, middle+topmove);
+                
+                /*long ltemp = index->lData[middle+topmove];
                 index->lData[middle+topmove] = index->lData[i];
-                index->lData[i]=ltemp;
+                index->lData[i]=ltemp;*/
+                index->Swap(i, middle+topmove);
+                
                 topmove++;
-                while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
-                    topmove++;
+                //while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
+                while (middle+topmove<=to && CompareRows (middle+topmove,middle) <=0) {
+                   topmove++;
                 }
             }
     }
 
     if (topmove==bottommove) {
         for (long i=1; i<bottommove; i++) {
-            _Parameter temp = theData[middle+i];
+            /*_Parameter temp = theData[middle+i];
             theData[middle+i] = theData[middle-i];
-            theData[middle-i]=temp;
-            long ltemp = index->lData[middle+i];
+            theData[middle-i]=temp;*/
+            
+            SwapRows(middle+i, middle-i);
+            
+            /*long ltemp = index->lData[middle+i];
             index->lData[middle+i] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;
+            index->lData[middle-i]=ltemp;*/
+            
+            index->Swap (middle+i, middle-i);
         }
     } else if (topmove>bottommove) {
         long shift = topmove-bottommove;
         for (long i=1; i<bottommove; i++) {
-            _Parameter temp = theData[middle+i+shift];
+            /*_Parameter temp = theData[middle+i+shift];
             theData[middle+i+shift] = theData[middle-i];
-            theData[middle-i]=temp;
-            long ltemp = index->lData[middle+i+shift];
+            theData[middle-i]=temp;*/
+            SwapRows (middle-i, middle+i+shift);
+        
+            /*long ltemp = index->lData[middle+i+shift];
             index->lData[middle+i+shift] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;
+            index->lData[middle-i]=ltemp;*/
+            index->Swap(middle-i, middle+i+shift);
         }
-        {
-            for (long i=0; i<shift; i++) {
-                theData[middle+i]       =   theData[middle+i+1];
-                index->lData[middle+i]  =   index->lData[middle+i+1];
+        
+        SwapRows    (middle, middle+shift);
+        index->Swap (middle, middle+shift);
+        
+        for (long i2=1; i2<shift-1; i2++) {
+            for (long column_id = 0; column_id < vDim; column_id ++) {
+                theData[(middle+i2)*vDim + column_id] = theData[(middle+i2+1)*vDim + column_id];
             }
+            index->lData[middle+i2]  =   index->lData[middle+i2+1];
         }
+        
         middle+=shift;
-        theData[middle]=middleV;
-        index->lData[middle]=imiddleV;
+        /*theData[middle]=middleV;
+        index->lData[middle]=imiddleV;*/
+        
     } else {
         long shift = bottommove-topmove;
         for (long i=1; i<topmove; i++) {
-            _Parameter temp = theData[middle-i-shift];
+            /*_Parameter temp = theData[middle-i-shift];
             theData[middle-i-shift] = theData[middle+i];
-            theData[middle+i]=temp;
-            long ltemp = index->lData[middle-i-shift];
+            theData[middle+i]=temp;*/
+            SwapRows (middle+i, middle-i-shift);
+            
+            /*long ltemp = index->lData[middle-i-shift];
             index->lData[middle-i-shift] = index->lData[middle+i];
-            index->lData[middle+i]=ltemp;
+            index->lData[middle+i]=ltemp;*/
+            index->Swap (middle+i, middle-i-shift);
         }
-        {
-            for (long i=0; i<shift; i++) {
-                theData[middle-i]=theData[middle-i-1];
-                index->lData[middle-i]=index->lData[middle-i-1];
+
+        SwapRows    (middle, middle-shift);
+        index->Swap (middle, middle-shift);
+
+        for (long i2=2; i2<shift; i2++) {
+            //theData[middle-i2]=theData[middle-i2-1];
+            for (long column_id = 0; column_id < vDim; column_id ++) {
+                theData[(middle-i2)*vDim + column_id] = theData[(middle-i2-1)*vDim + column_id];
             }
+            index->lData[middle-i2]=index->lData[middle-i2-1];
         }
+        
         middle-=shift;
-        theData[middle]=middleV;
-        index->lData[middle]=imiddleV;
+        /*theData[middle]=middleV;
+        index->lData[middle]=imiddleV;*/
     }
 
     if (to>middle+1) {
@@ -5942,7 +6001,7 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
             _String    errMsg ("Invalid column index to sort the matrix on:");
             errMsg = errMsg & _String((_String*)mp->toStr());
             WarnError  (errMsg);
-            return new _Matrix (1,1);
+            return new _MathObject;
         }
     } else {
         sortOn << mp->Value();
