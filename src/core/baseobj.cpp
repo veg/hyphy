@@ -61,6 +61,13 @@ extern int _hy_mpi_node_rank;
 #ifdef   __HYPHYXCODE__
 #include "HYUtils.h"
 #endif
+
+#ifdef __WINDOZE__
+    #include <Windows.h>
+#endif
+
+
+
 bool        terminateExecution  = false;
 
 #include    "batchlan.h"
@@ -163,7 +170,7 @@ bool    GlobalStartup (void)
 #ifndef __WINDOZE__
     seed_init               += getpid();
 #else
-    seed_init               += GetProcessId(GetCurrentProcess());
+    seed_init               += long(GetCurrentProcess());
 #endif
     init_genrand            (seed_init);
     globalRandSeed          = seed_init;
