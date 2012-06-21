@@ -557,11 +557,16 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
     }
 }
 
-BaseRef  _List::Join (BaseRef spacer)
+BaseRef  _List::Join (BaseRef spacer, long startAt, long endAt)
 {
     _String *joined = new _String (256L,true);
+    if (endAt < 0) { 
+        endAt = lLength; 
+    } else if (endAt > lLength) {
+        endAt = lLength;
+    }
 
-    for (unsigned long k = 0; k < lLength; k++) {
+    for (unsigned long k = MAX(0,startAt); k < endAt; k++) {
         if (k) {
             (*joined) << *(_String*)spacer;
         }

@@ -49,7 +49,7 @@ function _SendAnMPIJob (jobNumber, fileID, options, callbackOutput, verboseFlag)
 	{
 		fprintf (stdout, "[MPITools] Sending filepath ", pathList[jobNumber], " (ID ", jobNumber+1, ") to node ", _mpiNode+1, "\n");
 	}
-	MPISend (_mpiNode+1,"LoadFunctionLibrary (`fileID`," + options + ")");
+	MPISend (_mpiNode+1,"LoadFunctionLibrary (\"`fileID`\"," + options + ")");
 	return 0;
 }
 

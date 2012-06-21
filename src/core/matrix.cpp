@@ -27,7 +27,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "batchlan.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -36,6 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 #include <limits.h>
 
+#include "batchlan.h"
 #include "polynoml.h"
 #include "likefunc.h"
 
@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistxl.h"
 
 #ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
+    #include "dmalloc.h"
 #endif
 
 /*SLKP 20110209; include progress report updates */
@@ -103,6 +103,8 @@ long        matrixExpCount = 0,
             non0count = 0;
 
 extern      _String         printDigitsSpec;
+
+_Trie        _HY_MatrixRandomValidPDFs;
 
 //__________________________________________________________________________________
 
@@ -1371,7 +1373,8 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
 
     switch (opCode) {
     case HY_OP_CODE_IDIV: // $
-        return MultElements(p);
+    case HY_OP_CODE_DIV: // /
+        return MultElements(p,opCode == HY_OP_CODE_DIV);
         break;
     case HY_OP_CODE_MOD: // %
         return SortMatrixOnColumn (p);
@@ -3542,7 +3545,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
+void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 // multiplication operation on matrices
 // internal function
 // storage is assumed to NOT be *this
@@ -3575,29 +3578,69 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                long cumulativeIndex = 0;
+                long cumulativeIndex = 0,
+                     dimm4 = vDim - vDim%4;
 
                 _Parameter * row = theData;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
-                if (vDim % 4 == 0)
-                    // manual loop unroll
-                {
-                    for (long i=0; i<hDim; i++, row += vDim) {
-                        for (long j=0; j<secondArg.vDim; j++) {
-                            _Parameter resCell  = 0.0;
+                
+               
+                for (long i=0; i<hDim; i++, row += vDim) {
+                    for (long j=0; j<secondArg.vDim; j++) {
+                        _Parameter resCell  = 0.0;
 
-                            for (long k = 0, column = j; k < vDim; k+=4, column += (secondArg.vDim<<2))
-                                resCell += row[k]   * secondArg.theData [column]                         +
-                                           row[k+1] * secondArg.theData [column + secondArg.vDim ]       +
-                                           row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)] +
-                                           row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
-
-                            storage.theData[cumulativeIndex++] = resCell;
-
+                        long k = 0, 
+                             column = j;
+                        
+                        for (; k < dimm4; k+=4, column += (secondArg.vDim<<2)) {
+                            _Parameter pr1 = row[k]   * secondArg.theData [column],                         
+                                       pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
+                                       pr3 = row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)],
+                                       pr4 = row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
+                            pr1 += pr2;
+                            pr3 += pr4;
+                            resCell += pr1 + pr3;
                         }
+                        
+                        if (dimm4 < vDim)
+                            for (; k < vDim; k++, column += secondArg.vDim) {
+                                resCell += row[k] * secondArg.theData[column];
+                            }
+
+                        storage.theData[cumulativeIndex++] = resCell;
+
                     }
-                } else {
+                }
+                /*_Parameter cache [128];
+                for (long i=0; i<hDim; i++, row += vDim) {
+                    for (long j=0; j<secondArg.vDim; j++) {
+                        _Parameter resCell  = 0.0;
+                        for (long l = 0, m = j; l < secondArg.vDim; l++, m += secondArg.vDim)
+                            cache[l] = secondArg.theData [m ];
+                            
+                        long k = 0;
+                        
+                        for (; k < dimm4; k+=4) {
+                            _Parameter pr1 = row[k]   * cache[k],                         
+                            pr2 = row[k+1] * cache[k+1],      
+                            pr3 = row[k+2] * cache[k+2],
+                            pr4 = row[k+3] * cache[k+3];
+                            pr1 += pr2;
+                            pr3 += pr4;
+                            resCell += pr1 + pr3;
+                        }
+                        
+                        if (dimm4 < vDim)
+                            for (; k < vDim; k++) {
+                                resCell += row[k] * cache[k];
+                            }
+                        
+                        storage.theData[cumulativeIndex++] = resCell;
+                        
+                    }
+                }*/
+                /*} else {
                     for (long i=0; i<hDim; i++, row += vDim) {
                         for (long j=0; j<secondArg.vDim; j++) {
                             _Parameter resCell = 0.0;
@@ -3609,7 +3652,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
                             storage.theData[cumulativeIndex++] = resCell;
                         }
                     }
-                }
+                }*/
 #else
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
@@ -3626,36 +3669,90 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg )
 #endif
             } else
                 /* rectangular matrices */
-            {
-                /*long  off1 = secondArg.vDim,
-                        off2 = 2*secondArg.vDim,
-                        off3 = 3*secondArg.vDim,
-                        off4 = 4*secondArg.vDim;*/
-
-                _Parameter *rD,
-                           *fD,
-                           *sD,
-                           *stop,
-                           resCell;
-
-                for (long i=0; i<hDim; i++) {
-                    rD = storage.theData+i*secondArg.vDim;
-                    for (long j=0; j<secondArg.vDim; j++,rD++) {
-                        resCell = 0.0;
-                        fD = theData+i*vDim;
-                        stop = fD+vDim;
-                        sD = secondArg.theData+j;
-                        //for (k=0; k<vDim; k++, fD++, sD+=secondArg.vDim)
-                        //for (; stop!=fD; fD++, sD+=secondArg.vDim)
-                        for (; fD!=stop;)
-                            //resCell+=*fD**sD;
-                        {
-                            resCell += *(fD++)**sD;
-                            sD += secondArg.vDim;
+            {   
+#define _HY_MATRIX_CACHE_BLOCK 128
+                 if (vDim >= 256) {
+#ifdef _OPENMP
+                     long nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
+#endif
+                     for (long r = 0; r < hDim; r ++) {
+#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
+                         for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
+                             _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
+                             const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
+                             for (long r2 = 0; r2 < secondArg.hDim; r2+= _HY_MATRIX_CACHE_BLOCK) {
+                                 const long upto_p2 = (secondArg.hDim-r2)>=_HY_MATRIX_CACHE_BLOCK?_HY_MATRIX_CACHE_BLOCK:(secondArg.hDim-r2);
+                                 for (long p = 0; p < upto_p; p++) {
+                                     for (long p2 = 0; p2 < upto_p2; p2++) {
+                                         cacheBlockInMatrix2[p][p2] = secondArg.theData [(r2+p2)*secondArg.vDim+c+p];
+                                     }
+                                 }
+                                 if (upto_p2 % 4 == 0) {
+                                     for (long p = 0; p < upto_p; p++) {
+                                         _Parameter updater = 0.;
+                                         for (long p2 = 0; p2 < upto_p2; p2+=4) {
+                                             _Parameter pr1 = theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2],
+                                                        pr2 = theData[r*vDim + r2 + p2+1]*cacheBlockInMatrix2[p][p2+1],
+                                                        pr3 = theData[r*vDim + r2 + p2+2]*cacheBlockInMatrix2[p][p2+2],
+                                                        pr4 = theData[r*vDim + r2 + p2+3]*cacheBlockInMatrix2[p][p2+3];
+                                             pr1 += pr2;
+                                             pr3 += pr4;
+                                             updater += pr1 + pr3;
+                                         }
+                                         storage.theData[r*secondArg.vDim + c + p] += updater;
+                                     } 
+                                 } else
+                                     for (long p = 0; p < upto_p; p++) {
+                                         _Parameter updater = 0.;
+                                         for (long p2 = 0; p2 < upto_p2; p2++) {
+                                             updater += theData[r*vDim + r2 + p2]*cacheBlockInMatrix2[p][p2];
+                                         }
+                                         storage.theData[r*secondArg.vDim + c + p] += updater;
+                                     } 
+                             }
+                         }
+                     }
+                     
+                 } else {
+                     
+                     
+                    if (vDim % 4) {
+                        long mod4 = vDim-vDim%4;
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                long k = 0;
+                                for (; k < mod4; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[(k+1)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[(k+2)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[(k+3)*secondArg.vDim + j];
+                                }
+                                for (; k < vDim; k++) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j];
+                                }
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
                         }
-                        *rD = resCell;
+                    } else {
+                        for (long i=0; i<hDim; i++) {
+                            for (long j=0; j<secondArg.vDim; j++) {
+                                _Parameter resCell = 0.0;
+                                for (long k = 0; k < vDim; k+=4) {
+                                    resCell += theData[i*vDim + k] * secondArg.theData[k*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 1] * secondArg.theData[(k+1)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 2] * secondArg.theData[(k+2)*secondArg.vDim + j] +
+                                    theData[i*vDim + k + 3] * secondArg.theData[(k+3)*secondArg.vDim + j];
+                                }
+                                
+                                
+                                storage.theData[i*secondArg.vDim + j] = resCell;
+                            }
+                        }
                     }
                 }
+                
             }
         }
 
@@ -5704,101 +5801,117 @@ void        _Matrix::operator += (_Matrix& m)
 
 //______________________________________________________________
 
+long    _Matrix::CompareRows (const long row1, const long row2) {
+    for (long column_id = 0; column_id < vDim; column_id ++) {
+        _Parameter v1 = theData[row1*vDim+column_id],
+                   v2 = theData[row2*vDim+column_id];
+        if (!CheckEqual (v1,v2)) {
+            return (v1 < v2)?-1L:1L;
+        }
+    }
+    return 0L;
+}
+
+//______________________________________________________________
+
+void    _Matrix::SwapRows (const long row1, const long row2) {
+    long idx1 = row1*vDim,
+         idx2 = row2*vDim;
+    for (long column_id = 0; column_id < vDim; column_id ++) {
+        _Parameter t = theData[idx1];
+        theData[idx1++] = theData[idx2];
+        theData[idx2++] = t;
+    }
+}
+//______________________________________________________________
+
 void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 {
-    long            middle          = (from+to)/2,
-                    bottommove        = 1,
-                    topmove        = 1,
-                    imiddleV         = index->lData[middle];
+    long            middle          = (from+to) >> 1,
+                    bottommove      = 1L,
+                    topmove         = 1L;
 
-    _Parameter middleV = theData[middle];
+    /*
+        Use '+' to denote an element that is gretae than 'M' (the 'middle' element)
+        and '-' to denote an element than is less than 'M'
+     
+        Initially we may have something like
+     
+        --++--+M--+++--++-
+        and we want to end up with
+        ---------M+++++++
+     
+        Initially, we arrange the elements as
+     
+        ----+++M-----++++++, and then swap 'bottommove' pluses (of which there are 3 in this case)
+                            with 'topmove' minuses (of which there are 5)
+    
+     */
+    
 
     if (middle)
-        while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
+        while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
             bottommove++;
         }
     if (from<to)
-        while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
+        while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
             topmove++;
         }
 
     for (long i=from; i<middle-bottommove; i++)
-        if (theData[i]>=theData[middle]) {
-            _Parameter temp = theData[middle-bottommove];
-            theData[middle-bottommove] = theData[i];
-            theData[i]=temp;
-            long       ltemp = index->lData[middle-bottommove];
-            index->lData[middle-bottommove] = index->lData[i];
-            index->lData[i]=ltemp;
+        if (CompareRows (i, middle) >= 0L) {
+            SwapRows (middle-bottommove, i);
+            index->Swap(middle-bottommove,i);
             bottommove++;
-            while ((middle-bottommove>=from)&&(theData[middle-bottommove]>=theData[middle])) {
+
+            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
                 bottommove++;
             }
         }
 
     {
         for (long i=middle+topmove+1; i<=to; i++)
-            if (theData[i]<=theData[middle]) {
-                _Parameter temp = theData[middle+topmove];
-                theData[middle+topmove] = theData[i];
-                theData[i]=temp;
-                long ltemp = index->lData[middle+topmove];
-                index->lData[middle+topmove] = index->lData[i];
-                index->lData[i]=ltemp;
+            if (CompareRows(i,middle) <= 0L) {
+                SwapRows   (i, middle+topmove);
+                index->Swap(i, middle+topmove);
+                
                 topmove++;
-                while ((middle+topmove<=to)&&(theData[middle+topmove]<=theData[middle])) {
-                    topmove++;
+                while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
+                   topmove++;
                 }
             }
     }
 
     if (topmove==bottommove) {
         for (long i=1; i<bottommove; i++) {
-            _Parameter temp = theData[middle+i];
-            theData[middle+i] = theData[middle-i];
-            theData[middle-i]=temp;
-            long ltemp = index->lData[middle+i];
-            index->lData[middle+i] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;
+            SwapRows(middle+i, middle-i);
+            index->Swap (middle+i, middle-i);
         }
     } else if (topmove>bottommove) {
         long shift = topmove-bottommove;
+        // in the example above, shift = 2
+        
         for (long i=1; i<bottommove; i++) {
-            _Parameter temp = theData[middle+i+shift];
-            theData[middle+i+shift] = theData[middle-i];
-            theData[middle-i]=temp;
-            long ltemp = index->lData[middle+i+shift];
-            index->lData[middle+i+shift] = index->lData[middle-i];
-            index->lData[middle-i]=ltemp;
+             SwapRows (middle-i, middle+i+shift);
+             index->Swap(middle-i, middle+i+shift);
         }
-        {
-            for (long i=0; i<shift; i++) {
-                theData[middle+i]       =   theData[middle+i+1];
-                index->lData[middle+i]  =   index->lData[middle+i+1];
-            }
-        }
+        // at the end of this loop, the example above will look like 
+        // -------M--+++++++++, so now if we swap 'M' with the last '-', we'll arrive at the desired configuration
+        
+        SwapRows    (middle, middle+shift);
+        index->Swap (middle, middle+shift);
         middle+=shift;
-        theData[middle]=middleV;
-        index->lData[middle]=imiddleV;
+        
     } else {
         long shift = bottommove-topmove;
         for (long i=1; i<topmove; i++) {
-            _Parameter temp = theData[middle-i-shift];
-            theData[middle-i-shift] = theData[middle+i];
-            theData[middle+i]=temp;
-            long ltemp = index->lData[middle-i-shift];
-            index->lData[middle-i-shift] = index->lData[middle+i];
-            index->lData[middle+i]=ltemp;
+            SwapRows (middle+i, middle-i-shift);
+            index->Swap (middle+i, middle-i-shift);
         }
-        {
-            for (long i=0; i<shift; i++) {
-                theData[middle-i]=theData[middle-i-1];
-                index->lData[middle-i]=index->lData[middle-i-1];
-            }
-        }
+
+        SwapRows    (middle, middle-shift);
+        index->Swap (middle, middle-shift);
         middle-=shift;
-        theData[middle]=middleV;
-        index->lData[middle]=imiddleV;
     }
 
     if (to>middle+1) {
@@ -5813,13 +5926,12 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
 _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
 {
     if (storageType!=1) {
-        _String    errMsg ("Only numeric matrices can be sorted");
-        WarnError  (errMsg);
-        return new _Matrix (1,1);
+        WarnError  ("Only numeric matrices can be sorted");
+        return new _MathObject();
     }
 
     if (theData == nil) {
-        return new _Matrix (1,1);
+        return new _Matrix (0,0);
     }
 
     _SimpleList sortOn;
@@ -5845,7 +5957,7 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
             _String    errMsg ("Invalid column index to sort the matrix on:");
             errMsg = errMsg & _String((_String*)mp->toStr());
             WarnError  (errMsg);
-            return new _Matrix (1,1);
+            return new _MathObject;
         }
     } else {
         sortOn << mp->Value();
@@ -5855,56 +5967,23 @@ _PMathObj       _Matrix::SortMatrixOnColumn (_PMathObj mp)
                      // the code below is BROKEN
     
     _SimpleList             idx (hDim,0,1);
-    for (long col2Sort = 0; col2Sort < sortOn.lLength; col2Sort++) {
-        long colIdx = sortOn.lData[col2Sort];
+    _Matrix theColumn   (hDim,sortOn.lLength,false,true);
 
-        _Matrix theColumn   (1,hDim,false,true);
+    for (unsigned long col2Sort = 0; col2Sort < sortOn.lLength; col2Sort++) {
+        long colIdx = sortOn.lData[col2Sort];
 
         if (theIndex)
             for (long k=0; k<hDim; k++) {
-                theColumn.theData[k] = (*this)(k, colIdx);
+                theColumn.theData[col2Sort+k*sortOn.lLength] = (*this)(k, colIdx);
             }
         else
             for (long k=0, j = colIdx; k<hDim; k++, j+=vDim) {
-                theColumn.theData[k] = theData[j];
+                theColumn.theData[col2Sort+k*sortOn.lLength] = theData[j];
             }
 
-        if (col2Sort == 0) {
-            theColumn.RecursiveIndexSort (0, hDim-1, &idx);
-        } else {
-            long currentFrom = 0,
-                 currentTo   = 1;
-
-            bool didSort     = false;
-
-            _SimpleList    revIdx (hDim,0,1),
-                           cpyIdx (idx);
-
-            SortLists      (&cpyIdx, &revIdx);
-
-            while (currentFrom < vDim-1) {
-                currentTo = currentFrom + 1;
-                while (currentTo < vDim) {
-                    if ((*this)(revIdx.lData[currentTo], colIdx) > (*this)(revIdx.lData[currentFrom], colIdx)) {
-                        break;
-                    } else {
-                        currentTo ++;
-                    }
-                }
-                if (currentTo-currentFrom>2) {
-                    theColumn.RecursiveIndexSort (currentFrom, currentTo-1, &idx);
-                    didSort = true;
-                }
-
-                currentFrom = currentTo;
-            }
-
-            if (!didSort) {
-                break;
-            }
-        }
     }
 
+    theColumn.RecursiveIndexSort (0, hDim-1, &idx);
     _Matrix                 *result     = new _Matrix (hDim, vDim, theIndex, 1);
 
     if (theIndex) {
@@ -6225,13 +6304,13 @@ _PMathObj _Matrix::Random (_PMathObj kind)
             checkPointer (res);
 
             if (!theIndex)
-                for (long vv = 0; vv<lDim; vv+=myVDim)
-                    for (long k2=0; k2<remapped.lLength; k2++) {
+                for (unsigned long vv = 0; vv<lDim; vv+=myVDim)
+                    for (unsigned long k2=0; k2<remapped.lLength; k2++) {
                         res->theData[vv+k2] = theData[vv+remapped.lData[k2]];
                     }
             else {
-                for (long vv = 0; vv<myHDim; vv++)
-                    for (long k=0; k<remapped.lLength; k++) {
+                for (unsigned long vv = 0; vv<myHDim; vv++)
+                    for (unsigned long k=0; k<remapped.lLength; k++) {
                         long ki = remapped.lData[k];
                         if ((ki = Hash (vv,ki)) >= 0) {
                             res->Store (vv,k,theData[ki]);
@@ -6244,8 +6323,8 @@ _PMathObj _Matrix::Random (_PMathObj kind)
                 _Matrix * res = new _Matrix (GetHDim(), GetVDim(),theIndex,false);
                 checkPointer (res);
 
-                for (long vv = 0; vv<myHDim; vv++)
-                    for (long k=0; k<remapped.lLength; k++) {
+                for (unsigned long vv = 0; vv<myHDim; vv++)
+                    for (unsigned long k=0; k<remapped.lLength; k++) {
                         long ki = remapped.lData[k];
                         _Formula * ff = GetFormula (vv,ki);
                         if (ff) {
@@ -6263,6 +6342,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         // Associative list should contain following arguments:
         //  "PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
         //  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required for the p.d.f.
+        
         _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
         _List               * keys      = pdfArgs->GetKeys();
         _String             pdfkey      ("PDF"),
@@ -6271,19 +6351,22 @@ _PMathObj _Matrix::Random (_PMathObj kind)
         if (arg0->Equal(&pdfkey)) {
             _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
                         arg ("ARG0");
-
-            if (pdf == _String("Dirichlet")) {
-                return (_Matrix *) DirichletDeviate();
-            } else if (pdf == _String("Gaussian")) {
-                return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("Wishart")) {
-                return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("InverseWishart")) {
-                return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
-            } else if (pdf == _String("Multinomial")) {
-                return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
-            } else {
-                errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
+                        
+            long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
+            
+             switch (pdfCode) {
+                case _HY_MATRIX_RANDOM_DIRICHLET:
+                    return (_Matrix *) DirichletDeviate();
+                case _HY_MATRIX_RANDOM_GAUSSIAN:
+                    return (_Matrix *) GaussianDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_WISHART:
+                    return (_Matrix *) WishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_INVERSE_WISHART:
+                    return (_Matrix *) InverseWishartDeviate (*(_Matrix *) pdfArgs->GetByKey (arg, MATRIX));
+                case _HY_MATRIX_RANDOM_MULTINOMIAL:
+                    return (_Matrix *) MultinomialSample ((_Constant *) pdfArgs->GetByKey (arg, NUMBER));
+                default:
+                    errMsg = _String("String argument passed to Random not a supported PDF: '") & pdf & "'";
             }
         } else {
             errMsg = _String("Expecting \"PDF\" key in associative list argument passed to Random(), received: ") & ((_String *)(*keys)(0))->getStr();
@@ -6774,15 +6857,16 @@ _Matrix     _Matrix::operator * (_Parameter c)
 //_____________________________________________________________________________________________
 void        _Matrix::operator *= (_Matrix& m)
 {
-    CheckDimensions     (m);
-    AgreeObjects        (m);
-    _Matrix   result    (hDim, m.vDim, false, storageType);
-    Multiply            (result,m);
-    //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
-    if (theIndex!=nil && m.theIndex!=nil) {
-        result.AmISparse();
+    if (CheckDimensions     (m)) {
+        AgreeObjects        (m);
+        _Matrix   result    (hDim, m.vDim, false, storageType);
+        Multiply            (result,m);
+        //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
+        if (theIndex!=nil && m.theIndex!=nil) {
+            result.AmISparse();
+        }
+        Swap                (result);
     }
-    Swap                (result);
 }
 
 //_____________________________________________________________________________________________
@@ -6834,18 +6918,19 @@ _PMathObj       _Matrix::MultObj (_PMathObj mp)
         }
 
     _Matrix*        m = (_Matrix*)mp;
-    CheckDimensions (*m);
+    if (!CheckDimensions (*m)) return new _MathObject;
     AgreeObjects    (*m);
 
     _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
     checkPointer  (result);
+    
     Multiply      (*result,*m);
     return        result;
 
 }
 
 //_____________________________________________________________________________________________
-_PMathObj       _Matrix::MultElements (_PMathObj mp)
+_PMathObj       _Matrix::MultElements (_PMathObj mp, bool elementWiseDivide)
 {
 
     if (mp->ObjectClass()!=ObjectClass()) {
@@ -6856,46 +6941,79 @@ _PMathObj       _Matrix::MultElements (_PMathObj mp)
     _Matrix* m = (_Matrix*)mp;
 
     if ((GetHDim()!=m->GetHDim()) || (GetVDim()!=m->GetVDim())) {
-        WarnError ("Element-wise multiplication requires matrixes of the same dimension.");
+        WarnError ("Element-wise multiplication/division requires matrixes of the same dimension.");
         return new _Matrix (1,1);
     }
 
     if ((storageType!=1)||(m->storageType != 1)) {
-        WarnError ("Element-wise multiplication only works on numeric matrices");
+        WarnError ("Element-wise multiplication/division only works on numeric matrices");
         return new _Matrix (1,1);
     }
 
     _Matrix*      result = new _Matrix (hDim, vDim, false, true);
     checkPointer  (result);
 
-    if (theIndex) {
-        if (m->theIndex) {
-            for (long k=0; k<lDim; k++) {
-                long    i = theIndex[k];
-                if (i>=0) {
-                    result->theData [i] = theData[k] * (*m)(i/vDim, i%vDim);
+    if (elementWiseDivide) {
+        if (theIndex) {
+            if (m->theIndex) {
+                for (long k=0; k<lDim; k++) {
+                    long    i = theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[k] / (*m)(i/vDim, i%vDim);
+                    }
+                }
+            } else {
+                for (long k=0; k<lDim; k++) {
+                    long    i = theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[k] / m->theData[i];
+                    }
                 }
             }
         } else {
-            for (long k=0; k<lDim; k++) {
-                long    i = theIndex[k];
-                if (i>=0) {
-                    result->theData [i] = theData[k] * m->theData[i];
+            if (m->theIndex) {
+                for (long k=0; k<m->lDim; k++) {
+                    long    i = m->theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[i] / m->theData[k];
+                    }
+                }
+            } else
+                for (long k=0; k<lDim; k++) {
+                    result->theData [k] = theData[k] / m->theData[k];
+                }
+        }    
+    }
+    else {
+        if (theIndex) {
+            if (m->theIndex) {
+                for (long k=0; k<lDim; k++) {
+                    long    i = theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[k] * (*m)(i/vDim, i%vDim);
+                    }
+                }
+            } else {
+                for (long k=0; k<lDim; k++) {
+                    long    i = theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[k] * m->theData[i];
+                    }
                 }
             }
+        } else {
+            if (m->theIndex) {
+                for (long k=0; k<m->lDim; k++) {
+                    long    i = m->theIndex[k];
+                    if (i>=0) {
+                        result->theData [i] = theData[i] * m->theData[k];
+                    }
+                }
+            } else
+                for (long k=0; k<lDim; k++) {
+                    result->theData [k] = theData[k] * m->theData[k];
+                }
         }
-    } else {
-        if (m->theIndex) {
-            for (long k=0; k<m->lDim; k++) {
-                long    i = m->theIndex[k];
-                if (i>=0) {
-                    result->theData [i] = theData[i] * m->theData[k];
-                }
-            }
-        } else
-            for (long k=0; k<lDim; k++) {
-                result->theData [k] = theData[k] * m->theData[k];
-            }
     }
 
     if (theIndex||m->theIndex) {
@@ -6906,7 +7024,7 @@ _PMathObj       _Matrix::MultElements (_PMathObj mp)
 }
 
 //_____________________________________________________________________________________________
-void    _Matrix::CheckDimensions (_Matrix& secondArg)
+bool    _Matrix::CheckDimensions (_Matrix& secondArg)
 // check matrix dimensions to ensure that they are multipliable
 {
     if (vDim!=secondArg.hDim) {
@@ -6915,16 +7033,21 @@ void    _Matrix::CheckDimensions (_Matrix& secondArg)
         } else {
             char str[255];
             sprintf (str,"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
-            ReportWarning (str);
-            return;
+            WarnError (str);
+            return false;
         }
     }
+    return true;
 }
 
 //_____________________________________________________________________________________________
 _Matrix     _Matrix::operator * (_Matrix& m)
 {
-    CheckDimensions (m);
+    if (!CheckDimensions (m)) {   
+        _Matrix d;
+        return d;
+    }
+    
     AgreeObjects (m);
     _Matrix result (hDim, m.vDim, false, storageType);
     Multiply (result,m);
@@ -8537,8 +8660,8 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
     unsigned long samples     = replicates?replicates->Value ():0;
 
     _Matrix     *eval    = (_Matrix*)Compute (),
-                 * sorted = nil,
-                   * result = nil;
+                * sorted = nil,
+                * result = nil;
 
     if (samples < 1) {
         errMsg = "Expected a numerical (>=1) value for the number of replicates";
@@ -8624,10 +8747,11 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
 #endif
             }
 
-            result = new _Matrix (1, values, false, true);
+            result = new _Matrix (values, 2, false, true);
 
             for (long v = 0; v < values; v++) {
-                result->theData[(long)sorted->theData[2*(values-1-v)]] = raw_result->theData[v];
+                result->theData[2*v]   = (long)sorted->theData[2*(values-1-v)];
+                result->theData[2*v+1] = raw_result->theData[v];
             }
 
             DeleteObject (raw_result);
@@ -9174,7 +9298,7 @@ void        _AssociativeList::Merge (_PMathObj p)
         
         while (cn >= 0) {
             MStore(*(_String*)(*(_List*)rhs->avl.dataList)(cn),(_PMathObj)rhs->avl.GetXtra (cn),true);
-            cn = avl.Traverser (hist,ls);
+            cn = rhs->avl.Traverser (hist,ls);
         }
     }
     else {

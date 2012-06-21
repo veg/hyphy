@@ -216,7 +216,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     _FString        *lfID = (_FString*)FetchObjectFromVariableByType (&lf2SendBack, STRING);
 
                     if (!lfID) {
-                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - did not specify the LF name to return in variable") & lf2SendBack & ".\n\n\n" );
+                        FlagError (_String("[MPI] Malformed MPI likelihood function optimization request - did not specify the LF name to return in variable ") & lf2SendBack & ".\n\n\n" );
                         break;
                     }
 

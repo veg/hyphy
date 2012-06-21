@@ -3992,6 +3992,7 @@ _PMathObj _TreeTopology::BranchLength (_PMathObj p)
                                 _String bl;
                                 GetBranchLength (n1, bl, true);
                                 if (bl.sLength) {
+                                    DeleteObject(twoIDs);
                                     return new _FString (bl);
                                 }
                             }
@@ -5484,7 +5485,7 @@ long    _TheTree::CountTreeCategories (void)
         cVA.ReorderList   ();
     }
     categoryCount = 1;
-    for (long k=0; k<categoryVariables.lLength; k++) {
+    for (unsigned long k=0; k<categoryVariables.lLength; k++) {
         categoryCount *= ((_CategoryVariable*)LocateVar(categoryVariables.lData[k]))->GetNumberOfIntervals();
     }
     return categoryCount;
@@ -10450,18 +10451,15 @@ void    _TheTree::MolecularClock (_String& baseNode, _List& varsToConstrain)
     }
 
     if (!topNode) {
-        _String errMsg = _String ("Molecular clock constraint has failed, since node ")
-                         &baseNode
-                         &" is not a part of tree "
-                         &*GetName();
-
-        WarnError (errMsg);
+        WarnError (_String ("Molecular clock constraint has failed, since node '")
+                   &baseNode
+                   &"' is not a part of tree '"
+                   &*GetName() & "'");
     } else
-        for (long k=1; k<varsToConstrain.lLength; k++) {
+        for (unsigned long k=1; k<varsToConstrain.lLength; k++) {
             long varIndex = LocateVarByName (*(_String*)varsToConstrain (k));
             if (varIndex<0) {
-                _String errMsg = _String ("Molecular clock constraint has failed, since variable ") &*(_String*)varsToConstrain (k) &" is undefined.";
-                WarnError (errMsg);
+                WarnError (_String ("Molecular clock constraint has failed, since variable' ") &*(_String*)varsToConstrain (k) &"' is undefined.");
                 return ;
             }
             curNode->RecurseMC (variableNames.GetXtra(varIndex), topNode, true, rooted);

@@ -17,6 +17,7 @@ function operators()
     a = "/nonexistent/filepath";
     assert(!a==0.0, "!\"/nonexistent/filepath\"==0.0 failed");
     
+    
     //!= (operator)
     assert(1 != 2 == 1,"1 != 2 == 1 failed");
     assert("Hyphy" != "HyPhy" == 1,"\"Hyphy\" != \"HyPhy\" == 1 failed");

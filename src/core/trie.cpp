@@ -195,6 +195,16 @@ long     _Trie::Find (const _String& key, _SimpleList* path, bool prefixOK){
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+long     _Trie::GetValueFromString (const _String& key){
+    long keyIndex = Find(key);
+    if (keyIndex != HY_TRIE_NOTFOUND) {
+        return GetValue (keyIndex);
+    }
+    return HY_TRIE_NOTFOUND;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
 void     _Trie::UpdateValue(const long key, const long value) {
     if (key >= 0 && key < payload.lLength)
         payload.lData[key] = value;

@@ -379,7 +379,8 @@ void    _PolynomialData::RaiseTerm (long* target, long power)
 _Parameter  _PolynomialData::BinaryRaise (_Parameter base, long pwr)
 {
     _Parameter result = 1;
-    char bits[sizeof(long)*8], nLength = 0;
+    char bits[sizeof(long)*8];
+    unsigned char nLength = 0;
     while (pwr) {
         bits[nLength]=pwr%2;
         pwr/=2;

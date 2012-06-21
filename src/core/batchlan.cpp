@@ -1575,9 +1575,19 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                     long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
                          condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                     if (condition_index_match < 0) {
-                        acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
-                        DeleteObject (pieces);
-                        return false;
+                        // try to see if the command accepts a variable number of arguments (at least X)
+                        if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
+                            if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
+                                 acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                                 DeleteObject (pieces);
+                                 return false;
+                           
+                            }
+                        } else {
+                            acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                            DeleteObject (pieces);
+                            return false;
+                        }
                     }
                     if (commandExtraInfo->do_trim) {
                         currentLine.Trim (upto, -1);
@@ -1616,6 +1626,11 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
             case HY_HBL_COMMAND_USE_MODEL:
             case HY_HBL_COMMAND_SET_PARAMETER:
+            case HY_HBL_COMMAND_ASSERT:
+            case HY_HBL_COMMAND_REQUIRE_VERSION:
+            case HY_HBL_COMMAND_DELETE_OBJECT:
+            case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
+            case HY_HBL_COMMAND_MOLECULAR_CLOCK:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1690,8 +1705,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructTree (currentLine, *this);
         } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
             _ElementaryCommand::ConstructLF (currentLine, *this);
-        } else if (currentLine.startswith (blMolClock)) { // molecular clock definition
-            _ElementaryCommand::ConstructMolecularClock (currentLine, *this);
         } else if (currentLine.startswith (blfprintf)) { // fpintf call
             _ElementaryCommand::ConstructFprintf (currentLine, *this);
         } else if (currentLine.startswith (blGetString)) { // get string from an object
@@ -1706,8 +1719,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructImport (currentLine, *this);
         } else if (currentLine.startswith (blCategory)) { // category variable declaration
             _ElementaryCommand::ConstructCategory (currentLine, *this);
-        } else if (currentLine.startswith (blClearConstraints)) { // clear constraints
-            _ElementaryCommand::ConstructClearConstraints (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
             _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
         } else if (currentLine.startswith (blModel)) { // Model declaration
@@ -1749,19 +1760,13 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
         } else if (currentLine.startswith (blHBLProfile)) { // #profile
             _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
-        } else if (currentLine.startswith (blDeleteObject)) { // DeleteObject
-            _ElementaryCommand::ConstructDeleteObject (currentLine, *this);
-        } else if (currentLine.startswith (blRequireVersion)) { // RequireVersion
-            _ElementaryCommand::ConstructRequireVersion (currentLine, *this);
         } else if (currentLine.startswith (blSCFG)) { // SCFG definition
             _ElementaryCommand::ConstructSCFG (currentLine, *this);
         } else if (currentLine.startswith (blNN)) { // Neural Net definition
             _ElementaryCommand::ConstructNN (currentLine, *this);
         } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
             _ElementaryCommand::ConstructBGM (currentLine, *this);
-        } else if (currentLine.startswith (blAssert)) { // ConstructAssert
-            _ElementaryCommand::ConstructAssert (currentLine, *this);
-        }
+        } 
         // plain ol' formula - parse it as such!
         else {
             _String checker (currentLine);
@@ -2069,16 +2074,11 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
 
 
-    case 19: // a call to MolecularClock
+    case HY_HBL_COMMAND_MOLECULAR_CLOCK: // a call to MolecularClock
         converted = (_String*)parameters(0)->toStr();
-        result = _String("Molecular clock imposed starting at ")&(*converted);
-        result = result & " on variables ";
-        for (k=1; k<parameters.lLength; k++) {
-            result = result & *((_String*)parameters(k));
-            if (k<parameters.lLength-1) {
-                result = result & _String(",");
-            }
-        }
+        result    = ",";
+        result = _String("Molecular clock imposed starting at ")&(*converted)
+               & " on variables " & _String((_String*)parameters.Join (&result, 1, -1));
         break;
 
     case 20: // category variable construction
@@ -2106,7 +2106,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
 
         break;
     }
-    case 22: { // clear constraints
+    case HY_HBL_COMMAND_CLEAR_CONSTRAINTS: { // clear constraints
         converted = (_String*)parameters.toStr();
         result = _String("Clear contstraints on: ")&(*converted);
         break;
@@ -2442,12 +2442,12 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = blHBLProfile & " " & *converted;
         break;
     }
-    case 59: {
+    case HY_HBL_COMMAND_DELETE_OBJECT: {
         converted = (_String*)parameters.toStr();
         result = blDeleteObject & '(' & *converted & ')';
         break;
     }
-    case 60: {
+    case HY_HBL_COMMAND_REQUIRE_VERSION: {
         converted = (_String*)parameters(0)->toStr();
         result = blRequireVersion & '(' & *converted & ')';
         break;
@@ -2482,7 +2482,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         }
         result = result & ')';
         break;
-    case 65: {
+    case HY_HBL_COMMAND_ASSERT: {
         converted = (_String*)parameters(0)->toStr();
         result = _String ("Assert ") & "'" & *converted & "'";
         break;
@@ -5395,8 +5395,8 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
     }
 
     _Variable   *  alphabet = FetchVar (LocateVarByName (AppendContainerName(*(_String*)parameters (3),chain.nameSpacePrefix))),
-                   *  treeVar   = FetchVar (LocateVarByName (AppendContainerName(*(_String*)parameters (1),chain.nameSpacePrefix))),
-                      *  freqVar  = FetchVar (LocateVarByName (AppendContainerName(*(_String*)parameters (2),chain.nameSpacePrefix)));
+                *  treeVar  = FetchVar (LocateVarByName (AppendContainerName(*(_String*)parameters (1),chain.nameSpacePrefix))),
+                *  freqVar  = FetchVar (LocateVarByName (AppendContainerName(*(_String*)parameters (2),chain.nameSpacePrefix)));
 
 
     if (alphabet&&treeVar&&freqVar) {
@@ -5897,39 +5897,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 19: // molecular_clock constraint
-
-    {
-        chain.currentCommand++;
-
-        _String    theBaseNode          (chain.AddNameSpaceToID(*(_String*)parameters(0))),
-                   treeName;
-
-        _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
-
-        if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
-            WarnError (_String("Undefined tree/node object ") & theBaseNode & " in call to " & blMolClock.Cut(0,blMolClock.sLength-2));
-        }
-
-        _TheTree *theTree = nil;
-        if (theObject->ObjectClass() == TREE_NODE) {
-            theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
-            if (!theTree) {
-                WarnError (_String("Internal error - orphaned tree node ") & theBaseNode & " in call to " & blMolClock.Cut(0,blMolClock.sLength-2));
-                return false;
-
-            }
-            treeName    = *theTree->GetName();
-            theBaseNode = theObject->GetName()->Cut(treeName.sLength+1,-1);
-        } else {
-            treeName    = *theObject->GetName();
-            theTree     = (_TheTree*)theObject;
-            theBaseNode = empty;
-        }
-
-        theTree->MolecularClock(theBaseNode,parameters);
-    }
-    break;
+    case HY_HBL_COMMAND_MOLECULAR_CLOCK: // molecular_clock constraint
+        HandleMolecularClock(chain);
+        break;
 
     case 20: // category variable construction
 
@@ -5947,17 +5917,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase21 (chain);
         break;
 
-    case 22: { // clear constraints
-        chain.currentCommand++;
-        for (long i = 0; i<parameters.lLength; i++) {
-            _String cName (chain.AddNameSpaceToID(*(_String*)parameters(i)));
-            long cID = LocateVarByName (cName);
-            if (cID>=0) { // variable exists
-                FetchVar(cID)->ClearConstraints();
-            }
-        }
-    }
-    break;
+    case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:  // clear constraints
+        HandleClearConstraints(chain);
+        break;
 
     case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
         chain.currentCommand++;
@@ -6085,12 +6047,12 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase58 (chain);
         break;
 
-    case 59:
-        ExecuteCase59 (chain);
+    case HY_HBL_COMMAND_DELETE_OBJECT:
+        HandleDeleteObject (chain);
         break;
 
-    case 60:
-        ExecuteCase60 (chain);
+    case HY_HBL_COMMAND_REQUIRE_VERSION:
+        HandleRequireVersion(chain);
         break;
 
     case 61:
@@ -6105,8 +6067,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase64 (chain);
         break;
 
-    case 65:
-        ExecuteCase65 (chain);
+    case HY_HBL_COMMAND_ASSERT:
+        HandleAssert (chain);
         break;
 
     default:
@@ -6856,21 +6818,6 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     WarnError (errMsg);
     return false;
 }
-//____________________________________________________________________________________
-
-bool    _ElementaryCommand::ConstructClearConstraints (_String&source, _ExecutionList&target)
-{
-    _List args;
-    ExtractConditions (source,blClearConstraints.sLength,args,',');
-    if (args.lLength<1) {
-        WarnError ("Expected: ClearConstraints (var1<,var 2,var 3,...>)");
-        return false;
-    }
-    _ElementaryCommand * cc = new _ElementaryCommand(22);
-    cc->addAndClean (target,&args,0);
-    return true;
-}
-
 
 //____________________________________________________________________________________
 
@@ -7376,24 +7323,6 @@ bool    _ElementaryCommand::ConstructImport (_String&source, _ExecutionList&targ
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructMolecularClock (_String&source, _ExecutionList&target)
-// syntax: MolecularClock(base node, var1, ...)
-{
-
-    _List pieces;
-    ExtractConditions (source,blMolClock.sLength,pieces,',');
-    if (pieces.lLength<2) {
-        _String errMsg ("Expected: MolecularClock (base node, var1, ...)");
-        acknError (errMsg);
-        return false;
-    }
-
-    _ElementaryCommand * dsf = new _ElementaryCommand (19);
-    checkPointer        (dsf);
-    dsf->addAndClean(target,&pieces,0);
-    return true;
-}
 
 
 //____________________________________________________________________________________
