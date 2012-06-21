@@ -301,10 +301,12 @@ class _List:public _SimpleList
         * \n Equivalent to Python's join using the argument as the spacer
         * \n\n \b Example: \code _String ("AABBCC").Find("B")\endcode
         * @param spacer What you want to be the spacer 
-        * @return A pointer to the new list 
+        * @param startAt start at this list element 
+        * @param endAt end at this list element 
+        * @return A pointer to the new string 
         * @sa Find()
         */
-        BaseRef Join(BaseRef);
+        BaseRef Join(BaseRef spacer, long startAt = 0, long endAt = -1);
 
         /**
         * Identical to << operator. Places new value at the end of the list.

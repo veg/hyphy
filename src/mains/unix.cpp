@@ -130,12 +130,10 @@ void    ReadInTemplateFiles(void)
         baseArgDir = *((_String*)pathNames(0));
     }
 
-    fseek (modelList,0,SEEK_END);
-    unsigned long  fLength = ftell(modelList);
-    if (fLength) {
-        rewind (modelList);
-        _String theData (fLength);
-        fread (theData.getStr(),sizeof (char), fLength, modelList);
+    _String theData (modelList);
+    fclose (modelList);
+    
+    if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availableTemplateFiles);
         for (long i = 0; i<availableTemplateFiles.countitems(); i++) {
             _String* thisString = (_String*)availableTemplateFiles(i);
@@ -163,17 +161,17 @@ void    ReadInPostFiles(void)
 
     _String fileIndex;
     FILE* modelList = fopen (fileIndex.getStr(),"r");
-    fileIndex = baseArgDir &"TemplateBatchFiles/postprocessors.lst";
+    fileIndex = libArgDir &"TemplateBatchFiles/postprocessors.lst";
     modelList = fopen (fileIndex.getStr(),"r");
+    
+    if (modelList == NULL) {
+        return;
+    }
 
-    fseek (modelList,0,SEEK_END);
-    unsigned long  fLength = ftell(modelList);
-    fseek (modelList,0,SEEK_END);
-    fLength = ftell(modelList);
-    if (fLength) {
-        rewind (modelList);
-        _String theData (fLength);
-        fread (theData.getStr(),sizeof (char), fLength, modelList);
+    _String theData (modelList);
+    fclose (modelList);
+    
+    if (theData.sLength) {
         _ElementaryCommand::ExtractConditions(theData,0,availablePostProcessors);
         for (long i = 0; i<availablePostProcessors.countitems(); i++) {
             _String* thisString = (_String*)availablePostProcessors(i);
@@ -191,7 +189,7 @@ void    ReadInPostFiles(void)
                 fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
-                    fileIndex =baseArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
+                    fileIndex =libArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
                     dummyFile = fopen (fileIndex,"r");
                 }
                 if (dummyFile) {

@@ -28,6 +28,7 @@ function runTest ()
 	GetString (versionString, HYPHY_VERSION, 2);
 	assert ((versionString$"^.+\\ [0-9]+\\.[0-9a-zA-Z]+$")[0]==0, "The intermediate version string must be of the form build type major.minor[beta]. Had " + versionString);
 
+
 	//-----------------------------------------------------------------------------------------------------------------
 	// TIME STAMPS
 	//-----------------------------------------------------------------------------------------------------------------

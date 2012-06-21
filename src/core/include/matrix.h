@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "avllistx.h"
 #include "variablecontainer.h"
+#include "trie.h"
 
 #define     _POLYNOMIAL_TYPE 0
 #define     _NUMERICAL_TYPE  1
@@ -50,6 +51,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define     HY_MATRIX_COLUMN_VECTOR     1
 #define     HY_MATRIX_ROW_VECTOR        2
+
+//_____________________________________________________________________________________________
+
+#define      _HY_MATRIX_RANDOM_DIRICHLET         01L
+#define      _HY_MATRIX_RANDOM_GAUSSIAN          02L
+#define      _HY_MATRIX_RANDOM_WISHART           03L
+#define      _HY_MATRIX_RANDOM_INVERSE_WISHART   04L
+#define      _HY_MATRIX_RANDOM_MULTINOMIAL       05L
+
+extern        _Trie        _HY_MatrixRandomValidPDFs;
+
+//_____________________________________________________________________________________________
 
 class _Formula;
 /*__________________________________________________________________________________________________________________________________________ */
@@ -191,7 +204,7 @@ public:
 
     virtual _PMathObj    MultObj (_PMathObj);   // multiplication operation on matrices
 
-    virtual _PMathObj    MultElements (_PMathObj);  // element wise multiplication operation on matrices
+    virtual _PMathObj    MultElements (_PMathObj, bool elementWiseDivide = false);  // element wise multiplication/division operation on matrices
 
     virtual _PMathObj    Sum          (void);
 
@@ -250,6 +263,9 @@ public:
     _Parameter  AbsValue                        (void);
     virtual     _PMathObj Log                   (void);
     // return the matrix of logs of every matrix element
+    
+    void        SwapRows (const long, const long);
+    long        CompareRows (const long, const long);
 
     _Parameter  operator () (long, long);       // read access to an element in a matrix
     _Parameter& operator [] (long);             // read/write access to an element in a matrix
@@ -484,7 +500,7 @@ private:
     void        Multiply            (_Matrix&, _Matrix&);
     bool        IsNonEmpty          (long);
     // checks to see if the i-th position in the storage is non-empty
-    void        CheckDimensions     (_Matrix&);
+    bool        CheckDimensions     (_Matrix&);
     // compare dims of 2 matrices to see if they can be multiplied
     long        HashBack            (long);
     // hashing function, which finds matrix

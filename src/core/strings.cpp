@@ -2286,7 +2286,7 @@ void _String::ConvertToAnIdent (bool strict)
 
         long l = 0;
         for (long k=1; k<sLength; k++) {
-            char c = sData[k];
+            unsigned char c = sData[k];
             if (_hyValidIDChars.valid_chars[c]) {
                 (*result)<<c;
                 l++;
