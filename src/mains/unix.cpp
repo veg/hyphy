@@ -187,6 +187,7 @@ void    ReadInPostFiles(void)
             }
             if (*(_String*)thisFile(0)!=_String("SEPARATOR")) {
                 fileIndex = *((_String*)pathNames(0)) &"TemplateBatchFiles/" & *(_String*)thisFile(1);
+                //printf ("%s\n", fileIndex.sData);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
                     fileIndex =libArgDir&"TemplateBatchFiles/"& *(_String*)thisFile(1);
@@ -573,9 +574,10 @@ int main (int argc, char* argv[])
                 if (baseArgDir.sData[baseArgDir.sLength-1]!=dirSlash) {
                     baseArgDir = baseArgDir&dirSlash;
                 }
-
                 baseDirectory = baseArgDir;
-            }
+                pathNames.Delete    (0);
+                pathNames&&         &baseDirectory;
+           }
         } else if (thisArg.beginswith ("LIBPATH=")) {
             libArgDir = thisArg.Cut(8,-1);
             if (libArgDir.sLength) {
@@ -583,7 +585,9 @@ int main (int argc, char* argv[])
                     libArgDir = libArgDir & dirSlash;
                 }
                 libDirectory = libArgDir;
-            }
+                pathNames.Delete    (0);
+                pathNames&&         &libDirectory;
+           }
         } else if (thisArg.beginswith ("USEPATH=")) {
             baseDir             = thisArg.Cut(8,-1);
             errorFileName       = baseDir & errorFileName;
