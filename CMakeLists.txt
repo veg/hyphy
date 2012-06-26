@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.1)
 project(HyPhy)
 
-
 set(CMAKE_CONFIGURATION_TYPES Release)
 
 
@@ -119,6 +118,7 @@ file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
+file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
@@ -128,7 +128,7 @@ set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -143,6 +143,13 @@ set_property(
     SOURCE ${SRC_SQLITE3}
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 )
+
+
+set_property(
+    SOURCE ${SRC_PUGIXML}
+    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
+)
+
 
 set_property(
     SOURCE src/core/calcnode2.cpp
@@ -164,6 +171,8 @@ include_directories(
     src/core/include
     src/lib/Link src/new/include
     contrib/SQLite-3.7.11 # SQLite
+    contrib/tinyxml
+    contrib/pugixml/src/
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
@@ -306,8 +315,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS}"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS}"
 )
 
 install(
@@ -389,6 +398,65 @@ if((${GTK2_FOUND}))
     )
 endif((${GTK2_FOUND}))
 
+#-------------------------------------------------------------------------------
+# hyphy qt target
+#-------------------------------------------------------------------------------
+
+
+find_package(QT4)
+
+if((${QT4_FOUND}))
+
+
+    SET(hyphy_sources src/gui/qt/main.cpp src/gui/qt/hyphy_main.cpp src/gui/qt/helpers.cpp src/gui/qt/qterminal.cpp)
+    SET(hyphy_headers src/gui/qt/include/hyphy_main.h src/gui/qt/include/qterminal.h)
+    SET(hyphy_ui src/gui/qt/ui/hyphy_main.ui)
+
+    QT4_WRAP_CPP(hyphy_headers_moc ${hyphy_headers})
+    QT4_WRAP_UI(hyphy_ui_headers ${hyphy_ui})
+
+    include(${QT_USE_FILE})
+    add_definitions(${QT_DEFINITIONS})
+    add_definitions(-D__HYPHY_64__)
+
+    add_executable(HYPHYQT ${hyphy_sources}
+                           ${hyphy_headers} 
+                           ${hyphy_headers_moc} 
+                           ${hyphy_ui_headers} 
+                           ${SRC_CORE}                  
+                           ${SRC_NEW}                  
+                           ${SRC_SQLITE3} 
+                  )
+
+    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${DEFAULT_LIBRARIES})
+
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} src/gui/qt/include)
+
+    #Extra stuff to look over
+    add_custom_target(QT DEPENDS HYPHYQT)
+
+	install(DIRECTORY src/gui/res/QTResources/ DESTINATION lib/hyphy/QTResources)
+
+	install(
+        TARGETS HYPHYQT
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
+
+    set_property(
+        TARGET HYPHYQT
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_QT__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    )
+
+    set_target_properties(
+        HYPHYQT
+        PROPERTIES
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS}"
+    )
+
+endif((${QT4_FOUND}))
+
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
@@ -450,14 +518,14 @@ if(APPLE)
     add_executable(HyPhy
         MACOSX_BUNDLE
 		EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
 
     add_executable(iHyPhyDebug
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_TINYXML} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUIDEBUG}
     )
 
@@ -595,6 +663,12 @@ if(APPLE)
         HyPhy MAC
         PROPERTIES
         OSX_ARCHITECTURES i386
+    )
+
+    set_target_properties(
+        HYPHYQT
+        PROPERTIES
+        OSX_ARCHITECTURES x86_64
     )
 
     set_target_properties(
