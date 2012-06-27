@@ -1430,16 +1430,12 @@ void     _ExecutionList::ResetNameSpace (void)
     nameSpacePrefix = nil;
 }
 
-//____________________________________________________________________________________
-
 void     _ExecutionList::SetNameSpace (_String nID)
 {
     ResetNameSpace ();
     nameSpacePrefix = new _VariableContainer(nID);
     checkPointer(nameSpacePrefix);
 }
-
-//____________________________________________________________________________________
 
 _String*     _ExecutionList::GetNameSpace ()
 {
@@ -1449,8 +1445,6 @@ _String*     _ExecutionList::GetNameSpace ()
     return nil;
 }
 
-//____________________________________________________________________________________
-
 _String  _ExecutionList::AddNameSpaceToID (_String& theID)
 {
     if (nameSpacePrefix) {
@@ -1458,8 +1452,6 @@ _String  _ExecutionList::AddNameSpaceToID (_String& theID)
     }
     return theID;
 }
-
-//____________________________________________________________________________________
 
 _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 {
@@ -1471,8 +1463,6 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     return theID;
 }
 
-
-//____________________________________________________________________________________
 
 _String  blFor                  ("for("),               // moved
          blWhile                    ("while("),         // moved
@@ -1535,8 +1525,6 @@ _String  blFor                  ("for("),               // moved
          blAssert                   ("assert(");
 
 
-
-//____________________________________________________________________________________
 
 bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed)
 {
@@ -1708,7 +1696,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         } else if (currentLine.startswith (blfprintf)) { // fpintf call
             _ElementaryCommand::ConstructFprintf (currentLine, *this);
         } else if (currentLine.startswith (blGetString)) { // get string from an object
-            _ElementaryCommand::ConstructGetString (currentLine, *this);
+            _ElementaryCommand::ConstructGetString(currentLine, *this);
         } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
             _ElementaryCommand::ConstructFscanf (currentLine, *this);
         } else if (currentLine.startswith (blExport)) { // polymatrix export matrix

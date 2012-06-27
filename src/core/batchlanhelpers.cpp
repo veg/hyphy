@@ -43,21 +43,20 @@
 
 _List   templateModelList;
 
-//____________________________________________________________________________________
-
-_String    _HYStandardDirectory (const unsigned long which_one) {
+_String    _HYStandardDirectory (const unsigned long which_one) 
+{
     _String dirSpacer (GetPlatformDirectoryChar());
+
     switch (which_one) {
+
         case HY_HBL_DIRECTORY_TEMPLATE_MODELS:
             return libDirectory & "TemplateBatchFiles" & dirSpacer & "TemplateModels" & dirSpacer;
     }
+
     return empty;
 }
 
-
-//____________________________________________________________________________________
-
-void    ReadModelList(void)
+void    ReadModelList(void) 
 {
     if (templateModelList.lLength > 0) return; 
     
@@ -88,8 +87,6 @@ void    ReadModelList(void)
         }
     }
 }
-
-//_________________________________________________________________________
 
 bool    ExpressionCalculator (void)
 {
@@ -137,8 +134,6 @@ bool    ExpressionCalculator (void)
     return true;
 }
 
-//_________________________________________________________________________
-
 bool    PushFilePath (_String& pName, bool trim)
 {
     char c = GetPlatformDirectoryChar();
@@ -159,13 +154,11 @@ bool    PushFilePath (_String& pName, bool trim)
     return false;
 }
 
-//_________________________________________________________________________
 void   PopFilePath (void)
 {
     pathNames.Delete (pathNames.lLength-1);
 }
 
-//_________________________________________________________________________
 void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 {
     _ExecutionList ex;
