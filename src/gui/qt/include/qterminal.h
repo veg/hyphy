@@ -14,7 +14,7 @@ public:
 
 private slots:
     void readBufferOut();
-    void readStandardErr();
+    //void readStandardErr();
 
 private:
     int inputCharCount;

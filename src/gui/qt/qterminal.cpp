@@ -181,9 +181,11 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 }
 
 
-void QTerminal::parseBatchCommand() {
-    //this->insertPlainText(shell->readAllStandardOutput());
-    this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
-}
+/*
+ *void QTerminal::parseBatchCommand() {
+ *    //this->insertPlainText(shell->readAllStandardOutput());
+ *    this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
+ *}
+ */
 
 
