@@ -451,8 +451,8 @@ if((${QT4_FOUND}))
     set_target_properties(
         HYPHYQT
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
     )
 
 endif((${QT4_FOUND}))
