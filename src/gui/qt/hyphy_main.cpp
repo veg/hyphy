@@ -52,20 +52,17 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
 
 void HyphyMain::initialText() {
     textEdit->insertPlainText((QString)hyphyCiteString.getStr());
-    //Prompt
-    textEdit->insertPlainText("> ");
+
+    textEdit->prompt();
 }
 
 
 bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
 {
-    //Ok, this works
-    qDebug() << "Event type:" << event->type();
     
-    if (event->type() == QEvent::User) 
+    if (event->type() == BufferToStringType) 
     {
         QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
-        textEdit->insertPlainText("\n");
         textEdit->insertPlainText(e->buffer());
         return true;
     }

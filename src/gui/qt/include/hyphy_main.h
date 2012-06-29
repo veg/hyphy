@@ -42,17 +42,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ui_hyphy_main.h"
 #include "qterminal.h"
 
+
 class HyphyMain : public QMainWindow, private Ui::MainWindow
 {
 
     Q_OBJECT
 
 public:
-    //QTerminal* termWidget;
     HyphyMain(QMainWindow *parent = 0);
     void initialText();
-    //bool HyphyMain::event(QEvent *event);
-    //void event();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);

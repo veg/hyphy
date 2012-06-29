@@ -64,11 +64,12 @@ void StringToConsole(_String& str)
 
 void BufferToConsole(const char* buffer)
 {
-    foreach (QWidget *widget, QApplication::allWidgets()) {
-        qDebug() << "Widget name:" << widget->size();
+    
+    //Get MainWindow object specifically
 
+    foreach (QWidget *widget, QApplication::allWidgets()) {
         //Write to main console
-        QBufferToConsoleEvent event(QEvent::User,(QString)buffer);
+        QBufferToConsoleEvent event((QString)buffer);
         QApplication::sendEvent(widget, &event);
     }
 
@@ -78,7 +79,7 @@ void BufferToConsole(const char* buffer)
 
 _String* StringFromConsole (bool echo)
 {
-
+    //Do nothing for right now
 }
 
 void SetStatusLine(_String arg)

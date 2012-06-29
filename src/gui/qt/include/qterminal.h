@@ -11,6 +11,7 @@ public:
     ~QTerminal();
     void keyPressEvent(QKeyEvent * event);
     void changeDir(const QString & dir);
+    void prompt();
 
 private slots:
     void readBufferOut();

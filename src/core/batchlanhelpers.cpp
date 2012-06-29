@@ -167,11 +167,11 @@ bool    ExpressionCalculator (void)
             } else {
                 _String * objValue = (_String*)formRes->toStr();
                 StringToConsole (*objValue);
-                BufferToConsole ("\n");
+                //BufferToConsole ("\n");
                 DeleteObject    (objValue);
             }
         } else {
-            BufferToConsole ("NO RETURN VALUE\n");
+            BufferToConsole ("NO RETURN VALUE");
         }
     }
     terminateExecution = false;

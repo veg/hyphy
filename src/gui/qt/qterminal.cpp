@@ -1,4 +1,5 @@
 //TODO: Add better command line editing
+
 #include <QtGui>
 #include "qterminal.h"
 #include "hy_strings.h"
@@ -11,6 +12,7 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextEdit(parent) {
     inputCharCount = 0;
     histLocation = -1;
     tempCmd = "";
+    setTextColor(Qt::darkCyan);
 }
 
 QTerminal::~QTerminal() {
@@ -18,7 +20,6 @@ QTerminal::~QTerminal() {
 }
 
 void QTerminal::readBufferOut() {
-    this->insertPlainText("Hi");
     this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
 }
 
@@ -154,11 +155,9 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     // now pass a char* copy of the input to the shell process
     if (key == Qt::Key_Return || key == Qt::Key_Enter) {
         this->moveCursor(QTextCursor::End);
-        //Add Execution
-        
-        //this->insertPlainText("\r\n");
-        //this->insertPlainText("You said: " + cmdStr);
-        //BufferToConsole("\nYou entered a command");
+        this->insertPlainText("\n");
+
+        //Execute command string
         ExpressionCalculator((_String)(char *)cmdStr.toAscii().data());
 
         QTextEdit::keyPressEvent(event);
@@ -166,7 +165,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
-        this->insertPlainText("> ");
+        this->prompt();
     } 
 
     else {
@@ -182,12 +181,6 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 
 }
 
-
-/*
- *void QTerminal::parseBatchCommand() {
- *    //this->insertPlainText(shell->readAllStandardOutput());
- *    this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
- *}
- *
- */
-
+void QTerminal::prompt() {
+    this->insertHtml("<font color=\"red\">></font> ");
+}
