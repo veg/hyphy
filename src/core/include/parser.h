@@ -114,8 +114,8 @@ void        FindUnusedObjectName
 void        FindUnusedObjectName
 (_String&, _String&, _AVLListX&, bool = false);
 
-bool        ExpressionCalculator
-(void);
+bool        ExpressionCalculator(void);
+bool        ExpressionCalculator(_String data);
 
 _Variable*  CheckReceptacle
 (_String*,_String, bool = true, bool = false);

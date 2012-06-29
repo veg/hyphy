@@ -88,6 +88,50 @@ void    ReadModelList(void)
     }
 }
 
+bool ExpressionCalculator (_String data)
+{
+#ifndef __UNIX__
+    if (terminateExecution) {
+        return false;
+    }
+    BufferToConsole (">");
+    StringToConsole (data);
+    BufferToConsole ("\n");
+#endif
+
+    if (data.sLength == 4) {
+        _String checkForExit (data);
+        checkForExit.LoCase();
+        if (checkForExit == _String ("exit")) {
+            return false;
+        }
+    }
+
+    _Formula  lhs,
+              rhs;
+
+    long       refV,
+               retCode = Parse(&lhs, data, refV, nil,nil);
+
+    if (!terminateExecution) {
+        if (retCode == HY_FORMULA_EXPRESSION) {
+            _PMathObj formRes = lhs.Compute();
+            if (!formRes) {
+                BufferToConsole ("NULL\n");
+            } else {
+                _String * objValue = (_String*)formRes->toStr();
+                StringToConsole (*objValue);
+                BufferToConsole ("\n");
+                DeleteObject    (objValue);
+            }
+        } else {
+            BufferToConsole ("NO RETURN VALUE\n");
+        }
+    }
+    terminateExecution = false;
+    return true;
+}
+
 bool    ExpressionCalculator (void)
 {
     _String data (StringFromConsole(false));

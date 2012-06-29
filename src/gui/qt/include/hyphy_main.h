@@ -51,8 +51,10 @@ public:
     //QTerminal* termWidget;
     HyphyMain(QMainWindow *parent = 0);
     void initialText();
+    //bool HyphyMain::event(QEvent *event);
+    //void event();
 
-private slots:
-    void on_textEdit_valueChanged(int value);
+protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
 
 };

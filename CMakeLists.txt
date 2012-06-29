@@ -408,8 +408,8 @@ find_package(QT4)
 if((${QT4_FOUND}))
 
 
-    SET(hyphy_sources src/gui/qt/main.cpp src/gui/qt/hyphy_main.cpp src/gui/qt/helpers.cpp src/gui/qt/qterminal.cpp)
-    SET(hyphy_headers src/gui/qt/include/hyphy_main.h src/gui/qt/include/qterminal.h)
+    SET(hyphy_sources src/gui/qt/main.cpp src/gui/qt/hyphy_main.cpp src/gui/qt/helpers.cpp src/gui/qt/qterminal.cpp src/gui/qt/hyphyevents.cpp)
+    SET(hyphy_headers src/gui/qt/include/hyphy_main.h src/gui/qt/include/qterminal.h src/gui/qt/include/hyphyevents.h)
     SET(hyphy_ui src/gui/qt/ui/hyphy_main.ui)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${hyphy_headers})
@@ -419,14 +419,14 @@ if((${QT4_FOUND}))
     add_definitions(${QT_DEFINITIONS})
     add_definitions(-D__HYPHY_64__)
 
-    add_executable(HYPHYQT ${hyphy_sources}
+    add_executable(HYPHYQT ${SRC_CORE}                  
+                           ${SRC_NEW}                  
+                           ${SRC_SQLITE3} 
+                           ${hyphy_sources}
                            ${hyphy_headers} 
                            ${hyphy_headers_moc} 
                            ${hyphy_ui_headers} 
-                           ${SRC_CORE}                  
-                           ${SRC_NEW}                  
-                           ${SRC_SQLITE3} 
-                  )
+                           )
 
     target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${DEFAULT_LIBRARIES})
 

@@ -38,13 +38,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <QtGui>
+#include <QDebug>
 #include "hyphy_main.h"
 #include "hy_strings.h"
 #include "qterminal.h"
+#include "hyphyevents.h"
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     this->initialText();
+    textEdit->installEventFilter(this);
 }
 
 void HyphyMain::initialText() {
@@ -53,6 +56,23 @@ void HyphyMain::initialText() {
     textEdit->insertPlainText("> ");
 }
 
-void HyphyMain::on_textEdit_valueChanged(int value) {
+
+bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
+{
+    //Ok, this works
+    qDebug() << "Event type:" << event->type();
+    
+    if (event->type() == QEvent::User) 
+    {
+        QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
+        textEdit->insertPlainText("\n");
+        textEdit->insertPlainText(e->buffer());
+        return true;
+    }
+
+    else 
+    {
+        return false;
+    }
 
 }

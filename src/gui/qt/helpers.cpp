@@ -38,8 +38,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <QApplication>
+#include <QWidget>
 #include <QEvent>
+#include <QMouseEvent>
+#include <QDebug>
 #include "hy_strings.h"
+#include "hyphyevents.h"
 
 extern bool needExtraNL = true; 
 extern bool dropIntoDebugMode=false; 
@@ -53,15 +57,23 @@ void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
 bool Get_a_URL (_String& urls, _String* fileName);
 void NLToConsole();
 
-void StringToConsole(_String&)
+void StringToConsole(_String& str)
 {
-
+   BufferToConsole(str); 
 }
 
 void BufferToConsole(const char* buffer)
 {
-    //Write to main console
-    //We'll think about this later
+    foreach (QWidget *widget, QApplication::allWidgets()) {
+        qDebug() << "Widget name:" << widget->size();
+
+        //Write to main console
+        QBufferToConsoleEvent event(QEvent::User,(QString)buffer);
+        QApplication::sendEvent(widget, &event);
+    }
+
+    return;
+
 }
 
 _String* StringFromConsole (bool echo)

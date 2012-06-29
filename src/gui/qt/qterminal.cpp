@@ -1,8 +1,8 @@
 //TODO: Add better command line editing
-
 #include <QtGui>
 #include "qterminal.h"
-#include "batchlan.h"
+#include "hy_strings.h"
+#include "parser.h"
 
 QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextEdit(parent) {
     setWindowFlags(f);
@@ -158,6 +158,8 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         
         //this->insertPlainText("\r\n");
         //this->insertPlainText("You said: " + cmdStr);
+        //BufferToConsole("\nYou entered a command");
+        ExpressionCalculator((_String)(char *)cmdStr.toAscii().data());
 
         QTextEdit::keyPressEvent(event);
         cmdHistory.push_back(cmdStr);
@@ -186,6 +188,6 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
  *    //this->insertPlainText(shell->readAllStandardOutput());
  *    this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
  *}
+ *
  */
-
 

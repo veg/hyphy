@@ -3180,8 +3180,6 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
     }
 }
 
-//____________________________________________________________________________________
-
 void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -3352,8 +3350,6 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         pathNames.Delete (pathNames.lLength-1);
     }
 }
-
-//____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
 {
@@ -3766,8 +3762,6 @@ void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
     }
 #endif
 }
-
-//____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
 {
@@ -4715,9 +4709,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
     }
 }
 
-
-
-//____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 {
