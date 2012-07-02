@@ -2,14 +2,13 @@ ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
 runATest ();
 
 
-function getTestName ()
-{
+function getTestName () {
 	return "GetURL";
 }		
 
 function getTestedFunctions ()
 {
-	return {{"_ElementaryCommand::HandleGetURL"}};
+	return {{"_ElementaryCommand::HandleGetURL", "CheckReceptacleCommandID"}};
 }	
 
 
@@ -25,6 +24,8 @@ function runTest () {
     
     assert (runCommandWithSoftErrors ("GetURL (url_data/j, \"http://www.google.com\")", " is not a valid variable identifier"), "Failed error checking for an invalid receptacle");
     assert (runCommandWithSoftErrors ("GetURL (url_data, \"http://www.thereisnowaythisurlexists.org\")", "Could not fetch "), "Failed error checking for a URL fetch error");
+    assert (runCommandWithSoftErrors ("GetURL (PATH_TO_CURRENT_BF + \"tmp\" + DIRECTORY_SEPARATOR + \"GetURL.txt\", \"http://www.thereisnowaythisurlexists.org\", SAVE_TO_FILE)", "Could not fetch "), "Failed error checking for a URL fetch error, writing to file");
+    assert (runCommandWithSoftErrors ("GetURL (url_data, \"http://www.hyphy.org\", FAILED_FLAG)", "Unknown action flag "), "Failed error checking for an invalid action flag");
 
 	testResult = 1;
 		
