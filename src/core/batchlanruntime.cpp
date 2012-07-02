@@ -415,6 +415,13 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         return true;
     }
 
+    if (currentArgument->Equal (&randomSeed)) {
+        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+        init_genrand (globalRandSeed);
+        setParameter (randomSeed, ((long)globalRandSeed));
+        return true;
+    }
+    
     if (currentArgument->Equal (&deferConstrainAssignment)) {
         bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         if (on) {
@@ -422,6 +429,11 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         } else if (deferSetFormula) {
             FinishDeferredSF ();
         }
+        return true;
+    }
+
+    if (currentArgument->Equal (&_hyExecutionErrorMode)) {
+        currentProgram.errorHandlingMode = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         return true;
     }
 
@@ -765,5 +777,47 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     theTree->MolecularClock(theBaseNode,parameters);
     return true;
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    
+    _String url   (ProcessLiteralArgument((_String*)parameters(1),currentProgram.nameSpacePrefix)),
+            *arg1 = (_String*)parameters(0),
+            *act  = parameters.lLength>2?(_String*)parameters(2):nil,
+            errMsg;
+
+    if (act==nil) {
+        _Variable * rec = CheckReceptacleCommandID (&AppendContainerName(*arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_GET_URL, true, false, &currentProgram);
+
+        if (!rec) {
+            return false;
+        }
+
+        if (Get_a_URL(url)) {
+            rec->SetValue(new _FString (url,false),false);
+        } else {
+            errMsg = _String ("Could not fetch '") & url & "'";
+        }
+    } else {
+        if (act->Equal(&getURLFileFlag)) {
+            _String fileName (ProcessLiteralArgument(arg1,currentProgram.nameSpacePrefix));
+            fileName.ProcessFileName (true,false,(Ptr)currentProgram.nameSpacePrefix);
+            if (!Get_a_URL(url, &fileName)) {
+                errMsg = _String ("Could not fetch '") & url & "'";
+            }
+        } else {
+            errMsg = "Unknown action flag";
+        }
+    }
+    if (errMsg.sLength) {
+        currentProgram.ReportAnExecutionError (errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_GET_URL)); 
+        return false;
+    }
+
+    return true;
+}
+
 
 

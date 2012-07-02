@@ -64,6 +64,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //__________________________________________________________________________________
 extern  _List BuiltInFunctions;
+
+class   _ExecutionList; 
+
 //__________________________________________________________________________________
 
 #define  USE_POINTER_VC
@@ -127,7 +130,7 @@ bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
 _Variable*  CheckReceptacleCommandID
-(_String* name, const long id, bool checkValid, bool isGlobal = false);
+(_String* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 
 bool        CheckReceptacleCommandIDAndStore
 (_String* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);

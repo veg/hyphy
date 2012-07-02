@@ -210,6 +210,8 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 covarianceParameterList         ("COVARIANCE_PARAMETER"),
                                 matrixEvalCount                 ("MATRIX_EXPONENTIATION_COUNTS"),
                                 scfgCorpus                      ("SCFG_STRING_CORPUS"),
+                                _hyLastExecutionError           ("LAST_HBL_EXECUTION_ERROR"),
+                                _hyExecutionErrorMode           ("HBL_EXECUTION_ERROR_HANDLING"),
 
                                 bgmData                         ("BGM_DATA_MATRIX"),
                                 bgmScores                       ("BGM_SCORE_CACHE"),
@@ -1035,6 +1037,7 @@ _ExecutionList::_ExecutionList ()
     stdinRedirectAux = nil;
     doProfile      = 0;
     nameSpacePrefix = nil;
+    errorHandlingMode  = HY_BL_ERROR_HANDLING_DEFAULT;
 
 } // doesn't do much
 
@@ -1055,6 +1058,7 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copy
     if (copySource) {
         sourceText.Duplicate (&source);
     }
+    errorHandlingMode  = HY_BL_ERROR_HANDLING_DEFAULT;
     BuildList (source);
 }
 
@@ -1095,6 +1099,7 @@ BaseRef     _ExecutionList::makeDynamic (void)
     Res->cli                = nil;
     Res->profileCounter     = nil;
     Res->doProfile          = doProfile;
+    Res->errorHandlingMode  = errorHandlingMode;
 
     if(result) {
         Res->result = (_PMathObj)result->makeDynamic();
@@ -1113,6 +1118,20 @@ void        _ExecutionList::Duplicate   (BaseRef source)
 
     if (s->result) {
         s->result=(_PMathObj)result->makeDynamic();
+    }
+
+    errorHandlingMode  = s->errorHandlingMode;
+}
+
+
+//____________________________________________________________________________________
+void    _ExecutionList::ReportAnExecutionError (_String errMsg) {
+    switch (errorHandlingMode) {
+        case HY_BL_ERROR_HANDLING_SOFT:
+            setParameter(_hyLastExecutionError, new _FString (errMsg, false), false);
+            break;
+        default: 
+            WarnError (errMsg);
     }
 }
 
@@ -1141,6 +1160,9 @@ _String*    _ExecutionList::FetchFromStdinRedirect (void)
 
 _PMathObj       _ExecutionList::Execute     (void)      // run this execution list
 {
+
+    setParameter(_hyLastExecutionError, new _MathObject, false);
+    
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
     executionStack       << this;
@@ -1631,6 +1653,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_DELETE_OBJECT:
             case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
             case HY_HBL_COMMAND_MOLECULAR_CLOCK:
+            case HY_HBL_COMMAND_GET_URL:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1752,8 +1775,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructGetDataInfo (currentLine, *this);
         } else if (currentLine.startswith (blStateCounter)) { // Get Data Info
             _ElementaryCommand::ConstructStateCounter (currentLine, *this);
-        } else if (currentLine.startswith (blGetURL)) { // Get URL
-            _ElementaryCommand::ConstructGetURL (currentLine, *this);
         } else if (currentLine.startswith (blDoSQL)) { // Do SQL
             _ElementaryCommand::ConstructDoSQL (currentLine, *this);
         } else if (currentLine.startswith (blAlignSequences)) { // Do AlignSequences
@@ -2396,7 +2417,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result& ',' &(*converted) & ')';
         break;
     }
-    case 51: { //GetURL
+    case HY_HBL_COMMAND_GET_URL: { //GetURL
         converted = (_String*)parameters(0)->toStr();
         result = blGetURL&(*converted);
         DeleteObject(converted);
@@ -5329,45 +5350,6 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
 }
 
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase51 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String url   (ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix)),
-            *arg1 = (_String*)parameters(0),
-             *act  = parameters.lLength>2?(_String*)parameters(2):nil,
-              errMsg;
-
-    if (act==nil) {
-        _Variable * rec = CheckReceptacle (&AppendContainerName(*arg1,chain.nameSpacePrefix),blGetURL);
-
-        if (!rec) {
-            return;
-        }
-
-        if (Get_a_URL(url)) {
-            rec->SetValue(new _FString (url,false),false);
-        } else {
-            errMsg = url;
-        }
-    } else {
-        if (act->Equal(&getURLFileFlag)) {
-            _String fileName (ProcessLiteralArgument(arg1,chain.nameSpacePrefix));
-            fileName.ProcessFileName (true,false,(Ptr)chain.nameSpacePrefix);
-            if (!Get_a_URL(url, &fileName)) {
-                errMsg = url;
-            }
-        } else {
-            errMsg = "Unknown action flag";
-        }
-    }
-    if (errMsg.sLength) {
-        errMsg = errMsg & " in call to GetURL.";
-        WarnError (errMsg);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -6019,9 +6001,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase38 (chain, true);
         break;
 
-    case 51:
-        ExecuteCase51 (chain);
-        break;
+    case HY_HBL_COMMAND_GET_URL:
+        return HandleGetURL (chain);
 
     case 52:
         ExecuteCase52 (chain);
@@ -7448,23 +7429,6 @@ bool    _ElementaryCommand::ConstructGetDataInfo (_String&source, _ExecutionList
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructGetURL (_String&source, _ExecutionList&target)
-// syntax: GetURL (receptacle,URL string<,action flag>)
-{
-
-    _List pieces;
-    ExtractConditions (source,blGetURL.sLength,pieces,',');
-    if (pieces.lLength!=2 && pieces.lLength!=3) {
-        WarnError ("Expected: syntax: GetURL (receptacle,URL string<,action flag>))");
-        return false;
-    }
-
-    _ElementaryCommand * gurl = new _ElementaryCommand(51);
-    gurl->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructOpenDataPanel (_String&source, _ExecutionList&target)
 // syntax: OpenDataPanel(dataSetID,"species order","display settings","partition settings")
 {
@@ -7552,6 +7516,8 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
     dsc->addAndClean(target,&pieces,0);
     return true;
 }
+
+
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)

@@ -46,7 +46,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include <stdio.h>
 
-
+#define  HY_BL_ERROR_HANDLING_DEFAULT 0
+#define  HY_BL_ERROR_HANDLING_SOFT    1
 
 //____________________________________________________________________________________
 struct    _CELInternals {
@@ -111,6 +112,11 @@ public:
         currentCommand = MAX(currentCommand,lLength-1);
     }
 
+    void              ReportAnExecutionError (_String  errMsg);
+    /**
+     * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
+     * @param errMsg -- the current command text stream
+     */
 
 
     // data fields
@@ -118,6 +124,7 @@ public:
 
     long                            currentCommand;
     char                            doProfile;
+    int                             errorHandlingMode; // how does this execution list handle errors
 
     _PMathObj                       result;
 
@@ -184,7 +191,6 @@ public:
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
     void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
-    void      ExecuteCase51  (_ExecutionList&); // GetURL
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
@@ -206,6 +212,7 @@ public:
     bool      HandleDeleteObject                    (_ExecutionList&);
     bool      HandleClearConstraints                (_ExecutionList&);
     bool      HandleMolecularClock                  (_ExecutionList&);
+    bool      HandleGetURL                          (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -332,8 +339,6 @@ public:
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
 
-    static  bool      ConstructGetURL       (_String&, _ExecutionList&);
-
     static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
 
     static  bool      ConstructAlignSequences
@@ -361,6 +366,7 @@ public:
     static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
 
 protected:
+
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
     // internal command used
@@ -539,6 +545,8 @@ bgmNodeOrder                    ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
 assertionBehavior               ,
+_hyLastExecutionError           ,
+_hyExecutionErrorMode           ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,

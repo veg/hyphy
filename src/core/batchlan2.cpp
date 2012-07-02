@@ -336,6 +336,20 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MolecularClock(", HY_HBL_COMMAND_MOLECULAR_CLOCK,false),
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
+
+
+
+    lengthOptions.Clear();lengthOptions.Populate (2,2,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_URL, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetURL(", HY_HBL_COMMAND_GET_URL,false),
+                                    -1, 
+                                    "GetURL (<receptacle>,<URL>[, SAVE_TO_FILE])",
+                                        ',',
+                                        true,
+                                        false,
+                                        false,
+                                        &lengthOptions));
+
 // matrix global arrays
 
 
