@@ -739,26 +739,34 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 sss = &(((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->GetCode());
             }
 
+            _String errMsg;
+
             bool check = !inAssignment;
 
             if (check) {
                 if (sss) {
                     if (!sss->Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS))) {
-                        check = false;
+                       errMsg = "Can't assign value to an expression";
+                       check = false;
                     } else {
                         (((_Operation*)((f->theFormula)(f->theFormula.lLength-1)))->TheCode()) = HY_OP_CODE_MCOORD;
                     }
                     /* this will break if another operation is inserted between MAccess and MCoord */
                     //*sss = "MCoord";
-                } else if (!f->IsEmpty() ||
-                           levelData->countitems()!=1 ||
-                           !((_Operation*)(*levelData)(0))->IsAVariable()) {
-                    check = false;
-                }
+                } else if (!f->IsEmpty() || levelData->countitems()!=1) {
+                         check = false;
+                         errMsg = "Can't assign value to a user/predefined function ";
+                      } else if (!((_Operation*)(*levelData)(0))->IsAVariable()) {
+                         check = false;
+                         errMsg = "The left-hand side of an assignment must be a variable (not a constant)";
+                      
+                      }
+            } else {
+                errMsg = "Can't assign within another assignment";
             }
             if (!check) {
                 if (flagErrors) {
-                    WarnError (_String("Can't assign like this:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
+                    WarnError (errMsg & ": '"&s.Cut(0,i)&"?"&s.Cut(i+1,-1) & "'");
                 }
                 return HY_FORMULA_FAILED;
             }
