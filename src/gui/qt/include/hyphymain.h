@@ -37,39 +37,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include <QtGui>
-#include <QDebug>
-#include "hyphy_main.h"
-#include "hy_strings.h"
+#pragma once
+
+#include "ui_hyphymain.h"
 #include "qterminal.h"
-#include "hyphyevents.h"
-
-HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
-    setupUi(this);
-    this->initialText();
-    textEdit->installEventFilter(this);
-}
-
-void HyphyMain::initialText() {
-    textEdit->insertPlainText((QString)hyphyCiteString.getStr());
-
-    textEdit->prompt();
-}
 
 
-bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
+class HyphyMain : public QMainWindow, private Ui::MainWindow
 {
-    
-    if (event->type() == BufferToStringType) 
-    {
-        QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
-        textEdit->insertPlainText(e->buffer());
-        return true;
-    }
 
-    else 
-    {
-        return false;
-    }
+    Q_OBJECT
 
-}
+public:
+    HyphyMain(QMainWindow *parent = 0);
+    void initialText();
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
+
+};
