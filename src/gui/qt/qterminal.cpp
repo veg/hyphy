@@ -12,7 +12,7 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextEdit(parent) {
     inputCharCount = 0;
     histLocation = -1;
     tempCmd = "";
-    setTextColor(Qt::darkCyan);
+    //setTextColor(Qt::darkCyan);
 }
 
 QTerminal::~QTerminal() {
@@ -182,5 +182,5 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 }
 
 void QTerminal::prompt() {
-    this->insertHtml("<font color=\"red\">></font> ");
+    this->insertHtml("<font color=\"#A60000\">></font> ");
 }
