@@ -57,6 +57,7 @@ void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
 bool Get_a_URL (_String& urls, _String* fileName);
 void NLToConsole();
 
+
 void StringToConsole(_String& str)
 {
    BufferToConsole(str); 
@@ -74,7 +75,6 @@ void BufferToConsole(const char* buffer)
     }
 
     return;
-
 }
 
 _String* StringFromConsole (bool echo)
