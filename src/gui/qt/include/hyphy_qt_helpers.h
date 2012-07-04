@@ -39,33 +39,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include <QtGui>
 #include "ui_hyphy_main.h"
-#include "qterminal.h"
+#include <QtGui>
+#include "defines.h"
+#include "batchlan.h"
+#include "hyphy_main.h"
 
-class HyphyMain : public QMainWindow, private Ui::MainWindow
-{
+_String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite);
 
-    Q_OBJECT
-
-public:
-    HyphyMain(QMainWindow *parent = NULL);
-    void initialText();
-
-protected:
-    bool eventFilter(QObject *obj, QEvent *ev);
-    
-    private slots:
-        void hy_open();
-        void hy_save();
-        void quit();
-
-    private:
-        QAction *_hyConsoleOpenAction;
-        QAction *_hyConsoleSaveAction;
-        QAction *_hyConsoleExitAction;
-        
-        QMenu   *_hyConsoleMenu;
-};
-
-extern HyphyMain* _hyPrimaryConsoleWindow;
+/**
+ * Display a platform appropriate file selection dialog
+ * @param caption: dialog caption string
+ * @param defaultFileName (for write dialogs): the default file name to display
+ * @param isWrite: whether or not to display a read/write dialog
+ * @return full path to the selected file name; empty if canceled.
+ */

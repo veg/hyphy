@@ -38,22 +38,52 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <QtGui>
-#include <QDebug>
+//#include <QDebug>
 #include "hyphy_main.h"
 #include "hy_strings.h"
 #include "qterminal.h"
 #include "hyphyevents.h"
+#include "hyphy_qt_helpers.h"
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     this->initialText();
     textEdit->installEventFilter(this);
+    
+    _hyConsoleOpenAction = new QAction(tr("&Open Batch File"), this);
+    _hyConsoleOpenAction->setShortcuts(QKeySequence::Open);
+    _hyConsoleOpenAction->setStatusTip(tr("Open a HyPhy Batch Language File"));
+    _hyConsoleSaveAction = new QAction(tr("&Save Console"), this);
+    _hyConsoleSaveAction->setShortcuts(QKeySequence::Save);
+    _hyConsoleSaveAction->setStatusTip(tr("Save HyPhy console content"));
+    _hyConsoleExitAction = new QAction(tr("&Quit"), this);
+
+    connect(_hyConsoleOpenAction, SIGNAL(triggered()), this, SLOT(hy_open()));
+    connect(_hyConsoleSaveAction, SIGNAL(triggered()), this, SLOT(hy_save()));
+    connect(_hyConsoleExitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+
+    _hyConsoleMenu = menuBar()->addMenu(tr("&File"));
+    _hyConsoleMenu->addAction(_hyConsoleOpenAction);
+    _hyConsoleMenu->addAction(_hyConsoleSaveAction);
+    _hyConsoleMenu->addSeparator();
+    _hyConsoleMenu->addAction(_hyConsoleExitAction);
 }
 
 void HyphyMain::initialText() {
     textEdit->insertPlainText((QString)hyphyCiteString.getStr());
 
     textEdit->prompt();
+}
+
+void HyphyMain::hy_open() {
+    textEdit->insertPlainText((QString)_hyQTFileDialog("Select an HBL file to run",empty,false));
+}
+
+void HyphyMain::hy_save() {
+    textEdit->insertPlainText((QString)_hyQTFileDialog ("Save console contents to", "HyPhy Console.txt", true));
+}
+
+void HyphyMain::quit() {
 }
 
 

@@ -37,35 +37,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#pragma once
+#include "hyphy_main.h"
+#include "hy_strings.h"
 
-#include <QtGui>
-#include "ui_hyphy_main.h"
-#include "qterminal.h"
-
-class HyphyMain : public QMainWindow, private Ui::MainWindow
-{
-
-    Q_OBJECT
-
-public:
-    HyphyMain(QMainWindow *parent = NULL);
-    void initialText();
-
-protected:
-    bool eventFilter(QObject *obj, QEvent *ev);
-    
-    private slots:
-        void hy_open();
-        void hy_save();
-        void quit();
-
-    private:
-        QAction *_hyConsoleOpenAction;
-        QAction *_hyConsoleSaveAction;
-        QAction *_hyConsoleExitAction;
-        
-        QMenu   *_hyConsoleMenu;
-};
-
-extern HyphyMain* _hyPrimaryConsoleWindow;
+_String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite){
+    QString fileName;
+    if (isWrite) {
+        fileName = QFileDialog::getSaveFileName(NULL, caption.getStr(), "",
+                                                "All Files (*.*);;Text Files (*.txt)");        
+    } else {
+        fileName = QFileDialog::getOpenFileName(NULL, caption.getStr(), defaultFileName.getStr(),
+                                                        "All Files (*.*);;Text Files (*.txt)");
+    }
+     
+    return _String (fileName.toAscii().data()) ;
+}

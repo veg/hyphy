@@ -40,6 +40,10 @@
 #include      "batchlan.h"
 #include      "defines.h"
 
+#ifdef __HYPHY_QT__
+#include "hyphy_qt_helpers.h"
+#endif
+
 
 _List   templateModelList;
 
@@ -55,6 +59,9 @@ _String    _HYStandardDirectory (const unsigned long which_one)
 
     return empty;
 }
+
+//____________________________________________________________________________________
+
 
 void    ReadModelList(void) 
 {
@@ -87,6 +94,9 @@ void    ReadModelList(void)
         }
     }
 }
+
+//____________________________________________________________________________________
+
 
 bool ExpressionCalculator (_String data)
 {
@@ -131,6 +141,9 @@ bool ExpressionCalculator (_String data)
     terminateExecution = false;
     return true;
 }
+
+//____________________________________________________________________________________
+
 
 bool    ExpressionCalculator (void)
 {
@@ -178,6 +191,9 @@ bool    ExpressionCalculator (void)
     return true;
 }
 
+//____________________________________________________________________________________
+
+
 bool    PushFilePath (_String& pName, bool trim)
 {
     char c = GetPlatformDirectoryChar();
@@ -198,10 +214,16 @@ bool    PushFilePath (_String& pName, bool trim)
     return false;
 }
 
+//____________________________________________________________________________________
+
+
 void   PopFilePath (void)
 {
     pathNames.Delete (pathNames.lLength-1);
 }
+
+//____________________________________________________________________________________
+
 
 void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 {
@@ -214,3 +236,94 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
     ex.Execute      ();
     terminateExecution = false;
 }
+
+//____________________________________________________________________________________
+
+_String ReturnDialogInput(bool dispPath)
+{
+    if (!dispPath) {
+        NLToConsole ();
+        StringToConsole (dialogPrompt);
+        BufferToConsole (":");
+    } else {
+        NLToConsole ();
+        if (pathNames.lLength) {
+            StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
+        } else {
+            StringToConsole (baseDirectory);
+        }
+        
+        StringToConsole (dialogPrompt);
+        BufferToConsole (":");
+    }
+    return StringFromConsole();
+}
+
+
+//____________________________________________________________________________________
+
+_String ReturnFileDialogInput(void)
+{
+    if (currentExecutionList && currentExecutionList->stdinRedirect) {
+        _String outS (currentExecutionList->FetchFromStdinRedirect());
+        if (outS.sLength) {
+            return outS;
+        }
+    }
+    
+    _String resolvedFilePath;
+    
+#ifdef __HEADLESS__
+    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
+    return empty;
+#else
+#ifdef __HYPHY_QT__  
+    resolvedFilePath = _hyQTFileDialog (dialogPrompt,empty, false);
+#endif
+    
+#if defined __UNIX__ && ! defined __HYPHY_QT__
+    resolvedFilePath = ReturnDialogInput(true);
+#endif
+#endif
+    
+    if (resolvedFilePath.sLength == 0) {
+        terminateExecution = true;
+    }
+    
+    return resolvedFilePath;
+}
+
+//____________________________________________________________________________________
+
+_String WriteFileDialogInput(void)
+{
+    if (currentExecutionList && currentExecutionList->stdinRedirect) {
+        _String outS (currentExecutionList->FetchFromStdinRedirect());
+        if (outS.sLength) {
+            return outS;
+        }
+    }
+    
+    defFileNameValue = ProcessLiteralArgument (&defFileString,nil);
+    _String resolvedFilePath;
+    
+#ifdef __HEADLESS__
+    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
+    return empty;
+#else
+    #ifdef __HYPHY_QT__  
+        resolvedFilePath = _hyQTFileDialog (dialogPrompt,defFileNameValue, true);
+    #endif
+            
+    #if defined __UNIX__ && ! defined __HYPHY_QT__
+        resolvedFilePath = ReturnDialogInput(true);
+    #endif
+#endif
+    
+    if (resolvedFilePath.sLength == 0) {
+        terminateExecution = true;
+    }
+    defFileNameValue = empty;
+    return resolvedFilePath;
+}
+
