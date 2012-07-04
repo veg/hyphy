@@ -407,10 +407,9 @@ find_package(QT4)
 
 if((${QT4_FOUND}))
 
-
-    SET(hyphy_sources src/gui/qt/main.cpp src/gui/qt/hyphymain.cpp src/gui/qt/helpers.cpp src/gui/qt/qterminal.cpp src/gui/qt/hyphyevents.cpp)
-    SET(hyphy_headers src/gui/qt/include/hyphymain.h src/gui/qt/include/qterminal.h src/gui/qt/include/hyphyevents.h)
-    SET(hyphy_ui src/gui/qt/ui/hyphymain.ui)
+    file(GLOB hyphy_sources src/gui/qt/*.cpp)
+    file(GLOB hyphy_headers src/gui/qt/include/*.h)
+    file(GLOB hyphy_ui src/gui/qt/ui/*.ui)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${hyphy_headers})
     QT4_WRAP_UI(hyphy_ui_headers ${hyphy_ui})

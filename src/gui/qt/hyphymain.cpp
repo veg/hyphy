@@ -43,7 +43,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //For OSX number of cpus
 #include <sys/sysctl.h>
+
 #include "hy_strings.h"
+#include "HYUtils.h"
+
 #include "qterminal.h"
 #include "hyphyevents.h"
 
@@ -60,8 +63,9 @@ void HyphyMain::initialText() {
     textEdit->setLineWrapColumnOrWidth(80);
 
     //HyPhy version
-
-    //Number of cpus
+    _String version = GetVersionString();
+    //textEdit->insertPlainText(version);
+    //textEdit->insertPlainText("/n");
 
     //SW20120702:MPProcessors is deprecated as of OSX10.7, using sysctl
     //hw.physicalcpu
@@ -76,8 +80,6 @@ void HyphyMain::initialText() {
     } else {
         textEdit->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
     }
-
-    //Model Templates
 
     //The HyPhy Citation request
     const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite:<br />S.L. Kosakovsky Pond, S. D. W. Frost"
