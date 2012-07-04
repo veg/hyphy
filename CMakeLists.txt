@@ -178,6 +178,7 @@ include_directories(
     src/gui/include/WindowClasses
     contrib/gtest-1.6.0/include
     tests/gtests
+    /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
 
 
@@ -407,12 +408,11 @@ find_package(QT4)
 
 if((${QT4_FOUND}))
 
-
-    SET(hyphy_sources src/gui/qt/main.cpp src/gui/qt/hyphy_main.cpp src/gui/qt/helpers.cpp src/gui/qt/qterminal.cpp src/gui/qt/hyphyevents.cpp)
-    SET(hyphy_headers src/gui/qt/include/hyphy_main.h src/gui/qt/include/qterminal.h src/gui/qt/include/hyphyevents.h)
+    file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp ) 
+    file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h) 
     SET(hyphy_ui src/gui/qt/ui/hyphy_main.ui)
 
-    QT4_WRAP_CPP(hyphy_headers_moc ${hyphy_headers})
+    QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
     QT4_WRAP_UI(hyphy_ui_headers ${hyphy_ui})
 
     include(${QT_USE_FILE})
@@ -422,8 +422,8 @@ if((${QT4_FOUND}))
     add_executable(HYPHYQT ${SRC_CORE}                  
                            ${SRC_NEW}                  
                            ${SRC_SQLITE3} 
-                           ${hyphy_sources}
-                           ${hyphy_headers} 
+                           ${QT_HYPHY_SOURCES}
+                           ${QT_HYPHY_HEADERS} 
                            ${hyphy_headers_moc} 
                            ${hyphy_ui_headers} 
                            )
@@ -445,14 +445,16 @@ if((${QT4_FOUND}))
 
     set_property(
         TARGET HYPHYQT
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_QT__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_QT__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
     )
 
     set_target_properties(
         HYPHYQT
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
+        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+        #LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g "
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g "
     )
 
 endif((${QT4_FOUND}))
