@@ -539,6 +539,7 @@ bgmNodeOrder                    ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
 assertionBehavior               ,
+dialogPrompt                    ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,

@@ -39,9 +39,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include <QtGui>
 #include "ui_hyphymain.h"
 #include "qterminal.h"
-
 
 class HyphyMain : public QMainWindow, private Ui::MainWindow
 {
@@ -49,10 +49,76 @@ class HyphyMain : public QMainWindow, private Ui::MainWindow
     Q_OBJECT
 
 public:
-    HyphyMain(QMainWindow *parent = 0);
+    HyphyMain(QMainWindow *parent = NULL);
     void initialText();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);
+    
+    private slots:
+        //File Menu
+        void hy_open();
+        void hy_save();
+        void quit();
 
+        //Edit Menu
+        void hy_undo();
+        void hy_redo();
+        void hy_cut();
+        void hy_copy();
+        void hy_paste();
+        void hy_find();
+        void hy_selectall();
+        void hy_clearwindow();
+
+        //Analysis Menu
+        void hy_cancelexecution();
+        void hy_suspendexecution();
+        void hy_viewlog();
+        void hy_standardanalysis();
+        void hy_results();
+        void hy_rerunlastanalysis();
+
+        //Window Menu
+        void hy_minimize();
+        void hy_consolewindow();
+        void hy_objectinspector();
+        void hy_cyclethroughwindows();
+
+
+    private:
+        //File Actions
+        QAction *_hyConsoleOpenAction;
+        QAction *_hyConsoleSaveAction;
+        QAction *_hyConsoleExitAction;
+
+        //Edit Actions
+        QAction *_hyConsoleUndoAction;
+        QAction *_hyConsoleRedoAction;
+        QAction *_hyConsoleCutAction;
+        QAction *_hyConsoleCopyAction;
+        QAction *_hyConsolePasteAction;
+        QAction *_hyConsoleFindAction;
+        QAction *_hyConsoleSelectAllAction;
+        QAction *_hyConsoleClearWindowAction;
+
+        //Analysis Actions
+        QAction *_hyConsoleCancelExecutionAction;
+        QAction *_hyConsoleSuspendExecutionAction;
+        QAction *_hyConsoleViewLogAction;
+        QAction *_hyConsoleStandardAnalysisAction;
+        QAction *_hyConsoleResultsAction;
+        QAction *_hyConsoleRerunLastAnalysisAction;
+
+
+        //Window Actions
+        QAction *_hyConsoleMinimizeAction;
+        QAction *_hyConsoleConsoleWindowAction;
+        QAction *_hyConsoleObjectInspectorAction;
+        QAction *_hyConsoleCycleThroughWindowsAction;
+
+
+        QMenu   *_hyConsoleMenu;
 };
+
+extern HyphyMain* _hyPrimaryConsoleWindow;

@@ -37,71 +37,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include <QApplication>
-#include <QWidget>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QDebug>
-#include "hy_strings.h"
 #include "hyphymain.h"
-#include "hyphyevents.h"
+#include "hy_strings.h"
 
-extern bool needExtraNL = true; 
-extern bool dropIntoDebugMode=false; 
-
-void StringToConsole(_String&);
-void BufferToConsole(const char* buffer);
-_String* StringFromConsole (bool echo);
-void SetStatusLine(_String arg);
-void SetStatusLineUser(_String s);
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
-bool Get_a_URL (_String& urls, _String* fileName);
-void NLToConsole();
-
-void StringToConsole(_String& str)
-{
-   BufferToConsole(str); 
-}
-
-void BufferToConsole(const char* buffer)
-{
-    
-    //Get MainWindow object specifically
-    QBufferToConsoleEvent event((QString)buffer);
-
-    foreach (QWidget *widget, QApplication::allWidgets()) {
-        //Write to main console
-        QApplication::sendEvent(widget, &event);
+_String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite){
+    QString fileName;
+    if (isWrite) {
+        fileName = QFileDialog::getSaveFileName(NULL, caption.getStr(), defaultFileName.getStr(),
+                                                "All Files (*.*);;Text Files (*.txt)");        
+    } else {
+        fileName = QFileDialog::getOpenFileName(NULL, caption.getStr(), "",
+                                                        "All Files (*.*);;Text Files (*.txt)");
     }
-
-    return;
-}
-
-_String* StringFromConsole (bool echo)
-{
-    //Do nothing for right now
-}
-
-void SetStatusLine(_String arg)
-{
-
-}
-
-void SetStatusLineUser(_String s)
-{
-
-}
-
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
-{
-}
-
-bool Get_a_URL (_String& urls, _String* fileName)
-{
-
-}
-
-void NLToConsole()
-{
-
+     
+    return _String (fileName.toAscii().data()) ;
 }

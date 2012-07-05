@@ -52,6 +52,8 @@
 #include "bgm.h"
 #endif
 
+
+
 //#include "profiler.h"
 #ifndef __HEADLESS__
 #ifdef __HYPHY_GTK__
@@ -600,122 +602,6 @@ long    FindBgmName (_String&s)
 
 
 
-//____________________________________________________________________________________
-
-_String ReturnDialogInput(bool dispPath)
-{
-    if (!dispPath) {
-        NLToConsole ();
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    } else {
-        NLToConsole ();
-        if (pathNames.lLength) {
-            StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
-        } else {
-            StringToConsole (baseDirectory);
-        }
-
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    }
-    return StringFromConsole();
-}
-
-
-//____________________________________________________________________________________
-
-_String ReturnFileDialogInput(void)
-{
-    if (currentExecutionList && currentExecutionList->stdinRedirect) {
-        _String outS (currentExecutionList->FetchFromStdinRedirect());
-        if (outS.sLength) {
-            return outS;
-        }
-    }
-
-#ifdef __HEADLESS__
-    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
-#else
-#ifdef __MAC__
-    _String feedback =  MacSimpleFileOpen();
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-    return feedback;
-#else
-#ifdef __WINDOZE__
-    _String feedback = ReturnFileDialogSelectionWin(false);
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-    return feedback;
-#else
-#ifdef __HYPHY_GTK__
-    if (PopUpFileDialog (dialogPrompt)) {
-        return *argFileName;
-    }
-
-    terminateExecution = true;
-    return empty;
-#else
-    return ReturnDialogInput(true);
-#endif
-#endif
-#endif
-#endif
-}
-
-//____________________________________________________________________________________
-
-_String WriteFileDialogInput(void)
-{
-    if (currentExecutionList && currentExecutionList->stdinRedirect) {
-        _String outS (currentExecutionList->FetchFromStdinRedirect());
-        if (outS.sLength) {
-            return outS;
-        }
-    }
-
-    defFileNameValue = ProcessLiteralArgument (&defFileString,nil);
-    _String feedback;
-
-#ifdef __HEADLESS__
-    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
-#else
-#ifdef __MAC__
-    feedback =  MacSimpleFileSave();
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __WINDOZE__
-
-    feedback = ReturnFileDialogSelectionWin(true);
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __HYPHY_GTK__
-    if (PopUpFileDialog (dialogPrompt)) {
-        return *argFileName;
-    } else {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __UNIX__
-    feedback = ReturnDialogInput(true);
-#endif
-
-#endif
-    defFileNameValue = empty;
-    return feedback;
-}
 
 //__________________________________________________________
 

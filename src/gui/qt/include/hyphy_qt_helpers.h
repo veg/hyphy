@@ -37,71 +37,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include <QApplication>
-#include <QWidget>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QDebug>
-#include "hy_strings.h"
+#pragma once
+
+#include <QtGui>
+#include "defines.h"
+#include "batchlan.h"
+#include "ui_hyphymain.h"
 #include "hyphymain.h"
-#include "hyphyevents.h"
 
-extern bool needExtraNL = true; 
-extern bool dropIntoDebugMode=false; 
+extern HyphyMain* _hyPrimaryConsoleWindow;
 
-void StringToConsole(_String&);
-void BufferToConsole(const char* buffer);
-_String* StringFromConsole (bool echo);
-void SetStatusLine(_String arg);
-void SetStatusLineUser(_String s);
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
-bool Get_a_URL (_String& urls, _String* fileName);
-void NLToConsole();
+_String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite);
 
-void StringToConsole(_String& str)
-{
-   BufferToConsole(str); 
-}
-
-void BufferToConsole(const char* buffer)
-{
-    
-    //Get MainWindow object specifically
-    QBufferToConsoleEvent event((QString)buffer);
-
-    foreach (QWidget *widget, QApplication::allWidgets()) {
-        //Write to main console
-        QApplication::sendEvent(widget, &event);
-    }
-
-    return;
-}
-
-_String* StringFromConsole (bool echo)
-{
-    //Do nothing for right now
-}
-
-void SetStatusLine(_String arg)
-{
-
-}
-
-void SetStatusLineUser(_String s)
-{
-
-}
-
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
-{
-}
-
-bool Get_a_URL (_String& urls, _String* fileName)
-{
-
-}
-
-void NLToConsole()
-{
-
-}
+/**
+ * Display a platform appropriate file selection dialog
+ * @param caption: dialog caption string
+ * @param defaultFileName (for write dialogs): the default file name to display
+ * @param isWrite: whether or not to display a read/write dialog
+ * @return full path to the selected file name; empty if canceled.
+ */
