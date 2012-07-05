@@ -43,10 +43,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 _String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite){
     QString fileName;
     if (isWrite) {
-        fileName = QFileDialog::getSaveFileName(NULL, caption.getStr(), "",
+        fileName = QFileDialog::getSaveFileName(NULL, caption.getStr(), defaultFileName.getStr(),
                                                 "All Files (*.*);;Text Files (*.txt)");        
     } else {
-        fileName = QFileDialog::getOpenFileName(NULL, caption.getStr(), defaultFileName.getStr(),
+        fileName = QFileDialog::getOpenFileName(NULL, caption.getStr(), "",
                                                         "All Files (*.*);;Text Files (*.txt)");
     }
      
