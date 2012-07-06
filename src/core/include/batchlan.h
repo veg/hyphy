@@ -177,7 +177,6 @@ public:
     void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
-    void      ExecuteCase33  (_ExecutionList&); // index string selector
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
     void      ExecuteCase37  (_ExecutionList&); // GetInformation
@@ -213,6 +212,7 @@ public:
     bool      HandleClearConstraints                (_ExecutionList&);
     bool      HandleMolecularClock                  (_ExecutionList&);
     bool      HandleGetURL                          (_ExecutionList&);
+    bool      HandleGetString                       (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -557,7 +557,8 @@ hfCountGap                      ;
 extern  _ExecutionList              *currentExecutionList;
 
 extern  _AVLList                    loadedLibraryPaths;
-extern  _AVLListX                   _HY_HBLCommandHelper;
+extern  _AVLListX                   _HY_HBLCommandHelper,
+                                    _HY_GetStringGlobalTypes;
                                     
 extern  _Trie                       _HY_ValidHBLExpressions;
 
@@ -615,6 +616,9 @@ void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
 void    ReadModelList                (void);
+_String ProcessStringArgument        (_String* data);
+_String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
+
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);

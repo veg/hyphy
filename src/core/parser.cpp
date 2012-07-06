@@ -195,6 +195,28 @@ _String FetchObjectNameFromType (const unsigned long objectClass) {
 }
 
 //__________________________________________________________________________________
+_String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex)
+{
+    if (objectIndex >=0 && objectIndex < variableNames.countitems()) {
+            long tc = 0;
+            _SimpleList nts;
+            long        rt,
+                        vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
+
+            for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
+                if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == objectClass) {
+                    if (tc==objectIndex) {
+                        return (_String*)variableNames.Retrieve(vi);
+                        break;
+                    } else {
+                        tc++;
+                    }
+                }    
+    }
+    return nil;
+}
+
+//__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
@@ -213,6 +235,7 @@ _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long obje
     }
     return nil;
 }
+
 
 //__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
@@ -1043,6 +1066,9 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
     }
 
 }
+
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bool sorted)
 {
     if (partName.sLength==0) {
@@ -1065,6 +1091,8 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bo
 
     partName = tryName;
 }
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names, bool)
 {
     if (partName.sLength==0) {
@@ -1081,6 +1109,9 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names
 
     partName = tryName;
 }
+
+//__________________________________________________________________________________
+
 void  FinishDeferredSF (void)
 {
     if (deferSetFormula->lLength) {

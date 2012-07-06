@@ -806,15 +806,15 @@ _PMathObj   _FString::CountGlobalObjects (void)
     }
 
     switch (standardType) {
-    case 0:
+    case HY_BL_LIKELIHOOD_FUNCTION:
         return new _Constant (likeFuncList.lLength);
-    case 1:
+    case HY_BL_DATASET:
         return new _Constant (dataSetList.lLength);
-    case 2:
+    case HY_BL_DATASET_FILTER:
         return new _Constant (dataSetFilterList.lLength);
-    case 3:
+    case HY_BL_HBL_FUNCTION:
         return new _Constant (batchLanguageFunctionNames.lLength);
-    case 4: {
+    case HY_BL_TREE: {
         _SimpleList tc;
         long        si,
                     vi = variableNames.Traverser (tc,si,variableNames.GetRoot());
@@ -827,9 +827,9 @@ _PMathObj   _FString::CountGlobalObjects (void)
         break;
     }
 
-    case 5:
+    case HY_BL_SCFG:
         return new _Constant (scfgList.lLength);
-    case 6:
+    case HY_BL_VARIABLE:
         return new _Constant (variableNames.countitems());
 
     }

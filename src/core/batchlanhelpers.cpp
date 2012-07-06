@@ -177,3 +177,68 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
     ex.Execute      ();
     terminateExecution = false;
 }
+
+//____________________________________________________________________________________
+
+_String ProcessStringArgument (_String* data) {
+    if (data->sLength>2) {
+        if (data->sData[data->sLength-1]=='_' && data->sData[data->sLength-2]=='_') {
+            _String varName (*data,0,data->sLength-3);
+            _FString* theVar = (_FString*)FetchObjectFromVariableByType(&varName,STRING);
+            if (theVar) {
+                return *theVar->theString;
+            }
+        }
+    }
+    return empty;
+}
+
+//____________________________________________________________________________________
+
+_String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
+
+    _List * theList = nil;
+    switch (type) {
+        case HY_BL_DATASET:
+            theList = &dataSetNamesList;
+            break;
+        case HY_BL_DATASET_FILTER:
+            theList = &dataSetFilterNamesList;
+            break;
+        case HY_BL_LIKELIHOOD_FUNCTION:
+            theList = &likeFuncNamesList;
+            break;
+        case HY_BL_HBL_FUNCTION:
+            theList = &batchLanguageFunctionNames;
+            break;
+        case HY_BL_MODEL:
+            theList = &modelNames;
+            break;
+        case HY_BL_SCFG:
+            theList = &scfgNamesList;
+            break;
+        case HY_BL_BGM:
+            theList = &bgmNamesList;
+            break;
+            
+    }
+    if (theList) {
+        // account for deleted objects
+        if (!correct_for_empties) 
+            return (_String*)(*theList)(index);
+            
+        long counter = 0;
+        for (long name_index = 0; name_index < theList->lLength; name_index++) {
+            _String *thisName = (_String*)(*theList)(name_index);
+            if (thisName && thisName->sLength) {
+                if (name_index - counter == index) {
+                    return thisName;
+                }
+            } else {
+                counter ++;
+            }
+        }
+    }
+    return nil;
+}
+

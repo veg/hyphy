@@ -507,21 +507,6 @@ _AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer
     return nil;
 }
 
-//____________________________________________________________________________________
-
-_String ProcessStringArgument (_String* data)
-{
-    if (data->sLength>2) {
-        if (data->sData[data->sLength-1]=='_' && data->sData[data->sLength-2]=='_') {
-            _String varName (*data,0,data->sLength-3);
-            _FString* theVar = (_FString*)FetchObjectFromVariableByType(&varName,STRING);
-            if (theVar) {
-                return *theVar->theString;
-            }
-        }
-    }
-    return empty;
-}
 
 
 
@@ -1654,6 +1639,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
             case HY_HBL_COMMAND_MOLECULAR_CLOCK:
             case HY_HBL_COMMAND_GET_URL:
+            case HY_HBL_COMMAND_GET_STRING:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1730,8 +1716,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructLF (currentLine, *this);
         } else if (currentLine.startswith (blfprintf)) { // fpintf call
             _ElementaryCommand::ConstructFprintf (currentLine, *this);
-        } else if (currentLine.startswith (blGetString)) { // get string from an object
-            _ElementaryCommand::ConstructGetString (currentLine, *this);
         } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
             _ElementaryCommand::ConstructFscanf (currentLine, *this);
         } else if (currentLine.startswith (blExport)) { // polymatrix export matrix
@@ -2203,7 +2187,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
     }
 
-    case 33: { // get string from object
+    case HY_HBL_COMMAND_GET_STRING: { // get string from object
         converted = (_String*)parameters(2)->toStr();
         result = _String ("Get string ")&*converted;
         DeleteObject (converted);
@@ -5933,8 +5917,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase32 (chain);
         break;
 
-    case 33:
-        ExecuteCase33 (chain);
+    case HY_HBL_COMMAND_GET_STRING:
+        HandleGetString (chain);
         break;
 
     case HY_HBL_COMMAND_SET_PARAMETER:
@@ -7398,20 +7382,6 @@ bool    _ElementaryCommand::ConstructSpawnLF (_String&source, _ExecutionList&tar
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructGetString (_String&source, _ExecutionList&target)
-// syntax: GetString (receptacle_ID,object,string Index)
-{
-    _List pieces;
-    ExtractConditions (source,blGetString.sLength,pieces,',');
-    if (pieces.lLength!=3 && pieces.lLength!=4) {
-        WarnError ("Expected: GetString (receptacle_ID,object,string index<, optional second index>)");
-        return false;
-    }
-    _ElementaryCommand * gs = new _ElementaryCommand (33);
-    gs->addAndClean(target,&pieces,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructGetDataInfo (_String&source, _ExecutionList&target)
