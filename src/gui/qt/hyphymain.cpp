@@ -52,10 +52,53 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hyphy_qt_helpers.h"
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
+
     setupUi(this);
     this->initialText();
+    this->initializeMenuBar();
     textEdit->installEventFilter(this);
-    
+}
+
+void HyphyMain::initialText() {
+    //Options
+    textEdit->setLineWrapMode(QTextEdit::FixedColumnWidth);
+    textEdit->setWordWrapMode(QTextOption::WordWrap);
+    textEdit->setLineWrapColumnOrWidth(80);
+
+    //HyPhy version
+    _String version = GetVersionString();
+    char* cVersion = (char*)GetVersionString().sData;
+    textEdit->insertPlainText((QString)version);
+    textEdit->insertPlainText("\n");
+
+    // SW20120702
+    // MPProcessors is deprecated as of OSX10.7, using sysctl
+    size_t size;
+    int systemCPUCount;
+    size = sizeof systemCPUCount;
+
+    sysctlbyname("hw.physicalcpu", &systemCPUCount, &size, NULL, 0);
+
+    if (systemCPUCount == 1) {
+        textEdit->insertHtml("One processor detected.\n");
+    } else {
+        textEdit->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
+    }
+
+    //The HyPhy Citation request
+    const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite:<br />S.L. Kosakovsky Pond, S. D. W. Frost"
+                                "and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679</p>"
+                                "<p>If you are a new HyPhy user:"
+                                "<br />The tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br />";
+
+    textEdit->insertHtml((QString)qtHyphyCiteString);
+
+    //Begin prompting for user input
+    textEdit->prompt();
+}
+
+void HyphyMain::initializeMenuBar() {
+
     //Create File Menu Options
     _hyConsoleOpenAction = new QAction(tr("&Open Batch File"), this);
     _hyConsoleOpenAction->setShortcuts(QKeySequence::Open);
@@ -169,43 +212,7 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     _hyConsoleMenu->addSeparator();
     _hyConsoleMenu->addAction(_hyConsoleCycleThroughWindowsAction);
 
-}
 
-void HyphyMain::initialText() {
-    //Options
-    textEdit->setLineWrapMode(QTextEdit::FixedColumnWidth);
-    textEdit->setWordWrapMode(QTextOption::WordWrap);
-    textEdit->setLineWrapColumnOrWidth(80);
-
-    //HyPhy version
-    _String version = GetVersionString();
-    //textEdit->insertPlainText(version);
-    //textEdit->insertPlainText("/n");
-
-    //SW20120702:MPProcessors is deprecated as of OSX10.7, using sysctl
-    //hw.physicalcpu
-    size_t size;
-    int systemCPUCount;
-    size = sizeof systemCPUCount;
-
-    sysctlbyname("hw.physicalcpu", &systemCPUCount, &size, NULL, 0);
-
-    if (systemCPUCount == 1) {
-        textEdit->insertHtml("One processor detected.\n");
-    } else {
-        textEdit->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
-    }
-
-    //The HyPhy Citation request
-    const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite:<br />S.L. Kosakovsky Pond, S. D. W. Frost"
-                                "and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679</p>"
-                                "<p>If you are a new HyPhy user:"
-                                "<br />The tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br />";
-
-    textEdit->insertHtml((QString)qtHyphyCiteString);
-
-    //Begin prompting for user input
-    textEdit->prompt();
 }
 
 //File Menu Options

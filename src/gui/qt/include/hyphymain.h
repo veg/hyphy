@@ -117,8 +117,8 @@ protected:
         QAction *_hyConsoleObjectInspectorAction;
         QAction *_hyConsoleCycleThroughWindowsAction;
 
-
         QMenu   *_hyConsoleMenu;
+        void initializeMenuBar();
 };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;
