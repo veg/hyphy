@@ -126,7 +126,7 @@ void    _Formula::Clear (void)
 //__________________________________________________________________________________
 BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
 {
-    ConvertToTree();
+    ConvertToTree(false);
 
     _String * result = (_String*)checkPointer(new _String((unsigned long)16,true));
 
@@ -2491,12 +2491,13 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, bool errors)
     }
 }
 //__________________________________________________________________________________
-void    _Formula::ConvertToTree (void)
+void    _Formula::ConvertToTree (bool err_msg)
 {
     if (!theTree&&theFormula.lLength) { // work to do
         _SimpleList nodeStack;
+        
         _Operation* currentOp;
-        for (long i=0; i<theFormula.lLength; i++) {
+        for (unsigned long i=0; i<theFormula.lLength; i++) {
             currentOp = (_Operation*)theFormula(i);
             if (currentOp->TheCode()<0) { // a data bit
                 node<long>* leafNode = new node<long>;
@@ -2510,8 +2511,9 @@ void    _Formula::ConvertToTree (void)
                 }
 
                 if (nTerms>nodeStack.lLength) {
-                    _String errMsg ("Expression syntax/semantics error.");
-                    WarnError (errMsg);
+                    if (err_msg) {
+                        WarnError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()));
+                    }
                     theTree = nil;
                     return;
                 }
@@ -2527,7 +2529,9 @@ void    _Formula::ConvertToTree (void)
             }
         }
         if (nodeStack.lLength!=1) {
-            WarnError ((_String)"Expression syntax/sematics error.");
+            if (err_msg) {
+                WarnError ((_String)"The expression '" & _String ((_String*)toStr()) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+            }
             theTree = nil;
             return;
         } else {

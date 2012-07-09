@@ -164,7 +164,7 @@ public:
 protected:
 
     void        internalToStr       (_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
-    void        ConvertToTree       (void);
+    void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (_PMathObj);
     node<long>* DuplicateFormula    (node<long>*,_Formula&);

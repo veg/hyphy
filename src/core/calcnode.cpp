@@ -725,10 +725,9 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 #endif
     _Variable* curVar, *locVar;
 
-    long i;
 
     if (iVariables)
-        for (i=0; i<iVariables->lLength; i+=2)
+        for (unsigned long i=0; i<iVariables->lLength; i+=2)
             if (iVariables->lData[i+1]>=0) {
                 curVar = LocateVar (iVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -738,7 +737,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             }
 
     if (dVariables)
-        for (i=0; i<dVariables->lLength; i+=2)
+        for (unsigned long i=0; i<dVariables->lLength; i+=2)
             if (dVariables->lData[i+1]>=0) {
                 curVar = LocateVar (dVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -747,7 +746,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 }
             }
 
-    for (i=0; i<categoryVariables.lLength; i++) {
+    for (unsigned long i=0; i<categoryVariables.lLength; i++) {
         if (categoryIndexVars.lData[i]<0) {
             continue;
         }
@@ -768,10 +767,15 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     _Matrix * myModelMatrix = GetModelMatrix();
 
     if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
-        _Matrix *temp = (_Matrix*)(isExplicitForm?myModelMatrix->makeDynamic():myModelMatrix->MultByFreqs(theModel));
+        _Matrix *temp = nil;
+        if (isExplicitForm) {
+            temp = (_Matrix*)myModelMatrix->makeDynamic();
+        } else {
+            temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
+        }
 
         if (dVariables)
-            for (i=0; i<dVariables->lLength; i+=2)
+            for (unsigned long i=0; i<dVariables->lLength; i+=2)
                 if (dVariables->lData[i+1]>=0) {
                     curVar = LocateVar (dVariables->lData[i+1]);
                     if (!curVar->IsIndependent()) {
