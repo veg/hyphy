@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 2.8.1)
+
+#-------------------------------------------------------------------------------
+# set gnu-compatible compiler for OMP, must be set BEFORE project() invoke 
+#-------------------------------------------------------------------------------
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
+
 project(HyPhy)
 
 
@@ -10,6 +18,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
+
 
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
@@ -42,15 +51,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC46 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
-    if(${MACOSX_LION})
-        set(GCC45 true)
-    endif(${MACOSX_LION})
-
-    if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
-    else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
-    endif(${GCC45})
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
 
     if(${GCC46})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
@@ -77,9 +78,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+if(NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+endif(NOT ${OPENMP_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -88,6 +89,7 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
+
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -154,7 +156,6 @@ set_property(
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
-#add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -163,7 +164,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib/SQLite-3.7.11 # SQLite
+    contrib/SQLite-3.7.11
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
@@ -216,6 +217,7 @@ install(
 )
 add_custom_target(MP2 DEPENDS HYPHYMP)
 
+
 #-------------------------------------------------------------------------------
 # hyphy sp target
 #-------------------------------------------------------------------------------
@@ -231,6 +233,7 @@ install(
     OPTIONAL
 )
 add_custom_target(SP DEPENDS HYPHYSP)
+
 
 #-------------------------------------------------------------------------------
 # hyphy OpenCL target
@@ -449,11 +452,6 @@ set_target_properties(
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
 if(APPLE)
-    #---------------------------------------------------------------------------
-    # set this or blow up
-    #---------------------------------------------------------------------------
-    # set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/")
-
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------
