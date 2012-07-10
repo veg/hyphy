@@ -85,6 +85,7 @@
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";
 "","Test for selection in presence of recombination.","!Selection/Recombination";
+"FUBAR", "Detect site-specific pervasive diversifying and purifying selection using the Fast Unbiased Bayesian AppRoximate method on a multiple partition data set, e.g. produced by GARD.","FUBAR.bf";
 "MEME","Detect site-specific episodic diversifying selection using MEME on a multiple partition data set, e.g. produced by GARD.","MEME_mf.bf";
 "SLAC/FEL","Detect site-specific diversifying/purifying selection using SLAC or FEL on a multiple partition data set, e.g. produced by GARD.","QuickSelectionDetectionMF.bf";
 "REL","Detect site-specific selection using REL on a multiple partition data set, e.g. produced by GARD.","dNdSRateAnalysis_MF.bf";
