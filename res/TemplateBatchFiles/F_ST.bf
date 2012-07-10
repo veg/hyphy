@@ -175,8 +175,13 @@ if (useSeqData)
 	SetDialogPrompt ("Load the names/distance matrix");
 	fscanf          (PROMPT_FOR_FILE, "Matrix,NMatrix", namesMatrix,distanceMatrix);
 	dim_names = Rows(namesMatrix)*Columns(namesMatrix);
-	assert (dim_names == Columns (distanceMatrix), 
-	
+	assert (dim_names == Columns (distanceMatrix), "Dimension mismatch between the names vector and the distance matrix");
+	fakeDS = ""; fakeDS * 128;
+	for (_i = 0; _i < dim_names; _i+=1) {
+	    fakeDS * (">" + namesMatrix [_i] + "\nA\n");
+	}
+	fakeDS * 0;
+	DataSet ds = ReadFromString (fakeDS);
 }
 
 promptFor2ndRegExp = 1;
@@ -231,7 +236,9 @@ else
 	DataSetFilter filteredData = CreateFilter (ds,1,"","");
 }
 
-distanceMatrix = {ds.species, ds.species};
+if (useSeqData) {
+    distanceMatrix = {ds.species, ds.species};
+}
 
 if (distanceChoice == 1)
 {
