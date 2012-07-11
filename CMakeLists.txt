@@ -453,8 +453,8 @@ if((${QT4_FOUND}))
         PROPERTIES
         #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
         #LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g "
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
     )
 
 endif((${QT4_FOUND}))

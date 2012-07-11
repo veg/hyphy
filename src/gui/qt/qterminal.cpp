@@ -1,6 +1,7 @@
 //TODO: Add better command line editing
 
 #include <QtGui>
+#include <QFont>
 #include "qterminal.h"
 #include "hy_strings.h"
 #include "parser.h"
@@ -13,6 +14,11 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextEdit(parent) {
     histLocation = -1;
     tempCmd = "";
     //setTextColor(Qt::darkCyan);
+
+    //QFont font("Monaco Helvetica");
+    QFont font("Monaco Helvetica");
+    this->setCurrentFont(font);
+    //this->setFontFamily("Monaco Helvetica");
 }
 
 QTerminal::~QTerminal() {
@@ -180,6 +186,34 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     curCursorLoc = this->textCursor();
 
 }
+
+void QTerminal::insertFromMimeData(const QMimeData * source) {
+    //this->setTextCursor(curCursorLoc);
+    this->moveCursor(QTextCursor::End);
+
+    QString pastedText = source->text();
+    QStringList commands = pastedText.split("\n");
+
+    foreach (const QString &str, commands) {
+        this->insertPlainText(str);
+        this->insertPlainText("\n");
+        //ExpressionCalculator((_String)(char *)str.toAscii().data());
+        cmdHistory.push_back(str);
+        histLocation = -1;
+        cmdStr = "";
+        tempCmd = "";
+        this->insertPlainText("\n");
+        this->prompt();
+     }
+
+    curCursorLoc = this->textCursor();
+}
+
+/*
+ *void QTerminal::undo() {
+ *    qDebug() << "undo was called";
+ *}
+ */
 
 void QTerminal::prompt() {
     this->insertHtml("<font color=\"#A60000\">></font> ");

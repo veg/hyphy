@@ -52,7 +52,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hyphy_qt_helpers.h"
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
-
     setupUi(this);
     this->initialText();
     this->initializeMenuBar();
@@ -125,8 +124,10 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleUndoAction->setShortcuts(QKeySequence::Undo);
     _hyConsoleRedoAction = new QAction(tr("&Redo"),this);
     _hyConsoleRedoAction->setShortcuts(QKeySequence::Redo);
-    _hyConsoleCutAction = new QAction(tr("&Cut"),this);
-    _hyConsoleCutAction->setShortcuts(QKeySequence::Cut);
+
+    //No Cutting allowed for right now
+    //_hyConsoleCutAction = new QAction(tr("&Cut"),this);
+    //_hyConsoleCutAction->setShortcuts(QKeySequence::Cut);
     _hyConsoleCopyAction = new QAction(tr("&Copy"),this);
     _hyConsoleCopyAction->setShortcuts(QKeySequence::Copy);
     _hyConsolePasteAction = new QAction(tr("&Paste"),this);
@@ -139,13 +140,13 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleClearWindowAction->setStatusTip("Clears the Console Window");
 
     //Connect Edit Menu Events to appropriate slots
-    connect(_hyConsoleUndoAction, SIGNAL(triggered()), this, SLOT(hy_undo()));
-    connect(_hyConsoleRedoAction, SIGNAL(triggered()), this, SLOT(hy_redo()));
-    connect(_hyConsoleCutAction, SIGNAL(triggered()), this, SLOT(hy_cut()));
-    connect(_hyConsoleCopyAction, SIGNAL(triggered()), this, SLOT(hy_copy()));
-    connect(_hyConsolePasteAction, SIGNAL(triggered()), this, SLOT(hy_paste()));
+    connect(_hyConsoleUndoAction, SIGNAL(triggered()), textEdit, SLOT(undo()));
+    connect(_hyConsoleRedoAction, SIGNAL(triggered()), textEdit, SLOT(redo()));
+    //connect(_hyConsoleCutAction, SIGNAL(triggered()), textEdit, SLOT(cut()));
+    connect(_hyConsoleCopyAction, SIGNAL(triggered()), textEdit, SLOT(copy()));
+    connect(_hyConsolePasteAction, SIGNAL(triggered()), textEdit, SLOT(paste()));
     connect(_hyConsoleFindAction, SIGNAL(triggered()), this, SLOT(hy_find()));
-    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), this, SLOT(hy_selectall()));
+    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), this, SLOT(selectAll()));
     connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), this, SLOT(hy_clearwindow()));
 
     //Add the Edit Menu to the Menu Bar
@@ -153,7 +154,7 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addAction(_hyConsoleUndoAction);
     _hyConsoleMenu->addAction(_hyConsoleRedoAction);
     _hyConsoleMenu->addSeparator();
-    _hyConsoleMenu->addAction(_hyConsoleCutAction);
+    //_hyConsoleMenu->addAction(_hyConsoleCutAction);
     _hyConsoleMenu->addAction(_hyConsoleCopyAction);
     _hyConsoleMenu->addAction(_hyConsolePasteAction);
     _hyConsoleMenu->addSeparator();

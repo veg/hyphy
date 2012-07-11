@@ -10,6 +10,7 @@ public:
     QTerminal(QWidget * parent = 0, Qt::WindowFlags f = 0);
     ~QTerminal();
     void keyPressEvent(QKeyEvent * event);
+    void insertFromMimeData(const QMimeData * source);
     void changeDir(const QString & dir);
     void prompt();
 
