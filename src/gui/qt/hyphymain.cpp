@@ -230,11 +230,6 @@ void HyphyMain::quit() {
 
 
 //Edit Menu Options
-void HyphyMain::hy_undo(){}
-void HyphyMain::hy_redo(){}
-void HyphyMain::hy_cut(){}
-void HyphyMain::hy_copy(){}
-void HyphyMain::hy_paste(){}
 void HyphyMain::hy_find(){}
 void HyphyMain::hy_selectall(){}
 void HyphyMain::hy_clearwindow(){}

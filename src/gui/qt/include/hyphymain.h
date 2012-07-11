@@ -62,11 +62,6 @@ protected:
         void quit();
 
         //Edit Menu
-        void hy_undo();
-        void hy_redo();
-        void hy_cut();
-        void hy_copy();
-        void hy_paste();
         void hy_find();
         void hy_selectall();
         void hy_clearwindow();

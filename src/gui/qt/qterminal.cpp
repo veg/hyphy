@@ -166,12 +166,21 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         //Execute command string
         ExpressionCalculator((_String)(char *)cmdStr.toAscii().data());
 
+
         QTextEdit::keyPressEvent(event);
         cmdHistory.push_back(cmdStr);
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
         this->prompt();
+
+
+        //Clear undo trick
+        this->moveCursor(QTextCursor::End);
+        QString text = this->toHtml();
+        this->setHtml(text);
+
+
     } 
 
     else {
@@ -183,30 +192,34 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         }
     }
 
-    curCursorLoc = this->textCursor();
-
+    this->moveCursor(QTextCursor::End);
 }
 
 void QTerminal::insertFromMimeData(const QMimeData * source) {
     //this->setTextCursor(curCursorLoc);
     this->moveCursor(QTextCursor::End);
 
+    qDebug() << source->text();
     QString pastedText = source->text();
     QStringList commands = pastedText.split("\n");
 
     foreach (const QString &str, commands) {
         this->insertPlainText(str);
         this->insertPlainText("\n");
-        //ExpressionCalculator((_String)(char *)str.toAscii().data());
+        ExpressionCalculator((_String)(char *)str.toAscii().data());
         cmdHistory.push_back(str);
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
         this->insertPlainText("\n");
         this->prompt();
+
      }
 
+    //Clear undo trick
     curCursorLoc = this->textCursor();
+    QString text = this->toHtml();
+    this->setHtml(text);
 }
 
 /*
