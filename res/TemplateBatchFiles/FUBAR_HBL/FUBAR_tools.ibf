@@ -1,5 +1,9 @@
 function tabulateGridResults (points, sites, samples, _chainCount) {
 
+    jointLogLArray        = {1,samples};
+    jointSamples          = {samples,points};
+    perChain              = samples$_chainCount;
+
     positive_selection_stencil = {points,sites} ["grid[_MATRIX_ELEMENT_ROW_][0]<grid[_MATRIX_ELEMENT_ROW_][1]"];
     negative_selection_stencil = {points,sites} ["grid[_MATRIX_ELEMENT_ROW_][0]>grid[_MATRIX_ELEMENT_ROW_][1]"];
     diag_alpha = {points,points}["grid[_MATRIX_ELEMENT_ROW_][0]*(_MATRIX_ELEMENT_ROW_==_MATRIX_ELEMENT_COLUMN_)"];
@@ -11,9 +15,6 @@ function tabulateGridResults (points, sites, samples, _chainCount) {
     beta_matrices         = {};
     normalization_factors = {};
     
-    jointLogL             = {1,samples};
-    jointSamples          = {samples,points};
-    perChain              = samples$_chainCount;
     
     from = 0;
     to   = perChain;
@@ -33,7 +34,7 @@ function tabulateGridResults (points, sites, samples, _chainCount) {
         
         for (_sampleT = from; _sampleT < to; _sampleT += 1) {
             thisIndex = indices[_sampleT];
-            jointLogL [_sampleT] = thisLogL[thisIndex];
+            jointLogLArray [_sampleT] = thisLogL[thisIndex];
             for (_point = 0; _point < points; _point += 1) {
                 jointSamples[_sampleT][_point] = thisSample[thisIndex][_point];
             } 
@@ -69,9 +70,12 @@ function readMCMCSamples (baseFilePath,_chainCount) {
 
 //------------------------------------------------------------------------------------------------//
 
-function reportSiteResults (sites, writeTo) {
+function reportSiteResults (sites, writeTo, priorNN, doFDR) {
     t0 = Time (1);
-    bySitePosSel = {sites,8};
+    bySitePosSel = {sites,8+doFDR};
+
+    //"alpha" 0 ,"beta" 1 ,"beta-alpha" 2,"Prob[alpha<beta]" 3, "Prob[alpha>beta]" 4, "BayesFactor[alpha<beta]" 5,"PSRF" 6, "Neff" 7
+    
     // mean alpha (normalized to overall mean alpha = 1), mean beta, mean beta-alpha, mean pos.sel
     // mean neg.sel, PSRF, N_eff
      for (s = 0; s < sites; s+=1) {
@@ -107,9 +111,13 @@ function reportSiteResults (sites, writeTo) {
         /*if (doPrint) {
             fprintf (finalPHP, ",", pos_sel_samples[0], ",", 1-pos_sel_samples[0], ",", pos_sel_samples[1], ",", pos_sel_samples[2]);
         }*/
+        
         bySitePosSel [s][3] = pos_sel_samples[0];
-        bySitePosSel [s][5] = pos_sel_samples[1];
-        bySitePosSel [s][6] = pos_sel_samples[2];
+        if (priorNN > 0 && priorNN < 1) {
+            bySitePosSel [s][5] = pos_sel_samples[0] / (1-pos_sel_samples[0]) / (1-priorNN) * priorNN;
+        }
+        bySitePosSel [s][6] = pos_sel_samples[1];
+        bySitePosSel [s][7] = pos_sel_samples[2];
     }
     
     return bySitePosSel;

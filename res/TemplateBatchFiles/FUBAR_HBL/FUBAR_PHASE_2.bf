@@ -104,9 +104,9 @@ function defineAlphaBetaGrid (one_d_points) {
    
     one_d_points    = Max (one_d_points, 10);
     neg_sel         = 0.7;
-    neg_sel_points  = (one_d_points)*neg_sel$1+1;
+    neg_sel_points  = ((one_d_points)*neg_sel+0.5)$1;
     pos_sel_points  = (one_d_points-1)*(1-neg_sel)$1;
-    if (neg_sel_points + pos_sel_points > one_d_points) {
+    if (neg_sel_points + pos_sel_points != one_d_points) {
         pos_sel_points = one_d_points - neg_sel_points; 
     }
     _neg_step = 1/neg_sel_points;

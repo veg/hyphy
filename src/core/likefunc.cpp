@@ -607,8 +607,9 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
                 for (long lfID = 0; lfID < likeFuncList.lLength; lfID++) {
                     _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
                     if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
-                        WarnError (_String ("Cannot reuse the filter '") & *(_String*)dataSetFilterNamesList (theDataFilters.lData[f]) & "' because it is already being used by likelihood function '" &
-                                   *(_String*)likeFuncNamesList (lfID) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
+                        WarnError (_String ("Cannot reuse the filter '") & _HBLObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
+                                   "' because it is already being used by likelihood function '" &
+                                   *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID, false) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
                                    "Create a copy the filter and pass it to the second likelihood function to resolve this issue.");
 
                         return false;

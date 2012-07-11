@@ -43,7 +43,7 @@ AUTO_PARALLELIZE_OPTIMIZE = 0;
 fprintf (stdout, "Improved Log(L) BY ", codonLF[1][0]-resC[1][0], " points\n");
 OPTIMIZATION_METHOD = 4;
 
-LoadFunctionLibrary ("BranchSiteTemplate.mdl");
+LoadFunctionLibrary ("BranchSiteTemplate");
 
 global      mixingP     =         0.5; mixingP :< 1-1e-9; mixingP :> 1e-9;
 
@@ -629,7 +629,7 @@ function SendJobMEME ()
             }
         }
 
-		timesPerSite [siteIndexMap][1] = Time(1);
+		timesPerSite [theJob[1]][1] = Time(1);
 
  		MPINodeState[mpiNode][0] = 1;
 		MPINodeState[mpiNode][1] = theJob[2];		

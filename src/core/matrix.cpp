@@ -7110,7 +7110,11 @@ BaseRef _Matrix::toStr(void)
                         _Formula * f = GetFormula (i,j);
                         _PMathObj fv;
                         if (f && (fv=f->Compute())) {
-                            result << ((_FString*)fv)->theString;
+                            if (fv->ObjectClass() == STRING) {
+                                result << ((_FString*)fv)->theString;
+                            } else {
+                                result << (_String*)fv->toStr();
+                            }
                         }
                         result << '"';
                     } else {

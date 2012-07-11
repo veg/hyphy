@@ -20,3 +20,4 @@ LF_NEXUS_EXPORT_EXTRA = "positionalFrequencies = " + positionFrequencies + ";";
 SetDialogPrompt ("Write nucleotide model fit to");
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (PROMPT_FOR_FILE, CLEAR_FILE, nucLF);
+DeleteObject (nucLF);

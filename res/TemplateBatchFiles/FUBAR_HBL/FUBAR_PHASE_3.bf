@@ -15,7 +15,6 @@ assert (_chainsToRun > 1, "Must specify at least MCMC TWO chains to run");
 /* the MCMC function */
 
 baseFilePath  		= PATH_TO_CURRENT_BF + "spool/"+_in_FilePath;
-intermediateHTML	= _in_FilePath + ".progress";
 
 debug = 0;
 
@@ -65,7 +64,7 @@ if (!debug) {
         runMCMC(_r,_gridInfo,_sampleFile,_chainLength,_chainBurnin,_chainSamples,_concentration);
     }
     
-    fprintf         (stdout, "[FUBAR PHASE 3 DONE] Finished running the MCMC chains; drew ", _chainsToRun, "x", _chainSamples, " samples from chains of length ", _chainLength, 
+    fprintf         (stdout, "\n[FUBAR PHASE 3 DONE] Finished running the MCMC chains; drew ", _chainsToRun, "x", _chainSamples, " samples from chains of length ", _chainLength, 
                              " after discarding ", _chainBurnin, " burn-in steps. Achieved throughput of ", Format(_chainLength/(Time(1)-time0),6,0) + " moves/sec.\n");
    
     if (MPI_NODE_COUNT > 1 && points > MPI_NODE_COUNT) {
@@ -74,8 +73,7 @@ if (!debug) {
         }
     }
 
-    mcmcfile = _in_FilePath + ".samples";
-    fprintf (mcmcfile,CLEAR_FILE, _chainsToRun, "\n");
+    fprintf (_sampleFile,CLEAR_FILE, _chainsToRun, "\n");
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -137,9 +135,9 @@ function runMCMC (chainID,gridFile, sampleFile, total,discard,expected_samples,_
         gridSampled[k][2] = weights[k];
     }
     
-    fprintf (stdout, +weights["_MATRIX_ELEMENT_VALUE_<1e-10"], "\n");
+    //fprintf (stdout, +weights["_MATRIX_ELEMENT_VALUE_<1e-10"], "\n");
     
-    defaultStep = Max(Min(0.001,1/sites),(weights%0)[points*20$100]);
+    defaultStep = Max(Min(0.001,1/sites),(weights%0)[points*50$100]);
     
     //fprintf (stdout, "\nDefault step = ", defaultStep, "\n");
      

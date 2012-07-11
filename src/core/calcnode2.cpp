@@ -102,7 +102,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                     nodesToDo;
     _SimpleList     mustExponentiate;
 
-    for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
+    for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
         thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&mustExponentiate);
@@ -111,10 +111,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         }
     }
 
-    long matrixID;
+    unsigned long matrixID;
 
 #ifdef _OPENMP
-    long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
+    unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
     matrixExpCount += matrixQueue.lLength;
 #endif
 

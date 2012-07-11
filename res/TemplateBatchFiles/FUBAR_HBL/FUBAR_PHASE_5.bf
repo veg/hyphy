@@ -102,7 +102,7 @@ site_probs = computeLFOnGrid ("codonLF", grid,1);
 fprintf (sim_grid_info, CLEAR_FILE, byGridPoint, "\n", site_probs);
 
 tabulateGridResults (points, nn_sample_count, samples, _chainCount);
-posteriorsUnderNN = reportSiteResults (nn_sample_count, 0);
+posteriorsUnderNN = reportSiteResults (nn_sample_count, 0, 0, 1);
 
 return posteriorsUnderNN;
 

@@ -36,7 +36,7 @@ LoadFunctionLibrary ("GrabBag");
 LoadFunctionLibrary ("ReadDelimitedFiles");
 
 _runAsFunctionLibrary = 0;
-LoadFunctionLibrary ("_MFReader_.ibf");
+ExecuteAFile (Join(DIRECTORY_SEPARATOR,{{HYPHY_LIB_DIRECTORY[0][Abs(HYPHY_LIB_DIRECTORY)-2],"TemplateBatchFiles","_MFReader_.ibf"}}));
 
 filePaths = {"Base": LAST_FILE_PATH,
              "Nucleotide fit suffix": ".gtr_fit",
@@ -110,13 +110,13 @@ else
     _cachingOK = 0;
     _fubarChainCount = prompt_for_a_value ("Number of MCMC chains to run",5,2,20,1);
     fprintf (stdout, "[DIAGNOSTIC] FUBAR will use run ", _fubarChainCount, " independent chains\n"); 
-    _fubarChainLength  = prompt_for_a_value ("The length of each chain",5000000,500000,100000000,1);    
+    _fubarChainLength  = prompt_for_a_value ("The length of each chain",2000000,500000,100000000,1);    
     fprintf (stdout, "[DIAGNOSTIC] FUBAR will run the chains for ", _fubarChainLength, " steps\n"); 
     _fubarChainBurnin  = prompt_for_a_value ("Discard this many samples as burn-in",_fubarChainLength$2,_fubarChainLength$20,_fubarChainLength*95$100,1);
     fprintf (stdout, "[DIAGNOSTIC] FUBAR will run discard ", _fubarChainBurnin, " steps as burn-in\n"); 
-    _fubarTotalSamples = prompt_for_a_value ("How many samples should be drawn from each chain",1000,10,_fubarChainLength-_fubarChainBurnin,1);    
+    _fubarTotalSamples = prompt_for_a_value ("How many samples should be drawn from each chain",100,10,_fubarChainLength-_fubarChainBurnin,1);    
     fprintf (stdout, "[DIAGNOSTIC] FUBAR will run thin each chain down to ", _fubarTotalSamples, " samples\n"); 
-    _fubarPriorShape = prompt_for_a_value ("The concentration parameter of the Dirichlet prior",0.1,0.001,1,0);    
+    _fubarPriorShape = prompt_for_a_value ("The concentration parameter of the Dirichlet prior",0.5,0.001,1,0);    
     fprintf (stdout, "[DIAGNOSTIC] FUBAR will use the Dirichlet prior concentration parameter of ", _fubarPriorShape, "\n"); 
 
     ExecuteAFile (Join(DIRECTORY_SEPARATOR,{{PATH_TO_CURRENT_BF[0][Abs(PATH_TO_CURRENT_BF)-2],"FUBAR_HBL","FUBAR_PHASE_3.bf"}}), {"0" : _fubarMCMCSamplesLocation,
@@ -130,7 +130,7 @@ else
                                                                                                                                         
                                                                                                             
                                                                                                                                  
-    fprintf (stdout, "\n[DIAGNOSTIC] FUBAR wrote samples from ", _chainCount, " independent chains to ", _fubarMCMCSamplesLocation, "[0-", _fubarChainCount-1, "]\n"); 
+    fprintf (stdout, "\n[DIAGNOSTIC] FUBAR wrote samples from ", _fubarChainCount, " independent chains to ", _fubarMCMCSamplesLocation, "[0-", _fubarChainCount-1, "]\n"); 
 }
 
 //----------------------------------------------------------------------------
@@ -143,7 +143,9 @@ _fubarResultLocation = filePaths["Base"] + filePaths["Output"];
 _fubarSimGrid        = filePaths["Base"] + filePaths["SimGrid"];
 _fubarSimFitFile     = filePaths["Base"] + filePaths["SimFitFile"];
 
-if (_cachingOK && !_fubarResultLocation && !_fubarSimGrid && !_fubarSimFitFile) {
+_fubar_do_simulations = 0;
+
+if (_cachingOK && !_fubarResultLocation && (_fubar_do_simulations == 0 || (!_fubarSimGrid && !_fubarSimFitFile))) {
      fprintf (stdout, "[CACHED] FUBAR found the results file at ",_fubarResultLocation  ,"\n"); 
 }
 else
@@ -162,26 +164,39 @@ else
                                                                                                             
                                                                                                                                  
     fprintf (stdout, "\n[DIAGNOSTIC] FUBAR wrote the results of its analysis to ", _fubarResultLocation, "\n"); 
-    fprintf (stdout, "[DIAGNOSTIC] FUBAR wrote FDR simulation data to ", _fubarSimFitFile, "\n"); 
-    fprintf (stdout, "[DIAGNOSTIC] FUBAR wrote FDR grid information to ", _fubarSimFitFile, "\n"); 
+    if (_fubar_do_simulations) {
+        fprintf (stdout, "[DIAGNOSTIC] FUBAR wrote FDR simulation data to ", _fubarSimFitFile, "\n"); 
+        fprintf (stdout, "[DIAGNOSTIC] FUBAR wrote FDR grid information to ", _fubarSimFitFile, "\n"); 
+    }
 }
 
 fubar_data = (ReadCSVTable (_fubarResultLocation, 1))[1]%4;
 
-fprintf (stdout, "\n[RESULTS] At false discovery rate of 10% ");
+fprintf (stdout, "\n[RESULTS] At posterior probability >= 0.9 ");
 
-idx = 0;
-while (fubar_data[idx][8] < 0.1 && idx < Rows(fubar_data)) {
-    idx += 1;
+idx = Rows(fubar_data);
+mean_pp = 0;
+while (fubar_data[idx-1][4] >= 0.9 && idx > 0) {
+    mean_pp += (1-fubar_data[idx-1][4]);
+    idx += -1;
 }
 
-if (idx == 0) {
+if (idx == Rows(fubar_data) ) {
     fprintf (stdout, "there were no sites under diversifying positive selection\n");
 } else {
-    fprintf (stdout, "there were ", idx, " sites under diversifying positive selection\n");
-    fprintf (stdout, "\nCodon\tProb[dN/dS>1]\tPSRF\tN_eff\tFDR");
-    for (idx2 = 0; idx2 < idx; idx2 += 1) {
-        fprintf (stdout, "\n", fubar_data[idx2][0], "\t",  fubar_data[idx2][4], "\t",  fubar_data[idx2][6], "\t",  fubar_data[idx2][7], "\t",  fubar_data[idx2][8]); 
+    detected = Rows(fubar_data)-idx;
+    fprintf (stdout, "there were ", detected, " sites under diversifying positive selection, of which ", Format (mean_pp*100/detected, 5,2), "% are expected to be false positives.\n");
+    _fubar_did_simulations = Columns(fubar_data) > 9;
+    if (_fubar_did_simulations) {
+        fprintf (stdout, "\nCodon\tProb[dN/dS>1]\tEBF[dN/dS]>1\tPSRF\tN_eff\tFDR");
+        for (idx2 = Rows(fubar_data)-1; idx2 >= idx; idx2 += -1) {
+            fprintf (stdout, "\n", fubar_data[idx2][0], "\t",  fubar_data[idx2][4], "\t",  fubar_data[idx2][6], "\t", fubar_data[idx2][7], "\t",  fubar_data[idx2][8], "\t",  fubar_data[idx2][9]); 
+        }
+    } else {
+        fprintf (stdout, "\nCodon\tProb[dN/dS>1]\tEBF[dN/dS]>1\tPSRF\tN_eff");
+        for (idx2 = Rows(fubar_data)-1; idx2 >= idx; idx2 += -1) {
+            fprintf (stdout, "\n", fubar_data[idx2][0], "\t",  fubar_data[idx2][4], "\t",  fubar_data[idx2][6], "\t", fubar_data[idx2][7], "\t",  fubar_data[idx2][8]); 
+        }    
     }
     fprintf (stdout, "\n");
 }
