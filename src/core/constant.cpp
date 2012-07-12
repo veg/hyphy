@@ -437,11 +437,11 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
         return      nil;
     }
 
-    _Constant       *ga = (_Constant*)arg1->Gamma(),
-                     *gb = (_Constant*)arg2->Gamma();
+    _Constant        *ga = (_Constant*)arg1->LnGamma(),
+                     *gb = (_Constant*)arg2->LnGamma();
 
     if (ga&&gb) {
-        _Constant   *ac = (_Constant*)arg1,
+        _Constant    *ac = (_Constant*)arg1,
                      *bc = (_Constant*)arg2;
 
         _Parameter  a = ac->Value(),
@@ -513,9 +513,8 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
         }
 
         _Constant   * res = new _Constant (a+b);
-        ac  = (_Constant*)res->Gamma();
-        c   = ac->Value()/(ga->Value()*gb->Value()) *
-              exp (a*log(x)+b*log(1-x));
+        ac  = (_Constant*)res->LnGamma();
+        c   = exp (a*log(x)+b*log(1-x)+ac->Value()-ga->Value()-gb->Value());
 
         if (swap) {
             res->theValue = 1.-c*h/a;
