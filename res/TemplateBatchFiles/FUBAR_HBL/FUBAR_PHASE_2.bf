@@ -7,8 +7,8 @@ ExecuteAFile        (PATH_TO_CURRENT_BF + "FUBAR_tools.ibf");
 prefix              = "existingFit";
 timer               = Time (1);
 ExecuteAFile        (nucFit,"","existingFit");
-LoadFunctionLibrary ("LocalMGREV"); 
-LoadFunctionLibrary ("CF3x4");
+ExecuteAFile        (Join(DIRECTORY_SEPARATOR,{{HYPHY_LIB_DIRECTORY[0][Abs(HYPHY_LIB_DIRECTORY)-2],"TemplateBatchFiles","Utility","LocalMGREV.bf"}}));
+ExecuteAFile        (Join(DIRECTORY_SEPARATOR,{{HYPHY_LIB_DIRECTORY[0][Abs(HYPHY_LIB_DIRECTORY)-2],"TemplateBatchFiles","TemplateModels","CF3x4.bf"}}));
 
 nuc3x4 = CF3x4 (existingFit.positionalFrequencies,GeneticCodeExclusions);
 PopulateModelMatrix ("MGLocalQ", nuc3x4);
