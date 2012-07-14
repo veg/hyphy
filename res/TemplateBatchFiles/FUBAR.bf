@@ -172,12 +172,18 @@ else
 
 fubar_data = (ReadCSVTable (_fubarResultLocation, 1))[1]%4;
 
+ExecuteAFile (Join(DIRECTORY_SEPARATOR,{{PATH_TO_CURRENT_BF[0][Abs(PATH_TO_CURRENT_BF)-2],"FUBAR_HBL","FUBAR_tools.ibf"}}));
+
 fprintf (stdout, "\n[RESULTS] At posterior probability >= 0.9 ");
 
 idx = Rows(fubar_data);
 mean_pp = 0;
+
+p_i = {};
+
 while (fubar_data[idx-1][4] >= 0.9 && idx > 0) {
     mean_pp += (1-fubar_data[idx-1][4]);
+    p_i + (1-fubar_data[idx-1][4]);
     idx += -1;
 }
 
@@ -185,7 +191,8 @@ if (idx == Rows(fubar_data) ) {
     fprintf (stdout, "there were no sites under diversifying positive selection\n");
 } else {
     detected = Rows(fubar_data)-idx;
-    fprintf (stdout, "there were ", detected, " sites under diversifying positive selection, of which ", Format (mean_pp*100/detected, 5,2), "% are expected to be false positives.\n");
+    ci = computeENFP_CI (p_i, 0.05);
+    fprintf (stdout, "there were ", detected, " sites under diversifying positive selection, of which ", Format (mean_pp, 5,2), " [", ci[0], " - ", ci[1], "] are expected to be false positives.\n");
     _fubar_did_simulations = Columns(fubar_data) > 9;
     if (_fubar_did_simulations) {
         fprintf (stdout, "\nCodon\tProb[dN/dS>1]\tEBF[dN/dS]>1\tPSRF\tN_eff\tFDR");

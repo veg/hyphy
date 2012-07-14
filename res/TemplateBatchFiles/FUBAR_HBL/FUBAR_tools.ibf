@@ -1,3 +1,35 @@
+function computeENFP_CI (p_i,sig_level) {
+    N = Abs (p_i);
+      
+    
+    PDF_old = {{p_i[0], 1-p_i[0]}};
+    
+    for (i = 1; i < N; i+=1) {
+        PDF = {1,i+2};
+        PDF[0] = PDF_old[0] * (1-p_i[i]);
+        for (X = 1; X < i+1; X+=1) { 
+            PDF[X] = PDF_old[X] * (1-p_i[i]) + PDF_old[X-1] * (p_i[i]);
+        }
+        PDF[i+1] = PDF_old[i] * p_i[i];
+        PDF_old = PDF;
+    }
+    
+    sum = PDF[0];
+    _idx = 0;
+    while (sum < sig_level/2) {
+        _idx+=1;
+        sum += PDF[_idx];
+    }
+    lb = _idx;
+    
+    while (sum < 1-sig_level/2) {
+        _idx+=1;
+        sum += PDF[_idx];        
+    }
+    
+    return {{lb__, _idx__}}
+}
+
 function tabulateGridResults (points, sites, samples, _chainCount) {
 
     jointLogLArray        = {1,samples};
