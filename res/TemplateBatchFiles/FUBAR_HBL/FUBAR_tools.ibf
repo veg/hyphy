@@ -2,7 +2,7 @@ function computeENFP_CI (p_i,sig_level) {
     N = Abs (p_i);
       
     
-    PDF_old = {{p_i[0], 1-p_i[0]}};
+    PDF_old = {{1-p_i[0],p_i[0]}};
     PDF = PDF_old;
        
     for (i = 1; i < N; i+=1) {
