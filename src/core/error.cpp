@@ -57,6 +57,7 @@ void WinErrorBox(_String&, bool);
 #if !defined __MINGW32__
 #include <sys/utsname.h>
 #endif
+
 #ifndef __HYPHY_GTK__
 extern  bool dropIntoDebugMode;
 #endif
@@ -320,8 +321,15 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 
 
 //_______________________________________________________________________
-void    WarnError (_String st)
+void WarnError (_String st)
 {
+
+#ifdef __HYPHYQT__ 
+    //Just print to buffer for now
+    StringToConsole(st);
+    return;
+#endif
+
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
         globalInterfaceInstance->PushError (&st);
@@ -340,7 +348,6 @@ void    WarnError (_String st)
     int     rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
     if (globalMessageFile) {
         fprintf (globalMessageFile, "\n%s", st.sData);
     }

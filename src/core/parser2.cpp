@@ -647,7 +647,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             if (levelOps->lLength) { // there are some buffered operations left
                 if (levelOps->lLength > 3 || levelData->lLength > 2) {
                     if (flagErrors) {
-                        WarnError (_String ("Syntax error in expression:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
+                        WarnError(_String ("Syntax error in expression:")&s.Cut(0,i)&"?"&s.Cut(i+1,-1));
                     }
                     return HY_FORMULA_FAILED;
                 }
@@ -1423,14 +1423,12 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
     return HY_FORMULA_EXPRESSION;
 }
 
-//__________________________________________________________________________________
 long     VerbosityLevel (void)
 {
     checkParameter (VerbosityLevelString, verbosityLevel, -1.0);
     return verbosityLevel;
 }
 
-//__________________________________________________________________________________
 void  checkParameter (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* theP)
 {
     long f;

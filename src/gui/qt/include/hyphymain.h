@@ -63,7 +63,6 @@ protected:
 
         //Edit Menu
         void hy_find();
-        void hy_selectall();
         void hy_clearwindow();
 
         //Analysis Menu

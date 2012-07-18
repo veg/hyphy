@@ -100,15 +100,7 @@ void    ReadModelList(void)
 
 bool ExpressionCalculator (_String data)
 {
-#ifndef __UNIX__
-    if (terminateExecution) {
-        return false;
-    }
-    BufferToConsole (">");
-    StringToConsole (data);
-    BufferToConsole ("\n");
-#endif
-
+    //Checking for exit
     if (data.sLength == 4) {
         _String checkForExit (data);
         checkForExit.LoCase();
@@ -130,9 +122,8 @@ bool ExpressionCalculator (_String data)
                 BufferToConsole ("NULL\n");
             } else {
                 _String * objValue = (_String*)formRes->toStr();
-                StringToConsole (*objValue);
-                //BufferToConsole ("\n");
-                DeleteObject    (objValue);
+                StringToConsole(*objValue);
+                DeleteObject(objValue);
             }
         } else {
             BufferToConsole ("NO RETURN VALUE");

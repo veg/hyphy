@@ -6,27 +6,29 @@
 #include "hy_strings.h"
 #include "parser.h"
 
-QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextEdit(parent) {
+QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) {
     setWindowFlags(f);
     cmdStr = "";
     curCursorLoc = this->textCursor();
     inputCharCount = 0;
     histLocation = -1;
     tempCmd = "";
-    //setTextColor(Qt::darkCyan);
 
+    //Font Settings
     //QFont font("Monaco Helvetica");
     QFont font("Monaco Helvetica");
+    //setTextColor(Qt::darkCyan);
     this->setCurrentFont(font);
-    //this->setFontFamily("Monaco Helvetica");
+
+    //Make links clickable
+    this->setTextInteractionFlags(Qt::TextEditorInteraction|Qt::LinksAccessibleByMouse);
+
+    //Allow links to open browser
+    this->setOpenExternalLinks(true);
 }
 
 QTerminal::~QTerminal() {
 
-}
-
-void QTerminal::readBufferOut() {
-    this->moveCursor(QTextCursor::End, QTextCursor::KeepAnchor);
 }
 
 void QTerminal::changeDir(const QString & dir) {
@@ -38,6 +40,12 @@ void QTerminal::changeDir(const QString & dir) {
 void QTerminal::keyPressEvent(QKeyEvent * event) {
 
     int key = event->key();
+    qDebug() << key;
+
+    if (key == 16777249) {
+            event->ignore();
+            return;
+    }
 
     this->setTextCursor(curCursorLoc);
 
@@ -47,6 +55,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
             inputCharCount = 0;
         } 
 
+        
         //Command History
         else if (key == Qt::Key_Up) {
             if (cmdHistory.size()) {
@@ -166,20 +175,12 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         //Execute command string
         ExpressionCalculator((_String)(char *)cmdStr.toAscii().data());
 
-
         QTextEdit::keyPressEvent(event);
         cmdHistory.push_back(cmdStr);
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
         this->prompt();
-
-
-        //Clear undo trick
-        this->moveCursor(QTextCursor::End);
-        QString text = this->toHtml();
-        this->setHtml(text);
-
 
     } 
 
@@ -195,11 +196,20 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     this->moveCursor(QTextCursor::End);
 }
 
+void QTerminal::prompt() {
+    this->insertHtml("<font color=\"#A60000\">></font> ");
+
+    //Clear undo stack trick
+    //this->moveCursor(QTextCursor::End);
+    QString text = this->toHtml();
+    this->setHtml(text);
+    this->moveCursor(QTextCursor::End);
+}
+
 void QTerminal::insertFromMimeData(const QMimeData * source) {
     //this->setTextCursor(curCursorLoc);
     this->moveCursor(QTextCursor::End);
 
-    qDebug() << source->text();
     QString pastedText = source->text();
     QStringList commands = pastedText.split("\n");
 
@@ -213,21 +223,21 @@ void QTerminal::insertFromMimeData(const QMimeData * source) {
         tempCmd = "";
         this->insertPlainText("\n");
         this->prompt();
-
      }
 
-    //Clear undo trick
-    curCursorLoc = this->textCursor();
-    QString text = this->toHtml();
-    this->setHtml(text);
+     this->moveCursor(QTextCursor::End);
 }
 
-/*
- *void QTerminal::undo() {
- *    qDebug() << "undo was called";
- *}
- */
-
-void QTerminal::prompt() {
-    this->insertHtml("<font color=\"#A60000\">></font> ");
+void QTerminal::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu *menu = new QMenu();
+    menu->addAction(tr("Undo"),this,SLOT(undo()),QKeySequence::Undo);
+    menu->addAction(tr("Redo"),this,SLOT(redo()),QKeySequence::Redo);
+    menu->addAction(tr("Copy"),this,SLOT(copy()),QKeySequence::Copy);
+    menu->addAction(tr("Paste"),this,SLOT(paste()),QKeySequence::Paste);
+    //menu->addAction(tr("Find"),this,SLOT(find()) );
+    //menu->addAction(tr("Select All"),this );
+    //menu->addAction(tr("Clear Window"),this );
+    menu->exec(event->globalPos());
+    delete menu;
 }

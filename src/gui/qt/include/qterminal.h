@@ -1,29 +1,26 @@
 #pragma once
 
-#include <QTextEdit>
+#include <QTextBrowser>
 #include <QStringList>
 
-class QTerminal : public QTextEdit {
+class QTerminal : public QTextBrowser {
     Q_OBJECT
 
 public:
     QTerminal(QWidget * parent = 0, Qt::WindowFlags f = 0);
     ~QTerminal();
     void keyPressEvent(QKeyEvent * event);
+    void contextMenuEvent(QContextMenuEvent* event);
     void insertFromMimeData(const QMimeData * source);
     void changeDir(const QString & dir);
     void prompt();
 
-private slots:
-    void readBufferOut();
-    //void readStandardErr();
-
 private:
+    int histLocation;
     int inputCharCount;
     QTextCursor curCursorLoc;
     QString cmdStr;
-    void printPrompt();
-    QStringList cmdHistory;
-    int histLocation;
     QString tempCmd;
+    QStringList cmdHistory;
+    void printPrompt();
 };

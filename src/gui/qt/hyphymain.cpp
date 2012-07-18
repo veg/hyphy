@@ -126,8 +126,6 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleRedoAction->setShortcuts(QKeySequence::Redo);
 
     //No Cutting allowed for right now
-    //_hyConsoleCutAction = new QAction(tr("&Cut"),this);
-    //_hyConsoleCutAction->setShortcuts(QKeySequence::Cut);
     _hyConsoleCopyAction = new QAction(tr("&Copy"),this);
     _hyConsoleCopyAction->setShortcuts(QKeySequence::Copy);
     _hyConsolePasteAction = new QAction(tr("&Paste"),this);
@@ -146,7 +144,7 @@ void HyphyMain::initializeMenuBar() {
     connect(_hyConsoleCopyAction, SIGNAL(triggered()), textEdit, SLOT(copy()));
     connect(_hyConsolePasteAction, SIGNAL(triggered()), textEdit, SLOT(paste()));
     connect(_hyConsoleFindAction, SIGNAL(triggered()), this, SLOT(hy_find()));
-    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), this, SLOT(selectAll()));
+    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), textEdit, SLOT(selectAll()));
     connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), this, SLOT(hy_clearwindow()));
 
     //Add the Edit Menu to the Menu Bar
@@ -231,7 +229,6 @@ void HyphyMain::quit() {
 
 //Edit Menu Options
 void HyphyMain::hy_find(){}
-void HyphyMain::hy_selectall(){}
 void HyphyMain::hy_clearwindow(){}
 
 //Analysis Menu
