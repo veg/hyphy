@@ -658,7 +658,7 @@ long        _CalcNode::CheckForReferenceNode(void)
 
 bool        _CalcNode::NeedToExponentiate(long catID)
 {
-    if (isInOptimize&&(referenceNode>=0)) {
+    if (isInOptimize && referenceNode>=0) {
         return ((_CalcNode*)LocateVar(referenceNode))->NeedToExponentiate(catID);
     }
 
@@ -671,7 +671,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
             return true;
         }
 
-        for (long i = 0; i<categoryVariables.lLength; i++)
+        for (unsigned long i = 0; i<categoryVariables.lLength; i++)
             if (LocateVar (categoryVariables.lData[i])->HasChanged()) {
                 return true;
             }
@@ -680,7 +680,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
             return true;
         }
 
-        for (long i = 0; i<categoryVariables.lLength; i++)
+        for (unsigned long i = 0; i<categoryVariables.lLength; i++)
             if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged(remapMyCategories.lData[catID*(categoryVariables.lLength+1)+i+1])) {
                 return true;
             }
@@ -764,7 +764,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     bool    isExplicitForm  = HasExplicitFormModel ();
 
-    _Matrix * myModelMatrix = GetModelMatrix();
+    _Matrix * myModelMatrix = GetModelMatrix(); 
 
     if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
         _Matrix *temp = nil;
@@ -6320,12 +6320,14 @@ bool _TheTree::HaveStringBranchLengths (void)
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2)
+void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
 {
+    unsigned long traversal_order = 0;
     _CalcNode* curNode = DepthWiseTraversal (true);
     while (curNode) {
-        curNode->ScanForVariables(l,l2);
+        curNode->ScanForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order);
         curNode = DepthWiseTraversal();
+        traversal_order += 1;
     }
 }
 
@@ -6355,7 +6357,7 @@ void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2)
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld)
+void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger, long weight)
 {
     _CalcNode*  curNode = DepthWiseTraversal (true);
     _SimpleList cL;
@@ -6370,12 +6372,15 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld)
                 (modelM)->ScanForVariables(tempA, true);
                 tempA.ReorderList();
             }
-            for (long i=0; i<temp.lLength; i++) {
+            for (unsigned long i=0; i<temp.lLength; i++) {
                 long p = temp.lData[i];
                 _Variable* v = LocateVar (p);
                 if (v&&v->IsGlobal()) {
                     if(v->IsIndependent()) {
                         li.Insert ((BaseRef)p);
+                        if (tagger) {
+                            tagger->UpdateValue((BaseRef)p, weight, 0);
+                        }
                     } else {
                         ld.Insert ((BaseRef)p);
                     }
@@ -9701,7 +9706,7 @@ _AVLListX*  _TheTree::ConstructNodeToIndexMap (bool doINodes)
     * whichL = doINodes?&flatNodes:&flatLeaves;
     _AVLListX   * result = new _AVLListX (nodes);
 
-    for (long   pistolero = 0; pistolero < whichL->lLength; pistolero++) {
+    for (unsigned long   pistolero = 0; pistolero < whichL->lLength; pistolero++) {
         result->Insert ((BaseRef)whichL->lData[pistolero], pistolero, false);
     }
 

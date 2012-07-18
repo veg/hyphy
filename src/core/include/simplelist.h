@@ -92,10 +92,10 @@ class _SimpleList:public BaseObj
         */
 
         // element location functions - read/write
-        long& operator [] (long);
+        long& operator [] (const long);
 
         // element location functions - read only
-        long operator () (unsigned long);
+        long operator () (const unsigned long);
 
         // assignment operator
         virtual _SimpleList operator = (_SimpleList);
@@ -117,6 +117,15 @@ class _SimpleList:public BaseObj
         Methods
         ==============================================================
         */
+
+        /**
+        * Retrieve the element in position index if index if positive or 
+        * length + index if index is negative
+        * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
+        * @param index The index of the elemnt to retrieve 
+        * @return the value of the element at the specified index.
+        */
+        long GetElement (const long index);
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -264,6 +273,14 @@ class _SimpleList:public BaseObj
         */
         long Max(void);
 
+
+        /**
+        * SLKP: 20090508
+        * Return the sum of all values in the list 
+        * Example: _SimpleList([4, 1, 2]).Sum() = 7 
+        * @return the sum of all values in the list 
+        */
+        long Sum (void);
 
         /**
         * Populate a Simple List with integers incrementally.

@@ -624,9 +624,9 @@ public:
     }
 
     void        ScanAndAttachVariables          (void);
-    void        ScanForVariables                (_AVLList& l, _AVLList& l2);
+    void        ScanForVariables                (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
-    void        ScanForGVariables               (_AVLList&, _AVLList&);
+    void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForCVariables               (_AVLList&);
     void        MolecularClock                  (_String&, _List&);
 

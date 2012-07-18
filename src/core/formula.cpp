@@ -79,7 +79,7 @@ void _Formula::Duplicate  (BaseRef f)
 //__________________________________________________________________________________
 void _Formula::DuplicateReference  (_Formula* f)
 {
-    for (int i=0; i<f->theFormula.lLength; i++) {
+    for (unsigned long i=0; i<f->theFormula.lLength; i++) {
         _Operation *theO = ((_Operation*)f->theFormula(i));
         if (theO->GetAVariable()==-2) {
             theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-theO->GetNoTerms()-1)->Compute()->makeDynamic()));
@@ -92,18 +92,14 @@ void _Formula::DuplicateReference  (_Formula* f)
 //__________________________________________________________________________________
 BaseRef _Formula::makeDynamic (void)
 {
-    _Formula * res = new _Formula;
-    checkPointer(res);
-
+    _Formula * res = (_Formula*) checkPointer (new _Formula);
     res->Duplicate((BaseRef)this);
-
     return (BaseRef)res;
 }
 //__________________________________________________________________________________
 
 _Formula::~_Formula (void)
 {
-
     Clear();
 }
 
@@ -2203,7 +2199,7 @@ bool _Formula::HasChanged (bool ingoreCats)
 bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
 {
     _Operation *thisOp;
-    for (long i = 0; i<theFormula.lLength; i++) {
+    for (unsigned long i = 0; i<theFormula.lLength; i++) {
         thisOp = (_Operation*)((BaseRef**)theFormula.lData)[i];
         if (thisOp->theNumber) {
             continue;
@@ -2221,9 +2217,9 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments)
+void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight)
 {
-    for (long i = 0; i<theFormula.lLength; i++) {
+    for (unsigned long i = 0; i<theFormula.lLength; i++) {
         _Operation* theObj = ((_Operation**)theFormula.lData)[i];
         if (theObj->IsAVariable()) {
             if (!includeGlobals)
@@ -2238,23 +2234,26 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
                 _Variable * v = LocateVar(f);
 
                 if (v->IsCategory()&&includeCategs) {
-                    v->ScanForVariables (l,includeGlobals);
+                    v->ScanForVariables (l,includeGlobals,tagger, weight);
                 }
 
                 if(includeAll || v->ObjectClass()==NUMBER) {
                     l.Insert ((BaseRef)f);
+                    if (tagger) {
+                        tagger -> UpdateValue((BaseRef)f, weight, 0);
+                    }
                 }
 
                 if (skipMatrixAssignments) {
                     if (v->ObjectClass()!=MATRIX || !theObj->AssignmentVariable()) {
-                        v->ScanForVariables(l,includeGlobals);
+                        v->ScanForVariables(l,includeGlobals,tagger, weight);
                     }
                 } else if (!v->IsIndependent()) {
-                    v->ScanForVariables(l,includeGlobals);
+                    v->ScanForVariables(l,includeGlobals,tagger);
                 }
             } else if (theObj->theNumber)
                 if (theObj->theNumber->ObjectClass()==MATRIX) {
-                    ((_Matrix*)theObj->theNumber)->ScanForVariables(l,includeGlobals);
+                    ((_Matrix*)theObj->theNumber)->ScanForVariables(l,includeGlobals,tagger, weight);
                 }
         }
     }
@@ -2368,7 +2367,7 @@ _Operation* _Formula::GetIthTerm (long idx)
 //__________________________________________________________________________________
 bool _Formula::IsAConstant (void)
 {
-    for (int i = 0; i<theFormula.lLength; i++)
+    for (unsigned long i = 0; i<theFormula.lLength; i++)
         if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsAVariable()) {
             return false;
         }
@@ -2379,7 +2378,7 @@ bool _Formula::IsAConstant (void)
 //__________________________________________________________________________________
 bool _Formula::IsConstant (void)
 {
-    for (int i = 0; i<theFormula.lLength; i++)
+    for (unsigned long i = 0; i<theFormula.lLength; i++)
         if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsConstant() == false) {
             return false;
         }
@@ -2391,7 +2390,7 @@ bool _Formula::IsConstant (void)
 void _Formula::SimplifyConstants (void)
 {
     theStack.theStack.Clear();
-    for (long i = 0; i<theFormula.countitems(); i++) {
+    for (unsigned long i = 0; i<theFormula.countitems(); i++) {
         long j;
         _Operation* thisOp = ((_Operation*)((BaseRef**)theFormula.lData)[i]);
         if ((thisOp->theData==-1)&&(thisOp->opCode>=0)&&(thisOp->numberOfTerms)) {

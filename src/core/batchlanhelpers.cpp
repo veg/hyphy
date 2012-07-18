@@ -228,7 +228,7 @@ _String* _HBLObjectNameByType (const long type, const long index, bool correct_f
             return (_String*)(*theList)(index);
             
         long counter = 0;
-        for (long name_index = 0; name_index < theList->lLength; name_index++) {
+        for (unsigned long name_index = 0; name_index < theList->lLength; name_index++) {
             _String *thisName = (_String*)(*theList)(name_index);
             if (thisName && thisName->sLength) {
                 if (name_index - counter == index) {

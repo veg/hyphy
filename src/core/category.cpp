@@ -933,7 +933,7 @@ _Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void)
 //___________________________________________________________________________________________
 bool    _CategoryVariable::HaveParametersChanged (long catID)
 {
-    for (long i=0; i<parameterList.lLength; i++) {
+    for (unsigned long i=0; i<parameterList.lLength; i++) {
         _Variable * p = LocateVar(parameterList.lData[i]);
         if (p->HasChanged())
             if (catID == -1 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID]) {
@@ -947,7 +947,7 @@ bool    _CategoryVariable::HaveParametersChanged (long catID)
 //___________________________________________________________________________________________
 bool    _CategoryVariable::IsConstant (void)
 {
-    for (long i=0; i<parameterList.lLength; i++)
+    for (unsigned long i=0; i<parameterList.lLength; i++)
         if (LocateVar(parameterList.lData[i])->IsConstant() == false) {
             return false;
         }
@@ -962,18 +962,18 @@ bool    _CategoryVariable::IsGlobal (void)
 }
 
 //___________________________________________________________________________________________
-void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals)
+void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight)
 {
-    density.ScanFForVariables(l,true);
-    weights->ScanForVariables(l,true);
-    values->ScanForVariables(l,true);
+    density.ScanFForVariables(l,true, false, true, false, tagger, weight);
+    weights->ScanForVariables(l,true,tagger, weight);
+    values->ScanForVariables(l,true,tagger, weight);
 
     if (hiddenMarkovModel != HY_NO_MODEL) {
-        GetHiddenMarkov()->ScanForVariables (l,true);
-        GetHiddenMarkovFreqs()->ScanForVariables (l,true);
+        GetHiddenMarkov()->ScanForVariables (l,true, tagger, weight);
+        GetHiddenMarkovFreqs()->ScanForVariables (l,true, tagger, weight);
     }
     if (intervalSplitter != HY_NO_MODEL) {
-        LocateVar(intervalSplitter)->ScanForVariables (l, globals);
+        LocateVar(intervalSplitter)->ScanForVariables (l, globals, tagger, weight);
     }
 
     if (globals) {

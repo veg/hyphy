@@ -100,7 +100,7 @@ public:
     }
 
     virtual
-    void       ScanForVariables         (_AVLList&, bool = false);
+    void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0);
 
     virtual
     void       ScanForGVariables        (_AVLList&);

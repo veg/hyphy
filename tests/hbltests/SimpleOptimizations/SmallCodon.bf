@@ -650,9 +650,11 @@ Tree givenTree=(((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_UG_94_94
 
 DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter filteredData = CreateFilter(ds,3,"0-1319","4,5,7,6,1,0,2,3","TAA,TAG,TGA");
+
+PARAMETER_GROUPING = {"0" : {{"R","AC","AT","CT"}}};
 LikelihoodFunction lf = (filteredData,givenTree);
 OPTIMIZATION_PRECISION     = 0.001;
-VERBOSITY_LEVEL	           = 1;
+VERBOSITY_LEVEL	           = 10;
 OPTIMIZATION_METHOD		   = 4;
 USE_ADAPTIVE_VARIABLE_STEP = 1;
 

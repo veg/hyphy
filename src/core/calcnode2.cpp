@@ -144,7 +144,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
     }
 
     if (forceRecalculationOnTheseBranches.lLength) {
-        for (long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
+        for (unsigned long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
             nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 1;
         }
 
@@ -153,7 +153,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         }
     }
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++) {
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++) {
         bool    isLeaf     = nodeID < flatLeaves.lLength;
 
         currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
@@ -858,6 +858,8 @@ void            _TheTree::ComputeBranchCache    (
 )
 {
 
+    //printf ("ComputeBranchCache\n");
+
     _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
                 nodesToProcess,
                 rootPath;
@@ -877,7 +879,7 @@ void            _TheTree::ComputeBranchCache    (
     } while (myParent >= 0);
 
 
-    for (long k = 0; k <  flatLeaves.lLength+flatNodes.lLength; k++) {
+    for (unsigned long k = 0; k <  flatLeaves.lLength+flatNodes.lLength; k++) {
         myParent = flatParents.lData[k];
         if (taggedNodes.lData[myParent+flatLeaves.lLength] == 1 && taggedNodes.lData[k] == 0) {
             if (myParent != brID - flatLeaves.lLength) {

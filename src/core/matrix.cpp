@@ -1452,7 +1452,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
     case HY_OP_CODE_MIN: // Max
         if (p->ObjectClass()==NUMBER) {
             if (CheckEqual (p->Value(), 1)) {
-                long index;
+                long index = 0L;
                 _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
                 v[1] = index;
                 return new _Matrix (v,1,2);
@@ -2338,7 +2338,7 @@ _Matrix::_Matrix (_SimpleList& sl, long colArg)
 _Matrix::_Matrix (_Parameter* inList, unsigned long rows, unsigned long columns)
 {
     CreateMatrix (this, rows, columns, false, true, false);
-    for (long k = 0; k < rows*columns; k++) {
+    for (unsigned long k = 0; k < rows*columns; k++) {
         theData[k] = inList[k];
     }
 }
@@ -2354,7 +2354,7 @@ _Matrix::_Matrix (_List& sl)
         _Constant        hi (0.),
                          vi;
 
-        for (long k=0; k<sl.lLength; k++) {
+        for (unsigned long k=0; k<sl.lLength; k++) {
             _FString  *choiceString = new _FString (*(_String*) sl(k));
             _Formula  sf (choiceString);
             vi.SetValue (k);
@@ -2368,13 +2368,13 @@ _Matrix::_Matrix (_List& sl)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG)
+void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG, _AVLListX* tagger, long weights)
 {
-    ScanForVariables2 (theReceptacle, inclG, -1);
+    ScanForVariables2 (theReceptacle, inclG, -1, true, tagger, weights);
 }
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat)
+void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat, _AVLListX* tagger, long weights)
 {
     if (storageType == 2) { // a formula based matrix, there is stuff to do
         if (modelID >= 0) {
@@ -2415,16 +2415,16 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
                     cachedValues = new _Matrix (2,sl2.lLength,false,true);
                     checkPointer (cachedValues);
 
-                    for (long k=0; k<sl1.lLength; k++) {
+                    for (unsigned long k=0; k<sl1.lLength; k++) {
                         cachedValues->theData[k] = sl1.lData[k];
                     }
                     {
-                        for (long k=sl1.lLength; k<sl2.lLength; k++) {
+                        for (unsigned long k=sl1.lLength; k<sl2.lLength; k++) {
                             cachedValues->theData[k] = -1.;
                         }
                     }
                     {
-                        for (long k=0; k<sl2.lLength; k++) {
+                        for (unsigned long k=0; k<sl2.lLength; k++) {
                             cachedValues->theData[k+sl2.lLength] = sl2.lData[k];
                         }
                     }
@@ -2442,6 +2442,9 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
                     long vI = cachedValues->theData[rowIndex];
                     if (vI >= 0) {
                         theReceptacle.Insert ((BaseRef)vI);
+                        if (tagger) {
+                            tagger->UpdateValue((BaseRef)vI, weights, 0);
+                        }
                     } else {
                         break;
                     }
@@ -2457,12 +2460,12 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
         if (theIndex) {
             for (long i = 0; i<lDim; i++)
                 if (IsNonEmpty(i)) {
-                    theFormulas[i]->ScanFForVariables(theReceptacle,inclG,false,inclCat);
+                    theFormulas[i]->ScanFForVariables(theReceptacle,inclG,false,inclCat, false, tagger, weights);
                 }
         } else
             for (long i = 0; i<lDim; i++) {
                 if (theFormulas[i]!=(_Formula*)ZEROPOINTER) {
-                    theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat);
+                    theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat, false, tagger, weights);
                 }
             }
     } else if (storageType == 0) { // a polynomial based matrix, there is stuff to do
@@ -2470,13 +2473,13 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
         if (theIndex)
             for (long i = 0; i<lDim; i++) {
                 if (IsNonEmpty(i)) {
-                    thePoly[i]->ScanForVariables(theReceptacle,inclG);
+                    thePoly[i]->ScanForVariables(theReceptacle,inclG,tagger, weights);
                 }
             }
         else
             for (long i = 0; i<lDim; i++) {
                 if (thePoly[i]!=ZEROPOINTER) {
-                    thePoly[i]->ScanForVariables (theReceptacle,inclG);
+                    thePoly[i]->ScanForVariables (theReceptacle,inclG,tagger, weights);
                 }
             }
     }

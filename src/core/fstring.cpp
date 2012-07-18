@@ -96,7 +96,7 @@ _FString::_FString (_String& data, bool meta)
         }
 
         theString = new _String (data.sLength,true);
-        for (long k=0; k<data.sLength; k++) {
+        for (unsigned long k=0; k<data.sLength; k++) {
             char c = data.sData[k];
             if (c=='\\') {
                 if (k<data.sLength-1) {

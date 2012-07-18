@@ -43,7 +43,7 @@
 #include "baseobj.h"
 #include "classes.h"
 #include "defines.h"
-#include "avllist.h"
+#include "avllistx.h"
 #include "stack.h"
 #include "operation.h"
 
@@ -105,7 +105,7 @@ public:
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0);
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type

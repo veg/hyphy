@@ -210,7 +210,8 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 categoryMatrixScalers           (".site_scalers"),
                                 categoryLogMultiplier           (".log_scale_multiplier"),
                                 optimizationHardLimit           ("OPTIMIZATION_TIME_HARD_LIMIT"),
-                                minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE");
+                                minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
+                                userSuppliedVariableGrouping    ("PARAMETER_GROUPING");
 
 
 
@@ -1678,7 +1679,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     useGlobalUpdateFlag = true;
     // mod 20060125 to only update large globals once
-    long i = 0;
+    unsigned long i = 0;
 
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
@@ -1692,7 +1693,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
     useGlobalUpdateFlag = false;
     // mod 20060125 to only update large globals once
 
-    for (long j=0; j<arrayToCheck->lLength; j++) {
+    for (unsigned long j=0; j<arrayToCheck->lLength; j++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[j]);
         if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
             cornholio->varFlags -= HY_DEP_V_COMPUTED;
@@ -1710,7 +1711,7 @@ void    _LikelihoodFunction::PostCompute        (void)
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
     //useGlobalUpdateFlag = true;
-    for (long i=0; i<arrayToCheck->lLength; i++)
+    for (unsigned long i=0; i<arrayToCheck->lLength; i++)
         //LocateVar (indexDep.lData[i])->PostMarkChanged();
     {
         LocateVar (arrayToCheck->lData[i])->Compute();
@@ -1718,7 +1719,7 @@ void    _LikelihoodFunction::PostCompute        (void)
     //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
     {
-        for (long i=0; i<indexInd.lLength; i++) {
+        for (unsigned long i=0; i<indexInd.lLength; i++) {
             LocateVar (indexInd.lData[i])->MarkDone();
         }
     }
@@ -1807,7 +1808,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
      */
 
     if (!isInOptimize && hasBeenOptimized)
-        for (long i=0; i<indexInd.lLength; i++)
+        for (unsigned long i=0; i<indexInd.lLength; i++)
             if (LocateVar (indexInd.lData[i])->HasChanged()) {
                 hasBeenOptimized = false;
                 break;
@@ -3823,7 +3824,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     isInOptimize    = true;
     lockedLFID      = likeFuncList._SimpleList::Find ((long)this);
 
-    RankVariables   ();
+    //RankVariables   ();
     VerbosityLevel  ();
 
 #if defined __UNIX__ && ! defined __HEADLESS__
@@ -7140,30 +7141,37 @@ long    _LikelihoodFunction::DependOnModel (_String& modelTitle)
 _CategoryVariable*  _LikelihoodFunction::FindCategoryVar (long index)
 {
     _CategoryVariable* res = nil;
-    if ((index>=0)&&(index<blockDependancies.lLength)) {
+    if (index>=0 && index<blockDependancies.lLength) {
         res = (_CategoryVariable*)LocateVar(indexCat(HighestBit(blockDependancies.lData[index])));
     }
     return res;
 }
-
 
 //_______________________________________________________________________________________
 void    _LikelihoodFunction::ScanAllVariables (void)
 {
     _SimpleList   allVariables,
                   covCat,
-                  cpCat;
+                  cpCat,
+                  treeSizes,
+                  rankVariablesSupp;
+                  
+                   
+    _AVLListX    rankVariables (&rankVariablesSupp);
 
 
     {
         _AVLList avl (&allVariables);
-        for (long i=0; i<theProbabilities.lLength; i++) {
-            (LocateVar(theProbabilities(i)))->ScanForVariables (avl,true);
+        for (unsigned long i=0; i<theProbabilities.lLength; i++) {
+            long iNodeCount, lNodeCount;
+            ((_TheTree*)(LocateVar(theTrees(i))))->EdgeCount (iNodeCount, lNodeCount);
+            treeSizes << (iNodeCount + lNodeCount);
+            (LocateVar(theProbabilities(i)))->ScanForVariables (avl,true,&rankVariables,treeSizes.GetElement(-1) << 16);
         }
 
 
         if (computingTemplate) {
-            computingTemplate->ScanFForVariables (avl,true,false,true);
+            computingTemplate->ScanFForVariables (avl,true,false,true, false, &rankVariables, treeSizes.Sum() << 16);
         }
 
         avl.ReorderList();
@@ -7171,13 +7179,14 @@ void    _LikelihoodFunction::ScanAllVariables (void)
 
     if (templateKind<0) {
         allVariables.Delete (allVariables.Find(-templateKind-1));
+        rankVariables.Delete ((BaseRef)(-templateKind-1));
     }
 
     {
         _AVLList iia (&indexInd),
                  iid (&indexDep);
 
-        for (long i=0; i<allVariables.lLength; i++) {
+        for (unsigned  long i=0; i<allVariables.lLength; i++) {
             long variableIndex = allVariables.lData[i];
             _Variable* theV = (_Variable*)LocateVar(variableIndex);
             if (theV->IsCategory()) {
@@ -7199,14 +7208,14 @@ void    _LikelihoodFunction::ScanAllVariables (void)
             }
         }
 
-        for (long i=0; i<theTrees.lLength; i++) {
+        for (unsigned long i=0; i<theTrees.lLength; i++) {
             ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
-            ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid);
+            ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (i) << 16);
         }
-
-        for (long i=0; i<theTrees.lLength; i++) {
+        
+        for (unsigned long i=0; i<theTrees.lLength; i++) {
             _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->ScanForVariables  (iia, iid);
+            cT->ScanForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
             cT->ScanForDVariables (iid, iia);
             cT->SetUp();
         }
@@ -7223,7 +7232,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
     bool haveHMM                 = false,
          haveConstantOnPartition = false;
 
-    for (long i=0; i<theTrees.lLength; i++) {
+    for (unsigned long i=0; i<theTrees.lLength; i++) {
         _SimpleList localCategVars;
         {
             _AVLList ca (&localCategVars);
@@ -7231,7 +7240,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
             ca.ReorderList();
         }
 
-        for (long i2 = 0; i2 < localCategVars.lLength; i2++) {
+        for (unsigned long i2 = 0; i2 < localCategVars.lLength; i2++) {
             _CategoryVariable * cvRef = (_CategoryVariable*)LocateVar (localCategVars.lData[i2]);
             haveHMM                     = haveHMM || cvRef->IsHiddenMarkov();
             haveConstantOnPartition     = haveConstantOnPartition || cvRef->IsConstantOnPartition();
@@ -7257,13 +7266,11 @@ void    _LikelihoodFunction::ScanAllVariables (void)
     indexCat << covCat;
 
     if (indexCat.lLength>sizeof(long)*8) {
-        _String errMsg ("The number of category variables exceeded ");
-        errMsg = errMsg&_String((long)sizeof(long)*8);
-        WarnError (errMsg);
+        WarnError (_String ("The number of category variables exceeded ") &_String((long)sizeof(long)*8) );
         return;
     }
 
-    for (long i=0; i<theTrees.lLength; i++) {
+    for (unsigned long i=0; i<theTrees.lLength; i++) {
         _SimpleList categVars;
         {
             _AVLList ca (&categVars);
@@ -7299,7 +7306,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
             _SimpleList   auxL;
             _AVLList      auxa (&auxL);
 
-            for (long i=0; i<indexCat.lLength; i++) {
+            for (unsigned long i=0; i<indexCat.lLength; i++) {
                 _CategoryVariable *theCV = (_CategoryVariable*)LocateVar(indexCat(i));
                 theCV->ScanForGVariables (auxa);
             }
@@ -7318,8 +7325,10 @@ void    _LikelihoodFunction::ScanAllVariables (void)
 
     _Parameter l = DEFAULTLOWERBOUND*(1.0-machineEps),
                u = DEFAULTUPPERBOUND*(1.0-machineEps);
+               
+    
 
-    for (long i=0; i<indexInd.lLength; i++) {
+    for (unsigned long i=0; i<indexInd.lLength; i++) {
         _Variable *_cv = GetIthIndependentVar(i);
         if (_cv->GetLowerBound()<=l) {
             _cv->SetBounds(DEFAULTPARAMETERLBOUND,_cv->GetUpperBound());
@@ -7327,8 +7336,10 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         if (_cv->GetUpperBound()>=u) {
             _cv->SetBounds(_cv->GetLowerBound(),DEFAULTPARAMETERUBOUND);
         }
+        //printf ("%s -> %d\n", _cv->theName->sData, rankVariables.GetXtra(rankVariables.Find ((BaseRef)indexInd.lData[i])));
     }
-    for (long i=0; i<indexDep.lLength; i++) {
+    
+    for (unsigned  long i=0; i<indexDep.lLength; i++) {
         _Variable *_cv = GetIthDependentVar(i);
         if (_cv->GetLowerBound()<=l) {
             _cv->SetBounds(DEFAULTPARAMETERLBOUND,_cv->GetUpperBound());
@@ -7339,13 +7350,15 @@ void    _LikelihoodFunction::ScanAllVariables (void)
     }
 
     _SimpleList pidx (1,0,0);
-    for (long p = 0; p < theTrees.lLength; p++) {
+    for (unsigned long p = 0; p < theTrees.lLength; p++) {
         pidx.lData[0] = p;
         _SimpleList iv,dv,cv;
         ScanAllVariablesOnPartition (pidx, iv, dv, cv, true);
         indVarsByPartition && & iv;
         depVarsByPartition && & dv;
     }
+
+    RankVariables(&rankVariables);
 
     //for (long iid = 0; iid < indexInd.lLength; iid++)
     //  printf ("%ld: %s\n", iid, LocateVar(indexInd.lData[iid])->GetName()->sData);
@@ -7622,7 +7635,7 @@ void    _LikelihoodFunction::Setup (void)
     {
         checkParameter (keepOptimalOrder,kp,0.0);
         if (kp) {
-            for (int i=0; i<theTrees.lLength; i++) {
+            for (unsigned long i=0; i<theTrees.lLength; i++) {
                 _SimpleList*    s = (_SimpleList*)optimalOrders(i),
                                 *   l = (_SimpleList*)leafSkips(i);
 
@@ -7653,7 +7666,7 @@ void    _LikelihoodFunction::Setup (void)
     _Parameter assumeRev = 0.;
     checkParameter (assumeReversible,assumeRev,0.0);
 
-    for (long i=0; i<theTrees.lLength; i++) {
+    for (unsigned long i=0; i<theTrees.lLength; i++) {
         _Matrix         *glFreqs = (_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue();
         _DataSetFilter* df      = ((_DataSetFilter*)dataSetFilterList(theDataFilters(i)));
         _TheTree        *t       = ((_TheTree*)LocateVar(theTrees.lData[i]));
@@ -7673,7 +7686,7 @@ void    _LikelihoodFunction::Setup (void)
         if (assumeRev > 0.5) {
             ReportWarning (_String ("Partition ") & i & " is ASSUMED to have a reversible model");
         } else {
-            for (long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
+            for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
                 long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
                 if (alreadyDone>=0) {
                     alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
@@ -10657,7 +10670,7 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear)
 void    _LikelihoodFunction::DoneComputing (bool force)
 {
     if (hasBeenSetUp == 1 || (hasBeenSetUp > 0 && force)) {
-        for (long i=0; i<theTrees.lLength; i++) {
+        for (unsigned long i=0; i<theTrees.lLength; i++) {
             _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
             cT->CleanUpMatrices();
         }
@@ -10665,7 +10678,7 @@ void    _LikelihoodFunction::DoneComputing (bool force)
             mstCache->resultCache.Clear();
             mstCache->statesCache.Clear();
         }
-        for (long i=0; i<theProbabilities.lLength; i++) {
+        for (unsigned long i=0; i<theProbabilities.lLength; i++) {
             ((_Matrix*)LocateVar(theProbabilities.lData[i])->GetValue())->MakeMeGeneral();
         }
 
@@ -10682,34 +10695,98 @@ void    _LikelihoodFunction::DoneComputing (bool force)
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::RankVariables(void)
+void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 {
-    _SimpleList varRank, holder;
-    long        k,j,f;
-
-    for (k=0; k<indexInd.lLength; k++) {
-        if (LocateVar(indexInd.lData[k])->IsGlobal()) {
-            varRank<<10000;
-        } else {
-            varRank<<10050;
+    _SimpleList varRank (indexInd.lLength,0,0), 
+                holder;
+    
+    if (tagger) {
+        for (unsigned long k=0; k<indexInd.lLength; k++) {
+            varRank.lData[k] = -tagger->GetXtra(tagger->Find((BaseRef)indexInd.lData[k]));
         }
     }
-
-    for (k=0; k<indexDep.lLength; k++) {
-        holder.Clear();
-        {
-            _AVLList   al (&holder);
-            LocateVar (indexDep.lData[k])->ScanForVariables(al,true);
-            al.ReorderList ();
+    else {
+        for (unsigned long k=0; k<indexInd.lLength; k++) {
+            if (LocateVar(indexInd.lData[k])->IsGlobal()) {
+                varRank<<10000;
+            } else {
+                varRank<<10050;
+            }
+            //printf ("%s -> %ld\n", LocateVar(indexInd.lData[k])->theName->sData, varRank.GetElement(-1));
         }
-        for (j=0; j<holder.lLength; j++) {
-            f = indexInd.Find(holder.lData[j]);
-            if (f>=0) {
-                varRank.lData[f]--;
+
+        for (unsigned long k=0; k<indexDep.lLength; k++) {
+            holder.Clear();
+            {
+                _AVLList   al (&holder);
+                LocateVar (indexDep.lData[k])->ScanForVariables(al,true);
+                al.ReorderList ();
+            }
+            for (unsigned long j=0; j<holder.lLength; j++) {
+                long f = indexInd.Find(holder.lData[j]);
+                if (f>=0) {
+                    varRank.lData[f]--;
+                }
             }
         }
     }
+    
     SortLists (&varRank,&indexInd);
+    
+    // enforce user provided rankings 
+    
+    _AssociativeList * variableGrouping = (_AssociativeList*)FetchObjectFromVariableByType(&userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
+    if (variableGrouping) {
+        
+    
+         _SimpleList  hist,
+                      supportList;
+                      
+        _AVLListX existingRanking (&supportList);
+        long         ls,
+                     cn = variableGrouping->avl.Traverser (hist,ls,variableGrouping->avl.GetRoot());                     
+                     
+        for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
+            existingRanking.Insert((BaseRef)indexInd.lData[vi], vi, true);
+        }          
+        
+        //printf ("\n\n%ld\n\n", existingRanking.root);
+        
+        long  offset = 1; 
+        bool  re_sort = false;
+        
+        while (cn >= 0) {
+            _PMathObj anEntry = (_PMathObj)variableGrouping->avl.GetXtra (cn);
+            if (anEntry->ObjectClass() == MATRIX) {
+                _Matrix *variableGroup = (_Matrix*) anEntry;
+                if (variableGroup -> IsAStringMatrix()) {
+                    unsigned long dimension = variableGroup->GetHDim() * variableGroup->GetVDim ();
+                    
+                    for (unsigned long variable_id = 0; variable_id < dimension; variable_id ++) {
+                        _String variableID ((_String*)variableGroup->GetFormula (0, variable_id)->Compute()->toStr());
+                        long variableIndex = LocateVarByName(variableID);
+                        if (variableIndex >= 0) {
+                            existingRanking.UpdateValue((BaseRef)variableIndex, -offset - dimension + variable_id, 1);
+                            re_sort = true;
+                        }
+                    }
+                    offset += dimension;
+                }
+                
+                
+            }
+            cn = variableGrouping->avl.Traverser (hist,ls);
+        }
+        if (re_sort) {
+            _SimpleList new_ranks;
+            for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
+                new_ranks << existingRanking.GetXtra(existingRanking.Find ((BaseRef)indexInd.lData[vi]));
+                //printf ("%s -> %ld/%ld\n", LocateVar(indexInd.lData[vi])->theName->sData, new_ranks.GetElement (-1), existingRanking.Find ((BaseRef)indexInd.lData[vi]));
+            }          
+            SortLists (&new_ranks,&indexInd);
+        }
+    }
+    
 }
 
 //_______________________________________________________________________________________
@@ -10727,7 +10804,7 @@ _CustomFunction::_CustomFunction (_String* arg)
             myBody.ScanFForVariables(al,true,false,false);
             al.ReorderList();
         }
-        for (long k=0; k<myVars.lLength; k++)
+        for (unsigned long k=0; k<myVars.lLength; k++)
             if (LocateVar(myVars.lData[k])->IsIndependent()) {
                 GetIndependentVars() << myVars.lData[k];
             }
@@ -10742,7 +10819,7 @@ _Parameter _CustomFunction::Compute (void)
 {
     likeFuncEvalCallCount++;
     _SimpleList * iv = &GetIndependentVars ();
-    for (long i=0; i<iv->lLength; i++) {
+    for (unsigned long i=0; i<iv->lLength; i++) {
         _Parameter result = GetIthIndependent(i);
 
         if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {

@@ -493,7 +493,7 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
         (*errMsg) << theMessage;
         if (calls.lLength) {
             (*errMsg) << "\n\nFunction call stack\n";
-            for (long k = 0; k < calls.lLength; k++) {
+            for (unsigned long k = 0; k < calls.lLength; k++) {
                 (*errMsg) << (_String(k+1) & " : " & (*(_String*)calls(k)) & '\n');
                 _String* redir = (_String*)stdins (k);
                 if (redir->sLength) {

@@ -214,6 +214,18 @@ bool    _Variable::IsVariable (void)
 
 //__________________________________________________________________________________
 
+void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* tagger, long weight) {
+    if (varValue) {
+        varValue->ScanForVariables (l, globals,tagger, weight);
+    }
+    if (varFormula && varFormula->theFormula.lLength) {
+        varFormula->ScanFForVariables(l,globals, false, true, false,tagger, weight);
+    }
+}
+
+
+//__________________________________________________________________________________
+
 _PMathObj  _Variable::Compute (void) // compute or return the value
 {
     if (varFormula == nil) { // no formula, just return the value

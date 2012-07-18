@@ -43,7 +43,7 @@
 #include "variable.h"
 #include "baseobj.h"
 #include "list.h"
-#include "avllist.h"
+#include "avllistx.h"
 #include "avllistxl.h"
 #include "operation.h"
 
@@ -83,9 +83,9 @@ public:
 
     void        ScanAndAttachVariables      (void);
 
-    virtual     void        ScanForVariables            (_AVLList&,_AVLList&);
+    virtual     void        ScanForVariables            (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&);
-    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&);
+    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
 
     virtual     bool        IsModelVar                  (long);
     virtual     bool        IsConstant                  (void);

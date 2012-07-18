@@ -44,7 +44,7 @@
 #include "defines.h"
 #include "errorfns.h"
 #include "list.h"
-#include "avllist.h"
+#include "avllistx.h"
 #include "hy_strings.h"
 
 class   _MathObject : public BaseObj  //abstract math operations class
@@ -271,7 +271,7 @@ public:
     virtual _MathObject* Compute (void)            {
         return this;
     }
-    virtual void         ScanForVariables (_AVLList&,bool = false)
+    virtual void         ScanForVariables (_AVLList&,bool = false, _AVLListX* = nil, long = 0)
     {}
 
     virtual      BaseRef makeDynamic               (void);
