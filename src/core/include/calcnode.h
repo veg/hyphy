@@ -148,9 +148,10 @@ public:
     // change the codeBase value for this node
     // this will resize the vector used to handle frequencies
 
-    void                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil);
+    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil);
     // reexponentiate the transition matrix and
     // store it in compExp.
+    // return TRUE if the matrix is an explicit exponential form
 
     virtual bool        HasChanged       (void);
     virtual bool        NeedToExponentiate(long = -1);

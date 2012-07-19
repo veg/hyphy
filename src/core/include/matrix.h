@@ -274,6 +274,7 @@ public:
     void        StoreObject         (long, long, _MathObject*, bool dup = false);
     void        StoreObject         (long,  _MathObject*,bool dup = false);
     void        StoreFormula        (long, long, _Formula&, bool = true, bool = true);
+    void        NonZeroEntries      (_SimpleList&);
 
     void        UpdateDiag          (long ,long , _MathObject*);
 
@@ -333,6 +334,8 @@ public:
     virtual     bool        IsPrintable (void) {
         return storageType != 2;
     }
+    
+    virtual     bool        Equal       (_PMathObj);
 
     void        ExportMatrixExp         (_Matrix*, FILE*);
     bool        ImportMatrixExp         (FILE*);

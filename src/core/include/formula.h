@@ -65,7 +65,7 @@ public:
     _Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer* = nil);
+    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -158,8 +158,9 @@ public:
 
     bool        InternalSimplify    (node<long>*);
 
-    void        LocalizeFormula     (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
+    void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
+    long        ExtractMatrixExpArguments        (_List*);
 
 protected:
 

@@ -145,12 +145,13 @@ _Operation::_Operation  (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-bool _Operation::CanResultsBeCached (_Operation* prev)
+bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
         if ((prev->theNumber && prev->theNumber->ObjectClass() == MATRIX)
            || (prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)) {
-            return true;
+            if (! exp_only || opCode == HY_OP_CODE_EXP)
+                return true;
         }
     }
     return false;

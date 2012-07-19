@@ -689,7 +689,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
 }
 
 //_______________________________________________________________________________________________
-void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags)
+bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags)
 {
     // assumed that NeedToExponentiate was called prior to this function
 
@@ -705,7 +705,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 compExp = rN->compExp;
             }
 
-            return;
+            return false;
         } else {
             if (referenceNode<-1) {
                 slaveNodes++;
@@ -713,16 +713,12 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     if (slaveNodes == -referenceNode) {
                         slaveNodes = 0;
                     }
-                    return;
+                    return false;
                 }
             }
         }
 
-#ifdef __MP__
-    if (matrixTasks) {
-        pthread_mutex_lock(&matrixMutex);
-    }
-#endif
+
     _Variable* curVar, *locVar;
 
 
@@ -764,65 +760,53 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     bool    isExplicitForm  = HasExplicitFormModel ();
 
-    _Matrix * myModelMatrix = GetModelMatrix(); 
+    _Matrix * myModelMatrix = GetModelMatrix(queue,tags); 
+    
+    if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
+        return isExplicitForm;
+    } else {
 
-    if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
-        _Matrix *temp = nil;
-        if (isExplicitForm) {
-            temp = (_Matrix*)myModelMatrix->makeDynamic();
-        } else {
-            temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
-        }
+        if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
+            _Matrix *temp = nil;
+            if (isExplicitForm) {
+                temp = (_Matrix*)myModelMatrix->makeDynamic();
+            } else {
+                temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
+            }
 
-        if (dVariables)
-            for (unsigned long i=0; i<dVariables->lLength; i+=2)
-                if (dVariables->lData[i+1]>=0) {
-                    curVar = LocateVar (dVariables->lData[i+1]);
-                    if (!curVar->IsIndependent()) {
-                        locVar = LocateVar (dVariables->lData[i]);
-                        if (locVar->IsIndependent()) {
-                            locVar->SetValue (curVar->Compute());
+            if (dVariables)
+                for (unsigned long i=0; i<dVariables->lLength; i+=2)
+                    if (dVariables->lData[i+1]>=0) {
+                        curVar = LocateVar (dVariables->lData[i+1]);
+                        if (!curVar->IsIndependent()) {
+                            locVar = LocateVar (dVariables->lData[i]);
+                            if (locVar->IsIndependent()) {
+                                locVar->SetValue (curVar->Compute());
+                            }
                         }
                     }
-                }
 
-        if (storeRateMatrix) {
-            storeRateMatrix->Duplicate(temp);
-            return;
-        }
-
-#ifdef __MP__
-        if (matrixTasks) {
-            temp = (_Matrix*) temp->makeDynamic();
-            pthread_mutex_unlock(&matrixMutex);
-        }
-#endif
-
-#ifdef  _SLKP_LFENGINE_REWRITE_
-        if (queue) {
-            (*queue) << temp;
-            if (tags) {
-                (*tags) << (isExplicitForm == 0);
+            if (storeRateMatrix) {
+                storeRateMatrix->Duplicate(temp);
+                return isExplicitForm;
             }
-            return;
-        }
-#endif
 
-        SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);
-#ifdef __MP__
-        if (matrixTasks) {
-            DeleteObject (temp);
-        }
-#endif
 
-    } else {
-#ifdef __MP__
-        if (matrixTasks) {
-            pthread_mutex_unlock(&matrixMutex);
+            if (queue) {
+                (*queue) << temp;
+                if (tags) {
+                    (*tags) << (isExplicitForm);
+                }
+                return isExplicitForm;
+            }
+
+            SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);
+
+        } else {
+            compExp = (_Matrix*)myModelMatrix->Evaluate(false);
         }
-#endif
-        compExp = (_Matrix*)myModelMatrix->Evaluate(false);
     }
+    return false;
 }
 
 //_______________________________________________________________________________________________
@@ -6364,12 +6348,19 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
     _AVLList    cLL (&cL);
 
     while (curNode) {
-        _Matrix *modelM = curNode->GetModelMatrix();
-        if (modelM && cLL.Find(modelM) < 0) {
+    
+        _Formula *explicitFormMExp = curNode->GetExplicitFormModel ();
+        _Matrix  *modelM = explicitFormMExp?nil:curNode->GetModelMatrix();
+        
+        if (explicitFormMExp && cLL.Find ((BaseRef)explicitFormMExp) < 0 || modelM && cLL.Find(modelM) < 0) {
             _SimpleList temp;
             {
                 _AVLList tempA (&temp);
-                (modelM)->ScanForVariables(tempA, true);
+                if (modelM) {
+                    modelM->ScanForVariables(tempA, true);
+                } else {
+                    explicitFormMExp->ScanFForVariables(tempA, true, false, true, true);
+                }
                 tempA.ReorderList();
             }
             for (unsigned long i=0; i<temp.lLength; i++) {
@@ -6386,7 +6377,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
                     }
                 }
             }
-            cLL.Insert (modelM);
+            cLL.Insert (modelM?(BaseRef)modelM:(BaseRef)explicitFormMExp);
         }
         curNode -> ScanForGVariables(li,ld);
         curNode = DepthWiseTraversal();

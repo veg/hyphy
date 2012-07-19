@@ -129,7 +129,7 @@ public:
     }
     long            PrecedenceLevel     (void);
 
-    bool            CanResultsBeCached (_Operation *);
+    bool            CanResultsBeCached (_Operation *, bool exp_only = false);
 
 
     virtual bool            EqualOp             (_Operation*);

@@ -6836,6 +6836,59 @@ void        _Matrix::operator -= (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
+void       _Matrix::NonZeroEntries (_SimpleList& target) {
+    if (theIndex && storageType == 1) {
+        target.Clear();
+        target.RequestSpace(lDim);
+        for (long elementID = 0; elementID < lDim; elementID ++) {
+            if (theIndex[elementID] >= 0) {
+                target << theIndex[elementID];
+            }
+        }
+        target.Sort();
+    }
+}
+
+//_____________________________________________________________________________________________
+bool       _Matrix::Equal(_PMathObj mp)
+{
+    if (mp->ObjectClass()!=ObjectClass()) {
+        return false;
+    }
+
+    _Matrix * m = (_Matrix*)mp;
+    
+    if (m->storageType == storageType && storageType == 1 && (bool) m->theIndex == (bool) theIndex && m->hDim == hDim && m->vDim == vDim) {
+        if (theIndex) {
+        
+            _SimpleList       nonZeroThis ((unsigned long)lDim),
+                              nonZeroOther((unsigned long)m->lDim),
+                              shared;
+                        
+            NonZeroEntries    (nonZeroThis);
+            m->NonZeroEntries (nonZeroOther);
+    
+            shared.Intersect(nonZeroThis, nonZeroOther);
+            for (long elementID = 0; elementID < lDim; elementID ++) {
+            
+            }
+                        
+        } else {
+            for (long elementID = 0; elementID < lDim; elementID ++) {
+                if (!CheckEqual(theData[elementID], m->theData[elementID])) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+
+//_____________________________________________________________________________________________
 _PMathObj       _Matrix::SubObj (_PMathObj mp)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
@@ -6845,7 +6898,7 @@ _PMathObj       _Matrix::SubObj (_PMathObj mp)
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
-    _Matrix * result = new _Matrix (hDim, vDim, bool((theIndex!=nil)&&(m->theIndex!=nil)), storageType);
+    _Matrix * result = new _Matrix (hDim, vDim, bool( theIndex && m->theIndex ), storageType);
     if (!result) {
         checkPointer (result);
     }

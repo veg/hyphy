@@ -215,14 +215,22 @@ _Formula* _VariableContainer::GetExplicitFormModel (void)
 
 //__________________________________________________________________________________
 
-_Matrix* _VariableContainer::GetModelMatrix (void)
+_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags)
 {
     if (theModel == -1) {
         return nil;
     }
 
     if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
-        return (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
+        if (queue && tags) {
+            _List extractMatrices;
+            long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (&extractMatrices);
+            if (currentQueueLength) {
+                (*tags) << currentQueueLength;
+            }
+            return nil;
+        }
+        return  (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
     }
 
     return (_Matrix*) (LocateVar(modelMatrixIndices.lData[theModel])->GetValue());

@@ -27,6 +27,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+//#define _UBER_VERBOSE_LF_DEBUG
+
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -38,8 +40,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "site.h"
 #include "batchlan.h"
 #include "category.h"
-
-//#define _UBER_VERBOSE_LF_DEBUG
 
 
 #ifdef __WINDOZE__
@@ -1860,7 +1860,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
     printf ("Likelihood function evaluation %d\n", likeFuncEvalCallCount+1);
-    for (long i=0; i<indexInd.lLength; i++) {
+    for (unsigned long i=0; i<indexInd.lLength; i++) {
         _Variable *v = LocateVar (indexInd.lData[i]);
         if (v->HasChanged()) {
             printf ("%s changed\n", v->GetName()->sData);
@@ -1868,7 +1868,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     }
 #endif
     if (computeMode == 0) {
-        for (long partID=0; partID<theTrees.lLength; partID++) {
+        for (unsigned long partID=0; partID<theTrees.lLength; partID++) {
             if (blockDependancies.lData[partID])
                 // has category variables
             {
@@ -3807,7 +3807,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     long        i,
                 j,
                 fnDim               = MaximumDimension(),
-                evalsIn              = likeFuncEvalCallCount,
+                evalsIn             = likeFuncEvalCallCount,
                 exponentiationsIn   = matrixExpCount;
 
 
@@ -4664,7 +4664,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                             precisionStep = precision;
                             brackStep = 2.*precisionStep;
                         } else {
-                            brackStep = 2.*brackStep;
+                            brackStep *= 2.;
                         }
                         //if (IsIthParameterGlobal (j))
                         //  precisionStep *= 2.0;
@@ -6439,7 +6439,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
         }
 
         if (middleValue>maxSoFar) {
-            for (long i=0; i<indexInd.lLength; i++) {
+            for (unsigned long i=0; i<indexInd.lLength; i++) {
                 bestVal[i]=middle(i,0);
                 if (!CheckEqual(GetIthIndependent(i),middle(i,0))) {
                     SetIthIndependent (i,middle(i,0));
@@ -6450,7 +6450,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
         }
     }
     if (reset)
-        for (long i=0; i<indexInd.lLength; i++) {
+        for (unsigned long i=0; i<indexInd.lLength; i++) {
             SetIthIndependent(i,bestVal.theData[i]);
         }
 }
@@ -6469,203 +6469,114 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision;
 
 
-#ifdef _SLKP_LFENGINE_REWRITE_
     DetermineLocalUpdatePolicy           ();
-    //printf ("%s\n", LocateVar (indexInd.lData[index])->GetName()->sData);
-#endif
 
     int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
     long        fCount = likeFuncEvalCallCount;
     if (outcome != -1) { // successfull bracket
-        /*if (outcome == -2 && right-left < brentPrec)
-        {
-            if (middleValue>maxSoFar)
-            {
-                maxSoFar = middleValue;
-                bestVal = middle;
-                if (GetIthIndependent(index)!=middle)
-                    SetIthIndependent (index,middle);
-            }
-            else
-                SetIthIndependent (index,bestVal);
-        #ifdef _SLKP_LFENGINE_REWRITE_
-            FlushLocalUpdatePolicy            ();
-        #endif
-            return;
-        }*/
-
-        /*if (right-left > gPrecision)
-        {
-            _Parameter x0 = left,
-                       x1,
-                       x2,
-                       x3 = right,
-                       ax = left,
-                       bx = middle,
-                       cx = right,
-                       f1,
-                       f2;
-
-            if (fabs(cx-bx) > fabs (bx-ax))
-            {
-                x1 = bx; x2 = bx + GOLDEN_RATIO_C*(cx-bx);
-            }
-            else
-            {
-                x2 = bx; x1 = bx - GOLDEN_RATIO_C*(bx-ax);
-            }
-
-            SetIthIndependent (index,x1);
-            f1 = -Compute();
-            SetIthIndependent (index,x2);
-            f2 = -Compute();
-
-            while (fabs(x3-x0) > gPrecision)
-            {
-                if (f2<f1)
-                {
-                    x0 = x1; x1 = x2; x2 = GOLDEN_RATIO_R*x2 + GOLDEN_RATIO_C*x3;
-                    SetIthIndependent (index,x2);
-                    f1 = f2; f2 = -Compute();
-                }
-                else
-                {
-                    x3 = x2; x2 = x1; x1 = GOLDEN_RATIO_R*x1 + GOLDEN_RATIO_C*x0;
-                    SetIthIndependent (index,x1);
-                    f2 = f1; f1 = -Compute();
-                }
-            }
-
-            if (f1 < f2)
-            {
-                middle      = x1;
-                middleValue = -f1;
-            }
-            else
-            {
-                middle      = x2;
-                middleValue = -f2;
-
-            }
-
-        }*/
-
-        //if (bracketSetting == 0. || rightValue-leftValue < bracketSetting)
-        {
-
-            _Parameter U,V,W,X=middle,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
-            W = middle;
-            V = middle;
-            FX = -middleValue;
-            FV = FX;
-            FW = FX;
-            outcome = 0;
-            bool pFitGood;
-            while (outcome < 20) {
-                pFitGood = false;
-                XM = .5*(left+right);
-
-
-                //_Parameter tol1 = fabs (X) * brentPrec + 1.e-10,
-                //         tol2 = 2.*tol1;
-
-                if (verbosityLevel > 50) {
-                    char buf [256];
-                    sprintf (buf, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g (%g = %g) %g %g]", left, XM, X, fabs(X-XM), right, right-left);
-                    BufferToConsole (buf);
-                }
-
-                /*if (fabs(X-XM) <= tol2-0.5*(right-left))
-                    break;
-                */
-
-                if (right - left < (bracketSetting>0.?bracketSetting:gPrecision)) {
-                    break;
-                }
-
-                if (fabs(E)>1.0e-10) {
-                    R = (X-W)*(FX-FV);
-                    Q = (X-V)*(FX-FW);
-                    P = (X-V)*Q-(X-W)*R;
-                    Q = 2.0 * (Q-R);
-                    if (Q>0.) {
-                        P = -P;
-                    }
-                    Q = fabs(Q);
-                    ETEMP = E;
-                    E = D;
-                    if (!((fabs(P)>=fabs(.5*Q*ETEMP))||(P<=Q*(left-X))||(P>=Q*(right-X)))) {
-                        D = P/Q;
-                        U = X+D;
-                        pFitGood = true;
-                    }
-                }
-                if (!pFitGood) {
-                    if (X>=XM) {
-                        E = left-X;
-                    } else {
-                        E = right - X;
-                    }
-                    D = GOLDEN_RATIO_C*E;
-                }
-                U = X+D;
-                SetIthIndependent (index,U);
-                FU = -Compute();
-
-                if (verbosityLevel > 50) {
-                    char buf [256];
-                    sprintf (buf, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
-                    BufferToConsole (buf);
-                }
-
-
-                if (FU<=FX) {
-                    if (U>=X) {
-                        left = X;
-                    } else {
-                        right = X;
-                    }
-                    V = W;
-                    FV = FW;
-                    W = X;
-                    FW = FX;
-                    X = U;
-                    FX = FU;
-                } else {
-                    if (U < X) {
-                        left = U;
-                    } else {
-                        right = U;
-                    }
-                    if ((FU<=FW)||(W==X)) {
-                        V = W;
-                        FV = FW;
-                        W = U;
-                        FW = FU;
-                    } else {
-                        if ((FU<=FV)||(V==X)||(V==W)) {
-                            V = U;
-                            FV = FU;
-                        }
-                    }
-
-                }
-                outcome++;
-
-            }
-
-
+        _Parameter U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
+        W       = middle;
+        V       = middle;
+        FX      = -middleValue;
+        FV      = FX;
+        FW      = FX;
+        outcome = 0;
+        
+        bool   pFitGood;
+        
+        while (outcome < 20) {
+            pFitGood = false;
+            XM = .5*(left+right);
+            
             if (verbosityLevel > 50) {
                 char buf [256];
-                sprintf (buf, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g, delta Log L = %g ]\n\n", brentPrec, bestVal, X, middleValue+FX);
+                sprintf (buf, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g (%g = %g) %g %g]", left, XM, X, fabs(X-XM), right, right-left);
                 BufferToConsole (buf);
             }
-
-            middleValue = -FX;
-            middle      = X;
+            
+            if (right - left < (bracketSetting>0.?bracketSetting:gPrecision)) {
+                break;
+            }
+            
+            if (fabs(E)>1.0e-10) {
+                R = (X-W)*(FX-FV);
+                Q = (X-V)*(FX-FW);
+                P = (X-V)*Q-(X-W)*R;
+                Q = 2.0 * (Q-R);
+                if (Q>0.) {
+                    P = -P;
+                }
+                Q = fabs(Q);
+                ETEMP = E;
+                E = D;
+                if (!((fabs(P)>=fabs(.5*Q*ETEMP))||(P<=Q*(left-X))||(P>=Q*(right-X)))) {
+                    D = P/Q;
+                    U = X+D;
+                    pFitGood = true;
+                }
+            }
+            
+            if (!pFitGood) {
+                if (X>=XM) {
+                    E = left-X;
+                } else {
+                    E = right - X;
+                }
+                D = GOLDEN_RATIO_C*E;
+            }
+            
+            U = X+D;
+            SetIthIndependent (index,U);
+            FU = -Compute();
+            
+            if (verbosityLevel > 50) {
+                char buf [256];
+                sprintf (buf, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
+                BufferToConsole (buf);
+            }
+            
+            if (FU<=FX) {
+                if (U>=X) {
+                    left = X;
+                } else {
+                    right = X;
+                }
+                V = W;
+                FV = FW;
+                W = X;
+                FW = FX;
+                X = U;
+                FX = FU;
+            } else {
+                if (U < X) {
+                    left = U;
+                } else {
+                    right = U;
+                }
+                if ((FU<=FW)||(W==X)) {
+                    V = W;
+                    FV = FW;
+                    W = U;
+                    FW = FU;
+                } else {
+                    if ((FU<=FV)||(V==X)||(V==W)) {
+                        V = U;
+                        FV = FU;
+                    }
+                }
+            }
+            outcome++;
+            
         }
-
-        //printf ("/nMax at (%g,%g)", X, FX);
+        
+        if (verbosityLevel > 50) {
+            char buf [256];
+            sprintf (buf, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g, delta Log L = %g ]\n\n", brentPrec, bestVal, X, middleValue+FX);
+            BufferToConsole (buf);
+        }
+        middleValue = -FX;
+        middle      = X;
+         
         if (middleValue<maxSoFar) {
             SetIthIndependent(index,bestVal);
         } else {
@@ -6678,9 +6589,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
 
     oneDFCount += likeFuncEvalCallCount-fCount;
     oneDCount ++;
-#ifdef _SLKP_LFENGINE_REWRITE_
     FlushLocalUpdatePolicy            ();
-#endif
 }
 
 //_______________________________________________________________________________________
@@ -7736,7 +7645,6 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
     // set up global matrix frequencies
 
     _SimpleList               *sl = (_SimpleList*)optimalOrders.lData[index];
-    //*ls = (_SimpleList*)leafSkips.lData[index];
 
     _Matrix                   *glFreqs          = (_Matrix*)LocateVar(theProbabilities.lData[index])->GetValue();
     _DataSetFilter            *df               = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[index]));
@@ -7879,12 +7787,10 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
             _Parameter          *inc  = (currentRateClass<1)?conditionalInternalNodeLikelihoodCaches[index]:
                                         conditionalInternalNodeLikelihoodCaches[index] + currentRateClass*df->GetDimension()*blockID,
+                                *ssf  = (currentRateClass<1)?siteScalingFactors[index]: siteScalingFactors[index] + currentRateClass*blockID,
+                                *bc   = (currentRateClass<1)?branchCaches[index]: (branchCaches[index] + currentRateClass*patternCnt*df->GetDimension()*2);
 
-                                        *ssf  = (currentRateClass<1)?siteScalingFactors[index]: siteScalingFactors[index] + currentRateClass*blockID,
-
-                                         *bc   = (currentRateClass<1)?branchCaches[index]: (branchCaches[index] + currentRateClass*patternCnt*df->GetDimension()*2);
-
-            long *scc = nil,
+            long  *scc = nil,
                   *sccb = nil;
 
             if (siteRes) {
@@ -7918,14 +7824,26 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                     } else {
                         snID = t->DetermineNodesForUpdate          (*branches, matrices,catID,*cbid,canClear);
                     }
-
-                    RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
-                    *cbid = -1;
-                    if (snID >= 0 && canUseReversibleSpeedups.lData[index]) {
-                        ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
-                        doCachedComp = -snID-1;
+                    
+                    //printf ("\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
+                    if (snID != *cbid) {
+                        RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
+                        *cbid = -1;
+                        if (snID >= 0 && canUseReversibleSpeedups.lData[index]) {
+                            ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
+                            doCachedComp = -snID-1;
+                        } else {
+                            ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
+                        }
                     } else {
-                        ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
+                    // 20120718: SLKP added this branch to reuse the old cache if the branch that is being computed
+                    // is the same as the one cached last time, e.g. sequentially iterating through all local parameters
+                    // of a given branch.
+                        if (snID >= 0 && canUseReversibleSpeedups.lData[index]) {
+                            doCachedComp = ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = snID+3;
+                          } else {
+                            ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid] = nodeID + 1;
+                        }
                     }
                 } else {
                     doCachedComp = nodeID;
@@ -7989,6 +7907,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 #endif
             long sitesPerP    = df->NumberDistinctSites() / np + 1;
 
+#ifdef _UBER_VERBOSE_LF_DEBUG
+                printf ("NORMAL compute lf \n");
+#endif
 
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
             for (blockID = 0; blockID < np; blockID ++) {
@@ -10737,21 +10658,19 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     
     _AssociativeList * variableGrouping = (_AssociativeList*)FetchObjectFromVariableByType(&userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
     if (variableGrouping) {
-        
     
-         _SimpleList  hist,
-                      supportList;
+        _SimpleList  hist,
+                     supportList;
                       
-        _AVLListX existingRanking (&supportList);
+        _AVLListX    existingRanking (&supportList);
+        
         long         ls,
                      cn = variableGrouping->avl.Traverser (hist,ls,variableGrouping->avl.GetRoot());                     
                      
         for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
             existingRanking.Insert((BaseRef)indexInd.lData[vi], vi, true);
         }          
-        
-        //printf ("\n\n%ld\n\n", existingRanking.root);
-        
+
         long  offset = 1; 
         bool  re_sort = false;
         
@@ -10772,8 +10691,6 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                     }
                     offset += dimension;
                 }
-                
-                
             }
             cn = variableGrouping->avl.Traverser (hist,ls);
         }
@@ -10781,7 +10698,6 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
             _SimpleList new_ranks;
             for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
                 new_ranks << existingRanking.GetXtra(existingRanking.Find ((BaseRef)indexInd.lData[vi]));
-                //printf ("%s -> %ld/%ld\n", LocateVar(indexInd.lData[vi])->theName->sData, new_ranks.GetElement (-1), existingRanking.Find ((BaseRef)indexInd.lData[vi]));
             }          
             SortLists (&new_ranks,&indexInd);
         }

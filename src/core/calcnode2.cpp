@@ -100,31 +100,43 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 {
     _List           matrixQueue,
                     nodesToDo;
-    _SimpleList     mustExponentiate;
+                    
+    _SimpleList     isExplicitForm;
+    bool            hasExpForm = false;
 
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
-        thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&mustExponentiate);
-        if (matrixQueue.lLength - didIncrease) {
-            nodesToDo << thisNode;
+        hasExpForm = hasExpForm || thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm);
+        if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
+            for (long copies = 0; copies < didIncrease; copies++) {
+                nodesToDo << thisNode;
+            }
         }
     }
 
     unsigned long matrixID;
+    
+    _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
+    
 
 #ifdef _OPENMP
-    unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
+    long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
     matrixExpCount += matrixQueue.lLength;
 #endif
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (mustExponentiate.lData[matrixID]) {
+        if (isExplicitForm.lData[matrixID] == 0) {
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
         } else {
-            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID)), catID);
+            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
+            //((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID)), catID);
         }
+    }
+    
+    if (computedExponentials) {
+        DeleteObject(computedExponentials);
     }
 }
 
@@ -179,14 +191,14 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
 
     // one more pass to pick up all descendants of changed internal nodes
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
         if (nodesToUpdate.lData[flatLeaves.lLength+flatParents.lData[nodeID]] && nodesToUpdate.lData[nodeID] == 0) {
             nodesToUpdate.lData[nodeID] = 1;
         }
 
     // write out all changed nodes
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
         if (nodesToUpdate.lData[nodeID]) {
             updateNodes << nodeID;
         }

@@ -4188,6 +4188,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
                 WarnError (defErrMsg );
                 return;
             }
+            
+            //for (unsigned long k = 0; k < isExpressionBased
+            
             checkMatrix = (_Matrix*)isExpressionBased->Compute();
 
 

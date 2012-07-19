@@ -115,7 +115,7 @@ public:
     virtual     void        CompileListOfDependents     (_SimpleList&);
 
     void        MatchParametersToList       (_List&, bool doAll = false, bool indOnly = false);
-    _Matrix*    GetModelMatrix              (void);
+    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil);
     _Matrix*    GetFreqMatrix               (void);
     bool        HasExplicitFormModel        (void);
     _Formula*   GetExplicitFormModel        (void);
