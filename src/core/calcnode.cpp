@@ -689,7 +689,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
 }
 
 //_______________________________________________________________________________________________
-bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags)
+bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps)
 {
     // assumed that NeedToExponentiate was called prior to this function
 
@@ -756,14 +756,27 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             DeleteObject(GetCompExp(categID));
         } else if (compExp) {
             DeleteObject (compExp);
+            compExp = nil;
         }
 
     bool    isExplicitForm  = HasExplicitFormModel ();
+    
+    if (isExplicitForm && bufferedOps) {
+        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
+        SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
+        return false;
+    }
 
+    unsigned long      previous_length = queue && tags ? queue->lLength: 0;
     _Matrix * myModelMatrix = GetModelMatrix(queue,tags); 
     
     if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
-        return isExplicitForm;
+        if (queue->lLength > previous_length) {
+            return true;
+        } else {
+            WarnError ("Internal error");
+            return false;
+        }
     } else {
 
         if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {

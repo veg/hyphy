@@ -223,12 +223,12 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags)
 
     if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
         if (queue && tags) {
-            _List extractMatrices;
-            long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (&extractMatrices);
+            long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (queue);
             if (currentQueueLength) {
-                (*tags) << currentQueueLength;
+                for (long k = 0; k < currentQueueLength; k++) 
+                    (*tags) << currentQueueLength;
+                return nil;
             }
-            return nil;
         }
         return  (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
     }

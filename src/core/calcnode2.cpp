@@ -107,13 +107,18 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
-        hasExpForm = hasExpForm || thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm);
+        if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
+             hasExpForm = true;
+        }
+        //printf ("NodeID %d. Old length %ld, new length %ld\n", nodeID, didIncrease,matrixQueue.lLength); 
         if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
             for (long copies = 0; copies < didIncrease; copies++) {
                 nodesToDo << thisNode;
             }
         }
     }
+    
+    //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
 
     unsigned long matrixID;
     
@@ -127,15 +132,40 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (isExplicitForm.lData[matrixID] == 0) {
+        if (isExplicitForm.lData[matrixID] == 0) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
         } else {
-            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
-            //((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID)), catID);
+             (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
         }
     }
     
+    
     if (computedExponentials) {
+        _CalcNode * current_node         = nil;
+        _List       buffered_exponentials;
+        
+        for (unsigned long mx_index = 0; mx_index < nodesToDo.lLength; mx_index++) {
+            if (isExplicitForm.lData[mx_index]) {
+                _CalcNode *next_node = (_CalcNode*) nodesToDo (mx_index);
+                //printf ("%x %x\n", current_node, next_node);
+                if (next_node != current_node) {
+                    if (current_node) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
+                    current_node = next_node;
+                    buffered_exponentials.Clear(true);
+                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                 }
+                else {
+                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                }
+            } else {
+                current_node = nil;
+            }
+        }
+        if (current_node) {
+            current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+        }
         DeleteObject(computedExponentials);
     }
 }

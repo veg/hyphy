@@ -391,11 +391,12 @@ unsigned long _List::Count()
 }
 
 // Delete item at index (>=0)
-void  _List::Delete (long index)
+void  _List::Delete (long index, bool delete_object)
 {
-    if ((index>=0)&&(index<lLength)) {
-        BaseRef theObj = ((BaseRef*)lData)[index];
-        DeleteObject (theObj);
+    if (index>=0 && index<lLength) {
+        if (delete_object) {
+            DeleteObject (((BaseRef*)lData)[index]);
+        }
         lLength--;
         if (lLength-index)
             for (unsigned long i = index; i < lLength; i++) {
@@ -415,7 +416,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
 {
     if (toDelete.lLength) {
         long k = 0;
-        for (long i = 0; i<lLength; i++) {
+        for (unsigned long i = 0; i<lLength; i++) {
             if (k<toDelete.lLength && i==toDelete.lData[k]) {
                 DeleteObject (((BaseRef*)lData)[i]);
                 //if (k<toDelete.lLength)

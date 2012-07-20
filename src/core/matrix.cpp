@@ -72,7 +72,7 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
-int _Matrix::switchThreshold = 50;
+int _Matrix::switchThreshold = 40;
 
 #ifndef     __HYALTIVEC__
 _Parameter  _Matrix::truncPrecision = 1e-13;
@@ -1636,21 +1636,24 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
         return true;    // duh!
     }
 
-    long k=0,
-         i;
-
+    long k = 0,
+         i,
+         threshold = lDim*_Matrix::switchThreshold/100;
+    
     for (i=0; i<lDim; i++)
         if (theData[i]!=ZEROOBJECT) {
             k++;
+            if (k >= threshold) break;
         }
 
-    if ((k*100)/lDim<=_Matrix::switchThreshold) {
+    if (k < threshold) {
         // we indeed are sparse enough
+        
         if (k == 0) {
             k = 1;
         }
 
-        _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
+       _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }

@@ -1867,7 +1867,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                         cacheUpdated = true;
                         cacheID++;
                         if (nextOp->CanResultsBeCached(thisOp, true)) {
-                            (*storage) << currentArg;
+                            storage->AppendNewInstance(currentArg);
                             count ++;
                         }
                     }
@@ -1923,10 +1923,21 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                         if (cachedArg->ObjectClass() == MATRIX) {
                             diff =  (_Matrix*)cachedArg->SubObj(currentArg);
                         }
+                        
+                        bool    no_difference = diff && diff->MaxElement() <= 1e-12;
 
-                        if (diff && diff->MaxElement() <= 1e-12) {
+                        if (no_difference || (additionalCacheArguments && additionalCacheArguments->lLength && nextOp->CanResultsBeCached(thisOp,true))) {
                             DeleteObject  (theStack.Pop  ());
-                            theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
+                            if (no_difference) {
+                                theStack.Push ((_PMathObj)(*resultCache)(cacheID+1));
+                            } else {
+ 
+                                theStack.Push ((_PMathObj)(*additionalCacheArguments)(0)); 
+                                resultCache->Replace(cacheID,theStack.Pop(false),true);
+                                resultCache->Replace(cacheID+1,(*additionalCacheArguments)(0),false);
+                                additionalCacheArguments->Delete (0, false);                              
+                                //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
+                           }
                             cacheID += 2;
                             i ++;
                             //printf ("Used formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
@@ -1935,11 +1946,11 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                             resultCache->Replace(cacheID++,theStack.Pop(false),true);
                             //printf ("Updated formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
                        }
-                        DeleteObject (diff);
-                        continue;
+                       DeleteObject (diff);
+                       continue;
                     }
                 }
-                if (!thisOp->Execute(theStack,nameSpace)) {
+                if (!thisOp->Execute(theStack,nameSpace)) { // does this always get executed?
                     wellDone = false;
                     break;
                 }
