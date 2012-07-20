@@ -9064,8 +9064,6 @@ BaseRef _LikelihoodFunction::toStr (void)
         value = Compute();
     }
 
-    _String res(1,true);
-    char str [2048];
 
     if (longOrShort>5.5) { // serialized self-contained LF
         _String   *sLF = new _String (8192L, true);
@@ -9075,6 +9073,9 @@ BaseRef _LikelihoodFunction::toStr (void)
         sLF->Finalize   ();
         return          sLF;
     }
+
+    _String res(1,true);
+    char str [2048];
 
     if (longOrShort>=4.0) { // just spool out the names of parameters
         _Variable * thisVar;
