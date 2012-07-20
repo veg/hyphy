@@ -15,6 +15,9 @@ public:
     void changeDir(const QString & dir);
     void prompt();
 
+//private slots:
+    //void find();
+
 private:
     int histLocation;
     int inputCharCount;
@@ -23,4 +26,5 @@ private:
     QString tempCmd;
     QStringList cmdHistory;
     void printPrompt();
+
 };

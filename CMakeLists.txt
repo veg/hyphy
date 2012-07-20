@@ -410,10 +410,10 @@ if((${QT4_FOUND}))
 
     file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp ) 
     file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h) 
-    SET(QT_HYPHY_UI src/gui/qt/ui/hyphy_main.ui)
+    SET(QT_HYPHY_UI src/gui/qt/ui/hyphymain.ui src/gui/qt/ui/selectanalysis.ui)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
-    QT4_WRAP_UI(hyphy_ui_headers ${hyphy_ui_headers})
+    QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
 
     include(${QT_USE_FILE})
     add_definitions(${QT_DEFINITIONS})

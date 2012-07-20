@@ -55,64 +55,60 @@ public:
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);
     
-    private slots:
-        //File Menu
-        void hy_open();
-        void hy_save();
-        void quit();
+private slots:
+    //File Menu
+    void hy_open();
+    void hy_save();
+    void quit();
 
-        //Edit Menu
-        void hy_find();
-        void hy_clearwindow();
+    //Analysis Menu
+    void hy_cancelexecution();
+    void hy_suspendexecution();
+    void hy_viewlog();
+    void hy_standardanalysis();
+    void hy_results();
+    void hy_rerunlastanalysis();
 
-        //Analysis Menu
-        void hy_cancelexecution();
-        void hy_suspendexecution();
-        void hy_viewlog();
-        void hy_standardanalysis();
-        void hy_results();
-        void hy_rerunlastanalysis();
-
-        //Window Menu
-        void hy_minimize();
-        void hy_consolewindow();
-        void hy_objectinspector();
-        void hy_cyclethroughwindows();
+    //Window Menu
+    void hy_minimize();
+    void hy_consolewindow();
+    void hy_objectinspector();
+    void hy_cyclethroughwindows();
 
 
-    private:
-        //File Actions
-        QAction *_hyConsoleOpenAction;
-        QAction *_hyConsoleSaveAction;
-        QAction *_hyConsoleExitAction;
+private:
+    //File Actions
+    QAction *_hyConsoleOpenAction;
+    QAction *_hyConsoleSaveAction;
+    QAction *_hyConsoleExitAction;
 
-        //Edit Actions
-        QAction *_hyConsoleUndoAction;
-        QAction *_hyConsoleRedoAction;
-        QAction *_hyConsoleCutAction;
-        QAction *_hyConsoleCopyAction;
-        QAction *_hyConsolePasteAction;
-        QAction *_hyConsoleFindAction;
-        QAction *_hyConsoleSelectAllAction;
-        QAction *_hyConsoleClearWindowAction;
+    //Edit Actions
+    QAction *_hyConsoleUndoAction;
+    QAction *_hyConsoleRedoAction;
+    QAction *_hyConsoleCutAction;
+    QAction *_hyConsoleCopyAction;
+    QAction *_hyConsolePasteAction;
+    QAction *_hyConsoleFindAction;
+    QAction *_hyConsoleSelectAllAction;
+    QAction *_hyConsoleClearWindowAction;
 
-        //Analysis Actions
-        QAction *_hyConsoleCancelExecutionAction;
-        QAction *_hyConsoleSuspendExecutionAction;
-        QAction *_hyConsoleViewLogAction;
-        QAction *_hyConsoleStandardAnalysisAction;
-        QAction *_hyConsoleResultsAction;
-        QAction *_hyConsoleRerunLastAnalysisAction;
+    //Analysis Actions
+    QAction *_hyConsoleCancelExecutionAction;
+    QAction *_hyConsoleSuspendExecutionAction;
+    QAction *_hyConsoleViewLogAction;
+    QAction *_hyConsoleStandardAnalysisAction;
+    QAction *_hyConsoleResultsAction;
+    QAction *_hyConsoleRerunLastAnalysisAction;
 
 
-        //Window Actions
-        QAction *_hyConsoleMinimizeAction;
-        QAction *_hyConsoleConsoleWindowAction;
-        QAction *_hyConsoleObjectInspectorAction;
-        QAction *_hyConsoleCycleThroughWindowsAction;
+    //Window Actions
+    QAction *_hyConsoleMinimizeAction;
+    QAction *_hyConsoleConsoleWindowAction;
+    QAction *_hyConsoleObjectInspectorAction;
+    QAction *_hyConsoleCycleThroughWindowsAction;
 
-        QMenu   *_hyConsoleMenu;
-        void initializeMenuBar();
+    QMenu   *_hyConsoleMenu;
+    void initializeMenuBar();
 };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

@@ -38,9 +38,7 @@ void QTerminal::changeDir(const QString & dir) {
 }
 
 void QTerminal::keyPressEvent(QKeyEvent * event) {
-
     int key = event->key();
-    qDebug() << key;
 
     if (key == 16777249) {
             event->ignore();
@@ -228,16 +226,19 @@ void QTerminal::insertFromMimeData(const QMimeData * source) {
      this->moveCursor(QTextCursor::End);
 }
 
-void QTerminal::contextMenuEvent(QContextMenuEvent *event)
-{
+void QTerminal::contextMenuEvent(QContextMenuEvent *event) {
     QMenu *menu = new QMenu();
     menu->addAction(tr("Undo"),this,SLOT(undo()),QKeySequence::Undo);
     menu->addAction(tr("Redo"),this,SLOT(redo()),QKeySequence::Redo);
     menu->addAction(tr("Copy"),this,SLOT(copy()),QKeySequence::Copy);
     menu->addAction(tr("Paste"),this,SLOT(paste()),QKeySequence::Paste);
-    //menu->addAction(tr("Find"),this,SLOT(find()) );
-    //menu->addAction(tr("Select All"),this );
-    //menu->addAction(tr("Clear Window"),this );
+    menu->addAction(tr("Find"),this,SLOT(find()),QKeySequence::Find);
+    menu->addAction(tr("Select All"),this,SLOT(selectAll()),QKeySequence::SelectAll);
+    //menu->addAction(tr("Clear Window"),this,SLOT(clearwindow),QKeySequence::SelectAll);
     menu->exec(event->globalPos());
     delete menu;
 }
+
+//Edit Menu Options
+//void QTerminal::find(){}
+//void QTerminal::clearwindow(){}

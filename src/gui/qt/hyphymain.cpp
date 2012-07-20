@@ -48,6 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "HYUtils.h"
 
 #include "qterminal.h"
+#include "std_analysis.h"
 #include "hyphyevents.h"
 #include "hyphy_qt_helpers.h"
 
@@ -143,9 +144,9 @@ void HyphyMain::initializeMenuBar() {
     //connect(_hyConsoleCutAction, SIGNAL(triggered()), textEdit, SLOT(cut()));
     connect(_hyConsoleCopyAction, SIGNAL(triggered()), textEdit, SLOT(copy()));
     connect(_hyConsolePasteAction, SIGNAL(triggered()), textEdit, SLOT(paste()));
-    connect(_hyConsoleFindAction, SIGNAL(triggered()), this, SLOT(hy_find()));
+    connect(_hyConsoleFindAction, SIGNAL(triggered()), textEdit, SLOT(find()));
     connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), textEdit, SLOT(selectAll()));
-    connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), this, SLOT(hy_clearwindow()));
+    //connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), textEdit, SLOT(clearwindow()));
 
     //Add the Edit Menu to the Menu Bar
     _hyConsoleMenu = menuBar()->addMenu(tr("&Edit"));
@@ -226,16 +227,16 @@ void HyphyMain::hy_save() {
 void HyphyMain::quit() {
 }
 
-
-//Edit Menu Options
-void HyphyMain::hy_find(){}
-void HyphyMain::hy_clearwindow(){}
-
 //Analysis Menu
 void HyphyMain::hy_cancelexecution(){}
 void HyphyMain::hy_suspendexecution(){}
 void HyphyMain::hy_viewlog(){}
-void HyphyMain::hy_standardanalysis(){}
+
+void HyphyMain::hy_standardanalysis() {
+    SelectAnalysisDialog *s = new SelectAnalysisDialog(this);
+    s->show(); 
+}
+
 void HyphyMain::hy_results(){}
 void HyphyMain::hy_rerunlastanalysis(){}
 
@@ -247,7 +248,6 @@ void HyphyMain::hy_cyclethroughwindows(){}
 
 bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
 {
-    
     if (event->type() == BufferToStringType) 
     {
         QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
@@ -259,6 +259,4 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
     {
         return false;
     }
-
 }
-
