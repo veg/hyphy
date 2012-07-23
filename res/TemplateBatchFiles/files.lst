@@ -37,6 +37,7 @@
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
 "MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested cladesd in a tree","TestCladeMeans.bf";
 "PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Phylohandbook.bf";
+"RBLE","Use a series of random effects branch-site models to perform robust model-averaged branch length estimation under a codon model with episodic selection.","BranchSiteMultiModel.bf";
 "RED","Replace sufficiently close sequence with their MRCA","ReduceDataSetMatrix.bf";
 "SNS","Parse a codon alignment for ambiguous codons and output a complete list/resolutions/syn and ns counts by sequence/position","SandNSAmbigs.bf";
 "SW","Perform a sliding window analysis of sequence data.","SlidingWindowAnalysis.bf";

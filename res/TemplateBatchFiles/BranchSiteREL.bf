@@ -1,3 +1,5 @@
+VERBOSITY_LEVEL				 = 0;
+
 skipCodeSelectionStep 		= 0;
 LoadFunctionLibrary("chooseGeneticCode");
 
@@ -48,18 +50,17 @@ fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,Omega1,P1,Omeg
 csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
-VERBOSITY_LEVEL				 = 0;
 
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
-Optimize					  (res_base,base_LF);
+//Optimize					  (res_base,base_LF);
 
 lfOut	= csvFilePath + ".mglocal.fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, base_LF);
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
-localLL						 = res_base[1][0];
-localParams					 = res_base[1][1] + 9;
+//localLL						 = res_base[1][0];
+//localParams					 = res_base[1][1] + 9;
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -125,40 +126,10 @@ Paux2G 						 :< 1;
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
 
-/*LikelihoodFunction three_LF   = (dsf,mixtureTreeG);
+VERBOSITY_LEVEL               = 1;
 
 
-fprintf 					  (stdout, "[PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
-
-Optimize					  (res_three_LF_global,three_LF);
-fprintf						  (stdout,"\n",three_LF);
-
-lfOut	= csvFilePath + ".relglobal.fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, three_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
-
-global Paux1G=0.6417071370308534;
-global Paux2G=1;
-global omegaG3=1.064891502388613;
-global omegaG2=0.9203043460462096;
-global omegaG1=0.3863674819501042;
-
-
-wg1 = Max(0.05,Paux1G);
-wg2 = Max(0.05,(1-Paux1G)*Paux2G);
-wg3 = Max(0.05,(1-Paux1G)*(1-Paux2G));
-
-sum = wg1+wg2+wg3;
-
-wg1 = wg1/sum;
-wg2 = wg2/sum;
-wg3 = wg3/sum;
-
-Paux1G = wg1;
-Paux2G = wg2/(1-Paux1G);*/
-
-USE_LAST_RESULTS			  = 1;
+//LikelihoodFunction global_LF  = (dsf, mixtureTreG);
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
@@ -213,12 +184,14 @@ for (k = 0; k < totalBranchCount; k = k+1)
 }
 
 
-//VERBOSITY_LEVEL = 10;
+VERBOSITY_LEVEL = 1;
+USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
 fprintf 					  (stdout, "[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout,"\n",three_LF);
+
 
 
 lfOut	= csvFilePath + ".fit";
@@ -228,7 +201,7 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 
 
-for							  (k = 0; k < totalBranchCount; k = k+1)
+for	(k = 0; k < totalBranchCount; k = k+1)
 {
 	ref = "mixtureTree."+bNames[k];
 	
