@@ -1,7 +1,7 @@
 /* ________________________________________________________________________________________________*/
 
 
-function InitializeDistances (dummy)
+function InitializeDistances ()
 {
 	HarvestFrequencies (_dNucFreq,filteredData,1,1,0);
 	_d_fR = _dNucFreq[0]+_dNucFreq[2];
@@ -18,10 +18,7 @@ function InitializeDistances (dummy)
 		_d_TN_K3 = 2*(_d_fR*_d_fY-_dNucFreq[0]*_dNucFreq[2]*_d_fY/_d_fR-_dNucFreq[1]*_dNucFreq[3]*_d_fR/_d_fY);
 		_useK2P = 0;
 	}
-	
-	
 	summingVector = {4,1}["1"];
-
 	return 0;
 }
 
