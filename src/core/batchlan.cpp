@@ -4954,7 +4954,7 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
                             LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
                             _List       modelPNames;
 
-                            for (long vi=0; vi<modelParms.lLength; vi++) {
+                            for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
                                 modelPNames << LocateVar(modelParms.lData[vi])->GetName();
                             }
 

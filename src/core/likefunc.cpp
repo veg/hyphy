@@ -10624,7 +10624,12 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     
     if (tagger) {
         for (unsigned long k=0; k<indexInd.lLength; k++) {
-            varRank.lData[k] = -tagger->GetXtra(tagger->Find((BaseRef)indexInd.lData[k]));
+            long idx = tagger->Find((BaseRef)indexInd.lData[k]);
+            if (idx < 0) {
+                WarnError (_String("Internal error in '_LikelihoodFunction::RankVariables': missing parameter name ") & *LocateVar(indexInd.lData[k])->theName);
+                return ;
+            }
+            varRank.lData[k] = -tagger->GetXtra(idx);
         }
     }
     else {

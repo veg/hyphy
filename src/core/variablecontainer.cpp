@@ -1029,7 +1029,7 @@ void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX *
             _SimpleList temp;
             {
                 _AVLList  ta (&temp);
-                LocateVar (dVariables->lData[i])->ScanForVariables(ta, true);
+                LocateVar (dVariables->lData[i])->ScanForVariables(ta, true, tagger, weight);
                 ta.ReorderList();
             }
             // see if any of them are global
