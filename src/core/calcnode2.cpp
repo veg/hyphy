@@ -1357,7 +1357,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 
         long siteState1 = lNodeFlags[siteOrdering.lData[siteID]],
              siteState2 = lNodeFlags[siteCount + siteOrdering.lData[siteID]];
-
+        
         if (siteState1 >= 0)
             // a single character state; sweep down the appropriate column
         {
@@ -1386,7 +1386,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
             sum *= theProbs[siteState1];
         } else {
             if (siteState2 >=0 ) { // second resolved, but not the first
-                _Parameter* childVector = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension;
+               _Parameter* childVector = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension;
                 tMatrix                +=  siteState2;
                 if (alphabetDimension == 4) { // special case for nuc data
                     sum = tMatrix[0] * childVector[0]  * theProbs[0]+

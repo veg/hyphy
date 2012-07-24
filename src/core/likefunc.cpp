@@ -216,7 +216,8 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
 
 
 extern _String useNexusFileData,
-       VerbosityLevelString;
+       VerbosityLevelString,
+       acceptRootedTrees;
 
 
 void        countingTraverse         (node<long>*, long&, long, long&, bool);
@@ -570,23 +571,24 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, bool leafScan) // from t
             checkParameter (tryNumericSequenceMatch, doNum, 0.0);
             if (doNum>0.5) {
                 long sj = j;
+                
                 for (j=0; j<tips.lLength; j++) {
                     _String *thisName = (_String*)tips(j);
                     k = atoi (thisName->sData);
                     _String tryAgain (k);
-                    if ((tryAgain.Equal(thisName))&&(k<=tips.lLength)) {
+                    if (tryAgain.Equal(thisName) && k<=tips.lLength) {
                         tipMatches<<k;
                     } else {
                         break;
                     }
                 }
+                
                 if (j==tips.lLength) {
                     if (tipMatches.Find(0)==-1) // map to indexing from 0
-                        for (j=0; j<tips.lLength; j++) {
-                            tipMatches.lData[j]--;
-                        }
+                        tipMatches.Offset (-1);
 
                     _SimpleList *dfMap = (_SimpleList*)df->GetMap();
+                    
                     if (dfMap) {
                         for (sj = 0; sj < tips.lLength; sj++) {
                             tipMatches.lData[sj] = dfMap->lData[tipMatches.lData[sj]];
@@ -3745,6 +3747,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void)
                     translation = foundCharacters.GetXtra (translation);
                 }
                 conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
+                //printf ("%ld\n", translation);
             }
         }
         conditionalTerminalNodeLikelihoodCaches.AppendNewInstance (ambigs);
@@ -8879,6 +8882,11 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     // write out all the trees, including model definitions if needed
 
     _Parameter     stashIM = 0.0;
+    checkParameter (tryNumericSequenceMatch, stashIM, 0.0);
+    rec.AppendAnAssignmentToBuffer (&tryNumericSequenceMatch, new _String(stashIM));
+    checkParameter (acceptRootedTrees, stashIM, 0.0);
+    rec.AppendAnAssignmentToBuffer (&acceptRootedTrees, new _String(stashIM));
+
     checkParameter (includeModelSpecs,stashIM,0.0);
     {
         for (long idx = 0; idx < redirectorT->lLength; idx++) {
