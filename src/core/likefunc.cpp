@@ -7442,7 +7442,7 @@ void    _LikelihoodFunction::UpdateDependent (long index)
     if (f!=-1) {
         indexDep.Delete(f);
         indexInd<<index;
-        for (long k = 0; k<depVarsByPartition.lLength; k++) {
+        for (unsigned long k = 0; k<depVarsByPartition.lLength; k++) {
             f = ((_SimpleList*)depVarsByPartition(k))->Find(index);
             if (f >= 0) {
                 ((_SimpleList*)depVarsByPartition(k))->Delete(f);
@@ -10634,10 +10634,10 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
         for (unsigned long k=0; k<indexInd.lLength; k++) {
             long idx = tagger->Find((BaseRef)indexInd.lData[k]);
             if (idx < 0) {
-                WarnError (_String("Internal error in '_LikelihoodFunction::RankVariables': missing parameter name ") & *LocateVar(indexInd.lData[k])->theName);
-                return ;
+                ReportWarning (_String("Internal error in '_LikelihoodFunction::RankVariables': missing parameter name ") & *LocateVar(indexInd.lData[k])->theName);
+            } else {
+                varRank.lData[k] = -tagger->GetXtra(idx);
             }
-            varRank.lData[k] = -tagger->GetXtra(idx);
         }
     }
     else {

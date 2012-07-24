@@ -456,7 +456,7 @@ _VariableContainer::~_VariableContainer(void)
 
 bool _VariableContainer::HasChanged (void)
 {
-    long i;
+    unsigned long i;
     if (iVariables)
         for (i = 0; i<iVariables->lLength; i+=2)
             if (LocateVar (iVariables->lData[i])->HasChanged()) {
@@ -617,9 +617,9 @@ bool      _VariableContainer::RemoveDependance (long varIndex)
 
         if (f!=-1) {
 
-            //printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
-            //      GetName()->sData);
-
+            /*printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
+                  GetName()->sData);
+             */
 
             /*if (dVariables->lData[f+1]>=0)
             {
