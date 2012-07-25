@@ -43,7 +43,7 @@ Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 LoadFunctionLibrary			  ("queryTree");
 
 SetDialogPrompt ("Save analysis results to");
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Model,LogL,NP,BIC,Tree String");
+fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Model\tLogL\tNP\tBIC\tTree String");
 csvFilePath = LAST_FILE_PATH;
 
 
@@ -352,7 +352,7 @@ function getBranchLengths (treeID, modelType) {
                 ExecuteCommands (locals[_varID] + " = Eval (\"`treeID`.`branch_name`." + locals[_varID] + "\")");
             }
         
-            blByName [branch_name] = Eval (bl_expression);
+            blByName [branch_name] = Eval (bl_expression)/3;
         }
     } else {
         Model _temp = (MGMatrix1G, codon3x4, 0);
@@ -365,7 +365,7 @@ function getBranchLengths (treeID, modelType) {
         for (_bID = 0; _bID < Columns (bnames_list) - 1; _bID += 1) {
             branch_name = bnames_list[_bID];
             t = Eval ("`treeID`.`branch_name`.t");        
-            blByName [branch_name] = Eval (bl_expression);
+            blByName [branch_name] = Eval (bl_expression)/3;
         }    
     }
     
