@@ -1109,5 +1109,123 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     return false;
 }
 
+//____________________________________________________________________________________
+
+/*void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+    _String errMsg;
+    if (parameters.lLength == 2) {
+        _FString        * outLF = new _FString (new _String (8192L,1));
+        checkPointer    (outLF);
+        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
+        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
+        if (!lf) {
+            long modelSpec = FindModelName (objectID);
+
+            if (modelSpec<0) {
+                long modelSpec = FindDataSetFilterName (objectID);
+                if (modelSpec < 0) {
+                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
+                    outLF->theString->Finalize();
+                    DeleteObject (outLF);
+                    return ;
+                } else {
+                    outLF->theString->Finalize();
+                    DeleteObject (outLF->theString);
+                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
+                }
+            } else {
+                SerializeModel (*outLF->theString,modelSpec,nil,true);
+                outLF->theString->Finalize();
+            }
+        } else {
+            lf->SerializeLF (*outLF->theString);
+            outLF->theString->Finalize();
+        }
+        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
+        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
+    } else {
+        _Matrix* m[2];
+        for (long k=1; k<3; k++)
+            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
+                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
+                acknError (errMsg);
+                return;
+            }
+
+        _String fName (*(_String*)parameters(0));
+        fName.ProcessFileName();
+        if (terminateExecution) {
+            return;
+        }
+        FILE*   theDump = doFileOpen (fName.getStr(),"w");
+        if (!theDump) {
+            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
+            return;
+        }
+        m[1]->ExportMatrixExp(m[0],theDump);
+        fclose (theDump);
+    }
+}*/
+
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
+
+    currentProgram.currentCommand++;
+    
+    _String objectID (currentProgram.AddNameSpaceToID(*(_String*)parameters(1))),
+            arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
+            errMsg;
+    
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_EXPORT, true, false, &currentProgram);
+    if (!theReceptacle) {
+        return false;
+    }    
+
+    _FString        * outLF = new _FString (new _String (8192L,1));
+    checkPointer    (outLF);
+    long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER,
+             index;
+        
+    BaseRef objectToExport = _HYRetrieveBLObjectByName (objectID, typeFlag, &index);
+    if (! objectToExport) {
+        errMsg = _String ("'") & objectID & "' is not a supported type";
+    } else {
+        switch (typeFlag) {
+            case HY_BL_LIKELIHOOD_FUNCTION: {
+                ((_LikelihoodFunction*)objectToExport)->SerializeLF (*outLF->theString);
+                outLF->theString->Finalize();
+                break;
+            }
+            case HY_BL_DATASET_FILTER: {
+                outLF->theString->Finalize();
+                DeleteObject (outLF->theString);
+                checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr()));
+                break;
+            }
+            case HY_BL_MODEL: {
+                SerializeModel (*outLF->theString,index,nil,true);
+                outLF->theString->Finalize();
+                break;
+            }
+                
+        }
+    }
+
+    if (errMsg.sLength) {
+        outLF->theString->Finalize();
+        DeleteObject (outLF);
+        currentProgram.ReportAnExecutionError (errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_EXPORT)); 
+        theReceptacle->SetValue (new _MathObject, false);
+        return false;
+    }
+    
+    theReceptacle->SetValue (outLF,false);
+
+    return true;
+}
 
 

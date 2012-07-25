@@ -171,7 +171,6 @@ public:
     void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase17  (_ExecutionList&);
     void      ExecuteCase21  (_ExecutionList&);
     void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
     void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
@@ -213,6 +212,7 @@ public:
     bool      HandleMolecularClock                  (_ExecutionList&);
     bool      HandleGetURL                          (_ExecutionList&);
     bool      HandleGetString                       (_ExecutionList&);
+    bool      HandleExport                          (_ExecutionList&);
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -266,9 +266,6 @@ public:
 
     static  bool      ConstructExport       (_String&, _ExecutionList&);
     // construct a matrix export command
-
-    static  bool      ConstructImport       (_String&, _ExecutionList&);
-    // construct a matrix import command
 
     static  bool      ConstructGetString    (_String&, _ExecutionList&);
     // construct a matrix import command

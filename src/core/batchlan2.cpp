@@ -202,18 +202,14 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction3 ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3);
     _HY_ValidHBLExpressions.Insert ("MolecularClock(",                      HY_HBL_COMMAND_MOLECULAR_CLOCK);
     _HY_ValidHBLExpressions.Insert ("fprintf(",                             HY_HBL_COMMAND_FPRINTF);
-    _HY_ValidHBLExpressions.Insert ("GetString(",                           HY_HBL_COMMAND_GET_STRING);
     _HY_ValidHBLExpressions.Insert ("fscanf(",                              HY_HBL_COMMAND_FSCANF);
     _HY_ValidHBLExpressions.Insert ("sscanf(",                              HY_HBL_COMMAND_SSCANF);
-    _HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
-    _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT);
-    _HY_ValidHBLExpressions.Insert ("Import",                               HY_HBL_COMMAND_IMPORT);
+    //_HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
+    _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT); 
+    _HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
     _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
-    _HY_ValidHBLExpressions.Insert ("ClearConstraints(",					HY_HBL_COMMAND_CLEAR_CONSTRAINTS);
-    _HY_ValidHBLExpressions.Insert ("SelectTemplateModel(",					HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL);
     _HY_ValidHBLExpressions.Insert ("UseModel(",                            HY_HBL_COMMAND_USE_MODEL);
     _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
-    _HY_ValidHBLExpressions.Insert ("SetParameter(",                        HY_HBL_COMMAND_SET_PARAMETER);
     _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_SET_CHOICE_LIST);
     _HY_ValidHBLExpressions.Insert ("OpenDataPanel(",                       HY_HBL_COMMAND_OPEN_DATA_PANEL);
     _HY_ValidHBLExpressions.Insert ("GetInformation(",                      HY_HBL_COMMAND_GET_INFORMATION);
@@ -229,19 +225,15 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("GetDataInfo(",                         HY_HBL_COMMAND_GET_DATA_INFO);
     _HY_ValidHBLExpressions.Insert ("StateCounter(",                        HY_HBL_COMMAND_STATE_COUNTER);
     _HY_ValidHBLExpressions.Insert ("Integrate(",                           HY_HBL_COMMAND_INTEGRATE);
-    _HY_ValidHBLExpressions.Insert ("GetURL(",                              HY_HBL_COMMAND_GET_URL);
     _HY_ValidHBLExpressions.Insert ("DoSQL(",                               HY_HBL_COMMAND_DO_SQL);
     _HY_ValidHBLExpressions.Insert ("Topology ",                            HY_HBL_COMMAND_TOPOLOGY);
     _HY_ValidHBLExpressions.Insert ("AlignSequences(",                      HY_HBL_COMMAND_ALIGN_SEQUENCES);
     _HY_ValidHBLExpressions.Insert ("GetNeutralNull(",                      HY_HBL_COMMAND_GET_NEUTRAL_NULL);
     _HY_ValidHBLExpressions.Insert ("#profile",                             HY_HBL_COMMAND_PROFILE);
-    _HY_ValidHBLExpressions.Insert ("DeleteObject(",                        HY_HBL_COMMAND_DELETE_OBJECT);
-    _HY_ValidHBLExpressions.Insert ("RequireVersion(",                      HY_HBL_COMMAND_REQUIRE_VERSION);
     _HY_ValidHBLExpressions.Insert ("SCFG ",                                HY_HBL_COMMAND_SCFG);
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
-    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);      
 /*
 const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, length options
 */
@@ -336,6 +328,12 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
 
+
+    lengthOptions.Clear();lengthOptions.Populate (1,2,1); // 2
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXPORT, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Export(", HY_HBL_COMMAND_EXPORT,false),
+                                                                -1, 
+                                                                "Export (<string variable ID>, <object ID>)",','));
 
 
     lengthOptions.Clear();lengthOptions.Populate (2,2,1);
@@ -446,65 +444,6 @@ _AssociativeList *   CheckAssociativeListArg (_String* mxName)
     return nil;
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String errMsg;
-    if (parameters.lLength == 2) {
-        _FString        * outLF = new _FString (new _String (8192L,1));
-        checkPointer    (outLF);
-        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
-        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
-        if (!lf) {
-            long modelSpec = FindModelName (objectID);
-
-            if (modelSpec<0) {
-                long modelSpec = FindDataSetFilterName (objectID);
-                if (modelSpec < 0) {
-                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF);
-                    return ;
-                } else {
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF->theString);
-                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
-                }
-            } else {
-                SerializeModel (*outLF->theString,modelSpec,nil,true);
-                outLF->theString->Finalize();
-            }
-        } else {
-            lf->SerializeLF (*outLF->theString);
-            outLF->theString->Finalize();
-        }
-        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
-        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
-    } else {
-        _Matrix* m[2];
-        for (long k=1; k<3; k++)
-            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
-                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
-                acknError (errMsg);
-                return;
-            }
-
-        _String fName (*(_String*)parameters(0));
-        fName.ProcessFileName();
-        if (terminateExecution) {
-            return;
-        }
-        FILE*   theDump = doFileOpen (fName.getStr(),"w");
-        if (!theDump) {
-            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
-            return;
-        }
-        m[1]->ExportMatrixExp(m[0],theDump);
-        fclose (theDump);
-    }
-}
 
 //____________________________________________________________________________________
 

@@ -1640,6 +1640,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_MOLECULAR_CLOCK:
             case HY_HBL_COMMAND_GET_URL:
             case HY_HBL_COMMAND_GET_STRING:
+            case HY_HBL_COMMAND_EXPORT:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1718,12 +1719,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructFprintf (currentLine, *this);
         } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
             _ElementaryCommand::ConstructFscanf (currentLine, *this);
-        } else if (currentLine.startswith (blExport)) { // polymatrix export matrix
-            _ElementaryCommand::ConstructExport (currentLine, *this);
         } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
             _ElementaryCommand::ConstructReplicateConstraint (currentLine, *this);
-        } else if (currentLine.startswith (blImport)) { // polymatrix import
-            _ElementaryCommand::ConstructImport (currentLine, *this);
         } else if (currentLine.startswith (blCategory)) { // category variable declaration
             _ElementaryCommand::ConstructCategory (currentLine, *this);
         } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
@@ -2078,6 +2075,14 @@ BaseRef   _ElementaryCommand::toStr      (void)
         }
         break;
 
+    case HY_HBL_COMMAND_EXPORT:
+        converted = (_String*)parameters(1)->toStr();
+        result = _String("Export ")&(*converted);
+        DeleteObject(converted);
+        converted = (_String*)parameters(0)->toStr();
+        checkPointer(converted);
+        result = result& _String(" to ")& *converted;
+        break;
 
     case HY_HBL_COMMAND_MOLECULAR_CLOCK: // a call to MolecularClock
         converted = (_String*)parameters(0)->toStr();
@@ -5827,8 +5832,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 17: // matrix export operation
-        ExecuteCase17 (chain);
+    case HY_HBL_COMMAND_EXPORT: // matrix export operation
+        HandleExport (chain);
         break;
 
     case 18: // matrix import operation
@@ -7256,41 +7261,6 @@ bool    _ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionL
     constuctCatMatrix->addAndClean (target, &pieces, 0);
     return true;
 }
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructExport (_String&source, _ExecutionList&target)
-// syntax: Export (filename,base matrix, exp matrix)
-// or: Export (stringID, likelihood function ID);
-{
-    _List pieces;
-    ExtractConditions (source,blExport.sLength,pieces,',');
-    if (pieces.lLength!=3 && pieces.lLength!=2) {
-        _String errMsg ("Expected: Export (filename,base matrix, exp matrix) or Export (stringID, likelihood function ID)");
-        WarnError (errMsg);
-        return false;
-    }
-    _ElementaryCommand * dsf = makeNewCommand (17);
-    dsf->addAndClean    (target, &pieces, 0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructImport (_String&source, _ExecutionList&target)
-// syntax: Import (filename,base matrix, exp matrix)
-{
-
-    _List pieces;
-    ExtractConditions (source,blImport.sLength,pieces,',');
-    if (pieces.lLength!=2) {
-        WarnError ("Expected: Import (matrix ident,filename)");
-        return false;
-    }
-
-    _ElementaryCommand * dsf = new _ElementaryCommand (18);
-    dsf->addAndClean(target,&pieces,0);
-    return true;
-}
-
 
 
 //____________________________________________________________________________________
