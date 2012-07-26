@@ -351,7 +351,6 @@ function getBranchLengths (treeID, modelType) {
              for (_varID = 0; _varID < Columns (locals); _varID += 1) {
                 ExecuteCommands (locals[_varID] + " = Eval (\"`treeID`.`branch_name`." + locals[_varID] + "\")");
             }
-        
             blByName [branch_name] = Eval (bl_expression)/3;
         }
     } else {

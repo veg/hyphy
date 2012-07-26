@@ -608,9 +608,8 @@ BaseRef _List::makeDynamic(void)
 
 void  _List::Replace (long index, BaseRef newObj, bool dup)
 {
-    if ((index>=0)&&(index<lLength)) {
-        BaseRef theObj = ((BaseRef*)lData)[index];
-        DeleteObject (theObj);
+    if (index>=0 && index<lLength) {
+        DeleteObject (((BaseRef*)lData)[index]);
         ((BaseRef*)lData)[index] = dup?newObj->makeDynamic():newObj;
     }
 }

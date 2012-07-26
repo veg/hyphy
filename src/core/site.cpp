@@ -5693,16 +5693,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 #endif
 
             nexusBF.ExecuteAndClean(bfl);
-
-            //DeleteObject (lastNexusDataMatrix);
-            lastNexusDataMatrix = nil;
             nexusBFBody         = empty;
         } else if (execBF == 0) {
             nexusBFBody         = empty;
         }
     }
 
-    //return (_DataSet*)result.makeDynamic();
     return result;
 }
 
@@ -6508,8 +6504,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName)
 
     if (pos==-1) {
         dataSetNamesList << setName;
-        dataSetList<<ds;
-        DeleteObject (ds);
+        dataSetList.AppendNewInstance(ds);
     } else {
 #if !defined __UNIX__ && ! defined __HEADLESS__
         if (!RequestDataSetReplace (pos)) {
