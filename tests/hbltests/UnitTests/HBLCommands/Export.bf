@@ -20,14 +20,10 @@ function runTest () {
     
     Export (export_string, lf);
     DeleteObject (lf);
-    assert (Log(export_string) == 3059788636, "Failed checksum test when exporting a likelihood function object");
     ExecuteCommands (export_string);
-    Export (export_string, MG94customModel);
-    assert (Log(export_string) == 2553492864, "Failed checksum test when exporting a model object");
-    Export (export_string, filteredData);
-    assert (Log(export_string) == 520896235, "Failed checksum test when exporting a data filter object");
+    assert (trapAllErrors("Export (export_string, MG94customModel);") == 1, "Roundtrip likelihood function export (model)");
+    assert (trapAllErrors("Export (export_string, filteredData);") == 1, "Roundtrip likelihood function export (data)");
     
-    ExecuteCommands (export_string);
     DataSet roundtrip_filter = ReadFromString (export_string);
     assert (roundtrip_filter.sites == 1320 && roundtrip_filter.species == 8, "Failed a dataset filter roundtrip test");
     

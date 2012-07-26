@@ -9,6 +9,18 @@ function runCommandWithSoftErrors (command, expected_error_reg_exp) {
     return localTestResult;
 }
 
+function trapAllErrors (command) {
+	localTestResult  	   = 0;
+
+    LAST_HBL_EXECUTION_ERROR = "";
+    ExecuteCommands ("SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);" + command);
+    assert (Type(LAST_HBL_EXECUTION_ERROR) != "String", "Encountered an error '" + LAST_HBL_EXECUTION_ERROR + "', while executing '" +  command + "'.\n");
+    localTestResult          = 1;
+    
+    return localTestResult;
+}
+
+
 function runATest () {
     fprintf    (stdout, "[Running COVERAGE TEST '", getTestName(), "']\n");
     result  =  runTest();
