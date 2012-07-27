@@ -56,20 +56,20 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     this->initialText();
     this->initializeMenuBar();
-    textEdit->installEventFilter(this);
+    console->installEventFilter(this);
 }
 
 void HyphyMain::initialText() {
     //Options
-    textEdit->setLineWrapMode(QTextEdit::FixedColumnWidth);
-    textEdit->setWordWrapMode(QTextOption::WordWrap);
-    textEdit->setLineWrapColumnOrWidth(80);
+    console->setLineWrapMode(QTextEdit::FixedColumnWidth);
+    console->setWordWrapMode(QTextOption::WordWrap);
+    console->setLineWrapColumnOrWidth(80);
 
     //HyPhy version
     _String version = GetVersionString();
     char* cVersion = (char*)GetVersionString().sData;
-    textEdit->insertPlainText((QString)version);
-    textEdit->insertPlainText("\n");
+    console->insertPlainText((QString)version);
+    console->insertPlainText("\n");
 
     // SW20120702
     // MPProcessors is deprecated as of OSX10.7, using sysctl
@@ -80,9 +80,9 @@ void HyphyMain::initialText() {
     sysctlbyname("hw.physicalcpu", &systemCPUCount, &size, NULL, 0);
 
     if (systemCPUCount == 1) {
-        textEdit->insertHtml("One processor detected.\n");
+        console->insertHtml("One processor detected.\n");
     } else {
-        textEdit->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
+        console->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
     }
 
     //The HyPhy Citation request
@@ -91,10 +91,10 @@ void HyphyMain::initialText() {
                                 "<p>If you are a new HyPhy user:"
                                 "<br />The tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br />";
 
-    textEdit->insertHtml((QString)qtHyphyCiteString);
+    console->insertHtml((QString)qtHyphyCiteString);
 
     //Begin prompting for user input
-    textEdit->prompt();
+    console->prompt();
 }
 
 void HyphyMain::initializeMenuBar() {
@@ -139,14 +139,14 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleClearWindowAction->setStatusTip("Clears the Console Window");
 
     //Connect Edit Menu Events to appropriate slots
-    connect(_hyConsoleUndoAction, SIGNAL(triggered()), textEdit, SLOT(undo()));
-    connect(_hyConsoleRedoAction, SIGNAL(triggered()), textEdit, SLOT(redo()));
-    //connect(_hyConsoleCutAction, SIGNAL(triggered()), textEdit, SLOT(cut()));
-    connect(_hyConsoleCopyAction, SIGNAL(triggered()), textEdit, SLOT(copy()));
-    connect(_hyConsolePasteAction, SIGNAL(triggered()), textEdit, SLOT(paste()));
-    connect(_hyConsoleFindAction, SIGNAL(triggered()), textEdit, SLOT(find()));
-    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), textEdit, SLOT(selectAll()));
-    //connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), textEdit, SLOT(clearwindow()));
+    connect(_hyConsoleUndoAction, SIGNAL(triggered()), console, SLOT(undo()));
+    connect(_hyConsoleRedoAction, SIGNAL(triggered()), console, SLOT(redo()));
+    //connect(_hyConsoleCutAction, SIGNAL(triggered()), console, SLOT(cut()));
+    connect(_hyConsoleCopyAction, SIGNAL(triggered()), console, SLOT(copy()));
+    connect(_hyConsolePasteAction, SIGNAL(triggered()), console, SLOT(paste()));
+    connect(_hyConsoleFindAction, SIGNAL(triggered()), console, SLOT(find()));
+    connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), console, SLOT(selectAll()));
+    //connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), console, SLOT(clearwindow()));
 
     //Add the Edit Menu to the Menu Bar
     _hyConsoleMenu = menuBar()->addMenu(tr("&Edit"));
@@ -217,11 +217,11 @@ void HyphyMain::initializeMenuBar() {
 
 //File Menu Options
 void HyphyMain::hy_open() {
-    textEdit->insertPlainText((QString)_hyQTFileDialog("Select an HBL file to run",empty,false));
+    console->insertPlainText((QString)_hyQTFileDialog("Select an HBL file to run",empty,false));
 }
 
 void HyphyMain::hy_save() {
-    textEdit->insertPlainText((QString)_hyQTFileDialog ("Save console contents to", "HyPhy Console.txt", true));
+    console->insertPlainText((QString)_hyQTFileDialog ("Save console contents to", "HyPhy Console.txt", true));
 }
 
 void HyphyMain::quit() {
@@ -251,7 +251,7 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
     if (event->type() == BufferToStringType) 
     {
         QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
-        textEdit->insertPlainText(e->buffer());
+        console->insertPlainText(e->buffer());
         return true;
     }
 

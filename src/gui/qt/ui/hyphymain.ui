@@ -22,7 +22,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-          <widget class="QTerminal" name="textEdit"/>
+          <widget class="QTerminal" name="console"/>
         </item>
       </layout>
     </widget>

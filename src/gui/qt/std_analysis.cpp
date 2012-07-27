@@ -98,12 +98,11 @@ void SelectAnalysisDialog::loadTree() {
 
     while(!in.atEnd()) {
 
-        //Before looping, let's set the first top level item
         line = in.readLine();    
         rx.indexIn(line);
         fields = rx.capturedTexts();
 
-        //Need to do a while here, and then check if the label starts with a bang
+        //Check if the label starts with a bang
         if(fields[3].startsWith("!")) {
             items.append(item);
             item = new QTreeWidgetItem((QTreeWidget*)0, QStringList(fields[3].remove(0,1)));
@@ -138,3 +137,4 @@ void SelectAnalysisDialog::ok() {
 void SelectAnalysisDialog::cancel() {
     this->reject();
 }
+
