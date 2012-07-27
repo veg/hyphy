@@ -40,12 +40,9 @@ void QTerminal::changeDir(const QString & dir) {
 void QTerminal::keyPressEvent(QKeyEvent * event) {
     int key = event->key();
 
-    if (key == 16777249) {
-            event->ignore();
-            return;
+    if(!event->modifiers()) {
+        this->setTextCursor(curCursorLoc);
     }
-
-    this->setTextCursor(curCursorLoc);
 
     if (key != Qt::Key_Backspace) {
 
@@ -53,7 +50,6 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
             inputCharCount = 0;
         } 
 
-        
         //Command History
         else if (key == Qt::Key_Up) {
             if (cmdHistory.size()) {
@@ -191,7 +187,9 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         }
     }
 
-    this->moveCursor(QTextCursor::End);
+    if(!event->modifiers()) {
+        this->moveCursor(QTextCursor::End);
+    }
 }
 
 void QTerminal::prompt() {
