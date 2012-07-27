@@ -62,7 +62,7 @@ class   _Formula   // a computational formula
 
 public:
     _Formula (void);
-    _Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
+    _Formula (_String&,_VariableContainer* theParent=nil,_String* errorString = nil);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
     _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil);
@@ -73,7 +73,7 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true, bool* isVolatile = nil); // the parser
+    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, _String* saveError = nil, bool* isVolatile = nil); // the parser
     friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil);
     // the execution block for "compiled formulae
     /*

@@ -113,8 +113,19 @@ BaseRef _Operation::toStr(void)
     return res.makeDynamic();
 
 }
+
 //__________________________________________________________________________________
-_Operation::_Operation  (_String& opc, long opNo = 2)
+_Operation::_Operation  (const long theCode, const long opNo = 2)
+// by opcode
+{
+    opCode = theCode;
+    numberOfTerms = opNo;
+    theData       = -1;
+    theNumber     = nil;
+}
+
+//__________________________________________________________________________________
+_Operation::_Operation  (_String& opc, const long opNo = 2)
 // construct the operation by its symbol and, if relevant -
 // number of operands
 {

@@ -5451,7 +5451,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         if (cm>0.0) {
 
             _String     fString = _String ("CChi2(_xx_,1)-") & cm;
-            _Formula    CChi2Fla (fString,nil,true);
+            _Formula    CChi2Fla (fString,nil);
             t1 = CChi2Fla.Brent (thisVar,0,0);
             if (fabs(CChi2Fla.Compute()->Value())>1.e-6) {
                 _String errMsg ("Failed to compute chi-square significance level in call to CovarianceMatrix");
@@ -5520,7 +5520,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             sprintf (buffer,"%.14g",t1);
 
             fString = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
-            _Formula    FitFla (fString,nil,true);
+            _Formula    FitFla (fString,nil);
             if (CheckEqual(t2,thisVar2->GetLowerBound())) {
                 sigLevels.Store (i,0,t2);
             } else {
@@ -10723,11 +10723,12 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 
 _CustomFunction::_CustomFunction (_String* arg)
 {
-    _String body (*arg);
+    _String body    (*arg),
+            errMsg ;
 
     long    varRef = 0;
 
-    if (Parse (&myBody, body, varRef, nil,nil,true) == HY_FORMULA_EXPRESSION) {
+    if (Parse (&myBody, body, varRef, nil,nil,&errMsg) == HY_FORMULA_EXPRESSION) {
         _SimpleList myVars;
         {
             _AVLList al (&myVars);
@@ -10739,7 +10740,7 @@ _CustomFunction::_CustomFunction (_String* arg)
                 GetIndependentVars() << myVars.lData[k];
             }
     } else {
-        WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & *arg & '\'');
+        WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
     }
 }
 

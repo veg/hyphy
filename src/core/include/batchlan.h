@@ -71,6 +71,8 @@ struct    _HBLCommandExtras {
                         needs_verb;
 };
 
+class _ElementaryCommand;
+
 //____________________________________________________________________________________
 class   _ExecutionList: public _List // a sequence of commands to be executed
 {
@@ -107,12 +109,18 @@ public:
     _String     AddNameSpaceToID            (_String&);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
+    _ElementaryCommand* FetchLastCommand (void) {
+        if (currentCommand - 1 < lLength && currentCommand > 0) {
+            return (_ElementaryCommand*)(*this)(currentCommand - 1);
+        }
+        return nil;
+    }
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
     }
 
-    void              ReportAnExecutionError (_String  errMsg);
+    void              ReportAnExecutionError (_String  errMsg, bool = true);
     /**
      * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
      * @param errMsg -- the current command text stream
@@ -183,7 +191,6 @@ public:
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
     void      ExecuteCase40  (_ExecutionList&); // Open Window
     void      ExecuteCase41  (_ExecutionList&); // Spawn LF
-    void      ExecuteCase42  (_ExecutionList&); // Differentiate
     void      ExecuteCase43  (_ExecutionList&); // FindRoot
     void      ExecuteCase44  (_ExecutionList&); // MPISend
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
@@ -213,6 +220,8 @@ public:
     bool      HandleGetURL                          (_ExecutionList&);
     bool      HandleGetString                       (_ExecutionList&);
     bool      HandleExport                          (_ExecutionList&);
+    bool      HandleDifferentiate                   (_ExecutionList&);
+    long      GetCode                               (void) { return code; };
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -318,8 +327,6 @@ public:
     static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
 
     static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
-
-    static  bool      ConstructDifferentiate(_String&, _ExecutionList&);
 
     static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
 
@@ -585,10 +592,10 @@ _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
 _Parameter
-ProcessNumericArgument       (_String*,_VariableContainer*);
-_String ProcessLiteralArgument       (_String*,_VariableContainer*);
+ProcessNumericArgument               (_String*,_VariableContainer*, _ExecutionList* = nil);
+_String ProcessLiteralArgument       (_String*,_VariableContainer*, _ExecutionList* = nil);
 _AssociativeList*
-ProcessDictionaryArgument (_String* data, _VariableContainer* theP);
+ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
 _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);

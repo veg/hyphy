@@ -813,7 +813,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
         }
     }
     if (errMsg.sLength) {
-        currentProgram.ReportAnExecutionError (errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_GET_URL)); 
+        currentProgram.ReportAnExecutionError (errMsg); 
         return false;
     }
 
@@ -1093,7 +1093,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     }
 
     if (errMsg.sLength) {
-        currentProgram.ReportAnExecutionError (errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_GET_STRING)); 
+        currentProgram.ReportAnExecutionError (errMsg); 
         DeleteObject (result);
         result = nil;    
     }
@@ -1218,7 +1218,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
     if (errMsg.sLength) {
         outLF->theString->Finalize();
         DeleteObject (outLF);
-        currentProgram.ReportAnExecutionError (errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_EXPORT)); 
+        currentProgram.ReportAnExecutionError (errMsg); 
         theReceptacle->SetValue (new _MathObject, false);
         return false;
     }
@@ -1227,5 +1227,63 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
 
     return true;
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram){
+
+    currentProgram.currentCommand++;
+   
+    _String  arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
+             errMsg,
+             expressionToParse = *(_String*)parameters(1);
+             
+    _Formula  *theResult = nil;
+
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_DIFFERENTIATE, true, false, &currentProgram);
+    if (!theReceptacle) {
+        return false;
+    }    
+
+
+    _Formula theExpression (expressionToParse,currentProgram.nameSpacePrefix, &errMsg);
+    
+    if (!theExpression.IsEmpty() && errMsg.sLength == 0) {
+        long times = 1;
+        if (parameters.lLength==4) {
+            times = ProcessNumericArgument ((_String*)parameters(3),currentProgram.nameSpacePrefix, &currentProgram);
+            if (!numericalParameterSuccessFlag) {
+                return false;
+            }
+        }
+        if (times <= 0) {
+            errMsg = "The number of times to differentiate must be a non-negative integer";
+        }
+
+        theResult = theExpression.Differentiate (*(_String*)parameters(2), false);
+        for (; times>1 && theResult; times--) {
+            _Formula * temp = theResult->Differentiate (*(_String*)parameters(2));
+            delete (theResult);
+            theResult = temp;
+        }
+    }
+
+    if (errMsg.sLength || theResult == nil) {
+        if (theResult) { 
+            delete (theResult); 
+        } else {
+            errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed";
+        }
+        currentProgram.ReportAnExecutionError (errMsg); 
+        theReceptacle->SetValue (new _MathObject, false);
+        return false;
+    }
+    
+    theReceptacle->SetFormula (*theResult);
+    if (theResult) delete (theResult);
+
+    return true;
+}
+
 
 

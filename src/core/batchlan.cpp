@@ -445,21 +445,24 @@ _String*    ProcessCommandArgument (_String* data)
 
 bool    numericalParameterSuccessFlag = true;
 
-_Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP)
-{
-
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    numericalParameterSuccessFlag = true;
-    if (formRes&& formRes->ObjectClass()==NUMBER) {
-        return formRes->Value();
-    } else {
-        if (formRes&& formRes->ObjectClass()==STRING) {
-            return _String((_String*)((_FString*)formRes)->toStr()).toNum();
+_Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram) {
+    _String   errMsg;
+    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
+     
+    if (errMsg.sLength && currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    }
+    else {
+        _PMathObj formRes = nameForm.Compute();
+        numericalParameterSuccessFlag = true;
+        if (formRes&& formRes->ObjectClass()==NUMBER) {
+            return formRes->Value();
         } else {
-            _String errMsg (*data);
-            errMsg = errMsg & " was expected to be a numerical argument";
-            WarnError (errMsg);
+            if (formRes&& formRes->ObjectClass()==STRING) {
+                return _String((_String*)((_FString*)formRes)->toStr()).toNum();
+            } else {
+                WarnError (_String("'") & *data & "' was expected to be a numerical argument.");
+            }
         }
     }
     numericalParameterSuccessFlag = false;
@@ -482,12 +485,17 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
 
 //____________________________________________________________________________________
 
-_String ProcessLiteralArgument (_String* data, _VariableContainer* theP)
+_String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
 {
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    if (formRes && formRes->ObjectClass()==STRING) {
-        return *((_FString*)formRes)->theString;
+    _String   errMsg;
+    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
+    if (errMsg.sLength && currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    } else {
+        _PMathObj formRes = nameForm.Compute();
+        if (formRes && formRes->ObjectClass()==STRING) {
+            return *((_FString*)formRes)->theString;
+        }
     }
 
     return empty;
@@ -495,15 +503,19 @@ _String ProcessLiteralArgument (_String* data, _VariableContainer* theP)
 
 //____________________________________________________________________________________
 
-_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP)
+_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
 {
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST) {
-        formRes->AddAReference();
-        return (_AssociativeList*)formRes;
+    _String   errMsg;
+    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
+    if (errMsg.sLength && currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    } else {
+        _PMathObj formRes = nameForm.Compute();
+        if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST) {
+            formRes->AddAReference();
+            return (_AssociativeList*)formRes;
+        }
     }
-
     return nil;
 }
 
@@ -1110,7 +1122,13 @@ void        _ExecutionList::Duplicate   (BaseRef source)
 
 
 //____________________________________________________________________________________
-void    _ExecutionList::ReportAnExecutionError (_String errMsg) {
+void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand) {
+    if (doCurrentCommand) {
+        _ElementaryCommand *theCommand = FetchLastCommand();
+        if (theCommand) {
+            errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->GetCode());
+        }
+    }
     switch (errorHandlingMode) {
         case HY_BL_ERROR_HANDLING_SOFT:
             setParameter(_hyLastExecutionError, new _FString (errMsg, false), false);
@@ -1641,6 +1659,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_GET_URL:
             case HY_HBL_COMMAND_GET_STRING:
             case HY_HBL_COMMAND_EXPORT:
+            case HY_HBL_COMMAND_DIFFERENTIATE:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1741,8 +1760,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
         } else if (currentLine.startswith (blSpawnLF)) { // execute commands
             _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
-        } else if (currentLine.startswith (blDifferentiate)) { // differentiate an expr
-            _ElementaryCommand::ConstructDifferentiate (currentLine, *this);
         } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
             // find a root of an expression in an interval
             // or an integral
@@ -2302,15 +2319,15 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
     }
 
-    case 42: { // Differentiate
+    case HY_HBL_COMMAND_DIFFERENTIATE: { // Differentiate
         converted = (_String*)parameters(1)->toStr();
-        result = _String("Differentiate ")&(*converted);
+        result = _String("Differentiate '")&(*converted);
         DeleteObject(converted);
         converted = (_String*)parameters(2)->toStr();
-        result = result& _String(" on ")&(*converted);
+        result = result& _String("' on ")&(*converted);
         DeleteObject(converted);
         if (parameters.lLength==4) {
-            converted = (_String*)parameters(2)->toStr();
+            converted = (_String*)parameters(3)->toStr();
             result = result& _String(" ")&(*converted) & " times ";
             DeleteObject(converted);
         }
@@ -2522,12 +2539,13 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         _Formula f,
                  f2;
 
-        _String* theFla     = (_String*)parameters(0);
+        _String* theFla     = (_String*)parameters(0),
+                 errMsg;
 
         bool    doNotCompileThisFormula = false;
 
         long    varRef,
-                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,true,&doNotCompileThisFormula);
+                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,nil,&doNotCompileThisFormula);
 
         if (parseCode != HY_FORMULA_FAILED ) {
             if (doNotCompileThisFormula == false) { // not a matrix constant
@@ -2555,7 +2573,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
     ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
 
     if (terminateExecution) {
-        WarnError (_String("Problem occurred in line:")&*this);
+        WarnError (_String("Problem occurred in line: ")&*this);
         return;
     }
 }
@@ -4980,43 +4998,6 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase42 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String *currentArgument = (_String*)parameters(0),
-             errMsg,
-             result;
-
-    _Variable * theReceptacle = CheckReceptacle(&AppendContainerName(*currentArgument,chain.nameSpacePrefix),blDifferentiate,true);
-    if (theReceptacle) {
-        long        f = 1;
-        _String     exprString =  *(_String*)parameters(1);
-        _Formula    theExpression (exprString);
-
-        if (terminateExecution) {
-            return;
-        }
-
-        if (parameters.lLength==4) {
-            f = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
-            if (f<=0) {
-                f = 1;
-            }
-        }
-
-        _Formula * theResult = theExpression.Differentiate (*(_String*)parameters(2));
-        for (; f>1; f--) {
-            _Formula * temp = theResult->Differentiate (*(_String*)parameters(2));
-            delete (theResult);
-            theResult = temp;
-        }
-        theReceptacle->SetFormula (*theResult);
-        delete (theResult);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -5958,8 +5939,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase41 (chain);
         break;
 
-    case 42:
-        ExecuteCase42 (chain);
+    case HY_HBL_COMMAND_DIFFERENTIATE:
+        return HandleDifferentiate (chain);
         break;
 
     case 43:
@@ -7180,21 +7161,6 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructDifferentiate (_String&source, _ExecutionList&target)
-// syntax: Differentiate (receptacle, expression, variable, [number of times, default = 1])
-{
-    _List pieces;
-    ExtractConditions (source,blDifferentiate.sLength,pieces,',');
-    if (pieces.lLength<3||pieces.lLength>4) {
-        WarnError ("Expected: Differentiate (receptacle, expression, variable, [number of times, default = 1]).");
-        return false;
-    }
-
-    _ElementaryCommand * dif = new _ElementaryCommand (42);
-    dif->addAndClean(target,&pieces,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructFindRoot (_String&source, _ExecutionList&target)

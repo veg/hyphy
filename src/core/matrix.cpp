@@ -9010,8 +9010,10 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
         _List aPair;
         _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, aPair, ':' , false);
         if (aPair.lLength == 2) {
-            _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP));
-            _Formula value      (*(_String*)aPair(1),theP, doErrors);
+            _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP)),
+                     errMsg;
+                     
+            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil:&errMsg);
 
             _PMathObj   valueC  = value.Compute();
             if (valueC) {

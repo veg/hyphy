@@ -61,9 +61,10 @@ class   _Operation : public BaseObj
 
 public:
     _Operation  (void);
-    _Operation  (_String&, long);
+    _Operation  (_String&, const long);
     // construct the operation by its symbol and, if relevant -
     // number of operands
+    _Operation  (const long,const long);
 
     _Operation  (bool, _String&, bool isG = false, _VariableContainer*  = nil);
     // store a variable or a constant

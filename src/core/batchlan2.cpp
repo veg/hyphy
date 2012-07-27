@@ -206,9 +206,8 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("sscanf(",                              HY_HBL_COMMAND_SSCANF);
     //_HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
     _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT); 
-    _HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
+    //_HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
     _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
-    _HY_ValidHBLExpressions.Insert ("UseModel(",                            HY_HBL_COMMAND_USE_MODEL);
     _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
     _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_SET_CHOICE_LIST);
     _HY_ValidHBLExpressions.Insert ("OpenDataPanel(",                       HY_HBL_COMMAND_OPEN_DATA_PANEL);
@@ -218,7 +217,6 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(",					HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
     _HY_ValidHBLExpressions.Insert ("OpenWindow(",                          HY_HBL_COMMAND_OPEN_WINDOW);
     _HY_ValidHBLExpressions.Insert ("SpawnLikelihoodFunction(",				HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION);
-    _HY_ValidHBLExpressions.Insert ("Differentiate(",                       HY_HBL_COMMAND_DIFFERENTIATE);
     _HY_ValidHBLExpressions.Insert ("FindRoot(",                            HY_HBL_COMMAND_FIND_ROOT);
     _HY_ValidHBLExpressions.Insert ("MPIReceive(",                          HY_HBL_COMMAND_MPI_RECEIVE);
     _HY_ValidHBLExpressions.Insert ("MPISend(",                             HY_HBL_COMMAND_MPI_SEND);
@@ -358,6 +356,17 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         false,
                                         &lengthOptions));
                                         
+
+    lengthOptions.Clear();lengthOptions.Populate (2,3,1); // 3 or 4
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_DIFFERENTIATE, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Differentiate(", HY_HBL_COMMAND_DIFFERENTIATE,false),
+                                    -1, 
+                                    "Differentiate(<receptacle>, <the expression to differentiate>, <variable to differentiate>[, number of times, default = 1])",
+                                    ',',
+                                    true,
+                                    false,
+                                    false,
+                                    &lengthOptions));
                                         
 // matrix global arrays
 
