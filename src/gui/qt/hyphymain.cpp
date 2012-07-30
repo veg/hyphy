@@ -48,9 +48,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "HYUtils.h"
 
 #include "qterminal.h"
-#include "std_analysis.h"
+#include "hyphyhierarchicalselector.h"
 #include "hyphyevents.h"
 #include "hyphy_qt_helpers.h"
+
+#include "HYSharedMain.h"
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
@@ -67,7 +69,6 @@ void HyphyMain::initialText() {
 
     //HyPhy version
     _String version = GetVersionString();
-    char* cVersion = (char*)GetVersionString().sData;
     console->insertPlainText((QString)version);
     console->insertPlainText("\n");
 
@@ -86,10 +87,7 @@ void HyphyMain::initialText() {
     }
 
     //The HyPhy Citation request
-    const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite:<br />S.L. Kosakovsky Pond, S. D. W. Frost"
-                                "and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679</p>"
-                                "<p>If you are a new HyPhy user:"
-                                "<br />The tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br />";
+    const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite <b>SL Kosakovsky Pond, SDW Frost and SV Muse. (2005)</b> HyPhy: hypothesis testing using phylogenies. <i>Bioinformatics 21: 676-679</i></p><p>If you are a new HyPhy user, the tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br>";
 
     console->insertHtml((QString)qtHyphyCiteString);
 
@@ -168,6 +166,9 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleSuspendExecutionAction = new QAction(tr("&Suspend Execution"),this);
     _hyConsoleViewLogAction = new QAction(tr("&View Log"),this);
     _hyConsoleStandardAnalysisAction = new QAction(tr("&Standard Analysis"),this);
+    QList <QKeySequence>keyList;
+    keyList << QKeySequence ("Ctrl+E");
+    _hyConsoleStandardAnalysisAction->setShortcuts(keyList);
     _hyConsoleStandardAnalysisAction->setStatusTip("Standard Analysis");
     _hyConsoleResultsAction = new QAction(tr("&Results"),this);
     _hyConsoleRerunLastAnalysisAction = new QAction(tr("&Rerun Last Analysis"),this);
@@ -233,8 +234,20 @@ void HyphyMain::hy_suspendexecution(){}
 void HyphyMain::hy_viewlog(){}
 
 void HyphyMain::hy_standardanalysis() {
-    SelectAnalysisDialog *s = new SelectAnalysisDialog(this);
-    s->show(); 
+
+    _SimpleList std,
+                vc (availableTemplateFiles.lLength,0,1),
+                selections;
+                
+    std<<2;
+    std<<1;
+
+    _HY_HierarchicalSelector *hs = new _HY_HierarchicalSelector(this, availableTemplateFiles, std, vc, "Standard Analyses", &selections, 1, true);
+    hs->setWindowModality(Qt::WindowModal);
+    hs->exec(); 
+    if (selections.lLength == 1) {
+        RunTemplate (selections.lData[0]);
+    }
 }
 
 void HyphyMain::hy_results(){}
@@ -255,8 +268,32 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
         return true;
     }
 
-    else 
-    {
-        return false;
-    }
+    return QMainWindow::eventFilter(obj,event);
 }
+
+void HyphyMain::StartBarTimer() {
+}
+
+void HyphyMain:: StopBarTimer() {
+}
+
+void HyphyMain::SetStatusLine     (_String) {
+}
+void HyphyMain::SetStatusLine     (_String, _String, _String, long l){
+}
+
+void HyphyMain::SetStatusLine     (_String, _String, _String){
+}
+
+void HyphyMain::SetStatusLine     (_String, _String, _String, long, char){
+}
+
+void HyphyMain::SetStatusBarValue (long, _Parameter, _Parameter){
+}
+
+void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
+
+}
+
+
+

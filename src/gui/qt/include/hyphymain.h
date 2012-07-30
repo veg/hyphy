@@ -42,6 +42,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QtGui>
 #include "ui_hyphymain.h"
 #include "qterminal.h"
+#include "hy_strings.h"
+
+#define  HY_CONSOLE_CAN_COPY    0x01
+#define  HY_CONSOLE_CAN_PASTE   0x02
+#define  HY_CONSOLE_CAN_UNDO    0x04
+#define  HY_CONSOLE_CAN_REDO    0x08
+
+#define  HY_SL_FILE             0x01
+#define  HY_SL_TASK             0x02
+#define  HY_SL_TIMER            0x04
+#define  HY_SL_PERCENT          0x08
+#define  HY_SL_SUSPEND          0x10
+#define  HY_SL_RESUME           0x20
+#define  HY_SL_FORCE            0x40
+#define  HY_SL_DONE             0x80
 
 class HyphyMain : public QMainWindow, private Ui::MainWindow
 {
@@ -51,6 +66,14 @@ class HyphyMain : public QMainWindow, private Ui::MainWindow
 public:
     HyphyMain(QMainWindow *parent = NULL);
     void initialText();
+    void StartBarTimer();
+    void StopBarTimer();
+    void SetStatusLine     (_String);
+    void SetStatusLine     (_String, _String, _String, long l);
+    void SetStatusLine     (_String, _String, _String);
+    void SetStatusLine     (_String, _String, _String, long, char);
+    void SetStatusBarValue (long, _Parameter, _Parameter);
+    void AddStringToRecentMenu (const _String, const _String);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);

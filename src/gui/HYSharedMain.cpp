@@ -44,9 +44,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "HYSharedMain.h"
-#include "HYUtils.h"
-#include "HYConsoleWindow.h"
-#include "HYDialogs.h"
+
+#ifndef __HYPHYQT__
+    #include "HYUtils.h"
+    #include "HYConsoleWindow.h"
+    #include "HYDialogs.h"
+#else
+    #include "hyphymain.h"
+    _String   menuSeparator       ("SEPARATOR");
+#endif
 
 bool             isSuspended        = false,
                  hasTemplates      = false,
@@ -73,36 +79,6 @@ _String*         argFileName = nil;
 
 void    PrepareToExecuteBatchFile  (void)
 {
-#ifdef __MAC__
-    DisableMenuItem (GetMenuHandle(129),0);
-    EnableMenuItem  (GetMenuHandle(131),0);
-    EnableMenuItem  (GetMenuHandle(131),1);
-    EnableMenuItem  (GetMenuHandle(131),2);
-    DisableMenuItem (GetMenuHandle(131),4);
-    DisableMenuItem (GetMenuHandle(131),6);
-    DisableMenuItem (GetMenuHandle(131),7);
-    DisableMenuItem (GetMenuHandle(131),8);
-    InvalMenuBar();
-#endif
-
-#ifdef __WINDOZE__
-    HMENU       hMenu = GetMenu ((HWND)hyphyConsoleWindow->GetOSWindowData()),
-                sMenu;
-    if (hMenu) {
-        EnableMenuItem(hMenu, 0 ,MF_GRAYED|MF_BYPOSITION);
-    }
-    sMenu = GetSubMenu (hMenu,2);
-    if (sMenu) {
-        EnableMenuItem(sMenu, 0 ,MF_ENABLED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 1 ,MF_ENABLED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 3 ,MF_GRAYED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 5 ,MF_GRAYED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 6 ,MF_GRAYED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 7 ,MF_GRAYED|MF_BYPOSITION);
-    }
-
-#endif
-
 #ifdef __HYPHY_GTK__
     ToggleAnalysisMenu (true);
 #endif
@@ -112,72 +88,6 @@ void    PrepareToExecuteBatchFile  (void)
 
 void    DoneWithExecutionOfBatchFile (bool doPost)
 {
-#ifdef __MAC__
-    if (doPost) {
-        EnableMenuItem (GetMenuHandle(131),7);
-        EnableMenuItem (GetMenuHandle(201),0);
-        for (long i=0; i<availablePostProcessors.lLength; i++) {
-            _String* condition = (_String*)(*(_List*)availablePostProcessors(i))(2);
-            EnableMenuItem (GetMenuHandle (201),i+1);
-            if (condition->sLength) {
-                _Formula condCheck (*condition,nil);
-                _PMathObj condCheckRes = condCheck.Compute();
-                if ((!condCheckRes)||(condCheckRes->Value()<.5)) {
-                    DisableMenuItem (GetMenuHandle (201),i+1);
-                }
-            }
-        }
-    }
-
-    EnableMenuItem (GetMenuHandle(129),0);
-    EnableMenuItem (GetMenuHandle(150),5);
-    EnableMenuItem (GetMenuHandle(131),0);
-    DisableMenuItem (GetMenuHandle(131),1);
-    DisableMenuItem (GetMenuHandle(131),2);
-    EnableMenuItem (GetMenuHandle(131),4);
-    if (hasTemplates) {
-        EnableMenuItem (GetMenuHandle(131),6);
-    }
-    EnableMenuItem (GetMenuHandle(131),8);
-    InvalMenuBar();
-#endif
-
-#ifdef __WINDOZE__
-    HMENU       hMenu = GetMenu ((HWND)hyphyConsoleWindow->GetOSWindowData()),
-                sMenu;
-
-    if (hMenu) {
-        EnableMenuItem(hMenu, 0, MF_ENABLED|MF_BYPOSITION);
-    }
-
-    sMenu = GetSubMenu (hMenu,2);
-    if (sMenu) {
-        EnableMenuItem(sMenu, 0 ,MF_GRAYED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 1 ,MF_GRAYED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 3 ,MF_ENABLED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 5 ,MF_ENABLED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 6 ,MF_ENABLED|MF_BYPOSITION);
-        EnableMenuItem(sMenu, 7 ,MF_ENABLED|MF_BYPOSITION);
-    }
-    if (doPost) {
-        HMENU       sMenu = GetSubMenu(GetSubMenu (GetMenu((HWND)hyphyConsoleWindow->GetOSWindowData()),2),6);
-        for (long i=0; i<availablePostProcessors.lLength; i++) {
-            EnableMenuItem(sMenu, i ,MF_ENABLED|MF_BYPOSITION);
-            _String* condition = (_String*)(*(_List*)availablePostProcessors(i))(2);
-            if (condition->sLength) {
-                _Formula condCheck (*condition,nil);
-                _PMathObj condCheckRes = condCheck.Compute();
-                if ((!condCheckRes)||(condCheckRes->Value()<.5)) {
-                    EnableMenuItem(sMenu, i ,MF_GRAYED|MF_BYPOSITION);
-                }
-            }
-        }
-    }
-    DrawMenuBar((HWND)hyphyConsoleWindow->GetOSWindowData());
-    SendMessage ((HWND)hyphyConsoleWindow->GetOSWindowData(), WM_PAINT, NULL, NULL);
-
-#endif
-
 #ifdef __HYPHY_GTK__
     ToggleAnalysisMenu (false);
 #endif
@@ -194,19 +104,22 @@ bool    ExecuteBatchFile (void)
 
     _String justTheName     (*argFileName,argFileName->FindBackwards (GetPlatformDirectoryChar(),0,-1)+1,-1);
 
-    AddStringToRecentMenu   (justTheName, *argFileName);
-    SetStatusLine           (justTheName,"Loading","00:00:00", -1);
-
-    StartBarTimer           ();
+    _hyPrimaryConsoleWindow->AddStringToRecentMenu   (justTheName, *argFileName);
+    
+    _hyPrimaryConsoleWindow->SetStatusLine           (justTheName,"Loading","00:00:00", -1);
+    _hyPrimaryConsoleWindow->StartBarTimer           ();
+    
+    #ifndef __HYPHYQT__
     ApplyPreferences        ();
-
+    #endif 
+    
     ex.Clear                ();
     ReadBatchFile           (*argFileName,ex);
     ex.Execute();
 
-    StopBarTimer            ();
+    _hyPrimaryConsoleWindow->StopBarTimer            ();
+    
     setParameter            (VerbosityLevelString, 0.0, nil);
-    //SetStatusLine             (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
     BufferToConsole         ("\n");
 
     ReportAnalysisAsFinished (empty);
@@ -240,10 +153,15 @@ void    RunTemplate (long idx)
 bool    OpenBatchFile (bool openOrNot, _String* dL)
 {
     PurgeAll            (windowPtrs.lLength==1);
+    
+    #ifndef __HYPHYQT__
+    
     if (openOrNot)
         if (!PopUpFileDialog(" Please select a batch file to run:",dL)) {
             return false;
         }
+        
+    #endif
 
     if (!argFileName || argFileName->sLength == 0) {
         return false;
@@ -267,17 +185,17 @@ void    ExecuteAPostProcessor (_String justTheName)
     volumeName  = baseDirectory.Cut (0, baseDirectory.Find(':'));
 #endif
 
-    SetStatusLine ( justTheName, "Loading", "00:00:00", -1);
+    _hyPrimaryConsoleWindow->SetStatusLine ( justTheName, "Loading", "00:00:00", -1);
 
     PushFilePath      (pathName);
     ReadBatchFile     (postFile, postEx);
-    StartBarTimer     ();
+    _hyPrimaryConsoleWindow->StartBarTimer     ();
     terminateExecution = false;
     postEx.Execute    ();
-    SetStatusLine     (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
+    _hyPrimaryConsoleWindow->SetStatusLine     (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
     PopFilePath       ();
     terminateExecution = false;
-    StopBarTimer      ();
+    _hyPrimaryConsoleWindow->StopBarTimer      ();
     DoneWithExecutionOfBatchFile ();
 }
 
@@ -296,6 +214,7 @@ void    ReadInTemplateFiles(void)
     if (!modelList) {
         return;
     }
+    
 
     _String theData (modelList);
     fclose (modelList);
@@ -378,7 +297,8 @@ long  SelectATemplate (void)
     std<<2;
     std<<1;
 
-    return HandleHierListSelection (availableTemplateFiles, std, vc, "Select a standard analysis to run",selection,1);
+    return -1;
+    //return HandleHierListSelection (availableTemplateFiles, std, vc, "Select a standard analysis to run",selection,1);
 }
 
 //____________________________________________________________________________________________

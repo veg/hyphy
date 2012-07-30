@@ -193,7 +193,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 }
 
 void QTerminal::prompt() {
-    this->insertHtml("<font color=\"#A60000\">></font> ");
+    this->insertHtml("<font color=\"#A60000\">&gt;</font> ");
 
     //Clear undo stack trick
     //this->moveCursor(QTextCursor::End);

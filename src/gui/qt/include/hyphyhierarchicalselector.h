@@ -40,20 +40,43 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 #include <QDialog>
-#include "ui_selectanalysis.h"
+#include "ui_hyphyhierarchicalselector.h"
+#include "list.h"
+#include "hy_strings.h"
 
-class SelectAnalysisDialog : public QDialog, private Ui::Dialog
+
+class _HY_HierarchicalSelector : public QDialog, private Ui::Dialog
 {
     Q_OBJECT
 
 public:
-    SelectAnalysisDialog(QWidget *parent = NULL);
+    _HY_HierarchicalSelector(QWidget *parent, _List& definition, _SimpleList& c, _SimpleList& vc, _String n, _SimpleList* s, long r, bool is_modal = true);
+virtual
+    ~_HY_HierarchicalSelector () {};
+    void SetInitialSelection ();
+    
+protected:
 
-private:
-    void loadTree();
+    bool eventFilter ( QObject * watched, QEvent * event );
+
+private:   
+    void  toggleAcceptStatus(long);
+    void  closeEvent(QCloseEvent *event);
+
+    _List data,
+          iData,
+          dData;
+          
+    _SimpleList validChoices,
+                *selections,
+                offsets;
+                
+    long          result;
+    _String       lastString;
+    bool          validSelection;
 
 private slots:
     void ok();
     void cancel();
+    void handle_selection_change ();
 };
-
