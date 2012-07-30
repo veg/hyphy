@@ -1,3 +1,5 @@
+VERBOSITY_LEVEL				 = 0;
+
 skipCodeSelectionStep 		= 0;
 LoadFunctionLibrary("chooseGeneticCode");
 
@@ -19,9 +21,9 @@ omega3 = 1.0;
 
 nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
 
-PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t1", "omega1", "");
-PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t2", "omega2", "");
-PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t3", "omega3", "");
+PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t", "omega1", "");
+PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t", "omega2", "");
+PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t", "omega3", "");
 
 global	omegaG1 = 0.2;
 omegaG1 :< 1;
@@ -30,9 +32,9 @@ omegaG2 :< 1;
 global	omegaG3 = 2.0;
 omegaG3 :> 1;
 
-PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t1", "omegaG1", "");
-PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t2", "omegaG2", "");
-PopulateModelMatrix			  ("MGMatrix3G",  nucCF, "t3", "omegaG3", "");
+PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t", "omegaG1", "");
+PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t", "omegaG2", "");
+PopulateModelMatrix			  ("MGMatrix3G",  nucCF, "t", "omegaG3", "");
 
 
 
@@ -48,18 +50,17 @@ fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,Omega1,P1,Omeg
 csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
-VERBOSITY_LEVEL				 = 0;
 
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
-Optimize					  (res_base,base_LF);
+//Optimize					  (res_base,base_LF);
 
 lfOut	= csvFilePath + ".mglocal.fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, base_LF);
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
-localLL						 = res_base[1][0];
-localParams					 = res_base[1][1] + 9;
+//localLL						 = res_base[1][0];
+//localParams					 = res_base[1][1] + 9;
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -112,58 +113,23 @@ Tree						   mixtureTree = treeString;
 
 
 
-ReplicateConstraint 		  ("this1.?.t1:=this2.?.syn",mixtureTreeG,givenTree);
-ReplicateConstraint 		  ("this1.?.t1:=this2.?.syn",mixtureTree,givenTree);
+ReplicateConstraint 		  ("this1.?.t:=this2.?.syn",mixtureTreeG,givenTree);
+ReplicateConstraint 		  ("this1.?.t:=this2.?.syn",mixtureTree,givenTree);
 
 ClearConstraints			  (mixtureTree);
 ClearConstraints			  (mixtureTreeG);
 
-omega1G						 :< 1;
-omega2G						 :< 1;
+omegaG1						 :< 1;
+omegaG2						 :< 1;
 Paux1G 						 :< 1;
 Paux2G 						 :< 1;
 
-ReplicateConstraint 		  ("this1.?.t2:=this2.?.t1",mixtureTree,mixtureTree);
-ReplicateConstraint 		  ("this1.?.t3:=this2.?.t1",mixtureTree,mixtureTree);
-ReplicateConstraint 		  ("this1.?.t2:=this2.?.t1",mixtureTreeG,mixtureTreeG);
-ReplicateConstraint 		  ("this1.?.t3:=this2.?.t1",mixtureTreeG,mixtureTreeG);
-
 ASSUME_REVERSIBLE_MODELS	  = 1;
 
-/*LikelihoodFunction three_LF   = (dsf,mixtureTreeG);
+VERBOSITY_LEVEL               = 1;
 
 
-fprintf 					  (stdout, "[PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
-
-Optimize					  (res_three_LF_global,three_LF);
-fprintf						  (stdout,"\n",three_LF);
-
-lfOut	= csvFilePath + ".relglobal.fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, three_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
-
-global Paux1G=0.6417071370308534;
-global Paux2G=1;
-global omegaG3=1.064891502388613;
-global omegaG2=0.9203043460462096;
-global omegaG1=0.3863674819501042;
-
-
-wg1 = Max(0.05,Paux1G);
-wg2 = Max(0.05,(1-Paux1G)*Paux2G);
-wg3 = Max(0.05,(1-Paux1G)*(1-Paux2G));
-
-sum = wg1+wg2+wg3;
-
-wg1 = wg1/sum;
-wg2 = wg2/sum;
-wg3 = wg3/sum;
-
-Paux1G = wg1;
-Paux2G = wg2/(1-Paux1G);*/
-
-USE_LAST_RESULTS			  = 1;
+//LikelihoodFunction global_LF  = (dsf, mixtureTreG);
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
@@ -194,7 +160,7 @@ for (k = 0; k < totalBranchCount; k = k+1)
         
     bl = bl / (synM + nonsynM * baseOmega);
     
-    ExecuteCommands ("mixtureTree." + bNames[k] + ".t1 = bl");
+    ExecuteCommands ("mixtureTree." + bNames[k] + ".t = bl");
     ExecuteCommands ("mixtureTree." + bNames[k] + ".omega1 :< 1;");
 	ExecuteCommands ("mixtureTree." + bNames[k] + ".omega2 :< 1;");
     if (baseOmega > 1)
@@ -218,12 +184,14 @@ for (k = 0; k < totalBranchCount; k = k+1)
 }
 
 
-//VERBOSITY_LEVEL = 10;
+VERBOSITY_LEVEL = 1;
+USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
 fprintf 					  (stdout, "[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout,"\n",three_LF);
+
 
 
 lfOut	= csvFilePath + ".fit";
@@ -233,7 +201,7 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 
 
-for							  (k = 0; k < totalBranchCount; k = k+1)
+for	(k = 0; k < totalBranchCount; k = k+1)
 {
 	ref = "mixtureTree."+bNames[k];
 	

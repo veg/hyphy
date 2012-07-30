@@ -64,6 +64,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //__________________________________________________________________________________
 extern  _List BuiltInFunctions;
+
+class   _ExecutionList; 
+
 //__________________________________________________________________________________
 
 #define  USE_POINTER_VC
@@ -91,8 +94,8 @@ _Variable*  FetchVar        (long index);
 _PMathObj   FetchObjectFromVariableByType       (_String*, const unsigned long, long = -1, _String* = nil);
 _PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
-_String&    AppendContainerName
-(_String&, _VariableContainer*);
+_String&    AppendContainerName     (_String&, _VariableContainer*);
+_String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
 void        DeleteVariable  (_String&, bool deleteself = true);
 void        DeleteTreeVariable
@@ -127,7 +130,7 @@ bool        CheckReceptacleAndStore
 (_String,_String, bool, _PMathObj, bool = true);
 
 _Variable*  CheckReceptacleCommandID
-(_String* name, const long id, bool checkValid, bool isGlobal = false);
+(_String* name, const long id, bool checkValid, bool isGlobal = false, _ExecutionList* context = nil);
 
 bool        CheckReceptacleCommandIDAndStore
 (_String* name, const long id, bool checkValid, _PMathObj v, bool dup = true, bool isGlobal = false);

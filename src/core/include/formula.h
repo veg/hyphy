@@ -43,7 +43,7 @@
 #include "baseobj.h"
 #include "classes.h"
 #include "defines.h"
-#include "avllist.h"
+#include "avllistx.h"
 #include "stack.h"
 #include "operation.h"
 
@@ -62,10 +62,10 @@ class   _Formula   // a computational formula
 
 public:
     _Formula (void);
-    _Formula (_String&,_VariableContainer* theParent=nil,bool errors=true);
+    _Formula (_String&,_VariableContainer* theParent=nil,_String* errorString = nil);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer* = nil);
+    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -73,7 +73,7 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, bool flagErrors = true, bool* isVolatile = nil); // the parser
+    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, _String* saveError = nil, bool* isVolatile = nil); // the parser
     friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil);
     // the execution block for "compiled formulae
     /*
@@ -105,7 +105,7 @@ public:
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool = false);
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0);
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type
@@ -158,13 +158,14 @@ public:
 
     bool        InternalSimplify    (node<long>*);
 
-    void        LocalizeFormula     (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
+    void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
+    long        ExtractMatrixExpArguments        (_List*);
 
 protected:
 
     void        internalToStr       (_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
-    void        ConvertToTree       (void);
+    void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (_PMathObj);
     node<long>* DuplicateFormula    (node<long>*,_Formula&);

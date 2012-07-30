@@ -223,8 +223,9 @@ class _List:public _SimpleList
 
         /**
         * Delete the item at a given poisiton
+        * if the bool flag is false, then only remove the reference to the object 
         */
-        void Delete(long);
+        void Delete(long, bool = true);
 
         /**
         */

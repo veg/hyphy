@@ -182,6 +182,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      Bit flag style type tags and masks
      This is primarily to be used for object retrieval
      using the _HYRetrieveBLObjectByName function
+     and in the _HY_GetStringGlobalTypes list
 */
 
 #define   HY_BL_NOT_DEFINED             0
@@ -192,8 +193,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_BL_BGM                     16
 #define   HY_BL_MODEL                   32
 #define   HY_BL_HBL_FUNCTION            64
+#define   HY_BL_TREE                    128
+#define   HY_BL_VARIABLE                256
 
-#define   HY_BL_ANY                     1023
+#define   HY_BL_ANY                     65535
 
 //!  Batch Lanuage Command Codes 
 /*!
@@ -282,5 +285,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_MAX_LONG_VALUE                                             0xffffffffL
 
 
+#define   HY_HBL_GET_STRING_BGM_SCORE                                   0L
+#define   HY_HBL_GET_STRING_BGM_SERIALIZE                               1L
 
 #endif

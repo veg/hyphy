@@ -3526,8 +3526,8 @@ void    _HYChartWindow::HandleChartOptions      (void)
 
             if (overlayString->sLength) {
                 long varRef = 0;
-
-                if (Parse (&overlayPlot, *(_String*)args(3),varRef,nil,nil,true)!= HY_FORMULA_EXPRESSION) {
+                _String errMsg;
+                if (Parse (&overlayPlot, *(_String*)args(3),varRef,nil,nil,&errMsg)!= HY_FORMULA_EXPRESSION) {
                     overlayPlot.Clear();
                 }
             }
@@ -3582,8 +3582,8 @@ void    _HYChartWindow::SetLabels       (_String xx, _String yy, _String zz, lon
 
     if (fla.sLength) {
         long varRef = 0;
-
-        if (Parse (&overlayPlot, fla,varRef,nil,nil,true)!= HY_FORMULA_EXPRESSION) {
+        _String errMsg;
+        if (Parse (&overlayPlot, fla,varRef,nil,nil,&errMsg)!= HY_FORMULA_EXPRESSION) {
             overlayPlot.Clear();
         }
     }

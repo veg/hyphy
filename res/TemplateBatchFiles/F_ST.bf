@@ -134,37 +134,58 @@ ChoiceList (distanceChoice, "Distance Computation",1,SKIP_NONE,
 			"Full likelihood","Estimate distances using pairwise MLE. More choices but slow.",
 			"Load Matrix","Re-load a previously computed matrix in HyPhy format");
 			
-if (distanceChoice < 0)
-{
+if (distanceChoice < 0) {
 	return 0;
 }
 
-ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
-				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
-{
-	return;
-}
+if (distanceChoice == 2) {
+    ChoiceList (useSeqData,"Sequence names",1,SKIP_NONE,"Included","Sequence names are in the matrix file preceding the distance matrix.",
+                           "Read from an alignment","Gather sequence names from a separate alignment file");
 
-if (dataType)
-{
-	NICETY_LEVEL = 3;
-	SetDialogPrompt ("Please choose a codon data file:");
-	#include "TemplateModels/chooseGeneticCode.def";
-}
-else
-{
-	SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
+    if (useSeqData < 0) {
+        return 0;
+    }
+} else {
+    useSeqData = 1;
 }
 
 
-DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
+if (useSeqData) 
+{
+    ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
+                         "Codon","Codon (several available genetic codes).");
+    
+    if (dataType<0) {
+        return;
+    }
 
-fprintf (stdout, "\nRead the following data:", ds,"\n\n");
+    if (dataType) {
+        SetDialogPrompt ("Please choose a codon data file:");
+        ExecuteAFile ("TemplateModels/chooseGeneticCode.def");
+    }
+    else {
+        SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
+    }
+    
+    DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
+
+    fprintf (stdout, "\nRead the following data:", ds,"\n\n");
+} else {
+	SetDialogPrompt ("Load the names/distance matrix");
+	fscanf          (PROMPT_FOR_FILE, "Matrix,NMatrix", namesMatrix,distanceMatrix);
+	dim_names = Rows(namesMatrix)*Columns(namesMatrix);
+	assert (dim_names == Columns (distanceMatrix), "Dimension mismatch between the names vector and the distance matrix");
+	fakeDS = ""; fakeDS * 128;
+	for (_i = 0; _i < dim_names; _i+=1) {
+	    fakeDS * (">" + namesMatrix [_i] + "\nA\n");
+	}
+	fakeDS * 0;
+	DataSet ds = ReadFromString (fakeDS);
+}
 
 promptFor2ndRegExp = 1;
-#include "partitionSequences.ibf";
+ExecuteAFile ("partitionSequences.ibf");
 promptFor2ndRegExp = 0;
 
 bothCladesSize = clASize + clBSize; 
@@ -215,7 +236,9 @@ else
 	DataSetFilter filteredData = CreateFilter (ds,1,"","");
 }
 
-distanceMatrix = {ds.species, ds.species};
+if (useSeqData) {
+    distanceMatrix = {ds.species, ds.species};
+}
 
 if (distanceChoice == 1)
 {
@@ -284,8 +307,10 @@ else
 {
 	if (distanceChoice == 2)
 	{
-		SetDialogPrompt ("Load the distance matrix");
-		fscanf (PROMPT_FOR_FILE,"NMatrix",distanceMatrix);
+        if (useSeqData) {
+            SetDialogPrompt ("Load the distance matrix");
+            fscanf (PROMPT_FOR_FILE,"NMatrix",distanceMatrix);
+        }
 		if ((Rows(distanceMatrix) != ds.species)||(Columns(distanceMatrix) != ds.species))
 		{
 			fprintf (stdout, "\nThe dimensions of the distance matrix are incompatible with the data set.\n");

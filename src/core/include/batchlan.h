@@ -46,7 +46,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include <stdio.h>
 
-
+#define  HY_BL_ERROR_HANDLING_DEFAULT 0
+#define  HY_BL_ERROR_HANDLING_SOFT    1
 
 //____________________________________________________________________________________
 struct    _CELInternals {
@@ -69,6 +70,8 @@ struct    _HBLCommandExtras {
                         is_assignment,
                         needs_verb;
 };
+
+class _ElementaryCommand;
 
 //____________________________________________________________________________________
 class   _ExecutionList: public _List // a sequence of commands to be executed
@@ -106,11 +109,22 @@ public:
     _String     AddNameSpaceToID            (_String&);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
+    _ElementaryCommand* FetchLastCommand (void) {
+        if (currentCommand - 1 < lLength && currentCommand > 0) {
+            return (_ElementaryCommand*)(*this)(currentCommand - 1);
+        }
+        return nil;
+    }
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
     }
 
+    void              ReportAnExecutionError (_String  errMsg, bool = true);
+    /**
+     * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
+     * @param errMsg -- the current command text stream
+     */
 
 
     // data fields
@@ -118,6 +132,7 @@ public:
 
     long                            currentCommand;
     char                            doProfile;
+    int                             errorHandlingMode; // how does this execution list handle errors
 
     _PMathObj                       result;
 
@@ -164,13 +179,11 @@ public:
     void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase17  (_ExecutionList&);
     void      ExecuteCase21  (_ExecutionList&);
     void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
     void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
-    void      ExecuteCase33  (_ExecutionList&); // index string selector
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
     void      ExecuteCase37  (_ExecutionList&); // GetInformation
@@ -178,13 +191,11 @@ public:
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
     void      ExecuteCase40  (_ExecutionList&); // Open Window
     void      ExecuteCase41  (_ExecutionList&); // Spawn LF
-    void      ExecuteCase42  (_ExecutionList&); // Differentiate
     void      ExecuteCase43  (_ExecutionList&); // FindRoot
     void      ExecuteCase44  (_ExecutionList&); // MPISend
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
     void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
-    void      ExecuteCase51  (_ExecutionList&); // GetURL
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
@@ -206,6 +217,11 @@ public:
     bool      HandleDeleteObject                    (_ExecutionList&);
     bool      HandleClearConstraints                (_ExecutionList&);
     bool      HandleMolecularClock                  (_ExecutionList&);
+    bool      HandleGetURL                          (_ExecutionList&);
+    bool      HandleGetString                       (_ExecutionList&);
+    bool      HandleExport                          (_ExecutionList&);
+    bool      HandleDifferentiate                   (_ExecutionList&);
+    long      GetCode                               (void) { return code; };
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -260,9 +276,6 @@ public:
     static  bool      ConstructExport       (_String&, _ExecutionList&);
     // construct a matrix export command
 
-    static  bool      ConstructImport       (_String&, _ExecutionList&);
-    // construct a matrix import command
-
     static  bool      ConstructGetString    (_String&, _ExecutionList&);
     // construct a matrix import command
 
@@ -315,8 +328,6 @@ public:
 
     static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
 
-    static  bool      ConstructDifferentiate(_String&, _ExecutionList&);
-
     static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
 
     static  bool      ConstructGetInformation
@@ -331,8 +342,6 @@ public:
     static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetURL       (_String&, _ExecutionList&);
 
     static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
 
@@ -361,6 +370,7 @@ public:
     static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
 
 protected:
+
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
     // internal command used
@@ -540,6 +550,8 @@ bgmConstraintMx                 ,
 bgmParameters                   ,
 assertionBehavior               ,
 dialogPrompt                    ,
+_hyLastExecutionError           ,
+_hyExecutionErrorMode           ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,
@@ -550,7 +562,8 @@ hfCountGap                      ;
 extern  _ExecutionList              *currentExecutionList;
 
 extern  _AVLList                    loadedLibraryPaths;
-extern  _AVLListX                   _HY_HBLCommandHelper;
+extern  _AVLListX                   _HY_HBLCommandHelper,
+                                    _HY_GetStringGlobalTypes;
                                     
 extern  _Trie                       _HY_ValidHBLExpressions;
 
@@ -580,10 +593,10 @@ _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
 _Parameter
-ProcessNumericArgument       (_String*,_VariableContainer*);
-_String ProcessLiteralArgument       (_String*,_VariableContainer*);
+ProcessNumericArgument               (_String*,_VariableContainer*, _ExecutionList* = nil);
+_String ProcessLiteralArgument       (_String*,_VariableContainer*, _ExecutionList* = nil);
 _AssociativeList*
-ProcessDictionaryArgument (_String* data, _VariableContainer* theP);
+ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
 _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
@@ -608,6 +621,9 @@ void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
 void    ReadModelList                (void);
+_String ProcessStringArgument        (_String* data);
+_String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
+
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);

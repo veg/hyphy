@@ -415,6 +415,13 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         return true;
     }
 
+    if (currentArgument->Equal (&randomSeed)) {
+        globalRandSeed = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
+        init_genrand (globalRandSeed);
+        setParameter (randomSeed, ((long)globalRandSeed));
+        return true;
+    }
+    
     if (currentArgument->Equal (&deferConstrainAssignment)) {
         bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         if (on) {
@@ -422,6 +429,11 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         } else if (deferSetFormula) {
             FinishDeferredSF ();
         }
+        return true;
+    }
+
+    if (currentArgument->Equal (&_hyExecutionErrorMode)) {
+        currentProgram.errorHandlingMode = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         return true;
     }
 
@@ -573,6 +585,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         case HY_BL_SCFG:
         case HY_BL_LIKELIHOOD_FUNCTION:
         {
+            currentArgument = (_String*)parameters(1);
             if (typeFlag == HY_BL_SCFG && currentArgument->Equal (&scfgCorpus)) {
                 ((Scfg*)theObject)->SetStringCorpus ((_String*)parameters(2));
             } else {
@@ -765,5 +778,512 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
     theTree->MolecularClock(theBaseNode,parameters);
     return true;
 }
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    
+    _String url   (ProcessLiteralArgument((_String*)parameters(1),currentProgram.nameSpacePrefix)),
+            *arg1 = (_String*)parameters(0),
+            *act  = parameters.lLength>2?(_String*)parameters(2):nil,
+            errMsg;
+
+    if (act==nil) {
+        _Variable * rec = CheckReceptacleCommandID (&AppendContainerName(*arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_GET_URL, true, false, &currentProgram);
+
+        if (!rec) {
+            return false;
+        }
+
+        if (Get_a_URL(url)) {
+            rec->SetValue(new _FString (url,false),false);
+        } else {
+            errMsg = _String ("Could not fetch '") & url & "'";
+        }
+    } else {
+        if (act->Equal(&getURLFileFlag)) {
+            _String fileName (ProcessLiteralArgument(arg1,currentProgram.nameSpacePrefix));
+            fileName.ProcessFileName (true,false,(Ptr)currentProgram.nameSpacePrefix);
+            if (!Get_a_URL(url, &fileName)) {
+                errMsg = _String ("Could not fetch '") & url & "'";
+            }
+        } else {
+            errMsg = "Unknown action flag";
+        }
+    }
+    if (errMsg.sLength) {
+        currentProgram.ReportAnExecutionError (errMsg); 
+        return false;
+    }
+
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
+    currentProgram.currentCommand++;
+    
+    _String  errMsg,
+             *result = nil;
+
+    long    f,
+            sID,
+            sID2 = -1;
+
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(*((_String*)parameters(0)),currentProgram.nameSpacePrefix),HY_HBL_COMMAND_GET_STRING, true, false, &currentProgram);
+
+    if (!theReceptacle) {
+        return false;
+    }
+
+    sID = ProcessNumericArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix);
+    if (parameters.lLength>3) {
+        sID2 = ProcessNumericArgument ((_String*)parameters(3),currentProgram.nameSpacePrefix);
+    }
+
+    f = _HY_GetStringGlobalTypes.Find((_String*)parameters(1));
+    if (f >=0 ) {
+        f = _HY_GetStringGlobalTypes.GetXtra (f);
+    }
+
+    switch (f) {
+
+        case HY_BL_LIKELIHOOD_FUNCTION: // LikelihoodFunction
+        case HY_BL_DATASET:
+        case HY_BL_DATASET_FILTER:
+        case HY_BL_SCFG:
+        case HY_BL_BGM: {
+            result = (_String*)_HBLObjectNameByType(f,sID);
+            if (result) {
+                result = (_String*) result->makeDynamic();
+            }
+            break;
+        }
+           
+        case HY_BL_HBL_FUNCTION: // UserFunction
+            result = (_String*)_HBLObjectNameByType(HY_BL_HBL_FUNCTION,sID);
+            if (result) {
+                _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+                resAVL->MStore ("ID", new _FString (*result), false);
+                resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false);
+                theReceptacle->SetValue (resAVL,false);
+                return true;
+            } 
+            break;
+            
+        case HY_BL_TREE: { // Tree
+            // 20110608 SLKP: REFACTOR into a separate function
+            // I am sure this is used somewhere else (perhaps for other types)
+            result = FetchMathObjectNameOfTypeByIndex (TREE, sID);
+            if (result) {
+                result = (_String*) result->makeDynamic();
+            }
+            break;
+        }
+
+        default: { // everything else...
+            // decide what kind of object current argument represents
+            
+            _String *currentArgument = (_String*)parameters(1),
+                    nmspaced       = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix);
+            long    typeFlag       = HY_BL_ANY,
+                    index          = -1;
+                    
+            BaseRef theObject      = _HYRetrieveBLObjectByName (nmspaced, typeFlag, &index);
+
+            if (theObject) {
+                switch (typeFlag) {
+                case HY_BL_DATASET: {
+                    _DataSet* dataSetObject = (_DataSet*)theObject;
+                    if (sID>=0 && sID<dataSetObject->NoOfSpecies()) {
+                        result = (_String*)(dataSetObject->GetNames())(sID)->makeDynamic();
+                    } else {
+                        if (sID < 0) {
+                            theReceptacle->SetValue (new _Matrix (dataSetObject->GetNames()), false);
+                            return true;
+                        }
+                    }
+                    break;
+                }
+                case HY_BL_DATASET_FILTER: {
+                    _DataSetFilter* dataSetFilterObject = (_DataSetFilter*)theObject;
+
+                    if (sID >=0 && sID<dataSetFilterObject->NumberSpecies()) {
+                        result = (_String*)(dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(sID))->makeDynamic();
+                    } else {
+                        if (sID < 0) {
+                            _List filterSeqNames,
+                                  *originalNames = &dataSetFilterObject->GetData()->GetNames();
+                            for (long seqID=0; seqID<dataSetFilterObject->NumberSpecies(); seqID++) {
+                                filterSeqNames << (*originalNames)(dataSetFilterObject->theNodeMap(seqID));
+                            }
+                            theReceptacle->SetValue (new _Matrix (filterSeqNames), false);
+                            return true;
+                        }
+                    }
+                    break;
+                }
+                case HY_BL_BGM: {
+                    _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
+
+                    switch (sID) {
+                        case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
+                            _AssociativeList        * export_alist  = new _AssociativeList;
+
+                            if (this_bgm -> ExportCache (export_alist)) {
+                                theReceptacle -> SetValue (export_alist, false);
+                                return true;
+                            } else {
+                                DeleteObject (export_alist);
+                                errMsg = _String ("Failed to export node score cache for BGM '") & nmspaced & "'";
+                            }
+
+                            break;
+                        }
+                        case HY_HBL_GET_STRING_BGM_SERIALIZE: {   // return associative list with network structure and parameters
+                            result = new _String (1024L, true);
+                            this_bgm -> SerializeBGM (*result);
+                            result->Finalize();
+                            theReceptacle->SetValue (new _FString (result),false);
+                            return true;
+                        }
+                        default: {
+                            errMsg = _String ("Unrecognized index ") & sID & " for a BGM object";
+                        }
+                    }
+                }
+                case HY_BL_LIKELIHOOD_FUNCTION:
+                case HY_BL_SCFG: {
+                
+                    _LikelihoodFunction *lf = (_LikelihoodFunction*)theObject;
+                    if (sID>=0) {
+                        if (sID<lf->GetIndependentVars().lLength) {
+                            result = (_String*)(LocateVar(lf->GetIndependentVars().lData[sID])->GetName())->makeDynamic();
+                        } else {
+                            if (sID<lf->GetIndependentVars().lLength+lf->GetDependentVars().lLength) {
+                                result = (_String*)(LocateVar(lf->GetDependentVars().lData[sID-lf->GetIndependentVars().lLength])->GetName())->makeDynamic();
+                            }
+                        }
+                    } else {
+                        _AssociativeList* resList = lf->CollectLFAttributes ();
+                        if (typeFlag == HY_BL_SCFG) {
+                            ((Scfg*)lf)->AddSCFGInfo (resList);
+                        }
+                        theReceptacle->SetValue (resList,false);
+                        return true;
+                    }
+                    break;
+                }
+                
+                case HY_BL_MODEL: {
+                    if (sID>=0) {
+                        _Variable*      theMx = (_Variable*)theObject;
+
+                        if (sID2 < 0) { // get the sID's parameter name
+                            _SimpleList     modelP;
+                            _AVLList        modelPA (&modelP);
+                            theMx->ScanForVariables(modelPA,false);
+                            modelPA.ReorderList();
+                            if (sID<modelP.lLength) {
+                                result = (_String*)LocateVar(modelP.lData[sID])->GetName()->makeDynamic();
+                            } 
+
+                        } else { // get the formula for cell (sID, sID2)
+                            _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
+                            if (cellFla) {
+                                result = new _String((_String*)cellFla->toStr());
+                            }
+                        }
+                        
+                    } else {
+                        _Variable   * tV, * tV2;
+                        bool         mByF;
+                        RetrieveModelComponents (index, tV, tV2, mByF);
+
+                        if (tV) {
+                            if (sID == -1) { // branch length expression
+                                result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
+                            } else
+                                /*
+                                    returns an AVL with keys
+                                    "RATE_MATRIX" - the ID of the rate matrix
+                                    "EQ_FREQS"    - the ID of eq. freq. vector
+                                    "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+                                */
+                            {
+                                _AssociativeList * resList = new _AssociativeList;
+                                resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
+                                resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
+                                resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
+                                theReceptacle->SetValue (resList,false);
+                                return true;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case HY_BL_HBL_FUNCTION: {
+                    _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
+                    resAVL->MStore ("ID", new _FString (*_HBLObjectNameByType (HY_BL_HBL_FUNCTION, index, false)), false);
+                    resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(index)), false);
+                    resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(index))->sourceText,false),false);
+                    theReceptacle->SetValue (resAVL,false);
+                    return true;
+                }
+            } // end of "switch" 
+        }
+        else {
+            if (currentArgument->Equal(&versionString)) {
+                if (sID > 1.5)
+#ifdef __HEADLESS__
+                    result = new _String(_String ("Library version ") & __KERNEL__VERSION__);
+#else
+#ifdef __MAC__
+                    result = new _String(_String("Macintosh ") & __KERNEL__VERSION__);
+#else
+#ifdef __WINDOZE__
+                    result = new _String(_String("Windows ") & __KERNEL__VERSION__);
+#else
+                    result = new _String(_String("Source ") & __KERNEL__VERSION__);
+#endif
+#endif
+#endif
+                    else if (sID > 0.5) {
+                        result = new _String(GetVersionString());
+                    } else {
+                        result = new _String(__KERNEL__VERSION__);
+                    }
+                } else if (currentArgument->Equal(&timeStamp)) {
+                    result = new _String(GetTimeStamp(sID < 0.5));
+                } else {
+                    _Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
+                    if (theVar) {
+                        if (theVar->IsIndependent()) {
+                            result = (_String*)theVar->toStr();
+                        } else {
+                            if (sID == -1)
+                                // list of variables
+                            {
+                                _SimpleList vL;
+                                _AVLList    vAVL (&vL);
+                                theVar->ScanForVariables (vAVL, true);
+                                vAVL.ReorderList();
+                                _AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
+                                _List splitVars;
+                                SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
+                                InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
+                                InsertVarIDsInList (resL, "Local",   *(_SimpleList*)splitVars(1));
+
+                                theReceptacle->SetValue (resL,false);
+                                return true;
+                            }
+
+                            else {  // formula string
+                                result = (_String*)theVar->GetFormulaString ();
+                            }
+                        }
+                    } else {
+                        errMsg = _String ("'") & *currentArgument & "' is not an allowed argument type ";
+                    }
+                }
+            }
+        }
+    }
+
+    if (errMsg.sLength) {
+        currentProgram.ReportAnExecutionError (errMsg); 
+        DeleteObject (result);
+        result = nil;    
+    }
+    
+    if (result) {
+        theReceptacle->SetValue (new _FString (result),false);
+        return true;
+    }
+
+    theReceptacle->SetValue (new _MathObject(), false);
+    
+
+    return false;
+}
+
+//____________________________________________________________________________________
+
+/*void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
+{
+    chain.currentCommand++;
+    _String errMsg;
+    if (parameters.lLength == 2) {
+        _FString        * outLF = new _FString (new _String (8192L,1));
+        checkPointer    (outLF);
+        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
+        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
+        if (!lf) {
+            long modelSpec = FindModelName (objectID);
+
+            if (modelSpec<0) {
+                long modelSpec = FindDataSetFilterName (objectID);
+                if (modelSpec < 0) {
+                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
+                    outLF->theString->Finalize();
+                    DeleteObject (outLF);
+                    return ;
+                } else {
+                    outLF->theString->Finalize();
+                    DeleteObject (outLF->theString);
+                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
+                }
+            } else {
+                SerializeModel (*outLF->theString,modelSpec,nil,true);
+                outLF->theString->Finalize();
+            }
+        } else {
+            lf->SerializeLF (*outLF->theString);
+            outLF->theString->Finalize();
+        }
+        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
+        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
+    } else {
+        _Matrix* m[2];
+        for (long k=1; k<3; k++)
+            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
+                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
+                acknError (errMsg);
+                return;
+            }
+
+        _String fName (*(_String*)parameters(0));
+        fName.ProcessFileName();
+        if (terminateExecution) {
+            return;
+        }
+        FILE*   theDump = doFileOpen (fName.getStr(),"w");
+        if (!theDump) {
+            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
+            return;
+        }
+        m[1]->ExportMatrixExp(m[0],theDump);
+        fclose (theDump);
+    }
+}*/
+
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
+
+    currentProgram.currentCommand++;
+    
+    _String objectID (currentProgram.AddNameSpaceToID(*(_String*)parameters(1))),
+            arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
+            errMsg;
+    
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_EXPORT, true, false, &currentProgram);
+    if (!theReceptacle) {
+        return false;
+    }    
+
+    _FString        * outLF = new _FString (new _String (8192L,1));
+    checkPointer    (outLF);
+    long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER,
+             index;
+        
+    BaseRef objectToExport = _HYRetrieveBLObjectByName (objectID, typeFlag, &index);
+    if (! objectToExport) {
+        errMsg = _String ("'") & objectID & "' is not a supported type";
+    } else {
+        switch (typeFlag) {
+            case HY_BL_LIKELIHOOD_FUNCTION: {
+                ((_LikelihoodFunction*)objectToExport)->SerializeLF (*outLF->theString);
+                outLF->theString->Finalize();
+                break;
+            }
+            case HY_BL_DATASET_FILTER: {
+                outLF->theString->Finalize();
+                DeleteObject (outLF->theString);
+                checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)objectToExport)->toStr()));
+                break;
+            }
+            case HY_BL_MODEL: {
+                SerializeModel (*outLF->theString,index,nil,true);
+                outLF->theString->Finalize();
+                break;
+            }
+                
+        }
+    }
+
+    if (errMsg.sLength) {
+        outLF->theString->Finalize();
+        DeleteObject (outLF);
+        currentProgram.ReportAnExecutionError (errMsg); 
+        theReceptacle->SetValue (new _MathObject, false);
+        return false;
+    }
+    
+    theReceptacle->SetValue (outLF,false);
+
+    return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram){
+
+    currentProgram.currentCommand++;
+   
+    _String  arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
+             errMsg,
+             expressionToParse = *(_String*)parameters(1);
+             
+    _Formula  *theResult = nil;
+
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_DIFFERENTIATE, true, false, &currentProgram);
+    if (!theReceptacle) {
+        return false;
+    }    
+
+
+    _Formula theExpression (expressionToParse,currentProgram.nameSpacePrefix, &errMsg);
+    
+    if (!theExpression.IsEmpty() && errMsg.sLength == 0) {
+        long times = 1;
+        if (parameters.lLength==4) {
+            times = ProcessNumericArgument ((_String*)parameters(3),currentProgram.nameSpacePrefix, &currentProgram);
+            if (!numericalParameterSuccessFlag) {
+                return false;
+            }
+        }
+        if (times <= 0) {
+            errMsg = "The number of times to differentiate must be a non-negative integer";
+        }
+
+        theResult = theExpression.Differentiate (*(_String*)parameters(2), false);
+        for (; times>1 && theResult; times--) {
+            _Formula * temp = theResult->Differentiate (*(_String*)parameters(2));
+            delete (theResult);
+            theResult = temp;
+        }
+    }
+
+    if (errMsg.sLength || theResult == nil) {
+        if (theResult) { 
+            delete (theResult); 
+        } else {
+            errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed";
+        }
+        currentProgram.ReportAnExecutionError (errMsg); 
+        theReceptacle->SetValue (new _MathObject, false);
+        return false;
+    }
+    
+    theReceptacle->SetFormula (*theResult);
+    if (theResult) delete (theResult);
+
+    return true;
+}
+
 
 

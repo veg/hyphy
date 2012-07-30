@@ -148,9 +148,10 @@ public:
     // change the codeBase value for this node
     // this will resize the vector used to handle frequencies
 
-    void                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil);
+    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil);
     // reexponentiate the transition matrix and
     // store it in compExp.
+    // return TRUE if the matrix is an explicit exponential form
 
     virtual bool        HasChanged       (void);
     virtual bool        NeedToExponentiate(long = -1);
@@ -624,9 +625,9 @@ public:
     }
 
     void        ScanAndAttachVariables          (void);
-    void        ScanForVariables                (_AVLList& l, _AVLList& l2);
+    void        ScanForVariables                (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
-    void        ScanForGVariables               (_AVLList&, _AVLList&);
+    void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForCVariables               (_AVLList&);
     void        MolecularClock                  (_String&, _List&);
 

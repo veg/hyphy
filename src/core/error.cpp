@@ -353,46 +353,39 @@ void WarnError (_String st)
     }
 #if !defined __MAC__ && !defined __WINDOZE__
     _String errMsg;
-#ifdef __HYPHYMPI__
-    errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+    #ifdef __HYPHYMPI__
+        errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 
-    if (rank > 0) {
-        errMsg = ConstructAnErrorMessage (st);
-        fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
-        MPI_Abort (MPI_COMM_WORLD,1);
-        abort   ();
-    } else {
-        errMsg = _String ("\nMaster node received an error:") & st;
-    }
-#else
-    errMsg = st;
-#endif
+        if (rank > 0) {
+            errMsg = ConstructAnErrorMessage (st);
+            fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
+            MPI_Abort (MPI_COMM_WORLD,1);
+            abort   ();
+        } else {
+            errMsg = _String ("\nMaster node received an error:") & st;
+        }
+    #else
+        errMsg = st;
+    #endif
 
     errMsg = ConstructAnErrorMessage (errMsg);
 
-#ifdef  _MINGW32_MEGA_
-    SetStatusLine  (errMsg);
-#else
-    StringToConsole(errMsg);
-#endif
+    #ifdef  _MINGW32_MEGA_
+        SetStatusLine  (errMsg);
+    #else
+        StringToConsole(errMsg);
+    #endif
 #endif
 
 #ifdef __MAC__
     if (!skipWarningMessages) {
+        st = ConstructAnErrorMessage (st);
         Str255 err;
         err[0] = st.sLength>255?255:st.sLength;
         memcpy (err+1,st.getStr(),st.sLength>255?255:st.sLength);
         ParamText (err,NULL,NULL,NULL);
         char alertCode;
-#ifndef __OLDMAC__
-#ifdef TARGET_API_MAC_CARBON
         alertCode = Alert (129, (ModalFilterUPP)NULL);
-#else
-        alertCode = Alert (129, (RoutineDescriptor*)NULL);
-#endif
-#else
-        alertCode = Alert (129, NULL);
-#endif
         terminateExecution = true;
         if (alertCode == 2) {
             skipWarningMessages = true;
@@ -435,7 +428,8 @@ void WarnError (_String st)
     return;
 #endif
 #ifdef __WINDOZE__
-    if (!skipWarningMessages) {
+     st = ConstructAnErrorMessage (st);
+     if (!skipWarningMessages) {
         if (st.sLength>255) {
             st = st.Cut(0,255);
         }
@@ -500,8 +494,8 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
         (*errMsg) << theMessage;
         if (calls.lLength) {
             (*errMsg) << "\n\nFunction call stack\n";
-            for (long k = 0; k < calls.lLength; k++) {
-                (*errMsg) << (_String(k+1) & " : " & (*(_String*)calls(k)) & '\n');
+            for (unsigned long k = 0; k < calls.lLength; k++) {
+                (*errMsg) << (_String((long)k+1) & " : " & (*(_String*)calls(k)) & '\n');
                 _String* redir = (_String*)stdins (k);
                 if (redir->sLength) {
                     (*errMsg) << "\tStandard input redirect:\n\t\t";

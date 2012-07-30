@@ -72,7 +72,7 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
-int _Matrix::switchThreshold = 50;
+int _Matrix::switchThreshold = 40;
 
 #ifndef     __HYALTIVEC__
 _Parameter  _Matrix::truncPrecision = 1e-13;
@@ -1452,7 +1452,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute
     case HY_OP_CODE_MIN: // Max
         if (p->ObjectClass()==NUMBER) {
             if (CheckEqual (p->Value(), 1)) {
-                long index;
+                long index = 0L;
                 _Parameter v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
                 v[1] = index;
                 return new _Matrix (v,1,2);
@@ -1636,21 +1636,24 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo)
         return true;    // duh!
     }
 
-    long k=0,
-         i;
-
+    long k = 0,
+         i,
+         threshold = lDim*_Matrix::switchThreshold/100;
+    
     for (i=0; i<lDim; i++)
         if (theData[i]!=ZEROOBJECT) {
             k++;
+            if (k >= threshold) break;
         }
 
-    if ((k*100)/lDim<=_Matrix::switchThreshold) {
+    if (k < threshold) {
         // we indeed are sparse enough
+        
         if (k == 0) {
             k = 1;
         }
 
-        _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
+       _Parameter *          newData  = (_Parameter*)MatrixMemAllocate (k*sizeof(_Parameter));
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }
@@ -2338,7 +2341,7 @@ _Matrix::_Matrix (_SimpleList& sl, long colArg)
 _Matrix::_Matrix (_Parameter* inList, unsigned long rows, unsigned long columns)
 {
     CreateMatrix (this, rows, columns, false, true, false);
-    for (long k = 0; k < rows*columns; k++) {
+    for (unsigned long k = 0; k < rows*columns; k++) {
         theData[k] = inList[k];
     }
 }
@@ -2354,7 +2357,7 @@ _Matrix::_Matrix (_List& sl)
         _Constant        hi (0.),
                          vi;
 
-        for (long k=0; k<sl.lLength; k++) {
+        for (unsigned long k=0; k<sl.lLength; k++) {
             _FString  *choiceString = new _FString (*(_String*) sl(k));
             _Formula  sf (choiceString);
             vi.SetValue (k);
@@ -2368,13 +2371,13 @@ _Matrix::_Matrix (_List& sl)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG)
+void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG, _AVLListX* tagger, long weights)
 {
-    ScanForVariables2 (theReceptacle, inclG, -1);
+    ScanForVariables2 (theReceptacle, inclG, -1, true, tagger, weights);
 }
 //_____________________________________________________________________________________________
 
-void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat)
+void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat, _AVLListX* tagger, long weights)
 {
     if (storageType == 2) { // a formula based matrix, there is stuff to do
         if (modelID >= 0) {
@@ -2415,16 +2418,16 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
                     cachedValues = new _Matrix (2,sl2.lLength,false,true);
                     checkPointer (cachedValues);
 
-                    for (long k=0; k<sl1.lLength; k++) {
+                    for (unsigned long k=0; k<sl1.lLength; k++) {
                         cachedValues->theData[k] = sl1.lData[k];
                     }
                     {
-                        for (long k=sl1.lLength; k<sl2.lLength; k++) {
+                        for (unsigned long k=sl1.lLength; k<sl2.lLength; k++) {
                             cachedValues->theData[k] = -1.;
                         }
                     }
                     {
-                        for (long k=0; k<sl2.lLength; k++) {
+                        for (unsigned long k=0; k<sl2.lLength; k++) {
                             cachedValues->theData[k+sl2.lLength] = sl2.lData[k];
                         }
                     }
@@ -2442,6 +2445,9 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
                     long vI = cachedValues->theData[rowIndex];
                     if (vI >= 0) {
                         theReceptacle.Insert ((BaseRef)vI);
+                        if (tagger) {
+                            tagger->UpdateValue((BaseRef)vI, weights, 0);
+                        }
                     } else {
                         break;
                     }
@@ -2457,12 +2463,12 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
         if (theIndex) {
             for (long i = 0; i<lDim; i++)
                 if (IsNonEmpty(i)) {
-                    theFormulas[i]->ScanFForVariables(theReceptacle,inclG,false,inclCat);
+                    theFormulas[i]->ScanFForVariables(theReceptacle,inclG,false,inclCat, false, tagger, weights);
                 }
         } else
             for (long i = 0; i<lDim; i++) {
                 if (theFormulas[i]!=(_Formula*)ZEROPOINTER) {
-                    theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat);
+                    theFormulas[i]->ScanFForVariables (theReceptacle,inclG,false,inclCat, false, tagger, weights);
                 }
             }
     } else if (storageType == 0) { // a polynomial based matrix, there is stuff to do
@@ -2470,13 +2476,13 @@ void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long mo
         if (theIndex)
             for (long i = 0; i<lDim; i++) {
                 if (IsNonEmpty(i)) {
-                    thePoly[i]->ScanForVariables(theReceptacle,inclG);
+                    thePoly[i]->ScanForVariables(theReceptacle,inclG,tagger, weights);
                 }
             }
         else
             for (long i = 0; i<lDim; i++) {
                 if (thePoly[i]!=ZEROPOINTER) {
-                    thePoly[i]->ScanForVariables (theReceptacle,inclG);
+                    thePoly[i]->ScanForVariables (theReceptacle,inclG,tagger, weights);
                 }
             }
     }
@@ -3673,10 +3679,20 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 #define _HY_MATRIX_CACHE_BLOCK 128
                  if (vDim >= 256) {
 #ifdef _OPENMP
+                      #define GCC_VERSION (__GNUC__ * 10000 \
+                               + __GNUC_MINOR__ * 100 \
+                               + __GNUC_PATCHLEVEL__)
+                
                      long nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
 #endif
                      for (long r = 0; r < hDim; r ++) {
+#ifdef _OPENMP                     
+#if GCC_VERSION > 40400
+#pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(static) if (nt>1)  num_threads (nt)
+#else
 #pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
+#endif
+#endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
                              const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
@@ -6823,6 +6839,59 @@ void        _Matrix::operator -= (_Matrix& m)
 }
 
 //_____________________________________________________________________________________________
+void       _Matrix::NonZeroEntries (_SimpleList& target) {
+    if (theIndex && storageType == 1) {
+        target.Clear();
+        target.RequestSpace(lDim);
+        for (long elementID = 0; elementID < lDim; elementID ++) {
+            if (theIndex[elementID] >= 0) {
+                target << theIndex[elementID];
+            }
+        }
+        target.Sort();
+    }
+}
+
+//_____________________________________________________________________________________________
+bool       _Matrix::Equal(_PMathObj mp)
+{
+    if (mp->ObjectClass()!=ObjectClass()) {
+        return false;
+    }
+
+    _Matrix * m = (_Matrix*)mp;
+    
+    if (m->storageType == storageType && storageType == 1 && (bool) m->theIndex == (bool) theIndex && m->hDim == hDim && m->vDim == vDim) {
+        if (theIndex) {
+        
+            _SimpleList       nonZeroThis ((unsigned long)lDim),
+                              nonZeroOther((unsigned long)m->lDim),
+                              shared;
+                        
+            NonZeroEntries    (nonZeroThis);
+            m->NonZeroEntries (nonZeroOther);
+    
+            shared.Intersect(nonZeroThis, nonZeroOther);
+            for (long elementID = 0; elementID < lDim; elementID ++) {
+            
+            }
+                        
+        } else {
+            for (long elementID = 0; elementID < lDim; elementID ++) {
+                if (!CheckEqual(theData[elementID], m->theData[elementID])) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+
+//_____________________________________________________________________________________________
 _PMathObj       _Matrix::SubObj (_PMathObj mp)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
@@ -6832,7 +6901,7 @@ _PMathObj       _Matrix::SubObj (_PMathObj mp)
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
-    _Matrix * result = new _Matrix (hDim, vDim, bool((theIndex!=nil)&&(m->theIndex!=nil)), storageType);
+    _Matrix * result = new _Matrix (hDim, vDim, bool( theIndex && m->theIndex ), storageType);
     if (!result) {
         checkPointer (result);
     }
@@ -7100,7 +7169,11 @@ BaseRef _Matrix::toStr(void)
                         _Formula * f = GetFormula (i,j);
                         _PMathObj fv;
                         if (f && (fv=f->Compute())) {
-                            result << ((_FString*)fv)->theString;
+                            if (fv->ObjectClass() == STRING) {
+                                result << ((_FString*)fv)->theString;
+                            } else {
+                                result << (_String*)fv->toStr();
+                            }
                         }
                         result << '"';
                     } else {
@@ -8937,8 +9010,10 @@ bool _AssociativeList::ParseStringRepresentation (_String& serializedForm, bool 
         _List aPair;
         _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, aPair, ':' , false);
         if (aPair.lLength == 2) {
-            _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP));
-            _Formula value      (*(_String*)aPair(1),theP, doErrors);
+            _String  key        (ProcessLiteralArgument((_String*)aPair(0),theP)),
+                     errMsg;
+                     
+            _Formula value      (*(_String*)aPair(1),theP, doErrors?nil:&errMsg);
 
             _PMathObj   valueC  = value.Compute();
             if (valueC) {

@@ -113,8 +113,19 @@ BaseRef _Operation::toStr(void)
     return res.makeDynamic();
 
 }
+
 //__________________________________________________________________________________
-_Operation::_Operation  (_String& opc, long opNo = 2)
+_Operation::_Operation  (const long theCode, const long opNo = 2)
+// by opcode
+{
+    opCode = theCode;
+    numberOfTerms = opNo;
+    theData       = -1;
+    theNumber     = nil;
+}
+
+//__________________________________________________________________________________
+_Operation::_Operation  (_String& opc, const long opNo = 2)
 // construct the operation by its symbol and, if relevant -
 // number of operands
 {
@@ -145,12 +156,13 @@ _Operation::_Operation  (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-bool _Operation::CanResultsBeCached (_Operation* prev)
+bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
         if ((prev->theNumber && prev->theNumber->ObjectClass() == MATRIX)
            || (prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)) {
-            return true;
+            if (! exp_only || opCode == HY_OP_CODE_EXP)
+                return true;
         }
     }
     return false;

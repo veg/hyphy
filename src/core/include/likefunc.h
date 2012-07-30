@@ -227,7 +227,7 @@ public:
     _CategoryVariable*
     FindCategoryVar         (long);
     // return the category variable for a given partition
-    void        RankVariables           (void);
+    void        RankVariables           (_AVLListX* tagger = nil);
     _SimpleList&GetTheTrees             (void) {
         return theTrees;
     }

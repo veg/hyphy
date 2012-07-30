@@ -1,3 +1,7 @@
+ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
+runATest ();
+
+
 function getTestName ()
 {
 	return "Branch Length";
@@ -99,13 +103,3 @@ function runTest ()
 
 /* execution stub */
 
-fprintf    (stdout, "[Running COVERAGE TEST '", getTestName(), "']\n");
-result  =  runTest();
-if (result)
-{
-	fprintf (stdout, "[TEST PASSED]\n");
-}
-else
-{
-	fprintf (stdout, "[TEST FAILED]\n");
-}
