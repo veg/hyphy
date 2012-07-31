@@ -225,10 +225,12 @@ void _HY_HierarchicalSelector::handle_selection_change() {
         long           item_offset = 0;
         if (parent) {
             item_offset = offsets.lData[itemList->indexOfTopLevelItem(parent)] + parent->indexOfChild(theSelection)+1;
-            (*selections) << item_offset;
-            totalSelected++; 
         } else {
             item_offset = offsets.lData[itemList->indexOfTopLevelItem(theSelection)];   
+        }
+        if (theSelection->childCount() == 0) {
+            (*selections) << item_offset;
+            totalSelected++;
         }
         aboutText << *(_String*)dData(item_offset);
         if (k) {
