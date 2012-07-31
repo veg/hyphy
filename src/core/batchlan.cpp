@@ -98,6 +98,10 @@ extern  long    lastFileTypeSelection;
 #endif
 #endif
 
+#if defined __HYPHYQT__
+#include "HYSharedMain.h"
+#include "hyphy_qt_helpers.h"
+#endif
 
 
 #ifdef      __MACPROFILE__
@@ -1544,147 +1548,148 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // 20111212: this horrendous switch statement should be replaced with a 
         // prefix tree lookup 
 
-        if (!handled)
-        if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
-            _ElementaryCommand::ConstructFunction (currentLine, *this);
-        } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
-            _ElementaryCommand::ConstructReturn (currentLine, *this);
-        } else if (currentLine.startswith (blIf)) { // if-then-else statement
-            _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
-        } else if (currentLine.startswith (blElse)) { // else clause of an if-then-else statement
-            if (lastif.countitems()) {
-                long    temp = countitems(),
-                        lc   = lastif.countitems(),
-                        lif  = lastif.lData[lc-1];
+        if (!handled) {
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
+                _ElementaryCommand::ConstructFunction (currentLine, *this);
+            } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
+                _ElementaryCommand::ConstructReturn (currentLine, *this);
+            } else if (currentLine.startswith (blIf)) { // if-then-else statement
+                _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
+            } else if (currentLine.startswith (blElse)) { // else clause of an if-then-else statement
+                if (lastif.countitems()) {
+                    long    temp = countitems(),
+                            lc   = lastif.countitems(),
+                            lif  = lastif.lData[lc-1];
 
-                _ElementaryCommand      * stuff = new _ElementaryCommand ();
-                stuff->MakeJumpCommand  (nil,0,0,*this);
-                AppendNewInstance       (stuff);
-                currentLine.Trim        (4,-1);
+                    _ElementaryCommand      * stuff = new _ElementaryCommand ();
+                    stuff->MakeJumpCommand  (nil,0,0,*this);
+                    AppendNewInstance       (stuff);
+                    currentLine.Trim        (4,-1);
 
-                long  index         = currentLine.Length()-1,
-                      scopeIn     = 0;
+                    long  index         = currentLine.Length()-1,
+                          scopeIn     = 0;
 
-                while (currentLine.sData[scopeIn]=='{' && currentLine.sData[index]=='}') {
-                    scopeIn++;
-                    index--;
-                }
+                    while (currentLine.sData[scopeIn]=='{' && currentLine.sData[index]=='}') {
+                        scopeIn++;
+                        index--;
+                    }
 
-                if (scopeIn) {
-                    currentLine.Trim (scopeIn,index);
-                }
+                    if (scopeIn) {
+                        currentLine.Trim (scopeIn,index);
+                    }
 
-                BuildList (currentLine,bc,true);
+                    BuildList (currentLine,bc,true);
 
-                if (lif<0 || lif>=lLength) {
+                    if (lif<0 || lif>=lLength) {
+                        WarnError ("'else' w/o an if to latch on to...");
+                        return false;
+                    }
+
+                    ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
+                    ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
+
+                    while (lastif.countitems()>=lc) {
+                        lastif.Delete(lastif.countitems()-1);
+                    }
+                } else {
                     WarnError ("'else' w/o an if to latch on to...");
                     return false;
                 }
 
-                ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
-                ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
-
-                while (lastif.countitems()>=lc) {
-                    lastif.Delete(lastif.countitems()-1);
-                }
-            } else {
-                WarnError ("'else' w/o an if to latch on to...");
-                return false;
-            }
-
-        } else if (currentLine.startswith (blDo)) { // do {} while statement
-            _ElementaryCommand::BuildDoWhile (currentLine, *this);
-        }  else if (currentLine.startswith (blInclude)) { // #include
-            _ElementaryCommand::ProcessInclude (currentLine, *this);
-        } else if (currentLine.startswith (blDataSet)) { // data set definition
-            _ElementaryCommand::ConstructDataSet (currentLine, *this);
-        } else if (currentLine.startswith (blDataSetFilter)) { // data set filter definition
-            _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
-        } else if (currentLine.startswith (blConstructCM)) { // construct category assignments matrix
-            _ElementaryCommand::ConstructCategoryMatrix (currentLine, *this);
-        } else if (currentLine.startswith (blTree) || currentLine.startswith (blTopology)) { // tree definition
-            _ElementaryCommand::ConstructTree (currentLine, *this);
-        } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
-            _ElementaryCommand::ConstructLF (currentLine, *this);
-        } else if (currentLine.startswith (blfprintf)) { // fpintf call
-            _ElementaryCommand::ConstructFprintf (currentLine, *this);
-        } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
-            _ElementaryCommand::ConstructFscanf (currentLine, *this);
-        } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
-            _ElementaryCommand::ConstructReplicateConstraint (currentLine, *this);
-        } else if (currentLine.startswith (blCategory)) { // category variable declaration
-            _ElementaryCommand::ConstructCategory (currentLine, *this);
-        } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
-            _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
-        } else if (currentLine.startswith (blModel)) { // Model declaration
-            _ElementaryCommand::ConstructModel (currentLine, *this);
-        } else if (currentLine.startswith (blChoiceList)) { // choice list
-            _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-        } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
-            _ElementaryCommand::ConstructOpenDataPanel (currentLine, *this);
-        } else if (currentLine.startswith (blGetInformation)) { // get information
-            _ElementaryCommand::ConstructGetInformation (currentLine, *this);
-        } else if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary))
-            // execute commands
-        {
-            _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
-        } else if (currentLine.startswith (blOpenWindow)) { // execute commands
-            _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
-        } else if (currentLine.startswith (blSpawnLF)) { // execute commands
-            _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
-        } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
-            // find a root of an expression in an interval
-            // or an integral
-        {
-            _ElementaryCommand::ConstructFindRoot (currentLine, *this);
-        } else if (currentLine.startswith (blMPISend)) { // MPI Send
-            _ElementaryCommand::ConstructMPISend (currentLine, *this);
-        } else if (currentLine.startswith (blMPIReceive)) { // MPI Receive
-            _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
-        } else if (currentLine.startswith (blGetDataInfo)) { // Get Data Info
-            _ElementaryCommand::ConstructGetDataInfo (currentLine, *this);
-        } else if (currentLine.startswith (blStateCounter)) { // Get Data Info
-            _ElementaryCommand::ConstructStateCounter (currentLine, *this);
-        } else if (currentLine.startswith (blDoSQL)) { // Do SQL
-            _ElementaryCommand::ConstructDoSQL (currentLine, *this);
-        } else if (currentLine.startswith (blAlignSequences)) { // Do AlignSequences
-            _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
-        } else if (currentLine.startswith (blHBLProfile)) { // #profile
-            _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
-        } else if (currentLine.startswith (blSCFG)) { // SCFG definition
-            _ElementaryCommand::ConstructSCFG (currentLine, *this);
-        } else if (currentLine.startswith (blNN)) { // Neural Net definition
-            _ElementaryCommand::ConstructNN (currentLine, *this);
-        } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
-            _ElementaryCommand::ConstructBGM (currentLine, *this);
-        } 
-        // plain ol' formula - parse it as such!
-        else {
-            _String checker (currentLine);
-            if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length()) {
-                if (currentLine.Length()>1)
-                    while (currentLine[currentLine.Length()-1]==';') {
-                        currentLine.Trim (0,currentLine.Length()-2);
+            } else if (currentLine.startswith (blDo)) { // do {} while statement
+                _ElementaryCommand::BuildDoWhile (currentLine, *this);
+            }  else if (currentLine.startswith (blInclude)) { // #include
+                _ElementaryCommand::ProcessInclude (currentLine, *this);
+            } else if (currentLine.startswith (blDataSet)) { // data set definition
+                _ElementaryCommand::ConstructDataSet (currentLine, *this);
+            } else if (currentLine.startswith (blDataSetFilter)) { // data set filter definition
+                _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
+            } else if (currentLine.startswith (blConstructCM)) { // construct category assignments matrix
+                _ElementaryCommand::ConstructCategoryMatrix (currentLine, *this);
+            } else if (currentLine.startswith (blTree) || currentLine.startswith (blTopology)) { // tree definition
+                _ElementaryCommand::ConstructTree (currentLine, *this);
+            } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
+                _ElementaryCommand::ConstructLF (currentLine, *this);
+            } else if (currentLine.startswith (blfprintf)) { // fpintf call
+                _ElementaryCommand::ConstructFprintf (currentLine, *this);
+            } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
+                _ElementaryCommand::ConstructFscanf (currentLine, *this);
+            } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
+                _ElementaryCommand::ConstructReplicateConstraint (currentLine, *this);
+            } else if (currentLine.startswith (blCategory)) { // category variable declaration
+                _ElementaryCommand::ConstructCategory (currentLine, *this);
+            } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
+                _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
+            } else if (currentLine.startswith (blModel)) { // Model declaration
+                _ElementaryCommand::ConstructModel (currentLine, *this);
+            } else if (currentLine.startswith (blChoiceList)) { // choice list
+                _ElementaryCommand::ConstructChoiceList (currentLine, *this);
+            } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
+                _ElementaryCommand::ConstructOpenDataPanel (currentLine, *this);
+            } else if (currentLine.startswith (blGetInformation)) { // get information
+                _ElementaryCommand::ConstructGetInformation (currentLine, *this);
+            } else if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary))
+                // execute commands
+            {
+                _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
+            } else if (currentLine.startswith (blOpenWindow)) { // execute commands
+                _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
+            } else if (currentLine.startswith (blSpawnLF)) { // execute commands
+                _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
+            } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
+                // find a root of an expression in an interval
+                // or an integral
+            {
+                _ElementaryCommand::ConstructFindRoot (currentLine, *this);
+            } else if (currentLine.startswith (blMPISend)) { // MPI Send
+                _ElementaryCommand::ConstructMPISend (currentLine, *this);
+            } else if (currentLine.startswith (blMPIReceive)) { // MPI Receive
+                _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
+            } else if (currentLine.startswith (blGetDataInfo)) { // Get Data Info
+                _ElementaryCommand::ConstructGetDataInfo (currentLine, *this);
+            } else if (currentLine.startswith (blStateCounter)) { // Get Data Info
+                _ElementaryCommand::ConstructStateCounter (currentLine, *this);
+            } else if (currentLine.startswith (blDoSQL)) { // Do SQL
+                _ElementaryCommand::ConstructDoSQL (currentLine, *this);
+            } else if (currentLine.startswith (blAlignSequences)) { // Do AlignSequences
+                _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
+            } else if (currentLine.startswith (blHBLProfile)) { // #profile
+                _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
+            } else if (currentLine.startswith (blSCFG)) { // SCFG definition
+                _ElementaryCommand::ConstructSCFG (currentLine, *this);
+            } else if (currentLine.startswith (blNN)) { // Neural Net definition
+                _ElementaryCommand::ConstructNN (currentLine, *this);
+            } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
+                _ElementaryCommand::ConstructBGM (currentLine, *this);
+            } 
+            // plain ol' formula - parse it as such!
+            else {
+                _String checker (currentLine);
+                if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length()) {
+                    if (currentLine.Length()>1)
+                        while (currentLine[currentLine.Length()-1]==';') {
+                            currentLine.Trim (0,currentLine.Length()-2);
+                        }
+                    else {
+                        continue;
                     }
-                else {
-                    continue;
-                }
-                _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
-                oddCommand->code = 0;
-                oddCommand->parameters&&(&currentLine);
-                AppendNewInstance (oddCommand);
-            } else {
-                while (currentLine.Length()) {
-                    _String part (_ElementaryCommand::FindNextCommand (currentLine));
-                    BuildList (part,bc,processed);
+                    _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
+                    oddCommand->code = 0;
+                    oddCommand->parameters&&(&currentLine);
+                    AppendNewInstance (oddCommand);
+                } else {
+                    while (currentLine.Length()) {
+                        _String part (_ElementaryCommand::FindNextCommand (currentLine));
+                        BuildList (part,bc,processed);
+                    }
                 }
             }
+            
+            /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
+                WarnError (_String ("Missing semicolon before ") & currentLine);
+                return false;
+            }*/
         }
-        
-        /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
-            WarnError (_String ("Missing semicolon before ") & currentLine);
-            return false;
-        }*/
     }
     s.sData = savePointer;
     s.DuplicateErasing (&empty);
@@ -2740,13 +2745,14 @@ void      _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
             }
         }
 
-        if (thePrintObject)
+        if (thePrintObject) {
             if (!out2) {
                 thePrintObject->toFileStr (dest);
             } else {
                 _String outS ((_String*)thePrintObject->toStr());
                 StringToConsole (outS);
             }
+        }
     }
 #if !defined __UNIX__ || defined __HEADLESS__
     if (!dest) {
@@ -4451,14 +4457,14 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-#ifndef __UNIX__
+#if !defined __UNIX__ ||  defined __HYPHYQT__
                 SetStatusLine ("Waiting for user selection.");
                 _String* param = (_String*)parameters(1);
 
                 _SimpleList std(2,0,1),
                             all(theChoices->lLength,0,1);
 
-                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength);
+                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,nil);
 #else
                 _String* param = (_String*)parameters(1);
                 printf ("\n\n\t\t\t+");
@@ -6080,12 +6086,13 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
                 matrixScope--;
             } else {
                 scopeIn--;
-                if (!parenIn && !bracketIn)
+                if (!parenIn && !bracketIn) {
                     if (scopeIn >=0 && isDoWhileLoop.lLength && isDoWhileLoop.lData[isDoWhileLoop.lLength-1] == scopeIn) {
                         isDoWhileLoop.Delete (isDoWhileLoop.lLength-1);
                     } else if (scopeIn == 0) {
                         break;
                     }
+                }
 
             }
             lastChar = 0;

@@ -56,3 +56,11 @@ _String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite)
  * @param isWrite: whether or not to display a read/write dialog
  * @return full path to the selected file name; empty if canceled.
  */
+
+
+//____________________________________________________________________________________________
+long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& validChoices, _String titleInfo, _SimpleList& selections, long fixedLength, Ptr prt);
+//____________________________________________________________________________________________
+long  HandleListSelection (_List& data, _String titleInfo, Ptr prt);
+
+

@@ -405,12 +405,13 @@ void    PurgeAll (bool all)
 //____________________________________________________________________________________
 void    DeleteObject (BaseRef theObject)
 {
-    if (theObject)
+    if (theObject) {
         if (theObject->nInstances<=1) {
             delete (theObject);
         } else {
             theObject->nInstances--;
         }
+    }
 }
 
 //____________________________________________________________________________________

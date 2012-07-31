@@ -282,6 +282,7 @@ _String ReturnFileDialogInput(void)
     }
     
     return resolvedFilePath;
+}
 
 //____________________________________________________________________________________
 
@@ -300,8 +301,7 @@ _String ProcessStringArgument (_String* data) {
 
 //____________________________________________________________________________________
 
-_String WriteFileDialogInput(void)
-{
+_String WriteFileDialogInput(void) {
     if (currentExecutionList && currentExecutionList->stdinRedirect) {
         _String outS (currentExecutionList->FetchFromStdinRedirect());
         if (outS.sLength) {

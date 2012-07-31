@@ -475,9 +475,11 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
 
     if (errorFormattingExpression) {
         _Formula expression;
-        _String  expr (*errorFormattingExpression->theString);
+        _String  expr (*errorFormattingExpression->theString),
+        errMsgLocal;
+        bool     is_volatile;
         long     varRef = -1;
-        if (Parse    (&expression, expr, varRef, nil, nil, false) == HY_FORMULA_EXPRESSION) {
+        if (Parse    (&expression, expr, varRef, nil, nil, &errMsgLocal, nil) == HY_FORMULA_EXPRESSION) {
             CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);

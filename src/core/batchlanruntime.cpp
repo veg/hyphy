@@ -50,6 +50,11 @@
 
 #endif
 
+#if defined __HYPHYQT__
+#include "HYSharedMain.h"
+#include "hyphy_qt_helpers.h"
+#endif
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
@@ -320,7 +325,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
             WarnError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
             return false;
 #else
-#ifdef __UNIX__
+#if defined __UNIX__ && !defined __HYPHYQT__
             while (model_id == HY_MAX_LONG_VALUE) {
                 printf ("\n\n               +--------------------------+\n");
                 printf     ("               | Select a standard model. |\n");
@@ -343,9 +348,9 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 }
             }
 #endif
-#ifndef __UNIX__
+#if !defined __UNIX__ ||  defined __HYPHYQT__
             _SimpleList choiceDummy (2,0,1), selDummy;
-            model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1);
+            model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1,nil);
             if (model_id==-1) {
                 terminateExecution = true;
                 return false;

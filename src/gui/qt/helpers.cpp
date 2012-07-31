@@ -45,9 +45,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "hyphymain.h"
 #include "hyphyevents.h"
+#include "hyphyhierarchicalselector.h"
 
-extern bool needExtraNL = true; 
-extern bool dropIntoDebugMode=false; 
+bool needExtraNL = true; 
+bool dropIntoDebugMode=false;
 
 void StringToConsole(_String&);
 void BufferToConsole(const char* buffer);
@@ -80,6 +81,7 @@ void BufferToConsole(const char* buffer)
 _String* StringFromConsole (bool echo)
 {
     //Do nothing for right now
+    return nil;
 }
 
 void SetStatusLine(_String arg)
@@ -98,10 +100,55 @@ void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
 
 bool Get_a_URL (_String& urls, _String* fileName)
 {
-
+    return false;
 }
 
 void NLToConsole()
 {
 
 }
+
+//____________________________________________________________________________________________
+long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& validChoices, _String titleInfo, _SimpleList& selections, long fixedLength, Ptr prt)
+{
+    long res = -1;
+    if (data.lLength < 1 || validChoices.lLength < 1) {
+        _String errMsg ("An empty list of choices was passed to 'HandleListSelection'");
+        WarnError (errMsg);
+    } else {
+        selections.Clear();
+        _HY_HierarchicalSelector *hs = new _HY_HierarchicalSelector((QWidget*)prt, data, choices, validChoices, titleInfo, &selections, fixedLength, true);
+        hs->setWindowModality(Qt::WindowModal);
+        hs->exec();
+        res = selections.lLength;
+        
+    }
+    return res;
+}
+
+//____________________________________________________________________________________________
+long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
+{
+    _SimpleList validChoices,
+    choices,
+    sels;
+    
+    _List       menuData;
+    
+    validChoices << 0;
+    validChoices << 1;
+    
+    for (long k=0; k<data.lLength; k+=2) {
+        _List aChoice;
+        
+        aChoice << data (k);
+        aChoice << data (k+1);
+        
+        menuData && & aChoice;
+        
+        choices << choices.lLength;
+    }
+    
+    return  HandleListSelection (menuData, validChoices, choices, titleInfo, sels, 1, prt);
+}
+
