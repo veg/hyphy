@@ -91,10 +91,16 @@ _SimpleList::_SimpleList (_SimpleList& l, long from, long to)
     } else {
         Initialize           ();
         NormalizeCoordinates (from, to, l.lLength);
-
+        RequestSpace(to-from);
+        long upto = to-from ; 
+        for (long k = 0; k < upto; k++) {
+            lData[k] = l.lData[from+k];
+        }
+        /*
         for (long i = from; i < to; i++) {
             (*this) << l.lData[i];
         }
+        */
     }
 }
 

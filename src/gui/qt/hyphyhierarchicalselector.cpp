@@ -62,8 +62,6 @@ _HY_HierarchicalSelector::_HY_HierarchicalSelector(QWidget *parent, _List& defin
         n = n & " (select 1 or more)";
     }
     
-    
-    
     itemList->setHeaderLabels(QStringList(n.sData));
     if (r != 1) {
         itemList->setSelectionMode (QAbstractItemView::ExtendedSelection);
@@ -127,69 +125,6 @@ _HY_HierarchicalSelector::_HY_HierarchicalSelector(QWidget *parent, _List& defin
     connect(itemList, SIGNAL(itemSelectionChanged()), this, SLOT(handle_selection_change()));
 }
 
-/*
-void SelectAnalysisDialog::loadTree() {
-    //Regex for parsing files.lst
-    //"","Various tools for estimating the distribution of substitution rates.","!Substitution Rates";
-    QRegExp rx("\"(.*)\",\"(.*)\",\"(.*)\";");
-
-    //"SR","DNARates like site specific rate estimation. Other model parameters are inferred from the entire alignment.","SiteRates.bf";
-
-    //Read files.lst
-    QFile file("res/TemplateBatchFiles/files.lst");
-    if(!file.open(QIODevice::ReadOnly)) {
-        //QMessageBox::information(0, "error", file.errorString());
-        QMessageBox::information(0, "error", "error");
-    }
-
-    QTextStream in(&file);
-
-    //Before looping, let's set the first top level item
-    QString line = in.readLine();    
-
-    //Have to implement RegEx
-    rx.indexIn(line);
-    QStringList fields = rx.capturedTexts();
-
-    //treeWidget->setColumnCount(1);
-    QList<QTreeWidgetItem *> items;
-
-    //First item must always be a top level item
-    if(!fields[3].startsWith("!")) {
-        qDebug() << fields;
-        QMessageBox::information(0, "error", "Invalid File, first line is not a top level item");
-    }
-
-    //Set the first item. The remove is for the beginning "!"
-    QTreeWidgetItem* item = new QTreeWidgetItem((QTreeWidget*)0, QStringList(fields[3].remove(0,1)));
-    //item.setWhatsThis(fields[0]);
-
-    while(!in.atEnd()) {
-
-        line = in.readLine();    
-        rx.indexIn(line);
-        fields = rx.capturedTexts();
-
-        //Check if the label starts with a bang
-        if(fields[3].startsWith("!")) {
-            items.append(item);
-            item = new QTreeWidgetItem((QTreeWidget*)0, QStringList(fields[3].remove(0,1)));
-        }
-
-        //not a bang, add to the current item until we find the next one
-        else {
-            item->addChild(new QTreeWidgetItem((QTreeWidget*)0,QStringList(fields[3])));
-        }
-    }
-
-    //Append last item
-    items.append(item);
-
-    treeWidget->insertTopLevelItems(0, items);
-    file.close();
-    return;
-}
-*/
 
 void _HY_HierarchicalSelector::ok() {
     //Get currently selected treewidget item
