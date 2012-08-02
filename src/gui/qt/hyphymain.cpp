@@ -57,8 +57,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     waitingOnStringFromConsole = false;
-    this->initialText();
-    this->initializeMenuBar();
+    initialText();
+    initializeMenuBar();
     installEventFilter(this);
 }
 
