@@ -74,7 +74,7 @@ public:
     void SetStatusLine     (_String, _String, _String, long, char);
     void SetStatusBarValue (long, _Parameter, _Parameter);
     void AddStringToRecentMenu (const _String, const _String);
-    void AppendTextToEnd   (const QString&, bool isHTML = false);
+    void AppendTextToEnd   (const QString&, bool isHTML = false, _SimpleList* color = nil);
     void DisplayPrompt     (void);
     void setWaitingOnStringFromConsole (bool);
     const _String & getUserData (void) { return userData;}

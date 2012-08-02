@@ -85,7 +85,15 @@ class _SimpleList:public BaseObj
         virtual ~_SimpleList(void);
 
 
-        /*
+        /**
+         * Data constructor list of longs supplied as a variable
+         * @param long the first string to add to the list
+         * @param const unsigned long the number of additional long arguments supplied to the constructor
+         * @param 2-N: long to be added to the list
+         */
+        _SimpleList(const long, const unsigned long, ...);
+
+    /*
         ==============================================================
         Operator Overloads
         ==============================================================

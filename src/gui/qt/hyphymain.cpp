@@ -260,13 +260,17 @@ void HyphyMain::hy_consolewindow(){}
 void HyphyMain::hy_objectinspector(){}
 void HyphyMain::hy_cyclethroughwindows(){}
 
-void HyphyMain::AppendTextToEnd(const QString& text, bool isHTML) {
+void HyphyMain::AppendTextToEnd(const QString& text, bool isHTML, _SimpleList* color) {
     console->moveCursor(QTextCursor::End);
     if (isHTML) 
         console->insertHtml(text);
     else {
         QColor currentColor = console->textColor();
-        console->setTextColor (QColor (0,0,212));
+        if (color && color->lLength >= 3) {
+            console->setTextColor (QColor (color->lData[0], color->lData[1], color->lData[2]));
+        } else {
+            console->setTextColor (QColor (0,0,212));            
+        }
         console->insertPlainText(text);
         console->setTextColor (currentColor);
     }
@@ -280,7 +284,7 @@ void HyphyMain::DisplayPrompt     (void) {
 bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == BufferToStringType) {
-        AppendTextToEnd (((QBufferToConsoleEvent*)event)->buffer(), false);
+        AppendTextToEnd (((QBufferToConsoleEvent*)event)->buffer(), false, &((QBufferToConsoleEvent*)event)->color());
         return true;
     }
 
@@ -313,7 +317,7 @@ void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
 
 void HyphyMain::setWaitingOnStringFromConsole (bool value) {
     if (value) {
-        console->newline();
+        console->newline(true);
         console->prompt(true);
     }
     waitingOnStringFromConsole = value;

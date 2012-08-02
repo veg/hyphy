@@ -272,25 +272,9 @@ void    FlagError (_String st)
 #ifdef  _MINGW32_MEGA_
     SetStatusLine  (errMsg);
 #else
-    StringToConsole(errMsg);
+    _SimpleList color (255,2,0,0);
+    StringToConsole(errMsg, &color);
 #endif
-#endif
-
-#ifdef __MAC__
-    Str255            err;
-    StringToStr255   (st,err);
-    ParamText        (err,NULL,NULL,NULL);
-    Alert            (128, (ModalFilterUPP)NULL);
-    WritePreferences ();
-    SaveConsole      ();
-#endif
-
-#ifdef __WINDOZE__
-    if (st.sLength>255) {
-        st = st.Cut(0,255);
-    }
-    WritePreferences();
-    WinErrorBox(st,false);
 #endif
 
 #ifdef __HYPHYMPI__
@@ -299,11 +283,11 @@ void    FlagError (_String st)
     }
 #endif
 
-#if defined __UNIX__ && !defined __HYPHY_GTK__
+#if defined __UNIX__ && !defined __HYPHYQT__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif
-    //GlobalShutdown();
+
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
 #else
@@ -324,11 +308,6 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 void WarnError (_String st)
 {
 
-#ifdef __HYPHYQT__ 
-    //Just print to buffer for now
-    StringToConsole(st);
-    return;
-#endif
 
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
@@ -373,7 +352,11 @@ void WarnError (_String st)
     #ifdef  _MINGW32_MEGA_
         SetStatusLine  (errMsg);
     #else
-        StringToConsole(errMsg);
+        _SimpleList color (255,2,0,0);
+        StringToConsole(errMsg, &color);
+#ifdef __HYPHYQT__
+    return;
+#endif
     #endif
 #endif
 
@@ -438,6 +421,7 @@ void WarnError (_String st)
     }
     return;
 #endif
+    
 #if defined __UNIX__ && !defined __HYPHY_GTK__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;

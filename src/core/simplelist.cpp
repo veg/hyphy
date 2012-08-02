@@ -41,6 +41,8 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+#include <stdarg.h>
+
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
@@ -102,6 +104,22 @@ _SimpleList::_SimpleList (_SimpleList& l, long from, long to)
         }
         */
     }
+}
+
+// Data constructor (variable number of long constants)
+_SimpleList::_SimpleList (const long value1, const unsigned long number, ...)
+{
+    Initialize (true);
+    va_list vl;
+    
+    (*this) << value1;
+    
+    va_start(vl,number);
+    for (unsigned long arg_id =0;arg_id<number;arg_id++) {
+        const long this_arg =va_arg(vl,long);
+        (*this) << this_arg;
+    }
+    va_end(vl);
 }
 
 //Destructor
