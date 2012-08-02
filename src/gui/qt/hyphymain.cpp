@@ -139,7 +139,7 @@ void HyphyMain::initializeMenuBar() {
     //connect(_hyConsoleCutAction, SIGNAL(triggered()), console, SLOT(cut()));
     connect(_hyConsoleCopyAction, SIGNAL(triggered()), console, SLOT(copy()));
     connect(_hyConsolePasteAction, SIGNAL(triggered()), console, SLOT(paste()));
-    connect(_hyConsoleFindAction, SIGNAL(triggered()), console, SLOT(find()));
+    //connect(_hyConsoleFindAction, SIGNAL(triggered()), console, SLOT(find()));
     connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), console, SLOT(selectAll()));
     //connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), console, SLOT(clearwindow()));
 
