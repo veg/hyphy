@@ -14,7 +14,7 @@ public:
     void insertFromMimeData(const QMimeData * source);
     void changeDir(const QString & dir);
     void prompt(bool = false);
-    void newline (void);
+    void newline (bool = false);
     
 signals:
     void userEnteredString (const QString);

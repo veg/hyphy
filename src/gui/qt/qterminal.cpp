@@ -191,8 +191,13 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     }
 }
 
-void QTerminal::newline(void) {
+void QTerminal::newline(bool onlyIfLineNonEmpty) {
     moveCursor(QTextCursor::End);
+    if (onlyIfLineNonEmpty) {
+        if (textCursor().columnNumber() == 0) {
+            return;
+        }
+    }
     insertPlainText ("\n");
 }
 

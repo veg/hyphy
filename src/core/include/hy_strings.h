@@ -897,10 +897,12 @@ void    WarnErrorWhileParsing       (_String, _String&);
 void    WarnError                   (_String);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
-void    StringToConsole             (_String&);
-void    BufferToConsole             (const char*);
+
+void    StringToConsole             (_String&, _SimpleList* = nil);
+void    BufferToConsole             (const char*, _SimpleList* = nil);
 void    NLToConsole                 (void);
 _String*StringFromConsole           (bool=true);
+
 char    GetPlatformDirectoryChar    (void);
 
 

@@ -51,14 +51,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 bool needExtraNL = true; 
 bool dropIntoDebugMode=false;
 
-void StringToConsole(_String& str)
+void StringToConsole(_String& str, _SimpleList* color)
 {
-   BufferToConsole(str); 
+   BufferToConsole(str.sData, color);
 }
 
-void BufferToConsole(const char* buffer)
+void BufferToConsole(const char* buffer, _SimpleList* color)
 {
-    QBufferToConsoleEvent event((QString)buffer);
+    QBufferToConsoleEvent event((QString)buffer, color);
     QApplication::sendEvent(_hyPrimaryConsoleWindow, &event);
 }
 

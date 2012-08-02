@@ -42,15 +42,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <QEvent>
 #include <QString>
+#include "simplelist.h"
 
 const QEvent::Type BufferToStringType = QEvent::Type(QEvent::User+1);
 
 class Q_GUI_EXPORT QBufferToConsoleEvent : public QEvent
 {
 public:
-    QBufferToConsoleEvent(QString bufferStr);
+    QBufferToConsoleEvent(QString bufferStr, _SimpleList* color = nil);
     //~QBufferToConsoleEvent();
     inline QString buffer() const { return bufferStr; }
+    inline _SimpleList& color () { return textColor;}
 protected:
     QString bufferStr;
+    _SimpleList textColor;
 };
