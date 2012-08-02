@@ -4,7 +4,7 @@
 #include <QFont>
 #include "qterminal.h"
 #include "hy_strings.h"
-#include "parser.h"
+#include "batchlan.h"
 
 QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) {
     setWindowFlags(f);
@@ -164,17 +164,16 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     // now pass a char* copy of the input to the shell process
     if (key == Qt::Key_Return || key == Qt::Key_Enter) {
         this->moveCursor(QTextCursor::End);
-        this->insertPlainText("\n");
-
+ 
         //Execute command string
-        emit userEnteredString(cmdStr);
 
         QTextEdit::keyPressEvent(event);
         cmdHistory.push_back(cmdStr);
+        emit userEnteredString(cmdStr);
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
-        this->prompt();
+        //this->prompt();
 
     } 
 
@@ -192,10 +191,22 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     }
 }
 
-void QTerminal::prompt() {
+void QTerminal::newline(void) {
+    moveCursor(QTextCursor::End);
+    insertPlainText ("\n");
+}
+
+void QTerminal::prompt(bool hbl) {
     this->moveCursor(QTextCursor::End);
-    this->insertHtml("<font color='#A60000'>&gt;</font> ");
-    this->moveCursor(QTextCursor::End);
+    if (hbl) {
+        _String tag = currentExecutionList?currentExecutionList->GetFileName():empty;
+        if (tag.sLength == 0)
+                tag = "Analysis waiting for input";
+        insertHtml("<font color='#A60000'>["+QString(tag.sData)+"]&gt;</font> ");
+    } else {
+        insertHtml("<font color='#A60000'>&gt;</font> ");
+    }
+    moveCursor(QTextCursor::End);
 
     //Clear undo stack trick
     /*QString text = this->toHtml();

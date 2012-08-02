@@ -1046,6 +1046,17 @@ _String*    _ExecutionList::FetchFromStdinRedirect (void)
     return sendBack;
 }
 
+//____________________________________________________________________________________
+
+_String       _ExecutionList::GetFileName     (void)  {
+    if (sourceFile.sLength) {
+        return sourceFile;
+    } else {
+        if (pathNames.lLength)
+            return *(_String*)pathNames.GetElement (-1);
+    }
+    return empty;
+}
 // doesn't do much
 //____________________________________________________________________________________
 

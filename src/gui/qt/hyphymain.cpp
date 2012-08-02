@@ -70,22 +70,18 @@ void HyphyMain::initialText() {
 
     //HyPhy version
     _String version = GetVersionString();
-    console->insertPlainText((QString)version);
-    console->insertPlainText("\n");
-
+    console->insertHtml((QString)version + ". ");
+ 
     // SW20120702
     // MPProcessors is deprecated as of OSX10.7, using sysctl
     size_t size;
-    int systemCPUCount;
-    size = sizeof systemCPUCount;
-
-    sysctlbyname("hw.physicalcpu", &systemCPUCount, &size, NULL, 0);
-
-    if (systemCPUCount == 1) {
-        console->insertHtml("One processor detected.\n");
-    } else {
-        console->insertPlainText(QString::number(systemCPUCount) + " processors detected.\n\n");
-    }
+#ifdef _OPENMP
+    systemCPUCount = omp_get_max_threads();
+#else
+    systemCPUCount = 1;
+#endif
+    
+    console->insertHtml("Up to " + QString::number(systemCPUCount) + " threads can be used for analyses.<p>");
 
     //The HyPhy Citation request
     const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite <b>SL Kosakovsky Pond, SDW Frost and SV Muse. (2005)</b> HyPhy: hypothesis testing using phylogenies. <i>Bioinformatics 21: 676-679</i></p><p>If you are a new HyPhy user, the tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br>";
@@ -316,6 +312,10 @@ void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
 }
 
 void HyphyMain::setWaitingOnStringFromConsole (bool value) {
+    if (value) {
+        console->newline();
+        console->prompt(true);
+    }
     waitingOnStringFromConsole = value;
 }
 
@@ -326,6 +326,8 @@ void HyphyMain::handle_user_input(const QString data) {
         emit handled_user_input();
     } else {
         ExpressionCalculator((_String)(char *)data.toAscii().data());
+        console->newline();
+        console->prompt();
     }
 }
 

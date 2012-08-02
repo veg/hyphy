@@ -13,7 +13,8 @@ public:
     void contextMenuEvent(QContextMenuEvent* event);
     void insertFromMimeData(const QMimeData * source);
     void changeDir(const QString & dir);
-    void prompt();
+    void prompt(bool = false);
+    void newline (void);
     
 signals:
     void userEnteredString (const QString);

@@ -105,6 +105,7 @@ public:
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
     void        SetNameSpace                (_String);
+    _String     GetFileName                 (void);
     _String*    GetNameSpace                (void);
     _String     AddNameSpaceToID            (_String&);
     _String     TrimNameSpaceFromID         (_String&);

@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QEvent>
+#include <unistd.h>
 #include "baseobj.h"
 #include "hyphymain.h"
 #include "hyphyevents.h"
