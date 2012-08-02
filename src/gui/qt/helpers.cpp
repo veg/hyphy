@@ -92,6 +92,10 @@ void SetStatusLineUser(_String s)
 
 }
 
+void    SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c) {
+
+}
+
 void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
 {
 }
@@ -157,4 +161,16 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
     }
     return -1;
 }
+
+void yieldCPUTime (void) {
+    handleGUI();
+}
+
+bool handleGUI (bool checkForEvents) {
+    if (!checkForEvents || QCoreApplication::hasPendingEvents()) {
+        QCoreApplication::processEvents ();
+    }
+    return QCoreApplication::closingDown();
+}
+
 

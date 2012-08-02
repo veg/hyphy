@@ -212,6 +212,7 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addSeparator();
     _hyConsoleMenu->addAction(_hyConsoleCycleThroughWindowsAction);
 
+    console->setLineWrapMode(QTextEdit::WidgetWidth);
 
 }
 

@@ -885,6 +885,10 @@ extern _String volumeName;
 
 void    SetStatusBarValue           (long,_Parameter,_Parameter);
 void    SetStatusLine               (_String);
+void    SetStatusLine               (_String, _String, _String, long l);
+void    SetStatusLine               (_String, _String, _String);
+void    SetStatusLine               (_String, _String, _String, long, char);
+
 void    SetStatusLineUser           (_String);
 
 

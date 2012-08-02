@@ -9681,7 +9681,7 @@ void     _TheTree::WeightedCharacterDifferences (_Parameter siteLikelihood, _Mat
                 }
             }
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
             if ((cBase>=20)&&(offset<1)) {
                 yieldCPUTime();
                 if (terminateExecution) {

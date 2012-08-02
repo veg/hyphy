@@ -414,17 +414,6 @@ void    DeleteObject (BaseRef theObject)
     }
 }
 
-//____________________________________________________________________________________
-#ifdef __HYALTIVEC__
-char* VecMemAllocate (long chunk)
-{
-    char* result = (char*)vec_malloc (chunk);
-    if (!result) {
-        warnError(-108);
-    }
-    return result;
-}
-#endif
 
 #ifndef __HYPHYDMALLOC__
 //____________________________________________________________________________________
@@ -467,58 +456,7 @@ void        yieldCPUTime(void)
     }
 }
 
-#ifdef __WINDOZE__
-#include <Windows.h>
-#endif
-#else
-
-#ifdef __MAC__
-#include "Timer.h"
-
-void    yieldCPUTime(void)
-{
-    handleGUI(true);
-}
-#endif
-
-#ifdef __WINDOZE__
-#include        "Windows.h"
-#include        "preferences.h"
-#include        "HYSharedMain.h"
-#include        "HYPlatformWindow.h"
-
-extern  bool    hyphyExiting;
-
-void            yieldCPUTime     (void)
-{
-    MessageLoop();
-    if (hyphyExiting) {
-        WritePreferences    ();
-        ExitProcess(0);
-    }
-
-    while (isSuspended) {
-        MessageLoop(false,false);
-        if (hyphyExiting) {
-            WritePreferences    ();
-            ExitProcess         (0);
-        }
-    }
-}
-#endif
-
-#ifdef  __HYPHY_GTK__
-
-#include <gtk/gtk.h>
-void    yieldCPUTime (void)
-{
-    while (gtk_events_pending ()) {
-        gtk_main_iteration();
-    }
-}
-
-#endif
-#endif
+#endif 
 
 //____________________________________________________________________________________
 
