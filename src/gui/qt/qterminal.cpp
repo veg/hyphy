@@ -9,7 +9,7 @@
 QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) {
     setWindowFlags(f);
     cmdStr = "";
-    curCursorLoc = this->textCursor();
+    curCursorLoc = textCursor();
     inputCharCount = 0;
     histLocation = -1;
     tempCmd = "";
@@ -18,13 +18,13 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) 
     //QFont font("Monaco Helvetica");
     QFont font("Monaco Helvetica");
     //setTextColor(Qt::darkCyan);
-    this->setCurrentFont(font);
+    setCurrentFont(font);
 
     //Make links clickable
-    this->setTextInteractionFlags(Qt::TextEditorInteraction|Qt::LinksAccessibleByMouse);
+    setTextInteractionFlags(Qt::TextEditorInteraction|Qt::LinksAccessibleByMouse);
 
     //Allow links to open browser
-    this->setOpenExternalLinks(true);
+    setOpenExternalLinks(true);
 }
 
 QTerminal::~QTerminal() {
@@ -41,7 +41,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     int key = event->key();
 
     if(!event->modifiers()) {
-        this->setTextCursor(curCursorLoc);
+        setTextCursor(curCursorLoc);
     }
 
     if (key != Qt::Key_Backspace) {
@@ -73,7 +73,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
                 }
 
                 inputCharCount = cmdHistory.at(histLocation).length();
-                this->insertPlainText(cmdHistory.at(histLocation));
+                insertPlainText(cmdHistory.at(histLocation));
                 cmdStr = cmdHistory.at(histLocation);
             }
 
@@ -105,7 +105,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
             }
 
             inputCharCount = str.length();
-            this->insertPlainText(str);
+            insertPlainText(str);
             cmdStr = str;
         } 
 
@@ -121,11 +121,11 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         } 
 
         else if (key == Qt::Key_Right) {
-            QTextCursor cursor = this->textCursor();
+            QTextCursor cursor = textCursor();
 
             if (cursor.movePosition(QTextCursor::Right)) {
                 ++inputCharCount;
-                this->setTextCursor(cursor);
+                setTextCursor(cursor);
             } 
 
             else {
@@ -163,7 +163,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 
     // now pass a char* copy of the input to the shell process
     if (key == Qt::Key_Return || key == Qt::Key_Enter) {
-        this->moveCursor(QTextCursor::End);
+        moveCursor(QTextCursor::End);
  
         //Execute command string
 
@@ -187,7 +187,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     }
 
     if(!event->modifiers()) {
-        this->moveCursor(QTextCursor::End);
+        moveCursor(QTextCursor::End);
     }
 }
 
@@ -202,7 +202,7 @@ void QTerminal::newline(bool onlyIfLineNonEmpty) {
 }
 
 void QTerminal::prompt(bool hbl) {
-    this->moveCursor(QTextCursor::End);
+    moveCursor(QTextCursor::End);
     if (hbl) {
         _String tag = currentExecutionList?currentExecutionList->GetFileName():empty;
         if (tag.sLength == 0)
@@ -214,31 +214,31 @@ void QTerminal::prompt(bool hbl) {
     moveCursor(QTextCursor::End);
 
     //Clear undo stack trick
-    /*QString text = this->toHtml();
-    this->setHtml(text);
-    this->moveCursor(QTextCursor::End);*/
+    /*QString text = toHtml();
+    setHtml(text);
+    moveCursor(QTextCursor::End);*/
 }
 
 void QTerminal::insertFromMimeData(const QMimeData * source) {
-    //this->setTextCursor(curCursorLoc);
-    this->moveCursor(QTextCursor::End);
+    //setTextCursor(curCursorLoc);
+    moveCursor(QTextCursor::End);
 
     QString pastedText = source->text();
     QStringList commands = pastedText.split("\n");
 
     foreach (const QString &str, commands) {
-        this->insertPlainText(str);
-        this->insertPlainText("\n");
+        insertPlainText(str);
+        insertPlainText("\n");
         ExpressionCalculator((_String)(char *)str.toAscii().data());
         cmdHistory.push_back(str);
         histLocation = -1;
         cmdStr = "";
         tempCmd = "";
-        this->insertPlainText("\n");
-        this->prompt();
+        insertPlainText("\n");
+        prompt();
      }
 
-     this->moveCursor(QTextCursor::End);
+     moveCursor(QTextCursor::End);
 }
 
 void QTerminal::contextMenuEvent(QContextMenuEvent *event) {
