@@ -56,9 +56,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
+    waitingOnStringFromConsole = false;
     this->initialText();
     this->initializeMenuBar();
-    console->installEventFilter(this);
+    installEventFilter(this);
 }
 
 void HyphyMain::initialText() {
@@ -146,6 +147,8 @@ void HyphyMain::initializeMenuBar() {
     connect(_hyConsoleSelectAllAction, SIGNAL(triggered()), console, SLOT(selectAll()));
     //connect(_hyConsoleClearWindowAction, SIGNAL(triggered()), console, SLOT(clearwindow()));
 
+    connect(console, SIGNAL(userEnteredString(const QString)), this, SLOT(handle_user_input(const QString)));
+
     //Add the Edit Menu to the Menu Bar
     _hyConsoleMenu = menuBar()->addMenu(tr("&Edit"));
     _hyConsoleMenu->addAction(_hyConsoleUndoAction);
@@ -218,7 +221,9 @@ void HyphyMain::initializeMenuBar() {
 
 //File Menu Options
 void HyphyMain::hy_open() {
-    console->insertPlainText((QString)_hyQTFileDialog("Select an HBL file to run",empty,false));
+    if (OpenBatchFile (true)) {
+         ExecuteBatchFile();
+    }
 }
 
 void HyphyMain::hy_save() {
@@ -259,12 +264,27 @@ void HyphyMain::hy_consolewindow(){}
 void HyphyMain::hy_objectinspector(){}
 void HyphyMain::hy_cyclethroughwindows(){}
 
+void HyphyMain::AppendTextToEnd(const QString& text, bool isHTML) {
+    console->moveCursor(QTextCursor::End);
+    if (isHTML) 
+        console->insertHtml(text);
+    else {
+        QColor currentColor = console->textColor();
+        console->setTextColor (QColor (0,0,212));
+        console->insertPlainText(text);
+        console->setTextColor (currentColor);
+    }
+}
+
+void HyphyMain::DisplayPrompt     (void) {
+    console->moveCursor(QTextCursor::End);
+    console->prompt();
+}
+
 bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
 {
-    if (event->type() == BufferToStringType) 
-    {
-        QBufferToConsoleEvent* e = (QBufferToConsoleEvent*)event;
-        console->insertPlainText(e->buffer());
+    if (event->type() == BufferToStringType) {
+        AppendTextToEnd (((QBufferToConsoleEvent*)event)->buffer(), false);
         return true;
     }
 
@@ -295,5 +315,18 @@ void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
 
 }
 
+void HyphyMain::setWaitingOnStringFromConsole (bool value) {
+    waitingOnStringFromConsole = value;
+}
+
+void HyphyMain::handle_user_input(const QString data) {
+    if (waitingOnStringFromConsole) {
+        setWaitingOnStringFromConsole (false);
+        userData = (_String)(char *)data.toAscii().data();
+        emit handled_user_input();
+    } else {
+        ExpressionCalculator((_String)(char *)data.toAscii().data());
+    }
+}
 
 

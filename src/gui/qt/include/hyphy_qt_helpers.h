@@ -44,6 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "batchlan.h"
 #include "ui_hyphymain.h"
 #include "hyphymain.h"
+#include "hy_strings.h"
 
 extern HyphyMain* _hyPrimaryConsoleWindow;
 
@@ -58,9 +59,16 @@ _String _hyQTFileDialog (_String caption, _String defaultFileName, bool isWrite)
  */
 
 
-//____________________________________________________________________________________________
 long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& validChoices, _String titleInfo, _SimpleList& selections, long fixedLength, Ptr prt);
-//____________________________________________________________________________________________
 long  HandleListSelection (_List& data, _String titleInfo, Ptr prt);
 
 
+
+void StringToConsole(_String&);
+void BufferToConsole(const char* buffer);
+_String* StringFromConsole (bool echo);
+void SetStatusLine(_String arg);
+void SetStatusLineUser(_String s);
+void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
+bool Get_a_URL (_String& urls, _String* fileName);
+void NLToConsole();

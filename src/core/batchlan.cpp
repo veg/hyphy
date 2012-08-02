@@ -4464,7 +4464,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 _SimpleList std(2,0,1),
                             all(theChoices->lLength,0,1);
 
-                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,nil);
+                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,(Ptr)_hyPrimaryConsoleWindow);
 #else
                 _String* param = (_String*)parameters(1);
                 printf ("\n\n\t\t\t+");

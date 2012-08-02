@@ -14,6 +14,9 @@ public:
     void insertFromMimeData(const QMimeData * source);
     void changeDir(const QString & dir);
     void prompt();
+    
+signals:
+    void userEnteredString (const QString);
 
 //private slots:
     //void find();

@@ -51,6 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     #include "HYDialogs.h"
 #else
     #include "hyphymain.h"
+    #include "hyphy_qt_helpers.h"
     _String   menuSeparator       ("SEPARATOR");
 #endif
 
@@ -92,6 +93,10 @@ void    DoneWithExecutionOfBatchFile (bool doPost)
     ToggleAnalysisMenu (false);
 #endif
 
+#ifdef __HYPHYQT__
+    _hyPrimaryConsoleWindow->DisplayPrompt();
+#endif
+
 }
 
 //_________________________________________________________________________
@@ -105,9 +110,12 @@ bool    ExecuteBatchFile (void)
     _String justTheName     (*argFileName,argFileName->FindBackwards (GetPlatformDirectoryChar(),0,-1)+1,-1);
 
     _hyPrimaryConsoleWindow->AddStringToRecentMenu   (justTheName, *argFileName);
-    
     _hyPrimaryConsoleWindow->SetStatusLine           (justTheName,"Loading","00:00:00", -1);
     _hyPrimaryConsoleWindow->StartBarTimer           ();
+    
+    _String info = _String("Running '") & *argFileName & "'";
+    StringToConsole(info);
+
     
     #ifndef __HYPHYQT__
     ApplyPreferences        ();
@@ -154,14 +162,20 @@ bool    OpenBatchFile (bool openOrNot, _String* dL)
 {
     PurgeAll            (windowPtrs.lLength==1);
     
-    #ifndef __HYPHYQT__
+    #if !defined __HYPHYQT__
     
     if (openOrNot)
         if (!PopUpFileDialog(" Please select a batch file to run:",dL)) {
             return false;
         }
-        
-    #endif
+    
+    #else
+        if (!argFileName) {
+            argFileName = new _String (_hyQTFileDialog("Select an HBL file to run",empty,false));
+        } else {
+            *argFileName = _hyQTFileDialog("Select an HBL file to run",empty,false);
+        }            
+    #endif 
 
     if (!argFileName || argFileName->sLength == 0) {
         return false;

@@ -167,7 +167,7 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
         this->insertPlainText("\n");
 
         //Execute command string
-        ExpressionCalculator((_String)(char *)cmdStr.toAscii().data());
+        emit userEnteredString(cmdStr);
 
         QTextEdit::keyPressEvent(event);
         cmdHistory.push_back(cmdStr);
@@ -193,13 +193,14 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
 }
 
 void QTerminal::prompt() {
-    this->insertHtml("<font color=\"#A60000\">&gt;</font> ");
+    this->moveCursor(QTextCursor::End);
+    this->insertHtml("<font color='#A60000'>&gt;</font> ");
+    this->moveCursor(QTextCursor::End);
 
     //Clear undo stack trick
-    //this->moveCursor(QTextCursor::End);
-    QString text = this->toHtml();
+    /*QString text = this->toHtml();
     this->setHtml(text);
-    this->moveCursor(QTextCursor::End);
+    this->moveCursor(QTextCursor::End);*/
 }
 
 void QTerminal::insertFromMimeData(const QMimeData * source) {

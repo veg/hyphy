@@ -40,7 +40,7 @@
 #include      "batchlan.h"
 #include      "defines.h"
 
-#ifdef __HYPHY_QT__
+#ifdef __HYPHYQT__
 #include "hyphy_qt_helpers.h"
 #endif
 
@@ -268,11 +268,11 @@ _String ReturnFileDialogInput(void)
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
 #else
-#ifdef __HYPHY_QT__  
+#ifdef __HYPHYQT__  
     resolvedFilePath = _hyQTFileDialog (dialogPrompt,empty, false);
 #endif
     
-#if defined __UNIX__ && ! defined __HYPHY_QT__
+#if defined __UNIX__ && ! defined __HYPHYQT__
     resolvedFilePath = ReturnDialogInput(true);
 #endif
 #endif
@@ -316,11 +316,11 @@ _String WriteFileDialogInput(void) {
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
 #else
-    #ifdef __HYPHY_QT__  
+    #ifdef __HYPHYQT__  
         resolvedFilePath = _hyQTFileDialog (dialogPrompt,defFileNameValue, true);
     #endif
             
-    #if defined __UNIX__ && ! defined __HYPHY_QT__
+    #if defined __UNIX__ && ! defined __HYPHYQT__
         resolvedFilePath = ReturnDialogInput(true);
     #endif
 #endif

@@ -74,15 +74,24 @@ public:
     void SetStatusLine     (_String, _String, _String, long, char);
     void SetStatusBarValue (long, _Parameter, _Parameter);
     void AddStringToRecentMenu (const _String, const _String);
+    void AppendTextToEnd   (const QString&, bool isHTML = false);
+    void DisplayPrompt     (void);
+    void setWaitingOnStringFromConsole (bool);
+    const _String & getUserData (void) { return userData;}
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);
+
+signals:
+    void handled_user_input ();
+
     
 private slots:
     //File Menu
     void hy_open();
     void hy_save();
     void quit();
+    void handle_user_input (const QString);
 
     //Analysis Menu
     void hy_cancelexecution();
@@ -132,6 +141,8 @@ private:
 
     QMenu   *_hyConsoleMenu;
     void initializeMenuBar();
+    bool     waitingOnStringFromConsole;
+    _String  userData;
 };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

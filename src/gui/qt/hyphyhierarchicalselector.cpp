@@ -37,7 +37,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "hyphyhierarchicalselector.h"
 #include <QList>
 #include <QFile>
 #include <QTextStream>
@@ -47,24 +46,30 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QPushButton>
 #include <QKeyEvent>
 
+
 //HyPhy specific
 #include "batchlan.h"
+#include "avllistxl.h"
+#include "hyphyhierarchicalselector.h"
+
+_List      _HY_HierarchicalSelectorPreviousSelections_Aux;
+_AVLListXL _HY_HierarchicalSelectorPreviousSelections(&_HY_HierarchicalSelectorPreviousSelections_Aux);
 
 _HY_HierarchicalSelector::_HY_HierarchicalSelector(QWidget *parent, _List& definition, _SimpleList& c, _SimpleList& vc, _String n, _SimpleList* s, long r, bool is_modal) : QDialog(parent) {
-    setupUi(this);
+        setupUi(this);
 
-    //Tree Widget setup
-    setWindowTitle(QString(n.sData));
-    
-    if (r >= 1) {
-        n = n & " (select " & r &")";
-    } else {
-        n = n & " (select 1 or more)";
-    }
-    
-    itemList->setHeaderLabels(QStringList(n.sData));
-    if (r != 1) {
-        itemList->setSelectionMode (QAbstractItemView::ExtendedSelection);
+        //Tree Widget setup
+        setWindowTitle(QString(n.sData));
+        
+        if (r >= 1) {
+            n = n & " (select " & r &")";
+        } else {
+            n = n & " (select 1 or more)";
+        }
+        
+        itemList->setHeaderLabels(QStringList(n.sData));
+        if (r != 1) {
+            itemList->setSelectionMode (QAbstractItemView::ExtendedSelection);
     }
     //this->loadTree();
     if (is_modal) {
@@ -123,19 +128,52 @@ _HY_HierarchicalSelector::_HY_HierarchicalSelector(QWidget *parent, _List& defin
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(ok()));
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(cancel()));
     connect(itemList, SIGNAL(itemSelectionChanged()), this, SLOT(handle_selection_change()));
+    connect(itemList, SIGNAL(itemDoubleClicked ( QTreeWidgetItem*, int ) ), this, SLOT(handle_double_click()));
+    SetInitialSelection ();
 }
+
+//______________________________________________________________
 
 
 void _HY_HierarchicalSelector::ok() {
     //Get currently selected treewidget item
+    QList <QTreeWidgetItem*> selection = itemList->selectedItems();
+    if (selection.count()) {
+        _String * selectedValue = new _String(selection.at(0)->text(0).toAscii().data()),
+                wTitle (windowTitle().toAscii().data());
+        
+         _HY_HierarchicalSelectorPreviousSelections.UpdateValue(&wTitle, selectedValue, false, true);
+    }
     this->accept();
 }
 
+//______________________________________________________________
+
+void _HY_HierarchicalSelector::SetInitialSelection () {
+    _String wTitle (windowTitle().toAscii().data()),
+            *value = (_String*)_HY_HierarchicalSelectorPreviousSelections.GetDataByKey(&wTitle);
+    QTreeWidgetItem * theItem;        
+    if (value) {
+        QString theValue (value->sData);
+        QList<QTreeWidgetItem *> matches = itemList->findItems(theValue, Qt::MatchStartsWith);
+        if (matches.count() > 0) {
+            theItem = matches.at(0);
+        }
+    } else {
+        theItem = itemList->topLevelItem(0);
+    }
+    itemList->setCurrentItem(theItem);
+}
+
+
+//______________________________________________________________
 
 void _HY_HierarchicalSelector::cancel() {
     selections->Clear();
     this->reject();
 }
+
+//______________________________________________________________
 
 void _HY_HierarchicalSelector::toggleAcceptStatus (long selected) {
     validSelection = (result>0 && selected == result) || (selected > 0);
@@ -145,12 +183,21 @@ void _HY_HierarchicalSelector::toggleAcceptStatus (long selected) {
     }   
 }
 
+//______________________________________________________________
+
+void _HY_HierarchicalSelector::handle_double_click() {
+    if (validSelection) {
+        accept();
+    }
+}
+
+//______________________________________________________________
+
 void _HY_HierarchicalSelector::handle_selection_change() {
     QList <QTreeWidgetItem*> selection = itemList->selectedItems();
     
     _String aboutText (128L, true);
-    long    totalSelected = 0,
-            rawSelected = selection.count();
+    long    rawSelected = selection.count();
             
     selections->Clear();
     
@@ -165,7 +212,6 @@ void _HY_HierarchicalSelector::handle_selection_change() {
         }
         if (theSelection->childCount() == 0) {
             (*selections) << item_offset;
-            totalSelected++;
         }
         aboutText << *(_String*)dData(item_offset);
         if (k) {
@@ -175,8 +221,10 @@ void _HY_HierarchicalSelector::handle_selection_change() {
     aboutText.Finalize();    
     
     explanationLabel->document()->setPlainText (QString(aboutText.sData));
-    toggleAcceptStatus (totalSelected);
+    toggleAcceptStatus (selections->lLength);
 }
+
+//______________________________________________________________
 
 void _HY_HierarchicalSelector::closeEvent(QCloseEvent *event) {
     if (!validSelection) {
@@ -185,6 +233,8 @@ void _HY_HierarchicalSelector::closeEvent(QCloseEvent *event) {
     QDialog::closeEvent (event);
 }
 
+//______________________________________________________________
+ 
 bool _HY_HierarchicalSelector::eventFilter ( QObject * watched, QEvent * event ) {
     if (event->type () == QEvent::KeyPress) {
         QKeyEvent *keyEvent = (QKeyEvent*)(event);

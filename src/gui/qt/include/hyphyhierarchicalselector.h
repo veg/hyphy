@@ -79,4 +79,5 @@ private slots:
     void ok();
     void cancel();
     void handle_selection_change ();
+    void handle_double_click ();
 };

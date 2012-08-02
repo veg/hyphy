@@ -46,18 +46,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hyphymain.h"
 #include "hyphyevents.h"
 #include "hyphyhierarchicalselector.h"
+#include "hyphy_qt_helpers.h"
 
 bool needExtraNL = true; 
 bool dropIntoDebugMode=false;
-
-void StringToConsole(_String&);
-void BufferToConsole(const char* buffer);
-_String* StringFromConsole (bool echo);
-void SetStatusLine(_String arg);
-void SetStatusLineUser(_String s);
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
-bool Get_a_URL (_String& urls, _String* fileName);
-void NLToConsole();
 
 void StringToConsole(_String& str)
 {
@@ -66,21 +58,27 @@ void StringToConsole(_String& str)
 
 void BufferToConsole(const char* buffer)
 {
-    
-    //Get MainWindow object specifically
     QBufferToConsoleEvent event((QString)buffer);
-
-    foreach (QWidget *widget, QApplication::allWidgets()) {
-        //Write to main console
-        QApplication::sendEvent(widget, &event);
-    }
-
-    return;
+    QApplication::sendEvent(_hyPrimaryConsoleWindow, &event);
 }
 
 _String* StringFromConsole (bool echo)
 {
-    //Do nothing for right now
+    if (_hyPrimaryConsoleWindow) {
+        _hyPrimaryConsoleWindow->setWaitingOnStringFromConsole(true);
+        QEventLoop loop;
+        QObject::connect(_hyPrimaryConsoleWindow, SIGNAL(handled_user_input()), &loop, SLOT(quit()));
+         
+        // Execute the event loop here, now we will wait here until readyRead() signal is emitted
+        // which in turn will trigger event loop quit.
+        loop.exec();
+         
+        // Lets print the HTTP GET response.
+        return new _String(_hyPrimaryConsoleWindow->getUserData());
+        //_hyPrimaryConsoleWindow->getUserData ();
+        //_hyPrimaryConsoleWindow->setWaitingOnStringFromConsole(false);
+        
+    }
     return nil;
 }
 
@@ -113,14 +111,19 @@ long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& valid
 {
     long res = -1;
     if (data.lLength < 1 || validChoices.lLength < 1) {
-        _String errMsg ("An empty list of choices was passed to 'HandleListSelection'");
-        WarnError (errMsg);
+        WarnError ("An empty list of choices was passed to 'HandleListSelection'");
     } else {
         selections.Clear();
         _HY_HierarchicalSelector *hs = new _HY_HierarchicalSelector((QWidget*)prt, data, choices, validChoices, titleInfo, &selections, fixedLength, true);
         hs->setWindowModality(Qt::WindowModal);
         hs->exec();
         res = selections.lLength;
+        if (res == 0) {
+            return -1;
+        }
+        if (res == 1) {
+            return selections.lData[0];
+        }
         
     }
     return res;
@@ -138,7 +141,7 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
     validChoices << 0;
     validChoices << 1;
     
-    for (long k=0; k<data.lLength; k+=2) {
+    for (unsigned long k=0; k<data.lLength; k+=2) {
         _List aChoice;
         
         aChoice << data (k);
@@ -149,6 +152,9 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
         choices << choices.lLength;
     }
     
-    return  HandleListSelection (menuData, validChoices, choices, titleInfo, sels, 1, prt);
+    if (HandleListSelection (menuData, validChoices, choices, titleInfo, sels, 1, prt) > 0) {
+        return sels.lData[0];
+    }
+    return -1;
 }
 
