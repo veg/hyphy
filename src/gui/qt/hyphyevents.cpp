@@ -39,7 +39,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "hyphyevents.h"
+#include <QDebug> 
 
 QBufferToConsoleEvent::QBufferToConsoleEvent(QString bufferStr) : QEvent(BufferToStringType) {
-    bufferStr = bufferStr;
+    this->bufferStr = bufferStr;
 }
