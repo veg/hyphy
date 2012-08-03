@@ -151,7 +151,8 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 }
 
 USE_LAST_RESULTS			  = 1;
-VERBOSITY_LEVEL               = 0;
+
+SHORT_MPI_RETURN = 1;
 
 Optimize					  (res_three_LF_global,three_LFG);
 baseParameters                += 5; // to count nucleotide rates
@@ -183,7 +184,7 @@ LikelihoodFunction three_LF   = (dsf,mixtureTree);
 branchValues = {};
 
 if (MPI_NODE_COUNT > 1) {
-    MPI_NODE_STATE = {MPI_NODE_COUNT-1,0};
+    MPI_NODE_STATE = {MPI_NODE_COUNT-1,1};
     MPI_NODE_STATE[0] = "";
 }
 
@@ -192,21 +193,27 @@ for (k = 0; k < totalBranchCount; k = k+1) {
     thisBranchName = bNames[k];
     globalState["restoreLF"][""];
     if (k) {
-        constrainABranch (bNames[k-1]);
+        if (MPI_NODE_COUNT > 1) {
+            for (nodeID = 0; nodeID < totalBranchCount; nodeID += 1) {
+                constrainABranch (bNames[nodeID]);
+            }
+        } else {
+            constrainABranch (bNames[k-1]);    
+        }
     }
-    
     unConstrainABranch (bNames[k]);
     
     if (MPI_NODE_COUNT > 1) {
         for (nodeID = 0; nodeID < MPI_NODE_COUNT-1; nodeID += 1) {
             if (Abs(MPI_NODE_STATE[nodeID]) == 0) {
-                MPISend (nodeID, three_LF);
+                MPISend (nodeID+1, three_LF);
+                fprintf (stdout, "\n[SENT TO NODE ", nodeID, "]\n");
                 MPI_NODE_STATE [nodeID] = thisBranchName;
                 break;
             }   
         }
         if (nodeID == MPI_NODE_COUNT-1) {
-            processABranch ("", 1);
+            processABranch (thisBranchName, 1);
         }
     } else {
         Optimize (localBranchRes, three_LF);
@@ -214,10 +221,14 @@ for (k = 0; k < totalBranchCount; k = k+1) {
     }
 }
 
+
 leftOver = 0;
 for (nodeID = 0; nodeID < MPI_NODE_COUNT-1; nodeID += 1) {
     leftOver += Abs(MPI_NODE_STATE[nodeID])>0;
 }
+
+//fprintf (stdout, MPI_NODE_STATE, "\n", leftOver, "\n");
+
 
 for (nodeID = 0; nodeID < leftOver; nodeID += 1) {
     processABranch ("", 0);
@@ -280,13 +291,15 @@ function processABranch (thisBranchName, doSend) {
     if (MPI_NODE_COUNT > 1) {
         MPIReceive (-1,fromNode,resStr);
 	    prevBranch = MPI_NODE_STATE[fromNode-1];
+        fprintf (stdout, "\n[RECEIVED " + prevBranch +" FROM NODE ", (fromNode-1), "]\n");
         if (doSend) {
             MPISend (fromNode, three_LF);
-            MPI_NODE_STATE [fromNode-1] = prevBranch;
-            thisBranchName = prevBranch;
+            MPI_NODE_STATE [fromNode-1] = thisBranchName;
+            fprintf (stdout, "\n[SENT " + thisBranchName +" TO NODE ", (fromNode-1), "]\n");
         } else {
-             MPI_NODE_STATE [fromNode-1] = "";
+            MPI_NODE_STATE [fromNode-1] = "";
         }
+        thisBranchName = prevBranch;
         ExecuteCommands (resStr);
         
         three_LF_MLE_VALUES ["restoreLF"][""];
