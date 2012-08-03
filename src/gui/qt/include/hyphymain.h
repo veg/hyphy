@@ -84,7 +84,6 @@ protected:
 
 signals:
     void handled_user_input ();
-
     
 private slots:
     //File Menu
@@ -101,14 +100,22 @@ private slots:
     void hy_results();
     void hy_rerunlastanalysis();
 
+    //View Menu
+    void toggle_status_bar();
+
     //Window Menu
     void hy_minimize();
     void hy_consolewindow();
     void hy_objectinspector();
     void hy_cyclethroughwindows();
 
+    //Status Timer
+    void    update_timer_display();
 
 private:
+    QTimer *timer;
+    QElapsedTimer  *elapsed_timer;
+
     //File Actions
     QAction *_hyConsoleOpenAction;
     QAction *_hyConsoleSaveAction;
@@ -123,6 +130,9 @@ private:
     QAction *_hyConsoleFindAction;
     QAction *_hyConsoleSelectAllAction;
     QAction *_hyConsoleClearWindowAction;
+
+    //View Actions
+    QAction *_hyConsoleHideStatusBarAction;
 
     //Analysis Actions
     QAction *_hyConsoleCancelExecutionAction;
@@ -140,7 +150,8 @@ private:
     QAction *_hyConsoleCycleThroughWindowsAction;
 
     QMenu   *_hyConsoleMenu;
-    void initializeMenuBar();
+    void    initializeMenuBar();
+    void    initializeStatusBar();
     bool     waitingOnStringFromConsole;
     _String  userData;
 };

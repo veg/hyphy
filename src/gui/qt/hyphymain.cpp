@@ -59,6 +59,7 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     waitingOnStringFromConsole = false;
     initialText();
     initializeMenuBar();
+    initializeStatusBar();
     installEventFilter(this);
 }
 
@@ -159,6 +160,17 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addAction(_hyConsoleSelectAllAction);
     _hyConsoleMenu->addAction(_hyConsoleClearWindowAction);
 
+
+    //Create View Menu Options
+    _hyConsoleHideStatusBarAction = new QAction(tr("&Status Bar"),this);
+
+    //Connect View Menu Events to appropriate slots
+    connect(_hyConsoleHideStatusBarAction, SIGNAL(triggered()), this, SLOT(toggle_status_bar()));
+
+    //Add the View Menu to the Menu Bar
+    _hyConsoleMenu = menuBar()->addMenu(tr("&View"));
+    _hyConsoleMenu->addAction(_hyConsoleHideStatusBarAction);
+
     //Create Analysis Menu Options
     _hyConsoleCancelExecutionAction = new QAction(tr("&Cancel Execution"),this);
     _hyConsoleCancelExecutionAction->setStatusTip("Cancels Execution of Analysis Currently Running");
@@ -215,6 +227,22 @@ void HyphyMain::initializeMenuBar() {
 
 }
 
+void HyphyMain::initializeStatusBar() {
+    //Hide all status elements
+    //progressBar->hide();
+    //statusLine->hide();
+    //timerDisplay->hide();
+
+    //Initialize progressBar to 0
+    progressBar->setValue(0);
+
+    //Timer stuff
+    this->elapsed_timer = new QElapsedTimer();
+    this->timer = new QTimer(this);
+    connect(this->timer, SIGNAL(timeout()), this, SLOT(update_time_display()));
+    //this->StartBarTimer();
+}
+
 //File Menu Options
 void HyphyMain::hy_open() {
     if (OpenBatchFile (true)) {
@@ -227,6 +255,13 @@ void HyphyMain::hy_save() {
 }
 
 void HyphyMain::quit() {
+}
+
+//View Menu Options
+void HyphyMain::toggle_status_bar() {
+    this->progressBar->isHidden() ? this->progressBar->show() : this->progressBar->hide();
+    this->statusLine->isHidden() ? this->statusLine->show() : this->statusLine->hide();
+    this->timerDisplay->isHidden() ? this->timerDisplay->show() : this->timerDisplay->hide();
 }
 
 //Analysis Menu
@@ -281,8 +316,7 @@ void HyphyMain::DisplayPrompt     (void) {
     console->prompt();
 }
 
-bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
-{
+bool HyphyMain::eventFilter(QObject *obj, QEvent *event) {
     if (event->type() == BufferToStringType) {
         AppendTextToEnd (((QBufferToConsoleEvent*)event)->buffer(), false, &((QBufferToConsoleEvent*)event)->color());
         return true;
@@ -291,18 +325,31 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
     return QMainWindow::eventFilter(obj,event);
 }
 
+//Status line specific
 void HyphyMain::StartBarTimer() {
+      this->timer->start(1000);
+      this->elapsed_timer->start();
 }
 
 void HyphyMain:: StopBarTimer() {
+      this->timer->stop();
 }
 
-void HyphyMain::SetStatusLine     (_String) {
+void HyphyMain::update_timer_display() {
+    //Need to format the elapsed time
+    this->timerDisplay->display((int)(elapsed_timer->elapsed()/1000));
 }
+
+void HyphyMain::SetStatusLine(_String) {
+
+}
+
 void HyphyMain::SetStatusLine     (_String, _String, _String, long l){
+
 }
 
 void HyphyMain::SetStatusLine     (_String, _String, _String){
+
 }
 
 void HyphyMain::SetStatusLine     (_String, _String, _String, long, char){
@@ -334,5 +381,3 @@ void HyphyMain::handle_user_input(const QString data) {
         console->prompt();
     }
 }
-
-
