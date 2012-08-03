@@ -472,7 +472,7 @@ for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 
 /*-------------- INDEPENDENT DISTRIBUTIONS  ------------------*/
 
-sop = OPTIMIZATION_PRECISION;
+sop = Max(OPTIMIZATION_PRECISION,0.001);
 
 fprintf (stdout, "Running simpler distribution approximations to ensure good convergence...\n");
 

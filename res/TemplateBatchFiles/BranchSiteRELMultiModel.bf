@@ -55,12 +55,6 @@ fprintf 					  (stdout, "[BS-REL PHASE 0] Fitting the local MG94 (no site-to-sit
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
 Optimize					  (res_base,base_LF);
 
-AC := AC__;
-AT := AT__;
-CG := CG__;
-CT := CT__;
-GT := GT__;
-
 writeTheLF (".mglocal.fit", "base_LF");
 
 
@@ -188,6 +182,11 @@ LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
 branchValues = {};
 
+if (MPI_NODE_COUNT > 1) {
+    MPI_NODE_STATE = {MPI_NODE_COUNT-1,0};
+    MPI_NODE_STATE[0] = "";
+}
+
 for (k = 0; k < totalBranchCount; k = k+1) {
     fprintf (stdout, "\n[BS-REL PHASE 2. Branch '", bNames[k], "']\n");
     thisBranchName = bNames[k];
@@ -197,23 +196,31 @@ for (k = 0; k < totalBranchCount; k = k+1) {
     }
     
     unConstrainABranch (bNames[k]);
-    Optimize (localBranchRes, three_LF);
     
-    
-    writeTheLF (".`thisBranchName`.fit", "three_LF");
+    if (MPI_NODE_COUNT > 1) {
+        for (nodeID = 0; nodeID < MPI_NODE_COUNT-1; nodeID += 1) {
+            if (Abs(MPI_NODE_STATE[nodeID]) == 0) {
+                MPISend (nodeID, three_LF);
+                MPI_NODE_STATE [nodeID] = thisBranchName;
+                break;
+            }   
+        }
+        if (nodeID == MPI_NODE_COUNT-1) {
+            processABranch ("", 1);
+        }
+    } else {
+        Optimize (localBranchRes, three_LF);
+        processABranch (thisBranchName,0);
+    }
+}
 
-    fprintf (stdout, "\nModel fit:");   
-    BIC_scores [thisBranchName] = BIC (localBranchRes[1][0], localBranchRes[1][1]+baseParameters, sample_size);
-    BranchLengthEstimates [thisBranchName] = getBranchLengths ("mixtureTree", 0);
-    fprintf     (csvFilePath, "\nGlobal+",thisBranchName,"\t", localBranchRes[1][0],"\t", localBranchRes[1][1]+baseParameters, "\t", BIC_scores [thisBranchName], "\t", PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates [thisBranchName]));
-    fprintf (stdout, "\nLocal branch omega distribution: ");
-    ExecuteCommands ("reportOmegaDistro(mixtureTree.`thisBranchName`.omega1,mixtureTree.`thisBranchName`.omega2,mixtureTree.`thisBranchName`.omega3, mixtureTree.`thisBranchName`.Paux1, mixtureTree.`thisBranchName`.Paux2)");
-    fprintf (stdout, "Global omega distribution on the rest of the branches: ");
-    thisBranchName = bNames[k];
-    reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
-    stashBranchValues (thisBranchName, "branchValues");
-    pv = 1-CChi2 (2*(localBranchRes[1][0]-res_three_LF_global[1][0]),5);
-    fprintf (stdout, "\nLRT p-value for branch deviation from the global pattern = ", pv, "\n");
+leftOver = 0;
+for (nodeID = 0; nodeID < MPI_NODE_COUNT-1; nodeID += 1) {
+    leftOver += Abs(MPI_NODE_STATE[nodeID])>0;
+}
+
+for (nodeID = 0; nodeID < leftOver; nodeID += 1) {
+    processABranch ("", 0);
 }
 
 branchValues ["restoreLF"][""];
@@ -267,6 +274,40 @@ for (k = 0; k < Abs (BranchLengthEstimates); k+=1) {
 }
 
 fprintf (stdout,  PostOrderAVL2StringDistances(mixTreeAVL,reweighted_branch_lengths), "\n");
+
+//------------------------------------------------------------------------------------------------------------------------
+function processABranch (thisBranchName, doSend) {
+    if (MPI_NODE_COUNT > 1) {
+        MPIReceive (-1,fromNode,resStr);
+	    prevBranch = MPI_NODE_STATE[fromNode-1];
+        if (doSend) {
+            MPISend (fromNode, three_LF);
+            MPI_NODE_STATE [fromNode-1] = prevBranch;
+            thisBranchName = prevBranch;
+        } else {
+             MPI_NODE_STATE [fromNode-1] = "";
+        }
+        ExecuteCommands (resStr);
+        
+        three_LF_MLE_VALUES ["restoreLF"][""];
+        localBranchRes = three_LF_MLES;
+    }
+    writeTheLF (".`thisBranchName`.fit", "three_LF");
+    fprintf (stdout, "\nModel fit:");   
+    BIC_scores [thisBranchName] = BIC (localBranchRes[1][0], localBranchRes[1][1]+baseParameters, sample_size);
+    BranchLengthEstimates [thisBranchName] = getBranchLengths ("mixtureTree", 0);
+    fprintf     (csvFilePath, "\nGlobal+",thisBranchName,"\t", localBranchRes[1][0],"\t", localBranchRes[1][1]+baseParameters, "\t", BIC_scores [thisBranchName], "\t", PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates [thisBranchName]));
+    fprintf (stdout, "\nLocal branch omega distribution: ");
+    ExecuteCommands ("reportOmegaDistro(mixtureTree.`thisBranchName`.omega1,mixtureTree.`thisBranchName`.omega2,mixtureTree.`thisBranchName`.omega3, mixtureTree.`thisBranchName`.Paux1, mixtureTree.`thisBranchName`.Paux2)");
+    fprintf (stdout, "Global omega distribution on the rest of the branches: ");
+    thisBranchName = bNames[k];
+    reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
+    stashBranchValues (thisBranchName, "branchValues");
+    pv = 1-CChi2 (2*(localBranchRes[1][0]-res_three_LF_global[1][0]),5);
+    fprintf (stdout, "\nLRT p-value for branch deviation from the global pattern = ", pv, "\n");
+    return 0;
+
+}
 
 //------------------------------------------------------------------------------------------------------------------------
 function writeTheLF (fileNameExt,lfID) {
