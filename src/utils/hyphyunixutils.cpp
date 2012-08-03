@@ -137,7 +137,7 @@ _String*    StringFromConsole   (bool)
 
 //__________________________________________________________________________________
 
-void    StringToConsole (_String & s)
+void    StringToConsole (_String & s,  _SimpleList *)
 {
     BufferToConsole ((const char*)s.sData);
 }
@@ -145,7 +145,7 @@ void    StringToConsole (_String & s)
 
 //__________________________________________________________________________________
 
-void    BufferToConsole (const char* s)
+void    BufferToConsole (const char* s, _SimpleList *)
 {
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0)
