@@ -92,12 +92,13 @@ void SetStatusLineUser(_String s)
 
 }
 
-void    SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c) {
-
+void SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c) {
+    _hyPrimaryConsoleWindow->SetStatusLine(arg,arg2,arg3,l,c);
 }
 
 void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
 {
+    _hyPrimaryConsoleWindow->SetStatusBarValue(l,max,rate);
 }
 
 bool Get_a_URL (_String& urls, _String* fileName)

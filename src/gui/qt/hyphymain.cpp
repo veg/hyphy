@@ -165,7 +165,7 @@ void HyphyMain::initializeMenuBar() {
 
 
     //Create View Menu Options
-    _hyConsoleHideStatusBarAction = new QAction(trUtf8("&\U00002713 Status Bar"),this);
+    _hyConsoleHideStatusBarAction = new QAction(trUtf8("&Hide Status Bar"),this);
 
     //Connect View Menu Events to appropriate slots
     connect(_hyConsoleHideStatusBarAction, SIGNAL(triggered()), this, SLOT(toggle_status_bar()));
@@ -241,7 +241,6 @@ void HyphyMain::initializeStatusBar() {
     this->_elapsed_timer = new QElapsedTimer();
     this->_timer = new QTimer(this);
     connect(this->_timer, SIGNAL(timeout()), this, SLOT(update_timer_display()));
-    //this->StartBarTimer();
 }
 
 //File Menu Options
@@ -263,18 +262,26 @@ void HyphyMain::toggle_status_bar() {
 
     //Use of bool just in case a widget gets out of sync
     if(this->_statusBarVisible) {
-        this->_hyConsoleHideStatusBarAction->setText("&Status Bar");
+        this->_hyConsoleHideStatusBarAction->setText("&Show Status Bar");
+        this->filenameLabel->hide();
+        this->currentFilenameLabel->hide();
+        this->statusLabel->hide();
+        this->currentStatusLabel->hide();
         this->progressBar->hide();
-        this->statusLine->hide();
         this->timerDisplay->hide();
+        this->statusVline->hide();
     }
 
     //Display Check Mark next to Status Bar menu option if visible
     else {
-        this->_hyConsoleHideStatusBarAction->setText(trUtf8("&\U00002713 Status Bar"));
+        this->_hyConsoleHideStatusBarAction->setText(trUtf8("&Hide Status Bar"));
+        this->filenameLabel->show();
+        this->currentFilenameLabel->show();
+        this->statusLabel->show();
+        this->currentStatusLabel->show();
         this->progressBar->show();
-        this->statusLine->show();
         this->timerDisplay->show();
+        this->statusVline->show();
     }
 
     this->_statusBarVisible = !this->_statusBarVisible;
@@ -294,7 +301,6 @@ void HyphyMain::hy_standardanalysis() {
     std<<2;
     std<<1;
 
-    qDebug() << availableTemplateFiles.lLength;
     _HY_HierarchicalSelector *hs = new _HY_HierarchicalSelector(this, availableTemplateFiles, std, vc, "Standard Analyses", &selections, 1, true);
     hs->setWindowModality(Qt::WindowModal);
     hs->exec(); 
@@ -353,26 +359,47 @@ void HyphyMain:: StopBarTimer() {
 }
 
 void HyphyMain::update_timer_display() {
-    //Need to format the elapsed time
-    this->timerDisplay->display((int)(_elapsed_timer->elapsed()/1000));
-}
 
-void HyphyMain::SetStatusLine(_String) {
+    //Need to format the elapsed time :/
+    const int elapsed = (int)(_elapsed_timer->elapsed()/1000);
+    const int mins = elapsed / 60;
+    const int secs = elapsed % 60;
 
-}
+    QString minStr = (mins >= 10) ? QString::number(mins) : QString::fromLatin1("0") + QString::number(mins);
+    QString secStr = (secs >= 10) ? QString::number(secs) : QString::fromLatin1("0") + QString::number(secs);
 
-void HyphyMain::SetStatusLine     (_String, _String, _String, long l){
-
-}
-
-void HyphyMain::SetStatusLine     (_String, _String, _String){
+    this->timerDisplay->display(minStr + QString::fromLatin1(":") + secStr);
 
 }
 
-void HyphyMain::SetStatusLine     (_String, _String, _String, long, char){
+void HyphyMain::SetStatusLine(_String updatedStatus) {
+    this->currentStatusLabel->setText(updatedStatus.getStr());
 }
 
-void HyphyMain::SetStatusBarValue (long, _Parameter, _Parameter){
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer){
+    this->currentFilenameLabel->setText(fn.getStr());
+    this->currentStatusLabel->setText(updatedStatus.getStr());
+    //this->timerDisplay->setText(updatedStatus.getStr());
+}
+
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
+    this->currentFilenameLabel->setText(fn.getStr());
+    this->currentStatusLabel->setText(updatedStatus.getStr());
+    //this->timerDisplay->setText(updatedStatus.getStr());
+    this->progressBar->setValue(percentDone);
+}
+
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone, char c){
+    //TODO: implement fully
+    this->currentFilenameLabel->setText(fn.getStr());
+    this->currentStatusLabel->setText(updatedStatus.getStr());
+    //this->timerDisplay->setText(updatedStatus.getStr());
+    this->progressBar->setValue(percentDone);
+}
+
+void HyphyMain::SetStatusBarValue (long percentDone, _Parameter max, _Parameter rate) {
+    //Need to look up what max and rate is
+    this->progressBar->setValue(percentDone);
 }
 
 void HyphyMain::AddStringToRecentMenu (const _String, const _String) {

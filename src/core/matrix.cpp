@@ -51,10 +51,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if !defined __UNIX__ && !defined __HEADLESS__
 #include "HYConsoleWindow.h"
 #endif
-
-#if defined __HYPHYQT__
-    #include "hyphymain.h"
-#endif 
 /*SLKP*/
 
 //#include "profiler.h"
@@ -3696,12 +3692,6 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 #else
 #pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
 #endif
-
-// OpenMP version 3 changes whether things are predetermined shared, so this has to happen
-#if _OPENMP < 200805
-#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1) num_threads (nt)
-#else
-#pragma omp parallel for default(none) shared(r, secondArg, storage) schedule(static) if (nt>1) num_threads (nt)
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
@@ -8786,7 +8776,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
             _String      _HYMultinomialStatus       ("Generating multinomial samples");
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__
             TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
 #if !defined __HEADLESS__
             SetStatusLine     (empty,_HYMultinomialStatus, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
@@ -8808,7 +8798,7 @@ _PMathObj   _Matrix::MultinomialSample (_Constant *replicates)
                 }
 
                 raw_result->theData[index] += 1.;
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__
                 if ((it % 1000 == 0) && (temp=TimerDifferenceFunction(true))>1.0) { // time to update
                     seconds_accumulator += temp;
 
