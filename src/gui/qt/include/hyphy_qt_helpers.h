@@ -64,7 +64,7 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt);
 
 
 
-void SetStatusLine(_String arg);
-void SetStatusLineUser(_String s);
-void SetStatusBarValue (long l, _Parameter max, _Parameter rate);
-bool Get_a_URL (_String& urls, _String* fileName);
+
+void    SetStatusLineUser(_String s);
+void    SetStatusBarValue (long l, _Parameter max, _Parameter rate);
+bool    Get_a_URL (_String& urls, _String* fileName);

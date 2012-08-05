@@ -59,8 +59,8 @@ extern bool handleGUI(bool);
 #include "scfg.h"
 #endif
 
-#if !defined __UNIX__ || defined __HEADLESS__
-    #ifndef __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+    #if !defined __HEADLESS__ && !defined __HYPHYQT__
         #include     "HYTreePanel.h"
         extern       _HYTreePanel*  feedbackTreePanel;
     #endif
@@ -273,7 +273,7 @@ node<long>* DepthWiseStepTraverserLevel  (long&, node<long>* root);
 _Parameter  myLog (_Parameter);
 
 
-#ifdef      __UNIX__
+#if defined  __UNIX__ && !defined __HYPHYQT__
 
 void        UpdateOptimizationStatus (_Parameter, long, char, bool, _String * fileName = nil);
 
@@ -406,7 +406,7 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
     long         alterIndex = 0;
 
     if      (lf->HasComputingTemplate()) {
-        for (long k=0; k<lf->GetIndependentVars().lLength; k++)
+        for (unsigned long k=0; k<lf->GetIndependentVars().lLength; k++)
             if (!LocateVar (lf->GetIndependentVars().lData[k])->IsGlobal()) {
                 alterIndex = k;
                 break;
@@ -511,7 +511,7 @@ _LikelihoodFunction::_LikelihoodFunction (_String& s, _VariableContainer* p)
     Init     ();
     _List    tripletsRaw (&s,';'),
              tripletsSplit;
-    for (long k = 0; k < tripletsRaw.lLength; k++) {
+    for (unsigned long k = 0; k < tripletsRaw.lLength; k++) {
         _List thisTriplet (tripletsRaw(k),',');
         tripletsSplit << thisTriplet;
     }
@@ -3830,7 +3830,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     //RankVariables   ();
     VerbosityLevel  ();
 
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0) {
 #endif
@@ -3966,7 +3966,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     _Matrix variableValues(indexInd.lLength,1,false,true);
     computationalResults.Clear();
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     SetStatusBarValue (0,maxSoFar,0);
 #endif
 
@@ -3976,7 +3976,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 #endif
 
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
         checkParameter (nicetyMacLevel,nicetyLevel,1);
         nicetyLevel  = nicetyLevel>4?4:nicetyLevel;
         if ((fnDim>=16)&&(nicetyLevel<2)) {
@@ -3987,12 +3987,14 @@ _Matrix*        _LikelihoodFunction::Optimize ()
         }
 
         divideBy     = nicetyLevel>0.01?10000000./(long)(exp(log(10.0)*nicetyLevel)):1000000;
-#if defined __MAC__ || defined __WINDOZE__
+        
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
         DecideOnDivideBy (this);
 #endif
+
 #endif
 
-#ifdef __UNIX__
+#ifdef __UNIX__ && ! defined __HYPHYQT__
         Compute();
 #endif
 
@@ -4535,7 +4537,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                     BufferToConsole (buffer);
                 }
             }
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
             else if (verbosityLevel==1) {
                 UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
             }
@@ -4756,7 +4758,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                     BufferToConsole (buffer);
                     StringToConsole (*LocateVar(indexInd.lData[j])->GetName());
                 }
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
                 else if (verbosityLevel==1) {
                     UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
                 }
@@ -4834,7 +4836,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                     stayPut++;
                     percentDone+=1.0;
                 }
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
                 SetStatusBarValue (percentDone,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
 #else
                 if (verbosityLevel==1) {
@@ -4999,7 +5001,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 #endif
 
 
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
     if (verbosityLevel==1) {
         UpdateOptimizationStatus (0,0,2,true,progressFileString);
     }
@@ -5082,7 +5084,7 @@ void _LikelihoodFunction::GetAllIndependent (_Matrix & storage)
 {
     storage.Clear();
     CreateMatrix (&storage, indexInd.lLength,1,false,true, false);
-    for (long i=0; i<indexInd.lLength; i++) {
+    for (unsigned long i=0; i<indexInd.lLength; i++) {
         storage.theData[i]=GetIthIndependent(i);
     }
 
@@ -5470,7 +5472,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             }
         }
 
-#ifndef __UNIX__
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
         _Parameter totalCount    = 2*parameterList->lLength;
 
         long       finishedCount = 0;
@@ -5664,7 +5666,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
 
 
 
-#ifndef __UNIX__
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
     _Parameter totalCount    = 2*parameterList->lLength;
 
     long       finishedCount = 0;
@@ -7753,7 +7755,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
         */
 
         // this is to update the GUI.
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
         if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
             yieldCPUTime();
         }
@@ -7877,7 +7879,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
             }
 
             //printf ("%d %d\n",likeFuncEvalCallCount, matrixExpCount);
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
             if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
                 #pragma omp critical
                 yieldCPUTime();
@@ -9398,7 +9400,7 @@ void    StateCounterResultHandler (_Formula& fla, _SimpleList* dSites, long & do
             return;
         }
     }
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
     if (VerbosityLevel()==1) {
         UpdateOptimizationStatus (doneSites, (doneSites*100.)/totalUniqueSites, 1, false);
     }
@@ -9494,7 +9496,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback)
 #ifdef __MAC__
         handleGUI(true);
 #endif
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
         if (VerbosityLevel()==1) {
             UpdateOptimizationStatus (0,0,0,true);
         }
@@ -9562,7 +9564,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback)
     handleGUI(true);
 #endif
 
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
     if (VerbosityLevel()==1) {
         UpdateOptimizationStatus (0, 0, 2, false);
     }

@@ -2765,7 +2765,7 @@ void      _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
             }
         }
     }
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     if (!dest) {
         yieldCPUTime();
     }

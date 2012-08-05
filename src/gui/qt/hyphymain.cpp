@@ -70,6 +70,7 @@ void HyphyMain::initialText() {
     console->setLineWrapMode(QTextEdit::FixedColumnWidth);
     console->setWordWrapMode(QTextOption::WordWrap);
     console->setLineWrapColumnOrWidth(80);
+    console->setLineWrapMode(QTextEdit::WidgetWidth);
 
     //HyPhy version
     _String version = GetVersionString();

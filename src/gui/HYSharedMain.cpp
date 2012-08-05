@@ -113,7 +113,7 @@ bool    ExecuteBatchFile (void)
     _hyPrimaryConsoleWindow->SetStatusLine           (justTheName,"Loading","00:00:00", -1);
     _hyPrimaryConsoleWindow->StartBarTimer           ();
     
-    _String info = _String("Running '") & *argFileName & "'";
+    _String info = _String("Running '") & *argFileName & "'\n";
     StringToConsole(info);
 
     
