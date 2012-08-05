@@ -113,8 +113,9 @@ private slots:
     void    update_timer_display();
 
 private:
-    QTimer *timer;
-    QElapsedTimer  *elapsed_timer;
+    QTimer *_timer;
+    QElapsedTimer  *_elapsed_timer;
+    bool _statusBarVisible;
 
     //File Actions
     QAction *_hyConsoleOpenAction;

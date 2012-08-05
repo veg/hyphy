@@ -61,6 +61,8 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     initializeMenuBar();
     initializeStatusBar();
     installEventFilter(this);
+
+    this->_statusBarVisible = true;
 }
 
 void HyphyMain::initialText() {
@@ -162,7 +164,7 @@ void HyphyMain::initializeMenuBar() {
 
 
     //Create View Menu Options
-    _hyConsoleHideStatusBarAction = new QAction(tr("&Status Bar"),this);
+    _hyConsoleHideStatusBarAction = new QAction(trUtf8("&\U00002713 Status Bar"),this);
 
     //Connect View Menu Events to appropriate slots
     connect(_hyConsoleHideStatusBarAction, SIGNAL(triggered()), this, SLOT(toggle_status_bar()));
@@ -223,23 +225,21 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addAction(_hyConsoleObjectInspectorAction);
     _hyConsoleMenu->addSeparator();
     _hyConsoleMenu->addAction(_hyConsoleCycleThroughWindowsAction);
-
-
 }
 
 void HyphyMain::initializeStatusBar() {
-    //Hide all status elements
-    //progressBar->hide();
-    //statusLine->hide();
-    //timerDisplay->hide();
+    //Status elements
+    //progressBar;
+    //statusLine;
+    //timerDisplay;
 
     //Initialize progressBar to 0
     progressBar->setValue(0);
 
     //Timer stuff
-    this->elapsed_timer = new QElapsedTimer();
-    this->timer = new QTimer(this);
-    connect(this->timer, SIGNAL(timeout()), this, SLOT(update_time_display()));
+    this->_elapsed_timer = new QElapsedTimer();
+    this->_timer = new QTimer(this);
+    connect(this->_timer, SIGNAL(timeout()), this, SLOT(update_timer_display()));
     //this->StartBarTimer();
 }
 
@@ -259,9 +259,24 @@ void HyphyMain::quit() {
 
 //View Menu Options
 void HyphyMain::toggle_status_bar() {
-    this->progressBar->isHidden() ? this->progressBar->show() : this->progressBar->hide();
-    this->statusLine->isHidden() ? this->statusLine->show() : this->statusLine->hide();
-    this->timerDisplay->isHidden() ? this->timerDisplay->show() : this->timerDisplay->hide();
+
+    //Use of bool just in case a widget gets out of sync
+    if(this->_statusBarVisible) {
+        this->_hyConsoleHideStatusBarAction->setText("&Status Bar");
+        this->progressBar->hide();
+        this->statusLine->hide();
+        this->timerDisplay->hide();
+    }
+
+    //Display Check Mark next to Status Bar menu option if visible
+    else {
+        this->_hyConsoleHideStatusBarAction->setText(trUtf8("&\U00002713 Status Bar"));
+        this->progressBar->show();
+        this->statusLine->show();
+        this->timerDisplay->show();
+    }
+
+    this->_statusBarVisible = !this->_statusBarVisible;
 }
 
 //Analysis Menu
@@ -327,17 +342,17 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event) {
 
 //Status line specific
 void HyphyMain::StartBarTimer() {
-      this->timer->start(1000);
-      this->elapsed_timer->start();
+      this->_timer->start(1000);
+      this->_elapsed_timer->start();
 }
 
 void HyphyMain:: StopBarTimer() {
-      this->timer->stop();
+      this->_timer->stop();
 }
 
 void HyphyMain::update_timer_display() {
     //Need to format the elapsed time
-    this->timerDisplay->display((int)(elapsed_timer->elapsed()/1000));
+    this->timerDisplay->display((int)(_elapsed_timer->elapsed()/1000));
 }
 
 void HyphyMain::SetStatusLine(_String) {
