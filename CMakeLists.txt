@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 2.8.1)
+
+#-------------------------------------------------------------------------------
+# set gnu-compatible compiler for OMP, must be set BEFORE project() invoke 
+#-------------------------------------------------------------------------------
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
+
 project(HyPhy)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
@@ -9,6 +17,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
+
 
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
@@ -50,6 +59,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     else(${GCC45})
         set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     endif(${GCC45})
+=======
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+>>>>>>> 3cf3521ecabfd5a35089d91c862a4f35c09f4237
 
     if(${GCC46})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
@@ -76,9 +88,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+if(NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
+endif(NOT ${OPENMP_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -87,6 +99,7 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
+
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -161,7 +174,6 @@ set_property(
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
-#add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -225,6 +237,23 @@ install(
     OPTIONAL
 )
 add_custom_target(MP2 DEPENDS HYPHYMP)
+
+
+#-------------------------------------------------------------------------------
+# hyphy sp target
+#-------------------------------------------------------------------------------
+add_executable(
+    HYPHYSP
+    EXCLUDE_FROM_ALL
+    ${SRC_COMMON} ${SRC_UNIXMAIN}
+)
+target_link_libraries(HYPHYSP ${DEFAULT_LIBRARIES})
+install(
+    TARGETS HYPHYSP
+    RUNTIME DESTINATION bin
+    OPTIONAL
+)
+add_custom_target(SP DEPENDS HYPHYSP)
 
 
 #-------------------------------------------------------------------------------
@@ -465,7 +494,7 @@ endif((${QT4_FOUND}))
 #-------------------------------------------------------------------------------
 if(UNIX)
     set_property(
-        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG
+        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG HYPHYSP
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
@@ -476,13 +505,20 @@ set_property(
 )
 
 set_property(
-    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG
+    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG HYPHYSP
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
 set_property(
     TARGET HYPHYDEBUG HYPHYGTEST
     APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
+)
+
+set_target_properties(
+    HYPHYSP
+    PROPERTIES
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+    LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
 )
 
 set_target_properties(
@@ -497,11 +533,6 @@ set_target_properties(
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
 if(APPLE)
-    #---------------------------------------------------------------------------
-    # set this or blow up
-    #---------------------------------------------------------------------------
-    # set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/")
-
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------

@@ -294,6 +294,7 @@ void HyphyMain::hy_standardanalysis() {
     std<<2;
     std<<1;
 
+    qDebug() << availableTemplateFiles.lLength;
     _HY_HierarchicalSelector *hs = new _HY_HierarchicalSelector(this, availableTemplateFiles, std, vc, "Standard Analyses", &selections, 1, true);
     hs->setWindowModality(Qt::WindowModal);
     hs->exec(); 
