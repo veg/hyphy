@@ -44,11 +44,16 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <zorder>filenameLabel</zorder>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="filenameLabel">
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="text">
          <string>File</string>
         </property>
@@ -67,6 +72,12 @@
           <horstretch>80</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
         </property>
         <property name="frameShape">
          <enum>QFrame::Panel</enum>
@@ -103,6 +114,12 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="text">
          <string>Status</string>
         </property>
@@ -118,6 +135,12 @@
           <horstretch>80</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
         </property>
         <property name="frameShape">
          <enum>QFrame::Panel</enum>
@@ -141,6 +164,12 @@
       </item>
       <item>
        <widget class="QProgressBar" name="progressBar">
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="value">
          <number>24</number>
         </property>
@@ -148,6 +177,12 @@
       </item>
       <item>
        <widget class="QLCDNumber" name="timerDisplay">
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="smallDecimalPoint">
          <bool>false</bool>
         </property>

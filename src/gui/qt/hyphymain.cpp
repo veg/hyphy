@@ -39,6 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <QtGui>
 #include <QDebug>
+#include <QDir>
 #include "hyphymain.h"
 
 //For OSX number of cpus
@@ -49,10 +50,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "qterminal.h"
 #include "hyphyhierarchicalselector.h"
+#include "hyphymessageoutput.h"
 #include "hyphyevents.h"
 #include "hyphy_qt_helpers.h"
 
 #include "HYSharedMain.h"
+
+//QString messageFileName = "messages.log";
+extern _String messageFileName;
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
@@ -290,7 +295,13 @@ void HyphyMain::toggle_status_bar() {
 //Analysis Menu
 void HyphyMain::hy_cancelexecution(){}
 void HyphyMain::hy_suspendexecution(){}
-void HyphyMain::hy_viewlog(){}
+
+void HyphyMain::hy_viewlog(){
+    messageFileName = "messages.log";
+    QString path = QDir::currentPath() + '/' + messageFileName.getStr();
+    _HY_MessageOutput *mo = new _HY_MessageOutput(path,0,0);
+    mo->show();
+}
 
 void HyphyMain::hy_standardanalysis() {
 
