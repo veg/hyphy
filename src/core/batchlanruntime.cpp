@@ -168,19 +168,10 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
             DeleteObject (restrictor);
         } else {
         // BGM
-            #if not defined __AFYP_REWRITE_BGM__
-                _Matrix                * optRes;
-                #ifdef __AFYP_DEVELOPMENT__
-                    _SimpleList *   first_order = nil;
-                     optRes = (_Matrix *) lkf->CovarianceMatrix (first_order);
-                        
-                #else
-                    optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
-                #endif
-                    if (optRes) {
-                        result->SetValue(optRes,false);
-                    }
-             #endif            
+            _Matrix * optRes = (_Matrix*)lkf->CovarianceMatrix(nil);
+             if (optRes) {
+                result->SetValue(optRes,false);
+            }
         }
     } else {
         // OPTIMIZE
