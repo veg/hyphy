@@ -3994,7 +3994,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
 #endif
 
-#ifdef __UNIX__ && ! defined __HYPHYQT__
+#if defined __UNIX__ && ! defined __HYPHYQT__
         Compute();
 #endif
 

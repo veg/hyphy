@@ -75,7 +75,7 @@ public:
 
     virtual   BaseObj*      makeDynamic         (void);
 
-    bool            Execute             (_Stack&, _VariableContainer* = nil); //execute this operation
+    bool            Execute             (_Stack&, _VariableContainer* = nil, _String* errMsg = nil); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
     virtual   void          StackDepth          (long&);
 
@@ -137,6 +137,7 @@ public:
 
 protected:
 
+    bool        ReportOperationExecutionError ( _String, _String*);
 
     long        opCode;         // internal operation code
     long        numberOfTerms,  // 1 - unary, 2 - binary, etc

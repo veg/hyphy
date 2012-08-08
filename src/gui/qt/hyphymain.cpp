@@ -74,7 +74,6 @@ void HyphyMain::initialText() {
  
     // SW20120702
     // MPProcessors is deprecated as of OSX10.7, using sysctl
-    size_t size;
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #else
@@ -330,8 +329,11 @@ void HyphyMain::handle_user_input(const QString data) {
         userData = (_String)(char *)data.toAscii().data();
         emit handled_user_input();
     } else {
-        ExpressionCalculator((_String)(char *)data.toAscii().data());
-        console->newline();
+        if (data.length()) {
+        //printf ("Expression calculator");
+            ExpressionCalculator((_String)(char *)data.toAscii().data());
+        }
+        console->newline(true);
         console->prompt();
     }
 }

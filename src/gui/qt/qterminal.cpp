@@ -37,6 +37,15 @@ void QTerminal::changeDir(const QString & dir) {
     theDir = theDir.replace(QChar('/'), "\\");
 }
 
+void QTerminal::handleUserLineEntry (void) {
+    cmdHistory.push_back(cmdStr);
+    histLocation = -1;
+    emit userEnteredString(cmdStr);
+    cmdStr = "";
+    tempCmd = "";
+
+}
+
 void QTerminal::keyPressEvent(QKeyEvent * event) {
     int key = event->key();
 
@@ -164,17 +173,8 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     // now pass a char* copy of the input to the shell process
     if (key == Qt::Key_Return || key == Qt::Key_Enter) {
         moveCursor(QTextCursor::End);
- 
-        //Execute command string
-
         QTextEdit::keyPressEvent(event);
-        cmdHistory.push_back(cmdStr);
-        emit userEnteredString(cmdStr);
-        histLocation = -1;
-        cmdStr = "";
-        tempCmd = "";
-        //this->prompt();
-
+        handleUserLineEntry();
     } 
 
     else {
@@ -223,20 +223,20 @@ void QTerminal::insertFromMimeData(const QMimeData * source) {
     //setTextCursor(curCursorLoc);
     moveCursor(QTextCursor::End);
 
-    QString pastedText = source->text();
-    QStringList commands = pastedText.split("\n");
+    QString     pastedText = source->text();
+    bool        endsWithNL = pastedText.endsWith ('\n');
+    QStringList commands = pastedText.split('\n',QString::SkipEmptyParts);
 
-    foreach (const QString &str, commands) {
+    for (long item = 0; item < commands.count(); item ++) {
+        QString str = commands.at (item);
         insertPlainText(str);
-        insertPlainText("\n");
-        ExpressionCalculator((_String)(char *)str.toAscii().data());
-        cmdHistory.push_back(str);
-        histLocation = -1;
-        cmdStr = "";
-        tempCmd = "";
-        insertPlainText("\n");
-        prompt();
-     }
+        cmdStr += str;
+        if (endsWithNL || item < commands.count()-1) {
+            newline (true);
+            handleUserLineEntry();
+            cmdStr = "";
+        }
+    }
 
      moveCursor(QTextCursor::End);
 }

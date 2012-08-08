@@ -563,12 +563,6 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
  z :> expr                  | HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT    | index of the LHS
 
 
- -1     - valid formula - no variable assignment, e.g. x + y
- -3     - regular '=' with formula receptacle, e.g. matrix [a] = 1
- -4     = ":=" with formula receptacle, e.g. matrix [1] := x + y
- <-4        = ":=" with variable receptacle, e.g. z := x / y
- >=0        "=" with variable receptacle, e.g. z = x/y
-
 */
 
 {
