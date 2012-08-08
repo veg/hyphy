@@ -105,7 +105,7 @@ void HyphyMain::initializeMenuBar() {
     //Connect File Menu Events to appropriate slots
     connect(_hyConsoleOpenAction, SIGNAL(triggered()), this, SLOT(hy_open()));
     connect(_hyConsoleSaveAction, SIGNAL(triggered()), this, SLOT(hy_save()));
-    connect(_hyConsoleExitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+    connect(_hyConsoleExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
     //Add the File Menu to the Menu Bar
     _hyConsoleMenu = menuBar()->addMenu(tr("&File"));
@@ -213,6 +213,7 @@ void HyphyMain::initializeMenuBar() {
 
     console->setLineWrapMode(QTextEdit::WidgetWidth);
 
+    ReadSettings();
 }
 
 //File Menu Options
@@ -315,6 +316,11 @@ void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
 
 }
 
+void HyphyMain::closeEvent(QCloseEvent *event) {
+    WriteSettings();
+    QMainWindow::closeEvent (event);
+}
+
 void HyphyMain::setWaitingOnStringFromConsole (bool value) {
     if (value) {
         console->newline(true);
@@ -337,5 +343,23 @@ void HyphyMain::handle_user_input(const QString data) {
         console->prompt();
     }
 }
+
+void HyphyMain::ReadSettings (void) {
+    QSettings settings;
+    settings.beginGroup("ConsoleWindow");
+    restoreGeometry (settings.value("geometry").toByteArray());
+    restoreState (settings.value("windowState").toByteArray());
+    settings.endGroup();    
+}
+
+void HyphyMain::WriteSettings (void) {
+    QSettings settings;
+    settings.beginGroup("ConsoleWindow");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.endGroup();    
+    
+}
+
 
 

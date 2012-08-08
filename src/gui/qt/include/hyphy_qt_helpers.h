@@ -39,6 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include <QtCore>
 #include <QtGui>
 #include "defines.h"
 #include "batchlan.h"
@@ -68,3 +69,5 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt);
 void    SetStatusLineUser(_String s);
 void    SetStatusBarValue (long l, _Parameter max, _Parameter rate);
 bool    Get_a_URL (_String& urls, _String* fileName);
+
+void    DoApplicationSettings (void);

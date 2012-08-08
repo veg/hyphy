@@ -162,9 +162,13 @@ long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
     return -1;
 }
 
+//____________________________________________________________________________________________
+
 void yieldCPUTime (void) {
     handleGUI();
 }
+
+//____________________________________________________________________________________________
 
 bool handleGUI (bool checkForEvents) {
     if (!checkForEvents || QCoreApplication::hasPendingEvents()) {
@@ -173,4 +177,10 @@ bool handleGUI (bool checkForEvents) {
     return QCoreApplication::closingDown();
 }
 
+//____________________________________________________________________________________________
 
+void DoApplicationSettings (void) {
+    QCoreApplication::setOrganizationName("Viral Evolution Group");
+    QCoreApplication::setOrganizationDomain("www.hyphy.org");
+    QCoreApplication::setApplicationName("HyPhy");
+}

@@ -81,6 +81,7 @@ public:
 
 protected:
     bool eventFilter(QObject *obj, QEvent *ev);
+    virtual void closeEvent(QCloseEvent *);
 
 signals:
     void handled_user_input ();
@@ -141,6 +142,12 @@ private:
 
     QMenu   *_hyConsoleMenu;
     void initializeMenuBar();
+    
+    // preferences options
+    
+    void     ReadSettings  (void);
+    void     WriteSettings (void);
+    
     bool     waitingOnStringFromConsole;
     _String  userData;
 };
