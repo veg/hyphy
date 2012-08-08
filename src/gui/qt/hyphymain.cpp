@@ -336,7 +336,7 @@ void HyphyMain::handle_user_input(const QString data) {
         emit handled_user_input();
     } else {
         if (data.length()) {
-        //printf ("Expression calculator");
+            //printf ("Expression calculator %s\n", data.toAscii().data());
             ExpressionCalculator((_String)(char *)data.toAscii().data());
         }
         console->newline(true);

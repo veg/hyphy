@@ -235,6 +235,8 @@ void QTerminal::insertFromMimeData(const QMimeData * source) {
             newline (true);
             handleUserLineEntry();
             cmdStr = "";
+        } else {
+            inputCharCount = str.length();
         }
     }
 

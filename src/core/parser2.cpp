@@ -944,41 +944,38 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
         
             if (isVolatile) *isVolatile = true;
             
-            if (saveError == nil) {
-                int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
+            int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
 
-                if (j<0) {
-                    return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", saveError, s, i);
-                }
-
-                _String matrixDef   (s,i,j);
-
-                if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
-                    _AssociativeList *theList = new _AssociativeList ();
-                    if (!theList) {
-                        checkPointer (theList);
-                    }
-                    if (matrixDef.sLength > 2) {
-                        matrixDef.Trim (1,matrixDef.sLength-2);
-                        if (!theList->ParseStringRepresentation (matrixDef,saveError == nil, theParent)) {
-                            return HandleFormulaParsingError ("Poorly formed associative array construct ", saveError, s, i);
-                        }
-                    }
-
-                    levelData->AppendNewInstance (new _Operation (theList));
-                } else {
-                    _Matrix *theMatrix = new _Matrix (matrixDef,false,theParent);
-                    if (!theMatrix) {
-                        checkPointer (theMatrix);
-                    }
-                    levelData->AppendNewInstance (new _Operation (theMatrix));
-                }
-
-                i = j;
-                continue;
-            } else {
-                return HY_FORMULA_FAILED;
+            if (j<0) {
+                return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", saveError, s, i);
             }
+
+            _String matrixDef   (s,i,j);
+
+            if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
+                _AssociativeList *theList = new _AssociativeList ();
+                if (!theList) {
+                    checkPointer (theList);
+                }
+                if (matrixDef.sLength > 2) {
+                    matrixDef.Trim (1,matrixDef.sLength-2);
+                    if (!theList->ParseStringRepresentation (matrixDef,saveError == nil, theParent)) {
+                        return HandleFormulaParsingError ("Poorly formed associative array construct ", saveError, s, i);
+                    }
+                }
+
+                levelData->AppendNewInstance (new _Operation (theList));
+            } else {
+                _Matrix *theMatrix = new _Matrix (matrixDef,false,theParent);
+                if (!theMatrix) {
+                    checkPointer (theMatrix);
+                }
+                levelData->AppendNewInstance (new _Operation (theMatrix));
+            }
+
+            i = j;
+            continue;
+            
         }
 
         if (s.getChar(i) == '[') { // opening [
