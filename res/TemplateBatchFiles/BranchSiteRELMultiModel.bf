@@ -313,7 +313,6 @@ function processABranch (thisBranchName, doSend) {
     fprintf (stdout, "\nLocal branch omega distribution: ");
     ExecuteCommands ("reportOmegaDistro(mixtureTree.`thisBranchName`.omega1,mixtureTree.`thisBranchName`.omega2,mixtureTree.`thisBranchName`.omega3, mixtureTree.`thisBranchName`.Paux1, mixtureTree.`thisBranchName`.Paux2)");
     fprintf (stdout, "Global omega distribution on the rest of the branches: ");
-    thisBranchName = bNames[k];
     reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
     stashBranchValues (thisBranchName, "branchValues");
     pv = 1-CChi2 (2*(localBranchRes[1][0]-res_three_LF_global[1][0]),5);
