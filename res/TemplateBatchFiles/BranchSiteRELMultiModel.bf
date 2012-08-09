@@ -301,7 +301,6 @@ function processABranch (thisBranchName, doSend) {
         }
         thisBranchName = prevBranch;
         ExecuteCommands (resStr);
-        fprintf (stdout, resStr, "\n");
         three_LF_MLE_VALUES ["restoreLF"][""];
         localBranchRes = three_LF_MLES;
     }
