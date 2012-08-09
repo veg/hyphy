@@ -29,7 +29,7 @@ PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t", "omega3", "");
 
 global	                        omegaG1 = 0.2; omegaG1 :< 1;
 global	                        omegaG2 = 0.5; omegaG2 :< 1;
-global	                        omegaG3 = 2.0; omegaG3 :> 1;
+global	                        omegaG3 = 2.0;
 
 PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t", "omegaG1", "");
 PopulateModelMatrix			  ("MGMatrix2G",  nucCF, "t", "omegaG2", "");
@@ -127,7 +127,7 @@ mixTreeAVL                    = mixtureTreeG ^ 0;
 LikelihoodFunction three_LFG   = (dsf,mixtureTreeG);
 fprintf 					  (stdout, "[BS-REL PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
 
-for (k = 0; k < totalBranchCount; k = k+1) {
+for (k = 0; k < totalBranchCount; k += 1) {
     if (k == 0) {
         expr            = Eval("BranchLength(givenTree,\""+bNames[0]+";EXPECTED_NUMBER_OF_SUBSTITUTIONS\")");
         syn             = 1; nonsyn = 0;
@@ -170,7 +170,7 @@ fprintf (stdout, "\nInferred this global omega distribution: ");
 reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
 globalState = saveLF ("three_LFG");
 
-for (k = 0; k < totalBranchCount; k = k+1) {
+for (k = 0; k < totalBranchCount; k += 1) {
     constrainABranch (bNames[k]);
 }
 
@@ -188,7 +188,7 @@ if (MPI_NODE_COUNT > 1) {
     MPI_NODE_STATE[0] = "";
 }
 
-for (k = 0; k < totalBranchCount; k = k+1) {
+for (k = 0; k < totalBranchCount; k+=1) {
     fprintf (stdout, "\n[BS-REL PHASE 2. Branch '", bNames[k], "']\n");
     thisBranchName = bNames[k];
     globalState["restoreLF"][""];
@@ -301,7 +301,7 @@ function processABranch (thisBranchName, doSend) {
         }
         thisBranchName = prevBranch;
         ExecuteCommands (resStr);
-        
+        fprintf (stdout, resStr, "\n");
         three_LF_MLE_VALUES ["restoreLF"][""];
         localBranchRes = three_LF_MLES;
     }
