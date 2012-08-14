@@ -141,6 +141,9 @@ private:
     QAction *_hyConsoleCycleThroughWindowsAction;
 
     QMenu   *_hyConsoleMenu;
+    QString  lastAnalysisFilePath;
+    
+    
     void initializeMenuBar();
     
     // preferences options

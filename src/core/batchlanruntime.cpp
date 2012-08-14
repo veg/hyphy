@@ -59,12 +59,21 @@
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
     currentProgram.currentCommand++;
-    SetStatusLine           ("Gathering Frequencies");
-    _String  freqStorageID = currentProgram.AddNameSpaceToID(*(_String*)parameters(0)),
-             dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1));
     
+
+    _String  freqStorageID = currentProgram.AddNameSpaceToID(*(_String*)parameters(0)),
+             dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1)), 
+             errMsg        ;
+    
+    _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(freqStorageID,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_HARVEST_FREQUENCIES, true, false, &currentProgram);
+    if (!theReceptacle) {
+        return false;
+    }    
+    SetStatusLine           ("Gathering Frequencies");
+
+
     long       objectType = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-    BaseRef    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,true);
+    BaseRef    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,false);
     
     long      unit      = ProcessNumericArgument((_String*)parameters(2),currentProgram.nameSpacePrefix),
               posspec   = ProcessNumericArgument((_String*)parameters(4),currentProgram.nameSpacePrefix),
@@ -80,10 +89,10 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
                         hSpecs;
         
         if (parameters.lLength>5)   {
-            vSpecs = ProcessLiteralArgument((_String*)parameters(5),currentProgram.nameSpacePrefix);
+            vSpecs = *(_String*)parameters(5);
         }
         if (parameters.lLength>6)   {
-            hSpecs = ProcessLiteralArgument((_String*)parameters(6),currentProgram.nameSpacePrefix);
+            hSpecs = *(_String*)parameters(6);
         }
         
         _DataSet * dataset = (_DataSet*)sourceObject;
@@ -93,12 +102,25 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
         
         receptacle = dataset->HarvestFrequencies(unit,atom,posspec,hL, vL,cghf>0.5);
     } else { // harvest from a DataSetFilter
-        
-        receptacle = ((_DataSetFilter*)sourceObject)->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
+        if (objectType == HY_BL_DATASET_FILTER) {
+            receptacle = ((_DataSetFilter*)sourceObject)->HarvestFrequencies(unit,atom,posspec,cghf>0.5);
+        } else {
+            errMsg = _String ("'") & dataID & "' is neither a DataSet nor a DataSetFilter";
+        }
     }
     
     SetStatusLine           (empty);
-    return CheckReceptacleCommandIDAndStore (&freqStorageID,HY_HBL_COMMAND_HARVEST_FREQUENCIES,true, receptacle, false);
+    
+    if (errMsg.sLength || receptacle == nil) {
+        DeleteObject (receptacle);
+        currentProgram.ReportAnExecutionError (errMsg); 
+        theReceptacle->SetValue (new _MathObject, false);
+        return false;
+    }   
+    theReceptacle->SetValue (receptacle, false);
+    return true;
+    
+    //CheckReceptacleCommandIDAndStore (&freqStorageID,HY_HBL_COMMAND_HARVEST_FREQUENCIES,true, receptacle, false);
 }
 
 //____________________________________________________________________________________

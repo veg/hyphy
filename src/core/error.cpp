@@ -306,6 +306,10 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 void WarnError (_String st)
 {
 
+    if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
+        currentExecutionList->ReportAnExecutionError(st, true);
+        return;
+    }
 
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
@@ -328,7 +332,7 @@ void WarnError (_String st)
     if (globalMessageFile) {
         fprintf (globalMessageFile, "\n%s", st.sData);
     }
-#if !defined __MAC__ && !defined __WINDOZE__
+
     _String errMsg;
     #ifdef __HYPHYMPI__
         errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
@@ -345,7 +349,10 @@ void WarnError (_String st)
         errMsg = st;
     #endif
 
+
+
     errMsg = ConstructAnErrorMessage (errMsg);
+    
 
     #ifdef  _MINGW32_MEGA_
         SetStatusLine  (errMsg);
@@ -355,72 +362,9 @@ void WarnError (_String st)
 #ifdef __HYPHYQT__
     return;
 #endif
-    #endif
 #endif
 
-#ifdef __MAC__
-    if (!skipWarningMessages) {
-        st = ConstructAnErrorMessage (st);
-        Str255 err;
-        err[0] = st.sLength>255?255:st.sLength;
-        memcpy (err+1,st.getStr(),st.sLength>255?255:st.sLength);
-        ParamText (err,NULL,NULL,NULL);
-        char alertCode;
-        alertCode = Alert (129, (ModalFilterUPP)NULL);
-        terminateExecution = true;
-        if (alertCode == 2) {
-            skipWarningMessages = true;
-        } else if (alertCode == 3) {
-            WritePreferences();
-            SaveConsole();
-            //GlobalShutdown();
-            // graceless exit; no need to clean stuff up
-            exit(1);
-        }
-    }
-    return;
-#endif
-#ifdef __HYPHY_GTK__
-    if (!skipWarningMessages) {
-        GtkWidget *dialog = gtk_message_dialog_new (
-                                hyphyConsoleWindow?GTK_WINDOW(gtk_widget_get_ancestor(hyphyConsoleWindow->theWindow,GTK_TYPE_WINDOW)):NULL,
-                                GTK_DIALOG_MODAL,
-                                GTK_MESSAGE_WARNING,
-                                GTK_BUTTONS_NONE,
-                                "The following error occurred:\n %s",
-                                st.sData);
-
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"Skip Further Messages",2);
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"Quit",3);
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"OK",1);
-        char alertCode = gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
-
-        terminateExecution = true;
-        if (alertCode == 2) {
-            skipWarningMessages = true;
-        } else if (alertCode == 3) {
-            WritePreferences();
-            SaveConsole     ();
-            GlobalShutdown  ();
-            exit            (1);
-        }
-    }
-    return;
-#endif
-#ifdef __WINDOZE__
-     st = ConstructAnErrorMessage (st);
-     if (!skipWarningMessages) {
-        if (st.sLength>255) {
-            st = st.Cut(0,255);
-        }
-        WinErrorBox     (st, true);
-        terminateExecution = true;
-    }
-    return;
-#endif
-    
-#if defined __UNIX__ && !defined __HYPHY_GTK__
+#if defined __UNIX__ && !defined __HYPHY_QT__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif

@@ -169,7 +169,9 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleStandardAnalysisAction->setShortcuts(keyList);
     _hyConsoleStandardAnalysisAction->setStatusTip("Standard Analysis");
     _hyConsoleResultsAction = new QAction(tr("&Results"),this);
+    _hyConsoleResultsAction->setEnabled(false);
     _hyConsoleRerunLastAnalysisAction = new QAction(tr("&Rerun Last Analysis"),this);
+    _hyConsoleRerunLastAnalysisAction->setEnabled(false);
 
     //Connect Analysis Menu Events to appropriate slots
     connect(_hyConsoleCancelExecutionAction, SIGNAL(triggered()), this, SLOT(hy_cancelexecution()));
@@ -219,6 +221,7 @@ void HyphyMain::initializeMenuBar() {
 //File Menu Options
 void HyphyMain::hy_open() {
     if (OpenBatchFile (true)) {
+         lastAnalysisFilePath = (char*)argFileName->sData;
          ExecuteBatchFile();
     }
 }
@@ -249,6 +252,7 @@ void HyphyMain::hy_standardanalysis() {
     hs->exec(); 
     if (selections.lLength == 1) {
         RunTemplate (selections.lData[0]);
+        lastAnalysisFilePath = (char*)argFileName->sData;
     }
 }
 
