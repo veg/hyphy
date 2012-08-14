@@ -4012,7 +4012,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
     if (floor(keepStartingPoint) == 0.0 && precision>0.1) {
         GetInitialValues();
-    }
+     }
 
     checkParameter  (globalStartingPoint,precision,0.1);
     _Constant     c (precision);
@@ -4371,6 +4371,8 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
         _List               *stepHistory = nil;
         _GrowingVector      logLHistory;
+        
+        maxSoFar  = lastMaxValue = Compute();
 
         logLHistory.Store(maxSoFar);
 
@@ -4411,7 +4413,6 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
         currentPrecision = precision>.1?precision:.1;
 
-        lastMaxValue = Compute();
 
         termFactor = stdFactor+1;
         if (termFactor>indexInd.lLength/2) {
