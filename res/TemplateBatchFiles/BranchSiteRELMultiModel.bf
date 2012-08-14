@@ -189,8 +189,6 @@ if (MPI_NODE_COUNT > 1) {
     MPI_NODE_STATE[0] = "";
 }
 
- VERBOSITY_LEVEL				= 10;
-
 
 for (k = 0; k < totalBranchCount; k+=1) {
     fprintf (stdout, "\n[BS-REL PHASE 2. Branch '", bNames[k], "']\n");
