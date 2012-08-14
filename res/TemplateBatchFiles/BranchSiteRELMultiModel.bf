@@ -1,5 +1,4 @@
 skipCodeSelectionStep 		= 0;
-VERBOSITY_LEVEL				= 0;
 
 
 LoadFunctionLibrary("chooseGeneticCode");
@@ -27,8 +26,8 @@ PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t", "omega1", "");
 PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t", "omega2", "");
 PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t", "omega3", "");
 
-global	                        omegaG1 = 0.2; omegaG1 :< 1;
-global	                        omegaG2 = 0.5; omegaG2 :< 1;
+global	                        omegaG1 = 0.2;
+global	                        omegaG2 = 0.5;
 global	                        omegaG3 = 2.0;
 
 PopulateModelMatrix			  ("MGMatrix1G",  nucCF, "t", "omegaG1", "");
@@ -47,6 +46,8 @@ fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Model\tLogL\tNP\tBIC\tTree Stri
 csvFilePath = LAST_FILE_PATH;
 
 
+
+
 // ---- PHASE 0 : LOCAL (no omega variation model) FIT. ----- //
 
 fprintf 					  (stdout, "[BS-REL PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
@@ -54,13 +55,14 @@ fprintf 					  (stdout, "[BS-REL PHASE 0] Fitting the local MG94 (no site-to-sit
 
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
 Optimize					  (res_base,base_LF);
-
 writeTheLF (".mglocal.fit", "base_LF");
 
 
 baseParameters                = 9;
+
 localLL						 = res_base[1][0];
 localParams					 = res_base[1][1] + baseParameters;
+
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 
 pValueByBranch				  = {totalBranchCount,10};
@@ -104,20 +106,17 @@ Model 		MG1		=		  ("Exp(MGMatrix1)*Paux1+Exp(MGMatrix2)*(1-Paux1)*Paux2+Exp(MGMa
 Tree						   mixtureTree = treeString;
 
 
-
 ReplicateConstraint 		  ("this1.?.t:=this2.?.syn",mixtureTreeG,givenTree);
 ReplicateConstraint 		  ("this1.?.t:=this2.?.syn",mixtureTree,givenTree);
 
 ClearConstraints			  (mixtureTree);
 ClearConstraints			  (mixtureTreeG);
 
-omegaG1						 :< 1;
-omegaG2						 :< 1;
 Paux1G 						 :< 1;
 Paux2G 						 :< 1;
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
-OPTIMIZATION_METHOD           = 0;
+OPTIMIZATION_METHOD           = 4;
 
 BIC_scores                    = {};
 BranchLengthEstimates         = {};
@@ -127,48 +126,50 @@ mixTreeAVL                    = mixtureTreeG ^ 0;
 LikelihoodFunction three_LFG   = (dsf,mixtureTreeG);
 fprintf 					  (stdout, "[BS-REL PHASE 1] Fitting a GLOBAL branch-site matrix mixture\n");
 
+blG = getBranchLengthExpression (1);
+
 for (k = 0; k < totalBranchCount; k += 1) {
-    if (k == 0) {
-        expr            = Eval("BranchLength(givenTree,\""+bNames[0]+";EXPECTED_NUMBER_OF_SUBSTITUTIONS\")");
-        syn             = 1; nonsyn = 0;
-        synM            = Eval(expr);
-        syn             = 0; nonsyn = 1;
-        nonsynM         = Eval(expr);
-    }
-    
- 	srate  = Eval ("givenTree." + bNames[k] + ".syn");
-	nsrate = Eval ("givenTree." + bNames[k] + ".nonsyn");
     bl = Eval("BranchLength(givenTree,\""+bNames[k]+"\")")*3;
-    
-    if (srate > 0) {
-        baseOmega = nsrate/srate;
-    } else {
-        baseOmega = 10000;
-    }
-        
-    bl = bl / (synM + nonsynM * baseOmega);  
-    ExecuteCommands ("mixtureTreeG." + bNames[k] + ".t = bl");
+    ExecuteCommands ("FindRoot (z,`blG`-"+bl+",t,0,10000);");
+    ExecuteCommands ("mixtureTreeG." + bNames[k] + ".t := " + z);    
 }
 
 USE_LAST_RESULTS			  = 1;
 
 SHORT_MPI_RETURN = 1;
+VERBOSITY_LEVEL				= 1;
+
+OPTIMIZATION_PRECISION      = 0.1;
 
 Optimize					  (res_three_LF_global,three_LFG);
-baseParameters                += 5; // to count nucleotide rates
 
+OPTIMIZATION_PRECISION      = 0.001;
+
+for (k = 0; k < totalBranchCount; k += 1) {
+    ExecuteCommands ("mixtureTreeG." + bNames[k] + ".t = mixtureTreeG." + bNames[k] + ".t");    
+}
+
+Optimize					  (res_three_LF_global,three_LFG);
 writeTheLF (".relglobal.fit", "three_LFG");
 
-fprintf (stdout, "Global model fit:");
+
+OPTIMIZATION_METHOD         = 0;
+
+fprintf (stdout, "Global model fit:", three_LFG);
 
 BIC_scores ["global model"] = BIC (res_three_LF_global[1][0], res_three_LF_global[1][1]+baseParameters, sample_size);
 BranchLengthEstimates ["global model"] = getBranchLengths ("mixtureTreeG", 1);
 
 fprintf     (csvFilePath, "\nGlobal\t", res_three_LF_global[1][0],"\t", res_three_LF_global[1][1]+baseParameters, "\t", BIC_scores ["global model"], "\t", PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates ["global model"]));
+fprintf     (stdout,PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates ["global model"]));
 
 fprintf (stdout, "\nInferred this global omega distribution: ");
 reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
+fprintf     (stdout,PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates ["global model"]));
 globalState = saveLF ("three_LFG");
+
+fprintf (stdout, globalState, "\n");
+
 
 for (k = 0; k < totalBranchCount; k += 1) {
     constrainABranch (bNames[k]);
@@ -187,6 +188,9 @@ if (MPI_NODE_COUNT > 1) {
     MPI_NODE_STATE = {MPI_NODE_COUNT-1,1};
     MPI_NODE_STATE[0] = "";
 }
+
+ VERBOSITY_LEVEL				= 10;
+
 
 for (k = 0; k < totalBranchCount; k+=1) {
     fprintf (stdout, "\n[BS-REL PHASE 2. Branch '", bNames[k], "']\n");
@@ -216,6 +220,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
             processABranch (thisBranchName, 1);
         }
     } else {
+        //writeTheLF (".test.fit", "three_LF");    
         Optimize (localBranchRes, three_LF);
         processABranch (thisBranchName,0);
     }
@@ -236,7 +241,7 @@ for (nodeID = 0; nodeID < leftOver; nodeID += 1) {
 
 branchValues ["restoreLF"][""];
 
-fprintf (stdout, "\n[BS-REL PHASE 3] Fitting a LOCAL branch-site matrix mixture with a SINGLE unconstrained branch\n");
+fprintf (stdout, "\n[BS-REL PHASE 3] Fitting a LOCAL branch-site matrix mixture model\n");
 Optimize (res_local, three_LF);
 
 writeTheLF (".local.fit", "three_LF");
@@ -316,6 +321,7 @@ function processABranch (thisBranchName, doSend) {
     stashBranchValues (thisBranchName, "branchValues");
     pv = 1-CChi2 (2*(localBranchRes[1][0]-res_three_LF_global[1][0]),5);
     fprintf (stdout, "\nLRT p-value for branch deviation from the global pattern = ", pv, "\n");
+    fprintf     (stdout,PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates [thisBranchName]));
     return 0;
 
 }
@@ -356,9 +362,7 @@ function stashBranchValues (branch_name, storage&) {
 function unConstrainABranch (branch_name) {
     ExecuteCommands ("mixtureTree." + branch_name + ".t = mixtureTreeG." + branch_name + ".t");
     ExecuteCommands ("mixtureTree." + branch_name + ".omega1 = omegaG1");
-    ExecuteCommands ("mixtureTree." + branch_name + ".omega1 :< 1;");
     ExecuteCommands ("mixtureTree." + branch_name + ".omega2 = omegaG2");
-    ExecuteCommands ("mixtureTree." + branch_name + ".omega2 :< 1;");
     ExecuteCommands ("mixtureTree." + branch_name + ".omega3 = omegaG3");
     ExecuteCommands ("mixtureTree." + branch_name + ".Paux1  = Paux1G");
     ExecuteCommands ("mixtureTree." + branch_name + ".Paux2  = Paux2G");
@@ -382,11 +386,7 @@ function reportOmegaDistro (w1,w2,w3,p1,p2) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function getBranchLengths (treeID, modelType) {
-    blByName        = {};
-    bnames_list     = Eval ("BranchName (`treeID`,-1)");
-    
-    
+function getBranchLengthExpression (modelType) {
     if (modelType == 0) {
         Model _temp = (MGMatrix1, codon3x4, 0);
         GetString (model1BL, _temp, -1);
@@ -394,7 +394,28 @@ function getBranchLengths (treeID, modelType) {
         GetString (model2BL, _temp, -1);
         Model _temp = (MGMatrix3, codon3x4, 0);
         GetString (model3BL, _temp, -1);
-        bl_expression = "Paux1*(`model1BL`)+(1-Paux1)*Paux2*(`model2BL`)+(1-Paux1)*(1-Paux2)*(`model3BL`)";
+        bl_expression = "Paux1*(`model1BL`)+(1-Paux1)*Paux2*(`model2BL`)+(1-Paux1)*(1-Paux2)*(`model3BL`)";    
+    } else {
+        Model _temp = (MGMatrix1G, codon3x4, 0);
+        GetString (model1BL, _temp, -1);
+        Model _temp = (MGMatrix2G, codon3x4, 0);
+        GetString (model2BL, _temp, -1);
+        Model _temp = (MGMatrix3G, codon3x4, 0);
+        GetString (model3BL, _temp, -1);
+        bl_expression = "Paux1G*(`model1BL`)+(1-Paux1G)*Paux2G*(`model2BL`)+(1-Paux1G)*(1-Paux2G)*(`model3BL`)";
+    }
+    return bl_expression;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function getBranchLengths (treeID, modelType) {
+    blByName        = {};
+    bnames_list     = Eval ("BranchName (`treeID`,-1)");
+
+    bl_expression = getBranchLengthExpression(modelType);
+ 
+    if (modelType == 0) {
         locals = {{"t","omega1","omega2","omega3","Paux1", "Paux2"}};
       
         for (_bID = 0; _bID < Columns (bnames_list) - 1; _bID += 1) {
@@ -406,13 +427,6 @@ function getBranchLengths (treeID, modelType) {
             blByName [branch_name] = Eval (bl_expression)/3;
         }
     } else {
-        Model _temp = (MGMatrix1G, codon3x4, 0);
-        GetString (model1BL, _temp, -1);
-        Model _temp = (MGMatrix2G, codon3x4, 0);
-        GetString (model2BL, _temp, -1);
-        Model _temp = (MGMatrix3G, codon3x4, 0);
-        GetString (model3BL, _temp, -1);
-        bl_expression = "Paux1G*(`model1BL`)+(1-Paux1G)*Paux2G*(`model2BL`)+(1-Paux1G)*(1-Paux2G)*(`model3BL`)";
         for (_bID = 0; _bID < Columns (bnames_list) - 1; _bID += 1) {
             branch_name = bnames_list[_bID];
             t = Eval ("`treeID`.`branch_name`.t");        
