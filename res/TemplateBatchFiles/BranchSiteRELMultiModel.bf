@@ -155,7 +155,7 @@ writeTheLF (".relglobal.fit", "three_LFG");
 
 OPTIMIZATION_METHOD         = 0;
 
-fprintf (stdout, "Global model fit:", three_LFG);
+fprintf (stdout, "Global model fit:");
 
 BIC_scores ["global model"] = BIC (res_three_LF_global[1][0], res_three_LF_global[1][1]+baseParameters, sample_size);
 BranchLengthEstimates ["global model"] = getBranchLengths ("mixtureTreeG", 1);
@@ -167,8 +167,6 @@ fprintf (stdout, "\nInferred this global omega distribution: ");
 reportOmegaDistro (omegaG1,omegaG2,omegaG3,Paux1G,Paux2G);
 fprintf     (stdout,PostOrderAVL2StringDistances(mixTreeAVL,BranchLengthEstimates ["global model"]));
 globalState = saveLF ("three_LFG");
-
-fprintf (stdout, globalState, "\n");
 
 
 for (k = 0; k < totalBranchCount; k += 1) {
