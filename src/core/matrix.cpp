@@ -3300,8 +3300,8 @@ void    _Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
             }
 
         } else {
-            _Parameter _hprestrict_ * argData = secondArg.theData,
-                       _hprestrict_ * stData  = storage.theData;
+            _Parameter _hprestrict_ * argData = secondArg.theData;
+            _Parameter _hprestrict_ * stData  = storage.theData;
             
             long    upto = secondArg.lDim - secondArg.lDim%4;
                        
@@ -3517,8 +3517,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 {
     if (storageType == 1) { // numbers
-        _Parameter _hprestrict_ * destination = storage.theData,
-                   _hprestrict_ * source      = theData;
+        _Parameter _hprestrict_ * destination = storage.theData;
+        _Parameter _hprestrict_           * source      = theData;
             
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
@@ -3610,8 +3610,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 long cumulativeIndex = 0,
                      dimm4 = vDim - vDim%4;
 
-                _Parameter _hprestrict_ * row = theData,
-                           _hprestrict_ * dest = storage.theData;
+                _Parameter _hprestrict_ * row = theData;
+                _Parameter _hprestrict_ * dest = storage.theData;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
                 
@@ -5626,8 +5626,8 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 
             // loop interchange rocks!
 
-            _Parameter  _hprestrict_ * column = stash+lDim,
-                        _hprestrict_ * source = theData;
+            _Parameter  _hprestrict_ * column = stash+lDim;
+            _Parameter  _hprestrict_ * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
