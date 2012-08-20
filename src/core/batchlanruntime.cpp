@@ -61,12 +61,12 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
     currentProgram.currentCommand++;
     
 
-    _String  freqStorageID = currentProgram.AddNameSpaceToID(*(_String*)parameters(0)),
+    _String  freqStorageID = *(_String*)parameters(0),
              dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1)), 
              errMsg        ;
     
     _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(freqStorageID,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_HARVEST_FREQUENCIES, true, false, &currentProgram);
-    if (!theReceptacle) {
+     if (!theReceptacle) {
         return false;
     }    
     SetStatusLine           ("Gathering Frequencies");

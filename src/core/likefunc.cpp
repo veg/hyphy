@@ -4755,9 +4755,11 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                              brackStep,
                              precisionStep,
                              bracketFCount-brackStepSave,
-                             oneDFCount - oneDStepSave);
+                             oneDFCount - oneDStepSave
+                             );
                     BufferToConsole (buffer);
                     StringToConsole (*LocateVar(indexInd.lData[j])->GetName());
+                    BufferToConsole (CheckEqual(GetIthIndependentBound (j, true), cj)? ("[Lower bound]") : (CheckEqual(GetIthIndependentBound (j, false),cj) ? "[Upper bound]" : ""));
                 }
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
                 else if (verbosityLevel==1) {
@@ -4778,7 +4780,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                 noChange.Clear();
                 noChange.Duplicate (&nc2);
             } else {
-                noChange.Subtract      (nc2,glVars);
+                noChange.Subtract  (nc2,glVars);
             }
 
             if (noChange.lLength==0) {
