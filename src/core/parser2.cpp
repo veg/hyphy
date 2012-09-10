@@ -145,6 +145,10 @@ _Parameter  AndNumbers  (_Parameter x, _Parameter y)
 {
     return x != 0.0 && y != 0.0;
 }
+_Parameter  AbsNumber  (_Parameter x)
+{
+    return fabs (x);
+}
 
 //__________________________________________________________________________________
 
