@@ -26,7 +26,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	alignOptions ["SEQ_ALIGN_CODON_ALIGN"]	= 	1;
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=  "ACGT";
    
-    _cdnaln_partialScoreMatrices = cSM2partialSMs(_cdnaln_cdnScoreMatrix);
+    _cdnaln_partialScoreMatrices = cSM2partialSMs(_cdnaln_cdnScoreMatrix,0);
     
     alignOptions ["SEQ_ALIGN_PARTIAL_3x1_SCORES"] = _cdnaln_partialScoreMatrices["3x1"];
     alignOptions ["SEQ_ALIGN_PARTIAL_3x2_SCORES"] = _cdnaln_partialScoreMatrices["3x2"];
@@ -37,7 +37,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 
 
 
-function cSM2partialSMs(_cdnScoreMatrix)
+function cSM2partialSMs(_cdnScoreMatrix, penalties)
 {
     m3x5  =  { 65, 640 };
     m3x4  =  { 65, 256 };
@@ -45,11 +45,18 @@ function cSM2partialSMs(_cdnScoreMatrix)
     m3x1  =  { 65,  12 };
 
     // minor penalties to make mismatch not entirely free
-    p3x5 = 0;
-    p3x4 = 0;
-    p3x2 = 0;
-    p3x1 = 0;
-
+    
+    if (Rows(penalties)*Columns(penalties) == 4) {
+        p3x1 = penalties [0];
+        p3x2 = penalties [1];
+        p3x4 = penalties [2];
+        p3x5 = penalties [3];
+    } else {    
+        p3x5 = 0;
+        p3x4 = 0;
+        p3x2 = 0;
+        p3x1 = 0;
+    }
     for ( thisCodon = 0; thisCodon < 64; thisCodon += 1 ) {
         for ( d1 = 0; d1 < 4; d1 += 1 ) {
             max100 = -1e100;
