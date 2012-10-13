@@ -86,6 +86,7 @@ _String     sqlOpen                 ("SQL_OPEN"),
             seqAlignGapCodon3x2     ("SEQ_ALIGN_PARTIAL_3x2_SCORES"),
             seqAlignGapCodon3x4     ("SEQ_ALIGN_PARTIAL_3x4_SCORES"),
             seqAlignGapCodon3x5     ("SEQ_ALIGN_PARTIAL_3x5_SCORES"),
+            seqAlignDoLocal         ("SEQ_ALIGN_LOCAL_ALIGNMENT"),
             completeFlag            ("COMPLETE"),
             conditionalWeights      ("WEIGHTS"),
             siteProbabilities       ("SITE_LOG_LIKELIHOODS"),
@@ -1057,10 +1058,11 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector && charCount) {
                     // now check that all characters
-                    bool        doLocal     = false,
-                                doAffine = false,
-                                doLinear  = true,
-                                doCodon     = false;
+                    bool        doLocal      = false,
+                                doAffine     = false,
+                                doLinear     = true,
+                                doCodon      = false,
+                                doFullLocal  = false;
 
 
                     long        codonCount = charCount*charCount*charCount;
@@ -1200,6 +1202,16 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             } else {
                                 settingReport << "No";
                             }
+                            
+                            c = mappingTable->GetByKey (seqAlignDoLocal, NUMBER);
+                            if (c) {
+                                doFullLocal = c->Compute()->Value ()>0.5;
+                            }
+                            settingReport << "\n\tLocal alignment: ";
+                            settingReport << (doFullLocal?"Yes":"No");
+                            if (!doCodon && doFullLocal) {
+                                 settingReport << "\n\t Local alignment is currently available for the codon aligner only.";                           
+                            }
 
                             c = mappingTable->GetByKey (seqAlignGapAffine, NUMBER);
                             if (c) {
@@ -1248,7 +1260,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                         _List         store;
                                         score = AlignStrings (str1->sData,string2->sData,str1r,str2r,ccount.lData,scoreMatrix->theData,scoreMatrix->GetVDim(),
                                                               gapCharacter,gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,
-                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData);
+                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData, doFullLocal);
 
                                         if ( str1r && str2r ) {
                                             _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),

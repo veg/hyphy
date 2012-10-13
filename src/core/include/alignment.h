@@ -25,6 +25,7 @@ double AlignStrings( char * r_str
                    , double * codon3x4
                    , double * codon3x2
                    , double * codon3x1
+                   , const bool do_true_local = false
                    );
 
 _Parameter LinearSpaceAlign( _String * s1           // first string

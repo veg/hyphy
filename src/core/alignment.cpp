@@ -48,10 +48,14 @@
 #define HY_01011_11111 21
 #define HY_00111_11111 22
 
+
+// the local align move (i.e. take a direct shortcut to any internal position in the alignment matrix)
+#define HY_LOCAL_ALIGN_SHORTCUT 23
+
 #define HY_3X5_START   13
 #define HY_3X5_COUNT   10
 
-#define HY_ALIGNMENT_TYPES_COUNT 23
+#define HY_ALIGNMENT_TYPES_COUNT 24
 
 //____________________________________________________________________________________
 
@@ -75,6 +79,7 @@ long CodonAlignStringsStep( double * const score_matrix
                           , double * const codon3x4
                           , double * const codon3x2
                           , double * const codon3x1
+                          , const    bool  do_local
                           )
 {
     /**
@@ -86,6 +91,7 @@ long CodonAlignStringsStep( double * const score_matrix
      *       position in the scoring matrix, as we're only interested in CODON
      *       alignments to the reference
      * rpos is the position of r in the reference
+     * do_local is true if we wish to perform a local alignment 
      */
     const long curr = ( r - 0 ) * score_cols + q, // where we currently are
                prev = ( r - 1 ) * score_cols + q, // up a codon in the reference
@@ -120,6 +126,8 @@ long CodonAlignStringsStep( double * const score_matrix
         { 3, 2, 1 }  // 0111
     };
 
+    int    local_shortcut_came_from_this_move = -1;
+
     double choices[ HY_ALIGNMENT_TYPES_COUNT ],
            max_score = -A_LARGE_NUMBER,
            penalty;
@@ -129,7 +137,7 @@ long CodonAlignStringsStep( double * const score_matrix
     for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
         choices[ i ] = -A_LARGE_NUMBER;
     }
-
+    
     // if we're at least a CODON away from the edge...
     // (psst, r is CODONs remember?)
     if ( r >= 1 ) {
@@ -178,12 +186,16 @@ long CodonAlignStringsStep( double * const score_matrix
     // if q_codon and r_codon both exist, set the score equal to match
     if ( q_codon >= 0 ) {
         if ( r_codon >= 0 ) {
-            choices[ HY_111_111 ] = score_matrix[ prev - 3 ]
-                                  + cost_matrix[ r_codon * cost_stride + q_codon ];
+            const double move_cost = cost_matrix[ r_codon * cost_stride + q_codon ];
+            choices[ HY_111_111 ] = score_matrix[ prev - 3 ] + move_cost;
+            if (do_local && choices [HY_LOCAL_ALIGN_SHORTCUT] < move_cost) {
+                local_shortcut_came_from_this_move = HY_111_111;
+                choices [HY_LOCAL_ALIGN_SHORTCUT]  = move_cost;
+            }
         }
     }
 
-    // we disallow partial moves in the reference, so those use to be here but are now gone
+    // we disallow partial moves in the reference, so those used to be here but are now gone
 
     // HERE BE DRAGONS!!!!
 
@@ -225,8 +237,14 @@ long CodonAlignStringsStep( double * const score_matrix
                     // the miscall penalty is double (as we're matching 3 to 5)
                     else
                         penalty = 2. * miscall_cost;
-                    choices[ choice ] = score_matrix[ prev - 5 ] - penalty
-                                      + codon3x5[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
+                        
+                    const double move_cost = codon3x5[ r_codon * offset3x5 + HY_3X5_COUNT * partial_codons[ i ] + i ];
+                    
+                    choices[ choice ] = score_matrix[ prev - 5 ] - penalty + move_cost;
+                    if (do_local && choices [HY_LOCAL_ALIGN_SHORTCUT] < move_cost) {
+                        local_shortcut_came_from_this_move = choice;
+                        choices [HY_LOCAL_ALIGN_SHORTCUT]  = move_cost;
+                    }
                 }
             }
         }
@@ -251,8 +269,14 @@ long CodonAlignStringsStep( double * const score_matrix
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices[ choice ] = score_matrix[ prev - 4 ] - penalty
-                                      + codon3x4[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
+
+                    const double move_cost = codon3x4[ r_codon * offset3x4 + HY_3X4_COUNT * partial_codons[ i ] + i ];
+
+                    choices[ choice ] = score_matrix[ prev - 4 ] - penalty + move_cost;
+                    if (do_local && choices [HY_LOCAL_ALIGN_SHORTCUT] < move_cost) {
+                        local_shortcut_came_from_this_move = choice;
+                        choices [HY_LOCAL_ALIGN_SHORTCUT]  = move_cost;
+                    }
                 }
             }
         }
@@ -274,8 +298,15 @@ long CodonAlignStringsStep( double * const score_matrix
                     // otherwise it's just a single miscall penalty
                     else
                         penalty = miscall_cost;
-                    choices[ choice ] = score_matrix[ prev - 2 ] - penalty
-                                      + codon3x2[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
+                        
+                                                                
+                    const double move_cost = codon3x2[ r_codon * offset3x2 + HY_3X2_COUNT * partial_codons[ 0 ] + i ];
+
+                    choices[ choice ] = score_matrix[ prev - 2 ] - penalty + move_cost;
+                    if (do_local && choices [HY_LOCAL_ALIGN_SHORTCUT] < move_cost) {
+                        local_shortcut_came_from_this_move = choice;
+                        choices [HY_LOCAL_ALIGN_SHORTCUT]  = move_cost;
+                    }
                 }
             }
         }
@@ -302,15 +333,21 @@ long CodonAlignStringsStep( double * const score_matrix
                     // for the two positions we're inserting
                     else
                         penalty = 2. * miscall_cost;
-                    choices[ choice ] = score_matrix[ prev - 1 ] - penalty
-                                      + codon3x1[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
+
+                    const double move_cost = codon3x1[ r_codon * offset3x1 + HY_3X1_COUNT * partial_codons[ 0 ] + i ];
+
+                    choices[ choice ] = score_matrix[ prev - 1 ] - penalty + move_cost;
+                    if (do_local && choices [HY_LOCAL_ALIGN_SHORTCUT] < move_cost) {
+                        local_shortcut_came_from_this_move = choice;
+                        choices [HY_LOCAL_ALIGN_SHORTCUT]  = move_cost;
+                    }
                 }
             }
         }
     }
 
     // find the best possible choice
-    for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; ++i ) {
+    for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT - (!do_local); ++i ) {
         /* if ( i > 0 )
          fprintf( stderr, ", " );
          fprintf( stderr, "( %ld, %.3g )", i, choices[ i ] ); */
@@ -319,11 +356,15 @@ long CodonAlignStringsStep( double * const score_matrix
             max_score = choices[ i ];
         }
     }
-    /* fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice ); */
+    
+    //fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice );
 
     // assign the score to the current position
     score_matrix[ curr ] = max_score;
 
+    if (do_local && best_choice == HY_LOCAL_ALIGN_SHORTCUT) {
+        return -local_shortcut_came_from_this_move - 1;
+    }
     return best_choice;
 }
 
@@ -550,6 +591,7 @@ double AlignStrings( char * const r_str
                    , double * const codon3x4
                    , double * const codon3x2
                    , double * const codon3x1
+                   , const bool do_true_local
                    )
 {
     const unsigned long r_len = strlen( r_str ),
@@ -558,7 +600,7 @@ double AlignStrings( char * const r_str
                         score_rows = r_len / ref_stride + 1,
                         score_cols = q_len + 1;
 
-    long i, j, k;
+    long i, j, k, m;
 
     double score = 0.;
 
@@ -741,6 +783,7 @@ double AlignStrings( char * const r_str
                                              , codon3x4
                                              , codon3x2
                                              , codon3x1
+                                             , do_true_local
                                              );
                 // not doing codon alignment
             } else {
@@ -785,49 +828,66 @@ double AlignStrings( char * const r_str
             // of the ref and query, respectively
             i = r_len;
             j = q_len;
+            
+            bool took_local_shortcut = false;
 
             // grab maximum score from the last entry in the table
             score = score_matrix[ score_rows * score_cols - 1 ];
 
             // if we're doing a local alignment,
-            // find the best score in the last row and column of the scoring matrix
-            // and start backtracking from there ( if it's better than the score
-            // we've already found, that is )
-            if ( do_local ) {
-                // grab the best score from the last column of the score matrix,
-                // skipping the very last entry ( we already checked it )
-                for ( k = score_cols - 1; k < score_rows * score_cols - 1; k += score_cols )
-                    if ( score_matrix[ k ] > score ) {
-                        score = score_matrix[ k ];
-                        // if do_codon, k / score_cols indexes into the codon space
-                        // of the reference, which is resolved by multiplication
-                        // by ref_stride ( which is 3 ), otherwise this
-                        // directly indexes into the reference
-                        i = ref_stride * ( k / score_cols );
+            if ( do_true_local) {
+                // find the best score in the matrix
+                // except for the first row/first column 
+                // and start backtracking from there
+                for (m = 1; m < score_rows; m ++)  {
+                    for (k = 1; k < score_cols; k ++) {
+                        if ( score_matrix[ m*score_cols + k ] > score ) {
+                            score = score_matrix[ m*score_cols + k ];
+                            i = ref_stride * m;
+                            j = k;
+                        }
                     }
+                }
+                               
+            } else 
+                // find the best score in the last row and column of the scoring matrix
+                // and start backtracking from there ( if it's better than the score
+                // we've already found, that is )
+                if ( do_local ) {
+                    // grab the best score from the last column of the score matrix,
+                    // skipping the very last entry ( we already checked it )
+                    for ( k = score_cols - 1; k < score_rows * score_cols - 1; k += score_cols )
+                        if ( score_matrix[ k ] > score ) {
+                            score = score_matrix[ k ];
+                            // if do_codon, k / score_cols indexes into the codon space
+                            // of the reference, which is resolved by multiplication
+                            // by ref_stride ( which is 3 ), otherwise this
+                            // directly indexes into the reference
+                            i = ref_stride * ( k / score_cols );
+                        }
 
-                // grab the best score from the last row of the score matrix,
-                // skipping the very last entry ( we already checked it )
-                for ( k = ( score_rows - 1 ) * score_cols; k < score_rows * score_cols - 1; ++k )
-                    if ( score_matrix[ k ] > score ) {
-                        score = score_matrix[ k ];
-                        // if we've found a better score here,
-                        // don't forget to reset the ref index
-                        i = r_len;
-                        // remove the initial value!
-                        j = k - ( score_rows - 1 ) * score_cols;
-                    }
+                    // grab the best score from the last row of the score matrix,
+                    // skipping the very last entry ( we already checked it )
+                    for ( k = ( score_rows - 1 ) * score_cols; k < score_rows * score_cols - 1; ++k )
+                        if ( score_matrix[ k ] > score ) {
+                            score = score_matrix[ k ];
+                            // if we've found a better score here,
+                            // don't forget to reset the ref index
+                            i = r_len;
+                            // remove the initial value!
+                            j = k - ( score_rows - 1 ) * score_cols;
+                        }
 
-                // fill in the edit_ops with the difference
-                // between r_len and i
-                for ( k = i; k < r_len; ++k )
-                    edit_ops[ edit_ptr++ ] = -1;
+                    // fill in the edit_ops with the difference
+                    // between r_len and i
+                    for ( k = i; k < r_len; ++k )
+                        edit_ops[ edit_ptr++ ] = -1;
 
-                // fill in the edit_ops with the difference
-                // between q_len and j
-                for ( k = j; k < q_len; ++k )
-                    edit_ops[ edit_ptr++ ] = 1;
-            }
+                    // fill in the edit_ops with the difference
+                    // between q_len and j
+                    for ( k = j; k < q_len; ++k )
+                        edit_ops[ edit_ptr++ ] = 1;
+                }
 
             // backtrack now
 
@@ -847,9 +907,9 @@ double AlignStrings( char * const r_str
             if ( do_codon ) {
                 // if either index hits 0, we're done
                 // or if both indices fall below 3, we're done
-                while ( i && j && ( i >= 3 || j >= 3 ) ) {
+                while ( i && j && ( i >= 3 || j >= 3 ) && !took_local_shortcut ) {
                     // perform a step
-                    const long code = CodonAlignStringsStep( score_matrix
+                    long code = CodonAlignStringsStep( score_matrix
                                                            , r_enc
                                                            , q_enc
                                                            // divide by 3 to index into codon space
@@ -870,11 +930,18 @@ double AlignStrings( char * const r_str
                                                            , codon3x4
                                                            , codon3x2
                                                            , codon3x1
+                                                           , do_true_local
                                                            );
 
                     // alter edit_ops and decrement i and j
                     // according to the step k we took
+                    if (do_true_local && code < 0) {
+                         code = -code - 1;
+                         took_local_shortcut = true;
+                    }
+
                     BacktrackAlignCodon( edit_ops, edit_ptr, i, j, code );
+                    
 
                     // if anything drops below 0, something bad happened
                     if ( i < 0 || j < 0 ) {
@@ -1002,20 +1069,24 @@ double AlignStrings( char * const r_str
                 }
             }
 
-            // for anything that remains,
-            // don't forget it!!!
 
-            // reference
-            while ( --i >= 0 )
-                edit_ops[ edit_ptr++ ] = -1;
+            if (!took_local_shortcut) {
+                // for anything that remains,
+                // don't forget it!!!
+                // reference
+                while ( --i >= 0 )
+                    edit_ops[ edit_ptr++ ] = -1;
 
-            // then query
-            while ( --j >= 0 )
-                edit_ops[ edit_ptr++ ] = 1;
+                // then query
+                while ( --j >= 0 )
+                    edit_ops[ edit_ptr++ ] = 1;
+            }
 
             if ( edit_ptr > 0 ) {
                 // reset indices to 0
-                i = j = 0;
+                if (!took_local_shortcut){ 
+                    i = j = 0;
+                }
 
                 // rebuild the strings from the edit_ops
                 // with room for the null terminator
