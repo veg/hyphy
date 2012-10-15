@@ -3676,7 +3676,12 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                      long nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
 #endif
                      for (long r = 0; r < hDim; r ++) {
-#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
+// OpenMP version 3 changes whether things are predetermined shared, so this has to happen
+#if _OPENMP < 200805
+#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1) num_threads (nt)
+#else
+#pragma omp parallel for default(none) shared(r, secondArg, storage) schedule(static) if (nt>1) num_threads (nt)
+#endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
                              const long upto_p = (secondArg.vDim-c>=_HY_MATRIX_CACHE_BLOCK)?_HY_MATRIX_CACHE_BLOCK:(secondArg.vDim-c);
