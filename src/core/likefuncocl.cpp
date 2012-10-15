@@ -59,7 +59,7 @@
 #include <math.h>
 #include "calcnode.h"
 
-#include <opencl_kernels.h>
+#include "opencl_kernels.h"
 
 //#define FLOAT
 //#define OCLVERBOSE

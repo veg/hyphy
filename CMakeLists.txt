@@ -242,7 +242,7 @@ if(${OPENCL_FOUND})
         EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
     )
-    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
     install(
         TARGETS HYPHYOCL
