@@ -627,7 +627,7 @@ bool    IsModelReversible            (long);
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
 _String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
-
+_String _hblCommandAccessor          (_ExecutionList*, long);
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);

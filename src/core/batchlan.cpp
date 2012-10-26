@@ -1821,6 +1821,18 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 //____________________________________________________________________________________
 
+_String _hblCommandAccessor (_ExecutionList* theList, long index) {
+    if (theList) {
+        _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
+        if (aCommand) {
+            return _String ((_String*)aCommand->toStr());
+        }
+    }
+    return _String ("command index ") & index;
+}
+
+//____________________________________________________________________________________
+
 BaseRef   _ElementaryCommand::toStr      (void)
 {
     _String result, *converted = nil;
@@ -1837,9 +1849,12 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = "Branch ";
         if (simpleParameters.countitems()==3) {
             converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
-            result = result&" under condition "&*converted&" to "&_String(simpleParameters(0))&" else "&_String(simpleParameters(1));
+            result = result& "under condition '"& *converted&"'\n\tto "&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
+                        "\n\telse "&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
-            result = result&" to "&_String(simpleParameters(0));
+            result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
         }
 
         break;
