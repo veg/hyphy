@@ -83,7 +83,6 @@ void HyphyMain::initialText() {
  
     // SW20120702
     // MPProcessors is deprecated as of OSX10.7, using sysctl
-    size_t size;
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #else
@@ -115,7 +114,7 @@ void HyphyMain::initializeMenuBar() {
     //Connect File Menu Events to appropriate slots
     connect(_hyConsoleOpenAction, SIGNAL(triggered()), this, SLOT(hy_open()));
     connect(_hyConsoleSaveAction, SIGNAL(triggered()), this, SLOT(hy_save()));
-    connect(_hyConsoleExitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+    connect(_hyConsoleExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
     //Add the File Menu to the Menu Bar
     _hyConsoleMenu = menuBar()->addMenu(tr("&File"));
@@ -190,7 +189,9 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleStandardAnalysisAction->setShortcuts(keyList);
     _hyConsoleStandardAnalysisAction->setStatusTip("Standard Analysis");
     _hyConsoleResultsAction = new QAction(tr("&Results"),this);
+    _hyConsoleResultsAction->setEnabled(false);
     _hyConsoleRerunLastAnalysisAction = new QAction(tr("&Rerun Last Analysis"),this);
+    _hyConsoleRerunLastAnalysisAction->setEnabled(false);
 
     //Connect Analysis Menu Events to appropriate slots
     connect(_hyConsoleCancelExecutionAction, SIGNAL(triggered()), this, SLOT(hy_cancelexecution()));
@@ -246,11 +247,13 @@ void HyphyMain::initializeStatusBar() {
     this->_elapsed_timer = new QElapsedTimer();
     this->_timer = new QTimer(this);
     connect(this->_timer, SIGNAL(timeout()), this, SLOT(update_timer_display()));
+    ReadSettings();
 }
 
 //File Menu Options
 void HyphyMain::hy_open() {
     if (OpenBatchFile (true)) {
+         lastAnalysisFilePath = (char*)argFileName->sData;
          ExecuteBatchFile();
     }
 }
@@ -317,6 +320,7 @@ void HyphyMain::hy_standardanalysis() {
     hs->exec(); 
     if (selections.lLength == 1) {
         RunTemplate (selections.lData[0]);
+        lastAnalysisFilePath = (char*)argFileName->sData;
     }
 }
 
@@ -417,6 +421,11 @@ void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
 
 }
 
+void HyphyMain::closeEvent(QCloseEvent *event) {
+    WriteSettings();
+    QMainWindow::closeEvent (event);
+}
+
 void HyphyMain::setWaitingOnStringFromConsole (bool value) {
     if (value) {
         console->newline(true);
@@ -431,8 +440,34 @@ void HyphyMain::handle_user_input(const QString data) {
         userData = (_String)(char *)data.toAscii().data();
         emit handled_user_input();
     } else {
-        ExpressionCalculator((_String)(char *)data.toAscii().data());
-        console->newline();
+        if (data.length()) {
+            //printf ("Expression calculator %s\n", data.toAscii().data());
+            ExpressionCalculator((_String)(char *)data.toAscii().data());
+        }
+        console->newline(true);
         console->prompt();
     }
 }
+<<<<<<< HEAD
+=======
+
+void HyphyMain::ReadSettings (void) {
+    QSettings settings;
+    settings.beginGroup("ConsoleWindow");
+    restoreGeometry (settings.value("geometry").toByteArray());
+    restoreState (settings.value("windowState").toByteArray());
+    settings.endGroup();    
+}
+
+void HyphyMain::WriteSettings (void) {
+    QSettings settings;
+    settings.beginGroup("ConsoleWindow");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    settings.endGroup();    
+    
+}
+
+
+
+>>>>>>> 3f2d7145a5c39e30f7e31625e4a0077236d25c09

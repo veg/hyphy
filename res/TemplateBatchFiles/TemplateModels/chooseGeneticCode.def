@@ -79,6 +79,29 @@ _alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
 
 _aaLetterToCode			   = {};
 
+_singleAALetterToFullName  = {
+"A": "Alanine",
+"C": "Cysteine",
+"D": "Aspartic Acid",
+"E": "Glutamic Acid",
+"F": "Phenylalanine",
+"G": "Glycine",
+"H": "Histidine",
+"I": "Isoleucine",
+"K": "Lysine",
+"L": "Leucine",
+"M": "Methionine",
+"N": "Aspargine",
+"P": "Proline",
+"Q": "Glutamine",
+"R": "Arginine",
+"S": "Serine",
+"T": "Theronine",
+"V": "Valine",
+"W": "Tryptophan",
+"Y": "Tyrosine",
+"X": "Stop Codon"
+};
 
 for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
 {
@@ -298,17 +321,15 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
 	for (aaPos = 0; aaPos < seqLen; aaPos += 1)
 	{
 		advance = 1;
-		if (aaSequence[aaPos] == "-")
-		{
-			if (currentAA != "X")
-			{
+		if (aaSequence[aaPos] == "-") {
+			if (currentAA != "X") {
 				translString * "---";
 				advance = 0;
 			}
 		}
-		else
-		{
-			assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings");
+		else {
+			assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings at position " + aaPos 
+			        + " : codon '" + codonSeq[seqPos][seqPos+2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
 		}
 
 		if (advance)
@@ -489,6 +510,8 @@ function translateCodonToAA (codonSeq,mapping,offset)
 	
 	return translString;
 }
+
+
 
 /*----------------------------------------------------------------------------------------------------------*/
 

@@ -1564,9 +1564,7 @@ void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool s
 
             else {
                 // populate with zero data objects
-                for (i = 0; i<theMatrix->lDim; i++) {
-                    ((_Parameter*)theMatrix->theData)[i] = ZEROOBJECT;
-                }
+                memset (theMatrix->theData, 0, theMatrix->lDim*sizeof(_Parameter));
             }
         }
     } else {
@@ -3258,10 +3256,7 @@ void    _Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
                     }
                 }
             } else { // dense matrix
-                _Parameter * _hprestrict_ stData = storage.fastIndex();
-                for (long i = 0; i<lDim; i++) {
-                    stData[i] = theData[i];
-                }
+                memcpy (storage.theData, theData, sizeof (_Parameter)*lDim);
             }
         }
 
@@ -3302,15 +3297,34 @@ void    _Matrix::Add  (_Matrix& storage, _Matrix& secondArg, bool subtract)
 
         } else {
             _Parameter _hprestrict_ * argData = secondArg.theData;
-            _Parameter _hprestrict_ * stData = storage.theData;
+            _Parameter _hprestrict_ * stData  = storage.theData;
+            
+            long    upto = secondArg.lDim - secondArg.lDim%4;
+                       
             if (subtract)
-                for (long idx = 0; idx < secondArg.lDim; idx++) {
+                for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]-=argData[idx];
+                    stData[idx+1]-=argData[idx+1];
+                    stData[idx+2]-=argData[idx+2];
+                    stData[idx+3]-=argData[idx+3];
                 }
             else
-                for (long idx = 0; idx < secondArg.lDim; idx++) {
+                for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
+                    stData[idx+1]+=argData[idx+1];
+                    stData[idx+2]+=argData[idx+2];
+                    stData[idx+3]+=argData[idx+3];
                 }
+                
+            if (subtract)
+                for (long idx = upto; idx < secondArg.lDim; idx++) {
+                    stData[idx]-=argData[idx];
+                 }
+            else
+                for (long idx = upto; idx < secondArg.lDim; idx++) {
+                    stData[idx]+=argData[idx];
+                 }
+ 
         }
     } else
 
@@ -3499,15 +3513,20 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 {
     if (storageType == 1) { // numbers
+        _Parameter _hprestrict_ * destination = storage.theData;
+        _Parameter _hprestrict_           * source      = theData;
+            
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
                 if (storage.theIndex[k] != -1) {
-                    storage.theData[k] = theData[k]*c;
+                    destination[k] = source[k]*c;
                 }
-        } else
+        } else {
             for (long k = 0; k < lDim; k++) {
-                storage.theData[k] = theData[k]*c;
+                destination[k] = source[k]*c;
             }
+        }
+            
     } else {
         _Constant * cc = new _Constant (c);
         checkPointer (cc);
@@ -3587,7 +3606,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 long cumulativeIndex = 0,
                      dimm4 = vDim - vDim%4;
 
-                _Parameter * row = theData;
+                _Parameter _hprestrict_ * row = theData;
+                _Parameter _hprestrict_ * dest = storage.theData;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
                 
@@ -3604,9 +3624,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                        pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
                                        pr3 = row[k+2] * secondArg.theData [column + (secondArg.vDim << 1)],
                                        pr4 = row[k+3] * secondArg.theData [column + secondArg.vDim * 3];
-                            pr1 += pr2;
-                            pr3 += pr4;
-                            resCell += pr1 + pr3;
+                            resCell += pr1 + pr2 + pr3 + pr4;
                         }
                         
                         if (dimm4 < vDim)
@@ -3614,7 +3632,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                                 resCell += row[k] * secondArg.theData[column];
                             }
 
-                        storage.theData[cumulativeIndex++] = resCell;
+                        dest[cumulativeIndex++] = resCell;
 
                     }
                 }
@@ -3780,8 +3798,12 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 for (long k=0; k<lDim; k++) { // loop over entries in the 1st matrix
                     long m = theIndex[k];
                     if  (m!=-1) { // non-zero
-                        long i = m%vDim;
-
+                        long i;
+                        if (vDim == 61) {
+                            i = m % 61;
+                        } else {
+                            i = m%vDim;
+                        }
                         // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
                         // in the form of A_rc * B_cc'
 
@@ -5600,11 +5622,12 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 
             // loop interchange rocks!
 
-            _Parameter  * column = stash+lDim;
+            _Parameter  _hprestrict_ * column = stash+lDim;
+            _Parameter  _hprestrict_ * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
-                    column[c] = theData[j + c * vDim];
+                    column[c] = source[j + c * vDim];
                 }
 
                 for (long i = 0; i < lDim; i += vDim) {
@@ -5615,11 +5638,12 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 #ifndef _SLKP_SSE_VECTORIZATION_
                     long        k = 0;
 
-                    for (; k < loopBound; k+=4)
+                    for (; k < loopBound; k+=4) {
                         buffer += row[k]   * column [k] +
                                   row[k+1] * column [k+1] +
                                   row[k+2] * column [k+2] +
                                   row[k+3] * column [k+3];
+                    }
 
                     for (; k < vDim; k++) {
                         buffer += row[k] * column [k];
@@ -5634,10 +5658,12 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                 }
             }
         }
+        
+        memcpy (theData, stash, lDim * sizeof (_Parameter));
 
-        for (long s = 0; s < lDim; s++) {
+        /*for (long s = 0; s < lDim; s++) {
             theData[s] = stash[s];
-        }
+        }*/
     }
 }
 //_____________________________________________________________________________________________

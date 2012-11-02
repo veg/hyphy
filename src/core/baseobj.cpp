@@ -207,6 +207,11 @@ bool    GlobalStartup (void)
     _HBL_Init_Const_Arrays  ();
 
 
+#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
+    if (_hy_mpi_node_rank == 0) {
+#endif
+
+
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
 #ifndef __HYPHYMPI__
@@ -250,6 +255,9 @@ bool    GlobalStartup (void)
         p++;
     }
     messageFileName = fileName;
+#endif
+#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
+    }
 #endif
 
     return globalErrorFile && globalMessageFile;

@@ -371,6 +371,12 @@ void _String::operator << (const _String* s)
     }
 }
 
+// append operator
+void _String::operator << (const _String& s)
+{
+   (*this) << &s;
+}
+
 //Append operator
 void _String::operator << (const char* str)
 {

@@ -29,6 +29,7 @@ private:
     QString cmdStr;
     QString tempCmd;
     QStringList cmdHistory;
+    
     void printPrompt();
-
+    void handleUserLineEntry(void);
 };

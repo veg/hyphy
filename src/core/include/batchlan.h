@@ -78,7 +78,7 @@ class   _ExecutionList: public _List // a sequence of commands to be executed
 {
 public:
     _ExecutionList (); // doesn't do much
-    _ExecutionList (_String&, _String* = nil, bool = false);
+    _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
 
     virtual
     ~_ExecutionList (void);
@@ -91,7 +91,7 @@ public:
 
     virtual
     void        Duplicate                   (BaseRef);
-    bool        BuildList                   (_String&, _SimpleList* = nil, bool = false);
+    bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
     _PMathObj   Execute                     (void);             // run this execution list
     _PMathObj   GetResult                   (void) {
@@ -121,10 +121,13 @@ public:
         currentCommand = MAX(currentCommand,lLength-1);
     }
 
-    void              ReportAnExecutionError (_String  errMsg, bool = true);
+    void              ReportAnExecutionError (_String  errMsg, bool doCommand = true, bool appendToExisting = false);
     /**
      * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
      * @param errMsg -- the current command text stream
+     * @param doCommand -- add standard text about the current command
+     * @param appendToExisting -- append text to existing error
+     
      */
 
 
@@ -624,7 +627,7 @@ bool    IsModelReversible            (long);
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
 _String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
-
+_String _hblCommandAccessor          (_ExecutionList*, long);
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long);

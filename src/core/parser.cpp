@@ -802,6 +802,8 @@ void    SetupOperationLists (void)
 
         //HY_OP_CODE_ABS
         BuiltInFunctions.AppendNewInstance (new _String ("Abs"));
+        simpleOperationCodes<<HY_OP_CODE_ABS;
+        simpleOperationFunctions<<(long)AbsNumber;
 
         //HY_OP_CODE_ARCTAN
         BuiltInFunctions.AppendNewInstance (new _String ("Arctan"));

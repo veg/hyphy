@@ -32,8 +32,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "calcnode.h"
 #include <unistd.h>
 #if !defined __MINGW32__
-#include <termios.h>
+
+    #include <termios.h>
+    #include <signal.h>
+    #define __HYPHY_HANDLE_TERM_SIGNAL__
+
 #endif
+
 
 #ifdef _MINGW32_MEGA_
 #include <Windows.h>
@@ -45,7 +50,6 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #include "ut_strings.h"
 #endif
 
-//#include <signal.h>
 #if defined   __MP2__ || defined __MP__
 #include <pthread.h>
 #endif
@@ -111,6 +115,25 @@ extern int          _hy_mpi_node_rank;
 void            mpiNormalLoop    (int, int, _String &);
 void            mpiOptimizerLoop (int, int);
 #endif
+
+
+#ifdef     __HYPHY_HANDLE_TERM_SIGNAL__
+    volatile sig_atomic_t hyphy_sigterm_in_progress = 0;
+     
+    void    hyphy_sigterm_handler (int sig)
+    {
+       if (hyphy_sigterm_in_progress)
+           raise (sig);
+           
+       hyphy_sigterm_in_progress = 1;
+     
+       WarnError (_String("HyPhy killed by signal ") & (long)sig);
+       
+       signal (sig, SIG_DFL);
+       raise  (sig);
+    }
+     
+#endif  
 
 //bool  terminateExecution = false;
 
@@ -504,6 +527,13 @@ int main (int argc, char* argv[])
     }
 #endif
 
+#ifdef __HYPHY_HANDLE_TERM_SIGNAL__
+    if (signal (SIGTERM, hyphy_sigterm_handler) == SIG_IGN)
+         signal (SIGTERM, SIG_IGN);
+     if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
+         signal (SIGINT, SIG_IGN);
+         
+#endif
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar ();
     getcwd (curWd,4096);

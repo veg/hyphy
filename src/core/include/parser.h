@@ -175,6 +175,7 @@ _Parameter  Power       (_Parameter, _Parameter);
 _Parameter  RandomNumber(_Parameter, _Parameter);
 _Parameter  ExpNumbers  (_Parameter);
 _Parameter  LogNumbers  (_Parameter);
+_Parameter  AbsNumber   (_Parameter);
 _Parameter  MinusNumber (_Parameter);
 _Parameter  MaxNumbers  (_Parameter, _Parameter);
 _Parameter  MinNumbers  (_Parameter, _Parameter);

@@ -145,6 +145,10 @@ _Parameter  AndNumbers  (_Parameter x, _Parameter y)
 {
     return x != 0.0 && y != 0.0;
 }
+_Parameter  AbsNumber  (_Parameter x)
+{
+    return fabs (x);
+}
 
 //__________________________________________________________________________________
 
@@ -563,12 +567,6 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
  z :> expr                  | HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT    | index of the LHS
 
 
- -1     - valid formula - no variable assignment, e.g. x + y
- -3     - regular '=' with formula receptacle, e.g. matrix [a] = 1
- -4     = ":=" with formula receptacle, e.g. matrix [1] := x + y
- <-4        = ":=" with variable receptacle, e.g. z := x / y
- >=0        "=" with variable receptacle, e.g. z = x/y
-
 */
 
 {
@@ -950,41 +948,38 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
         
             if (isVolatile) *isVolatile = true;
             
-            if (saveError == nil) {
-                int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
+            int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
 
-                if (j<0) {
-                    return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", saveError, s, i);
-                }
-
-                _String matrixDef   (s,i,j);
-
-                if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
-                    _AssociativeList *theList = new _AssociativeList ();
-                    if (!theList) {
-                        checkPointer (theList);
-                    }
-                    if (matrixDef.sLength > 2) {
-                        matrixDef.Trim (1,matrixDef.sLength-2);
-                        if (!theList->ParseStringRepresentation (matrixDef,saveError == nil, theParent)) {
-                            return HandleFormulaParsingError ("Poorly formed associative array construct ", saveError, s, i);
-                        }
-                    }
-
-                    levelData->AppendNewInstance (new _Operation (theList));
-                } else {
-                    _Matrix *theMatrix = new _Matrix (matrixDef,false,theParent);
-                    if (!theMatrix) {
-                        checkPointer (theMatrix);
-                    }
-                    levelData->AppendNewInstance (new _Operation (theMatrix));
-                }
-
-                i = j;
-                continue;
-            } else {
-                return HY_FORMULA_FAILED;
+            if (j<0) {
+                return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", saveError, s, i);
             }
+
+            _String matrixDef   (s,i,j);
+
+            if (matrixDef.sLength == 2 || matrixDef.sData[1] == '"') {
+                _AssociativeList *theList = new _AssociativeList ();
+                if (!theList) {
+                    checkPointer (theList);
+                }
+                if (matrixDef.sLength > 2) {
+                    matrixDef.Trim (1,matrixDef.sLength-2);
+                    if (!theList->ParseStringRepresentation (matrixDef,saveError == nil, theParent)) {
+                        return HandleFormulaParsingError ("Poorly formed associative array construct ", saveError, s, i);
+                    }
+                }
+
+                levelData->AppendNewInstance (new _Operation (theList));
+            } else {
+                _Matrix *theMatrix = new _Matrix (matrixDef,false,theParent);
+                if (!theMatrix) {
+                    checkPointer (theMatrix);
+                }
+                levelData->AppendNewInstance (new _Operation (theMatrix));
+            }
+
+            i = j;
+            continue;
+            
         }
 
         if (s.getChar(i) == '[') { // opening [

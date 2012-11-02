@@ -922,12 +922,16 @@ _ExecutionList::_ExecutionList ()
     stdinRedirectAux = nil;
     doProfile      = 0;
     nameSpacePrefix = nil;
-    errorHandlingMode  = HY_BL_ERROR_HANDLING_DEFAULT;
+    if (currentExecutionList) {
+        errorHandlingMode  = currentExecutionList->errorHandlingMode;
+    } else {
+        errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+    }
 
 } // doesn't do much
 
 //____________________________________________________________________________________
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource)
+_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource, bool* successFlag)
 {
     currentCommand = 0;
     result         = nil;
@@ -937,14 +941,22 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copy
     stdinRedirect  = nil;
     stdinRedirectAux = nil;
     nameSpacePrefix = nil;
+    
     if (namespaceID) {
         SetNameSpace (*namespaceID);
     }
     if (copySource) {
         sourceText.Duplicate (&source);
     }
-    errorHandlingMode  = HY_BL_ERROR_HANDLING_DEFAULT;
-    BuildList (source);
+    if (currentExecutionList) {
+        errorHandlingMode  = currentExecutionList->errorHandlingMode;
+    } else {
+        errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+    }
+    bool result = BuildList (source, nil, false, true);
+    if (successFlag) {
+        *successFlag = result;
+    }
 }
 
 //____________________________________________________________________________________
@@ -1010,7 +1022,7 @@ void        _ExecutionList::Duplicate   (BaseRef source)
 
 
 //____________________________________________________________________________________
-void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand) {
+void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand, bool appendToExisting) {
     if (doCurrentCommand) {
         _ElementaryCommand *theCommand = FetchLastCommand();
         if (theCommand) {
@@ -1019,7 +1031,14 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
     }
     switch (errorHandlingMode) {
         case HY_BL_ERROR_HANDLING_SOFT:
+            if (appendToExisting) {
+              _FString * existing = (_FString*) FetchObjectFromVariableByType(&_hyLastExecutionError, STRING);
+              if (existing) {
+                errMsg = *existing->theString & '\n' & errMsg;
+              }
+            }
             setParameter(_hyLastExecutionError, new _FString (errMsg, false), false);
+            
             break;
         default: 
             WarnError (errMsg);
@@ -1450,7 +1469,7 @@ _String  blFor                  ("for("),               // moved
 
 
 
-bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed)
+bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success)
 {
     if (terminateExecution) {
         return false;
@@ -1488,17 +1507,22 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                          condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                     if (condition_index_match < 0) {
                         // try to see if the command accepts a variable number of arguments (at least X)
-                        if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
+                       _String parseFail;
+                       if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
                             if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
-                                 acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
-                                 DeleteObject (pieces);
-                                 return false;
-                           
-                            }
+                                 parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
+                             }
                         } else {
-                            acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                            parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
+                        }
+                        if (parseFail.sLength) {
+                            if (currentExecutionList) {
+                                currentExecutionList->ReportAnExecutionError(parseFail, false, true);
+                            } else {
+                                acknError (parseFail);
+                            }
                             DeleteObject (pieces);
-                            return false;
+                            return false;  
                         }
                     }
                     if (commandExtraInfo->do_trim) {
@@ -1704,7 +1728,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
     }
     s.sData = savePointer;
     s.DuplicateErasing (&empty);
-    return countitems();
+    return empty_is_success || countitems();
 }
 
 //____________________________________________________________________________________
@@ -1797,6 +1821,18 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 //____________________________________________________________________________________
 
+_String _hblCommandAccessor (_ExecutionList* theList, long index) {
+    if (theList) {
+        _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
+        if (aCommand) {
+            return _String ((_String*)aCommand->toStr());
+        }
+    }
+    return _String ("command index ") & index;
+}
+
+//____________________________________________________________________________________
+
 BaseRef   _ElementaryCommand::toStr      (void)
 {
     _String result, *converted = nil;
@@ -1813,9 +1849,12 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = "Branch ";
         if (simpleParameters.countitems()==3) {
             converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
-            result = result&" under condition "&*converted&" to "&_String(simpleParameters(0))&" else "&_String(simpleParameters(1));
+            result = result& "under condition '"& *converted&"'\n\tto "&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
+                        "\n\telse "&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
-            result = result&" to "&_String(simpleParameters(0));
+            result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
         }
 
         break;
@@ -3109,6 +3148,9 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
     }
 }
 
+//____________________________________________________________________________________
+
+
 void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -3245,24 +3287,30 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
     if (theCommand.beginswith ("#NEXUS")) {
         ReadDataSetFile (nil,1,&theCommand,nil,namespc);
     } else {
-        _ExecutionList exc (theCommand,namespc);
-
-        exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
-        exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
-
-        if (simpleParameters.lLength && exc.TryToMakeSimple()) {
-            ReportWarning ("Successfully compiled an execution list.");
-            exc.ExecuteSimple ();
+        bool result = false;
+        _ExecutionList exc (theCommand,namespc, false, &result);
+        
+        if (!result) {
+            chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
         } else {
-            exc.Execute();
-        }
 
-        exc.stdinRedirectAux = nil;
-        exc.stdinRedirect    = nil;
-        if (exc.result) {
-            DeleteObject (chain.result);
-            chain.result = exc.result;
-            exc.result = nil;
+            exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
+            exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+
+            if (simpleParameters.lLength && exc.TryToMakeSimple()) {
+                ReportWarning ("Successfully compiled an execution list.");
+                exc.ExecuteSimple ();
+            } else {
+                exc.Execute();
+            }
+
+            exc.stdinRedirectAux = nil;
+            exc.stdinRedirect    = nil;
+            if (exc.result) {
+                DeleteObject (chain.result);
+                chain.result = exc.result;
+                exc.result = nil;
+            }
         }
     }
 

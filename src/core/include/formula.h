@@ -65,7 +65,7 @@ public:
     _Formula (_String&,_VariableContainer* theParent=nil,_String* errorString = nil);
     _Formula (_PMathObj, bool isAVar = false);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil);
+    _PMathObj   Compute             (long = 0, _VariableContainer* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument

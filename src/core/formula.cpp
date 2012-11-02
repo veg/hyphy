@@ -1241,7 +1241,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 }
 
 //__________________________________________________________________________________
-_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments) 
+_PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg) 
 // compute the value of the formula
 {
     if (theFormula.lLength == 0) {
@@ -1266,7 +1266,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                     _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
 
                     if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
-                        if (!thisOp->Execute(theStack,nameSpace)) {
+                        if (!thisOp->Execute(theStack,nameSpace, errMsg)) {
                             wellDone = false;
                             break;
                         }
@@ -1305,7 +1305,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
                        continue;
                     }
                 }
-                if (!thisOp->Execute(theStack,nameSpace)) { // does this always get executed?
+                if (!thisOp->Execute(theStack,nameSpace, errMsg)) { // does this always get executed?
                     wellDone = false;
                     break;
                 }
@@ -1316,13 +1316,19 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List
             }
         } else {
             for (unsigned long i=startAt; i<theFormula.lLength; i++)
-                if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace)) {
+                if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->Execute(theStack, nameSpace, errMsg)) {
                     wellDone = false;
                     break;
                 }
         }
         if (theStack.theStack.lLength != 1 || !wellDone) {
-            WarnError (_String((_String*)toStr()) & _String(" contains errors."));
+            _String errorText = _String((_String*)toStr()) & _String(" contains errors.");
+            if (errMsg) {
+                *errMsg = *errMsg & errorText;
+            }
+            else {
+                WarnError (errorText);
+            }
             theStack.theStack.Clear();
             theStack.Push (new _Constant (0.0), false);
          }

@@ -52,15 +52,15 @@ csvFilePath = LAST_FILE_PATH;
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
 
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
-//Optimize					  (res_base,base_LF);
+Optimize					  (res_base,base_LF);
 
 lfOut	= csvFilePath + ".mglocal.fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, base_LF);
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
-//localLL						 = res_base[1][0];
-//localParams					 = res_base[1][1] + 9;
+localLL						 = res_base[1][0];
+localParams					 = res_base[1][1] + 9;
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -288,7 +288,7 @@ for		(k = 0; k < totalBranchCount; k = k+1)
 
 if (hasBranchesUnderSelection == 0)
 {
-	fprintf (stdout, "\tNo branches found to be under selection at p <= ", threshold, "\n");
+	fprintf (stdout, "\tNo branches found to be under selection at p <= ", pthreshold, "\n");
 }
 
 

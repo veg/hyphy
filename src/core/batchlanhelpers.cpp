@@ -101,25 +101,29 @@ void    ReadModelList(void)
 bool ExpressionCalculator (_String data)
 {
     //Checking for exit
-    if (data.sLength == 4) {
-        _String checkForExit (data);
-        checkForExit.LoCase();
-        if (checkForExit == _String ("exit")) {
-            return false;
+    #ifndef __HYPHYQT__
+        if (data.sLength == 4) {
+            _String checkForExit (data);
+            checkForExit.LoCase();
+            if (checkForExit == _String ("exit")) {
+                return false;
+            }
         }
-    }
+    #endif
 
-    _Formula  lhs,
-              rhs;
+    _Formula   lhs,
+               rhs;
+              
+    _String    errMsg;
 
     long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil);
+               retCode = Parse(&lhs, data, refV, nil,nil, &errMsg);
 
-    if (!terminateExecution) {
+    if (retCode != HY_FORMULA_FAILED) {
         if (retCode == HY_FORMULA_EXPRESSION) {
-            _PMathObj formRes = lhs.Compute();
-            if (!formRes) {
-                BufferToConsole ("NULL\n");
+            _PMathObj formRes = lhs.Compute(0,nil,nil,&errMsg);
+            if (errMsg.sLength) {
+                WarnError(errMsg);
             } else {
                 _String * objValue = (_String*)formRes->toStr();
                 StringToConsole(*objValue);
@@ -128,8 +132,9 @@ bool ExpressionCalculator (_String data)
         } else {
             BufferToConsole ("NO RETURN VALUE");
         }
+    } else {
+        WarnError(errMsg);
     }
-    terminateExecution = false;
     return true;
 }
 

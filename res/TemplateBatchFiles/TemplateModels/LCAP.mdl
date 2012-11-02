@@ -208,12 +208,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 	/*fprintf ( stdout, modelDefString );*/
 	ExecuteCommands (modelDefString);
 	
-	if ( freqs < 2 ) {
-		return 0;
-	}
-	else {
-		return 1;
-	}
+	return freqs == 2;
 }
 
  ChoiceList (freqType,"Choose a frequency parameterisation",1,SKIP_NONE,

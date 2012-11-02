@@ -4,6 +4,8 @@
 #include "baseobj.h"
 #include "hyphymain.h"
 #include "hyphyevents.h"
+#include "hyphy_qt_helpers.h"
+
 #include "HYSharedMain.h"
 
 _String baseArgDir,
@@ -14,6 +16,7 @@ HyphyMain * _hyPrimaryConsoleWindow;
 int main(int argc, char *argv[])
 {
     GlobalStartup();
+    DoApplicationSettings ();
     
     char    curWd[4096],
             dirSlash = GetPlatformDirectoryChar ();
@@ -45,13 +48,13 @@ int main(int argc, char *argv[])
 
     _hyPrimaryConsoleWindow = & mainWindow;
  
-    mainWindow.setGeometry(
+    /*mainWindow.setGeometry(
     QStyle::alignedRect(
         Qt::LeftToRight,
         Qt::AlignCenter,
         mainWindow.size(),
         qApp->desktop()->availableGeometry()
-    ));
+    ));*/
     
     mainWindow.show();
     mainWindow.raise();

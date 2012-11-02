@@ -219,6 +219,11 @@ public:
 
     /**
     * Append operator
+    */
+    virtual void operator << (const _String&);
+
+    /**
+    * Append operator
     * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
     * @return "AB"
     * @sa EscapteAndAppend()
