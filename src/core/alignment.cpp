@@ -605,6 +605,7 @@ double AlignStrings( char * const r_str
     double score = 0.;
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
+        WarnError( "Reference sequence length not divisible by 3 in AlignStrings (codon mode)" );
         return -A_LARGE_NUMBER;
     }
 

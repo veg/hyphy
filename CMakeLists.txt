@@ -435,7 +435,7 @@ if((${QT4_FOUND}))
     #Extra stuff to look over
     add_custom_target(QT DEPENDS HYPHYQT)
 
-	install(DIRECTORY src/gui/res/QTResources/ DESTINATION lib/hyphy/QTResources)
+	#install(DIRECTORY src/gui/res/QTResources/ DESTINATION lib/hyphy/QTResources)
 
 	install(
         TARGETS HYPHYQT
