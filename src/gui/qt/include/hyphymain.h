@@ -85,7 +85,6 @@ protected:
 
 signals:
     void handled_user_input ();
-
     
 private slots:
     //File Menu
@@ -108,8 +107,13 @@ private slots:
     void hy_objectinspector();
     void hy_cyclethroughwindows();
 
+    //Status Timer
+    void    update_timer_display();
 
 private:
+    QTimer *_timer;
+    QElapsedTimer  *_elapsed_timer;
+
     //File Actions
     QAction *_hyConsoleOpenAction;
     QAction *_hyConsoleSaveAction;
@@ -124,6 +128,9 @@ private:
     QAction *_hyConsoleFindAction;
     QAction *_hyConsoleSelectAllAction;
     QAction *_hyConsoleClearWindowAction;
+
+    //View Actions
+    QAction *_hyConsoleHideStatusBarAction;
 
     //Analysis Actions
     QAction *_hyConsoleCancelExecutionAction;
@@ -141,18 +148,22 @@ private:
     QAction *_hyConsoleCycleThroughWindowsAction;
 
     QMenu   *_hyConsoleMenu;
+    void    initializeMenuBar();
+    void    initializeStatusBar();
     QString  lastAnalysisFilePath;
     
-    
-    void initializeMenuBar();
-    
     // preferences options
-    
     void     ReadSettings  (void);
     void     WriteSettings (void);
     
     bool     waitingOnStringFromConsole;
     _String  userData;
-};
+
+    //Status Bar
+    QStatusBar *status;
+    QLabel *filename_status;
+    QLabel *updated_status;
+
+    };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

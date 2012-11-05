@@ -38,7 +38,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <QtGui>
+#include <QStatusBar>
 #include <QDebug>
+#include <QDir>
 #include "hyphymain.h"
 
 //For OSX number of cpus
@@ -49,17 +51,23 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "qterminal.h"
 #include "hyphyhierarchicalselector.h"
+#include "hyphymessageoutput.h"
 #include "hyphyevents.h"
 #include "hyphy_qt_helpers.h"
 
 #include "HYSharedMain.h"
+
+//QString messageFileName = "messages.log";
+extern _String messageFileName;
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     waitingOnStringFromConsole = false;
     initialText();
     initializeMenuBar();
+    initializeStatusBar();
     installEventFilter(this);
+
 }
 
 void HyphyMain::initialText() {
@@ -67,6 +75,7 @@ void HyphyMain::initialText() {
     console->setLineWrapMode(QTextEdit::FixedColumnWidth);
     console->setWordWrapMode(QTextOption::WordWrap);
     console->setLineWrapColumnOrWidth(80);
+    console->setLineWrapMode(QTextEdit::WidgetWidth);
 
     //HyPhy version
     _String version = GetVersionString();
@@ -212,11 +221,18 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addAction(_hyConsoleObjectInspectorAction);
     _hyConsoleMenu->addSeparator();
     _hyConsoleMenu->addAction(_hyConsoleCycleThroughWindowsAction);
-
-    console->setLineWrapMode(QTextEdit::WidgetWidth);
-
-    ReadSettings();
 }
+
+void HyphyMain::initializeStatusBar() {
+
+    this->filename_status = new QLabel(this);
+    this->updated_status = new QLabel(this);
+    this->status = statusBar();
+    this->status->addPermanentWidget(filename_status, 200);
+    this->status->addPermanentWidget(updated_status, 200);
+    status->show();
+}
+
 
 //File Menu Options
 void HyphyMain::hy_open() {
@@ -236,7 +252,13 @@ void HyphyMain::quit() {
 //Analysis Menu
 void HyphyMain::hy_cancelexecution(){}
 void HyphyMain::hy_suspendexecution(){}
-void HyphyMain::hy_viewlog(){}
+
+void HyphyMain::hy_viewlog(){
+    messageFileName = "messages.log";
+    QString path = QDir::currentPath() + '/' + messageFileName.getStr();
+    _HY_MessageOutput *mo = new _HY_MessageOutput(path,0,0);
+    mo->show();
+}
 
 void HyphyMain::hy_standardanalysis() {
 
@@ -286,8 +308,7 @@ void HyphyMain::DisplayPrompt     (void) {
     console->prompt();
 }
 
-bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
-{
+bool HyphyMain::eventFilter(QObject *obj, QEvent *event) {
     if (event->type() == BufferToStringType) {
         AppendTextToEnd (((QBufferToConsoleEvent*)event)->buffer(), false, &((QBufferToConsoleEvent*)event)->color());
         return true;
@@ -296,24 +317,54 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event)
     return QMainWindow::eventFilter(obj,event);
 }
 
+//Status line specific
 void HyphyMain::StartBarTimer() {
+      //this->_timer->start(1000);
+      //this->_elapsed_timer->start();
 }
 
 void HyphyMain:: StopBarTimer() {
+      //this->_timer->stop();
 }
 
-void HyphyMain::SetStatusLine     (_String) {
-}
-void HyphyMain::SetStatusLine     (_String, _String, _String, long l){
+void HyphyMain::update_timer_display() {
+
+    //Need to format the elapsed time :/
+    //const int elapsed = (int)(_elapsed_timer->elapsed()/1000);
+    //const int mins = elapsed / 60;
+    //const int secs = elapsed % 60;
+
+    //QString minStr = (mins >= 10) ? QString::number(mins) : QString::fromLatin1("0") + QString::number(mins);
+    //QString secStr = (secs >= 10) ? QString::number(secs) : QString::fromLatin1("0") + QString::number(secs);
+
+    //this->timerDisplay->display(minStr + QString::fromLatin1(":") + secStr);
 }
 
-void HyphyMain::SetStatusLine     (_String, _String, _String){
+void HyphyMain::SetStatusLine(_String updatedStatus){
+    this->updated_status->setText(updatedStatus.getStr());
 }
 
-void HyphyMain::SetStatusLine     (_String, _String, _String, long, char){
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer){
+    this->filename_status->setText(fn.getStr());
+    this->updated_status->setText(updatedStatus.getStr());
+    this->status->show();
+
+    //TODO: Timer
+    //this->timerDisplay->setText(updatedStatus.getStr());
 }
 
-void HyphyMain::SetStatusBarValue (long, _Parameter, _Parameter){
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
+    this->SetStatusLine(fn,updatedStatus,timer);
+    this->progressBar->setValue(percentDone);
+}
+
+void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone, char c){
+    this->SetStatusLine(fn,updatedStatus,timer,percentDone);
+    //handle c
+}
+
+void HyphyMain::SetStatusBarValue (long percentDone, _Parameter max, _Parameter rate) {
+    //this->progressBar->setValue(percentDone);
 }
 
 void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
@@ -364,6 +415,4 @@ void HyphyMain::WriteSettings (void) {
     settings.endGroup();    
     
 }
-
-
 
