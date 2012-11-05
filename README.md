@@ -33,6 +33,7 @@ then just `make` away with one of the following targets:
 
 +   MAC - build a Mac Carbon application
 +   HYPHYGTK - HYPHY with GTK
++   SP - build a HyPhy executable (HYPHYSP) without multiprocessing
 +   MP2 - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing

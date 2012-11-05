@@ -38,12 +38,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "hyphyevents.h"
-#include <QDebug> 
+#pragma once
+#include "ui_hyphymessageoutput.h"
 
-QBufferToConsoleEvent::QBufferToConsoleEvent(QString bufferStr, _SimpleList* color) : QEvent(BufferToStringType) {
-    this->bufferStr = bufferStr;
-    if (color) {
-        textColor.Duplicate (color);
-    }
-}
+
+class _HY_MessageOutput: public QWidget, private Ui::Form
+{
+    Q_OBJECT
+
+public:
+    _HY_MessageOutput(QString fn, QWidget * parent = 0, Qt::WindowFlags f = 0);
+};

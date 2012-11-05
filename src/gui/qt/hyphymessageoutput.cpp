@@ -1,4 +1,3 @@
-
 /*
 
 HyPhy - Hypothesis Testing Using Phylogenies.
@@ -38,12 +37,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "hyphyevents.h"
-#include <QDebug> 
+#include <QList>
+#include <QFile>
+#include <QTextStream>
+#include <QMessageBox>
+#include <QRegExp>
+#include <QPushButton>
+#include <QKeyEvent>
+#include <QDebug>
 
-QBufferToConsoleEvent::QBufferToConsoleEvent(QString bufferStr, _SimpleList* color) : QEvent(BufferToStringType) {
-    this->bufferStr = bufferStr;
-    if (color) {
-        textColor.Duplicate (color);
+#include "hyphymessageoutput.h"
+
+_HY_MessageOutput::_HY_MessageOutput(QString fn, QWidget * parent, Qt::WindowFlags f) : QWidget(parent) {
+    setupUi(this);
+
+    //Readout file to display
+    QFile file(fn);
+
+    if (!file.open(QIODevice::ReadOnly)) {
+     QMessageBox::warning(this, tr("Error Opening File"),
+                          tr("Could not open '%1'").arg(fn));
     }
+
+    QByteArray data = file.readAll();
+    qDebug() << fn; 
+    qDebug() << file.readAll(); 
+    this->textBrowser->setText(file.readAll());
+
+    //Make read only
+    this->textBrowser->setReadOnly(true);
+
 }
