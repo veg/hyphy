@@ -101,9 +101,6 @@ private slots:
     void hy_results();
     void hy_rerunlastanalysis();
 
-    //View Menu
-    void toggle_status_bar();
-
     //Window Menu
     void hy_minimize();
     void hy_consolewindow();
@@ -116,7 +113,6 @@ private slots:
 private:
     QTimer *_timer;
     QElapsedTimer  *_elapsed_timer;
-    bool _statusBarVisible;
 
     //File Actions
     QAction *_hyConsoleOpenAction;
@@ -153,19 +149,21 @@ private:
 
     QMenu   *_hyConsoleMenu;
     void    initializeMenuBar();
-    //void    initializeStatusBar();
+    void    initializeStatusBar();
     QString  lastAnalysisFilePath;
     
-    
-    void initializeMenuBar();
-    
     // preferences options
-    
     void     ReadSettings  (void);
     void     WriteSettings (void);
     
     bool     waitingOnStringFromConsole;
     _String  userData;
-};
+
+    //Status Bar
+    QStatusBar *status;
+    QLabel *filename_status;
+    QLabel *updated_status;
+
+    };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

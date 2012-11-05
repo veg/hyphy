@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <QtGui>
+#include <QStatusBar>
 #include <QDebug>
 #include <QDir>
 #include "hyphymain.h"
@@ -67,7 +68,6 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     initializeStatusBar();
     installEventFilter(this);
 
-    this->_statusBarVisible = true;
 }
 
 void HyphyMain::initialText() {
@@ -167,17 +167,6 @@ void HyphyMain::initializeMenuBar() {
     _hyConsoleMenu->addAction(_hyConsoleSelectAllAction);
     _hyConsoleMenu->addAction(_hyConsoleClearWindowAction);
 
-
-    //Create View Menu Options
-    _hyConsoleHideStatusBarAction = new QAction(trUtf8("&Hide Status Bar"),this);
-
-    //Connect View Menu Events to appropriate slots
-    connect(_hyConsoleHideStatusBarAction, SIGNAL(triggered()), this, SLOT(toggle_status_bar()));
-
-    //Add the View Menu to the Menu Bar
-    _hyConsoleMenu = menuBar()->addMenu(tr("&View"));
-    _hyConsoleMenu->addAction(_hyConsoleHideStatusBarAction);
-
     //Create Analysis Menu Options
     _hyConsoleCancelExecutionAction = new QAction(tr("&Cancel Execution"),this);
     _hyConsoleCancelExecutionAction->setStatusTip("Cancels Execution of Analysis Currently Running");
@@ -235,20 +224,15 @@ void HyphyMain::initializeMenuBar() {
 }
 
 void HyphyMain::initializeStatusBar() {
-    //Status elements
-    //progressBar;
-    //statusLine;
-    //timerDisplay;
 
-    //Initialize progressBar to 0
-    progressBar->setValue(0);
-
-    //Timer stuff
-    this->_elapsed_timer = new QElapsedTimer();
-    this->_timer = new QTimer(this);
-    connect(this->_timer, SIGNAL(timeout()), this, SLOT(update_timer_display()));
-    ReadSettings();
+    this->filename_status = new QLabel(this);
+    this->updated_status = new QLabel(this);
+    this->status = statusBar();
+    this->status->addPermanentWidget(filename_status, 200);
+    this->status->addPermanentWidget(updated_status, 200);
+    status->show();
 }
+
 
 //File Menu Options
 void HyphyMain::hy_open() {
@@ -263,36 +247,6 @@ void HyphyMain::hy_save() {
 }
 
 void HyphyMain::quit() {
-}
-
-//View Menu Options
-void HyphyMain::toggle_status_bar() {
-
-    //Use of bool just in case a widget gets out of sync
-    if(this->_statusBarVisible) {
-        this->_hyConsoleHideStatusBarAction->setText("&Show Status Bar");
-        this->filenameLabel->hide();
-        this->currentFilenameLabel->hide();
-        this->statusLabel->hide();
-        this->currentStatusLabel->hide();
-        this->progressBar->hide();
-        this->timerDisplay->hide();
-        this->statusVline->hide();
-    }
-
-    //Display Check Mark next to Status Bar menu option if visible
-    else {
-        this->_hyConsoleHideStatusBarAction->setText(trUtf8("&Hide Status Bar"));
-        this->filenameLabel->show();
-        this->currentFilenameLabel->show();
-        this->statusLabel->show();
-        this->currentStatusLabel->show();
-        this->progressBar->show();
-        this->timerDisplay->show();
-        this->statusVline->show();
-    }
-
-    this->_statusBarVisible = !this->_statusBarVisible;
 }
 
 //Analysis Menu
@@ -365,56 +319,52 @@ bool HyphyMain::eventFilter(QObject *obj, QEvent *event) {
 
 //Status line specific
 void HyphyMain::StartBarTimer() {
-      this->_timer->start(1000);
-      this->_elapsed_timer->start();
+      //this->_timer->start(1000);
+      //this->_elapsed_timer->start();
 }
 
 void HyphyMain:: StopBarTimer() {
-      this->_timer->stop();
+      //this->_timer->stop();
 }
 
 void HyphyMain::update_timer_display() {
 
     //Need to format the elapsed time :/
-    const int elapsed = (int)(_elapsed_timer->elapsed()/1000);
-    const int mins = elapsed / 60;
-    const int secs = elapsed % 60;
+    //const int elapsed = (int)(_elapsed_timer->elapsed()/1000);
+    //const int mins = elapsed / 60;
+    //const int secs = elapsed % 60;
 
-    QString minStr = (mins >= 10) ? QString::number(mins) : QString::fromLatin1("0") + QString::number(mins);
-    QString secStr = (secs >= 10) ? QString::number(secs) : QString::fromLatin1("0") + QString::number(secs);
+    //QString minStr = (mins >= 10) ? QString::number(mins) : QString::fromLatin1("0") + QString::number(mins);
+    //QString secStr = (secs >= 10) ? QString::number(secs) : QString::fromLatin1("0") + QString::number(secs);
 
-    this->timerDisplay->display(minStr + QString::fromLatin1(":") + secStr);
-
+    //this->timerDisplay->display(minStr + QString::fromLatin1(":") + secStr);
 }
 
-void HyphyMain::SetStatusLine(_String updatedStatus) {
-    this->currentStatusLabel->setText(updatedStatus.getStr());
+void HyphyMain::SetStatusLine(_String updatedStatus){
+    this->updated_status->setText(updatedStatus.getStr());
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer){
-    this->currentFilenameLabel->setText(fn.getStr());
-    this->currentStatusLabel->setText(updatedStatus.getStr());
+    this->filename_status->setText(fn.getStr());
+    this->updated_status->setText(updatedStatus.getStr());
+    this->status->show();
+
+    //TODO: Timer
     //this->timerDisplay->setText(updatedStatus.getStr());
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
-    this->currentFilenameLabel->setText(fn.getStr());
-    this->currentStatusLabel->setText(updatedStatus.getStr());
-    //this->timerDisplay->setText(updatedStatus.getStr());
+    this->SetStatusLine(fn,updatedStatus,timer);
     this->progressBar->setValue(percentDone);
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone, char c){
-    //TODO: implement fully
-    this->currentFilenameLabel->setText(fn.getStr());
-    this->currentStatusLabel->setText(updatedStatus.getStr());
-    //this->timerDisplay->setText(updatedStatus.getStr());
-    this->progressBar->setValue(percentDone);
+    this->SetStatusLine(fn,updatedStatus,timer,percentDone);
+    //handle c
 }
 
 void HyphyMain::SetStatusBarValue (long percentDone, _Parameter max, _Parameter rate) {
-    //Need to look up what max and rate is
-    this->progressBar->setValue(percentDone);
+    //this->progressBar->setValue(percentDone);
 }
 
 void HyphyMain::AddStringToRecentMenu (const _String, const _String) {
@@ -448,8 +398,6 @@ void HyphyMain::handle_user_input(const QString data) {
         console->prompt();
     }
 }
-<<<<<<< HEAD
-=======
 
 void HyphyMain::ReadSettings (void) {
     QSettings settings;
@@ -468,6 +416,3 @@ void HyphyMain::WriteSettings (void) {
     
 }
 
-
-
->>>>>>> 3f2d7145a5c39e30f7e31625e4a0077236d25c09

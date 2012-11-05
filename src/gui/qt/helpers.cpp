@@ -75,21 +75,28 @@ _String* StringFromConsole (bool echo)
          
         // Lets print the HTTP GET response.
         return new _String(_hyPrimaryConsoleWindow->getUserData());
-        //_hyPrimaryConsoleWindow->getUserData ();
-        //_hyPrimaryConsoleWindow->setWaitingOnStringFromConsole(false);
-        
     }
     return nil;
-}
-
-void SetStatusLine(_String arg)
-{
-
 }
 
 void SetStatusLineUser(_String s)
 {
 
+}
+
+void SetStatusLine(_String statusUpdate)
+{
+    _hyPrimaryConsoleWindow->SetStatusLine(statusUpdate);
+}
+
+void SetStatusLine(_String fn, _String updatedStatus, _String timer)
+{
+    _hyPrimaryConsoleWindow->SetStatusLine(fn, updatedStatus, timer);
+}
+
+void SetStatusLine(_String fn, _String updatedStatus, _String timer, long percentDone)
+{
+    _hyPrimaryConsoleWindow->SetStatusLine(fn, updatedStatus, timer, percentDone);
 }
 
 void SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c) {
