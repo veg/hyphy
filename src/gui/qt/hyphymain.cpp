@@ -37,10 +37,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include <QtGui>
-#include <QStatusBar>
 #include <QDebug>
+
+#include <QtGui>
 #include <QDir>
+#include <QStatusBar>
+#include <QSpacerItem>
 #include "hyphymain.h"
 
 //For OSX number of cpus
@@ -59,6 +61,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //QString messageFileName = "messages.log";
 extern _String messageFileName;
+
+//#define  STATUS_BAR_LABEL_WIDTH 100 
 
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
@@ -227,10 +231,16 @@ void HyphyMain::initializeStatusBar() {
 
     this->filename_status = new QLabel(this);
     this->updated_status = new QLabel(this);
+
+    this->progress_bar = new QProgressBar(this);
+    this->progress_bar->hide();
+
     this->status = statusBar();
-    this->status->addPermanentWidget(filename_status, 200);
-    this->status->addPermanentWidget(updated_status, 200);
+    this->status->insertWidget(0,updated_status, 1);
+    //this->status->insertWidget(1,progress_bar, 0);
+    this->status->addPermanentWidget(filename_status, 0);
     status->show();
+
 }
 
 
@@ -338,14 +348,17 @@ void HyphyMain::update_timer_display() {
     //QString secStr = (secs >= 10) ? QString::number(secs) : QString::fromLatin1("0") + QString::number(secs);
 
     //this->timerDisplay->display(minStr + QString::fromLatin1(":") + secStr);
+
 }
 
 void HyphyMain::SetStatusLine(_String updatedStatus){
     this->updated_status->setText(updatedStatus.getStr());
+
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer){
-    this->filename_status->setText(fn.getStr());
+    _String label_text = _String("Running ")&fn;
+    this->filename_status->setText(label_text.getStr());
     this->updated_status->setText(updatedStatus.getStr());
     this->status->show();
 
@@ -354,8 +367,20 @@ void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String ti
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
+    qDebug() << "Do we get here? percent done";
+    qDebug() << percentDone;
+
     this->SetStatusLine(fn,updatedStatus,timer);
-    this->progressBar->setValue(percentDone);
+
+    if (percentDone < 100 || percentDone > 0) {
+        this->status->insertWidget(1,progress_bar, 0);
+    }
+
+    else {
+        this->status->removeWidget(progress_bar);
+    }
+
+    this->progress_bar->setValue(percentDone);
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone, char c){

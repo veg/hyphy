@@ -40,6 +40,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include <QtGui>
+#include <QProgressBar>
+
 #include "ui_hyphymain.h"
 #include "qterminal.h"
 #include "hy_strings.h"
@@ -163,7 +165,7 @@ private:
     QStatusBar *status;
     QLabel *filename_status;
     QLabel *updated_status;
-
+    QProgressBar *progress_bar;
     };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

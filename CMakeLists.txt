@@ -403,7 +403,6 @@ endif((${GTK2_FOUND}))
 # hyphy qt target
 #-------------------------------------------------------------------------------
 
-
 find_package(QT4)
 
 if((${QT4_FOUND}))
@@ -411,6 +410,7 @@ if((${QT4_FOUND}))
     file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp src/gui/HYSharedMain.*) 
     file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h src/gui/include/HYSharedMain.*) 
     file(GLOB QT_HYPHY_UI src/gui/qt/ui/*ui)
+    set(RES_MACGUI src/gui/mac/HYPHYMP.icns src/gui/mac/HyPhy.rsrc)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
     QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
@@ -419,44 +419,54 @@ if((${QT4_FOUND}))
     add_definitions(${QT_DEFINITIONS})
     add_definitions(-D__HYPHY_64__)
 
-    add_executable(HYPHYQT ${SRC_CORE}                  
+    add_executable(HYPHYQT MACOSX_BUNDLE ${SRC_CORE}                  
                            ${SRC_NEW}                  
                            ${SRC_SQLITE3} 
                            ${QT_HYPHY_SOURCES}
                            ${QT_HYPHY_HEADERS} 
                            ${hyphy_headers_moc} 
                            ${hyphy_ui_headers} 
+                           ${RES_MACGUI}
                            )
 
     target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${DEFAULT_LIBRARIES})
 
     include_directories(${CMAKE_CURRENT_BINARY_DIR} src/gui/qt/include)
 
-    #Extra stuff to look over
-    add_custom_target(QT DEPENDS HYPHYQT)
-
-	#install(DIRECTORY src/gui/res/QTResources/ DESTINATION lib/hyphy/QTResources)
-
-	install(
-        TARGETS HYPHYQT
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
-
     set_property(
         TARGET HYPHYQT
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYQT__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
     )
 
-    set_target_properties(
-        HYPHYQT
-        PROPERTIES
-        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} -g -fprofile-arcs -ftest-coverage"
-        #LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} -g -fprofile-arcs -ftest-coverage"
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g"
-    )
+    if(APPLE)
+        set_target_properties(
+            HYPHYQT
+            PROPERTIES
+            OUTPUT_NAME "HyPhyQt"
+            MACOSX_BUNDLE_ICON_FILE "HYPHYMP.icns"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "org.hyphy"
+            MACOSX_BUNDLE_LONG_VERSION_STRING "1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            MACOSX_BUNDLE_BUNDLE_NAME "HyPhyQt"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "2.10beta"
+            MACOSX_BUNDLE_BUNDLE_VERSION "2.10beta"
+            MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        ) 
+        install(TARGETS HYPHYQT 
+                BUNDLE DESTINATION .
+        )
 
+    else()
+        set_target_properties(
+            HYPHYQT
+            PROPERTIES
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        )
+    endif()
+
+ 
 endif((${QT4_FOUND}))
 
 
@@ -497,10 +507,6 @@ set_target_properties(
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
 if(APPLE)
-    #---------------------------------------------------------------------------
-    # set this or blow up
-    #---------------------------------------------------------------------------
-    # set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/")
 
     #---------------------------------------------------------------------------
     # MacOSX gui files
@@ -527,7 +533,7 @@ if(APPLE)
     add_executable(iHyPhyDebug
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_TINYXML} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUIDEBUG}
     )
 
@@ -627,6 +633,7 @@ if(APPLE)
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
 	)
+
     set_property(
         SOURCE
         src/gui/mac/hydialogs.cpp
@@ -667,12 +674,7 @@ if(APPLE)
         OSX_ARCHITECTURES i386
     )
 
-    set_target_properties(
-        HYPHYQT
-        PROPERTIES
-        OSX_ARCHITECTURES x86_64
-    )
-
+   
     set_target_properties(
         HyPhy HYPHY_DMG
         PROPERTIES
