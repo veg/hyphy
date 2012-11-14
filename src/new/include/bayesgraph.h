@@ -26,7 +26,7 @@
 
  */
 
-#if defined __AFYP_REWRITE_BGM__
+
 
 #include "list.h"
 #include "simplelist.h"
@@ -53,8 +53,14 @@
 
 
 
-
+/* 
+	Quantity to add to all entries in contingency table 
+	to avoid zeroes that would cause an error when taking
+	natural log.
+	see Fienberg and Holland (1972) J Multivar Anal 2: 127-134.
+*/
 #define     DIRICHLET_FLATTENING_CONST  0.5
+#define		MIN_SAMPLE_SIZE				5
 
 
 class _BayesianGraphicalModel : public _LikelihoodFunction
@@ -78,18 +84,20 @@ public:
 
 
     /* computation */
-    virtual _Parameter      Compute (void);
-    _Parameter      Compute (_Matrix &),
-                    Compute (_SimpleList &, _List *);
-
-    virtual _Matrix *       Optimize ();
-
+    virtual _Parameter      Compute (void);	// compute likelihood of current network structure
+    _Parameter      Compute (_Matrix &),	// compute likelihood of given network structure
+                    Compute (_SimpleList &, _List *);	// compute likelihood of given node order
+                    									//	return edge marginal probabilities at pointer
+                    									
+    virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
+    										// e.g., K2, structural MCMC, order MCMC (see next functions)
+	
     void            GraphMetropolis (bool, long, long, long, _Parameter, _Matrix *),
                     OrderMetropolis (bool, long, long, _Parameter, _Matrix *),
                     K2Search (bool, long, long, _Matrix *);
 
 
-    void            CacheNodeScores (void);
+    void            CacheNodeScores (void);	// MPI enabled
     void            MPIReceiveScores (_Matrix *, bool, long);
     void            ReleaseCache (void);
 
@@ -102,27 +110,27 @@ public:
                     ComputeContinuousScore (long, _SimpleList &);
 
 
-    _Parameter      ImputeNodeScore (long, _SimpleList &);
+    _Parameter      ImputeDiscreteNodeScore (long, _SimpleList &),	// use Gibbs sampling to compute expectation over missing data
+    				ImputeCGNodeScore (long, _SimpleList &);		// arguments: node ID, parent ID's
 
-    void            ComputeParameters (void),
+    void            ComputeParameters (void),	// UNDER DEVELOPMENT - and I think I ended up using HBL instead
                     ComputeParameters (_Matrix *);
 
 
 
 
     /* input/output */
-    void                SerializeBGM (_String &);
-    bool                ImportModel (_AssociativeList *),
-
-                        ExportCache (_AssociativeList *),
-                        ImportCache (_AssociativeList *);
+    void                SerializeBGM (_String &);	// export network structure and parameters to HBL
+    bool                ImportModel (_AssociativeList *),	// THIS HAS NOT BEEN WRITTEN
+                        ExportCache (_AssociativeList *),	// send node score cache to HBL as associative list
+                        ImportCache (_AssociativeList *);	// set node score cache to HBL associative list
 
 
     /* utility */
     void            InitMarginalVectors (_List *);
     void            DumpMarginalVectors (_List *);
 
-    void            SerializeBGMtoMPI (_String &);
+    void            SerializeBGMtoMPI (_String &);	// pass network object to compute node as HBL
 
     void            RandomizeGraph (_Matrix *, _SimpleList *, _Parameter, long, long, bool);
     _SimpleList *   GetOrderFromGraph (_Matrix &);
@@ -198,4 +206,4 @@ protected:
 };
 #endif
 
-#endif
+

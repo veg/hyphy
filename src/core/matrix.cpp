@@ -1133,7 +1133,7 @@ _PMathObj   _Matrix::CholeskyDecompose (void)
         }
     }
 
-    ReportWarning (_String("_Matrix::CholeskyDecompose returning with ") & (_String *) lowerTri->toStr());
+    //ReportWarning (_String("_Matrix::CholeskyDecompose returning with ") & (_String *) lowerTri->toStr());
 
     return lowerTri;
 }
@@ -6383,7 +6383,7 @@ _PMathObj _Matrix::Random (_PMathObj kind)
     }
 
     else if (kind->ObjectClass() == ASSOCIATIVE_LIST) {
-        ReportWarning (_String("_Matrix::Random() with associative list as first argument."));
+        //ReportWarning (_String("_Matrix::Random() with associative list as first argument."));
 
         // Associative list should contain following arguments:
         //  "PDF" - string corresponding to p.d.f. ("Gamma", "Normal")
@@ -8714,7 +8714,7 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
             3rd ed., p.379
        ------------------------------------------------------ */
 
-    ReportWarning (_String("Entered _Matrix::GaussianDeviate() with cov = ") & (_String *)(cov.toStr()));
+    //ReportWarning (_String("Entered _Matrix::GaussianDeviate() with cov = ") & (_String *)(cov.toStr()));
 
     _String     errMsg;
 
@@ -8729,14 +8729,14 @@ _PMathObj   _Matrix::GaussianDeviate (_Matrix & cov)
         _Matrix* cov_cd = (_Matrix *) cov.CholeskyDecompose();
         _Matrix gaussvec (1, kdim, false, true);
 
-        ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
+        //ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *) cov_cd->toStr());
 
         // fill column vector with independent standard normal deviates
         for (long i = 0; i < kdim; i++) {
             gaussvec.Store (0, i, gaussDeviate());
         }
 
-        ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *) gaussvec.toStr());
+        //ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *) gaussvec.toStr());
 
         // left multiply vector by Cholesky decomposition of covariance matrix
         gaussvec *= (_Matrix &) (*cov_cd);
@@ -8937,7 +8937,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
 
 
     // debugging
-    ReportWarning (_String("Entered _Matrix::WishartDeviate() with this matrix: ") & (_String *) this->toStr() & " and df vector " & (_String *) df.toStr());
+    //ReportWarning (_String("Entered _Matrix::WishartDeviate() with this matrix: ") & (_String *) this->toStr() & " and df vector " & (_String *) df.toStr());
 
 
     long        n   = GetHDim();
@@ -8978,7 +8978,7 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
         }
     }
 
-    ReportWarning (_String("diag=") & (_String *)decomp.toStr());   // column vector
+    //ReportWarning (_String("diag=") & (_String *)decomp.toStr());   // column vector
 
 
     // populate diagonal with square root of i.i.d. chi-square random deviates
@@ -8991,21 +8991,21 @@ _PMathObj   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp)
         }
     }
 
-    ReportWarning (_String("rdeviates(A)=") & (_String *)rdeviates.toStr());
+    //ReportWarning (_String("rdeviates(A)=") & (_String *)rdeviates.toStr());
 
 
     // result is obtained from D^T B D, where B = A^T A, ^T is matrix transpose
     rd_transpose = (_Matrix &) rdeviates;
     rd_transpose.Transpose();
-    ReportWarning (_String("transpose(A)=") & (_String *)rd_transpose.toStr());
+    //ReportWarning (_String("transpose(A)=") & (_String *)rd_transpose.toStr());
     rd_transpose *= (_Matrix &) rdeviates;  // A^T A
-    ReportWarning (_String("A^T A=") & (_String *)rd_transpose.toStr());
+    //ReportWarning (_String("A^T A=") & (_String *)rd_transpose.toStr());
     rd_transpose *= (_Matrix &) decomp; // A^T A D
-    ReportWarning (_String("A^T A D=") & (_String *)rd_transpose.toStr());
+    //ReportWarning (_String("A^T A D=") & (_String *)rd_transpose.toStr());
 
     decomp.Transpose();
     decomp *= (_Matrix &) rd_transpose; // D^T A^T A D
-    ReportWarning (_String("D^T A^T A D=") & (_String *)decomp.toStr());
+    //ReportWarning (_String("D^T A^T A D=") & (_String *)decomp.toStr());
 
     return (_PMathObj) decomp.makeDynamic();
 }

@@ -41,11 +41,7 @@
 #include      "scfg.h"
 #include      <ctype.h>
 
-#if defined __AFYP_REWRITE_BGM__
 #include      "bayesgraph.h"
-#else
-#include      "bgm.h"
-#endif
 
 #ifndef __HYPHY_NO_SQLITE__
 #include "sqlite3.h"
@@ -183,6 +179,8 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), HY_BL_TREE);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), HY_BL_SCFG);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), HY_BL_VARIABLE);
+	
+	_HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
 
 
     _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
@@ -1997,8 +1995,9 @@ void      _ElementaryCommand::ExecuteCase63 (_ExecutionList& chain)
 
 void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 {
+	ReportWarning (_String("ExecuteCase64()"));
     chain.currentCommand++;
-#if defined __AFYP_REWRITE_BGM__
+
     _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 
     if (! (avl1)) {
@@ -2006,37 +2005,9 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     } else {
         _BayesianGraphicalModel * bgm   = new _BayesianGraphicalModel ((_AssociativeList *) avl1);
 
-#else
-    _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-                avl2 = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-
-    if (! (avl1 && avl2)) {
-        WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) &
-                   " in a call to BGM = ... must evaluate to associative arrays");
-    } else {
-        // is this a dynamic Bayesian network?
-        _Parameter      dynamicArg;
-        checkParameter (isDynamicGraph, dynamicArg, 0.);
-        bool is_dynamic_graph = (dynamicArg > 0) ? TRUE : FALSE;
-
-        Bgm     * bgm;  // pointer to base class
-
-        long    num_nodes   = ((_Matrix *) avl1)->GetSize() + ((_Matrix *) avl2)->GetSize();
-
-        if (num_nodes < 2) {
-            WarnError (_String("Cannot construct a Bgm object on less than 2 nodes, received ") & num_nodes);
-            return;
-        } else {
-            if (is_dynamic_graph)   {
-                bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-            } else {
-                bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-            }
-        }
-#endif
         _String bgmName     = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
         long    bgmIndex    = FindBgmName (bgmName);
-
+		
         if (bgmIndex == -1) {   // not found
             for (bgmIndex = 0; bgmIndex < bgmNamesList.lLength; bgmIndex++) {
                 // locate empty strings in name list
@@ -2058,6 +2029,8 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
             bgmNamesList.Replace(bgmIndex,&bgmName,true);
             bgmList.Replace(bgmIndex,bgm,false);
         }
+		
+		ReportWarning(_String("Created BGM ") & bgmName & " at index " & bgmIndex);
     }
 }
 
@@ -2132,8 +2105,9 @@ bool    _ElementaryCommand::ConstructNN (_String&source, _ExecutionList&target)
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
-// syntax: BGM ident = (<discrete nodes>, <continuous nodes>)
+// syntax: BGM ident = (<nodes>)
 {
+	ReportWarning(_String("ConstructBGM()"));
     // locate ident in HBL string
     long    mark1 = source.FirstSpaceIndex(0,-1,1),
             mark2 = source.Find ('=', mark1, -1);
@@ -2146,7 +2120,6 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
         return false;
     }
 
-
     // extract arguments from remainder of HBL string
     _List pieces;
 
@@ -2155,21 +2128,15 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
         ExtractConditions (source,mark1+1,pieces,',');
     }
 
-#if defined __AFYP_REWRITE_BGM__
     if (pieces.lLength != 1) {
         WarnError ("Expected: BGM ident = (<nodes>)");
         return false;
     }
-#else
-    if (pieces.lLength < 2) {
-        WarnError ("Expected: BGM ident = (<discrete nodes>, <continuous nodes>)");
-        return false;
-    }
-#endif
 
     _ElementaryCommand * bgm = new _ElementaryCommand (64);
     bgm->parameters && (&bgmID);
     bgm->addAndClean(target,&pieces,0);
+	
     return true;
 }
 
