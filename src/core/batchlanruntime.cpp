@@ -413,7 +413,6 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& currentProgram) {
 }
 
 //____________________________________________________________________________________
-// this used to be ExecuteCase35() - thanks for the "documentation", guys :-P
 bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram) {
 
     currentProgram.currentCommand++;
