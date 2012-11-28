@@ -113,8 +113,19 @@ BaseRef _Operation::toStr(void)
     return res.makeDynamic();
 
 }
+
 //__________________________________________________________________________________
-_Operation::_Operation  (_String& opc, long opNo = 2)
+_Operation::_Operation  (const long theCode, const long opNo = 2)
+// by opcode
+{
+    opCode = theCode;
+    numberOfTerms = opNo;
+    theData       = -1;
+    theNumber     = nil;
+}
+
+//__________________________________________________________________________________
+_Operation::_Operation  (_String& opc, const long opNo = 2)
 // construct the operation by its symbol and, if relevant -
 // number of operands
 {
@@ -145,12 +156,13 @@ _Operation::_Operation  (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-bool _Operation::CanResultsBeCached (_Operation* prev)
+bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
 {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
         if ((prev->theNumber && prev->theNumber->ObjectClass() == MATRIX)
            || (prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)) {
-            return true;
+            if (! exp_only || opCode == HY_OP_CODE_EXP)
+                return true;
         }
     }
     return false;
@@ -290,9 +302,22 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 
     return false;
 }
+//__________________________________________________________________________________
+
+bool        _Operation::ReportOperationExecutionError(_String text, _String * errMsg) {
+    _String theError = text & ". "; 
+    
+    if (errMsg) {
+        *errMsg = theError;
+    } else {
+        WarnError (theError);
+    }
+    
+    return false;
+}
 
 //__________________________________________________________________________________
-bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace)
+bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg)
 {
     if (theNumber) {
         theScrap.Push(theNumber);
@@ -307,20 +332,17 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         return true;
     }
     if (numberOfTerms<0) { // execute a user-defined function
-
         {
             long functionID = -numberOfTerms-1;
-            if (functionID >= batchLanguageFunctionParameters.lLength) {
-                WarnError ("Attempted to call an undefined user function.");
-                return false;
+            if (functionID >= batchLanguageFunctionParameters.lLength) {   
+                return ReportOperationExecutionError ("Attempted to call an undefined user function ", errMsg);
             }
+            
             long numb = batchLanguageFunctionParameters(functionID);
             if (theScrap.StackDepth()<numb) {
-                _String errMsg ("User-defined function:");
-                errMsg = errMsg&*(_String*)batchLanguageFunctionNames(functionID)
-                         &" needs "&_String(numb)& " parameters, but only "&_String(theScrap.StackDepth())&" were supplied.";
-                WarnError (errMsg);
-                return false;
+                return ReportOperationExecutionError (_String("User-defined function:") & 
+                            &*(_String*)batchLanguageFunctionNames(functionID)
+                            &" needs "&_String(numb)& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
             }
 
             _List       displacedVars,
@@ -352,7 +374,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
 
                 if (isRefVar && nthterm->ObjectClass()!=STRING) {
                     _FString * type = (_FString*)nthterm->Type();
-                    _String errMsg = _String ("User-defined function '")
+                    _String errText = _String ("User-defined function '")
                                      &*(_String*)batchLanguageFunctionNames(-numberOfTerms-1)
                                      &"' expected a string for the reference variable '"
                                      & *argNameString
@@ -360,8 +382,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
                                      & " with the value of " & _String((_String*)nthterm->toStr());
 
                     DeleteObject (type);
-                    WarnError    (errMsg);
-                    return false;
+                    return ReportOperationExecutionError (errText, errMsg);
                 }
 
                 if (f<0) { // not an existing var
@@ -445,21 +466,21 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
                 theScrap.Push (ret);
             }
 
-            for (long di = 0; di < referenceArgs.lLength; di++) {
+            for (unsigned long di = 0; di < referenceArgs.lLength; di++) {
                 variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.lData[di]);
             }
 
             //for (i= referenceArgs.lLength-1; i>=0; i--)
             //  variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(i)),displacedReferences.lData[i]);
 
-            for (long dv = 0; dv < displacedVars.lLength; dv++) {
+            for (unsigned long dv = 0; dv < displacedVars.lLength; dv++) {
                 variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv));
             }
 
             //for (i= displacedVars.lLength-1; i>=0; i--)
             //  variablePtrs.Replace (existingDVars(i),(_PMathObj)displacedVars(i));
 
-            for (long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
+            for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
                 _Variable* theV = LocateVar (existingIVars.lData[dv2]);
                 DeleteObject(theV->varValue);
                 theV->varValue = ((_PMathObj)displacedValues(dv2));
@@ -479,14 +500,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
     }
 
     if (theScrap.theStack.lLength<numberOfTerms) {
-        _String *s,errMsg;
-        s = (_String*)toStr();
-        errMsg = *s;
-        DeleteObject(s);
-        errMsg = errMsg&
-                 " needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given.";
-        WarnError (errMsg);
-        return nil;
+        return ReportOperationExecutionError (_String((_String*)toStr())&
+                         " needs "&_String(numberOfTerms)& " arguments; "&_String(theScrap.StackDepth())&" were supplied", errMsg);
+
     }
 
     _PMathObj term1, term2 = nil, term3 = nil, temp;

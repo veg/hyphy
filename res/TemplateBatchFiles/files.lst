@@ -37,6 +37,7 @@
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
 "MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested cladesd in a tree","TestCladeMeans.bf";
 "PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Phylohandbook.bf";
+"RBLE","Use a series of random effects branch-site models to perform robust model-averaged branch length estimation under a codon model with episodic selection.","BranchSiteRELMultiModel.bf";
 "RED","Replace sufficiently close sequence with their MRCA","ReduceDataSetMatrix.bf";
 "SNS","Parse a codon alignment for ambiguous codons and output a complete list/resolutions/syn and ns counts by sequence/position","SandNSAmbigs.bf";
 "SW","Perform a sliding window analysis of sequence data.","SlidingWindowAnalysis.bf";
@@ -85,7 +86,9 @@
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";
 "","Test for selection in presence of recombination.","!Selection/Recombination";
-"SLAC/FEL","Detect site-specific selection using SLAC or FEL on a multiple partition data set, e.g. produced by GARD.","QuickSelectionDetectionMF.bf";
+"FUBAR","Detect site-specific pervasive diversifying and purifying selection using the FUBAR (Fast Unbiased Bayesian AppRoximate) method on a multiple partition data set, e.g. produced by GARD.","FUBAR.bf";
+"MEME","Detect site-specific episodic diversifying selection using MEME on a multiple partition data set, e.g. produced by GARD.","MEME_mf.bf";
+"SLAC/FEL","Detect site-specific diversifying/purifying selection using SLAC or FEL on a multiple partition data set, e.g. produced by GARD.","QuickSelectionDetectionMF.bf";
 "REL","Detect site-specific selection using REL on a multiple partition data set, e.g. produced by GARD.","dNdSRateAnalysis_MF.bf";
 "PARRIS","A PARtitioning approach for Robust Inference of Selection (written by K. Scheffler)","PARRIS.bf";
 "","Perform relative rate tests.","!Relative Rate";

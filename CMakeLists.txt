@@ -1,14 +1,5 @@
 cmake_minimum_required(VERSION 2.8.1)
-
-#-------------------------------------------------------------------------------
-# set gnu-compatible compiler for OMP, must be set BEFORE project() invoke 
-#-------------------------------------------------------------------------------
-set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_COMPILER "g++")
-
-
 project(HyPhy)
-
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
@@ -18,7 +9,6 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
-
 
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
@@ -51,7 +41,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC46 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    if(${MACOSX_LION})
+        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
+    endif(${MACOSX_LION})
+
+    if(${GCC45})
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    else(${GCC45})
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    endif(${GCC45})
 
     if(${GCC46})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
@@ -78,9 +76,9 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
-if(NOT ${OPENMP_FOUND})
+if(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
     set(OpenMP_CXX_FLAGS "")
-endif(NOT ${OPENMP_FOUND})
+endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -89,7 +87,6 @@ endif(NOT ${OPENMP_FOUND})
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
-
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -121,6 +118,7 @@ file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
+file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
@@ -130,7 +128,7 @@ set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -146,6 +144,13 @@ set_property(
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 )
 
+
+set_property(
+    SOURCE ${SRC_PUGIXML}
+    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
+)
+
+
 set_property(
     SOURCE src/core/calcnode2.cpp
     PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
@@ -156,6 +161,7 @@ set_property(
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
+#add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
@@ -164,12 +170,15 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib/SQLite-3.7.11
+    contrib/SQLite-3.7.11 # SQLite
+    contrib/tinyxml
+    contrib/pugixml/src/
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
     contrib/gtest-1.6.0/include
     tests/gtests
+    /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
 
 
@@ -216,23 +225,6 @@ install(
     OPTIONAL
 )
 add_custom_target(MP2 DEPENDS HYPHYMP)
-
-
-#-------------------------------------------------------------------------------
-# hyphy sp target
-#-------------------------------------------------------------------------------
-add_executable(
-    HYPHYSP
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_UNIXMAIN}
-)
-target_link_libraries(HYPHYSP ${DEFAULT_LIBRARIES})
-install(
-    TARGETS HYPHYSP
-    RUNTIME DESTINATION bin
-    OPTIONAL
-)
-add_custom_target(SP DEPENDS HYPHYSP)
 
 
 #-------------------------------------------------------------------------------
@@ -324,8 +316,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -O0"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 install(
@@ -407,13 +399,83 @@ if((${GTK2_FOUND}))
     )
 endif((${GTK2_FOUND}))
 
+#-------------------------------------------------------------------------------
+# hyphy qt target
+#-------------------------------------------------------------------------------
+
+find_package(QT4 REQUIRED QT_QTNETWORK_LIBRARY)
+
+if((${QT4_FOUND}))
+
+    file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp src/gui/HYSharedMain.*) 
+    file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h src/gui/include/HYSharedMain.*) 
+    file(GLOB QT_HYPHY_UI src/gui/qt/ui/*ui)
+    set(RES_MACGUI src/gui/mac/HYPHYMP.icns src/gui/mac/HyPhy.rsrc)
+
+    QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
+    QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
+
+    include(${QT_USE_FILE})
+    add_definitions(${QT_DEFINITIONS})
+    add_definitions(-D__HYPHY_64__)
+
+    add_executable(HYPHYQT MACOSX_BUNDLE ${SRC_CORE}                  
+                           ${SRC_NEW}                  
+                           ${SRC_SQLITE3} 
+                           ${QT_HYPHY_SOURCES}
+                           ${QT_HYPHY_HEADERS} 
+                           ${hyphy_headers_moc} 
+                           ${hyphy_ui_headers} 
+                           ${RES_MACGUI}
+                           )
+
+    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})
+
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${QT_QTNETWORK_INCLUDE_DIR} src/gui/qt/include)
+
+    set_property(
+        TARGET HYPHYQT
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYQT__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    )
+
+    if(APPLE)
+        set_target_properties(
+            HYPHYQT
+            PROPERTIES
+            OUTPUT_NAME "HyPhyQt"
+            MACOSX_BUNDLE_ICON_FILE "HYPHYMP.icns"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "org.hyphy"
+            MACOSX_BUNDLE_LONG_VERSION_STRING "1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            MACOSX_BUNDLE_BUNDLE_NAME "HyPhyQt"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "2.10beta"
+            MACOSX_BUNDLE_BUNDLE_VERSION "2.10beta"
+            MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        ) 
+        install(TARGETS HYPHYQT 
+                BUNDLE DESTINATION .
+        )
+
+    else()
+        set_target_properties(
+            HYPHYQT
+            PROPERTIES
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        )
+    endif()
+
+ 
+endif((${QT4_FOUND}))
+
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
 #-------------------------------------------------------------------------------
 if(UNIX)
     set_property(
-        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG HYPHYSP
+        TARGET HYPHYMP hyphy_mp HYPHYGTEST HYPHYDEBUG
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
@@ -424,20 +486,13 @@ set_property(
 )
 
 set_property(
-    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG HYPHYSP
+    TARGET hyphy_mp HYPHYMP HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
 set_property(
     TARGET HYPHYDEBUG HYPHYGTEST
     APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
-)
-
-set_target_properties(
-    HYPHYSP
-    PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
-    LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
 )
 
 set_target_properties(
@@ -452,6 +507,7 @@ set_target_properties(
 # hyphy MacOSX gui target
 #-------------------------------------------------------------------------------
 if(APPLE)
+
     #---------------------------------------------------------------------------
     # MacOSX gui files
     #---------------------------------------------------------------------------
@@ -470,14 +526,14 @@ if(APPLE)
     add_executable(HyPhy
         MACOSX_BUNDLE
 		EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
 
     add_executable(iHyPhyDebug
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUIDEBUG}
     )
 
@@ -577,6 +633,7 @@ if(APPLE)
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
 	)
+
     set_property(
         SOURCE
         src/gui/mac/hydialogs.cpp
@@ -617,6 +674,7 @@ if(APPLE)
         OSX_ARCHITECTURES i386
     )
 
+   
     set_target_properties(
         HyPhy HYPHY_DMG
         PROPERTIES

@@ -195,6 +195,28 @@ _String FetchObjectNameFromType (const unsigned long objectClass) {
 }
 
 //__________________________________________________________________________________
+_String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex)
+{
+    if (objectIndex >=0 && objectIndex < variableNames.countitems()) {
+            long tc = 0;
+            _SimpleList nts;
+            long        rt,
+                        vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
+
+            for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
+                if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == objectClass) {
+                    if (tc==objectIndex) {
+                        return (_String*)variableNames.Retrieve(vi);
+                        break;
+                    } else {
+                        tc++;
+                    }
+                }    
+    }
+    return nil;
+}
+
+//__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
@@ -213,6 +235,7 @@ _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long obje
     }
     return nil;
 }
+
 
 //__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
@@ -464,7 +487,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                 }
             }
 
-            for (long k=0; k<toDelete.lLength; k++) {
+            for (unsigned long k=0; k<toDelete.lLength; k++) {
                 //StringToConsole (*(_String*)toDelete(k));
                 //BufferToConsole ("\n");
                 DeleteTreeVariable (*(_String*)toDelete(k),parms,false);
@@ -488,7 +511,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        _String errMsg = *name & " is not a variable identifier in call to " & fID;
+        _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
         WarnError (errMsg);
         return nil;
     }
@@ -502,10 +525,15 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool is
     return FetchVar(f);
 }
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal)
+_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        WarnError (_String ("'") & *name & "' is not a variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
+        _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
+        if (context) {
+            context->ReportAnExecutionError(errMsg);
+        } else {
+            WarnError (errMsg);
+        }
         return nil;
     }
     
@@ -774,6 +802,8 @@ void    SetupOperationLists (void)
 
         //HY_OP_CODE_ABS
         BuiltInFunctions.AppendNewInstance (new _String ("Abs"));
+        simpleOperationCodes<<HY_OP_CODE_ABS;
+        simpleOperationFunctions<<(long)AbsNumber;
 
         //HY_OP_CODE_ARCTAN
         BuiltInFunctions.AppendNewInstance (new _String ("Arctan"));
@@ -1038,6 +1068,9 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
     }
 
 }
+
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bool sorted)
 {
     if (partName.sLength==0) {
@@ -1060,6 +1093,8 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bo
 
     partName = tryName;
 }
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names, bool)
 {
     if (partName.sLength==0) {
@@ -1076,6 +1111,9 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names
 
     partName = tryName;
 }
+
+//__________________________________________________________________________________
+
 void  FinishDeferredSF (void)
 {
     if (deferSetFormula->lLength) {

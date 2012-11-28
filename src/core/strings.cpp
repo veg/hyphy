@@ -60,7 +60,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __KERNEL__VERSION__ = _String ("2.11") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __KERNEL__VERSION__ = _String ("2.13") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
@@ -77,8 +77,7 @@ _String   compileDate = __DATE__,
 
 _String     empty(""),
             emptyAssociativeList ("{}"),
-            hyphyCiteString
-            ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
+            hyphyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n");
 
 char        defaultReturn = 0;
 unsigned    long _String::storageIncrement = 32;
@@ -370,6 +369,12 @@ void _String::operator << (const _String* s)
         //memcpy(sData+sLength,s->sData,s->sLength);
         sLength+=s->sLength;
     }
+}
+
+// append operator
+void _String::operator << (const _String& s)
+{
+   (*this) << &s;
 }
 
 //Append operator

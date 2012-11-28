@@ -47,7 +47,7 @@ ExecuteAFile ("Utility/GrabBag.bf");
 GetInformation (UnalignedSeqs,filteredData);
 
 COUNT_GAPS_IN_FREQUENCIES = 0;
-InitializeDistances		   (0);
+InitializeDistances		   ();
 
 refSeqID = 0;
 maxL	 = 0;
@@ -60,8 +60,8 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter = seqCounter+1)
 	aSeq = UnalignedSeqs[seqCounter];
 	
 	UnalignedSeqs[seqCounter] = aSeq^{{"[^a-zA-Z]",""}};
-	UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"^N+",""}};
-	UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"N+$",""}};
+	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"^N+",""}};
+	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"N+$",""}};
 
     if (doLongestSequence > 0 && seqCounter < seqCount - (refSeq2 > 0))
 	{

@@ -16,6 +16,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 
 	treePostOrderAVL = Eval(treeNameID+"^0");
 	treePreOrderAVL  = Eval(treeNameID+"^1");
+	internalNodeCount = Eval("BranchCount(`treeNameID`)");
 	nodeCount        =  Abs(treePostOrderAVL);
 	
 	rateAVL          = {};
@@ -33,6 +34,8 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	}
 
 	timeStops				  = {};
+    
+    
 
 	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex += 1)
 	{
@@ -42,7 +45,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 		if (Abs(nodeInfo["Children"]))
 		{
-			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(-10000);\n");
+			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(0);\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
 				
@@ -71,7 +74,10 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	
 	descendantsList 		  = {};
 	
-	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
+    PARAMETER_GROUPING = {internalNodeCount,1};
+    PARAMETER_GROUPING [0] = "";
+    internalsHit = 0;
+	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex += 1)
 	{
 		nodeInfo 	= treePostOrderAVL[nodeIndex];
 		nodeNameS	= nodeInfo["Name"];
@@ -95,6 +101,8 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 						
 			if (Abs(nodeInfo["Children"]))
 			{
+			    PARAMETER_GROUPING [internalsHit] =  "`treeNameID`.`nodeNameS`.BL";
+			    internalsHit += 1;
 				DT_String * ("\n`treeNameID`.`nodeNameS`.`parameterToConstrain`:=`treeNameID`_scaler_"+rateClass+"*("+
 							 "`treeNameID`.`nodeNameS`.BL);\n`treeNameID`.`nodeNameS`.T:=`treeNameID`."+nodeParent["Name"]+".T+`treeNameID`."+nodeNameS+".BL;\n");
 							 
@@ -110,6 +118,9 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 			}
 		}
 	}
+	
+	fprintf (stdout, PARAMETER_GROUPING, "\n");
+	PARAMETER_GROUPING = {"0": PARAMETER_GROUPING};
 	
 	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
 	{
@@ -184,6 +195,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 
  	}
  	DT_String * 0;
+ 	fprintf (stdout, DT_String, "\n");
  	 	
 	return DT_String;
 }
@@ -461,10 +473,12 @@ LIKELIHOOD_FUNCTION_OUTPUT		= 0;
 
 timer = Time(0);
 
-//VERBOSITY_LEVEL = 10;
-//OPTIMIZATION_METHOD = 0;
+VERBOSITY_LEVEL = 10;
+OPTIMIZATION_METHOD = 0;
 
 Optimize (res1,lfConstrained);
+
+
 fprintf (stdout, "\n", separator,"\n\nRESULTS WITH DATED TIPS CLOCK:\nLog-likelihood: ",lfConstrained);
 lnLikDiff = 2(fullModelLik-res1[1][0]);
 degFDiff = fullVars - res1[1][1];

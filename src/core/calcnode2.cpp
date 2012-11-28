@@ -100,18 +100,30 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 {
     _List           matrixQueue,
                     nodesToDo;
-    _SimpleList     mustExponentiate;
+                    
+    _SimpleList     isExplicitForm;
+    bool            hasExpForm = false;
 
-    for (long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
+    for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
-        thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&mustExponentiate);
-        if (matrixQueue.lLength - didIncrease) {
-            nodesToDo << thisNode;
+        if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
+             hasExpForm = true;
+        }
+        //printf ("NodeID %d. Old length %ld, new length %ld\n", nodeID, didIncrease,matrixQueue.lLength); 
+        if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
+            for (long copies = 0; copies < didIncrease; copies++) {
+                nodesToDo << thisNode;
+            }
         }
     }
+    
+    //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
 
-    long matrixID;
+    unsigned long matrixID;
+    
+    _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
+    
 
 #ifdef _OPENMP
     long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
@@ -120,11 +132,41 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (mustExponentiate.lData[matrixID]) {
+        if (isExplicitForm.lData[matrixID] == 0) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
         } else {
-            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID)), catID);
+             (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
         }
+    }
+    
+    
+    if (computedExponentials) {
+        _CalcNode * current_node         = nil;
+        _List       buffered_exponentials;
+        
+        for (unsigned long mx_index = 0; mx_index < nodesToDo.lLength; mx_index++) {
+            if (isExplicitForm.lData[mx_index]) {
+                _CalcNode *next_node = (_CalcNode*) nodesToDo (mx_index);
+                //printf ("%x %x\n", current_node, next_node);
+                if (next_node != current_node) {
+                    if (current_node) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
+                    current_node = next_node;
+                    buffered_exponentials.Clear(true);
+                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                 }
+                else {
+                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                }
+            } else {
+                current_node = nil;
+            }
+        }
+        if (current_node) {
+            current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+        }
+        DeleteObject(computedExponentials);
     }
 }
 
@@ -144,7 +186,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
     }
 
     if (forceRecalculationOnTheseBranches.lLength) {
-        for (long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
+        for (unsigned long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
             nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 1;
         }
 
@@ -153,7 +195,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         }
     }
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++) {
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++) {
         bool    isLeaf     = nodeID < flatLeaves.lLength;
 
         currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
@@ -179,14 +221,14 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
 
     // one more pass to pick up all descendants of changed internal nodes
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
         if (nodesToUpdate.lData[flatLeaves.lLength+flatParents.lData[nodeID]] && nodesToUpdate.lData[nodeID] == 0) {
             nodesToUpdate.lData[nodeID] = 1;
         }
 
     // write out all changed nodes
 
-    for (long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
+    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
         if (nodesToUpdate.lData[nodeID]) {
             updateNodes << nodeID;
         }
@@ -858,6 +900,8 @@ void            _TheTree::ComputeBranchCache    (
 )
 {
 
+    //printf ("ComputeBranchCache\n");
+
     _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
                 nodesToProcess,
                 rootPath;
@@ -877,7 +921,7 @@ void            _TheTree::ComputeBranchCache    (
     } while (myParent >= 0);
 
 
-    for (long k = 0; k <  flatLeaves.lLength+flatNodes.lLength; k++) {
+    for (unsigned long k = 0; k <  flatLeaves.lLength+flatNodes.lLength; k++) {
         myParent = flatParents.lData[k];
         if (taggedNodes.lData[myParent+flatLeaves.lLength] == 1 && taggedNodes.lData[k] == 0) {
             if (myParent != brID - flatLeaves.lLength) {
@@ -1313,7 +1357,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
 
         long siteState1 = lNodeFlags[siteOrdering.lData[siteID]],
              siteState2 = lNodeFlags[siteCount + siteOrdering.lData[siteID]];
-
+        
         if (siteState1 >= 0)
             // a single character state; sweep down the appropriate column
         {
@@ -1342,7 +1386,7 @@ _Parameter      _TheTree::ComputeTwoSequenceLikelihood
             sum *= theProbs[siteState1];
         } else {
             if (siteState2 >=0 ) { // second resolved, but not the first
-                _Parameter* childVector = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension;
+               _Parameter* childVector = lNodeResolutions->theData + (-siteState1-1) * alphabetDimension;
                 tMatrix                +=  siteState2;
                 if (alphabetDimension == 4) { // special case for nuc data
                     sum = tMatrix[0] * childVector[0]  * theProbs[0]+

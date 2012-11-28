@@ -65,15 +65,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #ifndef _HY_SHARED_MAINS_
-
 #define _HY_SHARED_MAINS_
 
 
 
 #include    "likefunc.h"
-
 #include    "preferences.h"
-
 #include    <time.h>
 
 
@@ -158,23 +155,19 @@ void        ReportAnalysisAsFinished     (_String, bool = false);
 
 
 
-extern      _String*                     argFileName,
-
-            errorFileName,
-
-            messageFileName;
+extern      _String*                     
+                        argFileName,
+                        errorFileName,
+                        messageFileName,
+                        menuSeparator;
 
 
 
 extern      bool                         isSuspended,
-
-            hasTemplates,
-
-            highLevelQuit,
-
-            isRerunAvailable,
-
-            updateTimer,
+                                         hasTemplates,
+                                         highLevelQuit,
+                                         isRerunAvailable,
+                                         updateTimer,
 
             addToRecent,
 

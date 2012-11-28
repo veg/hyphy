@@ -61,9 +61,10 @@ class   _Operation : public BaseObj
 
 public:
     _Operation  (void);
-    _Operation  (_String&, long);
+    _Operation  (_String&, const long);
     // construct the operation by its symbol and, if relevant -
     // number of operands
+    _Operation  (const long,const long);
 
     _Operation  (bool, _String&, bool isG = false, _VariableContainer*  = nil);
     // store a variable or a constant
@@ -74,7 +75,7 @@ public:
 
     virtual   BaseObj*      makeDynamic         (void);
 
-    bool            Execute             (_Stack&, _VariableContainer* = nil); //execute this operation
+    bool            Execute             (_Stack&, _VariableContainer* = nil, _String* errMsg = nil); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
     virtual   void          StackDepth          (long&);
 
@@ -129,13 +130,14 @@ public:
     }
     long            PrecedenceLevel     (void);
 
-    bool            CanResultsBeCached (_Operation *);
+    bool            CanResultsBeCached (_Operation *, bool exp_only = false);
 
 
     virtual bool            EqualOp             (_Operation*);
 
 protected:
 
+    bool        ReportOperationExecutionError ( _String, _String*);
 
     long        opCode;         // internal operation code
     long        numberOfTerms,  // 1 - unary, 2 - binary, etc

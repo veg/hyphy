@@ -3,3 +3,4 @@
 *~
 .DS_Store
 src/ocl/opencl_kernels.h
+*.cxx

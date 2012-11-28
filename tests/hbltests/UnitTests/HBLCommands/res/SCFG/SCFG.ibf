@@ -1,0 +1,493 @@
+/* SCFG.ibf */
+
+SCFG_OPTIMIZATION_METHOD = 1;
+
+/* 	
+	declare associative list that indexes non-terminals by
+	by their literal (textual) representation 
+*/
+non_terminals = {};
+
+/*
+	by convention, the start symbol is represented by 
+	literal 'S' 
+*/
+non_terminals["S"] = 0;
+
+/*	
+	declare two more associative lists to contain branching
+	(X->YZ) and terminal (X-x) types of production rules, 
+	respectively 
+*/
+branching_rules = {};
+terminal_rules = {};
+
+
+/*  declare this at global scope */
+dot_string = "";
+
+/* ______________________________________________________________ */
+
+function add_branching_rule (ntL, ntR1, ntR2, prob_string)
+{
+	/* 
+		append production rule to associative list of
+		form X->YZ, using string arguments ntL->ntR1 ntR2
+		and a string expressing probability as a function 
+		of global varaibles
+	*/
+	
+	ntL_index = non_terminals[ntL];
+	if (ntL_index == 0 && ntL != "S")
+	{
+		/* first use of non-terminal, update list */
+		ntL_index = Abs(non_terminals);
+		non_terminals[ntL] = ntL_index;
+	}
+	
+	ntR1_index = non_terminals[ntR1];
+	if (ntR1_index == 0 && ntR1 != "S")
+	{
+		ntR1_index = Abs(non_terminals);
+		non_terminals[ntR1] = ntR1_index;
+	}
+	
+	ntR2_index = non_terminals[ntR2];
+	if (ntR2_index == 0 && ntR2 != "S")
+	{
+		ntR2_index = Abs(non_terminals);
+		non_terminals[ntR2] = ntR2_index;
+	}
+	
+	/* declare associative list comprising these items */
+	aRule = {};
+	aRule ["L"] = ntL_index;
+	aRule ["1"] = ntR1_index;
+	aRule ["2"] = ntR2_index;
+	
+	
+	/* an otherwise empty string denotes a deterministic rule */
+	if (Abs(prob_string))
+	{
+		aRule ["P"] = prob_string;
+	}
+	
+	
+	/* append associative list to the list of rules */
+	branching_rules[Abs(branching_rules)] = aRule;
+	
+	return 0;
+}
+
+
+/* ______________________________________________________________ */
+
+function add_terminal_rule (ntL, term_string, prob_string)
+{
+	/*
+		append production rule to associative list of 
+		form X->x using string arguments "ntL"->"term_string"
+		and a string expressing rule probability as a function
+		of global variables
+	*/
+	
+	ntL_index = non_terminals[ntL];
+	if (ntL_index == 0 && ntL != "S")
+	{
+		/* first use of non-terminal, update list */
+		ntL_index = Abs(non_terminals);
+		non_terminals[ntL] = ntL_index;
+	}
+	
+	aRule = {};
+	aRule ["L"] = ntL_index;
+	aRule ["T"] = term_string;
+	
+	if (Abs(prob_string))
+	{
+		aRule ["P"] = prob_string;
+	}
+	
+	terminal_rules[Abs(terminal_rules)] = aRule;
+	
+	return aRule;
+}
+
+
+/* ____________________________________________________________________ */
+function make_SCFG (scfgname)
+{
+	/* SCFG	 loopgram = (NTT_Rules, NT3_Rules); */
+	ExecuteCommands ("SCFG "+scfgname+" = (terminal_rules,branching_rules);");
+	return 0;
+}
+
+
+/* ____________________________________________________________________ */
+function output_graphviz (unused)
+{
+	/*
+		Generate a DOT formatted file encoding a graph representation
+		of the grammar, to be rendered using GraphViz.
+		This function takes no arguments, so just send a '0'.
+	*/
+	
+	
+	dot_string * 256;	/* allocate at least 256 bytes for string streaming */
+	dot_string * "digraph scfg {\n";
+	dot_string * "\tnode [style=\"setlinewidth(0)\"];\n";
+	
+	/* generate dictionary from associative list of non-terminals */
+	nt_keys = Rows(non_terminals);
+	
+	for (nt3 = 0; nt3 < Abs(branching_rules); nt3 = nt3 + 1)
+	{
+		rule = branching_rules[nt3];
+		nt_L = nt_keys[rule["L"]];
+		nt_1 = nt_keys[rule["1"]];
+		nt_2 = nt_keys[rule["2"]];
+		dot_string * ("\t\""+nt_L+"\"->\""+nt_1+"\";\n");
+		dot_string * ("\t\""+nt_L+"\"->\""+nt_2+"\";\n");
+	}
+	
+	
+	for (ntt = 0; ntt < Abs(terminal_rules); ntt = ntt + 1)
+	{
+		rule = terminal_rules[ntt];
+		nt_L = nt_keys[rule["L"]];
+		term_string = rule["T"];
+		dot_string * ("\t\""+nt_L+"\"->\"'"+term_string+"'\";\n");
+	}
+	
+	dot_string * "}\n";
+	dot_string * 0;	/* finalize string stream */
+	
+	SetDialogPrompt ("Select file to write DOT strings:");
+	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, dot_string);
+	
+	return 0;
+}
+
+
+/* ______________________________________________________ */
+function attach_corpus (scfg_string)
+{
+	/*
+		A corpus is a set of strings, and hence refers to data
+		that can be used for either training or parsing via
+		the grammar.
+		Send the name of the SCFG as an argument, i.e., in 
+		double quotes ("foo").
+	*/
+	
+	SetDialogPrompt ("Select file containing corpus text");
+	
+	fscanf (PROMPT_FOR_FILE, "Lines", input);
+	corpus = Tranpose(input);
+	ExecuteCommands("SetParameter ("+scfg_string+", SCFG_STRING_CORPUS, corpus);");
+	
+	return corpus;
+}
+
+
+/* ____________________________________________________ */
+function train_grammar (scfg_string, method)
+{
+	/*
+		Call an optimization method:
+		
+		 "CG" = (recommended) maximum likelihood heuristic 
+		 		search, which by default is a conjugate 
+		 		gradient method
+		 		
+		 "EM" = expectation maximization, i.e., inside-
+				outside algorithm
+	*/
+	
+	/* make sure a corpus is attached */
+	ExecuteCommands("GetString (scfgInfo, "+scfg_string+", -1);");
+	
+	if (Columns(scfgInfo["SCFG_STRING_CORPUS"]) > 0)
+	{
+		if (method == "EM")
+		{
+			fprintf (stdout, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+			fprintf (stdout, " WARNING: EM will NOT work with probability constraints.\n");
+			fprintf (stdout, " It can only take the first global variable in the \n");
+			fprintf (stdout, " probability function as the rule-specific parameter.\n");
+			fprintf (stdout, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+			
+			SCFG_OPTIMIZATION_METHOD = 0;
+		}
+		else
+		{
+			SCFG_OPTIMIZATION_METHOD = 1;
+		}
+		
+		/* compute initial likelihood */
+		timer0 = Time(0);
+		ExecuteCommands("LFCompute ("+scfg_string+", LF_START_COMPUTE);");
+		ExecuteCommands("LFCompute ("+scfg_string+", logL);");
+		
+		fprintf (stdout, "\nPass 1. Time = ", Time(0)-timer0, " seconds \nInitial Log-likelihood: ", logL, "\n");
+		
+		timer0 = Time(0);
+		ExecuteCommands ("Optimize(res,"+scfg_string+");");
+		timer = Time(0);
+		
+		logL = res[1][0];
+		fprintf (stdout, "Optimization completed in ", timer-timer0, "s with log L = ", logL, "\n");
+		
+		df = Columns(scfgInfo["Global Independent"]) - Columns(scfgInfo["Global Constrained"]);
+		fprintf (stdout, "AIC = ", 2*df - 2*logL,"\n");
+		
+		
+		fprintf (stdout, "Export grammar to file (y/n)? : ");
+		fscanf (stdin, "String", _yn);
+		if (_yn != "N" && _yn != "n")
+		{
+			export_grammar(scfg_string);
+		}
+	}
+	else
+	{
+		fprintf (stdout, "Unable to train grammar, no corpus attached.  Call attach_corpus(\""+scfg_string+"\")\n");
+		res = 0;
+	}
+	
+	return res;
+}
+
+
+/* ___________________________________________________________ */
+function export_grammar (scfg_string)
+{
+	scfgInfo = "";
+	
+	ExecuteCommands("GetString (scfgInfo, "+scfg_string+", -1);");
+	
+	/* add maximum likelihood parameter estimates */
+	scfgInfo["MLE"] = Transpose(res[0][-1]);
+	
+	/* repair string entries, escape double-quotes to be literal */
+	for (pr = 0; pr < Columns(scfgInfo["PRODUCTIONS"]); pr = pr+1)
+	{
+		rule = ""+(scfgInfo["PRODUCTIONS"])[pr];
+		(scfgInfo["PRODUCTIONS"])[pr] = rule^{{"\""}{"\\\""}};
+	}
+	
+	export_str = "_exportScfg = " + scfgInfo + ";\n";
+	
+	SetDialogPrompt ("Select file to export grammar:");
+	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, export_str);
+	
+	return 0;
+}
+
+/* ___________________________________________________________ */
+function import_parameters (scfg_string)
+{
+	SetDialogPrompt ("Import grammar parameters from file:");
+	fscanf (PROMPT_FOR_FILE, "Raw", importScfg);
+	
+	ExecuteCommands(importScfg);
+	
+	/* loop through global parameters and set to training estimates */
+	for (gi = 0; gi < Columns(_exportScfg["Global Independent"]); gi = gi+1)
+	{
+		ExecuteCommands ((_exportScfg["Global Independent"])[gi] + " := " + (_exportScfg["MLE"])[gi]+";");
+	}
+	
+	/* fill probability indices */
+	ExecuteCommands("LFCompute ("+scfg_string+", LF_START_COMPUTE);");
+	ExecuteCommands("LFCompute ("+scfg_string+", logL);");
+	
+	return 0;
+}
+
+
+
+/* ___________________________________________________________ */
+function parse_corpus (scfg_string)
+{
+	ExecuteCommands("GetString (scfgInfo, "+scfg_string+", -1);");
+	
+	if (Columns(scfgInfo["SCFG_STRING_CORPUS"]) > 0)
+	{
+		ExecuteCommands("DataSet ancData = ReconstructAncestors ("+scfg_string+");");
+		tempstr = ""+ancData;
+		
+		ntkeys = Rows(non_terminals);
+		for (_nt = 0; _nt < Columns(ntkeys); _nt = _nt+1)
+		{
+			tempstr = tempstr^{{"\("+_nt+" "}{"("+ntkeys[_nt]+" "}}; /* search and replace */
+		}
+		
+		/* fprintf(stdout, "\nBest parse tree (CYK):\n", tempstr, "\n"); */
+		fprintf (stdout, "\n\n***********Save parse trees to a file (y/n)?");
+		fscanf  (stdin, "String", resp);
+		if ((resp!="n")&&(resp!="N"))
+		{
+			SetDialogPrompt ("Write parse trees to:");
+			fprintf (PROMPT_FOR_FILE, CLEAR_FILE, temp_str, ";");
+		}
+	}
+	else
+	{
+		fprintf (stdout, "Error: no corpus attached to grammar to parse\n");
+	}
+	
+	/* convert string concatenation of parse trees into string matrix */
+	breaks = tempstr||"\n";
+	left = 0;
+	res = {Rows(breaks)$2,1};
+	for (s = 0; s < Rows(breaks); s = s+2)
+	{
+		ptree = tempstr[left][breaks[s]];
+		left = breaks[s];
+		res[s$2] = ptree;
+	}
+	
+	return res;
+}
+
+
+
+/* ______________________________________________________ */
+function render_parsetree (treestr)
+{
+	dot_string * 256;	/* allocate at least 256 bytes for string streaming */
+	dot_string * "digraph parsetree {\n";
+	dot_string * "\tnode [style=\"setlinewidth(0)\"];\n";
+	
+	
+	dot_string * dot_recursion(treestr, "root", 0, 0);
+	
+	
+	dot_string * "}\n";
+	dot_string * 0;	/* finalize string stream */
+	
+	SetDialogPrompt ("Select file to write DOT strings:");
+	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, dot_string);
+}
+
+
+function dot_recursion (treestr, parent, nt_count, term_count)
+{
+	/* 
+		adapted from Python code authored by afyp
+		traverse parse tree and generate GraphViz code on the fly
+	*/
+	
+	children = {};
+	child = {2,1};
+	depth = 0;
+	
+	/* locate children of this parent at depth = 1 */
+	for (i = 1; i < Abs(treestr)-1; i = i+1)
+	{
+		if (treestr[i] == "(")
+		{
+			depth = depth + 1;
+			if (depth == 1)
+			{
+				/* record location in string */
+				child[0] = i+1;
+				
+				/* look ahead to find end of non-terminal identifier */
+				for (j = i+1; j < Abs(treestr)-1; j=j+1)
+				{
+					if (treestr[j] == " ")
+					{
+						child[1] = j;
+						break;
+					}
+				}
+				
+				/* insert vector into associative array */
+				children[Abs(children)] = child;
+			}
+		}
+		else if (treestr[i] == ")")
+		{
+			depth = depth - 1;
+		}
+	}
+	
+	/* output children and call recursions on each child */
+	for (ch = 0; ch < Abs(children); ch = ch + 1)
+	{
+		nt_count = nt_count + 1;
+		dot_string * ("\""+parent+"\"->\""+treestr[children[ch]]+nt_count+";\n");
+		
+		dot_recursion(treestr[]);
+	}
+	
+	
+	
+}
+
+
+/* ______________________________________________________ */
+function report_grammar (scfg_string)
+{
+	ExecuteCommands("GetString (scfgInfo, "+scfg_string+", -1);");
+	
+	productionInfo = scfgInfo["PRODUCTIONS"];
+	probabilityInfo = scfgInfo["PROBABILITIES"];
+	varInfoG = scfgInfo["Global Independent"];
+	
+	fprintf (stdout, "\nThe grammar comprises ", Columns (productionInfo), " production rules\n");
+	for (k=0; k<Columns (productionInfo); k=k+1)
+	{
+		fprintf (stdout, "Production Rule ", k+1, ": ", productionInfo[k], " P=", probabilityInfo[k],"\n");	
+	}
+	
+	fprintf (stdout, "\nThe grammar comprises ", Columns (varInfoG), " global independent variables\n");
+	for (k=0; k<Columns (varInfoG); k=k+1)
+	{
+		fprintf (stdout, k+1, ": ", varInfoG[k], " = ", res[0][k],"\n");	
+	}
+	
+	return 0;
+}
+
+
+/* ______________________________________________________ */
+function simulate_corpus (scfg_string, nreps)
+{
+	res = {nreps,1};
+	for (rep = 0; rep < nreps; rep = rep+1)
+	{
+		ExecuteCommands("DataSet sim = SimulateDataSet("+scfg_string+");");
+		res[rep] = sim;
+	}
+	return res;
+}
+
+
+
+/* ______________________________________________________ */
+function profile_likelihood (scfg_string, var, interval)
+{
+	res = {1,2};
+	
+	if (interval > 0. && interval < 1.)
+	{
+		COVARIANCE_PRECISION = interval;
+		
+		ExecuteCommands("GetString (scfgInfo, "+scfg_string+", -1);");
+		varInfoG = scfgInfo["Global Independent"];
+		
+		for (k=0; k<Columns (varInfoG); k=k+1)
+		{
+			if (varInfoG[k] == var)
+			{
+				COVARIANCE_PARAMETER = varInfoG[k];
+				ExecuteCommands("CovarianceMatrix (res,"+scfg_string+");");
+			}
+		}
+	}
+	
+	return res;
+}

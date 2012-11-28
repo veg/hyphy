@@ -109,15 +109,7 @@ public:
     long        GetIndex (void) {
         return theIndex;
     }
-    virtual     void        ScanForVariables (_AVLList& l, bool globals = false) {
-        if (varValue) {
-            varValue->ScanForVariables (l, globals);
-        }
-        if (varFormula && varFormula->theFormula.lLength) {
-            varFormula->ScanFForVariables(l,globals);
-        }
-    }
-
+    virtual     void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
     virtual     bool        IsContainer (void) {
         return false;
     }

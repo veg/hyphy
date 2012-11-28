@@ -11,6 +11,10 @@
 
 #include "bayesgraph.h"
 
+#ifdef __HYPHYQT__
+    #include "hyphymain.h"
+#endif
+
 extern  _Parameter  lnGamma (_Parameter);
 
 
@@ -1307,7 +1311,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
     _Matrix         single_parent_scores (num_nodes, 1, false, true);
 
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
 #if !defined __HEADLESS__
     SetStatusLine     (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
@@ -1419,7 +1423,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
         }
 
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
         if ((temp=TimerDifferenceFunction(true))>1.0) { // time to update
             seconds_accumulator += temp;
 
@@ -2047,7 +2051,7 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
 
 
     // status line
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     long    updates = 0;
     TimerDifferenceFunction (false);
 #if defined __HEADLESS__
@@ -2508,7 +2512,7 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
                 break;
             }
 #endif
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ 
             ConsoleBGMStatus (statusLine, 100.*step/(n_steps), progressReportFile);
 #endif
 #endif
@@ -2538,10 +2542,10 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
 
     /*SLKP 20070926; include progress report updates */
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     SetStatusLine     (_HYBgm_STATUS_LINE_MCMC_DONE);
 #endif
-#if defined __UNIX__ && ! defined __HEADLESS__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
     ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC_DONE, -1.0, progressReportFile);
 #endif
     /* SLKP */
