@@ -316,8 +316,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 install(
@@ -403,7 +403,7 @@ endif((${GTK2_FOUND}))
 # hyphy qt target
 #-------------------------------------------------------------------------------
 
-find_package(QT4)
+find_package(QT4 REQUIRED QT_QTNETWORK_LIBRARY)
 
 if((${QT4_FOUND}))
 
@@ -429,9 +429,9 @@ if((${QT4_FOUND}))
                            ${RES_MACGUI}
                            )
 
-    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${DEFAULT_LIBRARIES})
+    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})
 
-    include_directories(${CMAKE_CURRENT_BINARY_DIR} src/gui/qt/include)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${QT_QTNETWORK_INCLUDE_DIR} src/gui/qt/include)
 
     set_property(
         TARGET HYPHYQT
