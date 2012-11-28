@@ -42,11 +42,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QEvent>
 #include <QMouseEvent>
 #include <QDebug>
+#include <QUrl>
+
 #include "hy_strings.h"
 #include "hyphymain.h"
 #include "hyphyevents.h"
 #include "hyphyhierarchicalselector.h"
 #include "hyphy_qt_helpers.h"
+#include "simplerequest.h"
 
 bool needExtraNL = true; 
 bool dropIntoDebugMode=false;
@@ -110,7 +113,28 @@ void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
 
 bool Get_a_URL (_String& urls, _String* fileName)
 {
-    return false;
+    SimpleRequest* getter = new SimpleRequest;
+
+    QNetworkReply* reply = getter->requestUrl((QString)urls.sData);
+
+    //Let's make this synchronous for now
+    QEventLoop loop;
+    QObject::connect(getter, SIGNAL(networkError(const QString)), &loop, SLOT(quit()));
+    QObject::connect(reply, SIGNAL(readyRead()), &loop, SLOT(quit()));
+    loop.exec();
+
+    //Check for an error
+    if(reply->error()) {
+        //TODO:Return something more meaningful. SW20121127
+        return false;
+    }
+
+    QByteArray rawData = reply->readAll();
+    
+    //Set urls since that's what the parser uses for the data
+    urls = (_String)rawData.data();
+
+    return true;
 }
 
 void NLToConsole()
