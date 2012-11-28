@@ -39,32 +39,29 @@ template <class node_data>
 node<node_data>* StepWiseTraverserLevel (node_data& level, node<node_data>* root)
 {
 	static node<node_data>* laststep;
-	node<node_data>* curstep, *crashdummy;
-	int goingup = false;
+	node   <node_data>  * curstep, 
+                        * crashdummy;
+                        
+	bool   goingup = false;
 		
-	if (root)
-	{
+	if (root) {
 		laststep = root;
 		level = 0;
 		return root;
 	}
 	
 	curstep = laststep;
-	while (curstep)
-	{
-		if (!goingup)
-		{
+	while (curstep) {
+		if (!goingup) {
 			crashdummy = curstep->go_down(1);
-			if (crashdummy)
-			{
+			if (crashdummy) {
 				level++;
 				curstep=crashdummy;
 				break;
 			}
 		}
 		crashdummy = curstep->go_next();
-		if (crashdummy)
-		{
+		if (crashdummy) {
 			curstep=crashdummy;
 			break;
 		}
@@ -76,13 +73,14 @@ node<node_data>* StepWiseTraverserLevel (node_data& level, node<node_data>* root
 	return curstep;	
 }
 
+
 //-------------------------------------------------------------
 
 template <class node_data>
 node<node_data>* StepWiseTraverser (node<node_data>* root)
 {
-	long duh = 0;
-	return StepWiseTraverserLevel (duh, root);
+	long   ignored_level = 0;
+	return StepWiseTraverserLevel (ignored_level, root);
 }
 
 //-------------------------------------------------------------

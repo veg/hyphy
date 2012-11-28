@@ -1,0 +1,39 @@
+function runCommandWithSoftErrors (command, expected_error_reg_exp) {
+	localTestResult  	   = 0;
+
+    LAST_HBL_EXECUTION_ERROR = "";
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);
+    ExecuteCommands (command);
+    assert ((LAST_HBL_EXECUTION_ERROR$expected_error_reg_exp)[0] >= 0, "Expected an error matching '" + expected_error_reg_exp + "', while executing '" +  command + "'.\nHad error\n" + LAST_HBL_EXECUTION_ERROR + "\n");
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,0,0);
+    localTestResult          = 1;
+    
+    return localTestResult;
+}
+
+function trapAllErrors (command) {
+	localTestResult  	   = 0;
+
+    LAST_HBL_EXECUTION_ERROR = "";
+    ExecuteCommands ("SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);" + command);
+    assert (Type(LAST_HBL_EXECUTION_ERROR) != "String", "Encountered an error '" + LAST_HBL_EXECUTION_ERROR + "', while executing '" +  command + "'.\n");
+    localTestResult          = 1;
+    
+    return localTestResult;
+}
+
+
+function runATest () {
+    fprintf    (stdout, "[Running COVERAGE TEST '", getTestName(), "']\n");
+    result  =  runTest();
+    if (result)
+    {
+        fprintf (stdout, "[TEST PASSED]\n");
+        return 1;
+    }
+    else
+    {
+        fprintf (stdout, "[TEST FAILED]\n");
+    }
+    return 0;
+}

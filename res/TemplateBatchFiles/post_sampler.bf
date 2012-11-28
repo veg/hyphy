@@ -70,10 +70,11 @@ if (lvc && gvc)
 ChoiceList  (pMethod,"Parameters to Sample",1,NO_SKIP,
 			 "All","Sample all independent parameters",
 			 "Global","Sample global model parameters only",
-			 "Local ","Sample local model parameter only",
-			 "Choose","Choose which parameters to sample");
-	if (pMethod < 0)
-	{
+			 "Local","Sample local model parameter only",
+			 "Choose","Choose which parameters to sample",
+			 "RegExp","Sample model parameters which match a regular expression");
+			 
+	if (pMethod < 0) {
 		return;
 	}
 }
@@ -84,16 +85,14 @@ else
 		ChoiceList  (pMethod,"Parameters to Sample",1,NO_SKIP,
 					 "All","Sample all independent parameters",
 					 "Global","Sample global model parameters only",
-					 "Choose","Choose which parameters to sample");
-		if (pMethod < 0)
-		{
+					 "Choose","Choose which parameters to sample",
+			         "RegExp","Sample model parameters which match a regular expression");
+		if (pMethod < 0) {
 			return;
 		}
-		else
-		{
-			if (pMethod==2)
-			{
-				pMethod = 3;
+		else {
+			if (pMethod >= 2) {
+				pMethod += 1;
 			}
 		}
 	}
@@ -102,16 +101,14 @@ else
 		ChoiceList  (pMethod,"Parameters to Sample",1,NO_SKIP,
 					 "All","Sample all independent parameters",
 					 "Local","Sample locl model parameters only",
-					 "Choose","Choose which parameters to sample");
-		if (pMethod < 0)
-		{
+					 "Choose","Choose which parameters to sample",
+			         "RegExp","Sample model parameters which match a regular expression");
+		if (pMethod < 0) {
 			return;
 		}
-		else
-		{
-			if (pMethod)
-			{
-				pMethod = pMethod+1;
+		else {
+			if (pMethod) {
+				pMethod += 1;
 			}
 		}	
 	}
@@ -150,29 +147,28 @@ if (pMethod == 3)
 }
 else
 {
-	if (pMethod == 0)
-	{
-		for (k=0; k<lvc+gvc; k=k+1)
-		{
-			chosenParms[k] = 1;
-		}
+	if (pMethod == 0) {
+	    chosenParms = chosenParms["1"];
 	}
-	else
-	{
-		if (pMethod == 1)
-		{
-			for (k=0; k<gvc; k=k+1)
-			{
+	else {
+		if (pMethod == 1) {
+			for (k=0; k<gvc; k=k+1) {
 				chosenParms[k] = 1;
 			}
 		}
-		else
-		{
-			for (k=gvc; k<lvc+gvc; k=k+1)
-			{
-				chosenParms[k] = 1;
+		else {
+		    if (pMethod == 4) {
+		        fprintf (stdout, "Please enter a regular expression to filter the parameter names with:");
+		        fscanf  (stdin,"String",filtering_regexp);   
+		        chosenParms = chosenParms["(choiceList[_MATRIX_ELEMENT_ROW_][0]$filtering_regexp)[0]>=0"];
+		        for (k = 0; k < Rows (chosenParms); k+=1) {
+		            if (chosenParms[k]) {
+		                fprintf (stdout, "Selected ", choiceList[k][0], " for sampling\n");
+		            }
+		        }
+		    } else {
+		        chosenParms = chosenParms["1"];
 			}
-		
 		}
 	}
 }

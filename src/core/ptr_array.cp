@@ -41,7 +41,7 @@ template <class array_data> void ptr_array<array_data >::add(array_data in){
 		length++;
         if (length > 1)
 		{
-			array_data *temp = new array_data[length];
+			 array_data *temp = new array_data[length];
 			 for (long i=0;i < length - 1; i++)
 				temp[i] = data[i];
 			 delete [] data;
@@ -83,9 +83,13 @@ template <class array_data>	void ptr_array<array_data>::delete_entry(int index){
   array_data *temp;
   if (length > 0){
 	  length--;
-      temp = new array_data [length];
-      for (long i=0; i < index-1 ; i++) temp[i] = data[i];
-      for (long k=index-1; k < length; k++) temp[k] = data[k+1];
+      if (length) {
+          temp = new array_data [length];
+          for (long i=0; i < index-1 ; i++) temp[i] = data[i];
+          for (long k=index-1; k < length; k++) temp[k] = data[k+1];
+      } else {
+        temp = nil;
+      } 
       delete [] data;
       data = temp;
   }

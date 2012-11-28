@@ -219,6 +219,11 @@ public:
 
     /**
     * Append operator
+    */
+    virtual void operator << (const _String&);
+
+    /**
+    * Append operator
     * \n\n \b Example: \code _String new_string = _String("A") & _String("B") \endcode
     * @return "AB"
     * @sa EscapteAndAppend()
@@ -885,6 +890,10 @@ extern _String volumeName;
 
 void    SetStatusBarValue           (long,_Parameter,_Parameter);
 void    SetStatusLine               (_String);
+void    SetStatusLine               (_String, _String, _String, long l);
+void    SetStatusLine               (_String, _String, _String);
+void    SetStatusLine               (_String, _String, _String, long, char);
+
 void    SetStatusLineUser           (_String);
 
 
@@ -897,10 +906,12 @@ void    WarnErrorWhileParsing       (_String, _String&);
 void    WarnError                   (_String);
 _String GetVersionString            (void);
 _String GetTimeStamp                (bool = false);
-void    StringToConsole             (_String&);
-void    BufferToConsole             (const char*);
+
+void    StringToConsole             (_String&, _SimpleList* = nil);
+void    BufferToConsole             (const char*, _SimpleList* = nil);
 void    NLToConsole                 (void);
 _String*StringFromConsole           (bool=true);
+
 char    GetPlatformDirectoryChar    (void);
 
 

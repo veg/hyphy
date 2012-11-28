@@ -507,7 +507,7 @@ void        Scfg::ClearParseTree    (void)
                 delete (aNode);
             }
         }
-        delete parseTree;
+        delete [] parseTree;
         parseTree = nil;
     }
 }

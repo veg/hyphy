@@ -60,10 +60,12 @@ public:
 
     virtual ~_AVLListXL(void){}
     virtual BaseRef toStr(void);
+    virtual BaseRef GetDataByKey (BaseRef);
 
     virtual long InsertData(BaseRef, long,bool);
     virtual void Clear(bool = false);
     virtual void DeleteXtra(long);
+    virtual void UpdateValue (BaseRef, BaseRef, bool = false, bool = true);
 
     _List xtraD;
 

@@ -1,6 +1,7 @@
-RequireVersion ("0.9920060815");
+RequireVersion ("2.12");
 
-#include "qndhelper1_mf.ibf";
+ExecuteAFile ("qndhelper1_mf.ibf");
+LoadFunctionLibrary ("GrabBag.bf");
 
 REPLACE_TREE_STRUCTURE = 1;
 
@@ -14,43 +15,34 @@ ChoiceList  (rOptions,"dN/dS bias parameter options",1,NO_SKIP,
 );
 	
 
-if (rOptions < 0)
-{
+if (rOptions < 0) {
 	return;
 }
 
-if (rOptions == 1)
-{
-	RR = -1.0;
-	while (RR<=0.0)
-	{
-		fprintf (stdout, "\nEnter the value for dNdS = dN/dS (>0):");
-		fscanf 	(stdin,"Number",RR);
-	}
+if (rOptions == 1) {
+    RR = prompt_for_a_value ("Enter the value for dNdS",0.25,0,10000,0);
 	dNdS = RR;
 }
 
 ChoiceList  (cOptions,"Which method?",1,NO_SKIP,
 			 "SLAC","Single likelihood ancestor counting",
-			 "FEL","Fixed effects likelihood");
+			 "FEL","Fixed effects likelihood",
+			 "MEME","Mixed effects model of evolution");
 
 
-if (cOptions < 0)
-{
+if (cOptions < 0) {
 	return;
 }
 
-#include "qndhelper2_mf.ibf";
-
+ExecuteAFile("qndhelper2_mf.ibf");
 
 fprintf (stdout, "\n\nPhase 4: Selection Analysis\n\n");
 
 
 pooledFreqs = {4,1};
 
-for (k=0; k<4; k=k+1)
-{
-	pooledFreqs[k] = (positionFrequencies[k][0]+positionFrequencies[k][1]+positionFrequencies[k][2])/3;
+for (k=0; k<4; k+=1) {
+	pooledFreqs[k] = (+positionFrequencies[k][-1])/3;
 }
 
 _EFV_MATRIX0_ = {{1,AC__*pooledFreqs[1],pooledFreqs[2],AT__*pooledFreqs[3]}
@@ -62,19 +54,11 @@ _EFV_MATRIX1_ = _EFV_MATRIX0_;
 _EFV_MATRIX2_ = _EFV_MATRIX0_;				
 useCustomCountingBias = 1;
 
-if (cOptions == 0)
-{		
+if (cOptions == 0) {		
 	ExecuteAFile("SGEmulator_MF.bf");
 }
-else
-{
-		pValue = 0;
-		while ((pValue<=0)||(pValue>=1))
-		{	
-			fprintf (stdout, "\nSignificance level for Likelihood Ratio Tests (between 0 and 1)?");
-			fscanf  (stdin,"Number", pValue);
-		}
-		fprintf (stdout, "\n");
+else { // FEL 
+    pValue = prompt_for_a_value ("Significance level for Likelihood Ratio Tests",0.1,0,1,0)
 					
 	SHORT_MPI_RETURN = 1;
 	FEL_RUN_TIMER    = Time(1);
@@ -84,8 +68,7 @@ else
 						 "All","Test for non-neutral evolution on all branches",
 						 "Internal Only","Test for non-neutral evolution on internal branches only");
 					 
-	if (brOptions < 0)
-	{
+	if (brOptions < 0) {
 		return 0;
 	}
 

@@ -1,7 +1,7 @@
 /* ________________________________________________________________________________________________*/
 
 
-function InitializeDistances (dummy)
+function InitializeDistances ()
 {
 	HarvestFrequencies (_dNucFreq,filteredData,1,1,0);
 	_d_fR = _dNucFreq[0]+_dNucFreq[2];

@@ -57,6 +57,7 @@ void WinErrorBox(_String&, bool);
 #if !defined __MINGW32__
 #include <sys/utsname.h>
 #endif
+
 #ifndef __HYPHY_GTK__
 extern  bool dropIntoDebugMode;
 #endif
@@ -205,7 +206,6 @@ void*   checkPointer (void* p)
 //_______________________________________________________________________
 void    ReportWarning (_String st)
 {
-#ifdef __HYPHYDEBUG__
     checkParameter          (MessageLogging, messageLogFlag, 1.0);
 
 #ifdef  __HEADLESS__
@@ -221,7 +221,6 @@ void    ReportWarning (_String st)
     fwrite (str, 1, 1, globalMessageFile);
     fwrite (st.getStr(), 1, st.Length(), globalMessageFile);
     fflush (globalMessageFile);
-#endif
 #endif
 }
 
@@ -271,25 +270,9 @@ void    FlagError (_String st)
 #ifdef  _MINGW32_MEGA_
     SetStatusLine  (errMsg);
 #else
-    StringToConsole(errMsg);
+    _SimpleList color (255,2,0,0);
+    StringToConsole(errMsg, &color);
 #endif
-#endif
-
-#ifdef __MAC__
-    Str255            err;
-    StringToStr255   (st,err);
-    ParamText        (err,NULL,NULL,NULL);
-    Alert            (128, (ModalFilterUPP)NULL);
-    WritePreferences ();
-    SaveConsole      ();
-#endif
-
-#ifdef __WINDOZE__
-    if (st.sLength>255) {
-        st = st.Cut(0,255);
-    }
-    WritePreferences();
-    WinErrorBox(st,false);
 #endif
 
 #ifdef __HYPHYMPI__
@@ -298,11 +281,11 @@ void    FlagError (_String st)
     }
 #endif
 
-#if defined __UNIX__ && !defined __HYPHY_GTK__
+#if defined __UNIX__ && !defined __HYPHYQT__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif
-    //GlobalShutdown();
+
 #ifdef _HY_ABORT_ON_ERROR
     abort ();
 #else
@@ -320,8 +303,14 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 
 
 //_______________________________________________________________________
-void    WarnError (_String st)
+void WarnError (_String st)
 {
+
+    if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
+        currentExecutionList->ReportAnExecutionError(st, true);
+        return;
+    }
+
 #ifdef  __HEADLESS__
     if (globalInterfaceInstance) {
         globalInterfaceInstance->PushError (&st);
@@ -340,104 +329,42 @@ void    WarnError (_String st)
     int     rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
     if (globalMessageFile) {
         fprintf (globalMessageFile, "\n%s", st.sData);
     }
-#if !defined __MAC__ && !defined __WINDOZE__
-    _String errMsg;
-#ifdef __HYPHYMPI__
-    errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
 
-    if (rank > 0) {
-        errMsg = ConstructAnErrorMessage (st);
-        fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
-        MPI_Abort (MPI_COMM_WORLD,1);
-        abort   ();
-    } else {
-        errMsg = _String ("\nMaster node received an error:") & st;
-    }
-#else
-    errMsg = st;
-#endif
+    _String errMsg;
+    #ifdef __HYPHYMPI__
+        errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
+
+        if (rank > 0) {
+            errMsg = ConstructAnErrorMessage (st);
+            fprintf (stderr, "HYPHYMPI terminated.\n%s\n\n", errMsg.sData);
+            MPI_Abort (MPI_COMM_WORLD,1);
+            abort   ();
+        } else {
+            errMsg = _String ("\nMaster node received an error:") & st;
+        }
+    #else
+        errMsg = st;
+    #endif
+
+
 
     errMsg = ConstructAnErrorMessage (errMsg);
+    
 
-#ifdef  _MINGW32_MEGA_
-    SetStatusLine  (errMsg);
-#else
-    StringToConsole(errMsg);
-#endif
-#endif
-
-#ifdef __MAC__
-    if (!skipWarningMessages) {
-        Str255 err;
-        err[0] = st.sLength>255?255:st.sLength;
-        memcpy (err+1,st.getStr(),st.sLength>255?255:st.sLength);
-        ParamText (err,NULL,NULL,NULL);
-        char alertCode;
-#ifndef __OLDMAC__
-#ifdef TARGET_API_MAC_CARBON
-        alertCode = Alert (129, (ModalFilterUPP)NULL);
-#else
-        alertCode = Alert (129, (RoutineDescriptor*)NULL);
-#endif
-#else
-        alertCode = Alert (129, NULL);
-#endif
-        terminateExecution = true;
-        if (alertCode == 2) {
-            skipWarningMessages = true;
-        } else if (alertCode == 3) {
-            WritePreferences();
-            SaveConsole();
-            //GlobalShutdown();
-            // graceless exit; no need to clean stuff up
-            exit(1);
-        }
-    }
+    #ifdef  _MINGW32_MEGA_
+        SetStatusLine  (errMsg);
+    #else
+        _SimpleList color (255,2,0,0);
+        StringToConsole(errMsg, &color);
+#ifdef __HYPHYQT__
     return;
 #endif
-#ifdef __HYPHY_GTK__
-    if (!skipWarningMessages) {
-        GtkWidget *dialog = gtk_message_dialog_new (
-                                hyphyConsoleWindow?GTK_WINDOW(gtk_widget_get_ancestor(hyphyConsoleWindow->theWindow,GTK_TYPE_WINDOW)):NULL,
-                                GTK_DIALOG_MODAL,
-                                GTK_MESSAGE_WARNING,
-                                GTK_BUTTONS_NONE,
-                                "The following error occurred:\n %s",
-                                st.sData);
-
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"Skip Further Messages",2);
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"Quit",3);
-        gtk_dialog_add_button (GTK_DIALOG(dialog),"OK",1);
-        char alertCode = gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
-
-        terminateExecution = true;
-        if (alertCode == 2) {
-            skipWarningMessages = true;
-        } else if (alertCode == 3) {
-            WritePreferences();
-            SaveConsole     ();
-            GlobalShutdown  ();
-            exit            (1);
-        }
-    }
-    return;
 #endif
-#ifdef __WINDOZE__
-    if (!skipWarningMessages) {
-        if (st.sLength>255) {
-            st = st.Cut(0,255);
-        }
-        WinErrorBox     (st, true);
-        terminateExecution = true;
-    }
-    return;
-#endif
-#if defined __UNIX__ && !defined __HYPHY_GTK__
+
+#if defined __UNIX__ && !defined __HYPHY_QT__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif
@@ -474,9 +401,11 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
 
     if (errorFormattingExpression) {
         _Formula expression;
-        _String  expr (*errorFormattingExpression->theString);
+        _String  expr (*errorFormattingExpression->theString),
+        errMsgLocal;
+        bool     is_volatile;
         long     varRef = -1;
-        if (Parse    (&expression, expr, varRef, nil, nil, false) == HY_FORMULA_EXPRESSION) {
+        if (Parse    (&expression, expr, varRef, nil, nil, &errMsgLocal, nil) == HY_FORMULA_EXPRESSION) {
             CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
@@ -493,8 +422,8 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
         (*errMsg) << theMessage;
         if (calls.lLength) {
             (*errMsg) << "\n\nFunction call stack\n";
-            for (long k = 0; k < calls.lLength; k++) {
-                (*errMsg) << (_String(k+1) & " : " & (*(_String*)calls(k)) & '\n');
+            for (unsigned long k = 0; k < calls.lLength; k++) {
+                (*errMsg) << (_String((long)k+1) & " : " & (*(_String*)calls(k)) & '\n');
                 _String* redir = (_String*)stdins (k);
                 if (redir->sLength) {
                     (*errMsg) << "\tStandard input redirect:\n\t\t";

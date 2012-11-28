@@ -149,7 +149,7 @@ double        TimerDifferenceFunction   (bool);
 typedef     double       _Parameter; // standard number type - used everywhere in matrices.
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ || defined __HYPHYQT__
 void    yieldCPUTime        (void);
 bool    handleGUI           (bool = false);
 #endif

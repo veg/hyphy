@@ -1,0 +1,351 @@
+function computeENFP_CI (p_i,sig_level) {
+    N = Abs (p_i);
+      
+    
+    PDF_old = {{1-p_i[0],p_i[0]}};
+    PDF = PDF_old;
+       
+    for (i = 1; i < N; i+=1) {
+        PDF = {1,i+2};
+        PDF[0] = PDF_old[0] * (1-p_i[i]);
+        for (X = 1; X < i+1; X+=1) { 
+            PDF[X] = PDF_old[X] * (1-p_i[i]) + PDF_old[X-1] * (p_i[i]);
+        }
+        PDF[i+1] = PDF_old[i] * p_i[i];
+        PDF_old = PDF;
+    }
+    
+    sum = PDF[0];
+    _idx = 0;
+    while (sum < sig_level/2) {
+        _idx+=1;
+        sum += PDF[_idx];
+    }
+    lb = _idx;
+    
+    while (sum < 1-sig_level/2) {
+        _idx+=1;
+        sum += PDF[_idx];        
+    }
+    
+    return {{lb__, _idx__}}
+}
+
+function tabulateGridResults (points, sites, samples, _chainCount) {
+
+    jointLogLArray        = {1,samples};
+    jointSamples          = {samples,points};
+    perChain              = samples$_chainCount;
+
+    positive_selection_stencil = {points,sites} ["grid[_MATRIX_ELEMENT_ROW_][0]<grid[_MATRIX_ELEMENT_ROW_][1]"];
+    negative_selection_stencil = {points,sites} ["grid[_MATRIX_ELEMENT_ROW_][0]>grid[_MATRIX_ELEMENT_ROW_][1]"];
+    diag_alpha = {points,points}["grid[_MATRIX_ELEMENT_ROW_][0]*(_MATRIX_ELEMENT_ROW_==_MATRIX_ELEMENT_COLUMN_)"];
+    diag_beta  = {points,points}["grid[_MATRIX_ELEMENT_ROW_][1]*(_MATRIX_ELEMENT_ROW_==_MATRIX_ELEMENT_COLUMN_)"];
+    
+    pos_sel_matrices      = {};
+    neg_sel_matrices      = {};
+    alpha_matrices        = {};
+    beta_matrices         = {};
+    normalization_factors = {};
+    
+    
+    from = 0;
+    to   = perChain;
+    
+    t0 = Time (1);
+    for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+        SetParameter (STATUS_BAR_STATUS_STRING, "Processing samples from chain "+ _chainID + "/" + _chainCount + " " + _formatTimeString(Time(1)-t0),0);
+        thisSample = samplesAVL[_chainID];
+        thisLogL   = logLAVL[_chainID];
+        norm_matrix           = (thisSample*site_probs["conditionals"]);
+        normalization_factors + norm_matrix;
+        pos_sel_matrices      + (thisSample*(site_probs["conditionals"]$positive_selection_stencil) / norm_matrix);
+        neg_sel_matrices      + (thisSample*(site_probs["conditionals"]$negative_selection_stencil) / norm_matrix);
+        alpha_matrices          + ((thisSample*diag_alpha*site_probs["conditionals"])/norm_matrix);
+        beta_matrices           + ((thisSample*diag_beta*site_probs["conditionals"])/norm_matrix);
+        indices = Random ({1,samples}["_MATRIX_ELEMENT_COLUMN_"], 0);
+        
+        for (_sampleT = from; _sampleT < to; _sampleT += 1) {
+            thisIndex = indices[_sampleT];
+            jointLogLArray [_sampleT] = thisLogL[thisIndex];
+            for (_point = 0; _point < points; _point += 1) {
+                jointSamples[_sampleT][_point] = thisSample[thisIndex][_point];
+            } 
+        }
+        from = to;
+        if (_chainID == _chainCount - 2) {
+            to = samples;
+        } else {
+            to += perChain;
+        }
+    }
+    
+    return 0;
+}
+
+//------------------------------------------------------------------------------------------------//
+
+function readMCMCSamples (baseFilePath,_chainCount) {
+    logLAVL    = {};
+    samplesAVL = {};
+    
+    for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+       sample_file = baseFilePath + "." + _chainID;
+       fscanf (sample_file, "NMatrix,NMatrix", logL, sampled);
+       logLAVL + logL;
+       samplesAVL + sampled;
+    }
+    
+    samples = Rows (sampled);
+    points  = Columns (sampled);
+    return 0;
+}
+
+//------------------------------------------------------------------------------------------------//
+
+function reportSiteResults (sites, writeTo, priorNN, doFDR) {
+    t0 = Time (1);
+    bySitePosSel = {sites,8+doFDR};
+
+    //"alpha" 0 ,"beta" 1 ,"beta-alpha" 2,"Prob[alpha<beta]" 3, "Prob[alpha>beta]" 4, "BayesFactor[alpha<beta]" 5,"PSRF" 6, "Neff" 7
+    
+    // mean alpha (normalized to overall mean alpha = 1), mean beta, mean beta-alpha, mean pos.sel
+    // mean neg.sel, PSRF, N_eff
+     for (s = 0; s < sites; s+=1) {
+        SetParameter (STATUS_BAR_STATUS_STRING, "Tabulating results for site "+ s + "/" + sites + " " + _formatTimeString(Time(1)-t0),0);
+        pos_sel_samples    =    {};
+        for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+            pos_sel_samples + ((alpha_matrices[_chainID])[-1][s]);
+        }
+        alpha = (computeRandNeff (pos_sel_samples))[0];
+        bySitePosSel[s][0] = alpha;
+
+        pos_sel_samples    =    {};
+        for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+            pos_sel_samples + ((beta_matrices[_chainID])[-1][s]);
+        }
+        beta = (computeRandNeff (pos_sel_samples))[0];
+        bySitePosSel[s][1] = beta;
+        bySitePosSel[s][2] = beta - alpha;
+        
+        pos_sel_samples    =    {};
+        for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+            pos_sel_samples + ((neg_sel_matrices[_chainID])[-1][s]);
+        }
+        neg_sel_prob = (computeRandNeff (pos_sel_samples))[0];
+        bySitePosSel[s][4] = neg_sel_prob;
+
+        pos_sel_samples    =    {};
+        for (_chainID = 0; _chainID < _chainCount; _chainID += 1) {
+            pos_sel_samples + ((pos_sel_matrices[_chainID])[-1][s]);
+        }
+        pos_sel_samples     = computeRandNeff(pos_sel_samples);
+        
+        /*if (doPrint) {
+            fprintf (finalPHP, ",", pos_sel_samples[0], ",", 1-pos_sel_samples[0], ",", pos_sel_samples[1], ",", pos_sel_samples[2]);
+        }*/
+        
+        bySitePosSel [s][3] = pos_sel_samples[0];
+        if (priorNN > 0 && priorNN < 1) {
+            bySitePosSel [s][5] = pos_sel_samples[0] / (1-pos_sel_samples[0]) / (1-priorNN) * priorNN;
+        }
+        bySitePosSel [s][6] = pos_sel_samples[1];
+        bySitePosSel [s][7] = pos_sel_samples[2];
+    }
+    
+    return bySitePosSel;
+}
+
+//------------------------------------------------------------------------------------------------//
+
+function exportFunctionDefinition (funcID) {
+    ExecuteCommands ("GetString (funcInfo, "+funcID+",-1);");
+    return "\nfunction " + funcInfo["ID"] + "(" + Join (",", funcInfo["Arguments"]) + ")\n{\n" + funcInfo ["Body"] + "\n}\n";
+}
+
+//------------------------------------------------------------------------------------------------//
+
+function computeLFOnGrid (lfID, grid, doConditionals) {
+    points = Rows (grid);
+    
+    result = {};
+    
+    t0 = Time (1);
+    _startPoint = 0;
+
+    if (MPI_NODE_COUNT > 1 && points > MPI_NODE_COUNT) {
+        per_node    = points $ MPI_NODE_COUNT;
+        _startPoint = points-per_node;
+        leftover    = points-per_node*MPI_NODE_COUNT;
+        
+        from          = 0;
+        to            = per_node + (leftover>0);
+        node_ranges   = {MPI_NODE_COUNT,2};
+        
+        for (node_id = 1; node_id < MPI_NODE_COUNT; node_id += 1) {
+            if (doConditionals) {
+                LF_NEXUS_EXPORT_EXTRA	= 
+                       "LFCompute(`lfID`,LF_START_COMPUTE);
+                        grid=" + grid[{{from,0}}][{{to-1,1}}] + ";\n
+                        points = Rows (grid);
+                        for (_r = 0 ; _r < points; _r += 1){
+                            alpha = grid[_r][0];
+                            beta  = grid[_r][1];
+                            ConstructCategoryMatrix(catMat,`lfID`,SITE_LOG_LIKELIHOODS);
+                            
+                            if (_r == 0) {
+                                _siteCount = Columns (catMat);
+                                MPI_NEXUS_FILE_RETURN = {points, _siteCount};
+                            }
+                            
+                            for (_c = 0; _c < _siteCount; _c += 1) {
+                                MPI_NEXUS_FILE_RETURN[_r][_c] = catMat[_c];
+                            }
+                        }
+                        LFCompute(`lfID`,LF_DONE_COMPUTE);
+                        return MPI_NEXUS_FILE_RETURN;";       
+                }  else {
+                 LF_NEXUS_EXPORT_EXTRA	= 
+                       "LFCompute(`lfID`,LF_START_COMPUTE);
+                        grid=" + grid[{{from,0}}][{{to-1,1}}] + ";\n
+                        points = Rows (grid);
+                        for (_r = 0 ; _r < points; _r += 1){
+                            alpha = grid[_r][0];
+                            beta  = grid[_r][1];
+                            LFCompute (`lfID`, logL);
+                            
+                            if (_r == 0) {
+                                 MPI_NEXUS_FILE_RETURN = {points, 3};
+                            }
+                            
+                            MPI_NEXUS_FILE_RETURN[_r][0] = alpha;
+                            MPI_NEXUS_FILE_RETURN[_r][1] = beta;
+                            MPI_NEXUS_FILE_RETURN[_r][2] = logL;
+                        }
+                        LFCompute(`lfID`,LF_DONE_COMPUTE);
+                        return MPI_NEXUS_FILE_RETURN;";       
+                   
+                }                             
+                                    
+            ExecuteCommands 	("Export(lfExport,`lfID`);");
+            MPISend				(node_id, lfExport);            
+            //fprintf				(stdout, "[SENT RANGE ", from+1, " - ", to, " TO MPI NODE ", node_id, "]\n");   
+            
+            node_ranges [node_id][0]         = from;
+            node_ranges [node_id][1]         = to;
+            
+            from                             = to;
+            to                              += per_node+(node_id<=leftover);  
+        } 
+    }
+    
+    ExecuteCommands ("LFCompute(`lfID`,LF_START_COMPUTE)"); 
+           
+    for (_r = _startPoint; _r < points; _r += 1){
+        alpha = grid[_r][0];
+        beta  = grid[_r][1];
+        if (doConditionals) {
+            ExecuteCommands ("ConstructCategoryMatrix(catMat,`lfID`,SITE_LOG_LIKELIHOODS)");
+        } else {
+            ExecuteCommands ("LFCompute(`lfID`,logL)");        
+        }
+        
+        if (_r == _startPoint) {
+            if (doConditionals) {
+                _siteCount = Columns (catMat);
+                conditionals = {points, _siteCount};
+                scaler = {1,_siteCount};
+            } else {
+                conditionals = {points, 3};            
+            }
+        }
+        
+        
+        if (doConditionals) {
+            for (_c = 0; _c < _siteCount; _c += 1) {
+                conditionals[_r][_c] = catMat[_c];
+            }
+        } else {
+            conditionals[_r][0] = alpha;
+            conditionals[_r][1] = beta;
+            conditionals[_r][2] = logL;
+        }
+        SetParameter (STATUS_BAR_STATUS_STRING, "Computing the likelihood function on grid points "+ (_r+1) + "/" + points + " " + _formatTimeString(Time(1)-t0),0);
+    }
+    ExecuteCommands ("LFCompute(`lfID`,LF_DONE_COMPUTE)");
+    
+
+    if (MPI_NODE_COUNT > 1 && points > MPI_NODE_COUNT) {
+         for (node_id = 1; node_id < MPI_NODE_COUNT; node_id += 1) {
+            MPIReceive (-1,fromNode,res);
+		    sscanf  (res, REWIND, "NMatrix", mpires);
+		    
+		    from = node_ranges[fromNode][0];
+		    to   = node_ranges[fromNode][1];
+		    
+            /*fprintf				(stdout, "[GOT RANGE ", from+1, " - ", to, ":", 
+                                           Rows(mpires), " FROM MPI NODE ", fromNode, "]\n"); 
+            */
+            
+            if (doConditionals) {
+                for (_r = 0; _r < Rows(mpires); _r += 1) {
+                    for (_c = 0; _c < _siteCount; _c += 1) {
+                        conditionals [_r+from][_c] = mpires[_r][_c];
+                    }
+                }
+            } else {
+                 for (_r = 0; _r < Rows(mpires); _r += 1) {
+                        conditionals [_r+from][0] = mpires[_r][0];
+                        conditionals [_r+from][1] = mpires[_r][1];
+                        conditionals [_r+from][2] = mpires[_r][2];
+                    }
+            }
+		}
+
+    }
+
+    if (doConditionals) {
+        for (_c = 0; _c < _siteCount; _c += 1) {
+            this_site  = conditionals[-1][_c];
+            best_log_l = Min (this_site*(-1),0);
+            this_site  = (this_site + best_log_l)["Exp(_MATRIX_ELEMENT_VALUE_)"];
+            normalizer = +this_site;
+            this_site  = (this_site)*(1/normalizer);
+            scaler[_c] = -best_log_l+Log(normalizer);
+            for (_r = 0; _r < points; _r += 1) {
+                conditionals[_r][_c] = this_site[_r];
+            }
+        }
+        
+        result["conditionals"] = conditionals;
+        result["scalers"]      = scaler;
+    } else {
+        return conditionals;
+    }
+    
+    return result;
+}
+
+//--------------------------------------------------------------------------------//
+
+function computeRandNeff (sampledValues) {
+    chainCount  = Abs (sampledValues);
+    withinVar   = {chainCount,1};
+    withinMeans = {chainCount, 1};
+    
+    chainLength = Columns(sampledValues[0])*Rows(sampledValues[0]);
+    
+    for (_chainID = 0;  _chainID < chainCount; _chainID += 1) {
+        chainMean = (+(sampledValues[_chainID]))/chainLength;
+        chainVar  = +((sampledValues[_chainID])["(_MATRIX_ELEMENT_VALUE_-chainMean__)^2"]);
+        withinVar   [_chainID] = chainVar/(chainLength-1);
+        withinMeans [_chainID] = chainMean;
+    }
+    
+    overallMean = (+withinMeans)/chainCount;
+    B           = (+withinMeans["(_MATRIX_ELEMENT_VALUE_-overallMean__)^2"])*chainLength / (chainCount-1);
+    W           = (+withinVar)/chainCount;
+    VarEst      = (chainLength-1)/chainLength*W + B/chainLength;
+        
+    return      {{overallMean, Sqrt(VarEst/W), VarEst/B*chainCount*chainLength, B, W, VarEst}};
+}
