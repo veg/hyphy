@@ -63,7 +63,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern _String messageFileName;
 
 //#define  STATUS_BAR_LABEL_WIDTH 100 
-
 HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     setupUi(this);
     waitingOnStringFromConsole = false;
@@ -71,7 +70,6 @@ HyphyMain::HyphyMain(QMainWindow *parent) : QMainWindow(parent) {
     initializeMenuBar();
     initializeStatusBar();
     installEventFilter(this);
-
 }
 
 void HyphyMain::initialText() {
@@ -85,8 +83,6 @@ void HyphyMain::initialText() {
     _String version = GetVersionString();
     console->insertHtml((QString)version + ". ");
  
-    // SW20120702
-    // MPProcessors is deprecated as of OSX10.7, using sysctl
 #ifdef _OPENMP
     systemCPUCount = omp_get_max_threads();
 #else
@@ -237,12 +233,11 @@ void HyphyMain::initializeStatusBar() {
 
     this->status = statusBar();
     this->status->insertWidget(0,updated_status, 1);
-    //this->status->insertWidget(1,progress_bar, 0);
+    this->status->insertWidget(1,progress_bar, 0);
     this->status->addPermanentWidget(filename_status, 0);
     status->show();
 
 }
-
 
 //File Menu Options
 void HyphyMain::hy_open() {
@@ -367,8 +362,6 @@ void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String ti
 }
 
 void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
-    qDebug() << "Do we get here? percent done";
-    qDebug() << percentDone;
 
     this->SetStatusLine(fn,updatedStatus,timer);
 

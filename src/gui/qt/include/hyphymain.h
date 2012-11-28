@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <QtGui>
 #include <QProgressBar>
+#include <QtNetwork>
 
 #include "ui_hyphymain.h"
 #include "qterminal.h"
