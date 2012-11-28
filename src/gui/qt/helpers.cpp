@@ -41,8 +41,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QWidget>
 #include <QEvent>
 #include <QMouseEvent>
-#include <QDebug>
+#include <QFile>
 #include <QUrl>
+#include <QDebug>
 
 #include "hy_strings.h"
 #include "hyphymain.h"
@@ -132,7 +133,22 @@ bool Get_a_URL (_String& urls, _String* fileName)
     QByteArray rawData = reply->readAll();
     
     //Set urls since that's what the parser uses for the data
-    urls = (_String)rawData.data();
+
+    //Either rewrite urls, or save to a file based on "fileName"
+    if(fileName) {
+        QFile file((QString)fileName->sData);
+
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            //TODO: Return something more meaningful. SW20121127
+            return false;
+
+        file.write(rawData);
+        file.close();
+    }
+
+    else {
+        urls = (_String)rawData.data();
+    }
 
     return true;
 }
