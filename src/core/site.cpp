@@ -1551,8 +1551,7 @@ void    _DataSet::toFileStr (FILE* dest)
 
 void    _DataSet::AddName (_String& s)
 {
-    s.Trim(0,s.FirstNonSpaceIndex (0,-1,-1));
-    theNames&&(&s);
+    theNames.AppendNewInstance (new _String (s,0,s.FirstNonSpaceIndex (0,-1,-1)));
 }
 
 
@@ -5146,10 +5145,19 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
 //_________________________________________________________
 void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 {
-    int  fNS = CurrentLine.FirstNonSpaceIndex();
-    _String     Name (CurrentLine.Cut (fNS, fNS+9));
-    CurrentLine.Trim(fNS+10,-1); // chop out the name
-    ds.AddName(Name);
+    int  fNS      = CurrentLine.FirstNonSpaceIndex(),
+         space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
+    
+    // hack for PAML support
+    if (space2 > fNS && isspace(CurrentLine.getChar (space2+1))) {
+        _String     sequence_name (CurrentLine,fNS, space2);
+        CurrentLine.Trim(space2+2,-1); // chop out the name
+        ds.AddName(sequence_name);        
+    } else {
+        _String     sequence_name (CurrentLine,fNS, fNS+9);
+        CurrentLine.Trim(fNS+10,-1); // chop out the name
+        ds.AddName(sequence_name);
+    }
 }
 
 
