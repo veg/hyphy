@@ -1046,7 +1046,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     continue;
                 }
 
-                if (aChar =='"') {
+                if (aChar =='"' && inPlaceID < 0) {
                     break;
                 }
 
@@ -1056,14 +1056,17 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     } else if (j == inPlaceID) {
                         return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", saveError, s, i);
                     } else {
-                        _String     inPlaceVID (s,i+inPlaceID,i+j-1);
-                        _FString    *inPlaceValue = (_FString*)FetchObjectFromVariableByType (&inPlaceVID, STRING);
+                        _String     inPlaceVID (s,i+inPlaceID,i+j-1),
+                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, theParent);
 
-                        if (!inPlaceValue) {
-                           return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable ", saveError, s, i);
-                        }
+                        /*if (!inPlaceValue) {
+                            inPlaceValue = (_FString*)ProcessLiteralArgument(&inPlaceVID, theParent);
+                            if (!inPlaceValue) {
+                                return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable/expression ", saveError, s, i);
+                            }
+                        }*/
 
-                        (*literal) << inPlaceValue->theString;
+                        (*literal) << inPlaceValue;
                         inPlaceID = -1;
                         if (isVolatile) *isVolatile = true;
                         j++;
