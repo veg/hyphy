@@ -13,11 +13,18 @@ set(HYPHY_VERSION 2.1)
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
 #-------------------------------------------------------------------------------
+
+
 set(MACOSX_LION false)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
         set(MACOSX_LION true)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+    
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
+        set(MACOSX_LION false)
+    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
+    
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 
