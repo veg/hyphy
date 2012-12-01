@@ -3856,6 +3856,19 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
     SetupLFCaches       ();
     SetupCategoryCaches ();
+    
+    
+    /*for (long k = 0; k < theTrees.lLength; k++){
+        _SimpleList subset(k);
+        _String          sLF (8192L, true);
+        SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,&subset,nil);
+        sLF.Finalize     ();
+        FILE * F = doFileOpen(_String("/tmp/") & k & ".dump", "w");
+        printf ("%ld\n",k);
+        fprintf (F, "%s", sLF.sData);
+        fclose (F);
+    }*/
+
 
 #ifdef __HYPHYMPI__
     if (_hy_mpi_node_rank == 0) {
@@ -10594,7 +10607,7 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear)
             hasBeenSetUp ++;
         }
         siteArrayPopulated = false;
-
+ 
     } else {
         hasBeenSetUp++;
     }

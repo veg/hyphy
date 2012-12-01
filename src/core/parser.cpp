@@ -81,8 +81,9 @@ _SimpleList     FunctionArgumentCount,
 bool            useGlobalUpdateFlag = false;
 
 
-_String     UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,LnGamma,"),
-            HalfOps (":<>=!&|");
+_String         HalfOps (":<>=!&|");
+
+_Trie           UnOps;
 
 _SimpleList opPrecedence,
             BinOps,
@@ -697,7 +698,38 @@ void  ReplaceVar (_Variable* theV)
 void    SetupOperationLists (void)
 {
 
+    _List all_unary_ops ("-",26,
+                          "!",
+                         "+",
+                         "Abs",
+                         "Sin",
+                         "Cos",
+                         "Tan",
+                         "Exp",
+                         "Log",
+                         "Arctan",
+                         "Time",
+                         "Gamma",
+                         "Transpose",
+                         "Sqrt",
+                         "Erf",
+                         "Rows",
+                         "Columns",
+                         "LUDecompose",
+                         "Inverse",
+                         "BranchCount",
+                         "TipCount",
+                         "ZCDF",
+                         "Eigensystem",
+                         "Simplex",
+                         "Type",
+                         "Eval",
+                         "LnGamma"
+                         );
+ 
 
+    UnOps.Insert (all_unary_ops);
+    
     BinOps<<'|'*256+'|';
     opPrecedence<<1;
     BinOps<<'&'*256+'&';

@@ -195,6 +195,17 @@ long     _Trie::Find (const _String& key, _SimpleList* path, bool prefixOK){
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+long     _Trie::Find (const char key, bool prefixOK){
+    long current_index = 0,
+    next_index    = FindNextLetter (key, current_index);
+    if (next_index < 0 && prefixOK) {
+        next_index = FindNextLetter (0, current_index);
+        current_index = next_index;
+    }
+    return current_index;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 long     _Trie::GetValueFromString (const _String& key){
     long keyIndex = Find(key);
     if (keyIndex != HY_TRIE_NOTFOUND) {

@@ -291,7 +291,7 @@ public:
     }
 
     /**
-       @return  an associative array with a variety of metrics (see http://www.datam0nk3y.org/hyphywiki/index.php/GetString#Functionality)
+       @return  an associative array with a variety of metrics (see GetString on HyPhy wiki)
                 about this LF.
        @author  SLKP
        @version 20110608

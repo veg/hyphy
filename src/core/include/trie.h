@@ -134,7 +134,15 @@ class _Trie: public _List
          * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
          * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise  
          */
-        
+
+        long     Find (const char key, bool prefixOK = false);
+        /**
+         * Determine if 'key' is in the trie
+         * @param  key      -- the character to search for
+         * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
+         * @return the index of the key in 'nodes' if found, HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise
+         */
+
         long     GetValueFromString (const _String& key);
         /**
          * A convenience function which calls Find and then GetValue if teh key is found
