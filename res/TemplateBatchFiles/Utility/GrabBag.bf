@@ -833,7 +833,7 @@ function mapStrings (sourceStr,targetStr)
 {
 	mapping 	  = {};
 	targetIndexing = {};
-	_d = Abs(targetStr);
+	_d = Abs(sourceStr);
 	
 	for (_i = 0; _i < _d; _i += 1)
 	{
