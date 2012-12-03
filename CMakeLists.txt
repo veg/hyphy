@@ -410,7 +410,7 @@ endif((${GTK2_FOUND}))
 # hyphy qt target
 #-------------------------------------------------------------------------------
 
-find_package(QT4 REQUIRED QT_QTNETWORK_LIBRARY)
+find_package(QT4)
 
 if((${QT4_FOUND}))
 
