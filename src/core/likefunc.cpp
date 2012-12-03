@@ -213,8 +213,7 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
                                 userSuppliedVariableGrouping    ("PARAMETER_GROUPING");
 
-
-
+    
 extern _String useNexusFileData,
        VerbosityLevelString,
        acceptRootedTrees;
@@ -4599,8 +4598,23 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
                     prec = MAX (prec*0.01, precision*0.1);
                     prec = MIN (prec, 0.1);
+                    
+                    /*_SimpleList* subset = _SimpleList (indexInd.lLength,0,1).Subset (10);
 
-                    ConjugateGradientDescent (prec, bestMSoFar,true,5);
+                    BufferToConsole (_String ((_String*)subset->toStr()));
+                    NLToConsole();
+                    
+                    ConjugateGradientDescent (prec, bestMSoFar,true,5,subset);
+                    DeleteObject (subset);*/
+                    
+                    if (gradientBlocks.lLength) {
+                        for (long b = 0; b < gradientBlocks.lLength; b++) {
+                            ConjugateGradientDescent (prec, bestMSoFar,true,5,(_SimpleList*)(gradientBlocks(b)));
+                        }
+                    } else {
+                        ConjugateGradientDescent (prec, bestMSoFar,true,5);
+                    }
+                    
                     GetAllIndependent   (bestMSoFar);
                     for (long k = 0; k < indexInd.lLength; k++) {
                         ((_GrowingVector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
@@ -6030,7 +6044,7 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit)
+void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters)
 {
 
     _Parameter  gradientStep     = STD_GRAD_STEP,
@@ -6040,11 +6054,15 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
 
     _SimpleList freeze;
 
-    /*if (localOnly)
-        for (long k = 0; k < indexInd.lLength; k++)
-            if (IsIthParameterGlobal(k))
-                freeze << k;
-    */
+    if (only_these_parameters)
+    {
+        only_these_parameters->Sort();
+        _SimpleList all (indexInd.lLength,0,1);
+        freeze.Intersect (all, *only_these_parameters);
+    }
+            
+    
+    
     _Matrix     unit     (bestVal),
                 gradient (bestVal);
 
@@ -10648,6 +10666,8 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     _SimpleList varRank (indexInd.lLength,0,0), 
                 holder;
     
+    gradientBlocks.Clear();
+    
     if (tagger) {
         for (unsigned long k=0; k<indexInd.lLength; k++) {
             long idx = tagger->Find((BaseRef)indexInd.lData[k]);
@@ -10685,6 +10705,7 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     }
     
     SortLists (&varRank,&indexInd);
+    gradientBlocks.Clear();
     
     // enforce user provided rankings 
     
@@ -10713,13 +10734,18 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                 if (variableGroup -> IsAStringMatrix()) {
                     unsigned long dimension = variableGroup->GetHDim() * variableGroup->GetVDim ();
                     
+                    _SimpleList thisBlock;
                     for (unsigned long variable_id = 0; variable_id < dimension; variable_id ++) {
                         _String variableID ((_String*)variableGroup->GetFormula (0, variable_id)->Compute()->toStr());
                         long variableIndex = LocateVarByName(variableID);
                         if (variableIndex >= 0) {
                             existingRanking.UpdateValue((BaseRef)variableIndex, -offset - dimension + variable_id, 1);
+                            thisBlock << variableIndex;
                             re_sort = true;
                         }
+                    }
+                    if (thisBlock.lLength) {
+                        gradientBlocks && & thisBlock;
                     }
                     offset += dimension;
                 }
@@ -10728,10 +10754,51 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
         }
         if (re_sort) {
             _SimpleList new_ranks;
+            
             for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
                 new_ranks << existingRanking.GetXtra(existingRanking.Find ((BaseRef)indexInd.lData[vi]));
-            }          
+            }
             SortLists (&new_ranks,&indexInd);
+
+            
+            if (gradientBlocks.lLength) {
+                _SimpleList  aux_list,
+                             included (indexInd.lLength, 0,0),
+                             not_listed;
+                
+                _AVLListX    indexIndToGlobalID (&aux_list);
+                
+                for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
+                    indexIndToGlobalID.Insert((BaseRef)indexInd.lData[vi], vi, true);
+                }
+                
+                for (long b = 0; b < gradientBlocks.lLength; b++) {
+                    _SimpleList *a_block = (_SimpleList*)(gradientBlocks(b));
+                    for (long i = 0; i < a_block->lLength; i++){
+                        long t = indexIndToGlobalID.GetXtra(indexIndToGlobalID.Find ((BaseRef)a_block->lData[i]));
+                        a_block->lData[i] = t;
+                        included.lData  [t] = 1;
+                    }
+                }
+                
+                for (long t = 0; t < included.lLength; t++) {
+                    if (included.lData[t]==0) {
+                        not_listed << t;
+                    }
+                }
+                if (not_listed.lLength) {
+                    gradientBlocks && & not_listed;
+                }
+                
+                /*for (long b = 0; b < gradientBlocks.lLength; b++) {
+                    _SimpleList *a_block = (_SimpleList*)(gradientBlocks(b));
+                    for (long i = 0; i < a_block->lLength; i++){
+                        printf ("Block %ld variable %s\n", b, LocateVar(indexInd.lData[a_block->lData[i]])->GetName()->sData);
+                    }
+                }*/
+                
+            }
+            
         }
     }
     

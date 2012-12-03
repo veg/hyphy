@@ -1189,6 +1189,30 @@ void _SimpleList::Offset (long shift)
     }
 }
 
+_SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
+{
+    _SimpleList* result = new _SimpleList;
+    if (size > 0) {
+        size = MIN(size, lLength);
+        if (replacement) {
+            for (long k = 0; k < size; k++) {
+                (*result) << lData[genrand_int32()%lLength];
+            }
+        } else {
+            (*result) << (*this);
+            for (long k = 0; k < size; k++) {
+                long idx = lData[genrand_int32()%(lLength-k)];
+                long t = result->lData[k];
+                result->lData[k] = result->lData[idx];
+                result->lData[idx] = t;
+            }
+            result->lLength = size;
+            result->TrimMemory();
+        }
+    }
+    return result;
+}
+
 // Create a permutation of the list's elements
 void  _SimpleList::Permute (long blockLength)
 {

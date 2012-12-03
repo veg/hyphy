@@ -109,13 +109,14 @@ BaseRef _AVLListXL::toStr (void)
 
 //______________________________________________________________
 
-void  _AVLListXL::UpdateValue(BaseRef b, BaseRef d, bool do_copy, bool copy_key) {
+long  _AVLListXL::UpdateValue(BaseRef b, BaseRef d, bool do_copy, bool copy_key) {
     long exists = Find (b);
     if (exists >= 0) {
         SetXtra (exists, d, do_copy);       
     } else {
         Insert (copy_key?b->makeDynamic():b,(long)d, do_copy);
     }
+    return exists;
 }
 
 //______________________________________________________________

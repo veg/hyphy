@@ -350,7 +350,7 @@ protected:
     void            GradientLocateTheBump (_Parameter, _Parameter&, _Matrix&, _Matrix&);
     void            GradientDescent       (_Parameter& , _Matrix& );
     void            ConjugateGradientDescent
-    (_Parameter , _Matrix& , bool localOnly = false, long = 0x7fffffff);
+    (_Parameter , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil);
 
     _Parameter      SetParametersAndCompute
     (long, _Parameter, _Matrix* = nil, _Matrix* = nil);
@@ -647,9 +647,10 @@ private:
                         siteCorrectionsBackup,
                         cachedBranches,
                         // for models with categories, a list of site by site scaling operation counts
-                        partScalingCache
+                        partScalingCache,
                         // used to store site by site scalers in computations that are performed
                         // on a site-by-site basis; includes scratch cache for remapping
+                        gradientBlocks
                         ;
 
 #ifdef  _OPENMP

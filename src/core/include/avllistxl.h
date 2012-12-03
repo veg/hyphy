@@ -65,7 +65,7 @@ public:
     virtual long InsertData(BaseRef, long,bool);
     virtual void Clear(bool = false);
     virtual void DeleteXtra(long);
-    virtual void UpdateValue (BaseRef, BaseRef, bool = false, bool = true);
+    virtual long UpdateValue (BaseRef, BaseRef, bool = false, bool = true);
 
     _List xtraD;
 
