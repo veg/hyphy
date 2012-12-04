@@ -941,9 +941,9 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
             if (templateKind < 0 || templateKind == _hyphyLFComputationalTemplateBySite) {
 #ifdef __HYPHYMPI__
-                bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+2,maxFilterSize,false,true));
+                bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+3,maxFilterSize,false,true));
 #else
-                bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+1,maxFilterSize,false,true));
+                 bySiteResults = (_Matrix*)checkPointer(new _Matrix    (theTrees.lLength+2,maxFilterSize,false,true));
 #endif
                 for (long k = 0; k <= theTrees.lLength; k++) {
                     partScalingCache.AppendNewInstance    (new _SimpleList(maxFilterSize, 0,0));
@@ -4597,6 +4597,12 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                     sprintf (buffer,"\n[Unchanged variables = %ld]", noChange.lLength);
                     BufferToConsole (buffer);
                 }
+                
+                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                    ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
+                    break;
+                }
+
                 if (convergenceMode > 2) {
                     _Matrix             bestMSoFar;
                     GetAllIndependent   (bestMSoFar);
@@ -4631,6 +4637,10 @@ _Matrix*        _LikelihoodFunction::Optimize ()
                 }
             }
             for (jjj=forward?0:indexInd.lLength-1; forward?(jjj<indexInd.lLength):jjj>=0; forward?jjj++:jjj--) {
+                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                    break;
+                }
+                
                 if (doShuffle > 0.1) {
                     j = shuffledOrder.lData[jjj];
                 } else {

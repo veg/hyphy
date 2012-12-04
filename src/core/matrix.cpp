@@ -1812,7 +1812,7 @@ void    _Matrix::CheckIfSparseEnough(bool force)
 {
     long i;
 
-    if (theIndex && (force || lDim>hDim*vDim*switchThreshold/100))
+    if (theIndex && (force || lDim>hDim*vDim*::_Matrix::switchThreshold/100))
         // switch to normal matrix storage - more than half elements are non-zero
     {
         // -= allocationBlock;
