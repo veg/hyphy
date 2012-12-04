@@ -4013,6 +4013,7 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 #ifdef __HYPHYMPI__
     }
 #endif
+    
 
     bool            skipCG = false;
     checkParameter (skipConjugateGradient,wobble,0.0);
@@ -4069,7 +4070,12 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 
     ReportWarning  (_String("Optimization settings:\n\t") & optimizationMethod & " = " & optMethodP &
                     "\n\t" & optimizationPrecision & " = " & precision &
-                    "\n\t" & maximumIterationsPerVariable & " = " & maxItersPerVar & "\n");
+                    "\n\t" & maximumIterationsPerVariable & " = " & maxItersPerVar
+                    &"\n\nInitial parameter values\n");
+    
+    for (long i = 0; i < indexInd.lLength; i++) {
+        ReportWarning (_String(LocateVar (indexInd.lData[i])->GetName()->sData) & " = " & GetIthIndependent (i));
+    }
 
     maxItersPerVar *= indexInd.lLength;
     checkParameter (relativePrecision,relPrec,0.0);
@@ -10736,11 +10742,12 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                     
                     _SimpleList thisBlock;
                     for (unsigned long variable_id = 0; variable_id < dimension; variable_id ++) {
-                        _String variableID ((_String*)variableGroup->GetFormula (0, variable_id)->Compute()->toStr());
+                        _String variableID ((_String*)variableGroup->GetFormula (variable_id,-1)->Compute()->toStr());
                         long variableIndex = LocateVarByName(variableID);
                         if (variableIndex >= 0) {
                             existingRanking.UpdateValue((BaseRef)variableIndex, -offset - dimension + variable_id, 1);
                             thisBlock << variableIndex;
+                            //printf ("%s<%ld>\n",variableID.sData, variableIndex );
                             re_sort = true;
                         }
                     }
@@ -10770,24 +10777,37 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                 
                 for (unsigned long vi = 0; vi < indexInd.lLength; vi ++ ) {
                     indexIndToGlobalID.Insert((BaseRef)indexInd.lData[vi], vi, true);
+                    //printf ("[%ld]\n",indexInd.lData[vi] );
                 }
                 
-                for (long b = 0; b < gradientBlocks.lLength; b++) {
+                for (long b = 0; b < gradientBlocks.countitems(); b++) {
                     _SimpleList *a_block = (_SimpleList*)(gradientBlocks(b));
-                    for (long i = 0; i < a_block->lLength; i++){
-                        long t = indexIndToGlobalID.GetXtra(indexIndToGlobalID.Find ((BaseRef)a_block->lData[i]));
-                        a_block->lData[i] = t;
-                        included.lData  [t] = 1;
+                    for (long i = 0; i < a_block->countitems(); i++){
+                        long t = indexIndToGlobalID.Find ((BaseRef)a_block->lData[i]);
+                        //printf ("%ld %ld\n",i,t);
+                        if (t >= 0) {
+                            t = indexIndToGlobalID.GetXtra(t);
+                            //printf ("%ld %ld %ld/ %ld /%ld\n", b, i, a_block->lData[i], indexIndToGlobalID.Find ((BaseRef)a_block->lData[i]), t);
+                            a_block->lData[i] = t;
+                            included.lData  [t] = 1;
+                        } else {
+                            a_block->Delete (i--);
+                        }
+                   }
+                    if (a_block->lLength == 0) {
+                        gradientBlocks.Delete(b--);
                     }
                 }
                 
-                for (long t = 0; t < included.lLength; t++) {
-                    if (included.lData[t]==0) {
-                        not_listed << t;
+                if (gradientBlocks.lLength) {
+                    for (long t = 0; t < included.lLength; t++) {
+                        if (included.lData[t]==0) {
+                            not_listed << t;
+                        }
                     }
-                }
-                if (not_listed.lLength) {
-                    gradientBlocks && & not_listed;
+                    if (not_listed.lLength) {
+                        gradientBlocks && & not_listed;
+                    }
                 }
                 
                 /*for (long b = 0; b < gradientBlocks.lLength; b++) {
