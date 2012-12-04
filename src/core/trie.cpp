@@ -200,8 +200,8 @@ long     _Trie::Find (const char key, bool prefixOK){
     next_index    = FindNextLetter (key, current_index);
     if (next_index < 0 && prefixOK) {
         next_index = FindNextLetter (0, current_index);
-        current_index = next_index;
     }
+    current_index = next_index;
     return current_index;
 }
 
@@ -257,7 +257,7 @@ long    _Trie::Insert (const _String& key, const long value) {
     if (next_index == HY_TRIE_INVALID_LETTER)
         return HY_TRIE_INVALID_LETTER;
     
-    if (current_char == key.sLength)
+    if (current_char == key.sLength && next_index >= 0)
         return next_index;
     
     current_char --;
