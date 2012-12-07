@@ -77,7 +77,6 @@ _String* StringFromConsole (bool echo)
         // which in turn will trigger event loop quit.
         loop.exec();
          
-        // Lets print the HTTP GET response.
         return new _String(_hyPrimaryConsoleWindow->getUserData());
     }
     return nil;
@@ -131,27 +130,29 @@ bool Get_a_URL (_String& urls, _String* fileName)
     }
 
     QByteArray rawData = reply->readAll();
-    
-    //Set urls since that's what the parser uses for the data
 
     //Either rewrite urls, or save to a file based on "fileName"
     if(fileName) {
         QFile file((QString)fileName->sData);
 
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             //TODO: Return something more meaningful. SW20121127
             return false;
+        }
 
         file.write(rawData);
         file.close();
     }
 
     else {
+        //Set urls since that's what the parser uses for the data
         urls = (_String)rawData.data();
     }
 
     return true;
 }
+
+//____________________________________________________________________________________________
 
 void NLToConsole()
 {
@@ -159,7 +160,9 @@ void NLToConsole()
 }
 
 //____________________________________________________________________________________________
+
 long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& validChoices, _String titleInfo, _SimpleList& selections, long fixedLength, Ptr prt)
+
 {
     long res = -1;
     if (data.lLength < 1 || validChoices.lLength < 1) {
@@ -182,6 +185,7 @@ long  HandleListSelection (_List& data, _SimpleList& choices, _SimpleList& valid
 }
 
 //____________________________________________________________________________________________
+
 long  HandleListSelection (_List& data, _String titleInfo, Ptr prt)
 {
     _SimpleList validChoices,

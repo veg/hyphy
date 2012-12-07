@@ -88,13 +88,22 @@ void HyphyMain::initialText() {
 #else
     systemCPUCount = 1;
 #endif
-    
     console->insertHtml("Up to " + QString::number(systemCPUCount) + " threads can be used for analyses.<p>");
 
     //The HyPhy Citation request
-    const char* qtHyphyCiteString = "<p>If you use HyPhy in a publication, please cite <b>SL Kosakovsky Pond, SDW Frost and SV Muse. (2005)</b> HyPhy: hypothesis testing using phylogenies. <i>Bioinformatics 21: 676-679</i></p><p>If you are a new HyPhy user, the tutorial located at <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a> may be a good starting point.</p><br>";
-
-    console->insertHtml((QString)qtHyphyCiteString);
+    QString qtHyphyCiteString = "\
+            <p> If you use HyPhy in a publication, please cite \
+            <b>SL Kosakovsky Pond, SDW Frost and SV Muse. (2005)</b> \
+            HyPhy: hypothesis testing using phylogenies. \
+            <i>Bioinformatics 21: 676-679</i> \
+            </p> \
+            <p> If you are a new HyPhy user, the tutorial located at \
+            <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>\
+            http://www.hyphy.org/docs/HyphyDocs.pdf</a> \
+            may be a good starting point. </p> \
+            <br><br>\
+            ";
+    console->insertHtml(qtHyphyCiteString);
 
     //Begin prompting for user input
     console->prompt();
@@ -348,20 +357,20 @@ void HyphyMain::update_timer_display() {
 
 void HyphyMain::SetStatusLine(_String updatedStatus){
     this->updated_status->setText(updatedStatus.getStr());
-
+    this->status->show();
 }
 
-void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer){
+void HyphyMain::SetStatusLine (_String fn, _String updatedStatus, _String timer){
+    this->SetStatusLine(updatedStatus.getStr());
+
     _String label_text = _String("Running ")&fn;
     this->filename_status->setText(label_text.getStr());
-    this->updated_status->setText(updatedStatus.getStr());
-    this->status->show();
 
     //TODO: Timer
     //this->timerDisplay->setText(updatedStatus.getStr());
 }
 
-void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone){
+void HyphyMain::SetStatusLine (_String fn, _String updatedStatus, _String timer, long percentDone){
 
     this->SetStatusLine(fn,updatedStatus,timer);
 
@@ -376,7 +385,7 @@ void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String ti
     this->progress_bar->setValue(percentDone);
 }
 
-void HyphyMain::SetStatusLine     (_String fn, _String updatedStatus, _String timer, long percentDone, char c){
+void HyphyMain::SetStatusLine (_String fn, _String updatedStatus, _String timer, long percentDone, char c){
     this->SetStatusLine(fn,updatedStatus,timer,percentDone);
     //handle c
 }
@@ -408,10 +417,14 @@ void HyphyMain::handle_user_input(const QString data) {
         userData = (_String)(char *)data.toAscii().data();
         emit handled_user_input();
     } else {
-        if (data.length()) {
+        if (data == "?") {
+            //printf ("Expression calculator %s\n", data.toAscii().data());
+            this->printHelp();
+        } else if (data.length()) {
             //printf ("Expression calculator %s\n", data.toAscii().data());
             ExpressionCalculator((_String)(char *)data.toAscii().data());
         }
+
         console->newline(true);
         console->prompt();
     }
@@ -434,3 +447,19 @@ void HyphyMain::WriteSettings (void) {
     
 }
 
+void HyphyMain::printHelp(void) {
+
+    QString help_string = 
+    "<p> Here are a couple of resources to help you get started. \ 
+    <ul>\
+        <li><a href='http://hyphy.org/w/index.php/Category:HBL_Built-in_function'>Built-in Language Commands</a></li>\
+        <li><a href='http://hyphy.org/'>Wiki Main Page</a></li>\
+    </ul>\
+    </p>\
+    <p>If you are a new HyPhy user, you may want to read the tutorial located at \
+    <a href='http://www.hyphy.org/docs/HyphyDocs.pdf'>http://www.hyphy.org/docs/HyphyDocs.pdf</a>\
+    </p> \
+    <br><br>";
+
+    console->insertHtml(help_string);
+}
