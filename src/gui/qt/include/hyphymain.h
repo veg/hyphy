@@ -167,6 +167,8 @@ private:
     QLabel *filename_status;
     QLabel *updated_status;
     QProgressBar *progress_bar;
+
+    void printHelp();
     };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;
