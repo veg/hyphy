@@ -5863,10 +5863,11 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         break;
     }
 
-    case 2: { // phylip sequential
-        // print PHYLIP format header
-        //fprintf (dest,"$FORMAT:\"PHYLIPS\"\n");
-        // print number of species and sites
+    case 2:     // phylip sequential
+    case 11:    // PAML 
+    {
+        
+        
         if (dest) {
             fprintf (dest,"%ld\t%ld\n",theNodeMap.lLength,theOriginalOrder.lLength);
         } else {
@@ -5877,14 +5878,19 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         }
         // proceed to spool out the data
         for ( i = 0; i<theNodeMap.lLength; i++) {
-            _String * curName = (_String *)theData->GetNames() (theNodeMap(i)), choppedTo10Chars;
-            if (curName->Length()>=10) {
-                choppedTo10Chars = curName->Cut(0,9)&' ';
-            } else {
-                choppedTo10Chars = *curName;
-                while (choppedTo10Chars.Length()<11) {
-                    choppedTo10Chars=choppedTo10Chars&' ';
+            _String * curName = (_String *)theData->GetNames() (theNodeMap(i)), 
+                     choppedTo10Chars;
+            if (outputFormat == 2) {
+                if (curName->Length()>=10) {
+                    choppedTo10Chars = curName->Cut(0,9)&' ';
+                } else {
+                    choppedTo10Chars = *curName;
+                    while (choppedTo10Chars.Length()<11) {
+                        choppedTo10Chars=choppedTo10Chars&' ';
+                    }
                 }
+            } else {
+                choppedTo10Chars = *curName & "  ";
             }
 
             if (dest) {
