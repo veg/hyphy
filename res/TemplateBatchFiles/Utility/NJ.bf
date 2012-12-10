@@ -20,7 +20,6 @@ function InitializeDistances ()
 	}
 	
 	
-	summingVector = {{1}{1}{1}{1}};
 
 	return 0;
 }
@@ -239,7 +238,7 @@ function InferTreeTopologyFromMatrix (distancesFlag)
 
 function InferTreeTopology(distancesFlag)
 {
-	InitializeDistances (0);
+	InitializeDistances ();
 	distanceMatrix = {filteredData.species,filteredData.species};
 		
 	for (i = 0; i<filteredData.species; i=i+1)
