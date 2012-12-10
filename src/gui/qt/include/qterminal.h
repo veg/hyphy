@@ -22,7 +22,9 @@ public:
 signals:
     void userEnteredString (const QString);
 
-//private slots:
+private slots:
+    
+    void handleCursorMove  ();
     //void find();
 
 private:

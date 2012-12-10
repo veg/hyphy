@@ -14,6 +14,7 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) 
     current_command                   = "";
     location_of_last_propmpt          = textCursor();
     location_of_insertion_point       = textCursor();
+    connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(handleCursorMove()));
     
     length_of_input_buffer            = 0;
 
@@ -39,6 +40,14 @@ void QTerminal::changeDir(const QString & dir) {
     // SLKP 20121205: seems unused
     QString theDir = QString(dir);
     theDir = theDir.replace(QChar('/'), "\\");
+}
+
+
+void QTerminal::handleCursorMove (void) {
+    int position = textCursor().position();
+    if (location_of_insertion_point.position() != position && position > location_of_last_propmpt.position()) {
+        location_of_insertion_point = textCursor();
+    }
 }
 
 void QTerminal::handleUserLineEntry (void) {
