@@ -6,16 +6,20 @@
 #include "hy_strings.h"
 #include "batchlan.h"
 
+//#define __QTERMINAL_DEBBUGGING
+
 QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) {
     setWindowFlags(f);
-    cmdStr = "";
-    curCursorLoc = textCursor();
-    inputCharCount = 0;
-    histLocation = -1;
-    tempCmd = "";
+    
+    current_command                   = "";
+    location_of_last_propmpt          = textCursor();
+    location_of_insertion_point       = textCursor();
+    
+    length_of_input_buffer            = 0;
 
+    command_history_location           = -1;
+ 
     //Font Settings
-    //QFont font("Monaco Helvetica");
     QFont font("Monaco Helvetica");
     //setTextColor(Qt::darkCyan);
     setCurrentFont(font);
@@ -32,162 +36,163 @@ QTerminal::~QTerminal() {
 }
 
 void QTerminal::changeDir(const QString & dir) {
-    /* Change directories */
+    // SLKP 20121205: seems unused
     QString theDir = QString(dir);
     theDir = theDir.replace(QChar('/'), "\\");
 }
 
 void QTerminal::handleUserLineEntry (void) {
-    cmdHistory.push_back(cmdStr);
-    histLocation = -1;
-    emit userEnteredString(cmdStr);
-    cmdStr = "";
-    tempCmd = "";
+    
+    command_history.push_back(current_command);
+    command_history_location = -1;
+    
+#ifdef __QTERMINAL_DEBBUGGING
+    printf ("handleUserLineEntry: %s\n", current_command.toAscii().data());
+#endif
+    
+    emit userEnteredString(current_command);
+    
+    current_command         = "";
+    stash_current_command   = "";
+    length_of_input_buffer  = 0;
 
 }
 
-void QTerminal::keyPressEvent(QKeyEvent * event) {
-    int key = event->key();
+void        QTerminal::beepAndIgnoreEvent (QEvent* event, bool do_ignore) {
+    QApplication::beep();
+    if (do_ignore)
+        event->ignore();
+}
 
-    if(!event->modifiers()) {
-        setTextCursor(curCursorLoc);
+void        QTerminal::replaceCurrentCommand   (const QString* replace_with, bool stash_current){
+    if (stash_current) {
+        stash_current_command = current_command;
     }
+    current_command = *replace_with;
+    for (int i = 0; i < length_of_input_buffer; ++i) {
+        QTextEdit::keyPressEvent(new QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier));
+    }
+    insertPlainText(*replace_with);
+    length_of_input_buffer      = replace_with->length();
+    moveCursor(QTextCursor::End);
+    location_of_insertion_point = textCursor();
+}
 
-    if (key != Qt::Key_Backspace) {
 
-        if (key == Qt::Key_Return || key == Qt::Key_Enter) {
-            inputCharCount = 0;
-        } 
-
-        //Command History
-        else if (key == Qt::Key_Up) {
-            if (cmdHistory.size()) {
-                if (histLocation == -1) {
-                    histLocation = cmdHistory.size() - 1;
-                    tempCmd = cmdStr;
-                } 
-
-                else if (histLocation == 0) {
-                    QApplication::beep();
+void QTerminal::keyPressEvent(QKeyEvent * event) {
+    
+    int     key        = event->key();
+ 
+    /*if(event->modifiers()) {
+        QTextEdit::keyPressEvent(event);
+        return;
+    }*/
+    
+    switch (key) {
+        case Qt::Key_Up: { // fetch an older command from history
+            if (command_history.size()) {
+                if (command_history_location == -1) {
+                    replaceCurrentCommand (&command_history.at(command_history_location = command_history.size()-1),true);
                     event->ignore();
                     return;
-                } 
-
-                else {
-                    --histLocation;
+                } else {
+                    if (command_history_location > 0) {
+                       replaceCurrentCommand (&command_history.at(--command_history_location),false);
+                       event->ignore();
+                       return;
+                    }
                 }
-
-                for (int i = 0; i < inputCharCount; ++i) {
-                    QTextEdit::keyPressEvent(new QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier));
-                }
-
-                inputCharCount = cmdHistory.at(histLocation).length();
-                insertPlainText(cmdHistory.at(histLocation));
-                cmdStr = cmdHistory.at(histLocation);
             }
-
-            event->ignore();
+            beepAndIgnoreEvent(event);
             return;
-        } 
-
-        else if (key == Qt::Key_Down) {
-            QString str = "";
-
-            if (histLocation == -1) {
-                QApplication::beep();
+        }
+        case Qt::Key_Down: { // fetch a newer command from history
+            if (command_history_location >= 0) {
+                if (command_history_location == command_history.size()-1) {
+                    replaceCurrentCommand (&stash_current_command,false);
+                    command_history_location = -1;
+                } else {
+                    replaceCurrentCommand (&command_history.at(++command_history_location),false);
+                }
                 event->ignore();
-                return;
-            } 
-
-            else if (histLocation == cmdHistory.size() - 1) {
-                histLocation = -1;
-                str = tempCmd;
-            } 
-
+            } else {
+                beepAndIgnoreEvent(event);
+            }
+            return;
+        }
+        case Qt::Key_Left: { // move left in the command string
+            setTextCursor(location_of_insertion_point);
+            if (location_of_insertion_point.position() > location_of_last_propmpt.position() + 1) {
+                location_of_insertion_point.movePosition (QTextCursor::Left);
+                setTextCursor (location_of_insertion_point);
+            } else {
+                beepAndIgnoreEvent(event);
+            }
+            return;
+        }
+        case Qt::Key_Right: { // move right in the command string
+            setTextCursor(location_of_insertion_point);
+            if (location_of_insertion_point.movePosition (QTextCursor::Right)) {
+                 setTextCursor (location_of_insertion_point);
+            } else {
+                beepAndIgnoreEvent(event);
+            }
+            return;
+        }
+        /*
+        case Qt::Key_Tab: {
+            // auto-complete later
+            break;
+        }
+        */
+        case Qt::Key_Return:
+        case Qt::Key_Enter: {
+            moveCursor(QTextCursor::End);
+            QTextEdit::keyPressEvent(event);
+            location_of_insertion_point = textCursor();
+            handleUserLineEntry();
+#ifdef __QTERMINAL_DEBBUGGING
+            printf ("new line start = %d insert = %d current = %d\n", location_of_last_propmpt.position(), location_of_insertion_point.position(),textCursor().position());
+#endif
+            return;
+        }
+            
+        case Qt::Key_Backspace: {
+            
+            setTextCursor(location_of_insertion_point);
+        
+            long diff = location_of_insertion_point.position() - location_of_last_propmpt.position();
+            if (diff>1) {
+               current_command.remove(diff-2, 1);
+               QTextEdit::keyPressEvent(event);
+               location_of_insertion_point = textCursor();
+               length_of_input_buffer --;
+            }
             else {
-                ++histLocation;
-                str = cmdHistory.at(histLocation);
+                beepAndIgnoreEvent(event);
             }
-
-            for (int i = 0; i < inputCharCount; ++i) {
-                QTextEdit::keyPressEvent(new QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier));
-            }
-
-            inputCharCount = str.length();
-            insertPlainText(str);
-            cmdStr = str;
-        } 
-
-        else if (key == Qt::Key_Left) {
-            if (inputCharCount) {
-                --inputCharCount;
-                QTextEdit::keyPressEvent(event);
-            } 
-
-            else {
-                QApplication::beep();
-            }
-        } 
-
-        else if (key == Qt::Key_Right) {
-            QTextCursor cursor = textCursor();
-
-            if (cursor.movePosition(QTextCursor::Right)) {
-                ++inputCharCount;
-                setTextCursor(cursor);
-            } 
-
-            else {
-                QApplication::beep();
-            }
-        } 
-
-        else if (key == Qt::Key_Tab) {
-            // TODO: Tab Completion
-        } 
-
-        else {
-            QString text = event->text();
+            return;
+        }
+            
+        default:{
+             QString text = event->text();
+            int  diff = location_of_insertion_point.position() - location_of_last_propmpt.position(),
+                 inserted = 0;
+            
             for (int i = 0; i < text.length(); ++i) {
                 if (text.at(i).isPrint()) {
-                    //only increase input counter for printable characters
-                    ++inputCharCount;
+                    current_command.insert(diff + inserted++ - 1, text.at(i));
                 }
             }
-
-            QTextEdit::keyPressEvent(event);
-        }
-    } 
-
-    else {
-        if (inputCharCount) {
-            --inputCharCount;
-            QTextEdit::keyPressEvent(event);
-            cmdStr.remove(inputCharCount, 1);
-        } 
-        else {
-            QApplication::beep();
-        }
-    }
-
-    // now pass a char* copy of the input to the shell process
-    if (key == Qt::Key_Return || key == Qt::Key_Enter) {
-        moveCursor(QTextCursor::End);
-        QTextEdit::keyPressEvent(event);
-        handleUserLineEntry();
-    } 
-
-    else {
-        QString input = event->text();
-        for (int i = 0; i < input.length(); ++i) {
-            if (input.at(i).isPrint()) {
-                cmdStr.insert(inputCharCount - 1, input.at(i));
+#ifdef __QTERMINAL_DEBBUGGING
+            printf ("keyPressEvent enter text: start = %d insert = %d printable %d buffer %s\n", location_of_last_propmpt.position(), location_of_insertion_point.position(), inserted, current_command.toAscii().data());
+#endif
+            if (inserted) {
+                setTextCursor(location_of_insertion_point);
+                length_of_input_buffer+=inserted;
             }
+            QTextEdit::keyPressEvent(event);
         }
-    }
-
-    if(!event->modifiers()) {
-        moveCursor(QTextCursor::End);
     }
 }
 
@@ -212,11 +217,8 @@ void QTerminal::prompt(bool hbl) {
         insertHtml("<font color='#A60000'>&gt;</font> ");
     }
     moveCursor(QTextCursor::End);
-
-    //Clear undo stack trick
-    /*QString text = toHtml();
-    setHtml(text);
-    moveCursor(QTextCursor::End);*/
+    location_of_last_propmpt = textCursor();
+    location_of_last_propmpt.movePosition(QTextCursor::Left);
 }
 
 void QTerminal::insertFromMimeData(const QMimeData * source) {
@@ -230,17 +232,18 @@ void QTerminal::insertFromMimeData(const QMimeData * source) {
     for (long item = 0; item < commands.count(); item ++) {
         QString str = commands.at (item);
         insertPlainText(str);
-        cmdStr += str;
+        current_command += str;
         if (endsWithNL || item < commands.count()-1) {
             newline (true);
             handleUserLineEntry();
-            cmdStr = "";
+            current_command = "";
         } else {
-            inputCharCount = str.length();
+            length_of_input_buffer = str.length();
         }
     }
 
-     moveCursor(QTextCursor::End);
+    moveCursor(QTextCursor::End);
+    location_of_insertion_point = textCursor();
 }
 
 void QTerminal::contextMenuEvent(QContextMenuEvent *event) {

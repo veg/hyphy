@@ -129,7 +129,7 @@ long  _AVLListX::InsertData (BaseRef b, long d, bool)
 
 //______________________________________________________________
 
-void  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
+long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
     long exists = Find (b);
     if (exists >= 0) {
         if (op == 0) {
@@ -140,6 +140,7 @@ void  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
     } else {
         Insert (b,d);
     }
+    return exists;
 }
 
 

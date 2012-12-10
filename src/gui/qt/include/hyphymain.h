@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <QtGui>
 #include <QProgressBar>
+#include <QtNetwork>
 
 #include "ui_hyphymain.h"
 #include "qterminal.h"
@@ -166,6 +167,8 @@ private:
     QLabel *filename_status;
     QLabel *updated_status;
     QProgressBar *progress_bar;
+
+    void printHelp();
     };
 
 extern HyphyMain* _hyPrimaryConsoleWindow;

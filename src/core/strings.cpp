@@ -177,9 +177,9 @@ _String::_String (const _String& source, long from, long to)
             from = 0;
         }
 
-        if (to == -1) {
+        if (to < 0 || to >= source.sLength) {
             to   = ((long)source.sLength)-1;
-        }
+        } 
 
         if (to>=from) {
             sLength = to-from+1;

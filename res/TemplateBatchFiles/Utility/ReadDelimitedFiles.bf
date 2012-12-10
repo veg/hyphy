@@ -360,7 +360,23 @@ function normalizeSequenceID (seqName, alreadyDefined&)
 
 function normalizeSequenceNamesInAFilter (filterName)
 {
-	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
+	return normalizeSequenceNamesInAFilter (filterName, "");
+}
+
+/*----------------------------------------------------------------*/
+
+function normalizeSequenceNamesInAFilterWithTree (filterName, treeName)
+{
+    if (Abs (treeName) > 0) {
+        LoadFunctionLibrary ("TreeTools");
+        ExecuteCommands ("_treeAVL = `treeName`^0");
+        _node_id_by_name = {};
+        for (_nodeID = 1; _nodeID < Abs(_treeAVL); _nodeID += 1) {
+            _node_id_by_name [(_treeAVL[_nodeID])["Name"]] = _nodeID;
+        }
+    }
+    
+ 	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
 	
 	_renamingBuffer = {};
 	
@@ -371,8 +387,16 @@ function normalizeSequenceNamesInAFilter (filterName)
 		if (_seqName2 != _seqNames[_k])
 		{
 			ExecuteCommands ("SetParameter (`filterName`,_k,_seqName2)");
+			if (Abs (treeName) > 0) {
+			    (_treeAVL[_node_id_by_name [_seqNames[_k]]])["Name"] = _seqName2;
+			}
+
 			_totalRenamed += 1;
 		}
+	}
+	
+	if (_totalRenamed && Abs (treeName) > 0) {
+	    ExecuteCommands ("Topology `treeName` = " + PostOrderAVL2String (_treeAVL));
 	}
 	
 	return _totalRenamed;

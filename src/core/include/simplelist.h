@@ -359,6 +359,7 @@ class _SimpleList:public BaseObj
         * @return Nothing. Acts on the List object it was called from. 
         */
         void Permute(long);
+    
 
         /**
         * TODO:Permute elements in blocks of given size with possible replacement
@@ -368,7 +369,17 @@ class _SimpleList:public BaseObj
         */
         void PermuteWithReplacement(long);
 
-
+    
+        /**
+         * Select a number of list elements at random (either with or w/o replacement)
+         * Example: SimpleList(1,3,5,7).Subset(2) = (1,7)
+         * @param size How many elements to select (values >= lLength are rest to lLength)
+         * @param select Sample with our without replacement 
+         * @return Return the list of sampled elements
+         */
+        _SimpleList* Subset (unsigned long size, const bool replacement = false);
+    
+    
         /**
         * Retrive the last value and shorted the list by 1
         * Example: SimpleList(1,3,5,7).Pop() = 7 

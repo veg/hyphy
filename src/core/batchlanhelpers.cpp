@@ -183,6 +183,7 @@ bool    ExpressionCalculator (void)
             BufferToConsole ("NO RETURN VALUE");
         }
     }
+    NLToConsole();
     terminateExecution = false;
     return true;
 }

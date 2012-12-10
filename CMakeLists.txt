@@ -13,11 +13,18 @@ set(HYPHY_VERSION 2.1)
 #-------------------------------------------------------------------------------
 # figure out some system-stuff for compile-time workarounds
 #-------------------------------------------------------------------------------
+
+
 set(MACOSX_LION false)
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
         set(MACOSX_LION true)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
+    
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
+        set(MACOSX_LION false)
+    endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 12.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 12.0.0)
+    
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 
@@ -316,8 +323,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 install(
@@ -429,9 +436,9 @@ if((${QT4_FOUND}))
                            ${RES_MACGUI}
                            )
 
-    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${DEFAULT_LIBRARIES})
+    target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})
 
-    include_directories(${CMAKE_CURRENT_BINARY_DIR} src/gui/qt/include)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${QT_QTNETWORK_INCLUDE_DIR} src/gui/qt/include)
 
     set_property(
         TARGET HYPHYQT

@@ -1046,7 +1046,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     continue;
                 }
 
-                if (aChar =='"') {
+                if (aChar =='"' && inPlaceID < 0) {
                     break;
                 }
 
@@ -1056,14 +1056,17 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     } else if (j == inPlaceID) {
                         return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", saveError, s, i);
                     } else {
-                        _String     inPlaceVID (s,i+inPlaceID,i+j-1);
-                        _FString    *inPlaceValue = (_FString*)FetchObjectFromVariableByType (&inPlaceVID, STRING);
+                        _String     inPlaceVID (s,i+inPlaceID,i+j-1),
+                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, theParent);
 
-                        if (!inPlaceValue) {
-                           return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable ", saveError, s, i);
-                        }
+                        /*if (!inPlaceValue) {
+                            inPlaceValue = (_FString*)ProcessLiteralArgument(&inPlaceVID, theParent);
+                            if (!inPlaceValue) {
+                                return HandleFormulaParsingError ("Attempted to string substitute something other that a string variable/expression ", saveError, s, i);
+                            }
+                        }*/
 
-                        (*literal) << inPlaceValue->theString;
+                        (*literal) << inPlaceValue;
                         inPlaceID = -1;
                         if (isVolatile) *isVolatile = true;
                         j++;
@@ -1114,7 +1117,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 globalKey  = true;
             }
                 
-            if (UnOps.contains (_String(',')&curOp&',')) { // a standard function
+            if (UnOps.Find(curOp)>=0) { // a standard function
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;
             } else { // a variable
@@ -1238,7 +1241,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             if (levelData->countitems()==0) {
                 if (s[i-curOp.sLength]!=')' && storage!=')' && s[i-curOp.sLength] !=']') {
-                    if (!twoToken && UnOps.contains(s.getChar(i))) {
+                    if (!twoToken && UnOps.Find (s.getChar(i)) >= 0) {
                         twoOrOne = 1;
                     } else {
                         return HandleFormulaParsingError ("Bad binary operator placement ", saveError, s, i);
@@ -1320,7 +1323,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 return HY_FORMULA_FAILED;
             }
             continue;
-        } else if (UnOps.contains(s.getChar(i))) {
+        } else if (UnOps.Find(s.getChar(i)) >= 0) {
             if ((s.getChar(i)=='-' || s.getChar(i)=='+') && (!i|| s.getChar(i-1)=='(')) { // unary minus?
                 curOp   = s.getChar(i);
                 levelOps->AppendNewInstance (new _Operation (curOp,1));

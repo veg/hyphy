@@ -69,7 +69,7 @@ class _AVLListX: public _AVLList
         virtual void PopulateFromList(_List&);
 
         virtual long InsertData(BaseRef, long, bool);
-        virtual void UpdateValue (BaseRef, long, long);
+        virtual long UpdateValue (BaseRef, long, long);
 
         void        SetXtra(long,long);
         long        GetXtra(long);

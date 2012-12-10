@@ -58,6 +58,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "stack.h"
 #include "variable.h"
 #include "variablecontainer.h"
+#include "trie.h"
+
 //End parser specific includes
 
 #include "matrix.h"
@@ -79,8 +81,9 @@ extern      _SimpleList     BuiltInFunctionParameterCount,
 
 extern      _AVLListX       variableNames;
 
-extern      _String         UnOps,
-            HalfOps;
+extern      _String         HalfOps;
+
+extern      _Trie           UnOps;
 
 extern      _Parameter      printDigits,
             verbosityLevel;
