@@ -1079,6 +1079,8 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
             up to the user for now (BGM_CONTINUOUS_MISSING_VALUE).
        --------------------------------------------------------------------------------------- */
 
+	ReportWarning (_String("ImputeCGNodeScore(") & node_id & "<-" & (_String *) parents.toStr() & ":\n");
+	
     long            num_parent_combos   = 1,
                     r_i                   = num_levels.lData[node_id],	// number of levels for child node
                     max_num_levels        = r_i,
@@ -1123,7 +1125,18 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
     double          urn;            // uniform random number
 
-
+	
+	// parameters for CG
+	_Matrix rho_mx (1, 1, false, true);
+	rho_mx.Store(0, 0, rho);
+	ReportWarning (_String("rho_mx: ") & (_String *) rho_mx.toStr());
+	
+	_Matrix phi_mx (1, 1, false, true);
+	phi_mx.Store(0, 0, phi);
+	
+	_Matrix * iw_ptr;
+	_Parameter iw_deviate;
+	
 
     // set Gibbs sampler parameters from batch language definitions
     checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_maxsteps, 0);
@@ -1223,7 +1236,7 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
     }
 
 	//ReportWarning (_String ("is_missing = ") & (_String *) is_missing.toStr() );
-	//ReportWarning (_String ("observed values matrix: ") & (_String *) observed_values.toStr() );
+	ReportWarning (_String ("observed values matrix: ") & (_String *) observed_values.toStr() );
 
 
     // make a decision whether to use empirical or prior distribution to do initial imputations
@@ -1291,9 +1304,9 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
         }
     }
 
-	//ReportWarning (_String ("observed values matrix 2: ") & (_String *) observed_values.toStr() );
+	ReportWarning (_String ("observed values matrix 2: ") & (_String *) observed_values.toStr() );
 	
-	//ReportWarning (_String ("data before impute:\n") & (_String *) data_deep_copy.toStr());
+	ReportWarning (_String ("data before impute:\n") & (_String *) data_deep_copy.toStr());
 
     // initialize missing entries to random assignments based on observed cases or prior info
     for (long fnode, row, col, missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++) {
@@ -1317,7 +1330,7 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
         }
     }
 
-	//ReportWarning (_String ("data after impute:\n") & (_String *) data_deep_copy.toStr());
+	ReportWarning (_String ("data after impute:\n") & (_String *) data_deep_copy.toStr());
 
 
 	long            k           = cparents.lLength,
@@ -1409,7 +1422,7 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
 
 
-	// Metropolis-Hastings sampling, but loop through all missing entries at each step
+	// Gibbs sampling over missing entries
 	for (long iter = 0; iter < impute_burnin + impute_maxsteps; iter++) {
 		//is_missing.Permute(1);
 
@@ -1423,29 +1436,39 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 
 			// if child node, then row remains in same 'pa' batch, Z^b_pa and N_ij unchanged
 			if (col == 0) {
-				// random draw from Gaussian distribution centered at previous value
-				child_state = data_deep_copy (row, col);
-				data_deep_copy.Store (row, col, observed_values(0,2) * (gaussDeviate() + data_deep_copy(row,col)) );
+				
+				// draw new state from posterior of CG node
+								
+				iw_ptr = (_Matrix *) phi_mx.InverseWishartDeviate (rho_mx);
+				iw_deviate = (*iw_ptr)(0,0);
+				ReportWarning(_String("sigma=") & iw_deviate);
+				
 
 				_Matrix zbpa (n_ij(pa_index,0), k+1, false, true);
 				_Matrix yb (n_ij(pa_index,0), 1, false, true);
-
+				
+				// collect all continuous parent states under given discrete parent combination (pa_index)
 				batch_count = 0;
 				for (long obs = 0; obs < pa_indices.lLength; obs++) {
+					if (obs == row) continue; // skip the current case
 					if (pa_indices.lData[obs] == pa_index) {
 						zbpa.Store (batch_count, 0, 1);
-
 						for (long findex = 1; findex < family_size; findex++) {
 							if (node_type.lData[parents.lData[findex-1]] == 1) {
 								zbpa.Store (batch_count, parents_by_nodetype.lData[findex-1], data_deep_copy(obs, findex));
 							}
 						}
-
 						yb.Store (batch_count, 0, data_deep_copy(obs, 0));
-
 						batch_count++;
 					}
 				}
+				
+				ReportWarning(_String("zbpa=") & (_String *) zbpa.toStr());
+				zbpa.Transpose();
+				ReportWarning(_String("zbpa=") & (_String *) zbpa.toStr());
+				zbpa *= yb;
+				ReportWarning(_String("zbpa=") & (_String *) zbpa.toStr());
+				
 
 				next_log_score_by_pa.Store (pa_index, 0, BottcherScore (yb, zbpa, tau, mu, rho, phi, (long)n_ij(pa_index,0)));
 				next_log_score  = log_score - log_scores_by_pa (pa_index, 0) + next_log_score_by_pa(pa_index, 0);
@@ -1621,12 +1644,13 @@ _Parameter _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList
 	}
 	// end sampler
 
-	ReportWarning (_String("ImputeCGNodeScore(") & node_id & "<-" & (_String *) parents.toStr() & ":\n");
+	
 	long gv_used = vector_of_scores->GetUsed();
 	for (long i = 0; i < gv_used; i++) {
-		ReportWarning ( _String (",") & (*vector_of_scores)(i,0) );
+		//ReportWarning ( _String (",") & (*vector_of_scores)(i,0) );
 		log_score += (*vector_of_scores)(i,0);
 	}
+	ReportWarning(_String("chain = ") & (_String *) vector_of_scores->toStr());
 	
 	log_score /= gv_used;
     // compute the average of sampled log-likelihoods

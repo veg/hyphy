@@ -409,7 +409,6 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
        ------------------------------------------------------------------------------------------------ */
 
 
-    //ReportWarning (_String ("Entered SetDataMatrix()."));
     _SimpleList data_nlevels;
 
 	/* reset missing value indicators to 0, in case we 
@@ -420,6 +419,8 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 	
     /* check for user assignment of continuous missing value indicator */
     checkParameter (_HYBgm_CONTINUOUS_MISSING_VALUE, continuous_missing_value, -666.0);
+	ReportWarning (_String ("Entered SetDataMatrix() with missing CG flag: ") & continuous_missing_value & " and node types" & (_String *) node_type.toStr());
+	
     data_nlevels.Populate (num_nodes, 1, 0);
 
     if (data->GetVDim() == num_nodes) {
@@ -462,15 +463,17 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
             // continuous
             else if (node_type.lData[node] == 1) {
                 for (long val, row = 0; row < nrows; row++) {
+					val = theData (row, node);
                     if (val == continuous_missing_value && has_missing.lData[node] == 0) {
                         has_missing.lData[node] = 1;
+						ReportWarning (_String("Detected missing continuous value at row ") & row);
                         break;
                     }
                 }
             }
         }
 
-        ReportWarning (_String ("Set data matrix to:\n") & (_String *)theData.toStr() & "\n");
+        ReportWarning (_String ("Set data matrix to:\n") & (_String *)theData.toStr() & "\n" & " and missing values at " & (_String *) has_missing.toStr());
     } else {
         WarnError (_String("ERROR: Number of variables in data (") & data->GetVDim() & ") does not match number of nodes in graph (" & num_nodes & ")");
         return (FALSE);
