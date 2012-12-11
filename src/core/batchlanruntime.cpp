@@ -413,7 +413,6 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& currentProgram) {
 }
 
 //____________________________________________________________________________________
-
 bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram) {
 
     currentProgram.currentCommand++;
@@ -876,6 +875,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             result = (_String*)_HBLObjectNameByType(f,sID);
             if (result) {
                 result = (_String*) result->makeDynamic();
+				ReportWarning(_String("In HandleGetString(): ") & result);
             }
             break;
         }
@@ -944,7 +944,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     break;
                 }
                 case HY_BL_BGM: {
-                    _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
+                    ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
+					_BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
 
                     switch (sID) {
                         case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
