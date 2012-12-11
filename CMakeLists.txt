@@ -457,8 +457,8 @@ if((${QT4_FOUND}))
             MACOSX_BUNDLE_SHORT_VERSION_STRING "2.10beta"
             MACOSX_BUNDLE_BUNDLE_VERSION "2.10beta"
             MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
         ) 
         install(TARGETS HYPHYQT 
                 BUNDLE DESTINATION .

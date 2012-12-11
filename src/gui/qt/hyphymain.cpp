@@ -390,6 +390,11 @@ void HyphyMain::SetStatusLine (_String fn, _String updatedStatus, _String timer,
     //handle c
 }
 
+void HyphyMain::ClearStatusLine (){
+    this->updated_status->setText("");
+    this->filename_status->setText("");
+}
+
 void HyphyMain::SetStatusBarValue (long percentDone, _Parameter max, _Parameter rate) {
     //this->progressBar->setValue(percentDone);
 }
