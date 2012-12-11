@@ -46,11 +46,8 @@
 #include "scfg.h"
 #include "HYNetInterface.h"
 
-#if defined __AFYP_REWRITE_BGM__
 #include "bayesgraph.h"
-#else
-#include "bgm.h"
-#endif
+
 
 //#include "profiler.h"
 #ifndef __HEADLESS__
@@ -221,14 +218,9 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 bgmScores                       ("BGM_SCORE_CACHE"),
                                 bgmGraph                        ("BGM_GRAPH_MATRIX"),
                                 bgmNodeOrder                    ("BGM_NODE_ORDER"),
-#if defined __AFYP_REWRITE_BGM__
+
                                 bgmConstraintMx                 ("BGM_CONSTRAINT_MATRIX"),
                                 bgmParameters                   ("BGM_NETWORK_PARAMETERS"),
-#else
-                                bgmWeights                      ("BGM_WEIGHT_MATRIX"),
-                                bgmBanMx                        ("BGM_BAN_MATRIX"),
-                                bgmEnforceMx                    ("BGM_ENFORCE_MATRIX"),
-#endif
 
                                 pathToCurrentBF                 ("PATH_TO_CURRENT_BF"),
                                 hfCountGap                      ("COUNT_GAPS_IN_FREQUENCIES"),
@@ -1463,7 +1455,7 @@ _String  blFor                  ("for("),               // moved
          blRequireVersion           ("RequireVersion("),
          blSCFG                     ("SCFG "),
          blNN                       ("NeuralNet "),
-         blBGM                      ("BGM "),
+         blBGM                      ("BayesianGraphicalModel "),
          blSimulateDataSet          ("SimulateDataSet"),
          blAssert                   ("assert(");
 
@@ -4516,7 +4508,7 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-#if !defined __UNIX__ ||  defined __HYPHYQT__
+#if defined __HYPHYQT__
                 SetStatusLine ("Waiting for user selection.");
                 _String* param = (_String*)parameters(1);
 
@@ -4769,12 +4761,12 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
     _String matrixName = chain.AddNameSpaceToID(*(_String*)parameters(0)),
             *objectName = (_String*)parameters(1);
 
-#if defined __AFYP_REWRITE_BGM__
+
     long    sID;
     if (parameters.lLength > 2) {
         sID = ProcessNumericArgument ((_String*)parameters(2), chain.nameSpacePrefix);
     }
-#endif
+
 
     _Matrix *result = nil;
 
@@ -4869,50 +4861,30 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
                 result = (_Matrix*) checkPointer(new _Matrix (catVars));
             } else {
-                f = bgmNamesList.Find (&objectNameID);
-                if (f >= 0) {   // then hey, it's a BGM!
-#if !defined __AFYP_REWRITE_BGM__
-                    /*
-                    Bgm * lf = (Bgm *) bgmList (f);
-                    // result = lf->ExportNodeScores();
-                    if (sID == 0)
-                        result = lf->GetStructure();
-                    else if (sID == 1)
-                        result = lf->GetNodeOrder();
-                    else
-                    {
-                        WarnError (_String("Integer argument (") & sID & "in GetInformation() has no assigned return value, returning NULL\n");
-                    }
-                     */
-#endif
+				if ((f = dataSetFilterNamesList.Find (&objectNameID))>=0)
+					// return a vector of strings - each with actual characters of the corresponding sequence
+				{
+					_DataSetFilter* daFilter = (_DataSetFilter*)dataSetFilterList (f);
+					result = daFilter->GetFilterCharacters();
+				} else {
+					// it's a tree node with a rate matrix assigned
+					f = FindModelName (objectNameID);
+					if (f>=0)
+						// for models, return the list of variables in the model
+					{
+						_SimpleList modelParms;
+						_AVLList    modelParmsA (&modelParms);
 
-                } else {
-                    // it's a data set filter
-                    if ((f = dataSetFilterNamesList.Find (&objectNameID))>=0)
-                        // return a vector of strings - each with actual characters of the corresponding sequence
-                    {
-                        _DataSetFilter* daFilter = (_DataSetFilter*)dataSetFilterList (f);
-                        result = daFilter->GetFilterCharacters();
-                    } else {
-                        // it's a tree node with a rate matrix assigned
-                        f = FindModelName (objectNameID);
-                        if (f>=0)
-                            // for models, return the list of variables in the model
-                        {
-                            _SimpleList modelParms;
-                            _AVLList    modelParmsA (&modelParms);
+						LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
+						_List       modelPNames;
 
-                            LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
-                            _List       modelPNames;
+						for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
+							modelPNames << LocateVar(modelParms.lData[vi])->GetName();
+						}
 
-                            for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
-                                modelPNames << LocateVar(modelParms.lData[vi])->GetName();
-                            }
-
-                            result = new _Matrix (modelPNames);
-                        }
-                    }
-                }
+						result = new _Matrix (modelPNames);
+					}
+				}
             }
         }
     }
@@ -7289,19 +7261,13 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
 
     _List pieces;
     ExtractConditions (source,blGetInformation.sLength,pieces,',');
-#if defined __AFYP_REWRITE_BGM__
+
     if (pieces.lLength < 2) {
         _String errMsg ("Expected at least 2 arguments: GetInformation(object,receptacle,...);");
         WarnError (errMsg);
         return false;
     }
-#else
-    if (pieces.lLength!=2) {
-        _String errMsg ("Expected syntax: GetInformation(object,receptacle);");
-        WarnError (errMsg);
-        return false;
-    }
-#endif
+
     else {
         _String *s0 = (_String*)pieces(0),
                  *s1 = (_String*)pieces(1);
