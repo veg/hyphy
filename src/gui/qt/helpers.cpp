@@ -106,6 +106,10 @@ void SetStatusLine (_String arg, _String arg2, _String arg3, long l, char c) {
     _hyPrimaryConsoleWindow->SetStatusLine(arg,arg2,arg3,l,c);
 }
 
+void ClearStatusLine () {
+    _hyPrimaryConsoleWindow->ClearStatusLine();
+}
+
 void SetStatusBarValue (long l, _Parameter max, _Parameter rate)
 {
     _hyPrimaryConsoleWindow->SetStatusBarValue(l,max,rate);
