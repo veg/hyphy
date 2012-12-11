@@ -70,4 +70,6 @@ void    SetStatusLineUser(_String s);
 void    SetStatusBarValue (long l, _Parameter max, _Parameter rate);
 bool    Get_a_URL (_String& urls, _String* fileName);
 
+void ClearStatusLine();
+
 void    DoApplicationSettings (void);

@@ -76,6 +76,7 @@ public:
     void SetStatusLine     (_String, _String, _String);
     void SetStatusLine     (_String, _String, _String, long, char);
     void SetStatusBarValue (long, _Parameter, _Parameter);
+    void ClearStatusLine     ();
     void AddStringToRecentMenu (const _String, const _String);
     void AppendTextToEnd   (const QString&, bool isHTML = false, _SimpleList* color = nil);
     void DisplayPrompt     (void);

@@ -94,6 +94,7 @@ void    DoneWithExecutionOfBatchFile (bool doPost)
 #endif
 
 #ifdef __HYPHYQT__
+    ClearStatusLine();
     _hyPrimaryConsoleWindow->DisplayPrompt();
 #endif
 
