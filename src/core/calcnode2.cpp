@@ -160,6 +160,9 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                     buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
                 }
             } else {
+                if (current_node) {
+                    current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                }
                 current_node = nil;
             }
         }
