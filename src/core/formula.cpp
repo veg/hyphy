@@ -459,7 +459,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         if (f!=-1)
             // indeed - a binary operation is what we have. check if need to wrap the return in parentheses
         {
-            if ((!currentNode)||(currentNode->get_num_nodes()==2)) {
+            if (!currentNode || currentNode->get_num_nodes()==2 ) {
                 char tOpLevel  = opPrecedence(f),
                      tOpLevel2 = tOpLevel;
 
@@ -547,7 +547,13 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         result<<conv;
         result<<'"';
     } else {
-        result<<conv;
+        if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
+            result<<'(';
+            result<<conv;
+            result<<')';
+        } else {
+            result<<conv;
+        }
     }
     DeleteObject(conv);
 }
