@@ -44,6 +44,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "simplelist.h"
 #include "list.h"
 
+class _ExecutionList; // forward declaration
+
 
 class _String:public BaseObj
 {
@@ -677,7 +679,7 @@ public:
     /**
     * TODO: With batchlan
     */
-    void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false);
+    bool    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
 
     /**
     * TODO: With batchlan

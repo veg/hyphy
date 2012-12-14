@@ -1866,55 +1866,71 @@ void    _String::ProcessParameter(void)
 //Filename and Platform Methods
 //==============================================================
 
-void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP, bool assume_platform_specific)
+bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP, bool assume_platform_specific, _ExecutionList * caller)
 {
-    if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
-        if (Equal (&tempFString)) {
-            #if not defined __MINGW32__ && not defined __WINDOZE__
-                #ifdef __MAC__
-                    char tmpFileName[] = "HYPHY-XXXXXX";
+    _String errMsg;
+    
+    try {
+        if (Equal(&getFString) || Equal (&tempFString)) { // prompt user for file
+            if (Equal (&tempFString)) {
+                #if not defined __MINGW32__ && not defined __WINDOZE__
+                    #ifdef __MAC__
+                        char tmpFileName[] = "HYPHY-XXXXXX";
+                    #else
+                        char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
+                    #endif
+                    
+                    int fileDescriptor = mkstemp(tmpFileName);
+                    if (fileDescriptor == -1){
+                        throw ("Failed to create a temporary file name");
+                    }
+                    *this = tmpFileName;
+                    CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+                    close (fileDescriptor);
+                    return true;
                 #else
-                    char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
+                    throw (tempFString & " is not implemented for this platform");
                 #endif
-                
-                int fileDescriptor = mkstemp(tmpFileName);
-                if (fileDescriptor == -1){
-                    WarnError ("Failed to create a temporary file name");
-                    return;
-                }
-                *this = tmpFileName;
-                CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
-                close (fileDescriptor);
-                return;
-            #else
-                WarnError (tempFString & " is not implemented for this platform");
-            #endif
-        } else {
-            if (!isWrite) {
-                *this = ReturnFileDialogInput();
             } else {
-                *this = WriteFileDialogInput ();
+                if (!isWrite) {
+                    *this = ReturnFileDialogInput();
+                } else {
+                    *this = WriteFileDialogInput ();
+                }
             }
+            ProcessFileName(false,false,theP,
+            #if defined __MAC__ || defined __WINDOZE__
+                true
+            #else
+                false
+            #endif
+            ,caller);
+            
+            CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
+            return true;
         }
-        ProcessFileName(false,false,theP,
-        #if defined __MAC__ || defined __WINDOZE__
-            true
-        #else
-            false
-        #endif
-        );
-        CheckReceptacleAndStore(&useLastFString,empty,false, new _FString (*this, false), false);
-        return;
-    }
 
-    if (acceptStringVars) {
-        *this = ProcessLiteralArgument (this,(_VariableContainer*)theP);
-    } else {
-        StripQuotes();
-    }
+        if (acceptStringVars) {
+            *this = ProcessLiteralArgument (this,(_VariableContainer*)theP, caller);
+            if (caller && caller->IsErrorState()) {
+                return false;
+            }
+        } else {
+            StripQuotes();
+        }
 
-    if (!sLength) {
-        return;
+        if (!sLength) {
+            return true;
+        }
+    }
+    
+    catch (_String errmsg) {
+        if (caller) {
+            caller->ReportAnExecutionError(errMsg);
+        } else {
+            WarnError(errMsg);
+        }
+        return false;
     }
 
 
@@ -2087,6 +2103,7 @@ void    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
         }
     }
 #endif
+    return true;
 }
 
 //Compose two UNIX paths (abs+rel)

@@ -179,7 +179,6 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_GetStringGlobalTypes.Insert(new _String("Tree"), HY_BL_TREE);
     _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), HY_BL_SCFG);
     _HY_GetStringGlobalTypes.Insert(new _String("Variable"), HY_BL_VARIABLE);
-	
 	_HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
 
 
@@ -200,11 +199,9 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction3 ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3);
     _HY_ValidHBLExpressions.Insert ("MolecularClock(",                      HY_HBL_COMMAND_MOLECULAR_CLOCK);
-    _HY_ValidHBLExpressions.Insert ("fprintf(",                             HY_HBL_COMMAND_FPRINTF);
     _HY_ValidHBLExpressions.Insert ("fscanf(",                              HY_HBL_COMMAND_FSCANF);
     _HY_ValidHBLExpressions.Insert ("sscanf(",                              HY_HBL_COMMAND_SSCANF);
-    //_HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
-    _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT); 
+    _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT);
     //_HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
     _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
     _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
@@ -326,11 +323,22 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
 
 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FPRINTF,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fprintf(", HY_HBL_COMMAND_FPRINTF,false),
+                                                                -2,
+                                                                "fprintf(stdout|MESSAGE_LOG|TEMP_FILE_NAME|PROMPT_FOR_FILE|file path, object 1 [optional ,<object 2>, ..., <object N>])",','));
+
+    
     lengthOptions.Clear();lengthOptions.Populate (1,2,1); // 2
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXPORT, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Export(", HY_HBL_COMMAND_EXPORT,false),
                                                                 -1, 
-                                                                "Export (<string variable ID>, <object ID>)",','));
+                                                                "Export (<string variable ID>, <object ID>)",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
 
 
     lengthOptions.Clear();lengthOptions.Populate (2,2,1);

@@ -55,6 +55,10 @@
 #include "hyphy_qt_helpers.h"
 #endif
 
+_List       openFileHandlesBackend;
+
+_AVLListX   openFileHandles     (&openFileHandlesBackend);
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
@@ -875,7 +879,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             result = (_String*)_HBLObjectNameByType(f,sID);
             if (result) {
                 result = (_String*) result->makeDynamic();
-				ReportWarning(_String("In HandleGetString(): ") & result);
+				//ReportWarning(_String((const char*)"In HandleGetString(): ") & result);
             }
             break;
         }
@@ -944,7 +948,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     break;
                 }
                 case HY_BL_BGM: {
-                    ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
+                    //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
 					_BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
 
                     switch (sID) {
@@ -1128,66 +1132,6 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     return false;
 }
 
-//____________________________________________________________________________________
-
-/*void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String errMsg;
-    if (parameters.lLength == 2) {
-        _FString        * outLF = new _FString (new _String (8192L,1));
-        checkPointer    (outLF);
-        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
-        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
-        if (!lf) {
-            long modelSpec = FindModelName (objectID);
-
-            if (modelSpec<0) {
-                long modelSpec = FindDataSetFilterName (objectID);
-                if (modelSpec < 0) {
-                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF);
-                    return ;
-                } else {
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF->theString);
-                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
-                }
-            } else {
-                SerializeModel (*outLF->theString,modelSpec,nil,true);
-                outLF->theString->Finalize();
-            }
-        } else {
-            lf->SerializeLF (*outLF->theString);
-            outLF->theString->Finalize();
-        }
-        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
-        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
-    } else {
-        _Matrix* m[2];
-        for (long k=1; k<3; k++)
-            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
-                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
-                acknError (errMsg);
-                return;
-            }
-
-        _String fName (*(_String*)parameters(0));
-        fName.ProcessFileName();
-        if (terminateExecution) {
-            return;
-        }
-        FILE*   theDump = doFileOpen (fName.getStr(),"w");
-        if (!theDump) {
-            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
-            return;
-        }
-        m[1]->ExportMatrixExp(m[0],theDump);
-        fclose (theDump);
-    }
-}*/
-
 
 //____________________________________________________________________________________
 
@@ -1304,5 +1248,163 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram
     return true;
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
+{
+    currentProgram.currentCommand++;
+    _String* targetName = (_String*)parameters(0),
+             fnm;
+    
+    bool     doClose                 = true,
+             print_to_stdout         = false;
+    
+    FILE*   dest = nil;
+    
+    try {
+        bool    skipFilePathEval        = false;
+        
+        if (targetName->Equal(&stdoutDestination)) {
+            _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
+            if (redirect && redirect->theString->sLength) {
+                if (redirect->theString->Equal (&blFprintfDevNull)) {
+                    return true; // "print" to /dev/null
+                } else {
+                    skipFilePathEval = true;
+                    targetName       = redirect->theString;
+                } 
+            }
+            else {
+                print_to_stdout = true;
+            }
+        }
+        
+        checkParameter (printDigitsSpec,printDigits,0);
+        
+        if (!print_to_stdout) {
+            fnm = *targetName;
+            if (fnm.Equal(&messageLogDestination)) {
+                if ((dest = globalMessageFile) == nil) {
+                    return true; // requested print to MESSAGE_LOG, but it does not exist
+                                 // (e.g. remote MPI nodes, or running from a read only location
+                }
+            } else {
+                if (skipFilePathEval == false && !fnm.IsALiteralArgument()) {
+                    fnm = GetStringFromFormula (&fnm,currentProgram.nameSpacePrefix);
+                }
+                
+                if (!fnm.ProcessFileName(true,false,(Ptr)currentProgram.nameSpacePrefix, false, &currentProgram)) {
+                    return false;
+                }
+                
+                
+                long k  = openFileHandles.Find (&fnm);
+                
+                doClose = k<0;
+                
+                if (!doClose) {
+                    dest = (FILE*)openFileHandles.GetXtra (k);
+                } else {
+                    if ((dest = doFileOpen (fnm.getStr(), "a")) == nil)
+                        throw  (_String  ("Could not create/open output file at path '") & fnm & "'.");
+                }
+            }
+        }
+        
+        for (long i = 1; i<parameters.lLength; i++) {
+            
+            /*_String *varname = ProcessCommandArgument((_String*)parameters(i));
+            
+            if (!varname) {
+                return;
+            }*/
+            _String    *varname = (_String*)parameters(i);
+            
+            BaseRef    thePrintObject   =   nil;
+            _Formula   f;
+            
+            if (varname->Equal(&clearFile)) {
+                if (!print_to_stdout && dest) {
+                    fclose (dest);
+                    dest = doFileOpen (fnm.getStr(), "w");
+                    long k = openFileHandles.Find (&fnm);
+                    if (k>=0) {
+                        openFileHandles.SetXtra(k, (long)dest);
+                    }
+                }
+            } else if (varname->Equal(&keepFileOpen) && !print_to_stdout) {
+                if (openFileHandles.Find (&fnm) < 0) {
+                    openFileHandles.Insert (fnm.makeDynamic(), (long)dest);
+                }
+                doClose = false;
+            } else if (varname->Equal(&closeFile) && !print_to_stdout) {
+                openFileHandles.Delete (&fnm, true);
+                doClose = true;
+            } else if (varname->Equal(&systemVariableDump)) {
+                thePrintObject=&variableNames;
+            } else if (varname->Equal(&selfDump)) {
+                thePrintObject=&currentProgram;
+            } else {
+                // check for possible string reference
+                
+                _String    temp    = ProcessStringArgument (varname),
+                           nmspace;
+                
+                if (temp.sLength > 0) {
+                    nmspace = AppendContainerName(temp,currentProgram.nameSpacePrefix);
+                    if (nmspace.IsValidIdentifier()) {
+                        thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
+                    }
+                } else {
+                    nmspace = AppendContainerName(*varname,currentProgram.nameSpacePrefix);
+                }
+                
+                
+                if (thePrintObject == nil) {
+                    long typeFlag = HY_BL_ANY;
+                    
+                    thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
+                    
+                    if (!thePrintObject) {
+                        long    varRef = -1;
+                        _String argCopy = *varname,
+                                errMsg;
+                        if (Parse (&f,argCopy, varRef, currentProgram.nameSpacePrefix,nil,&errMsg) == HY_FORMULA_EXPRESSION) {
+                            thePrintObject = f.Compute();
+                        } else {
+                            if (errMsg.sLength)
+                                throw (errMsg);
+                            else
+                                throw (_String ("Argument ") & i & " is not a simple expression");
+                        }
+                    }
+                }
+            }
+            
+            if (thePrintObject) {
+                if (!print_to_stdout) {
+                    thePrintObject->toFileStr (dest);
+                } else {
+                    _String outS ((_String*)thePrintObject->toStr());
+                    StringToConsole (outS);
+                }
+            }
+        }
+    }
+    catch (_String errMsg) {
+        currentProgram.ReportAnExecutionError (errMsg);
+    }
+    
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+    if (print_to_stdout) {
+        yieldCPUTime();
+    }
+#endif
+    if (dest && dest!=globalMessageFile && doClose) {
+        fclose (dest);
+    }
+    
+    return !currentProgram.IsErrorState();
+}
 
 
