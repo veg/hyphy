@@ -1955,7 +1955,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             // check the last stored absolute path and reprocess this relative path into an absolute.
             while (beginswith("../")) {
                 if ( (f = lastPath->FindBackwards('/',0,f)-1) ==-1) {
-                    return;
+                    return true;
                 }
                 Trim(3,-1);
                 k++;
