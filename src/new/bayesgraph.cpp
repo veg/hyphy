@@ -1752,7 +1752,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
             return nil;
         }
 
-#if defined __HYPHYMPI__
+#if defined __HYPHYMPI__ && defined __AFYP_DEVELOPMENT__
         int         size,
                     rank;
         long        mpi_node;
