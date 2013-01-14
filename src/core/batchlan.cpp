@@ -1835,9 +1835,13 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 _String _hblCommandAccessor (_ExecutionList* theList, long index) {
     if (theList) {
-        _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
-        if (aCommand) {
-            return _String ((_String*)aCommand->toStr());
+        if (index >= 0) {
+            if (index < theList->lLength) {
+                _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
+                return _String ((_String*)aCommand->toStr());
+            } else {
+                return "<END EXECUTION>";
+            }
         }
     }
     return _String ("command index ") & index;
