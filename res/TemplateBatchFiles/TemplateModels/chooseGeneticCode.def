@@ -130,6 +130,19 @@ if (!skipCodeSelectionStep)
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function CountSenseCodons (code) {
+    sense_count = 0;
+    for (_idx = 0; _idx < 64; _idx += 1) {
+        if (IsStop (_idx, code) == 0) {
+            sense_count += 1;
+        }
+    }
+    return sense_count;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 
 function ApplyGeneticCodeTable (myModelType)
 {
@@ -412,6 +425,22 @@ function defineCodonToAA ()
 	}
 	
 	return codonToAAMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function findAllCodonsForAA (aa)
+{	
+	codonsForAA = {};
+	
+	for (p1=0; p1<64; p1=p1+1)
+	{
+		if (_hyphyAAOrdering[_Genetic_Code[p1]] == aa) {
+		    codonsForAA [p1] = 1;
+		}
+	}
+	
+	return codonsForAA;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/

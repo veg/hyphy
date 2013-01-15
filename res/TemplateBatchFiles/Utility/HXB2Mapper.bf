@@ -66,10 +66,10 @@ _hxb_alignOptions_nuc ["SEQ_ALIGN_NO_TP"]		=   1;
 
 _hxb_alignOptions_prot = {};
 _hxb_alignOptions_prot ["SEQ_ALIGN_CHARACTER_MAP"]		=   "ARNDCQEGHILKMFPSTWYV";
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN"]			= 	34;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN2"]			= 	34;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND"]			= 	10;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND2"]		= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN"]			= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN2"]			= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND"]			= 	5;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND2"]		= 	5;
 _hxb_alignOptions_prot ["SEQ_ALIGN_AFFINE"]				=   1;
 _hxb_alignOptions_prot ["SEQ_ALIGN_NO_TP"]				=   1;
 _hxb_alignOptions_prot ["SEQ_ALIGN_SCORE_MATRIX"]		=  
