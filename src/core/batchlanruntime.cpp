@@ -1312,12 +1312,6 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
         }
         
         for (long i = 1; i<parameters.lLength; i++) {
-            
-            /*_String *varname = ProcessCommandArgument((_String*)parameters(i));
-            
-            if (!varname) {
-                return;
-            }*/
             _String    *varname = (_String*)parameters(i);
             
             BaseRef    thePrintObject   =   nil;

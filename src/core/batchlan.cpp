@@ -884,12 +884,7 @@ void KillModelRecord (long mdID)
         if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->GetIndex()) < 0) {
             DeleteVariable (*freqMatrix->GetName());
         }
-
-        //DeleteVariable (*LocateVar(mID)->GetName());
     }
-
-
-
 
     if (mdID<modelNames.lLength-1) {
         modelMatrixIndices.lData[mdID] = -1;
@@ -919,14 +914,15 @@ void KillModelRecord (long mdID)
 //____________________________________________________________________________________
 _ExecutionList::_ExecutionList ()
 {
-    result         = nil;
-    currentCommand = 0;
-    cli            = nil;
-    profileCounter = nil;
-    stdinRedirect  = nil;
-    stdinRedirectAux = nil;
-    doProfile      = 0;
-    nameSpacePrefix = nil;
+    result              = nil;
+    currentCommand      = 0;
+    cli                 = nil;
+    profileCounter      = nil;
+    stdinRedirect       = nil;
+    stdinRedirectAux    = nil;
+    doProfile           = 0;
+    nameSpacePrefix     = nil;
+    
     if (currentExecutionList) {
         errorHandlingMode  = currentExecutionList->errorHandlingMode;
         errorState         = currentExecutionList->errorState;
@@ -1401,12 +1397,19 @@ _String*     _ExecutionList::GetNameSpace ()
     return nil;
 }
 
-_String  _ExecutionList::AddNameSpaceToID (_String& theID)
+_String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
 {
+    if (extra && extra->sLength) {
+        if (nameSpacePrefix) {
+            return (*nameSpacePrefix->GetName())&'.'& *extra & '.' & theID;
+        }
+        return *extra & '.' & theID;
+    }
     if (nameSpacePrefix) {
-        return (*nameSpacePrefix->GetName())&'.'&theID;
+        return (*nameSpacePrefix->GetName())&'.' & theID;
     }
     return theID;
+    
 }
 
 _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
@@ -1424,6 +1427,7 @@ _String  blFor                  ("for("),               // moved
          blWhile                    ("while("),         // moved
          blFunction                 ("function "),      // moved
          blFFunction                ("ffunction "),     // moved
+         blLFunction                ("lfunction "),     // moved
          blReturn                   ("return "),        // moved
          blReturn2              ("return("),            // moved
          blIf                       ("if("),            // moved
@@ -1598,7 +1602,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // prefix tree lookup 
 
         if (!handled) {
-            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
                 _ElementaryCommand::ConstructFunction (currentLine, *this);
             } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
                 _ElementaryCommand::ConstructReturn (currentLine, *this);
@@ -7197,9 +7201,10 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     isInFunction = true;
 
-    bool    isFFunction = source.beginswith (blFFunction);
+    bool    isFFunction = source.beginswith (blFFunction),
+            isLFunction = source.beginswith (blLFunction);
 
-    long    mark1 = source.FirstNonSpaceIndex(isFFunction?blFFunction.sLength:blFunction.sLength,-1,1),
+    long    mark1 = source.FirstNonSpaceIndex((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength,-1,1),
             mark2 = source.Find ('(', mark1, -1);
 
 
@@ -7210,6 +7215,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     }
 
     _String*    funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+
     *funcID = chain.AddNameSpaceToID (*funcID);
 
     // now look for the opening paren
@@ -7229,12 +7235,27 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         return false;
     }
 
+    _String extraNamespace;
+    if (isLFunction)
+        extraNamespace = _HYGenerateANameSpace();
+    
     for (long k = 0; k < pieces.lLength; k++) {
-        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k))),false);
+        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k), & extraNamespace)),false);
     }
 
     _String          sfunctionBody (source, upto+1,source.Length()-2);
-    _ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+    _ExecutionList * functionBody;
+        if (isLFunction) {
+            _String * existing_namespace = chain.GetNameSpace();
+            if (existing_namespace) {
+                extraNamespace = *existing_namespace & '.' & extraNamespace;
+            }
+            functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+        }
+        else {
+            functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+        }
+    
 
     //  take care of all the return statements
     while (returnlist.lLength) {

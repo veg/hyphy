@@ -45,7 +45,24 @@
 #endif
 
 
+_Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
+
+//____________________________________________________________________________________
+
+_String    _HYGenerateANameSpace () {
+    _String nmsp,
+            capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+    do {
+        nmsp = _String::Random (8, &capLetters);
+        
+    } while (_HY_HBL_Namespaces.Find (nmsp) != HY_TRIE_NOTFOUND);
+    
+    _HY_HBL_Namespaces.Insert (nmsp, 0);
+    return nmsp;
+}
+
+//____________________________________________________________________________________
 
 _String    _HYStandardDirectory (const unsigned long which_one) 
 {

@@ -368,6 +368,7 @@ void    PurgeAll (bool all)
     batchLanguageFunctionClassification.Clear();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
+    _HY_HBL_Namespaces.Clear();
     if (all) {
         likeFuncList.Clear();
         likeFuncNamesList.Clear();
@@ -385,11 +386,6 @@ void    PurgeAll (bool all)
         variablePtrs.Clear();
         freeSlots.Clear();
         lastMatrixDeclared = -1;
-        /*if (_hy_mpi_node_rank == 0)
-        {
-            for (
-        }
-        else*/
         {
             variableNames.Clear(true);
         }

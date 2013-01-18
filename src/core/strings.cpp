@@ -2432,3 +2432,22 @@ void _String::RegExpMatchOnce(_String* pattern, _SimpleList& matchedPairs, bool 
         }
     }
 }
+
+_String _String::Random(const unsigned long length, const _String * alphabet)
+{
+    _String random (length + 1, true);
+    unsigned long alphabet_length = alphabet?alphabet->sLength:127;
+    if (length > 0 && alphabet_length > 0) {
+        for (unsigned long c = 0; c < length; c++) {
+            unsigned long idx = genrand_int32 () % alphabet_length;
+            if (alphabet) {
+                random << alphabet->sData[idx];
+            } else {
+                random << (char)(1+idx);
+            }
+        }
+    }
+    
+    random.Finalize();
+    return random;
+}

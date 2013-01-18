@@ -803,6 +803,14 @@ public:
     _String*Sort             (_SimpleList* = nil);
 
     /**
+     * Generate a random string on 
+     * @param len (>0) The desired length of the string
+     * @param alphabet Which alphabet do the random charcters come from; in nil, then this will be generated from 1-128 ASCII codes 
+     * @return the random string
+     */
+    static _String Random             (const unsigned long len, const _String * alphabet = nil);
+
+    /**
     * Computes Lempel-Ziv complexity of the string.
     * \n The Lempel-Ziv complexity computes the number of separate substrings in a given string
     * \n Example: 1001111011000010 = 6 because subset of all strings = {1, 0, 01, 1110, 1100, 0010 }

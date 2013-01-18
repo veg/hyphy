@@ -107,7 +107,7 @@ public:
     void        SetNameSpace                (_String);
     _String     GetFileName                 (void);
     _String*    GetNameSpace                (void);
-    _String     AddNameSpaceToID            (_String&);
+    _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
     _ElementaryCommand* FetchLastCommand (void) {
@@ -573,7 +573,8 @@ extern  _AVLList                    loadedLibraryPaths;
 extern  _AVLListX                   _HY_HBLCommandHelper,
                                     _HY_GetStringGlobalTypes;
                                     
-extern  _Trie                       _HY_ValidHBLExpressions;
+extern  _Trie                       _HY_ValidHBLExpressions,
+                                    _HY_HBL_Namespaces;
 
 extern  long                        globalRandSeed,
                                     matrixExpCount;
@@ -632,6 +633,7 @@ void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
 _String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
 _String _hblCommandAccessor          (_ExecutionList*, long);
+_String _HYGenerateANameSpace             (void);
 
 _PMathObj
 ProcessAnArgumentByType      (_String*, _VariableContainer*, long, _ExecutionList* = nil);
