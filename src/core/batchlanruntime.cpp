@@ -1002,21 +1002,23 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 
                 case HY_BL_MODEL: {
                     if (sID>=0) {
-                        _Variable*      theMx = (_Variable*)theObject;
-
-                        if (sID2 < 0) { // get the sID's parameter name
+                        // check to make see if the 
+                       if (sID2 < 0) { // get the sID's parameter name
                             _SimpleList     modelP;
                             _AVLList        modelPA (&modelP);
-                            theMx->ScanForVariables(modelPA,false);
+                            ScanModelForVariables (index, modelPA, false, -1, false);
                             modelPA.ReorderList();
                             if (sID<modelP.lLength) {
                                 result = (_String*)LocateVar(modelP.lData[sID])->GetName()->makeDynamic();
                             } 
 
                         } else { // get the formula for cell (sID, sID2)
-                            _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
-                            if (cellFla) {
-                                result = new _String((_String*)cellFla->toStr());
+                            if (!IsModelOfExplicitForm (index)) {
+                                _Variable*      theMx = (_Variable*)theObject;
+                                _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
+                                if (cellFla) {
+                                    result = new _String((_String*)cellFla->toStr());
+                                }
                             }
                         }
                         

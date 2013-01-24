@@ -629,6 +629,8 @@ CheckAssociativeListArg      (_String*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
+bool    IsModelOfExplicitForm        (long);
+
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
 _String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);

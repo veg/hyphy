@@ -1659,8 +1659,9 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
         _Operation* theObj = ((_Operation**)theFormula.lData)[i];
         if (theObj->IsAVariable()) {
             if (!includeGlobals)
-                if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
-                        (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
+                //if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
+                 //       (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
+                if (((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal()) {
                     continue;
                 }
 

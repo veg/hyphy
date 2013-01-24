@@ -2173,7 +2173,7 @@ void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mb
 
 void    RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool & mbf)
 {
-    if (modelTypeList.lData[mid] == 0) {
+    if (mid >= 0 && modelTypeList.lData[mid] == 0) {
         mm = LocateVar(modelMatrixIndices.lData[mid]);
     } else {
         mm = nil;
@@ -2198,20 +2198,26 @@ bool    IsModelReversible (long mid)
     return false;
 }
 
+//____________________________________________________________________________________
+
+bool    IsModelOfExplicitForm (long modelID) {
+    if (modelID != HY_NO_MODEL) {
+        return modelTypeList.lData[modelID] != 0;
+    }
+    return false;
+}
 
 //____________________________________________________________________________________
 
 void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat)
 {
     if (modelID != HY_NO_MODEL) {
-        if (modelTypeList.lData[modelID] == 0)
-            // standard rate matrix
-        {
+        // standard rate matrix
+        if (modelTypeList.lData[modelID] == 0) {
             ((_Matrix*) (LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
-        } else
-            // formula based
-        {
-            ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
+        } else {
+        // formula based
+            ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, false, false, inclCat);
         }
     }
 }
@@ -2322,6 +2328,9 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
             type = HY_BL_MODEL;
             if (index) {
                 *index = loc;
+            }
+            if (IsModelOfExplicitForm(loc)) {
+                return (BaseRef)modelMatrixIndices.lData[loc];
             }
             return LocateVar (modelMatrixIndices.lData[loc]);
         }
