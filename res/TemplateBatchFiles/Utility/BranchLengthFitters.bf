@@ -1,25 +1,35 @@
-function getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-   ExecuteCommands ("DataSetFilter _getNucRevBranchLengthsAndParameters.nucs = CreateFilter (`datafilter_id`, 1)");
-   HarvestFrequencies(_getNucRevBranchLengthsAndParameters.Freqs, _getNucRevBranchLengthsAndParameters.nucs, 1,1,1);
+function extractBranchLengthsFromTreeAsDict (tree_id) {
+    _treeLengthDict = {};
+}
 
-   global _getNucRevBranchLengthsAndParameters.AC = 1;
-   global _getNucRevBranchLengthsAndParameters.AT = 1;
-   global _getNucRevBranchLengthsAndParameters.CG = 1;
-   global _getNucRevBranchLengthsAndParameters.CT = 1;
-   global _getNucRevBranchLengthsAndParameters.GT = 1;
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------*/
+
+lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
+
+   DataSetFilter nucs = CreateFilter          (**datafilter_id, 1);
+   HarvestFrequencies   (Freqs, 	nucs, 1,1,1);
+
+   global 	AC = 1;
+   global 	AT = 1;
+   global 	CG = 1;
+   global 	CT = 1;
+   global 	GT = 1;
     
-   _getNucRevBranchLengthsAndParameters.revRateMatrix =  {{*,_getNucRevBranchLengthsAndParameters.AC*t,t,_getNucRevBranchLengthsAndParameters.AT*t}
-                      {_getNucRevBranchLengthsAndParameters.AC*t,*,_getNucRevBranchLengthsAndParameters.CG*t,_getNucRevBranchLengthsAndParameters.CT*t}
-                      {t,_getNucRevBranchLengthsAndParameters.CG*t,*,_getNucRevBranchLengthsAndParameters.GT*t}
-                      {_getNucRevBranchLengthsAndParameters.AT*t,_getNucRevBranchLengthsAndParameters.CT*t,_getNucRevBranchLengthsAndParameters.GT*t,*}};
+   revRateMatrix =  {{*,	AC*t,t,	AT*t}
+                      {	AC*t,*,	CG*t,	CT*t}
+                      {t,	CG*t,*,	GT*t}
+                      {	AT*t,	CT*t,	GT*t,*}};
                     
-   Model _getNucRevBranchLengthsAndParameters.revQ = (_getNucRevBranchLengthsAndParameters.revRateMatrix, _getNucRevBranchLengthsAndParameters.Freqs);
+   Model 	revQ = (	revRateMatrix, 	Freqs);
 
-   ExecuteCommands ("Tree _getNucRevBranchLengthsAndParameters.Tree = " + Eval("Format (`tree_id`,1,1)"));
-   LikelihoodFunction _getNucRevBranchLengthsAndParameters.LF = (_getNucRevBranchLengthsAndParameters.nucs,_getNucRevBranchLengthsAndParameters.Tree);
-   Optimize (_getNucRevBranchLengthsAndParameters.res, _getNucRevBranchLengthsAndParameters.LF);
+   ExecuteCommands ("Tree 	tree = " + Eval("Format (`tree_id`,1,1)"));
+   LikelihoodFunction 	LF = (	nucs,	tree);
+   Optimize (res,LF);
    
+   fprintf (stdout, LF, "\n");
   
    
    return 0;

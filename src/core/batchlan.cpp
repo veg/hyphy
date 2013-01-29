@@ -1363,7 +1363,7 @@ BaseRef  _ExecutionList::toStr (void)
     step ("\n\nStep"),
     dot (".");
 
-    for (long i=0; i<countitems(); i++) {
+    for (unsigned long i=0; i<countitems(); i++) {
         (*result) << &step;
         _String lineNumber (i);
         (*result)<< &lineNumber;
@@ -1382,12 +1382,16 @@ void     _ExecutionList::ResetNameSpace (void)
     nameSpacePrefix = nil;
 }
 
+//____________________________________________________________________________________
+
 void     _ExecutionList::SetNameSpace (_String nID)
 {
     ResetNameSpace ();
     nameSpacePrefix = new _VariableContainer(nID);
     checkPointer(nameSpacePrefix);
 }
+
+//____________________________________________________________________________________
 
 _String*     _ExecutionList::GetNameSpace ()
 {
@@ -1397,20 +1401,51 @@ _String*     _ExecutionList::GetNameSpace ()
     return nil;
 }
 
+//____________________________________________________________________________________
+
 _String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
 {
+    _String check_dereferences,
+            name_space;
+            
     if (extra && extra->sLength) {
         if (nameSpacePrefix) {
-            return (*nameSpacePrefix->GetName())&'.'& *extra & '.' & theID;
+            name_space = (*nameSpacePrefix->GetName())&'.'& *extra;
+        } else {
+            name_space = *extra;
         }
-        return *extra & '.' & theID;
+    } else {
+        if (nameSpacePrefix) {
+            name_space = (*nameSpacePrefix->GetName());        
+        }
     }
-    if (nameSpacePrefix) {
-        return (*nameSpacePrefix->GetName())&'.' & theID;
+            
+    unsigned char reference_type = theID.ProcessVariableReferenceCases (check_dereferences, name_space.sLength?&name_space:nil);
+    
+    /*if (reference_type == HY_STRING_DIRECT_REFERENCE || HY_STRING_LOCAL_DEREFERENCE) {
+        if (extra && extra->sLength) {
+            if (nameSpacePrefix) {
+                return (*nameSpacePrefix->GetName())&'.'& *extra & '.' & theID;
+            }
+            return *extra & '.' & theID;
+        }
+        if (nameSpacePrefix) {
+            return (*nameSpacePrefix->GetName())&'.' & theID;
+        }
+    } else {
+        if (reference_type == HY_STRING_GLOBAL_DEREFERENCE) {
+            return check_dereferences;
+        }
+    }*/
+    if (reference_type != HY_STRING_INVALID_REFERENCE) {
+        return check_dereferences;
     }
+    
     return theID;
     
 }
+
+//____________________________________________________________________________________
 
 _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 {
@@ -1421,6 +1456,8 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     }
     return theID;
 }
+
+//____________________________________________________________________________________
 
 
 _String  blFor                  ("for("),               // moved

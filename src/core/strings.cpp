@@ -2451,3 +2451,28 @@ _String _String::Random(const unsigned long length, const _String * alphabet)
     random.Finalize();
     return random;
 }
+
+unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
+    if (getChar(0) == '*') {
+        bool is_global_ref = getChar(1) == '*';
+        _String   choppedVarID (*this, 1+is_global_ref, -1);
+        if (context) {
+            choppedVarID = *context & '.' & choppedVarID;
+        }
+        _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&choppedVarID, STRING);
+        if (dereferenced_value && dereferenced_value->theString->ProcessVariableReferenceCases (referenced_object) == HY_STRING_DIRECT_REFERENCE) {
+            if (!is_global_ref && context) {
+                referenced_object = *context & '.' & referenced_object;
+            }
+            return is_global_ref?HY_STRING_GLOBAL_DEREFERENCE:HY_STRING_LOCAL_DEREFERENCE;
+        }
+    }
+    
+    if (IsValidIdentifier()) {
+        referenced_object = context? (*context & '.' & *this): (*this);
+        return HY_STRING_DIRECT_REFERENCE;
+    }
+    
+    referenced_object = empty;
+    return HY_STRING_INVALID_REFERENCE;
+}

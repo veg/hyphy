@@ -565,6 +565,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
     chain.currentCommand++;
 
     _String dataObjectID = chain.AddNameSpaceToID(*(_String*)parameters(1));
+    
     long dsID           = (parameters.lLength>2)?FindDataSetName (dataObjectID):-1;
     bool isFilter       = false;
 

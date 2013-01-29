@@ -46,6 +46,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class _ExecutionList; // forward declaration
 
+#define HY_STRING_INVALID_REFERENCE     0x00    
+#define HY_STRING_DIRECT_REFERENCE      0x01    
+#define HY_STRING_LOCAL_DEREFERENCE     0x02
+#define HY_STRING_GLOBAL_DEREFERENCE    0x03
+
 
 class _String:public BaseObj
 {
@@ -766,6 +771,21 @@ public:
     */
     _String ShortenVarID     (_String&);
 
+    /**
+    * Examine the string argument contained in this object, decide what it is, and process accordingly
+    * \n\n \bExample: \code 'hyphy'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+    * \n\n \bExample: \code '\"hy\"+\"phy\"'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+    * \n\n \bExample: \code '*hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy 
+    * \n\n \bExample: \code '**hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy in the global context
+    * @param referenced_object will store the handled variable ID
+    * @param context is the namespace of the referenced object; could be nil
+    * @return one of HY_STRING_INVALID_REFERENCE    HY_STRING_DIRECT_REFERENCE   HY_STRING_LOCAL_DEREFERENCE    HY_STRING_GLOBAL_DEREFERENCE 
+    * @see IsValidIdentifier()
+    */
+
+    unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String * context = nil);
+
+    
     static  unsigned long     storageIncrement;
 
     /**
