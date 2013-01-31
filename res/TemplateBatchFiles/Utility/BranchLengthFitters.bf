@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-function extractBranchLengthsFromTreeAsDict (tree_id) {
+lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
     _treeLengthDict = {};
 }
 
@@ -23,13 +23,13 @@ lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
                       {t,	CG*t,*,	GT*t}
                       {	AT*t,	CT*t,	GT*t,*}};
                     
-   Model 	revQ = (	revRateMatrix, 	Freqs);
+   Model 	revQ = (revRateMatrix, 	Freqs);
 
-   ExecuteCommands ("Tree 	tree = " + Eval("Format (`tree_id`,1,1)"));
+   ExecuteCommands ("Tree 	tree = " + Eval("Format (**tree_id,1,1)"));
    LikelihoodFunction 	LF = (	nucs,	tree);
-   Optimize (res,LF);
+   Optimize                  (res,LF);
    
-   fprintf (stdout, LF, "\n");
+   fprintf                   (stdout, LF, "\n");
   
    
    return 0;

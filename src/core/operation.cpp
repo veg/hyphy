@@ -514,7 +514,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         term2 = (_PMathObj)theScrap.theStack.lData[sL--];
         term1 = (_PMathObj)theScrap.theStack.lData[sL];
         theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, term3);
+        temp = term1->Execute (opCode, term2, term3, nameSpace);
         DeleteObject (term1);
         DeleteObject (term2);
         DeleteObject (term3);
@@ -523,12 +523,12 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         term2 = (_PMathObj)theScrap.theStack.lData[sL--];
         term1 = (_PMathObj)theScrap.theStack.lData[sL];
         theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, nil);
+        temp = term1->Execute (opCode, term2, nil, nameSpace);
         DeleteObject (term1);
         DeleteObject (term2);
     } else {
         term1 = (_PMathObj)theScrap.theStack.lData[--theScrap.theStack.lLength];
-        temp = term1->Execute (opCode, nil, nil);
+        temp = term1->Execute (opCode, nil, nil, nameSpace);
         DeleteObject (term1);
     }
 

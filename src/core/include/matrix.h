@@ -145,7 +145,7 @@ public:
     _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
 
-    virtual _PMathObj   Execute (long opCode, _PMathObj p = nil, _PMathObj p2 = nil);
+    virtual _PMathObj   Execute (long opCode, _PMathObj p = nil, _PMathObj p2 = nil, _PMathObj context = nil);
     // execute this operation with the list of Args
 
     _PMathObj   MAccess (_PMathObj, _PMathObj);
@@ -706,7 +706,7 @@ public:
      */
 
     virtual BaseRef     toStr           (void);
-    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil);
+    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _PMathObj = nil);
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
     virtual void        Merge           (_PMathObj);

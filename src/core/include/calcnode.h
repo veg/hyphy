@@ -374,7 +374,7 @@ public:
     bool            IsCurrentNodeTheRoot                (void);
     bool            IsDegenerate                        (void);
 
-    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil);
+    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil, _PMathObj = nil);
     virtual void            EdgeCount                           (long&, long&);
     // SLKP 20100827: a utility function to count edges in a tree
     //              : note that the root node WILL be counted as an internal node
@@ -551,7 +551,7 @@ public:
         return TREE;
     }
 
-    virtual  _PMathObj      Execute                     (long, _PMathObj = nil , _PMathObj = nil);
+    virtual  _PMathObj      Execute                     (long, _PMathObj = nil , _PMathObj = nil, _PMathObj = nil);
     virtual  _PMathObj      TEXTreeString               (_PMathObj);
     virtual  _PMathObj      PlainTreeString             (_PMathObj,_PMathObj);
 

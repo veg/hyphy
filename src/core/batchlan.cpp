@@ -479,7 +479,7 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
         currentProgram->ReportAnExecutionError (errMsg);
     }
     else {
-        _PMathObj expressionResult = expressionProcessor.Compute();
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
         if (expressionResult && expressionResult->ObjectClass()==objectType) {
             return (_PMathObj)expressionResult->makeDynamic();
         }
@@ -501,7 +501,7 @@ _String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _Execut
         currentProgram->ReportAnExecutionError (errMsg);
     }
     else {
-        _PMathObj expressionResult = expressionProcessor.Compute();
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
         if (expressionResult && expressionResult->ObjectClass()==STRING) {
             return *((_FString*)expressionResult)->theString;
         }

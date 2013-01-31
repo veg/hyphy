@@ -296,7 +296,7 @@ public:
     // 1 - number
     // 4 - matrix
 
-    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);
+    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _MathObject* context = nil);
     // execute this operation with the list of Args
 
     virtual bool         HasChanged (void) {

@@ -572,11 +572,11 @@ _PMathObj _FString::RerootTree (void)
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Evaluate ()
+_PMathObj _FString::Evaluate (_PMathObj context)
 {
     if (theString && theString->sLength) {
         _String     s (*theString);
-        _Formula    evaluator (s);
+        _Formula    evaluator (s, (_VariableContainer*)context);
         _PMathObj   evalTo = evaluator.Compute();
 
         if (evalTo && !terminateExecution) {
@@ -587,7 +587,10 @@ _PMathObj _FString::Evaluate ()
     return new _Constant (.0);
 }
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute this operation with the second arg if necessary
+//__________________________________________________________________________________
+
+
+_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_NOT: // !
@@ -670,7 +673,7 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
         return Differentiate(p);
         break;
     case HY_OP_CODE_EVAL: // Eval
-        return Evaluate();
+        return Evaluate(context);
         break;
     case HY_OP_CODE_EXP: // Exp
         return new _Constant (theString->LempelZivProductionHistory(nil));
