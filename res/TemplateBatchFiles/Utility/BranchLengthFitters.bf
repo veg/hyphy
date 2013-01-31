@@ -25,7 +25,9 @@ lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
                     
    Model 	revQ = (revRateMatrix, 	Freqs);
 
-   ExecuteCommands ("Tree 	tree = " + Eval("Format (**tree_id,1,1)"));
+   fprintf (stdout, "\n", *tree_id, "\n");
+
+   ExecuteCommands ("Tree 	tree = " + Eval("Format (*tree_id,1,1)"));
    LikelihoodFunction 	LF = (	nucs,	tree);
    Optimize                  (res,LF);
    

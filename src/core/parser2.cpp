@@ -178,7 +178,7 @@ _Parameter  EqualNumbers(_Parameter a, _Parameter b)
 //_______________________________________________________________________________________
 void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDatum* values)
 {
-    for (long k2 = 0; k2 < vars.lLength; k2++) {
+    for (unsigned long k2 = 0; k2 < vars.lLength; k2++) {
         _PMathObj varValue = LocateVar (vars.lData[k2])->Compute();
         if (varValue->ObjectClass() == NUMBER) {
             values[k2].value = varValue->Value();

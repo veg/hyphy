@@ -1445,7 +1445,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
             } else {
                 if (simpleOperationCodes.Find(thisOp->opCode)==-1) {
                     return false;
-                } else if (thisOp->opCode == HY_OP_CODE_MACCESS && thisOp->numberOfTerms != 2) {
+                } else if ((thisOp->opCode == HY_OP_CODE_MACCESS || thisOp->opCode == HY_OP_CODE_MUL) && thisOp->numberOfTerms != 2) {
                     return false;
                 }
 
@@ -1859,7 +1859,7 @@ void _Formula::SimplifyConstants (void)
                 theStack.theStack.Clear();
                 thisOp->nInstances--;
             } else {
-                if (thisOp->numberOfTerms > 0 &&
+                if (thisOp->numberOfTerms == 2 &&
                         (thisOp->opCode==HY_OP_CODE_MUL||thisOp->opCode==HY_OP_CODE_DIV||thisOp->opCode==HY_OP_CODE_POWER))
                     // *,/,^ 1 can be removed
                 {

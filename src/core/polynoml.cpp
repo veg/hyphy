@@ -788,7 +788,8 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _PMathObj) 
 {
     switch (opCode) {
     case HY_OP_CODE_MUL: //*
-        return Mult(p);
+        if (p)
+            return Mult(p);
         break;
     case HY_OP_CODE_ADD: // +
         if (p) {
@@ -812,9 +813,7 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _PMathObj) 
         break;
     }
 
-    //_String errMsg ("Operation ");
-    //errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for polynomials";
-    //WarnError (errMsg);
+    WarnNotDefined (this, opCode);
     return nil;
 
 }

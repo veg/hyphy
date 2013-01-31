@@ -2552,7 +2552,8 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMath
     break;
 
     case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
-        return SplitsIdentity (p);
+        if (p) 
+            return SplitsIdentity (p);
         break;
 
     case HY_OP_CODE_ADD: // +

@@ -701,6 +701,7 @@ void    SetupOperationLists (void)
     _List all_unary_ops ("-",26,
                          "!",
                          "+",
+                         "*",
                          "Abs",
                          "Sin",
                          "Cos",

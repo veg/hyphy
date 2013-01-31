@@ -589,6 +589,23 @@ _PMathObj _FString::Evaluate (_PMathObj context)
 
 //__________________________________________________________________________________
 
+_PMathObj _FString::Dereference(bool ignore_context, _PMathObj context) {
+    _String referencedVariable = *theString;
+    if (!ignore_context && context) {
+        referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context);
+    }
+    _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
+    if (!result) {
+        WarnError(_String("Failed to dereference '") & referencedVariable & "'");
+        result = new _FString;
+    } else {
+        result = (_PMathObj)result->makeDynamic();
+    }
+    return result;
+}
+
+//__________________________________________________________________________________
+
 
 _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
 {
@@ -635,10 +652,15 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj c
     }
     break;
     case HY_OP_CODE_MUL: // *
-        if (p->ObjectClass() == MATRIX) {
-            return      MapStringToVector (p);
+        if (p) {
+         // NOT a dereference
+            if (p->ObjectClass() == MATRIX) {
+                return      MapStringToVector (p);
+            } else {
+                return new _Constant(AddOn(p));
+            }
         } else {
-            return new _Constant(AddOn(p));
+            return Dereference(false, context);
         }
         break;
     case HY_OP_CODE_ADD: // +

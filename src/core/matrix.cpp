@@ -1383,7 +1383,8 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj co
         return pFDR (p);
         break;
     case HY_OP_CODE_MUL: // *
-        return MultObj(p);
+        if (p)
+            return MultObj(p);
         break;
     case HY_OP_CODE_ADD: // +
         if (p) {
