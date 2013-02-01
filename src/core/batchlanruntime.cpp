@@ -1366,7 +1366,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                         _String argCopy = *varname,
                                 errMsg;
                         if (Parse (&f,argCopy, varRef, currentProgram.nameSpacePrefix,nil,&errMsg) == HY_FORMULA_EXPRESSION) {
-                            thePrintObject = f.Compute();
+                            thePrintObject = f.Compute(0,currentProgram.nameSpacePrefix);
                         } else {
                             if (errMsg.sLength)
                                 throw (errMsg);

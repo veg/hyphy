@@ -2617,8 +2617,8 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMath
         return Type();
         break;
     case HY_OP_CODE_POWER: //^
-        return AVLRepresentation (p);
-        break;
+        if (p)
+            return AVLRepresentation (p);
     }
 
     WarnNotDefined (this, opCode);

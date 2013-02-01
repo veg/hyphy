@@ -2,6 +2,10 @@
 
 lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
     _treeLengthDict = {};
+    _bls = BranchLength (^tree_id, -1);
+    _bns = BranchName (^tree_id, -1);
+    
+    return _bls;
 }
 
 
@@ -9,7 +13,7 @@ lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
 
 lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
 
-   DataSetFilter nucs = CreateFilter          (**datafilter_id, 1);
+   DataSetFilter nucs = CreateFilter          (^datafilter_id, 1);
    HarvestFrequencies   (Freqs, 	nucs, 1,1,1);
 
    global 	AC = 1;
@@ -25,14 +29,10 @@ lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
                     
    Model 	revQ = (revRateMatrix, 	Freqs);
 
-   fprintf (stdout, "\n", *tree_id, "\n");
-
-   ExecuteCommands ("Tree 	tree = " + Eval("Format (*tree_id,1,1)"));
-   LikelihoodFunction 	LF = (	nucs,	tree);
+   ExecuteCommands           ("Tree 	tree = " + Eval("Format (^tree_id,1,1)"));
+   LikelihoodFunction 	LF = (nucs,	tree);
    Optimize                  (res,LF);
-   
-   fprintf                   (stdout, LF, "\n");
-  
+   fprintf                   (stdout, LF, "\n", extractBranchLengthsFromTreeAsDict (&tree));
    
    return 0;
 }

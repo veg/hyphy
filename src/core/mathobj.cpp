@@ -115,12 +115,14 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathOb
     case HY_OP_CODE_ZCDF: // ZCDF
         return ZCDF();
     case HY_OP_CODE_POWER: // ^
-        return Raise(p);
+        if (p)
+            return Raise(p);
+        break;
     case HY_OP_CODE_OR: // ||
         return LOr(p);
     }
     WarnNotDefined (this, opCode);
-    return new _Constant (0.0);
+    return new _MathObject;
 }
 
 //__________________________________________________________________________________

@@ -698,10 +698,11 @@ void  ReplaceVar (_Variable* theV)
 void    SetupOperationLists (void)
 {
 
-    _List all_unary_ops ("-",26,
+    _List all_unary_ops ("-",28,
                          "!",
                          "+",
                          "*",
+                         "^",
                          "Abs",
                          "Sin",
                          "Cos",
@@ -730,7 +731,7 @@ void    SetupOperationLists (void)
  
 
     UnOps.Insert (all_unary_ops);
-    
+        
     BinOps<<'|'*256+'|';
     opPrecedence<<1;
     BinOps<<'&'*256+'&';

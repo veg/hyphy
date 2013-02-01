@@ -378,7 +378,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             return 0;
         }
 
-        _PMathObj varObj = f2->Compute();
+        _PMathObj varObj = f2->Compute(0, nameSpace);
         if (varObj->ObjectClass()!=NUMBER) {
             WarnError ("Not a numeric RHS in a constraint assignment.");
             return 0;
@@ -1205,24 +1205,12 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 continue;
             }
         }
+        
         if ( BinOps.Find (s.getChar(i))!=-1 || (twoToken&& (BinOps.Find(s.getChar(i-1)*(long)256+s.getChar(i))!=-1)) ) {
             if (!twoToken && BinOps.Find(s.getChar(i)*(long)256+s.getChar(i+1)) != -1) {
                 twoToken = true;
                 continue;
             }
-
-
-            /*if (UnOps.contains(s.getChar(i)) && !twoToken)
-            {
-                char cim1 = s.getChar(i-1);
-
-                if ( i == 0 || cim1=='(' || cim1=='[' || cim1==',')
-                {
-                    curOp = s.getChar(i);
-                    levelOps->AppendNewInstance(new _Operation (curOp,1));
-                    continue;
-                }
-            }*/
 
             if (twoToken||(BinOps.Find(s.getChar(i)*256+s.getChar(i+1))!=-1)) {
                 if (!twoToken) {
@@ -1252,17 +1240,16 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             twoToken = false;
 
             if (levelData->countitems()) {
-                int k;
                 if (storage) {
                     BaseRef newS = (*levelData)(levelData->countitems()-1)->makeDynamic();
-                    for (k = 0; k<levelData->countitems()-1; k++) {
+                    for (unsigned long k = 0; k<levelData->countitems()-1; k++) {
                         f->theFormula&&((*levelData)(k));
                     }
 
                     levelData->Clear();
                     levelData->AppendNewInstance (newS);
                 } else {
-                    for (k = 0; k<levelData->countitems(); k++) {
+                    for (unsigned long k = 0; k<levelData->countitems(); k++) {
                         f->theFormula << ((*levelData)(k));
                     }
                     levelData->Clear();

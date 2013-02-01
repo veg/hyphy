@@ -577,7 +577,7 @@ _PMathObj _FString::Evaluate (_PMathObj context)
     if (theString && theString->sLength) {
         _String     s (*theString);
         _Formula    evaluator (s, (_VariableContainer*)context);
-        _PMathObj   evalTo = evaluator.Compute();
+        _PMathObj   evalTo = evaluator.Compute(0,(_VariableContainer*)context);
 
         if (evalTo && !terminateExecution) {
             evalTo->AddAReference();
@@ -595,6 +595,7 @@ _PMathObj _FString::Dereference(bool ignore_context, _PMathObj context) {
         referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context);
     }
     _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
+    //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);
     if (!result) {
         WarnError(_String("Failed to dereference '") & referencedVariable & "'");
         result = new _FString;
@@ -740,7 +741,9 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj c
         return Type();
         break;
     case HY_OP_CODE_POWER: // Replace (^)
-        return ReplaceReqExp (p);
+        if (p)
+            return ReplaceReqExp (p);
+        return Dereference(true, context);
         break;
     case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
         return EqualRegExp (p, true);

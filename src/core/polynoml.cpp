@@ -809,7 +809,8 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _PMathObj) 
         return Type();
         break;
     case HY_OP_CODE_POWER: // ^
-        return Raise(p);
+        if (p)
+            Raise(p);
         break;
     }
 

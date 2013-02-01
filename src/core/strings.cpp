@@ -2453,9 +2453,10 @@ _String _String::Random(const unsigned long length, const _String * alphabet)
 }
 
 unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
-    if (getChar(0) == '*') {
-        bool is_global_ref = getChar(1) == '*';
-        _String   choppedVarID (*this, 1+is_global_ref, -1);
+    char first_char = getChar(0);
+    if (first_char == '*' || first_char == '^') {
+        bool is_global_ref = first_char == '^';
+        _String   choppedVarID (*this, 1, -1);
         if (context) {
             choppedVarID = *context & '.' & choppedVarID;
         }

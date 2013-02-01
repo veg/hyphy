@@ -1483,7 +1483,8 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj co
         return Type();
         break;
     case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
-        return  PoissonLL (p);
+        if (p)
+            return  PoissonLL (p);
     }
 
     WarnNotDefined (this, opCode);
@@ -4712,7 +4713,7 @@ _PMathObj _Matrix::MAccess (_PMathObj p, _PMathObj p2)
         return new _Constant (0.0);
     }
 
-    if (hDim == 0 || vDim == 0) {
+    if (hDim <= 0 || vDim <= 0) {
         return new _Constant (0.0);
     }
 
