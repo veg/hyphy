@@ -1659,6 +1659,8 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
         _Operation* theObj = ((_Operation**)theFormula.lData)[i];
         if (theObj->IsAVariable()) {
             if (!includeGlobals)
+                // This change was part of a commit that introduced an optimizer bug (suspected location:
+                // src/core/batchlan2.cpp:2220). This change is suspicious as well (removed and undocumented condition).
                 //if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
                  //       (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
                 if (((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal()) {
