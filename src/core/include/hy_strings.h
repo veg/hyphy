@@ -519,6 +519,15 @@ public:
     bool Equal   (_String*);
 
     /**
+    * Lexicographic comparison
+    * \n Checks if a string is equal to one character 
+    * @param c the character to compare to 
+    * @return true if the string is equal to the character
+    * @sa Compare()
+    */
+    bool Equal   (const char c);
+
+    /**
     * TODO: Lexicographic comparison
     * \n Checks if Strings are equal lexicographic
     * @param s Second string to compare

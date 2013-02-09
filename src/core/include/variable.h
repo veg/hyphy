@@ -137,6 +137,7 @@ public:
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
+    virtual     _PMathObj   ComputeReference        (_PMathObj);
 
 
     friend      void        ResetVariables          (void);

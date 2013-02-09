@@ -1666,6 +1666,11 @@ bool _String::Equal (_String* s)
     return true;
 }
 
+bool _String::Equal (const char c)
+{
+    return sLength == 1 &&  sData[0] == c;
+}
+
 //S may contain a wild char
 bool _String::EqualWithWildChar (_String* s, char wildchar)
 {

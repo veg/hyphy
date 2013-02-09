@@ -626,3 +626,13 @@ void _Variable::MarkDone (void)
     }
 }
 
+//__________________________________________________________________________________
+_PMathObj    _Variable::ComputeReference (_PMathObj context)
+{
+    _String reference_string (*GetName());
+    reference_string = AppendContainerName(reference_string, (_VariableContainer*)context);
+    
+    return new _FString (reference_string, false);
+}
+
+

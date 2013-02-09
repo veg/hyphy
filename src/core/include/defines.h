@@ -88,7 +88,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_NEQ             (1+HY_OP_CODE_NOT)              // !=
 #define  HY_OP_CODE_IDIV            (1+HY_OP_CODE_NEQ)              // $
 #define  HY_OP_CODE_MOD             (1+HY_OP_CODE_IDIV)             // %
-#define  HY_OP_CODE_AND             (1+HY_OP_CODE_MOD)              // &&
+#define  HY_OP_CODE_REF             (1+HY_OP_CODE_MOD)              // &
+#define  HY_OP_CODE_AND             (1+HY_OP_CODE_REF)              // &&
 #define  HY_OP_CODE_MUL             (1+HY_OP_CODE_AND)              // *
 #define  HY_OP_CODE_ADD             (1+HY_OP_CODE_MUL)              // +
 #define  HY_OP_CODE_SUB             (1+HY_OP_CODE_ADD)          // -

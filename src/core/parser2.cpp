@@ -734,6 +734,10 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             _String errMsg;
 
             bool check = !inAssignment;
+            char deref = 0; 
+                        // 1 if derefercing within local context
+                        // 2 if derefercing within global context
+                 
 
             if (check) {
                 if (sss) {
@@ -756,6 +760,23 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             } else {
                 errMsg = "Can't assign within another assignment";
             }
+            
+            if (check) {
+                if (levelOps->lLength > 0) {
+                    check = false;
+                    if (levelOps->lLength == 1) {
+                        char buffered_op = ((_Operation*)((*levelOps)(0)))->TheCode(); 
+                        if (buffered_op == HY_OP_CODE_MUL) {
+                            check = true; deref = 1;
+                        } else {
+                            if (buffered_op == HY_OP_CODE_POWER) {
+                                check = true; deref = 2;
+                            }
+                        }
+                    }
+                }
+            }
+            
             if (!check) {
                 return HandleFormulaParsingError (errMsg, saveError, s, i);
             }
@@ -773,6 +794,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 // normal variable assignment
             {
                 _Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
+                
                 if (!f2) {
                     if (s.getChar(i-1) != ':') {
                         _PMathObj varObj = newF.Compute();
@@ -788,7 +810,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                         theV->SetFormula (newF);
                     }
                 } else { // this gets called from ExecuteCase0...
-                    if (twoToken && s.getChar(i-1) == '+') {
+                    if (twoToken && s.getChar(i-1) == '+') { // += gets handled here
                         _Operation* self = new _Operation ();
                         self->SetAVariable(theV->GetAVariable());
                         newF.theFormula.InsertElement (self,0,false);
@@ -1092,10 +1114,18 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
         }
 
         if (alpha.isAllowed [(unsigned char)s.getChar(i)]) { // an identifier
+            bool takeVarReference = false;
+            
             if (twoToken) {
-                _String thisOp (s.getChar(i-1));
-                levelOps->AppendNewInstance (new _Operation (thisOp,1L));
+                char opChar = s.getChar(i-1);
+                if (((_String*)BuiltInFunctions(HY_OP_CODE_REF))->Equal(opChar)) {
+                    takeVarReference = true;
+                } else {
+                    _String thisOp (opChar);
+                    levelOps->AppendNewInstance (new _Operation (thisOp,1L));
+                }
             }
+            
             impliedMult = (i && numeric.isAllowed [(unsigned char)s.getChar(i-1)]);
 
             long j = 1;
@@ -1107,23 +1137,36 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             i+=j-1;
 
             if (curOp.Equal(&globalToken)) {
+                if (takeVarReference) {
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, saveError, s, i);
+                }
                 globalKey = true;
                 continue;
             }
             
             bool noneObject = false;
             if (curOp.Equal(&noneToken)) {
-                noneObject = true;
+                 if (takeVarReference) {
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & noneToken, saveError, s, i);
+                }
+               noneObject = true;
                 globalKey  = true;
             }
                 
             if (UnOps.Find(curOp)>=0) { // a standard function
+                if (takeVarReference) {
+                    return HandleFormulaParsingError ("Cannot make a reference from a built-in function", saveError, s, i);
+                }
+                                
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
                 continue;
             } else { // a variable
                 // check if this is a function defined  in the list of "standard functions"
                 long bLang = noneObject?-1:FunctionNameList.BinaryFind(&curOp);
                 if (bLang>=0) {
+                    if (takeVarReference) {
+                        return HandleFormulaParsingError ("Cannot make a reference from a built-in function", saveError, s, i);
+                    }
                     levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
                     continue;
                 }
@@ -1131,6 +1174,9 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 // check if this is a function defined in the batch language
 
                 if ((bLang =  noneObject?-1:FindBFFunctionName (curOp, theParent))>=0) {
+                    if (takeVarReference) {
+                        return HandleFormulaParsingError ("Cannot make a reference from user-defined function", saveError, s, i);
+                    }
                     levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
                     continue;
                 }
@@ -1160,9 +1206,9 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                         levelData->AppendNewInstance (new _Operation (false, curOp));
                     else
                         if (theParent && _hyApplicationGlobals.Find(&curOp) >= 0) {
-                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil));
+                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil, takeVarReference));
                         } else {
-                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, theParent));
+                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, theParent, takeVarReference));
                         }
                 }
                 globalKey = false;
@@ -1333,6 +1379,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
     }
     return HY_FORMULA_EXPRESSION;
 }
+//__________________________________________________________________________________
 
 long     VerbosityLevel (void)
 {
@@ -1340,6 +1387,7 @@ long     VerbosityLevel (void)
     return verbosityLevel;
 }
 
+//__________________________________________________________________________________
 void  checkParameter (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* theP)
 {
     long f;

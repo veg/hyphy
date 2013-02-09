@@ -104,6 +104,10 @@ public:
         nInstances ++;
     }
 
+    virtual void     RemoveAReference (void)     {
+        nInstances --;
+    }
+
     long             nInstances;
 
 

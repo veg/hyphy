@@ -66,7 +66,7 @@ public:
     // number of operands
     _Operation  (const long,const long);
 
-    _Operation  (bool, _String&, bool isG = false, _VariableContainer*  = nil);
+    _Operation  (bool, _String&, bool isG = false, _VariableContainer*  = nil, bool take_a_reference = false);
     // store a variable or a constant
     _Operation  (_PMathObj);
     // store a non-numeric constant

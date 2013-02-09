@@ -183,7 +183,7 @@ bool _Operation::HasChanged (void)
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer* theParent)
+_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer* theParent, bool take_a_reference)
 {
     if (isVar) { // creating a variable
         long f;
@@ -196,25 +196,8 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
             }
 
             if (f<0) {
-                /*f = stuff.Find('.');
-                do
-                {
-                    if (f!=-1)
-                    {
-                        f = stuff.Find(".",f+1,-1); // skip scope levels as needed
-                        continue;
-                    }
-                    else
-                        break;
-                }
-                while ((theParent = theParent->theParent));
-                if (theParent)*/
                 theS = (*theParent->theName)&"."&theS;
             }
-            /*StringToConsole(stuff);
-            NLToConsole();
-            StringToConsole(theS);
-            NLToConsole();*/
         }
 
         f = LocateVarByName(theS);
@@ -228,7 +211,8 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
         theData       = f;
         theNumber     = nil;
-        numberOfTerms = 0;
+        numberOfTerms = take_a_reference?(1):0;
+        
     } else {
         numberOfTerms = 0;
         if (stuff.Equal (&noneToken))
@@ -323,11 +307,15 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         theScrap.Push(theNumber);
         return true;
     }
-    if (theData>-1) {
-        theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
+    if (theData >= 0) { // variable reference
+        if (numberOfTerms <= 0) { // compute and push value
+            theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
+        } else {
+            theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nameSpace),false);
+        }
         return true;
     }
-    if (theData<-2) {
+    if (theData < -2) {
         theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
         return true;
     }

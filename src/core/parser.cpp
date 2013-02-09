@@ -666,9 +666,9 @@ void  RenameVariable (_String* oldName, _String* newName)
         }
     }
 
-    for (long k = 0; k < toRename.lLength; k++) {
+    for (unsigned long k = 0; k < toRename.lLength; k++) {
         _Variable * thisVar = FetchVar (xtras.lData[k]);
-        thisVar->GetName()->nInstances --;
+        thisVar->GetName()->RemoveAReference();
         if (k) {
             thisVar->theName = new _String(thisVar->GetName()->Replace(oldNamePrefix,newNamePrefix,true));
         } else {
@@ -698,11 +698,12 @@ void  ReplaceVar (_Variable* theV)
 void    SetupOperationLists (void)
 {
 
-    _List all_unary_ops ("-",28,
+    _List all_unary_ops ("-",29,
                          "!",
                          "+",
                          "*",
                          "^",
+                         "&",
                          "Abs",
                          "Sin",
                          "Cos",
@@ -784,6 +785,9 @@ void    SetupOperationLists (void)
         //HY_OP_CODE_MOD
         BuiltInFunctions.AppendNewInstance (new _String ('%'));
 
+        //HY_OP_CODE_REF
+        BuiltInFunctions.AppendNewInstance (new _String ('&'));
+ 
         //HY_OP_CODE_AND
         BuiltInFunctions.AppendNewInstance (new _String ("&&"));
         simpleOperationCodes    << HY_OP_CODE_AND;

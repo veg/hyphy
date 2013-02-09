@@ -1055,7 +1055,7 @@ void    _BayesianGraphicalModel::DumpMarginalVectors (_List * compute_list)
         ((_GrowingVector *) compute_list->lData[i]) -> Clear();
     }
 
-    compute_list->Clear();
+    DeleteObject (compute_list);
 }
 
 
@@ -1837,7 +1837,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     }
 
 
-    return (_Matrix *) (output_matrix->makeDynamic());
+    return (_Matrix *) output_matrix;
 }
 
 
@@ -2015,7 +2015,7 @@ _SimpleList *   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
 
     }
 	ReportWarning(_String("Constructed node order from graph:\n") & (_String *)new_order->toStr() & "\n");
-    return (_SimpleList *) new_order->makeDynamic();
+    return new_order;
 }
 
 

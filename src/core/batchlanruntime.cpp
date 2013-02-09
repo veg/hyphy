@@ -499,7 +499,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
 
                     if (dataMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
+                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx);
                     } else {
                         WarnError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").");
                         return false;
