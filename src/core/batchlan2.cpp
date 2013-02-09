@@ -2218,7 +2218,9 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
             ((_Matrix*) (LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
         } else {
         // formula based
-            ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, false, false, inclCat);
+            // inclG was replaced with false in a previous commit. This caused problems in the optimizer and in
+            // likelihood reporting (it was consistently worse than optimizer results)
+            ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
         }
     }
 }
