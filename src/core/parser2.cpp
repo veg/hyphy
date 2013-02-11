@@ -1431,7 +1431,7 @@ void  stashParameter (_String& name, _Parameter v, bool set)
 void  setParameter (_String& name, _Parameter def, _String* namespc)
 {
     if (namespc) {
-        _String namespcd = *namespc & '.' & name;
+        _String namespcd = AppendContainerName(name,namespc);
         setParameter (namespcd,def);
     } else {
         long f = LocateVarByName (name);
@@ -1449,7 +1449,7 @@ void  setParameter (_String& name, _Parameter def, _String* namespc)
 void  setParameter (_String& name, _PMathObj def, bool dup, _String* namespc)
 {
     if (namespc) {
-        _String namespcd = *namespc & '.' & name;
+        _String namespcd = AppendContainerName(name,namespc);
         setParameter (namespcd,def,dup);
     } else {
         long f = LocateVarByName (name);

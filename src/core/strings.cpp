@@ -2458,8 +2458,14 @@ _String _String::Random(const unsigned long length, const _String * alphabet)
 }
 
 unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object, _String * context) {
-    char first_char = getChar(0);
+    char first_char    = getChar(0);
+    bool is_func_ref  = getChar(sLength-1) == '&';
+         
     if (first_char == '*' || first_char == '^') {
+        if (is_func_ref) {
+            referenced_object = empty;
+            return HY_STRING_INVALID_REFERENCE;
+        }
         bool is_global_ref = first_char == '^';
         _String   choppedVarID (*this, 1, -1);
         if (context) {
@@ -2474,9 +2480,18 @@ unsigned char _String::ProcessVariableReferenceCases (_String& referenced_object
         }
     }
     
-    if (IsValidIdentifier()) {
-        referenced_object = context? (*context & '.' & *this): (*this);
-        return HY_STRING_DIRECT_REFERENCE;
+    if (is_func_ref) {
+        referenced_object = Cut (0, sLength-2);
+        if (referenced_object.IsValidIdentifier()) {
+            referenced_object = (context? (*context & '.' & referenced_object): (referenced_object)) & '&';
+            return HY_STRING_DIRECT_REFERENCE;
+        }    
+    }
+    else {
+        if (IsValidIdentifier()) {
+            referenced_object = context? (*context & '.' & *this): (*this);
+            return HY_STRING_DIRECT_REFERENCE;
+        }
     }
     
     referenced_object = empty;

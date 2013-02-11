@@ -634,15 +634,22 @@ void  InsertVar (_Variable* theV)
 //__________________________________________________________________________________
 _String&  AppendContainerName (_String& inString, _VariableContainer* theP)
 {
+    return AppendContainerName (inString, theP?theP->GetName():nil);
+}
+
+//__________________________________________________________________________________
+_String&  AppendContainerName (_String& inString, _String* namescp)
+{
     static _String returnMe;
 
-    if (!theP) {
+    if (!namescp || _hyApplicationGlobals.Find (&inString) >= 0) {
         return inString;
     }
 
-    returnMe = *theP->GetName() & '.' & inString;
+    returnMe = *namescp & '.' & inString;
     return returnMe;
 }
+
 
 //__________________________________________________________________________________
 void  RenameVariable (_String* oldName, _String* newName)
