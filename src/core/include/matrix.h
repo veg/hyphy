@@ -44,6 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistx.h"
 #include "variablecontainer.h"
 #include "trie.h"
+#include "_hyDefaultExecutionContext.h"
 
 #define     _POLYNOMIAL_TYPE 0
 #define     _NUMERICAL_TYPE  1
