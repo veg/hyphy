@@ -2478,21 +2478,21 @@ _String*    _TheTree::TreeUserParams (void)
 
 //__________________________________________________________________________________
 
-_PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
 
     switch (opCode) {
     case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
         if (p->ObjectClass()!=NUMBER) {
-            _String errMsg ("Invalid (not a number) 2nd argument is call to $ for trees.");
-            WarnError (errMsg);
+            context->ReportError ("Invalid (not a number) 2nd argument is call to $ for trees.");
+            return new _MathObject;
         }
         _Constant*  cc     = (_Constant*)TipCount();
         long        size   = cc->Value()/p->Value();
 
         if  ((size<=4)||(size>cc->Value()/2)) {
-            _String errMsg ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
-            WarnError (errMsg);
+            context->ReportError ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
+            return new _MathObject;
         }
 
         long        checkSize = 1,
@@ -2566,9 +2566,9 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMath
 
     case HY_OP_CODE_LEQ: { // MatchPattern (<=)
         if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY)) {
-            _String errMsg ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
-            WarnError (errMsg);
-        }
+            context->ReportError ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
+            return new _MathObject;
+       }
         _String  res (((_TreeTopology*)p)->MatchTreePattern (this));
         return new _Constant (!res.beginswith ("Unequal"));
         break;
@@ -2621,7 +2621,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMath
             return AVLRepresentation (p);
     }
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }
@@ -2629,7 +2629,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMath
 
 //__________________________________________________________________________________
 
-_PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
 
     switch (opCode) {
@@ -2644,7 +2644,7 @@ _PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj c
         break;
     }
 
-    return  _TreeTopology::Execute (opCode,p,p2);
+    return  _TreeTopology::Execute (opCode,p,p2,context);
 
 }
 

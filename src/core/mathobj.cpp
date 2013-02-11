@@ -2,7 +2,7 @@
 #include "mathobj.h"
 
 //SW: This calls the function with the opcode after it's been parsed
-_PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_NOT: // !
@@ -121,7 +121,7 @@ _PMathObj _MathObject::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathOb
     case HY_OP_CODE_OR: // ||
         return LOr(p);
     }
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode,context);
     return new _MathObject;
 }
 

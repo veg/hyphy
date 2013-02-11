@@ -1365,7 +1365,7 @@ _PMathObj   _Matrix::Sum (void)
 //__________________________________________________________________________________
 
 
-_PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     //_Constant res;
     // why was static?? mod 07/21/2003
@@ -1487,7 +1487,7 @@ _PMathObj _Matrix::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj co
             return  PoissonLL (p);
     }
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode, context);
     return nil;
 }
 //_____________________________________________________________________________________________
@@ -9449,7 +9449,7 @@ _PMathObj        _AssociativeList::Sum (void)
 //__________________________________________________________________________________
 
 
-_PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
 
     switch (opCode) {
@@ -9502,7 +9502,7 @@ _PMathObj _AssociativeList::Execute (long opCode, _PMathObj p, _PMathObj p2, _PM
     }
 
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }

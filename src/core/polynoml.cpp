@@ -784,7 +784,7 @@ void    _Polynomial::Duplicate  (BaseRef tp)
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _PMathObj)   // execute this operation with the second arg if necessary
+_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_MUL: //*
@@ -814,7 +814,7 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _PMathObj) 
         break;
     }
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }

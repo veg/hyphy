@@ -46,6 +46,7 @@
 #include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
+#include "_hyExecutionContext.h"
 
 class   _MathObject : public BaseObj  //abstract math operations class
 {
@@ -296,7 +297,7 @@ public:
     // 1 - number
     // 4 - matrix
 
-    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _MathObject* context = nil);
+    virtual _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
     virtual bool         HasChanged (void) {

@@ -305,7 +305,6 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 //_______________________________________________________________________
 void WarnError (_String st)
 {
-
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
         currentExecutionList->ReportAnExecutionError(st, true);
         return;

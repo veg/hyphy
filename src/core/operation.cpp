@@ -494,6 +494,8 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
     }
 
     _PMathObj term1, term2 = nil, term3 = nil, temp;
+    
+    _hyExecutionContext localContext (nameSpace, errMsg);
 
 
     if (numberOfTerms >= 3) {
@@ -502,7 +504,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         term2 = (_PMathObj)theScrap.theStack.lData[sL--];
         term1 = (_PMathObj)theScrap.theStack.lData[sL];
         theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, term3, nameSpace);
+        temp = term1->Execute (opCode, term2, term3, &localContext);
         DeleteObject (term1);
         DeleteObject (term2);
         DeleteObject (term3);
@@ -511,12 +513,12 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         term2 = (_PMathObj)theScrap.theStack.lData[sL--];
         term1 = (_PMathObj)theScrap.theStack.lData[sL];
         theScrap.theStack.lLength = sL;
-        temp = term1->Execute (opCode, term2, nil, nameSpace);
+        temp = term1->Execute (opCode, term2, nil, &localContext);
         DeleteObject (term1);
         DeleteObject (term2);
     } else {
         term1 = (_PMathObj)theScrap.theStack.lData[--theScrap.theStack.lLength];
-        temp = term1->Execute (opCode, nil, nil, nameSpace);
+        temp = term1->Execute (opCode, nil, nil, &localContext);
         DeleteObject (term1);
     }
 
@@ -547,7 +549,7 @@ void        _Operation::StackDepth (long& depth)
 
 
 //__________________________________________________________________________________
-bool        _Operation::ExecutePolynomial (_Stack& theScrap)
+bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg)
 {
     if (theData<=-2 || numberOfTerms < 0) {
         return false;
@@ -570,9 +572,8 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap)
 
     if (theScrap.StackDepth()<numberOfTerms) {
         _String s((_String*)toStr());
-        WarnError (s&
-                   " needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given.");
-        return    false;
+        return ReportOperationExecutionError (s&
+                   " needs "&_String(numberOfTerms)& " arguments. Only "&_String(theScrap.StackDepth())&" were given", errMsg);
     }
 
     _PMathObj term1,
@@ -585,13 +586,13 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap)
         term2 = theScrap.Pop();
     }
 
+    _hyExecutionContext localContext (nameSpace, errMsg);
     term1 = theScrap.Pop();
-    temp  = term1->Execute (opCode, term2, nil);
+    temp  = term1->Execute (opCode, term2, nil, &localContext);
     DeleteObject (term1);
 
     if (temp) {
-        theScrap.Push (temp);
-        DeleteObject (temp);
+        theScrap.Push (temp, false);
     } else {
         opResult = false;
     }

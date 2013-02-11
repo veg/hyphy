@@ -64,10 +64,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "matrix.h"
 
-//__________________________________________________________________________________
 extern  _List BuiltInFunctions;
 
 class   _ExecutionList; 
+class   _hyExecutionContext;
+
 
 //__________________________________________________________________________________
 
@@ -194,7 +195,7 @@ _Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Paramet
 void        PopulateArraysForASimpleFormula
 (_SimpleList&, _SimpleFormulaDatum*);
 
-void        WarnNotDefined (_PMathObj, long);
+void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 
 extern      _Parameter  pi_const;
 extern      bool        useGlobalUpdateFlag;

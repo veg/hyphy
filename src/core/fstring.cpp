@@ -572,12 +572,12 @@ _PMathObj _FString::RerootTree (void)
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Evaluate (_PMathObj context)
+_PMathObj _FString::Evaluate (_hyExecutionContext* context)
 {
     if (theString && theString->sLength) {
         _String     s (*theString);
-        _Formula    evaluator (s, (_VariableContainer*)context);
-        _PMathObj   evalTo = evaluator.Compute(0,(_VariableContainer*)context);
+        _Formula    evaluator (s, (_VariableContainer*)context->GetContext());
+        _PMathObj   evalTo = evaluator.Compute(0,(_VariableContainer*)context->GetContext());
 
         if (evalTo && !terminateExecution) {
             evalTo->AddAReference();
@@ -589,10 +589,10 @@ _PMathObj _FString::Evaluate (_PMathObj context)
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Dereference(bool ignore_context, _PMathObj context) {
+_PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* context) {
     _String referencedVariable = *theString;
     if (!ignore_context && context) {
-        referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context);
+        referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context->GetContext());
     }
     _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
     //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);
@@ -608,7 +608,7 @@ _PMathObj _FString::Dereference(bool ignore_context, _PMathObj context) {
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj context)   // execute this operation with the second arg if necessary
+_PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_NOT: // !
@@ -750,7 +750,7 @@ _PMathObj _FString::Execute (long opCode, _PMathObj p, _PMathObj p2, _PMathObj c
         break;
     }
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode,context);
     return new _FString;
 
 }

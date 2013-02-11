@@ -191,10 +191,10 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
 
 //__________________________________________________________________________________
 
-void        WarnNotDefined (_PMathObj p, long opCode)
+void        WarnNotDefined (_PMathObj p, long opCode, _hyExecutionContext* context)
 {
     _FString * t = (_FString*)p->Type();
-    WarnError (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);
+    context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' is not implemented/defined for a " & *t->theString);        
     DeleteObject (t);
 }
 
