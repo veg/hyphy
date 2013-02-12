@@ -1192,7 +1192,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
     bool            status      = true;
 
-    for (long k = 0; k<lLength && status; k++) {
+    for (unsigned long k = 0; k<lLength && status; k++) {
         _ElementaryCommand * aStatement = (_ElementaryCommand*)(*this)(k);
         switch (aStatement->code) {
         case 0: {
@@ -1204,20 +1204,21 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
                 checkPointer ((BaseRef)(f&&f2));
 
-                long          varRef,
-                              parseCode = Parse(f,*formulaString,varRef,nameSpacePrefix,f2);
+                _FormulaParsingContext fpc (nil, nameSpacePrefix);
+
+                long          parseCode = Parse(f,*formulaString,fpc,f2);
 
                 if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
                     if (f->AmISimple(stackDepth,varList)) {
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
-                        aStatement->simpleParameters<<varRef;
+                        aStatement->simpleParameters<<fpc.assignmentRefID();
 
                         formulaeToConvert << (long)f;
 
                         if (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-                            parseCodes        << varRef;
+                            parseCodes        << fpc.assignmentRefID();
                         } else {
                             parseCodes        << -1;
                         }
@@ -1237,12 +1238,9 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             if (aStatement->simpleParameters.lLength == 3 || aStatement->parameters.lLength) {
                 if (aStatement->parameters.lLength) {
                     _Formula f;
-                    long     varRef;
-                    //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+                    _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
-                    long status = Parse (&f, *(_String*)aStatement->parameters(0), varRef, nameSpacePrefix,nil);
-
-                    //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+                    long status = Parse (&f, *(_String*)aStatement->parameters(0), fpc);
 
                     if (status== HY_FORMULA_EXPRESSION) {
                         aStatement->simpleParameters<<long(f.makeDynamic());
@@ -1276,15 +1274,15 @@ bool        _ExecutionList::TryToMakeSimple     (void)
         _SimpleList  avlData;
         _AVLListX    avlList (&avlData);
 
-        for (long fi = 0; fi < formulaeToConvert.lLength; fi++) {
+        for (unsigned long fi = 0; fi < formulaeToConvert.lLength; fi++) {
             ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
         }
 
-        for (long vi = 0; vi < varList.lLength; vi++) {
+        for (unsigned long vi = 0; vi < varList.lLength; vi++) {
             avlList.Insert ((BaseRef)varList.lData[vi], vi);
         }
 
-        for (long ri = 0; ri<parseCodes.lLength; ri++) {
+        for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
             if (parseCodes.lData[ri] < 0) {
                 cli->storeResults << -1;
             } else {
@@ -2526,17 +2524,17 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         _String* theFla     = (_String*)parameters(0),
                  errMsg;
 
-        bool    doNotCompileThisFormula = false;
+        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
-        long    varRef,
-                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,nil,&doNotCompileThisFormula);
+        long     parseCode = Parse(&f,(*theFla),fpc,&f2);
 
         if (parseCode != HY_FORMULA_FAILED ) {
-            if (doNotCompileThisFormula == false) { // not a matrix constant
+            if (fpc.isVolatile() == false) { // not a matrix constant
                 simpleParameters    <<parseCode;
                 simpleParameters    <<long (f.makeDynamic());
                 simpleParameters    <<long (f2.makeDynamic());
-                simpleParameters    <<varRef;
+                simpleParameters    <<fpc.assignmentRefID   ();
+                simpleParameters    <<fpc.assignmentRefType ();
 
                 _SimpleList*        varList = new _SimpleList;
                 _AVLList            varListA (varList);
@@ -2546,7 +2544,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
                 listOfCompiledFormulae<<(long)this;
                 compiledFormulaeParameters.AppendNewInstance(varList);
             } else {
-                ExecuteFormula(&f,&f2,parseCode,varRef,chain.nameSpacePrefix);
+                ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                 return;
             }
         } else {
@@ -2554,7 +2552,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         }
     }
 
-    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
+    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
 
     if (terminateExecution) {
         WarnError (_String("Problem occurred in line: ")&*this);
@@ -2575,10 +2573,10 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
     if (simpleParameters.lLength==3 || parameters.lLength) {
         if ( parameters.lLength && simpleParameters.lLength < 3) {
             _Formula f;
-            long     varRef;
             //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 
-            long status = Parse (&f, *(_String*)parameters(0), varRef, chain.nameSpacePrefix,nil);
+            _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
+            long status = Parse (&f, *(_String*)parameters(0), fpc);
 
             //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
 
@@ -4031,9 +4029,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
                     defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
             // try to parse the expression, confirm that it is a square  matrix,
             // and that it is a valid transition matrix
-            long                varRef = 0;
             isExpressionBased = (_Formula*)checkPointer(new _Formula);
-            long parseCode = Parse(isExpressionBased,matrixExpression,varRef,chain.nameSpacePrefix);
+            _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+            long parseCode = Parse(isExpressionBased,matrixExpression,fpc);
             if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
                 WarnError (defErrMsg );
                 return;

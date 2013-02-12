@@ -689,8 +689,8 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
     _String assertion (*(_String*)parameters(0));
 
     _Formula rhs, lhs;
-    long     varRef;
-    if (Parse (&rhs,assertion,varRef,currentProgram.nameSpacePrefix,&lhs) == HY_FORMULA_EXPRESSION) {
+    _FormulaParsingContext fpc (nil, currentProgram.nameSpacePrefix);
+    if (Parse (&rhs,assertion,fpc,&lhs) == HY_FORMULA_EXPRESSION) {
         _PMathObj assertionResult = rhs.Compute();
         if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
             if (CheckEqual(assertionResult->Value(),0.0)) {
@@ -1362,10 +1362,11 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                     thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
                     
                     if (!thePrintObject) {
-                        long    varRef = -1;
                         _String argCopy = *varname,
                                 errMsg;
-                        if (Parse (&f,argCopy, varRef, currentProgram.nameSpacePrefix,nil,&errMsg) == HY_FORMULA_EXPRESSION) {
+
+                        _FormulaParsingContext fpc (&errMsg, currentProgram.nameSpacePrefix);
+                        if (Parse (&f,argCopy, fpc) == HY_FORMULA_EXPRESSION) {
                             thePrintObject = f.Compute(0,currentProgram.nameSpacePrefix);
                         } else {
                             if (errMsg.sLength)

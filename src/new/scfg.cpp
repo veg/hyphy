@@ -530,9 +530,9 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
         _String  anExpression = *expression->theString;
 
         _Formula lhs;
-        long     varCode;
+        _FormulaParsingContext fpc;
 
-        if (Parse   (aFormula, anExpression, varCode, nil, &lhs) != HY_FORMULA_EXPRESSION) { // not a valid expression
+        if (Parse   (aFormula, anExpression, fpc, &lhs) != HY_FORMULA_EXPRESSION) { // not a valid expression
             errorMessage = _String ("Invalid probability expression: ") & expression->theString;
         } else {
             ruleProbabilities << expression->theString;

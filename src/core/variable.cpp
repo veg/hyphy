@@ -635,4 +635,22 @@ _PMathObj    _Variable::ComputeReference (_PMathObj context)
     return new _FString (reference_string, false);
 }
 
+//__________________________________________________________________________________
+long    DereferenceVariable (long index, _PMathObj context, char reference_type){
+    if (reference_type == HY_STRING_DIRECT_REFERENCE) {
+        return index;
+    }
+    
+    _FString * value = (_FString *)FetchObjectFromVariableByTypeIndex(index, STRING);
+    if (value) {
+        _String referencedVariable = *value->theString;
+        if (reference_type == HY_STRING_LOCAL_DEREFERENCE && context) {
+            referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer*)context);
+        }
+        return LocateVarByName(referencedVariable);
+        
+    }
+    
+    return -1;
+}
 

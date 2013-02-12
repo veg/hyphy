@@ -403,8 +403,8 @@ _PMathObj _FString::Differentiate (_PMathObj p)
     }
 
     _String copyMe (*theString);
-    long    varRef;
-    if (Parse (&F,copyMe, varRef) == HY_FORMULA_EXPRESSION) {
+    _FormulaParsingContext fpc;
+    if (Parse (&F,copyMe, fpc) == HY_FORMULA_EXPRESSION) {
         _Formula *DF = F.Differentiate (*X,true);
         if (DF) {
             DFDX = (_String*)DF->toStr();
@@ -597,7 +597,12 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
     _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
     //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);
     if (!result) {
-        WarnError(_String("Failed to dereference '") & referencedVariable & "'");
+        _String errM = _String("Failed to dereference '") & referencedVariable & "'";
+        if (context) {
+            context->ReportError(errM);
+        } else {
+            WarnError (errM);
+        }
         result = new _FString;
     } else {
         result = (_PMathObj)result->makeDynamic();

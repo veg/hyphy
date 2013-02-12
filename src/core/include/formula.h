@@ -47,13 +47,35 @@
 #include "stack.h"
 #include "operation.h"
 
+class _Variable;
+class _VariableContainer;
+
+
 union       _SimpleFormulaDatum {
     _Parameter value;
     Ptr        reference;
 };
 
-class _Variable;
-class _VariableContainer;
+
+class _FormulaParsingContext {
+
+    long                 assignment_ref_id;
+    char                 assignment_ref_type;
+    bool                 is_volatile;
+    _String            * err_msg;
+    _VariableContainer * formula_scope;
+    
+    public:
+        _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
+        bool&       isVolatile (void)                   { return is_volatile; }
+        long&       assignmentRefID (void)              { return assignment_ref_id; }
+        char&       assignmentRefType (void)            { return assignment_ref_type;} 
+        _String*    errMsg (void)                       { return err_msg; }
+        _VariableContainer* formulaScope (void)         { return formula_scope; }     
+        _String     contextualizeRef (_String&);
+};
+
+
 class   _Formula   // a computational formula
 {
 
@@ -73,8 +95,10 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, _String* saveError = nil, bool* isVolatile = nil); // the parser
-    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil);
+    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula* = nil); 
+    // the main expression parser
+    
+    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil, char = HY_STRING_DIRECT_REFERENCE);
     // the execution block for "compiled formulae
     /*
      SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference"

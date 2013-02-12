@@ -1924,8 +1924,9 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
     theTree     = nil;
     resultCache = nil;
 
-    long      refV;
-    if (Parse (this, s, refV, theParent,nil,reportErrors) != HY_FORMULA_EXPRESSION) {
+    _FormulaParsingContext fpc (reportErrors, theParent);
+    
+    if (Parse (this, s, fpc) != HY_FORMULA_EXPRESSION) {
         Clear();
     }
 }
@@ -2593,4 +2594,20 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
     return nil;
 }
 
+//__________________________________________________________________________________
+_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
+    assignment_ref_id   = -1;
+    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
+    is_volatile = false;
+    err_msg = err;
+    formula_scope = scope;
+}
+
+//__________________________________________________________________________________
+_String _FormulaParsingContext::contextualizeRef (_String& ref) {
+    if (formula_scope) {
+        return *formula_scope->GetName () & '.' & ref;
+    }
+    return ref;
+}
 

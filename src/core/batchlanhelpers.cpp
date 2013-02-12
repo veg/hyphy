@@ -132,9 +132,9 @@ bool ExpressionCalculator (_String data)
                rhs;
               
     _String    errMsg;
-
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil, &errMsg);
+    _FormulaParsingContext fpc (&errMsg, nil);
+    
+    long       retCode = Parse(&lhs, data, fpc);
 
     if (retCode != HY_FORMULA_FAILED) {
         if (retCode == HY_FORMULA_EXPRESSION) {
@@ -182,8 +182,8 @@ bool    ExpressionCalculator (void)
     _Formula  lhs,
               rhs;
 
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil);
+    _FormulaParsingContext fpc;
+    long retCode = Parse(&lhs, data, fpc);
 
     if (!terminateExecution) {
         if (retCode == HY_FORMULA_EXPRESSION) {

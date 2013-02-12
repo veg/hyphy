@@ -1756,9 +1756,9 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
                 replicateSource = (_String*)(theConstraints(ind1)->toStr());
                 if (applyNow) {
                     _Formula rhs, lhs;
-                    long     varRef;
-                    ind2 = Parse (&rhs,*replicateSource,varRef,chain.nameSpacePrefix,&lhs);
-                    ExecuteFormula(&rhs,&lhs,ind2,varRef);
+                    _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+                    ind2 = Parse (&rhs,*replicateSource,fpc,&lhs);
+                    ExecuteFormula(&rhs,&lhs,ind2,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                 }
                 (*constraintAccumulator) << replicateSource;
                 (*constraintAccumulator) << ';';

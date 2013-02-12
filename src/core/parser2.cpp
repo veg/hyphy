@@ -350,8 +350,17 @@ _Parameter  TrapezoidLevelK (_Formula&f, _Variable* xvar, _Parameter left, _Para
 
 //__________________________________________________________________________________
 
-long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _VariableContainer* nameSpace)
+long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference, _VariableContainer* nameSpace, char assignment_type)
 {
+    if (assignment_type != HY_STRING_DIRECT_REFERENCE && reference >= 0) {
+        long dereferenced = DereferenceVariable(reference, nameSpace, assignment_type);
+        if (dereferenced < 0) {
+            WarnError (_String ("Failed to dereference '") & *FetchVar(reference)->GetName() & "' in the " & ((assignment_type == HY_STRING_GLOBAL_DEREFERENCE) ? "global" : "local") & " context");
+            return 0;
+        }
+        reference = dereferenced;
+    }
+    
     if (code == HY_FORMULA_EXPRESSION || code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
         _PMathObj  formulaValue = f->Compute(0, nameSpace);
         if (!formulaValue) {
@@ -541,7 +550,31 @@ long        HandleFormulaParsingError (_String errMsg, _String* saveError, _Stri
 }
 
 //__________________________________________________________________________________
-long        Parse (_Formula* f, _String& s, long& variableReference, _VariableContainer* theParent, _Formula* f2, _String* saveError, bool* isVolatile)
+bool        checkLHS (_List* levelOps, _String& errMsg, char & deref) {
+    bool check = true;
+    deref = HY_STRING_DIRECT_REFERENCE;
+    if (levelOps->lLength > 0) {
+        check = false;
+        if (levelOps->lLength == 1) {
+            char buffered_op = ((_Operation*)((*levelOps)(0)))->TheCode(); 
+            if (buffered_op == HY_OP_CODE_MUL) {
+                check = true; deref = HY_STRING_LOCAL_DEREFERENCE;
+            } else {
+                if (buffered_op == HY_OP_CODE_POWER) {
+                    check = true; deref = HY_STRING_GLOBAL_DEREFERENCE;
+                } else {
+                    errMsg = "* and ^ are the two supported de-referencing operations";
+                }
+            }
+        } else {
+            errMsg = "Expressions (other than matrix/dict access) cannot appear on the left-hand side of assignments";
+        }
+    }
+    return check;
+}
+
+//__________________________________________________________________________________
+long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingContext, _Formula* f2)
 /* SLKP 20110908: added the concept of a 'volatile' formula, i.e. something that should be reparsed every time in ExecuteCase0
                 : currently those include
                 :    inline constructors (matrices, dictionaries)
@@ -555,7 +588,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
 /*
 
- case                       | return value                                  | variableReference value
+ case                       | return value                                  | parsingContext.assignment_ref_id value
 
  parse failed               | HY_FORMULA_FAILED                             | undefined
  expresion (no LHS)         | HY_FORMULA_EXPRESSION                         | undefined
@@ -565,6 +598,15 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
  object[a] = x/y            | HY_FORMULA_FORMULA_VALUE_ASSIGNMENT           | undefined
  z :< expr                  | HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT    | index of the LHS
  z :> expr                  | HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT    | index of the LHS
+ 
+ Further, for (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT,  HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT, 
+ HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT, HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT):
+ 
+ case           |   parsingContext.assignment_ref_type value
+
+ z op x/y        |   HY_STRING_DIRECT_REFERENCE
+ *z op x/y       |   HY_STRING_LOCAL_DEREFERENCE
+ ^z op x/y       |   HY_STRING_GLOBAL_DEREFERENCE
 
 
 */
@@ -621,7 +663,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             /* 04252006 if (level == mlevel && s.getChar(i)!=']')*/
             if (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level && lookAtMe != ']') {
-                return HandleFormulaParsingError ("Missing or unbalanced '[]' ", saveError, s, i);
+                return HandleFormulaParsingError ("Missing or unbalanced '[]' ", parsingContext.errMsg(), s, i);
              }
 
             /* 04252006 if (s.getChar(i)==']' && s.getChar(i+1)!='[')
@@ -641,16 +683,16 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     level = -1; */
 
             if (level<0) {
-                return HandleFormulaParsingError ("Unbalanced '()' parentheses ", saveError, s, i);
+                return HandleFormulaParsingError ("Unbalanced '()' parentheses ", parsingContext.errMsg(), s, i);
             }
 
             if (lookAtMe ==',' && (level<1 || (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level))) {
-                return HandleFormulaParsingError ("Parameter list is out of context ", saveError, s, i);
+                return HandleFormulaParsingError ("Parameter list is out of context ", parsingContext.errMsg(), s, i);
             }
 
             if (levelOps->lLength) { // there are some buffered operations left
                 if (levelOps->lLength > 3 || levelData->lLength > 2) {
-                    return HandleFormulaParsingError ("Syntax error ", saveError, s, i);
+                    return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 }
 
                 for (int i = 0; i<levelData->countitems(); i++) {
@@ -666,7 +708,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 levelOps->Clear();
             } else {
                 if (levelData->lLength>1) {
-                    return HandleFormulaParsingError ("Syntax error ", saveError, s, i);
+                    return HandleFormulaParsingError ("Syntax error ", parsingContext.errMsg(), s, i);
                 } else if (levelData->lLength) {
                     f->theFormula << (*levelData)(0);    // mod 07072006 to not duplicate
                 }
@@ -689,7 +731,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             if (lookAtMe ==']') {
                 if (!squareBrackets.lLength || squareBrackets.lData [squareBrackets.lLength-1] != level + 1) {
-                    return HandleFormulaParsingError ("Unexpected ']' ", saveError, s, i);
+                    return HandleFormulaParsingError ("Unexpected ']' ", parsingContext.errMsg(), s, i);
                 }
                 squareBrackets.Delete(squareBrackets.lLength-1);
                 curOp = *(_String*)BuiltInFunctions(HY_OP_CODE_MACCESS);
@@ -697,7 +739,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     long mergeIndex              = mergeMAccess.lData[mergeMAccess.lLength-1];
                     _Operation * previousMaccess = (_Operation*) f->theFormula (mergeIndex);
                     if (previousMaccess->GetCode () != curOp) {
-                        return HandleFormulaParsingError ("Internal error in Parse. Incorrect matrix access token code ", saveError, s, i);
+                        return HandleFormulaParsingError ("Internal error in Parse. Incorrect matrix access token code ", parsingContext.errMsg(), s, i);
                     }
                     
                     if (previousMaccess->GetNoTerms() > 2) {
@@ -735,9 +777,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             bool check = !inAssignment;
             char deref = 0; 
-                        // 1 if derefercing within local context
-                        // 2 if derefercing within global context
-                 
+                
 
             if (check) {
                 if (sss) {
@@ -762,30 +802,18 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             }
             
             if (check) {
-                if (levelOps->lLength > 0) {
-                    check = false;
-                    if (levelOps->lLength == 1) {
-                        char buffered_op = ((_Operation*)((*levelOps)(0)))->TheCode(); 
-                        if (buffered_op == HY_OP_CODE_MUL) {
-                            check = true; deref = 1;
-                        } else {
-                            if (buffered_op == HY_OP_CODE_POWER) {
-                                check = true; deref = 2;
-                            }
-                        }
-                    }
-                }
+                check = checkLHS (levelOps, errMsg, deref);
             }
             
             if (!check) {
-                return HandleFormulaParsingError (errMsg, saveError, s, i);
+                return HandleFormulaParsingError (errMsg, parsingContext.errMsg(), s, i);
             }
 
             inAssignment = true;
             _String ss (s,i+1,-1);
             _Formula  newF;
-            long      refV;
-            if (Parse(&newF,ss,refV,theParent,f2,saveError,isVolatile) != HY_FORMULA_EXPRESSION) {
+           
+            if (Parse(&newF,ss,parsingContext, f2) != HY_FORMULA_EXPRESSION) {
                 inAssignment = false;
                 return HY_FORMULA_FAILED;
             }
@@ -793,13 +821,19 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             if (!sss)
                 // normal variable assignment
             {
-                _Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
                 
-                if (!f2) {
+                 _Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
+                 if (!f2) {
+                    long varID = DereferenceVariable((((_Operation*)(*levelData)(0))->GetAVariable()), parsingContext.formulaScope(), deref);
+                    if (varID < 0) {
+                        return HandleFormulaParsingError ("Failed to dereference ", parsingContext.errMsg(), s, i);
+                    }
+                    _Variable * theV = (_Variable*)LocateVar(varID);
+                    
                     if (s.getChar(i-1) != ':') {
                         _PMathObj varObj = newF.Compute();
                         if (!varObj) {
-                            return HandleFormulaParsingError ("Invalid RHS in an assignment ", saveError, s, i);
+                            return HandleFormulaParsingError ("Invalid RHS in an assignment ", parsingContext.errMsg(), s, i);
                         }
                         if (twoToken && s.getChar(i-1) == '+') {
                             theV->SetValue(theV->Compute()->Execute(HY_OP_CODE_ADD,varObj));
@@ -811,17 +845,24 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     }
                 } else { // this gets called from ExecuteCase0...
                     if (twoToken && s.getChar(i-1) == '+') { // += gets handled here
+                    
                         _Operation* self = new _Operation ();
                         self->SetAVariable(theV->GetAVariable());
                         newF.theFormula.InsertElement (self,0,false);
                         DeleteObject (self);
+                        if (deref != HY_STRING_DIRECT_REFERENCE) {
+                             _Operation* ref = new _Operation (*(_String*)BuiltInFunctions(deref == HY_STRING_GLOBAL_DEREFERENCE ? HY_OP_CODE_POWER : HY_OP_CODE_MUL),1);
+                             newF.theFormula.InsertElement (ref,1,false);
+                             DeleteObject (ref);
+                      }
                         newF.theFormula.AppendNewInstance (new _Operation (*(_String*)BuiltInFunctions(HY_OP_CODE_ADD),2));
                     }
                     f->Duplicate((BaseRef)&newF);
                 }
                 twoToken     = false;
 
-                variableReference = theV->GetAVariable();
+                parsingContext.assignmentRefID()   = theV->GetAVariable();
+                parsingContext.assignmentRefType() = deref;
 
                 return (s.getChar(i-1)==':')?HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT:HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT;
             } else
@@ -830,7 +871,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 long stackD = -1,
                      last0  = 0;
 
-                for (long opID = 0; opID < f->theFormula.lLength - 1; opID ++) {
+                for (unsigned long opID = 0; opID < f->theFormula.lLength - 1; opID ++) {
                     ((_Operation*)f->theFormula(opID)) -> StackDepth (stackD);
                     if (stackD == 0) {
                         last0 = opID;
@@ -904,7 +945,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
 
                     if (anError) {
-                        return HandleFormulaParsingError ("Invalid matrix/associative list ident supplied ", saveError, s, i);
+                        return HandleFormulaParsingError ("Invalid matrix/associative list ident supplied ", parsingContext.errMsg(), s, i);
                     }
 
                     return HY_FORMULA_EXPRESSION;
@@ -921,7 +962,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
         if ( s.getChar(i-1)==':' && (s.getChar(i)=='<' || s.getChar(i)=='>')) { // variable bounds
             if (inAssignment||(!f->IsEmpty())||(levelData->countitems()!=1)||!(((_Operation*)(*levelData)(0))->IsAVariable())) {
-               return HandleFormulaParsingError ("Can't set bounds like this ", saveError, s, i);
+               return HandleFormulaParsingError ("Can't set bounds like this ", parsingContext.errMsg(), s, i);
             }
 
             inAssignment = true;
@@ -929,9 +970,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             _String ss (s,i+1,-1);
             _Formula newF;
 
-            long     refV;
-
-            if (Parse(&newF,ss,refV,theParent,f2,saveError,isVolatile) != HY_FORMULA_EXPRESSION) {
+            if (Parse(&newF,ss,parsingContext,f2) != HY_FORMULA_EXPRESSION) {
                 inAssignment = false;
                 return HY_FORMULA_FAILED;
             }
@@ -940,21 +979,38 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             inAssignment = false;
             twoToken = false;
             _Variable * theV = (_Variable*)LocateVar((((_Operation*)(*levelData)(0))->GetAVariable()));
+            
+            _String errMsg;
+            char    deref;
+            
+            if (!checkLHS (levelOps, errMsg, deref)) {
+                 return HandleFormulaParsingError (errMsg, parsingContext.errMsg(), s, i);
+            }
+
 
             if (!f2) {
                 _PMathObj varObj = newF.Compute();
                 if (varObj->ObjectClass()!=NUMBER) {
-                    return HandleFormulaParsingError ("Variable bound must evaluate to a number ", saveError, s, i);
+                    return HandleFormulaParsingError ("Variable bound must evaluate to a number ", parsingContext.errMsg(), s, i);
                 }
 
+                long varID = DereferenceVariable((((_Operation*)(*levelData)(0))->GetAVariable()), parsingContext.formulaScope(), deref);
+                if (varID < 0) {
+                    return HandleFormulaParsingError ("Failed to dereference ", parsingContext.errMsg(), s, i);
+                }
+                _Variable * theV = (_Variable*)LocateVar(varID);
+                    
                 if (s.getChar(i)=='>') {
                     theV->SetBounds(varObj->Value(),theV->GetUpperBound());
                 } else {
                     theV->SetBounds(theV->GetLowerBound(),varObj->Value());
                 }
-            } else {
+            } else { // BOUND ASSIGNMENTS
                 f2->Duplicate   ((BaseRef)&newF);
-                variableReference = theV->GetAVariable();
+
+                parsingContext.assignmentRefID()   = theV->GetAVariable();
+                parsingContext.assignmentRefType() = deref;
+
                 return (s.getChar(i)=='>')?HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT:HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT;
             }
 
@@ -968,12 +1024,12 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             */
         {
         
-            if (isVolatile) *isVolatile = true;
+            parsingContext.isVolatile() = true;
             
             int     j       = s.ExtractEnclosedExpression (i,'{','}',true,true);
 
             if (j<0) {
-                return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", saveError, s, i);
+                return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", parsingContext.errMsg(), s, i);
             }
 
             _String matrixDef   (s,i,j);
@@ -985,14 +1041,14 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 }
                 if (matrixDef.sLength > 2) {
                     matrixDef.Trim (1,matrixDef.sLength-2);
-                    if (!theList->ParseStringRepresentation (matrixDef,saveError == nil, theParent)) {
-                        return HandleFormulaParsingError ("Poorly formed associative array construct ", saveError, s, i);
+                    if (!theList->ParseStringRepresentation (matrixDef,parsingContext.errMsg() == nil, parsingContext.formulaScope())) {
+                        return HandleFormulaParsingError ("Poorly formed associative array construct ", parsingContext.errMsg(), s, i);
                     }
                 }
 
                 levelData->AppendNewInstance (new _Operation (theList));
             } else {
-                _Matrix *theMatrix = new _Matrix (matrixDef,false,theParent);
+                _Matrix *theMatrix = new _Matrix (matrixDef,false,parsingContext.formulaScope());
                 if (!theMatrix) {
                     checkPointer (theMatrix);
                 }
@@ -1016,7 +1072,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 mergeMAccessLevel << level;
             } else {
                 if (levelData->lLength == 0 && f->IsEmpty()) {
-                   return HandleFormulaParsingError ("[..] must be preceded by an object to index ", saveError, s, i);
+                   return HandleFormulaParsingError ("[..] must be preceded by an object to index ", parsingContext.errMsg(), s, i);
                 }
 
                 if (levelData->lLength) {
@@ -1076,10 +1132,10 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     if (inPlaceID < 0) {
                         inPlaceID = ++j;
                     } else if (j == inPlaceID) {
-                        return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", saveError, s, i);
+                        return HandleFormulaParsingError ("Attempted to string substitute an empty quotation ", parsingContext.errMsg(), s, i);
                     } else {
                         _String     inPlaceVID (s,i+inPlaceID,i+j-1),
-                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, theParent);
+                                    inPlaceValue = ProcessLiteralArgument(&inPlaceVID, parsingContext.formulaScope());
 
                         /*if (!inPlaceValue) {
                             inPlaceValue = (_FString*)ProcessLiteralArgument(&inPlaceVID, theParent);
@@ -1090,7 +1146,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
                         (*literal) << inPlaceValue;
                         inPlaceID = -1;
-                        if (isVolatile) *isVolatile = true;
+                        parsingContext.isVolatile() = true;
                         j++;
                     }
 
@@ -1103,7 +1159,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             }
             literal->Finalize();
             if (inPlaceID >= 0) {
-                return HandleFormulaParsingError ("Unterminated string substitution inside a literal ", saveError, s, i);
+                return HandleFormulaParsingError ("Unterminated string substitution inside a literal ", parsingContext.errMsg(), s, i);
             }
             levelData->AppendNewInstance (new _Operation (new _FString(*literal)));
             DeleteObject(literal);
@@ -1138,7 +1194,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
             if (curOp.Equal(&globalToken)) {
                 if (takeVarReference) {
-                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, saveError, s, i);
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & globalToken, parsingContext.errMsg(), s, i);
                 }
                 globalKey = true;
                 continue;
@@ -1147,7 +1203,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
             bool noneObject = false;
             if (curOp.Equal(&noneToken)) {
                  if (takeVarReference) {
-                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & noneToken, saveError, s, i);
+                    return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & noneToken, parsingContext.errMsg(), s, i);
                 }
                noneObject = true;
                 globalKey  = true;
@@ -1155,7 +1211,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 
             if (UnOps.Find(curOp)>=0) { // a standard function
                 if (takeVarReference) {
-                    return HandleFormulaParsingError ("Cannot make a reference from a built-in function", saveError, s, i);
+                    return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                 }
                                 
                 levelOps->AppendNewInstance (new _Operation (curOp,1));
@@ -1165,7 +1221,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 long bLang = noneObject?-1:FunctionNameList.BinaryFind(&curOp);
                 if (bLang>=0) {
                     if (takeVarReference) {
-                        return HandleFormulaParsingError ("Cannot make a reference from a built-in function", saveError, s, i);
+                        return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                     }
                     levelOps->AppendNewInstance (new _Operation (curOp,FunctionArgumentCount(bLang)));
                     continue;
@@ -1173,9 +1229,9 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
 
                 // check if this is a function defined in the batch language
 
-                if ((bLang =  noneObject?-1:FindBFFunctionName (curOp, theParent))>=0) {
+                if ((bLang =  noneObject?-1:FindBFFunctionName (curOp, parsingContext.formulaScope()))>=0) {
                     if (takeVarReference) {
-                        return HandleFormulaParsingError ("Cannot make a reference from user-defined function", saveError, s, i);
+                        return HandleFormulaParsingError ("Cannot make a reference from user-defined function", parsingContext.errMsg(), s, i);
                     }
                     levelOps->AppendNewInstance (new _Operation (curOp,-bLang-1));
                     continue;
@@ -1185,18 +1241,17 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                 if (curOpl>2 && curOp[curOpl-1]=='_' && curOp[curOpl-2]=='_') { // instant variable refrence
                     _String realVarName (curOp,0,curOpl-3);
 
-                    if (theParent) {
-                        realVarName = *(theParent->GetName()) & '.' & realVarName;
-                    }
+                    realVarName = parsingContext.contextualizeRef (realVarName);
+                   
 
                     long realVarLoc = LocateVarByName (realVarName);
                     if (realVarLoc<0) { // bad instant variable reference
-                        return HandleFormulaParsingError ("Attempted to take value of undeclared variable ", saveError, s, i);
+                        return HandleFormulaParsingError ("Attempted to take value of undeclared variable ", parsingContext.errMsg(), s, i);
                      }
                     if (!f2) { // 03/25/2004 ? Confused why the else
                         levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));
                     } else {
-                        _Operation theVar (true, realVarName, globalKey, theParent);
+                        _Operation theVar (true, realVarName, globalKey, parsingContext.formulaScope());
                         theVar.SetTerms(-variableNames.GetXtra (realVarLoc)-1);
                         theVar.SetAVariable(-2);
                         (*levelData) && (&theVar);
@@ -1205,10 +1260,10 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     if (noneObject)
                         levelData->AppendNewInstance (new _Operation (false, curOp));
                     else
-                        if (theParent && _hyApplicationGlobals.Find(&curOp) >= 0) {
+                        if (parsingContext.formulaScope() && _hyApplicationGlobals.Find(&curOp) >= 0) {
                             levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, nil, takeVarReference));
                         } else {
-                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, theParent, takeVarReference));
+                            levelData->AppendNewInstance (new _Operation(true, curOp, globalKey, parsingContext.formulaScope(), takeVarReference));
                         }
                 }
                 globalKey = false;
@@ -1278,7 +1333,7 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     if (!twoToken && UnOps.Find (s.getChar(i)) >= 0) {
                         twoOrOne = 1;
                     } else {
-                        return HandleFormulaParsingError ("Bad binary operator placement ", saveError, s, i);
+                        return HandleFormulaParsingError ("Bad binary operator placement ", parsingContext.errMsg(), s, i);
                     }
                 }
             }
@@ -1366,11 +1421,11 @@ long        Parse (_Formula* f, _String& s, long& variableReference, _VariableCo
                     twoToken = true;
                     continue;
                 }
-                return HandleFormulaParsingError ("Bad binary operator placement ", saveError, s, i);
+                return HandleFormulaParsingError ("Bad binary operator placement ", parsingContext.errMsg(), s, i);
             }
         } else {
             if (!HalfOps.contains(s.getChar(i))) {
-                return HandleFormulaParsingError ("Unexpected symbol ", saveError, s, i);
+                return HandleFormulaParsingError ("Unexpected symbol ", parsingContext.errMsg(), s, i);
             } else {
                 twoToken = true;
             }

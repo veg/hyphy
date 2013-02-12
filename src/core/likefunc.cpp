@@ -10841,9 +10841,9 @@ _CustomFunction::_CustomFunction (_String* arg)
     _String body    (*arg),
             errMsg ;
 
-    long    varRef = 0;
+    _FormulaParsingContext fpc (&errMsg, nil);
 
-    if (Parse (&myBody, body, varRef, nil,nil,&errMsg) == HY_FORMULA_EXPRESSION) {
+    if (Parse (&myBody, body, fpc) == HY_FORMULA_EXPRESSION) {
         _SimpleList myVars;
         {
             _AVLList al (&myVars);

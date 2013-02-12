@@ -313,8 +313,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     param = (_String*)parameters(3);
 
     if (!covariantVar) {
-        long varR = 0;
-        Parse (&density, *param, varR, theP,nil); // check if the formula is good
+        _FormulaParsingContext fpc (nil, theP);
+        Parse (&density, *param, fpc); // check if the formula is good
     }
 
     if (!density.IsEmpty()) {
@@ -350,8 +350,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             ReportWarning (errorMsg & _String("Runtime integration of probability density can be _very_ slow - please provide the analytic form for cumulative distribution if known."));
         } else {
             if(check) {
-                long varR = 0;
-                Parse(&cumulative,*param,varR,theP,nil);
+                _FormulaParsingContext fpc (nil, theP);
+                Parse(&cumulative,*param,fpc);
                 {
                     _SimpleList   densityVars,
                                   existingVars (scannedVarsList);
@@ -399,10 +399,10 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 density.Clear();
                 _Parameter dns = 1.0/(x_max-x_min);
                 errorMsg = _String(dns);
-                long varR = 0;
-                Parse(&density, errorMsg,varR,nil,nil);
+                _FormulaParsingContext fpc;
+                Parse(&density, errorMsg,fpc);
                 errorMsg = _String(dns)&"*(_x_-"&_String(x_min)&")";
-                Parse(&cumulative, errorMsg,varR,nil,nil);
+                Parse(&cumulative, errorMsg,fpc);
             }
         }
     } else { // enumerated interval parameters
@@ -511,8 +511,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
     if (parameters.countitems()>7) { // aux mean formula
         param = (_String*)parameters(7);
-        long  varR = 0;
-        Parse    (&meanC,*param,varR,theP,nil);
+        _FormulaParsingContext fpc (nil, theP);
+        Parse    (&meanC,*param,fpc);
 
         if (parameters.lLength>8) {
             _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
