@@ -3544,8 +3544,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
                 if (IsNonEmpty (i)) {
                     long h       = HashBack (i);
                     _Formula * f = GetFormula (h/vDim,h%vDim);
-                    f->GetList() && cOp;
-                    f->GetList() && mOp;
+                    f->GetList().AppendNewInstance (cOp);
+                    f->GetList().AppendNewInstance (mOp);
                 }
         } else {
             if (storageType != 3) {

@@ -1040,7 +1040,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                             {
                                 _AssociativeList * resList = new _AssociativeList;
                                 resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
-                                resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
+                                resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),false);
                                 resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
                                 theReceptacle->SetValue (resList,false);
                                 return true;
