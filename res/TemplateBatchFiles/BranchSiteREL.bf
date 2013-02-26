@@ -142,7 +142,7 @@ Paux2G 						 :< 1;
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
 
-VERBOSITY_LEVEL               = 1;
+VERBOSITY_LEVEL               = 0;
 
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
@@ -194,7 +194,7 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 }
 
 
-VERBOSITY_LEVEL     = 1;
+VERBOSITY_LEVEL     = 0;
 USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
@@ -379,6 +379,7 @@ psTree = PSTreeString (T,"STRING_SUPPLIED_LENGTHS",{{400,height}});
 treePath = csvFilePath + ".ps";
 
 fprintf (treePath, CLEAR_FILE, psTree);
+
 return pValueByBranch;
 
 //------------------------------------------------------------------------------------------------------------------------
