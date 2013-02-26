@@ -360,7 +360,7 @@ function normalizeSequenceID (seqName, alreadyDefined&)
 
 function normalizeSequenceNamesInAFilter (filterName)
 {
-	return normalizeSequenceNamesInAFilter (filterName, "");
+	return normalizeSequenceNamesInAFilterWithTree (filterName, "");
 }
 
 /*----------------------------------------------------------------*/

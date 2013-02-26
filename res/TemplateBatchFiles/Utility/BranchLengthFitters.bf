@@ -3,7 +3,7 @@
 lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
     _treeLengthDict = {};
     _bls = BranchLength (^tree_id, -1);
-    _bns = BranchName (^tree_id, -1);
+    _bns = BranchName  (^tree_id, -1);
     
     return _bls;
 }
