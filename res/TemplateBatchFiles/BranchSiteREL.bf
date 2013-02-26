@@ -288,7 +288,7 @@ pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+p
 pValueSorter = pValueSorter % 1;
 pValueSorter = pValueSorter["_MATRIX_ELEMENT_VALUE_*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_VALUE_*(totalBranchCount-_MATRIX_ELEMENT_ROW_)*(_MATRIX_ELEMENT_COLUMN_==1)"];
 
-fprintf (stdout,"\n\nSummary of branches under episodic selection:\n");
+fprintf (stdout,"\n\nSummary of branches under episodic selection (", Abs(selectedBranches)," were tested) :\n");
 hasBranchesUnderSelection = 0;
 
 pthreshold = 0.05;
@@ -304,14 +304,12 @@ for		(k = 0; k < totalBranchCount; k = k+1)
 }
 
 
-if (hasBranchesUnderSelection == 0)
-{
-    fprintf (stdout, "\tNo branches found to be under selection at p <= ", pthreshold, "\n");
+if (hasBranchesUnderSelection == 0) {
+    fprintf (stdout, "\tNo branches were found to be under selection at p <= ", pthreshold, "\n");
 }
 
 
-for		(k = 0; k < totalBranchCount; k = k+1)
-{
+for		(k = 0; k < totalBranchCount; k = k+1) {
     fprintf (csvFilePath, "\n", bNames[k], ",", Join(",",pValueByBranch[k][-1]));
 }
 
