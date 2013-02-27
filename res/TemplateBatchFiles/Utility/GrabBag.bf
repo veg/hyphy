@@ -932,3 +932,25 @@ function _formatTimeString (secondCount)
 	return _timeString;
 }	
 
+/*---------------------------------------------------------------------*/
+
+lfunction _constrainVariablesAndDescendants (variable) {
+    GetInformation (allVars, "^" + (variable&&6) + "\\..+$");
+    for (k = 0; k < Columns (allVars); k += 1) {
+        variableID    = allVars[k];
+        current_value = ^variableID;
+        ^variableID := current_value__;
+    }
+    return 0;
+}
+
+/*---------------------------------------------------------------------*/
+
+lfunction _unconstrainVariablesAndDescendants (variable) {
+    GetInformation (allVars, "^" + (variable&&6) + "\\..+$");
+    for (k = 0; k < Columns (allVars); k += 1) {
+        variableID    = allVars[k];
+        ClearConstraints (^variableID);
+    }
+    return 0;
+}
