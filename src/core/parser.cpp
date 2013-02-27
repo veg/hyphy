@@ -68,7 +68,7 @@ _Parameter printDigits;
 
 
 // indices of all independent variables
-void            DeleteVariable (long dv);
+
 
 _List           FunctionNameList,
                 BuiltInFunctions;

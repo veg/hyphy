@@ -103,6 +103,8 @@ _String&    AppendContainerName     (_String&, _String*);
 _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
 void        DeleteVariable  (_String&, bool deleteself = true);
+void        DeleteVariable  (long, bool deleteself);
+
 void        DeleteTreeVariable
 (_String&, _SimpleList&,bool);
 void        checkParameter  (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* = nil);

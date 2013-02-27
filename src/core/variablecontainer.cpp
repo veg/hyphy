@@ -212,6 +212,15 @@ _Formula* _VariableContainer::GetExplicitFormModel (void)
     return nil;
 }
 
+//__________________________________________________________________________________
+
+_String _VariableContainer::GetModelName (void) {
+    _String * res = _HBLObjectNameByType (HY_BL_MODEL, theModel, false);
+    if (res) {
+        return *res;
+    }
+    return nil;
+}
 
 //__________________________________________________________________________________
 
@@ -322,6 +331,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
             f = LocateVarByName (varName);
             if (f<0) {
                 _Variable v (varName);
+                //printf ("%x %s\n", v.theName, v.theName->sData);
                 f = v.theIndex;
             } else {
                 f = variableNames.GetXtra (f);
@@ -702,11 +712,33 @@ long      _VariableContainer::CheckAndAddUserExpression (_String& pName, long st
 }
 
 //__________________________________________________________________________________
-void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source)
+void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, bool match_by_name)
 {
     if (iVariables && source->iVariables)
-        for (long i=0; i<iVariables->lLength && i< source->iVariables->lLength; i+=2) {
-            LocateVar (iVariables->lData[i])->SetValue(LocateVar (source->iVariables->lData[i])->Compute());
+        if (match_by_name) {
+            _List source_vars,
+                  target_vars;
+            for (unsigned long i=0; i< source->iVariables->lLength; i+=2) {
+                source_vars << LocateVar (source->iVariables->lData[i])->GetName();
+            }
+            for (unsigned long i=0; i<iVariables->lLength; i+=2) {
+                target_vars << LocateVar (iVariables->lData[i])->GetName();
+            }
+            _SimpleList the_mapping;
+            
+            target_vars.Map (source_vars, the_mapping);
+            for (unsigned long i=0; i<the_mapping.lLength; i++) {
+                long source_var = the_mapping[i];
+                if (source_var >= 0) {
+                    LocateVar (iVariables->lData[2*i])->SetValue(LocateVar (source->iVariables->lData[2*source_var])->Compute());
+                }
+            }
+            
+            
+        } else {
+            for (unsigned long i=0; i<iVariables->lLength && i< source->iVariables->lLength; i+=2) {
+                LocateVar (iVariables->lData[i])->SetValue(LocateVar (source->iVariables->lData[i])->Compute());
+            }        
         }
 
     _PMathObj srcVal = source->Compute();
@@ -808,7 +840,7 @@ bool      _VariableContainer::SetMDependance (_SimpleList& mDep)
                 }
             }
         else
-            for (long k=0; iVariables && k<mDep.lLength; k++) {
+            for (unsigned long k=0; iVariables && k<mDep.lLength; k++) {
                 SetDependance (mDep.lData[k]);
             }
 

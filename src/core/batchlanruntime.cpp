@@ -501,7 +501,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (dataMx->GetVDim() == num_nodes) {
                         ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx);
                     } else {
-                        WarnError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").");
+                        currentProgram.ReportAnExecutionError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ")");
                         return false;
                     }
                 } else {
@@ -530,7 +530,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
                         ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
                     } else {
-                        WarnError("Dimension of graph does not match current graph.");
+                        currentProgram.ReportAnExecutionError("Dimension of graph does not match current graph");
                         return false;
                     }
                 } else {
@@ -548,7 +548,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
                         ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
                     } else {
-                        WarnError ("Dimensions of constraint matrix do not match current graph.");
+                        currentProgram.ReportAnExecutionError ("Dimensions of constraint matrix do not match current graph");
                         return false;
                     }
                 } else {
@@ -575,7 +575,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
                         ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
                     } else {
-                        WarnError("Length of order vector doesn't match number of nodes in graph.");
+                        currentProgram.ReportAnExecutionError ("Length of order vector doesn't match number of nodes in graph");
                         return false;
                     }
                 } else {
@@ -597,7 +597,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
             // anything else
             else {
-                WarnError (*currentArgument & " is not a valid BGM parameter in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid BGM parameter");
                 return false;
             }
         } // end BGM
@@ -614,7 +614,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                 currentArgument = (_String*)parameters(1);
                 long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
                 if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                    currentProgram.ReportAnExecutionError (*currentArgument & " (=" & g & ") is not a valid parameter index");
                     return false;
                 }
                 currentArgument = (_String*)parameters(2);
@@ -646,7 +646,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
             _List*  dsNames = &ds->GetNames();
             
             if (f<0 || f>=dsNames->lLength) {
-                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index");
                 return false;
             }
 
@@ -664,16 +664,28 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     long modelType = HY_BL_MODEL, modelIndex;
                     BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex, true);
                     if (modelObject) {
-                        //treeNode->SetModel ();
+                        _VariableContainer * parentTree = treeNode->ParentTree();
+                        if (!parentTree) {
+                            currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is an orphaned tree node (the parent tree has been deleted)");
+                            return false;
+                        }
+                        long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
+                        if (lfID>=0){
+                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &" and cannot be modified ");
+                             return false;
+                        }
+                        
+                        treeNode->ReplaceModel (modelName, parentTree);
+                        break;
                     }
                     else {
-                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                        currentProgram.ReportAnExecutionError (*((_String*)parameters(2)) & " does not appear to be a valid model name");
                         return false;
                     }
                 }
             }
             
-            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+            currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/calc node");
             return false;
 
     
@@ -710,15 +722,15 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
                     NLToConsole();
                     currentProgram.GoToLastInstruction ();
                 } else {
-                    WarnError (errMsg);
+                    currentProgram.ReportAnExecutionError (errMsg);
+                    return false;
                 }
             }
             return true;
         }
     }
+    currentProgram.ReportAnExecutionError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric.");
  
-    WarnError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric. " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_ASSERT));
-    
     return false;
 }
 
@@ -729,7 +741,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
     if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
-        WarnError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
+        currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
         return false;
     }
     return true;

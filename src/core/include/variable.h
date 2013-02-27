@@ -129,7 +129,10 @@ public:
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
 
-    _String*    GetName                 (void) {
+    _String     ContextFreeName                 (void);
+    _String     ParentObjectName                 (void);
+ 
+    _String*    GetName                         (void) {
         return theName;
     }
     _String*    GetFormulaString        (void) {

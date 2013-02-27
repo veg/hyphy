@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "calcnode.h"
 #include "scfg.h"
+#include "parser.h"
 
 #include "category.h"
 #include "batchlan.h"
@@ -212,6 +213,15 @@ _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableCon
 }
 
 //_______________________________________________________________________________________________
+_CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_VariableContainer (sourceNode->ContextFreeName(), "", theP) {
+    _String model = sourceNode->GetModelName();
+    InitializeCN (model, 0, theP);
+    if (model.sLength) { // copy model parameter values 
+        CopyMatrixParameters(sourceNode, true);
+    }
+}
+
+//_______________________________________________________________________________________________
 void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache)
 {
     cBase         = 0;
@@ -268,13 +278,13 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
                                    dv,
                                    dv2;
 
-                for (long k = 0; k<iVariables->lLength; k+=2) {
+                for (unsigned long k = 0; k<iVariables->lLength; k+=2) {
                     iv  << iVariables->lData[k];
                     iv2 << iVariables->lData[k+1];
                 }
 
                 if (dVariables)
-                    for (long k = 0; k<dVariables->lLength; k+=2) {
+                    for (unsigned long k = 0; k<dVariables->lLength; k+=2) {
                         dv  << dVariables->lData[k];
                         dv2 << dVariables->lData[k+1];
                     }
@@ -422,10 +432,19 @@ long    _CalcNode::FreeUpMemory (long)
 void _CalcNode::RemoveModel (void)
 {
     Clear();
-    if ((compExp) && (referenceNode < 0)) {
+    if (compExp && referenceNode < 0) {
         DeleteObject (compExp);
         compExp = nil;
     }
+}
+
+//__________________________________________________________________________________
+
+void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* theConext)
+{
+    RemoveModel ();
+    DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
+    InitializeCN(modelName, 0 , theConext);
 }
 
 //_______________________________________________________________________________________________
@@ -1159,9 +1178,6 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe)
 //_______________________________________________________________________________________________
 _TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_TreeTopology (&name)
 {
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    scalingForUnderflow = nil;
-#endif
     PreTreeConstructor   (dupMe);
     if (MainTreeConstructor  (parms)) {
         PostTreeConstructor  (dupMe);
@@ -1171,9 +1187,6 @@ _TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_Tree
 //_______________________________________________________________________________________________
 _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology (&name)
 {
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    scalingForUnderflow = nil;
-#endif
     PreTreeConstructor   (false);
     if (top->theRoot) {
         isDefiningATree         = true;
@@ -1205,6 +1218,31 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
         return;
     }
 }
+
+//_______________________________________________________________________________________________
+_TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopology (&name)
+{
+    PreTreeConstructor   (false);
+    if (otherTree->theRoot) {
+        isDefiningATree         = true;
+        theRoot                 = otherTree->theRoot->duplicate_tree ();
+        
+        node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
+        
+        
+        while (topTraverser) {
+            _CalcNode   copiedNode ((_CalcNode*)LocateVar(topTraverser->in_object), this);
+            topTraverser->init (copiedNode.theIndex);
+            topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
+        }
+        isDefiningATree         = false;
+        PostTreeConstructor      (false);
+    } else {
+        WarnError ("Can't create an empty tree");
+        return;
+    }
+}
+
 
 //_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty)
@@ -1911,9 +1949,11 @@ BaseRef  _TheTree::makeDynamicCopy (_String* replacementName)
     return res;
 }
 
+
+
 //_______________________________________________________________________________________________
 
-_PMathObj       _TreeTopology::Compute  (void)
+_PMathObj       _CalcNode::Compute  (void)
 {
     return this;
 }

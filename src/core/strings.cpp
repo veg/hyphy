@@ -1137,7 +1137,7 @@ long _String::FindTerminator (long from, _String& terminators)
 //s[0]...s[sLength-1] => s[sLength-1]...s[0]
 void _String::Flip(void)
 {
-    for (long i = 0; i < sLength/2; i++) {
+    for (unsigned long i = 0; i < sLength/2; i++) {
         char c = sData[i];
         sData[i] = sData[sLength-1-i];
         sData[sLength-1-i] = c;

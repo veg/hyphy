@@ -636,6 +636,24 @@ _PMathObj    _Variable::ComputeReference (_PMathObj context)
 }
 
 //__________________________________________________________________________________
+_String    _Variable::ContextFreeName(void) {
+    long location = theName->FindBackwards (".", 0, -1);
+    if (location > 0) {
+       return theName->Cut (location+1,-1); 
+    }  
+    return *theName;
+}
+
+//__________________________________________________________________________________
+_String    _Variable::ParentObjectName(void) {
+    long location = theName->FindBackwards (".", 0, -1);
+    if (location > 0) {
+       return theName->Cut (0,location-1); 
+    }  
+    return empty;
+}
+
+//__________________________________________________________________________________
 long    DereferenceVariable (long index, _PMathObj context, char reference_type){
     if (reference_type == HY_STRING_DIRECT_REFERENCE) {
         return index;

@@ -122,7 +122,10 @@ public:
     // matrix name, <optional comma separated variable declarations, inititalizations>
     // also should be passed the pointer to a container tree
 
+    _CalcNode           (_CalcNode* source, _VariableContainer* parentTree);
+ 
     virtual             ~_CalcNode      (void);
+    virtual             _PMathObj      Compute                             (void);
 
     virtual unsigned long        ObjectClass     (void) {
         return TREE_NODE;
@@ -208,6 +211,8 @@ public:
     }
     bool                MatchSubtree    (_CalcNode*);
     virtual void        RemoveModel     (void);
+    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree);
+    
     virtual long        CheckForReferenceNode
     (void);
 
@@ -222,6 +227,8 @@ public:
     virtual void        ClearCategoryMap(void) {
         remapMyCategories.Clear();
     }
+    
+    _VariableContainer*           ParentTree      (void);
 
     virtual void        SetupCategoryMap(_List&, _SimpleList&, _SimpleList&);
     /* 20090324: SLKP
@@ -364,7 +371,6 @@ public:
     virtual                 ~_TreeTopology                      (void);
 
     virtual  _FString*      Compare                             (_PMathObj);
-    virtual  _PMathObj      Compute                             (void);
     virtual  BaseRef        makeDynamic                         (void);
     node<long>* CopyTreeStructure                   (node<long>*, bool);
     virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
@@ -518,6 +524,7 @@ public:
     _TheTree ();                                                // default constructor - doesn't do much
     _TheTree (_String name, _String& parms, bool = true);       // builds a tree from a string
     _TheTree (_String name, _TreeTopology*);                    // builds a tree from a tree topology
+    _TheTree (_String name, _TheTree*);                    // builds a tree from another tree
 
 
     virtual                 ~_TheTree                   (void);

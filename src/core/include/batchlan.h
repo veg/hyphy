@@ -668,6 +668,7 @@ void    ReturnCurrentCallStack       (_List&, _List&);
 */
 
 BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);
 

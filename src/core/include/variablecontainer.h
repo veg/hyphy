@@ -123,17 +123,19 @@ public:
     long        GetModelIndex               (void) {
         return theModel;
     }
+    
+    _String     GetModelName                (void);
+    
     long        GetModelDimension           (void);
     /* 20100316 SLKP
         return the dimension of the model; needed to handle the case
         of explicit model exponentials
      */
 
-    void        CopyMatrixParameters        (_VariableContainer*);
-    void        GetListOfModelParameters    (_List&);
-    _String*    GetSaveableListOfUserParameters
-    (void);
-    void        TrimMemory                  (void);
+    void        CopyMatrixParameters                (_VariableContainer*, bool match_by_name = false);
+    void        GetListOfModelParameters            (_List&);
+    _String*    GetSaveableListOfUserParameters     (void);
+    void        TrimMemory                          (void);
     _VariableContainer* GetTheParent                (void) {
         return theParent;
     }

@@ -450,7 +450,7 @@ bool _List::Equal(_List& l2)
         return false;
     }
 
-    for (long i=0; i<lLength; i++)
+    for (unsigned long i=0; i<lLength; i++)
         if (!((_String*)lData[i])->Equal ((_String*)l2.lData[i])) {
             return false;
         }
@@ -653,4 +653,29 @@ BaseRef _List::toStr(void)
     s->Finalize();
     return s;
 }
+
+void    _List::Map (_List& target, _SimpleList& mapping) {
+    mapping.Clear();
+    if (lLength == 0) {
+        return ;
+    }
+    _List     aux;
+    _AVLListX theMapping (&aux);
+    for (unsigned long t = 0; t < target.lLength; t++) {
+        theMapping.Insert (target.GetItem(t)->toStr(), t);
+    }
+    
+    mapping.Clear();
+    for (unsigned long s = 0; s < lLength; s++) {
+        _String * s_object = (_String*)GetItem (s)->toStr();
+        long      idx = Find (s_object);
+        if (idx >= 0) {
+            mapping << theMapping.GetXtra (idx);
+        } else {
+            mapping << -1;
+        }
+        DeleteObject (s_object);
+    }
+}
+
 

@@ -2251,5 +2251,16 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
     return resultList;
 }
 
+//_______________________________________________________________________________________________
+
+_VariableContainer*     _CalcNode::ParentTree(void) {
+    _String parentTree = ParentObjectName();
+    _VariableContainer * theParent = (_VariableContainer *)FetchVar(LocateVarByName(parentTree));
+    if (theParent && theParent->ObjectClass () == TREE) {
+        return theParent;
+    }
+    return nil;
+}
+
 
 #endif

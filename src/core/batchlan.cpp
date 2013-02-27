@@ -1152,6 +1152,9 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     }
 
     executionStack.Delete (executionStack.lLength-1);
+    if (result == nil) {
+        result = new _MathObject();
+    }
 
     return result;
 }
@@ -5475,7 +5478,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 if (formRes->ObjectClass () == STRING) {
                     tr = new _TheTree (treeIdent,*((_FString*)formRes)->theString,false);
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
-                    tr = new _TheTree (treeIdent,(_TreeTopology*)nameForm.Compute());
+                    tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
+                } else if (formRes->ObjectClass () == TREE) {
+                    tr = new _TheTree (treeIdent,(_TheTree*)formRes);
                 }
             }
         } else {

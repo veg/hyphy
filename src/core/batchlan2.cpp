@@ -2262,6 +2262,7 @@ _String _HYHBLTypeToText (long type) {
     return result;
 }
 
+
 //____________________________________________________________________________________
 
 BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bool errMsg, bool tryLiteralLookup)
