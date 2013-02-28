@@ -141,27 +141,32 @@ Tree stepupTree               = givenTree;
 
 fprintf 					  (stdout, "[PHASE 1] Fitting Branch Site REL models to one branch at a time\n");
 
+mg94bls   = BranchLength (givenTree,-1);
+sortedBLs = {totalBranchCount, 2}["mg94bls[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==1)"];
+sortedBLs = sortedBLs%0;
+//fprintf (stdout, sortedBLs, "\n");
+
 for (k = 0; k < totalBranchCount; k+=1) {
-    branch_name_to_test = "stepupTree." + bNames[k];
+    reordered_index = sortedBLs[k][1];
+    branch_name_to_test = "stepupTree." + bNames[reordered_index];
     ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MG1);");
     
     Tree         mixtureTree = stepupTree;
 
     for (l = 0; l < totalBranchCount; l+=1) {
-        if (l != k) {
+        if (l != reordered_index) {
             _constrainVariablesAndDescendants ("mixtureTree." + bNames[l]);
         }
     }
     
-    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".synRate"), Eval ("givenTree." + bNames[k] + ".nonSynRate"));
+    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".synRate"), Eval ("givenTree." + bNames[reordered_index] + ".nonSynRate"));
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
-    fixGlobalParameters ("stepupLF");
-    //VERBOSITY_LEVEL = 100;
-    Optimize (res, stepupLF);
+    fixGlobalParameters           ("stepupLF");
+    Optimize                      (res, stepupLF);
     
-    fprintf 					  (stdout, "[PHASE 1] Branch ", bNames[k], " log(L) = ", res[1][0], "\n\t");
-    printNodeDesc ("mixtureTree." + bNames[k]);
+    fprintf 					  (stdout, "[PHASE 1] Branch ", bNames[reordered_index], " log(L) = ", res[1][0], "\n\t");
+    printNodeDesc ("mixtureTree." + bNames[reordered_index]);
 
     Tree stepupTree = mixtureTree;
 
