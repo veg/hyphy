@@ -360,6 +360,9 @@ _String WriteFileDialogInput(void) {
 
 _String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
 
+    if (index < 0) {
+        return nil;
+    }
     _List * theList = nil;
     switch (type) {
         case HY_BL_DATASET:

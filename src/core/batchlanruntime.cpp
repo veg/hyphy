@@ -666,7 +666,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (modelObject) {
                         _VariableContainer * parentTree = treeNode->ParentTree();
                         if (!parentTree) {
-                            currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is an orphaned tree node (the parent tree has been deleted)");
+                            currentProgram.ReportAnExecutionError (*((_String*)parameters(0)) & " is an orphaned tree node (the parent tree has been deleted)");
                             return false;
                         }
                         long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
@@ -682,10 +682,13 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                         currentProgram.ReportAnExecutionError (*((_String*)parameters(2)) & " does not appear to be a valid model name");
                         return false;
                     }
+                } else {
+                     currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is not a supported parameter type for a tree node argument");
+                     return false;
                 }
             }
             
-            currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/calc node");
+            currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/tree node");
             return false;
 
     

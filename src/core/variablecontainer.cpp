@@ -219,7 +219,7 @@ _String _VariableContainer::GetModelName (void) {
     if (res) {
         return *res;
     }
-    return nil;
+    return empty;
 }
 
 //__________________________________________________________________________________
