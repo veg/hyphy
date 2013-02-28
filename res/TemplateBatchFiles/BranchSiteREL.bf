@@ -147,7 +147,7 @@ sortedBLs = sortedBLs%0;
 //fprintf (stdout, sortedBLs, "\n");
 
 for (k = 0; k < totalBranchCount; k+=1) {
-    reordered_index = sortedBLs[k][1];
+    reordered_index = sortedBLs[totalBranchCount-k-1][1];
     branch_name_to_test = "stepupTree." + bNames[reordered_index];
     ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MG1);");
     
@@ -417,3 +417,4 @@ function copyomegas (node, syn, nonsyn) {
     return 0;
     
 }
+
