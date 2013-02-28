@@ -173,13 +173,23 @@ function splitFilePath (_filePath)
 /*---------------------------------------------------------*/
 /* fix global variables in a LF at their current values */
    
-function fixGlobalParameters (_lfName)
-{
-	ExecuteCommands ("GetString (_lfInfo," + _lfName + ",-1);");
+function fixGlobalParameters (_lfName) {
+	GetString (_lfInfo,^_lfName,-1);
 	_lfInfo = _lfInfo["Global Independent"];
-	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx = _gb_idx + 1)
-	{
+	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx += 1) {
 		ExecuteCommands (_lfInfo[_gb_idx] + ":=" + _lfInfo[_gb_idx] + "__;");
+	} 	
+	return 0;
+}
+
+/*---------------------------------------------------------*/
+/* unconstrain global variables in a LF at their current values */
+   
+function unconstrainGlobalParameters (_lfName) {
+	GetString (_lfInfo,^_lfName,-1);
+	_lfInfo = _lfInfo["Global Constrained"];
+	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx += 1) {
+		ExecuteCommands (_lfInfo[_gb_idx] + "=" + _lfInfo[_gb_idx]);
 	} 	
 	return 0;
 }

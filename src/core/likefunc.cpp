@@ -1860,7 +1860,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 
     bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
-    printf ("Likelihood function evaluation %d\n", likeFuncEvalCallCount+1);
+    printf ("Likelihood function evaluation %ld\n", likeFuncEvalCallCount+1);
     for (unsigned long i=0; i<indexInd.lLength; i++) {
         _Variable *v = LocateVar (indexInd.lData[i]);
         if (v->HasChanged()) {
@@ -1888,7 +1888,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    printf ("Did compute\n", result);
+                    printf ("Did compute %g\n", result);
 #endif
                     _Parameter                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
@@ -6338,6 +6338,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
 
 void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Parameter& maxSoFar, _Matrix& bestVal, _Matrix& gradient)
 {
+    DetermineLocalUpdatePolicy           ();
     _Parameter  leftValue   = maxSoFar,
                 middleValue = maxSoFar,
                 rightValue  = maxSoFar,
@@ -6375,7 +6376,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
             } else {
                 SetAllIndependent (&newMiddle);
             }
-
+            FlushLocalUpdatePolicy();
             return;
         }
 
@@ -6508,6 +6509,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
         for (unsigned long i=0; i<indexInd.lLength; i++) {
             SetIthIndependent(i,bestVal.theData[i]);
         }
+    FlushLocalUpdatePolicy();
 }
 
 //_______________________________________________________________________________________
@@ -7880,7 +7882,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                         snID = t->DetermineNodesForUpdate          (*branches, matrices,catID,*cbid,canClear);
                     }
                     
-                    //printf ("\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
+#ifdef _UBER_VERBOSE_LF_DEBUG
+                    printf ("\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
+#endif
                     if (snID != *cbid) {
                         RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
                         *cbid = -1;

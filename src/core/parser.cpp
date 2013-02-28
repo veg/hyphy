@@ -642,12 +642,17 @@ _String&  AppendContainerName (_String& inString, _String* namescp)
 {
     static _String returnMe;
 
-    if (!namescp || _hyApplicationGlobals.Find (&inString) >= 0) {
+    if (_hyApplicationGlobals.Find (&inString) >= 0) {
         return inString;
     }
+    
+    unsigned char reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && namescp -> sLength? namescp : nil);
+    
 
-    returnMe = *namescp & '.' & inString;
-    return returnMe;
+    if (reference_type != HY_STRING_INVALID_REFERENCE) {
+        return returnMe;
+    }
+    return inString;
 }
 
 

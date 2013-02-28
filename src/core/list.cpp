@@ -662,13 +662,16 @@ void    _List::Map (_List& target, _SimpleList& mapping) {
     _List     aux;
     _AVLListX theMapping (&aux);
     for (unsigned long t = 0; t < target.lLength; t++) {
-        theMapping.Insert (target.GetItem(t)->toStr(), t);
+        _String * s = (_String *)target.GetItem(t)->toStr();
+        theMapping.Insert (s, t);
+        //printf ("Target %ld:%s\n", t, s->sData);
     }
     
     mapping.Clear();
     for (unsigned long s = 0; s < lLength; s++) {
         _String * s_object = (_String*)GetItem (s)->toStr();
-        long      idx = Find (s_object);
+        //printf ("Source %ld : %s\n", s, s_object->sData);
+        long      idx = theMapping.Find (s_object);
         if (idx >= 0) {
             mapping << theMapping.GetXtra (idx);
         } else {

@@ -714,23 +714,60 @@ long      _VariableContainer::CheckAndAddUserExpression (_String& pName, long st
 //__________________________________________________________________________________
 void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, bool match_by_name)
 {
-    if (iVariables && source->iVariables)
+    if (iVariables && (source->iVariables || source->dVariables))
         if (match_by_name) {
             _List source_vars,
                   target_vars;
-            for (unsigned long i=0; i< source->iVariables->lLength; i+=2) {
-                source_vars << LocateVar (source->iVariables->lData[i])->GetName();
-            }
+                  
+            _SimpleList model_vars_in_source,
+                        model_vars_in_target;
+                        
+            if (source->iVariables) 
+                for (unsigned long i=0; i< source->iVariables->lLength; i+=2) {
+                    long   template_var_index = source->iVariables->lData[i+1];
+                    if (template_var_index >= 0) {
+                        source_vars << LocateVar (template_var_index)->GetName();
+                        model_vars_in_source << i;
+                    }             
+                }
+           
+            if (source->dVariables) 
+                for (unsigned long i=0; i< source->dVariables->lLength; i+=2) {
+                    long   template_var_index = source->dVariables->lData[i+1];
+                    if (template_var_index >= 0) {
+                        source_vars << LocateVar (template_var_index)->GetName();
+                        model_vars_in_source << (-2-i);
+                    }             
+                }
+
             for (unsigned long i=0; i<iVariables->lLength; i+=2) {
-                target_vars << LocateVar (iVariables->lData[i])->GetName();
+                long   template_var_index = iVariables->lData[i+1];
+                if (template_var_index >= 0) {
+                    target_vars << LocateVar (template_var_index)->GetName();
+                    model_vars_in_target << i;
+                }
             }
+
+
             _SimpleList the_mapping;
             
+            
             target_vars.Map (source_vars, the_mapping);
+            /*
+            printf ("\n_VariableContainer::CopyMatrixParameters %s :\n\t%s\n\t%s\n\t%s\n", theName->sData, _String((_String*)source_vars.toStr()).sData, 
+            _String((_String*)target_vars.toStr()).sData, 
+            _String((_String*)the_mapping.toStr()).sData);
+            */
+            
             for (unsigned long i=0; i<the_mapping.lLength; i++) {
                 long source_var = the_mapping[i];
                 if (source_var >= 0) {
-                    LocateVar (iVariables->lData[2*i])->SetValue(LocateVar (source->iVariables->lData[2*source_var])->Compute());
+                    long which_idx = model_vars_in_source.lData[source_var];
+                    if (which_idx >= 0) {
+                        LocateVar (iVariables->lData[model_vars_in_target.lData[i]])->SetValue(LocateVar (source->iVariables->lData[which_idx])->Compute());
+                    } else {
+                        LocateVar (iVariables->lData[model_vars_in_target.lData[i]])->SetValue(LocateVar (source->dVariables->lData[-which_idx-2])->Compute());                    
+                    }
                 }
             }
             

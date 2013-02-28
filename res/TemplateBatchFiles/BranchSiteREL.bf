@@ -86,6 +86,7 @@ csvFilePath = LAST_FILE_PATH;
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
 
 LikelihoodFunction	base_LF	 = (dsf, givenTree);
+
 Optimize					  (res_base,base_LF);
 
 lfOut	= csvFilePath + ".mglocal.fit";
@@ -95,6 +96,8 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 localLL						 = res_base[1][0];
 localParams					 = res_base[1][1] + 9;
+
+
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -124,77 +127,55 @@ Paux1 						 = 0.3;
 Paux1 						 :< 1;
 Paux2 						 = 0.4;
 Paux2 						 :< 1;
+omega1                       :< 1;
+omega2                       :< 1;
 
 Model 		MG1		=		  ("Exp(MGMatrix1)*Paux1+Exp(MGMatrix2)*(1-Paux1)*Paux2+Exp(MGMatrix3)*(1-Paux1)*(1-Paux2)",codon3x4,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
-Tree						   mixtureTree = treeString;
-
-
-
-ReplicateConstraint 		  ("this1.?.t:=this2.?.syn",mixtureTree,givenTree);
-
-ClearConstraints			  (mixtureTree);
-ClearConstraints			  (mixtureTreeG);
-
-omegaG1						 :< 1;
-omegaG2						 :< 1;
-Paux1G 						 :< 1;
-Paux2G 						 :< 1;
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
+USE_LAST_RESULTS              = 1;
+OPTIMIZATION_METHOD           = 0;
+Tree stepupTree               = givenTree;
 
-VERBOSITY_LEVEL               = 0;
 
-LikelihoodFunction three_LF   = (dsf,mixtureTree);
 
-expr            = Eval("BranchLength(givenTree,\""+bNames[0]+";EXPECTED_NUMBER_OF_SUBSTITUTIONS\")");
-syn             = 1; nonsyn = 0;
-synM            = Eval(expr);
-syn             = 0; nonsyn = 1;
-nonsynM         = Eval(expr);
+fprintf 					  (stdout, "[PHASE 1] Fitting Branch Site REL models to one branch at a time\n");
 
-for (k = 0; k < totalBranchCount; k = k+1) {
-
-    currentBranchName = bNames[k];
+for (k = 0; k < totalBranchCount; k+=1) {
+    branch_name_to_test = "stepupTree." + bNames[k];
+    ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MG1);");
     
- 	srate  = Eval ("givenTree.`currentBranchName`.syn");
-	nsrate = Eval ("givenTree.`currentBranchName`.nonsyn");
-    bl     = Eval("BranchLength(givenTree,\"`currentBranchName`\")")*3;
-    
-    if (srate > 0) {
-        baseOmega = nsrate/srate;
-    }
-    else {
-        baseOmega = 10000;
-    }
-        
-    bl = bl / (synM + nonsynM * baseOmega);
-    
-    ExecuteCommands ("mixtureTree.`currentBranchName`.t = bl");
-    ExecuteCommands ("mixtureTree.`currentBranchName`.omega1 :< 1;");
-	ExecuteCommands ("mixtureTree.`currentBranchName`.omega2 :< 1;");
-	
-    if (baseOmega > 1)
-    {
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega1 = 0.1;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega2 = 1;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega3 = baseOmega;");
+    Tree         mixtureTree = stepupTree;
 
-        ExecuteCommands ("mixtureTree.`currentBranchName`.Paux1 = 0.01;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.Paux2 = 0.01;");
+    for (l = 0; l < totalBranchCount; l+=1) {
+        if (l != k) {
+            _constrainVariablesAndDescendants ("mixtureTree." + bNames[l]);
+        }
     }
-    else
-    {
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega1 = baseOmega;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega2 = 1;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.omega3 = 2;");
+    
+    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".synRate"), Eval ("givenTree." + bNames[k] + ".nonSynRate"));
+    
+    LikelihoodFunction stepupLF = (dsf, mixtureTree);
+    fixGlobalParameters ("stepupLF");
+    //VERBOSITY_LEVEL = 100;
+    Optimize (res, stepupLF);
+    
+    fprintf 					  (stdout, "[PHASE 1] Branch ", bNames[k], " log(L) = ", res[1][0], "\n\t");
+    printNodeDesc ("mixtureTree." + bNames[k]);
 
-        ExecuteCommands ("mixtureTree.`currentBranchName`.Paux1 = 0.98;");
-        ExecuteCommands ("mixtureTree.`currentBranchName`.Paux2 = 0.5;");    
-    }
+    Tree stepupTree = mixtureTree;
+
 }
 
 
-VERBOSITY_LEVEL     = 0;
+
+ClearConstraints (mixtureTree);
+
+
+LikelihoodFunction three_LF   = (dsf,mixtureTree);
+unconstrainGlobalParameters ("three_LF");
+
+VERBOSITY_LEVEL     = 1;
 USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
@@ -233,11 +214,8 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     pValueByBranch [k][5] = thisOmega3;
     pValueByBranch [k][6] = wt3;
     
-    fprintf (stdout, "\nNode: ", ref, 
-                     "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", Eval (ref+".Paux1"),
-                     "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"),
-                     "\n\tClass 3: omega = ", thisOmega3, " weight = ", wt3 , "\n"
-                     );
+    fprintf (stdout, "\n");
+    printNodeDesc (ref);
         
     if (thisOmega3 > 1 && wt3 > 1e-6 && selectedBranches[k])
     {
@@ -247,11 +225,8 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 := 1");
         Optimize					  (res_three_current,three_LF);
         
-        fprintf (stdout, "\nNode: ", ref, 
-                         "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", Eval (ref+".Paux1"),
-                         "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"),
-                         "\n\tClass 3: omega = ", Eval (ref+".omega3"), " weight = ", Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)"), "\n"
-                         );
+        fprintf (stdout, "\n");
+        printNodeDesc (ref);
         pValueByBranch[k][7]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);				 
         pValueByBranch[k][8]			  = (1-CChi2 (pValueByBranch[k][7],1))*.5;
         fprintf (stdout, "\np-value = ", pValueByBranch[k][8],"\n\n", three_LF, "\n");
@@ -412,3 +387,28 @@ function restoreLF (key, value) {
 	return 0;
 }
 
+function printNodeDesc (ref) {
+    fprintf (stdout, "Node: ", ref, 
+                 "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", Eval (ref+".Paux1"),
+                 "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"),
+                 "\n\tClass 3: omega = ", Eval (ref+".omega3"), " weight = ", Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)"), "\n");
+    return 0;
+
+}
+
+function copyomegas (node, syn, nonsyn) {
+    Eval("`node`.Paux1 = 1");
+    Eval("`node`.Paux2 = 0");
+    local_omega = =  Min (10, nonsyn/syn);
+    Eval("`node`.omega2 = 1");
+    if (local_omega < 1) {
+        Eval("`node`.omega1 =  local_omega");
+        Eval("`node`.omega3 = 10");
+    } else {
+        Eval("`node`.omega3 =  local_omega");
+        Eval("`node`.omega1 = 10");    
+    }
+    Eval("`node`.t = syn");
+    return 0;
+    
+}

@@ -1231,10 +1231,12 @@ _TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopolog
         
         
         while (topTraverser) {
-            _CalcNode   copiedNode ((_CalcNode*)LocateVar(topTraverser->in_object), this);
+            _CalcNode   *sourceNode = (_CalcNode*)LocateVar(topTraverser->in_object),
+                          copiedNode (sourceNode, this);
             topTraverser->init (copiedNode.theIndex);
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
+        
         isDefiningATree         = false;
         PostTreeConstructor      (false);
     } else {

@@ -2145,7 +2145,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
             _SimpleList           workSpace;
             long leafCount      = psw.Element (-2);
 
-            for (long k = 0; k < psw2.lLength-3; k+=3) {
+            for (unsigned long k = 0; k < psw2.lLength-3; k+=3) {
 
                 if (psw2.lData[k] < leafCount) {
                     workSpace << 1;
@@ -2194,7 +2194,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
             _SimpleList leafSpans (leafCount,0,0),
                         iNodesTouched;
 
-            for (long k = 0; k < psw.lLength-2; k+=2) {
+            for (unsigned long k = 0; k < psw.lLength-2; k+=2) {
                 if (psw.lData[k] < leafCount) {
                     R = psw.lData[k];
                     psw2 << R;
@@ -2214,7 +2214,7 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (_PMathObj p)
                 }
             }
 
-            for (long k = 0; k < psw2.lLength; k+=2)
+            for (unsigned long k = 0; k < psw2.lLength; k+=2)
                 if (psw2.lData[k] < leafCount) {
                     psw2.lData[k+1] = 0;
                 } else {

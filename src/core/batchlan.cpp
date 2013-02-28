@@ -1421,29 +1421,7 @@ _String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
         }
     }
             
-    unsigned char reference_type = theID.ProcessVariableReferenceCases (check_dereferences, name_space.sLength?&name_space:nil);
-    
-    /*if (reference_type == HY_STRING_DIRECT_REFERENCE || HY_STRING_LOCAL_DEREFERENCE) {
-        if (extra && extra->sLength) {
-            if (nameSpacePrefix) {
-                return (*nameSpacePrefix->GetName())&'.'& *extra & '.' & theID;
-            }
-            return *extra & '.' & theID;
-        }
-        if (nameSpacePrefix) {
-            return (*nameSpacePrefix->GetName())&'.' & theID;
-        }
-    } else {
-        if (reference_type == HY_STRING_GLOBAL_DEREFERENCE) {
-            return check_dereferences;
-        }
-    }*/
-    if (reference_type != HY_STRING_INVALID_REFERENCE) {
-        return check_dereferences;
-    }
-    
-    return theID;
-    
+    return AppendContainerName (theID, &name_space);
 }
 
 //____________________________________________________________________________________
@@ -5480,6 +5458,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
+                    leftOverVars.Clear();
                     tr = new _TheTree (treeIdent,(_TheTree*)formRes);
                 }
             }
