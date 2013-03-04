@@ -413,7 +413,7 @@ void DeleteVariable (long dv, bool deleteself)
             }
         }
 
-        for (long k=0; k< toDelete.lLength; k++) {
+        for (unsigned long k=0; k< toDelete.lLength; k++) {
             DeleteVariable (*(_String*)toDelete(k));
         }
     }

@@ -5458,6 +5458,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
+                    for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
+                        //printf ("%s\n", LocateVar(leftOverVars.lData[i])->GetName()->sData);
+                        DeleteVariable(leftOverVars.lData[i], true);
+                    }
                     leftOverVars.Clear();
                     tr = new _TheTree (treeIdent,(_TheTree*)formRes);
                 }

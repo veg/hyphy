@@ -135,7 +135,7 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
         if (theFormula.lLength) {
             (*result) << "RPN:";
             internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(0)));
-            for (long k=1; k<theFormula.lLength; k++) {
+            for (unsigned long k=1; k<theFormula.lLength; k++) {
                 (*result)<<',';
                 internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(k)));
             }

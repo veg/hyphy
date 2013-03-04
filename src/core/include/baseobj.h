@@ -149,7 +149,7 @@ double        TimerDifferenceFunction   (bool);
 #define       USE_AVL_NAMES
 #define       HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
 
-#define     PRINTF_FORMAT_STRING    "%g"
+#define     PRINTF_FORMAT_STRING    "%.16g"
 typedef     double       _Parameter; // standard number type - used everywhere in matrices.
 
 

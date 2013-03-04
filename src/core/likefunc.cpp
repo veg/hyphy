@@ -5183,11 +5183,6 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     long               funcCounts = likeFuncEvalCallCount;
 
 
-    //if (index==0)
-    //{
-    //printf ("Index 0\n");
-    //}
-
     if (index >= 0) {
         middle  =  GetIthIndependent (index);
     } else {
@@ -5224,9 +5219,8 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     /*if (index < 0)
     {
         printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
-        for (long i = 0; i < indexInd.lLength; i++)
-        {
-            printf ("%s = %g\n", GetIthIndependentVar(i)->GetName()->sData, gradient->theData[i]);
+        for (unsigned long i = 0; i < indexInd.lLength; i++) {
+            printf ("%s = %.16g\n", GetIthIndependentVar(i)->GetName()->sData, gradient->theData[i]);
         }
     }*/
 
@@ -5312,7 +5306,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (verbosityLevel > 100) {
             char buf [512];
-            sprintf (buf, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue, middle, middleValue, right, rightValue);
+            sprintf (buf, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
             BufferToConsole (buf);
         }
 
@@ -5329,6 +5323,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         lastRStep   = rightStep;
 
         if (rightValue<=middleValue && leftValue<=middleValue) {
+            //if (index < 0) printf ("\nMaximum found\n");
             break;
         }
 
@@ -5372,10 +5367,12 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (middle>=practicalUB) {
             middleValue         = SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
+            //if (index < 0) printf ("\nmiddle>=practicalUB\n");
             break;
         }
         if (middle-lowerBound < STD_GRAD_STEP*0.5) {
             middleValue         = SetParametersAndCompute (index, middle = lowerBound+STD_GRAD_STEP*0.5, &currentValues, gradient);
+            //if (index < 0) printf ("\nmiddle-lowerBound < STD_GRAD_STEP*0.5\n");
             break;
         }
         first = false;
@@ -5393,20 +5390,20 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [256];
-        sprintf (buf, "\n[BRACKET SUCCESSFUL: %g - %g -% g. steps, L=%g, R=%g]", left,middle,right, leftStep, rightStep);
+        sprintf (buf, "\n[BRACKET SUCCESSFUL: %.16g - %.16g -% .16g. steps, L=%g, R=%g, values %.16g - %.16g - %.16g]", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
 
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
-    return 0;
+    return (rightValue<=middleValue && leftValue<=middleValue) ? 0 : -1;
 }
 //_______________________________________________________________________________________
 
 void    _LikelihoodFunction::CheckStep (_Parameter& tryStep, _Matrix vect, _Matrix* selection)
 {
-    for (long index = 0; index<indexInd.lLength; index++) {
+    for (unsigned long index = 0; index<indexInd.lLength; index++) {
 
         _Parameter  Bound,
                     currentValue,
@@ -5876,7 +5873,7 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter&
         *freezeCount = 0;
     }
 
-    for (long i = 0; i < indexInd.lLength; i++) {
+    for (unsigned long i = 0; i < indexInd.lLength; i++) {
         _Parameter directionalStep = gradient.theData[i];
         if (directionalStep) {
             _Parameter currentValue = GetIthIndependent (i),
@@ -6066,6 +6063,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
     _Parameter  gradientStep     = STD_GRAD_STEP,
                 temp,
                 maxSoFar          = Compute(),
+                initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
 
     _SimpleList freeze;
@@ -6145,7 +6143,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             _Parameter      gg  = 0.,
                             dgg = 0.;
 
-            for (long k = 0; k < indexInd.lLength; k++) {
+            for (unsigned long k = 0; k < indexInd.lLength; k++) {
                 gg  += G.theData[k]*G.theData[k];
                 dgg += (S.theData[k] + G.theData[k])*S.theData[k];
             }
@@ -6157,7 +6155,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             dgg /= gg;
 
 
-            for (long k = 0; k < indexInd.lLength; k++) {
+            for (unsigned long k = 0; k < indexInd.lLength; k++) {
                 G.theData[k] = -S.theData[k];
                 gradient.theData[k] = H.theData[k] = G.theData[k] + dgg * H.theData[k];
             }
@@ -6180,6 +6178,9 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
     }
 
     SetAllIndependent (&bestVal);
+    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value) == false) {
+        WarnError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
+    }
 
     if (vl>1) {
         BufferToConsole("\n");
@@ -6357,7 +6358,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
 
     int  outcome = Bracket(-1, lV,ms,rV,leftValue, middleValue, rightValue,bp, &gradient);
 
-    //printf ("[GRADIENT BRACKET %g/%g, %g/%g, %g/%g; %d]\n",lV,leftValue,ms,middleValue,rV,rightValue, outcome);
+    //printf ("[LogL = %.20g GRADIENT BRACKET %g/%.20g, %g/%.20g, %g/%.20g; %d]\n",maxSoFar,lV,leftValue,ms,middleValue,rV,rightValue, outcome);
 
     left.AplusBx   (gradient, lV);
     middle.AplusBx (gradient, ms);
@@ -6480,7 +6481,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
         //middle = X;
     }
 
-    if (outcome == -1) {
+    else {
         reset = true;
         if (verbosityLevel>1) {
             BufferToConsole ("Line optimization unsuccessful\n");
@@ -6495,20 +6496,20 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
         }
 
         if (middleValue>maxSoFar) {
-            for (unsigned long i=0; i<indexInd.lLength; i++) {
+            SetAllIndependent (&middle);
+            /*for (unsigned long i=0; i<indexInd.lLength; i++) {
                 bestVal[i]=middle(i,0);
                 if (!CheckEqual(GetIthIndependent(i),middle(i,0))) {
                     SetIthIndependent (i,middle(i,0));
                 }
-            }
+            }*/
             maxSoFar = middleValue;
             reset = false;
         }
     }
     if (reset)
-        for (unsigned long i=0; i<indexInd.lLength; i++) {
-            SetIthIndependent(i,bestVal.theData[i]);
-        }
+        SetAllIndependent (&bestVal);
+ 
     FlushLocalUpdatePolicy();
 }
 
@@ -8672,7 +8673,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
             if (partitionList->lData[partitionList->lLength-1] >= theDataFilters.lLength) {
                 errMsg = "The partition list contained invalid partition indices (too high) in call to SerializeLF";
             } else
-                for (long k2 = 1; k2 < partitionList->lLength; k2=k2+1)
+                for (unsigned long k2 = 1; k2 < partitionList->lLength; k2 ++)
                     if (partitionList->lData[k2] == partitionList->lData[k2-1]) {
                         errMsg = "The partition list contained duplicate partition indices in call to SerializeLF";
                         break;
@@ -8711,7 +8712,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     if (partitionList) {
         redirector = new _SimpleList;
         checkPointer (redirector);
-        for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx+1) {
+        for (unsigned long pidx = 0; pidx < partitionList->lLength; pidx = pidx+1) {
             (*redirector) << theDataFilters.lData[partitionList->lData[pidx]];
         }
     } else {
@@ -8725,7 +8726,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
 
     _AVLListX     taggedDS (&taggedDataSets);
 
-    for (long idx = 0; idx < redirector->lLength; idx++) {
+    for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
         long tIdx = dataSetList._SimpleList::Find ((long)(((_DataSetFilter*)dataSetFilterList (redirector->lData[idx]))->GetData()));
         tIdx = taggedDS.Insert ((BaseRef)tIdx, taggedDS.countitems());
 
@@ -8744,7 +8745,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     }
 
     _SimpleList indexedDataSets (taggedDS.countitems(),0,0);
-    for (long idx2 = 0; idx2 < taggedDataSets.lLength; idx2++) {
+    for (unsigned long idx2 = 0; idx2 < taggedDataSets.lLength; idx2++) {
         indexedDataSets.lData[taggedDS.xtraD.lData[idx2]] = taggedDataSets.lData[idx2];
     }
 
@@ -8754,7 +8755,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
 
     _SimpleList  unique_sites;
 
-    for (long idx3 = 0; idx3 < indexedDataSets.lLength; idx3++) {
+    for (unsigned long idx3 = 0; idx3 < indexedDataSets.lLength; idx3++) {
         unique_sites << 0;
         _SimpleList * esl  = new _SimpleList;
         checkPointer (esl);
@@ -8767,18 +8768,18 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     stashParameter (skipOmissions,0.0,true);
 
     if (partitionList || !exportPart) {
-        for (long idx = 0; idx < redirector->lLength; idx++) {
+        for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
             _SimpleList* originalOrderFF = &((_DataSetFilter*)dataSetFilterList (redirector->lData[idx]))->theOriginalOrder;
             _AVLListX  * involvedSitesL  = (_AVLListX*)(involvedSites (dataSetsByFilter.lData[idx]));
             long       * unique_sitesL   = unique_sites.lData + dataSetsByFilter.lData[idx];
 
-            for (long idx2 = 0; idx2 < originalOrderFF->lLength; idx2++)
+            for (unsigned long idx2 = 0; idx2 < originalOrderFF->lLength; idx2++)
                 if (involvedSitesL->Insert ((BaseRef)(originalOrderFF->lData[idx2]),*unique_sitesL) >= 0) {
                     (*unique_sitesL)++;
                 }
         }
 
-        for (long idx4 = 0; idx4 < indexedDataSets.lLength; idx4++) {
+        for (unsigned long idx4 = 0; idx4 < indexedDataSets.lLength; idx4++) {
             _AVLListX  * involvedSitesL  = (_AVLListX*)involvedSites (idx4);
 
             _SimpleList tcache,
@@ -8796,7 +8797,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     }
 
 
-    for (long idx5 = 0; idx5 < indexedDataSets.lLength; idx5++) {
+    for (unsigned long idx5 = 0; idx5 < indexedDataSets.lLength; idx5++) {
         _DataSetFilter  * entireSet = new _DataSetFilter ();
         checkPointer (entireSet);
         _SimpleList dH;
@@ -8836,7 +8837,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
         checkParameter (useLastResults,p1,0.0);
         checkParameter (useInitialDistanceGuess,p2,1.0);
         if (CheckEqual (p1,0.0) && p2>.1) {
-            for (long i=0; i<indexInd.lLength; i++) {
+            for (unsigned long i=0; i<indexInd.lLength; i++) {
                 LocateVar(indexInd.lData[i])->MarkDone();
             }
 

@@ -159,7 +159,14 @@ for (k = 0; k < totalBranchCount; k+=1) {
         }
     }
     
-    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".synRate"), Eval ("givenTree." + bNames[reordered_index] + ".nonSynRate"));
+    
+    branch_name_to_test = "mixtureTree." + bNames[reordered_index];
+    ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
+    ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
+    ExecuteCommands (branch_name_to_test+".omega1 :< 1");
+    ExecuteCommands (branch_name_to_test+".omega2 :< 1");
+    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".syn"), Eval ("givenTree." + bNames[reordered_index] + ".nonsyn"));
+    
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
     fixGlobalParameters           ("stepupLF");
@@ -176,13 +183,22 @@ for (k = 0; k < totalBranchCount; k+=1) {
 
 ClearConstraints (mixtureTree);
 
+for (k = 0; k < totalBranchCount; k+=1) {
+    branch_name_to_test = "mixtureTree." + bNames[k];
+    ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
+    ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
+    ExecuteCommands (branch_name_to_test+".omega1 :< 1");
+    ExecuteCommands (branch_name_to_test+".omega2 :< 1");
 
+}
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 unconstrainGlobalParameters ("three_LF");
 
 VERBOSITY_LEVEL     = 1;
 USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
+
+
 
 fprintf 					  (stdout, "[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
@@ -402,14 +418,16 @@ function printNodeDesc (ref) {
 }
 
 function copyomegas (node, syn, nonsyn) {
-    Eval("`node`.Paux1 = 1");
-    Eval("`node`.Paux2 = 0");
     local_omega = =  Min (10, nonsyn/syn);
     Eval("`node`.omega2 = 1");
     if (local_omega < 1) {
+        Eval("`node`.Paux1 = 1");
+        Eval("`node`.Paux2 = 0");
         Eval("`node`.omega1 =  local_omega");
         Eval("`node`.omega3 = 10");
     } else {
+        Eval("`node`.Paux1 = 0");
+        Eval("`node`.Paux2 = 0");
         Eval("`node`.omega3 =  local_omega");
         Eval("`node`.omega1 = 10");    
     }

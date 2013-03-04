@@ -1524,7 +1524,7 @@ void ExportIndVariables (_String& glVars, _String& locVars, _SimpleList* indepVa
     _String * stIn;
     char    str[4096];
 
-    for (long   i=0; i<indepVarList->lLength; i++) {
+    for (unsigned long   i=0; i<indepVarList->lLength; i++) {
         _Variable *thisVar = LocateVar(indepVarList->lData[i]);
         if (thisVar->IsGlobal()) {
             sprintf (str, "\nglobal %s=%.16g;", thisVar->GetName()->getStr(),(double)thisVar->Compute()->Value());
@@ -1564,14 +1564,14 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
 
         _List           dependancyLists;
         {
-            for (long i=0; i<depVarList->lLength; i++)
+            for (unsigned long i=0; i<depVarList->lLength; i++)
                 if (LocateVar(depVarList->lData[i])->IsGlobal()) {
                     lfDepGlobs << depVarList->lData[i];
                 }
         }
         lfDepGlobs.Sort();
 
-        for (long i=0; i<depVarList->lLength; i++) {
+        for (unsigned long i=0; i<depVarList->lLength; i++) {
             _Variable * thisVar = LocateVar(depVarList->lData[i]);
             if (thisVar->IsGlobal()) {
                 _SimpleList                 globDependancyList,
@@ -1619,10 +1619,10 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
                         indexList  (_globalVariablesList.lLength,0,1);
 
 
-            for (long i2 = 0; i2 < _globalVariablesList.lLength; i2++) {
+            for (unsigned long i2 = 0; i2 < _globalVariablesList.lLength; i2++) {
                 long updatedIndex = writeOrder.lData[i2];
                 _SimpleList * depList = (_SimpleList*)dependancyLists(i2);
-                for (long i3 = 0; i3 < depList->lLength; i3 ++) {
+                for (unsigned long i3 = 0; i3 < depList->lLength; i3 ++) {
                     long i4 = _globalVariablesList.Find (depList->lData[i3]);
                     if (i4 >= 0 && updatedIndex < writeOrder.lData[i4]) {
                         updatedIndex = writeOrder.lData[i4] + 1;
@@ -1633,14 +1633,12 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
 
             SortLists (&writeOrder, &indexList);
 
-            for (long i=0; i<_globalVariablesList.lLength; i++) {
+            for (unsigned long i=0; i<_globalVariablesList.lLength; i++) {
                 _Variable * thisVar = LocateVar(depVarList->lData[_globalVariablesList.lData[indexList.lData[i]]]);
                 sprintf (str, "\nglobal %s", thisVar->GetName()->getStr());
                 glVars<<str;
                 glVars<<":=";
-                _String* s = thisVar->GetFormulaString();
-                glVars<<s;
-                DeleteObject(s);
+                glVars<< thisVar->GetFormulaString();
                 glVars<<';';
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                     sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
