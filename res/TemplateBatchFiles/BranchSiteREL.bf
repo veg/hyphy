@@ -144,11 +144,15 @@ fprintf 					  (stdout, "[PHASE 1] Fitting Branch Site REL models to one branch 
 mg94bls   = BranchLength (givenTree,-1);
 sortedBLs = {totalBranchCount, 2}["mg94bls[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==1)"];
 sortedBLs = sortedBLs%0;
-//fprintf (stdout, sortedBLs, "\n");
+
+these_branches_use_mg94 = {};
 
 for (k = 0; k < totalBranchCount; k+=1) {
     reordered_index = sortedBLs[totalBranchCount-k-1][1];
-    branch_name_to_test = "stepupTree." + bNames[reordered_index];
+    //reordered_index = sortedBLs[k][1];
+    local_branch_name = bNames[reordered_index];
+    
+    branch_name_to_test = "stepupTree.`local_branch_name`";
     ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MG1);");
     
     Tree         mixtureTree = stepupTree;
@@ -165,30 +169,44 @@ for (k = 0; k < totalBranchCount; k+=1) {
     ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
     ExecuteCommands (branch_name_to_test+".omega1 :< 1");
     ExecuteCommands (branch_name_to_test+".omega2 :< 1");
-    copyomegas (branch_name_to_test, Eval ("givenTree." + bNames[k] + ".syn"), Eval ("givenTree." + bNames[reordered_index] + ".nonsyn"));
+    copyomegas (branch_name_to_test, Eval ("givenTree.`local_branch_name`.syn"), Eval ("givenTree.`local_branch_name`.nonsyn"));
     
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
     fixGlobalParameters           ("stepupLF");
     Optimize                      (res, stepupLF);
     
-    fprintf 					  (stdout, "[PHASE 1] Branch ", bNames[reordered_index], " log(L) = ", res[1][0], "\n\t");
-    printNodeDesc ("mixtureTree." + bNames[reordered_index]);
+    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], "\n\t");
+    skip_this_node = printNodeDesc ("mixtureTree.`local_branch_name`");
 
     Tree stepupTree = mixtureTree;
+    if (skip_this_node) {
+        branch_name_to_test = "stepupTree.`local_branch_name`";
+        ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MGL);");
+        ExecuteCommands ("`branch_name_to_test`.syn = givenTree.`local_branch_name`.syn");
+        ExecuteCommands ("`branch_name_to_test`.nonsyn = givenTree.`local_branch_name`.nonsyn");
+        fprintf 		(stdout, "\n\tBranch ", local_branch_name, " will use the MG94 model -- either the branch length is 0 or the substitution process is too simple.");
+        these_branches_use_mg94 [reordered_index] = 1;
+        /*
+         _expression = ("`branch_name_to_test`." && 6) + ".+";
+        GetInformation (_matchedVars, "`_expression`");
+        fprintf (stdout, "\n", _matchedVars, "\n");
+        */
+    }
 
 }
-
 
 
 ClearConstraints (mixtureTree);
 
 for (k = 0; k < totalBranchCount; k+=1) {
-    branch_name_to_test = "mixtureTree." + bNames[k];
-    ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
-    ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
-    ExecuteCommands (branch_name_to_test+".omega1 :< 1");
-    ExecuteCommands (branch_name_to_test+".omega2 :< 1");
+    if (these_branches_use_mg94 [k] != 1) {
+        branch_name_to_test = "mixtureTree." + bNames[k];
+        ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
+        ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
+        ExecuteCommands (branch_name_to_test+".omega1 :< 1");
+        ExecuteCommands (branch_name_to_test+".omega2 :< 1");
+    }
 
 }
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
@@ -200,9 +218,13 @@ OPTIMIZATION_METHOD = 0;
 
 
 
-fprintf 					  (stdout, "[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
+fprintf 					  (stdout, "\n\n[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom\n");
+lfOut	= csvFilePath + ".fit";
+LIKELIHOOD_FUNCTION_OUTPUT = 7;
+fprintf (lfOut, CLEAR_FILE, three_LF);
+LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 bsrel_bls = extractBranchLengthsFromBSREL ("mixtureTree");
 
@@ -215,10 +237,6 @@ UseModel (USE_NO_MODEL);
 Tree T = renderString;
 
 
-lfOut	= csvFilePath + ".fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, three_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
 for	(k = 0; k < totalBranchCount; k += 1) {
     pValueByBranch[k][10] = bsrel_bls[bNames[k]];
@@ -238,7 +256,7 @@ for	(k = 0; k < totalBranchCount; k += 1) {
     fprintf (stdout, "\n");
     printNodeDesc (ref);
         
-    if (thisOmega3 > 1 && wt3 > 1e-6 && selectedBranches[k])
+    if (thisOmega3 > 1 && wt3 > 1e-6 && selectedBranches[k] && these_branches_use_mg94 [k] != 1)
     {
         fprintf (stdout, "...Testing for selection at this branch\n");
         _stashLF = saveLF ("three_LF");
@@ -409,11 +427,15 @@ function restoreLF (key, value) {
 }
 
 function printNodeDesc (ref) {
+    wts = {{ Eval (ref+".Paux1"), Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"), Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)")}};
+     
     fprintf (stdout, "Node: ", ref, 
-                 "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", Eval (ref+".Paux1"),
-                 "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"),
-                 "\n\tClass 3: omega = ", Eval (ref+".omega3"), " weight = ", Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)"), "\n");
-    return 0;
+                 "\n\tLength parameter = ", Eval (ref+".t"), 
+                 "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", wts[0],
+                 "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", wts[1],
+                 "\n\tClass 3: omega = ", Eval (ref+".omega3"), " weight = ", wts[2], "\n");
+                 
+    return (Eval (ref+".t") == 0 || wts[0] == 1 || wts[1] == 1);
 
 }
 

@@ -165,43 +165,48 @@ lfunction extractBranchInformation (treeID, _omega_pattern, _model_prefix, _freq
         _toReturn ["Names"] + _branchNames[_i];
         (_toReturn["Props"])[_i][0] = _catCount;
         
-        _brLen     = 0;
-        _totalWeight = 0;
-        for (_c = 1; _c <= _catCount; _c += 1) {
-            _modelID = _model_prefix + _c;
-            if (Abs (_brLenExpressions[_modelID]) == 0) {
-                Model _internal = (^_modelID, ^_freq_vector, _do_mult);
-                GetString (_bl, _internal, -1);
-                _brLenExpressions [_modelID] = _bl;
-                _localParameters = {};
-                _p = 1;
-                GetString (_locP, _internal, 0);
-                while (_locP != None) {
-                    _localParameters + _locP; 
-                    GetString (_locP, _internal, _p);
-                    _p += 1;
+        if (_catCount > 0) {
+            _brLen     = 0;
+            _totalWeight = 0;
+            for (_c = 1; _c <= _catCount; _c += 1) {
+                _modelID = _model_prefix + _c;
+                if (Abs (_brLenExpressions[_modelID]) == 0) {
+                    Model _internal = (^_modelID, ^_freq_vector, _do_mult);
+                    GetString (_bl, _internal, -1);
+                    _brLenExpressions [_modelID] = _bl;
+                    _localParameters = {};
+                    _p = 1;
+                    GetString (_locP, _internal, 0);
+                    while (_locP != None) {
+                        _localParameters + _locP; 
+                        GetString (_locP, _internal, _p);
+                        _p += 1;
+                    }
+                    _brLenLocals [_modelID] = _localParameters;
                 }
-                _brLenLocals [_modelID] = _localParameters;
+                for (_lpc = 0; _lpc < Abs (_brLenLocals [_modelID]); _lpc += 1) {
+                    local_var = (_brLenLocals [_modelID])[_lpc];
+                    var_ref   =  treeID + "." + _branchNames[_i] + "." + (_brLenLocals [_modelID])[_lpc];
+                    Eval (local_var + "=" + ^var_ref);
+                }
+                _thisModelLength = Eval (_brLenExpressions[_modelID]);
+                
+                if (_c < _catCount) {
+                    var_ref = treeID + "." + _branchNames[_i] + "." + _freq_prefix + _c;
+                    _freqW = ^var_ref;
+                } else {
+                    var_ref = treeID + "." + _branchNames[_i] + "." + _freq_prefix + (_c-1);
+                    _freqW = 1-^var_ref;
+                }
+                
+                _thisModelWeight = (1-_totalWeight)*_freqW;            
+                _totalWeight += _thisModelWeight;
+                _brLen += _thisModelWeight * _thisModelLength;            
             }
-            for (_lpc = 0; _lpc < Abs (_brLenLocals [_modelID]); _lpc += 1) {
-                local_var = (_brLenLocals [_modelID])[_lpc];
-                var_ref   =  treeID + "." + _branchNames[_i] + "." + (_brLenLocals [_modelID])[_lpc];
-                Eval (local_var + "=" + ^var_ref);
-            }
-            _thisModelLength = Eval (_brLenExpressions[_modelID]);
-            
-            if (_c < _catCount) {
-                var_ref = treeID + "." + _branchNames[_i] + "." + _freq_prefix + _c;
-                _freqW = ^var_ref;
-            } else {
-                var_ref = treeID + "." + _branchNames[_i] + "." + _freq_prefix + (_c-1);
-                _freqW = 1-^var_ref;
-            }
-            
-            _thisModelWeight = (1-_totalWeight)*_freqW;            
-            _totalWeight += _thisModelWeight;
-            _brLen += _thisModelWeight * _thisModelLength;            
+        } else {
+            _brLen = 3 * BranchLength (^treeID, _branchNames[_i]);
         }
+        
         (_toReturn["Props"]) [_i][1] = _brLen/3;
     }
     
