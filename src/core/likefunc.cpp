@@ -6068,8 +6068,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
 
     _SimpleList freeze;
 
-    if (only_these_parameters)
-    {
+    if (only_these_parameters) {
         only_these_parameters->Sort();
         _SimpleList all (indexInd.lLength,0,1);
         freeze.Intersect (all, *only_these_parameters);
@@ -6375,7 +6374,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 bestVal  = middle;
                 SetAllIndependent (&middle);
             } else {
-                SetAllIndependent (&newMiddle);
+                SetAllIndependent (&bestVal);
             }
             FlushLocalUpdatePolicy();
             return;
@@ -6497,16 +6496,11 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
 
         if (middleValue>maxSoFar) {
             SetAllIndependent (&middle);
-            /*for (unsigned long i=0; i<indexInd.lLength; i++) {
-                bestVal[i]=middle(i,0);
-                if (!CheckEqual(GetIthIndependent(i),middle(i,0))) {
-                    SetIthIndependent (i,middle(i,0));
-                }
-            }*/
             maxSoFar = middleValue;
             reset = false;
         }
     }
+    
     if (reset)
         SetAllIndependent (&bestVal);
  

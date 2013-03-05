@@ -212,7 +212,7 @@ for (k = 0; k < totalBranchCount; k+=1) {
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 unconstrainGlobalParameters ("three_LF");
 
-VERBOSITY_LEVEL     = 1;
+VERBOSITY_LEVEL     = 0;
 USE_LAST_RESULTS    = 1;
 OPTIMIZATION_METHOD = 0;
 
@@ -451,7 +451,7 @@ function copyomegas (node, syn, nonsyn) {
         Eval("`node`.Paux1 = 0");
         Eval("`node`.Paux2 = 0");
         Eval("`node`.omega3 =  local_omega");
-        Eval("`node`.omega1 = 10");    
+        Eval("`node`.omega1 = 0");    
     }
     Eval("`node`.t = syn");
     return 0;
