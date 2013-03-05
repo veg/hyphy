@@ -863,7 +863,7 @@ _Matrix*        _CalcNode::ComputeModelMatrix  (bool)
                 *locVar;
 
     if (iVariables)
-        for (long i=0; i<iVariables->lLength; i+=2)
+        for (unsigned long i=0; i<iVariables->lLength; i+=2)
             if (iVariables->lData[i+1]>=0) {
                 curVar = LocateVar (iVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -873,7 +873,7 @@ _Matrix*        _CalcNode::ComputeModelMatrix  (bool)
             }
 
     if (dVariables)
-        for (long i=0; i<dVariables->lLength; i+=2)
+        for (unsigned long i=0; i<dVariables->lLength; i+=2)
             if (dVariables->lData[i+1]>=0) {
                 curVar = LocateVar (dVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
