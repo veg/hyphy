@@ -6342,6 +6342,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
     _Parameter  leftValue   = maxSoFar,
                 middleValue = maxSoFar,
                 rightValue  = maxSoFar,
+                initialValue = maxSoFar,
                 bp          = gPrecision*0.1,
                 lV = 0., rV = 0., ms = 0.;
 
@@ -6356,6 +6357,10 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
     middle = bestVal;
 
     int  outcome = Bracket(-1, lV,ms,rV,leftValue, middleValue, rightValue,bp, &gradient);
+    if (outcome >=0 && (leftValue > middleValue || rightValue > middleValue)) {
+        WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue);
+        return;
+    }
 
     //printf ("[LogL = %.20g GRADIENT BRACKET %g/%.20g, %g/%.20g, %g/%.20g; %d]\n",maxSoFar,lV,leftValue,ms,middleValue,rV,rightValue, outcome);
 
@@ -6448,18 +6453,18 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                     X = U;
                     FX = FU;
                 } else {
-                    if (U<=X) {
+                    if (U<X) {
                         lV = U;
                     } else {
                         rV = U;
                     }
-                    if ((FU<=FW)||(W==X)) {
+                    if (FU<=FW || W==X ) {
                         V = W;
                         FV = FW;
                         W = U;
                         FW = FU;
                     } else {
-                        if ((FU<=FV)||(V==X)||(V==W)) {
+                        if (FU<=FV || V==X || V==W) {
                             V = U;
                             FV = FU;
                         }
@@ -6470,9 +6475,20 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
 
             }
 
-            maxSoFar    = SetParametersAndCompute (-1,X,&newMiddle,&gradient);
-            bestVal     = newMiddle;
-            bestVal.AplusBx (gradient, X);
+            middleValue = -FX;
+            if (middleValue < maxSoFar) {
+                SetAllIndependent (&bestVal);
+                maxSoFar = middleValue;
+            } else {
+                maxSoFar    = SetParametersAndCompute (-1,X,&newMiddle,&gradient);
+                bestVal     = newMiddle;
+                bestVal.AplusBx (gradient, X);                
+            }
+                        
+            if (maxSoFar < initialValue) {
+                 WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue);
+                 return;   
+            }
 
             //bestVal = middle;
             //maxSoFar = middleValue;
