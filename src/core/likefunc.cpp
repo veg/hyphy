@@ -1202,13 +1202,15 @@ void    _LikelihoodFunction::SetIthDependent (long index, _Parameter p)
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::SetAllIndependent (_Matrix* v)
+long    _LikelihoodFunction::SetAllIndependent (_Matrix* v)
 {
-    long upto = v->GetSize();
+    unsigned long upto = v->GetSize();
+    long     set_this_many = 0;
     upto = MIN (upto, indexInd.lLength);
     for (long k = 0; k < upto; k++) {
-        CheckAndSetIthIndependent (k, v->theData[k]);
+        set_this_many += CheckAndSetIthIndependent (k, v->theData[k]);
     }
+    return set_this_many;
 }
 
 //_______________________________________________________________________________________
@@ -5095,7 +5097,7 @@ bool CheckEqual (_Parameter a, _Parameter b)
 {
     if (a!=0.0) {
         a = (a>b)?(a-b)/a:(b-a)/a;
-        return ((a>0.0)?(a<=machineEps):(a>=-machineEps));
+        return a>0.0 ? a<=machineEps : a>=-machineEps;
     }
     return (b<=machineEps)&&(b>=-machineEps);
 }
@@ -6347,18 +6349,25 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 lV = 0., rV = 0., ms = 0.;
 
     _Matrix                     left        ;
-    GetAllIndependent           (left);
-    _Matrix     right           (left),
-                middle          (left),
-                newMiddle       (left);
-
+    GetAllIndependent               (left);
+    _Matrix         right           (left),
+                    middle          (left),
+                    newMiddle       (left);
+                
+   // _GrowingVector brentHistory; 
 
 
     middle = bestVal;
 
     int  outcome = Bracket(-1, lV,ms,rV,leftValue, middleValue, rightValue,bp, &gradient);
+    if (middleValue < initialValue) {
+        SetAllIndependent (&bestVal);
+        FlushLocalUpdatePolicy();
+        return;    
+    }
+    
     if (outcome >=0 && (leftValue > middleValue || rightValue > middleValue)) {
-        WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue);
+        WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
         return;
     }
 
@@ -6391,6 +6400,8 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
             reset = true;
         } else {
             _Parameter U,V,W,X=ms,E=0,FX,FW,FV,XM,R,Q,P,ETEMP,D,FU;
+            _Matrix currentBestPoint (newMiddle);
+            currentBestPoint.AplusBx(gradient, ms);
             W = .0;
             V = .0;
             FX = -middleValue;
@@ -6399,6 +6410,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
             outcome = 0;
             bool pFitGood;
             while (outcome < 20) {
+               // brentHistory.Store (-FX - initialValue);
                 pFitGood = false;
                 XM = .5*(lV+rV);
 
@@ -6440,7 +6452,12 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 FU = -SetParametersAndCompute (-1,U,&newMiddle,&gradient);
                 //printf ("\n%g\n", FU);
 
-                if (FU<=FX) {
+                if (FU<=FX) { // accept the move
+                    currentBestPoint = newMiddle;
+                    currentBestPoint.AplusBx(gradient, U);
+                    //brentHistory.Store (1.);
+                    //brentHistory.Store (U);
+                    //brentHistory.Store (X);
                     if (U>=X) {
                         lV = X;
                     } else {
@@ -6452,8 +6469,11 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                     FW = FX;
                     X = U;
                     FX = FU;
-                } else {
-                    if (U<X) {
+                } else { 
+                   //brentHistory.Store (-1.);
+                   //brentHistory.Store (U);
+                   //brentHistory.Store (X);
+                   if (U<X) {
                         lV = U;
                     } else {
                         rV = U;
@@ -6476,17 +6496,26 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
             }
 
             middleValue = -FX;
-            if (middleValue < maxSoFar) {
+            //brentHistory.Store (0.);
+            if (middleValue <= maxSoFar || CheckEqual(maxSoFar, middleValue)) {
+                //brentHistory.Store (-1.);
+                //brentHistory.Store (middleValue-initialValue);
+
                 SetAllIndependent (&bestVal);
                 maxSoFar = middleValue;
             } else {
-                maxSoFar    = SetParametersAndCompute (-1,X,&newMiddle,&gradient);
-                bestVal     = newMiddle;
-                bestVal.AplusBx (gradient, X);                
+                long changed = SetAllIndependent (&currentBestPoint);
+                maxSoFar    = Compute();
+                bestVal     = currentBestPoint;
+                /*brentHistory.Store (1.);
+                brentHistory.Store (changed);
+                brentHistory.Store (X);
+                brentHistory.Store (maxSoFar-initialValue);
+                brentHistory.Store (-FX-initialValue);*/
             }
                         
             if (maxSoFar < initialValue) {
-                 WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue);
+                 WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");// & _String ((_String*)brentHistory.toStr()));
                  return;   
             }
 

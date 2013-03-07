@@ -99,7 +99,7 @@ long_max = (_Parameter)LONG_MAX;
 //Used in formula, and constant
 
 #ifndef  __HYALTIVEC__
-_Parameter  machineEps = 1e-12,
+_Parameter  machineEps = 2.*DBL_EPSILON,
 tolerance  = DBL_EPSILON;
 #else
 _Parameter  machineEps = 1e-7,

@@ -175,7 +175,7 @@ public:
     void        SetIthDependent           (long, _Parameter);   // set the value of i-th dependent variable
     bool        IsIthParameterGlobal      (long);
 
-    void        SetAllIndependent         (_Matrix*);
+    long        SetAllIndependent         (_Matrix*);
 
 
     void        UpdateIndependent (long,bool,_SimpleList* = nil,_SimpleList* = nil);

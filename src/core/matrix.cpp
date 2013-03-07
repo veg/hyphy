@@ -7209,13 +7209,13 @@ BaseRef _Matrix::toStr(void)
 #ifdef __USE_LONG_DOUBLE__
                             sprintf(str, "%18.12Lg", (*this)(i,j));
 #else
-                            sprintf(str, "%18.12g", (*this)(i,j));
+                            sprintf(str, PRINTF_FORMAT_STRING, (*this)(i,j));
 #endif
                         else
 #ifdef __USE_LONG_DOUBLE__
                             sprintf(str, "%Lg", (*this)(i,j));
 #else
-                            sprintf(str, "%g", (*this)(i,j));
+                            sprintf(str, PRINTF_FORMAT_STRING, (*this)(i,j));
 #endif
                         _String cell (str);
                         result<<&cell;
