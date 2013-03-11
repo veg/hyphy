@@ -605,7 +605,7 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
         }
         result = new _FString;
     } else {
-        result = (_PMathObj)result->makeDynamic();
+        result->AddAReference();
     }
     return result;
 }
