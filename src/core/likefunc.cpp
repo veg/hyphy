@@ -8829,6 +8829,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
 
             for (; k>=0; k = involvedSitesL->Traverser (tcache, iv)) {
                 (*dVL) << (long)involvedSitesL->Retrieve (k);
+                involvedSitesL->SetXtra(k, dVL->lLength-1);
             }
         }
     } else if (exportPart) {
