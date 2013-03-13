@@ -249,6 +249,13 @@ bool _Operation::IsAVariable(bool deep)
 }
 
 //__________________________________________________________________________________
+bool _Operation::IsAFunctionCall (void)
+{
+    return theData == -1 && numberOfTerms < 0;
+
+}
+
+//__________________________________________________________________________________
 bool _Operation::IsConstant (void)
 {
     if (theData==-1) {

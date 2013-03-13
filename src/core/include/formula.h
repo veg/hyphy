@@ -146,6 +146,7 @@ public:
     bool        IsAConstant         (void); //  does this formula include variables, or is it just a constant?
     bool        IsConstant          (void); //  does this formula depend on something other that constants and fixed parameters?
     bool        DependsOnVariable   (long);
+    bool        IsArrayAccess       (void); // check to see if this formula performs a matrix access
     /*
         SLKP 20090315: added a missing utility function
         given a variable index as an argument, returns true if
@@ -164,6 +165,7 @@ public:
     bool        ConvertToSimple     (_SimpleList& variableIndex);
     void        ConvertFromSimple   (_SimpleList& variableIndex);
     void        SimplifyConstants   (void);
+    _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
     _Parameter  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 

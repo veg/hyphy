@@ -1247,6 +1247,22 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 }
 
 //__________________________________________________________________________________
+_Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* theContext) {
+    _Variable * result = nil;
+    _PMathObj computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
+    if (computedValue && computedValue->ObjectClass() == STRING) {
+        result =  (_Variable*)((_FString*)computedValue)->Dereference(ignore_context, theContext, true);
+    }
+    
+    if (!result) {
+        theContext->ReportError( (_String ("Failed to dereference '") & _String ((_String*)toStr()) & "' in the " & (ignore_context ? "global" : "local") & " context"));
+    }
+    
+    return result;
+}
+
+
+//__________________________________________________________________________________
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg) 
 // compute the value of the formula
 {
@@ -1464,11 +1480,19 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
+bool _Formula::IsArrayAccess (void){
+    if (theFormula.lLength) {
+        return ((_Operation*)(theFormula(theFormula.lLength-1)))->GetCode().Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS));
+    }
+    return false;
+}
+
+//__________________________________________________________________________________
 bool _Formula::ConvertToSimple (_SimpleList& variableIndex)
 {
     bool has_volatiles = false;
     if (theFormula.lLength)
-        for (int i=0; i<theFormula.lLength; i++) {
+        for (unsigned long i=0; i<theFormula.lLength; i++) {
             _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
             if (thisOp->theNumber) {
                 continue;

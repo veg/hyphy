@@ -442,9 +442,9 @@ void _CalcNode::RemoveModel (void)
 
 void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* theConext)
 {
-    RemoveModel ();
+    RemoveModel    ();
     DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
-    InitializeCN(modelName, 0 , theConext);
+    InitializeCN   (modelName, 0 , theConext);
 }
 
 //_______________________________________________________________________________________________

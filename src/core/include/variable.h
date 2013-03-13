@@ -167,6 +167,7 @@ public:
 };
 
 long    DereferenceVariable (long index, _PMathObj context, char reference_type);
+long    DereferenceString   (_PMathObj, _PMathObj context, char reference_type);
 
 
 #endif

@@ -83,7 +83,7 @@ public:
     virtual _PMathObj Compute           (void) {
         return this;
     }
-    _PMathObj         Dereference       (bool ignore_context, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    _PMathObj         Dereference       (bool ignore_context, _hyExecutionContext* context = _hyDefaultExecutionContext, bool return_variable_ref = false);
 
     virtual _PMathObj MapStringToVector (_PMathObj);
     virtual _PMathObj CharAccess        (_PMathObj,_PMathObj);

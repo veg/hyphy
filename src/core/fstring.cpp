@@ -589,10 +589,13 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* context) {
+_PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* context, bool return_variable_ref) {
     _String referencedVariable = *theString;
     if (!ignore_context && context) {
         referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context->GetContext());
+    }
+    if (return_variable_ref) {
+        return FetchVar (LocateVarByName(referencedVariable));
     }
     _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
     //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);

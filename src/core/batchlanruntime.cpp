@@ -671,7 +671,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                         }
                         long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
                         if (lfID>=0){
-                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &" and cannot be modified ");
+                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
                              return false;
                         }
                         
