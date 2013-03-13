@@ -1,10 +1,10 @@
-RequireVersion ("2.1320130201");
+RequireVersion ("2.1320130313");
 
 VERBOSITY_LEVEL				= 0;
-
+maximum_number_of_omegas   = 10;
 skipCodeSelectionStep 		= 0;
-LoadFunctionLibrary("chooseGeneticCode");
 
+LoadFunctionLibrary("chooseGeneticCode");
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("dSdNTreeTools");
 LoadFunctionLibrary("CF3x4");
@@ -15,30 +15,29 @@ LoadFunctionLibrary("TreeTools");
 
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
 DataSetFilter 		dsf 			= CreateFilter(ds,3,"","",GeneticCodeExclusions);
-
 HarvestFrequencies	(nuc3, dsf, 3, 1, 1);
-
-omega1 = 0.2;
-omega2 = 0.5;
-omega3 = 1.0;
 
 
 nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
-PopulateModelMatrix			  ("MGMatrix1",  nucCF, "t", "omega1", "");
-PopulateModelMatrix			  ("MGMatrix2",  nucCF, "t", "omega2", "");
-PopulateModelMatrix			  ("MGMatrix3",  nucCF, "t", "omega3", "");
+
+for (matrix_id = 1; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
+    PopulateModelMatrix			  ("MGMatrix" + matrix_id,  nucCF, "t", "omega" + matrix_id, "");
+}
+
 PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
 codon3x4					= BuildCodonFrequencies (nucCF);
 
 Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 
-LoadFunctionLibrary			  ("queryTree");
+LoadFunctionLibrary("queryTree");
+
+
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 bNames						 = BranchName (givenTree, -1);
 
+//******* SELECT WHICH BRANCHES TO TEST ********//
 
 selectTheseForTesting = {totalBranchCount + 2, 2};
-
 selectTheseForTesting [0][0] = "None"; selectTheseForTesting [0][1] = "Just fit the branch-site REL model";
 selectTheseForTesting [1][0] = "All";  selectTheseForTesting [1][1] = "Test all branches";
 
@@ -78,9 +77,17 @@ function printSelectedBranches (key, value) {
 
 fprintf (stdout, "\n");
  
+//******* BASE MODEL FITTING ********//
+ 
 
 SetDialogPrompt ("Save analysis results to");
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,Omega1,P1,Omega2,P2,Omega3,P3,LRT,p,p_Holm,BranchLength");
+
+lrt_column = 4;
+p_uncorrected_column = 5;
+p_corrected_column = 6;
+branch_length_column = 7;
+
+fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN,"Branch,Mean_dNdS,RateClasses,OmegaOver1,WtOmegaOver1,LRT,p,p_Holm,BranchLength");
 csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
@@ -97,14 +104,12 @@ LIKELIHOOD_FUNCTION_OUTPUT = 2;
 localLL						 = res_base[1][0];
 localParams					 = res_base[1][1] + 9;
 
-
-
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
 //GetInformation	   		   (varNames, "givenTree\\..*\\.omega1");
 //localOmegaValues			 = {totalBranchCount,1}["Eval(varNames[_MATRIX_ELEMENT_ROW_])"];
 
-pValueByBranch				  = {totalBranchCount,11};
+pValueByBranch				  = {totalBranchCount,8};
 
 for (k = 0; k < totalBranchCount; k = k+1) {
 	srate  = Eval ("givenTree." + bNames[k] + ".syn");
@@ -118,19 +123,25 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 }
 
 omegaStats					 = GatherDescriptiveStats (pValueByBranch[-1][0]);
+current_parameter_count = localParams;
+current_log_L           = localLL;
+sample_size             = dsf.sites * dsf.species;
+current_IC             = getIC (current_log_L, current_parameter_count, sample_size);
 
-fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom\n");
+
+fprintf						 (stdout, "\nLog L = ", localLL, " with ", localParams, " degrees of freedom. IC = ", current_IC, "\n");
 
 PrintDescriptiveStats		 ("Branch omega values", omegaStats);
 
-Paux1 						 = 0.3;
-Paux1 						 :< 1;
-Paux2 						 = 0.4;
-Paux2 						 :< 1;
-omega1                       :< 1;
-omega2                       :< 1;
 
-Model 		MG1		=		  ("Exp(MGMatrix1)*Paux1+Exp(MGMatrix2)*(1-Paux1)*Paux2+Exp(MGMatrix3)*(1-Paux1)*(1-Paux2)",codon3x4,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
+for (matrix_id = 2; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
+    freq_weights = generateFrequencyParameterization ("Paux", matrix_id);
+    for (k = 0; k < matrix_id; k += 1) {
+        freq_weights[k] =  "Exp(MGMatrix" + (k+1) + ")*" + freq_weights[k];
+    }
+    ExecuteCommands ("Model 		MG" + matrix_id + "=(\"" + Join("+",freq_weights) + "\",codon3x4,EXPLICIT_FORM_MATRIX_EXPONENTIAL);");
+}
+
 
 ASSUME_REVERSIBLE_MODELS	  = 1;
 USE_LAST_RESULTS              = 1;
@@ -145,15 +156,16 @@ mg94bls   = BranchLength (givenTree,-1);
 sortedBLs = {totalBranchCount, 2}["mg94bls[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==1)"];
 sortedBLs = sortedBLs%0;
 
-these_branches_use_mg94 = {};
+rate_classes_by_branch = {};
 
 for (k = 0; k < totalBranchCount; k+=1) {
     reordered_index = sortedBLs[totalBranchCount-k-1][1];
     //reordered_index = sortedBLs[k][1];
     local_branch_name = bNames[reordered_index];
+    accepted_rates_count = 1;
     
-    branch_name_to_test = "stepupTree.`local_branch_name`";
-    ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MG1);");
+    branch_name_to_test_base = "stepupTree.`local_branch_name`";
+    ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG2);");
     
     Tree         mixtureTree = stepupTree;
 
@@ -163,52 +175,75 @@ for (k = 0; k < totalBranchCount; k+=1) {
         }
     }
     
-    
     branch_name_to_test = "mixtureTree." + bNames[reordered_index];
-    ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
-    ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
-    ExecuteCommands (branch_name_to_test+".omega1 :< 1");
-    ExecuteCommands (branch_name_to_test+".omega2 :< 1");
+    setBSRELBounds (branch_name_to_test, 2);
     copyomegas (branch_name_to_test, Eval ("givenTree.`local_branch_name`.syn"), Eval ("givenTree.`local_branch_name`.nonsyn"));
     
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
     fixGlobalParameters           ("stepupLF");
     Optimize                      (res, stepupLF);
+    test_IC = getIC (res[1][0], current_parameter_count + 2, sample_size);
+    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t2 rate clases\n\t");
+    printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
-    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], "\n\t");
-    skip_this_node = printNodeDesc ("mixtureTree.`local_branch_name`");
+    while (test_IC < current_IC) {
+        accepted_rates_count += 1;
+        current_parameter_count += 2;
+        current_IC = test_IC;
+        saved_MLEs = saveNodeMLES (branch_name_to_test, accepted_rates_count);
+        //fprintf (stdout, saved_MLEs, "\n");
+        ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG" + (accepted_rates_count+1) +");");
+        
+        Tree         mixtureTree = stepupTree;
+        for (l = 0; l < totalBranchCount; l+=1) {
+            if (l != reordered_index) {
+                _constrainVariablesAndDescendants ("mixtureTree." + bNames[l]);
+            }
+        }
+        setBSRELBounds (branch_name_to_test, accepted_rates_count+1);
+        initNodeMLESPlus1 (branch_name_to_test, saved_MLEs);
+        LikelihoodFunction stepupLF = (dsf, mixtureTree);
+        fixGlobalParameters           ("stepupLF");
+        Optimize                      (res, stepupLF);
+        test_IC = getIC (res[1][0], current_parameter_count + 2, sample_size);
+        fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t", accepted_rates_count+1, " rate clases\n\t");
+        printNodeDesc ("mixtureTree.`local_branch_name`", accepted_rates_count + 1);
+    }
+    
+    if (accepted_rates_count > 1) {
+        ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MG" + (accepted_rates_count) +");");
+        Tree         mixtureTree = stepupTree;
+        restoreNodeMLE (branch_name_to_test, saved_MLEs);
+    }
 
     Tree stepupTree = mixtureTree;
-    if (skip_this_node) {
-        branch_name_to_test = "stepupTree.`local_branch_name`";
-        ExecuteCommands ("SetParameter (`branch_name_to_test`, MODEL, MGL);");
-        ExecuteCommands ("`branch_name_to_test`.syn = givenTree.`local_branch_name`.syn");
-        ExecuteCommands ("`branch_name_to_test`.nonsyn = givenTree.`local_branch_name`.nonsyn");
-        fprintf 		(stdout, "\n\tBranch ", local_branch_name, " will use the MG94 model -- either the branch length is 0 or the substitution process is too simple.");
-        these_branches_use_mg94 [reordered_index] = 1;
-        /*
-         _expression = ("`branch_name_to_test`." && 6) + ".+";
-        GetInformation (_matchedVars, "`_expression`");
-        fprintf (stdout, "\n", _matchedVars, "\n");
-        */
+    
+    if (accepted_rates_count == 1) {
+        ExecuteCommands ("SetParameter (`branch_name_to_test_base`, MODEL, MGL);");
+        ExecuteCommands ("`branch_name_to_test_base`.syn = givenTree.`local_branch_name`.syn");
+        ExecuteCommands ("`branch_name_to_test_base`.nonsyn = givenTree.`local_branch_name`.nonsyn");
     }
 
+    rate_classes_by_branch [reordered_index] = accepted_rates_count;
 }
 
 
+Tree mixtureTree = stepupTree;
 ClearConstraints (mixtureTree);
 
-for (k = 0; k < totalBranchCount; k+=1) {
-    if (these_branches_use_mg94 [k] != 1) {
-        branch_name_to_test = "mixtureTree." + bNames[k];
-        ExecuteCommands (branch_name_to_test+".Paux1 :< 1");
-        ExecuteCommands (branch_name_to_test+".Paux2 :< 1");
-        ExecuteCommands (branch_name_to_test+".omega1 :< 1");
-        ExecuteCommands (branch_name_to_test+".omega2 :< 1");
-    }
+fprintf (stdout, "\n\n[INFERRED MODEL COMPLEXITY]");
 
+for (k = 0; k < totalBranchCount; k+=1) {
+    branch_name_to_test = "mixtureTree." + bNames[k];
+    pValueByBranch [k][1] = rate_classes_by_branch[k];
+    if (rate_classes_by_branch [k] != 1) {
+        setBSRELBounds (branch_name_to_test, rate_classes_by_branch[k]);
+    }
+    fprintf (stdout, "\n\t", branch_name_to_test, " has ", rate_classes_by_branch [k], " site rate classes");
 }
+fprintf (stdout, "\n");
+
 LikelihoodFunction three_LF   = (dsf,mixtureTree);
 unconstrainGlobalParameters ("three_LF");
 
@@ -220,7 +255,8 @@ OPTIMIZATION_METHOD = 0;
 
 fprintf 					  (stdout, "\n\n[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
 Optimize					  (res_three_LF,three_LF);
-fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom\n");
+fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), "\n");
+
 lfOut	= csvFilePath + ".fit";
 LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, three_LF);
@@ -236,44 +272,50 @@ fprintf (stdout, renderString, "\n");
 UseModel (USE_NO_MODEL);
 Tree T = renderString;
 
-
-
 for	(k = 0; k < totalBranchCount; k += 1) {
-    pValueByBranch[k][10] = bsrel_bls[bNames[k]];
+    pValueByBranch[k][branch_length_column] = bsrel_bls[bNames[k]];
+    
 
     ref = "mixtureTree."+bNames[k];
     
-    thisOmega3 = Eval (ref+".omega3");
-    wt3        = Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)");
-
-    pValueByBranch [k][1] = Eval (ref+".omega1");
-    pValueByBranch [k][2] = Eval (ref+".Paux1");
-    pValueByBranch [k][3] = Eval (ref+".omega2");
-    pValueByBranch [k][4] = Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2");
-    pValueByBranch [k][5] = thisOmega3;
-    pValueByBranch [k][6] = wt3;
+    rate_classes = rate_classes_by_branch[k];
+    node_omegas = getNodeOmegaDistribution (ref, rate_classes);
     
     fprintf (stdout, "\n");
-    printNodeDesc (ref);
+    printNodeDesc (ref, rate_classes_by_branch[k]);
+    if (node_omegas[rate_classes-1][0] > 1) {
+        pValueByBranch[k][2] = node_omegas[rate_classes-1][0];
+        pValueByBranch[k][3] = node_omegas[rate_classes-1][1];
+    }
+    
         
-    if (thisOmega3 > 1 && wt3 > 1e-6 && selectedBranches[k] && these_branches_use_mg94 [k] != 1)
+    if (node_omegas[rate_classes-1][0] > 1 && node_omegas[rate_classes-1][1] > 1e-6 && selectedBranches[k])
     {
         fprintf (stdout, "...Testing for selection at this branch\n");
         _stashLF = saveLF ("three_LF");
-
-        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 := 1");
+        
+        if (rate_classes > 1) {
+            testing_parameter =   ref + ".omega" + rate_classes;
+            *testing_parameter :< 1;
+        } else {
+            global _mg94omega = 1;
+            _mg94omega :< 1;
+            *(ref + ".nonsyn") := *(ref + ".syn") * _mg94omega;
+        }
+        
         Optimize					  (res_three_current,three_LF);
         
         fprintf (stdout, "\n");
-        printNodeDesc (ref);
-        pValueByBranch[k][7]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);				 
-        pValueByBranch[k][8]			  = (1-CChi2 (pValueByBranch[k][7],1))*.5;
-        fprintf (stdout, "\np-value = ", pValueByBranch[k][8],"\n\n", three_LF, "\n");
+        printNodeDesc (ref, rate_classes_by_branch[k]);
+        pValueByBranch[k][lrt_column]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);				 
+        pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],1))*.5;
+        fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
         
-        ExecuteCommands ("mixtureTree." + bNames[k] + ".omega3 :< 1e26");
+        if (rate_classes > 1) {
+            *testing_parameter :< 10000;
+        }
         
-        if (pValueByBranch[k][7] < (-0.5))
-        {
+        if (pValueByBranch[k][lrt_column] < (-0.5)) {
             fprintf 					  (stdout, "[PHASE 2/REPEAT] Detected a convergence problem; refitting the LOCAL alternative model with new starting values\n");
             lfOut	= csvFilePath + ".fit";
             Optimize					  (res_three_LF,three_LF);
@@ -283,14 +325,13 @@ for	(k = 0; k < totalBranchCount; k += 1) {
             _stashLF = saveLF ("three_LF");
             k = 0;
         }
-        else
-        {
+        else {
             _stashLF ["restoreLF"][""];
         }
     }
     else
     {
-        pValueByBranch[k][8] = 1.0;
+        pValueByBranch[k][p_uncorrected_column] = 1.0;
     }
 }
 
@@ -298,7 +339,7 @@ OPTIMIZATION_METHOD = 4;
 
 
 pValueSorter = {totalBranchCount,2};
-pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+pValueByBranch[_MATRIX_ELEMENT_ROW_][8]*(_MATRIX_ELEMENT_COLUMN_==1)"];
+pValueSorter = pValueSorter["_MATRIX_ELEMENT_ROW_*(_MATRIX_ELEMENT_COLUMN_==0)+pValueByBranch[_MATRIX_ELEMENT_ROW_][p_uncorrected_column]*(_MATRIX_ELEMENT_COLUMN_==1)"];
 pValueSorter = pValueSorter % 1;
 pValueSorter = pValueSorter["_MATRIX_ELEMENT_VALUE_*(_MATRIX_ELEMENT_COLUMN_==0)+_MATRIX_ELEMENT_VALUE_*(totalBranchCount-_MATRIX_ELEMENT_ROW_)*(_MATRIX_ELEMENT_COLUMN_==1)"];
 
@@ -309,10 +350,10 @@ pthreshold = 0.05;
 
 for		(k = 0; k < totalBranchCount; k = k+1)
 {
-    pValueByBranch[pValueSorter[k][0]][9] = Min (1,pValueSorter[k][1]);
+    pValueByBranch[pValueSorter[k][0]][p_corrected_column] = Min (1,pValueSorter[k][1]);
     if (pValueSorter[k][1] <= pthreshold)
     {
-        fprintf (stdout, "\t", bNames[pValueSorter[k][0]], " p = ", pValueByBranch[pValueSorter[k][0]][9], "\n");
+        fprintf (stdout, "\t", bNames[pValueSorter[k][0]], " p = ", pValueByBranch[pValueSorter[k][0]][p_corrected_column], "\n");
         hasBranchesUnderSelection += 1;
     }
 }
@@ -340,41 +381,35 @@ rows	= Rows (resultTable[2]);
 columns = Columns(resultTable[1]);
 
 
-
-
-
 TREE_OUTPUT_OPTIONS = {"__FONT_SIZE__":14};
 
 tavl = T^0;
-for (k = 1; k < Abs (tavl)-1; k+=1)
-{
+for (k = 1; k < Abs (tavl)-1; k+=1) {
 	TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]] = {};
 }
 
-for (k = 1; k < Abs (tavl)-1; k+=1)
-{
-	thisP = (resultTable[1])[k-1][9];
+for (k = 1; k < Abs (tavl)-1; k+=1) {
+	thisP = (resultTable[1])[k-1][p_corrected_column];
 	
-	parentName = (tavl[((tavl[k])["Parent"])])["Name"];
-	
-	myRateDistro = {3,2};
-	myRateDistro [0][0] = (resultTable[1])[k-1][1];
-	myRateDistro [0][1] = (resultTable[1])[k-1][2];
-	myRateDistro [1][0] = (resultTable[1])[k-1][3];
-	myRateDistro [1][1] = (resultTable[1])[k-1][4];
-	myRateDistro [2][0] = (resultTable[1])[k-1][5];
-	myRateDistro [2][1] = (resultTable[1])[k-1][6];
-	
+    ref = "mixtureTree."+bNames[k-1];
+    rate_classes = rate_classes_by_branch[k-1];
+    myRateDistro = getNodeOmegaDistribution (ref, rate_classes);
+    
+    parentName = (tavl[((tavl[k])["Parent"])])["Name"];
+		
 	myRateDistro = myRateDistro % 0;
 	
-	color1 = makeDNDSColor (myRateDistro[0][0]);
-	color2 = makeDNDSColor (myRateDistro[1][0]);
-	color3 = makeDNDSColor (myRateDistro[2][0]);
+	colors = {rate_classes,4};
+	for (cc = 0; cc < rate_classes; cc += 1) {
+	    color1 = makeDNDSColor (myRateDistro[cc][0]);
+	    colors [cc][0] = color1[0];
+	    colors [cc][1] = color1[1];
+	    colors [cc][2] = color1[2];
+	    colors [cc][3] = myRateDistro[cc][1];
+	}
 	
-	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_COLOR"] 		= {{color1__[0],color1__[1],color1__[2],myRateDistro__[0][1]}
-																				   {color2__[0],color2__[1],color2__[2],myRateDistro__[1][1]}
-																				   {color3__[0],color3__[1],color3__[2],myRateDistro__[2][1]}};
-	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_LINECAP"]  = 	0;
+	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_COLOR"] 		= colors;
+	(TREE_OUTPUT_OPTIONS[(tavl[k])["Name"]])["TREE_OUTPUT_BRANCH_LINECAP"]  = 	thisP > 0.05;
 	
 	if (thisP <= 0.05)
 	{
@@ -421,40 +456,159 @@ function saveLF (ID) {
 	return _stashLF;
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
 function restoreLF (key, value) {
 	ExecuteCommands (key + " = " + value);
 	return 0;
 }
 
-function printNodeDesc (ref) {
-    wts = {{ Eval (ref+".Paux1"), Eval ("(1-"+ref+".Paux1)*"+ref+".Paux2"), Eval ("(1-"+ref+".Paux1)*(1-"+ref+".Paux2)")}};
-     
-    fprintf (stdout, "Node: ", ref, 
-                 "\n\tLength parameter = ", Eval (ref+".t"), 
-                 "\n\tClass 1: omega = ", Eval (ref+".omega1"), " weight = ", wts[0],
-                 "\n\tClass 2: omega = ", Eval (ref+".omega2"), " weight = ", wts[1],
-                 "\n\tClass 3: omega = ", Eval (ref+".omega3"), " weight = ", wts[2], "\n");
-                 
-    return (Eval (ref+".t") == 0 || wts[0] == 1 || wts[1] == 1);
 
+//------------------------------------------------------------------------------------------------------------------------
+
+function gEval (expr) {
+    return Eval (expr);
 }
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction printNodeDesc (ref, rate_classes) {
+    if (rate_classes > 1) {
+        wts = generateFrequencyParameterization ("Paux", rate_classes);
+     
+        fprintf (stdout, "Node: ", ref, 
+                     "\n\tLength parameter = ", ^(ref+".t"));
+                 
+        for (k = 0; k < rate_classes; k+=1) {
+            fprintf (stdout, "\n\tClass ", k+1,": omega = ", ^(ref+".omega" + (k+1)), ", weight = ", gEval(wts[k]));
+        }
+                  
+        fprintf (stdout, "\n"); 
+    } else {
+        fprintf (stdout, "Node: ", ref, 
+                     "\n\tLength parameter = ", ^(ref+".syn"));
+        
+        fprintf (stdout, "\n\tClass ", rate_classes ,": omega = ", _standardizeRatio(^(ref+".nonsyn"),^(ref+".syn")), ", weight = 1.\n");
+    }    
+    return 0;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+function getIC (logl,params,samples) {
+    return -2*logl + 2*samples/(samples-params-1)*params;
+    //return -2*logl + Log (samples)*params;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
 
 function copyomegas (node, syn, nonsyn) {
     local_omega = =  Min (10, nonsyn/syn);
     Eval("`node`.omega2 = 1");
     if (local_omega < 1) {
         Eval("`node`.Paux1 = 1");
-        Eval("`node`.Paux2 = 0");
         Eval("`node`.omega1 =  local_omega");
-        Eval("`node`.omega3 = 10");
+        Eval("`node`.omega2 = 10");
     } else {
         Eval("`node`.Paux1 = 0");
-        Eval("`node`.Paux2 = 0");
-        Eval("`node`.omega3 =  local_omega");
+        Eval("`node`.omega2 =  local_omega");
         Eval("`node`.omega1 = 0");    
     }
     Eval("`node`.t = syn");
     return 0;
-    
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction setBSRELBounds (node, count) {
+    for (k = 1; k < count; k += 1) {
+        ^("`node`.Paux" + k ) :< 1;   
+        ^("`node`.omega" + k ) :<1;   
+    }
+    return 0;
+}
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction getNodeOmegaDistribution (ref, rate_classes) {
+    values = {rate_classes, 2};
+    if (rate_classes > 1) {
+        wts = generateFrequencyParameterization ("Paux", rate_classes);
+        for (k = 0; k < rate_classes; k+=1) {
+            values[k][0] = ^(ref+".omega" + (k+1));
+            values[k][1] = gEval(wts[k]);
+        }
+    } else {
+        values [0][0] =   ^("`ref`.nonsyn")/^("`ref`.syn");
+        values [0][1] =   1;        
+    }
+    return values;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction saveNodeMLES (node, count) {
+    values = {count, 2};
+    for (k = 0; k < count - 1; k += 1) {
+        values [k][0] = ^("`node`.omega" + (k+1));
+        values [k][1] = ^("`node`.Paux" + (k+1));        
+    }
+    values [count-1][0] = ^("`node`.omega" + count);
+    values [count-1][1] = ^("`node`.t");
+    return values;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction initNodeMLESPlus1 (node, values) {
+    count = Rows (values);
+    for (k = 0; k < count - 1; k += 1) {
+        ^("`node`.omega" + (k+1)) = values[k][0];
+        ^("`node`.Paux"  + (k+1)) = values[k][1];        
+    }
+    if (values[count-1][0] > 1) {
+        ^("`node`.omega" + (count+1)) = values[count-1][0];
+        ^("`node`.Paux"  + (count))   = 0.01;        
+        ^("`node`.omega" + (count))   = 0.5;
+    } else {
+        ^("`node`.omega" + (count+1)) = 2;
+        ^("`node`.Paux"  + (count))   = 0.99;        
+        ^("`node`.omega" + (count))   = values[count-1][0];
+    }
+    ^("`node`.t") = values[count-1][1];  
+    return 0;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction restoreNodeMLE (node, values) {
+    count = Rows (values);
+    for (k = 0; k < count - 1; k += 1) {
+         ^("`node`.omega" + (k+1)) = values[k][0];
+         ^("`node`.Paux"  + (k+1)) = values[k][1];        
+    }
+    ^("`node`.omega" + count) = values[count-1][0];  
+    ^("`node`.t") = values[count-1][1];  
+    return 0;
+}
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction generateFrequencyParameterization (prefix, count) {
+    result = {1, count};
+    if (count > 1) {
+        result[0] = "`prefix`1";
+        buffer = "(1-`prefix`1)";
+        for (i = 1; i < count - 1; i+=1) {
+            result[i] = buffer + "*" + "`prefix`" + (i+1);
+            buffer   += "*(1-`prefix`" + (i+1) + ")";
+        } 
+        result[count-1] = buffer;
+    } else {
+        result [0] = "1";
+    }
+    return result;
+}
