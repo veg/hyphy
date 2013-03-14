@@ -38,7 +38,7 @@ if (treeCount > 0)
 		for (lf_ID = 0; lf_ID < lf_Count; lf_ID = lf_ID + 1)
 		{
 			GetString (treeID, LikelihoodFunction,lf_ID);
-			ExecuteCommands ("GetString(lfInfo,"+treeID+",-1);");
+			GetString(lfInfo,^treeID,-1);
 			lfTrees = lfInfo["Trees"];
 			for (k = 0; k<Columns(lfTrees); k=k+1)
 			{

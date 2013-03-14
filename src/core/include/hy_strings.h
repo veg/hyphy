@@ -81,9 +81,10 @@ public:
 
     /**
     * A constructor that converts a _Parameter(double) to string.
-    * @param sL The floating number to convert to string
+    * @param sL         The floating number to convert to string
+    * @param format     The C-style format string to use for the conversion
     */
-    _String (_Parameter);
+    _String (_Parameter, const char * = nil);
 
     /**
     * A constructor that duplicates from another string.

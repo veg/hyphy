@@ -2997,11 +2997,11 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 
     for (long sc=0; sc <= branchCount+leafCount; sc++) {
         char       buffer[256];
-        sprintf  (buffer, "%.15f", branchSpans(sc,0));
+        snprintf  (buffer, 256, "%.15f", branchSpans(sc,0));
         nodeName = buffer;
         branchSpans.Store(sc,0,nodeName.toNum());
         timeSplitsAVL.Insert (nodeName.makeDynamic(),0,false,true);
-        sprintf  (buffer, "%.15f", branchSpans(sc,1));
+        snprintf  (buffer, 256, "%.15f", branchSpans(sc,1));
         nodeName = buffer;
         branchSpans.Store(sc,1,nodeName.toNum());
         timeSplitsAVL.Insert (nodeName.makeDynamic(),0,false,true);
@@ -3032,7 +3032,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
         }
 
         char       buffer[256];
-        sprintf  (buffer, "%.15f", T0);
+        snprintf  (buffer, 256, "%.15f", T0);
         nodeName = buffer;
         tcache.Clear();
         long       startingPos =  timeSplitsAVL.Find (&nodeName,tcache),
@@ -5330,7 +5330,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
                     vScale *= 10.;
                 }
 
-                _String rulerLabel (vScale);
+                _String rulerLabel (vScale, "%5.2g");
 
                 while (vScale*hScale > (treeLayout==1?treeRadius/3:treeWidth-newRoot->in_object.h)) {
                     vScale     *= 0.5;

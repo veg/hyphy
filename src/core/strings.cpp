@@ -235,13 +235,12 @@ _String::_String (const char s)
 }
 
 //Data constructor
-_String::_String (_Parameter val)
+_String::_String (_Parameter val, const char * format)
 {
     char s_val[128];
-    sprintf (s_val,PRINTF_FORMAT_STRING,val);
-    for(sLength=0; s_val[sLength]; sLength++) ;
+    sLength = snprintf (s_val,128, format?format:PRINTF_FORMAT_STRING,val);
     checkPointer (sData = (char*)MemAllocate (sLength+1));
-    for (long k=0; k<=sLength; k++) {
+    for (unsigned long k=0; k<=sLength; k++) {
         sData[k] = s_val[k];
     }
 }
