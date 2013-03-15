@@ -148,31 +148,21 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 		}
 	}
 	
-	aligned = aligned[0];
 	
+
+	
+	//GetString (seqName,unal,seqCounter);
+   // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
+    
 	if (stripOutMisalignedCharacters) {
-	    fixedRef = ""; fixedRef * 128;
-	    fixedQry = ""; fixedQry * 128;
-	    alignment_length = Abs (aligned[1]);
-	    for (k = 0; k < alignment_length; k+=1) {
-	        if ((aligned[1])[k] == "-" && (aligned[2])[k] != ((aligned[2])[k]&&1)) {
-	            continue;
-	        }
-	        fixedRef * (aligned[1])[k];
-	        fixedQry * (aligned[2])[k];
-	    }
-	    fixedRef * 0; fixedQry * 0;
-	    aligned[1] = fixedRef;
-	    aligned[2] = fixedQry;
-	    
+	    fixed = CleanAlignment (aligned,0);
+	    (aligned[0])[1] = fixed["ref"];
+	    (aligned[0])[2] = fixed["seq"];
 	}
 	
+	aligned = aligned[0];
 	SeqAlignments[seqCounter] = aligned;
-
-	/*
-	  GetString (seqName,unal,seqCounter);
-	  fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
-    */
+    
     
 	aligned = aligned[1];
 	

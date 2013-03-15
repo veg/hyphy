@@ -521,8 +521,7 @@ function translateCodonToAA (codonSeq,mapping,offset)
 	seqLen = Abs (codonSeq);
 	translString = "";
 	translString * (seqLen/3+1);
-	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
-	{
+	for (seqPos = offset; seqPos < seqLen; seqPos += 3) {
 		codon = codonSeq[seqPos][seqPos+2];
 		prot  = mapping[codon];
 		if (Abs(prot))

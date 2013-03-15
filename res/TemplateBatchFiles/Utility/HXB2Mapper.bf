@@ -231,8 +231,7 @@ function selectHXB2subsequenceCodon (seq,theSubset)
 
 //--------------------------------------------------------------------------------
 
-function		isoElectricPoint (seq)
-{
+function		isoElectricPoint (seq) {
 	COUNT_GAPS_IN_FREQUENCIES = 0;
 	
 	DataSet 			protSeq = ReadFromString ("$BASESET:BASE20\n>1\n" + seq);
@@ -265,14 +264,13 @@ function		isoElectricPoint (seq)
 
 //--------------------------------------------------------------------------------
 
-function		countPNGS		(seq)
-{
-	return Rows(seq || "N[^P][ST][^P]")/2
+lfunction		countPNGS		(seq){
+    pngs = seq || "N\\-*[^P]\\-*[ST]\\-*[^P]";
+	return Rows(pngs)/2 - (pngs[0] < 0) ;
 }
 
 /*-------------------------------------------------------------*/
-function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA)
-{
+function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA) {
 	if (nucOrAA != 1)
 	{
 		_template = {1,Abs(_HXB2_Env_Sequence_)};
