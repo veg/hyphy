@@ -609,9 +609,8 @@ void  InsertVar (_Variable* theV)
 
     if (pos < 0) {
         if (isDefiningATree == 1) {
-            _String errMsg (*theV->GetName());
-            errMsg = errMsg& " is already being used - please rename one of the two variables.";
-            WarnError(errMsg);
+            WarnError(_String("Internal error while creating a tree: '") & *theV->GetName() & "'");
+            return;
         }
 
         theV->theIndex = variableNames.GetXtra(-pos-1);

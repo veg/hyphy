@@ -80,9 +80,9 @@ long*       nonZeroNodes = nil,
     pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-char        isDefiningATree         = false,
-            takeBranchLengths       = false,
-            autoSolveBranchLengths  = false;
+char        isDefiningATree         = 0,
+            takeBranchLengths       = 0,
+            autoSolveBranchLengths  = 0;
 
 _Parameter  ignoringInternalNames   = 0.0;
 
@@ -1073,7 +1073,7 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
         node<long> *node_temp = theRoot->go_down(1);
         if (!node_temp) {
             WarnError (_String("Vacuos Tree Supplied"));
-            isDefiningATree = false;
+            isDefiningATree = 0;
             return;
         }
         if (node_temp->get_num_nodes()) {
@@ -1189,7 +1189,7 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
 {
     PreTreeConstructor   (false);
     if (top->theRoot) {
-        isDefiningATree         = true;
+        isDefiningATree         = 1;
         theRoot                 = top->theRoot->duplicate_tree ();
         node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
         while (topTraverser) {
@@ -1211,7 +1211,7 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
             FinalizeNode (topTraverser, 0, nodeName, nodeParams, nodeVS);
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
-        isDefiningATree         = false;
+        isDefiningATree         = 0;
         PostTreeConstructor      (false);
     } else {
         WarnError ("Can't create an empty tree");
@@ -1224,7 +1224,7 @@ _TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopolog
 {
     PreTreeConstructor   (false);
     if (otherTree->theRoot) {
-        isDefiningATree         = true;
+        isDefiningATree         = 1;
         theRoot                 = otherTree->theRoot->duplicate_tree ();
         
         node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
@@ -1237,7 +1237,7 @@ _TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopolog
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
         
-        isDefiningATree         = false;
+        isDefiningATree         = 0;
         PostTreeConstructor      (false);
     } else {
         WarnError ("Can't create an empty tree");
@@ -1251,7 +1251,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty)
 {
     PreTreeConstructor   (false);
     if (top->theRoot) {
-        isDefiningATree         = true;
+        isDefiningATree         = 1;
         theRoot                 = top->theRoot->duplicate_tree ();
         node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
         while (topTraverser && topTraverser->parent) {
@@ -1267,7 +1267,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty)
             DeleteObject (nodeSpec);
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
-        isDefiningATree         = false;
+        isDefiningATree         = 0;
     } else {
         WarnError ("Can't create an empty tree");
         return;
@@ -1299,8 +1299,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     long i,
          nodeCount=0,
          lastNode;
-
-
+    
     _Parameter      checkABL;
 
     checkParameter  (acceptBranchLengths, checkABL, 1.0);
@@ -1322,10 +1321,10 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     bool        isInLiteral = false;
 
     node<long>* currentNode = theRoot = nil,
-                * newNode   = nil,
-                  * parentNode  = nil;
+              * newNode     = nil,
+              * parentNode  = nil;
 
-    isDefiningATree         = true;
+    isDefiningATree         = 1;
 
     for (i=0; i<parms.sLength; i++) {
         switch (parms[i]) {
@@ -1340,7 +1339,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                     parentNode = currentNode->get_parent();
                     if (!parentNode) {
                         WarnError ((_String("'(' is out of context: ...")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                        isDefiningATree = false;
+                        isDefiningATree = 0;
                         return false;
                     } else {
                         parentNode->add_node (*newNode);
@@ -1369,7 +1368,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             if (lastNode<0) {
                 WarnError ((_String(parms[i])&_String(" is out of context:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
                 //PurgeTree();
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             parentNode = (node<long>*)nodeStack(lastNode);
@@ -1381,7 +1380,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                 checkPointer (newNode = new node<long>);
                 if (!(parentNode = parentNode->get_parent())) {
                     WarnError ((_String("',' is out of context:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                    isDefiningATree = false;
+                    isDefiningATree = 0;
                     return false;
                 }
                 currentNode = newNode;
@@ -1397,7 +1396,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             lastNode = parms.Find ("}",i+1,-1);
             if (lastNode<0) {
                 WarnError ((_String("'{' has no matching '}':")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             nodeParameters = parms.Cut (i+1,lastNode-1);
@@ -1409,7 +1408,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             lastNode = parms.Find ("]",i+1,-1);
             if (lastNode<0) {
                 WarnError ((_String("'[' has no matching ']':")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             nodeComment = parms.Cut (i+1,lastNode-1);
@@ -1463,7 +1462,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
 
             if (!isInLiteral && !(isalnum(c)|| c=='_')) {
                 WarnError ((_String("Node names should begin with a letter, a number, or an underscore. Had:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
 
@@ -1480,14 +1479,15 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                     if (lastNode<parms.sLength) {
                         lastNode++;
                         c = parms[lastNode];
-                        if (c == '\'')
+                        if (c == '\'') {
                             if (isInLiteral) {
                                 break;
                             } else {
                                 WarnError ((_String("Unxpected \'. Had:")&parms.Cut(lastNode>31?lastNode-32:0,lastNode)&"?"&parms.Cut(lastNode+1,parms.sLength-lastNode>32?lastNode+32:-1)));
-                                isDefiningATree = false;
+                                isDefiningATree = 0;
                                 return false;
                             }
+                        }
                     } else {
                         break;
                     }
@@ -1495,7 +1495,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             if (isInLiteral) {
                 if (c!='\'') {
                     WarnError ((_String("Unterminated \'. Had:")&parms.Cut(lastNode>31?lastNode-32:0,lastNode)&"?"&parms.Cut(lastNode+1,parms.sLength-lastNode>32?lastNode+32:-1)));
-                    isDefiningATree = false;
+                    isDefiningATree = 0;
                     return false;
                 }
                 nodeName        = parms.Cut(i,lastNode-1);
@@ -1523,12 +1523,12 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     }
 
     if (!theRoot) {
-        isDefiningATree = false;
+        isDefiningATree = 0;
         WarnError ("Can't create empty trees.");
         return false;
     }
 
-    isDefiningATree = false;
+    isDefiningATree = 0;
     return true;
 
 }
@@ -1564,9 +1564,10 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeNa
 
     }
 
+    char saveIDT = isDefiningATree;
     isDefiningATree = isAutoGenerated?2:1;
     _CalcNode cNt (nodeName,nodeParameters, 4, this, aCache);
-    isDefiningATree = 1;
+    isDefiningATree = saveIDT;
     nodie->init (cNt.theIndex);
 
 

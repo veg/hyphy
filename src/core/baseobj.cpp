@@ -396,7 +396,7 @@ void    PurgeAll (bool all)
     scanfLastFilePath = empty;
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = false;
-    isDefiningATree     = false;
+    isDefiningATree     = 0;
 #ifdef __HYPHYMPI__
     int            size;
 

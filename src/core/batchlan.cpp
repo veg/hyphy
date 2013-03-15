@@ -232,6 +232,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfRedirect               ("GLOBAL_FPRINTF_REDIRECT"),
                                 blFprintfDevNull                ("/dev/null"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
+                                alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
                                 baseDirectory,
                                 lastModelUsed,
@@ -3050,8 +3051,10 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     // printf ("%s\n", tryPath.sData);
+                    _Parameter reload = 0.;
+                    checkParameter(alwaysReloadLibraries, reload, 0.);
 
-                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2) {
+                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
                         return;
                     }
