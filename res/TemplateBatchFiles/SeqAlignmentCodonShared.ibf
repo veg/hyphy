@@ -68,6 +68,10 @@ function _cdn_alignment_cleanup (reference, query, offset_nuc) {
 	            if (_seqL-_rcidx < 3 && _codon_in_reference % 3 == 0) {
 	                break;
 	            }
+	            if (_codon_in_reference == 0) {
+                    ref_cleaned * (reference [_rcidx]&&1);
+                    qry_cleaned * (query [_rcidx]&&1);	                
+	            }
 	            too_long += 1;
 	        } else {
                 ref_cleaned * (reference [_rcidx]&&1);
@@ -79,6 +83,8 @@ function _cdn_alignment_cleanup (reference, query, offset_nuc) {
 	}
 	
 	ref_cleaned * 0; qry_cleaned * 0;
+	
+	//assert (too_long == 0, "\n" + ref_cleaned + "\n"+ qry_cleaned);
 	
 	return {"REF": ref_cleaned, "QRY": qry_cleaned, "TOO_SHORT" : too_short, "TOO_LONG": too_long};
 }
