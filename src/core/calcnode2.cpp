@@ -857,7 +857,11 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                 }
                 break;
             }
-            result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
+                result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            } else {
+                result += log(accumulator);
+            }
         }
     }
 
@@ -1317,7 +1321,12 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
                 }
                 break;
             }
-            result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            if (theFilter->theFrequencies [siteOrdering.lData[siteID]] > 1) {
+                result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
+            } else {
+                result += log(accumulator);
+            }
+            //result += log(accumulator) * theFilter->theFrequencies [siteOrdering.lData[siteID]];
         }
     }
     return result;

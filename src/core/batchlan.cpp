@@ -1886,9 +1886,9 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = "Branch ";
         if (simpleParameters.countitems()==3) {
             converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
-            result = result& "under condition '"& *converted&"'\n\tto "&
+            result = result& "under condition '"& *converted&"'\n\tto\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
-                        "\n\telse "&
+                        "\n\telse\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
             result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
@@ -1960,16 +1960,17 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result & " from string " &*converted;
         break;
 
-    case 8: // print stuff to file (or stdout)
+    case HY_HBL_COMMAND_FPRINTF: // print stuff to file (or stdout)
 
         converted = (_String*)parameters(0)->toStr();
-        result = _String("Print to File ")& (*converted) & ":";
+        result = _String("fprintf(")& (*converted);
         DeleteObject (converted);
 
         converted = nil;
         for (k = 1; k<parameters.countitems(); k++) {
-            result = result&*((_String*)parameters(k))&"\n";
+            result = result&*","& *((_String*)parameters(k));
         }
+        result = result & ")";
 
 
         break;

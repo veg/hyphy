@@ -5308,7 +5308,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (verbosityLevel > 100) {
             char buf [512];
-            sprintf (buf, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
+            snprintf (buf, 512, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
             BufferToConsole (buf);
         }
 
@@ -5392,7 +5392,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [256];
-        sprintf (buf, "\n[BRACKET SUCCESSFUL: %.16g - %.16g -% .16g. steps, L=%g, R=%g, values %.16g - %.16g - %.16g]", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+        snprintf (buf, 256, "\n[BRACKET SUCCESSFUL: %.16g - %.16g -% .16g. steps, L=%g, R=%g, values %.16g - %.16g - %.16g]", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
 
@@ -6414,7 +6414,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 pFitGood = false;
                 XM = .5*(lV+rV);
 
-                _Parameter tol1 = fabs (X) * gPrecision + 1.e-10,
+                _Parameter tol1 = fabs (X) * gPrecision + 1.e-6,
                            tol2 = 2.*tol1;
 
                 if (fabs(X-XM) <= tol2-0.5*(rV-lV)) {
@@ -6587,7 +6587,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             
             if (verbosityLevel > 50) {
                 char buf [256];
-                sprintf (buf, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g (%g = %g) %g %g]", left, XM, X, fabs(X-XM), right, right-left);
+                snprintf (buf, 256, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g (%g = %g) %g %g]", left, XM, X, fabs(X-XM), right, right-left);
                 BufferToConsole (buf);
             }
             
@@ -6628,7 +6628,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             
             if (verbosityLevel > 50) {
                 char buf [256];
-                sprintf (buf, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
+                snprintf (buf, 256, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
                 BufferToConsole (buf);
             }
             
@@ -6668,7 +6668,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         
         if (verbosityLevel > 50) {
             char buf [256];
-            sprintf (buf, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g, delta Log L = %g ]\n\n", brentPrec, bestVal, X, middleValue+FX);
+            snprintf (buf, 256, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g, delta Log L = %g ]\n\n", brentPrec, bestVal, X, middleValue+FX);
             BufferToConsole (buf);
         }
         middleValue = -FX;
@@ -6692,7 +6692,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
 //_______________________________________________________________________________________
 bool        _LikelihoodFunction::checkPermissibility (_Matrix&m, long row)
 {
-    for (long j=0; j<indexInd.lLength; j++) {
+    for (unsigned long j=0; j<indexInd.lLength; j++) {
         _Parameter junk = m (row,j);
 
         _Variable *v = LocateVar (indexInd(j));
