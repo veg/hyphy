@@ -155,9 +155,11 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
    // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
     
 	if (stripOutMisalignedCharacters) {
-	    fixed = CleanAlignment (aligned,1);
-	    (aligned[0])[1] = fixed["ref"];
-	    (aligned[0])[2] = fixed["seq"];
+	
+	    fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
+	    //fprintf (stdout, aligned, "\n", fixed, "\n");
+	    (aligned[0])[1] = fixed["REF"];
+	    (aligned[0])[2] = fixed["QRY"];
 	}
 	
 	aligned = aligned[0];

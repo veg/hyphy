@@ -42,112 +42,49 @@ function Uppercase( _str )
     return _upstr;
 }
 
-function CleanAlignment( _aln, _keepIns )
-/*
- * Given the raw alignment record from AlignSequence, clean the aligned sequence and return either the raw sequence or the list of positions by CSV
- * @param  _aln 		-- the alignment dictionary
- * @param  _keepIns 	-- whether or not to keep insertions in the REFERENCE (0/1)
- * @return the cleaned string
- */
-{
+// -------------------------------------------------------------------------- //
 
-    _ref = ( _aln[0] )[1];
-    _seq = ( _aln[0] )[2];
-    _altRef = _ref ^ {{ "[a-z]", "_" }};
-    _newRef = "";
-    _newStr = "";
-    _newRef * 256;
-    _newStr * 256;
-    if ( _keepIns ) {
-        _keepIns = 1;
-    } else {
-        _keepIns = 0;
-    }
-    _k = 0;
-    _overlap_count = 0;
-
-    // codon by codon...
-    _nucLen = Abs( _ref ^ {{ "[-]", "" }} );
-    for ( _l = 0; _l < _nucLen; _l += 3 ) {
-        _ins = 0;
-        _dels = 0;
-        // count the number of insertions and deletions
-        _cdnAdv = Min( 3, _nucLen - _l );
-        for ( _k2 = 0; _k2 < _cdnAdv; _k2 += 1 ) {
-            if ( _altRef[ _k+_k2 ] == "-" ) {
-                _ins += 1;
-            } else {
-                if ( _altRef[ _k+_k2 ] == "_" ) {
-                    _dels += 1;
-                }
-            }
-        }
-        // if _ins == 3 (and we want to keep inserts),
-        // then we have a full codon insertion,
-        // add the original characters back in
-        // if _ins == 0 and _dels == 0, then everything is normal,
-        // add the original characters back in
-        if ( ( _keepIns * _ins ) == 3 || ( _ins == 0 && _dels == 0 ) ) {
-            _newRef * _ref[ _k ][ _k+2 ];
-            _newStr * _seq[ _k ][ _k+2 ];
-
-            _overlap_count += 3 * ( _seq[ _k ][ _k+2 ] != "---" );
-            
-            _k += 3;
-        }
-        // if neither of those two cases is true, then we need to go
-        // position by position, removing insertions and
-        // fixing deletions by adding in a "N"
-        else {
-            // _k2 advances by only a single codon (3 positions), whereas
-            // _l2 moves us ahead in the alignment. At the end, the difference
-            // between _k2 and _l2 should be that _l2 is greater by the number
-            // of inserted nucleotides
-            _k2 = 0;
-            for ( _l2 = 0; _k2 < _cdnAdv; _l2 += 1 ) {
-                // "_" means a deletion, add an "N" back in
-                if ( _altRef[ _k+_l2 ] == "_" ) {
-                    _newRef * _ref[ _k+_l2 ];
-                    _newStr * "-"; // we used to add an N here, but that was controversial
-
-                    _k2 += 1;
-                }
-                // if the character isn't an insertion
-                // which it always isn't because we took care of
-                // insertions above, add the original back in
-                else {
-                    if ( _altRef[ _k+_l2 ] != "-" ) {
-                        _newRef * _ref[ _k+_l2 ];
-                        _newStr * _seq[ _k+_l2 ];
-
-                        _overlap_count += ( _seq[ _k+_l2 ] != "-" );
-                        
-                        _k2 += 1;
-                    }
-                }
-            }
-            _k += _l2;
-        }
-    }
-    // only uppercase when not keeping inserts
-    if ( _keepIns ) {
-        _rest = Abs( _seq ) - _k;
-        for ( _k2 = 0; _k2 < _rest; _k2 += 1 ) {
-            _newRef * "-";
-            _newStr * _seq[ _k+_k2 ];
-        }
-    } else {
-        _newRef = Uppercase( _newRef );
-        _newStr = Uppercase( _newStr );
-    }
-    _newRef * 0;
-    _newStr * 0;
-    // get rid of any gaps
-    // _newStr2 = _newStr^{{"[-]", ""}};
-    return { "ref": _newRef, 
-             "seq": _newStr, 
-             "overlap": _overlap_count / 3 };
+function _cdn_alignment_cleanup (reference, query, offset_nuc) {
+    too_short = 0;
+    too_long  = 0;
+    span      = 0; // how many nucleotides in the reference were covered by non-gaps
+    _seqL     = Abs (reference);
+    
+    ref_cleaned = ""; ref_cleaned * 128; 
+    qry_cleaned = ""; qry_cleaned * 128;
+    
+    _codon_in_reference = 0;
+    
+	for ( _rcidx = 0; _rcidx < _seqL; _rcidx += 1 ) {
+	    _del1 = reference [_rcidx] != (reference [_rcidx]&&1);
+	    if (_del1) {
+	        too_short += 1;
+	        _codon_in_reference += 1;
+	        ref_cleaned * (reference [_rcidx]&&1);
+	        qry_cleaned * (query [_rcidx]&&1);
+	    } else {
+	        _del1 = query [_rcidx] != (query [_rcidx]&&1);
+	        if (_del1) {
+	            if (_seqL-_rcidx < 3 && _codon_in_reference % 3 == 0) {
+	                break;
+	            }
+	            too_long += 1;
+	        } else {
+                ref_cleaned * (reference [_rcidx]&&1);
+                qry_cleaned * (query [_rcidx]&&1);
+                span += 1;	            
+                _codon_in_reference +=1;
+	        }
+	    }
+	}
+	
+	ref_cleaned * 0; qry_cleaned * 0;
+	
+	return {"REF": ref_cleaned, "QRY": qry_cleaned, "TOO_SHORT" : too_short, "TOO_LONG": too_long};
 }
+
+// -------------------------------------------------------------------------- //
+
 
 function cSM2partialSMs(_cdnScoreMatrix, penalties)
 {
