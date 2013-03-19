@@ -170,13 +170,18 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 	
 	myStartingPosition = aligned$"[^-]";
 	myEndingPosition  = Abs (aligned)-1;
+	
+	
 	while (aligned[myEndingPosition]=="-") {
 		myEndingPosition = myEndingPosition - 1;
 	}
 	
+	
+	startingPosition [seqCounter][0] = myStartingPosition[1];
+	startingPosition [seqCounter][1] = myEndingPosition;
 
 	refInsert = aligned||"-+";
-	if (refInsert[0]>0) {
+	if (refInsert[0]>=0) {
 		insCount = Rows (refInsert)/2;
 		offset = 0;
 		for (insN = 0; insN < insCount; insN = insN+1) {
@@ -203,8 +208,7 @@ fullRefSeq * refLength;
 fullRefSeq * (s1[0]);
 
 
-for (seqCounter=1;seqCounter<refLength;seqCounter=seqCounter+1)
-{
+for (seqCounter=1;seqCounter<refLength;seqCounter+=1) {
 	gapCount = refInsertions[seqCounter];
 	for (k=0; k<gapCount;k=k+1)
 	{
@@ -223,6 +227,8 @@ GetString (seqName,unal,refSeqID);
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE,">",seqName,"\n",fullRefSeq);
 fName = LAST_FILE_PATH;
 
+//fprintf (stdout, startingPosition, "\n", refInsertions, "\n");
+
 for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 {
     if (seqCounter == refSeqID) {
@@ -240,15 +246,18 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	
 	gappedSeq = "";
 	gappedSeq * Abs(aligned2);
-
+    
 	
 	k=0;
 	
 	while (k<refLength)
 	{
+	    /*if (seqCounter == 5) {
+	        fprintf (stdout, k, "/", s2, " ", fullRefSeq[k]&&1, ":", aligned1[s2]&&1, ":", aligned2[s2]&&1, "\n");
+	    }*/
 		while ((fullRefSeq[k]&&1)!=(aligned1[s2]&&1) && k < refLength) {
 			gappedSeq*("-");
-			k=k+1;
+			k += 1;
 		}
 		if (k == refLength) {
 			break;
@@ -259,7 +268,9 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	}
 
 	gappedSeq * 0;
-
+	/*if (seqCounter == 5) {
+        fprintf (stdout, "\n", startingPosition[seqCounter][0], "\n\n",fullRefSeq,"\n\n", aligned1, "\n\n", aligned2, "\n\n", gappedSeq, "\n\n");
+    }*/
 
 	if (refSeq2 && seqCounter == seqCount-1) {
 		fscanf (fName, "Raw", soFar);
