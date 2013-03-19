@@ -1,6 +1,6 @@
 LoadFunctionLibrary ("SeqAlignmentCodonShared");
 checkReferenceSequenceForStopCodons = 1;
-stripOutMisalignedCharacters        = 1;
+doCodonAlignment        = 1;
 LoadFunctionLibrary ("SeqAlignmentNucShared");
 
 

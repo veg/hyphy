@@ -36,7 +36,7 @@
 #define HY_3X4_START 9
 #define HY_3X4_COUNT 4
 
-// match 5 in the ref to 5 in the query
+// match 3 in the ref to 5 in the query
 #define HY_11100_11111 13
 #define HY_11010_11111 14
 #define HY_11001_11111 15

@@ -154,12 +154,13 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 	//GetString (seqName,unal,seqCounter);
    // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
     
-	if (stripOutMisalignedCharacters) {
-	
-	    fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
-	    //fprintf (stdout, aligned, "\n", fixed, "\n");
-	    (aligned[0])[1] = fixed["REF"];
-	    (aligned[0])[2] = fixed["QRY"];
+	if (doCodonAlignment) {
+        fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
+        
+        assert (  (((aligned[0])[1] ^ {{"-",""}})&&1) == (((fixed["REF"]) ^ {{"-",""}})&&1), "Internal error correcting codon-based frameshifts:\n\n" + aligned[0] + "\n" + fixed + "\n");
+        
+        (aligned[0])[1] = fixed["REF"];
+        (aligned[0])[2] = fixed["QRY"];
 	}
 	
 	aligned = aligned[0];
@@ -247,12 +248,15 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	gappedSeq = "";
 	gappedSeq * Abs(aligned2);
     
-	
 	k=0;
+	
+	/*if (seqName == "D61_1959") {
+	    fprintf (stdout, "\n*** ", seqCounter, " ***\n");
+	}*/
 	
 	while (k<refLength)
 	{
-	    /*if (seqCounter == 5) {
+	    /*if (seqCounter == 10) {
 	        fprintf (stdout, k, "/", s2, " ", fullRefSeq[k]&&1, ":", aligned1[s2]&&1, ":", aligned2[s2]&&1, "\n");
 	    }*/
 		while ((fullRefSeq[k]&&1)!=(aligned1[s2]&&1) && k < refLength) {
@@ -268,7 +272,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
 	}
 
 	gappedSeq * 0;
-	/*if (seqCounter == 5) {
+	/*if (seqCounter == 31) {
         fprintf (stdout, "\n", startingPosition[seqCounter][0], "\n\n",fullRefSeq,"\n\n", aligned1, "\n\n", aligned2, "\n\n", gappedSeq, "\n\n");
     }*/
 
