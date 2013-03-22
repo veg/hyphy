@@ -157,6 +157,7 @@ for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
 	if (doCodonAlignment) {
         fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
         
+        assert (Abs (fixed["REF"])%3 == 0);
         assert (  (((aligned[0])[1] ^ {{"-",""}})&&1) == (((fixed["REF"]) ^ {{"-",""}})&&1), "Internal error correcting codon-based frameshifts:\n\n" + aligned[0] + "\n" + fixed + "\n");
         
         (aligned[0])[1] = fixed["REF"];

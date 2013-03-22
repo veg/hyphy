@@ -6514,7 +6514,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 brentHistory.Store (-FX-initialValue);*/
             }
                         
-            if (maxSoFar < initialValue) {
+            if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue)) {
                  WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");// & _String ((_String*)brentHistory.toStr()));
                  return;   
             }

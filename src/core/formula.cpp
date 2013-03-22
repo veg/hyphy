@@ -77,10 +77,10 @@ void _Formula::Duplicate  (BaseRef f)
 }
 
 //__________________________________________________________________________________
-void _Formula::DuplicateReference  (_Formula* f)
+void _Formula::DuplicateReference  (const _Formula* f)
 {
     for (unsigned long i=0; i<f->theFormula.lLength; i++) {
-        _Operation *theO = ((_Operation*)f->theFormula(i));
+        _Operation *theO = ((_Operation**)f->theFormula.lData)[i];
         if (theO->GetAVariable()==-2) {
             theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-theO->GetNoTerms()-1)->Compute()->makeDynamic()));
         } else {
@@ -1377,6 +1377,46 @@ bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
     }
     return false;
 }
+
+//__________________________________________________________________________________
+_Formula _Formula::operator+ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_ADD);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator- (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_SUB);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator* (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_MUL);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator/ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_DIV);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator^ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_POWER);
+}
+
+//__________________________________________________________________________________
+_Formula& _Formula::PatchFormulasTogether (_Formula& target, const _Formula& operand2, const char op_code) {
+    target.Clear();
+    target.DuplicateReference(this);
+    target.DuplicateReference(&operand2);
+    target.theFormula.AppendNewInstance(new _Operation (op_code, 2));
+    return target;
+}
+
 
 //__________________________________________________________________________________
 void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)

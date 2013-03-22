@@ -122,7 +122,7 @@ public:
 
     virtual void        Initialize          (void);
     virtual void        Duplicate           (BaseRef);
-    void        DuplicateReference  (_Formula*);
+    void        DuplicateReference  (const _Formula*);
     virtual BaseRef     makeDynamic         (void);
     virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
 
@@ -187,6 +187,14 @@ public:
     void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
     long        ExtractMatrixExpArguments        (_List*);
+    
+    virtual     _Formula operator + (const _Formula&);
+    virtual     _Formula operator - (const _Formula&);
+    virtual     _Formula operator * (const _Formula&);
+    virtual     _Formula operator / (const _Formula&);
+    virtual     _Formula operator ^ (const _Formula&);
+    
+    _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
 
 protected:
 

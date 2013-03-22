@@ -5203,6 +5203,15 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
 {
     if (ind2>=0) { // element storage
         if (storageType == 2) { // formulas
+            if (opCode == HY_OP_CODE_ADD) {
+                _Formula * addOn = GetFormula(ind1,ind2);
+                if (addOn) {
+                    _Formula f_joint;
+                    addOn->PatchFormulasTogether(f_joint, f, HY_OP_CODE_ADD);
+                    StoreFormula (ind1,ind2,f_joint);
+                    return;
+                }
+            } 
             StoreFormula (ind1,ind2,f);
         } else {
             if (!f.IsAConstant()) {

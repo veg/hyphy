@@ -63,16 +63,23 @@ lfunction _cdn_alignment_cleanup (reference, query, offset_nuc) {
 	    _ref_char = reference [_rcidx];
 	    _qry_char = query [_rcidx];
 	    
-	   /* if (^"seqCounter" == 31) {
+	    /*
+	    if (^"seqCounter" == 5) {
 	        fprintf (stdout, _ref_char, "/", _qry_char, "   ", _reference_phase%3, ":", _query_phase%3, "\n");
 	    }
-	   */
+	    */
+	   
 	    
 	    if (_ref_char == "-") {
 	         if (_reference_phase % 3 == 0 && _seqL - _rcidx >=3 ) { // in frame, see if this is a --- 
-                ref_cleaned * reference [_rcidx];
-                qry_cleaned * query     [_rcidx];
-                _query_phase += 1;	            
+	            if (reference[_rcidx+1] == "-" && reference[_rcidx+2] == "-") {
+                    ref_cleaned * "---";
+                    qry_cleaned * query     [_rcidx][_rcidx+2];
+                    _rcidx += 2;
+                    _query_phase += 3;	 
+                } else {
+                    _query_phase += 1;
+                }     
 	         }
 	    } else {
 	        if (_qry_char == "-") {
@@ -89,6 +96,7 @@ lfunction _cdn_alignment_cleanup (reference, query, offset_nuc) {
                     ref_cleaned * reference [_rcidx];
                     qry_cleaned * "-";
                     _reference_phase += 1;
+                    _query_phase += 1;
                 }	        
 	        }
 	    }	    
