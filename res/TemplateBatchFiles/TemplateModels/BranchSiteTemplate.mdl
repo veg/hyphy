@@ -196,7 +196,7 @@ lfunction extractBranchInformation (treeID, _omega_pattern, _model_prefix, _freq
                     _freqW = ^var_ref;
                 } else {
                     var_ref = treeID + "." + _branchNames[_i] + "." + _freq_prefix + (_c-1);
-                    _freqW = 1-^var_ref;
+                    _freqW = 1.;
                 }
                 
                 _thisModelWeight = (1-_totalWeight)*_freqW;            

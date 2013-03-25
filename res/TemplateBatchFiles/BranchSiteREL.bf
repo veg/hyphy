@@ -480,8 +480,12 @@ lfunction printNodeDesc (ref, rate_classes) {
         fprintf (stdout, "Node: ", ref, 
                      "\n\tLength parameter = ", ^(ref+".t"));
                  
+        for (k = 1; k < rate_classes; k+=1) {
+            *("Paux" + k) = ^(ref+".Paux" + k);
+        }
+
         for (k = 0; k < rate_classes; k+=1) {
-            fprintf (stdout, "\n\tClass ", k+1,": omega = ", ^(ref+".omega" + (k+1)), ", weight = ", gEval(wts[k]));
+            fprintf (stdout, "\n\tClass ", k+1,": omega = ", ^(ref+".omega" + (k+1)), ", weight = ", Eval(wts[k]));
         }
                   
         fprintf (stdout, "\n"); 
