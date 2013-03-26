@@ -12,6 +12,13 @@ LoadFunctionLibrary("BranchSiteTemplate");
 LoadFunctionLibrary("TreeTools");
 
 
+ChoiceList  (doSynRateVariation,"Allow branch-site variation in synonymous rates?",1,NO_SKIP,"Yes","Both alpha and beta vary along branch-site combinations","No", "Alpha varies from branch to branch, while omega varies among branch-site combinations");
+
+if (doSynRateVariation < 0) {
+    return 1;
+}   
+
+doSynRateVariation = 1-doSynRateVariation;
 
 DataSet 			ds 				= ReadDataFile(PROMPT_FOR_FILE);
 DataSetFilter 		dsf 			= CreateFilter(ds,3,"","",GeneticCodeExclusions);
@@ -21,7 +28,11 @@ HarvestFrequencies	(nuc3, dsf, 3, 1, 1);
 nucCF						= CF3x4	(nuc3, GeneticCodeExclusions);
 
 for (matrix_id = 1; matrix_id <= maximum_number_of_omegas; matrix_id += 1) {
-    PopulateModelMatrix			  ("MGMatrix" + matrix_id,  nucCF, "t", "omega" + matrix_id, "");
+    if (doSynRateVariation) {
+      PopulateModelMatrix			  ("MGMatrix" + matrix_id,  nucCF, "syn" + matrix_id, "", "nonsyn" + matrix_id);    
+    } else {
+       PopulateModelMatrix			  ("MGMatrix" + matrix_id,  nucCF, "t", "omega" + matrix_id, "");
+    }
 }
 
 PopulateModelMatrix			  ("MGMatrixLocal",  nucCF, "syn", "", "nonsyn");
@@ -30,7 +41,6 @@ codon3x4					= BuildCodonFrequencies (nucCF);
 Model		MGL				= (MGMatrixLocal, codon3x4, 0);
 
 LoadFunctionLibrary("queryTree");
-
 
 totalBranchCount			 = BranchCount(givenTree) + TipCount (givenTree);
 bNames						 = BranchName (givenTree, -1);
@@ -50,7 +60,7 @@ for (k = 0; k < totalBranchCount; k = k+1) {
 ChoiceList  (whichBranchesToTest,"Which branches to test?",0,NO_SKIP,selectTheseForTesting);
 
 if (whichBranchesToTest[0] < 0) {
-    return;
+    return 1;
 }
 
 selectedBranches = {};
@@ -158,6 +168,8 @@ sortedBLs = sortedBLs%0;
 
 rate_classes_by_branch = {};
 
+
+
 for (k = 0; k < totalBranchCount; k+=1) {
     reordered_index = sortedBLs[totalBranchCount-k-1][1];
     //reordered_index = sortedBLs[k][1];
@@ -183,13 +195,13 @@ for (k = 0; k < totalBranchCount; k+=1) {
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
     fixGlobalParameters           ("stepupLF");
     Optimize                      (res, stepupLF);
-    test_IC = getIC (res[1][0], current_parameter_count + 2, sample_size);
-    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t2 rate clases\n\t");
+    test_IC = getIC (res[1][0], current_parameter_count + 2 + doSynRateVariation, sample_size);
+    fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
     
     while (test_IC < current_IC) {
         accepted_rates_count += 1;
-        current_parameter_count += 2;
+        current_parameter_count += 2 + doSynRateVariation;
         current_IC = test_IC;
         saved_MLEs = saveNodeMLES (branch_name_to_test, accepted_rates_count);
         //fprintf (stdout, saved_MLEs, "\n");
@@ -254,6 +266,7 @@ OPTIMIZATION_METHOD = 0;
 
 
 fprintf 					  (stdout, "\n\n[PHASE 2] Fitting the full LOCAL alternative model (no constraints)\n");
+VERBOSITY_LEVEL = 0;
 Optimize					  (res_three_LF,three_LF);
 fprintf						  (stdout, "\nLog L = ", res_three_LF[1][0], " with ", res_three_LF[1][1] + 9, " degrees of freedom, IC = ", getIC (res_three_LF[1][0], res_three_LF[1][1], sample_size), "\n");
 
@@ -262,7 +275,11 @@ LIKELIHOOD_FUNCTION_OUTPUT = 7;
 fprintf (lfOut, CLEAR_FILE, three_LF);
 LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
-bsrel_bls = extractBranchLengthsFromBSREL ("mixtureTree");
+if (doSynRateVariation) {
+    bsrel_bls = extractBranchLengthsFromBSREL_SRV ("mixtureTree");
+} else {
+    bsrel_bls = extractBranchLengthsFromBSREL ("mixtureTree");
+}
 
 tavl         = mixtureTree ^ 0;
 renderString = PostOrderAVL2StringDistances (tavl, bsrel_bls);
@@ -295,24 +312,48 @@ for	(k = 0; k < totalBranchCount; k += 1) {
         _stashLF = saveLF ("three_LF");
         
         if (rate_classes > 1) {
-            testing_parameter =   ref + ".omega" + rate_classes;
-            *testing_parameter :< 1;
+            if (doSynRateVariation) {
+                for (rc = 1; rc <= rate_classes; rc += 1) {
+                    ratio = "_mg94omega" + rc;
+                    nonsynvar = ref + ".nonsyn" + rc;
+                    synvar    = ref + ".syn" + rc;
+                    
+                    Eval ("global `ratio` = " + *(nonsynvar)/(*(synvar)));
+                    ^ratio :< 1;
+                    Eval ("`nonsynvar` := " + "`synvar` * `ratio`");                    
+                }
+            } else {
+                testing_parameter =   ref + ".omega" + rate_classes;
+                *testing_parameter :< 1;
+            }
         } else {
             global _mg94omega = 1;
             _mg94omega :< 1;
             *(ref + ".nonsyn") := *(ref + ".syn") * _mg94omega;
         }
         
+        //VERBOSITY_LEVEL = 10;
+        
         Optimize					  (res_three_current,three_LF);
         
         fprintf (stdout, "\n");
         printNodeDesc (ref, rate_classes_by_branch[k]);
-        pValueByBranch[k][lrt_column]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);				 
-        pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],1))*.5;
+        pValueByBranch[k][lrt_column]			  = 2*(res_three_LF[1][0] - res_three_current[1][0]);	
+        if (doSynRateVariation && rate_classes) {
+            pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],rate_classes));       
+        } else {	 
+            pValueByBranch[k][p_uncorrected_column]			  = (1-CChi2 (pValueByBranch[k][lrt_column],1))*.5;
+        }
         fprintf (stdout, "p-value = ", pValueByBranch[k][p_uncorrected_column], "\n");
         
         if (rate_classes > 1) {
-            *testing_parameter :< 10000;
+            if (doSynRateVariation == 0) {
+                *testing_parameter :< 10000;
+            } else {
+                for (rc = 1; rc <= rate_classes; rc += 1) {
+                    *(ref + ".nonsyn" + rc) = *(ref + ".nonsyn" + rc);                    
+                }
+            }
         }
         
         if (pValueByBranch[k][lrt_column] < (-0.5)) {
@@ -398,7 +439,7 @@ for (k = 1; k < Abs (tavl)-1; k+=1) {
     parentName = (tavl[((tavl[k])["Parent"])])["Name"];
 		
 	myRateDistro = myRateDistro % 0;
-	
+		
 	colors = {rate_classes,4};
 	for (cc = 0; cc < rate_classes; cc += 1) {
 	    color1 = makeDNDSColor (myRateDistro[cc][0]);
@@ -466,26 +507,32 @@ function restoreLF (key, value) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-function gEval (expr) {
-    return Eval (expr);
-}
-
-
-//------------------------------------------------------------------------------------------------------------------------
-
 lfunction printNodeDesc (ref, rate_classes) {
     if (rate_classes > 1) {
+        do_srv = ^("doSynRateVariation");
         wts = generateFrequencyParameterization ("Paux", rate_classes);
      
-        fprintf (stdout, "Node: ", ref, 
-                     "\n\tLength parameter = ", ^(ref+".t"));
+        fprintf (stdout, "Node: ", ref);
+        if (! do_srv) {
+            fprintf (stdout,"\n\tLength parameter = ", ^(ref+".t"));
+        }
                  
         for (k = 1; k < rate_classes; k+=1) {
-            *("Paux" + k) = ^(ref+".Paux" + k);
+            Eval ("Paux" + k + "= ^(ref+\".Paux\" + k)");
         }
 
         for (k = 0; k < rate_classes; k+=1) {
-            fprintf (stdout, "\n\tClass ", k+1,": omega = ", ^(ref+".omega" + (k+1)), ", weight = ", Eval(wts[k]));
+            if (do_srv) {
+                fprintf (stdout, "\n\tClass ", k+1,
+                         "\n\t\tsyn     : ", Format(^(ref+".syn" + (k+1)),10,4), 
+                         "\n\t\tnon-syn : ", Format(^(ref+".nonsyn" + (k+1)),10,4), 
+                         "\n\t\tomega   : ", _standardizeRatio (^(ref+".nonsyn" + (k+1)),^(ref+".syn" + (k+1))),
+                         "\n\t\tweight  : ", Format(Eval(wts[k]),10,4));            
+            } else {
+                fprintf (stdout, "\n\tClass ", k+1,
+                        "\n\t\tomega = ", Format(^(ref+".omega" + (k+1)),5,3), 
+                        "\n\t\tweight = ", Format(Eval(wts[k]),5,3));
+            }
         }
                   
         fprintf (stdout, "\n"); 
@@ -508,27 +555,44 @@ function getIC (logl,params,samples) {
 //------------------------------------------------------------------------------------------------------------------------
 
 function copyomegas (node, syn, nonsyn) {
-    local_omega = =  Min (10, nonsyn/syn);
-    Eval("`node`.omega2 = 1");
-    if (local_omega < 1) {
-        Eval("`node`.Paux1 = 1");
-        Eval("`node`.omega1 =  local_omega");
-        Eval("`node`.omega2 = 10");
+    if (doSynRateVariation) {
+        if (syn>nonsyn) {
+            Eval("`node`.Paux1 = 1");
+            Eval("`node`.syn1=  syn");
+            Eval("`node`.nonsyn1 = nonsyn");        
+        } else {
+            Eval("`node`.Paux1 = 0");
+            Eval("`node`.syn2 =  syn");
+            Eval("`node`.nonsyn2 = nonsyn");        
+        }
+        
     } else {
-        Eval("`node`.Paux1 = 0");
-        Eval("`node`.omega2 =  local_omega");
-        Eval("`node`.omega1 = 0");    
+        local_omega = =  Min (10, nonsyn/syn);
+        Eval("`node`.omega2 = 1");
+        if (local_omega < 1) {
+            Eval("`node`.Paux1 = 1");
+            Eval("`node`.omega1 =  local_omega");
+            Eval("`node`.omega2 = 10");
+        } else {
+            Eval("`node`.Paux1 = 0");
+            Eval("`node`.omega2 =  local_omega");
+            Eval("`node`.omega1 = 0");    
+        }
+        Eval("`node`.t = syn");    
     }
-    Eval("`node`.t = syn");
+       
     return 0;
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction setBSRELBounds (node, count) {
+    do_srv = ^("doSynRateVariation");
     for (k = 1; k < count; k += 1) {
         ^("`node`.Paux" + k ) :< 1;   
-        ^("`node`.omega" + k ) :<1;   
+        if (do_srv == 0) {
+            ^("`node`.omega" + k ) :<1;
+        }   
     }
     return 0;
 }
@@ -538,12 +602,23 @@ lfunction setBSRELBounds (node, count) {
 
 lfunction getNodeOmegaDistribution (ref, rate_classes) {
     values = {rate_classes, 2};
+    do_srv = ^("doSynRateVariation");
+
     if (rate_classes > 1) {
-        wts = generateFrequencyParameterization ("Paux", rate_classes);
+        wts = generateFrequencyParameterization ("Paux", rate_classes);     
         for (k = 0; k < rate_classes; k+=1) {
-            values[k][0] = ^(ref+".omega" + (k+1));
-            values[k][1] = gEval(wts[k]);
+            if (do_srv) {
+                values[k][0] = ^(ref+".nonsyn" + (k+1))/^(ref+".syn" + (k+1));            
+            } else {
+                values[k][0] = ^(ref+".omega" + (k+1));
+            }
+            
+            if (k < rate_classes - 1) {
+                Eval ("Paux" + (k+1) + " = ^(ref+\".Paux\" + (k+1))" );
+            }
+            values[k][1] = Eval(wts[k]);
         }
+        
     } else {
         values [0][0] =   ^("`ref`.nonsyn")/^("`ref`.syn");
         values [0][1] =   1;        
@@ -554,13 +629,26 @@ lfunction getNodeOmegaDistribution (ref, rate_classes) {
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction saveNodeMLES (node, count) {
-    values = {count, 2};
-    for (k = 0; k < count - 1; k += 1) {
-        values [k][0] = ^("`node`.omega" + (k+1));
-        values [k][1] = ^("`node`.Paux" + (k+1));        
+    do_srv = ^("doSynRateVariation");
+    values = {count, 2 + do_srv};
+
+    if (do_srv) {
+         for (k = 0; k < count - 1; k += 1) {
+            values [k][0] = ^("`node`.syn" + (k+1));
+            values [k][1] = ^("`node`.nonsyn" + (k+1));
+            values [k][2] = ^("`node`.Paux" + (k+1));        
+        }
+        values [count-1][0] = ^("`node`.syn" + count);
+        values [count-1][1] = ^("`node`.nonsyn" + count);
+    
+    } else {
+        for (k = 0; k < count - 1; k += 1) {
+            values [k][0] = ^("`node`.omega" + (k+1));
+            values [k][1] = ^("`node`.Paux" + (k+1));        
+        }
+        values [count-1][0] = ^("`node`.omega" + count);
+        values [count-1][1] = ^("`node`.t");
     }
-    values [count-1][0] = ^("`node`.omega" + count);
-    values [count-1][1] = ^("`node`.t");
     return values;
 }
 
@@ -568,20 +656,36 @@ lfunction saveNodeMLES (node, count) {
 
 lfunction initNodeMLESPlus1 (node, values) {
     count = Rows (values);
-    for (k = 0; k < count - 1; k += 1) {
-        ^("`node`.omega" + (k+1)) = values[k][0];
-        ^("`node`.Paux"  + (k+1)) = values[k][1];        
-    }
-    if (values[count-1][0] > 1) {
-        ^("`node`.omega" + (count+1)) = values[count-1][0];
-        ^("`node`.Paux"  + (count))   = 0.01;        
-        ^("`node`.omega" + (count))   = 0.5;
-    } else {
-        ^("`node`.omega" + (count+1)) = 2;
+    do_srv = ^("doSynRateVariation");
+    
+    if (do_srv) {
+        for (k = 0; k < count - 1; k += 1) {
+            ^("`node`.syn" + (k+1)) = values[k][0];
+            ^("`node`.nonsyn" + (k+1)) = values[k][1];
+            ^("`node`.Paux"  + (k+1)) = values[k][2];        
+        }
+        ^("`node`.syn" + (count+1)) = 1;
+        ^("`node`.nonsyn" + (count+1)) = 1;
         ^("`node`.Paux"  + (count))   = 0.99;        
-        ^("`node`.omega" + (count))   = values[count-1][0];
+        
+        
+    } else {
+        for (k = 0; k < count - 1; k += 1) {
+            ^("`node`.omega" + (k+1)) = values[k][0];
+            ^("`node`.Paux"  + (k+1)) = values[k][1];        
+        }
+        if (values[count-1][0] > 1) {
+            ^("`node`.omega" + (count+1)) = values[count-1][0];
+            ^("`node`.Paux"  + (count))   = 0.01;        
+            ^("`node`.omega" + (count))   = 0.5;
+        } else {
+            ^("`node`.omega" + (count+1)) = 2;
+            ^("`node`.Paux"  + (count))   = 0.99;        
+            ^("`node`.omega" + (count))   = values[count-1][0];
+        }
+        ^("`node`.t") = values[count-1][1];  
     }
-    ^("`node`.t") = values[count-1][1];  
+    
     return 0;
 }
 
@@ -589,12 +693,25 @@ lfunction initNodeMLESPlus1 (node, values) {
 
 lfunction restoreNodeMLE (node, values) {
     count = Rows (values);
-    for (k = 0; k < count - 1; k += 1) {
-         ^("`node`.omega" + (k+1)) = values[k][0];
-         ^("`node`.Paux"  + (k+1)) = values[k][1];        
+    do_srv = ^("doSynRateVariation");
+
+    if (do_srv) {
+        for (k = 0; k < count - 1; k += 1) {
+             ^("`node`.syn" + (k+1)) = values[k][0];
+             ^("`node`.nonsyn" + (k+1)) = values[k][1];
+             ^("`node`.Paux"  + (k+1)) = values[k][2];        
+        }
+        ^("`node`.syn" + count) = values[count-1][0];  
+        ^("`node`.nonsyn" + count) = values[count-1][1];  
+
+    } else {
+        for (k = 0; k < count - 1; k += 1) {
+             ^("`node`.omega" + (k+1)) = values[k][0];
+             ^("`node`.Paux"  + (k+1)) = values[k][1];        
+        }
+        ^("`node`.omega" + count) = values[count-1][0];  
+        ^("`node`.t") = values[count-1][1];  
     }
-    ^("`node`.omega" + count) = values[count-1][0];  
-    ^("`node`.t") = values[count-1][1];  
     return 0;
 }
 

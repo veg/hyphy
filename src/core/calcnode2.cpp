@@ -709,6 +709,9 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         
                     maxParentP *= DBL_EPSILON;  */      
                     
+#ifdef _SLKP_USE_SSE_INTRINSICS
+                    double buffer[2] __attribute__ ((aligned (16)));
+#endif
                     for (long p = 0; p < alphabetDimension; p++) {
                         /*if (parentConditionals[p] < maxParentP) {
                             tMatrix               += alphabetDimension;
@@ -717,8 +720,50 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         
                         _Parameter      accumulator = 0.0;
 
-                        for (long c = 0; c < alphabetDimensionmod4; c+=4) // 4 - unroll the loop
-                        {
+#ifdef _SLKP_USE_SSE_INTRINSICS
+
+                        __m128d buffer1,
+                                buffer2,
+                                buffer3 = _mm_setzero_pd(),
+                                buffer4 = _mm_setzero_pd(),
+                                load1, 
+                                load2,
+                                load3,
+                                load4;
+                                
+                        
+                        if (((long int)tMatrix & 0x1111b) == 0 && ((long int)childVector & 0x1111b) == 0){ 
+                           for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                                load1 = _mm_load_pd (tMatrix+c);
+                                load2 = _mm_load_pd (tMatrix+c+2);
+                                load3 = _mm_load_pd (childVector+c);
+                                load4 = _mm_load_pd (childVector+c+2);
+                                buffer1 = _mm_mul_pd (load1, load3);
+                                buffer2 = _mm_mul_pd (load2, load4);
+                                buffer3 = _mm_add_pd (buffer1,buffer3);
+                                buffer4 = _mm_add_pd (buffer2,buffer4);
+                            }      
+                        } else {
+                           for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                                load1 = _mm_loadu_pd (tMatrix+c);
+                                load2 = _mm_loadu_pd (tMatrix+c+2);
+                                load3 = _mm_loadu_pd (childVector+c);
+                                load4 = _mm_loadu_pd (childVector+c+2);
+                                buffer1 = _mm_mul_pd (load1, load3);
+                                buffer2 = _mm_mul_pd (load2, load4);
+                                buffer3 = _mm_add_pd (buffer1,buffer3);
+                                buffer4 = _mm_add_pd (buffer2,buffer4);
+                            }      
+                        
+                        }
+                        
+                        buffer3 = _mm_add_pd (buffer3, buffer4);    
+                        _mm_store_pd (buffer, buffer3);
+                        accumulator = buffer[0] + buffer[1];
+                    
+#else
+                        for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                        // 4 - unroll the loop
                              _Parameter pr1 =    tMatrix[c]   * childVector[c],
                                         pr2 =    tMatrix[c+1] * childVector[c+1],
                                         pr3 =    tMatrix[c+2] * childVector[c+2],
@@ -727,6 +772,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                             pr3 += pr4;
                             accumulator += pr1+pr3;
                         }
+#endif
 
                         for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                             accumulator +=  tMatrix[c] * childVector[c];

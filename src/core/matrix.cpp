@@ -3814,12 +3814,51 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                         _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
 
 #ifndef _SLKP_SSE_VECTORIZATION_
+#ifdef  _SLKP_USE_SSE_INTRINSICS
+
+                         __m128d buffer1,
+                                buffer2,
+                                buffer3,
+                                buffer4,
+                                value_op = _mm_load1_pd (&value);
+                                
+                        if (((long int)secArg & 0x1111b) == 0 && ((long int)res & 0x1111b) == 0) {
+                            for (long i = 0; i < loopBound; i+=4) {
+                                buffer1 = _mm_load_pd (secArg+i);
+                                buffer2 = _mm_load_pd (secArg+i+2);
+                                buffer3 = _mm_load_pd (res+i);
+                                buffer4 = _mm_load_pd (res+i+2);
+                                buffer1 = _mm_mul_pd (buffer1, value_op);
+                                buffer2 = _mm_mul_pd (buffer2, value_op);
+                                buffer3 = _mm_add_pd (buffer3, buffer1);
+                                buffer4 = _mm_add_pd (buffer4, buffer2);
+                                _mm_store_pd (res+i, buffer3);
+                                _mm_store_pd (res+i+2, buffer4);
+                             }
+                        } else {
+                            for (long i = 0; i < loopBound; i+=4) {
+                                buffer1 = _mm_loadu_pd (secArg+i);
+                                buffer2 = _mm_loadu_pd (secArg+i+2);
+                                buffer3 = _mm_loadu_pd (res+i);
+                                buffer4 = _mm_loadu_pd (res+i+2);
+                                buffer1 = _mm_mul_pd (buffer1, value_op);
+                                buffer2 = _mm_mul_pd (buffer2, value_op);
+                                buffer3 = _mm_add_pd (buffer3, buffer1);
+                                buffer4 = _mm_add_pd (buffer4, buffer2);
+                                _mm_storeu_pd (res+i, buffer3);
+                                _mm_storeu_pd (res+i+2, buffer4);
+                             }
+                        }
+
+#else
                         for (long i = 0; i < loopBound; i+=4) {
                             res[i] += value * secArg[i];
                             res[i+1] += value * secArg[i+1];
                             res[i+2] += value * secArg[i+2];
                             res[i+3] += value * secArg[i+3];
                         }
+                        
+#endif
                         for (long j = loopBound; j < vDim; j++) {
                             res[j]   += value * secArg[j];
                         }
@@ -5602,6 +5641,8 @@ void        _Matrix::AplusBx (_Matrix& B, _Parameter x)
     *this+=temp;
 }
 
+//#define _SLKP_USE_SSE_INTRINSICS
+
 //_____________________________________________________________________________________________
 void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 {
@@ -5631,8 +5672,12 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
         } else {
             long loopBound = vDim - vDim % 4;
 
+
             // loop interchange rocks!
 
+#ifdef _SLKP_USE_SSE_INTRINSICS
+            double buffer[2] __attribute__ ((aligned (16)));
+#endif
             _Parameter  _hprestrict_ * column = stash+lDim;
             _Parameter  _hprestrict_ * source = theData;
 
@@ -5641,33 +5686,89 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                     column[c] = source[j + c * vDim];
                 }
 
+#ifdef _SLKP_USE_SSE_INTRINSICS
+
+
+                for (long i = 0; i < lDim; i += vDim) {
+                    _Parameter * row = theData + i;
+                    
+                    
+                    __m128d buffer1,
+                            buffer2,
+                            buffer3 = _mm_setzero_pd(),
+                            buffer4 = _mm_setzero_pd(),
+                            load1, 
+                            load2,
+                            load3,
+                            load4;
+                            
+                    long k;
+                    
+                    if (((long int)row & 0x1111b) == 0 && ((long int)column & 0x1111b) == 0){ 
+                         for (k = 0; k < loopBound; k += 4) {
+                            load1 = _mm_load_pd (row+k);
+                            load2 = _mm_load_pd (row+k+2);
+                            load3 = _mm_load_pd (column+k);
+                            load4 = _mm_load_pd (column+k+2);
+                            buffer1 = _mm_mul_pd (load1, load3);
+                            buffer2 = _mm_mul_pd (load2, load4);
+                            buffer3 = _mm_add_pd (buffer1,buffer3);
+                            buffer4 = _mm_add_pd (buffer2,buffer4);
+                        }    
+                   
+                    } else {
+                        for (k = 0; k < loopBound; k += 4) {
+                            load1 = _mm_loadu_pd (row+k);
+                            load2 = _mm_loadu_pd (row+k+2);
+                            load3 = _mm_loadu_pd (column+k);
+                            load4 = _mm_loadu_pd (column+k+2);
+                            buffer1 = _mm_mul_pd (load1, load3);
+                            buffer2 = _mm_mul_pd (load2, load4);
+                            buffer3 = _mm_add_pd (buffer1,buffer3);
+                            buffer4 = _mm_add_pd (buffer2,buffer4);
+                        }    
+                    }
+                    
+                    buffer3 = _mm_add_pd (buffer3, buffer4);    
+                    _mm_store_pd (buffer, buffer3);
+                    
+                    for (; k < vDim; k++) {
+                        buffer[0] += row[k] * column [k];
+                    }
+                
+                    stash[i+j] = buffer[0] + buffer[1];
+                 
+                }
+
+#else
                 for (long i = 0; i < lDim; i += vDim) {
                     _Parameter * row    = theData + i,
-                                 buffer = 0.0;
+                                 buffer [4] = {0.,0.,0.,0.};
 
 
 #ifndef _SLKP_SSE_VECTORIZATION_
-                    long        k = 0;
+                    long        k;
 
-                    for (; k < loopBound; k+=4) {
-                        buffer += row[k]   * column [k] +
-                                  row[k+1] * column [k+1] +
-                                  row[k+2] * column [k+2] +
-                                  row[k+3] * column [k+3];
+                    for (k = 0; k < loopBound; k += 4) {
+                        buffer [0] += row[k] * column [k];
+                        buffer [1] += row[k+1] * column [k+1];
+                        buffer [2] += row[k+2] * column [k+2];
+                        buffer [3] += row[k+3] * column [k+3];
                     }
 
                     for (; k < vDim; k++) {
-                        buffer += row[k] * column [k];
+                        buffer[0] += row[k] * column [k];
                     }
 #else
                     for (long k = 0; k < vDim; k++) {
-                        buffer += row[k]   * column [k];
+                        buffer[0] += row[k]   * column [k];
                     }
 
 #endif
-                    stash[i+j] = buffer;
+                    stash[i+j] = buffer[0] + buffer[1] + buffer[2] + buffer[3];
                 }
-            }
+#endif
+           }
         }
         
         memcpy (theData, stash, lDim * sizeof (_Parameter));

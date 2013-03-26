@@ -184,6 +184,7 @@ lfunction extractBranchInformation (treeID, _omega_pattern, _model_prefix, _freq
                     }
                     _brLenLocals [_modelID] = _localParameters;
                 }
+                                
                 for (_lpc = 0; _lpc < Abs (_brLenLocals [_modelID]); _lpc += 1) {
                     local_var = (_brLenLocals [_modelID])[_lpc];
                     var_ref   =  treeID + "." + _branchNames[_i] + "." + (_brLenLocals [_modelID])[_lpc];
@@ -216,6 +217,16 @@ lfunction extractBranchInformation (treeID, _omega_pattern, _model_prefix, _freq
 
 lfunction extractBranchLengthsFromBSREL (treeID) {
     _mleLengths  = extractBranchInformation (treeID, "omega[0-9]+", "MGMatrix", "Paux", "codon3x4", 0);
+    _brLenByName = {};
+     for (k = 0; k < Abs (_mleLengths["Names"]); k+=1) {
+        _brLenByName[(_mleLengths["Names"])[k]] = (_mleLengths["Props"])[k][1];
+    }
+    return _brLenByName;
+    
+}
+
+lfunction extractBranchLengthsFromBSREL_SRV (treeID) {
+    _mleLengths  = extractBranchInformation (treeID, "nonsyn[0-9]+", "MGMatrix", "Paux", "codon3x4", 0);
     _brLenByName = {};
      for (k = 0; k < Abs (_mleLengths["Names"]); k+=1) {
         _brLenByName[(_mleLengths["Names"])[k]] = (_mleLengths["Props"])[k][1];

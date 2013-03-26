@@ -158,6 +158,11 @@ void    yieldCPUTime        (void);
 bool    handleGUI           (bool = false);
 #endif
 
+
+#ifdef _SLKP_USE_SSE_INTRINSICS
+#include <emmintrin.h>
+#endif
+
 #endif
 
 //EOF
