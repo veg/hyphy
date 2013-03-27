@@ -900,7 +900,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                     }
                 }
             } else {
-                templateKind = _hyphyLFComputationalTemplateNone;
+                templateKind = hasBlkMx?_hyphyLFComputationalTemplateByPartition : _hyphyLFComputationalTemplateNone;
             }
 
             // now test evaluate the formula

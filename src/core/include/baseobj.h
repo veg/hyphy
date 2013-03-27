@@ -160,7 +160,7 @@ bool    handleGUI           (bool = false);
 
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
-#include <emmintrin.h>
+#include <pmmintrin.h>
 #endif
 
 #endif
