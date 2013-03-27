@@ -312,7 +312,7 @@ bool    GlobalShutdown (void)
 #if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
 
 #else
-            printf ("\nCheck %s for details on execution errors.\n",errorFileName.getStr());
+            fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
 #endif
             res = false;
             fclose (globalErrorFile);
@@ -330,7 +330,7 @@ bool    GlobalShutdown (void)
         if (ftell(globalMessageFile)) {
 #if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
 #else
-            printf ("\nCheck %s details of this run.\n",messageFileName.getStr());
+            fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
 #endif
             fclose (globalMessageFile);
         } else {

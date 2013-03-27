@@ -237,6 +237,9 @@ public:
     _SimpleList&GetBaseFreqs            (void) {
         return theProbabilities;
     }
+    
+    void        FillInConditionals      (long = -1);
+    
     void        Setup                   (void);
     bool&       HasBeenOptimized (void) {
         return hasBeenOptimized;
@@ -256,7 +259,10 @@ public:
 #if defined _SLKP_LFENGINE_REWRITE_
 #if defined _OPENMP
     void        SetThreadCount            (long tc) {
-        lfThreadCount = tc;
+        if (tc != lfThreadCount) {
+            lfThreadCount = tc;
+            FillInConditionals ();
+        }
     }
     long        GetThreadCount            (void) {
         return lfThreadCount;

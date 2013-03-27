@@ -76,6 +76,8 @@ _Parameter          _lfScalerUpwards          = pow(2.,200.),
 _GrowingVector      _scalerMultipliers,
                     _scalerDividers;
 
+//_Parameter          eval_buffer [600];
+
 
 /*----------------------------------------------------------------------------------------------------------*/
 
@@ -552,7 +554,7 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
         siteTo = siteCount;
     }
 
-    for  (long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
+    for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
         long    nodeCode   = updateNodes.lData [nodeID],
                 parentCode = flatParents.lData [nodeCode];
 
@@ -656,6 +658,10 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         }
                     }
                     parentTCCIBit++;
+                    /*
+                    if (likeFuncEvalCallCount == 4 || likeFuncEvalCallCount == 5) {
+                        printf ("\nSKIPPED site %ld @ eval %ld\n", siteID, likeFuncEvalCallCount);
+                    }*/   
                     continue;
                 }
                 parentTCCIBit++;
@@ -944,6 +950,18 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
             for (long p = 0; p < alphabetDimension; p++,rootConditionals++) {
                 accumulator += *rootConditionals * theProbs[p];
             }
+
+        /*#pragma omp critical
+        {
+            if (likeFuncEvalCallCount == 0) {
+                eval_buffer [siteID] = accumulator;
+            } else {
+                if (!CheckEqual (eval_buffer [siteID], accumulator)) {
+                    printf ("EVAL %ld, Site %ld/%ld, LogL %g, %g (%d)\n", likeFuncEvalCallCount, siteFrom, siteID, accumulator, eval_buffer [siteID],localScalerChange);
+                }
+                eval_buffer [siteID] = accumulator;
+            }
+        }*/
 
         if (storageVec) {
             storageVec [siteOrdering.lData[siteID]] = accumulator;

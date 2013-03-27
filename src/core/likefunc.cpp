@@ -10704,6 +10704,31 @@ void    _LikelihoodFunction::DoneComputing (bool force)
 }
 
 //_______________________________________________________________________________________
+void    _LikelihoodFunction::FillInConditionals(long partIndex) {
+    if (partIndex >= 0) {
+
+        long    catCounter = 0;
+        _SimpleList             pcats;
+        PartitionCatVars        (pcats,partIndex);
+        catCounter            = pcats.lLength;
+
+        _TheTree   *tree        = (_TheTree*)LocateVar(theTrees(partIndex));
+        _DataSetFilter *dsf = (_DataSetFilter*)dataSetFilterList (theDataFilters(partIndex));
+
+        _SimpleList* tcc            = (_SimpleList*)treeTraversalMasks(partIndex);
+        if (tcc) {
+            long shifter = dsf->GetDimension()*dsf->NumberDistinctSites()*tree->GetINodeCount();
+            for (long cc = 0; cc <= catCounter; cc++) {
+                tree->FillInConditionals(dsf, conditionalInternalNodeLikelihoodCaches[partIndex] + cc*shifter, tcc);
+            }
+        }
+    } else {
+        for (long i = 0; i < theTrees.lLength; i++) {
+            FillInConditionals (i);
+        }
+    }
+}
+//_______________________________________________________________________________________
 void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 {
     _SimpleList varRank (indexInd.lLength,0,0), 
