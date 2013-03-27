@@ -59,19 +59,19 @@ extern bool handleGUI(bool);
 #include "scfg.h"
 #endif
 
+void    DecideOnDivideBy (_LikelihoodFunction*);
+
+long         siteEvalCount  =   0,
+             divideBy      =   10000000;
+
+
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
     #if !defined __HEADLESS__ && !defined __HYPHYQT__
         #include     "HYTreePanel.h"
         extern       _HYTreePanel*  feedbackTreePanel;
     #endif
 
-_Parameter   nicetyLevel    =   1.0;
-_String nicetyMacLevel   ("NICETY_LEVEL");
 
-long         siteEvalCount  =   0,
-             divideBy      =   10000000;
-
-void    DecideOnDivideBy (_LikelihoodFunction*);
 #endif
 
 #ifdef MDSOCL
@@ -272,6 +272,68 @@ node<long>* DepthWiseStepTraverserLevel  (long&, node<long>* root);
 _Parameter  myLog (_Parameter);
 
 
+//__________________________________________________________________________________
+
+
+void         DecideOnDivideBy (_LikelihoodFunction* lf)
+{
+    long         alterIndex = 0;
+
+    if      (lf->HasComputingTemplate()) {
+        for (unsigned long k=0; k<lf->GetIndependentVars().lLength; k++)
+            if (!LocateVar (lf->GetIndependentVars().lData[k])->IsGlobal()) {
+                alterIndex = k;
+                break;
+            }
+    }
+
+
+#ifndef _SLKP_LFENGINE_REWRITE_
+    long                   stash1 = siteEvalCount;
+#endif
+#ifdef  _OPENMP
+    lf->SetThreadCount (1);
+#endif
+    TimerDifferenceFunction (false);
+    lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
+    lf->Compute           ();
+
+
+#ifdef _SLKP_LFENGINE_REWRITE_
+    _Parameter            tdiff = TimerDifferenceFunction(true);
+#ifdef  _OPENMP
+    if (systemCPUCount > 1) {
+        _Parameter          minDiff = tdiff;
+        long                bestTC  = 1;
+
+        for (long k = 2; k <= systemCPUCount; k++) {
+            lf->SetThreadCount              (k);
+            TimerDifferenceFunction         (false);
+            lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
+            lf->Compute                     ();
+            tdiff = TimerDifferenceFunction (true);
+            if (tdiff < minDiff) {
+                minDiff = tdiff;
+                bestTC  = k;
+            } else {
+                break;
+            }
+        }
+        lf->SetThreadCount (bestTC);
+        divideBy              = MAX(1.0,0.5 / minDiff);
+        ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
+    } else
+#endif
+        divideBy              = MAX(1.0, 0.5 / tdiff);
+    ReportWarning       (_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
+
+#else
+    divideBy              = (siteEvalCount-stash1) * 0.5 / TimerDifferenceFunction(true);
+#endif
+
+}
+
+
 #if defined  __UNIX__ && !defined __HYPHYQT__
 
 void        UpdateOptimizationStatus (_Parameter, long, char, bool, _String * fileName = nil);
@@ -397,66 +459,6 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
 
 #else
 
-//__________________________________________________________________________________
-
-
-void         DecideOnDivideBy (_LikelihoodFunction* lf)
-{
-    long         alterIndex = 0;
-
-    if      (lf->HasComputingTemplate()) {
-        for (unsigned long k=0; k<lf->GetIndependentVars().lLength; k++)
-            if (!LocateVar (lf->GetIndependentVars().lData[k])->IsGlobal()) {
-                alterIndex = k;
-                break;
-            }
-    }
-
-
-#ifndef _SLKP_LFENGINE_REWRITE_
-    long                   stash1 = siteEvalCount;
-#endif
-#ifdef  _OPENMP
-    lf->SetThreadCount (1);
-#endif
-    TimerDifferenceFunction (false);
-    lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
-    lf->Compute           ();
-
-
-#ifdef _SLKP_LFENGINE_REWRITE_
-    _Parameter            tdiff = TimerDifferenceFunction(true);
-#ifdef  _OPENMP
-    if (systemCPUCount > 1) {
-        _Parameter          minDiff = tdiff;
-        long                bestTC  = 1;
-
-        for (long k = 2; k <= systemCPUCount; k++) {
-            lf->SetThreadCount              (k);
-            TimerDifferenceFunction         (false);
-            lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
-            lf->Compute                     ();
-            tdiff = TimerDifferenceFunction (true);
-            if (tdiff < minDiff) {
-                minDiff = tdiff;
-                bestTC  = k;
-            } else {
-                break;
-            }
-        }
-        lf->SetThreadCount (bestTC);
-        divideBy              = MAX(1.0,0.5 / minDiff);
-        ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
-    } else
-#endif
-        divideBy              = MAX(1.0, 0.5 / tdiff);
-    ReportWarning       (_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
-
-#else
-    divideBy              = (siteEvalCount-stash1) * 0.5 / TimerDifferenceFunction(true);
-#endif
-
-}
 
 #endif
 
@@ -3989,28 +3991,8 @@ _Matrix*        _LikelihoodFunction::Optimize ()
     if (_hy_mpi_node_rank == 0) {
 #endif
 
+DecideOnDivideBy (this);
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
-        checkParameter (nicetyMacLevel,nicetyLevel,1);
-        nicetyLevel  = nicetyLevel>4?4:nicetyLevel;
-        if ((fnDim>=16)&&(nicetyLevel<2)) {
-            nicetyLevel = 2;
-        }
-        if ((fnDim>25)&&(nicetyLevel<3)) {
-            nicetyLevel = 3;
-        }
-
-        divideBy     = nicetyLevel>0.01?10000000./(long)(exp(log(10.0)*nicetyLevel)):1000000;
-        
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
-        DecideOnDivideBy (this);
-#endif
-
-#endif
-
-#if defined __UNIX__ && ! defined __HYPHYQT__
-        Compute();
-#endif
 
 #ifdef __HYPHYMPI__
     }
@@ -7690,7 +7672,7 @@ void    _LikelihoodFunction::Setup (void)
         t->CompileListOfModels (treeModels);
         bool isReversiblePartition = true;
         if (assumeRev > 0.5) {
-            ReportWarning (_String ("Partition ") & i & " is ASSUMED to have a reversible model");
+            ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a reversible model");
         } else {
             for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
                 long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
