@@ -1636,25 +1636,25 @@ void  setParameter (_String& name, _PMathObj def, bool dup, _String* namespc)
 
 void ExportIndVariables (_String& glVars, _String& locVars, _SimpleList* indepVarList)
 {
-    _String * stIn;
-    char    str[4096];
-
+    _String * stIn,
+              str;
+             
     for (unsigned long   i=0; i<indepVarList->lLength; i++) {
         _Variable *thisVar = LocateVar(indepVarList->lData[i]);
         if (thisVar->IsGlobal()) {
-            sprintf (str, "\nglobal %s=%.16g;", thisVar->GetName()->getStr(),(double)thisVar->Compute()->Value());
+            str = _String ("\nglobal ") & *thisVar->GetName() & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
             stIn = &glVars;
         } else {
-            sprintf (str, "\n%s=%.16g;", thisVar->GetName()->getStr(),(double)thisVar->Compute()->Value());
+            str = _String ("\n") & *thisVar->GetName() & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
             stIn = &locVars;
         }
         *stIn << str;
         if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-            sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
+            str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
             *stIn << str;
         }
         if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-            sprintf (str, "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
+            str = _String ("\n") & *thisVar->GetName() & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
             *stIn << str;
         }
     }
@@ -1665,8 +1665,8 @@ void ExportIndVariables (_String& glVars, _String& locVars, _SimpleList* indepVa
 void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarList)
 {
     if (depVarList->lLength) {
-        _String * stIn;
-        char    str[4096];
+        _String * stIn,
+                  str;
 
         /* first we have to reorder global variables, so that dependent global variables which depend
            on other dependent global variables are written afterwards (lest they be implicitly declared 
@@ -1705,24 +1705,22 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
                     dependancyLists && & prunedList;
                     continue;
                 }
-                sprintf (str, "\nglobal %s", thisVar->GetName()->getStr());
+                str = _String("\nglobal ") & *thisVar->GetName();
                 stIn = &glVars;
             } else {
-                sprintf (str, "\n%s", thisVar->GetName()->getStr());
-                stIn = &locVars;
+                str = _String("\n") & *thisVar->GetName();
+                 stIn = &locVars;
             }
             (*stIn)<<str;
             (*stIn)<<":=";
-            _String* s = thisVar->GetFormulaString();
-            (*stIn)<<s;
-            DeleteObject(s);
+            stIn->AppendNewInstance(thisVar->GetFormulaString());
             (*stIn)<<';';
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-                sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
+                str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
                 (*stIn)<<str;
             }
             if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-                sprintf (str, "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
+                str = _String ("\n") & *thisVar->GetName() & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
                 (*stIn)<<str;
             }
         }
@@ -1750,17 +1748,17 @@ void ExportDepVariables (_String& glVars, _String& locVars, _SimpleList* depVarL
 
             for (unsigned long i=0; i<_globalVariablesList.lLength; i++) {
                 _Variable * thisVar = LocateVar(depVarList->lData[_globalVariablesList.lData[indexList.lData[i]]]);
-                sprintf (str, "\nglobal %s", thisVar->GetName()->getStr());
+                str = _String("\nglobal ") & *thisVar->GetName();
                 glVars<<str;
                 glVars<<":=";
                 glVars<< thisVar->GetFormulaString();
                 glVars<<';';
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-                    sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
+                    str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
                     glVars<<str;
                 }
                 if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-                    sprintf (str, "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
+                    str = _String ("\n") & *thisVar->GetName() & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
                     glVars<<str;
                 }
             }

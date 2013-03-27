@@ -132,15 +132,14 @@ _Variable * LocateVar (long index)
 }
 
 //__________________________________________________________________________________
-BaseRef     parameterToString (_Parameter value)
+void     parameterToCharBuffer (_Parameter value, char* dump, long length)
 {
-    char dump [255];
     long digs = printDigits;
     if (digs<=0 || digs>15) {
         if (round(value) == value && fabs (value) < long_max) {
-            sprintf (dump,"%ld",lrint (value));
+            snprintf (dump,length, "%ld",lrint (value));
         } else {
-            sprintf (dump,PRINTF_FORMAT_STRING,value);
+            snprintf (dump,length, PRINTF_FORMAT_STRING,value);
         }
     } else {
         _String format("%-");
@@ -149,8 +148,16 @@ BaseRef     parameterToString (_Parameter value)
 #else
         format = format&_String(digs)&'g';
 #endif
-        sprintf (dump,(const char*)format.sData,value);
+        snprintf (dump,length,(const char*)format.sData,value);
     }
+}
+
+
+//__________________________________________________________________________________
+BaseRef     parameterToString (_Parameter value)
+{
+    char dump [256];
+    parameterToCharBuffer (value, dump, 256);
     return new _String (dump);
 }
 

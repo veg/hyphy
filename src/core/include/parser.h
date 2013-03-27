@@ -188,7 +188,9 @@ _Parameter  MaxNumbers  (_Parameter, _Parameter);
 _Parameter  MinNumbers  (_Parameter, _Parameter);
 _Parameter  FastMxAccess(Ptr, _Parameter);
 
-BaseRef parameterToString (_Parameter);
+BaseRef parameterToString       (_Parameter);
+void    parameterToCharBuffer   (_Parameter, char*, long);
+
 _Parameter  InterpolateValue        (_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
 _Parameter  TrapezoidLevelK         (_Formula&, _Variable*, _Parameter, _Parameter, long);
 _Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
