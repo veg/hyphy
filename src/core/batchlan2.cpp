@@ -47,7 +47,7 @@
 #include "sqlite3.h"
 #endif
 
-#if !defined __HEADLESS__
+#if !defined __HEADLESS__ && !defined __UNIX__
 #include      "HYUtils.h"
 #endif
 

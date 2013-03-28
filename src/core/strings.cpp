@@ -1999,7 +1999,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             while (beginswith("..\\")) {
                 f = lastPath->FindBackwards('\\',0,f)-1;
                 if (f==-1) {
-                    return;
+                    return false;
                 }
                 Trim(3,-1);
                 k++;
