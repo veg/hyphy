@@ -907,15 +907,18 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
             // now test evaluate the formula
 
-            if (templateKind==_hyphyLFComputationalTemplateBySite) {
-                _Matrix         testMx (theTrees.lLength,1,false,true);
+            if (templateKind==_hyphyLFComputationalTemplateBySite || templateKind==_hyphyLFComputationalTemplateByPartition) {
+                _Matrix         testMx  (theTrees.lLength,1,false,true),
+                                testMx2 (theTrees.lLength,1,false,true);
+                                
                 for (long testCount = 0; testCount<25; testCount++) {
-                    for (long di = 0; di < theTrees.lLength; di++) {
-                        testMx.theData[di] = genrand_int32 ()/(_Parameter)RAND_MAX_32;
+                    for (unsigned long di = 0; di < theTrees.lLength; di++) {
+                        testMx.theData[di]  = genrand_int32 ()/(_Parameter)RAND_MAX_32;
+                        testMx2.theData[di] = (genrand_int32 ()/(_Parameter)RAND_MAX_32)*(-1.);
                     }
 
                     siteWiseVar->SetValue  (&testMx);
-                    blockWiseVar->SetValue (&testMx);
+                    blockWiseVar->SetValue (&testMx2);
 
                     _PMathObj    testResult = templateFormula.Compute();
                     _String     errMessage;
@@ -923,8 +926,8 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                         errMessage = _String ("Failed to evaluate computation template formula (")& copyString & ") in LikelihoodFunction constructor.";
                     } else {
                         if (testResult->ObjectClass() == NUMBER) {
-                            if (testResult->Value()>0.0) {
-                                errMessage = _String ("Computation template formula (")& copyString & ") in LikelihoodFunction constructor evaluated to a positive value (as a log-likelihood - must be non-positive).";
+                            if (testResult->Value()>0.0 ) {
+                                errMessage = _String ("Computation template formula (")& copyString & ") in LikelihoodFunction constructor evaluated to a positive value = " & testResult->Value() & " (as a log-likelihood - must be non-positive).";
                             }
                         } else {
                             errMessage = _String ("Computation template formula (")& copyString & ") in LikelihoodFunction constructor evaluated to a non-scalar value.";
@@ -1872,7 +1875,13 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         }
     }
 #endif
-    if (computeMode == 0) {
+    if (computeMode == 0 || computeMode == 3) {
+        _Matrix     * blockMatrix = nil;
+        if (computeMode == 3) {
+            blockWiseVar->SetValue      (new _Matrix (theTrees.lLength,1,false,true), false);
+            blockMatrix = (_Matrix*)blockWiseVar->GetValue();
+
+        }
         for (unsigned long partID=0; partID<theTrees.lLength; partID++) {
             if (blockDependancies.lData[partID])
                 // has category variables
@@ -1896,16 +1905,31 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 #endif
                     _Parameter                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
-                    result += blockResult;
+                    if (blockMatrix) {
+                        blockMatrix->theData[partID] = blockResult;
+                    } else {
+                        result += blockResult;
+                    }
                 } else {
-                    result += computationalResults.theData[partID];
+                    if (blockMatrix) {
+                        blockMatrix->theData[partID] =  computationalResults.theData[partID];
+                    }  else {
+                        result += computationalResults.theData[partID];
+                    }
                 }
             } else {
                 _Parameter  blockResult =  ComputeBlock (partID);
-                result                 +=  blockResult;
+                if (blockMatrix) {
+                    blockMatrix->theData[partID] = blockResult;
+                } else {
+                    result += blockResult;
+                }
                 UpdateBlockResult       (partID, blockResult);
             }
 
+        }
+        if (blockMatrix) {
+            result = computingTemplate->Compute()->Value();
         }
         done = true;
     } else if (computeMode == 1)
@@ -1970,7 +1994,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                                                  );
 
         } else {
-            // no need to remap; just process directly based on partiton indices
+            // no need to remap; just process directly based on partition indices
 
             siteArrayPopulated         = true;
             siteWiseVar->SetValue      (new _Matrix (theTrees.lLength,1,false,true), false);
