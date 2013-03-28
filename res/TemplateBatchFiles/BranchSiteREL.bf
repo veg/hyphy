@@ -4,6 +4,8 @@ VERBOSITY_LEVEL				= 0;
 maximum_number_of_omegas   = 10;
 skipCodeSelectionStep 		= 0;
 
+_useGridSearch              = 1;
+
 LoadFunctionLibrary("chooseGeneticCode");
 LoadFunctionLibrary("GrabBag");
 LoadFunctionLibrary("dSdNTreeTools");
@@ -102,17 +104,26 @@ csvFilePath = LAST_FILE_PATH;
 
 fprintf 					  (stdout, "[PHASE 0] Fitting the local MG94 (no site-to-site variation) to obtain initial parameter estimates\n");
 
-LikelihoodFunction	base_LF	 = (dsf, givenTree);
-
-Optimize					  (res_base,base_LF);
-
 lfOut	= csvFilePath + ".mglocal.fit";
-LIKELIHOOD_FUNCTION_OUTPUT = 7;
-fprintf (lfOut, CLEAR_FILE, base_LF);
-LIKELIHOOD_FUNCTION_OUTPUT = 2;
 
-localLL						 = res_base[1][0];
-localParams					 = res_base[1][1] + 9;
+if (_reload_local_fit) {
+    ExecuteAFile (lfOut);
+    LFCompute (base_LF,LF_START_COMPUTE);
+    LFCompute (base_LF,localLL);
+    LFCompute (base_LF,LF_DONE_COMPUTE);
+    GetString (_lfInfo, base_LF, -1);
+    localParams = Columns (_lfInfo["Local Independent"]) + Columns (_lfInfo["Global Independent"]) + 9;
+
+} else {
+    LikelihoodFunction	base_LF	 = (dsf, givenTree);
+    Optimize					  (res_base,base_LF);
+     LIKELIHOOD_FUNCTION_OUTPUT = 7;
+    fprintf (lfOut, CLEAR_FILE, base_LF);
+    LIKELIHOOD_FUNCTION_OUTPUT = 2;
+
+    localLL						 = res_base[1][0];
+    localParams					 = res_base[1][1] + 9;
+}
 
 LoadFunctionLibrary			 ("DescriptiveStatistics");
 
@@ -194,7 +205,40 @@ for (k = 0; k < totalBranchCount; k+=1) {
     
     LikelihoodFunction stepupLF = (dsf, mixtureTree);
     fixGlobalParameters           ("stepupLF");
+
+    if (_useGridSearch) {
+        if (!doSynRateVariation) {
+            _baseT = Eval ("givenTree.`local_branch_name`.syn");
+            
+            computeOnAGrid ({"0": {5,1}["_MATRIX_ELEMENT_ROW_ * 0.2"],
+                 "1": {7,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"],
+                 "2": {{0.98}{0.95}{0.90}{0.75}{0.5}},
+                 "3": {5,1}["_baseT * (1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"]},
+                {"0": "`branch_name_to_test`.omega1",
+                 "1": "`branch_name_to_test`.omega2",
+                 "2": "`branch_name_to_test`.Paux1",
+                 "3": "`branch_name_to_test`.t"},
+                 "stepupLF");
+        } else {
+             _baseS = Eval ("givenTree.`local_branch_name`.syn");
+             _baseN = Eval ("givenTree.`local_branch_name`.nonsyn");
+                computeOnAGrid ({"0": {{_baseS}{_0.5*_baseS + (_baseS==0)*0.05}{_2*_baseS + (_baseS==0)*0.1}{_5*_baseS + (_baseS==0)*0.5}},
+                                 "1": {{_baseN}{_0.5*_baseN + (_baseN==0)*0.05}{_2*_baseN + (_baseN==0)*0.1}{_5*_baseN + (_baseN==0)*0.5}},
+                                 "2": {{0}{0.25}{1.0}{5.0}},
+                                 "3": {{0}{0.25}{1.0}{5.0}},
+                                 "4": {{0.98}{0.90}{0.75}{0.5}}},
+                                {"0": "`branch_name_to_test`.syn1",
+                                 "1": "`branch_name_to_test`.nonsyn1",
+                                 "2": "`branch_name_to_test`.syn2",
+                                 "3": "`branch_name_to_test`.nonsyn2",
+                                 "4": "`branch_name_to_test`.Paux1"},
+                                 "stepupLF");
+        }
+    }
+    
+
     Optimize                      (res, stepupLF);
+    
     test_IC = getIC (res[1][0], current_parameter_count + 2 + doSynRateVariation, sample_size);
     fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", Format(res[1][0],8,3), ", IC = ", Format (test_IC,8,3), "\n\t2 rate clases\n\t");
     printNodeDesc ("mixtureTree.`local_branch_name`", 2);
@@ -217,6 +261,25 @@ for (k = 0; k < totalBranchCount; k+=1) {
         initNodeMLESPlus1 (branch_name_to_test, saved_MLEs);
         LikelihoodFunction stepupLF = (dsf, mixtureTree);
         fixGlobalParameters           ("stepupLF");
+        if (_useGridSearch) {
+            if (!doSynRateVariation) {
+                computeOnAGrid ({"0": {10,1}["(1+(_MATRIX_ELEMENT_ROW_-5)^3)*(_MATRIX_ELEMENT_ROW_>=5)+(_MATRIX_ELEMENT_ROW_*0.15+0.15)*(_MATRIX_ELEMENT_ROW_<5)"],
+                 "1": {{0.98}{0.95}{0.90}{0.75}{0.5}{0.25}}},
+                {"0": "`branch_name_to_test`.omega" + (accepted_rates_count+1),
+                 "1": "`branch_name_to_test`.Paux" + (accepted_rates_count)},
+                 "stepupLF");
+            } else {
+                computeOnAGrid ({"0": {{0.0,0.25,0.5,1.0,5.0}},
+                 "1": {{0.0,0.25,0.5,1.0,5.0}},
+                 "2": {{0.98}{0.90}{0.75}{0.5}{0.25}}},
+                {"0": "`branch_name_to_test`.syn" + (accepted_rates_count+1),
+                 "1": "`branch_name_to_test`.syn" + (accepted_rates_count+1),
+                 "2": "`branch_name_to_test`.Paux" + (accepted_rates_count)},
+                 "stepupLF");
+            
+            }
+        }
+        
         Optimize                      (res, stepupLF);
         test_IC = getIC (res[1][0], current_parameter_count + 2, sample_size);
         fprintf 					  (stdout, "\n[PHASE 1] Branch ", local_branch_name, " log(L) = ", res[1][0], ", IC = ", test_IC, "\n\t", accepted_rates_count+1, " rate clases\n\t");
@@ -732,4 +795,67 @@ lfunction generateFrequencyParameterization (prefix, count) {
         result [0] = "1";
     }
     return result;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction copyParametersToArray (parameters) {
+    p_count = Abs (parameters);
+    array = {p_count, 1};
+    for (k = 0; k < p_count; k += 1) {
+        array[k] = ^(parameters[k]);
+    }
+    return array;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction copyArrayToParameters (array, parameters) {
+    p_count = Abs (parameters);
+    for (k = 0; k < p_count; k += 1) {
+        param_name = parameters[k];
+        ^(param_name) =  array[k];
+        if (^param_name != array[k]) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction computeOnAGrid (grid_points, parameters, lfname) {
+    parameter_count = Abs (parameters);
+    grid_dimensions = {parameter_count,1};
+    total_grid_points     = 1;
+    
+     
+    for (k = 0; k < parameter_count; k += 1) {
+        grid_dimensions[k] = Rows(grid_points[k]);
+        total_grid_points = total_grid_points * grid_dimensions[k];
+    }
+    
+    best_val = -1e100;
+    
+    current_state = copyParametersToArray (parameters);
+    LFCompute (^lfname,LF_START_COMPUTE);
+    for (grid_point = 0; grid_point < total_grid_points; grid_point += 1) {
+        index = grid_point;
+        for (p_id = 0; p_id < parameter_count; p_id += 1) {
+            current_state[p_id] = (grid_points[p_id])[index % grid_dimensions[p_id]];
+            index = index $ grid_dimensions[p_id];
+        }
+        copyArrayToParameters (current_state, parameters);
+        LFCompute (^lfname, try_value);
+        if (try_value > best_val) {
+            //fprintf (stdout, try_value, "\n");
+            best_state  = current_state;
+            best_val = try_value;
+        }
+    }
+    copyArrayToParameters (best_state, parameters);
+    LFCompute (^lfname, current_value);
+    LFCompute(^lfname,LF_DONE_COMPUTE);
+    return best_state;
+            
 }
