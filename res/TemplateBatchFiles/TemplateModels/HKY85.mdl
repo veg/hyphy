@@ -35,18 +35,15 @@ if (modelType >= 1)
 
 function PopulateModelMatrix (ModelMatrixName&, EFV)
 {
-	if (modelType == 0)
-	{
+	if (modelType == 0) {
 		ModelMatrixName = {{*,a,b,a}{a,*,a,b}{b,a,*,a}{a,b,a,*}};
 	}
 	else
 	{
-		if (modelType<2)
-		{
+		if (modelType<2) {
 			ModelMatrixName = {{*,R*a,a,R*a}{R*a,*,R*a,a}{a,R*a,*,R*a}{R*a,a,R*a,*}};
 		}
-		else
-		{
+		else {
 			ModelMatrixName = {{*,R*a*c,a*c,R*a*c}{R*a*c,*,R*a*c,a*c}{a*c,R*a*c,*,R*a*c}{R*a*c,a*c,R*a*c,*}};
 		}
 	}

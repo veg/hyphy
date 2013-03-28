@@ -55,6 +55,10 @@
 #include "hyphy_qt_helpers.h"
 #endif
 
+_List       openFileHandlesBackend;
+
+_AVLListX   openFileHandles     (&openFileHandlesBackend);
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
@@ -495,9 +499,9 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     long    num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
 
                     if (dataMx->GetVDim() == num_nodes) {
-                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx->makeDynamic());
+                        ((_BayesianGraphicalModel *)lkf)->SetDataMatrix ((_Matrix *) dataMx);
                     } else {
-                        WarnError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ").");
+                        currentProgram.ReportAnExecutionError (_String("Data matrix columns (") & dataMx->GetVDim() & " ) does not match number of nodes in graph (" & num_nodes & ")");
                         return false;
                     }
                 } else {
@@ -526,7 +530,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
                         ((_BayesianGraphicalModel *)lkf)->SetStructure ((_Matrix *) graphMx->makeDynamic());
                     } else {
-                        WarnError("Dimension of graph does not match current graph.");
+                        currentProgram.ReportAnExecutionError("Dimension of graph does not match current graph");
                         return false;
                     }
                 } else {
@@ -544,7 +548,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
                         ((_BayesianGraphicalModel *)lkf)->SetConstraints ((_Matrix *) constraintMx->makeDynamic());
                     } else {
-                        WarnError ("Dimensions of constraint matrix do not match current graph.");
+                        currentProgram.ReportAnExecutionError ("Dimensions of constraint matrix do not match current graph");
                         return false;
                     }
                 } else {
@@ -571,7 +575,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
                         ((_BayesianGraphicalModel *)lkf)->SetNodeOrder ( (_SimpleList *) orderList->makeDynamic() );
                     } else {
-                        WarnError("Length of order vector doesn't match number of nodes in graph.");
+                        currentProgram.ReportAnExecutionError ("Length of order vector doesn't match number of nodes in graph");
                         return false;
                     }
                 } else {
@@ -593,7 +597,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
             // anything else
             else {
-                WarnError (*currentArgument & " is not a valid BGM parameter in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid BGM parameter");
                 return false;
             }
         } // end BGM
@@ -610,7 +614,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                 currentArgument = (_String*)parameters(1);
                 long g = ProcessNumericArgument(currentArgument,currentProgram.nameSpacePrefix);
                 if (g < 0 || g >= lkf->GetIndependentVars().lLength) {
-                    WarnError (*currentArgument & " (=" & g & ") is not a valid parameter index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                    currentProgram.ReportAnExecutionError (*currentArgument & " (=" & g & ") is not a valid parameter index");
                     return false;
                 }
                 currentArgument = (_String*)parameters(2);
@@ -642,7 +646,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
             _List*  dsNames = &ds->GetNames();
             
             if (f<0 || f>=dsNames->lLength) {
-                WarnError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & f & ") is not a valid sequence index");
                 return false;
             }
 
@@ -660,16 +664,31 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                     long modelType = HY_BL_MODEL, modelIndex;
                     BaseRef modelObject      = _HYRetrieveBLObjectByName (modelName, modelType, &modelIndex, true);
                     if (modelObject) {
-                        //treeNode->SetModel ();
+                        _VariableContainer * parentTree = treeNode->ParentTree();
+                        if (!parentTree) {
+                            currentProgram.ReportAnExecutionError (*((_String*)parameters(0)) & " is an orphaned tree node (the parent tree has been deleted)");
+                            return false;
+                        }
+                        long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
+                        if (lfID>=0){
+                             currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *_HBLObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
+                             return false;
+                        }
+                        
+                        treeNode->ReplaceModel (modelName, parentTree);
+                        break;
                     }
                     else {
-                        WarnError (*((_String*)parameters(2)) & " does not appear to be a valid model name in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+                        currentProgram.ReportAnExecutionError (*((_String*)parameters(2)) & " does not appear to be a valid model name");
                         return false;
                     }
+                } else {
+                     currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " is not a supported parameter type for a tree node argument");
+                     return false;
                 }
             }
             
-            WarnError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_SET_PARAMETER));
+            currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/tree node");
             return false;
 
     
@@ -685,8 +704,8 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
     _String assertion (*(_String*)parameters(0));
 
     _Formula rhs, lhs;
-    long     varRef;
-    if (Parse (&rhs,assertion,varRef,currentProgram.nameSpacePrefix,&lhs) == HY_FORMULA_EXPRESSION) {
+    _FormulaParsingContext fpc (nil, currentProgram.nameSpacePrefix);
+    if (Parse (&rhs,assertion,fpc,&lhs) == HY_FORMULA_EXPRESSION) {
         _PMathObj assertionResult = rhs.Compute();
         if (assertionResult && assertionResult->ObjectClass () == NUMBER) {
             if (CheckEqual(assertionResult->Value(),0.0)) {
@@ -706,15 +725,15 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
                     NLToConsole();
                     currentProgram.GoToLastInstruction ();
                 } else {
-                    WarnError (errMsg);
+                    currentProgram.ReportAnExecutionError (errMsg);
+                    return false;
                 }
             }
             return true;
         }
     }
+    currentProgram.ReportAnExecutionError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric.");
  
-    WarnError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric. " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_ASSERT));
-    
     return false;
 }
 
@@ -725,7 +744,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
     _String theVersion = ProcessLiteralArgument ((_String*)parameters (0),currentProgram.nameSpacePrefix);
 
     if (__KERNEL__VERSION__.toNum() < theVersion.toNum()) {
-        WarnError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
+        currentProgram.ReportAnExecutionError (_String ("Current batch file requires at least version :")& theVersion &" of HyPhy. Please download an updated version from http://www.hyphy.org and try again.");
         return false;
     }
     return true;
@@ -875,7 +894,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             result = (_String*)_HBLObjectNameByType(f,sID);
             if (result) {
                 result = (_String*) result->makeDynamic();
-				ReportWarning(_String("In HandleGetString(): ") & result);
+				//ReportWarning(_String((const char*)"In HandleGetString(): ") & result);
             }
             break;
         }
@@ -944,7 +963,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     break;
                 }
                 case HY_BL_BGM: {
-                    ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
+                    //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
 					_BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
 
                     switch (sID) {
@@ -998,21 +1017,23 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 
                 case HY_BL_MODEL: {
                     if (sID>=0) {
-                        _Variable*      theMx = (_Variable*)theObject;
-
-                        if (sID2 < 0) { // get the sID's parameter name
+                        // check to make see if the 
+                       if (sID2 < 0) { // get the sID's parameter name
                             _SimpleList     modelP;
                             _AVLList        modelPA (&modelP);
-                            theMx->ScanForVariables(modelPA,false);
+                            ScanModelForVariables (index, modelPA, false, -1, false);
                             modelPA.ReorderList();
                             if (sID<modelP.lLength) {
                                 result = (_String*)LocateVar(modelP.lData[sID])->GetName()->makeDynamic();
                             } 
 
                         } else { // get the formula for cell (sID, sID2)
-                            _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
-                            if (cellFla) {
-                                result = new _String((_String*)cellFla->toStr());
+                            if (!IsModelOfExplicitForm (index)) {
+                                _Variable*      theMx = (_Variable*)theObject;
+                                _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
+                                if (cellFla) {
+                                    result = new _String((_String*)cellFla->toStr());
+                                }
                             }
                         }
                         
@@ -1034,7 +1055,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                             {
                                 _AssociativeList * resList = new _AssociativeList;
                                 resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
-                                resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
+                                resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),false);
                                 resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
                                 theReceptacle->SetValue (resList,false);
                                 return true;
@@ -1127,66 +1148,6 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 
     return false;
 }
-
-//____________________________________________________________________________________
-
-/*void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String errMsg;
-    if (parameters.lLength == 2) {
-        _FString        * outLF = new _FString (new _String (8192L,1));
-        checkPointer    (outLF);
-        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
-        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
-        if (!lf) {
-            long modelSpec = FindModelName (objectID);
-
-            if (modelSpec<0) {
-                long modelSpec = FindDataSetFilterName (objectID);
-                if (modelSpec < 0) {
-                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF);
-                    return ;
-                } else {
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF->theString);
-                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
-                }
-            } else {
-                SerializeModel (*outLF->theString,modelSpec,nil,true);
-                outLF->theString->Finalize();
-            }
-        } else {
-            lf->SerializeLF (*outLF->theString);
-            outLF->theString->Finalize();
-        }
-        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
-        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
-    } else {
-        _Matrix* m[2];
-        for (long k=1; k<3; k++)
-            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
-                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
-                acknError (errMsg);
-                return;
-            }
-
-        _String fName (*(_String*)parameters(0));
-        fName.ProcessFileName();
-        if (terminateExecution) {
-            return;
-        }
-        FILE*   theDump = doFileOpen (fName.getStr(),"w");
-        if (!theDump) {
-            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
-            return;
-        }
-        m[1]->ExportMatrixExp(m[0],theDump);
-        fclose (theDump);
-    }
-}*/
 
 
 //____________________________________________________________________________________
@@ -1304,5 +1265,158 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram
     return true;
 }
 
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
+{
+    currentProgram.currentCommand++;
+    _String* targetName = (_String*)parameters(0),
+             fnm;
+    
+    bool     doClose                 = true,
+             print_to_stdout         = false;
+    
+    FILE*   dest = nil;
+    
+    try {
+        bool    skipFilePathEval        = false;
+        
+        if (targetName->Equal(&stdoutDestination)) {
+            _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
+            if (redirect && redirect->theString->sLength) {
+                if (redirect->theString->Equal (&blFprintfDevNull)) {
+                    return true; // "print" to /dev/null
+                } else {
+                    skipFilePathEval = true;
+                    targetName       = redirect->theString;
+                } 
+            }
+            else {
+                print_to_stdout = true;
+            }
+        }
+        
+        checkParameter (printDigitsSpec,printDigits,0);
+        
+        if (!print_to_stdout) {
+            fnm = *targetName;
+            if (fnm.Equal(&messageLogDestination)) {
+                if ((dest = globalMessageFile) == nil) {
+                    return true; // requested print to MESSAGE_LOG, but it does not exist
+                                 // (e.g. remote MPI nodes, or running from a read only location
+                }
+            } else {
+                if (skipFilePathEval == false && !fnm.IsALiteralArgument()) {
+                    fnm = GetStringFromFormula (&fnm,currentProgram.nameSpacePrefix);
+                }
+                
+                if (!fnm.ProcessFileName(true,false,(Ptr)currentProgram.nameSpacePrefix, false, &currentProgram)) {
+                    return false;
+                }
+                
+                
+                long k  = openFileHandles.Find (&fnm);
+                
+                doClose = k<0;
+                
+                if (!doClose) {
+                    dest = (FILE*)openFileHandles.GetXtra (k);
+                } else {
+                    if ((dest = doFileOpen (fnm.getStr(), "a")) == nil)
+                        throw  (_String  ("Could not create/open output file at path '") & fnm & "'.");
+                }
+            }
+        }
+        
+        for (long i = 1; i<parameters.lLength; i++) {
+            _String    *varname = (_String*)parameters(i);
+            
+            BaseRef    thePrintObject   =   nil;
+            _Formula   f;
+            
+            if (varname->Equal(&clearFile)) {
+                if (!print_to_stdout && dest) {
+                    fclose (dest);
+                    dest = doFileOpen (fnm.getStr(), "w");
+                    long k = openFileHandles.Find (&fnm);
+                    if (k>=0) {
+                        openFileHandles.SetXtra(k, (long)dest);
+                    }
+                }
+            } else if (varname->Equal(&keepFileOpen) && !print_to_stdout) {
+                if (openFileHandles.Find (&fnm) < 0) {
+                    openFileHandles.Insert (fnm.makeDynamic(), (long)dest);
+                }
+                doClose = false;
+            } else if (varname->Equal(&closeFile) && !print_to_stdout) {
+                openFileHandles.Delete (&fnm, true);
+                doClose = true;
+            } else if (varname->Equal(&systemVariableDump)) {
+                thePrintObject=&variableNames;
+            } else if (varname->Equal(&selfDump)) {
+                thePrintObject=&currentProgram;
+            } else {
+                // check for possible string reference
+                
+                _String    temp    = ProcessStringArgument (varname),
+                           nmspace;
+                
+                if (temp.sLength > 0) {
+                    nmspace = AppendContainerName(temp,currentProgram.nameSpacePrefix);
+                    if (nmspace.IsValidIdentifier()) {
+                        thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
+                    }
+                } else {
+                    nmspace = AppendContainerName(*varname,currentProgram.nameSpacePrefix);
+                }
+                
+                
+                if (thePrintObject == nil) {
+                    long typeFlag = HY_BL_ANY;
+                    
+                    thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
+                    
+                    if (!thePrintObject) {
+                        _String argCopy = *varname,
+                                errMsg;
+
+                        _FormulaParsingContext fpc (&errMsg, currentProgram.nameSpacePrefix);
+                        if (Parse (&f,argCopy, fpc) == HY_FORMULA_EXPRESSION) {
+                            thePrintObject = f.Compute(0,currentProgram.nameSpacePrefix);
+                        } else {
+                            if (errMsg.sLength)
+                                throw (errMsg);
+                            else
+                                throw (_String ("Argument ") & i & " is not a simple expression");
+                        }
+                    }
+                }
+            }
+            
+            if (thePrintObject) {
+                if (!print_to_stdout) {
+                    thePrintObject->toFileStr (dest);
+                } else {
+                    _String outS ((_String*)thePrintObject->toStr());
+                    StringToConsole (outS);
+                }
+            }
+        }
+    }
+    catch (_String errMsg) {
+        currentProgram.ReportAnExecutionError (errMsg);
+    }
+    
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+    if (print_to_stdout) {
+        yieldCPUTime();
+    }
+#endif
+    if (dest && dest!=globalMessageFile && doClose) {
+        fclose (dest);
+    }
+    
+    return !currentProgram.IsErrorState();
+}
 
 

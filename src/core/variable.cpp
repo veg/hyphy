@@ -626,3 +626,52 @@ void _Variable::MarkDone (void)
     }
 }
 
+//__________________________________________________________________________________
+_PMathObj    _Variable::ComputeReference (_PMathObj context)
+{
+    _String reference_string (*GetName());
+    reference_string = AppendContainerName(reference_string, (_VariableContainer*)context);
+    
+    return new _FString (reference_string, false);
+}
+
+//__________________________________________________________________________________
+_String    _Variable::ContextFreeName(void) {
+    long location = theName->FindBackwards (".", 0, -1);
+    if (location > 0) {
+       return theName->Cut (location+1,-1); 
+    }  
+    return *theName;
+}
+
+//__________________________________________________________________________________
+_String    _Variable::ParentObjectName(void) {
+    long location = theName->FindBackwards (".", 0, -1);
+    if (location > 0) {
+       return theName->Cut (0,location-1); 
+    }  
+    return empty;
+}
+
+//__________________________________________________________________________________
+long    DereferenceString (_PMathObj v, _PMathObj context, char reference_type){
+    if (v && v->ObjectClass () == STRING) {
+        _FString * value = (_FString*)v;
+        _String referencedVariable = *value->theString;
+        if (reference_type == HY_STRING_LOCAL_DEREFERENCE && context) {
+            referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer*)context);
+        }
+        return LocateVarByName(referencedVariable);
+    }
+    return -1;
+}
+
+//__________________________________________________________________________________
+long    DereferenceVariable (long index, _PMathObj context, char reference_type){
+    if (reference_type == HY_STRING_DIRECT_REFERENCE) {
+        return index;
+    }
+    
+    return  DereferenceString (FetchObjectFromVariableByTypeIndex(index, STRING), context, reference_type);
+}
+

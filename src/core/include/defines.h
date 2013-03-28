@@ -88,7 +88,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_OP_CODE_NEQ             (1+HY_OP_CODE_NOT)              // !=
 #define  HY_OP_CODE_IDIV            (1+HY_OP_CODE_NEQ)              // $
 #define  HY_OP_CODE_MOD             (1+HY_OP_CODE_IDIV)             // %
-#define  HY_OP_CODE_AND             (1+HY_OP_CODE_MOD)              // &&
+#define  HY_OP_CODE_REF             (1+HY_OP_CODE_MOD)              // &
+#define  HY_OP_CODE_AND             (1+HY_OP_CODE_REF)              // &&
 #define  HY_OP_CODE_MUL             (1+HY_OP_CODE_AND)              // *
 #define  HY_OP_CODE_ADD             (1+HY_OP_CODE_MUL)              // +
 #define  HY_OP_CODE_SUB             (1+HY_OP_CODE_ADD)          // -
@@ -165,6 +166,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_FORMULA_VARIABLE_LOWER_BOUND_ASSIGNMENT     5
 #define  HY_FORMULA_VARIABLE_UPPER_BOUND_ASSIGNMENT     6
 #define  HY_FORMULA_FORMULA_VALUE_INCREMENT             7
+#define  HY_FORMULA_REFERENCE_VALUE_ASSIGNMENT          20
+#define  HY_FORMULA_REFERENCE_FORMULA_ASSIGNMENT        30
+
+#define  HY_FORMULA_REFERENCE_LOWER_BOUND_ASSIGNMENT    40
+#define  HY_FORMULA_REFERENCE_UPPER_BOUND_ASSIGNMENT    41
+
 // END FORMULA RETURN CODES
 
 //Some useful defines

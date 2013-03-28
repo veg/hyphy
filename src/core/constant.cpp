@@ -293,39 +293,39 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
                a2 = p2->Value();
 
     char       format[32],
-               buffer[255];
+               buffer[256];
 
 #ifdef     __USE_LONG_DOUBLE__
     if (a1>=0 && a2>=0) {
         if (a1>0) {
-            sprintf    (format,"%%%ld.%ldLf",(long)a1,(long)a2);
+            snprintf    (format,32, "%%%ld.%ldLf",(long)a1,(long)a2);
         } else {
-            sprintf    (format,"%%.%ldLf",(long)a2);
+            snprintf    (format,32,"%%.%ldLf",(long)a2);
         }
     } else if (a1>=0) {
-        sprintf    (format,"%%%ldLf",(long)a1);
+        snprintf    (format,32,"%%%ldLf",(long)a1);
     } else if (a2>=0) {
-        sprintf    (format,"%%.%ldLf",(long)a2);
+        snprintf    (format,32,"%%.%ldLf",(long)a2);
     } else {
-        sprintf    (format,"%%Lg");
+        snprintf    (format,32,"%%Lg");
     }
 #else
     if (a1>=0 && a2>=0) {
         if (a1>0) {
-            sprintf    (format,"%%%ld.%ldf",(long)a1,(long)a2);
+            snprintf    (format,32, "%%%ld.%ldf",(long)a1,(long)a2);
         } else {
-            sprintf    (format,"%%.%ldf",(long)a2);
+            snprintf    (format,32, "%%.%ldf",(long)a2);
         }
     } else if (a1>=0) {
-        sprintf    (format,"%%%ldf",(long)a1);
+        snprintf    (format,32, "%%%ldf",(long)a1);
     } else if (a2>=0) {
-        sprintf    (format,"%%.%ldf",(long)a2);
+        snprintf    (format,32, "%%.%ldf",(long)a2);
     } else {
-        sprintf    (format,"%%g");
+        snprintf    (format,32, "%%g");
     }
 
 #endif
-    a1 = sprintf    (buffer,format,Value());
+    a1 = snprintf    (buffer,256, format,Value());
     _String    t (buffer);
     return     new _FString (t);
 }

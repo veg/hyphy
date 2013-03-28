@@ -2695,8 +2695,8 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
     if (!input.IsALiteralArgument(true)) { // not a literal argument
         _Formula fmla, lhs;
 
-        long     varRef = 0,
-                 outcome = Parse (&fmla, input, varRef, nil,&lhs);
+        _FormulaParsingContext fpc;
+        long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
             WarnError (input & _String(" is an invalid partition specification"));

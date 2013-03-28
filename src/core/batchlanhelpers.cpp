@@ -45,7 +45,24 @@
 #endif
 
 
+_Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
+
+//____________________________________________________________________________________
+
+_String    _HYGenerateANameSpace () {
+    _String nmsp,
+            capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+    do {
+        nmsp = _String::Random (8, &capLetters);
+        
+    } while (_HY_HBL_Namespaces.Find (nmsp) != HY_TRIE_NOTFOUND);
+    
+    _HY_HBL_Namespaces.Insert (nmsp, 0);
+    return nmsp;
+}
+
+//____________________________________________________________________________________
 
 _String    _HYStandardDirectory (const unsigned long which_one) 
 {
@@ -115,9 +132,9 @@ bool ExpressionCalculator (_String data)
                rhs;
               
     _String    errMsg;
-
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil, &errMsg);
+    _FormulaParsingContext fpc (&errMsg, nil);
+    
+    long       retCode = Parse(&lhs, data, fpc);
 
     if (retCode != HY_FORMULA_FAILED) {
         if (retCode == HY_FORMULA_EXPRESSION) {
@@ -165,8 +182,8 @@ bool    ExpressionCalculator (void)
     _Formula  lhs,
               rhs;
 
-    long       refV,
-               retCode = Parse(&lhs, data, refV, nil,nil);
+    _FormulaParsingContext fpc;
+    long retCode = Parse(&lhs, data, fpc);
 
     if (!terminateExecution) {
         if (retCode == HY_FORMULA_EXPRESSION) {
@@ -343,6 +360,9 @@ _String WriteFileDialogInput(void) {
 
 _String* _HBLObjectNameByType (const long type, const long index, bool correct_for_empties) {
 
+    if (index < 0) {
+        return nil;
+    }
     _List * theList = nil;
     switch (type) {
         case HY_BL_DATASET:

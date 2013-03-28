@@ -77,10 +77,10 @@ void _Formula::Duplicate  (BaseRef f)
 }
 
 //__________________________________________________________________________________
-void _Formula::DuplicateReference  (_Formula* f)
+void _Formula::DuplicateReference  (const _Formula* f)
 {
     for (unsigned long i=0; i<f->theFormula.lLength; i++) {
-        _Operation *theO = ((_Operation*)f->theFormula(i));
+        _Operation *theO = ((_Operation**)f->theFormula.lData)[i];
         if (theO->GetAVariable()==-2) {
             theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-theO->GetNoTerms()-1)->Compute()->makeDynamic()));
         } else {
@@ -135,7 +135,7 @@ BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
         if (theFormula.lLength) {
             (*result) << "RPN:";
             internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(0)));
-            for (long k=1; k<theFormula.lLength; k++) {
+            for (unsigned long k=1; k<theFormula.lLength; k++) {
                 (*result)<<',';
                 internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(k)));
             }
@@ -459,7 +459,7 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         if (f!=-1)
             // indeed - a binary operation is what we have. check if need to wrap the return in parentheses
         {
-            if ((!currentNode)||(currentNode->get_num_nodes()==2)) {
+            if (!currentNode || currentNode->get_num_nodes()==2 ) {
                 char tOpLevel  = opPrecedence(f),
                      tOpLevel2 = tOpLevel;
 
@@ -547,7 +547,13 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         result<<conv;
         result<<'"';
     } else {
-        result<<conv;
+        if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
+            result<<'(';
+            result<<conv;
+            result<<')';
+        } else {
+            result<<conv;
+        }
     }
     DeleteObject(conv);
 }
@@ -1241,6 +1247,22 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 }
 
 //__________________________________________________________________________________
+_Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* theContext) {
+    _Variable * result = nil;
+    _PMathObj computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
+    if (computedValue && computedValue->ObjectClass() == STRING) {
+        result =  (_Variable*)((_FString*)computedValue)->Dereference(ignore_context, theContext, true);
+    }
+    
+    if (!result) {
+        theContext->ReportError( (_String ("Failed to dereference '") & _String ((_String*)toStr()) & "' in the " & (ignore_context ? "global" : "local") & " context"));
+    }
+    
+    return result;
+}
+
+
+//__________________________________________________________________________________
 _PMathObj _Formula::Compute (long startAt, _VariableContainer * nameSpace, _List* additionalCacheArguments, _String* errMsg) 
 // compute the value of the formula
 {
@@ -1357,6 +1379,46 @@ bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
 }
 
 //__________________________________________________________________________________
+_Formula _Formula::operator+ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_ADD);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator- (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_SUB);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator* (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_MUL);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator/ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_DIV);
+}
+
+//__________________________________________________________________________________
+_Formula _Formula::operator^ (const _Formula& operand2) {
+    _Formula joint;
+    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_POWER);
+}
+
+//__________________________________________________________________________________
+_Formula& _Formula::PatchFormulasTogether (_Formula& target, const _Formula& operand2, const char op_code) {
+    target.Clear();
+    target.DuplicateReference(this);
+    target.DuplicateReference(&operand2);
+    target.theFormula.AppendNewInstance(new _Operation (op_code, 2));
+    return target;
+}
+
+
+//__________________________________________________________________________________
 void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
 {
     if (makeComplex) {
@@ -1439,7 +1501,7 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
             } else {
                 if (simpleOperationCodes.Find(thisOp->opCode)==-1) {
                     return false;
-                } else if (thisOp->opCode == HY_OP_CODE_MACCESS && thisOp->numberOfTerms != 2) {
+                } else if ((thisOp->opCode == HY_OP_CODE_MACCESS || thisOp->opCode == HY_OP_CODE_MUL) && thisOp->numberOfTerms != 2) {
                     return false;
                 }
 
@@ -1458,11 +1520,19 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
+bool _Formula::IsArrayAccess (void){
+    if (theFormula.lLength) {
+        return ((_Operation*)(theFormula(theFormula.lLength-1)))->GetCode().Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS));
+    }
+    return false;
+}
+
+//__________________________________________________________________________________
 bool _Formula::ConvertToSimple (_SimpleList& variableIndex)
 {
     bool has_volatiles = false;
     if (theFormula.lLength)
-        for (int i=0; i<theFormula.lLength; i++) {
+        for (unsigned long i=0; i<theFormula.lLength; i++) {
             _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
             if (thisOp->theNumber) {
                 continue;
@@ -1579,9 +1649,10 @@ _PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formu
 {
     theStack.Reset();
     bool wellDone = true;
+    _String errMsg; 
 
     for (long i=0; i<theFormula.lLength; i++)
-        if (!((_Operation*)((BaseRef**)theFormula.lData)[i])->ExecutePolynomial(theStack)) {
+        if (!((_Operation*)((BaseRef**)theFormula.lData)[i])->ExecutePolynomial(theStack, nil, &errMsg)) {
             wellDone = false;
             break;
         }
@@ -1653,8 +1724,11 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
         _Operation* theObj = ((_Operation**)theFormula.lData)[i];
         if (theObj->IsAVariable()) {
             if (!includeGlobals)
-                if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
-                        (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
+                // This change was part of a commit that introduced an optimizer bug (suspected location:
+                // src/core/batchlan2.cpp:2220). This change is suspicious as well (removed and undocumented condition).
+                //if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
+                 //       (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
+                if (((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal()) {
                     continue;
                 }
 
@@ -1852,7 +1926,7 @@ void _Formula::SimplifyConstants (void)
                 theStack.theStack.Clear();
                 thisOp->nInstances--;
             } else {
-                if (thisOp->numberOfTerms > 0 &&
+                if (thisOp->numberOfTerms == 2 &&
                         (thisOp->opCode==HY_OP_CODE_MUL||thisOp->opCode==HY_OP_CODE_DIV||thisOp->opCode==HY_OP_CODE_POWER))
                     // *,/,^ 1 can be removed
                 {
@@ -1914,8 +1988,9 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
     theTree     = nil;
     resultCache = nil;
 
-    long      refV;
-    if (Parse (this, s, refV, theParent,nil,reportErrors) != HY_FORMULA_EXPRESSION) {
+    _FormulaParsingContext fpc (reportErrors, theParent);
+    
+    if (Parse (this, s, fpc) != HY_FORMULA_EXPRESSION) {
         Clear();
     }
 }
@@ -2583,4 +2658,20 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
     return nil;
 }
 
+//__________________________________________________________________________________
+_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
+    assignment_ref_id   = -1;
+    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
+    is_volatile = false;
+    err_msg = err;
+    formula_scope = scope;
+}
+
+//__________________________________________________________________________________
+_String _FormulaParsingContext::contextualizeRef (_String& ref) {
+    if (formula_scope) {
+        return *formula_scope->GetName () & '.' & ref;
+    }
+    return ref;
+}
 

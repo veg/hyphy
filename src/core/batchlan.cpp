@@ -129,7 +129,6 @@ batchLanguageFunctionParameterLists,
 compiledFormulaeParameters,
 modelNames,
 executionStack,
-openFileHandlesBackend,
 standardLibraryPaths,
 standardLibraryExtensions,
 loadedLibraryPathsBackend;
@@ -233,6 +232,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfRedirect               ("GLOBAL_FPRINTF_REDIRECT"),
                                 blFprintfDevNull                ("/dev/null"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
+                                alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
                                 baseDirectory,
                                 lastModelUsed,
@@ -271,7 +271,6 @@ extern      _Parameter          toPolyOrNot,
 extern      _SimpleList         freeSlots;
 
 
-_AVLListX   openFileHandles     (&openFileHandlesBackend);
 _AVLList    loadedLibraryPaths  (&loadedLibraryPathsBackend);
 
 _ExecutionList
@@ -445,10 +444,7 @@ _Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP, _Ex
     _String   errMsg;
     _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
      
-    if (errMsg.sLength && currentProgram) {
-        currentProgram->ReportAnExecutionError (errMsg);
-    }
-    else {
+    if (!errMsg.sLength) {
         _PMathObj formRes = nameForm.Compute();
         numericalParameterSuccessFlag = true;
         if (formRes&& formRes->ObjectClass()==NUMBER) {
@@ -457,24 +453,39 @@ _Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP, _Ex
             if (formRes&& formRes->ObjectClass()==STRING) {
                 return _String((_String*)((_FString*)formRes)->toStr()).toNum();
             } else {
-                WarnError (_String("'") & *data & "' was expected to be a numerical argument.");
+                errMsg = (_String("'") & *data & "' was expected to be a numerical argument.");
             }
         }
     }
+    
+    if (currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    } else {
+        WarnError(errMsg);
+    }
+    
     numericalParameterSuccessFlag = false;
     return 0.0;
 }
 
 //____________________________________________________________________________________
 
-_PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* theP, long objectType)
+_PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* theP, long objectType, _ExecutionList* currentProgram)
 {
-    _Formula  expressionProcessor (*expression, theP);
-    _PMathObj expressionResult = expressionProcessor.Compute();
-    if (expressionResult && expressionResult->ObjectClass()==objectType) {
-        return (_PMathObj)expressionResult->makeDynamic();
-    }
+    _String   errMsg;
 
+    _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);
+    
+    if (errMsg.sLength) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    }
+    else {
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
+        if (expressionResult && expressionResult->ObjectClass()==objectType) {
+            return (_PMathObj)expressionResult->makeDynamic();
+        }
+    }
+    
     return nil;
 }
 
@@ -484,16 +495,19 @@ _PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* th
 _String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
 {
     _String   errMsg;
-    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
-    if (errMsg.sLength && currentProgram) {
+    
+    _Formula  expressionProcessor (*data, theP, currentProgram?&errMsg:nil);
+    
+    if (errMsg.sLength) {
         currentProgram->ReportAnExecutionError (errMsg);
-    } else {
-        _PMathObj formRes = nameForm.Compute();
-        if (formRes && formRes->ObjectClass()==STRING) {
-            return *((_FString*)formRes)->theString;
+    }
+    else {
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
+        if (expressionResult && expressionResult->ObjectClass()==STRING) {
+            return *((_FString*)expressionResult)->theString;
         }
     }
-
+    
     return empty;
 }
 
@@ -871,12 +885,7 @@ void KillModelRecord (long mdID)
         if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->GetIndex()) < 0) {
             DeleteVariable (*freqMatrix->GetName());
         }
-
-        //DeleteVariable (*LocateVar(mID)->GetName());
     }
-
-
-
 
     if (mdID<modelNames.lLength-1) {
         modelMatrixIndices.lData[mdID] = -1;
@@ -906,18 +915,21 @@ void KillModelRecord (long mdID)
 //____________________________________________________________________________________
 _ExecutionList::_ExecutionList ()
 {
-    result         = nil;
-    currentCommand = 0;
-    cli            = nil;
-    profileCounter = nil;
-    stdinRedirect  = nil;
-    stdinRedirectAux = nil;
-    doProfile      = 0;
-    nameSpacePrefix = nil;
+    result              = nil;
+    currentCommand      = 0;
+    cli                 = nil;
+    profileCounter      = nil;
+    stdinRedirect       = nil;
+    stdinRedirectAux    = nil;
+    doProfile           = 0;
+    nameSpacePrefix     = nil;
+    
     if (currentExecutionList) {
         errorHandlingMode  = currentExecutionList->errorHandlingMode;
+        errorState         = currentExecutionList->errorState;
     } else {
         errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+        errorState = false;
     }
 
 } // doesn't do much
@@ -942,9 +954,12 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copy
     }
     if (currentExecutionList) {
         errorHandlingMode  = currentExecutionList->errorHandlingMode;
+        errorState         = currentExecutionList->errorState;
     } else {
         errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+        errorState = false;
     }
+
     bool result = BuildList (source, nil, false, true);
     if (successFlag) {
         *successFlag = result;
@@ -989,6 +1004,7 @@ BaseRef     _ExecutionList::makeDynamic (void)
     Res->profileCounter     = nil;
     Res->doProfile          = doProfile;
     Res->errorHandlingMode  = errorHandlingMode;
+    Res->errorState         = errorState;
 
     if(result) {
         Res->result = (_PMathObj)result->makeDynamic();
@@ -1010,6 +1026,7 @@ void        _ExecutionList::Duplicate   (BaseRef source)
     }
 
     errorHandlingMode  = s->errorHandlingMode;
+    errorState         = s->errorState;
 }
 
 
@@ -1021,6 +1038,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
             errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->GetCode());
         }
     }
+    errorState = true;
     switch (errorHandlingMode) {
         case HY_BL_ERROR_HANDLING_SOFT:
             if (appendToExisting) {
@@ -1135,6 +1153,9 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     }
 
     executionStack.Delete (executionStack.lLength-1);
+    if (result == nil) {
+        result = new _MathObject();
+    }
 
     return result;
 }
@@ -1175,7 +1196,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
     bool            status      = true;
 
-    for (long k = 0; k<lLength && status; k++) {
+    for (unsigned long k = 0; k<lLength && status; k++) {
         _ElementaryCommand * aStatement = (_ElementaryCommand*)(*this)(k);
         switch (aStatement->code) {
         case 0: {
@@ -1187,20 +1208,21 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
                 checkPointer ((BaseRef)(f&&f2));
 
-                long          varRef,
-                              parseCode = Parse(f,*formulaString,varRef,nameSpacePrefix,f2);
+                _FormulaParsingContext fpc (nil, nameSpacePrefix);
+
+                long          parseCode = Parse(f,*formulaString,fpc,f2);
 
                 if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
                     if (f->AmISimple(stackDepth,varList)) {
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
-                        aStatement->simpleParameters<<varRef;
+                        aStatement->simpleParameters<<fpc.assignmentRefID();
 
                         formulaeToConvert << (long)f;
 
                         if (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-                            parseCodes        << varRef;
+                            parseCodes        << fpc.assignmentRefID();
                         } else {
                             parseCodes        << -1;
                         }
@@ -1220,12 +1242,9 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             if (aStatement->simpleParameters.lLength == 3 || aStatement->parameters.lLength) {
                 if (aStatement->parameters.lLength) {
                     _Formula f;
-                    long     varRef;
-                    //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+                    _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
-                    long status = Parse (&f, *(_String*)aStatement->parameters(0), varRef, nameSpacePrefix,nil);
-
-                    //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+                    long status = Parse (&f, *(_String*)aStatement->parameters(0), fpc);
 
                     if (status== HY_FORMULA_EXPRESSION) {
                         aStatement->simpleParameters<<long(f.makeDynamic());
@@ -1259,15 +1278,15 @@ bool        _ExecutionList::TryToMakeSimple     (void)
         _SimpleList  avlData;
         _AVLListX    avlList (&avlData);
 
-        for (long fi = 0; fi < formulaeToConvert.lLength; fi++) {
+        for (unsigned long fi = 0; fi < formulaeToConvert.lLength; fi++) {
             ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
         }
 
-        for (long vi = 0; vi < varList.lLength; vi++) {
+        for (unsigned long vi = 0; vi < varList.lLength; vi++) {
             avlList.Insert ((BaseRef)varList.lData[vi], vi);
         }
 
-        for (long ri = 0; ri<parseCodes.lLength; ri++) {
+        for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
             if (parseCodes.lData[ri] < 0) {
                 cli->storeResults << -1;
             } else {
@@ -1346,7 +1365,7 @@ BaseRef  _ExecutionList::toStr (void)
     step ("\n\nStep"),
     dot (".");
 
-    for (long i=0; i<countitems(); i++) {
+    for (unsigned long i=0; i<countitems(); i++) {
         (*result) << &step;
         _String lineNumber (i);
         (*result)<< &lineNumber;
@@ -1365,12 +1384,16 @@ void     _ExecutionList::ResetNameSpace (void)
     nameSpacePrefix = nil;
 }
 
+//____________________________________________________________________________________
+
 void     _ExecutionList::SetNameSpace (_String nID)
 {
     ResetNameSpace ();
     nameSpacePrefix = new _VariableContainer(nID);
     checkPointer(nameSpacePrefix);
 }
+
+//____________________________________________________________________________________
 
 _String*     _ExecutionList::GetNameSpace ()
 {
@@ -1380,13 +1403,29 @@ _String*     _ExecutionList::GetNameSpace ()
     return nil;
 }
 
-_String  _ExecutionList::AddNameSpaceToID (_String& theID)
+//____________________________________________________________________________________
+
+_String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
 {
-    if (nameSpacePrefix) {
-        return (*nameSpacePrefix->GetName())&'.'&theID;
+    _String check_dereferences,
+            name_space;
+            
+    if (extra && extra->sLength) {
+        if (nameSpacePrefix) {
+            name_space = (*nameSpacePrefix->GetName())&'.'& *extra;
+        } else {
+            name_space = *extra;
+        }
+    } else {
+        if (nameSpacePrefix) {
+            name_space = (*nameSpacePrefix->GetName());        
+        }
     }
-    return theID;
+            
+    return AppendContainerName (theID, &name_space);
 }
+
+//____________________________________________________________________________________
 
 _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
 {
@@ -1398,11 +1437,14 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     return theID;
 }
 
+//____________________________________________________________________________________
+
 
 _String  blFor                  ("for("),               // moved
          blWhile                    ("while("),         // moved
          blFunction                 ("function "),      // moved
          blFFunction                ("ffunction "),     // moved
+         blLFunction                ("lfunction "),     // moved
          blReturn                   ("return "),        // moved
          blReturn2              ("return("),            // moved
          blIf                       ("if("),            // moved
@@ -1563,6 +1605,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_GET_STRING:
             case HY_HBL_COMMAND_EXPORT:
             case HY_HBL_COMMAND_DIFFERENTIATE:
+            case HY_HBL_COMMAND_FPRINTF:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1576,7 +1619,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // prefix tree lookup 
 
         if (!handled) {
-            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
                 _ElementaryCommand::ConstructFunction (currentLine, *this);
             } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
                 _ElementaryCommand::ConstructReturn (currentLine, *this);
@@ -1637,8 +1680,6 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                 _ElementaryCommand::ConstructTree (currentLine, *this);
             } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
                 _ElementaryCommand::ConstructLF (currentLine, *this);
-            } else if (currentLine.startswith (blfprintf)) { // fpintf call
-                _ElementaryCommand::ConstructFprintf (currentLine, *this);
             } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
                 _ElementaryCommand::ConstructFscanf (currentLine, *this);
             } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
@@ -1815,9 +1856,13 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 _String _hblCommandAccessor (_ExecutionList* theList, long index) {
     if (theList) {
-        _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
-        if (aCommand) {
-            return _String ((_String*)aCommand->toStr());
+        if (index >= 0) {
+            if (index < theList->lLength) {
+                _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
+                return _String ((_String*)aCommand->toStr());
+            } else {
+                return "<END EXECUTION>";
+            }
         }
     }
     return _String ("command index ") & index;
@@ -1841,9 +1886,9 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = "Branch ";
         if (simpleParameters.countitems()==3) {
             converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
-            result = result& "under condition '"& *converted&"'\n\tto "&
+            result = result& "under condition '"& *converted&"'\n\tto\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
-                        "\n\telse "&
+                        "\n\telse\n\t\t"&
                         _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
             result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
@@ -1915,16 +1960,17 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result & " from string " &*converted;
         break;
 
-    case 8: // print stuff to file (or stdout)
+    case HY_HBL_COMMAND_FPRINTF: // print stuff to file (or stdout)
 
         converted = (_String*)parameters(0)->toStr();
-        result = _String("Print to File ")& (*converted) & ":";
+        result = _String("fprintf(")& (*converted);
         DeleteObject (converted);
 
         converted = nil;
         for (k = 1; k<parameters.countitems(); k++) {
-            result = result&*((_String*)parameters(k))&"\n";
+            result = result&*","& *((_String*)parameters(k));
         }
+        result = result & ")";
 
 
         break;
@@ -2461,17 +2507,17 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         _String* theFla     = (_String*)parameters(0),
                  errMsg;
 
-        bool    doNotCompileThisFormula = false;
+        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
-        long    varRef,
-                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,nil,&doNotCompileThisFormula);
+        long     parseCode = Parse(&f,(*theFla),fpc,&f2);
 
         if (parseCode != HY_FORMULA_FAILED ) {
-            if (doNotCompileThisFormula == false) { // not a matrix constant
+            if (fpc.isVolatile() == false) { // not a matrix constant
                 simpleParameters    <<parseCode;
                 simpleParameters    <<long (f.makeDynamic());
                 simpleParameters    <<long (f2.makeDynamic());
-                simpleParameters    <<varRef;
+                simpleParameters    <<fpc.assignmentRefID   ();
+                simpleParameters    <<fpc.assignmentRefType ();
 
                 _SimpleList*        varList = new _SimpleList;
                 _AVLList            varListA (varList);
@@ -2481,7 +2527,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
                 listOfCompiledFormulae<<(long)this;
                 compiledFormulaeParameters.AppendNewInstance(varList);
             } else {
-                ExecuteFormula(&f,&f2,parseCode,varRef,chain.nameSpacePrefix);
+                ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                 return;
             }
         } else {
@@ -2489,7 +2535,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         }
     }
 
-    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
+    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
 
     if (terminateExecution) {
         WarnError (_String("Problem occurred in line: ")&*this);
@@ -2510,10 +2556,10 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
     if (simpleParameters.lLength==3 || parameters.lLength) {
         if ( parameters.lLength && simpleParameters.lLength < 3) {
             _Formula f;
-            long     varRef;
             //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 
-            long status = Parse (&f, *(_String*)parameters(0), varRef, chain.nameSpacePrefix,nil);
+            _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
+            long status = Parse (&f, *(_String*)parameters(0), fpc);
 
             //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
 
@@ -2644,167 +2690,6 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     //StoreADataSet (ds, (_String*)parameters(0));
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String* targetName = (_String*)parameters(0),
-             fnm;
-
-
-    FILE*    dest = nil;
-
-    int     out2    = 0;
-    bool    doClose = true,
-            skipFilePathEval = false;
-
-    if (targetName->Equal(&stdoutDestination)) {
-        _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
-        if (redirect && redirect->theString->sLength) {
-            if (redirect->theString->Equal (&blFprintfDevNull)) {
-                return;
-            } else {
-                skipFilePathEval = true;
-                targetName = redirect->theString;
-            }
-        } else {
-            out2=1;
-        }
-    }
-
-    checkParameter (printDigitsSpec,printDigits,0);
-
-    if (!out2) {
-        fnm = *targetName;
-        if (fnm.Equal(&messageLogDestination)) {
-            if ((dest = globalMessageFile) == nil) {
-                return;
-            }
-        } else {
-            if (skipFilePathEval == false && !fnm.IsALiteralArgument()) {
-                fnm = GetStringFromFormula (&fnm,chain.nameSpacePrefix);
-            }
-
-            fnm.ProcessFileName(true,false,(Ptr)chain.nameSpacePrefix);
-            if (terminateExecution) {
-                return;
-            }
-
-            long k  = openFileHandles.Find (&fnm);
-            doClose = k<0;
-
-            if (!doClose) {
-                dest = (FILE*)openFileHandles.GetXtra (k);
-            } else {
-                if ((dest = doFileOpen (fnm.getStr(), "a")) == nil) {
-                    WarnError (_String  ("Could not create/open output file at path '") & fnm & "'.");
-                    return;
-                }
-            }
-        }
-    }
-
-    long literalshift = simpleParameters.lLength?0:-1;
-    for (long i = 1; i<parameters.lLength; i++) {
-        if (literalshift>=0) {
-            if (i==simpleParameters(literalshift)) {
-                if (!out2) {
-                    fprintf (dest,"%s", ((_String*)parameters(i))->getStr());
-                } else {
-                    StringToConsole (*(_String*)parameters(i));
-                }
-
-                if (literalshift<simpleParameters.lLength-1) {
-                    literalshift++;
-                } else {
-                    literalshift = -1;
-                }
-                continue;
-            }
-        }
-
-        _String *varname = ProcessCommandArgument((_String*)parameters(i));
-
-        if (!varname) {
-            return;
-        }
-
-        BaseRef    thePrintObject   =   nil;
-        _Formula   f;
-
-        if (varname->Equal(&clearFile)) {
-            if (!out2 && dest) {
-                fclose (dest);
-                dest = doFileOpen (fnm.getStr(), "w");
-                long k = openFileHandles.Find (&fnm);
-                if (k>=0) {
-                    openFileHandles.SetXtra(k, (long)dest);
-                }
-            }
-        } else if (varname->Equal(&keepFileOpen) && !out2) {
-            if (openFileHandles.Find (&fnm) < 0) {
-                openFileHandles.Insert (fnm.makeDynamic(), (long)dest);
-            }
-
-            doClose = false;
-        } else if (varname->Equal(&closeFile) && !out2) {
-            openFileHandles.Delete (&fnm, true);
-            doClose = true;
-        } else if (varname->Equal(&systemVariableDump)) {
-            thePrintObject=&variableNames;
-        } else if (varname->Equal(&selfDump)) {
-            thePrintObject=&chain;
-        } else {
-            // check for possible string reference
-
-            _String    temp    = ProcessStringArgument (varname),
-                       nmspace;
-
-            if (temp.sLength > 0) {
-                nmspace = AppendContainerName(temp,chain.nameSpacePrefix);
-                if (temp.IsValidIdentifier()) {
-                    thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
-                }
-            } else {
-                nmspace = AppendContainerName(*varname,chain.nameSpacePrefix);
-            }
-
-
-            if (thePrintObject == nil) {
-                long typeFlag = HY_BL_ANY;
-
-                thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
-
-                if (!thePrintObject) {
-                    long    varRef = -1;
-                    _String argCopy = *varname;
-                    if (Parse (&f,argCopy, varRef, chain.nameSpacePrefix,nil) == HY_FORMULA_EXPRESSION) {
-                        thePrintObject = f.Compute();
-                    }
-                }
-            }
-        }
-
-        if (thePrintObject) {
-            if (!out2) {
-                thePrintObject->toFileStr (dest);
-            } else {
-                _String outS ((_String*)thePrintObject->toStr());
-                StringToConsole (outS);
-            }
-        }
-    }
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
-    if (!dest) {
-        yieldCPUTime();
-    }
-#endif
-    if (dest && dest!=globalMessageFile && doClose) {
-        fclose (dest);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -3167,8 +3052,10 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     // printf ("%s\n", tryPath.sData);
+                    _Parameter reload = 0.;
+                    checkParameter(alwaysReloadLibraries, reload, 0.);
 
-                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2) {
+                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
                         return;
                     }
@@ -4127,9 +4014,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
                     defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
             // try to parse the expression, confirm that it is a square  matrix,
             // and that it is a valid transition matrix
-            long                varRef = 0;
             isExpressionBased = (_Formula*)checkPointer(new _Formula);
-            long parseCode = Parse(isExpressionBased,matrixExpression,varRef,chain.nameSpacePrefix);
+            _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+            long parseCode = Parse(isExpressionBased,matrixExpression,fpc);
             if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
                 WarnError (defErrMsg );
                 return;
@@ -5573,7 +5460,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 if (formRes->ObjectClass () == STRING) {
                     tr = new _TheTree (treeIdent,*((_FString*)formRes)->theString,false);
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
-                    tr = new _TheTree (treeIdent,(_TreeTopology*)nameForm.Compute());
+                    tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
+                } else if (formRes->ObjectClass () == TREE) {
+                    for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
+                        //printf ("%s\n", LocateVar(leftOverVars.lData[i])->GetName()->sData);
+                        DeleteVariable(leftOverVars.lData[i], true);
+                    }
+                    leftOverVars.Clear();
+                    tr = new _TheTree (treeIdent,(_TheTree*)formRes);
                 }
             }
         } else {
@@ -5637,9 +5531,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 8: // print stuff to file (or stdout)
-        ExecuteCase8(chain);
-        break;
+    case HY_HBL_COMMAND_FPRINTF: { // print stuff to file (or stdout)
+        return HandleFprintf(chain);
+    }
 
     case HY_HBL_COMMAND_HARVEST_FREQUENCIES: { // or HarvestFrequencies
         return HandleHarvestFrequencies(chain);
@@ -6913,7 +6807,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
+/*bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
 
 {
 
@@ -6945,7 +6839,7 @@ bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&tar
 
     fpr->addAndClean(target, nil, 0);
     return true;
-}
+}*/
 
 //____________________________________________________________________________________
 
@@ -7334,9 +7228,10 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     isInFunction = true;
 
-    bool    isFFunction = source.beginswith (blFFunction);
+    bool    isFFunction = source.beginswith (blFFunction),
+            isLFunction = source.beginswith (blLFunction);
 
-    long    mark1 = source.FirstNonSpaceIndex(isFFunction?blFFunction.sLength:blFunction.sLength,-1,1),
+    long    mark1 = source.FirstNonSpaceIndex((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength,-1,1),
             mark2 = source.Find ('(', mark1, -1);
 
 
@@ -7347,6 +7242,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     }
 
     _String*    funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+
     *funcID = chain.AddNameSpaceToID (*funcID);
 
     // now look for the opening paren
@@ -7366,12 +7262,27 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         return false;
     }
 
+    _String extraNamespace;
+    if (isLFunction)
+        extraNamespace = _HYGenerateANameSpace();
+    
     for (long k = 0; k < pieces.lLength; k++) {
-        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k))),false);
+        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k), & extraNamespace)),false);
     }
 
     _String          sfunctionBody (source, upto+1,source.Length()-2);
-    _ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+    _ExecutionList * functionBody;
+        if (isLFunction) {
+            _String * existing_namespace = chain.GetNameSpace();
+            if (existing_namespace) {
+                extraNamespace = *existing_namespace & '.' & extraNamespace;
+            }
+            functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+        }
+        else {
+            functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+        }
+    
 
     //  take care of all the return statements
     while (returnlist.lLength) {

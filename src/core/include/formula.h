@@ -47,13 +47,35 @@
 #include "stack.h"
 #include "operation.h"
 
+class _Variable;
+class _VariableContainer;
+
+
 union       _SimpleFormulaDatum {
     _Parameter value;
     Ptr        reference;
 };
 
-class _Variable;
-class _VariableContainer;
+
+class _FormulaParsingContext {
+
+    long                 assignment_ref_id;
+    char                 assignment_ref_type;
+    bool                 is_volatile;
+    _String            * err_msg;
+    _VariableContainer * formula_scope;
+    
+    public:
+        _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
+        bool&       isVolatile (void)                   { return is_volatile; }
+        long&       assignmentRefID (void)              { return assignment_ref_id; }
+        char&       assignmentRefType (void)            { return assignment_ref_type;} 
+        _String*    errMsg (void)                       { return err_msg; }
+        _VariableContainer* formulaScope (void)         { return formula_scope; }     
+        _String     contextualizeRef (_String&);
+};
+
+
 class   _Formula   // a computational formula
 {
 
@@ -73,8 +95,10 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, long&, _VariableContainer* = nil, _Formula* = nil, _String* saveError = nil, bool* isVolatile = nil); // the parser
-    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil);
+    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula* = nil); 
+    // the main expression parser
+    
+    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil, char = HY_STRING_DIRECT_REFERENCE);
     // the execution block for "compiled formulae
     /*
      SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference"
@@ -98,7 +122,7 @@ public:
 
     virtual void        Initialize          (void);
     virtual void        Duplicate           (BaseRef);
-    void        DuplicateReference  (_Formula*);
+    void        DuplicateReference  (const _Formula*);
     virtual BaseRef     makeDynamic         (void);
     virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
 
@@ -122,6 +146,7 @@ public:
     bool        IsAConstant         (void); //  does this formula include variables, or is it just a constant?
     bool        IsConstant          (void); //  does this formula depend on something other that constants and fixed parameters?
     bool        DependsOnVariable   (long);
+    bool        IsArrayAccess       (void); // check to see if this formula performs a matrix access
     /*
         SLKP 20090315: added a missing utility function
         given a variable index as an argument, returns true if
@@ -140,6 +165,7 @@ public:
     bool        ConvertToSimple     (_SimpleList& variableIndex);
     void        ConvertFromSimple   (_SimpleList& variableIndex);
     void        SimplifyConstants   (void);
+    _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
     _Parameter  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
@@ -161,6 +187,14 @@ public:
     void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
     long        ExtractMatrixExpArguments        (_List*);
+    
+    virtual     _Formula operator + (const _Formula&);
+    virtual     _Formula operator - (const _Formula&);
+    virtual     _Formula operator * (const _Formula&);
+    virtual     _Formula operator / (const _Formula&);
+    virtual     _Formula operator ^ (const _Formula&);
+    
+    _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
 
 protected:
 

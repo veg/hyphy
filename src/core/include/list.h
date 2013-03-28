@@ -316,6 +316,17 @@ class _List:public _SimpleList
         * @sa InsertElement()
         */
         void Place(BaseRef);
+        
+        
+        /**
+        * Map the values of the first list to the corresponding indices in the second list (treated as STRINGS).
+        * \n\n \b Example: \code ("a","b","d").Map (["b","c","a"], mapping); mapping = (2,0,-1)\endcode 
+        * @param target The target list of the mapping
+        * @param mapping The list that will store the mapping
+        * @return Nothing, manipulates mapping.
+        */
+
+        void Map (_List& target, _SimpleList& mapping);
 
         /**
         */

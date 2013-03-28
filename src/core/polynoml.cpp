@@ -784,11 +784,12 @@ void    _Polynomial::Duplicate  (BaseRef tp)
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execute this operation with the second arg if necessary
+_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_MUL: //*
-        return Mult(p);
+        if (p)
+            return Mult(p);
         break;
     case HY_OP_CODE_ADD: // +
         if (p) {
@@ -808,13 +809,12 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
         return Type();
         break;
     case HY_OP_CODE_POWER: // ^
-        return Raise(p);
+        if (p)
+            Raise(p);
         break;
     }
 
-    //_String errMsg ("Operation ");
-    //errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for polynomials";
-    //WarnError (errMsg);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }

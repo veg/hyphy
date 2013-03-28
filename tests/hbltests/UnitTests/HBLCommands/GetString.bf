@@ -124,15 +124,24 @@ function runTest ()
     binaryModel = {{*,rate1}{R*rate2,*}};
     freqs       = {{0.5,0.5}};
     Model         testModel1 = (binaryModel, freqs, 0);
+    Model         testModel2 =("Exp(binaryModel)",freqs,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
 
-    GetString (modelInfo1, testModel1, 1);
-    GetString (modelInfo2, testModel1, 2);
-    GetString (modelBL, testModel1, -1);
-    GetString (modelBits, testModel1, -2);
-    GetString (modelInfo1_0, testModel1, 1,0);
+    GetString (modelInfo1, testModel1,       1);
+    GetString (modelInfo2, testModel1,       2);
+    GetString (modelBL, testModel1,         -1);
+    GetString (modelBits, testModel1,       -2);
+    GetString (modelInfo1_0, testModel1,    1,0);
+
  
 	assert (Type (modelInfo2) == "Unknown" && modelInfo1 == "rate2" && modelBL == "0.5*rate1+0.5*R*rate2" && modelInfo1_0 == "R*rate2" &&
 	        Type (modelBits) == "AssociativeList" && modelBits["EQ_FREQS"] == "freqs", "Retrieve information about a substitution model");
+
+    GetString (modelInfo1, testModel2,       0);
+    GetString (modelBL, testModel2,         -1);
+    GetString (modelBits, testModel2,       -2);
+    GetString (modelInfo1_0, testModel2,    1,0);
+
+	assert ( modelInfo1 == "rate1" && Type (modelInfo2) == "Unknown" && Type (modelBL) == "Unknown" && Type (modelInfo1_0) == "Unknown" , "Retrieve information about a substitution model in explicit form");
 
 	//-----------------------------------------------------------------------------------------------------------------
 	// Likelihood Functions

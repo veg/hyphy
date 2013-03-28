@@ -129,7 +129,10 @@ public:
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
 
-    _String*    GetName                 (void) {
+    _String     ContextFreeName                 (void);
+    _String     ParentObjectName                 (void);
+ 
+    _String*    GetName                         (void) {
         return theName;
     }
     _String*    GetFormulaString        (void) {
@@ -137,6 +140,7 @@ public:
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
+    virtual     _PMathObj   ComputeReference        (_PMathObj);
 
 
     friend      void        ResetVariables          (void);
@@ -161,5 +165,9 @@ public:
     _Formula*  varFormula;
 
 };
+
+long    DereferenceVariable (long index, _PMathObj context, char reference_type);
+long    DereferenceString   (_PMathObj, _PMathObj context, char reference_type);
+
 
 #endif

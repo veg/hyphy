@@ -107,7 +107,7 @@ public:
     void        SetNameSpace                (_String);
     _String     GetFileName                 (void);
     _String*    GetNameSpace                (void);
-    _String     AddNameSpaceToID            (_String&);
+    _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
     _ElementaryCommand* FetchLastCommand (void) {
@@ -119,6 +119,10 @@ public:
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
+    }
+    
+    bool        IsErrorState    (void)     {
+            return errorState;
     }
 
     void              ReportAnExecutionError (_String  errMsg, bool doCommand = true, bool appendToExisting = false);
@@ -137,6 +141,7 @@ public:
     long                            currentCommand;
     char                            doProfile;
     int                             errorHandlingMode; // how does this execution list handle errors
+    bool                            errorState;
 
     _PMathObj                       result;
 
@@ -180,7 +185,6 @@ public:
     void      ExecuteCase4   (_ExecutionList&);
     void      ExecuteCase5   (_ExecutionList&);
     void      ExecuteDataFilterCases (_ExecutionList&);
-    void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
     void      ExecuteCase21  (_ExecutionList&);
@@ -210,6 +214,7 @@ public:
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
+    bool      HandleFprintf                         (_ExecutionList&);
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
     bool      HandleComputeLFFunction               (_ExecutionList&);
@@ -288,9 +293,6 @@ public:
 
     static  bool      ConstructTree         (_String&, _ExecutionList&);
     // construct a tree
-
-    static  bool      ConstructFprintf      (_String&, _ExecutionList&);
-    // construct a fprintf command
 
     static  bool      ConstructFscanf       (_String&, _ExecutionList&);
     // construct a fscanf command
@@ -478,6 +480,8 @@ platformDirectorySeparator,
 defFileNameValue,
 defFileString,
 blConstructCM,
+blFprintfRedirect               ,
+blFprintfDevNull                ,
 globalPolynomialCap             ,
 enforceGlobalPolynomialCap      ,
 dropPolynomialTerms             ,
@@ -569,7 +573,8 @@ extern  _AVLList                    loadedLibraryPaths;
 extern  _AVLListX                   _HY_HBLCommandHelper,
                                     _HY_GetStringGlobalTypes;
                                     
-extern  _Trie                       _HY_ValidHBLExpressions;
+extern  _Trie                       _HY_ValidHBLExpressions,
+                                    _HY_HBL_Namespaces;
 
 extern  long                        globalRandSeed,
                                     matrixExpCount;
@@ -624,13 +629,16 @@ CheckAssociativeListArg      (_String*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
+bool    IsModelOfExplicitForm        (long);
+
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
 _String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
 _String _hblCommandAccessor          (_ExecutionList*, long);
+_String _HYGenerateANameSpace             (void);
 
 _PMathObj
-ProcessAnArgumentByType      (_String*, _VariableContainer*, long);
+ProcessAnArgumentByType      (_String*, _VariableContainer*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);
 
@@ -660,6 +668,7 @@ void    ReturnCurrentCallStack       (_List&, _List&);
 */
 
 BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);
 

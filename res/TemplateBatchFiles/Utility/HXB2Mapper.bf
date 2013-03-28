@@ -66,10 +66,10 @@ _hxb_alignOptions_nuc ["SEQ_ALIGN_NO_TP"]		=   1;
 
 _hxb_alignOptions_prot = {};
 _hxb_alignOptions_prot ["SEQ_ALIGN_CHARACTER_MAP"]		=   "ARNDCQEGHILKMFPSTWYV";
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN"]			= 	34;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN2"]			= 	34;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND"]			= 	10;
-_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND2"]		= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN"]			= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_OPEN2"]			= 	10;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND"]			= 	5;
+_hxb_alignOptions_prot ["SEQ_ALIGN_GAP_EXTEND2"]		= 	5;
 _hxb_alignOptions_prot ["SEQ_ALIGN_AFFINE"]				=   1;
 _hxb_alignOptions_prot ["SEQ_ALIGN_NO_TP"]				=   1;
 _hxb_alignOptions_prot ["SEQ_ALIGN_SCORE_MATRIX"]		=  
@@ -231,8 +231,7 @@ function selectHXB2subsequenceCodon (seq,theSubset)
 
 //--------------------------------------------------------------------------------
 
-function		isoElectricPoint (seq)
-{
+function		isoElectricPoint (seq) {
 	COUNT_GAPS_IN_FREQUENCIES = 0;
 	
 	DataSet 			protSeq = ReadFromString ("$BASESET:BASE20\n>1\n" + seq);
@@ -265,14 +264,13 @@ function		isoElectricPoint (seq)
 
 //--------------------------------------------------------------------------------
 
-function		countPNGS		(seq)
-{
-	return Rows(seq || "N[^P][ST][^P]")/2
+lfunction		countPNGS		(seq){
+    pngs = seq || "N\\-*[^P]\\-*[ST]\\-*[^P]";
+	return Rows(pngs)/2 - (pngs[0] < 0) ;
 }
 
 /*-------------------------------------------------------------*/
-function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA)
-{
+function selectHXB2ENVsubsequence (seq,theSubset, nucOrAA) {
 	if (nucOrAA != 1)
 	{
 		_template = {1,Abs(_HXB2_Env_Sequence_)};

@@ -53,9 +53,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${MACOSX_LION})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -msse3 ")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -msse3  ")
     endif(${GCC45})
 
     if(${GCC46})
@@ -167,7 +167,7 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__ -D_SLKP_USE_SSE_INTRINSICS)
 #add_definitions(-D_SLKP_LFENGINE_REWRITE_)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -323,8 +323,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 install(

@@ -64,10 +64,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "matrix.h"
 
-//__________________________________________________________________________________
 extern  _List BuiltInFunctions;
 
 class   _ExecutionList; 
+class   _hyExecutionContext;
+
 
 //__________________________________________________________________________________
 
@@ -98,9 +99,12 @@ _PMathObj   FetchObjectFromVariableByType       (_String*, const unsigned long, 
 _PMathObj   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
 _String&    AppendContainerName     (_String&, _VariableContainer*);
+_String&    AppendContainerName     (_String&, _String*);
 _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
 void        DeleteVariable  (_String&, bool deleteself = true);
+void        DeleteVariable  (long, bool deleteself);
+
 void        DeleteTreeVariable
 (_String&, _SimpleList&,bool);
 void        checkParameter  (_String& name, _Parameter& dest, _Parameter def, _VariableContainer* = nil);
@@ -184,7 +188,9 @@ _Parameter  MaxNumbers  (_Parameter, _Parameter);
 _Parameter  MinNumbers  (_Parameter, _Parameter);
 _Parameter  FastMxAccess(Ptr, _Parameter);
 
-BaseRef parameterToString (_Parameter);
+BaseRef parameterToString       (_Parameter);
+void    parameterToCharBuffer   (_Parameter, char*, long);
+
 _Parameter  InterpolateValue        (_Parameter*, _Parameter*, long, _Parameter*, _Parameter*, _Parameter, _Parameter&);
 _Parameter  TrapezoidLevelK         (_Formula&, _Variable*, _Parameter, _Parameter, long);
 _Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Parameter, long, _SimpleFormulaDatum*, _SimpleFormulaDatum*, _SimpleList&, _SimpleList&);
@@ -193,7 +199,7 @@ _Parameter  TrapezoidLevelKSimple   (_Formula&, _Variable*, _Parameter, _Paramet
 void        PopulateArraysForASimpleFormula
 (_SimpleList&, _SimpleFormulaDatum*);
 
-void        WarnNotDefined (_PMathObj, long);
+void        WarnNotDefined (_PMathObj, long, _hyExecutionContext* );
 
 extern      _Parameter  pi_const;
 extern      bool        useGlobalUpdateFlag;

@@ -44,6 +44,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "simplelist.h"
 #include "list.h"
 
+class _ExecutionList; // forward declaration
+
+#define HY_STRING_INVALID_REFERENCE     0x00    
+#define HY_STRING_DIRECT_REFERENCE      0x01    
+#define HY_STRING_LOCAL_DEREFERENCE     0x02
+#define HY_STRING_GLOBAL_DEREFERENCE    0x03
+
 
 class _String:public BaseObj
 {
@@ -74,9 +81,10 @@ public:
 
     /**
     * A constructor that converts a _Parameter(double) to string.
-    * @param sL The floating number to convert to string
+    * @param sL         The floating number to convert to string
+    * @param format     The C-style format string to use for the conversion
     */
-    _String (_Parameter);
+    _String (_Parameter, const char * = nil);
 
     /**
     * A constructor that duplicates from another string.
@@ -512,6 +520,15 @@ public:
     bool Equal   (_String*);
 
     /**
+    * Lexicographic comparison
+    * \n Checks if a string is equal to one character 
+    * @param c the character to compare to 
+    * @return true if the string is equal to the character
+    * @sa Compare()
+    */
+    bool Equal   (const char c);
+
+    /**
     * TODO: Lexicographic comparison
     * \n Checks if Strings are equal lexicographic
     * @param s Second string to compare
@@ -677,7 +694,7 @@ public:
     /**
     * TODO: With batchlan
     */
-    void    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false);
+    bool    ProcessFileName (bool isWrite = false, bool acceptStringVars = false, Ptr = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
 
     /**
     * TODO: With batchlan
@@ -764,6 +781,21 @@ public:
     */
     _String ShortenVarID     (_String&);
 
+    /**
+    * Examine the string argument contained in this object, decide what it is, and process accordingly
+    * \n\n \bExample: \code 'hyphy'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+    * \n\n \bExample: \code '\"hy\"+\"phy\"'.ProcessVariableReferenceCases (object) \endcode is a direct reference to object hyphy
+    * \n\n \bExample: \code '*hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy 
+    * \n\n \bExample: \code '**hyphy'.ProcessVariableReferenceCases (object) \endcode is a reference to the object whose name is stored in the string variable hyphy in the global context
+    * @param referenced_object will store the handled variable ID
+    * @param context is the namespace of the referenced object; could be nil
+    * @return one of HY_STRING_INVALID_REFERENCE    HY_STRING_DIRECT_REFERENCE   HY_STRING_LOCAL_DEREFERENCE    HY_STRING_GLOBAL_DEREFERENCE 
+    * @see IsValidIdentifier()
+    */
+
+    unsigned char  ProcessVariableReferenceCases (_String& referenced_object, _String * context = nil);
+
+    
     static  unsigned long     storageIncrement;
 
     /**
@@ -799,6 +831,14 @@ public:
     * @return sorted string
     */
     _String*Sort             (_SimpleList* = nil);
+
+    /**
+     * Generate a random string on 
+     * @param len (>0) The desired length of the string
+     * @param alphabet Which alphabet do the random charcters come from; in nil, then this will be generated from 1-128 ASCII codes 
+     * @return the random string
+     */
+    static _String Random             (const unsigned long len, const _String * alphabet = nil);
 
     /**
     * Computes Lempel-Ziv complexity of the string.

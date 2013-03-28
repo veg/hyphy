@@ -305,7 +305,6 @@ void    WarnErrorWhileParsing (_String st, _String& context)
 //_______________________________________________________________________
 void WarnError (_String st)
 {
-
     if (currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
         currentExecutionList->ReportAnExecutionError(st, true);
         return;
@@ -402,10 +401,10 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
     if (errorFormattingExpression) {
         _Formula expression;
         _String  expr (*errorFormattingExpression->theString),
-        errMsgLocal;
-        bool     is_volatile;
-        long     varRef = -1;
-        if (Parse    (&expression, expr, varRef, nil, nil, &errMsgLocal, nil) == HY_FORMULA_EXPRESSION) {
+                 errMsgLocal;
+        _FormulaParsingContext fpc (&errMsgLocal, nil);
+        
+        if (Parse    (&expression, expr, fpc) == HY_FORMULA_EXPRESSION) {
             CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
