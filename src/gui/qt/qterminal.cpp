@@ -2,7 +2,6 @@
 
 #include <QtGui>
 #include <QFont>
-#include <QMouseEvent>
 #include "qterminal.h"
 #include "hy_strings.h"
 #include "batchlan.h"
@@ -15,13 +14,15 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) 
     current_command                   = "";
     location_of_last_propmpt          = textCursor();
     location_of_insertion_point       = textCursor();
+    connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(handleCursorMove()));
     
     length_of_input_buffer            = 0;
 
-    command_history_location           = 0;
+    command_history_location           = -1;
  
     //Font Settings
     QFont font("Monaco Helvetica");
+    //setTextColor(Qt::darkCyan);
     setCurrentFont(font);
 
     //Make links clickable
@@ -33,6 +34,20 @@ QTerminal::QTerminal(QWidget *parent, Qt::WindowFlags f) : QTextBrowser(parent) 
 
 QTerminal::~QTerminal() {
 
+}
+
+void QTerminal::changeDir(const QString & dir) {
+    // SLKP 20121205: seems unused
+    QString theDir = QString(dir);
+    theDir = theDir.replace(QChar('/'), "\\");
+}
+
+
+void QTerminal::handleCursorMove (void) {
+    int position = textCursor().position();
+    if (location_of_insertion_point.position() != position && position > location_of_last_propmpt.position()) {
+        location_of_insertion_point = textCursor();
+    }
 }
 
 void QTerminal::handleUserLineEntry (void) {
@@ -52,13 +67,13 @@ void QTerminal::handleUserLineEntry (void) {
 
 }
 
-void QTerminal::beepAndIgnoreEvent (QEvent* event, bool do_ignore) {
+void        QTerminal::beepAndIgnoreEvent (QEvent* event, bool do_ignore) {
     QApplication::beep();
     if (do_ignore)
         event->ignore();
 }
 
-void QTerminal::replaceCurrentCommand (const QString* replace_with, bool stash_current){
+void        QTerminal::replaceCurrentCommand   (const QString* replace_with, bool stash_current){
     if (stash_current) {
         stash_current_command = current_command;
     }
@@ -77,10 +92,15 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
     
     int     key        = event->key();
  
+    /*if(event->modifiers()) {
+        QTextEdit::keyPressEvent(event);
+        return;
+    }*/
+    
     switch (key) {
         case Qt::Key_Up: { // fetch an older command from history
             if (command_history.size()) {
-                if (command_history_location == 0) {
+                if (command_history_location == -1) {
                     replaceCurrentCommand (&command_history.at(command_history_location = command_history.size()-1),true);
                     event->ignore();
                     return;
@@ -128,14 +148,12 @@ void QTerminal::keyPressEvent(QKeyEvent * event) {
             }
             return;
         }
-
         /*
         case Qt::Key_Tab: {
             // auto-complete later
             break;
         }
         */
-
         case Qt::Key_Return:
         case Qt::Key_Enter: {
             moveCursor(QTextCursor::End);
@@ -199,7 +217,6 @@ void QTerminal::newline(bool onlyIfLineNonEmpty) {
 
 void QTerminal::prompt(bool hbl) {
     moveCursor(QTextCursor::End);
-
     if (hbl) {
         _String tag = currentExecutionList?currentExecutionList->GetFileName():empty;
         if (tag.sLength == 0)
@@ -208,13 +225,13 @@ void QTerminal::prompt(bool hbl) {
     } else {
         insertHtml("<font color='#A60000'>&gt;</font> ");
     }
-
     moveCursor(QTextCursor::End);
     location_of_last_propmpt = textCursor();
     location_of_last_propmpt.movePosition(QTextCursor::Left);
 }
 
 void QTerminal::insertFromMimeData(const QMimeData * source) {
+    //setTextCursor(curCursorLoc);
     moveCursor(QTextCursor::End);
 
     QString     pastedText = source->text();
@@ -246,6 +263,11 @@ void QTerminal::contextMenuEvent(QContextMenuEvent *event) {
     menu->addAction(tr("Paste"),this,SLOT(paste()),QKeySequence::Paste);
     menu->addAction(tr("Find"),this,SLOT(find()),QKeySequence::Find);
     menu->addAction(tr("Select All"),this,SLOT(selectAll()),QKeySequence::SelectAll);
+    //menu->addAction(tr("Clear Window"),this,SLOT(clearwindow),QKeySequence::SelectAll);
     menu->exec(event->globalPos());
     delete menu;
 }
+
+//Edit Menu Options
+//void QTerminal::find(){}
+//void QTerminal::clearwindow(){}
