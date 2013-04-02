@@ -163,6 +163,10 @@ bool    handleGUI           (bool = false);
 #include <pmmintrin.h>
 #endif
 
+#ifdef _SLKP_USE_AVX_INTRINSICS
+#include <immintrin.h>
+#endif
+
 #endif
 
 //EOF

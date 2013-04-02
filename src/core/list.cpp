@@ -108,7 +108,7 @@ _List::_List (BaseRef br)
 }
 
 // Data constructor (variable number of string constants)
-_List::_List (char* firstString, const unsigned long number, ...)
+_List::_List (const char* firstString, const unsigned long number, ...)
 {
     va_list vl;
     AppendNewInstance (new _String (firstString));

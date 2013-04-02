@@ -3850,14 +3850,39 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                              }
                         }
 
-#else
+#endif
+                        
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+                        __m256d buffer1,
+                                buffer2,
+                                value_op = _mm256_set_pd (value,value,value,value);
+                        
+                        if (((long int)secArg & 0x11111b) == 0 && ((long int)res & 0x11111b) == 0) {
+                            for (long i = 0; i < loopBound; i+=4) {
+                                buffer1 = _mm256_load_pd (secArg+i);
+                                buffer2 = _mm256_load_pd (res+i);
+                                buffer1 = _mm256_mul_pd (buffer1, value_op);
+                                buffer2 = _mm256_add_pd (buffer2, buffer1);
+                                _mm256_store_pd (res+i, buffer2);
+                            }
+                        } else {
+                            for (long i = 0; i < loopBound; i+=4) {
+                                buffer1 = _mm256_loadu_pd (secArg+i);
+                                buffer2 = _mm256_loadu_pd (res+i);
+                                buffer1 = _mm256_mul_pd (buffer1, value_op);
+                                buffer2 = _mm256_add_pd (buffer2, buffer1);
+                                _mm256_storeu_pd (res+i, buffer2);
+                            }
+                        }
+#endif
+                        
+#if not defined  _SLKP_USE_AVX_INTRINSICS and not defined _SLKP_USE_SSE_INTRINSICS
                         for (long i = 0; i < loopBound; i+=4) {
                             res[i] += value * secArg[i];
                             res[i+1] += value * secArg[i+1];
                             res[i+2] += value * secArg[i+2];
                             res[i+3] += value * secArg[i+3];
                         }
-                        
 #endif
                         for (long j = loopBound; j < vDim; j++) {
                             res[j]   += value * secArg[j];
@@ -5678,6 +5703,11 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
 #ifdef _SLKP_USE_SSE_INTRINSICS
             double buffer[2] __attribute__ ((aligned (16)));
 #endif
+            
+#ifdef _SLKP_USE_AVX_INTRINSICS
+            double buffer[4] __attribute__ ((aligned (32)));
+#endif
+            
             _Parameter  _hprestrict_ * column = stash+lDim;
             _Parameter  _hprestrict_ * source = theData;
 
@@ -5687,7 +5717,6 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                 }
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
-
 
                 for (long i = 0; i < lDim; i += vDim) {
                     _Parameter * row = theData + i;
@@ -5738,6 +5767,46 @@ void        _Matrix::Sqr (_Parameter* _hprestrict_ stash)
                 
                     stash[i+j] = buffer[0] + buffer[1];
                  
+                }
+
+#elif defined _SLKP_USE_AVX_INTRINSICS
+
+                for (long i = 0; i < lDim; i += vDim) {
+                    _Parameter * row = theData + i;
+                    
+                    
+                    __m256d   buffer1,
+                              buffer2 = _mm256_setzero_pd(),
+                              load1,
+                              load2;
+                    
+                    long k;
+                    
+                    if (((long int)row & 0x11111b) == 0 && ((long int)column & 0x11111b) == 0){
+                        for (k = 0; k < loopBound; k += 4) {
+                            load1 = _mm256_load_pd (row+k);
+                            load2 = _mm256_load_pd (column+k);
+                            buffer1 = _mm256_mul_pd (load1, load2);
+                            buffer2 = _mm256_add_pd (buffer1,buffer2);
+                        }
+                        
+                    } else {
+                        for (k = 0; k < loopBound; k += 4) {
+                            load1 = _mm256_loadu_pd (row+k);
+                            load2 = _mm256_loadu_pd (column+k);
+                            buffer1 = _mm256_mul_pd (load1, load2);
+                            buffer2 = _mm256_add_pd (buffer1,buffer2);
+                        }
+                    }
+                    
+                    _mm256_store_pd (buffer, buffer2);
+                    
+                    for (; k < vDim; k++) {
+                        buffer[0] += row[k] * column [k];
+                    }
+                    
+                    stash[i+j] = buffer[0] + buffer[1] + buffer[2] + buffer[3];
+                    
                 }
 
 #else

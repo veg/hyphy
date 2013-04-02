@@ -771,6 +771,9 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
 #ifdef _SLKP_USE_SSE_INTRINSICS
                     double buffer[2] __attribute__ ((aligned (16)));
 #endif
+#ifdef _SLKP_USE_AVX_INTRINSICS
+                    double buffer[4] __attribute__ ((aligned (32)));
+#endif
                     for (long p = 0; p < alphabetDimension; p++) {
                         /*if (parentConditionals[p] < maxParentP) {
                             tMatrix               += alphabetDimension;
@@ -819,7 +822,33 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                         buffer3 = _mm_add_pd (buffer3, buffer4);    
                         _mm_store_pd (buffer, buffer3);
                         accumulator = buffer[0] + buffer[1];
-                    
+#elif defined _SLKP_USE_AVX_INTRINSICS
+                        
+                        __m256d buffer1,
+                                buffer3 = _mm256_setzero_pd(),
+                                load1,
+                                load3;
+                        
+                        
+                        if (((long int)tMatrix & 0x11111b) == 0 && ((long int)childVector & 0x11111b) == 0){
+                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                                load1 = _mm256_load_pd (tMatrix+c);
+                                load3 = _mm256_load_pd (childVector+c);
+                                buffer1 = _mm256_mul_pd (load1, load3);
+                                buffer3 = _mm256_add_pd (buffer1,buffer3);
+                             }
+                        } else {
+                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                                load1 = _mm256_loadu_pd (tMatrix+c);
+                                load3 = _mm256_loadu_pd (childVector+c);
+                                buffer1 = _mm256_mul_pd (load1, load3);
+                                buffer3 = _mm256_add_pd (buffer1,buffer3);
+                            }
+                            
+                        }
+                        
+                        _mm256_store_pd (buffer, buffer3);
+                        accumulator = buffer[0] + buffer[1] + buffer[2] + buffer[3];
 #else
                         for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                         // 4 - unroll the loop

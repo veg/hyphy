@@ -97,7 +97,7 @@ class _List:public _SimpleList
         * @param const unsigned long the number of additional char* arguments supplied to the constructor
         * @param 2-N: char* to be added to the list
         */
-        _List(char*, const unsigned long, ...);
+        _List(const char*, const unsigned long, ...);
         
         /**
         * The deconstructor
