@@ -1441,7 +1441,7 @@ int main (void)
     if (systemCPUCount == 1) {
         BufferToConsole ("One processor detected.\n");
     } else {
-        sprintf (buffer,"%ld processors detected.\n", systemCPUCount);
+        snprintf (buffer, sizeof(buffer),"%ld processors detected.\n", systemCPUCount);
         BufferToConsole (buffer);
     }
 #endif

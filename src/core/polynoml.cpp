@@ -2630,7 +2630,7 @@ BaseObj* _Polynomial::toStr (void)
 
         for (i=0; i<theTerms->NumberOfTerms(); i++) {
             char        number [100];
-            sprintf     (number,PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
+            snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
             if (i>0 && number[0]!='-') {
                 result<<'+';
             }
@@ -2691,7 +2691,7 @@ void _Polynomial::toFileStr (FILE*f)
         fprintf(f,")=");
         for (i=0; i<theTerms->NumberOfTerms(); i++) {
             char number [100];
-            sprintf(number,PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
+            snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
             if ((i>0)&&(number[0]!='-')) {
                 fprintf(f,"+");
             }

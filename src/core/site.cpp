@@ -1852,7 +1852,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
                 testV += ((_Matrix*)(((_Matrix**)values.lData)[k]))->theData[site*dimension+state];
             }
 
-        sprintf     (buffer, "%20.18g", testV);
+        snprintf (buffer, sizeof(buffer), "%20.18g", testV);
         _String     testS (buffer);
         long        f = siteIndices.Find (&testS);
 

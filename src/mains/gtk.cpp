@@ -394,7 +394,7 @@ int main( int   argc, char *argv[] )
 #ifdef __HYPHYMPI__
         {
             char statBuffer[1024];
-            sprintf (statBuffer,"MPI version of HyPhy running on %d nodes (a master and %d compute nodes) in %s mode\n",
+            snprintf (statBuffer, sizeof(statBuffer),"MPI version of HyPhy running on %d nodes (a master and %d compute nodes) in %s mode\n",
                      size,
                      size-1,
                      mpiPartitionOptimizer?"partition":(mpiParallelOptimizer?"rate heterogeneity":"normal"));

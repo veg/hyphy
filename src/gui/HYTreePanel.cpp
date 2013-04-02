@@ -1956,7 +1956,7 @@ void    _HYTreePanel::RenderRuler (_Parameter hsc, bool printing, int hshift, in
         r.left  = windowTextMarginH+hshift;
         r.right = windowTextMarginH+hshift;
         char    buff[255];
-        sprintf (buff,"%.4g",treeLength);
+        snprintf (buff, sizeof(buff),"%.4g",treeLength);
         theRuler->DisplayText (_String (buff), HY_TREEPANEL_RULER_EXPANDED-5+vshift,windowTextMarginH+rulerWidth+3+hshift,true);
         oldRulerW = rulerWidth;
         _Parameter t = hashScale*tickScale/treeLength;
@@ -2852,11 +2852,11 @@ void  _HYTreePanel::PaintSquareBranchLabels (_HYCanvas* theCanvas, node<nodeCoor
              conf [32];
 
         //if (value>1.0)
-        sprintf (conf,"%%.%dg",above?labelDigits1:labelDigits2);
+        snprintf (conf, sizeof(conf),"%%.%dg",above?labelDigits1:labelDigits2);
         //else
-        //  sprintf (conf,"%%.%dg",(above?labelDigits1:labelDigits2)+1);
+        //  snprintf (conf, sizeof(conf),"%%.%dg",(above?labelDigits1:labelDigits2)+1);
 
-        sprintf (conv,conf,value);
+        snprintf (conv, sizeof(conv),conf,value);
         _String label (conv);
 
         nodeCircle.top = nodeCircle.bottom = mv;
@@ -2882,11 +2882,11 @@ void  _HYTreePanel::PaintSquareBranchLabels (_HYCanvas* theCanvas, node<nodeCoor
 
         while ((lw>nodeCircle.right-nodeCircle.left-2*(branchWidth+1))&&(cDig>=firstDig)) {
             if (value>1.0) {
-                sprintf (conf,"%%.%dg",cDig-firstDig);
+                snprintf (conf, sizeof(conf),"%%.%dg",cDig-firstDig);
             } else {
-                sprintf (conf,"%%.%dg",cDig-firstDig+1);
+                snprintf (conf, sizeof(conf),"%%.%dg",cDig-firstDig+1);
             }
-            sprintf (conv,conf,value);
+            snprintf (conv, sizeof(conv),conf,value);
             label = conv;
             label.Trim(0,cDig);
 #ifdef __MAC__
@@ -6305,7 +6305,7 @@ void    _HYTreePanel::GenerateDistanceTable (char opt)
                             unsortedDM->theData[nid*leafCounter + leafCounter2] += meNode->in_object.bL;
                             unsortedDM->theData[leafCounter2*leafCounter + nid] += meNode->in_object.bL;
                             /*char buffer [255];
-                            sprintf (buffer, "Adding %g %d:%d:%d (%g,%g) to %s %s path from leaf %s\n", meNode->in_object.bL,nid,leafCounter2,leafCounter,unsortedDM->theData[nid*leafCounter + leafCounter2],unsortedDM->theData[leafCounter2*leafCounter + nid],
+                            snprintf (buffer, sizeof(buffer), "Adding %g %d:%d:%d (%g,%g) to %s %s path from leaf %s\n", meNode->in_object.bL,nid,leafCounter2,leafCounter,unsortedDM->theData[nid*leafCounter + leafCounter2],unsortedDM->theData[leafCounter2*leafCounter + nid],
                                                                                              ((_String*)leafNames(nid))->sData,((_String*)leafNames(leafCounter2))->sData,((_String*)leafNames(leafCounter2))->sData);
                             BufferToConsole (buffer);*/
                         }
@@ -6337,7 +6337,7 @@ void    _HYTreePanel::GenerateDistanceTable (char opt)
                                 unsortedDM->theData[idx1*leafCounter + idx2] += meNode->in_object.bL;
                                 unsortedDM->theData[idx2*leafCounter + idx1] += meNode->in_object.bL;
                                 /*char buffer [255];
-                                sprintf (buffer, "Adding %g %d:%d:%d  (%g,%g) to %s %s path from leaf %s\n", meNode->in_object.bL,idx1,idx2,leafCounter,
+                                snprintf (buffer, sizeof(buffer), "Adding %g %d:%d:%d  (%g,%g) to %s %s path from leaf %s\n", meNode->in_object.bL,idx1,idx2,leafCounter,
                                                                                                   unsortedDM->theData[idx1*leafCounter + idx2],
                                                                                                   unsortedDM->theData[idx2*leafCounter + idx1],
                                                                                                   ((_String*)leafNames(idx1))->sData,((_String*)leafNames(idx2))->sData,meNode->in_object.branchName.sData);

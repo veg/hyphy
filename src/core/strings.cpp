@@ -164,7 +164,7 @@ _String::_String (long sL)
 {
 
     char s [32];
-    sprintf (s,"%ld", sL);
+    snprintf (s, sizeof(s),"%ld", sL);
     for(sLength=0; s[sLength]; sLength++) ;
     checkPointer (sData = (char*)MemAllocate(sLength+1));
     memcpy       (sData, s, sLength+1);
@@ -2021,7 +2021,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
     for (long stringIndex = 0; stringIndex < sLength; stringIndex ++) {
         char currentChar = getChar (stringIndex);
         //char b[256];
-        //sprintf (b,"%c %d\n", currentChar, currentChar);
+        //snprintf (b, sizeof(b),"%c %d\n", currentChar, currentChar);
         //BufferToConsole (b);
         switch (currentChar) {
         case '\t':
