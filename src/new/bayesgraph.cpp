@@ -1630,12 +1630,12 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
         if (node_type.lData[node_id] == 0) {
             rec << "nodes[Abs(nodes)]=add_discrete_node(";
             // I can't figure out how to write the _String object from [node_names] to file :-P
-            sprintf (buf, "\"Node%d\",%d,%d,%d", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0), num_levels.lData[node_id]);
+            snprintf (buf, sizeof(buf), "\"Node%d\",%d,%d,%d", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0), num_levels.lData[node_id]);
             rec << buf;
             rec << ");\n";
         } else {
             rec << "nodes[Abs(nodes)]=add_gaussian_node(";
-            sprintf (buf, "\"Node%d\",%d,%d,%f,%f,%f", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0),
+            snprintf (buf, sizeof(buf), "\"Node%d\",%d,%d,%f,%f,%f", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0),
                      prior_mean(node_id,0), prior_precision(node_id,0), prior_scale(node_id,0) );
             rec << buf;
             rec << ");\n";
@@ -1648,11 +1648,11 @@ void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
     rec << "=(nodes);\n";
 
     // missing data imputation settings
-    sprintf (buf, "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)impute_max_steps);
+    snprintf (buf, sizeof(buf), "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)impute_max_steps);
     rec << buf;
-    sprintf (buf, "BGM_IMPUTE_BURNIN = %d;\n", (long)impute_burnin);
+    snprintf (buf, sizeof(buf), "BGM_IMPUTE_BURNIN = %d;\n", (long)impute_burnin);
     rec << buf;
-    sprintf (buf, "BGM_IMPUTE_SAMPLES = %d;\n", (long)impute_sample_size);
+    snprintf (buf, sizeof(buf), "BGM_IMPUTE_SAMPLES = %d;\n", (long)impute_sample_size);
     rec << buf;
 
     // serialize constraint matrix

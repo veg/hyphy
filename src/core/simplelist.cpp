@@ -1490,7 +1490,7 @@ BaseRef _SimpleList::toStr(void)
 
         for (unsigned long i = 0; i<lLength; i++) {
             char c[32];
-            sprintf(c,"%ld",((long*)lData)[i]),
+            snprintf (c, sizeof(c),"%ld",((long*)lData)[i]),
                     (*s) << c;
             if (i<lLength-1) {
                 (*s) << ',';
