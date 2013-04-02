@@ -3,6 +3,58 @@ project(HyPhy)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
+#-------------------------------------------------------------------------------
+# SSE MACROS
+#-------------------------------------------------------------------------------
+
+macro(PCL_CHECK_FOR_SSE3)
+  include(CheckCXXSourceRuns)
+  set(CMAKE_REQUIRED_FLAGS)
+
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+      set(CMAKE_REQUIRED_FLAGS "-msse3")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+
+  check_cxx_source_runs("
+      #include <pmmintrin.h>
+      int main ()
+      {
+          __m128d a, b;
+          double vals[2] = {0};
+          a = _mm_loadu_pd (vals);
+          b = _mm_hadd_pd (a,a);
+          _mm_storeu_pd (vals, b);
+          return (0);
+      }"
+      HAVE_SSE3_EXTENSIONS)
+endmacro(PCL_CHECK_FOR_SSE3)
+
+#-------------------------------------------------------------------------------
+# SSE MACROS
+#-------------------------------------------------------------------------------
+
+macro(PCL_CHECK_FOR_AVX)
+  include(CheckCXXSourceRuns)
+  set(CMAKE_REQUIRED_FLAGS)
+
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+      set(CMAKE_REQUIRED_FLAGS "-march=corei7-avx -mtune=corei7-avx")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+
+  check_cxx_source_runs("
+      #include <immintrin.h>
+      int main ()
+      {
+          __m256d a, b;
+          double vals[4] = {0.};
+          a = _mm256_loadu_pd (vals);
+          b = _mm256_hadd_pd (a,a);
+          _mm256_storeu_pd (vals, b);
+          return (0);
+      }"
+      HAVE_AVX_EXTENSIONS)
+endmacro(PCL_CHECK_FOR_AVX)
+
 
 #-------------------------------------------------------------------------------
 # set the CMAKE_MODULE_PATH so we can import OpenCL
@@ -53,14 +105,27 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${MACOSX_LION})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -msse3 ")
+        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3 ")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -msse3  ")
+        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3  ")
     endif(${GCC45})
 
     if(${GCC46})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null")
     endif(${GCC46})
+    
+    PCL_CHECK_FOR_AVX()
+    if(${HAVE_AVX_EXTENSIONS})
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx ")
+        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+    else(${HAVE_AVX_EXTENSIONS})
+        PCL_CHECK_FOR_SSE3()
+        if(${HAVE_SSE3_EXTENSIONS})
+            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+        endif(${HAVE_SSE3_EXTENSIONS})
+    endif (${HAVE_AVX_EXTENSIONS})
+    
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -167,8 +232,7 @@ set_property(
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
 #-------------------------------------------------------------------------------
-add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__ -D_SLKP_USE_SSE_INTRINSICS)
-#add_definitions(-D_SLKP_LFENGINE_REWRITE_)
+add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions(-D__HYPHY_64__)
