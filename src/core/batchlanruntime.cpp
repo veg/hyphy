@@ -283,7 +283,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         if (unitLength==1) {
             if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 dataType = "nucleotide";
-            } else if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
+            } else if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN)) {
                 dataType = "aminoacid";
             }
         } else {
