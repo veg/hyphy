@@ -242,13 +242,12 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
-    src/lib/Link src/new/include
+    src/lib/Link 
+    src/new/include
     contrib/SQLite-3.7.11 # SQLite
     contrib/tinyxml
     contrib/pugixml/src/
-    src/gui/include
-    src/gui/include/Components
-    src/gui/include/WindowClasses
+    src/ocl/
     contrib/gtest-1.6.0/include
     tests/gtests
     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
@@ -436,7 +435,7 @@ if((${QT4_FOUND}))
     file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp src/gui/HYSharedMain.*) 
     file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h src/gui/include/HYSharedMain.*) 
     file(GLOB QT_HYPHY_UI src/gui/qt/ui/*ui)
-    set(RES_MACGUI src/gui/mac/HYPHYMP.icns src/gui/mac/HyPhy.rsrc)
+    set(RES_MACGUI src/gui/qt/mac/HYPHYMP.icns src/gui/qt/mac/HyPhy.rsrc)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
     QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
