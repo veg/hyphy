@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "baseobj.h"
 
-#define  MEMORYSTEP 8
+#define  MEMORYSTEP         8L
 
 class _SimpleList:public BaseObj
 {
@@ -235,7 +235,7 @@ class _SimpleList:public BaseObj
         * @param startAt Index to start at 
         * @return -1 if not found, index if found
         */
-        virtual long Find(long, long startAt = 0);
+        virtual long Find(const long, const long startAt = 0L) const;
 
         /**
         * Same as find, but steps over indices 
@@ -245,7 +245,7 @@ class _SimpleList:public BaseObj
         * @param startAt Index to start at 
         * @return -1 if not found, index if found
         */
-        virtual long FindStepping(long, long, long=0);
+        virtual long FindStepping(const long, const long, const long = 0L) const;
 
         /** 
         * Flips the list 

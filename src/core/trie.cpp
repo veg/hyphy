@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "trie.h"
+#include "helperfunctions.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 

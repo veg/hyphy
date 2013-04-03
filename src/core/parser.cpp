@@ -43,11 +43,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ctype.h"
 #include "polynoml.h"
 #include "batchlan.h"
+#include "hy_globals.h"
 
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 extern
 _SimpleList     simpleOperationCodes,
@@ -74,7 +72,6 @@ _List           FunctionNameList,
                 BuiltInFunctions;
 
 _SimpleList     FunctionArgumentCount,
-                freeSlots,
                 deferIsConstant,
                 *deferSetFormula = nil;
 

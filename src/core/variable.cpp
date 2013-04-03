@@ -105,11 +105,6 @@ void _Variable::Duplicate (BaseRef r)
 BaseRef _Variable::makeDynamic (void)
 {
     _Variable * res = new _Variable;
-    if (!res) {
-        isError(0);
-        return nil;
-    }
-    //memcpy ((char*)res, (char*)this, sizeof (_Variable));
     res->Duplicate(this);
     return res;
 }

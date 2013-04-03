@@ -162,7 +162,7 @@ public:
     * @param index The int location of the char in the string
     * @return char located at specified location
     */
-    const       char    getChar          (long);
+    const       char    getChar          (long) const;
 
     /**
     * Sets the character of the string instance at a specified index
@@ -439,12 +439,12 @@ public:
     * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
     * @sa FindKMP()
     */
-    long    Find(_String s, long from = 0, long to = -1);
+    long    Find(_String s, long from = 0, long to = -1) const;
 
     /**
     *  @see Find()
     */
-    long    Find(char s, long from = 0, long to = -1);
+    long    Find(const char s, long from = 0, long to = -1) const;
 
     /**
     * Find first occurence of the string between from and to

@@ -42,6 +42,7 @@
 #include      <ctype.h>
 
 #include      "bayesgraph.h"
+#include      "hy_globals.h"
 
 #ifndef __HYPHY_NO_SQLITE__
 #include "sqlite3.h"

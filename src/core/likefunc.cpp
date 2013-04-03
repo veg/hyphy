@@ -41,6 +41,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "batchlan.h"
 #include "category.h"
 
+#include "hy_globals.h"
+#include "helperfunctions.h"
+
 
 #ifdef __WINDOZE__
 #include     "windows.h"
@@ -1010,12 +1013,7 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 BaseRef _LikelihoodFunction::makeDynamic (void)  // dynamic copy of this object
 {
     _LikelihoodFunction * res = new _LikelihoodFunction;
-    checkPointer(res);
     memcpy ((char*)res, (char*)this, sizeof (_LikelihoodFunction));
-    if (!res) {
-        isError(0);
-        return nil;
-    }
     res->Duplicate(this);
     return res;
 }
@@ -2997,7 +2995,7 @@ void        _LikelihoodFunction::GetInitialValues (void)
         _TheTree *t        = (_TheTree*)LocateVar(theTrees.lData[index]);
         long mDim          = df->NumberSpecies();
 
-        if (df->GetData()->GetTT()->IsStandardNucleotide() && df->IsNormalFilter() && mDim<150 && LocateVar(theProbabilities.lData[index])->IsIndependent()) {
+        if (df->GetData()->GetTT()->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE) && df->IsNormalFilter() && mDim<150 && LocateVar(theProbabilities.lData[index])->IsIndependent()) {
             // if not - use distance estimates
 
             if (t->IsDegenerate()) {

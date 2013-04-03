@@ -45,6 +45,8 @@
 #include "polynoml.h"
 #include "batchlan.h"
 
+#include "hy_globals.h"
+
 extern _SimpleList BinOps,
        opPrecedence,
        FunctionArgumentCount,

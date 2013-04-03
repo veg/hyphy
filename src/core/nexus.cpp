@@ -26,6 +26,9 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
+
+#include "hy_globals.h"
+
 #include "site.h"
 #include "string.h"
 #include "ctype.h"
@@ -34,9 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "batchlan.h"
 
 #include "math.h"
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 //_________________________________________________________
 
 _DataSet* lastNexusDataMatrix = nil;
@@ -1172,10 +1173,10 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                     checkTTStatus (&fState);
                     if (charState==1) {
                         newAlph = aminoAcidOneCharCodes;
-                        fState.translationTable->baseLength = 20;
+                        fState.translationTable->SetStandardType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN);
                     } else {
                         newAlph = binaryOneCharCodes;
-                        fState.translationTable->baseLength = 2;
+                        fState.translationTable->SetStandardType(HY_TRANSLATION_TABLE_STANDARD_BINARY);
                     }
                 } else {
                     newAlph = dnaOneCharCodes;

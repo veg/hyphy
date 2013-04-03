@@ -42,6 +42,7 @@
 #include "constant.h"
 #include "matrix.h"
 #include "calcnode.h"
+#include "hy_globals.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;

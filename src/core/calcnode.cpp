@@ -39,23 +39,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "likefunc.h"
 #include "float.h"
 
-//#ifndef     __ALTIVEC__
-//#define     ALMOST_ZERO  1e-305
+#include "hy_globals.h"
 
-#define     ANCESTRAL_SCALING_MAX 16
-#define     ALMOST_ZERO           0.0
-//#else
-//#define     ALMOST_ZERO  1e-35
-//#endif
-
-
-#define     TREE_V_SHIFT            8.0
-#define     TREE_H_SHIFT            10.0
-
-#define     LIKELIHOOD_SCALER           1.0
-#define     LIKELIHOOD_SCALER_INT       1.0
-
-#define     DEGREES_PER_RADIAN          57.29577951308232286465
 
 
 extern      _Parameter   explicitFormMatrixExponential;
@@ -80,8 +65,7 @@ long*       nonZeroNodes = nil,
     pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-char        isDefiningATree         = 0,
-            takeBranchLengths       = 0,
+char        takeBranchLengths       = 0,
             autoSolveBranchLengths  = 0;
 
 _Parameter  ignoringInternalNames   = 0.0;

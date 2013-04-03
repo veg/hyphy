@@ -40,6 +40,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __DEFINES__
 #define     __DEFINES__
 
+#ifndef FALSE
+    #define FALSE 0
+#endif
+
+#ifndef TRUE
+    #define TRUE  1
+#endif
+
+#ifndef nil
+    #define nil   NULL
+#endif
+
+#define  HY_NOT_FOUND       (-1L)
+
 #define  HY_UNDEFINED       0x00UL
 #define  NUMBER             0x01UL
 #define  MATRIX             0x04UL
@@ -294,5 +308,32 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define   HY_HBL_GET_STRING_BGM_SCORE                                   0L
 #define   HY_HBL_GET_STRING_BGM_SERIALIZE                               1L
+
+#define    RAND_MAX_32               4294967295.0
+#define    HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
+
+#define    PRINTF_FORMAT_STRING    "%.16g"
+
+#define    USE_AVL_NAMES
+
+#define   HYPHY_SITE_DEFAULT_BUFFER_SIZE                                256
+#define   DATA_SET_SWITCH_THRESHOLD                                     100000
+
+
+#define   ALMOST_ZERO           0.0
+
+
+#define     TREE_V_SHIFT            8.0
+#define     TREE_H_SHIFT            10.0
+
+#define     LIKELIHOOD_SCALER           1.0
+#define     LIKELIHOOD_SCALER_INT       1.0
+
+#define     DEGREES_PER_RADIAN          57.29577951308232286465
+
+
+#define  GOLDEN_RATIO 1.618034
+#define MAX_BRENT_ITERATES 100L
+
 
 #endif

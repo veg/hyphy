@@ -31,41 +31,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "errorfns.h"
 #include "hy_strings.h"
-
-
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __MAC__ || defined __HYPHY_GTK__
-#include "preferences.h"
-#endif
-
-#ifdef __MAC__
-#include <Dialogs.h>
-#include "HYUtils.h"
-#include "HYConsoleWindow.h"
-#endif
-
-#ifdef __WINDOZE__
-void WinErrorBox(_String&, bool);
-#endif
-
-#ifdef __HYPHY_GTK__
-#include <gtk/gtk.h>
-#include "HYConsoleWindow.h"
-#endif
-
-#ifdef   __UNIX__
-#if !defined __MINGW32__
-#include <sys/utsname.h>
-#endif
-
-#ifndef __HYPHY_GTK__
-extern  bool dropIntoDebugMode;
-#endif
-#else
-void    SaveConsole (void);
-#endif
-
+#include "hy_globals.h"
 #include "batchlan.h"
+
+
+#if defined  __UNIX__ && !defined __MINGW32__
+    #include <sys/utsname.h>
+#endif
+
 
 //_____________________________________________________________
 
@@ -75,10 +48,7 @@ _String* ConstructAnErrorMessage        (_String&);
 
 //_____________________________________________________________
 
-int      gError                         = _HYNOERROR;
-
-bool     isFixable                      = true,
-         skipWarningMessages            = false;
+bool        skipWarningMessages            = false;
 
 _String  errorReportFormatExpression            ("ERROR_REPORT_FORMAT_EXPRESSION"),
          errorReportFormatExpressionStr            ("_ERROR_TEXT_"),
@@ -88,15 +58,7 @@ _String  errorReportFormatExpression            ("ERROR_REPORT_FORMAT_EXPRESSION
 
 //_____________________________________________________________
 
-bool gStatus(void)
-{
-    return gError == _HYNOERROR;
-}
-
-//_____________________________________________________________
-
-_String DecodeError (long errCode)
-{
+_String DecodeError (long errCode) {
     switch (errCode) {
     case -101:
         return "Incompatible Operands";
@@ -142,26 +104,10 @@ _String DecodeError (long errCode)
     }
 }
 
-//_____________________________________________________________
-bool isError (long errCode)
-{
-//  if (errCode == 0)
-//      acknError (false);
-    if (errCode!=_HYNOERROR)  {
-        if (errCode<0) {
-            gError = errCode;
-            isFixable = TRUE;
-            return FALSE;
-        }
-    }
-    gError = _HYNOERROR;
-    return TRUE;
-}
 
 //_____________________________________________________________
 
-void    warnError (long errCode)
-{
+void    warnError (long errCode) {
     if (errCode == -108) {
         warnError (DecodeError (errCode)&_String(" Exiting..."));
     } else {
@@ -171,16 +117,14 @@ void    warnError (long errCode)
 
 //_____________________________________________________________
 
-void    flagError (long errCode)
-{
+void    flagError (long errCode) {
     warnError (DecodeError (errCode));
 }
 
 
 //_____________________________________________________________
 
-void    warnError (const char* theError)
-{
+void    warnError (const char* theError) {
     FlagError (theError);
 }
 
@@ -193,8 +137,7 @@ void    acknError (const char* theError)
 
 //_____________________________________________________________
 
-void*   checkPointer (void* p)
-{
+void*   checkPointer (void* p) {
     if (p) {
         return p;
     }
@@ -213,14 +156,11 @@ void    ReportWarning (_String st)
         globalInterfaceInstance->PushWarning (&st);
     }
 #else
-    if ( !globalMessageFile || messageLogFlag<.1 ) {
-        return;
+    if ( globalMessageFile && messageLogFlag >=.1 ) {
+        fprintf (globalMessageFile, "\n%s", st.sData);
+        fflush(globalMessageFile);
     }
 
-    char   str[] = "\n";
-    fwrite (str, 1, 1, globalMessageFile);
-    fwrite (st.getStr(), 1, st.Length(), globalMessageFile);
-    fflush (globalMessageFile);
 #endif
 }
 
@@ -235,12 +175,9 @@ void    FlagError (_String st)
 
     terminateExecution = true;
 #else
-    char  str[] = "\nError:";
-
 
     if (globalErrorFile) {
-        fwrite (str, 1, 7, globalErrorFile);
-        fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
+        fprintf (globalErrorFile, "\nError:%s", st.sData);
         fflush(globalErrorFile);
     }
 
@@ -250,7 +187,6 @@ void    FlagError (_String st)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-#if !defined __MAC__ && !defined __WINDOZE__
     _String errMsg;
 #ifdef __HYPHYMPI__
     errMsg = _String("Received an error state from MPI node ") & (long)rank & '\n' & st;
@@ -272,7 +208,6 @@ void    FlagError (_String st)
 #else
     _SimpleList color (255,2,0,0);
     StringToConsole(errMsg, &color);
-#endif
 #endif
 
 #ifdef __HYPHYMPI__
@@ -296,8 +231,7 @@ void    FlagError (_String st)
 }
 
 //_______________________________________________________________________
-void    WarnErrorWhileParsing (_String st, _String& context)
-{
+void    WarnErrorWhileParsing (_String st, _String& context) {
     WarnError (_String ("While parsing:\n") & context & "\n" & st);
 }
 
@@ -316,11 +250,9 @@ void WarnError (_String st)
     }
     terminateExecution = true;
 #else
-    char  str[] = "\nError:";
 
     if (globalErrorFile) {
-        fwrite (str, 1, 7, globalErrorFile);
-        fwrite (st.getStr(), 1, st.Length(), globalErrorFile);
+        fprintf (globalErrorFile, "\nError:%s", st.sData);
         fflush (globalErrorFile);
     }
 
@@ -328,9 +260,6 @@ void WarnError (_String st)
     int     rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-    if (globalMessageFile) {
-        fprintf (globalMessageFile, "\n%s", st.sData);
-    }
 
     _String errMsg;
     #ifdef __HYPHYMPI__
@@ -386,8 +315,7 @@ void WarnError (_String st)
 
 //____________________________________________________________________________________
 
-_String* ConstructAnErrorMessage         (_String& theMessage)
-{
+_String* ConstructAnErrorMessage         (_String& theMessage) {
     _String* errMsg = new _String (128L,true);
 
     _List    calls,
@@ -440,8 +368,7 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
 
 //____________________________________________________________________________________
 
-void ReturnCurrentCallStack      (_List& calls, _List& stdins)
-{
+void ReturnCurrentCallStack      (_List& calls, _List& stdins) {
     calls.Clear  ();
     stdins.Clear ();
 

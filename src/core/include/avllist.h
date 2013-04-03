@@ -41,8 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _AVLLIST_
 //#pragma once
 #include "simplelist.h"
-
-#define  MEMORYSTEP 8
+#include "helperfunctions.h"
 
 //_____________________________________________________________________________
 class _AVLList: public BaseObj

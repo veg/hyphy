@@ -41,14 +41,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "float.h"
 #include "batchlan.h"
 #include "category.h"
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "hy_globals.h"
 
 
-#define  GOLDEN_RATIO 1.618034
-#define MAX_BRENT_ITERATES 100L
 
 extern   _SimpleList BinOps,
          opPrecedence,

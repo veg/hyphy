@@ -45,69 +45,15 @@
 #include "time.h"
 #include "scfg.h"
 #include "HYNetInterface.h"
+#include "hy_globals.h"
 
 #include "bayesgraph.h"
 
-
-//#include "profiler.h"
-#ifndef __HEADLESS__
-#ifdef __HYPHY_GTK__
-#include "HYConsoleWindow.h"
-#include "HYDialogs.h"
-#include "HYUtils.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYChartWindow.h"
-#include "HYDBWindow.h"
+#if not defined __HEADLESS__ && defined __HYPHYQT__
+    #include "HYSharedMain.h"
+    #include "hyphy_qt_helpers.h"
 #endif
 
-#ifdef __MAC__
-#include <Aliases.h>
-//#include <StandardFile.h>
-#include <Files.h>
-#include "HYDataPanel.h"
-#include "HYDialogs.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYUtils.h"
-#include "HYChartWindow.h"
-#include "HYDBWindow.h"
-#include "timer.h"
-void    GetFullPathName (FSSpec& theReply, _String& feedback);
-_String MacSimpleFileOpen (void);
-_String MacSimpleFileSave (void);
-#endif
-
-#ifdef __WINDOZE__
-#include "HYDataPanel.h"
-#include "HYDialogs.h"
-#include "HYTreePanel.h"
-#include "HYDataPanel.h"
-#include "HYUtils.h"
-#include "HYChartWindow.h"
-extern  long    lastFileTypeSelection;
-#include "HYUtils.h"
-#include "HYDBWindow.h"
-#endif
-
-#ifndef __UNIX__
-#include "HYEventTypes.h"
-#endif
-#endif
-
-#if defined __HYPHYQT__
-#include "HYSharedMain.h"
-#include "hyphy_qt_helpers.h"
-#endif
-
-
-#ifdef      __MACPROFILE__
-#include "profiler.h"
-#endif
-
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 
 //____________________________________________________________________________________
@@ -134,9 +80,6 @@ standardLibraryExtensions,
 loadedLibraryPathsBackend;
 
 
-#ifdef __MAC__
-_String volumeName;
-#endif
 
 
 // retrieval functions
@@ -237,7 +180,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 baseDirectory,
                                 lastModelUsed,
                                 libDirectory,
-                                scanfLastFilePath,
                                 defFileNameValue;
 
 
@@ -252,8 +194,6 @@ _String     mpiNodeID                       ("MPI_NODE_ID"),
 void        ReportMPIError                  (int, bool);
 
 #endif
-
-bool        isInFunction = false;
 
 _Parameter  explicitFormMatrixExponential = 0.0,
             messageLogFlag                = 1.0;
@@ -5195,7 +5135,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                                         _TranslationTable newTT (baseSet);
                                         _DataSet * ds = (_DataSet*)checkPointer(new _DataSet);
 
-                                        if (! newTT.IsStandardNucleotide() ) {
+                                        if (! newTT.CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE) ) {
                                             ds->SetTranslationTable (&newTT);    // mod 20060113 to properly deal with non-standard alphabets
                                         }
                                         // make a dummy

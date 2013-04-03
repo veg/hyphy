@@ -37,83 +37,71 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HBASEOBJ_
-#define _HBASEOBJ_
-//#pragma once
+#ifndef     __HY_GLOBALS__
+#define     __HY_GLOBALS__
+
+#include "batchlan.h"
+#include "parser.h"
+
+extern    bool
+    dropIntoDebugMode,
+    isInFunction,
+    terminateExecution,
+    skipWarningMessages;
+
+;
+
+extern    char
+    isDefiningATree;
+
+extern      FILE
+    *     globalErrorFile ,
+    *     globalMessageFile
+
+;
 
 
-typedef char         * Ptr;
-typedef double       _Parameter; 
+extern      _String
+    blockWiseMatrix,
+    errorFileName,
+    messageFileName,
+    randomSeed,
+    scanfLastFilePath,
+    siteWiseMatrix
 
-#include "defines.h"
+;
 
-#ifdef      __HEADLESS__
-#include "THyPhy.h"
+extern      _SimpleList
+    freeSlots
+
+;
+
+extern      long
+    globalRandSeed,
+    systemCPUCount
+
+;
+
+
+extern _Parameter
+    dFPrintFormat,
+    dFDefaultWidth
+
+;
+
+
+extern      _Variable
+    *_n_,
+    *_x_
+;
+
+extern      _AVLListX
+    openFileHandles
+;
+
+#ifdef    __HYPHYMPI__
+    extern int _hy_mpi_node_rank;
 #endif
 
-#ifdef __GNUC__
-#define _hprestrict_ __restrict
-#else
-#define _hprestrict_
-#endif
-
-#include "stdio.h"
-
-
-class BaseObj
-{
-
-    //base object class
-public:
-
-    BaseObj();
-
-    virtual ~BaseObj(void) {}
-
-    virtual BaseObj* toStr (void);
-
-    virtual BaseObj* toErrStr (void);
-
-    virtual void     toFileStr (FILE*);
-
-    virtual BaseObj* makeDynamic (void);
-
-    virtual long     FreeUpMemory (long) {
-        return 0L;
-    }
-
-    virtual void     Initialize (void) {
-        nInstances=1;
-    }
-
-    virtual void     Duplicate (BaseObj* ref) {
-        nInstances=++ref->nInstances;
-    }
-
-    virtual void     AddAReference (void)     {
-        nInstances ++;
-    }
-
-    virtual void     RemoveAReference (void)     {
-        nInstances --;
-    }
-
-    long             nInstances;
-
-
-};
-
-typedef BaseObj*  BaseRef;
-
-
-#ifdef _SLKP_USE_SSE_INTRINSICS
-#include <pmmintrin.h>
-#endif
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-#include <immintrin.h>
-#endif
 
 #endif
-
-//EOF

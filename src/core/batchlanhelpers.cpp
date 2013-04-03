@@ -39,6 +39,7 @@
 
 #include      "batchlan.h"
 #include      "defines.h"
+#include      "hy_globals.h"
 
 #ifdef __HYPHYQT__
 #include "hyphy_qt_helpers.h"

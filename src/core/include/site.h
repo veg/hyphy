@@ -47,77 +47,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllist.h"
 #include "avllistx.h"
 #include "avllistxl.h"
-#include "stdlib.h"
+#include <stdlib.h>
+
+#include "translationtable.h"
 
 #define   NUCLEOTIDEDATA 0
 #define   CODONDATA      1
 
 
 
-
-
-//_________________________________________________________
-class _TranslationTable:public BaseObj
-{
-
-public:
-
-    _TranslationTable                       (void);
-    _TranslationTable                       (char);
-    _TranslationTable                       (_String&);
-    /* 20100618: SLKP
-
-            - new constructor (needed to handle ExecuteCase52 / Simulate properly)
-              which takes an alphabet string and checks to see if it's a standard one
-              DNA/RNA/Protein or Binary
-
-     */
-    _TranslationTable                       (_TranslationTable&);
-    virtual ~_TranslationTable              (void) {
-        if (checkTable) {
-            free (checkTable);
-        }
-    }
-    virtual BaseRef  makeDynamic            (void);
-
-    long    TokenCode                       (char);
-    char    CodeToLetter                    (long*);
-
-    void    AddBaseSet                      (_String&);
-    bool    TokenCode                       (char, long*, bool = true);
-    void    SplitTokenCode                  (long, long*);
-
-    void    AddTokenCode                    (char, _String&);
-    void    PrepareForChecks                (void);
-    bool    IsCharLegal                     (char);
-    char    GetSkipChar                     (void);
-    char    GetGapChar                      (void);
-    _String ConvertCodeToLetters            (long, char);
-    long    LengthOfAlphabet                (void);
-    bool    IsStandardBinary                (void) {
-        return baseLength==2 && baseSet.sLength==0;
-    }
-    bool    IsStandardNucleotide            (void) {
-        return baseLength==4 && baseSet.sLength==0;
-    }
-    bool    IsStandardAA                    (void) {
-        return baseLength==20&& baseSet.sLength==0;
-    }
-    _TranslationTable*
-    MergeTables                     (_TranslationTable*);
-
-    char                                    baseLength;
-    // number of "fundamental" tokens
-    //(4 for nucl, ACGT; 20 for amino acids)
-
-
-    _String                                 tokensAdded,
-                                            baseSet;
-
-    _SimpleList                             translationsAdded;
-    char*                                   checkTable;
-    // if null - then assume default translation table;
-};
 
 //_________________________________________________________
 
@@ -626,10 +564,6 @@ bool            StoreADataSet           (_DataSet*, _String*);
 
 extern _String  dataFileTree,
        dataFileTreeString,
-       aminoAcidOneCharCodes,
-       dnaOneCharCodes,
-       rnaOneCharCodes,
-       binaryOneCharCodes,
        nexusFileTreeMatrix,
        dataFilePartitionMatrix,
        defaultLargeFileCutoff,

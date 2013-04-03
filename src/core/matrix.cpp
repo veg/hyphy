@@ -43,9 +43,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistx.h"
 #include "avllistxl.h"
 
-#ifdef    __HYPHYDMALLOC__
-    #include "dmalloc.h"
-#endif
+#include "hy_globals.h"
+
 
 /*SLKP 20110209; include progress report updates */
 #if !defined __UNIX__ && !defined __HEADLESS__
@@ -55,7 +54,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //#include "profiler.h"
 
-#define MEMORYERROR "Out of Memory"
 #define ZEROOBJECT  0.0
 #define ZEROPOINTER nil
 
@@ -74,16 +72,9 @@ int _Matrix::storageIncrement = 16;
 //  percent of total size (reasonable values divide 100)
 int _Matrix::switchThreshold = 40;
 
-#ifndef     __HYALTIVEC__
 _Parameter  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X)
 #define     MatrixMemFree(X)     free(X)
-#else
-#define     MatrixMemAllocate(X) VecMemAllocate(X)
-#define     MatrixMemFree(X)     vec_free(X)
-extern      vector float VECTOR_ZERO;
-_Parameter  _Matrix::truncPrecision = 1e-8;
-#endif
 
 _Parameter  analMatrixTolerance = 1e-6,
             zero = 0,

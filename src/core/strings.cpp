@@ -827,11 +827,11 @@ long _String::FindEndOfIdent(long start, long end, char wild)
 }
 
 // find first occurence of the string between from and to
-long _String::Find(_String s, long from, long to)
+long _String::Find(_String s, long from, long to) const
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -840,10 +840,10 @@ long _String::Find(_String s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (to-from+1<s.sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     char *sP = sData+from, *ssP = s.sData;
     for (long i=from; i<=to-s.sLength+1; i++,sP++) {
@@ -853,7 +853,7 @@ long _String::Find(_String s, long from, long to)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long _String::FindKMP(_String s, long from, long to)
@@ -1016,10 +1016,10 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
 
 
 //Find first occurence of the string between from and to
-long _String::Find(char s, long from, long to)
+long _String::Find(const char s, long from, long to) const
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -1028,7 +1028,7 @@ long _String::Find(char s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     //if (to-from<0) return -1;
 
@@ -1037,7 +1037,7 @@ long _String::Find(char s, long from, long to)
             return i;
         }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Find first occurence of the string between from and to
@@ -1150,7 +1150,7 @@ char * _String::getStr (void)
 }
 
 //Element location functions
-const char _String::getChar (long index)
+const char _String::getChar (long index) const
 {
     if (((unsigned long)index)<sLength) {
         return sData[index];
@@ -1246,11 +1246,6 @@ unsigned long _String::Length(void)
 BaseRef _String::makeDynamic (void)
 {
     _String * r = new _String;
-    if (!r) {
-        checkPointer(r);
-    }
-    //memcpy ((char*)r, (char*)this, sizeof (_String));
-    //r->nInstances = 1;
     r->Duplicate(this);
     return r;
 }

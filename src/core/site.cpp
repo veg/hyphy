@@ -27,54 +27,28 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "hy_globals.h"
+#include "helperfunctions.h"
+
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
-#define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
 #include "likefunc.h"
-
-#define   DATA_SET_SWITCH_THRESHOLD     100000
-
 #include "math.h"
 
-#ifdef __MAC__
-extern bool handleGUI(bool);
-#endif
-
-#if !defined  __UNIX__ && !defined __HEADLESS__
-#include "HYDataPanel.h"
-#endif
 
 #if !defined  __UNIX__ || defined __HEADLESS__
 #include "preferences.h"
 #endif
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
-#ifdef    __HYPHYMPI__
-extern int _hy_mpi_node_rank;
-#endif
-
-
-_TranslationTable      defaultTranslationTable;
-
-//_________________________________________________________
-
-extern _Parameter dFPrintFormat,
-       dFDefaultWidth;
 
 //_________________________________________________________
 
 _String           dataFileTree             ("IS_TREE_PRESENT_IN_DATA"),
                   dataFileTreeString       ("DATAFILE_TREE"),
-                  aminoAcidOneCharCodes    ("ACDEFGHIKLMNPQRSTVWY"),
-                  dnaOneCharCodes          ("ACGT"),
-                  rnaOneCharCodes          ("ACGU"),
-                  binaryOneCharCodes       ("01"),
                   nexusFileTreeMatrix      ("NEXUS_FILE_TREE_MATRIX"),
                   dataFilePartitionMatrix  ("DATA_FILE_PARTITION_MATRIX"),
                   useTraversalHeuristic    ("USE_TRAVERSAL_HEURISTIC"),
@@ -95,689 +69,6 @@ bool    SkipLine (_String& theLine, FileState* fS);
 void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds);
 void    ProcessTree    (FileState*, FILE*, _String&);
 void    ReadNexusFile (FileState& fState, FILE*f, _DataSet& result);
-
-//_________________________________________________________
-_TranslationTable::_TranslationTable (void)
-{
-    baseLength = 4;
-    checkTable = NULL;
-}
-
-//_________________________________________________________
-_TranslationTable::_TranslationTable (char baseL)
-{
-    baseLength = (baseL==20)?20:4;
-    checkTable = NULL;
-}
-
-//_________________________________________________________
-_TranslationTable::_TranslationTable (_TranslationTable& t)
-{
-    tokensAdded = t.tokensAdded;
-    baseLength = t.baseLength;
-    baseSet = t.baseSet;
-    translationsAdded.Duplicate (&t.translationsAdded);
-    checkTable = NULL;
-}
-
-//_________________________________________________________
-_TranslationTable::_TranslationTable (_String& alphabet)
-{
-    baseLength = alphabet.sLength;
-    checkTable = NULL;
-    if (!(alphabet.Equal (&dnaOneCharCodes) || alphabet.Equal (&rnaOneCharCodes) ||
-            alphabet.Equal (&binaryOneCharCodes) || alphabet.Equal (&aminoAcidOneCharCodes))) {
-        AddBaseSet (alphabet);
-    }
-}
-
-//_________________________________________________________
-BaseRef     _TranslationTable::makeDynamic (void)
-{
-    _TranslationTable * r = new _TranslationTable;
-    checkPointer(r);
-
-    memcpy ((char*)r, (char*)this, sizeof (_TranslationTable));
-    r->nInstances = 1;
-    r->tokensAdded.Duplicate (&tokensAdded);
-    r->baseSet.Duplicate (&baseSet);
-    r->translationsAdded.Duplicate (&translationsAdded);
-    r->checkTable = NULL;
-    return r;
-}
-
-//_________________________________________________________
-long    _TranslationTable::TokenCode (char token)
-{
-    // standard translations
-    long * receptacle       = new long[baseLength];
-    if (!receptacle) {
-        checkPointer    (receptacle);
-    }
-    TokenCode               (token,receptacle);
-
-    long                    theCode         = 0,
-                            shifter       = 1;
-
-    for (int i = 0; i<baseLength; i++, shifter <<= 1) {
-        theCode +=  shifter*receptacle[i];
-    }
-
-    delete receptacle;
-    return theCode;
-}
-
-//_________________________________________________________
-char    _TranslationTable::CodeToLetter (long* split)
-// assumes a non-unique translation of split
-// for unique - use ConvertCodeToLetters
-{
-    long     shifter = 1,
-             trsl    = 0;
-
-    for (long k=0; k<(baseSet.sLength?baseSet.sLength:baseLength); k++,shifter<<=1) {
-        trsl+=shifter*split[k];
-    }
-
-    if (baseSet.sLength == 0)
-        // one of the standard alphabers
-    {
-        if (baseLength==4)
-            // nucleotides
-        {
-            switch (trsl) {
-            case 3:
-                return 'M';
-            case 5:
-                return 'S';
-            case 6:
-                return 'R';
-            case 7:
-                return 'V';
-            case 9:
-                return 'W';
-            case 10:
-                return 'Y';
-            case 11:
-                return 'H';
-            case 12:
-                return 'K';
-            case 14:
-                return 'B';
-            }
-        } else if (baseLength==20)
-            // amino acids
-        {
-            switch (trsl) {
-            case 2052:
-                return 'B';
-            case 8200:
-                return 'Z';
-            }
-        }
-    } else if (tokensAdded.sLength) {
-        shifter = translationsAdded.Find(trsl);
-        // linear search for (binary) translations
-        if (shifter>=0) {
-            return tokensAdded.sData[shifter];
-        }
-    }
-    return '?';
-}
-
-//_________________________________________________________
-void    _TranslationTable::SplitTokenCode (long code, long* receptacle)
-{
-    long shifter = 1;
-    for (int i=0; i<baseLength; i++) {
-        receptacle[i] = ((code&shifter)!=0);
-        shifter*=2;
-    }
-}
-
-//_________________________________________________________
-long    _TranslationTable::LengthOfAlphabet (void)
-{
-    return baseSet.sLength?baseSet.sLength:baseLength;
-}
-
-//_________________________________________________________
-
-bool    _TranslationTable::TokenCode (char token, long* receptacle, bool gapToOnes)
-{
-
-    long f = tokensAdded.sLength?tokensAdded.Find (token):-1;
-    // check for custom translations
-    // OPTIMIZE FLAG linear search:
-    // SLKP 20071002 should really be a 256 char lookup table
-
-    if (f != -1) {
-        SplitTokenCode(translationsAdded.lData[f], receptacle);
-        return true;
-    }
-
-    if (baseSet.sLength)
-        // custom base alphabet
-    {
-        for (long k=0; k<baseLength; k++) {
-            receptacle[k] = 0;
-        }
-
-        f = baseSet.Find(token);
-        // OPTIMIZE FLAG linear search:
-        // SLKP 20071002 should really be a 256 char lookup table
-
-        if (f!=-1) {
-            receptacle[f] = 1;
-        }
-
-        return true;
-    }
-
-    if (baseLength==4)
-        // standard nucleotide
-    {
-        receptacle[0]=0;
-        receptacle[1]=0;
-        receptacle[2]=0;
-        receptacle[3]=0;
-
-        switch (token) {
-        case 'A':
-            receptacle[0]=1;
-            break;
-
-        case 'C':
-            receptacle[1]=1;
-            break;
-
-        case 'G':
-            receptacle[2]=1;
-            break;
-
-        case 'T':
-        case 'U':
-            receptacle[3]=1;
-            break;
-
-        case 'Y':
-            receptacle[3]=1;
-            receptacle[1]=1;
-            break;
-
-        case 'R':
-            receptacle[0]=1;
-            receptacle[2]=1;
-            break;
-
-        case 'W':
-            receptacle[3]=1;
-            receptacle[0]=1;
-            break;
-
-        case 'S':
-            receptacle[1]=1;
-            receptacle[2]=1;
-            break;
-
-        case 'K':
-            receptacle[3]=1;
-            receptacle[2]=1;
-            break;
-
-        case 'M':
-            receptacle[1]=1;
-            receptacle[0]=1;
-            break;
-
-        case 'B':
-            receptacle[1]=1;
-            receptacle[2]=1;
-            receptacle[3]=1;
-            break;
-
-        case 'D':
-            receptacle[0]=1;
-            receptacle[2]=1;
-            receptacle[3]=1;
-            break;
-
-        case 'H':
-            receptacle[1]=1;
-            receptacle[0]=1;
-            receptacle[3]=1;
-            break;
-
-        case 'V':
-            receptacle[1]=1;
-            receptacle[2]=1;
-            receptacle[0]=1;
-            break;
-
-        case 'X':
-        case 'N':
-        case '?':
-        case '.':
-        case '*':
-            receptacle[1]=1;
-            receptacle[2]=1;
-            receptacle[3]=1;
-            receptacle[0]=1;
-            break;
-
-        case '-':
-            if (gapToOnes) {
-                receptacle[1]=1;
-                receptacle[2]=1;
-                receptacle[3]=1;
-                receptacle[0]=1;
-                break;
-            }
-        }
-    } else {
-        if (baseLength==20) {
-            for (long k=0; k<baseLength; k++) {
-                receptacle[k] = 0;
-            }
-
-            switch (token) {
-            case 'A':
-                receptacle[0]=1;
-                break;
-
-            case 'B':
-                receptacle[2]=1;
-                receptacle[11]=1;
-                break;
-
-            case 'C':
-                receptacle[1]=1;
-                break;
-
-            case 'D':
-                receptacle[2]=1;
-                break;
-
-            case 'E':
-                receptacle[3]=1;
-                break;
-
-            case 'F':
-                receptacle[4]=1;
-                break;
-
-            case 'G':
-                receptacle[5]=1;
-                break;
-
-            case 'H':
-                receptacle[6]=1;
-                break;
-
-            case 'I':
-                receptacle[7]=1;
-                break;
-
-            case 'K':
-                receptacle[8]=1;
-                break;
-
-            case 'L':
-                receptacle[9]=1;
-                break;
-
-            case 'M':
-                receptacle[10]=1;
-                break;
-
-            case 'N':
-                receptacle[11]=1;
-                break;
-
-            case 'P':
-                receptacle[12]=1;
-                break;
-
-            case 'Q':
-                receptacle[13]=1;
-                break;
-
-            case 'R':
-                receptacle[14]=1;
-                break;
-
-            case 'S':
-                receptacle[15]=1;
-                break;
-
-            case 'T':
-                receptacle[16]=1;
-                break;
-
-            case 'V':
-                receptacle[17]=1;
-                break;
-
-            case 'W':
-                receptacle[18]=1;
-                break;
-
-            case 'Y':
-                receptacle[19]=1;
-                break;
-
-            case 'Z':
-                receptacle[3]=1;
-                receptacle[13]=1;
-                break;
-
-            case 'X':
-            case '?':
-            case '.':
-            case '*': {
-                for (int j = 0; j<20; j++) {
-                    receptacle[j] = 1;
-                }
-            }
-            break;
-            case '-': {
-                if (gapToOnes)
-                    for (int j = 0; j<20; j++) {
-                        receptacle[j] = 1;
-                    }
-            }
-            break;
-            }
-        } else
-            // binary
-        {
-            receptacle[0] = 0;
-            receptacle[1] = 0;
-            switch (token) {
-            case '0':
-                receptacle[0]=1;
-                break;
-
-            case '1':
-                receptacle[1]=1;
-                break;
-
-            case 'X':
-            case '?':
-            case '.':
-            case '*': {
-                receptacle[0] = 1;
-                receptacle[1] = 1;
-            }
-            break;
-            case '-': {
-                if (gapToOnes) {
-                    receptacle[0] = 1;
-                    receptacle[1] = 1;
-                }
-            }
-            break;
-            }
-
-        }
-    }
-    return false;
-
-}
-//_________________________________________________________
-void    _TranslationTable::PrepareForChecks (void)
-{
-    if (checkTable == NULL) {
-        checkTable = MemAllocate (256);
-    }
-
-    for (long i2=0; i2<256; i2++) {
-        checkTable[i2]=0;
-    }
-
-    _String checkSymbols;
-//  if (baseLength == 4)
-//      checkSymbols = _String("ACGTUYRWSKMBDHVXN?O-.")&tokensAdded;
-    if (baseSet.sLength) {
-        checkSymbols = baseSet&tokensAdded;
-    } else if (baseLength == 2) {
-        checkSymbols = _String("01*?-.")&tokensAdded;
-    } else {
-        checkSymbols = _String("ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.")&tokensAdded;
-    }
-
-    for (long i=0; i<checkSymbols.sLength; i++) {
-        checkTable[checkSymbols(i)] = 1;
-    }
-}
-
-//_________________________________________________________
-bool    _TranslationTable::IsCharLegal (char c)
-{
-    if (!checkTable) {
-        PrepareForChecks();
-    }
-    return checkTable[c];
-}
-//___________________________________________
-
-void    _TranslationTable::AddTokenCode (char token, _String& code)
-{
-    long    f,
-            newCode = 0;
-
-    bool    killBS = false;
-
-    if (baseSet.sLength==0)
-        // fill in baseSet for standard alphabets
-    {
-        if (baseLength == 4) {
-            baseSet = dnaOneCharCodes;
-        } else if (baseLength == 20) {
-            baseSet = aminoAcidOneCharCodes;
-        } else {
-            baseSet = binaryOneCharCodes;
-        }
-        killBS = true;
-    }
-
-
-    if (baseSet.sLength) {
-        long shifter = 1;
-        for (int j = 0; j<baseSet.sLength; j++, shifter*=2)
-            if (code.Find (baseSet.sData[j])>=0) {
-                newCode += shifter;
-            }
-    }
-
-    f = baseSet.Find (token);
-    if (killBS) {
-        baseSet = empty;
-    }
-    if (f>=0) {
-        return;
-    }
-    // see if the character being added is a base
-    // character; those cannot be redefined
-
-    f = tokensAdded.Find (token,0,-1);
-    // new definition or redefinition?
-
-    if (f==-1) { // new
-        tokensAdded             = tokensAdded&token;
-        translationsAdded       << 0;
-        f                       = tokensAdded.sLength-1;
-    }
-
-    translationsAdded.lData[f] = newCode;
-}
-
-//_________________________________________________________
-
-void    _TranslationTable::AddBaseSet (_String& code)
-{
-    baseSet         = code;
-    baseSet.StripQuotes();
-    baseLength      = baseSet.sLength;
-    if (baseLength > HY_WIDTH_OF_LONG)
-        // longer than the bit size of 'long'
-        // can't handle those
-    {
-        _String err = _String ("Alphabets with more than ")
-                      & HY_WIDTH_OF_LONG &
-                      " characters are not supported";
-        WarnError (err);
-    }
-
-}
-
-//_________________________________________________________
-
-char    _TranslationTable::GetSkipChar (void)
-{
-    if ( baseSet.sLength==0 && translationsAdded.lLength==0 ) {
-        return '?';    // this is the default
-    }
-
-    // see if there is a symbol
-    // which maps to all '1'
-
-    long    all     = 0,
-            ul       = baseSet.sLength?baseSet.sLength:baseLength,
-            shifter = 1;
-
-    for  (long f=0; f<ul; f++, shifter <<= 1) {
-        all |= shifter;
-    }
-
-    if  ((all = translationsAdded.Find(all))==-1) {
-        return '?';
-    } else {
-        return tokensAdded[all];
-    }
-}
-
-//_________________________________________________________
-
-char    _TranslationTable::GetGapChar (void)
-{
-    if ( baseSet.sLength==0 && translationsAdded.lLength==0 ) {
-        return '-';    // default gap character
-    }
-
-    long f = translationsAdded.Find(0L);
-
-    if  (f==-1) {
-        return 0;
-    } else {
-        return tokensAdded[f];
-    }
-}
-
-//_________________________________________________________
-_String _TranslationTable::ConvertCodeToLetters (long code, char base)
-{
-
-    _String res (base,false);
-    if (code >= 0) {
-        // OPTIMIZE FLAG; repeated memory allocation/deallocation
-        if (baseSet.sLength)
-            for (long k=1; k<=base; k++, code/=baseLength) {
-                res.sData[base-k]=baseSet.sData[code%baseLength];
-            }
-        else if (baseLength==4) {
-            for (long k=1; k<=base; k++, code/=baseLength) {
-                switch (code%baseLength) {
-                case 0:
-                    res[base-k]='A';
-                    break;
-                case 1:
-                    res[base-k]='C';
-                    break;
-                case 2:
-                    res[base-k]='G';
-                    break;
-                case 3:
-                    res[base-k]='T';
-                    break;
-                }
-            }
-        } else if (baseLength == 20) {
-            for (long k=1; k<=base; k++, code/=baseLength) {
-                char out = code%baseLength;
-                if (out==0) {
-                    res[base-k] = 'A';
-                } else if (out<=7) {
-                    res[base-k] = 'B'+out;
-                } else if (out<=11) {
-                    res[base-k] = 'C'+out;
-                } else if (out<=16) {
-                    res[base-k] = 'D'+out;
-                } else if (out<=18) {
-                    res[base-k] = 'E'+out;
-                } else {
-                    res[base-k]='Y';
-                }
-            }
-        } else if (baseLength == 2)
-            for (long k=1; k<=base; k++, code/=baseLength) {
-                switch (code%baseLength) {
-                case 0:
-                    res[base-k]='0';
-                    break;
-                case 1:
-                    res[base-k]='1';
-                    break;
-                }
-            }
-    } else {
-        char c = GetGapChar();
-        for (long k=0; k<base; k++) {
-            res.sData[k] = c;
-        }
-    }
-    return res;
-
-
-}
-
-//_________________________________________________________
-
-_TranslationTable*  _TranslationTable::MergeTables (_TranslationTable* table2)
-// merge the translation tables if they are compatible, return the result,
-// otherwise return nil
-{
-    if (baseSet.sLength==table2->baseSet.sLength) {
-        if (baseSet.sLength==0) { // standard alphabet
-            if (baseLength!=table2->baseLength) {
-                return nil;
-            }
-        } else if(!(baseSet.Equal (&table2->baseSet))) {
-            return nil;
-        }
-
-        _TranslationTable* result = new _TranslationTable (*this);
-        checkPointer     (result);
-        if (table2->tokensAdded.sLength) {
-            for (long i=0; i<table2->tokensAdded.sLength; i++) {
-                long f = tokensAdded.Find (table2->tokensAdded[i]);
-                if (f==-1) {
-                    result->tokensAdded       && table2->tokensAdded[i];
-                    // SLKP 20071002 added the next line;
-                    // was not adding the translation for the new token
-                    result->translationsAdded << table2->translationsAdded[i];
-                } else if (translationsAdded.lData[f] != table2->translationsAdded.lData[i]) {
-                    DeleteObject (result);
-                    return nil;
-                }
-            }
-            return result;
-        } else {
-            return result;
-        }
-    }
-    return nil;
-}
 
 //_________________________________________________________
 
@@ -1220,9 +511,9 @@ void     _DataSet::CheckMapping (long index)
 
 //_______________________________________________________________________
 
-long     _DataSet::GetCharDimension         (void)  // return the size of the alphabet space
-{
-    return theTT->baseLength;
+long     _DataSet::GetCharDimension         (void) {
+// return the size of the alphabet space
+    return theTT->LengthOfAlphabet();
 }
 
 //_______________________________________________________________________
@@ -1458,31 +749,23 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
     char        checks    [256],
                 gapChar = theTT->GetGapChar();
 
-    _String     baseSymbols;
-
-    if (theTT->baseSet.sLength) {
-        baseSymbols = theTT->baseSet;
-    } else if (theTT->baseLength == 4) {
-        baseSymbols = "ACGUT";
-    } else if (theTT->baseLength == 20) {
-        baseSymbols = "ACDEFGHIKLMNOPQRSTVWY";
-    } else {
-        baseSymbols = binaryOneCharCodes;
+    _String     baseSymbols (16L, true);
+    baseSymbols << theTT->RetrieveCharacters();
+    if (theTT->DetectType() == HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE) {
+        baseSymbols << 'U';
     }
+    baseSymbols.Finalize();
+
+    memset (checks, 0, 256);
 
 
-
-    for (; charsIn<256; charsIn++) {
-        checks[charsIn] = 0;
-    }
-
-    for (charsIn=0; charsIn<baseSymbols.sLength; charsIn++) {
-        checks[baseSymbols.sData[charsIn]] = 1;
+    for (long c = 0L; c < baseSymbols.sLength; c++) {
+        checks[baseSymbols.sData[c]] = 1;
     }
 
     charsIn = 0;
 
-    for (long i = 0; i<lLength; i++) {
+    for (unsigned long i = 0L; i<lLength; i++) {
         _String* thisColumn = (_String*)lData[i];
         long     w = theFrequencies.lData[i];
         for (long j = 0; j<thisColumn->sLength; j++)
@@ -1533,24 +816,12 @@ void    _DataSet::toFileStr (FILE* dest)
 
     fprintf (dest, ";\nTotal Sites: %ld",GetNoTypes()) ;
     fprintf (dest, ";\nDistinct Sites: %ld",theFrequencies.lLength);
-
-    /*  fprintf (dest,"\n");
-        for (long j=0; j<noOfSpecies;j++)
-        {
-            fprintf (dest,"\n");
-            for (long i=0; i<theMap.lLength; i++)
-            {
-                fprintf (dest,"%c",(*this)(i,j,1));
-            }
-        }*/
-
 }
 
 
 //_________________________________________________________
 
-void    _DataSet::AddName (_String& s)
-{
+void    _DataSet::AddName (_String& s) {
     theNames.AppendNewInstance (new _String (s,0,s.FirstNonSpaceIndex (0,-1,-1)));
 }
 
@@ -2663,12 +1934,12 @@ _String*    _DataSetFilter::GetExclusions (void)
 
 long    _DataSetFilter::GetDimension (bool correct)
 {
-    long result = theData->theTT->baseLength;
+    long result = theData->theTT->Dimension();
     for (long i=1; i<unitLength; i++) {
-        result *= theData->theTT->baseLength;
+        result *= theData->theTT->Dimension();
     }
     if (correct) {
-        result-=theExclusions.lLength;
+        result -= theExclusions.lLength;
     }
     return result;
 }
@@ -3955,7 +3226,7 @@ void _DataSetFilter::ComputePairwiseDifferences (_Matrix& target, long i, long j
         CreateMatrix (&target,1,7,false,true,false);
     }
 
-    if (!theData->theTT->IsStandardNucleotide()) {
+    if (theData->theTT->DetectType() != HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE) {
         return;
     }
     long k,l,m;
@@ -4244,39 +3515,40 @@ long    _DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect
                     index = 0,
                     shifter = 1,
                     *lp,
-                    *storeP;
+                    *storeP,
+                    alphabet_dimension = theData->theTT->Dimension();
 
         _Parameter* fl;
 
-        if (theData->theTT->baseLength * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
-            storeP = new long [theData->theTT->baseLength * unitLength];
+        if (alphabet_dimension * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
+            storeP = new long [alphabet_dimension * unitLength];
         } else {
             storeP = store;
         }
 
         count = 1;
         for (m = 0; m<unitLength; m++ ) {
-            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
+            theData->theTT->TokenCode (str.sData[m], storeP+alphabet_dimension*m);
         }
 
         for (m = unitLength-1; m>=0; m--) {
             int smcount = 0;
-            lp = storeP+theData->theTT->baseLength*m;
-            for (n = 0; n<theData->theTT->baseLength; n++,lp++) {
+            lp = storeP+alphabet_dimension*m;
+            for (n = 0; n<alphabet_dimension; n++,lp++) {
                 if (*lp) {
                     index += shifter*n;
                     smcount++;
                 }
             }
             if ((smcount==0)&&smear) { // deletion -- replace with 1's
-                lp = storeP+theData->theTT->baseLength*m;
-                for (n = 0; n<theData->theTT->baseLength; n++,lp++) {
+                lp = storeP+alphabet_dimension*m;
+                for (n = 0; n<alphabet_dimension; n++,lp++) {
                     *lp=1;
                 }
-                smcount = theData->theTT->baseLength;
+                smcount = alphabet_dimension;
             }
 
-            shifter*=theData->theTT->baseLength;
+            shifter*=alphabet_dimension;
             count *=smcount;
         }
 
@@ -4393,42 +3665,43 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str)
                 index = 0,
                 shifter = 1,
                 *lp,
-                *storeP;
+                *storeP,
+                alphabet_dimesion = theData->theTT->Dimension();
 
         count = 1;
 
-        if (theData->theTT->baseLength * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
-            storeP = new long [theData->theTT->baseLength * unitLength];
+        if (alphabet_dimesion * unitLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
+            storeP = new long [alphabet_dimesion * unitLength];
         } else {
             storeP = store;
         }
 
         for (m = 0; m<unitLength; m++ ) {
-            theData->theTT->TokenCode (str.sData[m], storeP+theData->theTT->baseLength*m);
+            theData->theTT->TokenCode (str.sData[m], storeP+alphabet_dimesion*m);
         }
 
         for (m = unitLength-1; m>=0; m--) {
             int smcount = 0;
 
-            lp = storeP+theData->theTT->baseLength*m;
+            lp = storeP+alphabet_dimesion*m;
 
-            for (n = 0; n<theData->theTT->baseLength; n++,lp++)
+            for (n = 0; n<alphabet_dimesion; n++,lp++)
                 if (*lp) {
                     index += shifter*n;
                     smcount++;
                 }
 
             if (smcount==0) {
-                lp = storeP+theData->theTT->baseLength*m;
+                lp = storeP+alphabet_dimesion*m;
 
-                for (n = 0; n<theData->theTT->baseLength; n++,lp++) {
+                for (n = 0; n<alphabet_dimesion; n++,lp++) {
                     *lp=1;
                 }
 
-                smcount = theData->theTT->baseLength;
+                smcount = alphabet_dimesion;
             }
 
-            shifter *= theData->theTT->baseLength;
+            shifter *= alphabet_dimesion;
 
             count *=smcount;
         }
@@ -4565,46 +3838,8 @@ void    _DataSetFilter::SetupConversion (void)
     } else {
         if (unitLength==2 || unitLength==3) {
             _String alphabet (16,true);
-            if (theData->theTT->baseSet.sLength == 0) {
-                if (theData->theTT->baseLength == 4) {
-                    alphabet << 'A';
-                    alphabet << 'C';
-                    alphabet << 'G';
-                    alphabet << 'T';
-                } else {
-                    if (theData->theTT->baseLength == 20) {
-                        alphabet << 'A';
-                        alphabet << 'C';
-                        alphabet << 'D';
-                        alphabet << 'E';
-                        alphabet << 'F';
-                        alphabet << 'G';
-                        alphabet << 'H';
-                        alphabet << 'I';
-                        alphabet << 'K';
-                        alphabet << 'L';
-                        alphabet << 'M';
-                        alphabet << 'N';
-                        alphabet << 'P';
-                        alphabet << 'Q';
-                        alphabet << 'R';
-                        alphabet << 'S';
-                        alphabet << 'T';
-                        alphabet << 'V';
-                        alphabet << 'W';
-                        alphabet << 'Y';
-                    } else {
-                        alphabet << '0';
-                        alphabet << '1';
-                    }
-                }
-            } else {
-                alphabet << &theData->theTT->baseSet;
-            }
-
-
+            alphabet<<theData->theTT->RetrieveCharacters ();
             alphabet.Finalize();
-
 
             long  ccache [88],
                   i,
@@ -4762,13 +3997,11 @@ void    processCommand (_String*s, FileState*fs)
         case 0:// new code set, e.g  "ACGU"
             checkTTStatus(fs);
             // erase previous char definitions
-            fs->translationTable->translationsAdded.Clear();
-            fs->translationTable->tokensAdded = "";
+            fs->translationTable->Clear();
             if (*s!=_String("BASE20")) {
                 fs->translationTable->AddBaseSet (*s);
             } else {
-                fs->translationTable->AddBaseSet (empty);
-                fs->translationTable->baseLength = 20;
+                fs->translationTable->SetStandardType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN);
             }
             break;
 
@@ -5511,7 +4744,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             // try binary data
         {
             _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
-            trialTable->baseLength = 2;
+            trialTable->SetStandardType(HY_TRANSLATION_TABLE_STANDARD_BINARY);
             _DataSet * res2 = ReadDataSetFile (f, execBF, theS, bfName, namespaceID, trialTable);
             if (res2->GetNoTypes()) {
                 DeleteObject (result);
@@ -5523,17 +4756,15 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             if (result->CheckAlphabetConsistency()<0.5)
                 // less than 50% of the data in the alphabet is not in the basic alphabet
             {
-                _TranslationTable trialTable (defaultTranslationTable);
-                trialTable.baseLength = 20;
-                (*result).theTT = &trialTable;
+                _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
+                trialTable->SetStandardType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN);
+                result->theTT = trialTable;
                 if ((*result).CheckAlphabetConsistency()<0.5) {
                     CurrentLine = "More than 50% of characters in the data are not in the alphabet.";
                     (*result).theTT =  &defaultTranslationTable;
+                    DeleteObject(trialTable);
                     ReportWarning (CurrentLine);
-                } else {
-                    (*result).theTT = (_TranslationTable*)trialTable.makeDynamic();
-                }
-
+                } 
             }
 
     }
@@ -5776,43 +5007,44 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
     long i,
          j;
 
-    if (outputFormat < 4 || outputFormat > 8)
-        if (!(theData->theTT->IsStandardNucleotide() || theData->theTT->IsStandardAA())) {
-            _String * bSet = &theData->theTT->baseSet;
+    if (outputFormat < 4 || outputFormat > 8) {
+         if (!theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN|HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
+            const _String * bSet = theData->theTT->RetrieveCharacters(),
+                          * tokens_added = &theData->theTT->RetrieveAddedTokens();
             if (dest) {
                 fprintf (dest,"$BASESET:\"%s\"\n",bSet->sData);
-                if (theData->theTT->tokensAdded.sLength) {
-                    for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
-                        fprintf (dest, "$TOKEN:\"%c\" = \"", theData->theTT->tokensAdded.sData[at]);
-                        long    buf [256];
-                        theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
-                        for (long tc = 0; tc < bSet->sLength; tc++)
-                            if (buf[tc]) {
-                                fprintf (dest, "%c", bSet->sData[tc]);
-                            }
-                        fprintf (dest, "\"\n");
-                    }
+                
+                for (long at = 0; at < tokens_added->sLength; at++) {
+                    char this_token = tokens_added->getChar(at);
+                    fprintf (dest, "$TOKEN:\"%c\" = \"", this_token);
+                    long    buf [256];
+                    theData->theTT->SplitTokenCode(theData->theTT->TokenCode(this_token), buf);
+                    for (long tc = 0; tc < bSet->sLength; tc++)
+                        if (buf[tc]) {
+                            fprintf (dest, "%c", bSet->sData[tc]);
+                        }
+                    fprintf (dest, "\"\n");
                 }
             } else {
                 rec << "$BASESET:\"";
                 rec << *bSet;
                 rec << "\"\n";
-                if (theData->theTT->tokensAdded.sLength) {
-                    for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
-                        rec << "$TOKEN:\"";
-                        rec << theData->theTT->tokensAdded.sData[at];
-                        rec << "\" = \"";
-                        long    buf [256];
-                        theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
-                        for (long tc = 0; tc < bSet->sLength; tc++)
-                            if (buf[tc]) {
-                                rec << bSet->sData[tc];
-                            }
-                        rec << "\"\n";
-                    }
+                for (long at = 0; at < tokens_added->sLength; at++) {
+                    char this_token = tokens_added->getChar(at);
+                    rec << "$TOKEN:\"";
+                    rec <<this_token;
+                    rec << "\" = \"";
+                    long    buf [256];
+                    theData->theTT->SplitTokenCode(theData->theTT->TokenCode(this_token), buf);
+                    for (long tc = 0; tc < bSet->sLength; tc++)
+                        if (buf[tc]) {
+                            rec << bSet->sData[tc];
+                        }
+                    rec << "\"\n";
                 }
             }
-        }
+         }
+    }
 
     switch (outputFormat) {
     case 1: // hash-mark interleaved
@@ -6039,32 +5271,33 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
             }
 
             fprintf (dest,";\nEND;\n\nBEGIN CHARACTERS;\n\tDIMENSIONS NCHAR = %ld;\n\tFORMAT\n\t\t",theOriginalOrder.lLength);
-            if (theData->theTT->IsStandardNucleotide()) {
+            if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 fprintf (dest,"DATATYPE = DNA\n");
             } else {
-                if (theData->theTT->IsStandardAA()) {
+                if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN)) {
                     fprintf (dest,"DATATYPE = PROTEIN\n");
-                } else if (theData->theTT->IsStandardBinary()) {
+                } else if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_BINARY)) {
                     fprintf (dest,"DATATYPE = BINARY\n");
                 } else {
-                    _String * bSet = &theData->theTT->baseSet;
+                    const _String * bSet = theData->theTT->RetrieveCharacters(),
+                                   *tokens_added = &theData->theTT->RetrieveAddedTokens();
                     fprintf (dest, "\n\tSYMBOLS = \"");
                     for (long bc = 0; bc < bSet->sLength-1; bc++) {
                         fprintf (dest, "%c ", bSet->sData[bc]);
                     }
                     fprintf (dest, "%c\"\n", bSet->sData[bSet->sLength-1]);
-                    if (theData->theTT->tokensAdded.sLength) {
-                        for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
-                            fprintf (dest,"\n\tEQUATE=\"%c = ", theData->theTT->tokensAdded.sData[at]);
-                            long    buf [256];
-                            theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
-                            for (long tc = 0; tc < bSet->sLength; tc++)
-                                if (buf[tc]) {
-                                    fprintf (dest, "%c", bSet->sData[tc]);
-                                }
-                            fprintf (dest, "\"");
-                        }
+                    for (long at = 0; at < tokens_added->sLength; at++) {
+                        char this_token = tokens_added->getChar(at);
+                        fprintf (dest,"\n\tEQUATE=\"%c = ", this_token);
+                        long    buf [256];
+                        theData->theTT->SplitTokenCode(theData->theTT->TokenCode(this_token), buf);
+                        for (long tc = 0; tc < bSet->sLength; tc++)
+                            if (buf[tc]) {
+                                fprintf (dest, "%c", bSet->sData[tc]);
+                            }
+                        fprintf (dest, "\"");
                     }
+
                 }
             }
             if (theData->theTT->GetGapChar()) {
@@ -6097,36 +5330,37 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
             rec << _String((long)theOriginalOrder.lLength);
             rec << ";\n\tFORMAT\n\t\t";
 
-            if (theData->theTT->IsStandardNucleotide()) {
+            if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 rec << "DATATYPE = DNA\n";
             } else {
-                if (theData->theTT->IsStandardAA()) {
+                if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_PROTEIN)) {
                     rec << "DATATYPE = PROTEIN\n";
-                } else if (theData->theTT->IsStandardBinary()) {
+                } else if (theData->theTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_BINARY)) {
                     rec << "DATATYPE = BINARY\n";
                 } else {
                     rec << "\t\tSYMBOLS = \"";
-                    _String * bSet = &theData->theTT->baseSet;
+                    const _String * bSet = theData->theTT->RetrieveCharacters(),
+                                  * added_tokens = &theData->theTT->RetrieveAddedTokens();
                     for (long bc = 0; bc < bSet->sLength-1; bc++) {
                         rec << bSet->sData[bc];
                         rec << ' ';
                     }
                     rec << bSet->sData[bSet->sLength-1];
                     rec << "\"\n";
-                    if (theData->theTT->tokensAdded.sLength)
-                        for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
-                            rec << "\nEQUATE =\"";
-                            rec << theData->theTT->tokensAdded.sData[at];
-                            rec << " = ";
-                            long    buf [256];
-                            theData->theTT->SplitTokenCode(theData->theTT->TokenCode(theData->theTT->tokensAdded.sData[at]), buf);
-                            for (long tc = 0; tc < bSet->sLength; tc++)
-                                if (buf[tc]) {
-                                    rec << bSet->sData[tc];
-                                }
+                    for (long at = 0; at < added_tokens->sLength; at++) {
+                        char this_token = added_tokens->getChar(at);
+                        rec << "\nEQUATE =\"";
+                        rec << this_token;
+                        rec << " = ";
+                        long    buf [256];
+                        theData->theTT->SplitTokenCode(theData->theTT->TokenCode(this_token), buf);
+                        for (long tc = 0; tc < bSet->sLength; tc++)
+                            if (buf[tc]) {
+                                rec << bSet->sData[tc];
+                            }
 
-                            rec << "\"";
-                        }
+                        rec << "\"";
+                    }
                 }
             }
             if (theData->theTT->GetGapChar()) {
@@ -6418,8 +5652,6 @@ bool    StoreADataSet (_DataSet* ds, _String* setName)
 
 _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps)
 {
-    unsigned long    vD,
-                     hD = 1L;
             
     if (hSegmentation.lLength == 0L || vSegmentation.lLength<unit) { // revert to default (all data)
         if (hSegmentation.lLength==0) {
@@ -6436,18 +5668,19 @@ _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
         return new _Matrix (1,1);
     }
 
+    unsigned long    vD,
+                     alph_dim = theTT->Dimension(),
+                     hD = compute_power (alph_dim, atom);
+
     // create the output Matrix
 
-    for (unsigned long i=0; i<atom; i++) {
-        hD*=theTT->baseLength;
-    }
 
     vD = posSpec?unit/atom:1;
 
     _Matrix   *  out = (_Matrix*) checkPointer(new _Matrix (hD, vD, false, true));
 
     long     positions  =   unit/atom,
-             *store        = new long[atom*theTT->baseLength];
+             *store        = new long[atom*alph_dim];
 
     for (unsigned long i = 0; i<vSegmentation.lLength; i+=unit) { // loop over the set of segments
         // make sure the partition is kosher
@@ -6466,19 +5699,19 @@ _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
                 unsigned long count = 1L;
                 // build atomic probabilities
                 for (unsigned long m = 0; m<atom; m++ ) {
-                    theTT->TokenCode ((*this)(vSegmentation.lData[jj+m],l,atom), store+theTT->baseLength*m,countGaps);
+                    theTT->TokenCode ((*this)(vSegmentation.lData[jj+m],l,atom), store+alph_dim*m,countGaps);
                 }
 
                 long index = 0, shifter = 1;
                 for (int m = atom-1; m>=0; m--) {
                     int smcount = 0;
-                    for (int n = 0; n<theTT->baseLength; n++) {
-                        if (store[theTT->baseLength*m+n]) {
+                    for (int n = 0; n<alph_dim; n++) {
+                        if (store[alph_dim*m+n]) {
                             index += shifter*n;
                             smcount++;
                         }
                     }
-                    shifter*=theTT->baseLength;
+                    shifter*=alph_dim;
                     count *=smcount;
                 }
 
@@ -6514,10 +5747,13 @@ _Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _Sim
 
 //_________________________________________________________
 void    _DataSet::constructFreq (long* d, _Parameter *m, char positions, long column, long counter, int level, int shifter, int index) {
-    for(unsigned i=0; i<theTT->baseLength; i++) {
-        if (d[level*theTT->baseLength+i]) {
+    
+    const unsigned long alph_len = theTT->Dimension();
+    
+    for(unsigned i=0; i < alph_len; i++) {
+        if (d[level*alph_len+i]) {
             if (level) {
-                constructFreq (d,m,positions,column,counter, level-1,shifter*theTT->baseLength,index + i*shifter);
+                constructFreq (d,m,positions,column,counter, level-1,shifter*alph_len,index + i*shifter);
             } else {
                 m[(index + i*shifter)*positions+column]+=1.0/counter;
             }

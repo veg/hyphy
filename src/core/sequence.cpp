@@ -31,12 +31,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "errorfns.h"
 #include "stdio.h"
 #include "string.h"
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include "helperfunctions.h"
+
 
 _String   NuclAlphabet          = "ACGT-?",
-          CodonAlphabet       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.",
+          CodonAlphabet         = "ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.",
           FullAlphabet,
           CompleteNuclAlphabet  = "AGCTUYRWSKMBDHVXN?0-.";
 
@@ -118,7 +117,6 @@ _CString::_CString (unsigned long sL, bool flag)
             memset (sData,0,sL+1);
         } else {
             sLength = 0;
-            isError(0);
         }
     }
     compressionType = NOCOMPRESSION;
@@ -148,11 +146,10 @@ void _CString::Finalize (void)
 {
     sData = MemReallocate (sData,sLength+1);
 
-    if (!sData) {
-        warnError(-108);
+    if (sData) {
+        sData[sLength]=0;
     }
 
-    sData[sLength]=0;
     allocatedSpace = 0;
 }
 

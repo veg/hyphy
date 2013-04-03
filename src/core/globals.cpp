@@ -2,19 +2,9 @@
 
 HyPhy - Hypothesis Testing Using Phylogenies.
 
-Copyright (C) 1997-now
-Core Developers:
+Copyright (C) 1997-2009
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
-  Steven Weaver (sweaver@ucsd.edu)
-  
-Module Developers:
-	Lance Hepler (nlhepler@gmail.com)
-	Martin Smith (martin.audacis@gmail.com)
-
-Significant contributions from:
-  Spencer V Muse (muse@stat.ncsu.edu)
-  Simon DW Frost (sdf22@cam.ac.uk)
+  Art FY Poon              (apoon@cfenet.ubc.ca)
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -37,36 +27,48 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HERROR_
-#define _HERROR_
-//#pragma once
-#include "baseobj.h"
+#include "hy_globals.h"
 
-#define  _HYNOERROR 1
+bool
+    terminateExecution         = false,
+    isInFunction               = false
+;
 
-//successful execution marker
+char
+    isDefiningATree            = 0
+;
 
-void acknError (const char*);
-// function acknoledges Error with either fixable (True) or terminal (False)
-// flag, the latter causes acknError to terminate the program
-// writes error number to stderror
+_String
+    scanfLastFilePath,
+    errorFileName   ("errors.log"),
+    messageFileName ("messages.log");
 
-void    warnError (const char*);
-// warns user of current error with a supplied string
-// writes to stderror
+;
 
-void    warnError (long);
-// warns user of current error with a built in string
-// writes to stderror
+_SimpleList
+    freeSlots
 
-void    flagError (long);
-// reports the text of current error to the user with a built in string
-// writes to stderror
-// terminates execution of current BF
-
-void*   checkPointer  (void*);
+;
 
 
-#endif
+long
+    globalRandSeed
 
+;
+
+
+
+FILE
+    *globalErrorFile        = nil,
+    *globalMessageFile      = nil
+
+;
+
+_List
+    openFileHandlesBackend
+;
+
+_AVLListX
+    openFileHandles     (&openFileHandlesBackend)
+;
 

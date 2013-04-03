@@ -44,20 +44,13 @@
 #include      "bayesgraph.h"
 #include      "scfg.h"
 
-#if defined __MAC__ || defined __WINDOZE__ || defined HYPHY_GTK
-    #include "HYConsoleWindow.h"
-    #include "HYDialogs.h"
-
-#endif
+#include       "hy_globals.h"
 
 #if defined __HYPHYQT__
 #include "HYSharedMain.h"
 #include "hyphy_qt_helpers.h"
 #endif
 
-_List       openFileHandlesBackend;
-
-_AVLListX   openFileHandles     (&openFileHandlesBackend);
 
 //____________________________________________________________________________________
 
@@ -288,18 +281,21 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         _TranslationTable*  thisTT = thisDF->GetData()->GetTT();
         
         if (unitLength==1) {
-            if (thisTT->IsStandardNucleotide()) {
+            if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 dataType = "nucleotide";
-            } else if (thisTT->IsStandardAA()) {
+            } else if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 dataType = "aminoacid";
             }
         } else {
-            if (thisTT->IsStandardNucleotide())
+            if (thisTT->CheckType(HY_TRANSLATION_TABLE_STANDARD_NUCLEOTIDE)) {
                 if (unitLength==3) {
                     dataType = "codon";
-                } else if (unitLength==2) {
-                    dataType = "dinucleotide";
+                } else {
+                    if (unitLength==2) {
+                        dataType = "dinucleotide";
+                    }
                 }
+            }
         }
 
         if (!dataType.sLength) {
