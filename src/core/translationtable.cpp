@@ -62,18 +62,12 @@ _TranslationTable::_TranslationTable (void) {
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable (const char baseL) {
-    baseLength = (baseL==20)?20:4;
-    checkTable = NULL;
-}
-
-//_________________________________________________________
 _TranslationTable::_TranslationTable (_TranslationTable& t) {
     Duplicate(&t);
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable (_String& alphabet) {
+_TranslationTable::_TranslationTable (const _String& alphabet) {
     baseLength = alphabet.sLength;
     checkTable = NULL;
     if (!(alphabet.Equal (&dnaOneCharCodes) || alphabet.Equal (&rnaOneCharCodes) ||
@@ -525,18 +519,19 @@ void    _TranslationTable::AddTokenCode (const char token, _String& code)
 
 //_________________________________________________________
 
-void    _TranslationTable::AddBaseSet (_String& code) {
+void    _TranslationTable::AddBaseSet (const _String& code) {
     baseSet         = code;
     baseSet.StripQuotes();
-    baseLength      = baseSet.sLength;
-    if (baseLength > HY_WIDTH_OF_LONG) {
-        // longer than the bit size of 'long'
-        // can't handle those
-        WarnError (_String ("Alphabets with more than ")
-                   & HY_WIDTH_OF_LONG &
-                   " characters are not supported");
+    if (CheckValidAlphabet (code)) {
+        baseLength      = baseSet.sLength;
+        if (baseLength > HY_WIDTH_OF_LONG) {
+            // longer than the bit size of 'long'
+            // can't handle those
+            WarnError (_String ("Alphabets with more than ")
+                       & HY_WIDTH_OF_LONG &
+                       " characters are not supported");
+        }
     }
-
 }
 
 //_________________________________________________________
@@ -720,4 +715,22 @@ const _String* _TranslationTable::GetDefaultAlphabet (const long size) {
     return nil;
 }
 
+//_________________________________________________________
+bool _TranslationTable::CheckValidAlphabet (const _String& try_me) {
+    _String test (try_me);
+    if (test.sLength > 1) {
+        test.UpCase();
+        _String * sorted = test.Sort();
+        if (sorted && sorted->Equal(&try_me)) {
+            DeleteObject (sorted);
+            return true;
+        }
+        DeleteObject (sorted);
+        WarnError ("_TranslationTable::CheckValidAlphabet -- a sorted string with no lower case letters is required");
+        
+    } else {
+        WarnError ("_TranslationTable::CheckValidAlphabet -- at least two characters required");
+    }
+    return false;
+}
 

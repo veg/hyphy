@@ -517,7 +517,7 @@ public:
     * @return true if strings are equal
     * @sa Compare()
     */
-    bool Equal   (_String*);
+    bool Equal   (const _String*) const;
 
     /**
     * Lexicographic comparison
@@ -526,7 +526,7 @@ public:
     * @return true if the string is equal to the character
     * @sa Compare()
     */
-    bool Equal   (const char c);
+    bool Equal   (const char c) const;
 
     /**
     * TODO: Lexicographic comparison

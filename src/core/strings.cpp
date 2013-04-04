@@ -1648,13 +1648,13 @@ char    _String::Compare (_String* s)
     return 1-2*(sLength<s->sLength);
 }
 
-bool _String::Equal (_String* s)
+bool _String::Equal (const _String* s) const
 {
     if  (sLength!=s->sLength) {
         return false;
     }
 
-    for (long i=0; i<sLength; i++)
+    for (unsigned long i=0; i<sLength; i++)
         if (sData[i]!=s->sData[i]) {
             return false;
         }
@@ -1662,7 +1662,7 @@ bool _String::Equal (_String* s)
     return true;
 }
 
-bool _String::Equal (const char c)
+bool _String::Equal (const char c) const
 {
     return sLength == 1 &&  sData[0] == c;
 }

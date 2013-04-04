@@ -52,14 +52,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //_________________________________________________________
 class _TranslationTable:public BaseObj {
     
-    static const _String * GetDefaultAlphabet (const long);
 
 
 public:
 
     _TranslationTable                       (void);
-    _TranslationTable                       (char);
-    _TranslationTable                       (_String&);
+    _TranslationTable                       (const _String&);
     /* 20100618: SLKP
 
             - new constructor (needed to handle ExecuteCase52 / Simulate properly)
@@ -79,7 +77,7 @@ public:
     const unsigned long    TokenCode        (const char) const;
     char    CodeToLetter                    (long*) const;
 
-    void    AddBaseSet                      (_String&);
+    void    AddBaseSet                      (const _String&);
     bool    TokenCode                       (const char, long*, const bool = true) const;
     void    SplitTokenCode                  (long, long*) const;
 
@@ -105,8 +103,13 @@ public:
     
     _TranslationTable*
     MergeTables                     (_TranslationTable*);
+    
+    static const _String * GetDefaultAlphabet (const long);
 
 private:
+    
+    static bool   CheckValidAlphabet        (const _String &);
+    
     unsigned long                           baseLength;
     // number of "fundamental" tokens
     //(4 for nucl, ACGT; 20 for amino acids)

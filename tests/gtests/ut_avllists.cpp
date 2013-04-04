@@ -370,8 +370,7 @@ TEST_F(AVLListTest,ClearTest){
 }
 
 TEST_F(AVLListTest,InsertTest){
-    long info; 
-    _SimpleList sl; 
+    _SimpleList sl;
     _AVLList al(&sl);
 
     for(int i=0; i<=10; i++) {
@@ -382,6 +381,7 @@ TEST_F(AVLListTest,InsertTest){
     EXPECT_EQ(13,al.dataList->lData[11]);
     
     al.Insert((BaseRef)13,4,false);
+    al.Insert((BaseRef)14,4,false);
     EXPECT_FALSE(al.dataList->lData[12]==13);
 }
 
