@@ -5182,7 +5182,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                                         newFilter->SetupConversion ();
 
                                         /*char buffer[255];
-                                        sprintf (buffer,"%d %d\n",siteCount, newFilter->GetFullLengthSpecies(),unitSize);
+                                        snprintf (buffer, sizeof(buffer),"%d %d\n",siteCount, newFilter->GetFullLengthSpecies(),unitSize);
                                         BufferToConsole (buffer);
                                         */
                                         _Matrix*   rootStates = nil;

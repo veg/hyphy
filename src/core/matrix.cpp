@@ -7299,7 +7299,7 @@ bool    _Matrix::CheckDimensions (_Matrix& secondArg)
             secondArg.Transpose();
         } else {
             char str[255];
-            sprintf (str,"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
+            snprintf (str, sizeof(str),"Incompatible matrix dimensions in call to CheckDimension: %ldx%ld and %ldx%ld\n",hDim,vDim,secondArg.hDim,secondArg.vDim);
             WarnError (str);
             return false;
         }
@@ -7377,15 +7377,15 @@ BaseRef _Matrix::toStr(void)
                     } else {
                         if (digs >= 0)
 #ifdef __USE_LONG_DOUBLE__
-                            sprintf(str, "%18.12Lg", (*this)(i,j));
+                            snprintf (str, sizeof(str), "%18.12Lg", (*this)(i,j));
 #else
-                            sprintf(str, PRINTF_FORMAT_STRING, (*this)(i,j));
+                            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
 #endif
                         else
 #ifdef __USE_LONG_DOUBLE__
-                            sprintf(str, "%Lg", (*this)(i,j));
+                            snprintf (str, sizeof(str), "%Lg", (*this)(i,j));
 #else
-                            sprintf(str, PRINTF_FORMAT_STRING, (*this)(i,j));
+                            snprintf (str, sizeof(str), PRINTF_FORMAT_STRING, (*this)(i,j));
 #endif
                         _String cell (str);
                         result<<&cell;
@@ -7807,7 +7807,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 
         if (bestError>analMatrixTolerance) {
             char be[100];
-            sprintf (be,"%g",bestError);
+            snprintf (be, sizeof(be),"%g",bestError);
             _String wm ("Polynomial Matrix Exp approximation failed tolerance test in cell (");
             wm = wm&_String(k/hDim)&","&_String(k%hDim)&"). Tolerance achieved is:"&be;
             ReportWarning (wm);

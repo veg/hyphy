@@ -391,9 +391,10 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
 
         if (userReportString.sLength) {
             char buffer[255];
+
             _String reportString = userReportString.Replace ("$1",userStatusString, true);
             if (optimization) {
-                sprintf (buffer, "%15.10g", (double)max);
+                snprintf (buffer, sizeof(buffer), "%15.10g", (double)max);
                 reportString = reportString.Replace ("$2", buffer, true);
             } else {
                 reportString = reportString.Replace ("$2", empty, true);
@@ -403,9 +404,9 @@ void        UpdateOptimizationStatus (_Parameter max, long pdone, char init, boo
             tStamp.FormatTimeString(elapsed_time);
             reportString = reportString.Replace ("$4",tStamp, true);
             if (elapsed_time) {
-                sprintf (buffer, "%8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*(elapsed_time)));
+                snprintf (buffer,sizeof(buffer),"%8.4g", (clock()-userTimeStart)/((_Parameter)CLOCKS_PER_SEC*(elapsed_time)));
                 reportString = reportString.Replace ("$6", buffer, true);
-                sprintf (buffer, "%8.4g", (likeFuncEvalCallCount-lCount)/elapsed_time);
+                snprintf (buffer, sizeof(buffer), "%8.4g", (likeFuncEvalCallCount-lCount)/elapsed_time);
                 reportString = reportString.Replace ("$5", buffer, true);
             } else {
                 reportString = reportString.Replace ("$5", empty, true);
@@ -3257,10 +3258,10 @@ void        _LikelihoodFunction::GetInitialValues (void)
                 _Variable * localVar = LocateVar(indeps.lData[vc]);
                 if (localVar->IsIndependent() && !localVar->HasChanged() && !localVar->IsGlobal()) {
                     localVar->CheckAndSet (initValue);
-                    //      sprintf (buf,"[PRESET]%s = %g\n", localVar->GetName()->sData, localVar->Compute()->Value());
+                    //      snprintf (buf, sizeof(buf),"[PRESET]%s = %g\n", localVar->GetName()->sData, localVar->Compute()->Value());
                 }
                 //else
-                //  sprintf (buf,"[PRESET]%s = %g\n", localVar->GetName()->sData, localVar->Compute()->Value());
+                //  snprintf (buf, sizeof(buf),"[PRESET]%s = %g\n", localVar->GetName()->sData, localVar->Compute()->Value());
                 //BufferToConsole(buf);
             }
 
@@ -3793,8 +3794,6 @@ _Matrix*        _LikelihoodFunction::Optimize ()
 {
     char           buffer [1024];
 
-
-
     if (lockedLFID != -1) {
         WarnError ("Optimize() could not be executed, because another optimization is already in progress.");
         return new _Matrix (1,1,false,true);
@@ -4159,7 +4158,7 @@ DecideOnDivideBy (this);
                     bP = fabs(lastMax-maxSoFar);
                 }
                 if (verbosityLevel>=5) {
-                    sprintf (buffer,"\nPowell's direction %ld current Max = %g\n", i, maxSoFar);
+                    snprintf (buffer, sizeof(buffer),"\nPowell's direction %ld current Max = %g\n", i, maxSoFar);
                     BufferToConsole (buffer);
                 }
 
@@ -4198,7 +4197,7 @@ DecideOnDivideBy (this);
             }*/
 
             if (verbosityLevel>=5) {
-                sprintf (buffer,"\nAt Powell's Precision %g  current Max = %g", currentPrecision, maxSoFar);
+                snprintf (buffer, sizeof(buffer),"\nAt Powell's Precision %g  current Max = %g", currentPrecision, maxSoFar);
                 BufferToConsole (buffer);
             }
 
@@ -4230,7 +4229,7 @@ DecideOnDivideBy (this);
         }
 
         if (verbosityLevel>20) {
-            sprintf (buffer,"\nGradient Precision %g  Opt Precision = %g", intermediateP, precision);
+            snprintf (buffer, sizeof(buffer),"\nGradient Precision %g  Opt Precision = %g", intermediateP, precision);
             BufferToConsole (buffer);
         }
 
@@ -4317,7 +4316,7 @@ DecideOnDivideBy (this);
                         _String *s = (_String*)LocateVar(indexInd(passOrder[j]))->GetName();
                         BufferToConsole ("\nAt ");
                         StringToConsole (*s);
-                        sprintf (buffer," with bracketing precision %g current Max = %g. Prior value = %g, current value = %g, %ld", optimizationStats(3,jj), maxSoFar, oldXValue, GetIthIndependent(passOrder[j]), counterR);
+                        snprintf (buffer, sizeof(buffer)," with bracketing precision %g current Max = %g. Prior value = %g, current value = %g, %ld", optimizationStats(3,jj), maxSoFar, oldXValue, GetIthIndependent(passOrder[j]), counterR);
                         BufferToConsole (buffer);
                     }
                     passesDone++;
@@ -4355,7 +4354,7 @@ DecideOnDivideBy (this);
             lastMax = maxSoFar;
             LocateTheBump (j,precision, maxSoFar, bestVal);
             if (verbosityLevel>1) {
-                sprintf (buffer,"\nControl Pass At Var#%ld with precision %g current Max = %g. Prior value = %g, current value = %g", j, currentPrecision, maxSoFar, bestVal, GetIthIndependent(j));
+                snprintf (buffer, sizeof(buffer),"\nControl Pass At Var#%ld with precision %g current Max = %g. Prior value = %g, current value = %g", j, currentPrecision, maxSoFar, bestVal, GetIthIndependent(j));
                 BufferToConsole (buffer);
             }
         }
@@ -4555,10 +4554,10 @@ DecideOnDivideBy (this);
             bigLastMax = maxSoFar;
 
             if (verbosityLevel>1) {
-                sprintf (buffer,"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
+                snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
                 BufferToConsole (buffer);
                 if (useAdaptiveStep > 0.5 && logLHistory.GetUsed() > 2) {
-                    sprintf (buffer, "\nLast cycle logL change = %g\n", diffs[0]);
+                    snprintf (buffer, sizeof(buffer), "\nLast cycle logL change = %g\n", diffs[0]);
                     BufferToConsole (buffer);
                 }
             }
@@ -4596,11 +4595,11 @@ DecideOnDivideBy (this);
             if (useAdaptiveStep > 0.5) {
                 stepScale = 1/divFactor;
                 if (verbosityLevel>5) {
-                    sprintf (buffer,"\n[BRACKET SHRINKAGE: %g]", divFactor);
+                    snprintf (buffer, sizeof(buffer),"\n[BRACKET SHRINKAGE: %g]", divFactor);
                     BufferToConsole (buffer);
-                    sprintf (buffer,"\n[Convergence mode = %d]", convergenceMode);
+                    snprintf (buffer, sizeof(buffer),"\n[Convergence mode = %d]", convergenceMode);
                     BufferToConsole (buffer);
-                    sprintf (buffer,"\n[Unchanged variables = %ld]", noChange.lLength);
+                    snprintf (buffer, sizeof(buffer),"\n[Unchanged variables = %ld]", noChange.lLength);
                     BufferToConsole (buffer);
                 }
                 
@@ -4725,7 +4724,7 @@ DecideOnDivideBy (this);
                         //  precisionStep *= 2.0;
 
                         if (verbosityLevel>50) {
-                            sprintf (buffer,"\n[BRACKET STEP: current = %g: previous = %g (diff = %g). bracket = %g, prec = %g]",
+                            snprintf (buffer, sizeof(buffer),"\n[BRACKET STEP: current = %g: previous = %g (diff = %g). bracket = %g, prec = %g]",
                                      lastParameterValue,
                                      previousParameterValue,
                                      lastParameterValue - previousParameterValue,
@@ -4796,7 +4795,7 @@ DecideOnDivideBy (this);
                 variableValues[j] = ch;
 
                 if (verbosityLevel>1) {
-                    sprintf (buffer,"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: %ld (BRACKET), %ld (BRENT) ",
+                    snprintf (buffer, sizeof(buffer),"\nindex = %ld\tlog(L) = %14.10g\t param value = %10.6g ( diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: %ld (BRACKET), %ld (BRENT) ",
                              j,
                              maxSoFar,
                              cj,
@@ -4899,7 +4898,7 @@ DecideOnDivideBy (this);
             logLHistory.Store(maxSoFar);
 
             if (verbosityLevel>5) {
-                sprintf (buffer,"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
+                snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
                 BufferToConsole (buffer);
 
             }
@@ -5232,7 +5231,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [512];
-        sprintf (buf, "\n[INITIAL BRACKET %g %g/%g %g]", middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
+        snprintf (buf, sizeof(buf), "\n[INITIAL BRACKET %g %g/%g %g]", middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
         BufferToConsole (buf);
     }
 
@@ -5568,7 +5567,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             sigLevels.Store (i,1,t2);
 
             char buffer[255];
-            sprintf (buffer,"%.14g",t1);
+            snprintf (buffer, sizeof(buffer),"%.14g",t1);
 
             fString = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
             _Formula    FitFla (fString,nil);
@@ -6092,7 +6091,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
     unit.PopulateConstantMatrix (1.);
 
     if (vl>1) {
-        sprintf (buffer,"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,precision,gradientStep,maxSoFar);
+        snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,precision,gradientStep,maxSoFar);
         BufferToConsole (buffer);
     }
 
@@ -6125,7 +6124,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
             GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, S);
 
             if (vl>1) {
-                sprintf (buffer,"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
+                snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
                 BufferToConsole (buffer);
             }
             if (localOnly) {
@@ -6267,7 +6266,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
 
             if (temp>maxSoFar) {
                 if (vl>=5) {
-                    sprintf (buffer,"\nMoving down along the gradient with step %g value %g", tryStep, temp);
+                    snprintf (buffer, sizeof(buffer),"\nMoving down along the gradient with step %g value %g", tryStep, temp);
                     BufferToConsole (buffer);
                 }
                 _Matrix delta;
@@ -6316,7 +6315,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                     if (leastChange.lLength) {
                         SortLists(&leastChange, &countLC);
                         if (vl>=5) {
-                            sprintf (buffer,"\nFreezing Variable %ld",leastChange(leastChange.lLength-1));
+                            snprintf (buffer, sizeof(buffer),"\nFreezing Variable %ld",leastChange(leastChange.lLength-1));
                             BufferToConsole (buffer);
                         }
                         freeze<<leastChange(leastChange.lLength-1);
@@ -6330,7 +6329,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                     break;
                 }
                 if (vl>=5) {
-                    sprintf (buffer,"\nShrinking step to %g (%g %g)", tryStep, tryStep, gPrecision);
+                    snprintf (buffer, sizeof(buffer),"\nShrinking step to %g (%g %g)", tryStep, tryStep, gPrecision);
                     BufferToConsole (buffer);
                 }
             }
@@ -6831,7 +6830,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
         error = functionalEvaluations(0,indexMax)-functionalEvaluations(0,indexMin);
         if (verbosityLevel>1) {
             char    buffer[64];
-            sprintf (buffer,"\n Error = %15.15g", error);
+            snprintf (buffer, sizeof(buffer),"\n Error = %15.15g", error);
             BufferToConsole (buffer);
         }
         if (error<minError) {
@@ -6899,7 +6898,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
                     }
                     if (verbosityLevel>1) {
                         char    buffer[64];
-                        sprintf (buffer,"\nBUMPING... with factor %g", bumpingFactor);
+                        snprintf (buffer, sizeof(buffer),"\nBUMPING... with factor %g", bumpingFactor);
                         BufferToConsole (buffer);
                     }
                 }
@@ -6907,7 +6906,7 @@ _Parameter      _LikelihoodFunction::SimplexMethod (_Parameter& gPrecision)
             }
             if (nBumps>25) {
                 char str[255];
-                sprintf (str,"Simplex Method Failed to Converge to Desired Precision. Precision attained: %15.15g", minError);
+                snprintf (str, sizeof(str),"Simplex Method Failed to Converge to Desired Precision. Precision attained: %15.15g", minError);
                 ReportWarning (_String(str));
                 break;
             }
@@ -8308,7 +8307,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
 
     if (vLevel>5) {
         char buffer [128];
-        sprintf(buffer,"\nOptimizing Column Order for block %ld", index);
+        snprintf (buffer, sizeof(buffer),"\nOptimizing Column Order for block %ld", index);
         BufferToConsole (buffer);
     }
 
@@ -8528,7 +8527,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
                 nc += t->ComputeReleafingCost (df,computingOrder.lData[level],parentOrder.lData[level]);
             }
 
-            sprintf (buffer,"\nDouble check cost %d\n", nc);
+            snprintf (buffer, sizeof(buffer),"\nDouble check cost %d\n", nc);
             BufferToConsole (buffer);
 
             nc = 0;
@@ -8586,7 +8585,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
         completedSites+=partition;
         if (vLevel>5) {
             char   buffer[64];
-            sprintf(buffer,"\n%ld %% done", (long)(completedSites*100/totalSites));
+            snprintf (buffer, sizeof(buffer),"\n%ld %% done", (long)(completedSites*100/totalSites));
             BufferToConsole (buffer);
         }
     }
@@ -8612,7 +8611,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
     }
 
     char buffer [512];
-    sprintf (buffer,"\nPseudo-optimal path's cost %ld vs %ld for 1..k=> a %g x improvement",(long)optl,(long)strl,strl/(double)optl );
+    snprintf (buffer, sizeof(buffer),"\nPseudo-optimal path's cost %ld vs %ld for 1..k=> a %g x improvement",(long)optl,(long)strl,strl/(double)optl );
     ReportWarning (buffer);
     if (vLevel>5) {
         BufferToConsole (buffer);
@@ -8622,7 +8621,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl)
         long     memOverhead = mstCache->cacheSize.lData[mstCache->cacheSize.lLength-1];
         if (memOverhead) {
             memOverhead *= (t->GetINodeCount()*(sizeof(_Parameter)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(_Parameter)+sizeof(long)))/1024;
-            sprintf (buffer,"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
+            snprintf (buffer, sizeof(buffer),"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
             ReportWarning (buffer);
             if (vLevel>5) {
                 BufferToConsole (buffer);
@@ -8931,7 +8930,7 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     if (opt == _hyphyLFSerializeModeCategoryAsGlobal)
         for (long idx = 0; idx < catVarList->lLength; idx++) {
             _CategoryVariable* theC = (_CategoryVariable*)LocateVar(catVarList->lData[idx]);
-            sprintf (str, "\nglobal %s;", theC->GetName()->getStr());
+            snprintf (str, sizeof(str), "\nglobal %s;", theC->GetName()->getStr());
             rec<<str;
         }
     else {
@@ -9192,19 +9191,19 @@ BaseRef _LikelihoodFunction::toStr (void)
         for (long i=0; i<indexInd.lLength; i++) {
             thisVar = LocateVar(indexInd.lData[i]);
             if (thisVar->IsGlobal()) {
-                sprintf (str, "\nglobal %s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
+                snprintf (str, sizeof(str), "\nglobal %s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
             } else {
-                sprintf (str, "\n%s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
+                snprintf (str, sizeof(str), "\n%s=%.16g;", thisVar->GetName()->getStr(),(double)GetIthIndependent(i));
             }
 
             res<<str;
 
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-                sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
+                snprintf (str, sizeof(str), "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
                 res<<str;
             }
             if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-                sprintf (str, "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
+                snprintf (str, sizeof(str), "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
                 res<<str;
             }
         }
@@ -9212,9 +9211,9 @@ BaseRef _LikelihoodFunction::toStr (void)
             for (long i=0; i<indexDep.lLength; i++) {
                 thisVar = LocateVar(indexDep.lData[i]);
                 if (thisVar->IsGlobal()) {
-                    sprintf (str, "\nglobal %s",thisVar->GetName()->getStr());
+                    snprintf (str, sizeof(str), "\nglobal %s",thisVar->GetName()->getStr());
                 } else {
-                    sprintf (str, "\n%s",thisVar->GetName()->getStr());
+                    snprintf (str, sizeof(str), "\n%s",thisVar->GetName()->getStr());
                 }
                 res<<str;
                 res<<":=";
@@ -9223,11 +9222,11 @@ BaseRef _LikelihoodFunction::toStr (void)
                 DeleteObject(s);
                 res<<';';
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-                    sprintf (str, "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
+                    snprintf (str, sizeof(str), "\n%s:>%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetLowerBound());
                     res<<str;
                 }
                 if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-                    sprintf (str, "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
+                    snprintf (str, sizeof(str), "\n%s:<%.16g;", thisVar->GetName()->getStr(),(double)thisVar->GetUpperBound());
                     res<<str;
                 }
             }
@@ -9242,19 +9241,19 @@ BaseRef _LikelihoodFunction::toStr (void)
 
     }
     if (longOrShort==3.0) { // just spool out the names of parameters
-        sprintf (str, "Log Likelihood = %g;\n\n",(double)value);
+        snprintf (str, sizeof(str), "Log Likelihood = %g;\n\n",(double)value);
         res<<str;
-        sprintf (str,"Independent Parameters List\n");
+        snprintf (str, sizeof(str),"Independent Parameters List\n");
         res<<str;
         for (long i=0; i<indexInd.lLength; i++) {
-            sprintf (str, "\n  Parameter %4ld : %s", i+1, LocateVar(indexInd.lData[i])->GetName()->getStr());
+            snprintf (str, sizeof(str), "\n  Parameter %4ld : %s", i+1, LocateVar(indexInd.lData[i])->GetName()->getStr());
             res<<str;
         }
         if (indexDep.lLength>0) {
-            sprintf (str,"\n\nConstrained Parameters List\n");
+            snprintf (str, sizeof(str),"\n\nConstrained Parameters List\n");
             res<<str;
             for (long i=0; i<indexDep.lLength; i++) {
-                sprintf (str, "\n  Parameter %4ld : %s", i+1, LocateVar(indexDep.lData[i])->GetName()->getStr());
+                snprintf (str, sizeof(str), "\n  Parameter %4ld : %s", i+1, LocateVar(indexDep.lData[i])->GetName()->getStr());
                 res<<str;
                 res<<'=';
                 _String* s = LocateVar(indexDep.lData[i])->GetFormulaString();
@@ -9264,7 +9263,7 @@ BaseRef _LikelihoodFunction::toStr (void)
         }
     } else if (longOrShort>1.1) {
         if (longOrShort!=2.5) {
-            sprintf (str, "Log Likelihood = %15.15g;",(double)value);
+            snprintf (str, sizeof(str), "Log Likelihood = %15.15g;",(double)value);
             res<<str;
             bool globals = false;
             for (long i = 0; i<indexInd.lLength+indexDep.lLength; i++) {
@@ -9399,7 +9398,7 @@ BaseRef _LikelihoodFunction::toStr (void)
         }
         res << '\n';
     } else if (longOrShort>.1) {
-        sprintf (str, "Likelihood Function's Current Value = %15.15g\n",(double)value);
+        snprintf (str, sizeof(str), "Likelihood Function's Current Value = %15.15g\n",(double)value);
         _String num (str);
         res<<&num;
 
@@ -9420,7 +9419,7 @@ BaseRef _LikelihoodFunction::toStr (void)
             DeleteObject(s);
         }
     } else {
-        sprintf (str, "%15.15g",(double)value);
+        snprintf (str, sizeof(str), "%15.15g",(double)value);
         _String num (str);
         res<<&num;
     }
@@ -9454,7 +9453,7 @@ void*   StateCounterMP (void* arg)
 
         if (vls>9.99) {
             char     buffer[64];
-            sprintf (buffer,"WeightedCharacterDifferences at site %ld\n", sites);
+            snprintf (buffer, sizeof(buffer),"WeightedCharacterDifferences at site %ld\n", sites);
             BufferToConsole (buffer);
         }
 

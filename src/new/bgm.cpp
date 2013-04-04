@@ -392,7 +392,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
     char buf [256];
     for (long i = 0; i < obsData->GetHDim(); i++) {
         for (long j = 0; j < obsData->GetVDim(); j++) {
-            sprintf (buf, "%d ", (long) (*obsData)(i,j));
+            snprintf (buf, sizeof(buf), "%d ", (long) (*obsData)(i,j));
             BufferToConsole (buf);
         }
         NLToConsole ();
@@ -430,18 +430,18 @@ void Bgm::SetDataMatrix (_Matrix * data)
         }
 
 #ifdef DEBUG_SDM
-        sprintf (buf, "Levels: ");
+        snprintf (buf, sizeof(buf), "Levels: ");
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            sprintf (buf, "%d ", num_levels.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", num_levels.lData[i]);
             BufferToConsole (buf);
         }
         NLToConsole ();
 
-        sprintf (buf, "Missing (0=FALSE, 1=TRUE): ");
+        snprintf (buf, sizeof(buf), "Missing (0=FALSE, 1=TRUE): ");
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            sprintf (buf, "%d ", has_missing.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", has_missing.lData[i]);
             BufferToConsole (buf);
         }
         NLToConsole ();
@@ -508,7 +508,7 @@ void    Bgm::SetGraphMatrix (_Matrix *graph)
     /*
     char    bug [255];
 
-    sprintf (bug, "Entered Bgm::SetGraphMatrix()\n");
+    snprintf (bug, sizeof(bug), "Entered Bgm::SetGraphMatrix()\n");
     BufferToConsole (bug);
     */
     dag = (_Matrix &) (*graph); // matrix assignment
@@ -547,19 +547,19 @@ void Bgm::PrintGraph (_Matrix * g)
     if (g) {
         for (long row = 0; row < g->GetHDim(); row++) {
             for (long col = 0; col < g->GetVDim(); col++) {
-                sprintf (buf, "%ld ", (long) (*g)(row,col));
+                snprintf (buf, sizeof(buf), "%ld ", (long) (*g)(row,col));
                 BufferToConsole (buf);
             }
-            sprintf (buf, "\n");
+            snprintf (buf, sizeof(buf), "\n");
             BufferToConsole (buf);
         }
     } else {
         for (long row = 0; row < dag.GetHDim(); row++) {
             for (long col = 0; col < dag.GetVDim(); col++) {
-                sprintf (buf, "%ld ", (long)dag(row,col));
+                snprintf (buf, sizeof(buf), "%ld ", (long)dag(row,col));
                 BufferToConsole (buf);
             }
-            sprintf (buf, "\n");
+            snprintf (buf, sizeof(buf), "\n");
             BufferToConsole (buf);
         }
     }
@@ -1130,10 +1130,10 @@ _Parameter  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef BGM_DEBUG_CDS
-    sprintf (buf, "Multipliers: ");
+    snprintf (buf, sizeof(buf), "Multipliers: ");
     BufferToConsole (buf);
     for (long i = 0; i < multipliers.lLength; i++) {
-        sprintf (buf, "%d ", multipliers.lData[i]);
+        snprintf (buf, sizeof(buf), "%d ", multipliers.lData[i]);
         BufferToConsole (buf);
     }
     NLToConsole();
@@ -1165,21 +1165,21 @@ _Parameter  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef BGM_DEBUG_CDS
-    sprintf (buf, "Node %d, parent(s) ", node_id);
+    snprintf (buf, sizeof(buf), "Node %d, parent(s) ", node_id);
     BufferToConsole (buf);
 
     for (long k = 0; k < parents.lLength; k++) {
-        sprintf (buf, "%d ", parents.lData[k]);
+        snprintf (buf, sizeof(buf), "%d ", parents.lData[k]);
         BufferToConsole (buf);
     }
     NLToConsole();
 
     for (long j = 0; j < num_parent_combos; j++) {
-        sprintf (buf, "N(%d,%d) = %f\n", node_id, j, n_ij(j,0));
+        snprintf (buf, sizeof(buf), "N(%d,%d) = %f\n", node_id, j, n_ij(j,0));
         BufferToConsole (buf);
 
         for (long k = 0; k < r_i; k++) {
-            sprintf (buf, "N(%d,%d,%d) = %f\n", node_id, j, k, n_ijk(j,k));
+            snprintf (buf, sizeof(buf), "N(%d,%d,%d) = %f\n", node_id, j, k, n_ijk(j,k));
             BufferToConsole (buf);
         }
     }
@@ -1196,19 +1196,19 @@ _Parameter  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
             }
 
 #ifdef BGM_DEBUG_CDS
-            sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
+            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
             BufferToConsole (buf);
 
-            sprintf (buf, "\tlog(N(%d,%d)+r-1)! = log %d! = %lf\n", node_id, j, ((long)n_ij(j, 0)) + r_i - 1,
+            snprintf (buf, sizeof(buf), "\tlog(N(%d,%d)+r-1)! = log %d! = %lf\n", node_id, j, ((long)n_ij(j, 0)) + r_i - 1,
                      LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
             BufferToConsole (buf);
 
             for (long k = 0; k < r_i; k++) {
-                sprintf (buf, "\tlog (N(%d,%d,%d)!) = log %d! = %lf\n", node_id, j, k, ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
+                snprintf (buf, sizeof(buf), "\tlog (N(%d,%d,%d)!) = log %d! = %lf\n", node_id, j, k, ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
                 BufferToConsole (buf);
             }
 
-            sprintf (buf, "j = %d\tcumulative log score = %lf\n", j, log_score);
+            snprintf (buf, sizeof(buf), "j = %d\tcumulative log score = %lf\n", j, log_score);
             BufferToConsole (buf);
 #endif
         }
@@ -1263,28 +1263,28 @@ _Parameter  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 
-            sprintf (buf, "Node %d, parent(s) ", node_id);
+            snprintf (buf, sizeof(buf), "Node %d, parent(s) ", node_id);
             BufferToConsole (buf);
 
             for (long k = 0; k < parents.lLength; k++) {
-                sprintf (buf, "%d ", parents.lData[k]);
+                snprintf (buf, sizeof(buf), "%d ", parents.lData[k]);
                 BufferToConsole (buf);
             }
             NLToConsole();
 
-            sprintf (buf, "j = %d\tcumulative log score = %lf\n", j, log_score);
+            snprintf (buf, sizeof(buf), "j = %d\tcumulative log score = %lf\n", j, log_score);
             BufferToConsole (buf);
 
 #ifdef BGM_DEBUG_CDS
-            sprintf (buf, "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
+            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
             BufferToConsole (buf);
 
-            sprintf (buf, "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.lData[node_id] - 1,
+            snprintf (buf, sizeof(buf), "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.lData[node_id] - 1,
                      LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
             BufferToConsole (buf);
 
             for (long k = 0; k < num_levels.lData[node_id]; k++) {
-                sprintf (buf, "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
+                snprintf (buf, sizeof(buf), "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
                 BufferToConsole (buf);
             }
 
@@ -1308,15 +1308,15 @@ _Parameter  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 #endif
 
     /*
-    sprintf (buf, "Node %d, parents (%d): ", node_id, parents.lLength);
+    snprintf (buf, sizeof(buf), "Node %d, parents (%d): ", node_id, parents.lLength);
     BufferToConsole (buf);
 
     for (long par = 0; par < parents.lLength; par++)
     {
-        sprintf (buf, " %d", parents.lData[par]);
+        snprintf (buf, sizeof(buf), " %d", parents.lData[par]);
         BufferToConsole (buf);
     }
-    sprintf (buf, " Log score = %f\n", log_score);
+    snprintf (buf, sizeof(buf), " Log score = %f\n", log_score);
     BufferToConsole (buf);
     */
 
@@ -1336,7 +1336,7 @@ void Bgm::CacheNodeScores (void)
 
     /*
     char buf [255];
-    sprintf (buf, "\nCaching node scores...\n");
+    snprintf (buf, sizeof(buf), "\nCaching node scores...\n");
     BufferToConsole (buf);
     */
 
@@ -2319,12 +2319,12 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 
 
 #ifdef __DEBUG_GMCMC__
-        sprintf (bug, "Current score = %f\n", current_score);
+        snprintf (bug, sizeof(bug), "Current score = %f\n", current_score);
         BufferToConsole (bug);
-        sprintf (bug, "Propose graph:\n");
+        snprintf (bug, sizeof(bug), "Propose graph:\n");
         BufferToConsole (bug);
         PrintGraph (proposed_graph);
-        sprintf (bug, "Proposed score = %f\n", proposed_score);
+        snprintf (bug, sizeof(bug), "Proposed score = %f\n", proposed_score);
         BufferToConsole (bug);
 #endif
 
@@ -2333,7 +2333,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 
         if (lk_ratio > 1. || genrand_real2() < lk_ratio) {  // Metropolis-Hastings
 #ifdef __DEBUG_GMCMC__
-            sprintf (bug, "Accept move\n");
+            snprintf (bug, sizeof(bug), "Accept move\n");
             BufferToConsole (bug);
 #endif
             current_graph       = (_Matrix &) (*proposed_graph);        // accept proposed graph
@@ -2350,10 +2350,10 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 #ifdef __DEBUG_GMCMC__
                 PrintGraph (&best_graph);
 
-                sprintf (bug, "Update best node ordering: ");
+                snprintf (bug, sizeof(bug), "Update best node ordering: ");
                 BufferToConsole (bug);
                 for (long deb = 0; deb < num_nodes; deb++) {
-                    sprintf (bug, "%d ", current_order.lData[deb]);
+                    snprintf (bug, sizeof(bug), "%d ", current_order.lData[deb]);
                     BufferToConsole (bug);
                 }
                 NLToConsole ();
@@ -2361,7 +2361,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
             }
         } else {
 #ifdef __DEBUG_GMCMC__
-            sprintf (bug, "Reject move\n");
+            snprintf (bug, sizeof(bug), "Reject move\n");
             BufferToConsole (bug);
 #endif
             // revert proposal
@@ -2691,10 +2691,10 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
     best_node_order = (_SimpleList &) (*current_order);     // initialize class member variable
 
 #ifdef DEBUG_RCC
-    sprintf (buf, "Initial node order (log L = %f): ", prob_current_order);
+    snprintf (buf, sizeof(buf), "Initial node order (log L = %f): ", prob_current_order);
     BufferToConsole (buf);
     for (long i = 0; i < num_nodes; i++) {
-        sprintf (buf, "%d ", best_node_order.lData[i]);
+        snprintf (buf, sizeof(buf), "%d ", best_node_order.lData[i]);
         BufferToConsole (buf);
     }
     NLToConsole();
@@ -2721,10 +2721,10 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
         prob_proposed_order = Compute (&proposed_order, clist);
 
 #ifdef DEBUG_RCC
-        sprintf (buf, "Proposed node order (log L = %f): ", prob_proposed_order);
+        snprintf (buf, sizeof(buf), "Proposed node order (log L = %f): ", prob_proposed_order);
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            sprintf (buf, "%d ", proposed_order.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", proposed_order.lData[i]);
             BufferToConsole (buf);
         }
         NLToConsole();
@@ -2739,7 +2739,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
             prob_current_order = prob_proposed_order;
 
 #ifdef DEBUG_RCC
-            sprintf (buf, "Accept\n");
+            snprintf (buf, sizeof(buf), "Accept\n");
             BufferToConsole (buf);
 #endif
 
@@ -2764,18 +2764,18 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
 
 #ifdef _DEBUG_RCC
-                sprintf (buf, "Contents of clist:\n");
+                snprintf (buf, sizeof(buf), "Contents of clist:\n");
                 BufferToConsole (buf);
 
                 for (long i = 0; i < num_nodes; i++) {
                     for (long j = 0; j < num_nodes; j++) {
                         gv = (_GrowingVector *) clist->lData[i * num_nodes + j];
 
-                        sprintf (buf, "i=%d, j=%d, n=%d: ", i, j, gv->GetUsed());
+                        snprintf (buf, sizeof(buf), "i=%d, j=%d, n=%d: ", i, j, gv->GetUsed());
                         BufferToConsole (buf);
 
                         for (long k = 0; k < gv->GetUsed(); k++) {
-                            sprintf (buf, "%f ", (*gv)(k,0));
+                            snprintf (buf, sizeof(buf), "%f ", (*gv)(k,0));
                             BufferToConsole (buf);
                         }
 
@@ -2803,22 +2803,22 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
                         if (gv->GetUsed() > 0) {
 #ifdef DEBUG_RCC
-                            sprintf (buf, "edge %d: pp = %f, gv = ", edge, (*mcmc_output)(edge, 1));
+                            snprintf (buf, sizeof(buf), "edge %d: pp = %f, gv = ", edge, (*mcmc_output)(edge, 1));
                             BufferToConsole (buf);
 
                             for (long i = 0; i < gv->GetUsed(); i++) {
-                                sprintf (buf, "%f ", (*gv) (i,0));
+                                snprintf (buf, sizeof(buf), "%f ", (*gv) (i,0));
                                 BufferToConsole (buf);
                             }
 
-                            sprintf (buf, "sum to %f", LogSumExpo (gv));
+                            snprintf (buf, sizeof(buf), "sum to %f", LogSumExpo (gv));
                             BufferToConsole (buf);
 #endif
 
                             mcmc_output->Store (edge, 1, (*mcmc_output)(edge, 1) + exp (LogSumExpo(gv) - denom));
 
 #ifdef DEBUG_RCC
-                            sprintf (buf, "= %f\n", (*mcmc_output)(edge, 1));
+                            snprintf (buf, sizeof(buf), "= %f\n", (*mcmc_output)(edge, 1));
                             BufferToConsole (buf);
 #endif
                         }
@@ -3192,12 +3192,12 @@ void    Bgm::SerializeBgm (_String & rec)
     for (long node_id = 0; node_id < num_nodes; node_id++) {
         if (is_discrete.lData[node_id]) {
             rec << "dnodes[Abs(dnodes)]=make_dnode(";
-            sprintf (buf, "%ld,%ld,%ld", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
+            snprintf (buf, sizeof(buf), "%ld,%ld,%ld", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
             rec << buf;
             rec << ");\n";
         } else {
             rec << "cnodes[Abs(cnodes)]=make_cnode(";
-            sprintf (buf, "%ld,%ld,%ld,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
+            snprintf (buf, sizeof(buf), "%ld,%ld,%ld,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
                      prior_mean(node_id,0), prior_precision(node_id,0));
             rec << buf;
             rec << ");\n";
@@ -3210,11 +3210,11 @@ void    Bgm::SerializeBgm (_String & rec)
     rec << "=(dnodes,cnodes);\n";
 
     // missing data imputation settings
-    sprintf (buf, "BGM_MCEM_MAXSTEPS = %d;\n", (long)mcem_max_steps);
+    snprintf (buf, sizeof(buf), "BGM_MCEM_MAXSTEPS = %d;\n", (long)mcem_max_steps);
     rec << buf;
-    sprintf (buf, "BGM_MCEM_BURNIN = %d;\n", (long)mcem_burnin);
+    snprintf (buf, sizeof(buf), "BGM_MCEM_BURNIN = %d;\n", (long)mcem_burnin);
     rec << buf;
-    sprintf (buf, "BGM_MCEM_SAMPLES = %d;\n", (long)mcem_sample_size);
+    snprintf (buf, sizeof(buf), "BGM_MCEM_SAMPLES = %d;\n", (long)mcem_sample_size);
     rec << buf;
 
     // ban matrix command has to come BEFORE setting data matrix (which calls CacheNodeScores)
