@@ -1168,7 +1168,7 @@ void    _String::Initialize (void)
 //Insert char operator
 void _String::Insert (char c, long pos)
 {
-    if (pos<0) {
+    if (pos<0 || pos >= sLength) {
         pos = sLength;
     }
 
@@ -1374,7 +1374,6 @@ _String* _String::Sort (_SimpleList* index)
             charList.Sort();
         }
         _String * sorted = new _String (sLength);
-        checkPointer (sorted);
         for (unsigned long i=0; i<sLength; i++) {
             sorted->sData[i] = charList.lData[i];
         }
