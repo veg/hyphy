@@ -55,9 +55,6 @@ class _ExecutionList; // forward declaration
 class _String:public BaseObj
 {
 
-    // contructor/destructor methods
-private:
-    int* kmpTable;
 public:
 
     /**
@@ -437,7 +434,6 @@ public:
     * @param from The index to start searching from
     * @param to The index to search to
     * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
-    * @sa FindKMP()
     */
     long    Find(_String s, long from = 0, long to = -1) const;
 
@@ -445,22 +441,6 @@ public:
     *  @see Find()
     */
     long    Find(const char s, long from = 0, long to = -1) const;
-
-    /**
-    * Find first occurence of the string between from and to
-    * @param s The substring to find
-    * @param from The index to start searching from
-    * @param to The index to search to
-    * @return Returns the index of the first instance of the substr, -1 if not found
-    * @sa Find()
-    * @sa buildKmpTable()
-    */
-    long    FindKMP(_String s, long from = 0, long to = -1);
-
-    /**
-    * Builds a KMP table for use with FindKMP
-    */
-    void    buildKmpTable(_String s);
 
     /**
     * Case insensitive Find
