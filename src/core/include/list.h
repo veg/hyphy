@@ -188,7 +188,7 @@ class _List:public _SimpleList
         * @param startat The index to start searching from
         * @param caseSensitive Pass true for a case sensitive search 
         * @param upTo Upper limit for search index. 
-        * @return -1 if not found, the index if it is found.
+        * @return HY_NOT_FOUND if not found, the index if it is found.
         * @sa Find()
         * @sa BinaryFind()
         */
@@ -250,7 +250,7 @@ class _List:public _SimpleList
         * _List("zero","one,"two").Find((BaseRef)needle)
         * \endcode
         * @param s The integer to find
-        * @return -1 if not found, index if found
+        * @return HY_NOT_FOUND if not found, index if found
         */
         virtual long Find(BaseRef, long startat = 0);
 
@@ -270,7 +270,7 @@ class _List:public _SimpleList
         * @param startat The index to start searching from
         * @param caseSensitive Pass true for a case sensitive search 
         * @param upTo Upper limit for search index. 
-        * @return -1 if not found, the index if it is found.
+        * @return HY_NOT_FOUND if not found, the index if it is found.
         * @sa Find()
         * @sa BinaryFind()
         */

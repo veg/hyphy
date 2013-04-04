@@ -72,7 +72,7 @@ long  _AVLList::Find (BaseRef obj)
         }
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //______________________________________________________________
@@ -93,7 +93,7 @@ long  _AVLList::FindLong (long obj)
         }
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //______________________________________________________________
@@ -139,7 +139,7 @@ long  _AVLList::Find (BaseRef obj, _SimpleList& hist)
         }
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //______________________________________________________________
@@ -169,7 +169,7 @@ long  _AVLList::Next (long d, _SimpleList& hist)
                 d = x;
             }
 
-            return -1;
+            return HY_NOT_FOUND;
         }
     }
 
@@ -234,7 +234,7 @@ long  _AVLList::GetByIndex (const long theIndex)
 
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 //______________________________________________________________
 
@@ -262,7 +262,7 @@ long  _AVLList::Prev (long d, _SimpleList& hist)
                 d = x;
             }
 
-            return -1;
+            return HY_NOT_FOUND;
         }
     }
 
@@ -394,7 +394,7 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r)
         nodeStack.Delete (h, false);
         return r;
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //______________________________________________________________

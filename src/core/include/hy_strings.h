@@ -882,7 +882,7 @@ public:
     * respecting (), [], {}, "" and escapes
     * \n SLKP 20090805
     * @param s The terminator to find
-    * @return -1 is returned if the starting character could not be found or the expression did not terminate before the end of the string
+    * @return HY_NOT_FOUND is returned if the starting character could not be found or the expression did not terminate before the end of the string
     * @sa IsALiteralArgument()
     *
     */

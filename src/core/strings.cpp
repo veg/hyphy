@@ -802,7 +802,7 @@ void _String::Finalize (void)
 long _String::FindEndOfIdent(long start, long end, char wild)
 {
     if(sLength==0) {
-        return -1;
+        return HY_NOT_FOUND;
     }
 
     if (start == -1) {
@@ -862,7 +862,7 @@ long _String::FindAnyCase (_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -871,10 +871,10 @@ long _String::FindAnyCase (_String s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (to-from+1<s.sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
 
     s.UpCase();
@@ -886,7 +886,7 @@ long _String::FindAnyCase (_String s, long from, long to)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long _String::ExtractEnclosedExpression (long& from, char open, char close, bool respectQuote, bool respectEscape)
@@ -918,7 +918,7 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
                     return currentPosition;
                 }
                 if (currentLevel < 0) {
-                    return -1;
+                    return HY_NOT_FOUND;
                 }
             } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
                 doEscape = true;
@@ -932,7 +932,7 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
         currentPosition++;
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 
@@ -966,7 +966,7 @@ long _String::FindBackwards(_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -975,10 +975,10 @@ long _String::FindBackwards(_String s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (to-from+1<s.sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     char *sP = sData, *ssP = (s.sData);
     for (long i=to-s.sLength+1; i>=(long)from; i--) {
@@ -988,7 +988,7 @@ long _String::FindBackwards(_String s, long from, long to)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Find first occurence of the string
@@ -1000,7 +1000,7 @@ long _String::FindBinary(char s)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long _String::FindTerminator (long from, _String& terminators)
@@ -1051,7 +1051,7 @@ long _String::FindTerminator (long from, _String& terminators)
         currentPosition++;
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //s[0]...s[sLength-1] => s[sLength-1]...s[0]
@@ -1451,7 +1451,7 @@ long _String::FirstNonSpaceIndex(long start, long end, char direction)
             return i;
         }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Locate the first non-space charachter of the string
@@ -1477,7 +1477,7 @@ long _String::FirstSpaceIndex(long start, long end, char direction)
             return i;
         }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Remove all spaces
@@ -1556,7 +1556,7 @@ char    _String::Compare (_String* s)
     for (long i=0; i<upTo; i++) {
         int res = (sData[i]-s->sData[i]);
         if (res < 0) {
-            return -1;
+            return HY_NOT_FOUND;
         } else if (res>0) {
             return 1;
         }
