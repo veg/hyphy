@@ -16,6 +16,7 @@
 #include "hy_strings.h"
 #include "list.h"
 #include "simplelist.h"
+#include "helperfunctions.h"
 
 #include "baseobj.h"
 
@@ -230,7 +231,7 @@ TEST_F(StringTest,InsertTest)
     EXPECT_STREQ(expected_test.getStr(), test.getStr());
 
     _String test2 = "";
-    _String expected_test2 = "";
+    _String expected_test2 = "C";
     test2.Insert('C',5);
     EXPECT_STREQ(expected_test2.getStr(), test2.getStr());
 
@@ -285,15 +286,16 @@ TEST_F(StringTest,AppendNewInstanceTest)
 
 TEST_F(StringTest,EscapeAndAppendTest)
 {
-    _String result = _String("AAGG");
+    _String result   = _String(4L,true);
     _String expected = _String("AAGG\\\\(&lt;\\\[''");
 
-
+    result << "AAGG";
     result.EscapeAndAppend('\\',2);
     result.EscapeAndAppend('(',1);
     result.EscapeAndAppend('<',4);
     result.EscapeAndAppend('[',5);
     result.EscapeAndAppend('\'',2);
+    result.Finalize();
 
 //    result.EscapeAndAppend('"',4);
 //    result.EscapeAndAppend('\'',4);
@@ -316,12 +318,14 @@ TEST_F(StringTest,EscapeAndAppendTest)
 
 TEST_F(StringTest,EscapeAndAppend2Test)
 {
-    _String str = _String("AAGG");
+    _String str = _String(4L, true);
     _String append = _String("\"AAGG\"");
     _String expected = _String("AAGG&quot;AAGG&quot;");
 
+    str << "AAGG";
     str.EscapeAndAppend(append,4);
-
+    str.Finalize();
+    
     EXPECT_STREQ(expected.getStr(), str.getStr());
 }
 
@@ -1171,19 +1175,25 @@ TEST_F(StringTest,LempelZivProductionHistoryTest)
 TEST_F(StringTest,SortTest)
 {
     _String initial = _String("hgfedcba");
-    _SimpleList* index = new _SimpleList();
-    _String* result = initial.Sort(index);
+    _String* result = initial.Sort();
     EXPECT_STREQ("abcdefgh", result->getStr());
-
+    
 
     initial = _String();
     _SimpleList index2;
     _String* result2 = initial.Sort(&index2);
     EXPECT_STREQ(nil, result2->getStr());
+    
+    initial = "cab";
+    _String* result3 = initial.Sort(&index2);
+    EXPECT_EQ(index2.lData[0],1);
+    EXPECT_EQ(index2.lData[1],2);
+    EXPECT_EQ(index2.lData[2],0);
 
-    delete index;
+
     delete result;
     delete result2;
+    delete result3;
 }
 
 TEST_F(StringTest,FindTerminatorTest)
@@ -1202,21 +1212,25 @@ TEST_F(StringTest,FindTerminatorTest)
 TEST_F(StringTest,AppendAnAssignmentToBufferTest)
 {
 
-    _String initial = _String("dither");
+    _String initial (4UL, true);
+    initial << _String("dither");
     _String append = _String("12");
     _String append2 = _String("34");
     initial.AppendAnAssignmentToBuffer(&append, &append2, false, false, false);
-
+    initial.Finalize();
+    
     _String expected = _String("dither12=34;\n");
     EXPECT_STREQ(expected.getStr(), initial.getStr());
 
-    initial = _String("dither");
+    _String initial2 (4UL, true);
+    initial2 << _String("dither");
     append = _String("12");
     _String* pAppend = new _String("34");
-    initial.AppendAnAssignmentToBuffer(&append, pAppend, true, true, true);
+    initial2.AppendAnAssignmentToBuffer(&append, pAppend, true, true, true);
+    initial2.Finalize();
 
     _String expected2 = _String("dither12:=\"34\";\n");
-    EXPECT_STREQ(expected2.getStr(), initial.getStr());
+    EXPECT_STREQ(expected2.getStr(), initial2.getStr());
 
 }
 
