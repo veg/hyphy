@@ -1162,7 +1162,10 @@ void    _String::Initialize (void)
 {
     BaseObj::Initialize();
     sLength = 0;
-    sData = 0;
+    if (sData) {
+        free (sData);
+        sData = nil;
+    }
 }
 
 //Insert char operator
