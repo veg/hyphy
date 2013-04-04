@@ -43,8 +43,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "baseobj.h"
 
-#define  MEMORYSTEP         8L
-
 class _SimpleList:public BaseObj
 {
     friend class _AVLList;

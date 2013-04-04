@@ -43,8 +43,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "avllist.h"
 
-#define  MEMORYSTEP 8
-
 //_____________________________________________________________________________
 
 class _AVLListX: public _AVLList
