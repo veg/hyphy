@@ -148,7 +148,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  HY_OP_CODE_MAX             (1+HY_OP_CODE_MCOORD) // Max
 #define  HY_OP_CODE_MIN             (1+HY_OP_CODE_MAX) // Min
-#define  HY_OP_CODE_PSTREESTRING    (1+HY_OP_CODE_MIN) // PSTreeString
+#define  HY_OP_CODE_NAMED_ARG       (1+HY_OP_CODE_MIN) // named argument ( x = value )
+#define  HY_OP_CODE_PSTREESTRING    (1+HY_OP_CODE_NAMED_ARG) // PSTreeString
 #define  HY_OP_CODE_RANDOM          (1+HY_OP_CODE_PSTREESTRING) // Random
 #define  HY_OP_CODE_REROOTTREE      (1+HY_OP_CODE_RANDOM) // RerootTree
 #define  HY_OP_CODE_ROWS            (1+HY_OP_CODE_REROOTTREE) // Rows

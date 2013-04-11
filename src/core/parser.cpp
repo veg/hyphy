@@ -748,14 +748,19 @@ void    SetupOperationLists (void)
 
     UnOps.Insert (all_unary_ops);
         
+    //BinOps<<'=';
+    //opPrecedence<<1;
+    
     BinOps<<'|'*256+'|';
-    opPrecedence<<1;
-    BinOps<<'&'*256+'&';
     opPrecedence<<2;
+    
+    BinOps<<'&'*256+'&';
+    opPrecedence<<3;
+    
     BinOps<<'='*256+'=';
-    opPrecedence<<3;
+    opPrecedence<<4;
     BinOps<<'!'*256+'=';
-    opPrecedence<<3;
+    opPrecedence<<4;
     BinOps<<'<';
     opPrecedence<<4;
     BinOps<<'>';
@@ -764,6 +769,7 @@ void    SetupOperationLists (void)
     opPrecedence<<4;
     BinOps<<'>'*256+'=';
     opPrecedence<<4;
+    
     BinOps<<'+';
     associativeOps << opPrecedence.lLength;
     opPrecedence<<5;
@@ -771,6 +777,7 @@ void    SetupOperationLists (void)
     opPrecedence<<5;
     BinOps<<'*';
     associativeOps << opPrecedence.lLength;
+    
     opPrecedence<<6;
     BinOps<<'/';
     opPrecedence<<6;
@@ -778,8 +785,10 @@ void    SetupOperationLists (void)
     opPrecedence<<6;
     BinOps<<'$';
     opPrecedence<<6;
+    
     BinOps<<'^';
     opPrecedence<<7;
+    
     BinOps<<'+'*256+'=';
     opPrecedence<<8;
 
@@ -991,6 +1000,11 @@ void    SetupOperationLists (void)
         simpleOperationCodes<<HY_OP_CODE_MIN;
         simpleOperationFunctions<<(long)MinNumbers;
 
+        //HY_OP_CODE_NAMED_ARG
+        BuiltInFunctions.AppendNewInstance (new _String ("="));
+        FunctionNameList << BuiltInFunctions (HY_OP_CODE_NAMED_ARG);
+        FunctionArgumentCount << 2;
+    
         //HY_OP_CODE_PSTREESTRING
         BuiltInFunctions.AppendNewInstance (new _String ("PSTreeString"));
         FunctionNameList << BuiltInFunctions (HY_OP_CODE_PSTREESTRING);
