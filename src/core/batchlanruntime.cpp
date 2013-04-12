@@ -45,6 +45,10 @@
 #include      "scfg.h"
 
 #include       "hy_globals.h"
+#include       "executionlist.h"
+#include       "datasetfilter.h"
+#include       "thetree.h"
+#include       "customfunction.h"
 
 #if defined __HYPHYQT__
 #include "HYSharedMain.h"

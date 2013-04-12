@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "hy_globals.h"
 #include "batchlan.h"
+#include "executionlist.h"
 
 
 #if defined  __UNIX__ && !defined __MINGW32__

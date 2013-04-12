@@ -39,6 +39,7 @@
 
 
 #include "bayesgraph.h"
+#include "ntuplestorage.h"
 
 extern _String      _HYBgm_IMPUTE_MAXSTEPS,
        _HYBgm_IMPUTE_BURNIN,

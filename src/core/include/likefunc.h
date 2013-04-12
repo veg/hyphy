@@ -666,26 +666,6 @@ private:
 #endif
 };
 
-//_______________________________________________________________________________________
-
-class   _CustomFunction: public _LikelihoodFunction
-{
-
-public:
-
-    _CustomFunction         (_String*);
-
-    virtual     _Parameter  Compute                 (void);
-    virtual     void        RescanAllVariables      (void) {}
-
-
-
-    _Formula myBody;
-};
-
-
-//_______________________________________________________________________________________
-
 extern  bool forceRecomputation,
         isInOptimize;
 

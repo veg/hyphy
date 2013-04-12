@@ -38,6 +38,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "likefunc.h"
+#include "thetree.h"
+#include "dataset.h"
+#include "datasetfilter.h"
+
 #include <math.h>
 
 #ifdef    __HYPHYDMALLOC__

@@ -298,7 +298,7 @@ long  _List::BinaryFind (BaseRef s)
     long top=lLength-1, bottom=0, middle;
 
     if (top==-1) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     while (top>bottom) {
         middle = (top+bottom)/2;
@@ -470,7 +470,7 @@ long  _List::Find (BaseRef s, long startat)
         }
         DeleteObject(sp);
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
@@ -497,7 +497,7 @@ long  _List::FindString (BaseRef s, long startat, bool caseSensitive, long upTo)
             }
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long  _List::FreeUpMemory (long requestedBytes)

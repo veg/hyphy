@@ -97,8 +97,9 @@ public:
     virtual  long           UserFunctionID      (void) {
         return numberOfTerms < 0 ? -numberOfTerms-1 : -1;
     };
+
     // return a non-neg number (function index) if this is a user function,
-    // otherwise, return -1
+    // otherwise, return HY_NOT_FOUND 
 
     virtual  long           GetAVariable        (void) {    // return the index of the variable
         return theData>=-2?theData:-theData-3;

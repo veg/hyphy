@@ -46,6 +46,7 @@
 #include "avllistx.h"
 #include "stack.h"
 #include "operation.h"
+#include "formulaparsingcontext.h"
 
 class _Variable;
 class _VariableContainer;
@@ -55,26 +56,6 @@ union       _SimpleFormulaDatum {
     _Parameter value;
     Ptr        reference;
 };
-
-
-class _FormulaParsingContext {
-
-    long                 assignment_ref_id;
-    char                 assignment_ref_type;
-    bool                 is_volatile;
-    _String            * err_msg;
-    _VariableContainer * formula_scope;
-    
-    public:
-        _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
-        bool&       isVolatile (void)                   { return is_volatile; }
-        long&       assignmentRefID (void)              { return assignment_ref_id; }
-        char&       assignmentRefType (void)            { return assignment_ref_type;} 
-        _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer* formulaScope (void)         { return formula_scope; }     
-        _String     contextualizeRef (_String&);
-};
-
 
 class   _Formula   // a computational formula
 {

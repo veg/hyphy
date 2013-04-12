@@ -49,6 +49,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "batchlan.h"
+#include "executionlist.h"
+#include "thetree.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -802,7 +804,7 @@ void _String::Finalize (void)
 long _String::FindEndOfIdent(long start, long end, char wild)
 {
     if(sLength==0) {
-        return -1;
+        return HY_NOT_FOUND;
     }
 
     if (start == -1) {
@@ -856,92 +858,13 @@ long _String::Find(_String s, long from, long to) const
     return HY_NOT_FOUND;
 }
 
-long _String::FindKMP(_String s, long from, long to)
-// -1, indicates that search term has not been found
-{
-    //Reproduced from http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
-
-    if (!sLength) {
-        return -1;
-    }
-    if (from == -1) {
-        from = 0;
-    }
-    if (to == -1) {
-        to = ((long)sLength)-1;
-    }
-    if (to<from) {
-        return -1;
-    }
-    if (to-from+1<s.sLength) {
-        return -1;
-    }
-
-    char *sP = sData+from; //Start of Haystack substring
-    char *ssP = s.sData;  //Start of Needle substring
-    int m = 0; //beginning of the current match in haystack
-    int i = 0; //the position of the current character in needle
-
-    while(m+i < (to-m+i+1)) {
-        if(ssP[i] == sP[m+i]) {
-            if (i == (s.sLength-1)) {
-                return m;
-            }
-            ++i;
-        }
-
-        else {
-            m = m + i - this->kmpTable[i];
-            if(this->kmpTable[i] > -1) {
-                i = this->kmpTable[i];
-            } else {
-                i = 0;
-            }
-        }
-    }
-
-    return -1;
-}
-
-// Construct a KMP table
-void _String::buildKmpTable(_String s)
-{
-    //Reproduced from http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
-    int pos = 2;
-    int cnd = 0;
-
-    this->kmpTable = new int[sizeof(int) * sLength];
-
-    this->kmpTable[0] = -1;
-    this->kmpTable[1] =  0;
-
-    char *ssP = s.sData;  //Start of Needle substring
-
-    while (pos < s.sLength) {
-        if(ssP[pos-1] == ssP[cnd]) {
-            ++cnd;
-            this->kmpTable[pos] = cnd;
-            ++pos;
-        }
-
-        else if(cnd > 0) {
-            cnd = this->kmpTable[cnd];
-        }
-
-        else {
-            this->kmpTable[pos] = 0;
-            ++pos;
-        }
-    }
-}
-
 // find first occurence of the string between from and to
 // case insensitive
 long _String::FindAnyCase (_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -950,10 +873,10 @@ long _String::FindAnyCase (_String s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (to-from+1<s.sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
 
     s.UpCase();
@@ -965,7 +888,7 @@ long _String::FindAnyCase (_String s, long from, long to)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long _String::ExtractEnclosedExpression (long& from, char open, char close, bool respectQuote, bool respectEscape)
@@ -997,7 +920,7 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
                     return currentPosition;
                 }
                 if (currentLevel < 0) {
-                    return -1;
+                    return HY_NOT_FOUND;
                 }
             } else if (thisChar == '\\' && respectEscape && isQuote && !doEscape) {
                 doEscape = true;
@@ -1011,7 +934,7 @@ long _String::ExtractEnclosedExpression (long& from, char open, char close, bool
         currentPosition++;
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 
@@ -1045,7 +968,7 @@ long _String::FindBackwards(_String s, long from, long to)
 // -1, indicates that search term has not been found
 {
     if (!sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (from == -1) {
         from = 0;
@@ -1054,10 +977,10 @@ long _String::FindBackwards(_String s, long from, long to)
         to = ((long)sLength)-1;
     }
     if (to<from) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     if (to-from+1<s.sLength) {
-        return -1;
+        return HY_NOT_FOUND;
     }
     char *sP = sData, *ssP = (s.sData);
     for (long i=to-s.sLength+1; i>=(long)from; i--) {
@@ -1067,7 +990,7 @@ long _String::FindBackwards(_String s, long from, long to)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Find first occurence of the string
@@ -1079,7 +1002,7 @@ long _String::FindBinary(char s)
             return i;
         }
     }
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 long _String::FindTerminator (long from, _String& terminators)
@@ -1130,7 +1053,7 @@ long _String::FindTerminator (long from, _String& terminators)
         currentPosition++;
     }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //s[0]...s[sLength-1] => s[sLength-1]...s[0]
@@ -1530,7 +1453,7 @@ long _String::FirstNonSpaceIndex(long start, long end, char direction)
             return i;
         }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Locate the first non-space charachter of the string
@@ -1556,7 +1479,7 @@ long _String::FirstSpaceIndex(long start, long end, char direction)
             return i;
         }
 
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Remove all spaces
@@ -1635,7 +1558,7 @@ char    _String::Compare (_String* s)
     for (long i=0; i<upTo; i++) {
         int res = (sData[i]-s->sData[i]);
         if (res < 0) {
-            return -1;
+            return HY_NOT_FOUND;
         } else if (res>0) {
             return 1;
         }
