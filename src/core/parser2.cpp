@@ -795,12 +795,13 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             /* 04252006 if (s.getChar(i)==']' && s.getChar(i+1)!='[')
                 mlevel = -1; */
 
-            if (lookAtMe != ',')
+            if (lookAtMe != ',') {
                 if (i != s.sLength) {
                     level--;
                 } else if (level) {
                     level = -1;
                 }
+            }
 
             /* 04252206 if (i!=s.sLength && lookAtMe != ',')
                 level --;

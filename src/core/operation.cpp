@@ -320,7 +320,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer* nameSpace
         if (numberOfTerms <= 0) { // compute and push value
             theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
         } else {
-            theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nameSpace),false);
+            theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nil),false);
         }
         return true;
     }
