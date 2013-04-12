@@ -40,12 +40,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _HLIST_
 #define _HLIST_
 //#pragma once
+
 #include "simplelist.h"
-
-
-//_____________________________________________________________________________
-
-//_____________________________________________________________________________
 
 class _List:public _SimpleList
 {

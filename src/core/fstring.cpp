@@ -38,11 +38,13 @@
  */
 
 #include "defines.h"
+#include "hy_globals.h"
 #include "fstring.h"
 #include "constant.h"
 #include "matrix.h"
 #include "calcnode.h"
-#include "hy_globals.h"
+#include "thetree.h"
+#include "growingvector.h"
 
 extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;

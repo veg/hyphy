@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 
 #include "list.h"
+#include "hy_strings.h"
 
 #define  HY_TRANSLATION_TABLE_NONSTANDARD         0x000
 #define  HY_TRANSLATION_TABLE_STANDARD_BINARY     0x001

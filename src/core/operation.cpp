@@ -40,12 +40,12 @@
 #include "defines.h"
 #include "variable.h"
 #include "operation.h"
-
 #include "parser.h"
 #include "polynoml.h"
 #include "batchlan.h"
-
 #include "hy_globals.h"
+
+#include "executionlist.h"
 
 extern _SimpleList BinOps,
        opPrecedence,

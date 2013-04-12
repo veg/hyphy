@@ -40,6 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _HSTRINGS_
 #define _HSTRINGS_
 //#pragma once
+
 #include "baseobj.h"
 #include "simplelist.h"
 #include "list.h"

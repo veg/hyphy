@@ -49,6 +49,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "batchlan.h"
+#include "executionlist.h"
+#include "thetree.h"
 
 #include <stdlib.h>
 #include <string.h>

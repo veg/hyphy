@@ -30,6 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "batchlan.h"
 #include "calcnode.h"
+#include "executionlist.h"
 #include <unistd.h>
 #if !defined __MINGW32__
 
