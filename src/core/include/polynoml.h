@@ -41,79 +41,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define     __POLY__
 
 #include "parser.h"
+#include "polynomialdata.h"
 
-#define   POLY_DATA_INCREMENT 10
 #define   GLOBAL_VARIABLE   1
 #define   CATEGORY_VARIABLE 2
 #define   RANDOM_VARIABLE   3
 
 
 //__________________________________________________________________________________
-
-class _PolynomialData : public BaseObj
-{
-
-public:
-
-    _PolynomialData (void);
-    _PolynomialData (long);
-    _PolynomialData (_PolynomialData&);
-    _PolynomialData (long,long, _Parameter*);
-
-    virtual ~_PolynomialData ();
-
-    virtual BaseObj*    makeDynamic(void);
-    virtual void        Duplicate  (BaseRef);
-
-    inline  _Parameter*         GetCoeff (void) {
-        return theCoeff;
-    }
-    inline  _Parameter&         GetCoeff (long index) {
-        return theCoeff[index];
-    }
-
-    long    *           GetTerm (long);
-    long                GetNoTerms (void) {
-        return actTerms;
-    }
-    void                AddTerm (long*, _Parameter);
-    void                AddTerm (long*, _Parameter, long*, long);
-    void                AddTerm (_Parameter);
-    void                WriteTerm (long*,long);
-    void                DeleteTerm (long);
-    bool                IsFirstANumber (void);
-    inline long         NumberOfTerms (void) {
-        return actTerms;
-    }
-    long                SumOfPowers (long);
-    long                WeightedSumOfPowers (long,_Parameter*);
-
-    // temp!
-
-    bool                checkMe (void);
-
-    friend class _Polynomial;
-
-    void                MultiplyTerms (long*, long*, long*);
-    void                RaiseTerm     (long*, long);
-    static  _Parameter  BinaryRaise   (_Parameter, long);
-    static  void        RearrangeTerm (long*, long*, long*,long);
-    char                CompareTerms  (long*, long*);
-    char                CompareTerms  (long*, long*, long*, long);
-    char                CompareTerms  (long*, long*, long*, long*, long, long);
-    long                FindTerm      (long*, long*, long start = 0);
-    void                ResortTerms   (long*);
-    void                ChopTerms     (void);
-    bool                checkTerm     (_Parameter, long);
-
-
-protected:
-
-    _Parameter*     theCoeff;
-    long*           thePowers;
-    long            numberVars, actTerms, allocTerms;
-
-};
 
 //__________________________________________________________________________________
 

@@ -40,6 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _HSTRINGS_
 #define _HSTRINGS_
 //#pragma once
+
 #include "baseobj.h"
 #include "simplelist.h"
 #include "list.h"
@@ -55,9 +56,6 @@ class _ExecutionList; // forward declaration
 class _String:public BaseObj
 {
 
-    // contructor/destructor methods
-private:
-    int* kmpTable;
 public:
 
     /**
@@ -437,7 +435,6 @@ public:
     * @param from The index to start searching from
     * @param to The index to search to
     * @return Returns the index of the first instance of the substr, -1 if not found. 2 in the example
-    * @sa FindKMP()
     */
     long    Find(_String s, long from = 0, long to = -1) const;
 
@@ -445,22 +442,6 @@ public:
     *  @see Find()
     */
     long    Find(const char s, long from = 0, long to = -1) const;
-
-    /**
-    * Find first occurence of the string between from and to
-    * @param s The substring to find
-    * @param from The index to start searching from
-    * @param to The index to search to
-    * @return Returns the index of the first instance of the substr, -1 if not found
-    * @sa Find()
-    * @sa buildKmpTable()
-    */
-    long    FindKMP(_String s, long from = 0, long to = -1);
-
-    /**
-    * Builds a KMP table for use with FindKMP
-    */
-    void    buildKmpTable(_String s);
 
     /**
     * Case insensitive Find
@@ -902,7 +883,7 @@ public:
     * respecting (), [], {}, "" and escapes
     * \n SLKP 20090805
     * @param s The terminator to find
-    * @return -1 is returned if the starting character could not be found or the expression did not terminate before the end of the string
+    * @return HY_NOT_FOUND is returned if the starting character could not be found or the expression did not terminate before the end of the string
     * @sa IsALiteralArgument()
     *
     */

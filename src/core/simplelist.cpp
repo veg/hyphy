@@ -171,7 +171,7 @@ long _SimpleList::operator () (const unsigned long i)
         return lData[i];
     }
     warnError("List index out of range");
-    return -1;
+    return HY_NOT_FOUND;
 }
 
 //Assignment operator

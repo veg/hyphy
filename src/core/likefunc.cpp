@@ -44,6 +44,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_globals.h"
 #include "helperfunctions.h"
 
+#include "thetree.h"
+#include "datasetfilter.h"
+#include "executionlist.h"
+
 
 #ifdef __WINDOZE__
 #include     "windows.h"
@@ -10909,46 +10913,4 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
 
 //_______________________________________________________________________________________
 
-_CustomFunction::_CustomFunction (_String* arg)
-{
-    _String body    (*arg),
-            errMsg ;
 
-    _FormulaParsingContext fpc (&errMsg, nil);
-
-    if (Parse (&myBody, body, fpc) == HY_FORMULA_EXPRESSION) {
-        _SimpleList myVars;
-        {
-            _AVLList al (&myVars);
-            myBody.ScanFForVariables(al,true,false,false);
-            al.ReorderList();
-        }
-        for (unsigned long k=0; k<myVars.lLength; k++)
-            if (LocateVar(myVars.lData[k])->IsIndependent()) {
-                GetIndependentVars() << myVars.lData[k];
-            }
-    } else {
-        WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
-    }
-}
-
-//_______________________________________________________________________________________
-
-_Parameter _CustomFunction::Compute (void)
-{
-    likeFuncEvalCallCount++;
-    _SimpleList * iv = &GetIndependentVars ();
-    for (unsigned long i=0; i<iv->lLength; i++) {
-        _Parameter result = GetIthIndependent(i);
-
-        if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
-            return -A_LARGE_NUMBER;
-        }
-    }
-
-    _PMathObj res = myBody.Compute();
-    if (res) {
-        return res->Value();
-    }
-    return 0.0;
-}

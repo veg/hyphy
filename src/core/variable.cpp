@@ -45,6 +45,7 @@
 #include "parser.h"
 #include "polynoml.h"
 #include "batchlan.h"
+#include "thetree.h"
 
 extern _SimpleList freeSlots;
 extern _SimpleList deferIsConstant;

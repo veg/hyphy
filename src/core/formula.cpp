@@ -2,6 +2,7 @@
 #include <float.h>
 #include "defines.h"
 #include "formula.h"
+#include "formulaparsingcontext.h"
 
 //SW: This should be helper functions
 #include "parser.h"
@@ -2658,20 +2659,4 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
     return nil;
 }
 
-//__________________________________________________________________________________
-_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
-    assignment_ref_id   = -1;
-    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
-    is_volatile = false;
-    err_msg = err;
-    formula_scope = scope;
-}
-
-//__________________________________________________________________________________
-_String _FormulaParsingContext::contextualizeRef (_String& ref) {
-    if (formula_scope) {
-        return *formula_scope->GetName () & '.' & ref;
-    }
-    return ref;
-}
 
