@@ -616,7 +616,7 @@ void  InsertVar (_Variable* theV)
 
     if (pos < 0) {
         if (isDefiningATree == 1) {
-            WarnError(_String("Internal error while creating a tree: '") & *theV->GetName() & "'");
+            WarnError(_String("Error while creating a tree: duplicate node name '") & *theV->GetName() & "'");
             return;
         }
 
