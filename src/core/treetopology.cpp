@@ -48,15 +48,6 @@ long*       nonZeroNodes = nil,
             nonZeroNodesDim = 0;
 
 #ifdef      __MP__
-    #include <pthread.h>
-    struct   ThreadMatrixTask {
-        long   cID,
-               tcat,
-               startAt,
-               endAt;
-        _SimpleList* updateCN;
-
-    };
     pthread_t*       matrixThreads = nil;
     ThreadMatrixTask*matrixTasks = nil;
     pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;

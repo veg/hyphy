@@ -39,6 +39,17 @@ extern long*      nonZeroNodes,
                   nonZeroNodesDim;
 
 #ifdef      __MP__
+
+    #include <pthread.h>
+    struct   ThreadMatrixTask {
+        long   cID,
+               tcat,
+               startAt,
+               endAt;
+        _SimpleList* updateCN;
+
+    };
+
     #include <pthread.h>
     //struct   ThreadMatrixTask {
     //    long   cID,
@@ -51,6 +62,8 @@ extern long*      nonZeroNodes,
     extern pthread_t*        matrixThreads;
     extern ThreadMatrixTask* matrixTasks;
     extern pthread_mutex_t   matrixMutex;
+
+    void*   MatrixUpdateFunction (void* arg);
 #endif
 
 extern char        takeBranchLengths,
