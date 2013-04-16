@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,89 +37,79 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __ASSOCIATIVELIST__
-#define     __ASSOCIATIVELIST__
+#ifndef __ASSOCIATIVELIST__
+#define __ASSOCIATIVELIST__
 
 #include "mathobj.h"
 #include "avllistxl.h"
 #include "elementarycommand.h"
 
-class _AssociativeList: public _MathObject
-{
+class _AssociativeList : public _MathObject {
+
 public:
-    _AssociativeList                    (void);
-    virtual ~_AssociativeList           (void) {}
-
-    bool    ParseStringRepresentation   (_String&, bool = true, _VariableContainer* = nil);
-    /* SLKP 20090803
-
-        Parse the list represented as
-            {"key": value, ...}
-
-        the boolean argument is supplied to request reporting/suppression of error messages
-
-        returns true on successful parse
-
-     */
-
-    virtual BaseRef     toStr           (void);
-    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual BaseRef     makeDynamic     (void);
-    virtual _PMathObj   Compute         (void);
-    virtual void        Merge           (_PMathObj);
-    /* 20100907: SLKP
-            A simple function to merge two lists;
-            the combined list will have the key set equal to the union of the two input key sets
-            if there are conflicting values for a given key, an undefined value will be stored in
-            for the corresponding key
+  _AssociativeList(void);
+  virtual ~_AssociativeList(void) {}
 
 
-     */
+  //SLKP 20090803
+  // Parse the list represented as {"key": value, ...}
+  // the boolean argument is supplied to request reporting/suppression
+  // of error messages returns true on successful parse
+  bool ParseStringRepresentation(_String &, bool = true,
+                                 _VariableContainer * = nil);
+     
 
-    virtual void        Duplicate       (BaseRef);
-    _PMathObj           MAccess         (_PMathObj);
+  virtual BaseRef toStr(void);
+  virtual _PMathObj
+  Execute(long opCode, _PMathObj = nil, _PMathObj = nil,
+          _hyExecutionContext *context = _hyDefaultExecutionContext);
+  virtual BaseRef makeDynamic(void);
+  virtual _PMathObj Compute(void);
 
-    _PMathObj           MIterator       (_PMathObj, _PMathObj);
-    /* perform a function call (ID stored in the first argument)
-       having performed [an optional] conditional check on the associated key (either empty for noop or a function ID)
-       Both functional IDs MUST be defined and take TWO and ONE argumens respectively
+  // 20100907: SLKP
+  // A simple function to merge two lists;the combined list will have the key
+  // set equal to the union of the two input key sets if there are
+  // conflicting values for a given key, an undefined value will be stored
+  // in for the corresponding key  
+  virtual void Merge(_PMathObj);
+  virtual void Duplicate(BaseRef);
+  _PMathObj MAccess(_PMathObj);
 
-       returns the number of items processed
-    */
+  //perform a function call (ID stored in the first argument) having performed
+  //[an optional] conditional check on the associated key (either empty for noop
+  //or a function ID) Both functional IDs MUST be defined and take TWO and ONE
+  //argumens respectively returns the number of items processed
+  _PMathObj MIterator(_PMathObj, _PMathObj);
+  _PMathObj GetByKey(_String &, long);
+  _PMathObj GetByKey(_String &);
+  _PMathObj GetByKey(long, long);
+  void DeleteByKey(_PMathObj);
+  _PMathObj MCoord(_PMathObj);
 
-    _PMathObj           GetByKey        (_String&, long);
-    _PMathObj           GetByKey        (_String&);
-    _PMathObj           GetByKey        (long, long);
-    void                DeleteByKey     (_PMathObj);
-    _PMathObj           MCoord          (_PMathObj);
-    void                MStore          (_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
-    // SLKP 20100811: see the comment for _Matrix::MStore
+  // SLKP 20100811: see the comment for _Matrix::MStore
+  void MStore(_PMathObj, _PMathObj, bool = true, long = HY_OP_CODE_NONE);
+  void MStore(_String, _PMathObj, bool = true);
+  void MStore(_String, _String);
+  virtual unsigned long ObjectClass(void) { return ASSOCIATIVE_LIST; }
+  _List *GetKeys(void);
+  void FillInList(_List &);
+  _String *Serialize(_String &);
 
-    void                MStore          (_String  , _PMathObj, bool = true);
-    void                MStore          (_String  , _String);
-    virtual unsigned long        ObjectClass     (void)      {
-        return ASSOCIATIVE_LIST;
-    }
-    _List*              GetKeys         (void);
-    void                FillInList      (_List&);
-    _String*            Serialize       (_String&);
-    
-    /**
-     * Traverse the dictionary, cast each value into a float and return their sum.
-     * Note that matrices and dictionary values will be processed recursively, i.e. "Sum" will be called on them.
-     * All values that cannot be cast to a float will be treated as 0.
-     * @return The sum of all dictionary elements.
-     */
-    _PMathObj           Sum             (void);
+  //Traverse the dictionary, cast each value into a float and return their sum.
+  //Note that matrices and dictionary values will be processed recursively,
+  //i.e. "Sum" will be called on them.
+  //All values that cannot be cast to a float will be treated as 0.
+  //@return The sum of all dictionary elements.
+  _PMathObj Sum(void);
 
-    _AVLListXL          avl;
+  _AVLListXL avl;
 
 private:
-
-    _List           theData;
+  _List theData;
 };
 
-void       InsertStringListIntoAVL  (_AssociativeList* , _String, _SimpleList&, _List&);
-void       InsertVarIDsInList       (_AssociativeList* , _String, _SimpleList&);
+void InsertStringListIntoAVL(_AssociativeList *, _String, _SimpleList &,
+                             _List &);
+void InsertVarIDsInList(_AssociativeList *, _String, _SimpleList &);
 
 #endif
