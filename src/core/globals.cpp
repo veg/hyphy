@@ -37,49 +37,21 @@
  
  */
 
-
 #include "hy_globals.h"
 
-bool
-    terminateExecution         = false,
-    isInFunction               = false
-;
+bool terminateExecution = false, isInFunction = false;
 
-char
-    isDefiningATree            = 0
-;
+char isDefiningATree = 0;
 
-_String
-    scanfLastFilePath,
-    errorFileName   ("errors.log"),
-    messageFileName ("messages.log");
+_String scanfLastFilePath, errorFileName("errors.log"),
+    messageFileName("messages.log");
 
-;
+_SimpleList freeSlots;
 
-_SimpleList
-    freeSlots
+long globalRandSeed;
 
-;
+FILE *globalErrorFile = nil, *globalMessageFile = nil;
 
+_List openFileHandlesBackend;
 
-long
-    globalRandSeed
-
-;
-
-
-
-FILE
-    *globalErrorFile        = nil,
-    *globalMessageFile      = nil
-
-;
-
-_List
-    openFileHandlesBackend
-;
-
-_AVLListX
-    openFileHandles     (&openFileHandlesBackend)
-;
-
+_AVLListX openFileHandles (&openFileHandlesBackend);

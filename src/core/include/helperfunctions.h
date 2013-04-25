@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,57 +37,56 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __HELPERS__
-#define     __HELPERS__
+#ifndef __HELPERS__
+#define __HELPERS__
 
 #include "baseobj.h"
 
-void            DeleteObject (BaseRef); // delete a dynamic object
+void DeleteObject(BaseRef); // delete a dynamic object
 
-char*           MemAllocate (const long);
-char*           MemReallocate (Ptr, const long);
+char *MemAllocate(const long);
+char *MemReallocate(Ptr, const long);
 
-bool            GlobalStartup();
-bool            GlobalShutdown();
+bool GlobalStartup();
+bool GlobalShutdown();
 
-unsigned long   bitStringToLong (const long *, const unsigned long );
-void            longToBitString      (long *, const unsigned long, const unsigned long);
+unsigned long bitStringToLong(const long *, const unsigned long);
+void longToBitString(long *, const unsigned long, const unsigned long);
 
+void PurgeAll(bool all = true);
+void init_genrand(unsigned long);
+unsigned long genrand_int32(void);
+double genrand_real2(void);
+FILE *doFileOpen(const char *, const char *, bool = false);
+// 20110324: SLKP added the bool flag to allow automatic "Can't open file" error
+// reports
+double TimerDifferenceFunction(bool);
 
-void            PurgeAll                  (bool   all = true);
-void            init_genrand              (unsigned long);
-unsigned long   genrand_int32             (void);
-double          genrand_real2             (void);
-FILE*           doFileOpen                (const char *, const char *, bool = false);
-// 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
-double          TimerDifferenceFunction   (bool);
-
-
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ || defined __HYPHYQT__
-    void    yieldCPUTime        (void);
-    bool    handleGUI           (bool = false);
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ ||      \
+    defined __HYPHYQT__
+void yieldCPUTime(void);
+bool handleGUI(bool = false);
 #endif
 
 template <class multipliable>
-multipliable compute_power (multipliable base, unsigned long power) {
-    multipliable result = 1.;
-    unsigned long bit = 0x7FFFFFFF;
-    
-    while ((bit & power) == 0UL && bit > 0) {
-        bit = bit >> 1;
+multipliable compute_power(multipliable base, unsigned long power) {
+  multipliable result = 1.;
+  unsigned long bit = 0x7FFFFFFF;
+
+  while ((bit & power) == 0UL && bit > 0) {
+    bit = bit >> 1;
+  }
+
+  while (power > 0) {
+    result *= result;
+    if (bit & power) {
+      result *= base;
     }
-    
-    while (power > 0) {
-        result *= result;
-        if (bit & power) {
-            result *= base;
-        }
-        power = power >> 1;
-        bit = bit >> 1;
-    }
-    
-    return result;
+    power = power >> 1;
+    bit = bit >> 1;
+  }
+
+  return result;
 }
 
 #endif

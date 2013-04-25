@@ -40,124 +40,106 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#ifdef    __HYPHYDMALLOC__
+#ifdef __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
 
-//______________________________________________________________
+//______________________________________________________________________________
 
-_AVLListX::_AVLListX (_SimpleList* d):_AVLList(d)
-{
+_AVLListX::_AVLListX(_SimpleList *d) : _AVLList(d) {}
+
+//______________________________________________________________________________
+
+long _AVLListX::GetXtra(long d) { return xtraD.lData[d]; }
+
+//______________________________________________________________________________
+
+void _AVLListX::SetXtra(long i, long d) { xtraD.lData[i] = d; }
+
+//______________________________________________________________________________
+
+void _AVLListX::Clear(bool cL) {
+  xtraD.Clear();
+  _AVLList::Clear(cL);
 }
 
-//______________________________________________________________
+//______________________________________________________________________________
 
-long    _AVLListX::GetXtra (long d)
-{
-    return xtraD.lData[d];
+BaseRef _AVLListX::toStr(void) {
+  _String *str = new _String(128L, true);
+  checkPointer(str);
+
+  if (countitems() == 0) {
+    (*str) << "Empty Associative List";
+  } else {
+    _SimpleList hist;
+    long ls, cn;
+
+    cn = Traverser(hist, ls, root);
+
+    while (cn >= 0) {
+      _String *keyVal = (_String *)Retrieve(cn);
+      (*str) << keyVal;
+      (*str) << " : ";
+      (*str) << _String(GetXtra(cn));
+      (*str) << '\n';
+      cn = Traverser(hist, ls);
+    }
+  }
+
+  str->Finalize();
+  return str;
 }
 
-//______________________________________________________________
+//______________________________________________________________________________
 
-void    _AVLListX::SetXtra (long i, long d)
-{
-    xtraD.lData[i] = d;
+long _AVLListX::InsertData(BaseRef b, long d, bool) {
+  long w = (long) emptySlots.lLength - 1, n;
+
+  if (w >= 0) {
+    n = emptySlots.lData[w];
+    emptySlots.Delete(w);
+    leftChild.lData[n] = -1;
+    rightChild.lData[n] = -1;
+    balanceFactor.lData[n] = 0;
+    xtraD.lData[n] = d;
+    ((BaseRef *)dataList->lData)[n] = b;
+  } else {
+    n = dataList->lLength;
+    dataList->InsertElement(b, -1, false, false);
+    leftChild << -1;
+    rightChild << -1;
+    balanceFactor << 0;
+    xtraD << d;
+  }
+  return n;
 }
 
-//______________________________________________________________
+//______________________________________________________________________________
 
-void _AVLListX::Clear (bool cL)
-{
-    xtraD.Clear();
-    _AVLList::Clear(cL);
-}
-
-//______________________________________________________________
-
-BaseRef _AVLListX::toStr (void)
-{
-    _String * str = new _String (128L, true);
-    checkPointer (str);
-
-    if (countitems() == 0) {
-        (*str) << "Empty Associative List";
+long _AVLListX::UpdateValue(BaseRef b, long d, long op) {
+  long exists = Find(b);
+  if (exists >= 0) {
+    if (op == 0) {
+      SetXtra(exists, GetXtra(exists) + d);
     } else {
-        _SimpleList  hist;
-        long         ls, cn;
-
-        cn = Traverser (hist,ls,root);
-
-        while (cn>=0) {
-            _String * keyVal = (_String*)Retrieve (cn);
-            (*str) << keyVal;
-            (*str) << " : ";
-            (*str) << _String(GetXtra (cn));
-            (*str) << '\n';
-            cn = Traverser (hist,ls);
-        }
+      SetXtra(exists, d);
     }
-
-    str->Finalize();
-    return str;
+  } else {
+    Insert(b, d);
+  }
+  return exists;
 }
 
-//______________________________________________________________
+//______________________________________________________________________________
 
-long  _AVLListX::InsertData (BaseRef b, long d, bool)
-{
-    long w = (long)emptySlots.lLength - 1,
-         n;
+void _AVLListX::DeleteXtra(long i) { xtraD.lData[i] = -1; }
 
-    if (w>=0) {
-        n = emptySlots.lData[w];
-        emptySlots.Delete (w);
-        leftChild.lData[n] = -1;
-        rightChild.lData[n] = -1;
-        balanceFactor.lData[n] = 0;
-        xtraD.lData[n] = d;
-        ((BaseRef*)dataList->lData)[n] = b;
-    } else {
-        n = dataList->lLength;
-        dataList->InsertElement (b,-1,false,false);
-        leftChild  << -1;
-        rightChild << -1;
-        balanceFactor << 0;
-        xtraD << d;
-    }
-    return n;
+//______________________________________________________________________________
+
+void _AVLListX::PopulateFromList(_List &src) {
+  Clear(false);
+  for (unsigned long k = 0; k < src.lLength; k++) {
+    Insert(src(k)->makeDynamic(), k, false);
+  }
 }
-
-//______________________________________________________________
-
-long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
-    long exists = Find (b);
-    if (exists >= 0) {
-        if (op == 0) {
-            SetXtra (exists, GetXtra(exists) + d);
-        } else {
-            SetXtra (exists, d);       
-        }
-    } else {
-        Insert (b,d);
-    }
-    return exists;
-}
-
-
-//______________________________________________________________
-
-void _AVLListX::DeleteXtra (long i)
-{
-    xtraD.lData[i] = -1;
-}
-
-//______________________________________________________________
-
-void _AVLListX::PopulateFromList (_List& src)
-{
-    Clear(false);
-    for (unsigned long k = 0; k < src.lLength; k++) {
-        Insert (src(k)->makeDynamic(),k,false);
-    }
-}
-

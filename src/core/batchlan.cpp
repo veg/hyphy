@@ -57,7 +57,7 @@
 #include "hyphy_qt_helpers.h"
 #endif
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 // global variables
 
 _List dataSetList, dataSetNamesList, likeFuncList, // list of all datasets
@@ -148,12 +148,12 @@ extern _Parameter toPolyOrNot, toMorNot2M, ANALYTIC_COMPUTATION_FLAG;
 extern _SimpleList freeSlots;
 _AVLList loadedLibraryPaths (&loadedLibraryPathsBackend);
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 // Function prototypes
 
 #ifdef __HYPHYMPI__
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 void ReportMPIError(int code, bool send) {
   if (code != MPI_SUCCESS) {
@@ -170,7 +170,7 @@ void ReportMPIError(int code, bool send) {
 
 #define MPI_SEND_CHUNK 0xFFFFFFL
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 void MPISendString(_String &theMessage, long destID, bool isError) {
   long messageLength = theMessage.sLength, transferCount = 0;
@@ -217,7 +217,7 @@ void MPISendString(_String &theMessage, long destID, bool isError) {
 
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _String *MPIRecvString(long senderT, long &senderID) {
 
   _String *theMessage = nil;
@@ -281,7 +281,7 @@ _String *MPIRecvString(long senderT, long &senderID) {
 }
 #endif
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _String GetStringFromFormula(_String *data, _VariableContainer *theP) {
   _Formula nameForm(*data, theP);
@@ -294,7 +294,7 @@ _String GetStringFromFormula(_String *data, _VariableContainer *theP) {
   return *data;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _String *ProcessCommandArgument(_String *data) {
   if (data->sLength > 1 && data->sData[data->sLength - 1] == '&') {
@@ -313,7 +313,7 @@ _String *ProcessCommandArgument(_String *data) {
   return (_String *)data;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 bool numericalParameterSuccessFlag = true;
 
@@ -347,7 +347,7 @@ _Parameter ProcessNumericArgument(_String *data, _VariableContainer *theP,
   return 0.0;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
                                   long objectType,
@@ -369,7 +369,7 @@ _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
   return nil;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _String ProcessLiteralArgument(_String *data, _VariableContainer *theP,
                                _ExecutionList *currentProgram) {
@@ -389,7 +389,7 @@ _String ProcessLiteralArgument(_String *data, _VariableContainer *theP,
   return empty;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _AssociativeList *ProcessDictionaryArgument(_String *data,
                                             _VariableContainer *theP,
@@ -408,15 +408,15 @@ _AssociativeList *ProcessDictionaryArgument(_String *data,
   return nil;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindDataSetName(_String &s) { return dataSetNamesList.Find(&s); }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindDataSetFilterName(_String &s) {
   return dataSetFilterNamesList.Find(&s);
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindLikeFuncName(_String &s, bool tryAsAString) {
   long try1 = likeFuncNamesList.Find(&s);
   if (try1 < 0 && tryAsAString) {
@@ -426,7 +426,7 @@ long FindLikeFuncName(_String &s, bool tryAsAString) {
   return try1;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindModelName(_String &s) {
   if (s.Equal(&useLastModel)) {
     return lastMatrixDeclared;
@@ -434,7 +434,7 @@ long FindModelName(_String &s) {
   return modelNames.Find(&s);
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _LikelihoodFunction *FindLikeFuncByName(_String &s) {
   long i = FindLikeFuncName(s);
   if (i >= 0) {
@@ -443,10 +443,10 @@ _LikelihoodFunction *FindLikeFuncByName(_String &s) {
   return nil;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindSCFGName(_String &s) { return scfgNamesList.Find(&s); }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindBFFunctionName(_String &s, _VariableContainer *theP) {
   if (theP) {
     _String testName = *(theP->GetName()) & '.' & s;
@@ -466,11 +466,11 @@ long FindBFFunctionName(_String &s, _VariableContainer *theP) {
   return batchLanguageFunctionNames.Find(&s);
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long FindBgmName(_String &s) { return bgmNamesList.Find(&s); }
 
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 long AddFilterToList(_String &partName, _DataSetFilter *theFilter, bool addP) {
   FindUnusedObjectName(prefixDF, partName, dataSetFilterNamesList);
   long k;
@@ -495,7 +495,7 @@ long AddFilterToList(_String &partName, _DataSetFilter *theFilter, bool addP) {
   return k;
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 long AddDataSetToList(_String &theName, _DataSet *theDS) {
   FindUnusedObjectName(prefixDS, theName, dataSetNamesList);
   long k = dataSetNamesList.Find(&empty);
@@ -510,7 +510,7 @@ long AddDataSetToList(_String &theName, _DataSet *theDS) {
   return k;
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 void KillDataFilterRecord(long dfID, bool addP) {
   if (addP) {
     SetDataFilterParameters(*(_String *)(dataSetFilterNamesList(dfID)), nil, false);
@@ -534,7 +534,7 @@ void KillDataFilterRecord(long dfID, bool addP) {
   }
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 void KillLFRecord(long lfID, bool completeKill) {
   /* compile the list of variables which will no longer be referenced */
 
@@ -614,7 +614,7 @@ void KillLFRecord(long lfID, bool completeKill) {
   }
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 
 void KillLFRecordFull(long lfID) {
   _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(lfID);
@@ -646,7 +646,7 @@ void KillLFRecordFull(long lfID) {
   KillLFRecord(lfID);
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 
 void KillDataSetRecord(long dsID) {
   if (dsID < dataSetList.lLength - 1) {
@@ -667,7 +667,7 @@ void KillDataSetRecord(long dsID) {
   }
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 
 void KillExplicitModelFormulae(void) {
   for (long i = 0; i < modelTypeList.lLength; i++)
@@ -676,7 +676,7 @@ void KillExplicitModelFormulae(void) {
     }
 }
 
-//__________________________________________________________
+//______________________________________________________________________________
 
 void KillModelRecord(long mdID) {
   if (lastMatrixDeclared == mdID) {
@@ -791,7 +791,7 @@ _String blFor("for("),         // moved
     blBGM("BayesianGraphicalModel "), blSimulateDataSet("SimulateDataSet"),
     blAssert("assert(");
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _String _hblCommandAccessor(_ExecutionList *theList, long index) {
   if (theList) {
     if (index >= 0) {
@@ -807,14 +807,14 @@ _String _hblCommandAccessor(_ExecutionList *theList, long index) {
   return _String("command index ") & index;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _ElementaryCommand *makeNewCommand(long ccode) {
   _ElementaryCommand *newC = new _ElementaryCommand(ccode);
   checkPointer(newC);
   return newC;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void ReadBatchFile(_String &fName, _ExecutionList &target)
     // read/parse a file into an execution list
     // THE function!!!
@@ -849,7 +849,7 @@ void ReadBatchFile(_String &fName, _ExecutionList &target)
   }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void SetDataFilterParameters(_String &parName, _DataSetFilter *thedf, bool setOrKill) {
   _String varName(parName & ".species");
   _Variable *receptacleVar = nil;
@@ -907,7 +907,7 @@ void SetDataFilterParameters(_String &parName, _DataSetFilter *thedf, bool setOr
   }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void SerializeModel(_String &rec, long theModel, _AVLList *alreadyDone,
                     bool completeExport) {
   bool mByF = true, do2 = false;

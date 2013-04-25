@@ -42,18 +42,17 @@
 #include "variablecontainer.h"
 #include "formulaparsingcontext.h"
 
-_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer* scope) {
-    assignment_ref_id   = -1;
-    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
-    is_volatile = false;
-    err_msg = err;
-    formula_scope = scope;
+_FormulaParsingContext::_FormulaParsingContext(_String *err, _VariableContainer *scope) {
+  assignment_ref_id = -1;
+  assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
+  is_volatile = false;
+  err_msg = err;
+  formula_scope = scope;
 }
 
-_String _FormulaParsingContext::contextualizeRef (_String& ref) {
-    if (formula_scope) {
-        return *formula_scope->GetName () & '.' & ref;
-    }
-    return ref;
+_String _FormulaParsingContext::contextualizeRef(_String &ref) {
+  if (formula_scope) {
+    return *formula_scope->GetName() & '.' & ref;
+  }
+  return ref;
 }
-

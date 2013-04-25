@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,70 +37,73 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __NTUPLESTORAGE__
-#define     __NTUPLESTORAGE__
-
+#ifndef __NTUPLESTORAGE__
+#define __NTUPLESTORAGE__
 
 #include "matrix.h"
 
-class   _NTupleStorage: public _Matrix
-// a way to associate floating points
-// with ordered K-tuples indices of the form 0<=i_1 < i_2 < ... < i_K < N, where N>=K
-// see http://en.wikipedia.org/wiki/Combinadic
-{
+class _NTupleStorage :
+    public _Matrix
+    // a way to associate floating points
+    // with ordered K-tuples indices of the form 0<=i_1 < i_2 < ... < i_K < N,
+    // where N>=K
+    // see http://en.wikipedia.org/wiki/Combinadic
+    {
 
 public:
-    _NTupleStorage  (void) {
-        storageN = 0;
-        storageK = 0;
-    }
-    // null constructor; does next to nothing
-    _NTupleStorage  (unsigned long,unsigned long);
-    // [long] - what is the maximum value for an index (N>=0; N=0 - empty set)
-    // [long] - how many indices in an ordered K-tuple (K), must be <=N; if K>N, then it will be reset to Min(1,N)
-    // will allocate an array of the appropriate dimension and zero it
-    // _NTupleStorage will set N=K=0 if the memory required to store the array exceeds MAX_LONG bytes (a good proxy for
-    // the maximum addressable space in the system)
+  _NTupleStorage(void) {
+    storageN = 0;
+    storageK = 0;
+  }
+  // null constructor; does next to nothing
+  _NTupleStorage(unsigned long, unsigned long);
+  // [long] - what is the maximum value for an index (N>=0; N=0 - empty set)
+  // [long] - how many indices in an ordered K-tuple (K), must be <=N; if K>N,
+  // then it will be reset to Min(1,N)
+  // will allocate an array of the appropriate dimension and zero it
+  // _NTupleStorage will set N=K=0 if the memory required to store the array
+  // exceeds MAX_LONG bytes (a good proxy for
+  // the maximum addressable space in the system)
 
-    virtual     ~_NTupleStorage (void) {};
+  virtual ~_NTupleStorage(void) {}
+  ;
 
-    virtual     BaseRef     makeDynamic (void);
-    // create a copy of the object dynamic copy
+  virtual BaseRef makeDynamic(void);
+  // create a copy of the object dynamic copy
 
-    // getters for N and K
-    unsigned long GetN      (void) {
-        return storageN;
-    }
-    unsigned long GetK      (void) {
-        return storageK;
-    }
+  // getters for N and K
+  unsigned long GetN(void) { return storageN; }
+  unsigned long GetK(void) { return storageK; }
 
-    bool            CheckKTuple     (_SimpleList&);
-    // modify (in-place) the argument to make it an ordered K-tuple; will also check dimensions and such
-    // returns true if the k-tuple if valid; false otherwise
+  bool CheckKTuple(_SimpleList &);
+  // modify (in-place) the argument to make it an ordered K-tuple; will also
+  // check dimensions and such
+  // returns true if the k-tuple if valid; false otherwise
 
-    unsigned long   Index           (_SimpleList&);
-    // return an index into the linear array pointed to by the K-tuple in the argument (ASSUMED to be valid here!)
+  unsigned long Index(_SimpleList &);
+  // return an index into the linear array pointed to by the K-tuple in the
+  // argument (ASSUMED to be valid here!)
 
-    _Parameter      DirectIndex     (unsigned long);
-    // retrieve a value using a direct index for the K-tuple (computed by Index)
+  _Parameter DirectIndex(unsigned long);
+  // retrieve a value using a direct index for the K-tuple (computed by Index)
 
-    unsigned long   Store           (_Parameter, _SimpleList&);
-    // associate a value with the K-tuple; returns the direct index for the value
+  unsigned long Store(_Parameter, _SimpleList &);
+  // associate a value with the K-tuple; returns the direct index for the value
 
-    _Parameter      Retrieve        (_SimpleList&);
-    // return the value associated with the K-tuple
+  _Parameter Retrieve(_SimpleList &);
+  // return the value associated with the K-tuple
 
-    void            IndexToTuple    (unsigned long, _SimpleList&);
-    // given a direct index in 0..(NcK-1); return a K-tuple corresponding to that index
-
+  void IndexToTuple(unsigned long, _SimpleList &);
+  // given a direct index in 0..(NcK-1); return a K-tuple corresponding to that
+  // index
 
 private:
 
-    unsigned long   storageN,
-             storageK;
+  unsigned long storageN, storageK;
 
-    _SimpleList     C_NK_Lookup; // an (K+1)x(N+1) linear array which stores I choose J in element (J,I)
+  _SimpleList
+  C_NK_Lookup; // an (K+1)x(N+1) linear array which stores I choose J in element
+               // (J,I)
 
 };
 

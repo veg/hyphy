@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,71 +37,36 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __HY_GLOBALS__
-#define     __HY_GLOBALS__
+#ifndef __HY_GLOBALS__
+#define __HY_GLOBALS__
 
 #include "batchlan.h"
 #include "parser.h"
 
-extern    bool
-    dropIntoDebugMode,
-    isInFunction,
-    terminateExecution,
+extern bool dropIntoDebugMode, isInFunction, terminateExecution,
     skipWarningMessages;
 
 ;
 
-extern    char
-    isDefiningATree;
+extern char isDefiningATree;
 
-extern      FILE
-    *     globalErrorFile ,
-    *     globalMessageFile
+extern FILE *globalErrorFile, *globalMessageFile;
 
-;
+extern _String blockWiseMatrix, errorFileName, messageFileName, randomSeed,
+    scanfLastFilePath, siteWiseMatrix;
 
+extern _SimpleList freeSlots;
 
-extern      _String
-    blockWiseMatrix,
-    errorFileName,
-    messageFileName,
-    randomSeed,
-    scanfLastFilePath,
-    siteWiseMatrix
+extern long globalRandSeed, systemCPUCount;
 
-;
+extern _Parameter dFPrintFormat, dFDefaultWidth;
 
-extern      _SimpleList
-    freeSlots
+extern _Variable *_n_, *_x_;
 
-;
+extern _AVLListX openFileHandles;
 
-extern      long
-    globalRandSeed,
-    systemCPUCount
-
-;
-
-
-extern _Parameter
-    dFPrintFormat,
-    dFDefaultWidth
-
-;
-
-
-extern      _Variable
-    *_n_,
-    *_x_
-;
-
-extern      _AVLListX
-    openFileHandles
-;
-
-#ifdef    __HYPHYMPI__
-    extern int _hy_mpi_node_rank;
+#ifdef __HYPHYMPI__
+extern int _hy_mpi_node_rank;
 #endif
-
 
 #endif

@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -44,46 +44,49 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 extern long likeFuncEvalCallCount;
 
-_CustomFunction::_CustomFunction (_String* arg)
-{
-    _String body    (*arg),
-            errMsg ;
+_CustomFunction::_CustomFunction(_String *arg) {
+  _String body(*arg), errMsg;
 
-    _FormulaParsingContext fpc (&errMsg, nil);
+  _FormulaParsingContext fpc(&errMsg, nil);
 
-    if (Parse (&myBody, body, fpc) == HY_FORMULA_EXPRESSION) {
-        _SimpleList myVars;
-        {
-            _AVLList al (&myVars);
-            myBody.ScanFForVariables(al,true,false,false);
-            al.ReorderList();
-        }
-        for (unsigned long k=0; k<myVars.lLength; k++)
-            if (LocateVar(myVars.lData[k])->IsIndependent()) {
-                GetIndependentVars() << myVars.lData[k];
-            }
-    } else {
-        WarnError (_String ("An invalid expression supplied for formula-based custom LF: '") & errMsg & '\'');
+  if (Parse(&myBody, body, fpc) == HY_FORMULA_EXPRESSION) {
+    _SimpleList myVars;
+    {
+      _AVLList al(&myVars);
+      myBody.ScanFForVariables(al, true, false, false);
+      al.ReorderList();
     }
+    for (unsigned long k = 0; k < myVars.lLength; k++)
+      if (LocateVar(myVars.lData[k])->IsIndependent()) {
+        GetIndependentVars() << myVars.lData[k];
+      }
+  } else {
+    WarnError(_String(
+        "An invalid expression supplied for formula-based custom LF: '") &
+              errMsg & '\'');
+  }
 }
 
-//_______________________________________________________________________________________
+//______________________________________________________________________________
+_Parameter _CustomFunction::Compute(void) {
 
-_Parameter _CustomFunction::Compute (void)
-{
-    likeFuncEvalCallCount++;
-    _SimpleList * iv = &GetIndependentVars ();
-    for (unsigned long i=0; i<iv->lLength; i++) {
-        _Parameter result = GetIthIndependent(i);
+  likeFuncEvalCallCount++;
 
-        if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
-            return -A_LARGE_NUMBER;
-        }
+  _SimpleList *iv = &GetIndependentVars();
+
+  for (unsigned long i = 0; i < iv->lLength; i++) {
+    _Parameter result = GetIthIndependent(i);
+
+    if (result < GetIthIndependentBound(i, true) ||
+        result > GetIthIndependentBound(i, false)) {
+      return -A_LARGE_NUMBER;
+
     }
+  }
 
-    _PMathObj res = myBody.Compute();
-    if (res) {
-        return res->Value();
-    }
-    return 0.0;
+  _PMathObj res = myBody.Compute();
+  if (res) {
+    return res->Value();
+  }
+  return 0.0;
 }

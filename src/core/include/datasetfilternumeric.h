@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,40 +37,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __DATASETFILTERNUMERIC__
-#define     __DATASETFILTERNUMERIC__
+#ifndef __DATASETFILTERNUMERIC__
+#define __DATASETFILTERNUMERIC__
 
 #include "datasetfilter.h"
 
-class _DataSetFilterNumeric:public _DataSetFilter
-{
+class _DataSetFilterNumeric : public _DataSetFilter {
 
 public:
 
-    _DataSetFilterNumeric                       (void) {
-    }
-    _DataSetFilterNumeric                       (_Matrix*, _List&,_DataSet*,long);
+  _DataSetFilterNumeric(void) {}
+  _DataSetFilterNumeric(_Matrix *, _List &, _DataSet *, long);
 
-    virtual  bool                                       IsNormalFilter          (void) {
-        return false;
-    }
+  virtual bool IsNormalFilter(void) { return false; }
 
+  virtual BaseRef makeDynamic(void);
+  virtual long GetDimension(bool) { return dimension; }
 
-    virtual  BaseRef                                    makeDynamic             (void);
-    virtual  long                                       GetDimension            (bool) {
-        return dimension;
-    }
+  _Parameter *getProbabilityVector(long, long, long = 0);
+  virtual bool CompareTwoSites(unsigned long, unsigned long, unsigned long);
 
-    _Parameter*                 getProbabilityVector    (long,long,long = 0);
-    virtual  bool               CompareTwoSites         (unsigned long, unsigned long,unsigned long);
-
-    long                    shifter,
-                            categoryShifter,
-                            categoryCount;
-    _Matrix                 probabilityVectors;
-    // N x M dense matrix
-    // N = spec count
-    // M = unique sites * dimension
+  long shifter, categoryShifter, categoryCount;
+  _Matrix probabilityVectors;
+  // N x M dense matrix
+  // N = spec count
+  // M = unique sites * dimension
 
 };
 

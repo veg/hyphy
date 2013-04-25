@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -39,61 +39,49 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "growingvector.h"
 
-_GrowingVector::_GrowingVector (bool iscol) : _Matrix (64,1,false,true)
-{
-    used = 0;
-    isColumn = iscol;
+_GrowingVector::_GrowingVector(bool iscol) : _Matrix(64, 1, false, true) {
+  used = 0;
+  isColumn = iscol;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-BaseRef     _GrowingVector::makeDynamic (void)
-{
-    _GrowingVector * result = (_GrowingVector*)checkPointer(new _GrowingVector);
-    result->_Matrix::Duplicate (this);
-    result->used = used;
-    result->vDim = 1;
-    result->isColumn = isColumn;
-    return result;
+//______________________________________________________________________________
+BaseRef _GrowingVector::makeDynamic(void) {
+  _GrowingVector *result = (_GrowingVector *)checkPointer(new _GrowingVector);
+  result->_Matrix::Duplicate(this);
+  result->used = used;
+  result->vDim = 1;
+  result->isColumn = isColumn;
+  return result;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-long        _GrowingVector::Store (_Parameter toStore)
-{
-    if (used < hDim) {
-        theData[used++] = toStore;  // increment AFTER argument is sent to function
-        return used-1;
-    } else {
-        Resize (used + MAX (used/8,64));    // allocate another block of 64
-        return Store (toStore);
-    }
+//______________________________________________________________________________
+long _GrowingVector::Store(_Parameter toStore) {
+  if (used < hDim) {
+    theData[used++] = toStore; // increment AFTER argument is sent to function
+    return used - 1;
+  } else {
+    Resize(used + MAX(used / 8, 64)); // allocate another block of 64
+    return Store(toStore);
+  }
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        _GrowingVector::operator << (const _SimpleList& theSource)
-{
-    for (long k = 0; k < theSource.lLength; k++) {
-        Store (theSource.lData[k]);
-    }
+//______________________________________________________________________________
+void _GrowingVector::operator<<(const _SimpleList &theSource) {
+  for (long k = 0; k < theSource.lLength; k++) {
+    Store(theSource.lData[k]);
+  }
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        _GrowingVector::Clear (void)
-{
-    _Matrix::Clear();
-    ZeroUsed();
-    vDim = 1;
+//______________________________________________________________________________
+void _GrowingVector::Clear(void) {
+  _Matrix::Clear();
+  ZeroUsed();
+  vDim = 1;
 }
 
-//_____________________________________________________________________________________________
-void _GrowingVector::Duplicate (BaseRef obj)
-{
-    _Matrix::Duplicate (obj);
-    used = ((_GrowingVector*)obj)->used;
-    isColumn = ((_GrowingVector*)obj)->isColumn;
+//______________________________________________________________________________
+void _GrowingVector::Duplicate(BaseRef obj) {
+  _Matrix::Duplicate(obj);
+  used = ((_GrowingVector *)obj)->used;
+  isColumn = ((_GrowingVector *)obj)->isColumn;
 }
-
-

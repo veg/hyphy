@@ -47,7 +47,7 @@ extern _String MATRIX_AGREEMENT, ANAL_COMP_FLAG, ANAL_MATRIX_TOLERANCE,
 _AssociativeList::_AssociativeList(void) : avl(&theData) {}
 
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 
 BaseRef _AssociativeList::makeDynamic(void) {
   _AssociativeList *newAL = new _AssociativeList();
@@ -55,7 +55,7 @@ BaseRef _AssociativeList::makeDynamic(void) {
   return newAL;
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 
 bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
                                                  bool doErrors,
@@ -93,14 +93,14 @@ bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
   return true;
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 
 BaseRef _AssociativeList::toStr(void) {
   _String defName("_hyphyAssociativeArray");
   return Serialize(defName);
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 
 void _AssociativeList::Duplicate(BaseRef br) {
   nInstances = 1;
@@ -114,13 +114,13 @@ void _AssociativeList::Duplicate(BaseRef br) {
   avl.root = copyMe->avl.root;
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 
 _PMathObj _AssociativeList::MCoord(_PMathObj p) {
   return new _FString((_String *)p->toStr());
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::MAccess(_PMathObj p) {
 
   long f;
@@ -141,7 +141,7 @@ _PMathObj _AssociativeList::MAccess(_PMathObj p) {
 
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
   long done = 0;
 
@@ -237,7 +237,7 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
   return new _Constant(done);
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::GetByKey(_String &key, long objType) {
 
   long f = avl.Find(&key);
@@ -252,7 +252,7 @@ _PMathObj _AssociativeList::GetByKey(_String &key, long objType) {
   return nil;
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::GetByKey(_String &key) {
   long f = avl.Find(&key);
 
@@ -263,13 +263,13 @@ _PMathObj _AssociativeList::GetByKey(_String &key) {
   return nil;
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::GetByKey(long nKey, long objType) {
   _String key(nKey);
   return GetByKey(key, objType);
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::DeleteByKey(_PMathObj p) {
   if (p->ObjectClass() == STRING) {
     avl.Delete(((_FString *)p)->theString, true);
@@ -287,7 +287,7 @@ void _AssociativeList::DeleteByKey(_PMathObj p) {
   }
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::MStore(_PMathObj p, _PMathObj inObject, bool repl,
                               long opCode) {
   if (!p) {
@@ -320,19 +320,19 @@ void _AssociativeList::MStore(_PMathObj p, _PMathObj inObject, bool repl,
   }
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::MStore(_String obj, _PMathObj inObject, bool repl) {
   _FString f(obj);
   MStore(&f, inObject, repl);
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::MStore(_String obj, _String info) {
   _FString inf(info);
   MStore(obj, &inf, true);
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _String *_AssociativeList::Serialize(_String &avlName) {
   _String *outString = new _String(1024L, true);
   checkPointer(outString);
@@ -370,13 +370,13 @@ _String *_AssociativeList::Serialize(_String &avlName) {
   return outString;
 }
 
-//__________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::Compute(void) { return this; }
 
-//__________________________________________________________________________________
+//______________________________________________________________________________
 _List *_AssociativeList::GetKeys(void) { return (_List *)avl.dataList; }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::FillInList(_List &fillMe) {
   _SimpleList hist;
   long ls, cn = avl.Traverser(hist, ls, avl.GetRoot());
@@ -390,7 +390,7 @@ void _AssociativeList::FillInList(_List &fillMe) {
   }
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 void _AssociativeList::Merge(_PMathObj p) {
 
   if (p == this) {
@@ -420,7 +420,7 @@ void _AssociativeList::Merge(_PMathObj p) {
   }
 }
 
-//_____________________________________________________________________________________________
+//______________________________________________________________________________
 _PMathObj _AssociativeList::Sum(void) {
   _Parameter sum = 0.;
 
@@ -456,7 +456,7 @@ _PMathObj _AssociativeList::Sum(void) {
   return new _Constant(sum);
 }
 
-//__________________________________________________________________________________
+//______________________________________________________________________________
 
 // execute this operation with the second arg if necessary
 _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,

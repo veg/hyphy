@@ -57,7 +57,7 @@
 #include "dmalloc.h"
 #endif
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 // global variables
 _String sqlOpen("SQL_OPEN"), sqlClose("SQL_CLOSE"), sqlRowData("SQL_ROW_DATA"),
     sqlColNames("SQL_COLUMN_NAMES"), seqAlignMap("SEQ_ALIGN_CHARACTER_MAP"),
@@ -100,7 +100,7 @@ _Trie _HY_ValidHBLExpressions;
 _AVLListX _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux),
     _HY_HBLCommandHelper (&_HY_HBLCommandHelperAux);
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _HBLCommandExtras *_hyInitCommandExtras(const long cut, const long conditions,
                                         _String commandInvocation,
                                         const char sep, const bool doTrim,
@@ -124,7 +124,7 @@ _HBLCommandExtras *_hyInitCommandExtras(const long cut, const long conditions,
 
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void _HBL_Init_Const_Arrays(void) {
   // init GetString lookups
   _HY_GetStringGlobalTypes.Insert(new _String("LikelihoodFunction"),
@@ -388,7 +388,7 @@ void _HBL_Init_Const_Arrays(void) {
 
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void InsertVarIDsInList(_AssociativeList *theList, _String theKey, _SimpleList &varIDs) {
   _FString arrayKey(theKey, false);
   _Matrix *mxEntry = nil;
@@ -410,7 +410,7 @@ void InsertVarIDsInList(_AssociativeList *theList, _String theKey, _SimpleList &
   theList->MStore(&arrayKey, mxEntry, false);
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void InsertStringListIntoAVL(_AssociativeList *theList, _String theKey,
                              _SimpleList &stringsToPick, _List &theStrings) {
 
@@ -435,7 +435,7 @@ void InsertStringListIntoAVL(_AssociativeList *theList, _String theKey,
 
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _Matrix *CheckMatrixArg(_String *mxName, bool onlyStrings) {
   _Variable *mVar = FetchVar(LocateVarByName(*mxName));
   if (mVar && mVar->ObjectClass() == MATRIX) {
@@ -448,7 +448,7 @@ _Matrix *CheckMatrixArg(_String *mxName, bool onlyStrings) {
   return nil;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _AssociativeList *CheckAssociativeListArg(_String *mxName) {
   _Variable *mVar = FetchVar(LocateVarByName(*mxName));
   if (mVar && mVar->ObjectClass() == ASSOCIATIVE_LIST) {
@@ -457,7 +457,7 @@ _AssociativeList *CheckAssociativeListArg(_String *mxName) {
   return nil;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
                         _List &theConstraints, _List &theParts,
                         _SimpleList &partIndex) {
@@ -598,7 +598,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
 
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void RetrieveModelComponents(long mid, _Matrix *&mm, _Matrix *&fv, bool &mbf) {
   if (mid >= 0 && mid < modelTypeList.lLength) {
     if (modelTypeList.lData[mid] == 0) {
@@ -618,7 +618,7 @@ void RetrieveModelComponents(long mid, _Matrix *&mm, _Matrix *&fv, bool &mbf) {
   }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void RetrieveModelComponents(long mid, _Variable *&mm, _Variable *&fv, bool &mbf) {
   if (mid >= 0 && modelTypeList.lData[mid] == 0) {
     mm = LocateVar(modelMatrixIndices.lData[mid]);
@@ -631,7 +631,7 @@ void RetrieveModelComponents(long mid, _Variable *&mm, _Variable *&fv, bool &mbf
   mbf = (fvi >= 0);
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 bool IsModelReversible(long mid) {
   _Matrix *m = nil, *f = nil;
   bool mbf;
@@ -642,7 +642,7 @@ bool IsModelReversible(long mid) {
   return false;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 bool IsModelOfExplicitForm(long modelID) {
   if (modelID != HY_NO_MODEL) {
     return modelTypeList.lData[modelID] != 0;
@@ -650,7 +650,7 @@ bool IsModelOfExplicitForm(long modelID) {
   return false;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 void ScanModelForVariables(long modelID, _AVLList &theReceptacle, bool inclG,
                            long modelID2, bool inclCat) {
   if (modelID != HY_NO_MODEL) {
@@ -667,7 +667,7 @@ void ScanModelForVariables(long modelID, _AVLList &theReceptacle, bool inclG,
   }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 _String _HYHBLTypeToText(long type) {
   _String result(128L, true);
   if (type & HY_BL_DATASET) {
@@ -703,7 +703,7 @@ _String _HYHBLTypeToText(long type) {
   return result;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 BaseRef _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
                                   bool errMsg, bool tryLiteralLookup) {
   long loc = -1;

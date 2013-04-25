@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,48 +37,46 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __GROWINGVECTOR__
-#define     __GROWINGVECTOR__
+#ifndef __GROWINGVECTOR__
+#define __GROWINGVECTOR__
 
 #include "matrix.h"
 
-class   _GrowingVector: public _Matrix
-// automatically growing matrix class
-{
+class _GrowingVector : public _Matrix
+                       // automatically growing matrix class
+                       {
 
 public:
-    _GrowingVector  (bool = true);
-    virtual     ~_GrowingVector (void) {};
+  _GrowingVector(bool = true);
+  virtual ~_GrowingVector(void) {}
+  ;
 
-    virtual     BaseRef     makeDynamic (void); // duplicate this object into a dynamic copy
-    virtual     void        Duplicate   (BaseRef); // duplicate an object from reference
+  virtual BaseRef
+  makeDynamic(void);               // duplicate this object into a dynamic copy
+  virtual void Duplicate(BaseRef); // duplicate an object from reference
 
-    virtual     void        Clear (void);
+  virtual void Clear(void);
 
-    virtual     long        GetHDim                     (void) {
-        if (isColumn) {
-            return GetUsed();
-        }
-        return 1;
+  virtual long GetHDim(void) {
+    if (isColumn) {
+      return GetUsed();
     }
-    virtual     long        GetVDim                     (void) {
-        if (!isColumn) {
-            return GetUsed();
-        }
-        return 1;
+    return 1;
+  }
+  virtual long GetVDim(void) {
+    if (!isColumn) {
+      return GetUsed();
     }
-    long   Store            (_Parameter);
-    long   GetUsed          (void) {
-        return used;
-    }
-    void     ZeroUsed       (void) {
-        used = 0;
-    }
+    return 1;
+  }
+  long Store(_Parameter);
+  long GetUsed(void) { return used; }
+  void ZeroUsed(void) { used = 0; }
 
-    void    operator <<     (const _SimpleList&);
+  void operator<<(const _SimpleList &);
 
-    long   used;
-    bool   isColumn;
+  long used;
+  bool isColumn;
 };
 
 #endif

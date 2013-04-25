@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,22 +37,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __CUSTOMFUNCTION__
-#define     __CUSTOMFUNCTION__
+#ifndef __CUSTOMFUNCTION__
+#define __CUSTOMFUNCTION__
 
-class   _CustomFunction: public _LikelihoodFunction
-{
+class _CustomFunction : public _LikelihoodFunction {
 
 public:
 
-    _CustomFunction         (_String*);
+  _CustomFunction(_String *);
 
-    virtual     _Parameter  Compute                 (void);
-    virtual     void        RescanAllVariables      (void) {}
+  virtual _Parameter Compute(void);
+  virtual void RescanAllVariables(void) {}
 
-
-
-    _Formula myBody;
+  _Formula myBody;
 };
 
 #endif
