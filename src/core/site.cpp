@@ -166,69 +166,6 @@ void _Site::Archive(void) {
   }
 }
 
-void _DataSetFilter::FindAllSitesLikeThisOne(long index,
-                                             _SimpleList &receptacle) {
-
-  long oindex = theOriginalOrder.Find(index), m;
-
-  if (oindex < 0) {
-    return;
-  }
-
-  if (theData->NoOfSpecies() == theNodeMap.lLength) {
-    long *matchMap = new long[unitLength];
-
-    checkPointer(matchMap);
-    for (m = 0; m < unitLength; m++) {
-      //matchMap[m] = theData->theMap.lData[theOriginalOrder.lData[oindex+1]];
-      matchMap[m] = theData->theMap.lData[theOriginalOrder.lData[oindex + m]];
-    }
-
-    for (long k = 0; k < theOriginalOrder.lLength; k += unitLength) {
-      for (m = 0; m < unitLength; m++) {
-        if (theData->theMap.lData[theOriginalOrder.lData[k + m]] !=
-            matchMap[m]) {
-          break;
-        }
-      }
-      if (m == unitLength)
-        for (m = 0; m < unitLength; m++) {
-          receptacle << theOriginalOrder.lData[k + m];
-        }
-    }
-
-    delete matchMap;
-  } else {
-    char **matchMap = (char **)MemAllocate(sizeof(char *) * unitLength);
-    checkPointer(matchMap);
-
-    for (m = 0; m < unitLength; m++) {
-      matchMap[m] = ((_Site *)(
-          ((BaseRef *)theData->lData)[theData->theMap.lData[oindex + m]]))->sData;
-    }
-    for (long k = 0; k < theOriginalOrder.lLength; k += unitLength) {
-      for (m = 0; m < unitLength; m++) {
-        char *checkStr = ((_Site *)(
-            ((BaseRef *)theData->lData)[theData->theMap.lData[k + m]]))->sData;
-        long t;
-        for (t = 0; t < theNodeMap.lLength; t++) {
-          if (checkStr[t] != matchMap[m][t]) {
-            break;
-          }
-        }
-        if (t < theNodeMap.lLength) {
-          break;
-        }
-      }
-      if (m == unitLength)
-        for (m = 0; m < unitLength; m++) {
-          receptacle << theOriginalOrder.lData[k + m];
-        }
-    }
-    delete matchMap;
-  }
-}
-
 //______________________________________________________________________________
 // reading the data set file in here
 // check whether the translation table needs to be refreshed
