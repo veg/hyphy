@@ -56,7 +56,6 @@ _DataSetFilter::~_DataSetFilter(void) {
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::CopyFilter(_DataSetFilter *copyFrom) {
 
   memcpy((char *)this, (char *)copyFrom, sizeof(_DataSetFilter));
@@ -77,7 +76,6 @@ void _DataSetFilter::CopyFilter(_DataSetFilter *copyFrom) {
 }
 
 //______________________________________________________________________________
-
 BaseRef _DataSetFilter::makeDynamic(void) {
   _DataSetFilter *r = new _DataSetFilter;
   checkPointer(r);
@@ -283,7 +281,6 @@ unsigned long _DataSetFilter::FindUniqueSequences(_SimpleList &indices,
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::SetFilter(_DataSet *ds, char unit,
                                _SimpleList &horizontalList,
                                _SimpleList &verticalList,
@@ -666,7 +663,6 @@ _DataSetFilter *_DataSetFilter::PairFilter(long index1, long index2,
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::MatchStartNEnd(_SimpleList &order, _SimpleList &positions,
                                     _SimpleList *parent) {
   if (order.lLength == 0) {
@@ -757,7 +753,6 @@ void _DataSetFilter::SetExclusions(_String *theList, bool filter) {
 }
 
 //______________________________________________________________________________
-
 _String *_DataSetFilter::GetExclusions(void) {
   _String *res = new _String(16L, true);
   checkPointer(res);
@@ -777,7 +772,6 @@ _String *_DataSetFilter::GetExclusions(void) {
 }
 
 //______________________________________________________________________________
-
 long _DataSetFilter::GetDimension(bool correct) {
   long result = theData->theTT->Dimension();
   for (long i = 1; i < unitLength; i++) {
@@ -790,7 +784,6 @@ long _DataSetFilter::GetDimension(bool correct) {
 }
 
 //______________________________________________________________________________
-
 _String &_DataSetFilter::operator()(unsigned long site, unsigned long pos) {
   if (!accessCache || accessCache->sLength != unitLength) {
     if (accessCache) {
@@ -817,7 +810,6 @@ _String &_DataSetFilter::operator()(unsigned long site, unsigned long pos) {
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::RetrieveState(unsigned long site, unsigned long pos,
                                    _String &reply, bool map) {
   long vIndex = theNodeMap.lData[pos];
@@ -852,7 +844,6 @@ void _DataSetFilter::RetrieveState(unsigned long site, unsigned long pos,
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::GrabSite(unsigned long site, unsigned long pos,
                               _String &storage) {
 
@@ -873,7 +864,6 @@ void _DataSetFilter::GrabSite(unsigned long site, unsigned long pos,
 }
 
 //______________________________________________________________________________
-
 void _DataSetFilter::GrabSite(unsigned long site, unsigned long pos, char *s) {
   long vIndex = theNodeMap.lData[pos];
   if (unitLength == 1) {
@@ -891,7 +881,6 @@ void _DataSetFilter::GrabSite(unsigned long site, unsigned long pos, char *s) {
 }
 
 //______________________________________________________________________________
-
 _SimpleList *_DataSetFilter::CountAndResolve(long pattern, _Parameter *storage,
                                              bool randomly) {
   // last cell in the list contains the count of distinct characters in the
@@ -1015,7 +1004,6 @@ _SimpleList *_DataSetFilter::CountAndResolve(long pattern, _Parameter *storage,
 }
 
 //______________________________________________________________________________
-
 _Matrix *_DataSetFilter::PairwiseCompare(_SimpleList *s1, _SimpleList *s2,
                                          _List *labels) {
 
@@ -3236,6 +3224,7 @@ void _DataSetFilter::internalToStr(FILE *dest, _String &rec) {
 
 }
 
+//______________________________________________________________________________
 void _DataSetFilter::SetMap(_String &s) {
   theNodeMap.Clear();
   if (s.Length()) {

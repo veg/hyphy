@@ -54,7 +54,6 @@ _AVLList::_AVLList(_SimpleList *d) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Find(BaseRef obj) {
 
   long curNode = root;
@@ -75,7 +74,6 @@ long _AVLList::Find(BaseRef obj) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::FindLong(long obj) {
   long curNode = root;
 
@@ -95,7 +93,6 @@ long _AVLList::FindLong(long obj) {
 }
 
 //______________________________________________________________________________
-
 char _AVLList::FindBest(BaseRef obj, long &lastNode) {
   long curNode = root, comp = 1;
 
@@ -116,7 +113,6 @@ char _AVLList::FindBest(BaseRef obj, long &lastNode) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Find(BaseRef obj, _SimpleList &hist) {
   long curNode = root;
 
@@ -138,7 +134,6 @@ long _AVLList::Find(BaseRef obj, _SimpleList &hist) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Next(long d, _SimpleList &hist) {
   if (d >= 0) {
     if (rightChild.lData[d] >= 0) {
@@ -174,7 +169,6 @@ long _AVLList::Next(long d, _SimpleList &hist) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::First(void) {
   long d = root;
   while (d >= 0 && leftChild.lData[d] >= 0) {
@@ -185,7 +179,6 @@ long _AVLList::First(void) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Last(void) {
   long d = root;
   while (d >= 0 && rightChild.lData[d] >= 0) {
@@ -196,7 +189,6 @@ long _AVLList::Last(void) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::GetByIndex(const long theIndex) {
   if (theIndex == 0) {
     return First();
@@ -223,8 +215,8 @@ long _AVLList::GetByIndex(const long theIndex) {
 
   return HY_NOT_FOUND;
 }
-//______________________________________________________________________________
 
+//______________________________________________________________________________
 long _AVLList::Prev(long d, _SimpleList &hist) {
   if (d >= 0) {
     if (leftChild.lData[d] >= 0) {
@@ -261,7 +253,6 @@ long _AVLList::Prev(long d, _SimpleList &hist) {
 }
 
 //______________________________________________________________________________
-
 void _AVLList::ReorderList(_SimpleList *s) {
   _SimpleList reorderMe(
       (unsigned long)(dataList->lLength - emptySlots.lLength + 1)),
@@ -301,7 +292,6 @@ void _AVLList::ReorderList(_SimpleList *s) {
 }
 
 //______________________________________________________________________________
-
 void _AVLList::ConsistencyCheck(void) {
   _SimpleList nodeStack((unsigned long) 32);
 
@@ -357,7 +347,6 @@ void _AVLList::ConsistencyCheck(void) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Traverser(_SimpleList &nodeStack, long &t, long r) {
   if (r >= 0) {
     t = r;
@@ -381,7 +370,6 @@ long _AVLList::Traverser(_SimpleList &nodeStack, long &t, long r) {
 }
 
 //______________________________________________________________________________
-
 BaseRef _AVLList::toStr(void) {
   _String *str = new _String(128L, true);
   checkPointer(str);
@@ -407,13 +395,11 @@ BaseRef _AVLList::toStr(void) {
 }
 
 //______________________________________________________________________________
-
 BaseRef _AVLList::Retrieve(long idx) {
   return ((BaseRef *)dataList->lData)[idx];
 }
 
 //______________________________________________________________________________
-
 void _AVLList::Clear(bool cL) {
   if (cL) {
     ((_List *)dataList)->Clear();
@@ -429,7 +415,6 @@ void _AVLList::Clear(bool cL) {
 }
 
 //______________________________________________________________________________
-
 long _AVLList::InsertData(BaseRef b, long, bool) {
   long w = (long) emptySlots.lLength - 1, n;
 
@@ -451,13 +436,11 @@ long _AVLList::InsertData(BaseRef b, long, bool) {
 }
 
 //______________________________________________________________________________
-
 unsigned long _AVLList::countitems(void) {
   return dataList->lLength - emptySlots.lLength;
 }
 
 //______________________________________________________________________________
-
 long _AVLList::Insert(BaseRef b, long xtra, bool cp, bool clear) {
   if (dataList->lLength - emptySlots.lLength) {
     long y = root, z = -1, p, q, n, w;
@@ -605,11 +588,9 @@ long _AVLList::Insert(BaseRef b, long xtra, bool cp, bool clear) {
 }
 
 //______________________________________________________________________________
-
 bool _AVLList::HasData(long idx) { return leftChild.lData[idx] != 2; }
 
 //______________________________________________________________________________
-
 void _AVLList::Delete(BaseRef b, bool delMe) {
 
   if (root == -1) {

@@ -59,7 +59,6 @@
 
 //______________________________________________________________________________
 // global variables
-
 _List dataSetList, dataSetNamesList, likeFuncList, // list of all datasets
     dataSetFilterList, dataSetFilterNamesList,
     likeFuncNamesList, // list of all dataset filters
@@ -154,7 +153,6 @@ _AVLList loadedLibraryPaths (&loadedLibraryPathsBackend);
 #ifdef __HYPHYMPI__
 
 //______________________________________________________________________________
-
 void ReportMPIError(int code, bool send) {
   if (code != MPI_SUCCESS) {
     _String errMsg = "MPI Error while ";
@@ -171,7 +169,6 @@ void ReportMPIError(int code, bool send) {
 #define MPI_SEND_CHUNK 0xFFFFFFL
 
 //______________________________________________________________________________
-
 void MPISendString(_String &theMessage, long destID, bool isError) {
   long messageLength = theMessage.sLength, transferCount = 0;
 
@@ -282,7 +279,6 @@ _String *MPIRecvString(long senderT, long &senderID) {
 #endif
 
 //______________________________________________________________________________
-
 _String GetStringFromFormula(_String *data, _VariableContainer *theP) {
   _Formula nameForm(*data, theP);
   _PMathObj formRes = nameForm.Compute();
@@ -295,7 +291,6 @@ _String GetStringFromFormula(_String *data, _VariableContainer *theP) {
 }
 
 //______________________________________________________________________________
-
 _String *ProcessCommandArgument(_String *data) {
   if (data->sLength > 1 && data->sData[data->sLength - 1] == '&') {
     _String argName(*data, 0, data->sLength - 2);
@@ -314,7 +309,6 @@ _String *ProcessCommandArgument(_String *data) {
 }
 
 //______________________________________________________________________________
-
 bool numericalParameterSuccessFlag = true;
 
 _Parameter ProcessNumericArgument(_String *data, _VariableContainer *theP,
@@ -348,7 +342,6 @@ _Parameter ProcessNumericArgument(_String *data, _VariableContainer *theP,
 }
 
 //______________________________________________________________________________
-
 _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
                                   long objectType,
                                   _ExecutionList *currentProgram) {
@@ -370,7 +363,6 @@ _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
 }
 
 //______________________________________________________________________________
-
 _String ProcessLiteralArgument(_String *data, _VariableContainer *theP,
                                _ExecutionList *currentProgram) {
   _String errMsg;
@@ -390,7 +382,6 @@ _String ProcessLiteralArgument(_String *data, _VariableContainer *theP,
 }
 
 //______________________________________________________________________________
-
 _AssociativeList *ProcessDictionaryArgument(_String *data,
                                             _VariableContainer *theP,
                                             _ExecutionList *currentProgram) {
@@ -615,7 +606,6 @@ void KillLFRecord(long lfID, bool completeKill) {
 }
 
 //______________________________________________________________________________
-
 void KillLFRecordFull(long lfID) {
   _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(lfID);
 
@@ -647,7 +637,6 @@ void KillLFRecordFull(long lfID) {
 }
 
 //______________________________________________________________________________
-
 void KillDataSetRecord(long dsID) {
   if (dsID < dataSetList.lLength - 1) {
     DeleteObject(dataSetList(dsID));
@@ -668,7 +657,6 @@ void KillDataSetRecord(long dsID) {
 }
 
 //______________________________________________________________________________
-
 void KillExplicitModelFormulae(void) {
   for (long i = 0; i < modelTypeList.lLength; i++)
     if (modelTypeList.lData[i]) {
@@ -677,7 +665,6 @@ void KillExplicitModelFormulae(void) {
 }
 
 //______________________________________________________________________________
-
 void KillModelRecord(long mdID) {
   if (lastMatrixDeclared == mdID) {
     lastMatrixDeclared = -1;

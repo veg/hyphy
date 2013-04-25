@@ -44,15 +44,12 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #endif
 
 //______________________________________________________________________________
-
 _AVLListXL::_AVLListXL(_SimpleList *d) : _AVLList(d) {}
 
 //______________________________________________________________________________
-
 BaseRef _AVLListXL::GetXtra(long d) { return xtraD(d); }
 
 //______________________________________________________________________________
-
 BaseRef _AVLListXL::GetDataByKey(BaseRef key) {
   long f = Find(key);
   if (f < 0) {
@@ -62,13 +59,11 @@ BaseRef _AVLListXL::GetDataByKey(BaseRef key) {
 }
 
 //______________________________________________________________________________
-
 void _AVLListXL::SetXtra(long i, BaseRef d, bool dup) {
   xtraD.Replace(i, d, dup);
 }
 
 //______________________________________________________________________________
-
 BaseRef _AVLListXL::toStr(void) {
   _String *str = new _String(128L, true);
   checkPointer(str);
@@ -96,7 +91,6 @@ BaseRef _AVLListXL::toStr(void) {
 }
 
 //______________________________________________________________________________
-
 long _AVLListXL::UpdateValue(BaseRef b, BaseRef d, bool do_copy,
                              bool copy_key) {
   long exists = Find(b);
@@ -109,14 +103,12 @@ long _AVLListXL::UpdateValue(BaseRef b, BaseRef d, bool do_copy,
 }
 
 //______________________________________________________________________________
-
 void _AVLListXL::Clear(bool cL) {
   xtraD.Clear();
   _AVLList::Clear(cL);
 }
 
 //______________________________________________________________________________
-
 long _AVLListXL::InsertData(BaseRef b, long xl, bool cp) {
   long w = (long) emptySlots.lLength - 1, n;
 
@@ -148,7 +140,6 @@ long _AVLListXL::InsertData(BaseRef b, long xl, bool cp) {
 }
 
 //______________________________________________________________________________
-
 void _AVLListXL::DeleteXtra(long i) {
   DeleteObject(((BaseRef *)xtraD.lData)[i]);
   (((BaseRef *)xtraD.lData)[i]) = nil;

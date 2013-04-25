@@ -48,7 +48,6 @@ _AssociativeList::_AssociativeList(void) : avl(&theData) {}
 
 
 //______________________________________________________________________________
-
 BaseRef _AssociativeList::makeDynamic(void) {
   _AssociativeList *newAL = new _AssociativeList();
   newAL->Duplicate(this);
@@ -56,7 +55,6 @@ BaseRef _AssociativeList::makeDynamic(void) {
 }
 
 //______________________________________________________________________________
-
 bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
                                                  bool doErrors,
                                                  _VariableContainer *theP) {
@@ -94,14 +92,12 @@ bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
 }
 
 //______________________________________________________________________________
-
 BaseRef _AssociativeList::toStr(void) {
   _String defName("_hyphyAssociativeArray");
   return Serialize(defName);
 }
 
 //______________________________________________________________________________
-
 void _AssociativeList::Duplicate(BaseRef br) {
   nInstances = 1;
   _AssociativeList *copyMe = (_AssociativeList *)br;
@@ -115,7 +111,6 @@ void _AssociativeList::Duplicate(BaseRef br) {
 }
 
 //______________________________________________________________________________
-
 _PMathObj _AssociativeList::MCoord(_PMathObj p) {
   return new _FString((_String *)p->toStr());
 }
@@ -457,7 +452,6 @@ _PMathObj _AssociativeList::Sum(void) {
 }
 
 //______________________________________________________________________________
-
 // execute this operation with the second arg if necessary
 _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
                                     _hyExecutionContext *context) {

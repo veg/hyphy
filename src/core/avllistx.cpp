@@ -45,26 +45,21 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #endif
 
 //______________________________________________________________________________
-
 _AVLListX::_AVLListX(_SimpleList *d) : _AVLList(d) {}
 
 //______________________________________________________________________________
-
 long _AVLListX::GetXtra(long d) { return xtraD.lData[d]; }
 
 //______________________________________________________________________________
-
 void _AVLListX::SetXtra(long i, long d) { xtraD.lData[i] = d; }
 
 //______________________________________________________________________________
-
 void _AVLListX::Clear(bool cL) {
   xtraD.Clear();
   _AVLList::Clear(cL);
 }
 
 //______________________________________________________________________________
-
 BaseRef _AVLListX::toStr(void) {
   _String *str = new _String(128L, true);
   checkPointer(str);
@@ -92,7 +87,6 @@ BaseRef _AVLListX::toStr(void) {
 }
 
 //______________________________________________________________________________
-
 long _AVLListX::InsertData(BaseRef b, long d, bool) {
   long w = (long) emptySlots.lLength - 1, n;
 
@@ -116,7 +110,6 @@ long _AVLListX::InsertData(BaseRef b, long d, bool) {
 }
 
 //______________________________________________________________________________
-
 long _AVLListX::UpdateValue(BaseRef b, long d, long op) {
   long exists = Find(b);
   if (exists >= 0) {
@@ -132,11 +125,9 @@ long _AVLListX::UpdateValue(BaseRef b, long d, long op) {
 }
 
 //______________________________________________________________________________
-
 void _AVLListX::DeleteXtra(long i) { xtraD.lData[i] = -1; }
 
 //______________________________________________________________________________
-
 void _AVLListX::PopulateFromList(_List &src) {
   Clear(false);
   for (unsigned long k = 0; k < src.lLength; k++) {

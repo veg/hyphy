@@ -1091,7 +1091,6 @@ void _LikelihoodFunction::Duplicate(BaseRef obj) {
     }
 }
 
-
 //______________________________________________________________________________
 _SimpleList &_LikelihoodFunction::GetIndependentVars(void) { return indexInd; }
 
@@ -1127,7 +1126,6 @@ _Parameter _LikelihoodFunction::GetIthIndependent(long index) {
     }
     return ((_Constant *)LocateVar(indexInd.lData[index])->Compute())->Value();
 }
-
 
 //______________________________________________________________________________
 _Parameter _LikelihoodFunction::GetIthIndependentBound(long index,
@@ -1363,8 +1361,6 @@ void _LikelihoodFunction::MPI_LF_Compute(long senderID, bool partMode)
     //ReportWarning (_String("Exiting slave loop after step  ") & loopie);
 #endif
 }
-
-
 
 //______________________________________________________________________________
 _Matrix *
@@ -1687,7 +1683,6 @@ long _LikelihoodFunction::PartitionLengths(char runMode,
     return maxDim;
 }
 
-
 //______________________________________________________________________________
 void _LikelihoodFunction::AllocateSiteResults(void) {
     long dim = PartitionLengths(0),
@@ -1708,9 +1703,6 @@ void _LikelihoodFunction::ZeroSiteResults(void) {
         siteScalerBuffer.Populate(upperLimit, 0, 0);
     }
 }
-
-
-//______________________________________________________________________________
 
 #ifndef __HYPHYMPI__
 bool _LikelihoodFunction::SendOffToMPI(long) {

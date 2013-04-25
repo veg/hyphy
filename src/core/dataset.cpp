@@ -801,7 +801,6 @@ _DataSet *_DataSet::Concatenate(_SimpleList ref) {
 }
 
 //______________________________________________________________________________
-
 _DataSet *_DataSet::Combine(_SimpleList ref) {
 
   // combines (adds rows together) several datasets
@@ -873,7 +872,6 @@ _DataSet *_DataSet::Combine(_SimpleList ref) {
 
 //______________________________________________________________________________
 //  20110610: SLKP, some cleanup and refactoring
-
 void _DataSet::ProcessPartition(_String &input2, _SimpleList &target,
                                 bool isVertical, _SimpleList *additionalFilter,
                                 _SimpleList *otherDimension) {
@@ -1141,7 +1139,6 @@ void _DataSet::ProcessPartition(_String &input2, _SimpleList &target,
 }
 
 //______________________________________________________________________________
-
 _Matrix *_DataSet::HarvestFrequencies(char unit, char atom, bool posSpec,
                                       _SimpleList &hSegmentation,
                                       _SimpleList &vSegmentation,

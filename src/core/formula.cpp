@@ -1696,7 +1696,6 @@ bool _Formula::EqualFormula(_Formula *f) {
 
 //______________________________________________________________________________
 // compute the value of the formula
-
 _PMathObj _Formula::ConstructPolynomial(void) {
   theStack.Reset();
   bool wellDone = true;

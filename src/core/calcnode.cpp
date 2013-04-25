@@ -53,11 +53,6 @@ extern _String VerbosityLevelString, BRANCH_LENGTH_STENCIL;
 #endif
 
 //______________________________________________________________________________
-
-//______________________________________________________________________________
-
-//______________________________________________________________________________
-
 _CalcNode::_CalcNode() {
   theProbs = nil; // default constructor, doesn't do much
   compExp = nil;
@@ -205,7 +200,6 @@ void _CalcNode::SetModel(long modelID, _AVLListXL *varCache) {
 }
 
 //______________________________________________________________________________
-
 long _CalcNode::SetDependance(long varIndex) {
   varIndex = _VariableContainer::SetDependance(varIndex);
   if (varIndex >= 0) {
@@ -224,7 +218,6 @@ long _CalcNode::SetDependance(long varIndex) {
 }
 
 //______________________________________________________________________________
-
 void _CalcNode::SetCodeBase(int codeBase) {
   if (codeBase > 0) {
     if ((codeBase != cBase) || !theProbs) {
@@ -251,7 +244,6 @@ void _CalcNode::SetCodeBase(int codeBase) {
 void _CalcNode::SetCompMatrix(long categID) { compExp = GetCompExp(categID); }
 
 //______________________________________________________________________________
-
 _CalcNode::~_CalcNode(void) {
 
 #ifndef __HYALTIVEC__
@@ -269,7 +261,6 @@ _CalcNode::~_CalcNode(void) {
 }
 
 //______________________________________________________________________________
-
 long _CalcNode::FreeUpMemory(long) {
   long res = 0;
   if (compExp && referenceNode < 0) {
@@ -281,7 +272,6 @@ long _CalcNode::FreeUpMemory(long) {
 }
 
 //______________________________________________________________________________
-
 void _CalcNode::RemoveModel(void) {
   Clear();
   if (compExp && referenceNode < 0) {
@@ -291,7 +281,6 @@ void _CalcNode::RemoveModel(void) {
 }
 
 //______________________________________________________________________________
-
 void _CalcNode::ReplaceModel(_String &modelName,
                              _VariableContainer *theConext) {
   RemoveModel();
@@ -310,7 +299,6 @@ bool _CalcNode::MatchSubtree(_CalcNode *mNode) {
 }
 
 //______________________________________________________________________________
-
 _Parameter _CalcNode::BranchLength(void) {
 
   if (theModel < 0) {
@@ -383,11 +371,9 @@ _Parameter _CalcNode::BranchLength(void) {
 }
 
 //______________________________________________________________________________
-
 _Parameter &_CalcNode::operator[](unsigned long i) { return theProbs[i]; }
 
 //______________________________________________________________________________
-
 BaseRef _CalcNode::toStr(void) {
   _String *res = new _String(16L, true);
   checkPointer(res);
@@ -414,7 +400,6 @@ BaseRef _CalcNode::toStr(void) {
 }
 
 //______________________________________________________________________________
-
 void _CalcNode::Duplicate(BaseRef theO) {
   _VariableContainer::Duplicate(theO);
   cBase = 0;
@@ -427,7 +412,6 @@ void _CalcNode::Duplicate(BaseRef theO) {
 }
 
 //______________________________________________________________________________
-
 bool _CalcNode::HasChanged(void) {
   if (_VariableContainer::HasChanged()) {
     return true;
@@ -440,7 +424,6 @@ bool _CalcNode::HasChanged(void) {
 }
 
 //______________________________________________________________________________
-
 long _CalcNode::CheckForReferenceNode(void) {
   long rN = -1, idx = 0;
 
@@ -515,7 +498,6 @@ long _CalcNode::CheckForReferenceNode(void) {
 }
 
 //______________________________________________________________________________
-
 bool _CalcNode::NeedToExponentiate(long catID) {
   if (isInOptimize && referenceNode >= 0) {
     return ((_CalcNode *)LocateVar(referenceNode))->NeedToExponentiate(catID);
@@ -727,7 +709,6 @@ _Matrix *_CalcNode::ComputeModelMatrix(bool) {
 }
 
 //______________________________________________________________________________
-
 _Matrix *_CalcNode::GetCompExp(long catID) {
   if (catID == -1) {
     return compExp;
@@ -741,7 +722,6 @@ _Matrix *_CalcNode::GetCompExp(long catID) {
 }
 
 //______________________________________________________________________________
-
 BaseRef _CalcNode::makeDynamic(void) {
   _CalcNode *res = new (_CalcNode);
   checkPointer(res);
@@ -769,12 +749,10 @@ BaseRef _CalcNode::makeDynamic(void) {
 }
 
 //______________________________________________________________________________
-
 _PMathObj _CalcNode::Compute(void) { return this; }
 
 #ifdef __MP__
 //______________________________________________________________________________
-
 void *MatrixUpdateFunction(void *arg) {
   ThreadMatrixTask *theTask = (ThreadMatrixTask *)arg;
   for (long k = theTask->startAt; k < theTask->endAt; k++) {
@@ -786,7 +764,6 @@ void *MatrixUpdateFunction(void *arg) {
 #endif
 
 //______________________________________________________________________________
-
 node<long> *_CalcNode::LocateMeInTree(void) {
 
   _String baseNode = GetName()->Cut(0, GetName()->Find('.') - 1);
@@ -804,9 +781,6 @@ node<long> *_CalcNode::LocateMeInTree(void) {
 }
 
 //______________________________________________________________________________
-
-//______________________________________________________________________________
-
 long _CalcNode::ConvertToSimpleMatrix(void) {
   _Formula *mf = GetExplicitFormModel();
   if (mf) {
@@ -827,7 +801,6 @@ long _CalcNode::ConvertToSimpleMatrix(void) {
 }
 
 //______________________________________________________________________________
-
 void _CalcNode::ConvertFromSimpleMatrix(void) {
   _Formula *mf = GetExplicitFormModel();
   if (mf) {
@@ -847,7 +820,6 @@ void _CalcNode::ConvertFromSimpleMatrix(void) {
 }
 
 //______________________________________________________________________________
-
 _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
                                bool first, char rooted) {
   long descendants = whereAmI->get_num_nodes(),
@@ -989,6 +961,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
   return nil;
 }
 
+//______________________________________________________________________________
 void _CalcNode::SetupCategoryMap(_List &containerVariables,
                                  _SimpleList &classCounter,
                                  _SimpleList &multipliers) {
@@ -1064,6 +1037,7 @@ void _CalcNode::SetupCategoryMap(_List &containerVariables,
 
 }
 
+//______________________________________________________________________________
 _VariableContainer *_CalcNode::ParentTree(void) {
   _String parentTree = ParentObjectName();
   _VariableContainer *theParent =

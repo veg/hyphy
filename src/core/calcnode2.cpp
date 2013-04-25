@@ -68,8 +68,7 @@ _GrowingVector _scalerMultipliers, _scalerDividers;
 
 //_Parameter          eval_buffer [600];
 
-/*----------------------------------------------------------------------------------------------------------*/
-
+//----------------------------------------------------------------------------------------------------------
 inline void _handle4x4_pruning_case(double *childVector, double *tMatrix,
                                     double *parentConditionals) {
 #ifdef _SLKP_USE_SSE_INTRINSICS
@@ -128,8 +127,7 @@ inline void _handle4x4_pruning_case(double *childVector, double *tMatrix,
 
 }
 
-/*----------------------------------------------------------------------------------------------------------*/
-
+//----------------------------------------------------------------------------------------------------------
 _Parameter acquireScalerMultiplier(long s) {
   if (s > 0) {
     if (s >= _scalerMultipliers.used) {

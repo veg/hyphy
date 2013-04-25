@@ -807,7 +807,6 @@ BaseRef _ElementaryCommand::toStr(void) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -867,7 +866,6 @@ void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase4(_ExecutionList &chain) {
   chain.currentCommand++;
   if (simpleParameters.lLength == 2) {
@@ -948,7 +946,6 @@ void _ElementaryCommand::ExecuteCase4(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase5(_ExecutionList &chain) {
   chain.currentCommand++;
   FILE *df;
@@ -1025,7 +1022,6 @@ void _ElementaryCommand::ExecuteCase5(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase11(
     _ExecutionList &chain) /*
                             code cleanup SLKP 20090316
@@ -1201,7 +1197,6 @@ void _ElementaryCommand::ExecuteCase11(
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
   chain.currentCommand++;
   SetStatusLine("Simulating Data");
@@ -1323,7 +1318,6 @@ void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase38(_ExecutionList &chain, bool sample) {
   chain.currentCommand++;
   SetStatusLine("Reconstructing Ancestors");
@@ -1377,7 +1371,6 @@ void _ElementaryCommand::ExecuteCase38(_ExecutionList &chain, bool sample) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase39(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -1575,6 +1568,7 @@ void _ElementaryCommand::ExecuteCase39(_ExecutionList &chain) {
   }
 }
 
+//______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase40(_ExecutionList &chain) {
   chain.currentCommand++;
   _String errMsg;
@@ -2018,6 +2012,7 @@ void _ElementaryCommand::ExecuteCase40(_ExecutionList &chain) {
 #endif
 }
 
+//______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase41(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -2084,7 +2079,6 @@ void _ElementaryCommand::ExecuteCase41(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase25(_ExecutionList &chain, bool issscanf) {
   chain.currentCommand++;
   // first of all obtain the string to be parsed
@@ -2367,8 +2361,8 @@ void _ElementaryCommand::ExecuteCase25(_ExecutionList &chain, bool issscanf) {
     DeleteObject(data);
   }
 }
-//______________________________________________________________________________
 
+//______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
 
   // 20100312 SLKP: added matrix-expression based model
@@ -3035,6 +3029,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
   }
 }
 
+//______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase36(_ExecutionList &chain) {
   chain.currentCommand++;
   _String *currentArgument = (_String *)parameters(0), errMsg, result;
@@ -3243,7 +3238,6 @@ void _ElementaryCommand::ExecuteCase37(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase43(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -3309,7 +3303,6 @@ void _ElementaryCommand::ExecuteCase43(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase44(_ExecutionList &chain) {
 
   chain.currentCommand++;
@@ -3380,7 +3373,6 @@ void _ElementaryCommand::ExecuteCase44(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase45(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -3420,7 +3412,6 @@ void _ElementaryCommand::ExecuteCase45(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase46(_ExecutionList &chain) {
 
   chain.currentCommand++;
@@ -3570,7 +3561,6 @@ void _ElementaryCommand::ExecuteCase46(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase47(_ExecutionList &chain) {
 
   chain.currentCommand++;
@@ -3612,7 +3602,6 @@ void _ElementaryCommand::ExecuteCase47(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 
   chain.currentCommand++;
@@ -3938,7 +3927,6 @@ void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 bool _ElementaryCommand::Execute(
     _ExecutionList &chain) // perform this command in a given list
     {
@@ -5949,6 +5937,7 @@ bool _ElementaryCommand::ConstructReturn(_String &source,
   return true;
 }
 
+//______________________________________________________________________________
 bool _ElementaryCommand::ExtractValidateAddHBLCommand(
     _String &current_stream, const long command_code, _List *pieces,
     _HBLCommandExtras *command_spec, _ExecutionList &command_list) {
@@ -5963,6 +5952,7 @@ bool _ElementaryCommand::ExtractValidateAddHBLCommand(
   return true;
 }
 
+//______________________________________________________________________________
 // syntax: DoSQL (dbID,action string|file name,<callback ID>)
 bool _ElementaryCommand::ConstructDoSQL(_String &source, _ExecutionList &target)
 {
@@ -7180,7 +7170,6 @@ void _ElementaryCommand::ExecuteCase26(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase57(_ExecutionList &chain) {
 
   chain.currentCommand++;
@@ -7331,7 +7320,6 @@ void _ElementaryCommand::ExecuteCase58(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
-
 void _ElementaryCommand::ExecuteCase61(_ExecutionList &chain) {
 
   chain.currentCommand++;

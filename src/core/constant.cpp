@@ -87,15 +87,15 @@ _Constant::_Constant (_Parameter value)
 {
     theValue = value;
 }
-//______________________________________________________________________________
 
+//______________________________________________________________________________
 void _Constant::Initialize (void)
 {
     BaseObj::Initialize();
     theValue = 0;
 }
-//______________________________________________________________________________
 
+//______________________________________________________________________________
 void _Constant::Duplicate (BaseRef c)
 {
     BaseObj::Initialize();
@@ -103,7 +103,6 @@ void _Constant::Duplicate (BaseRef c)
 }
 
 //______________________________________________________________________________
-
 BaseRef _Constant::makeDynamic (void)
 {
     _Constant * res = (_Constant*)checkPointer(new _Constant);
@@ -112,7 +111,6 @@ BaseRef _Constant::makeDynamic (void)
 }
 
 //______________________________________________________________________________
-
 _Constant::_Constant (_String& s)
 {
     theValue = atof (s.sData);
@@ -129,6 +127,7 @@ _Parameter    _Constant::Value (void)
 {
     return theValue;
 }
+
 //______________________________________________________________________________
 BaseRef _Constant::toStr(void)
 {
@@ -277,11 +276,13 @@ _PMathObj _Constant::Tan (void)
 {
     return     new _Constant  (tan(theValue));
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::Exp (void)
 {
     return     new _Constant  (exp(theValue));
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
 {
@@ -325,16 +326,19 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     _String    t (buffer);
     return     new _FString (t);
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::Log (void)
 {
     return     new _Constant  (log(theValue));
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::Sqrt (void)
 {
     return     new _Constant  (sqrt(theValue));
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::Arctan (void)
 {
@@ -527,7 +531,6 @@ _PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
     DeleteObject (gb);
     return nil;
 }
-
 
 //______________________________________________________________________________
 _PMathObj _Constant::IGamma (_PMathObj arg)
@@ -735,6 +738,7 @@ _PMathObj _Constant::GreaterEq (_PMathObj theObj)
         return nil;
     }
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::AreEqual (_PMathObj theObj)
 {
@@ -751,6 +755,7 @@ _PMathObj _Constant::AreEqual (_PMathObj theObj)
 
     return new _Constant(fabs ((a-b)/a)<tolerance);
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::NotEqual (_PMathObj theObj)
 {
@@ -766,6 +771,7 @@ _PMathObj _Constant::NotEqual (_PMathObj theObj)
 
     return new _Constant(fabs ((a-b)/a)>=tolerance);
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::LAnd (_PMathObj theObj)
 {
@@ -774,6 +780,7 @@ _PMathObj _Constant::LAnd (_PMathObj theObj)
     }
     return new _Constant ((long)(theValue)&&(long)(((_Constant*)theObj)->theValue));
 }
+
 //______________________________________________________________________________
 _PMathObj _Constant::LOr (_PMathObj theObj)
 {

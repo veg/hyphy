@@ -38,7 +38,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "math.h"
 
 //______________________________________________________________________________
-
 _DataSet *lastNexusDataMatrix = nil;
 _String nexusBFBody;
 
