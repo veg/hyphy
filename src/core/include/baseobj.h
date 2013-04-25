@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -41,13 +41,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HBASEOBJ_
 //#pragma once
 
-
-typedef char         * Ptr;
-typedef double       _Parameter; 
+typedef char *Ptr;
+typedef double _Parameter;
 
 #include "defines.h"
 
-#ifdef      __HEADLESS__
+#ifdef __HEADLESS__
 #include "THyPhy.h"
 #endif
 
@@ -59,52 +58,38 @@ typedef double       _Parameter;
 
 #include "stdio.h"
 
+class BaseObj {
 
-class BaseObj
-{
-
-    //base object class
+  //base object class
 public:
 
-    BaseObj();
+  BaseObj();
 
-    virtual ~BaseObj(void) {}
+  virtual ~BaseObj(void) {}
 
-    virtual BaseObj* toStr (void);
+  virtual BaseObj *toStr(void);
 
-    virtual BaseObj* toErrStr (void);
+  virtual BaseObj *toErrStr(void);
 
-    virtual void     toFileStr (FILE*);
+  virtual void toFileStr(FILE *);
 
-    virtual BaseObj* makeDynamic (void);
+  virtual BaseObj *makeDynamic(void);
 
-    virtual long     FreeUpMemory (long) {
-        return 0L;
-    }
+  virtual long FreeUpMemory(long) { return 0L; }
 
-    virtual void     Initialize (void) {
-        nInstances=1;
-    }
+  virtual void Initialize(void) { nInstances = 1; }
 
-    virtual void     Duplicate (BaseObj* ref) {
-        nInstances=++ref->nInstances;
-    }
+  virtual void Duplicate(BaseObj *ref) { nInstances = ++ref->nInstances; }
 
-    virtual void     AddAReference (void)     {
-        nInstances ++;
-    }
+  virtual void AddAReference(void) { nInstances++; }
 
-    virtual void     RemoveAReference (void)     {
-        nInstances --;
-    }
+  virtual void RemoveAReference(void) { nInstances--; }
 
-    long             nInstances;
-
+  long nInstances;
 
 };
 
-typedef BaseObj*  BaseRef;
-
+typedef BaseObj *BaseRef;
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
 #include <pmmintrin.h>

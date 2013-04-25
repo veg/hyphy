@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -44,64 +44,60 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "helperfunctions.h"
 
 //_____________________________________________________________________________
-class _AVLList: public BaseObj
-{
+class _AVLList : public BaseObj {
 
-    public:
+public:
 
-        //Data Members
-        _SimpleList *dataList,
-                    leftChild,
-                    rightChild,
-                    balanceFactor,
-                    emptySlots;
+  //Data Members
+  _SimpleList *dataList, leftChild, rightChild, balanceFactor, emptySlots;
 
-        long root;
+  long root;
 
-        //Methods
-        _AVLList(_SimpleList*);
+  //Methods
+  _AVLList(_SimpleList *);
 
-        virtual ~_AVLList(void){}
-        virtual void Clear(bool = false);
-        virtual bool HasData(long);
+  virtual ~_AVLList(void) {}
+  virtual void Clear(bool = false);
+  virtual bool HasData(long);
 
-        virtual void ReorderList(_SimpleList* = nil);
-        virtual long InsertData(BaseRef, long, bool);
-        virtual BaseRef toStr(void);
-        virtual long Traverser(_SimpleList&, long &, long = -1);
-        virtual long GetRoot(void){return root;}
-        virtual void DeleteXtra(long){};
-        virtual void DeleteAll(bool cL){
-            Clear(cL);        
-            DeleteObject(dataList);
-        }
+  virtual void ReorderList(_SimpleList * = nil);
+  virtual long InsertData(BaseRef, long, bool);
+  virtual BaseRef toStr(void);
+  virtual long Traverser(_SimpleList &, long &, long = -1);
+  virtual long GetRoot(void) { return root; }
+  virtual void DeleteXtra(long) {}
+  ;
+  virtual void DeleteAll(bool cL) {
+    Clear(cL);
+    DeleteObject(dataList);
+  }
 
-        unsigned long countitems(void);
+  unsigned long countitems(void);
 
-        // 20100623: a shortcut function to look for integers only
-        // avoids calling ::Compare
+  // 20100623: a shortcut function to look for integers only
+  // avoids calling ::Compare
 
-        long Find(BaseRef);
-        long Find(BaseRef,_SimpleList&);
-        long FindLong(long);
-        char FindBest(BaseRef, long&);
+  long Find(BaseRef);
+  long Find(BaseRef, _SimpleList &);
+  long FindLong(long);
+  char FindBest(BaseRef, long &);
 
-        long Next(long,_SimpleList&);
-        long Prev(long,_SimpleList&);
-        long First(void);
-        long Last(void);
+  long Next(long, _SimpleList &);
+  long Prev(long, _SimpleList &);
+  long First(void);
+  long Last(void);
 
-        long GetByIndex(const long);
+  long GetByIndex(const long);
 
-        // the 1st bool flag is to say whether to dup the object being inserted
-        // the 2nd bool flag (if the first flag is false) if set to true,
-        // will cause failed inserts (key already exists) to delete the key
-        long Insert(BaseRef,long = 0,bool=true,bool=false);
+  // the 1st bool flag is to say whether to dup the object being inserted
+  // the 2nd bool flag (if the first flag is false) if set to true,
+  // will cause failed inserts (key already exists) to delete the key
+  long Insert(BaseRef, long = 0, bool = true, bool = false);
 
-        BaseRef Retrieve(long);
+  BaseRef Retrieve(long);
 
-        void Delete(BaseRef,bool=false);
-        void ConsistencyCheck(void);
+  void Delete(BaseRef, bool = false);
+  void ConsistencyCheck(void);
 
 };
 

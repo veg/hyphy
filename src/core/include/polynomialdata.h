@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,76 +37,65 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __POLYNOMIALDATA__
-#define     __POLYNOMIALDATA__
+#ifndef __POLYNOMIALDATA__
+#define __POLYNOMIALDATA__
 
-
-#define  POLY_DATA_INCREMENT 10
+#define POLY_DATA_INCREMENT 10
 
 #include "parser.h"
 
-class _PolynomialData : public BaseObj
-{
+class _PolynomialData : public BaseObj {
 
 public:
 
-    _PolynomialData (void);
-    _PolynomialData (long);
-    _PolynomialData (_PolynomialData&);
-    _PolynomialData (long,long, _Parameter*);
+  _PolynomialData(void);
+  _PolynomialData(long);
+  _PolynomialData(_PolynomialData &);
+  _PolynomialData(long, long, _Parameter *);
 
-    virtual ~_PolynomialData ();
+  virtual ~_PolynomialData();
 
-    virtual BaseObj*    makeDynamic(void);
-    virtual void        Duplicate  (BaseRef);
+  virtual BaseObj *makeDynamic(void);
+  virtual void Duplicate(BaseRef);
 
-    inline  _Parameter*         GetCoeff (void) {
-        return theCoeff;
-    }
-    inline  _Parameter&         GetCoeff (long index) {
-        return theCoeff[index];
-    }
+  inline _Parameter *GetCoeff(void) { return theCoeff; }
+  inline _Parameter &GetCoeff(long index) { return theCoeff[index]; }
 
-    long    *           GetTerm (long);
-    long                GetNoTerms (void) {
-        return actTerms;
-    }
-    void                AddTerm (long*, _Parameter);
-    void                AddTerm (long*, _Parameter, long*, long);
-    void                AddTerm (_Parameter);
-    void                WriteTerm (long*,long);
-    void                DeleteTerm (long);
-    bool                IsFirstANumber (void);
-    inline long         NumberOfTerms (void) {
-        return actTerms;
-    }
-    long                SumOfPowers (long);
-    long                WeightedSumOfPowers (long,_Parameter*);
+  long *GetTerm(long);
+  long GetNoTerms(void) { return actTerms; }
+  void AddTerm(long *, _Parameter);
+  void AddTerm(long *, _Parameter, long *, long);
+  void AddTerm(_Parameter);
+  void WriteTerm(long *, long);
+  void DeleteTerm(long);
+  bool IsFirstANumber(void);
+  inline long NumberOfTerms(void) { return actTerms; }
+  long SumOfPowers(long);
+  long WeightedSumOfPowers(long, _Parameter *);
 
-    // temp!
+  // temp!
 
-    bool                checkMe (void);
+  bool checkMe(void);
 
-    friend class _Polynomial;
+  friend class _Polynomial;
 
-    void                MultiplyTerms (long*, long*, long*);
-    void                RaiseTerm     (long*, long);
-    static  _Parameter  BinaryRaise   (_Parameter, long);
-    static  void        RearrangeTerm (long*, long*, long*,long);
-    char                CompareTerms  (long*, long*);
-    char                CompareTerms  (long*, long*, long*, long);
-    char                CompareTerms  (long*, long*, long*, long*, long, long);
-    long                FindTerm      (long*, long*, long start = 0);
-    void                ResortTerms   (long*);
-    void                ChopTerms     (void);
-    bool                checkTerm     (_Parameter, long);
-
+  void MultiplyTerms(long *, long *, long *);
+  void RaiseTerm(long *, long);
+  static _Parameter BinaryRaise(_Parameter, long);
+  static void RearrangeTerm(long *, long *, long *, long);
+  char CompareTerms(long *, long *);
+  char CompareTerms(long *, long *, long *, long);
+  char CompareTerms(long *, long *, long *, long *, long, long);
+  long FindTerm(long *, long *, long start = 0);
+  void ResortTerms(long *);
+  void ChopTerms(void);
+  bool checkTerm(_Parameter, long);
 
 protected:
 
-    _Parameter*     theCoeff;
-    long*           thePowers;
-    long            numberVars, actTerms, allocTerms;
+  _Parameter *theCoeff;
+  long *thePowers;
+  long numberVars, actTerms, allocTerms;
 
 };
 

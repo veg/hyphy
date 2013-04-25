@@ -37,13 +37,12 @@
  
  */
 
-
 #include "errorfns.h"
 #include "hy_strings.h"
 #include "helperfunctions.h"
 #include "hy_globals.h"
-#include  <time.h>
-#include  <stdlib.h>
+#include <time.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -60,395 +59,370 @@
 #include <string.h>
 */
 
+//______________________________________________________________________________
+FILE *doFileOpen(const char *fileName, const char *mode, bool warn) {
 
+  FILE *daFile = nil;
 
-//____________________________________________________________________________________
-
-FILE *      doFileOpen (const char * fileName, const char * mode, bool warn)
-{
-    FILE    *daFile = nil;
-    
-    if (fileName) {
-        _String fnstr (fileName);
+  if (fileName) {
+    _String fnstr(fileName);
 #ifdef __HYPHYXCODE__
-        daFile = fopen (DoMacToPOSIX(fnstr).getStr(),mode);
+    daFile = fopen(DoMacToPOSIX(fnstr).getStr(), mode);
 #else
-        daFile = fopen (fileName,mode);
+    daFile = fopen(fileName, mode);
 #endif
-        if (!daFile && warn) {
-            WarnError (_String("Could not open file '") & *fileName & "' with mode '" & *mode & "'.");
-        }
+    if (!daFile && warn) {
+      WarnError(_String("Could not open file '") & *fileName & "' with mode '" &
+                *mode & "'.");
     }
-    return daFile;
+  }
+  return daFile;
 }
 
+//______________________________________________________________________________
+bool GlobalStartup(void) {
+  SetupOperationLists();
+  unsigned long seed_init = 0L;
+  time_t k;
+  time(&k);
+  seed_init = k;
 
-//____________________________________________________________________________________
-bool    GlobalStartup (void)
-{
-    SetupOperationLists     ();
-    unsigned long seed_init = 0L;
-    time_t                  k;
-    time                    (&k);
-    seed_init               = k;
-    
 #ifdef __HYPHYMPI__
-    _hyApplicationGlobals.Insert(new _String (mpiNodeID));
-    _hyApplicationGlobals.Insert(new _String (mpiNodeCount));
-    _hyApplicationGlobals.Insert(new _String (mpiLastSentMsg));
-    seed_init += _hy_mpi_node_rank;
+  _hyApplicationGlobals.Insert(new _String(mpiNodeID));
+  _hyApplicationGlobals.Insert(new _String(mpiNodeCount));
+  _hyApplicationGlobals.Insert(new _String(mpiLastSentMsg));
+  seed_init += _hy_mpi_node_rank;
 #endif
-    
-    
+
 #ifndef __WINDOZE__
-    seed_init               += getpid();
+  seed_init += getpid();
 #else
-    seed_init               += long(GetCurrentProcess());
+  seed_init += long(GetCurrentProcess());
 #endif
-    init_genrand            (seed_init);
-    globalRandSeed          = seed_init;
-    setParameter            (randomSeed,globalRandSeed);
-    long                    p   = 1;
-    
-    _hyApplicationGlobals.Insert(new _String (dataFileTree));
-    _hyApplicationGlobals.Insert(new _String (dataFileTreeString));
-    _hyApplicationGlobals.Insert(new _String (siteWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (blockWiseMatrix));
-    _hyApplicationGlobals.Insert(new _String (selectionStrings));
-    _hyApplicationGlobals.Insert(new _String (randomSeed));
-    _hyApplicationGlobals.Insert(new _String (statusBarUpdateString));
-    _hyApplicationGlobals.Insert(new _String (statusBarProgressValue));
-    _hyApplicationGlobals.Insert(new _String (hyphyBaseDirectory));
-    _hyApplicationGlobals.Insert(new _String (hyphyLibDirectory));
-    _hyApplicationGlobals.Insert(new _String (platformDirectorySeparator));
-    _hyApplicationGlobals.Insert(new _String (pathToCurrentBF));
-    
-    _String             dd (GetPlatformDirectoryChar());
-    
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd ));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "UserAddIns" & dd));
-    standardLibraryPaths.AppendNewInstance      (new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
-    
-    standardLibraryExtensions.AppendNewInstance (new _String (""));
-    standardLibraryExtensions.AppendNewInstance (new _String (".bf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".ibf"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".def"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".mdl"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".hbl"));
-    standardLibraryExtensions.AppendNewInstance (new _String (".ihbl"));
-    
-    _HBL_Init_Const_Arrays  ();
-    
-    
-#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
-    if (_hy_mpi_node_rank == 0) {
+  init_genrand(seed_init);
+  globalRandSeed = seed_init;
+  setParameter(randomSeed, globalRandSeed);
+  long p = 1;
+
+  _hyApplicationGlobals.Insert(new _String(dataFileTree));
+  _hyApplicationGlobals.Insert(new _String(dataFileTreeString));
+  _hyApplicationGlobals.Insert(new _String(siteWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String(blockWiseMatrix));
+  _hyApplicationGlobals.Insert(new _String(selectionStrings));
+  _hyApplicationGlobals.Insert(new _String(randomSeed));
+  _hyApplicationGlobals.Insert(new _String(statusBarUpdateString));
+  _hyApplicationGlobals.Insert(new _String(statusBarProgressValue));
+  _hyApplicationGlobals.Insert(new _String(hyphyBaseDirectory));
+  _hyApplicationGlobals.Insert(new _String(hyphyLibDirectory));
+  _hyApplicationGlobals.Insert(new _String(platformDirectorySeparator));
+  _hyApplicationGlobals.Insert(new _String(pathToCurrentBF));
+
+  _String dd(GetPlatformDirectoryChar());
+
+  standardLibraryPaths.AppendNewInstance(
+      new _String(libDirectory & "TemplateBatchFiles" & dd));
+  standardLibraryPaths.AppendNewInstance(new _String(
+      libDirectory & "TemplateBatchFiles" & dd & "TemplateModels" & dd));
+  standardLibraryPaths.AppendNewInstance(
+      new _String(libDirectory & "TemplateBatchFiles" & dd & "Utility" & dd));
+  standardLibraryPaths.AppendNewInstance(
+      new _String(libDirectory & "UserAddIns" & dd));
+  standardLibraryPaths.AppendNewInstance(
+      new _String(libDirectory & "TemplateBatchFiles" & dd & "Distances" & dd));
+
+  standardLibraryExtensions.AppendNewInstance(new _String(""));
+  standardLibraryExtensions.AppendNewInstance(new _String(".bf"));
+  standardLibraryExtensions.AppendNewInstance(new _String(".ibf"));
+  standardLibraryExtensions.AppendNewInstance(new _String(".def"));
+  standardLibraryExtensions.AppendNewInstance(new _String(".mdl"));
+  standardLibraryExtensions.AppendNewInstance(new _String(".hbl"));
+  standardLibraryExtensions.AppendNewInstance(new _String(".ihbl"));
+
+  _HBL_Init_Const_Arrays();
+
+#if not defined(__HYPHY_MPI_MESSAGE_LOGGING__) && defined(__HYPHYMPI__)
+  if (_hy_mpi_node_rank == 0) {
 #endif
-        
-        
-        
+
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
 #ifndef __HYPHYMPI__
-        _String fileName(errorFileName);
+    _String fileName(errorFileName);
 #if defined __HYPHYXCODE__ || defined __WINDOZE__
-        fileName = baseDirectory & fileName;
+    fileName = baseDirectory & fileName;
 #endif
 #else
-        _String fileName = errorFileName & ".mpinode" & (long)_hy_mpi_node_rank;
+    _String fileName = errorFileName & ".mpinode" & (long) _hy_mpi_node_rank;
 #endif
-        
-        globalErrorFile = doFileOpen (fileName.sData,"w+");
-        while (globalErrorFile == nil && p<10) {
-            fileName = errorFileName&'.'&_String(p);
+
+    globalErrorFile = doFileOpen(fileName.sData, "w+");
+    while (globalErrorFile == nil && p < 10) {
+      fileName = errorFileName & '.' & _String(p);
 #if defined __HYPHYXCODE__ || defined __WINDOZE__
-            fileName = baseDirectory & fileName;
+      fileName = baseDirectory & fileName;
 #endif
-            globalErrorFile = doFileOpen (fileName.sData,"w+");
-            p++;
-        }
-        errorFileName = fileName;
-        
-        p=1;
+      globalErrorFile = doFileOpen(fileName.sData, "w+");
+      p++;
+    }
+    errorFileName = fileName;
+
+    p = 1;
 #ifndef __HYPHYMPI__
-        fileName = messageFileName;
+    fileName = messageFileName;
 #if defined __HYPHYXCODE__ || defined __WINDOZE__
-        fileName = baseDirectory & fileName;
+    fileName = baseDirectory & fileName;
 #endif
 #else
-        fileName = messageFileName & ".mpinode" & (long)_hy_mpi_node_rank;
+    fileName = messageFileName & ".mpinode" & (long) _hy_mpi_node_rank;
 #endif
-        
-        globalMessageFile = doFileOpen (fileName.getStr(),"w+");
-        
-        while (globalMessageFile == nil && p<10) {
-            fileName = messageFileName&'.'&_String(p);
+
+    globalMessageFile = doFileOpen(fileName.getStr(), "w+");
+
+    while (globalMessageFile == nil && p < 10) {
+      fileName = messageFileName & '.' & _String(p);
 #if defined __HYPHYXCODE__ || defined __WINDOZE__
-            fileName = baseDirectory & fileName;
+      fileName = baseDirectory & fileName;
 #endif
-            globalMessageFile = doFileOpen (fileName.sData,"w+");
-            p++;
-        }
-        messageFileName = fileName;
-#endif
-#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
+      globalMessageFile = doFileOpen(fileName.sData, "w+");
+      p++;
     }
+    messageFileName = fileName;
 #endif
-    
-    return globalErrorFile && globalMessageFile;
+#if not defined(__HYPHY_MPI_MESSAGE_LOGGING__) && defined(__HYPHYMPI__)
+  }
+#endif
+
+  return globalErrorFile && globalMessageFile;
 }
 
+//______________________________________________________________________________
+bool GlobalShutdown(void) {
+  bool res = true;
 
-//____________________________________________________________________________________
-bool    GlobalShutdown (void)
-{
-    bool res = true;
-    
-#if defined (__HYPHY_GTK__) || defined (__HEADLESS__)
+#if defined(__HYPHY_GTK__) || defined(__HEADLESS__)
 #elif defined __UNIX__
-    if (needExtraNL)
-        printf ("\n");
+  if (needExtraNL)
+    printf("\n");
 #endif
-    
-#ifdef  __HYPHYMPI__
-    int     flag, size;
-    
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    PurgeAll (true);
-    // force manual clear to help debuggin 'exit' crashes
-    ReportWarning ("PurgeAll was successful");
-    if (_hy_mpi_node_rank == 0) {
-        for (long count = 1; count < size; count++) {
-            ReportWarning (_String ("Sending shutdown command to node ") & count & '.');
-            MPISendString(empty,count);
-        }
-    }
-#endif
-    
-#ifdef  __HYPHYMPI__
-    // MPI_Barrier (MPI_COMM_WORLD);
-    ReportWarning ("Calling MPI_Finalize");
-#ifdef __USE_ABORT_HACK__
-    MPI_Abort(MPI_COMM_WORLD,0);
-#else
-    MPI_Finalized(&flag);
-    if (!flag)
-        MPI_Finalize();
-#endif
-    ReportWarning ("Returned from MPI_Finalize");
-#endif
-    
-    
-    if (globalErrorFile) {
-        fflush (globalErrorFile);
-        fseek(globalErrorFile,0,SEEK_END);
-        unsigned long fileSize = ftell(globalErrorFile);
-        if (fileSize) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-            
-#else
-            fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
-#endif
-            res = false;
-            fclose (globalErrorFile);
-            
-        } else {
-            fclose (globalErrorFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(errorFileName).getStr());
-#else
-            remove (errorFileName.getStr());
-#endif
-        }
-    }
-    if (globalMessageFile) {
-        if (ftell(globalMessageFile)) {
-#if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
-#else
-            fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
-#endif
-            fclose (globalMessageFile);
-        } else {
-            fclose (globalMessageFile);
-#ifdef __HYPHYXCODE__
-            remove (DoMacToPOSIX(messageFileName).getStr());
-#else
-            remove (messageFileName.getStr());
-#endif
-        }
-    }
-    
-    _SimpleList  hist;
-    long         ls,
-    cn = _HY_HBLCommandHelper.Traverser (hist,ls,_HY_HBLCommandHelper.GetRoot());
-    
-    while (cn >= 0) {
-        delete ((_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra(cn));
-        cn = _HY_HBLCommandHelper.Traverser (hist,ls);
-    }
-    _HY_HBLCommandHelper.Clear();
-    _HY_ValidHBLExpressions.Clear();
-    
-    return res;
-}
 
-//____________________________________________________________________________________
-
-void    PurgeAll (bool all)
-{
-    batchLanguageFunctions.Clear();
-    batchLanguageFunctionNames.Clear();
-    batchLanguageFunctionParameterLists.Clear();
-    batchLanguageFunctionParameters.Clear();
-    batchLanguageFunctionClassification.Clear();
-    executionStack.Clear();
-    loadedLibraryPaths.Clear(true);
-    _HY_HBL_Namespaces.Clear();
-    if (all) {
-        likeFuncList.Clear();
-        likeFuncNamesList.Clear();
-        dataSetFilterList.Clear();
-        dataSetFilterNamesList.Clear();
-        dataSetList.Clear();
-        dataSetNamesList.Clear();
-        compiledFormulaeParameters.Clear();
-        modelNames.Clear();
-        KillExplicitModelFormulae ();
-        modelMatrixIndices.Clear();
-        modelFrequenciesIndices.Clear();
-        modelTypeList.Clear();
-        listOfCompiledFormulae.Clear();
-        variablePtrs.Clear();
-        freeSlots.Clear();
-        lastMatrixDeclared = -1;
-        {
-            variableNames.Clear(true);
-        }
-        _x_ = nil;
-        _n_ = nil;
-        pathNames.Clear();
-    }
-    scanfLastFilePath = empty;
-    setParameter (randomSeed,globalRandSeed);
-    isInFunction        = false;
-    isDefiningATree     = false;
 #ifdef __HYPHYMPI__
-    int            size;
-    
-    MPI_Comm_size   (MPI_COMM_WORLD, &size);
-    setParameter    (mpiNodeID, (_Parameter)_hy_mpi_node_rank);
-    setParameter    (mpiNodeCount, (_Parameter)size);
-#endif
-}
+  int flag, size;
 
-//____________________________________________________________________________________
-void    DeleteObject (BaseRef theObject)
-{
-    if (theObject) {
-        if (theObject->nInstances<=1) {
-            delete (theObject);
-        } else {
-            theObject->nInstances--;
-        }
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  PurgeAll(true);
+  // force manual clear to help debuggin 'exit' crashes
+  ReportWarning("PurgeAll was successful");
+  if (_hy_mpi_node_rank == 0) {
+    for (long count = 1; count < size; count++) {
+      ReportWarning(_String("Sending shutdown command to node ") & count & '.');
+      MPISendString(empty, count);
     }
-}
-
-
-//____________________________________________________________________________________
-char* MemAllocate (const long chunk)
-{
-    char* result = (char*)malloc (chunk);
-    if (!result) {
-         FlagError (_String ("Failed to allocate ") & chunk & " bytes.");
-    }
-    return result;
-}
-
-
-//____________________________________________________________________________________
-char* MemReallocate (Ptr oldP, long const chunk)
-{
-    char* result  = (char*) realloc (oldP, chunk);
-    
-    if (!result) {
-        FlagError (_String ("Failed to re-allocate ") & chunk & " bytes.");
-    }
-    
-    return result;
-}
-
-
-
-//____________________________________________________________________________________
-
-
-#ifdef __HEADLESS__
-void        yieldCPUTime(void)
-{
-    if (globalInterfaceInstance) {
-        terminateExecution = !(*globalInterfaceInstance->GetCallbackHandler())
-        (_THyPhyGetStringStatus(),_THyPhyGetLongStatus(),_THyPhyGetDoubleStatus());
-    }
-}
-
+  }
 #endif
 
-//____________________________________________________________________________________
+#ifdef __HYPHYMPI__
+  // MPI_Barrier (MPI_COMM_WORLD);
+  ReportWarning("Calling MPI_Finalize");
+#ifdef __USE_ABORT_HACK__
+  MPI_Abort(MPI_COMM_WORLD, 0);
+#else
+  MPI_Finalized(&flag);
+  if (!flag)
+    MPI_Finalize();
+#endif
+  ReportWarning("Returned from MPI_Finalize");
+#endif
 
-// time differencing function
+  if (globalErrorFile) {
+    fflush(globalErrorFile);
+    fseek(globalErrorFile, 0, SEEK_END);
+    unsigned long fileSize = ftell(globalErrorFile);
+    if (fileSize) {
+#if defined(__MAC__) || defined(__WINDOZE__) || defined(__HYPHYMPI__) ||       \
+    defined(__HYPHY_GTK__)
 
-double      TimerDifferenceFunction (bool doRetrieve)
-{
-    double timeDiff = 0.0;
+#else
+      fprintf(stderr, "\nCheck %s for details on execution errors.\n",
+              errorFileName.getStr());
+#endif
+      res = false;
+      fclose(globalErrorFile);
 
-    
-    static timeval clockIn, clockOut;
-    if (doRetrieve) {
-        gettimeofday (&clockOut,nil);
-        timeDiff = (clockOut.tv_sec-clockIn.tv_sec) + (clockOut.tv_usec-clockIn.tv_usec)*0.000001;
     } else {
-        gettimeofday (&clockIn,nil);
+      fclose(globalErrorFile);
+#ifdef __HYPHYXCODE__
+      remove(DoMacToPOSIX(errorFileName).getStr());
+#else
+      remove(errorFileName.getStr());
+#endif
     }
-    
-    
-    return timeDiff;
+  }
+  if (globalMessageFile) {
+    if (ftell(globalMessageFile)) {
+#if defined(__MAC__) || defined(__WINDOZE__) || defined(__HYPHYMPI__) ||       \
+    defined(__HYPHY_GTK__)
+#else
+      fprintf(stderr, "\nCheck %s details of this run.\n",
+              messageFileName.getStr());
+#endif
+      fclose(globalMessageFile);
+    } else {
+      fclose(globalMessageFile);
+#ifdef __HYPHYXCODE__
+      remove(DoMacToPOSIX(messageFileName).getStr());
+#else
+      remove(messageFileName.getStr());
+#endif
+    }
+  }
+
+  _SimpleList hist;
+  long ls, cn = _HY_HBLCommandHelper.Traverser(hist, ls,
+                                               _HY_HBLCommandHelper.GetRoot());
+
+  while (cn >= 0) {
+    delete ((_HBLCommandExtras *)_HY_HBLCommandHelper.GetXtra(cn));
+    cn = _HY_HBLCommandHelper.Traverser(hist, ls);
+  }
+  _HY_HBLCommandHelper.Clear();
+  _HY_ValidHBLExpressions.Clear();
+
+  return res;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
+void PurgeAll(bool all) {
+  batchLanguageFunctions.Clear();
+  batchLanguageFunctionNames.Clear();
+  batchLanguageFunctionParameterLists.Clear();
+  batchLanguageFunctionParameters.Clear();
+  batchLanguageFunctionClassification.Clear();
+  executionStack.Clear();
+  loadedLibraryPaths.Clear(true);
+  _HY_HBL_Namespaces.Clear();
+  if (all) {
+    likeFuncList.Clear();
+    likeFuncNamesList.Clear();
+    dataSetFilterList.Clear();
+    dataSetFilterNamesList.Clear();
+    dataSetList.Clear();
+    dataSetNamesList.Clear();
+    compiledFormulaeParameters.Clear();
+    modelNames.Clear();
+    KillExplicitModelFormulae();
+    modelMatrixIndices.Clear();
+    modelFrequenciesIndices.Clear();
+    modelTypeList.Clear();
+    listOfCompiledFormulae.Clear();
+    variablePtrs.Clear();
+    freeSlots.Clear();
+    lastMatrixDeclared = -1;
+    { variableNames.Clear(true); }
+    _x_ = nil;
+    _n_ = nil;
+    pathNames.Clear();
+  }
+  scanfLastFilePath = empty;
+  setParameter(randomSeed, globalRandSeed);
+  isInFunction = false;
+  isDefiningATree = false;
+#ifdef __HYPHYMPI__
+  int size;
 
-
-
-unsigned long bitStringToLong (const long * bits, const unsigned long length) {
-    unsigned long          theCode         = 0UL,
-    shifter        = 0x01b;
-    
-    for (unsigned long i = 0; i<length; i++, shifter <<= 1) {
-        if (bits[i]) {
-            theCode +=  shifter*bits[i];
-        }
-    }
-    return theCode;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  setParameter(mpiNodeID, (_Parameter) _hy_mpi_node_rank);
+  setParameter(mpiNodeCount, (_Parameter) size);
+#endif
 }
 
-//____________________________________________________________________________________
-
-
-void     longToBitString      (long * receptacle, const unsigned long code, const unsigned long length) {
-    long shifter = 1L;
-    for (unsigned long i=0L; i<length; i++, shifter<<=1) {
-        if (code&shifter) {
-            receptacle[i] = 1;
-        } else {
-            receptacle[i] = 0;
-        }
+//______________________________________________________________________________
+void DeleteObject(BaseRef theObject) {
+  if (theObject) {
+    if (theObject->nInstances <= 1) {
+      delete (theObject);
+    } else {
+      theObject->nInstances--;
     }
+  }
 }
 
+//______________________________________________________________________________
+char *MemAllocate(const long chunk) {
+  char *result = (char *)malloc(chunk);
+  if (!result) {
+    FlagError(_String("Failed to allocate ") & chunk & " bytes.");
+  }
+  return result;
+}
 
+//______________________________________________________________________________
+char *MemReallocate(Ptr oldP, long const chunk) {
+  char *result = (char *)realloc(oldP, chunk);
 
-//____________________________________________________________________________________
+  if (!result) {
+    FlagError(_String("Failed to re-allocate ") & chunk & " bytes.");
+  }
+
+  return result;
+}
+
+//______________________________________________________________________________
+#ifdef __HEADLESS__
+void yieldCPUTime(void) {
+  if (globalInterfaceInstance) {
+    terminateExecution = !(*globalInterfaceInstance->GetCallbackHandler())(
+        _THyPhyGetStringStatus(), _THyPhyGetLongStatus(),
+        _THyPhyGetDoubleStatus());
+  }
+}
+
+#endif
+
+//______________________________________________________________________________
+// time differencing function
+double TimerDifferenceFunction(bool doRetrieve) {
+  double timeDiff = 0.0;
+
+  static timeval clockIn, clockOut;
+  if (doRetrieve) {
+    gettimeofday(&clockOut, nil);
+    timeDiff = (clockOut.tv_sec - clockIn.tv_sec) +
+               (clockOut.tv_usec - clockIn.tv_usec) * 0.000001;
+  } else {
+    gettimeofday(&clockIn, nil);
+  }
+
+  return timeDiff;
+}
+
+//______________________________________________________________________________
+unsigned long bitStringToLong(const long *bits, const unsigned long length) {
+
+  unsigned long theCode = 0UL, shifter = 0x01b;
+
+  for (unsigned long i = 0; i < length; i++, shifter <<= 1) {
+    if (bits[i]) {
+      theCode += shifter * bits[i];
+    }
+  }
+  return theCode;
+}
+
+//______________________________________________________________________________
+void longToBitString(long *receptacle, const unsigned long code,
+                     const unsigned long length) {
+  long shifter = 1L;
+  for (unsigned long i = 0L; i < length; i++, shifter <<= 1) {
+    if (code & shifter) {
+      receptacle[i] = 1;
+    } else {
+      receptacle[i] = 0;
+    }
+  }
+}
+
+//______________________________________________________________________________
 //       RANDOM NUMBER GENERATOR CODE
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 /*
  A C-program for MT19937, with initialization improved 2002/1/26.
@@ -500,143 +474,128 @@ void     longToBitString      (long * receptacle, const unsigned long code, cons
 #define LOWER_MASK 0x7fffffffUL /* least significant r bits */
 
 static unsigned long mt[N]; /* the array for the state vector  */
-static int mti=N+1; /* mti==N+1 means mt[N] is not initialized */
+static int mti = N + 1;     /* mti==N+1 means mt[N] is not initialized */
 
 /* prototypes */
 
-void        init_by_array       (unsigned long[], unsigned long);
-long        genrand_int31       (void);
-double      genrand_real1       (void);
-double      genrand_real3       (void);
-double      genrand_res53       (void);
-
+void init_by_array(unsigned long[], unsigned long);
+long genrand_int31(void);
+double genrand_real1(void);
+double genrand_real3(void);
+double genrand_res53(void);
 
 /* initializes mt[N] with a seed */
-void init_genrand(unsigned long s)
-{
-    mt[0]= s & 0xffffffffUL;
-    for (mti=1; mti<N; mti++) {
-        mt[mti] =
-        (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti);
-        /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
-        /* In the previous versions, MSBs of the seed affect   */
-        /* only MSBs of the array mt[].                        */
-        /* 2002/01/09 modified by Makoto Matsumoto             */
-        mt[mti] &= 0xffffffffUL;
-        /* for >32 bit machines */
-    }
+void init_genrand(unsigned long s) {
+  mt[0] = s & 0xffffffffUL;
+  for (mti = 1; mti < N; mti++) {
+    mt[mti] = (1812433253UL * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
+    /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+    /* In the previous versions, MSBs of the seed affect   */
+    /* only MSBs of the array mt[].                        */
+    /* 2002/01/09 modified by Makoto Matsumoto             */
+    mt[mti] &= 0xffffffffUL;
+    /* for >32 bit machines */
+  }
 }
 
 /* initialize by an array with array-length */
 /* init_key is the array for initializing keys */
 /* key_length is its length */
-void init_by_array(unsigned long init_key[], unsigned long key_length)
-{
-    int i, j, k;
-    init_genrand(19650218UL);
-    i=1;
-    j=0;
-    k = (N>key_length ? N : key_length);
-    for (; k; k--) {
-        mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1664525UL))
-        + init_key[j] + j; /* non linear */
-        mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
-        i++;
-        j++;
-        if (i>=N) {
-            mt[0] = mt[N-1];
-            i=1;
-        }
-        if (j>=key_length) {
-            j=0;
-        }
+void init_by_array(unsigned long init_key[], unsigned long key_length) {
+  int i, j, k;
+  init_genrand(19650218UL);
+  i = 1;
+  j = 0;
+  k = (N > key_length ? N : key_length);
+  for (; k; k--) {
+    mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525UL)) +
+            init_key[j] + j; /* non linear */
+    mt[i] &= 0xffffffffUL;   /* for WORDSIZE > 32 machines */
+    i++;
+    j++;
+    if (i >= N) {
+      mt[0] = mt[N - 1];
+      i = 1;
     }
-    for (k=N-1; k; k--) {
-        mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1566083941UL))
-        - i; /* non linear */
-        mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
-        i++;
-        if (i>=N) {
-            mt[0] = mt[N-1];
-            i=1;
-        }
+    if (j >= key_length) {
+      j = 0;
     }
-    
-    mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
+  }
+  for (k = N - 1; k; k--) {
+    mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941UL)) - i;
+        /* non linear */
+    mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+    i++;
+    if (i >= N) {
+      mt[0] = mt[N - 1];
+      i = 1;
+    }
+  }
+  mt[0] = 0x80000000UL; /* MSB is 1; assuring non-zero initial array */
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-unsigned long genrand_int32(void)
-{
-    unsigned long y;
-    static unsigned long mag01[2]= {0x0UL, MATRIX_A};
-    /* mag01[x] = x * MATRIX_A  for x=0,1 */
-    
-    if (mti >= N) { /* generate N words at one time */
-        int kk;
-        
-        if (mti == N+1) { /* if init_genrand() has not been called, */
-            init_genrand(5489UL);    /* a default initial seed is used */
-        }
-        
-        for (kk=0; kk<N-M; kk++) {
-            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-            mt[kk] = mt[kk+M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-        }
-        for (; kk<N-1; kk++) {
-            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-            mt[kk] = mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-        }
-        y = (mt[N-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
-        mt[N-1] = mt[M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-        
-        mti = 0;
+unsigned long genrand_int32(void) {
+  unsigned long y;
+  static unsigned long mag01[2] = { 0x0UL, MATRIX_A };
+  /* mag01[x] = x * MATRIX_A  for x=0,1 */
+
+  if (mti >= N) { /* generate N words at one time */
+    int kk;
+
+    if (mti == N + 1) {     /* if init_genrand() has not been called, */
+      init_genrand(5489UL); /* a default initial seed is used */
     }
-    
-    y = mt[mti++];
-    
-    /* Tempering */
-    y ^= (y >> 11);
-    y ^= (y << 7) & 0x9d2c5680UL;
-    y ^= (y << 15) & 0xefc60000UL;
-    y ^= (y >> 18);
-    
-    return y;
+
+    for (kk = 0; kk < N - M; kk++) {
+      y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
+      mt[kk] = mt[kk + M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    for (; kk < N - 1; kk++) {
+      y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
+      mt[kk] = mt[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    y = (mt[N - 1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
+    mt[N - 1] = mt[M - 1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+
+    mti = 0;
+  }
+
+  y = mt[mti++];
+
+  /* Tempering */
+  y ^= (y >> 11);
+  y ^= (y << 7) & 0x9d2c5680UL;
+  y ^= (y << 15) & 0xefc60000UL;
+  y ^= (y >> 18);
+
+  return y;
 }
 
 /* generates a random number on [0,0x7fffffff]-interval */
-long genrand_int31(void)
-{
-    return (long)(genrand_int32()>>1);
-}
+long genrand_int31(void) { return (long)(genrand_int32() >> 1); }
 
 /* generates a random number on [0,1]-real-interval */
-double genrand_real1(void)
-{
-    return genrand_int32()*(1.0/4294967295.0);
-    /* divided by 2^32-1 */
+double genrand_real1(void) {
+  return genrand_int32() * (1.0 / 4294967295.0);
+  /* divided by 2^32-1 */
 }
 
 /* generates a random number on [0,1)-real-interval */
-double genrand_real2(void)
-{
-    return ((double)genrand_int32())*(1.0/4294967296.0);
-    /* divided by 2^32 */
+double genrand_real2(void) {
+  return ((double) genrand_int32()) * (1.0 / 4294967296.0);
+  /* divided by 2^32 */
 }
 
 /* generates a random number on (0,1)-real-interval */
-double genrand_real3(void)
-{
-    return (((double)genrand_int32()) + 0.5)*(1.0/4294967296.0);
-    /* divided by 2^32 */
+double genrand_real3(void) {
+  return (((double) genrand_int32()) + 0.5) * (1.0 / 4294967296.0);
+  /* divided by 2^32 */
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-double genrand_res53(void)
-{
-    unsigned long a=genrand_int32()>>5, b=genrand_int32()>>6;
-    return(a*67108864.0+b)*(1.0/9007199254740992.0);
+double genrand_res53(void) {
+  unsigned long a = genrand_int32() >> 5, b = genrand_int32() >> 6;
+  return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
 }
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
-
-

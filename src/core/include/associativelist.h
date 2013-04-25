@@ -50,14 +50,12 @@ public:
   _AssociativeList(void);
   virtual ~_AssociativeList(void) {}
 
-
   //SLKP 20090803
   // Parse the list represented as {"key": value, ...}
   // the boolean argument is supplied to request reporting/suppression
   // of error messages returns true on successful parse
   bool ParseStringRepresentation(_String &, bool = true,
                                  _VariableContainer * = nil);
-     
 
   virtual BaseRef toStr(void);
   virtual _PMathObj
@@ -70,7 +68,7 @@ public:
   // A simple function to merge two lists;the combined list will have the key
   // set equal to the union of the two input key sets if there are
   // conflicting values for a given key, an undefined value will be stored
-  // in for the corresponding key  
+  // in for the corresponding key
   virtual void Merge(_PMathObj);
   virtual void Duplicate(BaseRef);
   _PMathObj MAccess(_PMathObj);

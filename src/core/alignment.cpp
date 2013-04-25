@@ -42,7 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "alignment.h"
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 // match or skip whole codons
 #define HY_111_111 0
@@ -391,7 +391,7 @@ CodonAlignStringsStep(double *const score_matrix, long *const reference,
     return best_choice;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void BacktrackAlign( signed char * const edit_ops
                           , long & edit_ptr
@@ -415,7 +415,7 @@ inline void BacktrackAlign( signed char * const edit_ops
     }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void BacktrackAlignCodon( signed char * const edit_ops
                                , long & edit_ptr
@@ -571,7 +571,7 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
 }
 
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void MatchScore( char * r_str
                       , char * q_str
@@ -591,7 +591,7 @@ inline void MatchScore( char * r_str
     }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 double AlignStrings( char * const r_str
                    , char * const q_str
@@ -1179,13 +1179,13 @@ double AlignStrings( char * const r_str
     return score;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 #define _ALIGNMENT_NOLOCAL      0x00
 #define _ALIGNMENT_LOCAL_START  0x01
 #define _ALIGNMENT_LOCAL_END    0x02
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _Parameter   CostOnly   (_String * s1,               // first string
                          _String * s2,               // second string
@@ -1490,7 +1490,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
     return score;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _Parameter      LinearSpaceAlign (_String *s1,                  // first string
                                   _String *s2,                      // second string

@@ -37,25 +37,25 @@
  
  */
 
-#ifndef     __FORMULAPARSINGCONTEXT__
-#define     __FORMULAPARSINGCONTEXT__
+#ifndef __FORMULAPARSINGCONTEXT__
+#define __FORMULAPARSINGCONTEXT__
 
 class _FormulaParsingContext {
 
-    long                 assignment_ref_id;
-    char                 assignment_ref_type;
-    bool                 is_volatile;
-    _String            * err_msg;
-    _VariableContainer * formula_scope;
-    
-    public:
-        _FormulaParsingContext (_String* = nil, _VariableContainer* = nil);
-        bool&       isVolatile (void)                   { return is_volatile; }
-        long&       assignmentRefID (void)              { return assignment_ref_id; }
-        char&       assignmentRefType (void)            { return assignment_ref_type;} 
-        _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer* formulaScope (void)         { return formula_scope; }     
-        _String     contextualizeRef (_String&);
+  long assignment_ref_id;
+  char assignment_ref_type;
+  bool is_volatile;
+  _String *err_msg;
+  _VariableContainer *formula_scope;
+
+public:
+  _FormulaParsingContext(_String * = nil, _VariableContainer * = nil);
+  bool &isVolatile(void) { return is_volatile; }
+  long &assignmentRefID(void) { return assignment_ref_id; }
+  char &assignmentRefType(void) { return assignment_ref_type; }
+  _String *errMsg(void) { return err_msg; }
+  _VariableContainer *formulaScope(void) { return formula_scope; }
+  _String contextualizeRef(_String &);
 };
 
 #endif
