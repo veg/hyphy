@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,29 +37,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __TREETOPOLOGY__
-#define     __TREETOPOLOGY__
+#ifndef __TREETOPOLOGY__
+#define __TREETOPOLOGY__
 
 #include "calcnode.h"
 
-class _TreeTopology: public _CalcNode
-{
+class _TreeTopology : public _CalcNode {
 
 protected:
 
-    virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String&,bool = true);
-    virtual void            PostTreeConstructor                 (bool);
-    node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil);
-    void            destroyCompTree                     (node<long>*);
-    _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long);
-    char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology*, bool = false);
-    char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology*, bool = false);
-    virtual _PMathObj       FlatRepresentation                  (void);
-    void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, _Parameter);
-    void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, _Parameter);
-    void            AddANode                            (_PMathObj);
-    /*
+  virtual void PreTreeConstructor(bool);
+  virtual bool MainTreeConstructor(_String &, bool = true);
+  virtual void PostTreeConstructor(bool);
+  node<long> *prepTree4Comparison(_List &, _SimpleList &, node<long> * = nil);
+  void destroyCompTree(node<long> *);
+  _List *SplitTreeIntoClustersInt(node<long> *, _List *, _AVLListX &, long,
+                                  long);
+  char internalTreeCompare(node<long> *, node<long> *, _SimpleList *, char,
+                           long, node<long> *, _TreeTopology *, bool = false);
+  char internalNodeCompare(node<long> *, node<long> *, _SimpleList &,
+                           _SimpleList *, bool, long, node<long> *,
+                           _TreeTopology *, bool = false);
+  virtual _PMathObj FlatRepresentation(void);
+  void FindCOTHelper(node<long> *, long, _Matrix &, _Matrix &, _Matrix &,
+                     _List &, _AVLListX &, _Parameter);
+  void FindCOTHelper2(node<long> *, _Matrix &, _Matrix &, _AVLListX &,
+                      node<long> *, _Parameter);
+  void AddANode(_PMathObj);
+  /*
 
      20091006: SLKP
 
@@ -74,52 +79,50 @@ protected:
 
 public:
 
-    node<long>      *theRoot,
-         *currentNode;
+  node<long> *theRoot, *currentNode;
 
-    _List           flatTree,
-                    flatCLeaves;
+  _List flatTree, flatCLeaves;
 
-    char            rooted;
+  char rooted;
 
-    virtual void            toFileStr                           (FILE*);
-    virtual BaseRef         toStr                               (void);
-    void            RerootTreeInternalTraverser         (long, bool,_String&, long  = -1, bool = false);
+  virtual void toFileStr(FILE *);
+  virtual BaseRef toStr(void);
+  void RerootTreeInternalTraverser(long, bool, _String &, long = -1,
+                                   bool = false);
 
-    _TreeTopology                       (void);
-    _TreeTopology                       (_String, _String&, bool = true);
-    _TreeTopology                       (_String*);
-    _TreeTopology                       (_TheTree*);
+  _TreeTopology(void);
+  _TreeTopology(_String, _String &, bool = true);
+  _TreeTopology(_String *);
+  _TreeTopology(_TheTree *);
 
-    virtual                 ~_TreeTopology                      (void);
+  virtual ~_TreeTopology(void);
 
-    virtual  _FString*      Compare                             (_PMathObj);
-    virtual  BaseRef        makeDynamic                         (void);
-    node<long>* CopyTreeStructure                   (node<long>*, bool);
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
+  virtual _FString *Compare(_PMathObj);
+  virtual BaseRef makeDynamic(void);
+  node<long> *CopyTreeStructure(node<long> *, bool);
+  virtual bool FinalizeNode(node<long> *, long, _String &, _String &, _String &,
+                            _String * = NULL);
 
+  bool IsCurrentNodeATip(void);
+  bool IsCurrentNodeTheRoot(void);
+  bool IsDegenerate(void);
 
-    bool            IsCurrentNodeATip                   (void);
-    bool            IsCurrentNodeTheRoot                (void);
-    bool            IsDegenerate                        (void);
+  virtual _PMathObj
+  Execute(long, _PMathObj = nil, _PMathObj = nil,
+          _hyExecutionContext *context = _hyDefaultExecutionContext);
+  virtual void EdgeCount(long &, long &);
+  // SLKP 20100827: a utility function to count edges in a tree
+  //              : note that the root node WILL be counted as an internal node
+  //              : writes [leaf count, internal node count] into the arguments
 
-    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual void            EdgeCount                           (long&, long&);
-    // SLKP 20100827: a utility function to count edges in a tree
-    //              : note that the root node WILL be counted as an internal node
-    //              : writes [leaf count, internal node count] into the arguments
+  virtual _PMathObj TipCount(void);
+  virtual _PMathObj BranchCount(void);
+  virtual _PMathObj AVLRepresentation(_PMathObj);
+  virtual unsigned long ObjectClass(void) { return TOPOLOGY; }
+  virtual _AssociativeList *FindCOT(_PMathObj);
 
-    virtual _PMathObj       TipCount                            (void);
-    virtual _PMathObj       BranchCount                         (void);
-    virtual _PMathObj       AVLRepresentation                   (_PMathObj);
-    virtual unsigned long            ObjectClass                         (void) {
-        return TOPOLOGY;
-    }
-    virtual _AssociativeList*
-    FindCOT                             (_PMathObj);
-
-    node<long>      *FindNodeByName                     (_String*);
-    /*
+  node<long> *FindNodeByName(_String *);
+  /*
 
      20091006: SLKP
 
@@ -128,68 +131,71 @@ public:
 
      */
 
-    void            DepthWiseT                          (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
-    void            DepthWiseTRight                     (bool = false);
-    void            DepthWiseTLevel                     (long& level, bool = false);
-    void            StepWiseT                           (bool = false, _HYTopologyTraversalFunction* = nil, Ptr = nil);
-    void            StepWiseTLevel                      (long&, bool = false);
-    void            LeafWiseT                           (bool = false);
+  void DepthWiseT(bool = false, _HYTopologyTraversalFunction * = nil,
+                  Ptr = nil);
+  void DepthWiseTRight(bool = false);
+  void DepthWiseTLevel(long &level, bool = false);
+  void StepWiseT(bool = false, _HYTopologyTraversalFunction * = nil, Ptr = nil);
+  void StepWiseTLevel(long &, bool = false);
+  void LeafWiseT(bool = false);
 
-    virtual void            GetNodeName                         (node<long> *, _String&, bool = false);
-    virtual void            GetBranchLength                     (node<long> *, _String&, bool = false);
-    // SLKP 20100901:
-    //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
-    //               just the numeric value (if false)
+  virtual void GetNodeName(node<long> *, _String &, bool = false);
+  virtual void GetBranchLength(node<long> *, _String &, bool = false);
+  // SLKP 20100901:
+  //               added a boolean flag to ask to return branch length
+  // expression (if true) (returns "" for topologies)
+  //               just the numeric value (if false)
 
+  virtual void GetBranchLength(node<long> *, _Parameter &);
+  virtual void GetBranchValue(node<long> *, _String &);
+  virtual void GetBranchVarValue(node<long> *, _String &, long);
+  virtual void PasteBranchLength(node<long> *, _String &, long,
+                                 _Parameter factor = 1.);
 
-    virtual void            GetBranchLength                     (node<long> *, _Parameter&);
-    virtual void            GetBranchValue                      (node<long> *, _String&);
-    virtual void            GetBranchVarValue                   (node<long> *, _String&, long);
-    virtual void            PasteBranchLength                   (node<long> *, _String&, long, _Parameter factor = 1.);
+  node<long> &GetRoot(void) { return *theRoot; }
+  void SetRoot(node<long> *r) { theRoot = r; }
+  node<long> &GetCurrentNode(void) { return *currentNode; }
+  void SubTreeString(_String &, bool = false, long = -1, _AVLListXL * = nil);
 
-    node<long>&     GetRoot                             (void) {
-        return *theRoot;
-    }
-    void            SetRoot                             (node<long>* r) {
-        theRoot = r;
-    }
-    node<long>&     GetCurrentNode                      (void) {
-        return *currentNode;
-    }
-    void            SubTreeString                       (_String&, bool = false, long = -1, _AVLListXL* = nil);
-
-    _String         CompareTrees                        (_TreeTopology*);
-    _String         MatchTreePattern                    (_TreeTopology*);
-    virtual _PMathObj       TipName                             (_PMathObj);
-    virtual _PMathObj       BranchName                          (_PMathObj, bool = false, _PMathObj = nil);
-    virtual _PMathObj       BranchLength                        (_PMathObj);
-    virtual _PMathObj       RerootTree                          (_PMathObj);
-    _List*          SplitTreeIntoClusters               (unsigned long, unsigned long);
-    void            SetLeafName                         (long, _String*);
-    _String         DetermineBranchLengthMappingMode    (_String*, char&);
-    _AssociativeList*
-    SplitsIdentity                      (_PMathObj);
-    /* 20090609: SLKP
-        given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
+  _String CompareTrees(_TreeTopology *);
+  _String MatchTreePattern(_TreeTopology *);
+  virtual _PMathObj TipName(_PMathObj);
+  virtual _PMathObj BranchName(_PMathObj, bool = false, _PMathObj = nil);
+  virtual _PMathObj BranchLength(_PMathObj);
+  virtual _PMathObj RerootTree(_PMathObj);
+  _List *SplitTreeIntoClusters(unsigned long, unsigned long);
+  void SetLeafName(long, _String *);
+  _String DetermineBranchLengthMappingMode(_String *, char &);
+  _AssociativeList *SplitsIdentity(_PMathObj);
+  /* 20090609: SLKP
+        given a tree agrument (p), the function returns an AVL with a 2x1
+      matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");
         The first cell contains the number of splits in *this
-        The second cell contains the number of splits in the argument that are present in *this
+        The second cell contains the number of splits in the argument that
+      are present in *this
 
-        This entry will contain -1 if the argument is invalid (nil or not a tree)
+        This entry will contain -1 if the argument is invalid (nil or not
+      a tree)
         and if the set of leaves differs between two trees
 
-        The string will be empty (incomparable trees or another exception) or the Newick String
+        The string will be empty (incomparable trees or another exception)
+      or the Newick String
         with the consensus string
 
     */
-    bool            ConvertToPSW                        (_AVLListX&,_List*, _SimpleList&,bool = false);
-    /* 20090612: SLKP
-       20100510: Modified the function to also return internal node names in the second AVL
+  bool ConvertToPSW(_AVLListX &, _List *, _SimpleList &, bool = false);
+  /* 20090612: SLKP
+       20100510: Modified the function to also return internal node names
+     in the second AVL
 
         covert the topology into the post-order with weights representation
-        The first argument maps node names to their internal indices in the traversal order
-        (note that leaves are numbered 1..leaves-1 and internal indices as leaves-1...leaves+inodes-1)
-        The second argument stores doubles for each node; the index in the array itself (mod 2),
+        The first argument maps node names to their internal indices in the
+     traversal order
+        (note that leaves are numbered 1..leaves-1 and internal indices as
+     leaves-1...leaves+inodes-1)
+        The second argument stores doubles for each node; the index in the
+     array itself (mod 2),
         corresponds to the appropriate step in the post-order traversal;
 
         <node index, number of nodes in the subtree below>
@@ -202,31 +208,31 @@ public:
         The last two entries store the number of leaves and internal nodes
 
 
-        if the bool argument is TRUE, then each LEAF in the tree must be found in the reference
-        dictionary supplied by the FIRST argument; false will be returned if this is not the case.
+        if the bool argument is TRUE, then each LEAF in the tree must be
+     found in the reference
+        dictionary supplied by the FIRST argument; false will be returned
+     if this is not the case.
     */
 
-    _String*        ConvertFromPSW                      (_AVLListX&,_SimpleList&);
-    /* 20090612: SLKP
-            given a PSW tree traversal order and a labeling legend,
-            return the Newick string for the tree
-    */
+  _String *ConvertFromPSW(_AVLListX &, _SimpleList &);
+  /* 20090612: SLKP
+          given a PSW tree traversal order and a labeling legend,
+          return the Newick string for the tree
+  */
 
-    void            ComputeClusterTable                 (_SimpleList&, _SimpleList&);
-    /* given the PSW traversal representation (arg 2)
-       compute the cluster table (as defined in William HE Day "Optimal Algorithms for Comparing Trees With Labels",
-       Page 16) and store in arg 1
-            the list a is a flat representation for an Nx3 (N = number of leaves) table
-            clusters spanning L<->R leaves will be stored in either row L or row R
-            i-th entry
-            <L = leftmost cluster leaf (in traversal order),
-             R = rightmost cluster leaf (in traversal order),
-             F = a binary toggle (set to 0 by this procedure)
-     */
-
-
-
-
+  void ComputeClusterTable(_SimpleList &, _SimpleList &);
+  /* given the PSW traversal representation (arg 2)
+     compute the cluster table (as defined in William HE Day "Optimal Algorithms
+     for Comparing Trees With Labels",
+     Page 16) and store in arg 1
+          the list a is a flat representation for an Nx3 (N = number of leaves)
+     table
+          clusters spanning L<->R leaves will be stored in either row L or row R
+          i-th entry
+          <L = leftmost cluster leaf (in traversal order),
+           R = rightmost cluster leaf (in traversal order),
+           F = a binary toggle (set to 0 by this procedure)
+   */
 
 };
 

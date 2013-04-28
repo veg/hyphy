@@ -27,138 +27,126 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-
 #include "matrix.h"
 #include "ntuplestorage.h"
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
+//______________________________________________________________________________
+_NTupleStorage::_NTupleStorage(unsigned long N, unsigned long K) {
+  storageN = N;
+  storageK = (K > N) ? MIN(N, 1) : K;
+  unsigned long matrixDimension = 1;
 
-_NTupleStorage::_NTupleStorage (unsigned long N, unsigned long K)
-{
-    storageN        = N;
-    storageK        = (K>N)?MIN(N,1):K;
-    unsigned long   matrixDimension = 1;
+  // now compute what dimension of the matrix will be required
+  // handle the special cases first
 
-    // now compute what dimension of the matrix will be required
-    // handle the special cases first
+  if (storageK) { 
+    // not just the empty set
+    // populate C_NK_Lookup
+    for (long i2 = 0; i2 <= storageN; i2++) {
+      // N choose 0 is always 1 for every N
+      C_NK_Lookup << 1; 
+    }
+    for (long i = 1; i <= storageK; i++) {
+      for (long filler = 0; filler < i; filler++, C_NK_Lookup << 0); 
+      // N choose K where K>N is invalid
+      C_NK_Lookup << 1;
+      // K choose K is 1
+      for (long j = i + 1; j <= storageN; j = j + 1) {
+        // N choose K = N/(N-K) times (N-1) choose K
+        C_NK_Lookup << C_NK_Lookup.lData[C_NK_Lookup.lLength - 1] * j / (j - i);
+      }
+    }
+  }
 
-    if (storageK) { // not just the empty set
-        // populate C_NK_Lookup
-        for (long i2=0; i2<=storageN; i2++) {
-            C_NK_Lookup << 1;    // N choose 0 is always 1 for every N
-        }
-        for (long i=1; i<=storageK; i++) {
-            for (long filler = 0; filler < i; filler++, C_NK_Lookup<<0); // N choose K where K>N is invalid
-            C_NK_Lookup << 1;
-            // K choose K is 1
-            for (long j=i+1; j<=storageN; j=j+1) {
-                // N choose K = N/(N-K) times (N-1) choose K
-                C_NK_Lookup << C_NK_Lookup.lData[C_NK_Lookup.lLength-1] * j/(j-i);
-            }
+  //for (long i=0; i<=storageK; i++)
+  //  {
+  //      long offset = i*(storageN+1);
+  //      for (long j=0; j<=storageN; j++)
+  //          printf ("(%d,%d) = %d\n", j,i, C_NK_Lookup.lData[offset+j]);
+  //  }
+
+
+  matrixDimension = C_NK_Lookup.lData[C_NK_Lookup.lLength - 1];
+  CreateMatrix(this, 1, matrixDimension, false, true, false);
+}
+
+//______________________________________________________________________________
+BaseRef _NTupleStorage::makeDynamic(void) {
+  _NTupleStorage *copy = new _NTupleStorage;
+  checkPointer(copy);
+  copy->_Matrix::Duplicate(this);
+  copy->storageN = storageN;
+  copy->storageK = storageK;
+  copy->C_NK_Lookup.Duplicate(&C_NK_Lookup);
+  return copy;
+}
+
+//______________________________________________________________________________
+bool _NTupleStorage::CheckKTuple(_SimpleList &kTuple) {
+  if (kTuple.lLength == storageK) {
+    if (storageK) {
+      kTuple.Sort();
+      for (long k = 0; k < kTuple.lLength; k++)
+        if (kTuple.lData[k] < 0 || kTuple.lData[k] >= storageN ||
+            (k && kTuple.lData[k] == kTuple.lData[k - 1])) {
+          return false;
         }
     }
-
-    /*  for (long i=0; i<=storageK; i++)
-        {
-            long offset = i*(storageN+1);
-            for (long j=0; j<=storageN; j++)
-                printf ("(%d,%d) = %d\n", j,i, C_NK_Lookup.lData[offset+j]);
-        }
-    */
-
-    matrixDimension = C_NK_Lookup.lData[C_NK_Lookup.lLength-1];
-    CreateMatrix (this, 1, matrixDimension, false, true, false);
+    return true;
+  }
+  return false;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-BaseRef _NTupleStorage::makeDynamic (void)
-{
-    _NTupleStorage* copy = new _NTupleStorage;
-    checkPointer (copy);
-    copy->_Matrix::Duplicate (this);
-    copy->storageN = storageN;
-    copy->storageK = storageK;
-    copy->C_NK_Lookup.Duplicate (&C_NK_Lookup);
-    return copy;
-}
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-bool    _NTupleStorage::CheckKTuple (_SimpleList& kTuple)
-{
-    if (kTuple.lLength == storageK) {
-        if (storageK) {
-            kTuple.Sort();
-            for (long k=0; k<kTuple.lLength; k++)
-                if (kTuple.lData[k] < 0 || kTuple.lData[k] >= storageN || (k && kTuple.lData[k] == kTuple.lData[k-1])) {
-                    return false;
-                }
-        }
-        return true;
+//______________________________________________________________________________
+unsigned long _NTupleStorage::Index(_SimpleList &kTuple) {
+  unsigned long myIndex = 0;
+  if (storageK)
+    for (long k = kTuple.lLength - 1; k >= 0; k--) {
+      myIndex += C_NK_Lookup.lData[(k + 1) * (1 + storageN) + kTuple.lData[k]];
     }
-    return false;
+  return myIndex;
 }
 
-
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-unsigned long   _NTupleStorage::Index (_SimpleList& kTuple)
-{
-    unsigned long myIndex = 0;
-    if (storageK)
-        for (long k=kTuple.lLength-1; k >=0; k--) {
-            myIndex += C_NK_Lookup.lData[(k+1)*(1+storageN) + kTuple.lData[k]];
-        }
-    return myIndex;
+//______________________________________________________________________________
+_Parameter _NTupleStorage::DirectIndex(unsigned long directIndex) {
+  return theData[directIndex];
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-_Parameter  _NTupleStorage::DirectIndex (unsigned long directIndex)
-{
-    return theData[directIndex];
+//______________________________________________________________________________
+unsigned long _NTupleStorage::Store(_Parameter value, _SimpleList &kTuple) {
+  unsigned long myIndex = Index(kTuple);
+  theData[myIndex] = value;
+  return myIndex;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-unsigned long   _NTupleStorage::Store (_Parameter value, _SimpleList& kTuple)
-{
-    unsigned long myIndex = Index (kTuple);
-    theData[myIndex] = value;
-    return myIndex;
+//______________________________________________________________________________
+_Parameter _NTupleStorage::Retrieve(_SimpleList &kTuple) {
+  unsigned long myIndex = Index(kTuple);
+  return theData[myIndex];
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
+//______________________________________________________________________________
+void _NTupleStorage::IndexToTuple(unsigned long directIndex,
+                                  _SimpleList &kTuple) {
 
-_Parameter  _NTupleStorage::Retrieve (_SimpleList& kTuple)
-{
-    unsigned long myIndex = Index (kTuple);
-    return theData[myIndex];
-}
+  kTuple.Clear();
+  if (storageK && directIndex < C_NK_Lookup.lData[C_NK_Lookup.lLength - 1]) {
+    long currentN = storageN - 1;
+    for (long k = storageK; k > 0; k--) {
+      long i = currentN, lookup_offset = k * (storageN + 1);
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
+      while (C_NK_Lookup.lData[lookup_offset + i] > directIndex) {
+        //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
+        i--;
+      }
 
-void    _NTupleStorage::IndexToTuple (unsigned long directIndex, _SimpleList& kTuple)
-{
-    kTuple.Clear();
-    if (storageK && directIndex < C_NK_Lookup.lData[C_NK_Lookup.lLength-1]) {
-        long currentN = storageN-1;
-        for (long k=storageK; k > 0; k--) {
-            long  i             = currentN,
-                  lookup_offset = k*(storageN+1);
+      //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
+      kTuple << i;
+      //printf ("Stored %d\n", i);
 
-            while (C_NK_Lookup.lData[lookup_offset+i] > directIndex) {
-                //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
-                i--;
-            }
-            //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
-            kTuple << i;
-            //printf ("Stored %d\n", i);
-
-            currentN     = i-1;
-            directIndex -= C_NK_Lookup.lData[lookup_offset+i];
-        }
+      currentN = i - 1;
+      directIndex -= C_NK_Lookup.lData[lookup_offset + i];
     }
-    kTuple.Flip();
+  }
+  kTuple.Flip();
 }

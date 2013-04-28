@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -45,32 +45,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
-class _AVLListX: public _AVLList
-{
+class _AVLListX : public _AVLList {
 
-    public:
-        /* SLKP: 20090817
-            add key: index values from the list of strings
-         */
+public:
+  /* SLKP: 20090817
+      add key: index values from the list of strings
+   */
 
-        //Data Members
-        _SimpleList xtraD;
+  //Data Members
+  _SimpleList xtraD;
 
-        //Methods
-        _AVLListX(_SimpleList*);
+  //Methods
+  _AVLListX(_SimpleList *);
 
-        virtual ~_AVLListX(void){}
-        virtual BaseRef toStr(void);
+  virtual ~_AVLListX(void) {}
+  virtual BaseRef toStr(void);
 
-        virtual void Clear(bool = false);
-        virtual void DeleteXtra(long);
-        virtual void PopulateFromList(_List&);
+  virtual void Clear(bool = false);
+  virtual void DeleteXtra(long);
+  virtual void PopulateFromList(_List &);
 
-        virtual long InsertData(BaseRef, long, bool);
-        virtual long UpdateValue (BaseRef, long, long);
+  virtual long InsertData(BaseRef, long, bool);
+  virtual long UpdateValue(BaseRef, long, long);
 
-        void        SetXtra(long,long);
-        long        GetXtra(long);
+  void SetXtra(long, long);
+  long GetXtra(long);
 
 };
 

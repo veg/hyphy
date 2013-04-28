@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-
+  
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -37,46 +37,54 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef __GROWINGVECTOR__
-#define __GROWINGVECTOR__
+#include <tr1/tuple>
+#include <iostream>
+#include "gtest/gtest.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 
-#include "matrix.h"
+//Generate necessary includes from the respective implementation file
+% for include in includes:
+${include}
+% endfor
 
-class _GrowingVector : public _Matrix
-                       // automatically growing matrix class
-                       {
+namespace {
 
-public:
-  _GrowingVector(bool = true);
-  virtual ~_GrowingVector(void) {}
-  ;
+// The fixture for testing class Foo.
+class ${class_name}Test : public ::testing::Test {
 
-  virtual BaseRef
-  makeDynamic(void);               // duplicate this object into a dynamic copy
-  virtual void Duplicate(BaseRef); // duplicate an object from reference
+protected:
+  // You can remove any or all of the following functions if its body
+  // is empty.
 
-  virtual void Clear(void);
-
-  virtual long GetHDim(void) {
-    if (isColumn) {
-      return GetUsed();
-    }
-    return 1;
+  ${class_name}Test() {
+    // You can do set-up work for each test here.
   }
-  virtual long GetVDim(void) {
-    if (!isColumn) {
-      return GetUsed();
-    }
-    return 1;
+
+  virtual ~${class_name}Test() {
+    // You can do clean-up work that doesn't throw exceptions here.
   }
-  long Store(_Parameter);
-  long GetUsed(void) { return used; }
-  void ZeroUsed(void) { used = 0; }
 
-  void operator<<(const _SimpleList &);
+  // If the constructor and destructor are not enough for setting up
+  // and cleaning up each test, you can define the following methods:
 
-  long used;
-  bool isColumn;
+  virtual void SetUp() {
+    // Code here will be called immediately after the constructor (right
+    // before each test).
+  }
+
+  virtual void TearDown() {
+    // Code here will be called immediately after each test (right
+    // before the destructor).
+  }
+
 };
 
-#endif
+% for method in methods:
+TEST_F(${class_name}Test, ${method}Test) {
+}
+% endfor
+
+}

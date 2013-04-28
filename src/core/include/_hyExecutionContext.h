@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -49,17 +49,17 @@ class _VariableContainer;
 
 class _hyExecutionContext {
 
-  _VariableContainer* contextSpec;
-  _String           * errMsg;
+  _VariableContainer *contextSpec;
+  _String *errMsg;
 
 public:
-                      _hyExecutionContext                   (_VariableContainer * = nil, _String* = nil);
-  _VariableContainer* GetContext                            (void);
-  void                ReportError                           (_String);
-  _String           * GetErrorBuffer                        (void);
-  
+  _hyExecutionContext(_VariableContainer * = nil, _String * = nil);
+  _VariableContainer *GetContext(void);
+  void ReportError(_String);
+  _String *GetErrorBuffer(void);
+
 };
 
-extern    _hyExecutionContext *_hyDefaultExecutionContext;
+extern _hyExecutionContext *_hyDefaultExecutionContext;
 
 #endif
