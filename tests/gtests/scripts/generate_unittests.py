@@ -1,6 +1,6 @@
 from mako.template import Template
 
-ROOT_PATH ="/Users/sweaver/Programming/hyphy/src/"
+ROOT_PATH ="./"
 TAG_FILE = './tags'
 TEMPLATE_FILE="./ut_template.cpp"
 OUTPUT_DIR = "./"
@@ -39,6 +39,7 @@ method_taglist = get_core_tags_from_file(TAG_FILE)
 
 #Get unique filenames
 unique_filenames = list(set([t[1] for t in method_taglist]))
+
 
 #Adapt list to easily view methods by class and file
 class_information = [(u[0],u[1].replace("class:",""),
