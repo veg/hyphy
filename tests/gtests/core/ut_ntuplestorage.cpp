@@ -46,35 +46,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "matrix.h"
+#include "ntuplestorage.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _NTupleStorageTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _NTupleStorageTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    _SimpleListtest = new _SimpleList();
+    unsignedtest = new unsigned();
+    _NTupleStoragetest = new _NTupleStorage();
+    _Parametertest = new _Parameter();
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_NTupleStorageTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +85,75 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete _SimpleListtest;
+    delete unsignedtest;
+    delete _NTupleStoragetest;
+    delete _Parametertest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  _SimpleList* _SimpleListtest;
+  unsigned* unsignedtest;
+  _NTupleStorage* _NTupleStoragetest;
+  _Parameter* _Parametertest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_NTupleStorageTest, CheckKTupleTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  bool resultbool = _NTupleStoragetest->CheckKTuple(*_SimpleListtest);
+  //EXPECT_EQ (resultbool, 0);
 
 }
 
-% endfor
+
+TEST_F(_NTupleStorageTest, DirectIndexTest) {
+
+  _Parameter result_Parameter = _NTupleStoragetest->DirectIndex(*longtest);
+  //EXPECT_EQ (result_Parameter, 0);
+
+}
+
+
+TEST_F(_NTupleStorageTest, IndexTest) {
+
+  long resultlong = _NTupleStoragetest->Index(*_SimpleListtest);
+  //EXPECT_EQ (resultlong, 0);
+
+}
+
+
+TEST_F(_NTupleStorageTest, IndexToTupleTest) {
+
+  _NTupleStoragetest->IndexToTuple(*longtest);
+  //EXPECT_EQ (_NTupleStoragetest, 0);
+
+}
+
+
+TEST_F(_NTupleStorageTest, RetrieveTest) {
+
+  _Parameter result_Parameter = _NTupleStoragetest->Retrieve(*_SimpleListtest);
+  //EXPECT_EQ (result_Parameter, 0);
+
+}
+
+
+TEST_F(_NTupleStorageTest, StoreTest) {
+
+  long resultlong = _NTupleStoragetest->Store(*_Parametertest, *_SimpleListtest);
+  //EXPECT_EQ (resultlong, 0);
+
+}
+
+
+TEST_F(_NTupleStorageTest, makeDynamicTest) {
+
+  BaseRef resultBaseRef = _NTupleStoragetest->makeDynamic();
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
 
 }

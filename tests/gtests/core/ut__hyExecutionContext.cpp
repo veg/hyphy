@@ -46,35 +46,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "_hyExecutionContext.h"
+#include "variablecontainer.h"
+#include "hy_strings.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _hyExecutionContextTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _hyExecutionContextTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    _hyExecutionContexttest = new _hyExecutionContext(_VariableContainertest, _Stringtest);
+    _VariableContainertest = new _VariableContainer();
+    _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_hyExecutionContextTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +85,41 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete _hyExecutionContexttest;
+    delete _VariableContainertest;
+    delete _Stringtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  _hyExecutionContext* _hyExecutionContexttest;
+  _VariableContainer* _VariableContainertest;
+  _String* _Stringtest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_hyExecutionContextTest, GetContextTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  _VariableContainer* result_VariableContainer = _hyExecutionContexttest->GetContext();
+  //EXPECT_EQ (result_VariableContainer*, 0);
 
 }
 
-% endfor
+
+TEST_F(_hyExecutionContextTest, GetErrorBufferTest) {
+
+  _String* result_String = _hyExecutionContexttest->GetErrorBuffer();
+  //EXPECT_EQ (result_String*, 0);
+
+}
+
+
+TEST_F(_hyExecutionContextTest, ReportErrorTest) {
+
+  _hyExecutionContexttest->ReportError(*_Stringtest);
+  //EXPECT_EQ (_hyExecutionContexttest, 0);
+
+}
+
 
 }

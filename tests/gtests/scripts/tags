@@ -225,7 +225,7 @@ Cleanup	./core/likefunc.cpp	/^void _LikelihoodFunction::Cleanup(void) {$/;"	f	cl
 Cleanup	./core/likefuncocl.cpp	/^void _OCLEvaluator::Cleanup(int iExitCode) {$/;"	f	class:_OCLEvaluator
 CleanupMPIOptimizer	./core/likefunc.cpp	/^void _LikelihoodFunction::CleanupMPIOptimizer(void) {$/;"	f	class:_LikelihoodFunction
 CleanupMenusAndSuch	./mains/mac.cpp	/^void    CleanupMenusAndSuch (void)$/;"	f
-CleanupParameterMapping	./core/likefunc2.cpp	/^void _LikelihoodFunction::CleanupParameterMapping(void) {$/;"	f	class:_LikelihoodFunction
+CleanupParameterMapping	./core/likefunc.cpp	/^void _LikelihoodFunction::CleanupParameterMapping(void) {$/;"	f	class:_LikelihoodFunction
 Clear	./core/avllist.cpp	/^void _AVLList::Clear(bool cL) {$/;"	f	class:_AVLList
 Clear	./core/avllistx.cpp	/^void _AVLListX::Clear(bool cL) {$/;"	f	class:_AVLListX
 Clear	./core/avllistxl.cpp	/^void _AVLListXL::Clear(bool cL) {$/;"	f	class:_AVLListXL
@@ -258,7 +258,7 @@ CodeToLetter	./core/translationtable.cpp	/^char _TranslationTable::CodeToLetter(
 CodonAlignStringsStep	./core/alignment.cpp	/^CodonAlignStringsStep(double *const score_matrix, long *const reference,$/;"	f
 CodonAlphabet	./core/sequence.cpp	/^        CodonAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.", FullAlphabet,$/;"	v
 CodonNeutralSimulate	./core/likefunc.cpp	/^void _LikelihoodFunction::CodonNeutralSimulate($/;"	f	class:_LikelihoodFunction
-CollectLFAttributes	./core/likefunc2.cpp	/^_AssociativeList *_LikelihoodFunction::CollectLFAttributes(void) {$/;"	f	class:_LikelihoodFunction
+CollectLFAttributes	./core/likefunc.cpp	/^_AssociativeList *_LikelihoodFunction::CollectLFAttributes(void) {$/;"	f	class:_LikelihoodFunction
 Combine	./core/dataset.cpp	/^_DataSet *_DataSet::Combine(_SimpleList ref) {$/;"	f	class:_DataSet
 Compact	./core/dataset.cpp	/^void _DataSet::Compact(long index) {$/;"	f	class:_DataSet
 Compare	./core/list.cpp	/^long _List::Compare(BaseRef i, long j) {$/;"	f	class:_List
@@ -341,7 +341,7 @@ ComputeReleafingCost	./core/thetree.cpp	/^long _TheTree::ComputeReleafingCost(_D
 ComputeReleafingCostChar	./core/thetree.cpp	/^long _TheTree::ComputeReleafingCostChar(_DataSetFilter *dsf, long firstIndex,$/;"	f	class:_TheTree
 ComputeRowAndColSums	./core/matrix.cpp	/^_List *_Matrix::ComputeRowAndColSums(void) {$/;"	f	class:_Matrix
 ComputeSimple	./core/formula.cpp	/^_Parameter _Formula::ComputeSimple(_SimpleFormulaDatum *stack,$/;"	f	class:_Formula
-ComputeSiteLikelihoodsForABlock	./core/likefunc2.cpp	/^void _LikelihoodFunction::ComputeSiteLikelihoodsForABlock($/;"	f	class:_LikelihoodFunction
+ComputeSiteLikelihoodsForABlock	./core/likefunc.cpp	/^void _LikelihoodFunction::ComputeSiteLikelihoodsForABlock($/;"	f	class:_LikelihoodFunction
 ComputeSize	./core/dataset.cpp	/^long _DataSet::ComputeSize(void) {$/;"	f	class:_DataSet
 ComputeTreeBlockByBranch	./core/thetree.cpp	/^_Parameter _TheTree::ComputeTreeBlockByBranch($/;"	f	class:_TheTree
 ComputeTwoSequenceLikelihood	./core/thetree.cpp	/^_Parameter _TheTree::ComputeTwoSequenceLikelihood($/;"	f	class:_TheTree
@@ -507,7 +507,7 @@ DereferenceVariable	./core/variable.cpp	/^long DereferenceVariable(long index, _
 DetectType	./core/translationtable.cpp	/^const unsigned char _TranslationTable::DetectType(void) const {$/;"	f	class:_TranslationTable
 DetermineBranchLengthGivenScalingParameter	./core/thetree.cpp	/^_Parameter _TheTree::DetermineBranchLengthGivenScalingParameter($/;"	f	class:_TheTree
 DetermineBranchLengthMappingMode	./core/treetopology.cpp	/^_String _TreeTopology::DetermineBranchLengthMappingMode(_String *param,$/;"	f	class:_TreeTopology
-DetermineLocalUpdatePolicy	./core/likefunc2.cpp	/^void _LikelihoodFunction::DetermineLocalUpdatePolicy(void) {$/;"	f	class:_LikelihoodFunction
+DetermineLocalUpdatePolicy	./core/likefunc.cpp	/^void _LikelihoodFunction::DetermineLocalUpdatePolicy(void) {$/;"	f	class:_LikelihoodFunction
 DetermineNodesForUpdate	./core/thetree.cpp	/^long _TheTree::DetermineNodesForUpdate(_SimpleList &updateNodes,$/;"	f	class:_TheTree
 DialogTimerAnimateAction	./mains/mac.cpp	/^pascal void DialogTimerAnimateAction (EventLoopTimerRef,void*userData)$/;"	f
 DialogTimerAnimateCornholio	./mains/mac.cpp	/^pascal void DialogTimerAnimateCornholio (EventLoopTimerRef,void* userData)$/;"	f
@@ -707,7 +707,7 @@ Find	./core/strings.cpp	/^long _String::Find(const char s, long from, long to) c
 Find	./core/trie.cpp	/^long _Trie::Find(const _String &key, _SimpleList *path, bool prefixOK) {$/;"	f	class:_Trie
 Find	./core/trie.cpp	/^long _Trie::Find(const char key, bool prefixOK) {$/;"	f	class:_Trie
 FindAllSitesLikeThisOne	./core/dataset.cpp	/^void _DataSet::FindAllSitesLikeThisOne(long index, _SimpleList &receptacle) {$/;"	f	class:_DataSet
-FindAllSitesLikeThisOne	./core/site.cpp	/^void _DataSetFilter::FindAllSitesLikeThisOne(long index,$/;"	f	class:_DataSetFilter
+FindAllSitesLikeThisOne	./core/datasetfilter.cpp	/^void _DataSetFilter::FindAllSitesLikeThisOne(long index,$/;"	f	class:_DataSetFilter
 FindAnyCase	./core/strings.cpp	/^long _String::FindAnyCase(_String s, long from, long to)$/;"	f	class:_String
 FindBFFunctionName	./core/batchlan.cpp	/^long FindBFFunctionName(_String &s, _VariableContainer *theP) {$/;"	f
 FindBackwards	./core/strings.cpp	/^long _String::FindBackwards(_String s, long from, long to)$/;"	f	class:_String
@@ -753,7 +753,7 @@ FlagError	./core/error.cpp	/^void FlagError(_String st) {$/;"	f
 FlatRepresentation	./core/treetopology.cpp	/^_PMathObj _TreeTopology::FlatRepresentation(void) {$/;"	f	class:_TreeTopology
 Flip	./core/simplelist.cpp	/^void _SimpleList::Flip() {$/;"	f	class:_SimpleList
 Flip	./core/strings.cpp	/^void _String::Flip(void) {$/;"	f	class:_String
-FlushLocalUpdatePolicy	./core/likefunc2.cpp	/^void _LikelihoodFunction::FlushLocalUpdatePolicy(void) {$/;"	f	class:_LikelihoodFunction
+FlushLocalUpdatePolicy	./core/likefunc.cpp	/^void _LikelihoodFunction::FlushLocalUpdatePolicy(void) {$/;"	f	class:_LikelihoodFunction
 FlushRegExp	./core/strings.cpp	/^void FlushRegExp(Ptr regExpP) {$/;"	f
 FormatNumberString	./core/constant.cpp	/^_PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)$/;"	f	class:_Constant
 FormatNumberString	./core/include/mathobj.h	/^  virtual _MathObject *FormatNumberString(_MathObject *, _MathObject *) {$/;"	f	class:_MathObject
@@ -1557,7 +1557,7 @@ MPIReceiveScores	./new/bayesgraph.cpp	/^void _BayesianGraphicalModel::MPIReceive
 MPIReceiveScores	./new/bgm.cpp	/^void    Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long node_id)$/;"	f	class:Bgm
 MPIRecvString	./core/batchlan.cpp	/^_String *MPIRecvString(long senderT, long &senderID) {$/;"	f
 MPISendString	./core/batchlan.cpp	/^void MPISendString(_String &theMessage, long destID, bool isError) {$/;"	f
-MPISwitchNodesToMPIMode	./core/likefunc2.cpp	/^void MPISwitchNodesToMPIMode(long totalNodeCount) {$/;"	f
+MPISwitchNodesToMPIMode	./core/likefunc.cpp	/^void MPISwitchNodesToMPIMode(long totalNodeCount) {$/;"	f
 MPI_LF_Compute	./core/likefunc.cpp	/^void _LikelihoodFunction::MPI_LF_Compute(long senderID, bool partMode)$/;"	f	class:_LikelihoodFunction
 MPI_SEND_CHUNK	./core/batchlan.cpp	/^#define MPI_SEND_CHUNK /;"	d	file:
 MResolve	./core/matrix.cpp	/^bool _Matrix::MResolve(_PMathObj p, _PMathObj p2, long &ind1, long &ind2) {$/;"	f	class:_Matrix
@@ -1741,7 +1741,7 @@ ParseNode	./new/include/scfg.h	/^    ParseNode() {   \/\/ for root node$/;"	f	cl
 ParseNode	./new/include/scfg.h	/^    ParseNode(ParseNode * p, char c) {$/;"	f	class:ParseNode
 ParseNode	./new/include/scfg.h	/^class ParseNode$/;"	c
 ParseStringRepresentation	./core/associativelist.cpp	/^bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,$/;"	f	class:_AssociativeList
-PartitionCatVars	./core/likefunc2.cpp	/^void _LikelihoodFunction::PartitionCatVars(_SimpleList &storage,$/;"	f	class:_LikelihoodFunction
+PartitionCatVars	./core/likefunc.cpp	/^void _LikelihoodFunction::PartitionCatVars(_SimpleList &storage,$/;"	f	class:_LikelihoodFunction
 PartitionLengths	./core/likefunc.cpp	/^long _LikelihoodFunction::PartitionLengths(char runMode,$/;"	f	class:_LikelihoodFunction
 PasteBranchLength	./core/treetopology.cpp	/^void _TreeTopology::PasteBranchLength(node<long> *currentNode, _String &res,$/;"	f	class:_TreeTopology
 PatchFormulasTogether	./core/formula.cpp	/^_Formula &_Formula::PatchFormulasTogether(_Formula &target,$/;"	f	class:_Formula
@@ -1761,7 +1761,7 @@ Pop	./core/stack.cpp	/^_PMathObj _Stack::Pop(bool del) {$/;"	f	class:_Stack
 PopFilePath	./core/batchlanhelpers.cpp	/^void PopFilePath(void) { pathNames.Delete(pathNames.lLength - 1); }$/;"	f
 Populate	./core/simplelist.cpp	/^void _SimpleList::Populate(long l, long start, long step) {$/;"	f	class:_SimpleList
 PopulateArraysForASimpleFormula	./core/parser2.cpp	/^void PopulateArraysForASimpleFormula(_SimpleList &vars,$/;"	f
-PopulateConditionalProbabilities	./core/likefunc2.cpp	/^void _LikelihoodFunction::PopulateConditionalProbabilities($/;"	f	class:_LikelihoodFunction
+PopulateConditionalProbabilities	./core/likefunc.cpp	/^void _LikelihoodFunction::PopulateConditionalProbabilities($/;"	f	class:_LikelihoodFunction
 PopulateConstantMatrix	./core/matrix.cpp	/^void _Matrix::PopulateConstantMatrix(const _Parameter v) {$/;"	f	class:_Matrix
 PopulateFromList	./core/avllistx.cpp	/^void _AVLListX::PopulateFromList(_List &src) {$/;"	f	class:_AVLListX
 PostCompute	./core/likefunc.cpp	/^void _LikelihoodFunction::PostCompute(void) {$/;"	f	class:_LikelihoodFunction
@@ -1807,7 +1807,7 @@ ProcessNexusTrees	./core/nexus.cpp	/^void ProcessNexusTrees(FileState &fState, l
 ProcessNumericArgument	./core/batchlan.cpp	/^_Parameter ProcessNumericArgument(_String *data, _VariableContainer *theP,$/;"	f
 ProcessParameter	./core/strings.cpp	/^void _String::ProcessParameter(void) {$/;"	f	class:_String
 ProcessPartition	./core/dataset.cpp	/^void _DataSet::ProcessPartition(_String &input2, _SimpleList &target,$/;"	f	class:_DataSet
-ProcessPartitionList	./core/likefunc2.cpp	/^bool _LikelihoodFunction::ProcessPartitionList(_SimpleList &partsToDo,$/;"	f	class:_LikelihoodFunction
+ProcessPartitionList	./core/likefunc.cpp	/^bool _LikelihoodFunction::ProcessPartitionList(_SimpleList &partsToDo,$/;"	f	class:_LikelihoodFunction
 ProcessStringArgument	./core/batchlanhelpers.cpp	/^_String ProcessStringArgument(_String *data) {$/;"	f
 ProcessTree	./core/site.cpp	/^void ProcessTree(FileState *fState, FILE *f, _String &CurrentLine) {$/;"	f
 ProcessTreeBranchLength	./core/strings.cpp	/^_Parameter _String::ProcessTreeBranchLength(void) {$/;"	f	class:_String
@@ -2081,9 +2081,9 @@ ReadSettings	./gui/qt/hyphymain.cpp	/^void HyphyMain::ReadSettings (void) {$/;"	
 RearrangeTerm	./core/polynomialdata.cpp	/^void _PolynomialData::RearrangeTerm(long *target, long *source, long *markup,$/;"	f	class:_PolynomialData
 Rebuild	./core/likefunc.cpp	/^void _LikelihoodFunction::Rebuild(void) {$/;"	f	class:_LikelihoodFunction
 RecomputeMatrix	./core/calcnode.cpp	/^bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,$/;"	f	class:_CalcNode
-ReconstructAncestors	./core/likefunc2.cpp	/^void _LikelihoodFunction::ReconstructAncestors(_DataSet &target,$/;"	f	class:_LikelihoodFunction
+ReconstructAncestors	./core/likefunc.cpp	/^void _LikelihoodFunction::ReconstructAncestors(_DataSet &target,$/;"	f	class:_LikelihoodFunction
 RecoverAncestralSequences	./core/thetree.cpp	/^_List *_TheTree::RecoverAncestralSequences($/;"	f	class:_TheTree
-RecoverAncestralSequencesMarginal	./core/likefunc2.cpp	/^_List *_LikelihoodFunction::RecoverAncestralSequencesMarginal($/;"	f	class:_LikelihoodFunction
+RecoverAncestralSequencesMarginal	./core/likefunc.cpp	/^_List *_LikelihoodFunction::RecoverAncestralSequencesMarginal($/;"	f	class:_LikelihoodFunction
 RecoverNodeSupportStates	./core/thetree.cpp	/^void _TheTree::RecoverNodeSupportStates(_DataSetFilter *dsf, long index,$/;"	f	class:_TheTree
 RecoverNodeSupportStates2	./core/thetree.cpp	/^void _TheTree::RecoverNodeSupportStates2(node<long> *thisNode,$/;"	f	class:_TheTree
 RecurseCategory	./core/likefunc.cpp	/^void _LikelihoodFunction::RecurseCategory($/;"	f	class:_LikelihoodFunction
@@ -2137,13 +2137,13 @@ ResetNameSpace	./core/executionlist.cpp	/^void _ExecutionList::ResetNameSpace(vo
 ResetPolynomialCheck	./core/polynoml.cpp	/^void ResetPolynomialCheck(_Polynomial *p) {$/;"	f
 Resize	./core/matrix.cpp	/^void _Matrix::Resize(long newH) {$/;"	f	class:_Matrix
 ResortTerms	./core/polynomialdata.cpp	/^void _PolynomialData::ResortTerms(long *reIndex) {$/;"	f	class:_PolynomialData
-RestoreScalingFactors	./core/likefunc2.cpp	/^void _LikelihoodFunction::RestoreScalingFactors(long index, long branchID,$/;"	f	class:_LikelihoodFunction
+RestoreScalingFactors	./core/likefunc.cpp	/^void _LikelihoodFunction::RestoreScalingFactors(long index, long branchID,$/;"	f	class:_LikelihoodFunction
 Retrieve	./core/avllist.cpp	/^BaseRef _AVLList::Retrieve(long idx) {$/;"	f	class:_AVLList
 Retrieve	./core/ntuplestorage.cpp	/^_Parameter _NTupleStorage::Retrieve(_SimpleList &kTuple) {$/;"	f	class:_NTupleStorage
 RetrieveAddedTokens	./core/include/translationtable.h	/^  const _String &RetrieveAddedTokens(void) const { return tokensAdded; }$/;"	f	class:_TranslationTable
 RetrieveCharacters	./core/translationtable.cpp	/^const _String *_TranslationTable::RetrieveCharacters(void) const {$/;"	f	class:_TranslationTable
 RetrieveKeyByPayload	./core/trie.cpp	/^_String _Trie::RetrieveKeyByPayload(const long key) {$/;"	f	class:_Trie
-RetrieveMPICount	./core/likefunc2.cpp	/^long RetrieveMPICount(char) {$/;"	f
+RetrieveMPICount	./core/likefunc.cpp	/^long RetrieveMPICount(char) {$/;"	f
 RetrieveModelComponents	./core/batchlan2.cpp	/^void RetrieveModelComponents(long mid, _Matrix *&mm, _Matrix *&fv, bool &mbf) {$/;"	f
 RetrieveModelComponents	./core/batchlan2.cpp	/^void RetrieveModelComponents(long mid, _Variable *&mm, _Variable *&fv, bool &mbf) {$/;"	f
 RetrieveNumeric	./core/matrix.cpp	/^_PMathObj _Matrix::RetrieveNumeric(void) {$/;"	f	class:_Matrix
@@ -2156,7 +2156,7 @@ RootedFlag	./core/include/thetree.h	/^  char &RootedFlag(void) { return rooted; 
 RowAndColumnMax	./core/matrix.cpp	/^void _Matrix::RowAndColumnMax(_Parameter &r, _Parameter &c, _Parameter *cache) {$/;"	f	class:_Matrix
 RunColdChain	./new/bgm.cpp	/^_Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sample_lag)$/;"	f	class:Bgm
 RunHotChain	./new/bgm.cpp	/^void    Bgm::RunHotChain (_SimpleList * current_order, long nsteps, long sample_lag, _Parameter temper)$/;"	f	class:Bgm
-RunViterbi	./core/likefunc2.cpp	/^void _LikelihoodFunction::RunViterbi(_Matrix &result,$/;"	f	class:_LikelihoodFunction
+RunViterbi	./core/likefunc.cpp	/^void _LikelihoodFunction::RunViterbi(_Matrix &result,$/;"	f	class:_LikelihoodFunction
 SCALED_MEDIAN	./core/include/category.h	/^#define SCALED_MEDIAN /;"	d
 SCFG_OPTIMIZATION_THRESHOLD	./new/scfg.cpp	/^#define     SCFG_OPTIMIZATION_THRESHOLD /;"	d	file:
 SET_LIST_BIT	./core/regex.cpp	/^#define SET_LIST_BIT(/;"	d	file:
@@ -2924,14 +2924,14 @@ SetWeightMatrix	./new/bgm.cpp	/^void    Bgm::SetWeightMatrix (_Matrix * weights)
 SetXtra	./core/avllistx.cpp	/^void _AVLListX::SetXtra(long i, long d) { xtraD.lData[i] = d; }$/;"	f	class:_AVLListX
 SetXtra	./core/avllistxl.cpp	/^void _AVLListXL::SetXtra(long i, BaseRef d, bool dup) {$/;"	f	class:_AVLListXL
 Setup	./core/likefunc.cpp	/^void _LikelihoodFunction::Setup(void) {$/;"	f	class:_LikelihoodFunction
-SetupCategoryCaches	./core/likefunc2.cpp	/^void _LikelihoodFunction::SetupCategoryCaches(void) {$/;"	f	class:_LikelihoodFunction
+SetupCategoryCaches	./core/likefunc.cpp	/^void _LikelihoodFunction::SetupCategoryCaches(void) {$/;"	f	class:_LikelihoodFunction
 SetupCategoryMap	./core/calcnode.cpp	/^void _CalcNode::SetupCategoryMap(_List &containerVariables,$/;"	f	class:_CalcNode
 SetupCategoryMapsForNodes	./core/thetree.cpp	/^void _TheTree::SetupCategoryMapsForNodes(_List &containerVariables,$/;"	f	class:_TheTree
 SetupConversion	./core/datasetfilter.cpp	/^void _DataSetFilter::SetupConversion(void) {$/;"	f	class:_DataSetFilter
 SetupLFCaches	./core/likefunc.cpp	/^void _LikelihoodFunction::SetupLFCaches(void) {$/;"	f	class:_LikelihoodFunction
 SetupMenusAndSuch	./mains/mac.cpp	/^void    SetupMenusAndSuch (void)$/;"	f
 SetupOperationLists	./core/parser.cpp	/^void SetupOperationLists(void) {$/;"	f
-SetupParameterMapping	./core/likefunc2.cpp	/^void _LikelihoodFunction::SetupParameterMapping(void) {$/;"	f	class:_LikelihoodFunction
+SetupParameterMapping	./core/likefunc.cpp	/^void _LikelihoodFunction::SetupParameterMapping(void) {$/;"	f	class:_LikelihoodFunction
 ShortenVarID	./core/strings.cpp	/^_String _String::ShortenVarID(_String &containerID) {$/;"	f	class:_String
 ShowObjectInspector	./mains/gtk.cpp	/^void    ShowObjectInspector (void)$/;"	f
 SimpleRequest	./gui/qt/include/simplerequest.h	/^class SimpleRequest:public QObject$/;"	c
@@ -3012,8 +3012,8 @@ Sum	./core/include/mathobj.h	/^  virtual _MathObject *Sum(void) {$/;"	f	class:_M
 Sum	./core/matrix.cpp	/^_PMathObj _Matrix::Sum(void) { return new _Constant(MaxElement(1)); }$/;"	f	class:_Matrix
 Sum	./core/simplelist.cpp	/^long _SimpleList::Sum(void) {$/;"	f	class:_SimpleList
 SumOfPowers	./core/polynomialdata.cpp	/^long _PolynomialData::SumOfPowers(long index) {$/;"	f	class:_PolynomialData
-SumUpHiddenMarkov	./core/likefunc2.cpp	/^_Parameter _LikelihoodFunction::SumUpHiddenMarkov($/;"	f	class:_LikelihoodFunction
-SumUpSiteLikelihoods	./core/likefunc2.cpp	/^_LikelihoodFunction::SumUpSiteLikelihoods(long index,$/;"	f	class:_LikelihoodFunction
+SumUpHiddenMarkov	./core/likefunc.cpp	/^_Parameter _LikelihoodFunction::SumUpHiddenMarkov($/;"	f	class:_LikelihoodFunction
+SumUpSiteLikelihoods	./core/likefunc.cpp	/^_LikelihoodFunction::SumUpSiteLikelihoods(long index,$/;"	f	class:_LikelihoodFunction
 Swap	./core/matrix.cpp	/^void _Matrix::Swap(_Matrix &m) {$/;"	f	class:_Matrix
 Swap	./core/simplelist.cpp	/^void _SimpleList::Swap(long i, long j) {$/;"	f	class:_SimpleList
 SwapRows	./core/matrix.cpp	/^void _Matrix::SwapRows(const long row1, const long row2) {$/;"	f	class:_Matrix
@@ -3250,7 +3250,7 @@ TokenCode	./core/translationtable.cpp	/^bool _TranslationTable::TokenCode(const 
 TokenCode	./core/translationtable.cpp	/^const unsigned long _TranslationTable::TokenCode(const char token) const {$/;"	f	class:_TranslationTable
 Tokenize	./core/strings.cpp	/^_List *_String::Tokenize(_String s) {$/;"	f	class:_String
 TokenizeString	./new/scfg.cpp	/^_String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)$/;"	f	class:Scfg
-TotalRateClassesForAPartition	./core/likefunc2.cpp	/^long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,$/;"	f	class:_LikelihoodFunction
+TotalRateClassesForAPartition	./core/likefunc.cpp	/^long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,$/;"	f	class:_LikelihoodFunction
 TrainModelNN	./new/HYNetInterface.cpp	/^void         TrainModelNN   (_String* model, _String* matrix)$/;"	f
 Translate2Frequencies	./core/datasetfilter.cpp	/^long _DataSetFilter::Translate2Frequencies(_String &str, _Parameter *parvect,$/;"	f	class:_DataSetFilter
 Translate2Frequencies	./core/datasetfilter.cpp	/^long _DataSetFilter::Translate2Frequencies(char s, _Parameter *parvect,$/;"	f	class:_DataSetFilter
@@ -3281,7 +3281,7 @@ UnFreeze	./core/datasetfilter.cpp	/^void _DataSetFilter::UnFreeze(long site) {$/
 UnOps	./core/parser.cpp	/^_Trie UnOps;$/;"	v
 Union	./core/simplelist.cpp	/^void _SimpleList::Union(_SimpleList &l1, _SimpleList &l2) {$/;"	f	class:_SimpleList
 UpCase	./core/strings.cpp	/^void _String::UpCase(void) {$/;"	f	class:_String
-UpdateBlockResult	./core/likefunc2.cpp	/^void _LikelihoodFunction::UpdateBlockResult(long index, _Parameter new_value) {$/;"	f	class:_LikelihoodFunction
+UpdateBlockResult	./core/likefunc.cpp	/^void _LikelihoodFunction::UpdateBlockResult(long index, _Parameter new_value) {$/;"	f	class:_LikelihoodFunction
 UpdateChangingFlas	./core/parser.cpp	/^void UpdateChangingFlas(_SimpleList &involvedVariables) {$/;"	f
 UpdateChangingFlas	./core/parser.cpp	/^void UpdateChangingFlas(long vN) {$/;"	f
 UpdateDependent	./core/likefunc.cpp	/^void _LikelihoodFunction::UpdateDependent(long index) {$/;"	f	class:_LikelihoodFunction
@@ -3683,7 +3683,7 @@ _hyConsoleSuspendExecutionAction	./gui/qt/include/hyphymain.h	/^    QAction *_hy
 _hyConsoleUndoAction	./gui/qt/include/hyphymain.h	/^    QAction *_hyConsoleUndoAction;$/;"	m	class:HyphyMain
 _hyConsoleViewLogAction	./gui/qt/include/hyphymain.h	/^    QAction *_hyConsoleViewLogAction;$/;"	m	class:HyphyMain
 _hyDefaultExecutionContext	./core/_hyExecutionContext.cpp	/^                    *_hyDefaultExecutionContext = &_hyDefaultExecutionContextAux;$/;"	v
-_hyExecutionContext	./core/_hyExecutionContext.cpp	/^_hyExecutionContext::_hyExecutionContext (_VariableContainer *context, _String* errorBuffer) {$/;"	f	class:_hyExecutionContext
+_hyExecutionContext	./core/_hyExecutionContext.cpp	/^_hyExecutionContext::_hyExecutionContext (_VariableContainer *context, _String *errorBuffer) {$/;"	f	class:_hyExecutionContext
 _hyExecutionContext	./core/include/_hyExecutionContext.h	/^class _hyExecutionContext {$/;"	c
 _hyInitCommandExtras	./core/batchlan2.cpp	/^_HBLCommandExtras *_hyInitCommandExtras(const long cut, const long conditions,$/;"	f
 _hyPreferencesKeysAux	./gui/preferences.cpp	/^_AVLListX           _hyPreferencesKeys (&_hyPreferencesKeysAux);$/;"	v
@@ -4762,7 +4762,7 @@ makeDynamicCopy	./core/thetree.cpp	/^BaseRef _TheTree::makeDynamicCopy(_String *
 makeNewCommand	./core/batchlan.cpp	/^_ElementaryCommand *makeNewCommand(long ccode) {$/;"	f
 makedir	./lib/build.sh	/^makedir () {$/;"	f
 manager	./gui/qt/include/simplerequest.h	/^    QNetworkAccessManager* manager;$/;"	m	class:SimpleRequest
-mapParameterToInverval	./core/likefunc2.cpp	/^_Parameter mapParameterToInverval(_Parameter in, char type, bool inverse) {$/;"	f
+mapParameterToInverval	./core/likefunc.cpp	/^_Parameter mapParameterToInverval(_Parameter in, char type, bool inverse) {$/;"	f
 marginalLikelihoodCache	./core/include/thetree.h	/^  _Parameter *rootIChildrenCache, *marginalLikelihoodCache;$/;"	m	class:_TheTree
 masks	./new/include/scfg.h	/^    unsigned long masks[_HY_BITMASK_WIDTH_];$/;"	m	struct:bitMasks
 match_null_string_p	./core/regex.cpp	/^        unsigned match_null_string_p : 2;$/;"	m	struct:__anon4::__anon5	file:

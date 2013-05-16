@@ -46,35 +46,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "baseobj.h"
+#include "likefunc.h"
+#include <sys/time.h>
+#include <unistd.h>
+#include    "baseobj.h"
+#include    "helperfunctions.h"
+#include    "hy_globals.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class BaseObjTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  BaseObjTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    BaseObjtest = new BaseObj();
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~BaseObjTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +87,45 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete BaseObjtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  BaseObj* BaseObjtest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(BaseObjTest, makeDynamicTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  BaseObj* resultBaseObj = BaseObjtest->makeDynamic();
+  //EXPECT_EQ (resultBaseObj*, 0);
 
 }
 
-% endfor
+
+TEST_F(BaseObjTest, toErrStrTest) {
+
+  BaseRef resultBaseRef = BaseObjtest->toErrStr();
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
+
+TEST_F(BaseObjTest, toFileStrTest) {
+
+  BaseObjtest->toFileStr(FILEtest);
+  //EXPECT_EQ (BaseObjtest, 0);
+
+}
+
+
+TEST_F(BaseObjTest, toStrTest) {
+
+  BaseRef resultBaseRef = BaseObjtest->toStr();
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
 
 }

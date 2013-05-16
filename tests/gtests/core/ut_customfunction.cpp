@@ -46,35 +46,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "likefunc.h"
+#include "customfunction.h"
+#include "hy_strings.h"
+#include "formula.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _CustomFunctionTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _CustomFunctionTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    _CustomFunctiontest = new _CustomFunction(_Stringtest);
+    _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_CustomFunctionTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +85,23 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete _CustomFunctiontest;
+    delete _Stringtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  _CustomFunction* _CustomFunctiontest;
+  _String* _Stringtest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_CustomFunctionTest, ComputeTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  _Parameter result_Parameter = _CustomFunctiontest->Compute();
+  //EXPECT_EQ (result_Parameter, 0);
 
 }
 
-% endfor
 
 }

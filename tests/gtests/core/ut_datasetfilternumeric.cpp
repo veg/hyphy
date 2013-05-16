@@ -46,35 +46,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "baseobj.h"
+#include "list.h"
+#include "matrix.h"
+#include "datasetfilter.h"
+#include "datasetfilternumeric.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _DataSetFilterNumericTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _DataSetFilterNumericTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    longtest = new long();
+    unsignedtest = new unsigned();
+    _DataSetFilterNumerictest = new _DataSetFilterNumeric();
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_DataSetFilterNumericTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +87,42 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete longtest;
+    delete unsignedtest;
+    delete _DataSetFilterNumerictest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  long* longtest;
+  unsigned* unsignedtest;
+  _DataSetFilterNumeric* _DataSetFilterNumerictest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_DataSetFilterNumericTest, CompareTwoSitesTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  //TODO
+  //bool resultbool = _DataSetFilterNumerictest->CompareTwoSites(*longtest, *longtest);
+  //EXPECT_EQ (resultbool, 0);
 
 }
 
-% endfor
+
+TEST_F(_DataSetFilterNumericTest, getProbabilityVectorTest) {
+
+  _Parameter* result_Parameter = _DataSetFilterNumerictest->getProbabilityVector(*longtest, *longtest);
+  //EXPECT_EQ (result_Parameter*, 0);
+
+}
+
+
+TEST_F(_DataSetFilterNumericTest, makeDynamicTest) {
+
+  BaseRef resultBaseRef = _DataSetFilterNumerictest->makeDynamic();
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
 
 }

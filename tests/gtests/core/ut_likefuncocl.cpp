@@ -46,35 +46,40 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include <string>
+#include <stdio.h>
+#include <assert.h>
+#include <sys/sysctl.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
+#include "calcnode.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _OCLEvaluatorTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _OCLEvaluatorTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    longtest = new long();
+    unsignedtest = new unsigned();
+    inttest = new int();
+    doubletest = new double();
+    _OCLEvaluatortest = new _OCLEvaluator();
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_OCLEvaluatorTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +94,77 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete longtest;
+    delete unsignedtest;
+    delete inttest;
+    delete doubletest;
+    delete _OCLEvaluatortest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  long* longtest;
+  unsigned* unsignedtest;
+  int* inttest;
+  double* doubletest;
+  _OCLEvaluator* _OCLEvaluatortest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_OCLEvaluatorTest, CleanupTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  _OCLEvaluatortest->Cleanup(*inttest);
+  //EXPECT_EQ (_OCLEvaluatortest, 0);
 
 }
 
-% endfor
+
+TEST_F(_OCLEvaluatorTest, initTest) {
+
+  _OCLEvaluatortest->init(*longtest, *longtest);
+  //EXPECT_EQ (_OCLEvaluatortest, 0);
+
+}
+
+
+TEST_F(_OCLEvaluatorTest, launchmdsoclTest) {
+
+  double resultdouble = _OCLEvaluatortest->launchmdsocl();
+  //EXPECT_EQ (resultdouble, 0);
+
+}
+
+
+TEST_F(_OCLEvaluatorTest, oclmainTest) {
+
+  double resultdouble = _OCLEvaluatortest->oclmain();
+  //EXPECT_EQ (resultdouble, 0);
+
+}
+
+
+TEST_F(_OCLEvaluatorTest, roundDoubleUpToNextPowerOfTwoTest) {
+
+  double resultdouble = _OCLEvaluatortest->roundDoubleUpToNextPowerOfTwo(*doubletest);
+  //EXPECT_EQ (resultdouble, 0);
+
+}
+
+
+TEST_F(_OCLEvaluatorTest, roundUpToNextPowerOfTwoTest) {
+
+  int resultint = _OCLEvaluatortest->roundUpToNextPowerOfTwo(*inttest);
+  //EXPECT_EQ (resultint, 0);
+
+}
+
+
+TEST_F(_OCLEvaluatorTest, setupContextTest) {
+
+  int resultint = _OCLEvaluatortest->setupContext();
+  //EXPECT_EQ (resultint, 0);
+
+}
+
 
 }

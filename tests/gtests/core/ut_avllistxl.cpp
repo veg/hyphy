@@ -46,35 +46,39 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "hy_strings.h"
+#include "errorfns.h"
+#include "parser.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <math.h>
+#include <limits.h>
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _AVLListXLTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _AVLListXLTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    _SimpleListtest = new _SimpleList();
+    longtest = new long();
+    booltest = new bool();
+    BaseReftest = new BaseRef();
+    _AVLListXLtest = new _AVLListXL(_SimpleListtest);
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_AVLListXLTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +93,85 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete _SimpleListtest;
+    delete longtest;
+    delete booltest;
+    delete BaseReftest;
+    delete _AVLListXLtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  _SimpleList* _SimpleListtest;
+  long* longtest;
+  bool* booltest;
+  BaseRef* BaseReftest;
+  _AVLListXL* _AVLListXLtest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_AVLListXLTest, ClearTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  _AVLListXLtest->Clear(*booltest);
+  //EXPECT_EQ (_AVLListXLtest, 0);
 
 }
 
-% endfor
+
+TEST_F(_AVLListXLTest, DeleteXtraTest) {
+
+  _AVLListXLtest->DeleteXtra(*longtest);
+  //EXPECT_EQ (_AVLListXLtest, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, GetDataByKeyTest) {
+
+  BaseRef resultBaseRef = _AVLListXLtest->GetDataByKey(*BaseReftest);
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, GetXtraTest) {
+
+  BaseRef resultBaseRef = _AVLListXLtest->GetXtra(*longtest);
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, InsertDataTest) {
+
+  long resultlong = _AVLListXLtest->InsertData(*BaseReftest, *longtest, *booltest);
+  //EXPECT_EQ (resultlong, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, SetXtraTest) {
+
+  _AVLListXLtest->SetXtra(*longtest, *BaseReftest, *booltest);
+  //EXPECT_EQ (_AVLListXLtest, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, UpdateValueTest) {
+
+  long resultlong = _AVLListXLtest->UpdateValue(*BaseReftest, *BaseReftest, *booltest);
+  //EXPECT_EQ (resultlong, 0);
+
+}
+
+
+TEST_F(_AVLListXLTest, toStrTest) {
+
+  BaseRef resultBaseRef = _AVLListXLtest->toStr();
+  //EXPECT_EQ (resultBaseRef, 0);
+
+}
+
 
 }

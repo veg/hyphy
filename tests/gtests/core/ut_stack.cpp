@@ -46,35 +46,30 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 //Generate necessary includes from the respective implementation file
-% for include in includes:
-${include}
-% endfor
+#include "stack.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class ${class_name}Test : public ::testing::Test {
+class _StackTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  ${class_name}Test() {
+  _StackTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
-    % for object in objects:
-    %if object[1]:
-    ${object[1]};
-    %else:
-    ${object[0]}test = new ${object[0]}();
-    %endif
-    % endfor
+    booltest = new bool();
+    BaseReftest = new BaseRef();
+    _Stacktest = new _Stack();
+    _PMathObjtest = new _PMathObj();
   }
 
-  virtual ~${class_name}Test() {
+  virtual ~_StackTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -89,32 +84,67 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    % for object in objects:
-    delete ${object[0]}test;
-    % endfor
+    delete booltest;
+    delete BaseReftest;
+    delete _Stacktest;
+    delete _PMathObjtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
-  % for object in objects:
-  ${object[0]}* ${object[0]}test;
-  % endfor
+  bool* booltest;
+  BaseRef* BaseReftest;
+  _Stack* _Stacktest;
+  _PMathObj* _PMathObjtest;
 };
 
-% for method in methods:
 
-TEST_F(${class_name}Test, ${method[3]}Test) {
+TEST_F(_StackTest, DuplicateTest) {
 
-  %if method[1][0]=="void":
-  ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (${class_name}test, 0);
-  %else:
-  ${method[1][0]} result${method[1][0].replace("*","")} = ${class_name}test->${method[0]}(${method[4]});
-  //EXPECT_EQ (result${method[1][0]}, 0);
-  %endif
+  _Stacktest->Duplicate(*BaseReftest);
+  //EXPECT_EQ (_Stacktest, 0);
 
 }
 
-% endfor
+
+TEST_F(_StackTest, InitializeTest) {
+
+  _Stacktest->Initialize();
+  //EXPECT_EQ (_Stacktest, 0);
+
+}
+
+
+TEST_F(_StackTest, PopTest) {
+
+  _PMathObj result_PMathObj = _Stacktest->Pop(*booltest);
+  //EXPECT_EQ (result_PMathObj, 0);
+
+}
+
+
+TEST_F(_StackTest, PushTest) {
+
+  bool resultbool = _Stacktest->Push(*_PMathObjtest, *booltest);
+  //EXPECT_EQ (resultbool, 0);
+
+}
+
+
+TEST_F(_StackTest, ResetTest) {
+
+  _Stacktest->Reset();
+  //EXPECT_EQ (_Stacktest, 0);
+
+}
+
+
+TEST_F(_StackTest, StackDepthTest) {
+
+  long resultlong = _Stacktest->StackDepth();
+  //EXPECT_EQ (resultlong, 0);
+
+}
+
 
 }
