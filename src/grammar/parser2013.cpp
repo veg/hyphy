@@ -77,7 +77,7 @@ void _parser2013_pushIdentifier (_Formula& f, _FormulaParsingContext& fpc, const
         
         long realVarLoc = LocateVarByName(realVarName);
         if (realVarLoc < 0) { // bad instant variable reference
-                HandleFormulaParsingError("Attempted to take value of undeclared variable ", fpc.errMsg(), ident, 0);
+            HandleFormulaParsingError("Attempted to take value of undeclared variable ", fpc.errMsg(), ident, 0);
         }
         _Operation * theVar = new _Operation(true, realVarName, globalKey, fpc.formulaScope());
         theVar->SetTerms(-variableNames.GetXtra(realVarLoc) - 1);

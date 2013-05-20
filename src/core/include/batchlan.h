@@ -40,12 +40,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __BATCHLANGUAGE__
 #define __BATCHLANGUAGE__
 
-#include "legacy_parser.h"
 #include "site.h"
 #include "trie.h"
 
 #include "associativelist.h"
 #include "growingvector.h"
+
+#include "legacy_parser.h"
 
 #include <stdio.h>
 

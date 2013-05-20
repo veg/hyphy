@@ -38,8 +38,10 @@
 #ifndef __ELEMENTARYCOMMAND__
 #define __ELEMENTARYCOMMAND__
 
-#include "legacy_parser.h"
 #include "trie.h"
+#include "legacy_parser.h"
+
+
 #include <stdio.h>
 
 struct _HBLCommandExtras {
