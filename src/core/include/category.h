@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __CATEGORY__
 #define __CATEGORY__
 
-#include  "parser.h"
+#include  "legacy_parser.h"
 #include  "batchlan.h"
 #include  "matrix.h"
 

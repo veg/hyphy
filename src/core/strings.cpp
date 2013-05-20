@@ -212,6 +212,25 @@ _String::_String(const char *s) {
   memcpy(sData, s, sLength + 1);
 }
 
+
+//Data constructor
+_String::_String(const wchar_t *wc) {
+    unsigned long allocated = wcslen (wc);
+    sLength = 0;
+    checkPointer(sData = (char *)MemAllocate(allocated + 1));
+    for (unsigned long cid = 0; cid < allocated; cid ++) {
+        int this_char = wctob (wc[cid]);
+        if (this_char != WEOF) {
+            sData[sLength++] = (char) this_char;
+        }
+    }
+    if (sLength != allocated) {
+        sData = (char *)MemReallocate((char *)sData, (sLength+1) * sizeof(char));
+    }
+    sData[sLength] = 0;
+}
+
+
 //Data constructor
 _String::_String(const char s) {
   sLength = 1;

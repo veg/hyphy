@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __CALCNODE__
 #define __CALCNODE__
 
-#include "parser.h"
+#include "legacy_parser.h"
 #include "classes.h"
 #include "site.h"
 

@@ -32,7 +32,7 @@
 #include "simplelist.h"
 #include "classes.h"
 #include "likefunc.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include <math.h>
 #include "matrix.h"
 #include "baseobj.h"

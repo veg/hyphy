@@ -42,7 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define POLY_DATA_INCREMENT 10
 
-#include "parser.h"
+#include "legacy_parser.h"
 
 class _PolynomialData : public BaseObj {
 

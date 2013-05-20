@@ -37,7 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "parser.h"
+#include "legacy_parser.h"
 #include "mathobj.h"
 
 _PMathObj _MathObject::Execute(

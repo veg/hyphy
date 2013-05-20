@@ -3,7 +3,7 @@
 #include "defines.h"
 #include "formula.h"
 #include "formulaparsingcontext.h"
-#include "parser.h"
+#include "legacy_parser.h"
 
 //Constants
 extern _Parameter twoOverSqrtPi;

@@ -40,7 +40,7 @@
 #include "defines.h"
 #include "variable.h"
 #include "operation.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "polynoml.h"
 #include "batchlan.h"
 #include "hy_globals.h"

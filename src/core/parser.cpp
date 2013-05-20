@@ -32,7 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <limits.h>
 
 #include "likefunc.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "matrix.h"
 #include "stdlib.h"
 #include "string.h"

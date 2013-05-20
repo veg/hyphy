@@ -33,7 +33,7 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include "avllist.h"
 #include "hy_strings.h"
 #include "errorfns.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

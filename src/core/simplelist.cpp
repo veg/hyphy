@@ -41,7 +41,7 @@
 #include "errorfns.h"
 #include "list.h"
 #include "simplelist.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "defines.h"
 #include <stdlib.h>
 #include <string.h>
@@ -370,7 +370,7 @@ long _SimpleList::CountCommonElements(_SimpleList &l1, bool yesNo) {
 }
 
 //List length
-unsigned long _SimpleList::countitems(void) { return lLength; }
+unsigned long _SimpleList::countitems(void) const { return lLength; }
 
 _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering) {
   if (ordering) {

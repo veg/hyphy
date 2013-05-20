@@ -41,7 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _GENSITE_
 //#pragma once
 #include "sequence.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "simplelist.h"
 #include "list.h"
 #include "avllist.h"

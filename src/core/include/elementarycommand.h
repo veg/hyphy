@@ -38,7 +38,7 @@
 #ifndef __ELEMENTARYCOMMAND__
 #define __ELEMENTARYCOMMAND__
 
-#include "parser.h"
+#include "legacy_parser.h"
 #include "trie.h"
 #include <stdio.h>
 

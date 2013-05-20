@@ -72,6 +72,15 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #include "omp.h"
 #endif
 
+
+#ifdef __NEW_GRAMMAR__
+#include "Parser.h"
+#include "Scanner.h"
+#include <sys/timeb.h>
+#include <wchar.h>
+#endif
+
+
 _List   availableTemplateFiles,
         availablePostProcessors,
         loggedUserInputs;
@@ -640,7 +649,20 @@ int main (int argc, char* argv[])
     }
 
     GlobalStartup();
-
+#ifdef __NEW_GRAMMAR__
+    if (argc == 2) {
+		wchar_t *fileName = coco_string_create(argv[1]);
+		Scanner *scanner = new Scanner(fileName);
+		Parser  *parser = new Parser(scanner);
+		parser->Parse();
+		coco_string_delete(fileName);
+		delete parser;
+		delete scanner;
+        //GlobalShutdown();
+        //return 0;
+	}
+    
+#endif
     if (calculatorMode) {
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
