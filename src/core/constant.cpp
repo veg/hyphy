@@ -46,7 +46,8 @@
 #include "time.h"
 
 #include "constant.h"
-#include "parser.h"
+
+#include "legacy_parser.h"
 
 _Formula *chi2 = nil,
          *derchi2 = nil;

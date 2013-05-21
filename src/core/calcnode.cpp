@@ -36,7 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "calcnode_globals.h"
 #include "thetree.h"
 #include "scfg.h"
-#include "parser.h"
+#include "legacy_parser.h"
 
 #include "category.h"
 #include "batchlan.h"

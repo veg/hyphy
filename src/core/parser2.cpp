@@ -27,7 +27,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "parser.h"
+#include "legacy_parser.h"
 #include "matrix.h"
 #include "math.h"
 #include "stdlib.h"

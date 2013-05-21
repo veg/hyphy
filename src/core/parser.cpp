@@ -32,7 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <limits.h>
 
 #include "likefunc.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "matrix.h"
 #include "stdlib.h"
 #include "string.h"
@@ -1129,6 +1129,15 @@ void FindUnusedObjectName(_String &prefix, _String &partName, _AVLListX &names,
   partName = tryName;
 }
 
+//______________________________________________________________________________
+
+long    ExepectedBuiltInArguments (_String& funcId) {
+    long function_list_index = FunctionNameList.Find (&funcId);
+    if (function_list_index >= 0) {
+        return FunctionArgumentCount.GetElement(function_list_index);
+    }
+    return 1;
+}
 //______________________________________________________________________________
 void FinishDeferredSF(void) {
   if (deferSetFormula->lLength) {

@@ -33,16 +33,15 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include "avllistx.h"
 #include "hy_strings.h"
 #include "errorfns.h"
-#include "parser.h"
+#include "legacy_parser.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#ifdef __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 
 //______________________________________________________________________________
 _AVLListX::_AVLListX(_SimpleList *d) : _AVLList(d) {}

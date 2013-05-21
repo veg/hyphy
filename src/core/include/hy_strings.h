@@ -44,6 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "baseobj.h"
 #include "simplelist.h"
 #include "list.h"
+#include "wchar.h"
 
 class _ExecutionList; // forward declaration
 
@@ -105,7 +106,12 @@ public:
   */
   _String(const char *);
 
-  /**
+ /**
+  * A constructor that copies from a standard wide character string (only single byte characters are actually stored).
+  */
+  _String(const wchar_t *);
+
+ /**
   * A constructor that copies from a single char.
   */
   _String(const char);

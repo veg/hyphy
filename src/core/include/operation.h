@@ -68,6 +68,11 @@ public:
              bool take_a_reference = false);
   // store a variable or a constant
   _Operation(_PMathObj);
+  
+  #ifdef __NEW_GRAMMAR__
+     bool ResolveDeferredAction (void);
+  #endif    
+  
   // store a non-numeric constant
 
   virtual ~_Operation(void);

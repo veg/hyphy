@@ -8,7 +8,7 @@
 
 #include "HYNetInterface.h"
 #include "baseobj.h"
-#include "parser.h"
+#include "legacy_parser.h"
 
 _String   ModelTrainNNFlag          ("TRAIN_MODEL_NN"),
           ModelLoadNNFlag             ("LOAD_MODEL_NN"),

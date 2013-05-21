@@ -1,0 +1,244 @@
+#include "wchar.h"
+#include "parser2013.h"
+
+COMPILER hyphy_batch_language
+  
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+CHARACTERS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+  LETTER        = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  DIGIT         = "0123456789".
+  DOT           = '.'.
+  UNDERSCORE    = '_'.
+  CR            = '\r'.
+  LF            = '\n'.
+  TAB           = '\t'.
+  NOT_DQUOTE    = ANY - '"'.
+  NOT_SQUOTE    = ANY - '\''.
+  NOT_FIRST_CHAR = LETTER + DIGIT + UNDERSCORE. 
+
+ 
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+TOKENS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+  IDENTIFIER  = (LETTER|UNDERSCORE) {NOT_FIRST_CHAR} {DOT NOT_FIRST_CHAR {NOT_FIRST_CHAR}} .
+  FLOAT       = ((DIGIT {DIGIT} [DOT {DIGIT}]) | (DOT {DIGIT})) [('e'|'E') ['+'|'-'] DIGIT {DIGIT}] .
+  SINGLE_QUOTE_STRING      = '\'' {NOT_SQUOTE | "\\\'" } '\'' .
+  DOUBLE_QUOTE_STRING      = '"' {NOT_DQUOTE | "\\\"" } '"' .
+  NONE_OBJECT              = "None".
+  OPEN_PARENTHESIS         = '('.
+  CLOSE_PARENTHESIS        = ')'.
+  EQUAL                    = '='.
+  ASSIGN                   = ":=".
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO CR LF
+
+IGNORE CR + LF + TAB
+ 
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+PRODUCTIONS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------------------*/
+ident <_Formula& f, _FormulaParsingContext& fpc>
+= IDENTIFIER  (. _parser2013_pushIdentifier (this, f, fpc, t->val, false, false); .)
+.
+
+/*------------------------------------------------------------------------*/
+number <_Formula& f, _FormulaParsingContext& fpc>
+= FLOAT  (. _parser2013_pushNumber (this, f, fpc, t->val); .)
+.
+
+/*------------------------------------------------------------------------*/
+
+matrix_row 
+= '{'  (. _Formula f; _FormulaParsingContext fpc; .)
+    expression <f, fpc> 
+    { ',' expression <f, fpc>}
+  '}'
+.
+
+dense_matrix 
+= '{' (. printf ("\nStart matrix declaration"); .)
+    matrix_row 
+    {matrix_row } 
+  '}' (. printf ("\nEnd matrix declaration"); .)
+.
+
+/*------------------------------------------------------------------------*/
+
+function_call <_Formula& f, _FormulaParsingContext& fpc>
+= (. _List argument_names; .)
+  IDENTIFIER (. _String func_id (t->val); .)
+  OPEN_PARENTHESIS
+  {expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.)
+  { ',' expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.) } 
+  }
+  CLOSE_PARENTHESIS
+  (. _parser2013_pushFunctionCall (this, f, fpc, func_id, argument_names); .)
+  .
+  
+
+/*------------------------------------------------------------------------*/
+
+primitive  <_Formula& f, _FormulaParsingContext& fpc>
+= number <f, fpc>
+| DOUBLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
+| SINGLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
+| OPEN_PARENTHESIS expression <f, fpc> CLOSE_PARENTHESIS 
+| dense_matrix
+| NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
+| IF (_parser2013_isFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
+| ident <f, fpc> 
+//| primitive <f, fpc> '[' expression <f,fpc> ']'
+.
+
+/*------------------------------------------------------------------------*/
+
+lvalue <_Formula& f, _FormulaParsingContext& fpc>
+= ident <f, fpc>
+.
+
+/*------------------------------------------------------------------------*/
+
+reference_like <_Formula& f, _FormulaParsingContext& fpc>
+= (. long op_code = HY_OP_CODE_NONE; .)
+  [
+    "*"  (. op_code = HY_OP_CODE_MUL; .)
+  | "^"  (. op_code = HY_OP_CODE_POWER; .)
+  ]
+  primitive <f, fpc> 
+  (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
+  .
+  
+/*------------------------------------------------------------------------*/
+
+power_like <_Formula& f, _FormulaParsingContext& fpc>
+= reference_like <f, fpc> (. long op_code; .)
+  {
+  "^"  (. op_code = HY_OP_CODE_POWER; .)
+  reference_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+multiplication_like <_Formula& f, _FormulaParsingContext& fpc>
+= power_like <f, fpc> (. long op_code; .)
+  {
+  (
+  "*"  (. op_code = HY_OP_CODE_MUL; .)
+  | "/" (. op_code = HY_OP_CODE_DIV; .)
+  | "$" (. op_code = HY_OP_CODE_IDIV; .)
+  | "%" (. op_code = HY_OP_CODE_MOD; .)
+  )
+  power_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+addition_like <_Formula& f, _FormulaParsingContext& fpc>
+= multiplication_like <f, fpc> (. long op_code; .)
+  {
+  (
+  "+"  (. op_code = HY_OP_CODE_ADD; .)
+  | "-" (. op_code = HY_OP_CODE_SUB; .)
+  )
+  multiplication_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+logical_comp <_Formula& f, _FormulaParsingContext& fpc>
+= addition_like <f, fpc> (. long op_code; .)
+  {
+  (
+  "=="  (. op_code = HY_OP_CODE_EQ; .)
+  | "!=" (. op_code = HY_OP_CODE_NEQ; .)
+  | ">"  (. op_code = HY_OP_CODE_GREATER; .)
+  | "<"  (. op_code = HY_OP_CODE_LESS; .)
+  | ">=" (. op_code = HY_OP_CODE_GEQ; .)
+  | "<=" (. op_code = HY_OP_CODE_LEQ; .)
+  )
+  addition_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+logical_and <_Formula& f, _FormulaParsingContext& fpc>
+= logical_comp <f, fpc>
+  {
+  "&&" logical_comp <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); .) 
+  }
+  .
+
+/*------------------------------------------------------------------------*/
+
+logical_or <_Formula& f, _FormulaParsingContext& fpc>
+= logical_and <f, fpc>
+  {
+  "||" logical_and <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); .) 
+  }
+  .
+/*------------------------------------------------------------------------*/
+
+expression <_Formula& f, _FormulaParsingContext& fpc>
+=
+SYNC logical_or <f, fpc>  
+.
+
+/*------------------------------------------------------------------------*/
+statement <_ExecutionList &current_code_stream>
+=   IF (_parser2013_isSimpleStatement (this))
+      (. _Formula f; _FormulaParsingContext fpc; .)
+      expression <f, fpc> ';'  
+        (. _String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); .)
+        
+|       (. _Formula f, f2; _FormulaParsingContext fpc;.) 
+lvalue <f2, fpc> (
+    EQUAL  
+    | ASSIGN
+) expression <f, fpc> ';' 
+        (. printf ("\nvalue assignment"); .)
+/*
+| lvalue ':=' expression ';' (. printf ("\nformula assignment"); .)
+*/
+.
+
+/*------------------------------------------------------------------------*/
+block <_ExecutionList &current_code_stream>
+= 
+'{'
+{statement <current_code_stream>| block <current_code_stream>}
+'}'
+.
+
+/*------------------------------------------------------------------------*/
+
+hyphy_batch_language 
+= (. _ExecutionList current_code_stream; .)
+{statement <current_code_stream> | block <current_code_stream>} 
+| (. _Formula f; _FormulaParsingContext fpc; .)
+expression <f, fpc> SYNC /* a single expression for calculator-style parsing */
+.
+
+END hyphy_batch_language.

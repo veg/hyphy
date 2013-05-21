@@ -170,7 +170,7 @@ public:
   * Example: SimpleList SimpleList([4, 1, 2]).countitems() = 4
   * @return Unsigned long of item length
   */
-  unsigned long countitems(void);
+  unsigned long countitems(void) const;
 
   /**
   * SLKP: 20090611

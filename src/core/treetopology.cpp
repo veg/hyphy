@@ -37,7 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "calcnode.h"
 #include "scfg.h"
-#include "parser.h"
+#include "legacy_parser.h"
 
 #include "category.h"
 #include "batchlan.h"

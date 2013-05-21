@@ -199,6 +199,7 @@ file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/core/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
+file(GLOB SRC_GRAMMAR src/grammar/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
@@ -208,7 +209,7 @@ set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS} ${SRC_GRAMMAR})
 
 
 #-------------------------------------------------------------------------------
@@ -257,6 +258,7 @@ include_directories(
     #contrib/gtest-1.6.0/include
     contrib/gmock-1.6.0/include
     contrib/gmock-1.6.0/gtest/include
+    src/grammar
     tests/gtests
     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
@@ -396,8 +398,15 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    #COMPILE_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    #LINK_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g"
+)
+
+set_property(
+    TARGET HYPHYDEBUG
+    APPEND PROPERTY COMPILE_DEFINITIONS __NEW_GRAMMAR__
 )
 
 install(

@@ -75,7 +75,7 @@ class _hyExecutionContext;
 
 extern _List variablePtrs, hyReservedWords;
 
-extern _SimpleList BuiltInFunctionParameterCount, *deferSetFormula;
+extern _SimpleList FunctionArgumentCount, *deferSetFormula;
 
 extern _AVLListX variableNames;
 
@@ -198,6 +198,9 @@ _Parameter TrapezoidLevelKSimple(_Formula &, _Variable *, _Parameter,
 void PopulateArraysForASimpleFormula(_SimpleList &, _SimpleFormulaDatum *);
 
 void WarnNotDefined(_PMathObj, long, _hyExecutionContext *);
+long HandleFormulaParsingError(_String errMsg, _String *saveError, _String &s,long index);
+long ExepectedBuiltInArguments (_String&);
+
 
 extern _Parameter pi_const;
 extern bool useGlobalUpdateFlag;

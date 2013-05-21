@@ -189,7 +189,7 @@ public:
   * @sa Find()
   * @sa BinaryFind()
   */
-  virtual long BinaryFind(BaseRef);
+  virtual long BinaryFind(const BaseRef);
 
   /**
   * Insert an element into the sorted list preserving the sortedness

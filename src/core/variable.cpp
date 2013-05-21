@@ -42,7 +42,7 @@
 #include "operation.h"
 
 #include "likefunc.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include "polynoml.h"
 #include "batchlan.h"
 #include "thetree.h"

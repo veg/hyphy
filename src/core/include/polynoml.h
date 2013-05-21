@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __POLY__
 #define __POLY__
 
-#include "parser.h"
+#include "legacy_parser.h"
 #include "polynomialdata.h"
 
 #define GLOBAL_VARIABLE 1

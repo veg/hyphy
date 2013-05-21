@@ -77,6 +77,9 @@ public:
 
   bool IsEmpty(void);          // is there anything in the formula
   long NumberOperations(void); // how many ops in the formula?
+  void Push (_Operation* newOp) {theFormula.AppendNewInstance (newOp);}
+                                // append a newly heap allocated Operation
+                                // to the end of the op-list for this formula
 
   friend long Parse(_Formula *, _String &, _FormulaParsingContext &,
                     _Formula * = nil);

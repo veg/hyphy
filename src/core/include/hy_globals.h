@@ -41,7 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __HY_GLOBALS__
 
 #include "batchlan.h"
-#include "parser.h"
+#include "legacy_parser.h"
 
 extern bool dropIntoDebugMode, isInFunction, terminateExecution,
     skipWarningMessages;

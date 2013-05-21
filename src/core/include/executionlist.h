@@ -39,7 +39,7 @@
 #define __EXECUTIONLIST__
 
 #include <stdio.h>
-#include "parser.h"
+#include "legacy_parser.h"
 #include "site.h"
 #include "trie.h"
 
