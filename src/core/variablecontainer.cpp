@@ -220,8 +220,10 @@ _Matrix *_VariableContainer::GetModelMatrix(_List *queue, _SimpleList *tags) {
         return nil;
       }
     }
-    return (_Matrix *)((_Formula *)modelMatrixIndices.lData[theModel])
+    _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.lData[theModel])
         ->Compute();
+    result->CheckIfSparseEnough(true);
+    return result;
   }
 
   return (_Matrix *)(LocateVar(modelMatrixIndices.lData[theModel])->GetValue());

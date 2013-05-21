@@ -137,11 +137,17 @@ public:
 protected:
 
   bool ReportOperationExecutionError(_String, _String *);
-
-  long opCode;        // internal operation code
-  long numberOfTerms, // 1 - unary, 2 - binary, etc
-      theData;
-  _PMathObj theNumber;
+    
+  long          operationKind,
+        // what KIND of an operation is it
+        // (e.g. a value, a built-in call, a user function call, a reference etc)
+        // the value of this member variable alters how other members are interpreted
+                opCode,             // internal operation code
+                numberOfTerms,      // 1 - unary, 2 - binary, etc
+                theData;
+    
+    
+  _PMathObj     theNumber;
 };
 
 #endif
