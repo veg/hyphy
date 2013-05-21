@@ -53,9 +53,7 @@ extern _SimpleList BinOps, opPrecedence, FunctionArgumentCount,
 
 //______________________________________________________________________________
 _Operation::_Operation(void) {
-  numberOfTerms = 0;
-  theData = -1;
-  theNumber = nil;
+  Initialize();
 }
 
 //______________________________________________________________________________
@@ -63,6 +61,7 @@ void _Operation::Initialize(void) {
   numberOfTerms = 0;
   theData = -1;
   theNumber = nil;
+  opCode = HY_OP_CODE_NONE;
 }
 
 //______________________________________________________________________________
@@ -88,21 +87,20 @@ void _Operation::Duplicate(BaseRef r) {
 
 //______________________________________________________________________________
 BaseRef _Operation::toStr(void) {
-  _String res, *dump = nil;
+  _String * res = new _String (128L, true);
   if (theData != -1) {
-    dump = (_String *)((_Variable *)LocateVar(theData))->toStr();
-    res = _String("Variable ") & *dump;
+    (*res) << "Variable ";
+    res->AppendNewInstance ((_String *)((_Variable *)LocateVar(theData))->toStr());
   } else if (theNumber) {
-    dump = (_String *)theNumber->toStr();
-    res = _String("Constant ") & *dump;
+    (*res) << "Constant ";
+    res->AppendNewInstance((_String *)theNumber->toStr());
   } else {
-    res = _String("Operation ") & *(_String *)BuiltInFunctions(opCode);
+    (*res) << "Operation ";
+    res->AppendNewInstance((_String *)BuiltInFunctions(opCode));
   }
 
-  if (dump) {
-    DeleteObject(dump);
-  }
-  return res.makeDynamic();
+  res->Finalize();
+  return res;
 
 }
 
@@ -128,8 +126,14 @@ _Operation::_Operation(_String &opc, const long opNo = 2)
   }
 
   if (opCode < 0) {
+  #ifdef __NEW_GRAMMAR__
+    opCode        = HY_OP_CODE_NONE;
+    numberOfTerms = -opNo-1;
+    theNumber     = new _FString (opc, false);
+  #else
     WarnError(_String("Operation: '") & opc & "' is not defined.");
     opCode = 0;
+  #endif
   }
 
   numberOfTerms = opNo;
@@ -160,6 +164,19 @@ bool _Operation::CanResultsBeCached(_Operation *prev, bool exp_only) {
   }
   return false;
 }
+
+//______________________________________________________________________________
+
+#ifdef __NEW_GRAMMAR__
+bool _Operation::ResolveDeferredAction (void){
+    if (opCode == HY_OP_CODE_NONE && numberOfTerms < 0 && theNumber) { 
+    // deferred user function call
+    
+    }
+    return false;
+}
+#endif    
+
 
 //______________________________________________________________________________
 bool _Operation::HasChanged(void) {

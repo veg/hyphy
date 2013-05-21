@@ -42,31 +42,43 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // parser support functions
 
-void _parser2013_pushNumber (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value) {
+void _parser2013_pushNumber (void *, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value) {
     wchar_t * endptr = NULL;
     double numeric_value = wcstod (value, &endptr);
     f.Push (new _Operation (new _Constant (numeric_value)));
 }
 
-void _parser2013_pushString (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value) {
+void _parser2013_pushString (void *, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value) {
     _String literal (value);
     literal.Trim(1, literal.sLength - 2);
     f.Push (new _Operation (new _FString (literal)));
 }
 
-void _parser2013_pushNone (_Formula& f, _FormulaParsingContext& fpc) {
+void _parser2013_pushNone (void *, _Formula& f, _FormulaParsingContext& fpc) {
     f.Push (new _Operation (false,noneToken));
 }
 
-void _parser2013_pushOp (_Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms) {
+void _parser2013_pushOp (void *, _Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms) {
     f.Push (new _Operation (op_code,num_terms));
 }
 
-void _parser2013_pushFunctionCall (_Formula& f, _FormulaParsingContext& fpc, _String& funcId, const _List& argumentNames) {
-    f.Push (new _Operation (funcId,argumentNames.countitems()));
+void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& funcId, const _List& argumentNames) {
+    long arg_count   = argumentNames.countitems(),
+         built_in_id = BuiltInFunctions.BinaryFind(&funcId);
+         
+    if (built_in_id >= 0) {
+        long expect_arg = ExepectedBuiltInArguments (funcId);
+        if (arg_count != expect_arg) {
+            _parser2013_reportError(vp, _String(arg_count) &" arguments passed to '" & funcId & "', expected " & _String(expect_arg) & '.');
+        }
+        f.Push (new _Operation (built_in_id,arg_count));
+    }
+    else {
+        f.Push (new _Operation (funcId,arg_count));
+    }
 }
 
-void _parser2013_pushIdentifier (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value, bool globalKey, bool takeVarReference) {
+void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value, bool globalKey, bool takeVarReference) {
     _String ident (value);
     long curOpl = ident.sLength;
     if (curOpl > 2 && ident[curOpl - 1] == '_' &&
@@ -77,7 +89,7 @@ void _parser2013_pushIdentifier (_Formula& f, _FormulaParsingContext& fpc, const
         
         long realVarLoc = LocateVarByName(realVarName);
         if (realVarLoc < 0) { // bad instant variable reference
-            HandleFormulaParsingError("Attempted to take value of undeclared variable ", fpc.errMsg(), ident, 0);
+            _parser2013_reportError(vp, "Attempted to take value of undeclared variable ");
         }
         _Operation * theVar = new _Operation(true, realVarName, globalKey, fpc.formulaScope());
         theVar->SetTerms(-variableNames.GetXtra(realVarLoc) - 1);
@@ -95,17 +107,19 @@ void _parser2013_pushIdentifier (_Formula& f, _FormulaParsingContext& fpc, const
 
 // LL(1) resolvers
 
-bool    IsFollowedByAnOpenParenthesis (void * vp) {
+bool    _parser2013_isFollowedByAnOpenParenthesis (void * vp) {
     Parser* p = (Parser*)vp;
+    p->scanner->ResetPeek();
     if (p->la->kind == p->_IDENTIFIER && p->scanner->Peek()->kind == p->_OPEN_PARENTHESIS) {
         return true;
     }
     return false;
 }
 
-bool    IsSimpleStatement (void * vp) {
+bool    _parser2013_isSimpleStatement (void * vp) {
     Parser* p = (Parser*)vp;
-    
+    p->scanner->ResetPeek();
+   
     if (p->la->kind == p->_IDENTIFIER) {
         int next_token_kind = p->scanner->Peek()->kind;
         if (next_token_kind == p->_EQUAL || next_token_kind == p->_ASSIGN) {
@@ -114,5 +128,15 @@ bool    IsSimpleStatement (void * vp) {
     }
     return true;
 }
+
+void    _parser2013_reportError    (void * vp, const _String err){
+    Parser* p = (Parser*)vp;
+    wchar_t * buffer = new wchar_t [1+err.sLength];
+    swprintf(buffer, err.sLength+1, L"%hs", err.sData);
+    p->errors->Error(p->la->line, p->la->col, buffer);
+    delete[] buffer;
+}
+
+// utility functions 
 
 

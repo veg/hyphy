@@ -90,12 +90,12 @@ bool Parser::WeakSeparator(int n, int syFol, int repFol) {
 
 void Parser::ident(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_IDENTIFIER);
-		_parser2013_pushIdentifier (f, fpc, t->val, false, false); 
+		_parser2013_pushIdentifier (this, f, fpc, t->val, false, false); 
 }
 
 void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_FLOAT);
-		_parser2013_pushNumber (f, fpc, t->val); 
+		_parser2013_pushNumber (this, f, fpc, t->val); 
 }
 
 void Parser::matrix_row() {
@@ -140,7 +140,7 @@ void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
 			}
 		}
 		Expect(_CLOSE_PARENTHESIS);
-		_parser2013_pushFunctionCall (f, fpc, func_id, argument_names); 
+		_parser2013_pushFunctionCall (this, f, fpc, func_id, argument_names); 
 }
 
 void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
@@ -148,10 +148,10 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			number(f, fpc);
 		} else if (la->kind == _DOUBLE_QUOTE_STRING) {
 			Get();
-			_parser2013_pushString (f, fpc, t->val); 
+			_parser2013_pushString (this, f, fpc, t->val); 
 		} else if (la->kind == _SINGLE_QUOTE_STRING) {
 			Get();
-			_parser2013_pushString (f, fpc, t->val); 
+			_parser2013_pushString (this, f, fpc, t->val); 
 		} else if (la->kind == _OPEN_PARENTHESIS) {
 			Get();
 			expression(f, fpc);
@@ -160,8 +160,8 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			dense_matrix();
 		} else if (la->kind == _NONE_OBJECT) {
 			Get();
-			_parser2013_pushNone (f, fpc); 
-		} else if (IsFollowedByAnOpenParenthesis(this)) {
+			_parser2013_pushNone (this, f, fpc); 
+		} else if (_parser2013_isFollowedByAnOpenParenthesis(this)) {
 			function_call(f, fpc);
 		} else if (la->kind == _IDENTIFIER) {
 			ident(f, fpc);
@@ -184,7 +184,7 @@ void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 			}
 		}
 		primitive(f, fpc);
-		if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (f,fpc,op_code,1); 
+		if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); 
 }
 
 void Parser::power_like(_Formula& f, _FormulaParsingContext& fpc) {
@@ -194,7 +194,7 @@ void Parser::power_like(_Formula& f, _FormulaParsingContext& fpc) {
 			Get();
 			op_code = HY_OP_CODE_POWER; 
 			reference_like(f, fpc);
-			_parser2013_pushOp (f, fpc, op_code , 2); 
+			_parser2013_pushOp (this, f, fpc, op_code , 2); 
 		}
 }
 
@@ -216,7 +216,7 @@ void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 				op_code = HY_OP_CODE_MOD; 
 			}
 			power_like(f, fpc);
-			_parser2013_pushOp (f, fpc, op_code , 2); 
+			_parser2013_pushOp (this, f, fpc, op_code , 2); 
 		}
 }
 
@@ -232,7 +232,7 @@ void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
 				op_code = HY_OP_CODE_SUB; 
 			}
 			multiplication_like(f, fpc);
-			_parser2013_pushOp (f, fpc, op_code , 2); 
+			_parser2013_pushOp (this, f, fpc, op_code , 2); 
 		}
 }
 
@@ -273,7 +273,7 @@ void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 			}
 			}
 			addition_like(f, fpc);
-			_parser2013_pushOp (f, fpc, op_code , 2); 
+			_parser2013_pushOp (this, f, fpc, op_code , 2); 
 		}
 }
 
@@ -282,7 +282,7 @@ void Parser::logical_and(_Formula& f, _FormulaParsingContext& fpc) {
 		while (la->kind == 26 /* "&&" */) {
 			Get();
 			logical_comp(f, fpc);
-			_parser2013_pushOp (f, fpc, HY_OP_CODE_AND , 2); 
+			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); 
 		}
 }
 
@@ -291,12 +291,12 @@ void Parser::logical_or(_Formula& f, _FormulaParsingContext& fpc) {
 		while (la->kind == 27 /* "||" */) {
 			Get();
 			logical_and(f, fpc);
-			_parser2013_pushOp (f, fpc, HY_OP_CODE_OR , 2); 
+			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); 
 		}
 }
 
 void Parser::statement(_ExecutionList &current_code_stream) {
-		if (IsSimpleStatement (this)) {
+		if (_parser2013_isSimpleStatement (this)) {
 			_Formula f; _FormulaParsingContext fpc; 
 			expression(f, fpc);
 			Expect(28 /* ";" */);

@@ -1130,6 +1130,15 @@ void FindUnusedObjectName(_String &prefix, _String &partName, _AVLListX &names,
 }
 
 //______________________________________________________________________________
+
+long    ExepectedBuiltInArguments (_String& funcId) {
+    long function_list_index = FunctionNameList.Find (&funcId);
+    if (function_list_index >= 0) {
+        return FunctionArgumentCount.GetElement(function_list_index);
+    }
+    return 1;
+}
+//______________________________________________________________________________
 void FinishDeferredSF(void) {
   if (deferSetFormula->lLength) {
     SortLists(deferSetFormula, &deferIsConstant);

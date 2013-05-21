@@ -48,29 +48,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // parser support functions
 
-void _parser2013_pushNumber         (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value);
+void _parser2013_pushNumber         (void * vp, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value);
     // convert a floating point number stored in value and push it onto 'f' 
 
-void _parser2013_pushString         (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value);
+void _parser2013_pushString         (void * vp, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value);
     // process a string stored in value and push it onto 'f'
 
-void _parser2013_pushNone        (_Formula& f, _FormulaParsingContext& fpc);
+void _parser2013_pushNone        (void * vp, _Formula& f, _FormulaParsingContext& fpc);
 // process None onto 'f'
 
-void _parser2013_pushIdentifier     (_Formula& f, _FormulaParsingContext& fpc, const wchar_t* value, bool globalKey, bool takeVarReference);
+void _parser2013_pushIdentifier     (void * vp, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value, bool globalKey, bool takeVarReference);
 // process a variable identifier (take __references & */^ references if needed) and push onto 'f'
 
-void _parser2013_pushOp           (_Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms);
+void _parser2013_pushOp           (void * vp, _Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms);
 // push an operation given it's internal op_code and the number of terms
 
-void _parser2013_pushFunctionCall           (_Formula& f, _FormulaParsingContext& fpc, _String& fundID, const _List&);
+void _parser2013_pushFunctionCall           (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& fundID, const _List&);
 // push a function call given the function id and the list of 'named' arguments
 // a blank entry in the list implies that the argument is positional
 // generally speaking, all positional arguments need to preceed all named arguments
 
 // grammar conflict resolvers
 
-bool    IsFollowedByAnOpenParenthesis (void * p);
-bool    IsSimpleStatement             (void * p);
+bool    _parser2013_isFollowedByAnOpenParenthesis (void * p);
+bool    _parser2013_isSimpleStatement             (void * p);
+
+// Utility functions
+
+void    _parser2013_reportError                   (void * vp, const _String);
 
 #endif

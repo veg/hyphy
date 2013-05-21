@@ -51,12 +51,12 @@ PRODUCTIONS
 
 /*------------------------------------------------------------------------*/
 ident <_Formula& f, _FormulaParsingContext& fpc>
-= IDENTIFIER  (. _parser2013_pushIdentifier (f, fpc, t->val, false, false); .)
+= IDENTIFIER  (. _parser2013_pushIdentifier (this, f, fpc, t->val, false, false); .)
 .
 
 /*------------------------------------------------------------------------*/
 number <_Formula& f, _FormulaParsingContext& fpc>
-= FLOAT  (. _parser2013_pushNumber (f, fpc, t->val); .)
+= FLOAT  (. _parser2013_pushNumber (this, f, fpc, t->val); .)
 .
 
 /*------------------------------------------------------------------------*/
@@ -85,7 +85,7 @@ function_call <_Formula& f, _FormulaParsingContext& fpc>
   { ',' expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.) } 
   }
   CLOSE_PARENTHESIS
-  (. _parser2013_pushFunctionCall (f, fpc, func_id, argument_names); .)
+  (. _parser2013_pushFunctionCall (this, f, fpc, func_id, argument_names); .)
   .
   
 
@@ -93,12 +93,12 @@ function_call <_Formula& f, _FormulaParsingContext& fpc>
 
 primitive  <_Formula& f, _FormulaParsingContext& fpc>
 = number <f, fpc>
-| DOUBLE_QUOTE_STRING (. _parser2013_pushString (f, fpc, t->val); .)
-| SINGLE_QUOTE_STRING (. _parser2013_pushString (f, fpc, t->val); .)
+| DOUBLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
+| SINGLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
 | OPEN_PARENTHESIS expression <f, fpc> CLOSE_PARENTHESIS 
 | dense_matrix
-| NONE_OBJECT (. _parser2013_pushNone (f, fpc); .)
-| IF (IsFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
+| NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
+| IF (_parser2013_isFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
 | ident <f, fpc> 
 //| primitive <f, fpc> '[' expression <f,fpc> ']'
 .
@@ -118,7 +118,7 @@ reference_like <_Formula& f, _FormulaParsingContext& fpc>
   | "^"  (. op_code = HY_OP_CODE_POWER; .)
   ]
   primitive <f, fpc> 
-  (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (f,fpc,op_code,1); .) 
+  (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
   .
   
 /*------------------------------------------------------------------------*/
@@ -128,7 +128,7 @@ power_like <_Formula& f, _FormulaParsingContext& fpc>
   {
   "^"  (. op_code = HY_OP_CODE_POWER; .)
   reference_like <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, op_code , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
   }
   .
   
@@ -144,7 +144,7 @@ multiplication_like <_Formula& f, _FormulaParsingContext& fpc>
   | "%" (. op_code = HY_OP_CODE_MOD; .)
   )
   power_like <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, op_code , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
   }
   .
   
@@ -158,7 +158,7 @@ addition_like <_Formula& f, _FormulaParsingContext& fpc>
   | "-" (. op_code = HY_OP_CODE_SUB; .)
   )
   multiplication_like <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, op_code , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
   }
   .
   
@@ -176,7 +176,7 @@ logical_comp <_Formula& f, _FormulaParsingContext& fpc>
   | "<=" (. op_code = HY_OP_CODE_LEQ; .)
   )
   addition_like <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, op_code , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
   }
   .
   
@@ -186,7 +186,7 @@ logical_and <_Formula& f, _FormulaParsingContext& fpc>
 = logical_comp <f, fpc>
   {
   "&&" logical_comp <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, HY_OP_CODE_AND , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); .) 
   }
   .
 
@@ -196,7 +196,7 @@ logical_or <_Formula& f, _FormulaParsingContext& fpc>
 = logical_and <f, fpc>
   {
   "||" logical_and <f, fpc> 
-  (. _parser2013_pushOp (f, fpc, HY_OP_CODE_OR , 2); .) 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); .) 
   }
   .
 /*------------------------------------------------------------------------*/
@@ -208,7 +208,7 @@ SYNC logical_or <f, fpc>
 
 /*------------------------------------------------------------------------*/
 statement <_ExecutionList &current_code_stream>
-=   IF (IsSimpleStatement (this))
+=   IF (_parser2013_isSimpleStatement (this))
       (. _Formula f; _FormulaParsingContext fpc; .)
       expression <f, fpc> ';'  
         (. _String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); .)
