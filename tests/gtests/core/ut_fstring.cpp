@@ -71,8 +71,8 @@ protected:
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
     longtest = new long();
-    test = new ();
     _Stringtest = new _String(FILEtest);
+    _VariableContainertest = new _VariableContainer();
     _hyExecutionContexttest = new _hyExecutionContext(_VariableContainertest, _Stringtest);
     BaseReftest = new BaseRef();
     booltest = new bool();
@@ -96,9 +96,10 @@ protected:
     // Code here will be called immediately after each test (right
     // before the destructor).
     delete longtest;
-    delete test;
+    //delete test;
     delete _Stringtest;
     delete _hyExecutionContexttest;
+    delete _VariableContainertest;
     delete BaseReftest;
     delete booltest;
     delete _PMathObjtest;
@@ -108,8 +109,8 @@ protected:
 
   FILE* FILEtest;
   long* longtest;
-  * test;
   _String* _Stringtest;
+  _VariableContainer* _VariableContainertest;
   _hyExecutionContext* _hyExecutionContexttest;
   BaseRef* BaseReftest;
   bool* booltest;
@@ -216,7 +217,7 @@ TEST_F(_FStringTest, EvaluateTest) {
 
 TEST_F(_FStringTest, ExecuteTest) {
 
-  _PMathObj result_PMathObj = _FStringtest->Execute();
+  //_PMathObj result_PMathObj = _FStringtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
 
 }

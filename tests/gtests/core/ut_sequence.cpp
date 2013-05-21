@@ -203,7 +203,7 @@ TEST_F(_CStringTest, makeDynamicTest) {
 
 TEST_F(_CStringTest, operatorDoubleLessTest) {
 
-  _CStringtest->operatorDoubleLess(_Stringtest);
+  //_CStringtest->operatorDoubleLess(_Stringtest);
   //EXPECT_EQ (_CStringtest, 0);
 
 }
@@ -211,7 +211,7 @@ TEST_F(_CStringTest, operatorDoubleLessTest) {
 
 TEST_F(_CStringTest, operatorDoubleLess1Test) {
 
-  _CStringtest->operatorDoubleLess(*chartest);
+  //_CStringtest->operatorDoubleLess(*chartest);
   //EXPECT_EQ (_CStringtest, 0);
 
 }

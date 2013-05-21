@@ -83,7 +83,7 @@ protected:
     chartest = new char();
     _Listtest = new _List();
     _DataSetFilterNumerictest = new _DataSetFilterNumeric();
-    node<long>test = new node<long>();
+    //node<long>test = new node<long>();
     _TheTreetest = new _TheTree();
     _DataSettest = new _DataSet(FILEtest);
     _hyExecutionContexttest = new _hyExecutionContext(_VariableContainertest, _Stringtest);
@@ -93,8 +93,9 @@ protected:
     _DataSetFiltertest = new _DataSetFilter(_DataSettest, *chartest, *_Stringtest);
     booltest = new bool();
     _AVLListtest = new _AVLList(_SimpleListtest);
-    node<nodeCoord>test = new node<nodeCoord>();
+    //node<nodeCoord>test = new node<nodeCoord>();
     _PMathObjtest = new _PMathObj();
+    _VariableContainertest = new _VariableContainer();
   }
 
   virtual ~_TheTreeTest() {
@@ -119,7 +120,7 @@ protected:
     delete chartest;
     delete _Listtest;
     delete _DataSetFilterNumerictest;
-    delete node<long>test;
+    //delete node<long>test;
     delete _TheTreetest;
     delete _DataSettest;
     delete _hyExecutionContexttest;
@@ -129,8 +130,9 @@ protected:
     delete _DataSetFiltertest;
     delete booltest;
     delete _AVLListtest;
-    delete node<nodeCoord>test;
+    //delete node<nodeCoord>test;
     delete _PMathObjtest;
+    delete _VariableContainertest;
     fclose (FILEtest);
   }
 
@@ -142,7 +144,7 @@ protected:
   char* chartest;
   _List* _Listtest;
   _DataSetFilterNumeric* _DataSetFilterNumerictest;
-  node<long>* node<long>test;
+  //node<long>* node<long>test;
   _TheTree* _TheTreetest;
   _DataSet* _DataSettest;
   _hyExecutionContext* _hyExecutionContexttest;
@@ -152,14 +154,15 @@ protected:
   _DataSetFilter* _DataSetFiltertest;
   bool* booltest;
   _AVLList* _AVLListtest;
-  node<nodeCoord>* node<nodeCoord>test;
+  //node<nodeCoord>* node<nodeCoord>test;
   _PMathObj* _PMathObjtest;
+  _VariableContainer* _VariableContainertest;
 };
 
 
 TEST_F(_TheTreeTest, AddNodeNamesToDSTest) {
 
-  _TheTreetest->AddNodeNamesToDS(_DataSettest, *booltest, *booltest);
+  //_TheTreetest->AddNodeNamesToDS(_DataSettest, *booltest, *booltest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -167,7 +170,7 @@ TEST_F(_TheTreeTest, AddNodeNamesToDSTest) {
 
 TEST_F(_TheTreeTest, AlignNodesTest) {
 
-  _TheTreetest->AlignNodes(node<nodeCoord>test);
+  //_TheTreetest->AlignNodes(node<nodeCoord>test);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -175,7 +178,7 @@ TEST_F(_TheTreeTest, AlignNodesTest) {
 
 TEST_F(_TheTreeTest, AlignedTipsMappingTest) {
 
-  node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->AlignedTipsMapping(*booltest, *booltest);
+  //node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->AlignedTipsMapping(*booltest, *booltest);
   //EXPECT_EQ (resultnode<nodeCoord>*, 0);
 
 }
@@ -199,7 +202,7 @@ TEST_F(_TheTreeTest, AllocateResultsCacheTest) {
 
 TEST_F(_TheTreeTest, AllocateUnderflowScalersTest) {
 
-  _TheTreetest->AllocateUnderflowScalers(*longtest);
+  //_TheTreetest->AllocateUnderflowScalers(*longtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -207,7 +210,7 @@ TEST_F(_TheTreeTest, AllocateUnderflowScalersTest) {
 
 TEST_F(_TheTreeTest, AssignLabelsToBranchesTest) {
 
-  _TheTreetest->AssignLabelsToBranches(node<nodeCoord>test);
+  //_TheTreetest->AssignLabelsToBranches(node<nodeCoord>test);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -247,7 +250,7 @@ TEST_F(_TheTreeTest, ClearConstraintsTest) {
 
 TEST_F(_TheTreeTest, CompareSubTreesTest) {
 
-  _String result_String = _TheTreetest->CompareSubTrees(_TheTreetest, node<long>test);
+  //_String result_String = _TheTreetest->CompareSubTrees(_TheTreetest, node<long>test);
   //EXPECT_EQ (result_String, 0);
 
 }
@@ -263,7 +266,7 @@ TEST_F(_TheTreeTest, CompileListOfModelsTest) {
 
 TEST_F(_TheTreeTest, ComputeBranchCacheTest) {
 
-  _TheTreetest->ComputeBranchCache();
+  //_TheTreetest->ComputeBranchCache();
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -271,7 +274,7 @@ TEST_F(_TheTreeTest, ComputeBranchCacheTest) {
 
 TEST_F(_TheTreeTest, ComputeLLWithBranchCacheTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ComputeLLWithBranchCache(*_SimpleListtest);
+  //_Parameter result_Parameter = _TheTreetest->ComputeLLWithBranchCache(*_SimpleListtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -279,7 +282,7 @@ TEST_F(_TheTreeTest, ComputeLLWithBranchCacheTest) {
 
 TEST_F(_TheTreeTest, ComputeReleafingCostTest) {
 
-  long resultlong = _TheTreetest->ComputeReleafingCost(_DataSetFiltertest, *longtest);
+  //long resultlong = _TheTreetest->ComputeReleafingCost(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -287,7 +290,7 @@ TEST_F(_TheTreeTest, ComputeReleafingCostTest) {
 
 TEST_F(_TheTreeTest, ComputeReleafingCostCharTest) {
 
-  long resultlong = _TheTreetest->ComputeReleafingCostChar(_DataSetFiltertest, *longtest);
+  //long resultlong = _TheTreetest->ComputeReleafingCostChar(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -295,7 +298,7 @@ TEST_F(_TheTreeTest, ComputeReleafingCostCharTest) {
 
 TEST_F(_TheTreeTest, ComputeTreeBlockByBranchTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ComputeTreeBlockByBranch();
+  //_Parameter result_Parameter = _TheTreetest->ComputeTreeBlockByBranch();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -303,7 +306,7 @@ TEST_F(_TheTreeTest, ComputeTreeBlockByBranchTest) {
 
 TEST_F(_TheTreeTest, ComputeTwoSequenceLikelihoodTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ComputeTwoSequenceLikelihood();
+  //_Parameter result_Parameter = _TheTreetest->ComputeTwoSequenceLikelihood();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -311,7 +314,7 @@ TEST_F(_TheTreeTest, ComputeTwoSequenceLikelihoodTest) {
 
 TEST_F(_TheTreeTest, ConditionalBranchLikelihoodTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ConditionalBranchLikelihood(node<long>test);
+  //_Parameter result_Parameter = _TheTreetest->ConditionalBranchLikelihood(node<long>test);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -319,7 +322,7 @@ TEST_F(_TheTreeTest, ConditionalBranchLikelihoodTest) {
 
 TEST_F(_TheTreeTest, ConditionalNodeLikelihoodTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ConditionalNodeLikelihood(node<long>test);
+  //_Parameter result_Parameter = _TheTreetest->ConditionalNodeLikelihood(node<long>test);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -343,7 +346,7 @@ TEST_F(_TheTreeTest, CountTreeCategoriesTest) {
 
 TEST_F(_TheTreeTest, DeallocateUnderflowScalersTest) {
 
-  _TheTreetest->DeallocateUnderflowScalers();
+  //_TheTreetest->DeallocateUnderflowScalers();
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -375,7 +378,7 @@ TEST_F(_TheTreeTest, DepthWiseTraversalRightTest) {
 
 TEST_F(_TheTreeTest, DetermineBranchLengthGivenScalingParameterTest) {
 
-  _Parameter result_Parameter = _TheTreetest->DetermineBranchLengthGivenScalingParameter();
+  //_Parameter result_Parameter = _TheTreetest->DetermineBranchLengthGivenScalingParameter();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -399,7 +402,7 @@ TEST_F(_TheTreeTest, DumpingOrderTest) {
 
 TEST_F(_TheTreeTest, DuplicateTreeStructureTest) {
 
-  node<long>* resultnode<long> = _TheTreetest->DuplicateTreeStructure(node<long>test);
+  //node<long>* resultnode<long> = _TheTreetest->DuplicateTreeStructure(node<long>test);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }
@@ -423,7 +426,7 @@ TEST_F(_TheTreeTest, ExponentiateMatricesTest) {
 
 TEST_F(_TheTreeTest, FillInConditionalsTest) {
 
-  _TheTreetest->FillInConditionals(_DataSetFiltertest);
+  //_TheTreetest->FillInConditionals(_DataSetFiltertest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -431,7 +434,7 @@ TEST_F(_TheTreeTest, FillInConditionalsTest) {
 
 TEST_F(_TheTreeTest, FinalizeNodeTest) {
 
-  bool resultbool = _TheTreetest->FinalizeNode(node<long>test, *longtest, *_Stringtest);
+  //bool resultbool = _TheTreetest->FinalizeNode(node<long>test, *longtest, *_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -439,7 +442,7 @@ TEST_F(_TheTreeTest, FinalizeNodeTest) {
 
 TEST_F(_TheTreeTest, FindMaxCommonSubTreeTest) {
 
-  _String result_String = _TheTreetest->FindMaxCommonSubTree(_TheTreetest, *longtest);
+  //_String result_String = _TheTreetest->FindMaxCommonSubTree(_TheTreetest, *longtest);
   //EXPECT_EQ (result_String, 0);
 
 }
@@ -455,7 +458,7 @@ TEST_F(_TheTreeTest, FindScalingVariablesTest) {
 
 TEST_F(_TheTreeTest, GetBranchLengthTest) {
 
-  _TheTreetest->GetBranchLength(node<long>test, *_Parametertest);
+  //_TheTreetest->GetBranchLength(node<long>test, *_Parametertest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -463,7 +466,7 @@ TEST_F(_TheTreeTest, GetBranchLengthTest) {
 
 TEST_F(_TheTreeTest, GetBranchLength1Test) {
 
-  _TheTreetest->GetBranchLength(node<long>test, *_Stringtest, *booltest);
+  //_TheTreetest->GetBranchLength(node<long>test, *_Stringtest, *booltest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -471,7 +474,7 @@ TEST_F(_TheTreeTest, GetBranchLength1Test) {
 
 TEST_F(_TheTreeTest, GetBranchSpecTest) {
 
-  _String* result_String = _TheTreetest->GetBranchSpec(node<long>test);
+  //_String* result_String = _TheTreetest->GetBranchSpec(node<long>test);
   //EXPECT_EQ (result_String*, 0);
 
 }
@@ -479,7 +482,7 @@ TEST_F(_TheTreeTest, GetBranchSpecTest) {
 
 TEST_F(_TheTreeTest, GetBranchValueTest) {
 
-  _TheTreetest->GetBranchValue(node<long>test, *_Stringtest);
+  //_TheTreetest->GetBranchValue(node<long>test, *_Stringtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -487,7 +490,7 @@ TEST_F(_TheTreeTest, GetBranchValueTest) {
 
 TEST_F(_TheTreeTest, GetBranchVarValueTest) {
 
-  _TheTreetest->GetBranchVarValue(node<long>test, *_Stringtest, *longtest);
+  //_TheTreetest->GetBranchVarValue(node<long>test, *_Stringtest, *longtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -503,7 +506,7 @@ TEST_F(_TheTreeTest, GetLowerBoundOnCostTest) {
 
 TEST_F(_TheTreeTest, GetLowerBoundOnCostWithOrderTest) {
 
-  long resultlong = _TheTreetest->GetLowerBoundOnCostWithOrder(_DataSetFiltertest);
+  //long resultlong = _TheTreetest->GetLowerBoundOnCostWithOrder(_DataSetFiltertest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -511,7 +514,7 @@ TEST_F(_TheTreeTest, GetLowerBoundOnCostWithOrderTest) {
 
 TEST_F(_TheTreeTest, GetNodeNameTest) {
 
-  _TheTreetest->GetNodeName(node<long>test, *_Stringtest, *booltest);
+  //_TheTreetest->GetNodeName(node<long>test, *_Stringtest, *booltest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -551,7 +554,7 @@ TEST_F(_TheTreeTest, InitializeTreeFrequenciesTest) {
 
 TEST_F(_TheTreeTest, IntPopulateLeavesTest) {
 
-  bool resultbool = _TheTreetest->IntPopulateLeaves(_DataSetFiltertest, *longtest, *longtest);
+  //bool resultbool = _TheTreetest->IntPopulateLeaves(_DataSetFiltertest, *longtest, *longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -583,7 +586,7 @@ TEST_F(_TheTreeTest, LeafWiseTraversalTest) {
 
 TEST_F(_TheTreeTest, MapCBaseToCharactersTest) {
 
-  _List* result_List = _TheTreetest->MapCBaseToCharacters(_DataSetFiltertest, *booltest);
+  //_List* result_List = _TheTreetest->MapCBaseToCharacters(_DataSetFiltertest, *booltest);
   //EXPECT_EQ (result_List*, 0);
 
 }
@@ -607,7 +610,7 @@ TEST_F(_TheTreeTest, MarkDoneTest) {
 
 TEST_F(_TheTreeTest, MarkMatchesTest) {
 
-  _TheTreetest->MarkMatches(_DataSetFiltertest, *longtest);
+  //_TheTreetest->MarkMatches(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -615,7 +618,7 @@ TEST_F(_TheTreeTest, MarkMatchesTest) {
 
 TEST_F(_TheTreeTest, MatchLeavesToDFTest) {
 
-  bool resultbool = _TheTreetest->MatchLeavesToDF(*_SimpleListtest, _DataSetFiltertest);
+  //bool resultbool = _TheTreetest->MatchLeavesToDF(*_SimpleListtest, _DataSetFiltertest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -639,7 +642,7 @@ TEST_F(_TheTreeTest, MolecularClockTest) {
 
 TEST_F(_TheTreeTest, OCLLikelihoodEvaluatorTest) {
 
-  _Parameter result_Parameter = _TheTreetest->OCLLikelihoodEvaluator(*_SimpleListtest);
+  //_Parameter result_Parameter = _TheTreetest->OCLLikelihoodEvaluator(*_SimpleListtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -663,7 +666,7 @@ TEST_F(_TheTreeTest, PlainTreeStringTest) {
 
 TEST_F(_TheTreeTest, PostTreeConstructorTest) {
 
-  _TheTreetest->PostTreeConstructor(*booltest);
+  //_TheTreetest->PostTreeConstructor(*booltest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -671,7 +674,7 @@ TEST_F(_TheTreeTest, PostTreeConstructorTest) {
 
 TEST_F(_TheTreeTest, PreTreeConstructorTest) {
 
-  _TheTreetest->PreTreeConstructor(*booltest);
+  //_TheTreetest->PreTreeConstructor(*booltest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -735,7 +738,7 @@ TEST_F(_TheTreeTest, PurgeTreeTest) {
 
 TEST_F(_TheTreeTest, RadialBranchMappingTest) {
 
-  node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->RadialBranchMapping();
+  //node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->RadialBranchMapping();
   //EXPECT_EQ (resultnode<nodeCoord>*, 0);
 
 }
@@ -743,7 +746,7 @@ TEST_F(_TheTreeTest, RadialBranchMappingTest) {
 
 TEST_F(_TheTreeTest, RecoverAncestralSequencesTest) {
 
-  _List* result_List = _TheTreetest->RecoverAncestralSequences();
+  //_List* result_List = _TheTreetest->RecoverAncestralSequences();
   //EXPECT_EQ (result_List*, 0);
 
 }
@@ -751,7 +754,7 @@ TEST_F(_TheTreeTest, RecoverAncestralSequencesTest) {
 
 TEST_F(_TheTreeTest, RecoverNodeSupportStatesTest) {
 
-  _TheTreetest->RecoverNodeSupportStates(_DataSetFiltertest, *longtest);
+  //_TheTreetest->RecoverNodeSupportStates(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -759,7 +762,7 @@ TEST_F(_TheTreeTest, RecoverNodeSupportStatesTest) {
 
 TEST_F(_TheTreeTest, RecoverNodeSupportStates2Test) {
 
-  _TheTreetest->RecoverNodeSupportStates2(node<long>test);
+  //_TheTreetest->RecoverNodeSupportStates2(node<long>test);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -767,7 +770,7 @@ TEST_F(_TheTreeTest, RecoverNodeSupportStates2Test) {
 
 TEST_F(_TheTreeTest, ReleafTreeTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ReleafTree(_DataSetFiltertest, *longtest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ReleafTree(_DataSetFiltertest, *longtest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -775,7 +778,7 @@ TEST_F(_TheTreeTest, ReleafTreeTest) {
 
 TEST_F(_TheTreeTest, ReleafTreeAndCheckTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ReleafTreeAndCheck(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ReleafTreeAndCheck(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -783,7 +786,7 @@ TEST_F(_TheTreeTest, ReleafTreeAndCheckTest) {
 
 TEST_F(_TheTreeTest, ReleafTreeAndCheckChar4Test) {
 
-  _Parameter result_Parameter = _TheTreetest->ReleafTreeAndCheckChar4(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ReleafTreeAndCheckChar4(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -791,7 +794,7 @@ TEST_F(_TheTreeTest, ReleafTreeAndCheckChar4Test) {
 
 TEST_F(_TheTreeTest, ReleafTreeCacheTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ReleafTreeCache(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ReleafTreeCache(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -799,7 +802,7 @@ TEST_F(_TheTreeTest, ReleafTreeCacheTest) {
 
 TEST_F(_TheTreeTest, ReleafTreeChar4Test) {
 
-  _Parameter result_Parameter = _TheTreetest->ReleafTreeChar4(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ReleafTreeChar4(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -839,7 +842,7 @@ TEST_F(_TheTreeTest, RemoveModelTest) {
 
 TEST_F(_TheTreeTest, SampleAncestorsBySequenceTest) {
 
-  _TheTreetest->SampleAncestorsBySequence();
+  //_TheTreetest->SampleAncestorsBySequence();
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -847,7 +850,7 @@ TEST_F(_TheTreeTest, SampleAncestorsBySequenceTest) {
 
 TEST_F(_TheTreeTest, ScaledBranchMappingTest) {
 
-  node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->ScaledBranchMapping(node<nodeCoord>test);
+  //node<nodeCoord>* resultnode<nodeCoord> = _TheTreetest->ScaledBranchMapping(node<nodeCoord>test);
   //EXPECT_EQ (resultnode<nodeCoord>*, 0);
 
 }
@@ -855,7 +858,7 @@ TEST_F(_TheTreeTest, ScaledBranchMappingTest) {
 
 TEST_F(_TheTreeTest, ScaledBranchReMappingTest) {
 
-  _TheTreetest->ScaledBranchReMapping(node<nodeCoord>test, *_Parametertest);
+  //_TheTreetest->ScaledBranchReMapping(node<nodeCoord>test, *_Parametertest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -951,7 +954,7 @@ TEST_F(_TheTreeTest, SetUpMatricesTest) {
 
 TEST_F(_TheTreeTest, SetupCategoryMapsForNodesTest) {
 
-  _TheTreetest->SetupCategoryMapsForNodes(*_Listtest);
+  //_TheTreetest->SetupCategoryMapsForNodes(*_Listtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -991,7 +994,7 @@ TEST_F(_TheTreeTest, ThreadMatrixUpdateTest) {
 
 TEST_F(_TheTreeTest, ThreadReleafTreeCacheTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ThreadReleafTreeCache(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ThreadReleafTreeCache(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -999,7 +1002,7 @@ TEST_F(_TheTreeTest, ThreadReleafTreeCacheTest) {
 
 TEST_F(_TheTreeTest, ThreadReleafTreeChar4Test) {
 
-  _Parameter result_Parameter = _TheTreetest->ThreadReleafTreeChar4(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ThreadReleafTreeChar4(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1007,7 +1010,7 @@ TEST_F(_TheTreeTest, ThreadReleafTreeChar4Test) {
 
 TEST_F(_TheTreeTest, ThreadReleafTreeCharCacheTest) {
 
-  _Parameter result_Parameter = _TheTreetest->ThreadReleafTreeCharCache(_DataSetFiltertest, *longtest);
+  //_Parameter result_Parameter = _TheTreetest->ThreadReleafTreeCharCache(_DataSetFiltertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1015,7 +1018,7 @@ TEST_F(_TheTreeTest, ThreadReleafTreeCharCacheTest) {
 
 TEST_F(_TheTreeTest, TreePSRecurseTest) {
 
-  _TheTreetest->TreePSRecurse(node<nodeCoord>test, *_Stringtest);
+  //_TheTreetest->TreePSRecurse(node<nodeCoord>test, *_Stringtest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }
@@ -1023,7 +1026,7 @@ TEST_F(_TheTreeTest, TreePSRecurseTest) {
 
 TEST_F(_TheTreeTest, TreeTEXRecurseTest) {
 
-  nodeCoord resultnodeCoord = _TheTreetest->TreeTEXRecurse(node<nodeCoord>test, *_Stringtest);
+  //nodeCoord resultnodeCoord = _TheTreetest->TreeTEXRecurse(node<nodeCoord>test, *_Stringtest);
   //EXPECT_EQ (resultnodeCoord, 0);
 
 }
@@ -1039,7 +1042,7 @@ TEST_F(_TheTreeTest, TreeUserParamsTest) {
 
 TEST_F(_TheTreeTest, VerySimpleLikelihoodEvaluatorTest) {
 
-  _Parameter result_Parameter = _TheTreetest->VerySimpleLikelihoodEvaluator();
+  //_Parameter result_Parameter = _TheTreetest->VerySimpleLikelihoodEvaluator();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1047,7 +1050,7 @@ TEST_F(_TheTreeTest, VerySimpleLikelihoodEvaluatorTest) {
 
 TEST_F(_TheTreeTest, WeightedCharacterDifferencesTest) {
 
-  _TheTreetest->WeightedCharacterDifferences(*_Parametertest);
+  //_TheTreetest->WeightedCharacterDifferences(*_Parametertest);
   //EXPECT_EQ (_TheTreetest, 0);
 
 }

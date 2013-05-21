@@ -65,6 +65,8 @@ protected:
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
     _SimpleListtest = new _SimpleList();
+    chartest = new char('h');
+    longtest = new long(1);
     booltest = new bool();
     BaseReftest = new BaseRef();
     _Stringtest = new _String(FILEtest);
@@ -91,12 +93,16 @@ protected:
     delete BaseReftest;
     delete _Stringtest;
     delete _Trietest;
+    delete chartest;
+    delete longtest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
   _SimpleList* _SimpleListtest;
   bool* booltest;
+  char* chartest;
+  long* longtest;
   BaseRef* BaseReftest;
   _String* _Stringtest;
   _Trie* _Trietest;
@@ -137,7 +143,7 @@ TEST_F(_TrieTest, Delete1Test) {
 
 TEST_F(_TrieTest, Delete2Test) {
 
-  long resultlong = _Trietest->Delete(*_Listtest);
+  //long resultlong = _Trietest->Delete(*_Listtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -145,7 +151,7 @@ TEST_F(_TrieTest, Delete2Test) {
 
 TEST_F(_TrieTest, DumpRawTest) {
 
-  _Trietest->DumpRaw();
+  //_Trietest->DumpRaw();
   //EXPECT_EQ (_Trietest, 0);
 
 }
@@ -177,7 +183,7 @@ TEST_F(_TrieTest, Find1Test) {
 
 TEST_F(_TrieTest, FindNextLetterTest) {
 
-  long resultlong = _Trietest->FindNextLetter(*chartest);
+  //long resultlong = _Trietest->FindNextLetter(*chartest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -185,7 +191,7 @@ TEST_F(_TrieTest, FindNextLetterTest) {
 
 TEST_F(_TrieTest, FindNextUnusedIndexTest) {
 
-  long resultlong = _Trietest->FindNextUnusedIndex(*booltest);
+  //long resultlong = _Trietest->FindNextUnusedIndex(*booltest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -225,7 +231,7 @@ TEST_F(_TrieTest, Insert1Test) {
 
 TEST_F(_TrieTest, Insert2Test) {
 
-  long resultlong = _Trietest->Insert(*_Listtest, _SimpleListtest);
+  //long resultlong = _Trietest->Insert(*_Listtest, _SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -233,7 +239,7 @@ TEST_F(_TrieTest, Insert2Test) {
 
 TEST_F(_TrieTest, InsertNextLetterTest) {
 
-  long resultlong = _Trietest->InsertNextLetter(*chartest);
+  //long resultlong = _Trietest->InsertNextLetter(*chartest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -249,7 +255,7 @@ TEST_F(_TrieTest, RetrieveKeyByPayloadTest) {
 
 TEST_F(_TrieTest, RetrieveStringFromPathTest) {
 
-  _String* result_String = _Trietest->RetrieveStringFromPath(*_SimpleListtest);
+  //_String* result_String = _Trietest->RetrieveStringFromPath(*_SimpleListtest);
   //EXPECT_EQ (result_String*, 0);
 
 }
@@ -257,7 +263,7 @@ TEST_F(_TrieTest, RetrieveStringFromPathTest) {
 
 TEST_F(_TrieTest, SetAlphabetTest) {
 
-  _Trietest->SetAlphabet(_Stringtest, *booltest);
+  //_Trietest->SetAlphabet(_Stringtest, *booltest);
   //EXPECT_EQ (_Trietest, 0);
 
 }

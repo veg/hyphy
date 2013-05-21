@@ -121,7 +121,7 @@ TEST_F(_PolynomialDataTest, AddTerm1Test) {
 
 TEST_F(_PolynomialDataTest, AddTerm2Test) {
 
-  _PolynomialDatatest->AddTerm(longtest, *_Parametertest, longtest);
+  //_PolynomialDatatest->AddTerm(longtest, *_Parametertest, longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
 
 }
@@ -153,7 +153,7 @@ TEST_F(_PolynomialDataTest, CompareTermsTest) {
 
 TEST_F(_PolynomialDataTest, CompareTerms1Test) {
 
-  char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
+  //char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -161,7 +161,7 @@ TEST_F(_PolynomialDataTest, CompareTerms1Test) {
 
 TEST_F(_PolynomialDataTest, CompareTerms2Test) {
 
-  char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
+  //char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -225,7 +225,7 @@ TEST_F(_PolynomialDataTest, RaiseTermTest) {
 
 TEST_F(_PolynomialDataTest, RearrangeTermTest) {
 
-  _PolynomialDatatest->RearrangeTerm(longtest, longtest, longtest);
+  //_PolynomialDatatest->RearrangeTerm(longtest, longtest, longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
 
 }

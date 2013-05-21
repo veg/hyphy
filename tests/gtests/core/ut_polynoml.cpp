@@ -140,7 +140,7 @@ TEST_F(_PolynomialTest, ComputeTest) {
 
 TEST_F(_PolynomialTest, ComputePTest) {
 
-  _Parameter result_Parameter = _Polynomialtest->ComputeP(_Parametertest, _Parametertest);
+  //_Parameter result_Parameter = _Polynomialtest->ComputeP(_Parametertest, _Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -164,7 +164,7 @@ TEST_F(_PolynomialTest, Convert2ComputationFormTest) {
 
 TEST_F(_PolynomialTest, Convert2OperationFormTest) {
 
-  _Polynomialtest->Convert2OperationForm();
+  //_Polynomialtest->Convert2OperationForm();
   //EXPECT_EQ (_Polynomialtest, 0);
 
 }
@@ -188,7 +188,7 @@ TEST_F(_PolynomialTest, EqualTest) {
 
 TEST_F(_PolynomialTest, ExecuteTest) {
 
-  _PMathObj result_PMathObj = _Polynomialtest->Execute();
+  //_PMathObj result_PMathObj = _Polynomialtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
 
 }

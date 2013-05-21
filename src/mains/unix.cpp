@@ -48,7 +48,6 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 
 #ifdef  __UNITTEST__
 #include "gtest/gtest.h"
-#include "ut_strings.h"
 #endif
 
 #if defined   __MP2__ || defined __MP__

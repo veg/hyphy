@@ -76,13 +76,14 @@ protected:
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
+    _VariableContainertest = new _VariableContainer();
     longtest = new long();
     unsignedtest = new unsigned();
     _TreeTopologytest = new _TreeTopology();
-    _hyExecutionContexttest = new _hyExecutionContext(_VariableContainertest, _Stringtest);
+    //_hyExecutionContexttest = new _hyExecutionContext(_VariableContainertest, _Stringtest);
     _Listtest = new _List();
-    _HYTopologyTraversalFunctiontest = new _HYTopologyTraversalFunction();
-    node<long>test = new node<long>();
+    //_HYTopologyTraversalFunctiontest = new _HYTopologyTraversalFunction();
+    //node<long>test = new node<long>();
     _Stringtest = new _String(FILEtest);
     _Matrixtest = new _Matrix();
     _AVLListXtest = new _AVLListX(_SimpleListtest);
@@ -112,8 +113,8 @@ protected:
     delete _TreeTopologytest;
     delete _hyExecutionContexttest;
     delete _Listtest;
-    delete _HYTopologyTraversalFunctiontest;
-    delete node<long>test;
+    //delete _HYTopologyTraversalFunctiontest;
+    //delete node<long>test;
     delete _Stringtest;
     delete _Matrixtest;
     delete _AVLListXtest;
@@ -121,6 +122,7 @@ protected:
     delete booltest;
     delete _Parametertest;
     delete _PMathObjtest;
+    delete _VariableContainertest;
     fclose (FILEtest);
   }
 
@@ -131,7 +133,7 @@ protected:
   _hyExecutionContext* _hyExecutionContexttest;
   _List* _Listtest;
   _HYTopologyTraversalFunction* _HYTopologyTraversalFunctiontest;
-  node<long>* node<long>test;
+  //node<long>* node<long>test;
   _String* _Stringtest;
   _Matrix* _Matrixtest;
   _AVLListX* _AVLListXtest;
@@ -139,6 +141,7 @@ protected:
   bool* booltest;
   _Parameter* _Parametertest;
   _PMathObj* _PMathObjtest;
+  _VariableContainer* _VariableContainertest;
 };
 
 
@@ -152,7 +155,7 @@ TEST_F(_TreeTopologyTest, AVLRepresentationTest) {
 
 TEST_F(_TreeTopologyTest, AddANodeTest) {
 
-  _TreeTopologytest->AddANode(*_PMathObjtest);
+  //_TreeTopologytest->AddANode(*_PMathObjtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -200,7 +203,7 @@ TEST_F(_TreeTopologyTest, CompareTreesTest) {
 
 TEST_F(_TreeTopologyTest, ComputeClusterTableTest) {
 
-  _TreeTopologytest->ComputeClusterTable(*_SimpleListtest);
+  //_TreeTopologytest->ComputeClusterTable(*_SimpleListtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -208,7 +211,7 @@ TEST_F(_TreeTopologyTest, ComputeClusterTableTest) {
 
 TEST_F(_TreeTopologyTest, ConvertFromPSWTest) {
 
-  _String* result_String = _TreeTopologytest->ConvertFromPSW(*_AVLListXtest);
+  //_String* result_String = _TreeTopologytest->ConvertFromPSW(*_AVLListXtest);
   //EXPECT_EQ (result_String*, 0);
 
 }
@@ -216,7 +219,7 @@ TEST_F(_TreeTopologyTest, ConvertFromPSWTest) {
 
 TEST_F(_TreeTopologyTest, ConvertToPSWTest) {
 
-  bool resultbool = _TreeTopologytest->ConvertToPSW(*_AVLListXtest, _Listtest);
+  //bool resultbool = _TreeTopologytest->ConvertToPSW(*_AVLListXtest, _Listtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -224,7 +227,7 @@ TEST_F(_TreeTopologyTest, ConvertToPSWTest) {
 
 TEST_F(_TreeTopologyTest, CopyTreeStructureTest) {
 
-  node<long>* resultnode<long> = _TreeTopologytest->CopyTreeStructure(node<long>test, *booltest);
+  //node<long>* resultnode<long> = _TreeTopologytest->CopyTreeStructure(node<long>test, *booltest);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }
@@ -256,7 +259,7 @@ TEST_F(_TreeTopologyTest, DepthWiseTRightTest) {
 
 TEST_F(_TreeTopologyTest, DetermineBranchLengthMappingModeTest) {
 
-  _String result_String = _TreeTopologytest->DetermineBranchLengthMappingMode(_Stringtest);
+  //_String result_String = _TreeTopologytest->DetermineBranchLengthMappingMode(_Stringtest);
   //EXPECT_EQ (result_String, 0);
 
 }
@@ -280,7 +283,7 @@ TEST_F(_TreeTopologyTest, ExecuteTest) {
 
 TEST_F(_TreeTopologyTest, FinalizeNodeTest) {
 
-  bool resultbool = _TreeTopologytest->FinalizeNode(node<long>test, *longtest);
+  //bool resultbool = _TreeTopologytest->FinalizeNode(node<long>test, *longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -296,7 +299,7 @@ TEST_F(_TreeTopologyTest, FindCOTTest) {
 
 TEST_F(_TreeTopologyTest, FindCOTHelperTest) {
 
-  _TreeTopologytest->FindCOTHelper(node<long>test, *longtest);
+  //_TreeTopologytest->FindCOTHelper(node<long>test, *longtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -304,7 +307,7 @@ TEST_F(_TreeTopologyTest, FindCOTHelperTest) {
 
 TEST_F(_TreeTopologyTest, FindCOTHelper2Test) {
 
-  _TreeTopologytest->FindCOTHelper2(node<long>test, *_Matrixtest);
+  //_TreeTopologytest->FindCOTHelper2(node<long>test, *_Matrixtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -312,7 +315,7 @@ TEST_F(_TreeTopologyTest, FindCOTHelper2Test) {
 
 TEST_F(_TreeTopologyTest, FindNodeByNameTest) {
 
-  node<long>* resultnode<long> = _TreeTopologytest->FindNodeByName(_Stringtest);
+  //node<long>* resultnode<long> = _TreeTopologytest->FindNodeByName(_Stringtest);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }
@@ -320,7 +323,7 @@ TEST_F(_TreeTopologyTest, FindNodeByNameTest) {
 
 TEST_F(_TreeTopologyTest, FlatRepresentationTest) {
 
-  _PMathObj result_PMathObj = _TreeTopologytest->FlatRepresentation();
+  //_PMathObj result_PMathObj = _TreeTopologytest->FlatRepresentation();
   //EXPECT_EQ (result_PMathObj, 0);
 
 }
@@ -328,7 +331,7 @@ TEST_F(_TreeTopologyTest, FlatRepresentationTest) {
 
 TEST_F(_TreeTopologyTest, GetBranchLengthTest) {
 
-  _TreeTopologytest->GetBranchLength(node<long>test, *_Parametertest);
+  //_TreeTopologytest->GetBranchLength(node<long>test, *_Parametertest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -336,7 +339,7 @@ TEST_F(_TreeTopologyTest, GetBranchLengthTest) {
 
 TEST_F(_TreeTopologyTest, GetBranchLength1Test) {
 
-  _TreeTopologytest->GetBranchLength(node<long>test, *_Stringtest, *booltest);
+  //_TreeTopologytest->GetBranchLength(node<long>test, *_Stringtest, *booltest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -344,7 +347,7 @@ TEST_F(_TreeTopologyTest, GetBranchLength1Test) {
 
 TEST_F(_TreeTopologyTest, GetBranchValueTest) {
 
-  _TreeTopologytest->GetBranchValue(node<long>test, *_Stringtest);
+  //_TreeTopologytest->GetBranchValue(node<long>test, *_Stringtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -352,7 +355,7 @@ TEST_F(_TreeTopologyTest, GetBranchValueTest) {
 
 TEST_F(_TreeTopologyTest, GetBranchVarValueTest) {
 
-  _TreeTopologytest->GetBranchVarValue(node<long>test, *_Stringtest, *longtest);
+  //_TreeTopologytest->GetBranchVarValue(node<long>test, *_Stringtest, *longtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -360,7 +363,7 @@ TEST_F(_TreeTopologyTest, GetBranchVarValueTest) {
 
 TEST_F(_TreeTopologyTest, GetNodeNameTest) {
 
-  _TreeTopologytest->GetNodeName(node<long>test, *_Stringtest, *booltest);
+  //_TreeTopologytest->GetNodeName(node<long>test, *_Stringtest, *booltest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -400,7 +403,7 @@ TEST_F(_TreeTopologyTest, LeafWiseTTest) {
 
 TEST_F(_TreeTopologyTest, MainTreeConstructorTest) {
 
-  bool resultbool = _TreeTopologytest->MainTreeConstructor(*_Stringtest, *booltest);
+  //bool resultbool = _TreeTopologytest->MainTreeConstructor(*_Stringtest, *booltest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -416,7 +419,7 @@ TEST_F(_TreeTopologyTest, MatchTreePatternTest) {
 
 TEST_F(_TreeTopologyTest, PasteBranchLengthTest) {
 
-  _TreeTopologytest->PasteBranchLength(node<long>test, *_Stringtest);
+  //_TreeTopologytest->PasteBranchLength(node<long>test, *_Stringtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -424,7 +427,7 @@ TEST_F(_TreeTopologyTest, PasteBranchLengthTest) {
 
 TEST_F(_TreeTopologyTest, PostTreeConstructorTest) {
 
-  _TreeTopologytest->PostTreeConstructor(*booltest);
+  //_TreeTopologytest->PostTreeConstructor(*booltest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -432,7 +435,7 @@ TEST_F(_TreeTopologyTest, PostTreeConstructorTest) {
 
 TEST_F(_TreeTopologyTest, PreTreeConstructorTest) {
 
-  _TreeTopologytest->PreTreeConstructor(*booltest);
+  //_TreeTopologytest->PreTreeConstructor(*booltest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -448,7 +451,7 @@ TEST_F(_TreeTopologyTest, RerootTreeTest) {
 
 TEST_F(_TreeTopologyTest, RerootTreeInternalTraverserTest) {
 
-  _TreeTopologytest->RerootTreeInternalTraverser(*longtest);
+  //_TreeTopologytest->RerootTreeInternalTraverser(*longtest);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -464,7 +467,7 @@ TEST_F(_TreeTopologyTest, SetLeafNameTest) {
 
 TEST_F(_TreeTopologyTest, SplitTreeIntoClustersTest) {
 
-  _List* result_List = _TreeTopologytest->SplitTreeIntoClusters(*longtest);
+  //_List* result_List = _TreeTopologytest->SplitTreeIntoClusters(*longtest);
   //EXPECT_EQ (result_List*, 0);
 
 }
@@ -472,7 +475,7 @@ TEST_F(_TreeTopologyTest, SplitTreeIntoClustersTest) {
 
 TEST_F(_TreeTopologyTest, SplitTreeIntoClustersIntTest) {
 
-  _List* result_List = _TreeTopologytest->SplitTreeIntoClustersInt(node<long>test, _Listtest);
+  //_List* result_List = _TreeTopologytest->SplitTreeIntoClustersInt(node<long>test, _Listtest);
   //EXPECT_EQ (result_List*, 0);
 
 }
@@ -528,7 +531,7 @@ TEST_F(_TreeTopologyTest, TipNameTest) {
 
 TEST_F(_TreeTopologyTest, destroyCompTreeTest) {
 
-  _TreeTopologytest->destroyCompTree(node<long>test);
+  //_TreeTopologytest->destroyCompTree(node<long>test);
   //EXPECT_EQ (_TreeTopologytest, 0);
 
 }
@@ -536,7 +539,7 @@ TEST_F(_TreeTopologyTest, destroyCompTreeTest) {
 
 TEST_F(_TreeTopologyTest, internalNodeCompareTest) {
 
-  char resultchar = _TreeTopologytest->internalNodeCompare(node<long>test, node<long>test);
+  //char resultchar = _TreeTopologytest->internalNodeCompare(node<long>test, node<long>test);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -544,7 +547,7 @@ TEST_F(_TreeTopologyTest, internalNodeCompareTest) {
 
 TEST_F(_TreeTopologyTest, internalTreeCompareTest) {
 
-  char resultchar = _TreeTopologytest->internalTreeCompare(node<long>test, node<long>test);
+  //char resultchar = _TreeTopologytest->internalTreeCompare(node<long>test, node<long>test);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -560,7 +563,7 @@ TEST_F(_TreeTopologyTest, makeDynamicTest) {
 
 TEST_F(_TreeTopologyTest, prepTree4ComparisonTest) {
 
-  node<long>* resultnode<long> = _TreeTopologytest->prepTree4Comparison(*_Listtest);
+  //node<long>* resultnode<long> = _TreeTopologytest->prepTree4Comparison(*_Listtest);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }

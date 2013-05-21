@@ -81,7 +81,7 @@ protected:
     _VariableContainertest = new _VariableContainer();
     booltest = new bool();
     _AVLListtest = new _AVLList(_SimpleListtest);
-    node<long>test = new node<long>();
+    //node<long>test = new node<long>();
     _PMathObjtest = new _PMathObj();
   }
 
@@ -113,7 +113,7 @@ protected:
     delete _VariableContainertest;
     delete booltest;
     delete _AVLListtest;
-    delete node<long>test;
+    //delete node<long>test;
     delete _PMathObjtest;
     fclose (FILEtest);
   }
@@ -132,7 +132,7 @@ protected:
   _VariableContainer* _VariableContainertest;
   bool* booltest;
   _AVLList* _AVLListtest;
-  node<long>* node<long>test;
+  //node<long>* node<long>test;
   _PMathObj* _PMathObjtest;
 };
 
@@ -163,7 +163,7 @@ TEST_F(_FormulaTest, CheckFForDependenceTest) {
 
 TEST_F(_FormulaTest, CheckSimpleTermTest) {
 
-  bool resultbool = _Formulatest->CheckSimpleTerm(*_PMathObjtest);
+  //bool resultbool = _Formulatest->CheckSimpleTerm(*_PMathObjtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -187,7 +187,7 @@ TEST_F(_FormulaTest, ComputeTest) {
 
 TEST_F(_FormulaTest, ComputeSimpleTest) {
 
-  _Parameter result_Parameter = _Formulatest->ComputeSimple(_SimpleFormulaDatumtest);
+  //_Parameter result_Parameter = _Formulatest->ComputeSimple(_SimpleFormulaDatumtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -211,7 +211,7 @@ TEST_F(_FormulaTest, ConvertFromSimpleTest) {
 
 TEST_F(_FormulaTest, ConvertFromTreeTest) {
 
-  _Formulatest->ConvertFromTree();
+  //_Formulatest->ConvertFromTree();
   //EXPECT_EQ (_Formulatest, 0);
 
 }
@@ -235,7 +235,7 @@ TEST_F(_FormulaTest, ConvertToSimpleTest) {
 
 TEST_F(_FormulaTest, ConvertToTreeTest) {
 
-  _Formulatest->ConvertToTree(*booltest);
+  //_Formulatest->ConvertToTree(*booltest);
   //EXPECT_EQ (_Formulatest, 0);
 
 }
@@ -275,7 +275,7 @@ TEST_F(_FormulaTest, DuplicateTest) {
 
 TEST_F(_FormulaTest, DuplicateFormulaTest) {
 
-  node<long>* resultnode<long> = _Formulatest->DuplicateFormula(node<long>test, *_Formulatest);
+  //node<long>* resultnode<long> = _Formulatest->DuplicateFormula(node<long>test, *_Formulatest);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }
@@ -355,7 +355,7 @@ TEST_F(_FormulaTest, IntegralTest) {
 
 TEST_F(_FormulaTest, InternalDifferentiateTest) {
 
-  node<long>* resultnode<long> = _Formulatest->InternalDifferentiate(node<long>test);
+  //node<long>* resultnode<long> = _Formulatest->InternalDifferentiate(node<long>test);
   //EXPECT_EQ (resultnode<long>*, 0);
 
 }
@@ -363,7 +363,7 @@ TEST_F(_FormulaTest, InternalDifferentiateTest) {
 
 TEST_F(_FormulaTest, InternalSimplifyTest) {
 
-  bool resultbool = _Formulatest->InternalSimplify(node<long>test);
+  //bool resultbool = _Formulatest->InternalSimplify(node<long>test);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -403,7 +403,7 @@ TEST_F(_FormulaTest, IsEmptyTest) {
 
 TEST_F(_FormulaTest, LocalizeFormulaTest) {
 
-  _Formulatest->LocalizeFormula(*_Formulatest, *_Stringtest);
+  //_Formulatest->LocalizeFormula(*_Formulatest, *_Stringtest);
   //EXPECT_EQ (_Formulatest, 0);
 
 }
@@ -411,7 +411,7 @@ TEST_F(_FormulaTest, LocalizeFormulaTest) {
 
 TEST_F(_FormulaTest, MeanIntegralTest) {
 
-  _Parameter result_Parameter = _Formulatest->MeanIntegral(_Variabletest, *_Parametertest);
+  //_Parameter result_Parameter = _Formulatest->MeanIntegral(_Variabletest, *_Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -419,7 +419,7 @@ TEST_F(_FormulaTest, MeanIntegralTest) {
 
 TEST_F(_FormulaTest, NewtonTest) {
 
-  _Parameter result_Parameter = _Formulatest->Newton(*_Formulatest, *_Parametertest);
+  //_Parameter result_Parameter = _Formulatest->Newton(*_Formulatest, *_Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -427,7 +427,7 @@ TEST_F(_FormulaTest, NewtonTest) {
 
 TEST_F(_FormulaTest, Newton1Test) {
 
-  _Parameter result_Parameter = _Formulatest->Newton(*_Formulatest, _Variabletest);
+  //_Parameter result_Parameter = _Formulatest->Newton(*_Formulatest, _Variabletest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -435,7 +435,7 @@ TEST_F(_FormulaTest, Newton1Test) {
 
 TEST_F(_FormulaTest, Newton2Test) {
 
-  _Parameter result_Parameter = _Formulatest->Newton(_Variabletest, *_Parametertest);
+  //_Parameter result_Parameter = _Formulatest->Newton(_Variabletest, *_Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -459,7 +459,7 @@ TEST_F(_FormulaTest, ObjectClassTest) {
 
 TEST_F(_FormulaTest, PatchFormulasTogetherTest) {
 
-  _Formula result_Formula = _Formulatest->PatchFormulasTogether(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->PatchFormulasTogether(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }
@@ -491,7 +491,7 @@ TEST_F(_FormulaTest, SimplifyConstantsTest) {
 
 TEST_F(_FormulaTest, internalToStrTest) {
 
-  _Formulatest->internalToStr(*_Stringtest, node<long>test);
+  //_Formulatest->internalToStr(*_Stringtest, node<long>test);
   //EXPECT_EQ (_Formulatest, 0);
 
 }
@@ -507,7 +507,7 @@ TEST_F(_FormulaTest, makeDynamicTest) {
 
 TEST_F(_FormulaTest, operatorPointerTest) {
 
-  _Formula result_Formula = _Formulatest->operatorPointer(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->operatorPointer(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }
@@ -515,7 +515,7 @@ TEST_F(_FormulaTest, operatorPointerTest) {
 
 TEST_F(_FormulaTest, operatorUnaryPlusTest) {
 
-  _Formula result_Formula = _Formulatest->operatorUnaryPlus(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->operatorUnaryPlus(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }
@@ -523,7 +523,7 @@ TEST_F(_FormulaTest, operatorUnaryPlusTest) {
 
 TEST_F(_FormulaTest, operatorUnaryNegTest) {
 
-  _Formula result_Formula = _Formulatest->operatorUnaryNeg(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->operatorUnaryNeg(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }
@@ -531,7 +531,7 @@ TEST_F(_FormulaTest, operatorUnaryNegTest) {
 
 TEST_F(_FormulaTest, operatorDivTest) {
 
-  _Formula result_Formula = _Formulatest->operatorDiv(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->operatorDiv(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }
@@ -539,7 +539,7 @@ TEST_F(_FormulaTest, operatorDivTest) {
 
 TEST_F(_FormulaTest, operatorCarotTest) {
 
-  _Formula result_Formula = _Formulatest->operatorCarot(*_Formulatest);
+  //_Formula result_Formula = _Formulatest->operatorCarot(*_Formulatest);
   //EXPECT_EQ (result_Formula, 0);
 
 }

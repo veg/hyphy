@@ -150,7 +150,7 @@ protected:
 
 TEST_F(_LikelihoodFunctionTest, AllocateSiteResultsTest) {
 
-  _LikelihoodFunctiontest->AllocateSiteResults();
+  //_LikelihoodFunctiontest->AllocateSiteResults();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -166,7 +166,7 @@ TEST_F(_LikelihoodFunctionTest, AnnealTest) {
 
 TEST_F(_LikelihoodFunctionTest, BlockLengthTest) {
 
-  long resultlong = _LikelihoodFunctiontest->BlockLength(*longtest);
+  //long resultlong = _LikelihoodFunctiontest->BlockLength(*longtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -174,7 +174,7 @@ TEST_F(_LikelihoodFunctionTest, BlockLengthTest) {
 
 TEST_F(_LikelihoodFunctionTest, BracketTest) {
 
-  long resultlong = _LikelihoodFunctiontest->Bracket();
+  //long resultlong = _LikelihoodFunctiontest->Bracket();
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -182,7 +182,7 @@ TEST_F(_LikelihoodFunctionTest, BracketTest) {
 
 TEST_F(_LikelihoodFunctionTest, BuildIncrementsTest) {
 
-  _LikelihoodFunctiontest->BuildIncrements(*longtest);
+  //_LikelihoodFunctiontest->BuildIncrements(*longtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -190,7 +190,7 @@ TEST_F(_LikelihoodFunctionTest, BuildIncrementsTest) {
 
 TEST_F(_LikelihoodFunctionTest, BuildLeafProbsTest) {
 
-  _LikelihoodFunctiontest->BuildLeafProbs();
+  //_LikelihoodFunctiontest->BuildLeafProbs();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -206,7 +206,7 @@ TEST_F(_LikelihoodFunctionTest, CheckAndSetIthIndependentTest) {
 
 TEST_F(_LikelihoodFunctionTest, CheckDependentBoundsTest) {
 
-  _LikelihoodFunctiontest->CheckDependentBounds();
+  //_LikelihoodFunctiontest->CheckDependentBounds();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -214,7 +214,7 @@ TEST_F(_LikelihoodFunctionTest, CheckDependentBoundsTest) {
 
 TEST_F(_LikelihoodFunctionTest, CheckFibonacciTest) {
 
-  _LikelihoodFunctiontest->CheckFibonacci(*_Parametertest);
+  //_LikelihoodFunctiontest->CheckFibonacci(*_Parametertest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -222,7 +222,7 @@ TEST_F(_LikelihoodFunctionTest, CheckFibonacciTest) {
 
 TEST_F(_LikelihoodFunctionTest, CheckNthBitTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->CheckNthBit(*longtest, *chartest);
+  //bool resultbool = _LikelihoodFunctiontest->CheckNthBit(*longtest, *chartest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -230,7 +230,7 @@ TEST_F(_LikelihoodFunctionTest, CheckNthBitTest) {
 
 TEST_F(_LikelihoodFunctionTest, CheckStepTest) {
 
-  _LikelihoodFunctiontest->CheckStep(*_Parametertest, *_Matrixtest);
+  //_LikelihoodFunctiontest->CheckStep(*_Parametertest, *_Matrixtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -238,7 +238,7 @@ TEST_F(_LikelihoodFunctionTest, CheckStepTest) {
 
 TEST_F(_LikelihoodFunctionTest, CleanUpOptimizeTest) {
 
-  _LikelihoodFunctiontest->CleanUpOptimize();
+  //_LikelihoodFunctiontest->CleanUpOptimize();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -246,7 +246,7 @@ TEST_F(_LikelihoodFunctionTest, CleanUpOptimizeTest) {
 
 TEST_F(_LikelihoodFunctionTest, CleanupTest) {
 
-  _LikelihoodFunctiontest->Cleanup();
+  //_LikelihoodFunctiontest->Cleanup();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -254,7 +254,7 @@ TEST_F(_LikelihoodFunctionTest, CleanupTest) {
 
 TEST_F(_LikelihoodFunctionTest, CleanupMPIOptimizerTest) {
 
-  _LikelihoodFunctiontest->CleanupMPIOptimizer();
+  //_LikelihoodFunctiontest->CleanupMPIOptimizer();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -262,7 +262,7 @@ TEST_F(_LikelihoodFunctionTest, CleanupMPIOptimizerTest) {
 
 TEST_F(_LikelihoodFunctionTest, CleanupParameterMappingTest) {
 
-  _LikelihoodFunctiontest->CleanupParameterMapping();
+  //_LikelihoodFunctiontest->CleanupParameterMapping();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -270,7 +270,7 @@ TEST_F(_LikelihoodFunctionTest, CleanupParameterMappingTest) {
 
 TEST_F(_LikelihoodFunctionTest, ClearTest) {
 
-  _LikelihoodFunctiontest->Clear();
+  //_LikelihoodFunctiontest->Clear();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -278,7 +278,7 @@ TEST_F(_LikelihoodFunctionTest, ClearTest) {
 
 TEST_F(_LikelihoodFunctionTest, CodonNeutralSimulateTest) {
 
-  _LikelihoodFunctiontest->CodonNeutralSimulate();
+  //_LikelihoodFunctiontest->CodonNeutralSimulate();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -302,7 +302,7 @@ TEST_F(_LikelihoodFunctionTest, ComputeTest) {
 
 TEST_F(_LikelihoodFunctionTest, ComputeBlockTest) {
 
-  _Parameter result_Parameter = _LikelihoodFunctiontest->ComputeBlock();
+  //_Parameter result_Parameter = _LikelihoodFunctiontest->ComputeBlock();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -310,7 +310,7 @@ TEST_F(_LikelihoodFunctionTest, ComputeBlockTest) {
 
 TEST_F(_LikelihoodFunctionTest, ComputeBlockForTemplateTest) {
 
-  _LikelihoodFunctiontest->ComputeBlockForTemplate(*longtest, *booltest);
+  //_LikelihoodFunctiontest->ComputeBlockForTemplate(*longtest, *booltest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -318,7 +318,7 @@ TEST_F(_LikelihoodFunctionTest, ComputeBlockForTemplateTest) {
 
 TEST_F(_LikelihoodFunctionTest, ComputeBlockForTemplate2Test) {
 
-  _LikelihoodFunctiontest->ComputeBlockForTemplate2();
+  //_LikelihoodFunctiontest->ComputeBlockForTemplate2();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -326,7 +326,7 @@ TEST_F(_LikelihoodFunctionTest, ComputeBlockForTemplate2Test) {
 
 TEST_F(_LikelihoodFunctionTest, ComputeGradientTest) {
 
-  _LikelihoodFunctiontest->ComputeGradient();
+  //_LikelihoodFunctiontest->ComputeGradient();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -342,7 +342,7 @@ TEST_F(_LikelihoodFunctionTest, ComputePruningEfficiencyTest) {
 
 TEST_F(_LikelihoodFunctionTest, ComputeSiteLikelihoodsForABlockTest) {
 
-  _LikelihoodFunctiontest->ComputeSiteLikelihoodsForABlock();
+  //_LikelihoodFunctiontest->ComputeSiteLikelihoodsForABlock();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -350,7 +350,7 @@ TEST_F(_LikelihoodFunctionTest, ComputeSiteLikelihoodsForABlockTest) {
 
 TEST_F(_LikelihoodFunctionTest, ConjugateGradientDescentTest) {
 
-  _LikelihoodFunctiontest->ConjugateGradientDescent();
+  //_LikelihoodFunctiontest->ConjugateGradientDescent();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -366,7 +366,7 @@ TEST_F(_LikelihoodFunctionTest, ConstructTest) {
 
 TEST_F(_LikelihoodFunctionTest, CostOfPathTest) {
 
-  long resultlong = _LikelihoodFunctiontest->CostOfPath(_DataSetFiltertest, _TheTreetest);
+  //long resultlong = _LikelihoodFunctiontest->CostOfPath(_DataSetFiltertest, _TheTreetest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -390,7 +390,7 @@ TEST_F(_LikelihoodFunctionTest, CovarianceMatrixTest) {
 
 TEST_F(_LikelihoodFunctionTest, DeleteCachesTest) {
 
-  _LikelihoodFunctiontest->DeleteCaches(*booltest);
+  //_LikelihoodFunctiontest->DeleteCaches(*booltest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -422,7 +422,7 @@ TEST_F(_LikelihoodFunctionTest, DependOnTreeTest) {
 
 TEST_F(_LikelihoodFunctionTest, DetermineLocalUpdatePolicyTest) {
 
-  _LikelihoodFunctiontest->DetermineLocalUpdatePolicy();
+  //_LikelihoodFunctiontest->DetermineLocalUpdatePolicy();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -462,7 +462,7 @@ TEST_F(_LikelihoodFunctionTest, FindCategoryVarTest) {
 
 TEST_F(_LikelihoodFunctionTest, FlushLocalUpdatePolicyTest) {
 
-  _LikelihoodFunctiontest->FlushLocalUpdatePolicy();
+  //_LikelihoodFunctiontest->FlushLocalUpdatePolicy();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -502,7 +502,7 @@ TEST_F(_LikelihoodFunctionTest, GetGlobalVarsTest) {
 
 TEST_F(_LikelihoodFunctionTest, GetGradientStepBoundTest) {
 
-  _LikelihoodFunctiontest->GetGradientStepBound();
+  //_LikelihoodFunctiontest->GetGradientStepBound();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -518,7 +518,7 @@ TEST_F(_LikelihoodFunctionTest, GetIndependentVarsTest) {
 
 TEST_F(_LikelihoodFunctionTest, GetInitialValuesTest) {
 
-  _LikelihoodFunctiontest->GetInitialValues();
+  //_LikelihoodFunctiontest->GetInitialValues();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -566,7 +566,7 @@ TEST_F(_LikelihoodFunctionTest, GetIthIndependentVarTest) {
 
 TEST_F(_LikelihoodFunctionTest, GradientDescentTest) {
 
-  _LikelihoodFunctiontest->GradientDescent(*_Parametertest);
+  //_LikelihoodFunctiontest->GradientDescent(*_Parametertest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -574,7 +574,7 @@ TEST_F(_LikelihoodFunctionTest, GradientDescentTest) {
 
 TEST_F(_LikelihoodFunctionTest, GradientLocateTheBumpTest) {
 
-  _LikelihoodFunctiontest->GradientLocateTheBump();
+  //_LikelihoodFunctiontest->GradientLocateTheBump();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -582,7 +582,7 @@ TEST_F(_LikelihoodFunctionTest, GradientLocateTheBumpTest) {
 
 TEST_F(_LikelihoodFunctionTest, HasBlockChangedTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->HasBlockChanged(*longtest);
+  //bool resultbool = _LikelihoodFunctiontest->HasBlockChanged(*longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -590,7 +590,7 @@ TEST_F(_LikelihoodFunctionTest, HasBlockChangedTest) {
 
 TEST_F(_LikelihoodFunctionTest, HasHiddenMarkovTest) {
 
-  long resultlong = _LikelihoodFunctiontest->HasHiddenMarkov(*longtest, *booltest);
+  //long resultlong = _LikelihoodFunctiontest->HasHiddenMarkov(*longtest, *booltest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -598,7 +598,7 @@ TEST_F(_LikelihoodFunctionTest, HasHiddenMarkovTest) {
 
 TEST_F(_LikelihoodFunctionTest, HasPartitionChangedTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->HasPartitionChanged(*longtest);
+  //bool resultbool = _LikelihoodFunctiontest->HasPartitionChanged(*longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -606,7 +606,7 @@ TEST_F(_LikelihoodFunctionTest, HasPartitionChangedTest) {
 
 TEST_F(_LikelihoodFunctionTest, HasPrecisionBeenAchievedTest) {
 
-  long resultlong = _LikelihoodFunctiontest->HasPrecisionBeenAchieved(*_Parametertest);
+  //long resultlong = _LikelihoodFunctiontest->HasPrecisionBeenAchieved(*_Parametertest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -614,7 +614,7 @@ TEST_F(_LikelihoodFunctionTest, HasPrecisionBeenAchievedTest) {
 
 TEST_F(_LikelihoodFunctionTest, HighestBitTest) {
 
-  char resultchar = _LikelihoodFunctiontest->HighestBit(*longtest);
+  //char resultchar = _LikelihoodFunctiontest->HighestBit(*longtest);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -630,7 +630,7 @@ TEST_F(_LikelihoodFunctionTest, InitTest) {
 
 TEST_F(_LikelihoodFunctionTest, InitMPIOptimizerTest) {
 
-  _LikelihoodFunctiontest->InitMPIOptimizer();
+  //_LikelihoodFunctiontest->InitMPIOptimizer();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -646,7 +646,7 @@ TEST_F(_LikelihoodFunctionTest, IsIthParameterGlobalTest) {
 
 TEST_F(_LikelihoodFunctionTest, LocateTheBumpTest) {
 
-  _LikelihoodFunctiontest->LocateTheBump();
+  //_LikelihoodFunctiontest->LocateTheBump();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -654,7 +654,7 @@ TEST_F(_LikelihoodFunctionTest, LocateTheBumpTest) {
 
 TEST_F(_LikelihoodFunctionTest, LowestBitTest) {
 
-  char resultchar = _LikelihoodFunctiontest->LowestBit(*longtest);
+  //char resultchar = _LikelihoodFunctiontest->LowestBit(*longtest);
   //EXPECT_EQ (resultchar, 0);
 
 }
@@ -686,7 +686,7 @@ TEST_F(_LikelihoodFunctionTest, MaximumDimensionTest) {
 
 TEST_F(_LikelihoodFunctionTest, OptimalOrderTest) {
 
-  _LikelihoodFunctiontest->OptimalOrder(*longtest, *_SimpleListtest);
+  //_LikelihoodFunctiontest->OptimalOrder(*longtest, *_SimpleListtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -702,7 +702,7 @@ TEST_F(_LikelihoodFunctionTest, OptimizeTest) {
 
 TEST_F(_LikelihoodFunctionTest, PartitionCatVarsTest) {
 
-  _LikelihoodFunctiontest->PartitionCatVars(*_SimpleListtest);
+  //_LikelihoodFunctiontest->PartitionCatVars(*_SimpleListtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -710,7 +710,7 @@ TEST_F(_LikelihoodFunctionTest, PartitionCatVarsTest) {
 
 TEST_F(_LikelihoodFunctionTest, PartitionLengthsTest) {
 
-  long resultlong = _LikelihoodFunctiontest->PartitionLengths(*chartest);
+  //long resultlong = _LikelihoodFunctiontest->PartitionLengths(*chartest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -718,7 +718,7 @@ TEST_F(_LikelihoodFunctionTest, PartitionLengthsTest) {
 
 TEST_F(_LikelihoodFunctionTest, PopulateConditionalProbabilitiesTest) {
 
-  _LikelihoodFunctiontest->PopulateConditionalProbabilities();
+  //_LikelihoodFunctiontest->PopulateConditionalProbabilities();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -750,7 +750,7 @@ TEST_F(_LikelihoodFunctionTest, PrepareToComputeTest) {
 
 TEST_F(_LikelihoodFunctionTest, ProcessPartitionListTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->ProcessPartitionList(*_SimpleListtest);
+  //bool resultbool = _LikelihoodFunctiontest->ProcessPartitionList(*_SimpleListtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -758,7 +758,7 @@ TEST_F(_LikelihoodFunctionTest, ProcessPartitionListTest) {
 
 TEST_F(_LikelihoodFunctionTest, RandomizeListTest) {
 
-  _LikelihoodFunctiontest->RandomizeList(*_SimpleListtest);
+  //_LikelihoodFunctiontest->RandomizeList(*_SimpleListtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -782,7 +782,7 @@ TEST_F(_LikelihoodFunctionTest, RebuildTest) {
 
 TEST_F(_LikelihoodFunctionTest, ReconstructAncestorsTest) {
 
-  _LikelihoodFunctiontest->ReconstructAncestors(*_DataSettest);
+  //_LikelihoodFunctiontest->ReconstructAncestors(*_DataSettest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -790,7 +790,7 @@ TEST_F(_LikelihoodFunctionTest, ReconstructAncestorsTest) {
 
 TEST_F(_LikelihoodFunctionTest, RecoverAncestralSequencesMarginalTest) {
 
-  _List* result_List = _LikelihoodFunctiontest->RecoverAncestralSequencesMarginal();
+  //_List* result_List = _LikelihoodFunctiontest->RecoverAncestralSequencesMarginal();
   //EXPECT_EQ (result_List*, 0);
 
 }
@@ -798,7 +798,7 @@ TEST_F(_LikelihoodFunctionTest, RecoverAncestralSequencesMarginalTest) {
 
 TEST_F(_LikelihoodFunctionTest, RecurseCategoryTest) {
 
-  _LikelihoodFunctiontest->RecurseCategory();
+  //_LikelihoodFunctiontest->RecurseCategory();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -806,7 +806,7 @@ TEST_F(_LikelihoodFunctionTest, RecurseCategoryTest) {
 
 TEST_F(_LikelihoodFunctionTest, RecurseConstantOnPartitionTest) {
 
-  _LikelihoodFunctiontest->RecurseConstantOnPartition();
+  //_LikelihoodFunctiontest->RecurseConstantOnPartition();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -814,7 +814,7 @@ TEST_F(_LikelihoodFunctionTest, RecurseConstantOnPartitionTest) {
 
 TEST_F(_LikelihoodFunctionTest, RemapMatrixTest) {
 
-  _Matrix* result_Matrix = _LikelihoodFunctiontest->RemapMatrix(_Matrixtest);
+  //_Matrix* result_Matrix = _LikelihoodFunctiontest->RemapMatrix(_Matrixtest);
   //EXPECT_EQ (result_Matrix*, 0);
 
 }
@@ -830,7 +830,7 @@ TEST_F(_LikelihoodFunctionTest, RescanAllVariablesTest) {
 
 TEST_F(_LikelihoodFunctionTest, RestoreScalingFactorsTest) {
 
-  _LikelihoodFunctiontest->RestoreScalingFactors(*longtest, *longtest);
+  //_LikelihoodFunctiontest->RestoreScalingFactors(*longtest, *longtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -838,15 +838,7 @@ TEST_F(_LikelihoodFunctionTest, RestoreScalingFactorsTest) {
 
 TEST_F(_LikelihoodFunctionTest, RunViterbiTest) {
 
-  _LikelihoodFunctiontest->RunViterbi(*_Matrixtest);
-  //EXPECT_EQ (_LikelihoodFunctiontest, 0);
-
-}
-
-
-TEST_F(_LikelihoodFunctionTest, ScanAllVariablesTest) {
-
-  _LikelihoodFunctiontest->ScanAllVariables();
+  //_LikelihoodFunctiontest->RunViterbi(*_Matrixtest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -854,7 +846,7 @@ TEST_F(_LikelihoodFunctionTest, ScanAllVariablesTest) {
 
 TEST_F(_LikelihoodFunctionTest, ScanAllVariablesOnPartitionTest) {
 
-  _LikelihoodFunctiontest->ScanAllVariablesOnPartition();
+  //_LikelihoodFunctiontest->ScanAllVariablesOnPartition();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -862,7 +854,7 @@ TEST_F(_LikelihoodFunctionTest, ScanAllVariablesOnPartitionTest) {
 
 TEST_F(_LikelihoodFunctionTest, SendOffToMPITest) {
 
-  bool resultbool = _LikelihoodFunctiontest->SendOffToMPI(*longtest);
+  //bool resultbool = _LikelihoodFunctiontest->SendOffToMPI(*longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -910,7 +902,7 @@ TEST_F(_LikelihoodFunctionTest, SetIthIndependentTest) {
 
 TEST_F(_LikelihoodFunctionTest, SetNthBitTest) {
 
-  _LikelihoodFunctiontest->SetNthBit(*longtest, *chartest);
+  //_LikelihoodFunctiontest->SetNthBit(*longtest, *chartest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -918,16 +910,8 @@ TEST_F(_LikelihoodFunctionTest, SetNthBitTest) {
 
 TEST_F(_LikelihoodFunctionTest, SetParametersAndComputeTest) {
 
-  _Parameter result_Parameter = _LikelihoodFunctiontest->SetParametersAndCompute();
+  //_Parameter result_Parameter = _LikelihoodFunctiontest->SetParametersAndCompute();
   //EXPECT_EQ (result_Parameter, 0);
-
-}
-
-
-TEST_F(_LikelihoodFunctionTest, SetReferenceNodesTest) {
-
-  _LikelihoodFunctiontest->SetReferenceNodes();
-  //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
 
@@ -940,17 +924,9 @@ TEST_F(_LikelihoodFunctionTest, SetupTest) {
 }
 
 
-TEST_F(_LikelihoodFunctionTest, SetupCategoryCachesTest) {
-
-  _LikelihoodFunctiontest->SetupCategoryCaches();
-  //EXPECT_EQ (_LikelihoodFunctiontest, 0);
-
-}
-
-
 TEST_F(_LikelihoodFunctionTest, SetupLFCachesTest) {
 
-  _LikelihoodFunctiontest->SetupLFCaches();
+  //_LikelihoodFunctiontest->SetupLFCaches();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -958,7 +934,7 @@ TEST_F(_LikelihoodFunctionTest, SetupLFCachesTest) {
 
 TEST_F(_LikelihoodFunctionTest, SetupParameterMappingTest) {
 
-  _LikelihoodFunctiontest->SetupParameterMapping();
+  //_LikelihoodFunctiontest->SetupParameterMapping();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -974,7 +950,7 @@ TEST_F(_LikelihoodFunctionTest, SimplexMethodTest) {
 
 TEST_F(_LikelihoodFunctionTest, SimulateTest) {
 
-  _LikelihoodFunctiontest->Simulate();
+  //_LikelihoodFunctiontest->Simulate();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -982,7 +958,7 @@ TEST_F(_LikelihoodFunctionTest, SimulateTest) {
 
 TEST_F(_LikelihoodFunctionTest, SimulateCodonNeutralTest) {
 
-  _AssociativeList* result_AssociativeList = _LikelihoodFunctiontest->SimulateCodonNeutral();
+  //_AssociativeList* result_AssociativeList = _LikelihoodFunctiontest->SimulateCodonNeutral();
   //EXPECT_EQ (result_AssociativeList*, 0);
 
 }
@@ -990,7 +966,7 @@ TEST_F(_LikelihoodFunctionTest, SimulateCodonNeutralTest) {
 
 TEST_F(_LikelihoodFunctionTest, SingleBuildLeafProbsTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->SingleBuildLeafProbs();
+  //bool resultbool = _LikelihoodFunctiontest->SingleBuildLeafProbs();
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -1006,7 +982,7 @@ TEST_F(_LikelihoodFunctionTest, SiteCountTest) {
 
 TEST_F(_LikelihoodFunctionTest, SniffAroundTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->SniffAround(*_Matrixtest, *_Parametertest);
+  //bool resultbool = _LikelihoodFunctiontest->SniffAround(*_Matrixtest, *_Parametertest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -1022,7 +998,7 @@ TEST_F(_LikelihoodFunctionTest, StateCounterTest) {
 
 TEST_F(_LikelihoodFunctionTest, SumUpHiddenMarkovTest) {
 
-  _Parameter result_Parameter = _LikelihoodFunctiontest->SumUpHiddenMarkov();
+  //_Parameter result_Parameter = _LikelihoodFunctiontest->SumUpHiddenMarkov();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1038,7 +1014,7 @@ TEST_F(_LikelihoodFunctionTest, TotalRateClassesForAPartitionTest) {
 
 TEST_F(_LikelihoodFunctionTest, UpdateBlockResultTest) {
 
-  _LikelihoodFunctiontest->UpdateBlockResult(*longtest, *_Parametertest);
+  //_LikelihoodFunctiontest->UpdateBlockResult(*longtest, *_Parametertest);
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -1070,7 +1046,7 @@ TEST_F(_LikelihoodFunctionTest, UpdateIndependentTest) {
 
 TEST_F(_LikelihoodFunctionTest, ZeroSiteResultsTest) {
 
-  _LikelihoodFunctiontest->ZeroSiteResults();
+  //_LikelihoodFunctiontest->ZeroSiteResults();
   //EXPECT_EQ (_LikelihoodFunctiontest, 0);
 
 }
@@ -1078,7 +1054,7 @@ TEST_F(_LikelihoodFunctionTest, ZeroSiteResultsTest) {
 
 TEST_F(_LikelihoodFunctionTest, checkPermissibilityTest) {
 
-  bool resultbool = _LikelihoodFunctiontest->checkPermissibility(*_Matrixtest, *longtest);
+  //bool resultbool = _LikelihoodFunctiontest->checkPermissibility(*_Matrixtest, *longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -1086,7 +1062,7 @@ TEST_F(_LikelihoodFunctionTest, checkPermissibilityTest) {
 
 TEST_F(_LikelihoodFunctionTest, computeAtAPointTest) {
 
-  _Parameter result_Parameter = _LikelihoodFunctiontest->computeAtAPoint(*_Matrixtest, *longtest);
+  //_Parameter result_Parameter = _LikelihoodFunctiontest->computeAtAPoint(*_Matrixtest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1102,7 +1078,7 @@ TEST_F(_LikelihoodFunctionTest, makeDynamicTest) {
 
 TEST_F(_LikelihoodFunctionTest, replaceAPointTest) {
 
-  _Parameter result_Parameter = _LikelihoodFunctiontest->replaceAPoint();
+  //_Parameter result_Parameter = _LikelihoodFunctiontest->replaceAPoint();
   //EXPECT_EQ (result_Parameter, 0);
 
 }

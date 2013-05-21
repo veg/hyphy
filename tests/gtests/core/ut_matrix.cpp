@@ -161,7 +161,7 @@ TEST_F(_MatrixTest, AbsValueTest) {
 
 TEST_F(_MatrixTest, AddTest) {
 
-  _Matrixtest->Add(*_Matrixtest, *_Matrixtest, *booltest);
+  //_Matrixtest->Add(*_Matrixtest, *_Matrixtest, *booltest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -177,7 +177,7 @@ TEST_F(_MatrixTest, AddObjTest) {
 
 TEST_F(_MatrixTest, AddWithThresholdTest) {
 
-  bool resultbool = _Matrixtest->AddWithThreshold(*_Matrixtest, *_Parametertest);
+  //bool resultbool = _Matrixtest->AddWithThreshold(*_Matrixtest, *_Parametertest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -185,7 +185,7 @@ TEST_F(_MatrixTest, AddWithThresholdTest) {
 
 TEST_F(_MatrixTest, AgreeObjectsTest) {
 
-  _Matrixtest->AgreeObjects(*_Matrixtest);
+  //_Matrixtest->AgreeObjects(*_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -201,7 +201,7 @@ TEST_F(_MatrixTest, AmISparseTest) {
 
 TEST_F(_MatrixTest, AmISparseFastTest) {
 
-  bool resultbool = _Matrixtest->AmISparseFast(*_Matrixtest);
+  //bool resultbool = _Matrixtest->AmISparseFast(*_Matrixtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -217,7 +217,7 @@ TEST_F(_MatrixTest, AplusBxTest) {
 
 TEST_F(_MatrixTest, BalanceTest) {
 
-  _Matrixtest->Balance();
+  //_Matrixtest->Balance();
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -241,7 +241,7 @@ TEST_F(_MatrixTest, CheckCoordinatesTest) {
 
 TEST_F(_MatrixTest, CheckDimensionsTest) {
 
-  bool resultbool = _Matrixtest->CheckDimensions(*_Matrixtest);
+  //bool resultbool = _Matrixtest->CheckDimensions(*_Matrixtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -273,7 +273,7 @@ TEST_F(_MatrixTest, ClearTest) {
 
 TEST_F(_MatrixTest, ClearFormulaeTest) {
 
-  _Matrixtest->ClearFormulae();
+  //_Matrixtest->ClearFormulae();
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -281,7 +281,7 @@ TEST_F(_MatrixTest, ClearFormulaeTest) {
 
 TEST_F(_MatrixTest, ClearObjectsTest) {
 
-  _Matrixtest->ClearObjects();
+  //_Matrixtest->ClearObjects();
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -337,7 +337,7 @@ TEST_F(_MatrixTest, Convert2FormulasTest) {
 
 TEST_F(_MatrixTest, ConvertFormulas2PolyTest) {
 
-  _Matrixtest->ConvertFormulas2Poly(*booltest);
+  //_Matrixtest->ConvertFormulas2Poly(*booltest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -345,7 +345,7 @@ TEST_F(_MatrixTest, ConvertFormulas2PolyTest) {
 
 TEST_F(_MatrixTest, ConvertNumbers2PolyTest) {
 
-  _Matrixtest->ConvertNumbers2Poly();
+  //_Matrixtest->ConvertNumbers2Poly();
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -385,7 +385,7 @@ TEST_F(_MatrixTest, DuplicateTest) {
 
 TEST_F(_MatrixTest, EigenDecompTest) {
 
-  _Matrixtest->EigenDecomp(*_Matrixtest, *_Matrixtest);
+  //_Matrixtest->EigenDecomp(*_Matrixtest, *_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -425,7 +425,7 @@ TEST_F(_MatrixTest, EvaluateSimpleTest) {
 
 TEST_F(_MatrixTest, ExecuteTest) {
 
-  _PMathObj result_PMathObj = _Matrixtest->Execute();
+  //_PMathObj result_PMathObj = _Matrixtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
 
 }
@@ -513,7 +513,7 @@ TEST_F(_MatrixTest, HashTest) {
 
 TEST_F(_MatrixTest, HashBackTest) {
 
-  long resultlong = _Matrixtest->HashBack(*longtest);
+  //long resultlong = _Matrixtest->HashBack(*longtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -529,7 +529,7 @@ TEST_F(_MatrixTest, ImportMatrixExpTest) {
 
 TEST_F(_MatrixTest, IncreaseStorageTest) {
 
-  bool resultbool = _Matrixtest->IncreaseStorage();
+  //bool resultbool = _Matrixtest->IncreaseStorage();
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -537,7 +537,7 @@ TEST_F(_MatrixTest, IncreaseStorageTest) {
 
 TEST_F(_MatrixTest, InitMxVarTest) {
 
-  _Matrixtest->InitMxVar(*_SimpleListtest, *_Parametertest);
+  //_Matrixtest->InitMxVar(*_SimpleListtest, *_Parametertest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -601,7 +601,7 @@ TEST_F(_MatrixTest, IsMaxElementTest) {
 
 TEST_F(_MatrixTest, IsNonEmptyTest) {
 
-  inlinebool resultinlinebool = _Matrixtest->IsNonEmpty(*longtest);
+  //inlinebool resultinlinebool = _Matrixtest->IsNonEmpty(*longtest);
   //EXPECT_EQ (resultinlinebool, 0);
 
 }
@@ -777,7 +777,7 @@ TEST_F(_MatrixTest, MultObjTest) {
 
 TEST_F(_MatrixTest, MultbySTest) {
 
-  _Matrixtest->MultbyS(*_Matrixtest, *booltest, _Matrixtest, _Parametertest);
+  //_Matrixtest->MultbyS(*_Matrixtest, *booltest, _Matrixtest, _Parametertest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -793,7 +793,7 @@ TEST_F(_MatrixTest, MultinomialSampleTest) {
 
 TEST_F(_MatrixTest, MultiplyTest) {
 
-  _Matrixtest->Multiply(*_Matrixtest, *_Matrixtest);
+  //_Matrixtest->Multiply(*_Matrixtest, *_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -801,7 +801,7 @@ TEST_F(_MatrixTest, MultiplyTest) {
 
 TEST_F(_MatrixTest, Multiply1Test) {
 
-  _Matrixtest->Multiply(*_Matrixtest, *_Parametertest);
+  //_Matrixtest->Multiply(*_Matrixtest, *_Parametertest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -825,7 +825,7 @@ TEST_F(_MatrixTest, NonZeroEntriesTest) {
 
 TEST_F(_MatrixTest, PathLogLikelihoodTest) {
 
-  _PMathObj result_PMathObj = _Matrixtest->PathLogLikelihood(*_PMathObjtest);
+  //_PMathObj result_PMathObj = _Matrixtest->PathLogLikelihood(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
 
 }
@@ -849,7 +849,7 @@ TEST_F(_MatrixTest, PopulateConstantMatrixTest) {
 
 TEST_F(_MatrixTest, ProcessFormulasTest) {
 
-  bool resultbool = _Matrixtest->ProcessFormulas(*longtest, *_SimpleListtest);
+  //bool resultbool = _Matrixtest->ProcessFormulas(*longtest, *_SimpleListtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -857,7 +857,7 @@ TEST_F(_MatrixTest, ProcessFormulasTest) {
 
 TEST_F(_MatrixTest, ProfileMeanFitTest) {
 
-  _PMathObj result_PMathObj = _Matrixtest->ProfileMeanFit(*_PMathObjtest);
+  //_PMathObj result_PMathObj = _Matrixtest->ProfileMeanFit(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
 
 }
@@ -873,7 +873,7 @@ TEST_F(_MatrixTest, RandomTest) {
 
 TEST_F(_MatrixTest, RecursiveIndexSortTest) {
 
-  _Matrixtest->RecursiveIndexSort(*longtest, *longtest, _SimpleListtest);
+  //_Matrixtest->RecursiveIndexSort(*longtest, *longtest, _SimpleListtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -897,7 +897,7 @@ TEST_F(_MatrixTest, RetrieveNumericTest) {
 
 TEST_F(_MatrixTest, RowAndColumnMaxTest) {
 
-  _Matrixtest->RowAndColumnMax(*_Parametertest, *_Parametertest, _Parametertest);
+  //_Matrixtest->RowAndColumnMax(*_Parametertest, *_Parametertest, _Parametertest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -921,7 +921,7 @@ TEST_F(_MatrixTest, ScanForVariables2Test) {
 
 TEST_F(_MatrixTest, SchurTest) {
 
-  _Matrixtest->Schur();
+  //_Matrixtest->Schur();
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -937,7 +937,7 @@ TEST_F(_MatrixTest, SerializeTest) {
 
 TEST_F(_MatrixTest, SimplexHelper1Test) {
 
-  _Matrixtest->SimplexHelper1(*longtest, *_SimpleListtest);
+  //_Matrixtest->SimplexHelper1(*longtest, *_SimpleListtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -945,7 +945,7 @@ TEST_F(_MatrixTest, SimplexHelper1Test) {
 
 TEST_F(_MatrixTest, SimplexHelper2Test) {
 
-  _Matrixtest->SimplexHelper2(*longtest, *longtest);
+  //_Matrixtest->SimplexHelper2(*longtest, *longtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -953,7 +953,7 @@ TEST_F(_MatrixTest, SimplexHelper2Test) {
 
 TEST_F(_MatrixTest, SimplexHelper3Test) {
 
-  _Matrixtest->SimplexHelper3(*longtest, *longtest, *longtest, *longtest);
+  //_Matrixtest->SimplexHelper3(*longtest, *longtest, *longtest, *longtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1025,7 +1025,7 @@ TEST_F(_MatrixTest, SubObjTest) {
 
 TEST_F(_MatrixTest, SubtractTest) {
 
-  _Matrixtest->Subtract(*_Matrixtest, *_Matrixtest);
+  //_Matrixtest->Subtract(*_Matrixtest, *_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1089,7 +1089,7 @@ TEST_F(_MatrixTest, WishartDeviate1Test) {
 
 TEST_F(_MatrixTest, branchLengthStencilTest) {
 
-  _Matrix* result_Matrix = _Matrixtest->branchLengthStencil();
+  //_Matrix* result_Matrix = _Matrixtest->branchLengthStencil();
   //EXPECT_EQ (result_Matrix*, 0);
 
 }
@@ -1097,7 +1097,7 @@ TEST_F(_MatrixTest, branchLengthStencilTest) {
 
 TEST_F(_MatrixTest, computePFDRTest) {
 
-  _Parameter result_Parameter = _Matrixtest->computePFDR(*_Parametertest, *_Parametertest);
+  //_Parameter result_Parameter = _Matrixtest->computePFDR(*_Parametertest, *_Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1113,7 +1113,7 @@ TEST_F(_MatrixTest, makeDynamicTest) {
 
 TEST_F(_MatrixTest, operatorParenthsTest) {
 
-  _Parameter result_Parameter = _Matrixtest->operatorParenths();
+  //_Parameter result_Parameter = _Matrixtest->operatorParenths();
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -1121,7 +1121,7 @@ TEST_F(_MatrixTest, operatorParenthsTest) {
 
 TEST_F(_MatrixTest, operatorPointerTest) {
 
-  _Matrix result_Matrix = _Matrixtest->operatorPointer(*_Matrixtest);
+  //_Matrix result_Matrix = _Matrixtest->operatorPointer(*_Matrixtest);
   //EXPECT_EQ (result_Matrix, 0);
 
 }
@@ -1129,7 +1129,7 @@ TEST_F(_MatrixTest, operatorPointerTest) {
 
 TEST_F(_MatrixTest, operatorPointer1Test) {
 
-  _Matrix result_Matrix = _Matrixtest->operatorPointer(*_Parametertest);
+  //_Matrix result_Matrix = _Matrixtest->operatorPointer(*_Parametertest);
   //EXPECT_EQ (result_Matrix, 0);
 
 }
@@ -1137,7 +1137,7 @@ TEST_F(_MatrixTest, operatorPointer1Test) {
 
 TEST_F(_MatrixTest, operatorMultEqualTest) {
 
-  _Matrixtest->operatorMultEqual(*_Matrixtest);
+  //_Matrixtest->operatorMultEqual(*_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1145,7 +1145,7 @@ TEST_F(_MatrixTest, operatorMultEqualTest) {
 
 TEST_F(_MatrixTest, operatorUnaryPlusTest) {
 
-  _Matrix result_Matrix = _Matrixtest->operatorUnaryPlus(*_Matrixtest);
+  //_Matrix result_Matrix = _Matrixtest->operatorUnaryPlus(*_Matrixtest);
   //EXPECT_EQ (result_Matrix, 0);
 
 }
@@ -1153,7 +1153,7 @@ TEST_F(_MatrixTest, operatorUnaryPlusTest) {
 
 TEST_F(_MatrixTest, operatorPlusEqualTest) {
 
-  _Matrixtest->operatorPlusEqual(*_Matrixtest);
+  //_Matrixtest->operatorPlusEqual(*_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1161,7 +1161,7 @@ TEST_F(_MatrixTest, operatorPlusEqualTest) {
 
 TEST_F(_MatrixTest, operatorUnaryNegTest) {
 
-  _Matrix result_Matrix = _Matrixtest->operatorUnaryNeg(*_Matrixtest);
+  //_Matrix result_Matrix = _Matrixtest->operatorUnaryNeg(*_Matrixtest);
   //EXPECT_EQ (result_Matrix, 0);
 
 }
@@ -1169,7 +1169,7 @@ TEST_F(_MatrixTest, operatorUnaryNegTest) {
 
 TEST_F(_MatrixTest, operatorSubEqualTest) {
 
-  _Matrixtest->operatorSubEqual(*_Matrixtest);
+  //_Matrixtest->operatorSubEqual(*_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1177,7 +1177,7 @@ TEST_F(_MatrixTest, operatorSubEqualTest) {
 
 TEST_F(_MatrixTest, operatorEqualTest) {
 
-  _Matrixtest->operatorEqual(*_Matrixtest);
+  //_Matrixtest->operatorEqual(*_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1185,7 +1185,7 @@ TEST_F(_MatrixTest, operatorEqualTest) {
 
 TEST_F(_MatrixTest, operatorEqual1Test) {
 
-  _Matrixtest->operatorEqual(_Matrixtest);
+  //_Matrixtest->operatorEqual(_Matrixtest);
   //EXPECT_EQ (_Matrixtest, 0);
 
 }
@@ -1193,7 +1193,7 @@ TEST_F(_MatrixTest, operatorEqual1Test) {
 
 TEST_F(_MatrixTest, operatorBracketsTest) {
 
-  _Parameter result_Parameter = _Matrixtest->operatorBrackets(*longtest);
+  //_Parameter result_Parameter = _Matrixtest->operatorBrackets(*longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }

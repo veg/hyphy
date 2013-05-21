@@ -290,7 +290,7 @@ TEST_F(_VariableContainerTest, HasLocalsTest) {
 
 TEST_F(_VariableContainerTest, InitializeVarContTest) {
 
-  _VariableContainertest->InitializeVarCont(*_Stringtest, *_Stringtest);
+  //_VariableContainertest->InitializeVarCont(*_Stringtest, *_Stringtest);
   //EXPECT_EQ (_VariableContainertest, 0);
 
 }
@@ -386,7 +386,7 @@ TEST_F(_VariableContainerTest, ScanForVariablesTest) {
 
 TEST_F(_VariableContainerTest, ScanModelBasedVariablesTest) {
 
-  _VariableContainertest->ScanModelBasedVariables(*_Stringtest);
+  //_VariableContainertest->ScanModelBasedVariables(*_Stringtest);
   //EXPECT_EQ (_VariableContainertest, 0);
 
 }
@@ -418,7 +418,7 @@ TEST_F(_VariableContainerTest, SetModelTest) {
 
 TEST_F(_VariableContainerTest, SortVarsTest) {
 
-  _VariableContainertest->SortVars();
+  //_VariableContainertest->SortVars();
   //EXPECT_EQ (_VariableContainertest, 0);
 
 }

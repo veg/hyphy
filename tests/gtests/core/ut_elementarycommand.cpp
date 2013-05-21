@@ -134,7 +134,7 @@ TEST_F(_ElementaryCommandTest, BuildDoWhileTest) {
 
 TEST_F(_ElementaryCommandTest, BuildForTest) {
 
-  bool resultbool = _ElementaryCommandtest->BuildFor(*_Stringtest, *_ExecutionListtest);
+  //bool resultbool = _ElementaryCommandtest->BuildFor(*_Stringtest, *_ExecutionListtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -142,7 +142,7 @@ TEST_F(_ElementaryCommandTest, BuildForTest) {
 
 TEST_F(_ElementaryCommandTest, BuildIfThenElseTest) {
 
-  bool resultbool = _ElementaryCommandtest->BuildIfThenElse(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->BuildIfThenElse(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -150,7 +150,7 @@ TEST_F(_ElementaryCommandTest, BuildIfThenElseTest) {
 
 TEST_F(_ElementaryCommandTest, BuildWhileTest) {
 
-  bool resultbool = _ElementaryCommandtest->BuildWhile(*_Stringtest, *_ExecutionListtest);
+  //bool resultbool = _ElementaryCommandtest->BuildWhile(*_Stringtest, *_ExecutionListtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -158,7 +158,7 @@ TEST_F(_ElementaryCommandTest, BuildWhileTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructAlignSequencesTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructAlignSequences(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructAlignSequences(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -174,7 +174,7 @@ TEST_F(_ElementaryCommandTest, ConstructBGMTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructCategoryTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructCategory(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructCategory(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -182,7 +182,7 @@ TEST_F(_ElementaryCommandTest, ConstructCategoryTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructCategoryMatrixTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructCategoryMatrix(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructCategoryMatrix(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -190,7 +190,7 @@ TEST_F(_ElementaryCommandTest, ConstructCategoryMatrixTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructChoiceListTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructChoiceList(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructChoiceList(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -198,7 +198,7 @@ TEST_F(_ElementaryCommandTest, ConstructChoiceListTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructDataSetTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructDataSet(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructDataSet(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -206,7 +206,7 @@ TEST_F(_ElementaryCommandTest, ConstructDataSetTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructDataSetFilterTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructDataSetFilter(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructDataSetFilter(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -222,7 +222,7 @@ TEST_F(_ElementaryCommandTest, ConstructDoSQLTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructExecuteCommandsTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructExecuteCommands(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructExecuteCommands(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -230,7 +230,7 @@ TEST_F(_ElementaryCommandTest, ConstructExecuteCommandsTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructFindRootTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructFindRoot(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructFindRoot(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -238,7 +238,7 @@ TEST_F(_ElementaryCommandTest, ConstructFindRootTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructFscanfTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructFscanf(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructFscanf(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -246,7 +246,7 @@ TEST_F(_ElementaryCommandTest, ConstructFscanfTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructFunctionTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructFunction(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructFunction(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -254,7 +254,7 @@ TEST_F(_ElementaryCommandTest, ConstructFunctionTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructGetDataInfoTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructGetDataInfo(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructGetDataInfo(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -262,7 +262,7 @@ TEST_F(_ElementaryCommandTest, ConstructGetDataInfoTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructGetInformationTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructGetInformation(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructGetInformation(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -270,7 +270,7 @@ TEST_F(_ElementaryCommandTest, ConstructGetInformationTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructGetNeutralNullTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructGetNeutralNull(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructGetNeutralNull(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -286,7 +286,7 @@ TEST_F(_ElementaryCommandTest, ConstructLFTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructMPIReceiveTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructMPIReceive(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructMPIReceive(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -294,7 +294,7 @@ TEST_F(_ElementaryCommandTest, ConstructMPIReceiveTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructMPISendTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructMPISend(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructMPISend(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -318,7 +318,7 @@ TEST_F(_ElementaryCommandTest, ConstructNNTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructOpenDataPanelTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructOpenDataPanel(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructOpenDataPanel(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -326,7 +326,7 @@ TEST_F(_ElementaryCommandTest, ConstructOpenDataPanelTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructOpenWindowTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructOpenWindow(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructOpenWindow(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -334,7 +334,7 @@ TEST_F(_ElementaryCommandTest, ConstructOpenWindowTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructProfileStatementTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructProfileStatement(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructProfileStatement(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -342,7 +342,7 @@ TEST_F(_ElementaryCommandTest, ConstructProfileStatementTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructReplicateConstraintTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructReplicateConstraint(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructReplicateConstraint(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -350,7 +350,7 @@ TEST_F(_ElementaryCommandTest, ConstructReplicateConstraintTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructReturnTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructReturn(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructReturn(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -366,7 +366,7 @@ TEST_F(_ElementaryCommandTest, ConstructSCFGTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructSpawnLFTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructSpawnLF(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructSpawnLF(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -374,7 +374,7 @@ TEST_F(_ElementaryCommandTest, ConstructSpawnLFTest) {
 
 TEST_F(_ElementaryCommandTest, ConstructStateCounterTest) {
 
-  bool resultbool = _ElementaryCommandtest->ConstructStateCounter(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ConstructStateCounter(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -398,7 +398,7 @@ TEST_F(_ElementaryCommandTest, DuplicateTest) {
 
 TEST_F(_ElementaryCommandTest, ExecuteTest) {
 
-  bool resultbool = _ElementaryCommandtest->Execute();
+  //bool resultbool = _ElementaryCommandtest->Execute();
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -414,7 +414,7 @@ TEST_F(_ElementaryCommandTest, ExecuteCase0Test) {
 
 TEST_F(_ElementaryCommandTest, ExecuteCase11Test) {
 
-  _ElementaryCommandtest->ExecuteCase11();
+  //_ElementaryCommandtest->ExecuteCase11();
   //EXPECT_EQ (_ElementaryCommandtest, 0);
 
 }
@@ -654,7 +654,7 @@ TEST_F(_ElementaryCommandTest, ExecuteDataFilterCasesTest) {
 
 TEST_F(_ElementaryCommandTest, ExtractConditionsTest) {
 
-  long resultlong = _ElementaryCommandtest->ExtractConditions(*_Stringtest, *longtest);
+  //long resultlong = _ElementaryCommandtest->ExtractConditions(*_Stringtest, *longtest);
   //EXPECT_EQ (resultlong, 0);
 
 }
@@ -662,7 +662,7 @@ TEST_F(_ElementaryCommandTest, ExtractConditionsTest) {
 
 TEST_F(_ElementaryCommandTest, ExtractValidateAddHBLCommandTest) {
 
-  bool resultbool = _ElementaryCommandtest->ExtractValidateAddHBLCommand();
+  //bool resultbool = _ElementaryCommandtest->ExtractValidateAddHBLCommand();
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -758,7 +758,7 @@ TEST_F(_ElementaryCommandTest, HandleMolecularClockTest) {
 
 TEST_F(_ElementaryCommandTest, HandleOptimizeCovarianceMatrixTest) {
 
-  bool resultbool = _ElementaryCommandtest->HandleOptimizeCovarianceMatrix();
+  //bool resultbool = _ElementaryCommandtest->HandleOptimizeCovarianceMatrix();
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -790,7 +790,7 @@ TEST_F(_ElementaryCommandTest, HandleUseModelTest) {
 
 TEST_F(_ElementaryCommandTest, MakeGeneralizedLoopTest) {
 
-  bool resultbool = _ElementaryCommandtest->MakeGeneralizedLoop(_Stringtest, _Stringtest);
+  //bool resultbool = _ElementaryCommandtest->MakeGeneralizedLoop(_Stringtest, _Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -798,7 +798,7 @@ TEST_F(_ElementaryCommandTest, MakeGeneralizedLoopTest) {
 
 TEST_F(_ElementaryCommandTest, MakeJumpCommandTest) {
 
-  bool resultbool = _ElementaryCommandtest->MakeJumpCommand(_Stringtest, *longtest);
+  //bool resultbool = _ElementaryCommandtest->MakeJumpCommand(_Stringtest, *longtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -806,7 +806,7 @@ TEST_F(_ElementaryCommandTest, MakeJumpCommandTest) {
 
 TEST_F(_ElementaryCommandTest, ProcessIncludeTest) {
 
-  bool resultbool = _ElementaryCommandtest->ProcessInclude(*_Stringtest);
+  //bool resultbool = _ElementaryCommandtest->ProcessInclude(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
 
 }
@@ -814,7 +814,7 @@ TEST_F(_ElementaryCommandTest, ProcessIncludeTest) {
 
 TEST_F(_ElementaryCommandTest, addAndCleanTest) {
 
-  _ElementaryCommandtest->addAndClean(*_ExecutionListtest, _Listtest);
+  //_ElementaryCommandtest->addAndClean(*_ExecutionListtest, _Listtest);
   //EXPECT_EQ (_ElementaryCommandtest, 0);
 
 }

@@ -66,6 +66,8 @@ protected:
     _GrowingVectortest = new _GrowingVector(*booltest);
     BaseReftest = new BaseRef();
     _Parametertest = new _Parameter();
+    _SimpleListtest = new _SimpleList();
+    booltest = new bool();
   }
 
   virtual ~_GrowingVectorTest() {
@@ -86,12 +88,16 @@ protected:
     delete _GrowingVectortest;
     delete BaseReftest;
     delete _Parametertest;
+    delete _SimpleListtest;
+    delete booltest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
   _GrowingVector* _GrowingVectortest;
   BaseRef* BaseReftest;
+  bool* booltest;
+  _SimpleList* _SimpleListtest;
   _Parameter* _Parametertest;
 };
 
@@ -130,7 +136,7 @@ TEST_F(_GrowingVectorTest, makeDynamicTest) {
 
 TEST_F(_GrowingVectorTest, operatorDoubleLessTest) {
 
-  _GrowingVectortest->operatorDoubleLess(*_SimpleListtest);
+  //_GrowingVectortest->operatorDoubleLess(*_SimpleListtest);
   //EXPECT_EQ (_GrowingVectortest, 0);
 
 }

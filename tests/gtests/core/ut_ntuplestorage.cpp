@@ -110,7 +110,7 @@ TEST_F(_NTupleStorageTest, CheckKTupleTest) {
 
 TEST_F(_NTupleStorageTest, DirectIndexTest) {
 
-  _Parameter result_Parameter = _NTupleStoragetest->DirectIndex(*longtest);
+  //_Parameter result_Parameter = _NTupleStoragetest->DirectIndex(*longtest);
   //EXPECT_EQ (result_Parameter, 0);
 
 }
@@ -126,7 +126,7 @@ TEST_F(_NTupleStorageTest, IndexTest) {
 
 TEST_F(_NTupleStorageTest, IndexToTupleTest) {
 
-  _NTupleStoragetest->IndexToTuple(*longtest);
+  //_NTupleStoragetest->IndexToTuple(*longtest);
   //EXPECT_EQ (_NTupleStoragetest, 0);
 
 }

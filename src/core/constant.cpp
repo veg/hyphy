@@ -46,8 +46,6 @@
 #include "time.h"
 
 #include "constant.h"
-
-//SW: This should be just helper functions
 #include "parser.h"
 
 _Formula *chi2 = nil,
@@ -256,13 +254,13 @@ bool     _Constant::Equal (_PMathObj theObj)
 //______________________________________________________________________________
 _PMathObj _Constant::Abs (void)
 {
-    return     new _Constant (fabs(theValue));
+  return new _Constant(fabs(theValue));
 }
 
 //______________________________________________________________________________
 _PMathObj _Constant::Sin (void)
 {
-    return     new  _Constant (sin(theValue));
+  return new _Constant(sin(theValue));
 }
 
 //______________________________________________________________________________

@@ -66,6 +66,7 @@ protected:
 
     FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
+    _VariableContainertest = new _VariableContainer();
     _FormulaParsingContexttest = new _FormulaParsingContext(_Stringtest, _VariableContainertest);
     _Stringtest = new _String(FILEtest);
   }
@@ -87,12 +88,14 @@ protected:
     // before the destructor).
     delete _FormulaParsingContexttest;
     delete _Stringtest;
+    delete _VariableContainertest;
     fclose (FILEtest);
   }
 
   FILE* FILEtest;
   _FormulaParsingContext* _FormulaParsingContexttest;
   _String* _Stringtest;
+  _VariableContainer* _VariableContainertest;
 };
 
 
