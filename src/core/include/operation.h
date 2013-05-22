@@ -45,6 +45,28 @@
 #include "hy_strings.h"
 #include "mathobj.h"
 
+
+#define _HY_OPERATION_INVALID_REFERENCE (-1L)
+
+
+#define _HY_OPERATION_NOOP   0L  
+// this operation does nothing
+#define _HY_OPERATION_VALUE  1L  
+// this operation contains an object to be pushed on the stack
+#define _HY_OPERATION_VAR    2L  
+// this operation contains a reference to a variable whose value will be pushed on the stack
+#define _HY_OPERATION_REF    3L
+// this operation contains a reference to a string variable whose value will
+// used to look up another variable whose value will be pushed on the stack
+#define _HY_OPERATION_BUILTIN 4L
+// this operation refers to a built-in function or operation
+#define _HY_OPERATION_FUNCTION_CALL 5L
+// this operation will call an HBL function
+#define _HY_OPERATION_DEFERRED_FUNCTION_CALL 6L
+// this operation contains a reference to an HBL function ID
+// whose name will be looked up and bound at the time of first call
+
+
 extern _List BuiltInFunctions;
 
 class _Stack;
@@ -57,6 +79,37 @@ class _Operation : public BaseObj {
   friend class _Variable;
   friend class _VariableContainer;
 
+protected:
+    
+    bool ReportOperationExecutionError(_String, _String *);
+    
+    long          operationKind;
+    // what KIND of an operation is this operation
+    // one of the _HY_OPERATION_ #defines
+    
+    
+    long          reference;
+    long          attribute;
+    _PMathObj     payload;
+    
+/*
+ 
+operationKind               |  reference                        | attribute                         | payload 
+----------------------------+-----------------------------------+-----------------------------------+---------+
+_HY_OPERATION_NOOP          |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | NULL        
+_HY_OPERATION_VALUE         |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
+_HY_OPERATION_VAR           |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
+_HY_OPERATION_REF           |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
+_HY_OPERATION_BUILTIN       |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | NULL
+                            |                                   | the stack                         |
+_HY_OPERATION_FUNCTION_CALL |  index of the function to call    | number of terms to consume from   | NULL OR
+                            |                                   | the stack                         | named argument list
+_HY_OPERATION_DEFERRED_     |  _HY_OPERATION_INVALID_REFERENCE  | number of terms to consume from   | function id
+FUNCTION_CALL               |                                   | the stack                         | 
+
+ 
+*/
+   
 public:
   _Operation(void);
   _Operation(_String &, const long);
@@ -67,7 +120,9 @@ public:
   _Operation(bool, _String &, bool isG = false, _VariableContainer * = nil,
              bool take_a_reference = false);
   // store a variable or a constant
+    
   _Operation(_PMathObj);
+  virtual void Duplicate(BaseRef);
   
   #ifdef __NEW_GRAMMAR__
      bool ResolveDeferredAction (void);
@@ -77,19 +132,18 @@ public:
 
   virtual ~_Operation(void);
 
+  virtual void    Initialize(void);
   virtual BaseObj *makeDynamic(void);
 
   bool Execute(_Stack &, _VariableContainer * = nil,
                _String *errMsg = nil); //execute this operation
   // see the commend for _Formula::ExecuteFormula for the second argument
+  bool ExecutePolynomial(_Stack &, _VariableContainer *nameSpace = nil,
+                           _String *errMsg = nil);
   virtual void StackDepth(long &);
 
-  bool ExecutePolynomial(_Stack &, _VariableContainer *nameSpace = nil,
-                         _String *errMsg = nil);
   virtual BaseObj *toStr(void); //convert the op to string
 
-  virtual void Initialize(void);
-  virtual void Duplicate(BaseRef);
   _String &GetCode(void) {
     return (opCode > -1) && (numberOfTerms >= 0)
                ? *(_String *)BuiltInFunctions(opCode)
@@ -134,20 +188,6 @@ public:
 
   virtual bool EqualOp(_Operation *);
 
-protected:
-
-  bool ReportOperationExecutionError(_String, _String *);
-    
-  long          operationKind,
-        // what KIND of an operation is it
-        // (e.g. a value, a built-in call, a user function call, a reference etc)
-        // the value of this member variable alters how other members are interpreted
-                opCode,             // internal operation code
-                numberOfTerms,      // 1 - unary, 2 - binary, etc
-                theData;
-    
-    
-  _PMathObj     theNumber;
 };
 
 #endif

@@ -58,17 +58,15 @@ _Operation::_Operation(void) {
 
 //______________________________________________________________________________
 void _Operation::Initialize(void) {
-  numberOfTerms = 0;
-  theData = -1;
-  theNumber = nil;
-  opCode = HY_OP_CODE_NONE;
+    operationKind = _HY_OPERATION_NOOP;
+    reference     = _HY_OPERATION_INVALID_REFERENCE;
+    attribute     = _HY_OPERATION_INVALID_REFERENCE;
+    payload       = NULL;
 }
 
 //______________________________________________________________________________
 BaseRef _Operation::makeDynamic(void) {
   _Operation *res = new _Operation;
-  checkPointer(res);
-  //memcpy ((char*)res, (char*)this, sizeof (_Operation));
   res->Duplicate(this);
   return res;
 }
@@ -76,33 +74,117 @@ BaseRef _Operation::makeDynamic(void) {
 //______________________________________________________________________________
 void _Operation::Duplicate(BaseRef r) {
   _Operation *o = (_Operation *)r;
-  numberOfTerms = o->numberOfTerms;
-  theData = o->theData;
-  theNumber = o->theNumber;
-  opCode = o->opCode;
-  if (theNumber) {
-    theNumber->nInstances++;
+  operationKind = o->operationKind;
+  reference = o->reference;
+  attribute = o->attribute;
+  if (payload) {
+    payload->nInstances++;
   }
 }
 
 //______________________________________________________________________________
 BaseRef _Operation::toStr(void) {
   _String * res = new _String (128L, true);
-  if (theData != -1) {
-    (*res) << "Variable ";
-    res->AppendNewInstance ((_String *)((_Variable *)LocateVar(theData))->toStr());
-  } else if (theNumber) {
-    (*res) << "Constant ";
-    res->AppendNewInstance((_String *)theNumber->toStr());
-  } else {
-    (*res) << "Operation ";
-    res->AppendNewInstance((_String *)BuiltInFunctions(opCode));
+  
+  (*res) << "An operation object: ";
+  switch (operationKind) {
+      case _HY_OPERATION_NOOP:
+         (*res) << "no-op";
+        break;
+      case _HY_OPERATION_VALUE:
+          (*res) << "push value ";
+          res->AppendNewInstance((_String*)payload->toStr());
+          break;
+      case _HY_OPERATION_VAR:
+          (*res) << "push value of variable ";
+          (*res) << *LocateVar(reference)->GetName();
+          break;
+      case _HY_OPERATION_REF:
+          (*res) << "push reference in variable ";
+          (*res) << *LocateVar(reference)->GetName();
+          break;
+      case _HY_OPERATION_BUILTIN:
+          (*res) << "execute a built-in operation ";
+          (*res) << GetCode();
+          break;
+      case _HY_OPERATION_FUNCTION_CALL:
+          (*res) << "call an HBL function ";
+          (*res) << *_HBLObjectNameByType(HY_BL_HBL_FUNCTION, reference);
+          break;
+      case _HY_OPERATION_FUNCTION_CALL:
+          (*res) << "call an HBL function (deferred)";
+          (*res) << (_String*)payload;
+          break;
   }
 
   res->Finalize();
   return res;
 
 }
+
+//______________________________________________________________________________
+_Operation::_Operation(_PMathObj theObj) {
+    Initialize();
+    operationKind = _HY_OPERATION_VALUE;
+    payload = theObj;
+}
+
+
+// DONE UP TO HERE.
+
+
+//______________________________________________________________________________
+_Operation::_Operation(bool isVar, _String &stuff, bool isG,
+                       _VariableContainer *theParent, bool take_a_reference) {
+    
+    // creating a variable
+    if (isVar) {
+        long f;
+        _String theS(stuff);
+        if (theParent /*&&(!isG)*/) {
+            // 20070620: SLKP the commenting may break
+            // default behavior!
+            f = LocateVarByName(theS);
+            
+            if (f >= 0 && !FetchVar(f)->IsGlobal()) {
+                f = -1;
+            }
+            
+            if (f < 0) {
+                theS = (*theParent->theName) & "." & theS;
+            }
+        }
+        
+        f = LocateVarByName(theS);
+        
+        if (f < 0) {
+            _Variable v(theS, isG);
+            f = v.theIndex;
+        } else {
+            f = variableNames.GetXtra(f);
+        }
+        
+        theData = f;
+        theNumber = nil;
+        numberOfTerms = take_a_reference ? (1) : 0;
+        
+    } else {
+        numberOfTerms = 0;
+        if (stuff.Equal(&noneToken))
+            theNumber = new _MathObject;
+        else
+            theNumber = new _Constant(stuff);
+        theData = -1;
+    }
+    opCode = -1;
+    
+}
+
+//______________________________________________________________________________
+_Operation::~_Operation(void) {
+    DeleteObject(payload);
+}
+
 
 //______________________________________________________________________________
 // by opcode
@@ -141,16 +223,7 @@ _Operation::_Operation(_String &opc, const long opNo = 2)
   theNumber = nil;
 }
 
-//______________________________________________________________________________
-// construct the operation by its symbol and, if relevant -
-// number of operands
-_Operation::_Operation(_PMathObj theObj)
-    {
-  numberOfTerms = 0;
-  theData = -1;
-  opCode = -1;
-  theNumber = theObj;
-}
+
 
 //______________________________________________________________________________
 bool _Operation::CanResultsBeCached(_Operation *prev, bool exp_only) {
@@ -190,59 +263,6 @@ bool _Operation::HasChanged(void) {
   return false;
 }
 
-//______________________________________________________________________________
-_Operation::_Operation(bool isVar, _String &stuff, bool isG,
-                       _VariableContainer *theParent, bool take_a_reference) {
-
-  // creating a variable
-  if (isVar) { 
-    long f;
-    _String theS(stuff);
-    if (theParent /*&&(!isG)*/) { 
-      // 20070620: SLKP the commenting may break
-      // default behavior!
-      f = LocateVarByName(theS);
-
-      if (f >= 0 && !FetchVar(f)->IsGlobal()) {
-        f = -1;
-      }
-
-      if (f < 0) {
-        theS = (*theParent->theName) & "." & theS;
-      }
-    }
-
-    f = LocateVarByName(theS);
-
-    if (f < 0) {
-      _Variable v(theS, isG);
-      f = v.theIndex;
-    } else {
-      f = variableNames.GetXtra(f);
-    }
-
-    theData = f;
-    theNumber = nil;
-    numberOfTerms = take_a_reference ? (1) : 0;
-
-  } else {
-    numberOfTerms = 0;
-    if (stuff.Equal(&noneToken))
-      theNumber = new _MathObject;
-    else
-      theNumber = new _Constant(stuff);
-    theData = -1;
-  }
-  opCode = -1;
-
-}
-
-//______________________________________________________________________________
-_Operation::~_Operation(void) {
-  if (theNumber) {
-    DeleteObject(theNumber);
-  }
-}
 
 //______________________________________________________________________________
 bool _Operation::IsAVariable(bool deep) {
