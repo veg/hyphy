@@ -204,12 +204,13 @@ public:
 
 protected:
 
-  void internalToStr(_String &result, node<long> *, char opLevel,
+  void internalToStr(_String &result, node<long> *, long opLevel,
                      _List *matchNames, _Operation * = nil);
   void ConvertToTree(bool err_msg = true);
-  void ConvertFromTree(void);
+  void ConvertFromTree(bool = true);
   bool CheckSimpleTerm(_PMathObj);
   node<long> *DuplicateFormula(node<long> *, _Formula &);
+  void DumpTree (void);
 
   _List theFormula, *resultCache;
 

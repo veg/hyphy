@@ -61,7 +61,7 @@ bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
   _List splitKeys;
   _ElementaryCommand::ExtractConditions(serializedForm, 0, splitKeys, ',', false);
 
-  for (long k = 0; k < splitKeys.lLength; k = k + 1) {
+  for (unsigned long k = 0; k < splitKeys.lLength; k++) {
 
     _List aPair;
     _ElementaryCommand::ExtractConditions(*(_String *)splitKeys(k), 0, aPair,':', false);
@@ -165,12 +165,14 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList()
-            .AppendNewInstance(new _Operation(empty, -fID - 1));
+            .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+              _HY_OPERATION_FUNCTION_CALL, fID, 2, NULL));
 
         if (fID2 >= 0) {
           testFormula.GetList().AppendNewInstance(new _Operation());
           testFormula.GetList()
-              .AppendNewInstance(new _Operation(empty, -fID2 - 1));
+              .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+              _HY_OPERATION_FUNCTION_CALL, fID2, 1, NULL));
         }
 
         _SimpleList hist;
@@ -183,15 +185,15 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
             DeleteObject(fKey->theString);
             fKey->theString = (_String *)aKey->toStr();
             if (fID2 >= 0) {
-              ((_Operation **)testFormula.GetList().lData)[0]->SetNumber(fKey);
+              ((_Operation **)testFormula.GetList().lData)[0]->SetPayload(fKey);
               if (CheckEqual(testFormula.Compute()->Value(), 0.0)) {
                 cn = avl.Traverser(hist, ls);
                 continue;
               }
             }
-            ((_Operation **)actionFormula.GetList().lData)[0]->SetNumber(fKey);
+            ((_Operation **)actionFormula.GetList().lData)[0]->SetPayload(fKey);
             ((_Operation **)actionFormula.GetList().lData)[1]
-                ->SetNumber((_PMathObj) avl.GetXtra(cn));
+                ->SetPayload((_PMathObj) avl.GetXtra(cn));
             actionFormula.Compute();
             done++;
           }
@@ -200,10 +202,10 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
 
         DeleteObject(fKey);
 
-        ((_Operation **)actionFormula.GetList().lData)[0]->SetNumber(nil);
-        ((_Operation **)actionFormula.GetList().lData)[1]->SetNumber(nil);
+        ((_Operation **)actionFormula.GetList().lData)[0]->SetPayload(nil);
+        ((_Operation **)actionFormula.GetList().lData)[1]->SetPayload(nil);
         if (fID2 >= 0) {
-          ((_Operation **)testFormula.GetList().lData)[0]->SetNumber(nil);
+          ((_Operation **)testFormula.GetList().lData)[0]->SetPayload(nil);
         }
 
       }

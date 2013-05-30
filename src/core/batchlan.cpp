@@ -1002,3 +1002,17 @@ void SerializeModel(_String &rec, long theModel, _AVLList *alreadyDone,
   }
   rec << ");\n";
 }
+
+//______________________________________________________________________________
+_List   *_HYFetchFunctionParameters (const unsigned long func_id) {
+    if (func_id < batchLanguageFunctionParameterLists.lLength) 
+        return (_List*)batchLanguageFunctionParameterLists.GetItem(func_id);
+    return nil;
+}
+
+//______________________________________________________________________________
+_ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id) {
+    if (func_id < batchLanguageFunctions.lLength) 
+        return (_ExecutionList*)batchLanguageFunctions.GetItem(func_id);
+    return nil;
+}

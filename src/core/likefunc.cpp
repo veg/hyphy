@@ -6908,7 +6908,7 @@ void _LikelihoodFunction::GradientLocateTheBump(
                 SetAllIndependent(&bestVal);
                 maxSoFar = middleValue;
             } else {
-                long changed = SetAllIndependent(&currentBestPoint);
+                SetAllIndependent(&currentBestPoint);
                 maxSoFar = Compute();
                 bestVal = currentBestPoint;
                 /*brentHistory.Store (1.);
@@ -10074,14 +10074,14 @@ void _LikelihoodFunction::StateCounter(long functionCallback) {
     PrepareToCompute();
     computationalResults.Clear();
 
-    _Operation functionCallbackOp;
-
-    functionCallbackOp.SetTerms(-functionCallback - 1);
-    functionCallbackOp.TheCode() = functionCallback;
+    _Operation * functionCallbackOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+        _HY_OPERATION_FUNCTION_CALL, functionCallback, 
+        _HYFetchFunctionParameters (functionCallback)->lLength, 
+        NULL);
 
     _Formula fla;
 
-    fla.GetList() && &functionCallbackOp;
+    fla.GetList().AppendNewInstance (functionCallbackOp);
 
     long totalUniqueSites = 0, doneSites = 0, lastDone = 0;
     {
