@@ -21,7 +21,9 @@ _HXB_aa_offsets					=
 								  "gp41endo":684
 								};
 
+_HXB_env_region_name            = {{"pre","v1","c1","v2","c2","v3","c3","v4","c4","v5", "post", "gp41ecto", "gp41endo"}};
 _HXB_aa_offset_matrix			= {{0,130,149,157,196,295,331,384,418,459,471,511,684,856}};
+_HXB_env_upperbound             = _HXB_aa_offset_matrix [{{0,1}}][{{0,Columns(_HXB_env_region_name)}}] + 1;
 								  
 _HXB_Annotation = {};
 _HXB_Annotation ["pre"] 		= {{_HXB_env_offset__,_HXB_env_offset__+389}};
@@ -267,6 +269,44 @@ function		isoElectricPoint (seq) {
 lfunction		countPNGS		(seq){
     pngs = seq || "N\\-*[^P]\\-*[ST]\\-*[^P]";
 	return Rows(pngs)/2 - (pngs[0] < 0) ;
+}
+
+/*-------------------------------------------------------------*/
+function partitionENVsequence (seq, nucOrAA) {
+    if (nucOrAA != 1) {
+		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_Env_Sequence_,nucOrAA);
+	}
+	else {
+		_mappedReference = mapSequenceToHXB2Aux (seq,_HXB2_AA_ENV_,nucOrAA);
+	}
+	
+	_allPartitions       = Columns (_HXB_env_region_name);
+	_currentIndex        = 0;
+	_upperBound          = _HXB_env_upperbound[_currentIndex];
+	_mappedLength        = Rows (_mappedReference);
+	_splitSequence       = {};
+	
+	for (_currentPartition    = 0; _currentPartition < _allPartitions; _currentPartition += 1) {
+	    _segmentName = _HXB_env_region_name[_currentPartition];
+	    _splitSequence [_segmentName] = "";
+	    _splitSequence [_segmentName] * 128;
+	}
+	_currentPartition = 0;
+	
+	while (_currentPartition < _allPartitions && _currentIndex < _mappedLength) {
+	    if (_mappedReference[_currentIndex] >= _upperBound) {
+	        _currentPartition += 1;
+	        _upperBound          = _HXB_env_upperbound[_currentPartition];
+	    } 
+	    _splitSequence [_HXB_env_region_name[_currentPartition]] * seq[_currentIndex];
+	    _currentIndex += 1;
+	}
+
+	for (_currentPartition    = 0; _currentPartition < _allPartitions; _currentPartition += 1) {
+        _splitSequence [_HXB_env_region_name[_currentPartition]] * 0;
+	}
+		
+	return _splitSequence;
 }
 
 /*-------------------------------------------------------------*/
