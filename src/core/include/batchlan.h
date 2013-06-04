@@ -238,6 +238,36 @@ BaseRef _HYRetrieveBLObjectByName(_String &name, long &type, long *index = nil,
 _String _HYHBLTypeToText(long type);
 _String _HYStandardDirectory(const unsigned long);
 
+
+/**
+    An accessor function which attempts to retrieve the list of HBL function
+    parameters, based on the function index
+
+
+    @param   func_id the index for the HBL function object
+    @return  pointer to the _List enumerating function parameters
+    or nil if not found
+    @author  SLKP
+    @version 20130522
+*/
+
+_List   *_HYFetchFunctionParameters (const unsigned long func_id);
+
+/**
+    An accessor function which attempts to retrieve the code of an HBL function
+    based on its index
+
+
+    @param   func_id the index for the HBL function object
+    @return  pointer to the _ExecutionList object containing the function code
+    or nil if not found
+    @author  SLKP
+    @version 20130522
+*/
+
+_ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id);
+
+
 _HBLCommandExtras *_hyInitCommandExtras(const long = 0, const long = 0,
                                         const _String = empty, const char = ';',
                                         const bool = true, const bool = false,

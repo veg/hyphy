@@ -3459,14 +3459,11 @@ void _Matrix::Multiply(_Matrix &storage, _Parameter c) {
 
   } else {
     _Constant *cc = new _Constant(c);
-    checkPointer(cc);
 
     if (storageType == 2) {
-      _String star('*');
-      _Operation *cOp = new _Operation(cc), *mOp = new _Operation(star, 2);
+      _Operation *cOp = new _Operation(cc), 
+        *mOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2L);
 
-      checkPointer(cOp);
-      checkPointer(mOp);
       for (long i = 0; i < lDim; i++)
         if (IsNonEmpty(i)) {
           long h = HashBack(i);

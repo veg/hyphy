@@ -207,7 +207,7 @@ long _CalcNode::SetDependance(long varIndex) {
     _AVLList myVars(&checkVars);
     LocateVar(varIndex)->ScanForVariables(myVars, true);
 
-    for (long k = 0; k < checkVars.lLength; k++)
+    for (unsigned long k = 0; k < checkVars.lLength; k++)
       if (LocateVar(checkVars.lData[k])->IsCategory() &&
           (categoryVariables >> checkVars.lData[k])) {
         categoryIndexVars << -1;
@@ -324,7 +324,7 @@ _Parameter _CalcNode::BranchLength(void) {
 
   _Parameter weight = 1.0, result = 0.0;
 
-  long categoryCounter, totalCategs = 1;
+  unsigned long categoryCounter, totalCategs = 1;
 
   _CategoryVariable *cVar = nil;
 
@@ -416,7 +416,7 @@ bool _CalcNode::HasChanged(void) {
   if (_VariableContainer::HasChanged()) {
     return true;
   }
-  for (long i = 0; i < categoryVariables.lLength; i++)
+  for (unsigned long i = 0; i < categoryVariables.lLength; i++)
     if (LocateVar(categoryVariables.lData[i])->HasChanged()) {
       return true;
     }
@@ -914,11 +914,10 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
           nodeConditions[l]->GetList().Delete(0);
           _Formula newConstraint;
           newConstraint.Duplicate((BaseRef) nodeConditions[k]);
-          _String mns("-");
-          _Operation mins(mns, 2L);
-          for (m = 0; m < nodeConditions[l]->GetList().lLength; m++) {
-            _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(m);
-            if (curOp->GetNoTerms()) {
+          _Operation mins(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 2L);
+          for (unsigned long op_index = 0; op_index < nodeConditions[l]->GetList().lLength; op_index++) {
+            _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(op_index);
+            if (curOp->GetOpKind() == _HY_OPERATION_BUILTIN) {
               newConstraint.GetList() && &mins;
             } else {
               newConstraint.GetList() << curOp;
@@ -933,20 +932,10 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
 
   if (!first) {
     _Formula *result = nodeConditions[k];
-    _String pls('+');
-    _Operation *newVar = new _Operation, *plus = new _Operation(pls, 2L);
-
-    if (!(newVar && plus)) {
-      checkPointer(nil);
-    }
-
-    newVar->SetAVariable(iVariables->lData[f - 1]);
-
-    result->GetList() << newVar;
-    result->GetList() << plus;
-
-    DeleteObject(newVar);
-    DeleteObject(plus);
+  
+    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER _HY_OPERATION_VAR, 
+        iVariables->lData[f - 1], _HY_OPERATION_INVALID_REFERENCE, NULL));
+    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_ADD, 2L));
 
     free(nodeConditions);
     return result;

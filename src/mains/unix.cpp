@@ -649,7 +649,7 @@ int main (int argc, char* argv[])
 
     GlobalStartup();
 #ifdef __NEW_GRAMMAR__
-    if (argc == 2) {
+    /*if (argc == 2) {
 		wchar_t *fileName = coco_string_create(argv[1]);
 		Scanner *scanner = new Scanner(fileName);
 		Parser  *parser = new Parser(scanner);
@@ -659,7 +659,7 @@ int main (int argc, char* argv[])
 		delete scanner;
         //GlobalShutdown();
         //return 0;
-	}
+	}*/
     
 #endif
     if (calculatorMode) {
