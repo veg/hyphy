@@ -8696,231 +8696,261 @@ long    _LikelihoodFunction::CountObjects (char flag)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * partitionList, _SimpleList* exportPart)
-{
+//______________________________________________________________________________
+void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
+                                      _SimpleList * partitionList,
+                                      _SimpleList * exportPart) {
+
     // first - check how many data sets the LF depends on;
     // if only one - then spool it out into a NEXUS string;
     // if more than one - output a NEXUS file where
     // data sets after the first one are embedded as strings.
-
     RescanAllVariables();
 
-    if (partitionList)
+    if (partitionList) {
+
         // validate the list
-    {
         _String errMsg;
-        if (partitionList->lLength == 0 || partitionList->lLength > theDataFilters.lLength) {
-            errMsg = "The partition list for sub-export passed to SerializeLF was either empty or too long";
+        if (partitionList->lLength == 0 ||
+            partitionList->lLength > theDataFilters.lLength) {
+            errMsg = "The partition list for sub-export passed to SerializeLF "
+                     "was either empty or too long";
         } else {
             // check for duplicates and index overrun
             partitionList->Sort();
-            if (partitionList->lData[partitionList->lLength-1] >= theDataFilters.lLength) {
-                errMsg = "The partition list contained invalid partition indices (too high) in call to SerializeLF";
-            } else
-                for (unsigned long k2 = 1; k2 < partitionList->lLength; k2 ++)
-                    if (partitionList->lData[k2] == partitionList->lData[k2-1]) {
-                        errMsg = "The partition list contained duplicate partition indices in call to SerializeLF";
+            if (partitionList->lData[partitionList->lLength - 1] >=
+                theDataFilters.lLength) {
+                errMsg = "The partition list contained invalid partition "
+                         "indices (too high) in call to SerializeLF";
+            } else {
+                for (unsigned long k2 = 1; k2 < partitionList->lLength; k2++) {
+                    if (partitionList->lData[k2] ==
+                        partitionList->lData[k2 - 1]) {
+                        errMsg = "The partition list contained duplicate "
+                                 "partition indices in call to SerializeLF";
                         break;
                     }
-
+                }
+            }
         }
 
         if (errMsg.sLength) {
-            WarnError (errMsg);
+            WarnError(errMsg);
             return;
         }
     }
 
-    _String *lfName = (_String*)likeFuncNamesList (likeFuncList._SimpleList::Find((long)this));
+    _String *lfName = (_String *)likeFuncNamesList(
+        likeFuncList._SimpleList::Find((long) this));
 
-    ReportWarning (_String("Serializing ") & *lfName & " with mode " & _String((long)opt));
+    ReportWarning(_String("Serializing ") & *lfName & " with mode " &
+                  _String((long) opt));
 
     if (opt == _hyphyLFSerializeModeShortMPI) {
-        _String    resVarName = *lfName & "_MLES";
-        _Variable* resVar = FetchVar(LocateVarByName (resVarName));
+        _String resVarName = *lfName & "_MLES";
+        _Variable *resVar = FetchVar(LocateVarByName(resVarName));
         if (resVar) {
-            rec.AppendAnAssignmentToBuffer (&resVarName, (_String*)resVar->Compute()->toStr());
+            rec.AppendAnAssignmentToBuffer(
+                &resVarName, (_String *)resVar->Compute()->toStr());
         }
 
         resVarName = *lfName & "_MLE_VALUES";
-        rec.AppendAnAssignmentToBuffer (&resVarName, &emptyAssociativeList, false);
 
-        rec.AppendVariableValueAVL (&resVarName,indexInd);
-        rec.AppendVariableValueAVL (&resVarName,indexDep);
+        rec.AppendAnAssignmentToBuffer(&resVarName, &emptyAssociativeList,
+                                       false);
+        rec.AppendVariableValueAVL(&resVarName, indexInd);
+        rec.AppendVariableValueAVL(&resVarName, indexDep);
 
         return;
     }
 
 
-    _SimpleList * redirector = nil;
+    _SimpleList *redirector = nil;
     if (partitionList) {
         redirector = new _SimpleList;
-        checkPointer (redirector);
-        for (unsigned long pidx = 0; pidx < partitionList->lLength; pidx = pidx+1) {
+        checkPointer(redirector);
+        for (unsigned long pidx = 0; pidx < partitionList->lLength;
+             pidx = pidx + 1) {
             (*redirector) << theDataFilters.lData[partitionList->lData[pidx]];
         }
     } else {
         redirector = &theDataFilters;
     }
 
+    _SimpleList taggedDataSets, dataSetsByFilter;
 
-
-    _SimpleList   taggedDataSets,
-                  dataSetsByFilter;
-
-    _AVLListX     taggedDS (&taggedDataSets);
+    _AVLListX taggedDS(&taggedDataSets);
 
     for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
-        long tIdx = dataSetList._SimpleList::Find ((long)(((_DataSetFilter*)dataSetFilterList (redirector->lData[idx]))->GetData()));
-        tIdx = taggedDS.Insert ((BaseRef)tIdx, taggedDS.countitems());
+
+        long tIdx = dataSetList._SimpleList::Find(
+            (long)(((_DataSetFilter *)dataSetFilterList(redirector->lData[idx]))
+                       ->GetData()));
+        tIdx = taggedDS.Insert((BaseRef) tIdx, taggedDS.countitems());
 
         if (tIdx < 0) {
-            tIdx = -tIdx-1;
+            tIdx = -tIdx - 1;
         }
 
         dataSetsByFilter << tIdx;
+
     }
 
-    if (taggedDS.countitems()>1 && exportPart) {
-        _String errMsg = _String("Can't represent likelihood function ") & *(_String*)likeFuncNamesList(likeFuncList._SimpleList::Find ((long)this)) &
-                         " as a single file with a prespecified partition, because it depends on multiple datasets. This is an internal error.";
-        WarnError (errMsg);
+    if (taggedDS.countitems() > 1 && exportPart) {
+        _String errMsg =
+            _String("Can't represent likelihood function ") &
+            *(_String *)likeFuncNamesList(
+                likeFuncList._SimpleList::Find((long) this)) &
+            " as a single file with a prespecified partition, because it "
+            "depends on multiple datasets. This is an internal error.";
+        WarnError(errMsg);
         return;
     }
 
-    _SimpleList indexedDataSets (taggedDS.countitems(),0,0);
+    _SimpleList indexedDataSets(taggedDS.countitems(), 0, 0);
+
     for (unsigned long idx2 = 0; idx2 < taggedDataSets.lLength; idx2++) {
-        indexedDataSets.lData[taggedDS.xtraD.lData[idx2]] = taggedDataSets.lData[idx2];
+        indexedDataSets.lData[taggedDS.xtraD.lData[idx2]] =
+            taggedDataSets.lData[idx2];
     }
 
-    _List        involvedSites,
-                 avlSupport,
-                 dV;
+    _List involvedSites, avlSupport, dV;
 
-    _SimpleList  unique_sites;
+    _SimpleList unique_sites;
 
     for (unsigned long idx3 = 0; idx3 < indexedDataSets.lLength; idx3++) {
         unique_sites << 0;
-        _SimpleList * esl  = new _SimpleList;
-        checkPointer (esl);
-        avlSupport.AppendNewInstance (esl);
-        involvedSites.AppendNewInstance (new _AVLListX (esl));
-        dV.AppendNewInstance (new _SimpleList);
+        _SimpleList *esl = new _SimpleList;
+        checkPointer(esl);
+        avlSupport.AppendNewInstance(esl);
+        involvedSites.AppendNewInstance(new _AVLListX(esl));
+        dV.AppendNewInstance(new _SimpleList);
     }
 
     // create a dummy data filter and spool the data to a file
-    stashParameter (skipOmissions,0.0,true);
+    stashParameter(skipOmissions, 0.0, true);
 
     if (partitionList || !exportPart) {
         for (unsigned long idx = 0; idx < redirector->lLength; idx++) {
-            _SimpleList* originalOrderFF = &((_DataSetFilter*)dataSetFilterList (redirector->lData[idx]))->theOriginalOrder;
-            _AVLListX  * involvedSitesL  = (_AVLListX*)(involvedSites (dataSetsByFilter.lData[idx]));
-            long       * unique_sitesL   = unique_sites.lData + dataSetsByFilter.lData[idx];
 
-            for (unsigned long idx2 = 0; idx2 < originalOrderFF->lLength; idx2++)
-                if (involvedSitesL->Insert ((BaseRef)(originalOrderFF->lData[idx2]),*unique_sitesL) >= 0) {
+            _SimpleList *originalOrderFF =
+                &((_DataSetFilter *)dataSetFilterList(redirector->lData[idx]))
+                    ->theOriginalOrder;
+
+            _AVLListX *involvedSitesL =
+                (_AVLListX *)(involvedSites(dataSetsByFilter.lData[idx]));
+
+            long *unique_sitesL =
+                unique_sites.lData + dataSetsByFilter.lData[idx];
+
+            for (unsigned long idx2 = 0; idx2 < originalOrderFF->lLength;
+                 idx2++) {
+                if (involvedSitesL->Insert(
+                        (BaseRef)(originalOrderFF->lData[idx2]),
+                        *unique_sitesL) >= 0) {
                     (*unique_sitesL)++;
                 }
+            }
         }
 
         for (unsigned long idx4 = 0; idx4 < indexedDataSets.lLength; idx4++) {
-            _AVLListX  * involvedSitesL  = (_AVLListX*)involvedSites (idx4);
 
-            _SimpleList tcache,
-                        * dVL =  (_SimpleList*)dV (idx4);
+            _AVLListX *involvedSitesL = (_AVLListX *)involvedSites(idx4);
+            _SimpleList tcache, *dVL = (_SimpleList *)dV(idx4);
 
-            long        iv,
-                        k = involvedSitesL->Traverser (tcache, iv, involvedSitesL->GetRoot());
+            long iv, k = involvedSitesL->Traverser(tcache, iv,
+                                                   involvedSitesL->GetRoot());
 
-            for (; k>=0; k = involvedSitesL->Traverser (tcache, iv)) {
-                (*dVL) << (long)involvedSitesL->Retrieve (k);
-                involvedSitesL->SetXtra(k, dVL->lLength-1);
+            for (; k >= 0; k = involvedSitesL->Traverser(tcache, iv)) {
+                (*dVL) << (long) involvedSitesL->Retrieve(k);
+                involvedSitesL->SetXtra(k, dVL->lLength - 1);
             }
         }
     } else if (exportPart) {
-        ((_SimpleList*) dV (dataSetsByFilter(0)))->Duplicate (exportPart);
+        ((_SimpleList *)dV(dataSetsByFilter(0)))->Duplicate(exportPart);
     }
 
-
     for (unsigned long idx5 = 0; idx5 < indexedDataSets.lLength; idx5++) {
-        _DataSetFilter  * entireSet = new _DataSetFilter ();
-        checkPointer (entireSet);
+
+        _DataSetFilter *entireSet = new _DataSetFilter();
+        checkPointer(entireSet);
         _SimpleList dH;
-        stashParameter (skipOmissions,0.0,true);
-        entireSet->SetFilter ((_DataSet*)dataSetList(indexedDataSets.lData[idx5]),1,dH,*(_SimpleList*)dV (idx5));
-        stashParameter (skipOmissions,0.0,false);
+        stashParameter(skipOmissions, 0.0, true);
+        entireSet->SetFilter(
+            (_DataSet *)dataSetList(indexedDataSets.lData[idx5]), 1, dH,
+            *(_SimpleList *)dV(idx5));
+        stashParameter(skipOmissions, 0.0, false);
         if (idx5) {
-            stashParameter (dataFilePrintFormat,0.0,true);
+            stashParameter(dataFilePrintFormat, 0.0, true);
         } else {
-            stashParameter (dataFilePrintFormat,4.0,true);
+            stashParameter(dataFilePrintFormat, 4.0, true);
         }
 
-        _String * cs =(_String*) entireSet->toStr ();
+        _String *cs = (_String *)entireSet->toStr();
 
         if (idx5) {
             if (idx5 == 1) {
                 rec << "\n\nBEGIN HYPHY;\n\n";
             }
-            rec  << "_tdsstring_ = \"";
-            rec.EscapeAndAppend (*cs);
+            rec << "_tdsstring_ = \"";
+            rec.EscapeAndAppend(*cs);
             rec << "\";\nDataSet ";
-            rec << (_String*)dataSetNamesList (indexedDataSets.lData[idx5]);
+            rec << (_String *)dataSetNamesList(indexedDataSets.lData[idx5]);
             rec << " = ReadFromString (_tdsstring_);\n_tdsstring_=0;\n";
         } else {
-            rec.AppendNewInstance (cs);
+            rec.AppendNewInstance(cs);
         }
-        DeleteObject (entireSet);
-        stashParameter (dataFilePrintFormat,0.0,false);
+        DeleteObject(entireSet);
+        stashParameter(dataFilePrintFormat, 0.0, false);
     }
 
     if (indexedDataSets.lLength == 1) {
         rec << "\n\nBEGIN HYPHY;\n\n";
     }
 
-    if (opt==_hyphyLFSerializeModeOptimize) {
-        _Parameter     p1,p2;
-        checkParameter (useLastResults,p1,0.0);
-        checkParameter (useInitialDistanceGuess,p2,1.0);
-        if (CheckEqual (p1,0.0) && p2>.1) {
-            for (unsigned long i=0; i<indexInd.lLength; i++) {
+    if (opt == _hyphyLFSerializeModeOptimize) {
+        _Parameter p1, p2;
+        checkParameter(useLastResults, p1, 0.0);
+        checkParameter(useInitialDistanceGuess, p2, 1.0);
+        if (CheckEqual(p1, 0.0) && p2 > .1) {
+            for (unsigned long i = 0; i < indexInd.lLength; i++) {
                 LocateVar(indexInd.lData[i])->MarkDone();
             }
 
             GetInitialValues();
         }
 
-        _FString *mpiPrefix = (_FString*)FetchObjectFromVariableByType (&mpiPrefixCommand, STRING);
+        _FString *mpiPrefix = (_FString *)FetchObjectFromVariableByType(
+            &mpiPrefixCommand, STRING);
+
         if (mpiPrefix) {
             rec << mpiPrefix->theString;
         }
     }
 
     // write out all globals
+    _String glVars(1024L, true), locVars(1024L, true);
 
-    _String     glVars (1024L,true),
-                locVars(1024L,true);
+    char str[4096];
 
-    char        str[4096];
-
-    _SimpleList * indepVarList = nil,
-                  * depVarList   = nil,
-                    * catVarList   = nil;
+    _SimpleList *indepVarList = nil, *depVarList = nil, *catVarList = nil;
 
     if (partitionList) {
-        indepVarList    = new _SimpleList;
-        depVarList      = new _SimpleList;
-        catVarList      = new _SimpleList;
+        indepVarList = new _SimpleList;
+        depVarList = new _SimpleList;
+        catVarList = new _SimpleList;
 
-        checkPointer                ((Ptr)(indepVarList && depVarList && catVarList));
-        ScanAllVariablesOnPartition (*partitionList, *indepVarList, *depVarList, *catVarList);
+        checkPointer((Ptr)(indepVarList && depVarList && catVarList));
+        ScanAllVariablesOnPartition(*partitionList, *indepVarList, *depVarList,
+                                    *catVarList);
     } else {
         indepVarList = &indexInd;
-        depVarList   = &indexDep;
-        catVarList   = &indexCat;
+        depVarList = &indexDep;
+        catVarList = &indexCat;
     }
 
-    ExportIndVariables (glVars,locVars,indepVarList);
-    ExportDepVariables (glVars,locVars,depVarList);
+    ExportIndVariables(glVars, locVars, indepVarList);
+    ExportDepVariables(glVars, locVars, depVarList);
 
     glVars.Finalize();
     locVars.Finalize();
@@ -8928,29 +8958,25 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     rec << glVars;
 
     // write out all categs
-
-    if (opt == _hyphyLFSerializeModeCategoryAsGlobal)
+    if (opt == _hyphyLFSerializeModeCategoryAsGlobal) {
         for (long idx = 0; idx < catVarList->lLength; idx++) {
-            _CategoryVariable* theC = (_CategoryVariable*)LocateVar(catVarList->lData[idx]);
-            snprintf (str, sizeof(str), "\nglobal %s;", theC->GetName()->getStr());
-            rec<<str;
+            _CategoryVariable *theC =
+                (_CategoryVariable *)LocateVar(catVarList->lData[idx]);
+            snprintf(str, sizeof(str), "\nglobal %s;",
+                     theC->GetName()->getStr());
+            rec << str;
         }
-    else {
-        ExportCatVariables (rec, catVarList);
+    } else {
+        ExportCatVariables(rec, catVarList);
     }
 
     //write out all the models
-
-
-    _SimpleList * redirectorT = nil,
-                  dH,
-                  dV2,
-                  dU;
+    _SimpleList *redirectorT = nil, dH, dV2, dU;
 
     if (partitionList) {
         redirectorT = new _SimpleList;
-        checkPointer (redirectorT);
-        for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx+1) {
+        checkPointer(redirectorT);
+        for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx + 1) {
             (*redirectorT) << theTrees.lData[partitionList->lData[pidx]];
         }
     } else {
@@ -8959,123 +8985,134 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
 
     for (long idx = 0; idx < redirectorT->lLength; idx++) {
         _SimpleList dT;
-        ((_TheTree*)LocateVar(redirectorT->lData[idx]))->CompileListOfModels(dT);
+        ((_TheTree *)LocateVar(redirectorT->lData[idx]))
+            ->CompileListOfModels(dT);
 
         if (dT.lLength == 1) {
-            dV2<<dT.lData[0];
+            dV2 << dT.lData[0];
         } else {
-            dV2<<-1;
+            dV2 << -1;
         }
 
-        dH.Union (dU,dT);
-        dU.Duplicate (&dH);
+        dH.Union(dU, dT);
+        dU.Duplicate(&dH);
     }
 
     {
         _SimpleList modelAux;
-        _AVLList    modelDupChecker (&modelAux);
-        for (long idx = 0; idx<dH.lLength; idx++) {
-            SerializeModel (rec, dH.lData[idx],&modelDupChecker);
+        _AVLList modelDupChecker(&modelAux);
+        for (long idx = 0; idx < dH.lLength; idx++) {
+            SerializeModel(rec, dH.lData[idx], &modelDupChecker);
         }
 
     }
 
 
     // write out all the trees, including model definitions if needed
+    _Parameter stashIM = 0.0;
+    checkParameter(tryNumericSequenceMatch, stashIM, 0.0);
 
-    _Parameter     stashIM = 0.0;
-    checkParameter (tryNumericSequenceMatch, stashIM, 0.0);
-    rec.AppendAnAssignmentToBuffer (&tryNumericSequenceMatch, new _String(stashIM));
-    checkParameter (acceptRootedTrees, stashIM, 0.0);
-    rec.AppendAnAssignmentToBuffer (&acceptRootedTrees, new _String(stashIM));
+    rec.AppendAnAssignmentToBuffer(&tryNumericSequenceMatch,
+                                   new _String(stashIM));
 
-    checkParameter (includeModelSpecs,stashIM,0.0);
+    checkParameter(acceptRootedTrees, stashIM, 0.0);
+    rec.AppendAnAssignmentToBuffer(&acceptRootedTrees, new _String(stashIM));
+
+    checkParameter(includeModelSpecs, stashIM, 0.0);
     {
         for (long idx = 0; idx < redirectorT->lLength; idx++) {
-            if (dV2.lData[idx]>=0) {
+            if (dV2.lData[idx] >= 0) {
                 rec << "\nUseModel (";
-                rec << *((_String*)modelNames (dV2.lData[idx]));
+                rec << *((_String *)modelNames(dV2.lData[idx]));
                 rec << ");\n";
-                setParameter (includeModelSpecs,0.0);
+                setParameter(includeModelSpecs, 0.0);
             } else {
-                setParameter (includeModelSpecs,1.0);
+                setParameter(includeModelSpecs, 1.0);
             }
 
             rec << "Tree ";
             rec << LocateVar(redirectorT->lData[idx])->GetName();
             rec << '=';
-            rec.AppendNewInstance((_String*)((_TheTree*)LocateVar(redirectorT->lData[idx]))->toStr());
+            rec.AppendNewInstance((_String *)(
+                (_TheTree *)LocateVar(redirectorT->lData[idx]))->toStr());
             rec << '\n';
         }
     }
-    setParameter (includeModelSpecs,stashIM);
+    setParameter(includeModelSpecs, stashIM);
 
-    rec     << locVars;
+    rec << locVars;
 
     // spool out the specs for datafilter
-
-    rec     << "\nDataSet ";
-    rec     << ((_String*)dataSetNamesList(indexedDataSets.lData[0]))->getStr();
-    rec     << " = ReadDataFile(";
-    rec     << useNexusFileData;
-    rec     << ");\n";
+    rec << "\nDataSet ";
+    rec << ((_String *)dataSetNamesList(indexedDataSets.lData[0]))->getStr();
+    rec << " = ReadDataFile(";
+    rec << useNexusFileData;
+    rec << ");\n";
 
     dU.Clear();
-    _AVLList writtenDF (&dU);
+    _AVLList writtenDF(&dU);
 
     for (long idx = 0; idx < redirector->lLength; idx++) {
-        if (writtenDF.Insert ((BaseRef)redirector->lData[idx])>=0) {
-            _DataSetFilter* theDF = (_DataSetFilter*)dataSetFilterList (redirector->lData[idx]);
-            _String       * horPart;
+        if (writtenDF.Insert((BaseRef) redirector->lData[idx]) >= 0) {
+            _DataSetFilter *theDF =
+                (_DataSetFilter *)dataSetFilterList(redirector->lData[idx]);
+            _String *horPart;
 
             if (partitionList || !exportPart) {
                 _SimpleList remappedOO;
-                _AVLListX    * involvedSitesL = (_AVLListX*)involvedSites (dataSetsByFilter.lData[idx]);
-                for (long idx2 = 0; idx2 < theDF->theOriginalOrder.lLength; idx2++) {
-                    remappedOO << involvedSitesL->GetXtra(involvedSitesL->Find ((BaseRef)theDF->theOriginalOrder.lData[idx2]));
+                _AVLListX *involvedSitesL =
+                    (_AVLListX *)involvedSites(dataSetsByFilter.lData[idx]);
+                for (long idx2 = 0; idx2 < theDF->theOriginalOrder.lLength;
+                     idx2++) {
+                    remappedOO
+                        << involvedSitesL->GetXtra(involvedSitesL->Find(
+                               (BaseRef) theDF->theOriginalOrder.lData[idx2]));
                 }
-                horPart = (_String*)remappedOO.ListToPartitionString();
+                horPart = (_String *)remappedOO.ListToPartitionString();
             } else if (exportPart) {
-                horPart = new _String(_String("0-") & (long)exportPart->lLength-1);
+                horPart =
+                    new _String(_String("0-") & (long) exportPart->lLength - 1);
             }
             // else
             // horPart = (_String*)theDF->theOriginalOrder.ListToPartitionString();
 
-            rec    << "DataSetFilter ";
-            rec    << ((_String*)dataSetFilterNamesList(redirector->lData[idx]))->getStr();
-            rec    << " = CreateFilter(";
-            rec     << ((_String*)dataSetNamesList(indexedDataSets.lData[dataSetsByFilter.lData[idx]]))->getStr();
-            rec    << ',';
-            rec    << _String((long)theDF->GetUnitLength());
-            rec    << ',';
-            rec    << '"';
-            rec    << *horPart;
-            rec    << '"';
-            DeleteObject (horPart);
-            horPart = (_String*)theDF->theNodeMap.ListToPartitionString();
-            rec    << ',';
-            rec    << '"';
-            rec    << *horPart;
-            rec    << '"';
-            DeleteObject (horPart);
+            rec << "DataSetFilter ";
+            rec << ((_String *)dataSetFilterNamesList(redirector->lData[idx]))
+                       ->getStr();
+            rec << " = CreateFilter(";
+            rec << ((_String *)dataSetNamesList(
+                       indexedDataSets.lData[dataSetsByFilter.lData[idx]]))
+                       ->getStr();
+            rec << ',';
+            rec << _String((long) theDF->GetUnitLength());
+            rec << ',';
+            rec << '"';
+            rec << *horPart;
+            rec << '"';
+            DeleteObject(horPart);
+            horPart = (_String *)theDF->theNodeMap.ListToPartitionString();
+            rec << ',';
+            rec << '"';
+            rec << *horPart;
+            rec << '"';
+            DeleteObject(horPart);
 
             horPart = theDF->GetExclusions();
             if (horPart->sLength) {
-                rec    << ',';
-                rec    << '"';
-                rec    << *horPart;
-                rec    << '"';
+                rec << ',';
+                rec << '"';
+                rec << *horPart;
+                rec << '"';
             }
-            DeleteObject (horPart);
+            DeleteObject(horPart);
 
             rec << ");\n";
         }
     }
 
     // write out the global variable for enforcing reversible models
-
-    checkParameter (assumeReversible, stashIM, 0.0);
-    rec.AppendAnAssignmentToBuffer (&assumeReversible, new _String(stashIM));
+    checkParameter(assumeReversible, stashIM, 0.0);
+    rec.AppendAnAssignmentToBuffer(&assumeReversible, new _String(stashIM));
 
     rec << "LikelihoodFunction ";
     rec << *lfName;
@@ -9090,31 +9127,33 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
                 dsID = 1;
             }
 
-            rec << (_String*)dataSetFilterNamesList (redirector->lData[idx]);
+            rec << (_String *)dataSetFilterNamesList(redirector->lData[idx]);
             rec << ',';
             rec << *LocateVar(redirectorT->lData[idx])->GetName();
         }
     }
-    if (computingTemplate&&templateKind == 1) {
+    if (computingTemplate && templateKind == 1) {
         rec << ",\"";
-        rec << (_String*)computingTemplate->toStr();
+        rec << (_String *)computingTemplate->toStr();
         rec << '"';
     }
 
-    if (opt==_hyphyLFSerializeModeOptimize) {
+    if (opt == _hyphyLFSerializeModeOptimize) {
         rec << ");\n";
         _Parameter pv;
-        checkParameter (optimizationPrecision, pv ,0.001);
-        rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String (pv));
-        checkParameter (optimizationMethod, pv ,4.);
-        rec.AppendAnAssignmentToBuffer(&optimizationMethod, new _String (pv));
-        checkParameter (useInitialDistanceGuess, pv ,1.);
-        rec.AppendAnAssignmentToBuffer(&useInitialDistanceGuess, new _String (pv));
-        checkParameter (useLastResults, pv ,0.);
-        rec.AppendAnAssignmentToBuffer(&useLastResults, new _String (pv));
-        checkParameter (optimizationHardLimit, pv ,-1.);
+        checkParameter(optimizationPrecision, pv, 0.001);
+        rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String(pv));
+        checkParameter(optimizationMethod, pv, 4.);
+        rec.AppendAnAssignmentToBuffer(&optimizationMethod, new _String(pv));
+        checkParameter(useInitialDistanceGuess, pv, 1.);
+        rec.AppendAnAssignmentToBuffer(&useInitialDistanceGuess,
+                                       new _String(pv));
+        checkParameter(useLastResults, pv, 0.);
+        rec.AppendAnAssignmentToBuffer(&useLastResults, new _String(pv));
+        checkParameter(optimizationHardLimit, pv, -1.);
         if (pv > 0.) {
-            rec.AppendAnAssignmentToBuffer(&optimizationHardLimit, new _String (pv));
+            rec.AppendAnAssignmentToBuffer(&optimizationHardLimit,
+                                           new _String(pv));
         }
         rec << "Optimize(";
         rec << lfName;
@@ -9129,22 +9168,26 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
         rec << "=\"";
         rec << lfName;
         rec << "\";\n";
-        checkParameter (shortMPIReturn, pv ,0);
-        rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String (pv));
-    } else if (opt==_hyphyLFSerializeModeLongMPI) {
-        rec <<     ");\n";
-        rec.AppendAnAssignmentToBuffer(&mpiMLELFValue, new _String(FetchVar(LocateVarByName(mpiMLELFValue))->Compute()->Value()));
+        checkParameter(shortMPIReturn, pv, 0);
+        rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String(pv));
+    } else if (opt == _hyphyLFSerializeModeLongMPI) {
+        rec << ");\n";
+        rec.AppendAnAssignmentToBuffer(
+            &mpiMLELFValue, new _String(FetchVar(LocateVarByName(mpiMLELFValue))
+                                            ->Compute()->Value()));
 
-        _String    resVarName = *lfName & "_MLES";
-        _Variable* resVar = FetchVar(LocateVarByName (resVarName));
+        _String resVarName = *lfName & "_MLES";
+        _Variable *resVar = FetchVar(LocateVarByName(resVarName));
         if (resVar) {
-            rec.AppendAnAssignmentToBuffer(&resVarName,(_String*)resVar->Compute()->toStr());
+            rec.AppendAnAssignmentToBuffer(
+                &resVarName, (_String *)resVar->Compute()->toStr());
         }
     } else {
         rec << ");";
     }
 
-    _FString * haveExtra = (_FString*)FetchObjectFromVariableByType(&lfExtraLFExportCode, STRING);
+    _FString *haveExtra =
+        (_FString *)FetchObjectFromVariableByType(&lfExtraLFExportCode, STRING);
     if (haveExtra) {
         rec << *(haveExtra->theString);
     }
@@ -9152,11 +9195,11 @@ void    _LikelihoodFunction::SerializeLF (_String& rec, char opt, _SimpleList * 
     rec << "\n\nEND;";
 
     if (partitionList) {
-        DeleteObject (redirector);
-        DeleteObject (indepVarList);
-        DeleteObject (depVarList);
-        DeleteObject (catVarList);
-        DeleteObject (redirectorT);
+        DeleteObject(redirector);
+        DeleteObject(indepVarList);
+        DeleteObject(depVarList);
+        DeleteObject(catVarList);
+        DeleteObject(redirectorT);
     }
 }
 
