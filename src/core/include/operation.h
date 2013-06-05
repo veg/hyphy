@@ -53,28 +53,38 @@
 #define _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER empty,
 
 
-#define _HY_OPERATION_NOOP   0L  
+#define _HY_OPERATION_NOOP                0x0000L  
 // this operation does nothing
-#define _HY_OPERATION_VALUE  1L  
+#define _HY_OPERATION_VALUE               0x0001L  
 // this operation contains an object to be pushed on the stack
-#define _HY_OPERATION_VAR    2L  
+#define _HY_OPERATION_VAR                 0x0002L  
 // this operation contains a reference to a variable whose computed value will be pushed on the stack
-#define _HY_OPERATION_VAR_OBJ    3L  
+#define _HY_OPERATION_VAR_OBJ             0x0004L  
 // this operation contains a reference to a variable whose value will be pushed on the stack 
 // e.g. for matrix/avl assignments
-#define _HY_OPERATION_REF    4L
+#define _HY_OPERATION_REF                 0x0008L
 // this operation contains a reference to a string variable whose value will
 // used to look up another variable whose computed value will be pushed on the stack
-#define _HY_OPERATION_BUILTIN 5L
+#define _HY_OPERATION_BUILTIN             0x0010L
 // this operation refers to a built-in function or operation
-#define _HY_OPERATION_FUNCTION_CALL 6L
+#define _HY_OPERATION_FUNCTION_CALL          0x0020L
 // this operation will call an HBL function
-#define _HY_OPERATION_DEFERRED_FUNCTION_CALL 7L
+#define _HY_OPERATION_DEFERRED_FUNCTION_CALL 0x0040L
 // this operation contains a reference to an HBL function ID
 // whose name will be looked up and bound at the time of first call
-#define _HY_OPERATION_DEFERRED_INLINE 8L
+#define _HY_OPERATION_DEFERRED_INLINE 0x0080L
 // this operation represents an ident__ call, where the value of ident at
 // the time of execute/deferral resolution is substituted as _HY_OPERATION_VALUE
+#define _HY_OPERATION_FAST_EXEC_VALUE 0x0100L
+// the analog of _HY_OPERATION_VALUE for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_VAR   0x0200L
+// the analog of _HY_OPERATION_VAR for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_BUILTIN   0x0400L
+// the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF   0x0800L
+// the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
+// but using 'references' instead of 'values' to access arguments
+// used by matrix[]
 
 
 
@@ -119,7 +129,13 @@ _HY_OPERATION_FUNCTION_CALL |  index of the function to call    | number of term
 _HY_OPERATION_DEFERRED_     |  _HY_OPERATION_INVALID_REFERENCE  | number of terms to consume from   | function id
 FUNCTION_CALL               |                                   | the stack                         | 
 _HY_OPERATION_DEFERRED_     |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
-INLINE                      |                                   |                          | 
+INLINE                      |                                   |                                   | 
+_HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
+_VALUE                      |                                   |                                   | (must be a scalar)
+_HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
+_VAR                        |                                   | 'compiled' _SimpleFormulaDatum*   | 
+_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | NULL
+BUILTIN                     |                                   | the stack                         | 
 
  
 */
