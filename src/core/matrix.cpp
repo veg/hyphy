@@ -2701,7 +2701,7 @@ void _Matrix::MakeMeSimple(void) {
 void _Matrix::MakeMeGeneral(void) {
   if (storageType == 3) {
     for (long k = 0; k < cmd->formulasToEval.lLength; k++) {
-      ((_Formula *)cmd->formulasToEval.lData[k])->ConvertFromSimple(cmd->varIndex);
+      ((_Formula *)cmd->formulasToEval.lData[k])->ConvertFromSimple();
     }
 
     delete[] cmd->formulaValues;
@@ -4933,10 +4933,10 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
                   }
                 }
               }
-              f.ConvertFromSimple(vIndex);
+              f.ConvertFromSimple();
             }
             if (conditionalCheck) {
-              conditionalCheck->ConvertFromSimple(vIndex);
+              conditionalCheck->ConvertFromSimple();
             }
             delete[] stack;
             delete[] varValues;

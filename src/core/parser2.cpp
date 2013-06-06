@@ -430,12 +430,10 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
       if (mmo)
         if (mmo->ObjectClass() == MATRIX) {
           mmx = (_Matrix *)(mmo->GetValue());
-          ((_Operation *)f->theFormula(0))->SetAVariable(
-              -((_Operation *)f->theFormula(0))->GetAVariable() - 3);
+          ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
         } else if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
           mma = (_AssociativeList *)(mmo->GetValue());
-          ((_Operation *)f->theFormula(0))->SetAVariable(
-              -((_Operation *)f->theFormula(0))->GetAVariable() - 3);
+           ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
         }
     }
 
@@ -786,10 +784,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                                            parsingContext.errMsg(), s, i);
         }
 
-        for (int i = 0; i < levelData->countitems(); i++) {
-          f->theFormula << (*levelData)(i); // mod 07072006 to not duplicate
-        }
-
+        f->theFormula << *levelData; 
         levelData->Clear();
 
         for (int k = levelOps->countitems() - 1; k >= 0; k--) {
@@ -843,12 +838,12 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                 parsingContext.errMsg(), s, i);
           }
 
-          if (previousMaccess->GetNoTerms() > 2) {
+          if (previousMaccess->GetAttribute() > 2) {
             mergeMAccess.Delete(mergeMAccess.lLength - 1, false);
             mergeMAccessLevel.Delete(mergeMAccessLevel.lLength - 1, false);
-            f->theFormula.AppendNewInstance(new _Operation(curOp, 2));
+            f->theFormula.AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, 2));
           } else {
-            previousMaccess->SetTerms(3);
+            previousMaccess->SetAttribute(3);
             mergeMAccess.Delete(mergeMAccess.lLength - 1, false);
             mergeMAccessLevel.Delete(mergeMAccessLevel.lLength - 1, false);
             previousMaccess->nInstances++;
@@ -857,7 +852,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
             previousMaccess->nInstances--;
           }
         } else {
-          f->theFormula.AppendNewInstance(new _Operation(curOp, 2));
+          f->theFormula.AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, 2));
         }
       }
 
@@ -911,8 +906,8 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
         } else { // this gets called from ExecuteCase0...
           if (twoToken && s.getChar(i - 1) == '+') { // += gets handled here
 
-            _Operation *self = new _Operation();
-            self->SetAVariable(lhs_variable->GetAVariable());
+            _Operation *self = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER _HY_OPERATION_VAR,
+                    lhs_variable->GetAVariable(), _HY_OPERATION_INVALID_REFERENCE, NULL);
             newF.theFormula.InsertElement(self, 0, false);
             DeleteObject(self);
             if (deref != HY_STRING_DIRECT_REFERENCE) {

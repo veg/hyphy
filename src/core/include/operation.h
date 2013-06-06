@@ -72,27 +72,33 @@
 #define _HY_OPERATION_DEFERRED_FUNCTION_CALL 0x0040L
 // this operation contains a reference to an HBL function ID
 // whose name will be looked up and bound at the time of first call
-#define _HY_OPERATION_DEFERRED_INLINE 0x0080L
+#define _HY_OPERATION_DEFERRED_INLINE        0x0080L
 // this operation represents an ident__ call, where the value of ident at
 // the time of execute/deferral resolution is substituted as _HY_OPERATION_VALUE
-#define _HY_OPERATION_FAST_EXEC_VALUE 0x0100L
+#define _HY_OPERATION_FAST_EXEC_VALUE        0x0100L
 // the analog of _HY_OPERATION_VALUE for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_VAR   0x0200L
+#define _HY_OPERATION_FAST_EXEC_VAR          0x0200L
 // the analog of _HY_OPERATION_VAR for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_BUILTIN   0x0400L
+#define _HY_OPERATION_FAST_EXEC_VAR_OBJ      0x0400L
+// the analog of _HY_OPERATION_VAR_OBJ for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_BUILTIN      0x0800L
 // the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF   0x0800L
+#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF  0x1000L
 // the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
 // but using 'references' instead of 'values' to access arguments
 // used by matrix[]
 
+#define _HY_OPERATION_FAST_EXEC              (_HY_OPERATION_FAST_EXEC_VALUE | _HY_OPERATION_FAST_EXEC_VAR | _HY_OPERATION_FAST_EXEC_VAR_OBJ | _HY_OPERATION_FAST_EXEC_BUILTIN |_HY_OPERATION_FAST_EXEC_BUILTIN_REF)
 
+#define _HY_OPERATION_OP_CLASS               (_HY_OPERATION_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN_REF)
 
 extern _List BuiltInFunctions;
 
 class _Stack;
 class _VariableContainer;
 class _Formula;
+union _SimpleFormulaDatum;
+
 //__________________________________________________________________________________
 class _Operation : public BaseObj {
 
@@ -134,8 +140,12 @@ _HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_
 _VALUE                      |                                   |                                   | (must be a scalar)
 _HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
 _VAR                        |                                   | 'compiled' _SimpleFormulaDatum*   | 
-_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | NULL
-BUILTIN                     |                                   | the stack                         | 
+_HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
+_VAR_OBJ                    |                                   | 'compiled' _SimpleFormulaDatum*   | 
+_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | the 'shortcut' function
+BUILTIN                     |                                   | the stack                         | to call
+_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | the 'shortcut' function
+BUILTIN_REF                 |                                   | the stack                         | to call
 
  
 */
@@ -180,6 +190,11 @@ public:
                _String *errMsg = nil); //execute this operation
   // see the commend for _Formula::ExecuteFormula for the second argument
   
+  bool      ExecuteFast (_SimpleFormulaDatum *stack,
+                    _SimpleFormulaDatum *varValues,
+                    long& stackTop,
+                    _String *errMsg = nil); //execute this operation
+
   void ResolveDeferredAction (_VariableContainer* = nil, _String *errMsg = nil);
   
   bool ExecutePolynomial(_Stack &, _VariableContainer *nameSpace = nil,
@@ -217,7 +232,7 @@ public:
 
   virtual bool AssignmentVariable(void) const { return operationKind == _HY_OPERATION_VAR_OBJ; }
 
-  virtual bool HasChanged(void) const;
+  virtual bool HasChanged(bool ignore_cats, const _SimpleList * variable_index = nil) const;
 
   virtual void SetAttribute(long d) { attribute  = d; }
 
@@ -239,11 +254,15 @@ public:
   long GetOpKind    (void) const { return operationKind;}
   long GetReference  (void) const { return reference;}
   bool IsAssociativeOp (void) const;
+  bool IsVolatileOp    (void) const;
 
   bool CanResultsBeCached(const _Operation *, bool exp_only = false) const;
+  void ToggleVarRef    (bool);
 
   virtual bool EqualOp  (const _Operation *) const;
   _PMathObj    FetchReferencedObject (void) const;
+  bool         ToggleFastExec (bool on_off, const _SimpleList* variable_index);
+  // returns TRUE if the operation is volatile (e.g Time or Random)
 
 };
 

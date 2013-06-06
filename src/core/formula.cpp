@@ -1159,7 +1159,7 @@ _Parameter _Formula::Integral(_Variable *dx, _Parameter left, _Parameter right,
         delete ic;
         delete id;
         if (stackDepth >= 0) {
-          ConvertFromSimple(fvidx);
+          ConvertFromSimple();
           delete (stack);
           delete (vvals);
         }
@@ -1170,7 +1170,7 @@ _Parameter _Formula::Integral(_Variable *dx, _Parameter left, _Parameter right,
   }
 
   if (stackDepth >= 0) {
-    ConvertFromSimple(fvidx);
+    ConvertFromSimple();
     delete (stack);
     delete (vvals);
   }
@@ -1567,52 +1567,20 @@ bool _Formula::ConvertToSimple(_SimpleList &variableIndex) {
   bool has_volatiles = false;
   if (theFormula.lLength)
     for (unsigned long i = 0; i < theFormula.lLength; i++) {
-      _Operation *thisOp = ((_Operation *)(((BaseRef **)theFormula.lData)[i]));
-      if (thisOp->theNumber) {
-        continue;
-      } else if (thisOp->theData >= 0) {
-        thisOp->theData = variableIndex.Find(thisOp->theData);
-      } else if (thisOp->opCode == HY_OP_CODE_SUB &&
-                 thisOp->numberOfTerms == 1) {
-        thisOp->opCode = (long) MinusNumber;
-      } else {
-        if (thisOp->opCode == HY_OP_CODE_MACCESS) {
-          thisOp->numberOfTerms = -2;
-        }
-        if (thisOp->opCode == HY_OP_CODE_RANDOM ||
-            thisOp->opCode == HY_OP_CODE_TIME)
-          has_volatiles = true;
-        thisOp->opCode =
-            simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
-      }
+      has_volatiles = has_volatiles || ((_Operation *)(((BaseRef **)theFormula.lData)[i]))->ToggleFastExec(true, &variableIndex);
     }
   return has_volatiles;
 }
 
 //______________________________________________________________________________
-void _Formula::ConvertFromSimple(_SimpleList &variableIndex) {
+void _Formula::ConvertFromSimple(void) {
 
   if (!theFormula.lLength) {
     return;
   }
 
-  for (int i = 0; i < theFormula.lLength; i++) {
-    _Operation *thisOp = ((_Operation *)(((BaseRef **)theFormula.lData)[i]));
-    if (thisOp->theNumber) {
-      continue;
-    } else {
-      if (thisOp->theData > -1) {
-        thisOp->theData = variableIndex[thisOp->theData];
-      } else if (thisOp->opCode == (long) MinusNumber) {
-        thisOp->opCode = HY_OP_CODE_SUB;
-      } else {
-        if (thisOp->opCode == (long) FastMxAccess) {
-          thisOp->numberOfTerms = 2;
-        }
-        thisOp->opCode =
-            simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
-      }
-    }
+  for (unsigned long i = 0; i < theFormula.lLength; i++) {
+      ((_Operation *)(((BaseRef **)theFormula.lData)[i]))->ToggleFastExec(false, NULL);
   }
 }
 
@@ -1625,46 +1593,9 @@ _Parameter _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
 
   long stackTop = 0;
 
-  for (int i = 0; i < theFormula.lLength; i++) {
-    _Operation *thisOp = ((_Operation *)(((BaseRef **)theFormula.lData)[i]));
-    if (thisOp->theNumber) {
-      stack[stackTop++].value = thisOp->theNumber->Value();
-      continue;
-    } else {
-      if (thisOp->theData > -1) {
-        stack[stackTop++] = varValues[thisOp->theData];
-      } else {
-        stackTop--;
-        if (thisOp->numberOfTerms == 2) {
-          _Parameter(*theFunc)(_Parameter, _Parameter);
-          theFunc = (_Parameter(*)(_Parameter, _Parameter)) thisOp->opCode;
-          if (stackTop < 1) {
-            _String errMsg =
-                "Internal error in _Formula::ComputeSimple - stack underflow.)";
-            WarnError(errMsg);
-            return 0.0;
-          }
-          stack[stackTop - 1].value =
-              (*theFunc)(stack[stackTop - 1].value, stack[stackTop].value);
-        } else {
-          if (thisOp->numberOfTerms == -2) {
-            _Parameter(*theFunc)(Ptr, _Parameter);
-            theFunc = (_Parameter(*)(Ptr, _Parameter)) thisOp->opCode;
-            if (stackTop < 1) {
-              _String errMsg = "Internal error in _Formula::ComputeSimple - "
-                               "stack underflow.)";
-              WarnError(errMsg);
-              return 0.0;
-            }
-            stack[stackTop - 1].value = (*theFunc)(
-                stack[stackTop - 1].reference, stack[stackTop].value);
-          } else {
-            _Parameter(*theFunc)(_Parameter);
-            theFunc = (_Parameter(*)(_Parameter)) thisOp->opCode;
-            stack[stackTop++].value = (*theFunc)(stack[stackTop].value);
-          }
-        }
-      }
+  for (unsigned long i = 0; i < theFormula.lLength; i++) {
+    if (!((_Operation *)(((BaseRef **)theFormula.lData)[i]))->ExecuteFast(stack,varValues,stackTop, NULL)) {
+      return 0.0;
     }
   }
 
@@ -1707,33 +1638,9 @@ _PMathObj _Formula::ConstructPolynomial(void) {
 }
 
 //______________________________________________________________________________
-bool _Formula::HasChanged(bool ingoreCats) {
-  _Operation *thisOp;
-  long dataID;
-  for (int i = 0; i < theFormula.lLength; i++) {
-    thisOp = (_Operation *)((BaseRef **)theFormula.lData)[i];
-    if (thisOp->IsAVariable()) {
-      dataID = thisOp->GetAVariable();
-      if (dataID >= 0) {
-        if (((_Variable *)(((BaseRef *)(variablePtrs.lData))[dataID]))
-                ->HasChanged(ingoreCats)) {
-          return true;
-        }
-      } else if (thisOp->theNumber->HasChanged()) {
-        return true;
-      }
-    } else if (thisOp->opCode == HY_OP_CODE_BRANCHLENGTH || thisOp->opCode ==
-               HY_OP_CODE_RANDOM || thisOp->opCode == HY_OP_CODE_TIME) {
-      // time, random or branch length
-      return true;
-    } else if (thisOp->numberOfTerms < 0) {
-      dataID = -thisOp->numberOfTerms - 2;
-      if (dataID < batchLanguageFunctionClassification.lLength) {
-        if (batchLanguageFunctionClassification.lData[dataID] ==
-            BL_FUNCTION_NORMAL_UPDATE) {
-          continue;
-        }
-      }
+bool _Formula::HasChanged(bool ignoreCats) {
+  for (unsigned long i = 0; i < theFormula.lLength; i++) {
+    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->HasChanged(ignoreCats)) {
       return true;
     }
   }
@@ -1742,21 +1649,10 @@ bool _Formula::HasChanged(bool ingoreCats) {
 
 //______________________________________________________________________________
 bool _Formula::HasChangedSimple(_SimpleList &variableIndex) {
-  _Operation *thisOp;
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    thisOp = (_Operation *)((BaseRef **)theFormula.lData)[i];
-    if (thisOp->theNumber) {
-      continue;
-    } else if (thisOp->theData >= 0) {
-      if (((_Variable *)(((BaseRef *)(variablePtrs.lData))[
-              variableIndex.lData[thisOp->theData]]))->HasChanged(false)) {
-        return true;
-      }
-    } else {
-      if (thisOp->opCode == (long) RandomNumber) {
-        return true;
-      }
-    }
+    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->HasChanged(false, &variableIndex)){
+      return true;
+    } 
   }
   return false;
 }

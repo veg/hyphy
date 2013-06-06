@@ -159,7 +159,7 @@ public:
 
   bool AmISimple(long &stackDepth, _SimpleList &variableIndex);
   bool ConvertToSimple(_SimpleList &variableIndex);
-  void ConvertFromSimple(_SimpleList &variableIndex);
+  void ConvertFromSimple(void);
   void SimplifyConstants(void);
   _Variable *Dereference(bool,
                          _hyExecutionContext * = _hyDefaultExecutionContext);

@@ -1016,3 +1016,8 @@ _ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id) {
         return (_ExecutionList*)batchLanguageFunctions.GetItem(func_id);
     return nil;
 }
+
+//______________________________________________________________________________
+long  _HYGetHBLCallType (unsigned long const index) {
+  return batchLanguageFunctionClassification.GetElement(index);
+}

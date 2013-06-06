@@ -265,6 +265,9 @@ _List   *_HYFetchFunctionParameters (const unsigned long func_id);
     @version 20130522
 */
 
+long  _HYGetHBLCallType (unsigned long const);
+
+
 _ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id);
 
 

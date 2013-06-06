@@ -47,6 +47,8 @@
 
 #include "executionlist.h"
 
+extern _SimpleList simpleOperationFunctions, simpleOperationCodes;
+
 //______________________________________________________________________________
 _Operation::_Operation(void) {
   Initialize();
@@ -140,7 +142,9 @@ _Operation::_Operation(_PMathObj theObj) {
 
 //______________________________________________________________________________
 _Operation::~_Operation(void) {
-  DeleteObject(payload);
+  if ((operationKind & _HY_OPERATION_FAST_EXEC) == 0L) {
+    DeleteObject(payload);
+  }
 }
 
 //______________________________________________________________________________
@@ -440,17 +444,100 @@ bool _Operation::Execute(_Stack &theScrap, _VariableContainer *nameSpace,
 }
 
 //______________________________________________________________________________
-bool _Operation::HasChanged(void) const{
+bool _Operation::ExecuteFast (_SimpleFormulaDatum *stack,
+                    _SimpleFormulaDatum *varValues,
+                    long& stackTop,
+                    _String *errMsg) {
+  
+  
+  switch (operationKind) {
+    case _HY_OPERATION_FAST_EXEC_VALUE:
+      stack[stackTop++].value = payload->Value();
+      return true;
+
+    case _HY_OPERATION_FAST_EXEC_VAR:
+    case _HY_OPERATION_FAST_EXEC_VAR_OBJ:
+      stack[stackTop++] = varValues [attribute];
+      return true;
+      
+    case _HY_OPERATION_FAST_EXEC_BUILTIN:
+    case _HY_OPERATION_FAST_EXEC_BUILTIN_REF: {
+        if (attribute==2) {
+          stackTop--;
+          if (stackTop < 1) {
+            ReportOperationExecutionError("Internal error in _Formula::ComputeSimple - stack underflow.)", errMsg);
+            return false;
+          }
+          if (operationKind == _HY_OPERATION_FAST_EXEC_BUILTIN) {
+            _Parameter(*theFunc)(_Parameter, _Parameter);
+            theFunc = (_Parameter(*)(_Parameter, _Parameter)) payload;
+            stack[stackTop - 1].value =
+              (*theFunc)(stack[stackTop - 1].value, stack[stackTop].value);
+          } else {
+            _Parameter(*theFunc)(Ptr, _Parameter);
+            theFunc = (_Parameter(*)(Ptr, _Parameter)) payload;
+            stack[stackTop - 1].value = (*theFunc)(
+                stack[stackTop - 1].reference, stack[stackTop].value);
+          }
+        } else {
+          if (attribute == 1) {
+            if (operationKind == _HY_OPERATION_FAST_EXEC_BUILTIN) {
+              _Parameter(*theFunc)(_Parameter);
+              theFunc = (_Parameter(*)(_Parameter)) payload;
+              stack[stackTop++].value = (*theFunc)(stack[stackTop].value);
+            } else {
+              _Parameter(*theFunc)(Ptr);
+              theFunc = (_Parameter(*)(Ptr)) payload;
+              stack[stackTop++].value = (*theFunc)(stack[stackTop].reference);
+            }
+          } else {
+            return false;
+          }
+        }
+      }
+      return true;
+      
+
+    case _HY_OPERATION_NOOP:
+      return true;
+
+}
+  
+  return false;
+  
+  
+}
+
+//______________________________________________________________________________
+bool _Operation::HasChanged(bool ignore_cats, const _SimpleList * variable_index) const{
   switch (operationKind) {
     case _HY_OPERATION_VALUE:
       return payload->HasChanged();
       
+    case _HY_OPERATION_FAST_EXEC_VALUE:
+        return false;
+        
     case _HY_OPERATION_VAR:
     case _HY_OPERATION_REF:
     case _HY_OPERATION_VAR_OBJ:
     case _HY_OPERATION_DEFERRED_INLINE:
-      return LocateVar(reference)->HasChanged();
+      return LocateVar(reference)->HasChanged(ignore_cats);
       
+    case _HY_OPERATION_FAST_EXEC_VAR:
+    case _HY_OPERATION_FAST_EXEC_VAR_OBJ:
+      return LocateVar(variable_index->GetElement (attribute)) -> HasChanged (false);
+      
+    case _HY_OPERATION_BUILTIN:
+    case _HY_OPERATION_FAST_EXEC_BUILTIN:
+    case _HY_OPERATION_FAST_EXEC_BUILTIN_REF:
+      return IsVolatileOp();
+      
+  
+    case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
+      return true;
+      
+    case _HY_OPERATION_FUNCTION_CALL:
+      return _HYGetHBLCallType (reference) != BL_FUNCTION_NORMAL_UPDATE;
   }
   
   return false;
@@ -657,8 +744,19 @@ long _Operation::GetOperationPrecedence (void) const {
 
 bool _Operation::IsAssociativeOp (void) const {
   
-  if (operationKind == _HY_OPERATION_BUILTIN) {
+  if (operationKind & _HY_OPERATION_OP_CLASS) {
     return (reference == HY_OP_CODE_ADD || reference == HY_OP_CODE_MUL) && attribute == 2;
+  }
+  
+  return false;
+}
+
+//______________________________________________________________________________
+
+bool _Operation::IsVolatileOp (void) const {
+  
+  if (operationKind & _HY_OPERATION_OP_CLASS) {
+    return (reference == HY_OP_CODE_RANDOM || reference == HY_OP_CODE_TIME || reference == HY_OP_CODE_BRANCHLENGTH);
   }
   
   return false;
@@ -759,3 +857,82 @@ bool _Operation::ExecutePolynomial(_Stack &theScrap,
   return false;
 
 }
+
+//______________________________________________________________________________
+void _Operation::ToggleVarRef(bool on_off) {
+  if (on_off) {
+    if (operationKind == _HY_OPERATION_VAR) {
+      operationKind = _HY_OPERATION_VAR_OBJ;
+    }
+  } else {
+    if (operationKind == _HY_OPERATION_VAR_OBJ) {
+      operationKind = _HY_OPERATION_VAR;
+    }
+  }
+}
+
+//______________________________________________________________________________
+bool _Operation::ToggleFastExec(bool on_off, const _SimpleList* variable_index) {
+
+  if (on_off) {
+    switch (operationKind) {
+        case _HY_OPERATION_VALUE:
+          operationKind = _HY_OPERATION_FAST_EXEC_VALUE;
+          break;
+        case _HY_OPERATION_VAR:
+          operationKind = _HY_OPERATION_FAST_EXEC_VAR;
+          attribute = variable_index->Find (reference);
+          break;
+        case _HY_OPERATION_VAR_OBJ:
+          operationKind = _HY_OPERATION_FAST_EXEC_VAR_OBJ;
+          attribute = variable_index->Find (reference);
+          break;
+        case _HY_OPERATION_BUILTIN: {
+            operationKind = (reference == HY_OP_CODE_MACCESS) ? _HY_OPERATION_FAST_EXEC_BUILTIN_REF :  _HY_OPERATION_FAST_EXEC_BUILTIN; 
+            if (reference == HY_OP_CODE_SUB) {
+                payload = (_PMathObj)MinusNumber;
+            } else {
+                payload = (_PMathObj)simpleOperationFunctions(simpleOperationCodes.Find(reference)); 
+            }
+          }
+          break;
+        case _HY_OPERATION_FAST_EXEC_VALUE:
+        case _HY_OPERATION_FAST_EXEC_BUILTIN_REF:
+        case _HY_OPERATION_FAST_EXEC_BUILTIN:
+        case _HY_OPERATION_FAST_EXEC_VAR:
+        case _HY_OPERATION_FAST_EXEC_VAR_OBJ:
+          break;
+          
+        default:
+          WarnError ("Internal error in _Operation::ToggleFastExec: invalid operation type");
+          break;
+        
+        
+    }
+    return IsVolatileOp();
+  }
+
+
+    switch (operationKind) {
+        case _HY_OPERATION_FAST_EXEC_VALUE:
+          operationKind = _HY_OPERATION_VALUE;
+          break;
+        case _HY_OPERATION_VAR:
+          operationKind = _HY_OPERATION_VAR;
+          attribute = _HY_OPERATION_INVALID_REFERENCE;
+          break;
+        case _HY_OPERATION_VAR_OBJ:
+          operationKind = _HY_OPERATION_VAR_OBJ;
+          attribute = _HY_OPERATION_INVALID_REFERENCE;
+          break;
+        case _HY_OPERATION_FAST_EXEC_BUILTIN_REF: 
+        case _HY_OPERATION_FAST_EXEC_BUILTIN: {
+            operationKind = _HY_OPERATION_BUILTIN; 
+            payload = NULL;
+          }
+          break;        
+    }
+
+  return false;
+}
+
