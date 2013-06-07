@@ -1167,7 +1167,7 @@ void _ElementaryCommand::ExecuteCase11(
   _String lfID = chain.AddNameSpaceToID(
       *(_String *)parameters(0)); // the ID of the likelihood function
   long likeFuncObjectID = FindLikeFuncName(lfID);
-  if (likeFuncObjectID == -1)
+  if (likeFuncObjectID == HY_NOT_FOUND)
       // not an existing LF ID
       {
     _LikelihoodFunction *lkf = new _LikelihoodFunction();
@@ -7600,7 +7600,7 @@ _ElementaryCommand::HandleHarvestFrequencies(_ExecutionList &currentProgram) {
   long objectType = HY_BL_DATASET | HY_BL_DATASET_FILTER;
   BaseRef sourceObject =
       _HYRetrieveBLObjectByName(dataID, objectType, nil, false);
-
+      
   long unit = ProcessNumericArgument((_String *)parameters(2),currentProgram.nameSpacePrefix),
        posspec = ProcessNumericArgument((_String *)parameters(4), currentProgram.nameSpacePrefix),
        atom = ProcessNumericArgument((_String *)parameters(3), currentProgram.nameSpacePrefix);

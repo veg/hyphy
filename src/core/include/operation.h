@@ -153,14 +153,14 @@ BUILTIN_REF                 |                                   | the stack     
 public:
   _Operation(void);
   
-  _Operation(_String&, bool isUserFunction, _String &, const long);
+  _Operation(bool isUserFunction, _String &, const long);
   // construct the operation by its symbol and, if relevant -
   // number of operands
-  _Operation(_String&, const long, const long);
-  _Operation(_String&, const long, const long, const long, _PMathObj);
+  _Operation(const long, const long);
+  _Operation(const long, const long, const long, _PMathObj);
 
   // store a variable or a constant
-  _Operation(_String&, _String &, bool, bool = false, _VariableContainer * = nil,
+  _Operation(_String &, bool, bool = false, _VariableContainer * = nil,
              bool take_a_reference = false, bool deferred_inline = false);
     
   _Operation(_PMathObj);

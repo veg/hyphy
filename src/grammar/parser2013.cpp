@@ -55,11 +55,11 @@ void _parser2013_pushString (void *, _Formula& f, _FormulaParsingContext& fpc, c
 }
 
 void _parser2013_pushNone (void *, _Formula& f, _FormulaParsingContext& fpc) {
-    f.Push (new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER noneToken,false));
+    f.Push (new _Operation ( noneToken,false));
 }
 
 void _parser2013_pushOp (void *, _Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms) {
-    f.Push (new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER op_code,num_terms));
+    f.Push (new _Operation ( op_code,num_terms));
 }
 
 void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& funcId, const _List& argumentNames) {
@@ -71,10 +71,10 @@ void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContex
         if (arg_count != expect_arg) {
             _parser2013_reportError(vp, _String(arg_count) &" arguments passed to '" & funcId & "', expected " & _String(expect_arg) & '.');
         }
-        f.Push (new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER built_in_id,arg_count));
+        f.Push (new _Operation ( built_in_id,arg_count));
     }
     else {
-        f.Push (new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER true, funcId,arg_count));
+        f.Push (new _Operation ( true, funcId,arg_count));
     }
 }
 
@@ -91,15 +91,15 @@ void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& 
         if (realVarLoc < 0) { // bad instant variable reference
             _parser2013_reportError(vp, "Attempted to take value of undeclared variable ");
         }
-        _Operation * theVar = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER realVarName, 
+        _Operation * theVar = new _Operation( realVarName, 
           true, globalKey, fpc.formulaScope(), false, true);
         f.Push(theVar);
     } else {
         if (fpc.formulaScope() &&
                 _hyApplicationGlobals.Find(&ident) >= 0) {
-            f.Push(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER ident, true, globalKey, nil, takeVarReference));
+            f.Push(new _Operation( ident, true, globalKey, nil, takeVarReference));
         } else {
-            f.Push(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER ident, true, globalKey, fpc.formulaScope(), takeVarReference));
+            f.Push(new _Operation( ident, true, globalKey, fpc.formulaScope(), takeVarReference));
         }
     }
 }

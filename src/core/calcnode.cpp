@@ -914,7 +914,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
           nodeConditions[l]->GetList().Delete(0);
           _Formula newConstraint;
           newConstraint.Duplicate((BaseRef) nodeConditions[k]);
-          _Operation mins(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 2L);
+          _Operation mins( HY_OP_CODE_SUB, 2L);
           for (unsigned long op_index = 0; op_index < nodeConditions[l]->GetList().lLength; op_index++) {
             _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(op_index);
             if (curOp->GetOpKind() == _HY_OPERATION_BUILTIN) {
@@ -933,9 +933,9 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
   if (!first) {
     _Formula *result = nodeConditions[k];
   
-    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER _HY_OPERATION_VAR, 
+    result->GetList().AppendNewInstance(new _Operation( _HY_OPERATION_VAR, 
         iVariables->lData[f - 1], _HY_OPERATION_INVALID_REFERENCE, NULL));
-    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_ADD, 2L));
+    result->GetList().AppendNewInstance(new _Operation( HY_OP_CODE_ADD, 2L));
 
     free(nodeConditions);
     return result;

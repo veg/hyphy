@@ -41,7 +41,7 @@ _Formula::_Formula(_PMathObj p, bool isAVar) {
   } else {
     _Variable *v = (_Variable *)p;
     theFormula.AppendNewInstance(
-        new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER  *v->GetName(), true, v->IsGlobal(), nil));
+        new _Operation(  *v->GetName(), true, v->IsGlobal(), nil));
   }
 }
 
@@ -1197,9 +1197,9 @@ _Parameter _Formula::MeanIntegral(_Variable *dx, _Parameter left,
                                   _Parameter right, bool infinite) {
   _Formula newF;
   newF.Duplicate((BaseRef) this);
-  newF.theFormula.AppendNewInstance (new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER *(dx->GetName()), true, 
+  newF.theFormula.AppendNewInstance (new _Operation( *(dx->GetName()), true, 
     dx->IsGlobal()));
-  newF.theFormula.AppendNewInstance (new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2));
+  newF.theFormula.AppendNewInstance (new _Operation( HY_OP_CODE_MUL, 2));
   return newF.Integral(dx, left, right, infinite);
 }
 
@@ -1447,7 +1447,7 @@ _Formula &_Formula::PatchFormulasTogether(_Formula &target,
   target.Clear();
   target.DuplicateReference(this);
   target.DuplicateReference(&operand2);
-  target.theFormula.AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER op_code, 2));
+  target.theFormula.AppendNewInstance(new _Operation( op_code, 2));
   return target;
 }
 
@@ -1792,7 +1792,7 @@ void _Formula::LocalizeFormula(_Formula &ref, _String &parentName,
           idv << vIndex;
         }
       }
-      theFormula.AppendNewInstance (new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER fullName, true));
+      theFormula.AppendNewInstance (new _Operation ( fullName, true));
     } else {
       theFormula &&ref.theFormula(i);
     }
@@ -2057,9 +2057,9 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           }
           
           
-          _Operation *newOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_ADD, 2),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2),
-          *newOp3 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2);
+          _Operation *newOp = new _Operation( HY_OP_CODE_ADD, 2),
+          *newOp2 = new _Operation( HY_OP_CODE_MUL, 2),
+          *newOp3 = new _Operation( HY_OP_CODE_MUL, 2);
           
           
           node<long> *newNode2 = (node<long> *)checkPointer(new node<long>);
@@ -2140,11 +2140,11 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           }
           
           
-          _Operation *newOp  = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_DIV, 2),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_POWER, 2),
-          *newOp3 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 2),
-          *newOp4 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2),
-          *newOp5 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2),
+          _Operation *newOp  = new _Operation( HY_OP_CODE_DIV, 2),
+          *newOp2 = new _Operation( HY_OP_CODE_POWER, 2),
+          *newOp3 = new _Operation( HY_OP_CODE_SUB, 2),
+          *newOp4 = new _Operation( HY_OP_CODE_MUL, 2),
+          *newOp5 = new _Operation( HY_OP_CODE_MUL, 2),
           *newOp6 = new _Operation(new _Constant(2.0));
           
           
@@ -2201,10 +2201,10 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           }
           
           
-          _Operation *newOp  = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_DIV, 2),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_ADD, 2),
+          _Operation *newOp  = new _Operation( HY_OP_CODE_DIV, 2),
+          *newOp2 = new _Operation( HY_OP_CODE_ADD, 2),
           *newOp3 = new _Operation(new _Constant(1.0)),
-          *newOp4 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_POWER, 2),
+          *newOp4 = new _Operation( HY_OP_CODE_POWER, 2),
           *newOp5 = new _Operation(new _Constant(2.0));
           
           node<long> *newNode2 = new node<long>;
@@ -2247,9 +2247,9 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           }
           
           
-          _Operation *newOp  = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 1),
-          *newOp3 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SIN, 1);
+          _Operation *newOp  = new _Operation( HY_OP_CODE_MUL, 2),
+          *newOp2 = new _Operation( HY_OP_CODE_SUB, 1),
+          *newOp3 = new _Operation( HY_OP_CODE_SIN, 1);
           
           node<long> *newNode2 = new node<long>;
           node<long> *newNode3 = new node<long>;
@@ -2287,12 +2287,12 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           }
           
           
-          _Operation *newOp  = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_DIV, 2),
+          _Operation *newOp  = new _Operation( HY_OP_CODE_MUL, 2),
+          *newOp2 = new _Operation( HY_OP_CODE_DIV, 2),
           *newOp3 = new _Operation(new _Constant(twoOverSqrtPi)),
-          *newOp4 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_EXP, 1),
-          *newOp5 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 1),
-          *newOp6 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_POWER, 2),
+          *newOp4 = new _Operation( HY_OP_CODE_EXP, 1),
+          *newOp5 = new _Operation( HY_OP_CODE_SUB, 1),
+          *newOp6 = new _Operation( HY_OP_CODE_POWER, 2),
           *newOp7 = new _Operation(new _Constant(2.0));
           
           
@@ -2351,8 +2351,8 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
             opC2 = HY_OP_CODE_EXP;
           }
           
-          _Operation *newOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2L),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC2, 1L);
+          _Operation *newOp = new _Operation( HY_OP_CODE_MUL, 2L),
+          *newOp2 = new _Operation( opC2, 1L);
           
           node<long> *newNode2 = new node<long>;
           
@@ -2380,7 +2380,7 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
             return nil;
           }
           
-          _Operation *newOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_DIV, 2L);
+          _Operation *newOp = new _Operation( HY_OP_CODE_DIV, 2L);
           
           
           newNode->add_node(*b1);
@@ -2405,9 +2405,9 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           _String opC('/'), opC2('*'),
           opC3(*(_String *)BuiltInFunctions(HY_OP_CODE_SQRT));
           
-          _Operation *newOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC, 2L),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC2, 2L),
-          *newOp3 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC3, 1L),
+          _Operation *newOp = new _Operation( opC, 2L),
+          *newOp2 = new _Operation( opC2, 2L),
+          *newOp3 = new _Operation( opC3, 1L),
           *newOp4 = new _Operation(new _Constant(2.0));
           
           
@@ -2449,10 +2449,10 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           _String opC('/'), opC2('^'),
           opC3(*(_String *)BuiltInFunctions(HY_OP_CODE_COS));
           
-          _Operation *newOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC, 2L),
-          *newOp2 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC2, 2L),
+          _Operation *newOp = new _Operation( opC, 2L),
+          *newOp2 = new _Operation( opC2, 2L),
           *newOp3 = new _Operation(new _Constant(2.0)),
-          *newOp4 = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opC3, 1L);
+          *newOp4 = new _Operation( opC3, 1L);
           
           node<long> *newNode2 = new node<long>;
           node<long> *newNode3 = new node<long>;
@@ -2534,7 +2534,7 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
           
           for (long k = 6; k >= 0; k--) {
             newNodes[k]->in_object = tgt.theFormula.lLength;
-            tgt.theFormula.AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER opCodes[k], opArgs[k]));
+            tgt.theFormula.AppendNewInstance(new _Operation( opCodes[k], opArgs[k]));
           }
           return newNode;
         }

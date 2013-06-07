@@ -69,20 +69,19 @@ bool handleGUI(bool = false);
 #endif
 
 template <class multipliable>
-multipliable compute_power(multipliable base, unsigned long power) {
+multipliable compute_power(const multipliable base, unsigned long power) {
   multipliable result = 1.;
-  unsigned long bit = 0x7FFFFFFF;
+  unsigned long bit = 0x80000000;
 
-  while ((bit & power) == 0UL && bit > 0) {
+  while ((bit & power) == 0UL && bit > 0UL) {
     bit = bit >> 1;
   }
 
-  while (power > 0) {
+  while (bit > 0UL) {
     result *= result;
     if (bit & power) {
       result *= base;
     }
-    power = power >> 1;
     bit = bit >> 1;
   }
 

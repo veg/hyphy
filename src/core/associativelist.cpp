@@ -165,13 +165,13 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList()
-            .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+            .AppendNewInstance(new _Operation( 
               _HY_OPERATION_FUNCTION_CALL, fID, 2, NULL));
 
         if (fID2 >= 0) {
           testFormula.GetList().AppendNewInstance(new _Operation());
           testFormula.GetList()
-              .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+              .AppendNewInstance(new _Operation( 
               _HY_OPERATION_FUNCTION_CALL, fID2, 1, NULL));
         }
 

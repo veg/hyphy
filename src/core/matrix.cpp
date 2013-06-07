@@ -3462,7 +3462,7 @@ void _Matrix::Multiply(_Matrix &storage, _Parameter c) {
 
     if (storageType == 2) {
       _Operation *cOp = new _Operation(cc), 
-        *mOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_MUL, 2L);
+        *mOp = new _Operation( HY_OP_CODE_MUL, 2L);
 
       for (long i = 0; i < lDim; i++)
         if (IsNonEmpty(i)) {

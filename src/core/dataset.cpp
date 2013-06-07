@@ -1143,6 +1143,8 @@ _Matrix *_DataSet::HarvestFrequencies(char unit, char atom, bool posSpec,
                                       _SimpleList &hSegmentation,
                                       _SimpleList &vSegmentation,
                                       bool countGaps) {
+                                      
+                                      
   // revert to default (all data)
   if (hSegmentation.lLength == 0L || vSegmentation.lLength < unit) { 
     if (hSegmentation.lLength == 0) {

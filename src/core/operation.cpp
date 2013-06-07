@@ -82,6 +82,7 @@ void _Operation::Duplicate(BaseRef r) {
   operationKind = o->operationKind;
   reference = o->reference;
   attribute = o->attribute;
+  payload   = o->payload;
   if (payload) {
     payload->nInstances++;
   }
@@ -148,21 +149,21 @@ _Operation::~_Operation(void) {
 }
 
 //______________________________________________________________________________
-_Operation::_Operation(_String&, const long opk, const long ref, const long attr, _PMathObj data) {
+_Operation::_Operation(const long opk, const long ref, const long attr, _PMathObj data) {
     Initialize(opk, ref, attr, data);
 }
 
 
 //______________________________________________________________________________
   // a built-in
-_Operation::_Operation(_String&, const long theCode, const long opNo) {
+_Operation::_Operation(const long theCode, const long opNo) {
   Initialize (_HY_OPERATION_BUILTIN,theCode,opNo);
 }
 
 //______________________________________________________________________________
   // construct the operation by built-in
 
-_Operation::_Operation(_String&, bool isUserFunction, _String &opc, const long opNo = 2) {
+_Operation::_Operation(bool isUserFunction, _String &opc, const long opNo = 2) {
   
   long opCode = isUserFunction?FindBFFunctionName(opc):BuiltInFunctions.BinaryFind(&opc);
   
@@ -180,7 +181,7 @@ _Operation::_Operation(_String&, bool isUserFunction, _String &opc, const long o
 
 
 //______________________________________________________________________________
-_Operation::_Operation(_String&, _String &stuff, bool defineAVar, bool global_flag, 
+_Operation::_Operation(_String &stuff, bool defineAVar, bool global_flag, 
   _VariableContainer *theParent, bool take_a_reference, bool deferred_inline) {
   
     // creating a variable
@@ -917,11 +918,11 @@ bool _Operation::ToggleFastExec(bool on_off, const _SimpleList* variable_index) 
         case _HY_OPERATION_FAST_EXEC_VALUE:
           operationKind = _HY_OPERATION_VALUE;
           break;
-        case _HY_OPERATION_VAR:
+        case _HY_OPERATION_FAST_EXEC_VAR:
           operationKind = _HY_OPERATION_VAR;
           attribute = _HY_OPERATION_INVALID_REFERENCE;
           break;
-        case _HY_OPERATION_VAR_OBJ:
+        case _HY_OPERATION_FAST_EXEC_VAR_OBJ:
           operationKind = _HY_OPERATION_VAR_OBJ;
           attribute = _HY_OPERATION_INVALID_REFERENCE;
           break;
