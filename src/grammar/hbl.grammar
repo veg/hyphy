@@ -62,17 +62,20 @@ number <_Formula& f, _FormulaParsingContext& fpc>
 /*------------------------------------------------------------------------*/
 
 matrix_row 
-= '{'  (. _Formula f; _FormulaParsingContext fpc; .)
-    expression <f, fpc> 
-    { ',' expression <f, fpc>}
-  '}'
+= '{'  (. _Formula f; _FormulaParsingContext fpc; long col = 0; printf ("\nStart matrix row\n"); .)
+    (expression <f, fpc> | '*') (. printf ("%ld\n", col++); .)
+    { 
+        ',' (expression <f, fpc> | '*') (. printf ("%ld\n", col++); .)
+    } 
+  '}' (. printf ("\nEnd matrix row\n"); .)
 .
 
-dense_matrix 
-= '{' (. printf ("\nStart matrix declaration"); .)
-    matrix_row 
-    {matrix_row } 
-  '}' (. printf ("\nEnd matrix declaration"); .)
+dense_matrix <_Formula& f, _FormulaParsingContext& fpc>
+= '{' (. _List matrix_entries; .)
+    matrix_row <matrix_entries, fpc>
+    {matrix_row <matrix_entries, fpc> } 
+  '}' (. _Matrix * m = _parser2013_createMatrix (matrix_entries);
+          _parser2013_pushMatrix (this, f, fpc, m);  .)
 .
 
 /*------------------------------------------------------------------------*/
@@ -96,7 +99,7 @@ primitive  <_Formula& f, _FormulaParsingContext& fpc>
 | DOUBLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
 | SINGLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
 | OPEN_PARENTHESIS expression <f, fpc> CLOSE_PARENTHESIS 
-| dense_matrix
+| dense_matrix <f, fpc>
 | NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
 | IF (_parser2013_isFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
 | ident <f, fpc> 

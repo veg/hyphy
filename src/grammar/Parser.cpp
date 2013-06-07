@@ -100,29 +100,40 @@ void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::matrix_row() {
 		Expect(10 /* "{" */);
-		_Formula f; _FormulaParsingContext fpc; 
-		expression(f, fpc);
-		while (la->kind == 11 /* "," */) {
-			Get();
+		_Formula f; _FormulaParsingContext fpc; long col = 0; printf ("\nStart matrix row\n"); 
+		if (StartOf(1)) {
 			expression(f, fpc);
+		} else if (la->kind == 11 /* "*" */) {
+			Get();
+		} else SynErr(30);
+		printf ("%ld\n", col++); 
+		while (la->kind == 12 /* "," */) {
+			Get();
+			if (StartOf(1)) {
+				expression(f, fpc);
+			} else if (la->kind == 11 /* "*" */) {
+				Get();
+			} else SynErr(31);
+			printf ("%ld\n", col++); 
 		}
-		Expect(12 /* "}" */);
+		Expect(13 /* "}" */);
+		printf ("\nEnd matrix row\n"); 
 }
 
 void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
-		while (!(StartOf(1))) {SynErr(30); Get();}
+		while (!(StartOf(2))) {SynErr(32); Get();}
 		logical_or(f, fpc);
 }
 
 void Parser::dense_matrix() {
 		Expect(10 /* "{" */);
-		printf ("\nStart matrix declaration"); 
+		printf ("\nStart matrix declaration\n"); 
 		matrix_row();
 		while (la->kind == 10 /* "{" */) {
 			matrix_row();
 		}
-		Expect(12 /* "}" */);
-		printf ("\nEnd matrix declaration"); 
+		Expect(13 /* "}" */);
+		printf ("\nEnd matrix declaration\n"); 
 }
 
 void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
@@ -130,10 +141,10 @@ void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_IDENTIFIER);
 		_String func_id (t->val); 
 		Expect(_OPEN_PARENTHESIS);
-		while (StartOf(2)) {
+		while (StartOf(1)) {
 			expression(f, fpc);
 			argument_names.AppendNewInstance(new _String);
-			while (la->kind == 11 /* "," */) {
+			while (la->kind == 12 /* "," */) {
 				Get();
 				expression(f, fpc);
 				argument_names.AppendNewInstance(new _String);
@@ -165,7 +176,7 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			function_call(f, fpc);
 		} else if (la->kind == _IDENTIFIER) {
 			ident(f, fpc);
-		} else SynErr(31);
+		} else SynErr(33);
 }
 
 void Parser::lvalue(_Formula& f, _FormulaParsingContext& fpc) {
@@ -174,8 +185,8 @@ void Parser::lvalue(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 		long op_code = HY_OP_CODE_NONE; 
-		if (la->kind == 13 /* "*" */ || la->kind == 14 /* "^" */) {
-			if (la->kind == 13 /* "*" */) {
+		if (la->kind == 11 /* "*" */ || la->kind == 14 /* "^" */) {
+			if (la->kind == 11 /* "*" */) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
 			} else {
@@ -202,7 +213,7 @@ void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 		power_like(f, fpc);
 		long op_code; 
 		while (StartOf(3)) {
-			if (la->kind == 13 /* "*" */) {
+			if (la->kind == 11 /* "*" */) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
 			} else if (la->kind == 15 /* "/" */) {
@@ -308,40 +319,40 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 				Get();
 			} else if (la->kind == _ASSIGN) {
 				Get();
-			} else SynErr(32);
+			} else SynErr(34);
 			expression(f, fpc);
 			Expect(28 /* ";" */);
 			printf ("\nvalue assignment"); 
-		} else SynErr(33);
+		} else SynErr(35);
 }
 
 void Parser::block(_ExecutionList &current_code_stream) {
 		Expect(10 /* "{" */);
-		while (StartOf(2)) {
-			if (StartOf(2)) {
+		while (StartOf(1)) {
+			if (StartOf(1)) {
 				statement(current_code_stream);
 			} else {
 				block(current_code_stream);
 			}
 		}
-		Expect(12 /* "}" */);
+		Expect(13 /* "}" */);
 }
 
 void Parser::hyphy_batch_language() {
-		if (StartOf(1)) {
+		if (StartOf(2)) {
 			_ExecutionList current_code_stream; 
-			while (StartOf(2)) {
-				if (StartOf(2)) {
+			while (StartOf(1)) {
+				if (StartOf(1)) {
 					statement(current_code_stream);
 				} else {
 					block(current_code_stream);
 				}
 			}
-		} else if (StartOf(2)) {
+		} else if (StartOf(1)) {
 			_Formula f; _FormulaParsingContext fpc; 
 			expression(f, fpc);
-			while (!(la->kind == _EOF)) {SynErr(34); Get();}
-		} else SynErr(35);
+			while (!(la->kind == _EOF)) {SynErr(36); Get();}
+		} else SynErr(37);
 }
 
 
@@ -461,10 +472,10 @@ bool Parser::StartOf(int s) {
 	const bool x = false;
 
 	static bool set[5][31] = {
-		{T,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{T,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{T,T,T,T, T,T,T,x, x,x,T,T, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,x, x,x,T,T, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{T,T,T,T, T,T,T,x, x,x,T,T, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x,x}
 	};
 
@@ -497,9 +508,9 @@ void Errors::SynErr(int line, int col, int n) {
 			case 8: s = coco_string_create(L"EQUAL expected"); break;
 			case 9: s = coco_string_create(L"ASSIGN expected"); break;
 			case 10: s = coco_string_create(L"\"{\" expected"); break;
-			case 11: s = coco_string_create(L"\",\" expected"); break;
-			case 12: s = coco_string_create(L"\"}\" expected"); break;
-			case 13: s = coco_string_create(L"\"*\" expected"); break;
+			case 11: s = coco_string_create(L"\"*\" expected"); break;
+			case 12: s = coco_string_create(L"\",\" expected"); break;
+			case 13: s = coco_string_create(L"\"}\" expected"); break;
 			case 14: s = coco_string_create(L"\"^\" expected"); break;
 			case 15: s = coco_string_create(L"\"/\" expected"); break;
 			case 16: s = coco_string_create(L"\"$\" expected"); break;
@@ -516,12 +527,14 @@ void Errors::SynErr(int line, int col, int n) {
 			case 27: s = coco_string_create(L"\"||\" expected"); break;
 			case 28: s = coco_string_create(L"\";\" expected"); break;
 			case 29: s = coco_string_create(L"??? expected"); break;
-			case 30: s = coco_string_create(L"this symbol not expected in expression"); break;
-			case 31: s = coco_string_create(L"invalid primitive"); break;
-			case 32: s = coco_string_create(L"invalid statement"); break;
-			case 33: s = coco_string_create(L"invalid statement"); break;
-			case 34: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
-			case 35: s = coco_string_create(L"invalid hyphy_batch_language"); break;
+			case 30: s = coco_string_create(L"invalid matrix_row"); break;
+			case 31: s = coco_string_create(L"invalid matrix_row"); break;
+			case 32: s = coco_string_create(L"this symbol not expected in expression"); break;
+			case 33: s = coco_string_create(L"invalid primitive"); break;
+			case 34: s = coco_string_create(L"invalid statement"); break;
+			case 35: s = coco_string_create(L"invalid statement"); break;
+			case 36: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
+			case 37: s = coco_string_create(L"invalid hyphy_batch_language"); break;
 
 		default:
 		{
