@@ -427,14 +427,17 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
       _Variable *mmo =
           LocateVar(((_Operation *)f->theFormula(0))->GetAVariable());
 
-      if (mmo)
+      if (mmo) {
         if (mmo->ObjectClass() == MATRIX) {
           mmx = (_Matrix *)(mmo->GetValue());
           ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
-        } else if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
-          mma = (_AssociativeList *)(mmo->GetValue());
-           ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+        } else {
+          if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
+            mma = (_AssociativeList *)(mmo->GetValue());
+            ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+          }
         }
+      }
     }
 
     _PMathObj coordMx = nil;
@@ -912,15 +915,16 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
             DeleteObject(self);
             if (deref != HY_STRING_DIRECT_REFERENCE) {
               _Operation *ref = new _Operation(
-                  *(_String *)BuiltInFunctions(
-                      deref == HY_STRING_GLOBAL_DEREFERENCE ? HY_OP_CODE_POWER
+                  _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER
+                      (deref == HY_STRING_GLOBAL_DEREFERENCE ? HY_OP_CODE_POWER
                                                             : HY_OP_CODE_MUL),
-                  1);
+                  1L);
               newF.theFormula.InsertElement(ref, 1, false);
               DeleteObject(ref);
             }
             newF.theFormula.AppendNewInstance(new _Operation(
-                *(_String *)BuiltInFunctions(HY_OP_CODE_ADD), 2));
+                _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER                                             
+                HY_OP_CODE_ADD, 2));
           }
           f->Duplicate((BaseRef) & newF);
         }
@@ -977,16 +981,17 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                                                    ->GetAVariable())
                                    : nil;
 
-              if (mmo)
+              if (mmo) {
                 if (mmo->ObjectClass() == MATRIX) {
                   mmx = (_Matrix *)(mmo->GetValue());
-                  ((_Operation *)f->theFormula(0))->SetAVariable(
-                      -((_Operation *)f->theFormula(0))->GetAVariable() - 3);
-                } else if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
-                  mma = (_AssociativeList *)(mmo->GetValue());
-                  ((_Operation *)f->theFormula(0))->SetAVariable(
-                      -((_Operation *)f->theFormula(0))->GetAVariable() - 3);
+                  ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+                } else {
+                  if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
+                    mma = (_AssociativeList *)(mmo->GetValue());
+                    ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+                  }
                 }
+              }
             }
 
             if (mmx) {
@@ -1030,8 +1035,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
             bool isSimple = (s.getChar(i - 1) != ':');
             f2->Duplicate((BaseRef) & newF);
             if (last0 == 0) {
-              ((_Operation *)f->theFormula(0))->SetAVariable(
-                  -((_Operation *)f->theFormula(0))->GetAVariable() - 3);
+              ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
             }
             return isSimple ? ((s.getChar(i - 1) == '+')
                                    ? HY_FORMULA_FORMULA_VALUE_INCREMENT
@@ -1045,18 +1049,18 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
 
             if (twoToken && s.getChar(i - 1) == '+') { // += gets handled here
               newF.theFormula.InsertElement(
-                  new _Operation(*(_String *)BuiltInFunctions(
-                                     deref == HY_STRING_GLOBAL_DEREFERENCE
-                                         ? HY_OP_CODE_POWER
-                                         : HY_OP_CODE_MUL),
-                                 1),
+                  new _Operation(
+                                 _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER
+                                 (deref == HY_STRING_GLOBAL_DEREFERENCE ? HY_OP_CODE_POWER
+                                  : HY_OP_CODE_MUL),
+                                 1L),
                   0, false);
               for (long lhs_ops = f->theFormula.lLength - 1; lhs_ops >= 0;
                    lhs_ops--) {
                 newF.theFormula.InsertElement(f->theFormula(lhs_ops), 0, true);
               }
-              newF.theFormula.AppendNewInstance(new _Operation(
-                  *(_String *)BuiltInFunctions(HY_OP_CODE_ADD), 2));
+              newF.theFormula.AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER
+                  HY_OP_CODE_ADD, 2L));
             }
             f2->Duplicate((BaseRef) & newF);
             parsingContext.assignmentRefType() = deref;
@@ -1312,7 +1316,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
           takeVarReference = true;
         } else {
           _String thisOp(opChar);
-          levelOps->AppendNewInstance(new _Operation(thisOp, 1L));
+          levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false,  thisOp, 1L));
         }
       }
 
@@ -1358,7 +1362,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
               parsingContext.errMsg(), s, i);
         }
 
-        levelOps->AppendNewInstance(new _Operation(curOp, 1));
+        levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false,curOp, 1));
         continue;
       } else { // a variable
         // check if this is a function defined  in the list of "standard
@@ -1371,7 +1375,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                 parsingContext.errMsg(), s, i);
           }
           levelOps->AppendNewInstance(
-              new _Operation(curOp, FunctionArgumentCount(bLang)));
+              new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, FunctionArgumentCount(bLang)));
           continue;
         }
 
@@ -1386,7 +1390,8 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                 "Cannot make a reference from user-defined function",
                 parsingContext.errMsg(), s, i);
           }
-          levelOps->AppendNewInstance(new _Operation(curOp, -bLang - 1));
+          levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER true, curOp,
+                                                    batchLanguageFunctionParameters.GetElement(bLang)));
           continue;
         }
 
@@ -1404,25 +1409,26 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                 parsingContext.errMsg(), s, i);
           }
           if (!f2) { // 03/25/2004 ? Confused why the else
-            levelData->AppendNewInstance(new _Operation(
-                (_MathObject *)FetchVar(realVarLoc)->Compute()->makeDynamic()));
+            levelData->AppendNewInstance(new _Operation((_PMathObj)FetchVar(realVarLoc)->Compute()->makeDynamic()));
           } else {
-            _Operation theVar(true, realVarName, globalKey,
-                              parsingContext.formulaScope());
-            theVar.SetTerms(-variableNames.GetXtra(realVarLoc) - 1);
-            theVar.SetAVariable(-2);
-            (*levelData) && (&theVar);
+             levelData->AppendNewInstance(new _Operation (_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER
+                                         _HY_OPERATION_DEFERRED_INLINE,
+                                         FetchVar(realVarLoc)->GetAVariable(),
+                                         _HY_OPERATION_INVALID_REFERENCE,
+                                         NULL));
           }
         } else {
           if (noneObject)
-            levelData->AppendNewInstance(new _Operation(false, curOp));
+            levelData->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER
+                                                        noneToken,
+                                                        false));
           else if (parsingContext.formulaScope() &&
                    _hyApplicationGlobals.Find(&curOp) >= 0) {
             levelData->AppendNewInstance(
-                new _Operation(true, curOp, globalKey, nil, takeVarReference));
+                new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER curOp, true, globalKey, nil, takeVarReference));
           } else {
             levelData->AppendNewInstance(new _Operation(
-                true, curOp, globalKey, parsingContext.formulaScope(),
+                _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER curOp, true, globalKey, parsingContext.formulaScope(),
                 takeVarReference));
           }
         }
@@ -1438,7 +1444,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                 i, ((_String *)BuiltInFunctions(HY_OP_CODE_MUL))->getChar(0));
           } else {
             curOp = *(_String *)BuiltInFunctions(HY_OP_CODE_MUL);
-            levelOps->AppendNewInstance(new _Operation(curOp, 2));
+            levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, 2L));
           }
         }
         if (!storage) {
@@ -1450,7 +1456,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
     if (numeric.isAllowed[(unsigned char) s.getChar(i)]) {
       if (twoToken) {
         _String thisOp(s.getChar(i - 1));
-        levelOps->AppendNewInstance(new _Operation(thisOp, 1L));
+        levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, thisOp, 1L));
       }
       long j = 1;
 
@@ -1463,7 +1469,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
 
       curOp = (s.Cut(i, i + j - 1));
       i += j - 1;
-      levelData->AppendNewInstance(new _Operation(false, curOp));
+      levelData->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER curOp, false));
       if (i < s.sLength - 1 && s.getChar(i + 1) == '(') {
         storage = s.getChar(i);
         s.setChar(i, ((_String *)BuiltInFunctions(HY_OP_CODE_MUL))->getChar(0));
@@ -1530,7 +1536,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       }
 
       if (!levelOps->countitems()) {
-        levelOps->AppendNewInstance(new _Operation(curOp, twoOrOne));
+        levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, twoOrOne));
         if (terminateExecution) {
           return HY_FORMULA_FAILED;
         }
@@ -1557,7 +1563,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       g = opPrecedence(g);
 
       if (g > h && h != -1) { // store the op, don't do it yet!
-        levelOps->AppendNewInstance(new _Operation(curOp, twoOrOne));
+        levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, twoOrOne));
         if (terminateExecution) {
           return HY_FORMULA_FAILED;
         }
@@ -1583,7 +1589,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
         f->theFormula &&((*levelOps)(j));
         levelOps->Delete((*levelOps).lLength - 1);
       }
-      levelOps->AppendNewInstance(new _Operation(curOp, twoOrOne));
+      levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, twoOrOne));
       if (terminateExecution) {
         return HY_FORMULA_FAILED;
       }
@@ -1592,7 +1598,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       if ((s.getChar(i) == '-' || s.getChar(i) == '+') &&
           (!i || s.getChar(i - 1) == '(')) { // unary minus?
         curOp = s.getChar(i);
-        levelOps->AppendNewInstance(new _Operation(curOp, 1));
+        levelOps->AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER false, curOp, 1));
         continue;
       } else {
         if (HalfOps.contains(s.getChar(i))) {
