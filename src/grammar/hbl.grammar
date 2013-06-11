@@ -61,21 +61,21 @@ number <_Formula& f, _FormulaParsingContext& fpc>
 
 /*------------------------------------------------------------------------*/
 
-matrix_row 
-= '{'  (. _Formula f; _FormulaParsingContext fpc; long col = 0; printf ("\nStart matrix row\n"); .)
-    (expression <f, fpc> | '*') (. printf ("%ld\n", col++); .)
-    { 
-        ',' (expression <f, fpc> | '*') (. printf ("%ld\n", col++); .)
+matrix_row  <_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const>
+= '{'  (. _Formula* f = new _Formula; unsigned long my_column_count = 0; .)
+    (expression <*f, fpc> | '*') (. _parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const); my_column_count++; .)
+    {    
+        ',' (. f = new _Formula; .)
+        (expression <*f, fpc> | '*') (. _parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const);  my_column_count++; .)
     } 
-  '}' (. printf ("\nEnd matrix row\n"); .)
+  '}' (. _parser2013_matrix_checkRowLengths (this, column_count, my_column_count); .)
 .
 
 dense_matrix <_Formula& f, _FormulaParsingContext& fpc>
-= '{' (. _List matrix_entries; .)
-    matrix_row <matrix_entries, fpc>
-    {matrix_row <matrix_entries, fpc> } 
-  '}' (. _Matrix * m = _parser2013_createMatrix (matrix_entries);
-          _parser2013_pushMatrix (this, f, fpc, m);  .)
+= '{' (. _SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; .)
+    matrix_row  <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .)
+    {matrix_row <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .) }  
+  '}' (. _parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, &matrix_entries, n_rows, n_cols, is_const));  .)
 .
 
 /*------------------------------------------------------------------------*/

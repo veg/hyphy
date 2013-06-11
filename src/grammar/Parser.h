@@ -93,9 +93,9 @@ public:
 
 	void ident(_Formula& f, _FormulaParsingContext& fpc);
 	void number(_Formula& f, _FormulaParsingContext& fpc);
-	void matrix_row();
+	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
 	void expression(_Formula& f, _FormulaParsingContext& fpc);
-	void dense_matrix();
+	void dense_matrix(_Formula& f, _FormulaParsingContext& fpc);
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);
 	void lvalue(_Formula& f, _FormulaParsingContext& fpc);

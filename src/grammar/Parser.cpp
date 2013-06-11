@@ -98,26 +98,27 @@ void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
 		_parser2013_pushNumber (this, f, fpc, t->val); 
 }
 
-void Parser::matrix_row() {
+void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const) {
 		Expect(10 /* "{" */);
-		_Formula f; _FormulaParsingContext fpc; long col = 0; printf ("\nStart matrix row\n"); 
+		_Formula* f = new _Formula; unsigned long my_column_count = 0; 
 		if (StartOf(1)) {
-			expression(f, fpc);
+			expression(*f, fpc);
 		} else if (la->kind == 11 /* "*" */) {
 			Get();
 		} else SynErr(30);
-		printf ("%ld\n", col++); 
+		_parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const); my_column_count++; 
 		while (la->kind == 12 /* "," */) {
 			Get();
+			f = new _Formula; 
 			if (StartOf(1)) {
-				expression(f, fpc);
+				expression(*f, fpc);
 			} else if (la->kind == 11 /* "*" */) {
 				Get();
 			} else SynErr(31);
-			printf ("%ld\n", col++); 
+			_parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const);  my_column_count++; 
 		}
 		Expect(13 /* "}" */);
-		printf ("\nEnd matrix row\n"); 
+		_parser2013_matrix_checkRowLengths (this, column_count, my_column_count); 
 }
 
 void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
@@ -125,15 +126,17 @@ void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
 		logical_or(f, fpc);
 }
 
-void Parser::dense_matrix() {
+void Parser::dense_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(10 /* "{" */);
-		printf ("\nStart matrix declaration\n"); 
-		matrix_row();
+		_SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; 
+		matrix_row(matrix_entries, fpc, n_cols, is_const);
+		n_rows ++; 
 		while (la->kind == 10 /* "{" */) {
-			matrix_row();
+			matrix_row(matrix_entries, fpc, n_cols, is_const);
+			n_rows ++; 
 		}
 		Expect(13 /* "}" */);
-		printf ("\nEnd matrix declaration\n"); 
+		_parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, &matrix_entries, n_rows, n_cols, is_const));  
 }
 
 void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
@@ -168,7 +171,7 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			expression(f, fpc);
 			Expect(_CLOSE_PARENTHESIS);
 		} else if (la->kind == 10 /* "{" */) {
-			dense_matrix();
+			dense_matrix(f, fpc);
 		} else if (la->kind == _NONE_OBJECT) {
 			Get();
 			_parser2013_pushNone (this, f, fpc); 

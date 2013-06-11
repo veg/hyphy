@@ -101,7 +101,7 @@ public:
 
   _Matrix(long theHDim, long theVDim, bool sparse = false,
           bool allocateStorage =
-              false); // create an empty matrix of given dimensions;
+              false, bool isFla = false); // create an empty matrix of given dimensions;
 
   // creates an empty matrix of given dimensions;
   // the first flag specifies whether it is sparse or not

@@ -62,6 +62,10 @@ void _parser2013_pushOp (void *, _Formula& f, _FormulaParsingContext& fpc, long 
     f.Push (new _Operation ( op_code,num_terms));
 }
 
+void _parser2013_pushObject (void *, _Formula& f, _FormulaParsingContext& fpc, _PMathObj obj) {
+    f.Push (new _Operation (obj));
+}
+
 void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& funcId, const _List& argumentNames) {
     long arg_count   = argumentNames.countitems(),
          built_in_id = BuiltInFunctions.BinaryFind(&funcId);
@@ -102,6 +106,65 @@ void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& 
             f.Push(new _Operation( ident, true, globalKey, fpc.formulaScope(), takeVarReference));
         }
     }
+}
+
+_Matrix* _parser2013_createDenseMatrix (void* vp, _SimpleList* entries, const unsigned long n_rows, 
+        const unsigned long n_cols, const bool is_const) {
+   
+   _Matrix * m = nil;
+   
+    if (n_cols * n_rows != entries->countitems()) {
+        _parser2013_reportError(vp, 
+          "Internal error in _parser2013_createMatrixObject (incompatible entries and column_count arguments)");
+        return nil;
+    }
+ 
+    if (is_const) {
+      m = new _Matrix(n_rows, n_cols, false, true, false);
+    } else {
+      m = new _Matrix(n_rows, n_cols, false, false, true);     
+      m->Convert2Formulas (); 
+    }
+    
+    long overall_index = 0L;
+    
+    if (is_const) {
+      for (unsigned long r = 0UL; r < n_rows; r ++) {
+        for (unsigned long c = 0UL; c < n_cols; c++, overall_index++) {
+          m->Store(r, c, ((_Formula*)entries->GetElement (overall_index))->Compute()->Value());
+        }
+      }
+      entries->ClearFormulasInList();
+    } else {
+      for (unsigned long r = 0UL; r < n_rows; r ++) {
+        for (unsigned long c = 0UL; c < n_cols; c++, overall_index++) {
+          m->StoreFormula(r,c, *(_Formula*)entries->GetElement (overall_index),false);
+        }
+      }      
+    }
+      
+   return m;
+}
+
+void _parser2013_matrix_checkRowLengths (void *vp, unsigned long & global_count, unsigned long& local_count) {
+    if (global_count == 0L) {
+      global_count = local_count;
+    } else {
+      if (global_count != local_count) {
+          _parser2013_reportError(vp, _String ("Rows of unequal dimensions in a matrix constructor: ") & (long) global_count 
+              & " vs " & (long) local_count);
+
+      }
+    }
+}
+
+
+void _parser2013_add_matrix_entry (_SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
+  f->SimplifyConstants();
+  if (is_const) {
+    is_const = f->IsConstant();
+  }
+  matrix_entries << (long)f;
 }
 
 // LL(1) resolvers

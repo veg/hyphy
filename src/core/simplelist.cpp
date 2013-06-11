@@ -1237,6 +1237,7 @@ long _SimpleList::Pop(void) {
   return 0;
 }
 
+
 //Length constructor and populator
 void _SimpleList::Populate(long l, long start, long step) {
   RequestSpace(l);
@@ -1615,6 +1616,8 @@ void SortLists(_SimpleList *ref, _SimpleList *index) {
     (*ref).RecursiveIndexSort(0, (*ref).lLength - 1, index);
   }
 }
+
+
 
 /*
 ==============================================================

@@ -1977,8 +1977,8 @@ void _Matrix::Duplicate(BaseRef obj) {
 //______________________________________________________________________________
 // create an empty matrix of given dimensions;
 // the flag specifies whether it is sparse or not
-_Matrix::_Matrix(long theHDim, long theVDim, bool sparse,bool allocateStorage) {
-  CreateMatrix(this, theHDim, theVDim, sparse, allocateStorage);
+_Matrix::_Matrix(long theHDim, long theVDim, bool sparse,bool allocateStorage, bool isFla) {
+  CreateMatrix(this, theHDim, theVDim, sparse, allocateStorage,isFla);
 }
 
 //______________________________________________________________________________
