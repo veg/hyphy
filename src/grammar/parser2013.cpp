@@ -123,10 +123,9 @@ _Matrix* _parser2013_createDenseMatrix (void* vp, _SimpleList* entries, const un
       m = new _Matrix(n_rows, n_cols, false, true, false);
     } else {
       m = new _Matrix(n_rows, n_cols, false, false, true);     
-      m->Convert2Formulas (); 
     }
     
-    long overall_index = 0L;
+    unsigned long overall_index = 0L;
     
     if (is_const) {
       for (unsigned long r = 0UL; r < n_rows; r ++) {
@@ -136,11 +135,11 @@ _Matrix* _parser2013_createDenseMatrix (void* vp, _SimpleList* entries, const un
       }
       entries->ClearFormulasInList();
     } else {
-      for (unsigned long r = 0UL; r < n_rows; r ++) {
-        for (unsigned long c = 0UL; c < n_cols; c++, overall_index++) {
-          m->StoreFormula(r,c, *(_Formula*)entries->GetElement (overall_index),false);
-        }
-      }      
+      overall_index = entries->countitems();
+      _Formula ** fp = (_Formula**) m->theData;
+      for (unsigned long c = 0UL; c < overall_index; c++) {
+        fp[c] = (_Formula*)entries->GetElement (c);
+      }
     }
       
    return m;
@@ -162,7 +161,7 @@ void _parser2013_matrix_checkRowLengths (void *vp, unsigned long & global_count,
 void _parser2013_add_matrix_entry (_SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
   f->SimplifyConstants();
   if (is_const) {
-    is_const = f->IsConstant();
+    is_const = f->IsAConstant(true);
   }
   matrix_entries << (long)f;
 }

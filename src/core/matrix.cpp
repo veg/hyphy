@@ -266,13 +266,13 @@ void MatrixIndexError(long hPos, long vPos, long hDim, long vDim) {
 inline bool _Matrix::IsNonEmpty(long logicalIndex) {
   return (theIndex
               ? theIndex[logicalIndex] != -1
-              : (storageType != 1 ? GetMatrixObject(logicalIndex) != ZEROPOINTER
+              : (storageType != _HY_MATRIX_NUMERICAL_TYPE ? GetMatrixObject(logicalIndex) != ZEROPOINTER
                                   : true));
 }
 
 //______________________________________________________________________________
 bool _Matrix::HasChanged(void) {
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     _Formula *theF, **theFormulae = (_Formula **)theData;
     if (theIndex) {
       for (long i = 0; i < lDim; i++) {
@@ -292,7 +292,7 @@ bool _Matrix::HasChanged(void) {
       }
     }
 
-  } else if (storageType == 0) {
+  } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     _MathObject *theO, **objData = (_MathObject **)theData;
     if (theIndex) {
       for (long i = 0; i < lDim; i++) {
@@ -311,7 +311,7 @@ bool _Matrix::HasChanged(void) {
       }
     }
 
-  } else if (storageType == 3) {
+  } else if (storageType == _HY_MATRIX_FAST_EXECUTION_TYPE) {
     if (cmd->has_volatile_entries)
       return true;
 
@@ -342,14 +342,16 @@ inline static void ROTATE(_Parameter *a, long i, long j, long k, long l,
   a[k * hDim + l] = h + s * (g - h * tau);
 }
 
+//_____________________________________________________________________________
+
+bool    _Matrix::isNonEmptyDenseSquare (void) const {
+  return storageType == _HY_MATRIX_NUMERICAL_TYPE && hDim == vDim && hDim > 0;
+}
+
 //______________________________________________________________________________
 void _Matrix::Balance(void) {
-  if (storageType != 1 || hDim != vDim || hDim == 0) { 
-
-    // only works for numerical matrices at this stage
-    _String errorMsg(
-        "Balance only works with numerical non-empty square dense matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError ("Balance only works with numerical non-empty square dense matrices");
     return;
   }
 
@@ -399,12 +401,8 @@ void _Matrix::Balance(void) {
 
 //______________________________________________________________________________
 void _Matrix::Schur(void) {
-  if (storageType != 1 || hDim != vDim || hDim == 0) { 
-
-    // only works for numerical matrices at this stage
-    _String errorMsg(
-        "Hessenberg only works with numerical non-empty square dense matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError("Schur only works with numerical non-empty square dense matrices");
     return;
   }
 
@@ -464,11 +462,8 @@ void _Matrix::Schur(void) {
 
 //______________________________________________________________________________
 void _Matrix::EigenDecomp(_Matrix &real, _Matrix &imag) {
-  if (storageType != 1 || hDim != vDim ||
-      hDim == 0) { // only works for numerical matrices at this stage
-    _String errorMsg("EigenDecomp only works with numerical non-empty square "
-                     "dense matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError("EigenDecomp only works with numerical non-empty square dense matrices");
     return;
   }
 
@@ -654,11 +649,8 @@ _PMathObj _Matrix::Eigensystem(void) {
   // returns an associative list with a sorted vector of eigenvalues and
   // a square matrix where columns are the corresponding eigenvalues
 
-  if ((storageType != 1) || (hDim != vDim) ||
-      (hDim == 0)) { // only works for numerical matrices at this stage
-    _String errorMsg(
-        "Eigensystem only works with numerical non-empty square matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError("Eigensystem only works with numerical non-empty square dense matrices");
     return new _AssociativeList();
   }
 
@@ -865,11 +857,8 @@ _PMathObj _Matrix::LUDecompose(void) {
   // the return object is an nx(n+1) matrix which contains the LU decomposition
   // followed
   // by a vector of row interchanges
-  if (storageType != 1 || hDim != vDim ||
-      hDim == 0) { // only works for numerical matrices at this stage
-    _String errorMsg(
-        "LUDecompose only works with numerical non-empty square matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError("LUDecompose only works with numerical non-empty square dense matrices");
     return new _Matrix();
   }
 
@@ -982,7 +971,7 @@ _PMathObj _Matrix::LUDecompose(void) {
 // returns a vector of solutions
 _PMathObj _Matrix::LUSolve(_PMathObj p) {
 
-  if ((storageType != 1) || (hDim + 1 != vDim) ||
+  if ((storageType != _HY_MATRIX_NUMERICAL_TYPE) || (hDim + 1 != vDim) ||
       (vDim <= 0)) { // only works for numerical matrices at this stage
     _String errorMsg("LUSolve only works with numerical non-empty matrices of "
                      "dimension nx(n+1) returned by LUDecompose.");
@@ -991,7 +980,7 @@ _PMathObj _Matrix::LUSolve(_PMathObj p) {
   }
   if (p->ObjectClass() == MATRIX) {
     _Matrix *b = (_Matrix *)p;
-    if (!((b->hDim != hDim) || (b->vDim != 1) || (b->storageType != 1))) {
+    if (!((b->hDim != hDim) || (b->vDim != 1) || (b->storageType != _HY_MATRIX_NUMERICAL_TYPE))) {
       _Parameter sum;
       _Matrix result(*b);
       result.CheckIfSparseEnough(true);
@@ -1041,11 +1030,8 @@ _PMathObj _Matrix::LUSolve(_PMathObj p) {
 //   algorithm based on Numerical Recipes
 _PMathObj _Matrix::CholeskyDecompose(void) {
 
-  if (storageType != 1 || hDim != vDim || hDim == 0) { 
-    // only works for numerical square matrices at this stage
-    _String errorMsg("CholeskyDecompose only works with numerical non-empty "
-                     "square matrices");
-    WarnError(errorMsg);
+  if (!isNonEmptyDenseSquare()) {
+    WarnError ("CholeskyDecompose only works with numerical non-empty square dense matrices");
     return new _Matrix();
   }
 
@@ -1093,7 +1079,7 @@ _PMathObj _Matrix::CholeskyDecompose(void) {
 
 //______________________________________________________________________________
 _PMathObj _Matrix::Log(void) {
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Matrix *res = new _Matrix;
     checkPointer(res);
     res->Duplicate(this);
@@ -1116,12 +1102,11 @@ _PMathObj _Matrix::Log(void) {
 
 //______________________________________________________________________________
 _PMathObj _Matrix::Inverse(void) {
-  if ((storageType != 1) || (hDim != vDim) || (hDim == 0)) {
-    _String errorMsg(
-        "Inverse only works with numerical non-empty square matrices.");
-    WarnError(errorMsg);
-    return nil;
+  if (!isNonEmptyDenseSquare()) {
+    WarnError ("Inverse only works with numerical non-empty square dense matrices");
+    return new _MathObject;
   }
+
   _Matrix *LUdec = (_Matrix *)LUDecompose();
   if (LUdec) {
     _Matrix b(hDim, 1, false, true), result(hDim, vDim, false, true);
@@ -1159,7 +1144,7 @@ _PMathObj _Matrix::MultByFreqs(long freqID) {
     freqID = modelFrequenciesIndices.lData[freqID];
     if (freqID >= 0) {
       freqMatrix = (_Matrix *)LocateVar(freqID)->GetValue();
-      if (freqMatrix->storageType != 1) {
+      if (freqMatrix->storageType != _HY_MATRIX_NUMERICAL_TYPE) {
         if (freqMatrix->theValue) {
           freqMatrix = (_Matrix *)freqMatrix->theValue;
         } else {
@@ -1240,8 +1225,8 @@ _PMathObj _Matrix::MultByFreqs(long freqID) {
 //______________________________________________________________________________
 _PMathObj _Matrix::Compute(void) {
   //if ((storageType != 1)&&(storageType != 2))
-  if (storageType != 1) {
-    if (storageType == 0) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
+    if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
       if (ANALYTIC_COMPUTATION_FLAG) {
         return this;
       }
@@ -1249,43 +1234,41 @@ _PMathObj _Matrix::Compute(void) {
     if (IsAStringMatrix()) {
       return this;
     }
-
-    if (theValue) {
-      DeleteObject(theValue);
-    }
-    if (storageType != 3) {
-      theValue = Evaluate(false);
-    } else {
-      theValue = EvaluateSimple();
-    }
+    
+    updateMatrixValue();
     return theValue;
   }
   return this;
 }
 
 //______________________________________________________________________________
+
+void _Matrix::updateMatrixValue(void) {
+  if (theValue) {
+    DeleteObject(theValue);
+  }
+  if (storageType != _HY_MATRIX_FAST_EXECUTION_TYPE) {
+    theValue = Evaluate(false);
+  } else {
+    theValue = EvaluateSimple();
+  }
+ 
+}
+//______________________________________________________________________________
 _PMathObj _Matrix::ComputeNumeric(bool copy) {
-  if (storageType != 1) {
-    if (storageType == 0 && ANALYTIC_COMPUTATION_FLAG) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
+    if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE && ANALYTIC_COMPUTATION_FLAG) {
       return this;
     }
 
-    if (theValue) {
-      DeleteObject(theValue);
-    }
-
-    if (storageType != 3) {
-      theValue = Evaluate(false);
-    } else {
-      theValue = EvaluateSimple();
-    }
+    updateMatrixValue();
     return theValue;
   }
+
   if (copy) {
     if (theValue) {
       DeleteObject(theValue);
     }
-
     theValue = (_Matrix *)makeDynamic();
     return theValue;
   }
@@ -1294,7 +1277,7 @@ _PMathObj _Matrix::ComputeNumeric(bool copy) {
 
 //______________________________________________________________________________
 _PMathObj _Matrix::RetrieveNumeric(void) {
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     if (theValue) {
       return theValue;
     }
@@ -1446,12 +1429,12 @@ _Matrix::_Matrix() // default constructor, doesn't do much
 }
 
 //______________________________________________________________________________
-void _Matrix::Initialize() // default constructor, doesn't do much
-    {
+void _Matrix::Initialize() {
+  // default constructor, doesn't do much
   theData = nil;
   theIndex = nil;
   vDim = hDim = lDim = bufferPerRow = overflowBuffer = 0;
-  storageType = 1;
+  storageType = _HY_MATRIX_NUMERICAL_TYPE;
   allocationBlock = 1;
   theValue = nil;
 
@@ -1464,7 +1447,14 @@ void CreateMatrix(_Matrix *theMatrix, long theHDim, long theVDim,
   long i;
 
   theMatrix->theValue = nil;
-  theMatrix->storageType = allocateStorage;
+  
+  if (isFla) {
+    theMatrix->storageType = _HY_MATRIX_FORMULA_TYPE;
+  } else {
+    theMatrix->storageType = allocateStorage?_HY_MATRIX_NUMERICAL_TYPE:_HY_MATRIX_POLYNOMIAL_TYPE;
+  }
+  
+  
   if (theHDim && theVDim) {
     if (sparse) {          // store matrix as sparse
       theMatrix->lDim = theHDim * theVDim * theMatrix->storageIncrement / 100 +
@@ -1541,12 +1531,12 @@ bool _Matrix::AmISparse(void) {
   if (theIndex) {
     return true; // duh!
   }
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     return false;
   }
 
   long k = 0;
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     for (long i = 0; i < lDim; i++)
       if (theData[i] != ZEROOBJECT) {
         k++;
@@ -1560,14 +1550,14 @@ bool _Matrix::AmISparse(void) {
 
   if ((_Parameter(k) / lDim * 100.) <= _Matrix::switchThreshold) {
     // we indeed are sparse enough
-    _Matrix sparseMe(hDim, vDim, true, storageType == 1);
-    if (storageType == 1) {
+    _Matrix sparseMe(hDim, vDim, true, storageType == _HY_MATRIX_NUMERICAL_TYPE);
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       for (long i = 0; i < lDim; i++) {
         if (theData[i] != ZEROOBJECT) {
           sparseMe[i] = theData[i];
         }
       }
-    } else if (storageType == 0) {
+    } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
       for (long i = 0; i < lDim; i++) {
         if ((GetMatrixObject(i) != ZEROPOINTER) &&
             (!GetMatrixObject(i)->IsObjectEmpty())) {
@@ -1639,18 +1629,18 @@ bool _Matrix::AmISparseFast(_Matrix &whereTo) {
 //______________________________________________________________________________
 bool _Matrix::IsReversible(_Matrix *freqs) {
   if (hDim != vDim || (freqs && freqs->hDim * freqs->vDim != hDim) ||
-      (storageType != 1 && storageType != 2) ||
-      (freqs && freqs->storageType != 1 && freqs->storageType != 2)) {
+      (storageType != _HY_MATRIX_NUMERICAL_TYPE && storageType != _HY_MATRIX_FORMULA_TYPE) ||
+      (freqs && freqs->storageType != _HY_MATRIX_NUMERICAL_TYPE && freqs->storageType != _HY_MATRIX_FORMULA_TYPE)) {
     return false;
   }
 
-  bool needAnalytics = storageType == 2 || (freqs && freqs->storageType == 2);
+  bool needAnalytics = storageType == _HY_MATRIX_FORMULA_TYPE || (freqs && freqs->storageType == _HY_MATRIX_FORMULA_TYPE);
   if (needAnalytics) {
     if (freqs) {
       for (long r = 0; r < hDim; r++)
         for (long c = r + 1; c < hDim; c++) {
           bool compResult = true;
-          if (storageType == 2) {
+          if (storageType == _HY_MATRIX_FORMULA_TYPE) {
             _Formula *rc = GetFormula(r, c), *cr = GetFormula(c, r);
 
             if (rc && cr) {
@@ -1660,7 +1650,7 @@ bool _Matrix::IsReversible(_Matrix *freqs) {
               if (rcp && crp) {
                 _PMathObj tr = nil, tc = nil;
 
-                if (freqs->storageType == 2) {
+                if (freqs->storageType == _HY_MATRIX_FORMULA_TYPE) {
                   if (freqs->GetFormula(r, 0)) {
                     tr = freqs->GetFormula(r, 0)->ConstructPolynomial();
                     if (tr) {
@@ -1764,7 +1754,7 @@ void _Matrix::CheckIfSparseEnough(bool force) {
   if (theIndex && (force || lDim > hDim * vDim * ::_Matrix::switchThreshold / 100)) {
     // switch to normal matrix storage - more than half elements are non-zero
     // -= allocationBlock;
-    if (storageType != 1) {
+    if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
       // pointers
       long *tempData;
 
@@ -1828,7 +1818,7 @@ bool _Matrix::IncreaseStorage(void) {
     theIndex = tempIndex;
   }
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     // pointers or formulas
     _MathObject **tempData;
     if (!(tempData = (_MathObject **)MatrixMemAllocate(sizeof(char) * lDim *
@@ -1893,7 +1883,7 @@ void DuplicateMatrix(_Matrix *targetMatrix, _Matrix *sourceMatrix) {
   targetMatrix->theData = nil;
 
   if (sourceMatrix->lDim) {
-    if (sourceMatrix->storageType == 0)
+    if (sourceMatrix->storageType == _HY_MATRIX_POLYNOMIAL_TYPE)
         // matrix will store pointers to elements
         {
       if (targetMatrix->lDim) {
@@ -1984,8 +1974,8 @@ _Matrix::_Matrix(long theHDim, long theVDim, bool sparse,bool allocateStorage, b
 //______________________________________________________________________________
 
 void _Matrix::Convert2Formulas(void) {
-  if (storageType == 1) {
-    storageType = 2;
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
+    storageType = _HY_MATRIX_FORMULA_TYPE;
     _Formula **tempData = (_Formula **)MatrixMemAllocate(sizeof(void *) * lDim);
     if (!theIndex) {
       for (long i = 0; i < lDim; i++) {
@@ -1994,9 +1984,6 @@ void _Matrix::Convert2Formulas(void) {
     } else
       for (long i = 0; i < lDim; i++) {
         if (IsNonEmpty(i)) {
-          //_Constant c (((_Parameter*)theData)[i]);
-          //_Formula f((_PMathObj)c.makeDynamic());
-          //tempData[i] = (_Formula*)f.makeDynamic();
           tempData[i] = new _Formula(new _Constant(((_Parameter *)theData)[i]));
         } else {
           tempData[i] = nil;
@@ -2237,7 +2224,7 @@ _Matrix::_Matrix(_String &s, bool isNumeric, _VariableContainer *theP) {
     } // end else
 
     if (!isNumeric) {
-      storageType = 2; // formula elements
+      storageType = _HY_MATRIX_FORMULA_TYPE; // formula elements
       checkParameter(ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
       if ((ANALYTIC_COMPUTATION_FLAG) && !isAConstant) {
         ConvertFormulas2Poly(false);
@@ -2313,7 +2300,7 @@ void _Matrix::ScanForVariables2(_AVLList &theReceptacle, bool inclG,
                                 long modelID, bool inclCat, _AVLListX *tagger,
                                 long weights) {
 
-  if (storageType == 2) { 
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     // a formula based matrix, there is stuff to do
     if (modelID >= 0) {
       _AssociativeList *definedCache = nil;
@@ -2407,7 +2394,7 @@ void _Matrix::ScanForVariables2(_AVLList &theReceptacle, bool inclG,
                                             inclCat, false, tagger, weights);
         }
       }
-  } else if (storageType == 0) { 
+  } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     // a polynomial based matrix, there is stuff to do
     _MathObject **thePoly = (_MathObject **)theData;
     if (theIndex)
@@ -2428,11 +2415,11 @@ void _Matrix::ScanForVariables2(_AVLList &theReceptacle, bool inclG,
 
 //______________________________________________________________________________
 bool _Matrix::IsConstant(void) {
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     return true;
   }
 
-  if (storageType == 2) { // a formula based matrix, there is stuff to do
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) { // a formula based matrix, there is stuff to do
     _Formula **theFormulas = (_Formula **)theData;
     if (theIndex) {
       for (long i = 0; i < lDim; i++)
@@ -2531,8 +2518,7 @@ _Matrix *_Matrix::branchLengthStencil(void) {
   _Matrix *stencil =
       (_Matrix *)FetchObjectFromVariableByType(&BRANCH_LENGTH_STENCIL, MATRIX);
   if (stencil) {
-    if (stencil->storageType == 1 && stencil->hDim == stencil->vDim &&
-        stencil->hDim == hDim) {
+    if (stencil->isNonEmptyDenseSquare()) {
       stencil->CheckIfSparseEnough(true);
     } else {
       stencil = nil;
@@ -2545,7 +2531,7 @@ _Matrix *_Matrix::branchLengthStencil(void) {
 //______________________________________________________________________________
 _String *_Matrix::BranchLengthExpression(_Matrix *baseFreqs, bool mbf) {
 
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     long stackLength = 0;
     _SimpleList varList, newFormulas, references;
 
@@ -2559,7 +2545,7 @@ _String *_Matrix::BranchLengthExpression(_Matrix *baseFreqs, bool mbf) {
     _String *sendMeBack = new _String(128L, true);
 
     // numerical base frequencies
-    if (baseFreqs->storageType == 1) {
+    if (baseFreqs->storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       _Matrix multipliersByRate(newFormulas.lLength, 1, false, true);
       for (long i = 0; i < lDim; i++) {
         long thisRef = references.lData[i];
@@ -2589,7 +2575,7 @@ _String *_Matrix::BranchLengthExpression(_Matrix *baseFreqs, bool mbf) {
           firstDone = true;
         }
       }
-    } else if (baseFreqs->storageType == 2) {
+    } else if (baseFreqs->storageType == _HY_MATRIX_FORMULA_TYPE) {
       // formula-based equilibrium frequencies
       _List freqFla, multipliersByRate;
 
@@ -2658,7 +2644,7 @@ _String *_Matrix::BranchLengthExpression(_Matrix *baseFreqs, bool mbf) {
 
 //______________________________________________________________________________
 void _Matrix::MakeMeSimple(void) {
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     long stackLength = 0;
     bool isGood = true;
 
@@ -2671,7 +2657,7 @@ void _Matrix::MakeMeSimple(void) {
                              flaStrings);
 
     if (isGood) {
-      storageType = 3;
+      storageType = _HY_MATRIX_FAST_EXECUTION_TYPE;
 
       cmd = new _CompiledMatrixData;
       cmd->has_volatile_entries = false;
@@ -2699,7 +2685,7 @@ void _Matrix::MakeMeSimple(void) {
 
 //______________________________________________________________________________
 void _Matrix::MakeMeGeneral(void) {
-  if (storageType == 3) {
+  if (storageType == _HY_MATRIX_FAST_EXECUTION_TYPE) {
     for (long k = 0; k < cmd->formulasToEval.lLength; k++) {
       ((_Formula *)cmd->formulasToEval.lData[k])->ConvertFromSimple();
     }
@@ -2711,7 +2697,7 @@ void _Matrix::MakeMeGeneral(void) {
     MatrixMemFree(cmd->varValues);
     delete (cmd);
     cmd = nil;
-    storageType = 2;
+    storageType = _HY_MATRIX_FORMULA_TYPE;
   }
 }
 
@@ -2721,7 +2707,7 @@ _PMathObj _Matrix::Evaluate(bool replace) {
   // evaluate the matrix  overwriting (or not) the old one
   _Matrix result(hDim, vDim, bool(theIndex), true);
 
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     _PMathObj formValue = nil;
     _Formula **theFormulas = (_Formula **)theData;
     if (theIndex) {
@@ -2795,7 +2781,7 @@ _PMathObj _Matrix::Evaluate(bool replace) {
     }
   }
 
-  if (storageType == 0) {
+  if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     _PMathObj polValue = nil;
     _MathObject **thePoly = (_MathObject **)theData;
     if (theIndex) {
@@ -2837,7 +2823,7 @@ _PMathObj _Matrix::Evaluate(bool replace) {
 //______________________________________________________________________________
 void _Matrix::ConvertToSimpleList(_SimpleList &sl) {
   sl.Clear();
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     sl.RequestSpace(hDim * vDim + 1);
 
     for (long i = 0; i < hDim; i++)
@@ -2850,7 +2836,7 @@ void _Matrix::ConvertToSimpleList(_SimpleList &sl) {
 //______________________________________________________________________________
 // check if a formula matrix contains strings
 bool _Matrix::IsAStringMatrix(void) {
-  if (storageType == 2) {
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     _PMathObj formValue = nil;
     _Formula **theFormulas = (_Formula **)theData;
     if (theIndex)
@@ -2879,7 +2865,7 @@ bool _Matrix::IsAStringMatrix(void) {
 //______________________________________________________________________________
 // check if a formula matrix contains strings
 void _Matrix::FillInList(_List &fillMe, bool doNumeric) {
-  if (storageType == _FORMULA_TYPE)
+  if (storageType == _HY_MATRIX_FORMULA_TYPE)
     for (long r = 0; r < hDim; r++)
       for (long c = 0; c < vDim; c++) {
         _Formula *entryFla = GetFormula(r, c);
@@ -2895,7 +2881,7 @@ void _Matrix::FillInList(_List &fillMe, bool doNumeric) {
         }
       }
   else {
-    if (doNumeric && storageType == _NUMERICAL_TYPE) {
+    if (doNumeric && storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       for (long r = 0; r < hDim; r++)
         for (long c = 0; c < vDim; c++) {
           fillMe.AppendNewInstance(new _String((*this)(r, c)));
@@ -3079,10 +3065,10 @@ void _Matrix::ClearObjects(void) {
 //______________________________________________________________________________
 void _Matrix::Clear(void) {
   DeleteObject(theValue);
-  if (storageType == 2) { // has formulas in it - must delete
+  if (storageType == _HY_MATRIX_FORMULA_TYPE) { // has formulas in it - must delete
     ClearFormulae();
   }
-  if (storageType == 0) { // has objects in it - must delete
+  if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) { // has objects in it - must delete
     ClearObjects();
   }
   if (theIndex) {
@@ -3099,7 +3085,7 @@ void _Matrix::Clear(void) {
 
 //______________________________________________________________________________
 void _Matrix::Resize(long newH) {
-  if (newH >= 0 && newH != hDim && storageType == 1 && theIndex == nil) {
+  if (newH >= 0 && newH != hDim && storageType == _HY_MATRIX_NUMERICAL_TYPE && theIndex == nil) {
     hDim = newH;
     lDim = newH * vDim;
     if (theData) {
@@ -3128,22 +3114,19 @@ void _Matrix::operator=(_Matrix *m) {
 
 //______________________________________________________________________________
 _Parameter _Matrix::AbsValue(void) {
-  if (storageType == 1 && (hDim == 1 || vDim == 1)) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE && (hDim == 1 || vDim == 1)) {
     _Parameter norm = 0.;
     if (theIndex) {
       for (long k = 0; k < lDim; k++)
         if (long i = theIndex[k] >= 0) {
           norm += theData[i] * theData[i];
         }
-
-      norm = sqrt(norm);
     } else {
       for (long k = 0; k < lDim; k++) {
         norm += theData[k] * theData[k];
       }
-      norm = sqrt(norm);
     }
-    return norm;
+    return sqrt(norm);
   }
 
   return 0.;
@@ -3151,7 +3134,7 @@ _Parameter _Matrix::AbsValue(void) {
 
 //______________________________________________________________________________
 _PMathObj _Matrix::Abs(void) {
-  if (storageType == 1 && (hDim == 1 || vDim == 1)) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE && (hDim == 1 || vDim == 1)) {
     return new _Constant(AbsValue());
   }
   return new _Constant(MaxElement());
@@ -3177,7 +3160,7 @@ void _Matrix::Add(_Matrix &storage, _Matrix &secondArg, bool subtract) {
     return;
   }
 
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     if (&storage != this) { 
       // not an add&store operation
       // copy *this to storage
@@ -3262,7 +3245,7 @@ void _Matrix::Add(_Matrix &storage, _Matrix &secondArg, bool subtract) {
         }
 
     }
-  } else if (storageType == 0) {
+  } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     long i;
     if (&storage != this) { // not an add&store operation
       /*              if (theIndex) //sparse matrix
@@ -3442,7 +3425,7 @@ void _Matrix::Subtract(_Matrix &storage, _Matrix &secondArg) {
 // multiply a matrix by a scalar
 // internal function
 void _Matrix::Multiply(_Matrix &storage, _Parameter c) {
-  if (storageType == 1) { // numbers
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) { // numbers
     _Parameter _hprestrict_ *destination = storage.theData;
     _Parameter _hprestrict_ *source = theData;
 
@@ -3460,7 +3443,7 @@ void _Matrix::Multiply(_Matrix &storage, _Parameter c) {
   } else {
     _Constant *cc = new _Constant(c);
 
-    if (storageType == 2) {
+    if (storageType == _HY_MATRIX_FORMULA_TYPE) {
       _Operation *cOp = new _Operation(cc), 
         *mOp = new _Operation( HY_OP_CODE_MUL, 2L);
 
@@ -3472,7 +3455,7 @@ void _Matrix::Multiply(_Matrix &storage, _Parameter c) {
           f->GetList().AppendNewInstance(mOp);
         }
     } else {
-      if (storageType != 3) {
+      if (storageType != _HY_MATRIX_FAST_EXECUTION_TYPE) {
         if (theIndex) {
           //sparse matrix
           for (long i = 0; i < lDim; i++)
@@ -3503,7 +3486,8 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix &secondArg) {
   if (!theIndex && !secondArg.theIndex) {
     // simplest case of two non-sparse matrices - multiply in a
     // straightforward way
-    if (storageType == 0 && secondArg.storageType == 0) { 
+    if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE
+          && secondArg.storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
       // both matrices are polynomial in nature
       for (long i = 0; i < hDim; i++)
         for (long j = i * secondArg.vDim; j < (i + 1) * secondArg.vDim; j++) {
@@ -3738,7 +3722,8 @@ for (long i=0; i<hDim; i++, row += vDim) {
     }
   } else if (theIndex && !secondArg.theIndex) { 
     // sparse multiplied by non-sparse
-    if (storageType == 1 && secondArg.storageType == 1) { // both numeric
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE
+          && secondArg.storageType == _HY_MATRIX_NUMERICAL_TYPE) { // both numeric
       if (vDim == hDim && secondArg.vDim == secondArg.hDim) { 
         // both square and same dimension
         long loopBound = vDim - vDim % 4;
@@ -3887,7 +3872,7 @@ _SLKP_USE_SSE_INTRINSICS
 
   } else if (!theIndex && secondArg.theIndex) {
     // non-sparse multiplied by sparse
-    if (storageType == 1 && secondArg.storageType == 1) {
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE && secondArg.storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       if (vDim == hDim && secondArg.vDim == secondArg.hDim) {
         // both are square matrices
         for (long k = 0; k < secondArg.lDim; k++) {
@@ -3969,7 +3954,7 @@ _SLKP_USE_SSE_INTRINSICS
     memset(indexTable, 0, indexTableDim * sizeof(long));
     memset(indexTable2, 0, indexTableDim * sizeof(long));
     memset(indexVector, 0, secondArg.hDim * sizeof(long));
-    if (storageType == 1) {
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       // numeric
       for (long i = 0; i < secondArg.lDim; i++) {
         if ((t = secondArg.theIndex[i]) != -1) {
@@ -4046,7 +4031,7 @@ long _Matrix::HashBack(long logicalIndex) {
 // returns matrix's largest abs value element
 _Parameter _Matrix::MaxElement(char runMode, long *indexStore) {
 
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Parameter max = 0.0, temp;
 
     bool doAbsValue = runMode != 1 && runMode != 3,
@@ -4114,7 +4099,7 @@ void _Matrix::RowAndColumnMax(_Parameter &r, _Parameter &c, _Parameter *cache) {
 
   r = c = 10.;
 
-  if (storageType == 1) { 
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     // numeric matrix
     _Parameter *maxScratch = cache;
     r = c = 0.;
@@ -4178,7 +4163,7 @@ void _Matrix::RowAndColumnMax(_Parameter &r, _Parameter &c, _Parameter *cache) {
 //______________________________________________________________________________
 // returns matrix's largest abs value element
 bool _Matrix::IsMaxElement(_Parameter bench) {
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Parameter t, mBench = -bench;
     for (long i = 0; i < lDim; i++) {
       t = theData[i];
@@ -4187,7 +4172,7 @@ bool _Matrix::IsMaxElement(_Parameter bench) {
       }
     }
     return false;
-  } else if (storageType == 0) {
+  } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     _Polynomial **pData = (_Polynomial **)theData;
     for (long i = 0; i < lDim; i++, pData++) {
       if ((*pData)->IsMaxElement(bench)) {
@@ -4202,7 +4187,7 @@ bool _Matrix::IsMaxElement(_Parameter bench) {
 //______________________________________________________________________________
 // returns matrix's largest abs value element
 _Parameter _Matrix::MaxRelError(_Matrix &compMx) {
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Parameter max = 0, temp;
     for (long i = 0; i < lDim; i++) {
       temp = theData[i] / compMx.theData[i];
@@ -4233,7 +4218,7 @@ bool _Matrix::IsAVector(char type) {
 // returns matrix's smalles non-zero abs value element
 _Parameter _Matrix::MinElement(char doAbsValue, long *storeIndex) {
 
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Parameter min = DBL_MAX;
 
     if (theIndex)
@@ -4282,7 +4267,7 @@ _Parameter _Matrix::MinElement(char doAbsValue, long *storeIndex) {
 //______________________________________________________________________________
 // transpose a matrix
 void _Matrix::Transpose(void) {
-  if (storageType == 1) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     if (hDim == vDim) { // do an in place swap
       if (!theIndex) {  // non-sparse
         for (long i = 0; i < hDim; i++)
@@ -4335,13 +4320,13 @@ void _Matrix::Transpose(void) {
       if (!theIndex) { // non-sparse
         for (long i = 0; i < hDim; i++)
           for (long j = i + 1; j < vDim; j++) {
-            if (storageType == 2) {
+            if (storageType == _HY_MATRIX_FORMULA_TYPE) {
               z = (Ptr) GetFormula(i, j);
             } else {
               z = (Ptr) GetMatrixObject(i * vDim + j);
             }
 
-            if (storageType == 2) {
+            if (storageType == _HY_MATRIX_FORMULA_TYPE) {
               ((_Formula **)theData)[i * vDim + j] = GetFormula(j, i);
             } else {
               ((_PMathObj *)theData)[i * vDim + j] =
@@ -4359,14 +4344,14 @@ void _Matrix::Transpose(void) {
             if (l != k) {
               p = Hash(l, k);
 
-              if (storageType == 2) {
+              if (storageType == _HY_MATRIX_FORMULA_TYPE) {
                 z = (Ptr) GetFormula(k, l);
               } else {
                 z = (Ptr) GetMatrixObject(i);
               }
 
               if (p >= 0) {
-                if (storageType == 2) {
+                if (storageType == _HY_MATRIX_FORMULA_TYPE) {
                   ((_Formula **)theData)[i] = GetFormula(l, k);
                 } else {
                   ((_MathObject **)theData)[i] = GetMatrixObject(p);
@@ -4375,7 +4360,7 @@ void _Matrix::Transpose(void) {
                 ((Ptr *)theData)[p] = z;
               } else {
                 theIndex[i] = -1;
-                if (storageType == 2) {
+                if (storageType == _HY_MATRIX_FORMULA_TYPE) {
                   StoreFormula(l, k, *(_Formula *)z, false, false);
                 } else {
                   StoreObject(l * vDim + k, (_PMathObj) z);
@@ -4389,12 +4374,12 @@ void _Matrix::Transpose(void) {
 
       _Matrix result;
       CreateMatrix(&result, vDim, hDim, bool(theIndex), false,
-                   storageType == 2);
+                   storageType == _HY_MATRIX_FORMULA_TYPE);
       result.storageType = storageType;
       if (!theIndex) {
         for (long i = 0; i < hDim; i++)
           for (long j = 0; j < vDim; j++) {
-            if (storageType == 2) {
+            if (storageType == _HY_MATRIX_FORMULA_TYPE) {
               result.StoreFormula(j, i, *GetFormula(i, j), true, false);
             } else {
               z = (Ptr) GetMatrixObject(i * vDim + j);
@@ -4408,7 +4393,7 @@ void _Matrix::Transpose(void) {
           if (IsNonEmpty(i)) {
             r = theIndex[i] / vDim;
             c = theIndex[i] % vDim;
-            if (storageType == 2) {
+            if (storageType == _HY_MATRIX_FORMULA_TYPE) {
               result.StoreFormula(c, r, *GetFormula(r, c), true, false);
             } else {
               z = (Ptr) GetMatrixObject(i);
@@ -4476,7 +4461,7 @@ _Matrix *_Matrix::Exponentiate(void) {
 
   _Parameter max = 1.0, *stash = new _Parameter[hDim * (1 + vDim)];
 
-  if (storageType) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     _Parameter t;
     RowAndColumnMax(max, t, stash);
     max *= t;
@@ -4498,13 +4483,13 @@ _Matrix *_Matrix::Exponentiate(void) {
     max = 1.;
   }
 
-  _Matrix *result = new _Matrix(hDim, vDim, !storageType, storageType),
+  _Matrix *result = new _Matrix(hDim, vDim, storageType == _HY_MATRIX_POLYNOMIAL_TYPE, storageType == _HY_MATRIX_NUMERICAL_TYPE),
           temp(*this);
 
   checkPointer(result);
 
   // put ones on the diagonal
-  if (storageType) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     for (i = 0; i < result->lDim; i += vDim + 1) {
       result->theData[i] = 1.0;
     }
@@ -4524,8 +4509,8 @@ _Matrix *_Matrix::Exponentiate(void) {
 
   i = 2;
 
-  if (precisionArg || !storageType) {
-    if (storageType)
+  if (precisionArg || storageType != _HY_MATRIX_NUMERICAL_TYPE) {
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE)
       for (; i <= precisionArg; i++) {
         temp *= (*this);
         temp *= 1.0 / i;
@@ -4555,7 +4540,7 @@ _Matrix *_Matrix::Exponentiate(void) {
 
     i = 2;
 
-    _Matrix tempS(hDim, vDim, false, temp.storageType);
+    _Matrix tempS(hDim, vDim, false, temp.storageType == _HY_MATRIX_NUMERICAL_TYPE);
     do {
       temp.MultbyS(*this, theIndex != nil, &tempS, stash);
       temp *= 1.0 / i;
@@ -4677,7 +4662,7 @@ _Parameter _Matrix::operator()(long i, long j) {
 _Matrix *_Matrix::ExtractElementsByEnumeration(_SimpleList *h, _SimpleList *v,
                                                bool column) {
 
-  if (storageType && h->lLength == v->lLength && h->lLength > 0) {
+  if (storageType != _HY_MATRIX_POLYNOMIAL_TYPE && h->lLength == v->lLength && h->lLength > 0) {
 
     _Matrix *result = new _Matrix(column ? h->lLength : 1,
                                   column ? 1 : h->lLength, false, true);
@@ -4685,7 +4670,7 @@ _Matrix *_Matrix::ExtractElementsByEnumeration(_SimpleList *h, _SimpleList *v,
     checkPointer(result);
 
     // formulae
-    if (storageType == 2) 
+    if (storageType == _HY_MATRIX_FORMULA_TYPE)
       for (long k = 0; k < h->lLength; k++) {
         result->StoreFormula(column ? k : 0, column ? 0 : k, *GetFormula(h->lData[k], v->lData[k]));
       }
@@ -4714,7 +4699,7 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
   if (p->ObjectClass() == MATRIX) {
     if (p2 == nil) {
       _Matrix *nn = (_Matrix *)p;
-      if (nn->storageType == 1)
+      if (nn->storageType == _HY_MATRIX_NUMERICAL_TYPE)
         if (nn->hDim == hDim && nn->vDim == vDim) {
           _SimpleList hL, vL;
 
@@ -4785,8 +4770,8 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
         _Matrix *nn = (_Matrix *)((_Matrix *)p)->ComputeNumeric();
         _Matrix *nn2 = (_Matrix *)((_Matrix *)p2)->ComputeNumeric();
 
-        if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == 1 &&
-            nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == 1) {
+        if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == _HY_MATRIX_NUMERICAL_TYPE &&
+            nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == _HY_MATRIX_NUMERICAL_TYPE) {
 
           long left = (*nn)(0, 0), top = (*nn)(0, 1), bottom = (*nn2)(0, 1),
                right = (*nn2)(0, 0);
@@ -5020,7 +5005,7 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
 
   if (ind2 >= 0) {          
     // element access
-    if (storageType == 2) { 
+    if (storageType == _HY_MATRIX_FORMULA_TYPE) {
       // formulas
       if (!theIndex) {
         _Formula *entryFla = (((_Formula **)theData)[ind1 * vDim + ind2]);
@@ -5039,7 +5024,7 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
         }
       }
     } else {
-      if (storageType == 1) {
+      if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
         if (theIndex) {
           return new _Constant((*this)(ind1, ind2));
         } else {
@@ -5092,7 +5077,7 @@ _Formula *_Matrix::GetFormula(long ind1, long ind2) {
   }
 
   if (ind2 >= 0) {          // element access
-    if (storageType == 2) { // formulas
+    if (storageType == _HY_MATRIX_FORMULA_TYPE) { // formulas
       if (!theIndex) {
         return (((_Formula **)theData)[ind1 * vDim + ind2]);
       } else {
@@ -5202,7 +5187,7 @@ bool _Matrix::CheckCoordinates(long &ind1, long &ind2) {
 //______________________________________________________________________________
 void _Matrix::MStore(long ind1, long ind2, _Formula &f, long opCode) {
   if (ind2 >= 0) {          // element storage
-    if (storageType == 2) { // formulas
+    if (storageType == _HY_MATRIX_FORMULA_TYPE) { // formulas
       if (opCode == HY_OP_CODE_ADD) {
         _Formula *addOn = GetFormula(ind1, ind2);
         if (addOn) {
@@ -5249,7 +5234,7 @@ void _Matrix::MStore(_PMathObj p, _PMathObj p2, _PMathObj poly) {
 //______________________________________________________________________________
 void _Matrix::MStore(long ind1, long ind2, _PMathObj poly) {
   if (ind2 >= 0) {          // element storage
-    if (storageType == 0) { // formulas
+    if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) { // formulas
       StoreObject(ind1, ind2, poly, true);
       if (AUTO_PAD_DIAGONAL) {
         UpdateDiag(ind1, ind2, poly);
@@ -5258,7 +5243,7 @@ void _Matrix::MStore(long ind1, long ind2, _PMathObj poly) {
       _Polynomial *pp = (_Polynomial *)poly;
       poly = pp->IsANumber();
       if (!poly) { // just a number
-        storageType == 1 ? ConvertNumbers2Poly() : ConvertFormulas2Poly();
+        storageType == _HY_MATRIX_NUMERICAL_TYPE ? ConvertNumbers2Poly() : ConvertFormulas2Poly();
         StoreObject(ind1, ind2, pp, true);
       } else {
         (*this)[Hash(ind1, ind2)] = poly->Value();
@@ -5284,7 +5269,7 @@ _Parameter &_Matrix::operator[](long i) {
 
 //______________________________________________________________________________
 void _Matrix::Store(long i, long j, _Parameter value) {
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     return;
   }
 
@@ -5313,7 +5298,7 @@ void _Matrix::Store(long i, long j, _Parameter value) {
 //______________________________________________________________________________
 void _Matrix::StoreObject(long i, long j, _MathObject *value, bool dup) {
 
-  if (storageType) {
+  if (storageType != _HY_MATRIX_POLYNOMIAL_TYPE) {
     return;
   }
 
@@ -5368,7 +5353,7 @@ void _Matrix::StoreObject(long k, _MathObject *value, bool dup) {
 void _Matrix::StoreFormula(long i, long j, _Formula &f, bool copyF,
                            bool simplify) {
 
-  if (storageType != 2) {
+  if (storageType != _HY_MATRIX_FORMULA_TYPE) {
     return;
   }
 
@@ -5420,196 +5405,6 @@ void _Matrix::Swap(_Matrix &m) {
   SWAP(cmd, m.cmd, tCmd);
 }
 
-//______________________________________________________________________________
-/*_Matrix       IterateStrassen (_Matrix& source1, _Matrix& source2)
-// square the matrix
-{
-
-    if ((source1.storageType!=1)||(source2.storageType!=1)) warnError (-111);
-    long iterationDim = source1.hDim, i;
-
-    if (iterationDim>2)
-    {
-        // create four quadrants of each matrix and temporary storage
-        _Matrix a11 (iterationDim/2, iterationDim/2, (bool)false, true),
-                a12 (iterationDim/2, iterationDim/2, (bool)false, true),
-                a21 (iterationDim/2, iterationDim/2, (bool)false, true),
-                a22 (iterationDim/2, iterationDim/2, (bool)false, true),
-                b11 (iterationDim/2, iterationDim/2, (bool)false, true),
-                b12 (iterationDim/2, iterationDim/2, (bool)false, true),
-                b21 (iterationDim/2, iterationDim/2, (bool)false, true),
-                b22 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s1 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s2 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s3 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s4 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s5 (iterationDim/2, iterationDim/2, (bool)false, true),
-                s6 (iterationDim/2, iterationDim/2, (bool)false, true),
-                t1 (iterationDim/2, iterationDim/2, (bool)false, true),
-                t2 (iterationDim/2, iterationDim/2, (bool)false, true),
-                c11 (iterationDim/2, iterationDim/2, (bool)false, true),
-                c12 (iterationDim/2, iterationDim/2, (bool)false, true),
-                c21 (iterationDim/2, iterationDim/2, (bool)false, true),
-                c22 (iterationDim/2, iterationDim/2, (bool)false, true);
-
-        // copy data to quadrants
-
-        iterationDim/=2;
-        for (i=0;i<iterationDim;i++)
-        {
-            memcpy ((_Parameter*)a11.theData+i*iterationDim,
-(_Parameter*)source1.theData+i*source1.hDim, iterationDim*sizeof (_Parameter));
-            memcpy ((_Parameter*)a12.theData+i*iterationDim,
-(_Parameter*)source1.theData+i*source1.hDim+iterationDim, iterationDim*sizeof
-(_Parameter));
-            memcpy ((_Parameter*)a21.theData+i*iterationDim,
-(_Parameter*)source1.theData+(i+iterationDim)*source1.hDim, iterationDim*sizeof
-(_Parameter));
-            memcpy ((_Parameter*)a22.theData+i*iterationDim,
-(_Parameter*)source1.theData+(i+iterationDim)*source1.hDim+iterationDim,
-iterationDim*sizeof (_Parameter));
-            memcpy ((_Parameter*)b11.theData+i*iterationDim,
-(_Parameter*)source2.theData+i*source2.hDim, iterationDim*sizeof (_Parameter));
-            memcpy ((_Parameter*)b12.theData+i*iterationDim,
-(_Parameter*)source2.theData+i*source2.hDim+iterationDim, iterationDim*sizeof
-(_Parameter));
-            memcpy ((_Parameter*)b21.theData+i*iterationDim,
-(_Parameter*)source2.theData+(i+iterationDim)*source2.hDim, iterationDim*sizeof
-(_Parameter));
-            memcpy ((_Parameter*)b22.theData+i*iterationDim,
-(_Parameter*)source2.theData+(i+iterationDim)*source2.hDim+iterationDim,
-iterationDim*sizeof (_Parameter));
-        }
-
-        // compute strassen blocks
-
-        t1=a12;
-        t1-=a22;
-        t2=b21;
-        t2+=b22;
-        s1=IterateStrassen (t1,t2);
-
-        t1=a11;
-        t1+=a22;
-        t2=b11;
-        t2+=b22;
-        s2=IterateStrassen (t1,t2);
-
-        t1=a11;
-        t1-=a21;
-        t2=b11;
-        t2+=b12;
-        s3=IterateStrassen (t1,t2);
-
-        t1=a11;
-        t1+=a12;
-        s4=IterateStrassen (t1,b22);
-
-        t1=b12;
-        t1-=b22;
-        s5=IterateStrassen (a11,t1);
-
-        t1=b21;
-        t1-=b11;
-        s6=IterateStrassen (a22,t1);
-
-        c11 = s1;
-        c11 += s2;
-        c11 -= s4;
-        c11 += s6;
-
-        c12 = s4;
-        c12 += s5;
-
-        t1=a21;
-        t1+=a22;
-        s1=IterateStrassen (t1,b11);
-
-        c21 = s6;
-        c21 += s1;
-
-        c22 = s2;
-        c22 -= s3;
-        c22 += s5;
-        c22 -= s1;
-
-        _Matrix result (source1.hDim, source1.hDim, (bool)false, true);
-
-        // copy the results from four resultant quadrants c11..c22
-
-
-        for (i=0;i<iterationDim;i++)
-        {
-            memcpy
-((_Parameter*)result.theData+i*source1.hDim,(_Parameter*)c11.theData+i*iterationDim,
-iterationDim*sizeof (_Parameter));
-            memcpy
-((_Parameter*)result.theData+i*source1.hDim+iterationDim,(_Parameter*)c12.theData+i*iterationDim,
-iterationDim*sizeof (_Parameter));
-            memcpy
-((_Parameter*)result.theData+(i+iterationDim)*source1.hDim,(_Parameter*)c21.theData+i*iterationDim,
-iterationDim*sizeof (_Parameter));
-            memcpy
-((_Parameter*)result.theData+(i+iterationDim)*source1.hDim+iterationDim,(_Parameter*)c22.theData+i*iterationDim,
-iterationDim*sizeof (_Parameter));
-        }
-
-        return result;
-    }
-    else
-        return source1*source2;
-}
-
-
-//______________________________________________________________________________
-void        _Matrix::SqrStrassen (void)
-// square the matrix
-// the matrix is assumed to be a non-pointer matrix
-{
-    if (hDim!=vDim) return;
-    // a non-square matrix
-
-    if (theIndex)
-    // sparse matrix - multiply directly at better speed
-    {
-        _Matrix temp (hDim, vDim, (bool)false, true);
-        Multiply (temp, *this);
-        Swap(temp);
-    }
-    else
-    {
-        // pad the matrix with zeros to make the dimension a power of two;
-        long newDim = 2,i;
-        while (newDim<hDim) newDim*=2;
-
-
-        // copies the entries of the original to the padded matrix
-
-        if (newDim != hDim)
-        {
-            _Matrix paddedMatrix (newDim, newDim, (bool)false, true);
-            for (i=0; i<hDim; i++)
-                memcpy ((_Parameter*)paddedMatrix.theData+i*newDim,
-(_Parameter*)theData+i*hDim, hDim*sizeof (_Parameter));
-
-            // call Strassen iteration function
-
-
-            paddedMatrix .Swap( IterateStrassen (paddedMatrix,paddedMatrix));
-
-            // strip unneeded elements and copy them back into the original;
-
-            for (i=0; i<hDim; i++)
-                memcpy
-((_Parameter*)theData+i*hDim,(_Parameter*)paddedMatrix.theData+i*newDim,
-hDim*sizeof (_Parameter));
-        }
-        else
-            Swap( IterateStrassen (*this,*this));
-
-    }
-}
-*/
 
 //______________________________________________________________________________
 void _Matrix::AplusBx(_Matrix &B, _Parameter x) {
@@ -5627,10 +5422,10 @@ void _Matrix::Sqr(_Parameter *_hprestrict_ stash) {
   }
 
   // not a square matrix
-  if (theIndex || storageType != 1) {
+  if (theIndex || storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     // sparse or non-numeric matrix
-    _Matrix temp(hDim, vDim, storageType == 0 ? theIndex != nil : false,
-                 storageType);
+    _Matrix temp(hDim, vDim, storageType == _HY_MATRIX_POLYNOMIAL_TYPE ? theIndex != nil : false,
+                 storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
     Multiply(temp, *this);
     Swap(temp);
   } else {
@@ -5788,14 +5583,14 @@ void _Matrix::Sqr(_Parameter *_hprestrict_ stash) {
 
 //______________________________________________________________________________
 void _Matrix::AgreeObjects(_Matrix &m) {
-  if (storageType == 2)
+  if (storageType == _HY_MATRIX_FORMULA_TYPE)
     if (toPolyOrNot != 0.0) {
       ConvertFormulas2Poly();
     } else {
       Evaluate(true);
     }
 
-  if (m.storageType == 2)
+  if (m.storageType == _HY_MATRIX_FORMULA_TYPE)
     if (toPolyOrNot != 0.0) {
       m.ConvertFormulas2Poly();
     } else {
@@ -5804,13 +5599,13 @@ void _Matrix::AgreeObjects(_Matrix &m) {
 
   if (storageType != m.storageType) {
     if (toPolyOrNot) {
-      if (storageType == 1) {
+      if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
         ConvertNumbers2Poly();
       } else {
         m.ConvertNumbers2Poly();
       }
     } else {
-      if (storageType == 1) {
+      if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
         m.Evaluate(true);
       } else {
         Evaluate();
@@ -5908,7 +5703,7 @@ void _Matrix::ConvertFormulas2Poly(bool force2numbers) {
     ClearFormulae();
     MatrixMemFree(theData);
     theData = (_Parameter *)tempStorage;
-    storageType = 0;
+    storageType = _HY_MATRIX_POLYNOMIAL_TYPE;
     if (!theIndex) {
       _Polynomial zero;
       for (i = 0; i < lDim; i++)
@@ -5947,7 +5742,7 @@ void _Matrix::ConvertNumbers2Poly(void) {
   }
   MatrixMemFree(theData);
   theData = (_Parameter *)tempStorage;
-  storageType = 0;
+  storageType = _HY_MATRIX_POLYNOMIAL_TYPE;
 }
 
 //______________________________________________________________________________
@@ -6087,7 +5882,7 @@ void _Matrix::RecursiveIndexSort(long from, long to, _SimpleList *index) {
 //______________________________________________________________________________
 _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     WarnError("Only numeric matrices can be sorted");
     return new _MathObject();
   }
@@ -6181,7 +5976,7 @@ _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
 //______________________________________________________________________________
 _PMathObj _Matrix::PoissonLL(_PMathObj mp) {
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     _String errMsg(
         "Only numeric matrices can be passed to Poisson Log-Likelihood");
 
@@ -6251,7 +6046,7 @@ _PMathObj _Matrix::PathLogLikelihood(_PMathObj mp) {
 
   _String errMsg;
 
-  if (storageType != 1 || hDim != 3) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE || hDim != 3) {
     errMsg = ("First argument in call to < (PathLogLikelihood) must be a "
               "numeric 3xN matrix");
   } else {
@@ -6315,7 +6110,7 @@ _PMathObj _Matrix::pFDR(_PMathObj classes) {
     CheckIfSparseEnough(true);
   }
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     errMsg = "Only numeric matrices can be passed to && (pFDR)";
   } else {
     if ((GetVDim() != 1 && GetHDim() != 1) || GetVDim() * GetHDim() < 1) {
@@ -6447,7 +6242,7 @@ _PMathObj _Matrix::Random(_PMathObj kind) {
       remapped.Permute(1);
     }
 
-    if (storageType == 1) { // numeric matrix
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE) { // numeric matrix
       _Matrix *res = new _Matrix(GetHDim(), GetVDim(), theIndex, true);
       checkPointer(res);
 
@@ -6467,7 +6262,7 @@ _PMathObj _Matrix::Random(_PMathObj kind) {
       }
       return res;
     } else { // formula matrix
-      if (storageType == 2) {
+      if (storageType == _HY_MATRIX_FORMULA_TYPE) {
         _Matrix *res = new _Matrix(GetHDim(), GetVDim(), theIndex, false);
         checkPointer(res);
 
@@ -6567,7 +6362,7 @@ _PMathObj _Matrix::K_Means(_PMathObj classes) {
     CheckIfSparseEnough(true);
   }
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     errMsg = "Only numeric matrices can be passed to <= (K-means)";
   } else {
     if (GetVDim() != 2) {
@@ -6777,7 +6572,7 @@ _PMathObj _Matrix::ProfileMeanFit(_PMathObj classes) {
     CheckIfSparseEnough(true);
   }
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     errMsg = "Only numeric matrices can be passed to <= (K-means)";
   } else {
     if (GetHDim() != 2) {
@@ -6912,7 +6707,7 @@ _PMathObj _Matrix::ProfileMeanFit(_PMathObj classes) {
 
 //______________________________________________________________________________
 void _Matrix::PopulateConstantMatrix(const _Parameter v) {
-  if (storageType == 1)
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE)
     for (long r = 0; r < lDim; r++) {
       theData[r] = v;
     }
@@ -6930,7 +6725,7 @@ _PMathObj _Matrix::AddObj(_PMathObj mp) {
     }
     if (mp->ObjectClass() == NUMBER) {
       _Matrix *aNum = (_Matrix *)ComputeNumeric();
-      if (aNum->storageType == 1) {
+      if (aNum->storageType == _HY_MATRIX_NUMERICAL_TYPE) {
         _Matrix *plusStuff = new _Matrix(hDim, vDim, false, true);
         checkPointer(plusStuff);
         _Parameter plusValue = mp->Value();
@@ -6962,7 +6757,7 @@ _PMathObj _Matrix::AddObj(_PMathObj mp) {
   _Matrix *m = (_Matrix *)mp;
   AgreeObjects(*m);
   _Matrix *result = new _Matrix(
-      hDim, vDim, bool((theIndex != nil) && (m->theIndex != nil)), storageType);
+      hDim, vDim, bool((theIndex != nil) && (m->theIndex != nil)), storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   if (!result) {
     checkPointer(result);
   }
@@ -6981,7 +6776,7 @@ void _Matrix::operator-=(_Matrix &m) {
 
 //______________________________________________________________________________
 void _Matrix::NonZeroEntries(_SimpleList &target) {
-  if (theIndex && storageType == 1) {
+  if (theIndex && storageType == _HY_MATRIX_NUMERICAL_TYPE) {
     target.Clear();
     target.RequestSpace(lDim);
     for (long elementID = 0; elementID < lDim; elementID++) {
@@ -7002,7 +6797,7 @@ bool _Matrix::Equal(_PMathObj mp) {
 
   _Matrix *m = (_Matrix *)mp;
 
-  if (m->storageType == storageType && storageType == 1 &&
+  if (m->storageType == storageType && storageType == _HY_MATRIX_NUMERICAL_TYPE &&
       (bool) m->theIndex == (bool)
           theIndex && m->hDim == hDim && m->vDim == vDim) {
     if (theIndex) {
@@ -7042,7 +6837,7 @@ _PMathObj _Matrix::SubObj(_PMathObj mp) {
   _Matrix *m = (_Matrix *)mp;
   AgreeObjects(*m);
   _Matrix *result =
-      new _Matrix(hDim, vDim, bool(theIndex && m->theIndex), storageType);
+      new _Matrix(hDim, vDim, bool(theIndex && m->theIndex), storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   if (!result) {
     checkPointer(result);
   }
@@ -7064,7 +6859,7 @@ _Matrix _Matrix::operator*(_Parameter c) {
 void _Matrix::operator*=(_Matrix &m) {
   if (CheckDimensions(m)) {
     AgreeObjects(m);
-    _Matrix result(hDim, m.vDim, false, storageType);
+    _Matrix result(hDim, m.vDim, false, storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
     Multiply(result, m);
     //if ((theIndex!=nil)||(m.theIndex!=nil)) result.AmISparse();
     if (theIndex != nil && m.theIndex != nil) {
@@ -7079,7 +6874,7 @@ void _Matrix::MultbyS(_Matrix &m, bool leftMultiply, _Matrix *externalStorage, _
 
   _Matrix *result = nil;
   if (!externalStorage) {
-    result = new _Matrix(hDim, m.vDim, false, storageType);
+    result = new _Matrix(hDim, m.vDim, false, storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   }
 
   _Matrix *receptacle = (externalStorage ? externalStorage : result);
@@ -7128,7 +6923,7 @@ _PMathObj _Matrix::MultObj(_PMathObj mp) {
     return new _MathObject;
   AgreeObjects(*m);
 
-  _Matrix *result = new _Matrix(hDim, m->vDim, false, storageType);
+  _Matrix *result = new _Matrix(hDim, m->vDim, false, storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   checkPointer(result);
 
   Multiply(*result, *m);
@@ -7152,7 +6947,8 @@ _PMathObj _Matrix::MultElements(_PMathObj mp, bool elementWiseDivide) {
     return new _Matrix(1, 1);
   }
 
-  if ((storageType != 1) || (m->storageType != 1)) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE ||
+        m->storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     WarnError(
         "Element-wise multiplication/division only works on numeric matrices");
     return new _Matrix(1, 1);
@@ -7257,7 +7053,7 @@ _Matrix _Matrix::operator*(_Matrix &m) {
   }
 
   AgreeObjects(m);
-  _Matrix result(hDim, m.vDim, false, storageType);
+  _Matrix result(hDim, m.vDim, false, storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   Multiply(result, m);
   if ((theIndex != nil) || (m.theIndex != nil)) {
     result.AmISparse();
@@ -7270,7 +7066,7 @@ _Matrix _Matrix::operator*(_Matrix &m) {
 _Matrix _Matrix::operator+(_Matrix &m) {
   AgreeObjects(m);
   _Matrix result(hDim, vDim, bool((theIndex != nil) && (m.theIndex != nil)),
-                 storageType);
+                 storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   Add(result, m);
   return result;
 
@@ -7279,7 +7075,7 @@ _Matrix _Matrix::operator+(_Matrix &m) {
 //______________________________________________________________________________
 _Matrix _Matrix::operator-(_Matrix &m) {
   AgreeObjects(m);
-  _Matrix result(hDim, vDim, bool((theIndex != nil) && (m.theIndex != nil)), storageType);
+  _Matrix result(hDim, vDim, bool((theIndex != nil) && (m.theIndex != nil)), storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
   Subtract(result, m);
   return result;
 }
@@ -7293,8 +7089,8 @@ BaseRef _Matrix::toStr(void) {
 
   //if (vDim<500)
   {
-    if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-      bool printStrings = storageType != 1;
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE || (storageType == _HY_MATRIX_FORMULA_TYPE && IsAStringMatrix())) {
+      bool printStrings = storageType != _HY_MATRIX_NUMERICAL_TYPE;
 
       result << '{';
       result << '\n';
@@ -7341,7 +7137,7 @@ BaseRef _Matrix::toStr(void) {
       result << '}';
       result << '\n';
       result.Finalize();
-    } else if (storageType == 0) {
+    } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
       checkParameter(ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
       if (!ANALYTIC_COMPUTATION_FLAG) {
         return Compute()->toStr();
@@ -7383,16 +7179,16 @@ BaseRef _Matrix::toStr(void) {
 
 //______________________________________________________________________________
 void _Matrix::Serialize(_String &res, _String &myID) {
-  if (storageType) {
+  if (storageType != _HY_MATRIX_POLYNOMIAL_TYPE) {
     res << '\n';
     res << myID;
-    if (storageType == 1) {
+    if (storageType == _HY_MATRIX_NUMERICAL_TYPE) {
       _String *mStr = (_String *)toStr();
       res << '=';
       res << *mStr;
       res << ';';
       DeleteObject(mStr);
-    } else if (storageType == 2) {
+    } else if (storageType == _HY_MATRIX_FORMULA_TYPE) {
       _String mHeader = _String("={") & hDim & ',' & vDim & "};\n";
       res << mHeader;
       for (long h = 0; h < hDim; h++)
@@ -7417,8 +7213,8 @@ void _Matrix::Serialize(_String &res, _String &myID) {
 
 //______________________________________________________________________________
 void _Matrix::toFileStr(FILE *dest) {
-  if (storageType == 1 || (storageType == 2 && IsAStringMatrix())) {
-    bool printStrings = storageType != 1;
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE || (storageType == _HY_MATRIX_FORMULA_TYPE && IsAStringMatrix())) {
+    bool printStrings = storageType != _HY_MATRIX_NUMERICAL_TYPE;
     long digs = -1;
 
     if (!printStrings) {
@@ -7475,7 +7271,7 @@ void _Matrix::toFileStr(FILE *dest) {
       }
       fprintf(dest, "}\n");
     }
-  } else if (storageType == 0) {
+  } else if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE) {
     checkParameter(ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0);
     if (!ANALYTIC_COMPUTATION_FLAG) {
       Compute()->toFileStr(dest);
@@ -7498,7 +7294,7 @@ void _Matrix::toFileStr(FILE *dest) {
     }
   } else {
     _Matrix *eval =
-        (_Matrix *)(storageType == 3 ? EvaluateSimple() : Evaluate(false));
+        (_Matrix *)(storageType == _HY_MATRIX_FAST_EXECUTION_TYPE ? EvaluateSimple() : Evaluate(false));
     eval->toFileStr(dest);
     DeleteObject(eval);
   }
@@ -7659,7 +7455,7 @@ bool _Matrix::ImportMatrixExp(FILE *theSource) {
 void _Matrix::ExportMatrixExp(_Matrix *theBase, FILE *theDump) {
 
   // write out the preliminaries
-  if (storageType != 0) {
+  if (storageType != _HY_MATRIX_POLYNOMIAL_TYPE) {
     warnError(-200);
     return;
   }
@@ -7896,7 +7692,7 @@ void _Matrix::ExportMatrixExp(_Matrix *theBase, FILE *theDump) {
 //______________________________________________________________________________
 _Parameter _Matrix::ExpNumberOfSubs(_Matrix *freqs, bool mbf) {
 
-  if (storageType != 1 || freqs->storageType != 1 || hDim != vDim) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE || freqs->storageType != _HY_MATRIX_NUMERICAL_TYPE || hDim != vDim) {
     return 0.0;
   }
 
@@ -8003,7 +7799,7 @@ _Parameter _Matrix::ExpNumberOfSubs(_Matrix *freqs, bool mbf) {
 // the third  - a constant with the total sum
 _List *_Matrix::ComputeRowAndColSums(void) {
 
-  if ((storageType == 1) && (hDim >= 1) && (vDim >= 1)) {
+  if ((storageType == _HY_MATRIX_NUMERICAL_TYPE) && (hDim >= 1) && (vDim >= 1)) {
     _List *resList = new _List;
     _Matrix *rowSums = new _Matrix(hDim, 1, false, true),
             *columnSums = new _Matrix(vDim, 1, false, true);
@@ -8070,7 +7866,7 @@ _List *_Matrix::ComputeRowAndColSums(void) {
 _Matrix *_Matrix::NeighborJoin(bool methodIndex) {
   long specCount = GetHDim();
 
-  if (storageType != 1 || specCount != GetVDim() || specCount < 4) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE || specCount != GetVDim() || specCount < 4) {
     WarnError("NeigborJoin needs a square numeric matrix of dimension >= 4");
     return new _Matrix;
   }
@@ -8565,7 +8361,7 @@ _Matrix *_Matrix::SimplexSolve(_Parameter desiredPrecision) {
   long n = vDim - 2, // number of variables
       m = hDim - 1;  // number of constraints
 
-  if (storageType == 1 && n > 0 && m > 0) {
+  if (storageType == _HY_MATRIX_NUMERICAL_TYPE && n > 0 && m > 0) {
     // artificial construct used to break out on error
     while (1) {
       // an to avoid goto statements
@@ -8782,7 +8578,7 @@ _PMathObj _Matrix::DirichletDeviate(void) {
   _Parameter denom = 0.;
   _Matrix res(1, dim = GetHDim() * GetVDim(), false, true); // row vector
 
-  if (storageType != 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
   }
 
@@ -8830,7 +8626,7 @@ _PMathObj _Matrix::GaussianDeviate(_Matrix &cov) {
   //(_String *)(cov.toStr()));
 
   _String errMsg;
-  if (storageType != 1 || GetHDim() > 1) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE || GetHDim() > 1) {
     WarnError(
         _String("ERROR in _Matrix::GaussianDeviate(), expecting to be called "
                 "on numeric row vector matrix, current dimensions: ") &
@@ -8884,7 +8680,7 @@ _PMathObj _Matrix::MultinomialSample(_Constant *replicates) {
 
   if (samples < 1) {
     errMsg = "Expected a numerical (>=1) value for the number of replicates";
-  } else if (eval->storageType != 1 || GetVDim() != 2 || values < 2) {
+  } else if (eval->storageType != _HY_MATRIX_NUMERICAL_TYPE || GetVDim() != 2 || values < 2) {
     errMsg = "Expecting numerical Nx2 (with N>=1) matrix.";
   } else {
     _Constant one(1.);
@@ -9001,7 +8797,7 @@ _PMathObj _Matrix::InverseWishartDeviate(_Matrix &df) {
   _String errMsg;
   long n = GetHDim();
 
-  if (storageType != 1 || GetHDim() != GetVDim()) {
+  if (storageType != _HY_MATRIX_NUMERICAL_TYPE || GetHDim() != GetVDim()) {
     errMsg = "expecting numerical symmetric matrix.";
   } else if (df.MatrixType() != 1 || df.GetHDim() != n || df.GetVDim() > 1) {
     errMsg = "expecting numerical row vector for second argument (degrees of "
@@ -9061,7 +8857,7 @@ _PMathObj _Matrix::WishartDeviate(_Matrix &df, _Matrix &decomp) {
 
   if (decomp.GetHDim() == 0) { 
     // no second argument, perform Cholesky decomposition
-    if (storageType != 1 || GetHDim() != GetVDim()) {
+    if (storageType != _HY_MATRIX_NUMERICAL_TYPE || GetHDim() != GetVDim()) {
       WarnError(_String("ERROR in _Matrix::WishartDeviate(), expecting square "
                         "numeric matrix."));
       return new _Matrix(1, 1, false, true);

@@ -621,7 +621,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
     }
   } else {
 
-    if (myModelMatrix->MatrixType() != _POLYNOMIAL_TYPE) {
+    if (myModelMatrix->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
       _Matrix *temp = nil;
       if (isExplicitForm) {
         temp = (_Matrix *)myModelMatrix->makeDynamic();
@@ -701,7 +701,7 @@ _Matrix *_CalcNode::ComputeModelMatrix(bool) {
 
   _Matrix *modelMx = GetModelMatrix();
   if (modelMx && modelMx->ObjectClass() == MATRIX &&
-      modelMx->MatrixType() != _POLYNOMIAL_TYPE) {
+      modelMx->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
     return (_Matrix *)modelMx->ComputeNumeric();
   }
 

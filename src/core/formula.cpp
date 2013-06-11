@@ -1819,9 +1819,9 @@ _Operation *_Formula::GetIthTerm(long idx) {
 }
 
 //______________________________________________________________________________
-bool _Formula::IsAConstant(void) {
+bool _Formula::IsAConstant(bool deep) {
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->IsAVariable()) {
+    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->IsAVariable(deep)) {
       return false;
     }
   }

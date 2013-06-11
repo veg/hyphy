@@ -45,10 +45,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 #include "associativelist.h"
 #include "trie.h"
-
-#define _POLYNOMIAL_TYPE 0
-#define _NUMERICAL_TYPE 1
-#define _FORMULA_TYPE 2
+    
+#define _HY_MATRIX_POLYNOMIAL_TYPE     0L
+#define _HY_MATRIX_NUMERICAL_TYPE      1L
+#define _HY_MATRIX_FORMULA_TYPE        2L
+#define _HY_MATRIX_FAST_EXECUTION_TYPE 3L
 
 #define HY_MATRIX_COLUMN_VECTOR 1
 #define HY_MATRIX_ROW_VECTOR 2
@@ -480,6 +481,8 @@ protected:
 
 private:
 
+  void       updateMatrixValue     (void);
+  bool       isNonEmptyDenseSquare (void) const;
   _Parameter computePFDR(_Parameter, _Parameter);
   void InitMxVar(_SimpleList &, _Parameter);
   bool ProcessFormulas(long &, _SimpleList &, _SimpleList &, _SimpleList &,
