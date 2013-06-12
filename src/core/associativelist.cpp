@@ -92,6 +92,28 @@ bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
 }
 
 //______________________________________________________________________________
+_AssociativeList::_AssociativeList (_PMathObj definition): avl(&theData) {
+    _SimpleList* defs = (_SimpleList*) definition; 
+    
+    for (unsigned long i = 0L; i < defs->lLength; i+=2) {
+    
+        _Formula * key   = (_Formula*) defs->GetElement(i),
+                 * obj = (_Formula*) defs->GetElement(i+1);
+        
+        _PMathObj  key_value = key->Compute(), 
+                   obj_value = obj->Compute();
+                   
+         if (key_value && obj_value) {
+            _String string_key ((_String*)key_value->toStr());
+            MStore(string_key, obj_value, true);
+              
+         } else {
+           break;
+         }
+    }
+}
+
+//______________________________________________________________________________
 BaseRef _AssociativeList::toStr(void) {
   _String defName("_hyphyAssociativeArray");
   return Serialize(defName);

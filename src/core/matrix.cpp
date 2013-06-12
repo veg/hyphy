@@ -1448,6 +1448,11 @@ void CreateMatrix(_Matrix *theMatrix, long theHDim, long theVDim,
 
   theMatrix->theValue = nil;
   
+  if (isFla && allocateStorage) {
+    WarnError ("Internal error in CreateMatrix");
+    return;
+  }
+  
   if (isFla) {
     theMatrix->storageType = _HY_MATRIX_FORMULA_TYPE;
   } else {
@@ -1996,6 +2001,49 @@ void _Matrix::Convert2Formulas(void) {
 }
 
 //______________________________________________________________________________
+
+_Matrix::_Matrix (_PMathObj data, bool is_const) {
+  Initialize();
+  long n_rows = 0L,
+       n_cols = 0L;
+  
+  _SimpleList * values = (_SimpleList*) data;
+  _List * values_l = (_List*) values;  
+
+  if (is_const) {
+    n_rows = ((_PMathObj)values_l->Element (0))->Compute()->Value();
+    n_cols = ((_PMathObj)values_l->Element (1))->Compute()->Value();
+  } else {
+    n_rows = ((_Formula*)values->Element (0))->Compute()->Value();
+    n_cols = ((_Formula*)values->Element (1))->Compute()->Value();
+  }
+  
+  
+  
+  if (n_rows >= 0 && n_cols >= 0) {
+    CreateMatrix(this, n_rows, n_cols, true, is_const, !is_const);
+    for (unsigned long k = 2; k < values->lLength; k+=3) {
+      long r = is_const? ((_PMathObj)values_l->Element (k))->Compute()->Value():
+                         ((_Formula*)values->Element (k))->Compute()->Value(),
+           c = is_const? ((_PMathObj)values_l->Element (k+1))->Compute()->Value():
+                         ((_Formula*)values->Element (k+1))->Compute()->Value();
+
+          if (r < 0 || c < 0 || r >= n_rows || c >= n_cols) {
+            MatrixIndexError(r, c, n_rows, n_cols);
+            return;
+          }
+
+          
+      if (is_const) {
+        Store(r, c, ((_PMathObj)values_l->Element (k+2))->Compute()->Value());
+      } else {
+        StoreFormula(r, c, *((_Formula*)values->Element (k+2)),true);
+      }
+    }
+  }
+}
+
+//______________________________________________________________________________
 // takes two separate formats
 // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must
 // be explicitly specified
@@ -2251,7 +2299,7 @@ _Matrix::_Matrix(_SimpleList &sl, long colArg) {
     } else {
       CreateMatrix(this, 1, sl.lLength, false, true, false);
     }
-    for (long k = 0; k < sl.lLength; k++) {
+    for (unsigned long k = 0; k < sl.lLength; k++) {
       theData[k] = sl.lData[k];
     }
   } else {
@@ -2272,7 +2320,7 @@ _Matrix::_Matrix(_Parameter *inList, unsigned long rows,
 // list of strings
 _Matrix::_Matrix(_List &sl) {
   if (sl.lLength) {
-    CreateMatrix(this, 1, sl.lLength, false, true, false);
+    CreateMatrix(this, 1, sl.lLength, false, false, true);
     _Constant hi(0.), vi;
 
     for (unsigned long k = 0; k < sl.lLength; k++) {
@@ -5199,7 +5247,7 @@ void _Matrix::MStore(long ind1, long ind2, _Formula &f, long opCode) {
       }
       StoreFormula(ind1, ind2, f);
     } else {
-      if (!f.IsAConstant()) {
+      if (!f.IsAConstant(true)) {
         Convert2Formulas();
         StoreFormula(ind1, ind2, f);
       } else {
@@ -5888,7 +5936,7 @@ _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
   }
 
   if (theData == nil) {
-    return new _Matrix(0, 0);
+    return new _Matrix(0L, 0L);
   }
 
   _SimpleList sortOn;

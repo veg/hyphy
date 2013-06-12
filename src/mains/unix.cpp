@@ -658,8 +658,8 @@ int main (int argc, char* argv[])
 		coco_string_delete(fileName);
 		delete parser;
 		delete scanner;
-        //GlobalShutdown();
-        //return 0;
+    GlobalShutdown();
+    return 0;
 	}
     
 #endif

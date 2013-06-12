@@ -75,7 +75,12 @@ public:
 		_OPEN_PARENTHESIS=6,
 		_CLOSE_PARENTHESIS=7,
 		_EQUAL=8,
-		_ASSIGN=9
+		_ASSIGN=9,
+		_COMMA=10,
+		_CLOSE_BRACE=11,
+		_OPEN_BRACE=12,
+		_MULTIPLY=13,
+		_COLON=14
 	};
 	int maxT;
 
@@ -96,6 +101,8 @@ public:
 	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
 	void expression(_Formula& f, _FormulaParsingContext& fpc);
 	void dense_matrix(_Formula& f, _FormulaParsingContext& fpc);
+	void matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const);
+	void sparse_matrix(_Formula& f, _FormulaParsingContext& fpc);
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);
 	void lvalue(_Formula& f, _FormulaParsingContext& fpc);

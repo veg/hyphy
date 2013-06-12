@@ -71,9 +71,15 @@ void _parser2013_pushFunctionCall           (void * vp, _Formula& f, _FormulaPar
 // a blank entry in the list implies that the argument is positional
 // generally speaking, all positional arguments need to preceed all named arguments
 
-void _parser2013_matrix_checkRowLengths (void *vp, unsigned long & global_count, unsigned long& local_count);
+void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc, unsigned long & global_count, unsigned long& local_count);
 
-_Matrix*  _parser2013_createDenseMatrix (void* vp, _SimpleList* entries, 
+void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, _SimpleList&, _Formula*, _Formula*, _Formula*, bool & );
+
+void _parser2013_createSparseMatrix (void* vp, _Formula&, _FormulaParsingContext&, 
+          _Formula*, _Formula*, _SimpleList*, bool); 
+
+
+_Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _SimpleList* entries, 
       const unsigned long n_rows, const unsigned long n_cols, const bool is_const); 
 /*
 
@@ -85,16 +91,28 @@ _Matrix*  _parser2013_createDenseMatrix (void* vp, _SimpleList* entries,
   
 */
 
-void _parser2013_add_matrix_entry (_SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
+
+void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, 
+                                        _FormulaParsingContext& fpc, bool & is_const);
+                                        
+void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext& fpc, 
+                                  _SimpleList& dictionary_entries, bool is_const);
+                                        
+
+void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
 
 
 // grammar conflict resolvers
 
-bool    _parser2013_isFollowedByAnOpenParenthesis (void * p);
+bool    _parser2013_IdentFollowedByAnOpenParenthesis (void * p);
+bool    _parser2013_TwoOpenBraces                   (void * p);
 bool    _parser2013_isSimpleStatement             (void * p);
+bool    _parser2013_isFollowedByAnCommaOrClosingBrace (void *p);
+bool    _parser2013_StringAndColon (void *p);
 
 // Utility functions
 
-void    _parser2013_reportError                   (void * vp, const _String);
+void    _parser2013_reportError                   (void * vp, const _String, _FormulaParsingContext&);
+bool    _parser2013_errorFree                     (void * vp);
 
 #endif

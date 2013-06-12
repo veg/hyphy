@@ -1284,7 +1284,8 @@ _Variable *_Formula::Dereference(bool ignore_context,
 //______________________________________________________________________________
 // compute the value of the formula
 _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
-                            _List *additionalCacheArguments, _String *errMsg) {
+                            _List *additionalCacheArguments, _String *errMsg, 
+                            unsigned long result_type) {
   if (theFormula.lLength == 0) {
     theStack.theStack.Clear();
     theStack.Push(new _MathObject, false);
@@ -1389,7 +1390,11 @@ _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
     }
   }
 
-  return theStack.Pop(false);
+  _PMathObj r = theStack.Pop(false);
+  if (result_type == HY_ANY_OBJECT || (r->ObjectClass() & result_type) != 0) {
+    return r;
+  }
+  return nil;
 }
 
 //______________________________________________________________________________

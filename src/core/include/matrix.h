@@ -121,6 +121,25 @@ public:
   // if <= 0 - a row matrix is returned
 
   _Matrix(_List &); //make string matrix from a list
+  
+  _Matrix (_PMathObj, bool);
+  /* create a sparse matrix from a list of data objects 
+     is bool is false, then _PMathObj is a list of formulas
+     stored in a _SimpleList obj, of the following format:
+     
+     [0] -- number of rows (must be >=0)
+     [1] -- number of columns (must be >=0)
+      n>=0
+     [3*n+2] -- the row to store the n-th element in
+     [3*n+3] -- the column to store the n-th element in 
+     [3*n+4] -- the value/object to store as the n-th element
+     
+     if bool is true (the matrix is a constant), then the same format
+     holds, except the object is a _List and all the values are 
+     _Constants
+     
+  */
+  
 
   _Matrix(_Parameter *, unsigned long, unsigned long);
   /*

@@ -75,15 +75,24 @@
 #define _HY_OPERATION_DEFERRED_INLINE        0x0080L
 // this operation represents an ident__ call, where the value of ident at
 // the time of execute/deferral resolution is substituted as _HY_OPERATION_VALUE
-#define _HY_OPERATION_FAST_EXEC_VALUE        0x0100L
+
+#define _HY_OPERATION_SPARSE_MATRIX  0x0100L
+// this operation constructs a sparse matrix at run time
+// this for example, can handle matrices of variable dimensions
+// in the new check syntax now/execute later framework
+
+#define _HY_OPERATION_DICTIONARY      0x0200L
+// this operation constructs a dictionary at run time
+
+#define _HY_OPERATION_FAST_EXEC_VALUE        0x0400L
 // the analog of _HY_OPERATION_VALUE for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_VAR          0x0200L
+#define _HY_OPERATION_FAST_EXEC_VAR          0x0800L
 // the analog of _HY_OPERATION_VAR for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_VAR_OBJ      0x0400L
+#define _HY_OPERATION_FAST_EXEC_VAR_OBJ      0x1000L
 // the analog of _HY_OPERATION_VAR_OBJ for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_BUILTIN      0x0800L
+#define _HY_OPERATION_FAST_EXEC_BUILTIN      0x2000L
 // the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
-#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF  0x1000L
+#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF  0x4000L
 // the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
 // but using 'references' instead of 'values' to access arguments
 // used by matrix[]
@@ -136,6 +145,10 @@ _HY_OPERATION_DEFERRED_     |  _HY_OPERATION_INVALID_REFERENCE  | number of term
 FUNCTION_CALL               |                                   | the stack                         | 
 _HY_OPERATION_DEFERRED_     |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
 INLINE                      |                                   |                                   | 
+_HY_OPERATION_SPARSE_       |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | matrix spec object
+MATRIX                      |                                   |                                   | see _Matrix::_Matrix  (_PMathObj)
+_HY_OPERATION_DICTIONARY    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | matrix spec object
+                            |                                   |                                   | see ::_AssociativeArray (_PMathObj)
 _HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
 _VALUE                      |                                   |                                   | (must be a scalar)
 _HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
@@ -255,6 +268,7 @@ public:
   long GetReference  (void) const { return reference;}
   bool IsAssociativeOp (void) const;
   bool IsVolatileOp    (void) const;
+  bool HasSparseMatrixChanged (void) const;
 
   bool CanResultsBeCached(const _Operation *, bool exp_only = false) const;
   void ToggleVarRef    (bool);

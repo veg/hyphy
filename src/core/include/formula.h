@@ -70,7 +70,7 @@ public:
   virtual ~_Formula(void);
   _PMathObj Compute(long = 0, _VariableContainer * = nil,
                     _List *additionalCacheArguments = nil,
-                    _String *errMsg = nil);
+                    _String *errMsg = nil, long unsigned type = HY_ANY_OBJECT);
   // compute the value of the formula
   // 1st argument : execute from this instruction onwards
   // see the commend for ExecuteFormula for the second argument

@@ -48,6 +48,11 @@ class _AssociativeList : public _MathObject {
 
 public:
   _AssociativeList(void);
+  _AssociativeList(_PMathObj); 
+
+  /* construct an object from a list of key : value pairs 
+    supplied as formulas in the _SimpleList argument */
+
   virtual ~_AssociativeList(void) {}
 
   //SLKP 20090803

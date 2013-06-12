@@ -129,6 +129,12 @@ BaseRef _Operation::toStr(void) {
       (*res) << "call an HBL function (deferred)";
       (*res) << (_String*)payload;
       break;
+    case _HY_OPERATION_DICTIONARY:
+      (*res) << "Create a dictionary";
+       break;
+    case _HY_OPERATION_SPARSE_MATRIX:
+      (*res) << "Create a sparse matrix";
+       break;
   }
   
   res->Finalize();
@@ -144,6 +150,10 @@ _Operation::_Operation(_PMathObj theObj) {
 //______________________________________________________________________________
 _Operation::~_Operation(void) {
   if ((operationKind & _HY_OPERATION_FAST_EXEC) == 0L) {
+    if (operationKind == _HY_OPERATION_SPARSE_MATRIX ||
+       operationKind == _HY_OPERATION_DICTIONARY) {
+      ((_SimpleList*)payload)->ClearFormulasInList();
+    }
     DeleteObject(payload);
   }
 }
@@ -425,6 +435,15 @@ bool _Operation::Execute(_Stack &theScrap, _VariableContainer *nameSpace,
                     ->GetValue());
       
       return true;
+
+    case _HY_OPERATION_SPARSE_MATRIX:
+      theScrap.Push(new _Matrix (payload, false), false);
+      return true;
+
+    case _HY_OPERATION_DICTIONARY:
+      theScrap.Push(new _AssociativeList (payload), false);
+      return true;
+
     case _HY_OPERATION_BUILTIN:  
       return ExecuteBuiltIn (theScrap, nameSpace, errMsg);
     case _HY_OPERATION_FUNCTION_CALL:
@@ -532,8 +551,11 @@ bool _Operation::HasChanged(bool ignore_cats, const _SimpleList * variable_index
     case _HY_OPERATION_FAST_EXEC_BUILTIN:
     case _HY_OPERATION_FAST_EXEC_BUILTIN_REF:
       return IsVolatileOp();
-      
-  
+        
+    case _HY_OPERATION_SPARSE_MATRIX:
+    case _HY_OPERATION_DICTIONARY:
+      return HasSparseMatrixChanged ();
+
     case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
       return true;
       
@@ -553,6 +575,8 @@ bool _Operation::IsAVariable(bool deep) const{
       }
       return false;            
       
+    case _HY_OPERATION_SPARSE_MATRIX:
+    case _HY_OPERATION_DICTIONARY:
     case _HY_OPERATION_VAR:
     case _HY_OPERATION_REF:
     case _HY_OPERATION_VAR_OBJ:
@@ -606,6 +630,7 @@ bool _Operation::IsConstant(void) const {
     case _HY_OPERATION_NOOP:
       return true;
       
+      
   }
   return false;
 }
@@ -633,6 +658,8 @@ void _Operation::StackDepth(long &depth) const {
     case _HY_OPERATION_REF:
     case _HY_OPERATION_VAR_OBJ:
     case _HY_OPERATION_DEFERRED_INLINE:
+    case _HY_OPERATION_SPARSE_MATRIX:
+    case _HY_OPERATION_DICTIONARY:
       depth++;
       break;
       
@@ -859,6 +886,19 @@ bool _Operation::ExecutePolynomial(_Stack &theScrap,
 
 }
 
+//______________________________________________________________________________
+bool _Operation::HasSparseMatrixChanged(void) const {
+  if (operationKind == _HY_OPERATION_SPARSE_MATRIX
+     || operationKind == _HY_OPERATION_DICTIONARY) {
+    _SimpleList * listSpec = (_SimpleList *) payload;
+    for (unsigned long k = 0; k < listSpec->lLength; k++) {
+       if (((_Formula*)listSpec->Element(k))->HasChanged()) {
+        return true;
+       }
+    } 
+  }
+  return false;
+}
 //______________________________________________________________________________
 void _Operation::ToggleVarRef(bool on_off) {
   if (on_off) {

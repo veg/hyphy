@@ -36,6 +36,11 @@ TOKENS
   CLOSE_PARENTHESIS        = ')'.
   EQUAL                    = '='.
   ASSIGN                   = ":=".
+  COMMA                    = ','.
+  CLOSE_BRACE              = '}'.
+  OPEN_BRACE               = '{'.
+  MULTIPLY                 = '*'.
+  COLON                    = ':'.
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO CR LF
@@ -62,20 +67,69 @@ number <_Formula& f, _FormulaParsingContext& fpc>
 /*------------------------------------------------------------------------*/
 
 matrix_row  <_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const>
-= '{'  (. _Formula* f = new _Formula; unsigned long my_column_count = 0; .)
-    (expression <*f, fpc> | '*') (. _parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const); my_column_count++; .)
+= OPEN_BRACE  (. _Formula* f = new _Formula; unsigned long my_column_count = 0; .)
+    (
+        IF (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) MULTIPLY 
+        | expression <*f, fpc>  
+    ) (. _parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; .)
     {    
-        ',' (. f = new _Formula; .)
-        (expression <*f, fpc> | '*') (. _parser2013_add_matrix_entry (matrix_entries, f, fpc, is_const);  my_column_count++; .)
+        COMMA (. f = new _Formula; .)
+        (
+        IF (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) MULTIPLY 
+        | expression <*f, fpc>  
+        ) (. _parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; .)
     } 
-  '}' (. _parser2013_matrix_checkRowLengths (this, column_count, my_column_count); .)
+  CLOSE_BRACE (. _parser2013_matrix_checkRowLengths (this, fpc, column_count, my_column_count); .)
 .
 
 dense_matrix <_Formula& f, _FormulaParsingContext& fpc>
-= '{' (. _SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; .)
+= OPEN_BRACE (. _SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; .)
     matrix_row  <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .)
     {matrix_row <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .) }  
-  '}' (. _parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, &matrix_entries, n_rows, n_cols, is_const));  .)
+  CLOSE_BRACE (. _parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, fpc, &matrix_entries, n_rows, n_cols, is_const));  .)
+.
+
+/*------------------------------------------------------------------------*/
+
+matrix_element  <_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const> 
+= OPEN_BRACE (. _Formula * h = new _Formula, * v = new _Formula, * d = new _Formula; .)
+        expression <*h, fpc> 
+        COMMA 
+        expression <*v, fpc> 
+        COMMA
+        expression <*d, fpc> 
+   CLOSE_BRACE (. _parser2013_pushSparseElementEntry (this, fpc, matrix_definition, h, v, d, is_const); .)
+.
+   
+sparse_matrix <_Formula& f, _FormulaParsingContext& fpc>
+= OPEN_BRACE  (. bool is_matrix = false; _SimpleList* matrix_definition = new _SimpleList; 
+        _Formula * hd = new _Formula, *vd = new _Formula; bool is_const = true; .)
+    (
+        IF (_parser2013_StringAndColon (this)) (
+            [ (. _Formula *key = new _Formula, *value = new _Formula; .)
+                expression <*key, fpc> COLON  expression <*value, fpc> 
+                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)
+            ]
+            {
+                (. _Formula *key = new _Formula, *value = new _Formula; .)
+                COMMA expression <*key, fpc> COLON  expression <*value, fpc> 
+                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)            }
+        )
+        |
+        ( (. is_matrix = true; .)
+            expression <*hd, fpc> 
+            [ COMMA expression <*vd, fpc> ] 
+            {COMMA matrix_element <*matrix_definition, fpc, is_const>}
+        ) 
+    )  
+  CLOSE_BRACE 
+    (.  if (is_matrix) {
+            _parser2013_createSparseMatrix (this, f, fpc, hd, vd, matrix_definition, is_const);}
+        else {
+            _parser2013_createDictionary (this, f, fpc, *matrix_definition, is_const);
+            delete (hd); delete (vd);
+        }
+    .)
 .
 
 /*------------------------------------------------------------------------*/
@@ -99,9 +153,10 @@ primitive  <_Formula& f, _FormulaParsingContext& fpc>
 | DOUBLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
 | SINGLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
 | OPEN_PARENTHESIS expression <f, fpc> CLOSE_PARENTHESIS 
-| dense_matrix <f, fpc>
+| IF (_parser2013_TwoOpenBraces (this)) dense_matrix <f, fpc>
+| sparse_matrix <f, fpc>
 | NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
-| IF (_parser2013_isFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
+| IF (_parser2013_IdentFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
 | ident <f, fpc> 
 //| primitive <f, fpc> '[' expression <f,fpc> ']'
 .
