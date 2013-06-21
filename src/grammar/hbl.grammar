@@ -39,6 +39,8 @@ TOKENS
   COMMA                    = ','.
   CLOSE_BRACE              = '}'.
   OPEN_BRACE               = '{'.
+  CLOSE_BRACKET            = ']'.
+  OPEN_BRACKET             = '['.
   MULTIPLY                 = '*'.
   COLON                    = ':'.
 
@@ -113,7 +115,8 @@ sparse_matrix <_Formula& f, _FormulaParsingContext& fpc>
             {
                 (. _Formula *key = new _Formula, *value = new _Formula; .)
                 COMMA expression <*key, fpc> COLON  expression <*value, fpc> 
-                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)            }
+                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)            
+            }
         )
         |
         ( (. is_matrix = true; .)
@@ -209,7 +212,17 @@ multiplication_like <_Formula& f, _FormulaParsingContext& fpc>
 /*------------------------------------------------------------------------*/
 
 addition_like <_Formula& f, _FormulaParsingContext& fpc>
-= multiplication_like <f, fpc> (. long op_code; .)
+= (. long unary_code = HY_OP_CODE_NONE, op_code; .)
+  [ 
+    (
+    "+"  (. unary_code = HY_OP_CODE_ADD; .)
+    | "-" (. unary_code = HY_OP_CODE_SUB; .)
+    )
+  ]
+  multiplication_like <f, fpc> (. 
+    if (unary_code != HY_OP_CODE_NONE) {
+     _parser2013_pushOp (this, f, fpc, unary_code , 1); 
+    } .)
   {
   (
   "+"  (. op_code = HY_OP_CODE_ADD; .)

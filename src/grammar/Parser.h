@@ -79,8 +79,10 @@ public:
 		_COMMA=10,
 		_CLOSE_BRACE=11,
 		_OPEN_BRACE=12,
-		_MULTIPLY=13,
-		_COLON=14
+		_CLOSE_BRACKET=13,
+		_OPEN_BRACKET=14,
+		_MULTIPLY=15,
+		_COLON=16
 	};
 	int maxT;
 
