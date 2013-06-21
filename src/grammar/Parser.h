@@ -108,6 +108,7 @@ public:
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);
 	void lvalue(_Formula& f, _FormulaParsingContext& fpc);
+	void indexing_operation(_Formula& f, _FormulaParsingContext& fpc);
 	void reference_like(_Formula& f, _FormulaParsingContext& fpc);
 	void power_like(_Formula& f, _FormulaParsingContext& fpc);
 	void multiplication_like(_Formula& f, _FormulaParsingContext& fpc);

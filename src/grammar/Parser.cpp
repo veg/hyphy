@@ -177,10 +177,10 @@ void Parser::sparse_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 			if (la->kind == _COMMA) {
 				Get();
 				expression(*vd, fpc);
-			}
-			while (la->kind == _COMMA) {
-				Get();
-				matrix_element(*matrix_definition, fpc, is_const);
+				while (la->kind == _COMMA) {
+					Get();
+					matrix_element(*matrix_definition, fpc, is_const);
+				}
 			}
 		} else SynErr(36);
 		Expect(_CLOSE_BRACE);
@@ -239,7 +239,21 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 }
 
 void Parser::lvalue(_Formula& f, _FormulaParsingContext& fpc) {
-		ident(f, fpc);
+		indexing_operation(f, fpc);
+}
+
+void Parser::indexing_operation(_Formula& f, _FormulaParsingContext& fpc) {
+		primitive(f, fpc);
+		if (la->kind == _OPEN_BRACKET) {
+			Get();
+			expression(f, fpc);
+			Expect(_CLOSE_BRACKET);
+			if (la->kind == _OPEN_BRACKET) {
+				Get();
+				expression(f, fpc);
+				Expect(_CLOSE_BRACKET);
+			}
+		}
 }
 
 void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
@@ -253,7 +267,7 @@ void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 				op_code = HY_OP_CODE_POWER; 
 			}
 		}
-		primitive(f, fpc);
+		indexing_operation(f, fpc);
 		if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); 
 }
 
@@ -383,7 +397,7 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 			expression(f, fpc);
 			Expect(31 /* ";" */);
 			_String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); 
-		} else if (la->kind == _IDENTIFIER) {
+		} else if (StartOf(5)) {
 			_Formula f, f2; _FormulaParsingContext fpc;
 			lvalue(f2, fpc);
 			if (la->kind == _EQUAL) {
@@ -542,12 +556,13 @@ bool Parser::StartOf(int s) {
 	const bool T = true;
 	const bool x = false;
 
-	static bool set[5][34] = {
+	static bool set[6][34] = {
 		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,T,x,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x},
 		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,T,x,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x},
 		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,T,x,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x}
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x}
 	};
 
 

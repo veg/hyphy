@@ -121,8 +121,9 @@ sparse_matrix <_Formula& f, _FormulaParsingContext& fpc>
         |
         ( (. is_matrix = true; .)
             expression <*hd, fpc> 
-            [ COMMA expression <*vd, fpc> ] 
+            [ COMMA expression <*vd, fpc> 
             {COMMA matrix_element <*matrix_definition, fpc, is_const>}
+            ]
         ) 
     )  
   CLOSE_BRACE 
@@ -167,18 +168,32 @@ primitive  <_Formula& f, _FormulaParsingContext& fpc>
 /*------------------------------------------------------------------------*/
 
 lvalue <_Formula& f, _FormulaParsingContext& fpc>
-= ident <f, fpc>
+= indexing_operation <f, fpc> 
 .
 
 /*------------------------------------------------------------------------*/
 
+
+indexing_operation <_Formula& f, _FormulaParsingContext& fpc> 
+= primitive <f, fpc> 
+  [
+  OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET
+  [
+    OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET
+  ]
+  ]
+.
+
+  
+/*------------------------------------------------------------------------*/
+
 reference_like <_Formula& f, _FormulaParsingContext& fpc>
 = (. long op_code = HY_OP_CODE_NONE; .)
-  [
-    "*"  (. op_code = HY_OP_CODE_MUL; .)
+  [ 
+    MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
   | "^"  (. op_code = HY_OP_CODE_POWER; .)
   ]
-  primitive <f, fpc> 
+  indexing_operation <f, fpc> 
   (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
   .
   
@@ -199,7 +214,7 @@ multiplication_like <_Formula& f, _FormulaParsingContext& fpc>
 = power_like <f, fpc> (. long op_code; .)
   {
   (
-  "*"  (. op_code = HY_OP_CODE_MUL; .)
+  MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
   | "/" (. op_code = HY_OP_CODE_DIV; .)
   | "$" (. op_code = HY_OP_CODE_IDIV; .)
   | "%" (. op_code = HY_OP_CODE_MOD; .)
