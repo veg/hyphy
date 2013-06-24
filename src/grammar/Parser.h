@@ -82,7 +82,12 @@ public:
 		_CLOSE_BRACKET=13,
 		_OPEN_BRACKET=14,
 		_MULTIPLY=15,
-		_COLON=16
+		_COLON=16,
+		_SEMICOLON=17,
+		_PLUS_EQUAL=18,
+		_MINUS_EQUAL=19,
+		_TIMES_EQUAL=20,
+		_DIV_EQUAL=21
 	};
 	int maxT;
 
@@ -107,7 +112,6 @@ public:
 	void sparse_matrix(_Formula& f, _FormulaParsingContext& fpc);
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);
-	void lvalue(_Formula& f, _FormulaParsingContext& fpc);
 	void indexing_operation(_Formula& f, _FormulaParsingContext& fpc);
 	void reference_like(_Formula& f, _FormulaParsingContext& fpc);
 	void power_like(_Formula& f, _FormulaParsingContext& fpc);
@@ -116,6 +120,7 @@ public:
 	void logical_comp(_Formula& f, _FormulaParsingContext& fpc);
 	void logical_and(_Formula& f, _FormulaParsingContext& fpc);
 	void logical_or(_Formula& f, _FormulaParsingContext& fpc);
+	void assignment_op(_Formula& f, _FormulaParsingContext& fpc);
 	void statement(_ExecutionList &current_code_stream);
 	void block(_ExecutionList &current_code_stream);
 	void hyphy_batch_language();

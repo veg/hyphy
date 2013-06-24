@@ -73,6 +73,8 @@ void _parser2013_pushFunctionCall           (void * vp, _Formula& f, _FormulaPar
 
 void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc, unsigned long & global_count, unsigned long& local_count);
 
+long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc);
+
 void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, _SimpleList&, _Formula*, _Formula*, _Formula*, bool & );
 
 void _parser2013_createSparseMatrix (void* vp, _Formula&, _FormulaParsingContext&, 
@@ -90,6 +92,10 @@ _Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, 
   
   
 */
+
+void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs, 
+                                        _FormulaParsingContext& fpc, long assignment_type,
+                                        long op_code, long lvalue_index);
 
 
 void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, 

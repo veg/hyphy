@@ -204,6 +204,10 @@ void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc,
     }
 }
 
+long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc) {
+  if (_parser2013_errorFree(vp) == false) return HY_NOT_FOUND;
+  return f.LValueIndex ();
+}
 
 void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
   if (_parser2013_errorFree(vp) == false) return;
@@ -213,6 +217,24 @@ void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formu
   }
   matrix_entries << (long)f;
 }
+
+void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs, 
+                                        _FormulaParsingContext& fpc, long assignment_type,
+                                        long op_code, long lvalue_index) {
+  if (_parser2013_errorFree(vp) == false) return;
+  if (lvalue_index == HY_NOT_FOUND) {
+    _parser2013_reportError(vp, _String ("Invalid LHS in assignment"), fpc);
+  } else {
+    if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE) {
+      lhs.PrepareLHS (lvalue_index);
+      lhs.GetList() << rhs.GetList(); 
+      lhs.Push (new _Operation (_HY_OPERATION_ASSIGNMENT_VALUE, _HY_OPERATION_INVALID_REFERENCE, op_code, NULL));
+      //printf ("\n%s\n", _String ((_String*)lhs.GetList().toStr()).sData);
+    }
+  }
+                                                                      
+}
+
 
 void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, _FormulaParsingContext& fpc, bool & is_const) {
 

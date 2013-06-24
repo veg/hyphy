@@ -92,7 +92,7 @@ void _Operation::Duplicate(BaseRef r) {
 BaseRef _Operation::toStr(void) {
   _String * res = new _String (128L, true);
   
-  (*res) << "An operation object: ";
+  (*res) << "<_Operation: ";
   switch (operationKind) {
     case _HY_OPERATION_NOOP:
       (*res) << "no-op";
@@ -102,11 +102,19 @@ BaseRef _Operation::toStr(void) {
       res->AppendNewInstance((_String*)payload->toStr());
       break;
     case _HY_OPERATION_VAR:
-      (*res) << "push computed value of variable ";
+      if (attribute == _HY_OPERATION_TOGGLE) {
+        (*res) << "push the index of variable ";      
+      } else {
+        (*res) << "push computed value of variable ";
+      }
       (*res) << *LocateVar(reference)->GetName();
       break;
     case _HY_OPERATION_VAR_OBJ:
-      (*res) << "push object value of variable ";
+      if (attribute == _HY_OPERATION_TOGGLE) {
+        (*res) << "push the index of variable ";      
+      } else {
+        (*res) << "push object value of variable ";
+      }
       (*res) << *LocateVar(reference)->GetName();
       break;
     case _HY_OPERATION_DEFERRED_INLINE:
@@ -120,6 +128,9 @@ BaseRef _Operation::toStr(void) {
     case _HY_OPERATION_BUILTIN:
       (*res) << "execute a built-in operation ";
       (*res) << GetCode();
+      (*res) << " (consume ";
+      (*res) << _String(attribute);
+      (*res) << " values off the stack)";
       break;
     case _HY_OPERATION_FUNCTION_CALL:
       (*res) << "call an HBL function ";
@@ -135,8 +146,11 @@ BaseRef _Operation::toStr(void) {
     case _HY_OPERATION_SPARSE_MATRIX:
       (*res) << "Create a sparse matrix";
        break;
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
+      (*res) << "LHS = RHS";
+       break;
   }
-  
+  (*res) << ">";
   res->Finalize();
   return res;
   
@@ -258,6 +272,45 @@ bool _Operation::ExecuteBuiltIn (_Stack& theScrap, _VariableContainer *nameSpace
   
   return false;  
   
+}
+
+//______________________________________________________________________________
+
+void  _Operation::PrepareLHS(void) {
+  switch (operationKind) {
+    case _HY_OPERATION_VAR:
+    case _HY_OPERATION_VAR_OBJ:
+      attribute = _HY_OPERATION_TOGGLE;
+      break;
+  }
+}
+
+//______________________________________________________________________________
+
+bool _Operation::ExecuteAssignment (_Stack& theScrap, _VariableContainer *nameSpace,
+                                      _String *errMsg) {
+  
+  if (operationKind == _HY_OPERATION_ASSIGNMENT_VALUE) {
+      _PMathObj rhs = theScrap.Pop(),
+                lhs = theScrap.Pop();
+                
+      _Variable *lhs_var = LocateVar((long)lhs->Compute()->Value()); 
+      if (attribute != HY_OP_CODE_NONE) {
+         _PMathObj op_result = lhs_var->Compute()->Execute(attribute, rhs);
+         if (!op_result) {
+            return false;
+         }
+         DeleteObject (rhs);
+         rhs = op_result;
+      }
+      
+      lhs_var -> SetValue (rhs, false);
+      DeleteObject (lhs);
+      rhs->AddAReference();
+      theScrap.theStack.Place (rhs);
+      return true;
+  }
+  return false;
 }
 
 //______________________________________________________________________________
@@ -413,8 +466,37 @@ bool _Operation::ExecuteFunctionCall (_Stack& theScrap, _VariableContainer *name
 }  
 
 
+//______________________________________________________________________________
 
-
+void _Operation::UpdateLValue (_SimpleList & stack, _SimpleList & indices, const long index) const {
+  switch (operationKind) {
+    case _HY_OPERATION_VAR:
+    case _HY_OPERATION_REF:
+    case _HY_OPERATION_VAR_OBJ:
+      stack   << reference;
+      indices << index;
+      break;
+    case _HY_OPERATION_BUILTIN:
+    case _HY_OPERATION_FUNCTION_CALL:
+    case _HY_OPERATION_DEFERRED_FUNCTION_CALL: {
+        bool is_index = reference == HY_OP_CODE_MACCESS && operationKind == _HY_OPERATION_BUILTIN;
+        long up_to = attribute - is_index;
+        for (long k = 0; k < up_to; k++) {
+          stack.Pop();
+          indices.Pop();
+        }
+        if (! is_index) {
+          stack << HY_NOT_FOUND;
+          indices << index;
+        }
+    }
+    break;
+    default:
+      stack << HY_NOT_FOUND;
+      indices << index;
+      break;
+  }
+}
 //______________________________________________________________________________
 bool _Operation::Execute(_Stack &theScrap, _VariableContainer *nameSpace,
                          _String *errMsg) {
@@ -424,15 +506,23 @@ bool _Operation::Execute(_Stack &theScrap, _VariableContainer *nameSpace,
       theScrap.Push(payload);
       return true;
     case _HY_OPERATION_VAR:
-      theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])->Compute());
+      if (attribute == _HY_OPERATION_INVALID_REFERENCE) {
+        theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])->Compute());
+      } else {
+        theScrap.Push(new _Constant (reference), false);
+      }
       return true;
     case _HY_OPERATION_REF:
       theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])
                     ->ComputeReference(nil), false);
       return true;
     case _HY_OPERATION_VAR_OBJ:
-      theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])
-                    ->GetValue());
+      if (attribute == _HY_OPERATION_INVALID_REFERENCE) {
+        theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])
+                      ->GetValue());
+      } else {
+        theScrap.Push(new _Constant (reference), false);      
+      }
       
       return true;
 
@@ -452,6 +542,10 @@ bool _Operation::Execute(_Stack &theScrap, _VariableContainer *nameSpace,
     case _HY_OPERATION_DEFERRED_INLINE:
       ResolveDeferredAction (nameSpace, errMsg);
       return Execute (theScrap, nameSpace, errMsg);
+      
+    case _HY_OPERATION_ASSIGNMENT_VALUE: 
+      return ExecuteAssignment (theScrap, nameSpace, errMsg);
+    
       
     case _HY_OPERATION_NOOP:
       return true;
@@ -630,6 +724,8 @@ bool _Operation::IsConstant(void) const {
     case _HY_OPERATION_NOOP:
       return true;
       
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
+      return true;
       
   }
   return false;
@@ -660,13 +756,19 @@ void _Operation::StackDepth(long &depth) const {
     case _HY_OPERATION_DEFERRED_INLINE:
     case _HY_OPERATION_SPARSE_MATRIX:
     case _HY_OPERATION_DICTIONARY:
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
       depth++;
       break;
       
     case _HY_OPERATION_BUILTIN:
     case _HY_OPERATION_FUNCTION_CALL:
     case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
-      depth += attribute-1;          
+      depth += attribute-1;  
+      
+    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+    case _HY_OPERATION_ASSIGNMENT_BOUND:
+      depth --;
+      
       
   }
   

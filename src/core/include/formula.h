@@ -198,12 +198,25 @@ public:
   virtual _Formula operator*(const _Formula &);
   virtual _Formula operator/(const _Formula &);
   virtual _Formula operator^(const _Formula &);
+  
+  void    PrepareLHS  (long);
+  
 
   _Formula &PatchFormulasTogether(_Formula &, const _Formula &,
                                   const char op_code);
+                                  
+  long     LValueIndex (const unsigned long start_at = 0) const;
+  /* 
+    scan the formula from start_at and return the position of the 
+    last _Operation that can serve as an l-value, e.g. a variable
+    ident, a reference, or a matrix/associative array access.
+    Returns HY_NOT_FOUND upon failure
+  */
 
 protected:
 
+  inline  _Operation* getIthOp (unsigned long) const; 
+  
   void internalToStr(_String &result, node<long> *, long opLevel,
                      _List *matchNames, _Operation * = nil);
   void ConvertToTree(bool err_msg = true);

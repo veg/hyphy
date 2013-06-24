@@ -150,7 +150,7 @@ _PMathObj _AssociativeList::MAccess(_PMathObj p) {
   }
   if (f >= 0) {
     _PMathObj res = (_PMathObj) avl.GetXtra(f);
-    res->nInstances++;
+    res->AddAReference();
     return res;
   } else {
     return new _Constant(0.0);

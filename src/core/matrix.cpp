@@ -5173,12 +5173,9 @@ _PMathObj _Matrix::MCoord(_PMathObj p, _PMathObj p2) {
   }
 
   _Matrix *res = new _Matrix(1, 2, false, true);
-  if (res) {
-    res->theData[0] = ind1;
-    res->theData[1] = ind2;
-  } else {
-    checkPointer(res);
-  }
+  res->theData[0] = ind1;
+  res->theData[1] = ind2;
+
   return res;
 
 }

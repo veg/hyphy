@@ -43,6 +43,11 @@ TOKENS
   OPEN_BRACKET             = '['.
   MULTIPLY                 = '*'.
   COLON                    = ':'.
+  SEMICOLON                = ';'.
+  PLUS_EQUAL               = "+=".
+  MINUS_EQUAL               = "-=".
+  TIMES_EQUAL               = "*=".
+  DIV_EQUAL               = "/=".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO CR LF
@@ -143,7 +148,7 @@ function_call <_Formula& f, _FormulaParsingContext& fpc>
   IDENTIFIER (. _String func_id (t->val); .)
   OPEN_PARENTHESIS
   {expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.)
-  { ',' expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.) } 
+  { COMMA expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.) } 
   }
   CLOSE_PARENTHESIS
   (. _parser2013_pushFunctionCall (this, f, fpc, func_id, argument_names); .)
@@ -165,23 +170,19 @@ primitive  <_Formula& f, _FormulaParsingContext& fpc>
 //| primitive <f, fpc> '[' expression <f,fpc> ']'
 .
 
-/*------------------------------------------------------------------------*/
-
-lvalue <_Formula& f, _FormulaParsingContext& fpc>
-= indexing_operation <f, fpc> 
-.
 
 /*------------------------------------------------------------------------*/
 
 
 indexing_operation <_Formula& f, _FormulaParsingContext& fpc> 
-= primitive <f, fpc> 
+= primitive <f, fpc> (. int bracket_count = 0; .)
   [
-  OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET
+  OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET (. bracket_count ++; .)
   [
-    OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET
+    OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET (. bracket_count ++; .)
   ]
   ]
+  (. if (bracket_count > 0) { _parser2013_pushOp (this, f, fpc, HY_OP_CODE_MACCESS, bracket_count+1);} .) 
 .
 
   
@@ -287,35 +288,48 @@ logical_or <_Formula& f, _FormulaParsingContext& fpc>
   .
 /*------------------------------------------------------------------------*/
 
-expression <_Formula& f, _FormulaParsingContext& fpc>
+assignment_op <_Formula& f, _FormulaParsingContext& fpc>
 =
 SYNC logical_or <f, fpc>  
+[   (. _Formula rhs; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;.)
+(   
+    EQUAL 
+    | PLUS_EQUAL (. op_code = HY_OP_CODE_ADD; .)
+    | MINUS_EQUAL (. op_code = HY_OP_CODE_SUB; .)
+    | TIMES_EQUAL (. op_code = HY_OP_CODE_MUL; .)
+    | DIV_EQUAL (. op_code = HY_OP_CODE_DIV; .)
+    | ASSIGN (. printf ("\nExpression assignment\n"); .)
+)
+logical_or <rhs, fpc> 
+(. 
+    _parser2013_handleAssignment (this, f,  rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
+.) 
+]
 .
 
 /*------------------------------------------------------------------------*/
+
+expression <_Formula& f, _FormulaParsingContext& fpc>
+=
+SYNC assignment_op <f, fpc>  
+.
+
+
+/*------------------------------------------------------------------------*/
 statement <_ExecutionList &current_code_stream>
-=   IF (_parser2013_isSimpleStatement (this))
-      (. _Formula f; _FormulaParsingContext fpc; .)
-      expression <f, fpc> ';'  
-        (. _String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); .)
-        
-|       (. _Formula f, f2; _FormulaParsingContext fpc;.) 
-lvalue <f2, fpc> (
-    EQUAL  
-    | ASSIGN
-) expression <f, fpc> ';' 
-        (. printf ("\nvalue assignment"); .)
-/*
-| lvalue ':=' expression ';' (. printf ("\nformula assignment"); .)
-*/
+=   (. _Formula f; _FormulaParsingContext fpc; .)
+expression <f, fpc> SEMICOLON
+    (.    _String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); .)
+
 .
 
 /*------------------------------------------------------------------------*/
 block <_ExecutionList &current_code_stream>
 = 
-'{'
-{statement <current_code_stream>| block <current_code_stream>}
-'}'
+OPEN_BRACE
+{statement <current_code_stream> | 
+ block <current_code_stream>}
+CLOSE_BRACE
 .
 
 /*------------------------------------------------------------------------*/

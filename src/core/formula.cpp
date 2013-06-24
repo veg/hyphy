@@ -1491,6 +1491,38 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm(bool makeComplex) {
 }
 
 //______________________________________________________________________________
+
+_Operation* _Formula::getIthOp (unsigned long idx) const {
+  return ((_Operation *)(((BaseRef **)theFormula.lData)[idx]));
+}
+
+//______________________________________________________________________________
+
+void _Formula::PrepareLHS (long idx) {
+  if (idx != HY_NOT_FOUND) {
+    ((_Operation *)(((BaseRef **)theFormula.lData)[idx]))->PrepareLHS();
+  }
+}
+
+
+//______________________________________________________________________________
+long _Formula::LValueIndex(const unsigned long start_at) const {
+  
+  _SimpleList    lvalues, indices;
+  
+  for (unsigned long op = start_at; op < theFormula.lLength; op++) {
+    getIthOp (op) -> UpdateLValue (lvalues, indices, op);
+  }
+  
+  for (long code = lvalues.lLength - 1; code >= 0L; code --) {
+    if (lvalues.GetElement(code) != HY_NOT_FOUND) {
+      return indices.GetElement(code);
+    }
+  }
+  
+  return HY_NOT_FOUND;
+}
+//______________________________________________________________________________
 bool _Formula::AmISimple(long &stackDepth, _SimpleList &variableIndex) {
   if (!theFormula.lLength) {
     return true;
@@ -1499,7 +1531,7 @@ bool _Formula::AmISimple(long &stackDepth, _SimpleList &variableIndex) {
   long locDepth = 0;
   
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    _Operation *thisOp = ((_Operation *)(((BaseRef **)theFormula.lData)[i]));
+    _Operation *thisOp = getIthOp (i);
     locDepth++;
     
     switch (thisOp->GetOpKind()) {
