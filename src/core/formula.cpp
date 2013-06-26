@@ -258,7 +258,7 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
   isConstant = isConstant && firstConst && (numChildren == 1 || secondConst);
 
   if (op->IsComputed()) {
-    if (isConstant) { 
+    if (isConstant && !op->IsVolatileOp()) {
       // this executes the subxpression starting at the current
       // node
       _Stack scrap;

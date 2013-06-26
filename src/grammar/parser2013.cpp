@@ -234,9 +234,10 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
         lhs.Push (new _Operation (assignment_type, reference, op_code, NULL));
       } else {
         lhs.Push (new _Operation (assignment_type, reference, HY_OP_CODE_NONE, (_PMathObj)&rhs));
-        return;      
+          //printf ("\n%s\n", _String ((_String*)lhs.GetList().toStr()).sData);
+        return;
       }
-      //printf ("\n%s\n", _String ((_String*)lhs.GetList().toStr()).sData);
+        //printf ("\n%s\n", _String ((_String*)lhs.GetList().toStr()).sData);
     } else {
     
     }

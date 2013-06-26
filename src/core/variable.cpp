@@ -447,7 +447,7 @@ bool _Variable::IsConstant(void) {
 //______________________________________________________________________________
 // set the value of the var to a formula
 void _Variable::SetFormula(_Formula &theF) {
-  bool changeMe = false, isAConstant = theF.IsAConstant();
+  bool changeMe = false, isAConstant = theF.IsConstant();
 
   _Formula *myF = &theF;
 

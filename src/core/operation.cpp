@@ -149,6 +149,9 @@ BaseRef _Operation::toStr(void) {
     case _HY_OPERATION_ASSIGNMENT_VALUE:
       (*res) << "LHS = RHS";
        break;
+    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+      (*res) << "LHS := RHS";
+      break;
   }
   (*res) << ">";
   res->Finalize();
@@ -308,7 +311,8 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
   
   if (operationKind == _HY_OPERATION_ASSIGNMENT_VALUE
       || _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
-      _PMathObj rhs = theScrap.Pop();
+      
+      _PMathObj rhs = operationKind == _HY_OPERATION_ASSIGNMENT_VALUE ? theScrap.Pop() : NULL;
       if (reference == _HY_OPERATION_INVALID_REFERENCE) {
         // this handles x ?= y assignments
         _PMathObj lhs = theScrap.Pop();
@@ -797,8 +801,7 @@ bool _Operation::IsConstant(void) const {
       return LocateVar(reference)->IsConstant();
       
     case _HY_OPERATION_BUILTIN:
-      return !(reference == HY_OP_CODE_BRANCHLENGTH || reference == HY_OP_CODE_RANDOM ||
-               reference == HY_OP_CODE_TIME);            
+      return !IsVolatileOp();
       
     case _HY_OPERATION_NOOP:
       return true;
@@ -965,7 +968,9 @@ bool _Operation::IsAssociativeOp (void) const {
 bool _Operation::IsVolatileOp (void) const {
   
   if (operationKind & _HY_OPERATION_OP_CLASS) {
-    return (reference == HY_OP_CODE_RANDOM || reference == HY_OP_CODE_TIME || reference == HY_OP_CODE_BRANCHLENGTH);
+    if (reference == HY_OP_CODE_RANDOM || reference == HY_OP_CODE_TIME || reference == HY_OP_CODE_BRANCHLENGTH) {
+      return true;
+    }
   }
   
   return false;
