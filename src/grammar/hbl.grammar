@@ -291,18 +291,18 @@ logical_or <_Formula& f, _FormulaParsingContext& fpc>
 assignment_op <_Formula& f, _FormulaParsingContext& fpc>
 =
 SYNC logical_or <f, fpc>  
-[   (. _Formula rhs; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;.)
+[   (. _Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;.)
 (   
     EQUAL 
     | PLUS_EQUAL (. op_code = HY_OP_CODE_ADD; .)
     | MINUS_EQUAL (. op_code = HY_OP_CODE_SUB; .)
     | TIMES_EQUAL (. op_code = HY_OP_CODE_MUL; .)
     | DIV_EQUAL (. op_code = HY_OP_CODE_DIV; .)
-    | ASSIGN (. printf ("\nExpression assignment\n"); .)
+    | ASSIGN (. assignment_type = _HY_OPERATION_ASSIGNMENT_EXPRESSION; .)
 )
-logical_or <rhs, fpc> 
+logical_or <*rhs, fpc> 
 (. 
-    _parser2013_handleAssignment (this, f,  rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
+    _parser2013_handleAssignment (this, f,  *rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
 .) 
 ]
 .
@@ -335,10 +335,10 @@ CLOSE_BRACE
 /*------------------------------------------------------------------------*/
 
 hyphy_batch_language 
-= (. _ExecutionList current_code_stream; .)
-{statement <current_code_stream> | block <current_code_stream>} 
-| (. _Formula f; _FormulaParsingContext fpc; .)
-expression <f, fpc> SYNC /* a single expression for calculator-style parsing */
+= 
+(IF (_parseExpressionsOnly ()) expression <*f, *fpc> SYNC /* a single expression for calculator-style parsing */
+| {statement <*hbl_stream> | block <*hbl_stream>} 
+)
 .
 
 END hyphy_batch_language.

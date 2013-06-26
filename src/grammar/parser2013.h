@@ -120,5 +120,5 @@ bool    _parser2013_StringAndColon (void *p);
 
 void    _parser2013_reportError                   (void * vp, const _String, _FormulaParsingContext&);
 bool    _parser2013_errorFree                     (void * vp);
-
+long    _parser2013_expected_arguments            (const long);
 #endif

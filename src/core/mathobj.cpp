@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 _PMathObj _MathObject::Execute(
     long opCode, _PMathObj p, _PMathObj p2,
     _hyExecutionContext *
-        context) // execute this operation with the second arg if necessary
+        context, _PMathObj p3) // execute this operation with the second arg if necessary
     {
   switch (opCode) {
   case HY_OP_CODE_NOT: // !

@@ -478,7 +478,7 @@ _PMathObj _AssociativeList::Sum(void) {
 //______________________________________________________________________________
 // execute this operation with the second arg if necessary
 _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
-                                    _hyExecutionContext *context) {
+                                    _hyExecutionContext *context, _PMathObj p3) {
   switch (opCode) {
     case HY_OP_CODE_ADD: // +
       if (p) {

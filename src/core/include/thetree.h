@@ -91,7 +91,8 @@ public:
 
   virtual _PMathObj
   Execute(long, _PMathObj = nil, _PMathObj = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _PMathObj = nil);
   virtual _PMathObj TEXTreeString(_PMathObj);
   virtual _PMathObj PlainTreeString(_PMathObj, _PMathObj);
 

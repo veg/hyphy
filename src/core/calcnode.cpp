@@ -604,7 +604,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
   bool isExplicitForm = HasExplicitFormModel();
 
   if (isExplicitForm && bufferedOps) {
-    _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, nil, bufferedOps);
+    _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, _hyDefaultExecutionContext, bufferedOps);
     SetCompExp((_Matrix *)bufferedExp->makeDynamic(),totalCategs > 1 ? categID : -1);
     return false;
   }

@@ -63,7 +63,8 @@ public:
   virtual ~_Polynomial();
   virtual _MathObject *Execute(
       long opCode, _MathObject *p = nil, _MathObject *p2 = nil,
-      _hyExecutionContext *context = _hyDefaultExecutionContext); // execute
+      _hyExecutionContext *context = _hyDefaultExecutionContext,
+      _MathObject *p3 = nil); // execute
                                                                   // this
                                                                   // operation
                                                                   // with the

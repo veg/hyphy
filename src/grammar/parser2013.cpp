@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "Parser.h"
+#include "hy_globals.h"
 
 
 // parser support functions
@@ -74,10 +75,10 @@ void _parser2013_pushObject (void * vp, _Formula& f, _FormulaParsingContext& fpc
 void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& funcId, const _List& argumentNames) {
     if (_parser2013_errorFree(vp) == false) return;
     long arg_count   = argumentNames.countitems(),
-         built_in_id = BuiltInFunctions.BinaryFind(&funcId);
+         built_in_id = BuiltInFunctions.GetValueFromString(funcId);
          
     if (built_in_id >= 0) {
-        long expect_arg = ExepectedBuiltInArguments (funcId);
+        long expect_arg = _parser2013_expected_arguments (built_in_id);
         if (arg_count != expect_arg) {
             _parser2013_reportError(vp, _String(arg_count) &" arguments passed to '" & funcId & "', expected " & _String(expect_arg) & '.', fpc);
         }
@@ -206,7 +207,7 @@ void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc,
 
 long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc) {
   if (_parser2013_errorFree(vp) == false) return HY_NOT_FOUND;
-  return f.LValueIndex ();
+  return f.LValueIndex (0L, true);
 }
 
 void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
@@ -225,14 +226,23 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
   if (lvalue_index == HY_NOT_FOUND) {
     _parser2013_reportError(vp, _String ("Invalid LHS in assignment"), fpc);
   } else {
-    if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE) {
-      lhs.PrepareLHS (lvalue_index);
-      lhs.GetList() << rhs.GetList(); 
-      lhs.Push (new _Operation (_HY_OPERATION_ASSIGNMENT_VALUE, _HY_OPERATION_INVALID_REFERENCE, op_code, NULL));
+    if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE || 
+        assignment_type == _HY_OPERATION_ASSIGNMENT_EXPRESSION ) {
+      long reference = lhs.PrepareLHS (lvalue_index);
+      if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE) {
+        lhs.GetList() << rhs.GetList(); 
+        lhs.Push (new _Operation (assignment_type, reference, op_code, NULL));
+      } else {
+        lhs.Push (new _Operation (assignment_type, reference, HY_OP_CODE_NONE, (_PMathObj)&rhs));
+        return;      
+      }
       //printf ("\n%s\n", _String ((_String*)lhs.GetList().toStr()).sData);
+    } else {
+    
     }
   }
-                                                                      
+  delete (&rhs);
+                                                                                                                                        
 }
 
 
@@ -359,6 +369,16 @@ bool _parser2013_isFollowedByAnCommaOrClosingBrace (void *vp) {
 
 bool    _parser2013_errorFree                     (void * vp){
   return ((Parser*)vp)->errors->count == 0;
+}
+
+//______________________________________________________________________________
+
+long    _parser2013_expected_arguments (const long funcId) {
+    long function_list_index = _builtInArgumentCounts.FindLong (funcId);
+    if (function_list_index >= 0) {
+        return _builtInArgumentCounts.GetXtra(function_list_index);
+    }
+    return 1L;
 }
 
 // utility functions 

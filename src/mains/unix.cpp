@@ -653,7 +653,8 @@ int main (int argc, char* argv[])
     if (argc == 2) {
 		wchar_t *fileName = coco_string_create(argv[1]);
 		Scanner *scanner = new Scanner(fileName);
-		Parser  *parser = new Parser(scanner);
+    _ExecutionList tester;
+		Parser  *parser = new Parser(scanner, NULL, NULL, &tester);
 		parser->Parse();
 		coco_string_delete(fileName);
 		delete parser;

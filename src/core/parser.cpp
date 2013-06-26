@@ -51,20 +51,23 @@ extern _SimpleList simpleOperationCodes, simpleOperationFunctions;
 // stores all the variables declared so far
 _List globalNamesSupportList, hyReservedWords, varNamesSupportList,
     variablePtrs; 
+    
+_SimpleList   _builtInArgumentCountsAux;
 
-_AVLList *lookAside = nil;
 
-_AVLListX variableNames (&varNamesSupportList),
-    _hyApplicationGlobals (&globalNamesSupportList);
+_AVLListX variableNames   (&varNamesSupportList),
+    _hyApplicationGlobals (&globalNamesSupportList),
+    _builtInArgumentCounts (&_builtInArgumentCountsAux);       
 
 _Parameter printDigits;
 
 // indices of all independent variables
-_List FunctionNameList, BuiltInFunctions;
-_SimpleList FunctionArgumentCount, deferIsConstant, *deferSetFormula = nil;
+_SimpleList deferIsConstant, 
+            *deferSetFormula = nil;
+            
 bool useGlobalUpdateFlag = false;
 _String HalfOps(":<>=!&|");
-_Trie UnOps;
+_Trie UnOps, BuiltInFunctions;
 _SimpleList opPrecedence, BinOps, associativeOps;
 _Parameter pi_const = 3.141592653589793, long_max = (_Parameter) LONG_MAX;
 
@@ -687,13 +690,30 @@ void ReplaceVar(_Variable *theV) {
 }
 
 //______________________________________________________________________________
+
+void  InsertOpDescription (const char* str, const long opcode, void* simpleOp, long arguments) {
+  BuiltInFunctions.Insert(str, opcode);
+  if (simpleOp) {
+    simpleOperationCodes << opcode;
+    simpleOperationFunctions << (long)simpleOp;
+  }
+  hyReservedWords.AppendNewInstance(new _String (str));
+  if (arguments >= 0) {
+    _builtInArgumentCounts.Insert((BaseRef)opcode, arguments);
+  }
+}
+
+//______________________________________________________________________________
 void SetupOperationLists(void) {
 
   _List all_unary_ops(
       "-", 29, "!", "+", "*", "^", "&", "Abs", "Sin", "Cos", "Tan", "Exp",
       "Log", "Arctan", "Time", "Gamma", "Transpose", "Sqrt", "Erf", "Rows",
       "Columns", "LUDecompose", "Inverse", "BranchCount", "TipCount", "ZCDF",
-      "Eigensystem", "Simplex", "Type", "Eval", "LnGamma");
+      "Eigensystem", "Simplex", "Type", "Eval", "LnGamma"),
+      _all_binary_ops (
+      
+      );
 
   UnOps.Insert(all_unary_ops);
 
@@ -741,7 +761,7 @@ void SetupOperationLists(void) {
   BinOps << '+' * 256 + '=';
   opPrecedence << 8;
 
-  if (BuiltInFunctions.lLength == 0)
+  if (BuiltInFunctions.countitems() == 0)
       // construct a list of operations
       // don't forget to update SimplifyConstants, simpleOperationCodes,
       // InternalDifferentiate, InternalSimplify, Formula::HasChanged and all
@@ -749,279 +769,15 @@ void SetupOperationLists(void) {
       // also MAccess and MCoord codes are used in Parse to merge multiple
       // matrix access operations
       {
-    //HY_OP_CODE_NOT
-    BuiltInFunctions.AppendNewInstance(new _String('!'));
+    
+
+    for (long k = 0; k < HY_OP_COUNT; k++) {
+      InsertOpDescription (_hyBuiltInOperationProperties[k].op_string,
+                           _hyBuiltInOperationProperties[k].op_code,
+                           _hyBuiltInOperationProperties[k].fast_exec,
+                           _hyBuiltInOperationProperties[k].argument_count);
+    }
 
-    //HY_OP_CODE_NEQ
-    BuiltInFunctions.AppendNewInstance(new _String("!="));
-
-    //HY_OP_CODE_IDIV
-    BuiltInFunctions.AppendNewInstance(new _String('$'));
-
-    //HY_OP_CODE_MOD
-    BuiltInFunctions.AppendNewInstance(new _String('%'));
-
-    //HY_OP_CODE_REF
-    BuiltInFunctions.AppendNewInstance(new _String('&'));
-
-    //HY_OP_CODE_AND
-    BuiltInFunctions.AppendNewInstance(new _String("&&"));
-    simpleOperationCodes << HY_OP_CODE_AND;
-    simpleOperationFunctions << (long) AndNumbers;
-
-    //HY_OP_CODE_MUL
-    BuiltInFunctions.AppendNewInstance(new _String('*'));
-    simpleOperationCodes << HY_OP_CODE_MUL;
-    simpleOperationFunctions << (long) MultNumbers;
-
-    //HY_OP_CODE_ADD
-    BuiltInFunctions.AppendNewInstance(new _String('+'));
-    simpleOperationCodes << HY_OP_CODE_ADD;
-    simpleOperationFunctions << (long) AddNumbers;
-
-    //HY_OP_CODE_SUB
-    BuiltInFunctions.AppendNewInstance(new _String('-'));
-    simpleOperationCodes << HY_OP_CODE_SUB;
-    simpleOperationFunctions << (long) SubNumbers;
-
-    //HY_OP_CODE_DIV
-    BuiltInFunctions.AppendNewInstance(new _String('/'));
-    simpleOperationCodes << HY_OP_CODE_DIV;
-    simpleOperationFunctions << (long) DivNumbers;
-
-    //HY_OP_CODE_LESS
-    BuiltInFunctions.AppendNewInstance(new _String('<'));
-    simpleOperationCodes << HY_OP_CODE_LESS;
-    simpleOperationFunctions << (long) LessThan;
-
-    //HY_OP_CODE_LEQ
-    BuiltInFunctions.AppendNewInstance(new _String("<="));
-    simpleOperationCodes << HY_OP_CODE_LEQ;
-    simpleOperationFunctions << (long) LessThanE;
-
-    //HY_OP_CODE_EQ
-    BuiltInFunctions.AppendNewInstance(new _String("=="));
-    simpleOperationCodes << HY_OP_CODE_EQ;
-    simpleOperationFunctions << (long) EqualNumbers;
-
-    //HY_OP_CODE_GREATER
-    BuiltInFunctions.AppendNewInstance(new _String('>'));
-    simpleOperationCodes << HY_OP_CODE_GREATER;
-    simpleOperationFunctions << (long) GreaterThan;
-
-    //HY_OP_CODE_GEQ
-    BuiltInFunctions.AppendNewInstance(new _String(">="));
-    simpleOperationCodes << HY_OP_CODE_GEQ;
-    simpleOperationFunctions << (long) GreaterThanE;
-
-    //HY_OP_CODE_ABS
-    BuiltInFunctions.AppendNewInstance(new _String("Abs"));
-    simpleOperationCodes << HY_OP_CODE_ABS;
-    simpleOperationFunctions << (long) AbsNumber;
-
-    //HY_OP_CODE_ARCTAN
-    BuiltInFunctions.AppendNewInstance(new _String("Arctan"));
-
-    //HY_OP_CODE_BETA
-    BuiltInFunctions.AppendNewInstance(new _String("Beta"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_BETA);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_BRANCHCOUNT
-    BuiltInFunctions.AppendNewInstance(new _String("BranchCount"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_BRANCHCOUNT);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_BRANCHLENGTH
-    BuiltInFunctions.AppendNewInstance(new _String("BranchLength"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_BRANCHLENGTH);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_BRANCHNAME
-    BuiltInFunctions.AppendNewInstance(new _String("BranchName"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_BRANCHNAME);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_CCHI2
-    BuiltInFunctions.AppendNewInstance(new _String("CChi2"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_CCHI2);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_CGAMMADIST
-    BuiltInFunctions.AppendNewInstance(new _String("CGammaDist"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_CGAMMADIST);
-    FunctionArgumentCount << 3;
-
-    //HY_OP_CODE_COLUMNS
-    BuiltInFunctions.AppendNewInstance(new _String("Columns"));
-
-    //HY_OP_CODE_COS
-    BuiltInFunctions.AppendNewInstance(new _String("Cos"));
-
-    //HY_OP_CODE_DIFF
-    BuiltInFunctions.AppendNewInstance(new _String("Differentiate"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_DIFF);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_EIGENSYSTEM
-    BuiltInFunctions.AppendNewInstance(new _String("Eigensystem"));
-
-    //HY_OP_CODE_ERF
-    BuiltInFunctions.AppendNewInstance(new _String("Erf"));
-
-    //HY_OP_CODE_EVAL
-    BuiltInFunctions.AppendNewInstance(new _String("Eval"));
-
-    //HY_OP_CODE_EXP
-    BuiltInFunctions.AppendNewInstance(new _String("Exp"));
-    simpleOperationCodes << HY_OP_CODE_EXP;
-    simpleOperationFunctions << (long) ExpNumbers;
-
-    //HY_OP_CODE_FORMAT
-    BuiltInFunctions.AppendNewInstance(new _String("Format"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_FORMAT);
-    FunctionArgumentCount << 3;
-
-    //HY_OP_CODE_GAMMA
-    BuiltInFunctions.AppendNewInstance(new _String("Gamma"));
-
-    //HY_OP_CODE_GAMMADIST
-    BuiltInFunctions.AppendNewInstance(new _String("GammaDist"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_GAMMADIST);
-    FunctionArgumentCount << 3;
-
-    //HY_OP_CODE_IBETA
-    BuiltInFunctions.AppendNewInstance(new _String("IBeta"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_IBETA);
-    FunctionArgumentCount << 3;
-
-    //HY_OP_CODE_IGAMMA
-    BuiltInFunctions.AppendNewInstance(new _String("IGamma"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_IGAMMA);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_INVCHI2
-    BuiltInFunctions.AppendNewInstance(new _String("InvChi2"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_INVCHI2);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_INVERSE
-    BuiltInFunctions.AppendNewInstance(new _String("Inverse"));
-
-    //HY_OP_CODE_JOIN
-    BuiltInFunctions.AppendNewInstance(new _String("Join"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_JOIN);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_LUDECOMPOSE
-    BuiltInFunctions.AppendNewInstance(new _String("LUDecompose"));
-
-    //HY_OP_CODE_LUSOLVE
-    BuiltInFunctions.AppendNewInstance(new _String("LUSolve"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_LUSOLVE);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_LOG_GAMMA
-    BuiltInFunctions.AppendNewInstance(new _String("LnGamma"));
-
-    //HY_OP_CODE_LOG
-    BuiltInFunctions.AppendNewInstance(new _String("Log"));
-    simpleOperationCodes << HY_OP_CODE_LOG;
-    simpleOperationFunctions << (long) LogNumbers;
-
-    //HY_OP_CODE_MACCESS
-    BuiltInFunctions.AppendNewInstance(new _String("MAccess"));
-    simpleOperationCodes << HY_OP_CODE_MACCESS;
-    simpleOperationFunctions << (long) FastMxAccess;
-
-    //HY_OP_CODE_MCOORD
-    BuiltInFunctions.AppendNewInstance(new _String("MCoord"));
-
-    //HY_OP_CODE_MAX
-    BuiltInFunctions.AppendNewInstance(new _String("Max"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_MAX);
-    FunctionArgumentCount << 2;
-    simpleOperationCodes << HY_OP_CODE_MAX;
-    simpleOperationFunctions << (long) MaxNumbers;
-
-    //HY_OP_CODE_MIN
-    BuiltInFunctions.AppendNewInstance(new _String("Min"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_MIN);
-    FunctionArgumentCount << 2;
-    simpleOperationCodes << HY_OP_CODE_MIN;
-    simpleOperationFunctions << (long) MinNumbers;
-
-    //HY_OP_CODE_NAMED_ARG
-    BuiltInFunctions.AppendNewInstance(new _String("="));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_NAMED_ARG);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_PSTREESTRING
-    BuiltInFunctions.AppendNewInstance(new _String("PSTreeString"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_PSTREESTRING);
-    FunctionArgumentCount << 3;
-
-    //HY_OP_CODE_RANDOM
-    BuiltInFunctions.AppendNewInstance(new _String("Random"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_RANDOM);
-    FunctionArgumentCount << 2;
-    simpleOperationCodes << HY_OP_CODE_RANDOM;
-    simpleOperationFunctions << (long) RandomNumber;
-
-    //HY_OP_CODE_REROOTTREE
-    BuiltInFunctions.AppendNewInstance(new _String("RerootTree"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_REROOTTREE);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_ROWS
-    BuiltInFunctions.AppendNewInstance(new _String("Rows"));
-
-    //HY_OP_CODE_SIMPLEX
-    BuiltInFunctions.AppendNewInstance(new _String("Simplex"));
-
-    //HY_OP_CODE_SIN
-    BuiltInFunctions.AppendNewInstance(new _String("Sin"));
-
-    //HY_OP_CODE_SQRT
-    BuiltInFunctions.AppendNewInstance(new _String("Sqrt"));
-
-    //HY_OP_CODE_TEXTREESTRING
-    BuiltInFunctions.AppendNewInstance(new _String("TEXTreeString"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_TEXTREESTRING);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_TAN
-    BuiltInFunctions.AppendNewInstance(new _String("Tan"));
-
-    //HY_OP_CODE_TIME
-    BuiltInFunctions.AppendNewInstance(new _String("Time"));
-
-    //HY_OP_CODE_TIPCOUNT
-    BuiltInFunctions.AppendNewInstance(new _String("TipCount"));
-
-    //HY_OP_CODE_TIPNAME
-    BuiltInFunctions.AppendNewInstance(new _String("TipName"));
-    FunctionNameList << BuiltInFunctions(HY_OP_CODE_TIPNAME);
-    FunctionArgumentCount << 2;
-
-    //HY_OP_CODE_TRANSPOSE
-    BuiltInFunctions.AppendNewInstance(new _String("Transpose"));
-
-    //HY_OP_CODE_TYPE
-    BuiltInFunctions.AppendNewInstance(new _String("Type"));
-
-    //HY_OP_CODE_ZCDF
-    BuiltInFunctions.AppendNewInstance(new _String("ZCDF"));
-
-    //HY_OP_CODE_POWER
-    BuiltInFunctions.AppendNewInstance(new _String('^'));
-    simpleOperationCodes << HY_OP_CODE_POWER;
-    simpleOperationFunctions << (long) Power;
-
-    //HY_OP_CODE_OR
-    BuiltInFunctions.AppendNewInstance(new _String("||"));
-
-    hyReservedWords << BuiltInFunctions;
     hyReservedWords.AppendNewInstance(new _String("global"));
     hyReservedWords.Sort();
   }
@@ -1129,15 +885,7 @@ void FindUnusedObjectName(_String &prefix, _String &partName, _AVLListX &names,
   partName = tryName;
 }
 
-//______________________________________________________________________________
 
-long    ExepectedBuiltInArguments (_String& funcId) {
-    long function_list_index = FunctionNameList.Find (&funcId);
-    if (function_list_index >= 0) {
-        return FunctionArgumentCount.GetElement(function_list_index);
-    }
-    return 1;
-}
 //______________________________________________________________________________
 void FinishDeferredSF(void) {
   if (deferSetFormula->lLength) {

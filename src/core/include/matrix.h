@@ -171,7 +171,8 @@ public:
 
   virtual _PMathObj
   Execute(long opCode, _PMathObj p = nil, _PMathObj p2 = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _PMathObj p3 = nil);
   // execute this operation with the list of Args
 
   _PMathObj MAccess(_PMathObj, _PMathObj);
@@ -179,11 +180,12 @@ public:
   _PMathObj MCoord(_PMathObj, _PMathObj);
   // implements the M[i][j] operation for formulas
 
-  void MStore(long, long, _Formula &, long = -1);
-  bool MResolve(_PMathObj, _PMathObj, long &, long &);
+  void MStore(long, long, _Formula &, long = HY_OP_CODE_NONE);
+  void StoreValue (long, long, _PMathObj);
+  bool MResolve(_PMathObj, _PMathObj, long &, long &, _String* = nil);
   // resolve coordiates from two Number arguments
 
-  bool CheckCoordinates(long &, long &);
+  bool CheckCoordinates(long &, long &, _String* errMsg = nil);
   // validate matrix coordinates
 
   void MStore(_PMathObj, _PMathObj, _Formula &, long = HY_OP_CODE_NONE);

@@ -74,7 +74,7 @@ void _Formula::DuplicateReference(const _Formula *f) {
     _Operation *theO = ((_Operation **)f->theFormula.lData)[i];
     if (theO->IsDeferred ()) {
       _Operation * resolvedCopy = new _Operation (*theO);
-      resolvedCopy->ResolveDeferredAction();
+      resolvedCopy->ResolveDeferredAction(_hyDefaultExecutionContext);
       theFormula.AppendNewInstance(resolvedCopy);
     } else {
       theFormula &&theO;
@@ -453,7 +453,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
                 // put parentheses around the return of this expression
               result << '(';
               internalToStr(result, currentNode->go_down(1), tOpLevel, matchNames);
-              result << &thisNodeOperation->GetCode();
+              result << thisNodeOperation->GetCode();
               internalToStr(result, currentNode->go_down(2), tOpLevel2, matchNames);
               result << ')';
               return;
@@ -462,14 +462,14 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
           if (currentNode) {
             internalToStr(result, currentNode->go_down(1), tOpLevel, matchNames);
           }
-          result << &thisNodeOperation->GetCode();
+          result << thisNodeOperation->GetCode();
           if (currentNode) {
             internalToStr(result, currentNode->go_down(2), tOpLevel2, matchNames);
           }
           return;
         } else { 
             // mixed binary-unary operation
-          result << &thisNodeOperation->GetCode();
+          result << thisNodeOperation->GetCode();
           if (currentNode) {
             result << '(';
             internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE,
@@ -481,7 +481,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       } else {
         long nOps = thisNodeOperation->GetAttribute();
         if (thisNodeOperation->GetReference() != HY_OP_CODE_MACCESS ) {
-          result << &thisNodeOperation->GetCode();
+          result << thisNodeOperation->GetCode();
           if (currentNode) {
             result << '(';
             for (long k = 1; k <= nOps; k++) {
@@ -1266,7 +1266,7 @@ _Variable *_Formula::Dereference(bool ignore_context,
                                  _hyExecutionContext *theContext) {
   _Variable *result = nil;
   _PMathObj computedValue =
-      Compute(0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
+      Compute(0, theContext);
   if (computedValue && computedValue->ObjectClass() == STRING) {
     result = (_Variable *)((_FString *)computedValue)
         ->Dereference(ignore_context, theContext, true);
@@ -1283,8 +1283,8 @@ _Variable *_Formula::Dereference(bool ignore_context,
 
 //______________________________________________________________________________
 // compute the value of the formula
-_PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
-                            _List *additionalCacheArguments, _String *errMsg, 
+_PMathObj _Formula::Compute(long startAt, _hyExecutionContext* execContext,
+                            _List *additionalCacheArguments, 
                             unsigned long result_type) {
   if (theFormula.lLength == 0) {
     theStack.theStack.Clear();
@@ -1310,7 +1310,7 @@ _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
               (_Operation *)(((BaseRef **)theFormula.lData)[i + 1]));
 
           if (!cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
-            if (!thisOp->Execute(theStack, nameSpace, errMsg)) {
+            if (!thisOp->Execute(theStack, execContext)) {
               wellDone = false;
               break;
             }
@@ -1357,7 +1357,7 @@ _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
           }
         }
 
-        if (!thisOp->Execute(theStack, nameSpace, errMsg)) { 
+        if (!thisOp->Execute(theStack, execContext)) { 
           // does this always get executed?
           wellDone = false;
           break;
@@ -1372,7 +1372,7 @@ _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
     } else {
       for (unsigned long i = startAt; i < theFormula.lLength; i++)
         if (!((_Operation *)(((BaseRef **)theFormula.lData)[i]))
-                ->Execute(theStack, nameSpace, errMsg)) {
+                ->Execute(theStack, execContext)) {
           wellDone = false;
           break;
         }
@@ -1380,8 +1380,8 @@ _PMathObj _Formula::Compute(long startAt, _VariableContainer *nameSpace,
     if (theStack.theStack.lLength != 1 || !wellDone) {
       _String errorText =
           _String((_String *)toStr()) & _String(" contains errors.");
-      if (errMsg) {
-        *errMsg = *errMsg & errorText;
+      if (execContext->GetErrorBuffer()) {
+        *execContext->GetErrorBuffer() = *execContext->GetErrorBuffer() & errorText;
       } else {
         WarnError(errorText);
       }
@@ -1498,15 +1498,21 @@ _Operation* _Formula::getIthOp (unsigned long idx) const {
 
 //______________________________________________________________________________
 
-void _Formula::PrepareLHS (long idx) {
+long _Formula::PrepareLHS (long idx) {
   if (idx != HY_NOT_FOUND) {
-    ((_Operation *)(((BaseRef **)theFormula.lData)[idx]))->PrepareLHS();
+    long reference = ((_Operation *)(((BaseRef **)theFormula.lData)[idx]))->PrepareLHS();
+    if (reference != _HY_OPERATION_INVALID_REFERENCE) {
+      // delete the MACCESS operation from the formula
+      theFormula.Delete (idx, true);
+      return reference;
+    }
   }
+  return _HY_OPERATION_INVALID_REFERENCE;
 }
 
 
 //______________________________________________________________________________
-long _Formula::LValueIndex(const unsigned long start_at) const {
+long _Formula::LValueIndex(const unsigned long start_at, const bool handle_matrix_op) const {
   
   _SimpleList    lvalues, indices;
   
@@ -1516,6 +1522,15 @@ long _Formula::LValueIndex(const unsigned long start_at) const {
   
   for (long code = lvalues.lLength - 1; code >= 0L; code --) {
     if (lvalues.GetElement(code) != HY_NOT_FOUND) {
+      // check if we need to toggle the matrix op code
+      if (handle_matrix_op) {
+        if (code > 0) {
+          if (lvalues.GetElement (code-1) == lvalues.GetElement (code)) {
+            ((_Operation *)(((BaseRef **)theFormula.lData)[indices.GetElement(code-1)]))->
+            ToggleVarRef(true);
+          }
+        }
+      }
       return indices.GetElement(code);
     }
   }
@@ -1593,8 +1608,8 @@ bool _Formula::AmISimple(long &stackDepth, _SimpleList &variableIndex) {
 //______________________________________________________________________________
 bool _Formula::IsArrayAccess(void) {
   if (theFormula.lLength) {
-    return ((_Operation *)(theFormula(theFormula.lLength - 1)))->GetCode()
-        .Equal((_String *)BuiltInFunctions(HY_OP_CODE_MACCESS));
+    const _Operation * theOp = getIthOp(theFormula.lLength - 1);
+    return theOp->GetOpKind() == _HY_OPERATION_BUILTIN && theOp->GetReference() == HY_OP_CODE_MACCESS;
   }
   return false;
 }
@@ -1914,6 +1929,19 @@ _PMathObj _Formula::GetTheMatrix(void) {
   return nil;
 }
 
+//______________________________________________________________________________
+long _Formula::FormulaType(void) const {
+  
+  if (theFormula.lLength) {
+    const _Operation* last_op = getIthOp(theFormula.lLength-1);
+    if (last_op -> GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
+      return last_op->GetReference() > _HY_OPERATION_INVALID_REFERENCE ?
+             HY_FORMULA_FORMULA_VALUE_ASSIGNMENT :
+             HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT;
+    }
+  }
+  return HY_FORMULA_EXPRESSION;
+}
 //______________________________________________________________________________
 long _Formula::ObjectClass(void) {
   if (theStack.theStack.lLength) {
@@ -2439,12 +2467,10 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
             return nil;
           }
           
-          _String opC('/'), opC2('*'),
-          opC3(*(_String *)BuiltInFunctions(HY_OP_CODE_SQRT));
-          
-          _Operation *newOp = new _Operation( opC, 2L),
-          *newOp2 = new _Operation( opC2, 2L),
-          *newOp3 = new _Operation( opC3, 1L),
+  
+          _Operation *newOp = new _Operation( HY_OP_CODE_DIV, 2L),
+          *newOp2 = new _Operation( HY_OP_CODE_MUL, 2L),
+          *newOp3 = new _Operation( HY_OP_CODE_SQRT, 1L),
           *newOp4 = new _Operation(new _Constant(2.0));
           
           
@@ -2483,13 +2509,10 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
             return nil;
           }
           
-          _String opC('/'), opC2('^'),
-          opC3(*(_String *)BuiltInFunctions(HY_OP_CODE_COS));
-          
-          _Operation *newOp = new _Operation( opC, 2L),
-          *newOp2 = new _Operation( opC2, 2L),
+          _Operation *newOp = new _Operation( HY_OP_CODE_DIV, 2L),
+          *newOp2 = new _Operation( HY_OP_CODE_POWER , 2L),
           *newOp3 = new _Operation(new _Constant(2.0)),
-          *newOp4 = new _Operation( opC3, 1L);
+          *newOp4 = new _Operation( HY_OP_CODE_COS, 1L);
           
           node<long> *newNode2 = new node<long>;
           node<long> *newNode3 = new node<long>;

@@ -395,7 +395,7 @@ void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
 		while (!(StartOf(2))) {SynErr(42); Get();}
 		logical_or(f, fpc);
 		if (StartOf(5)) {
-			_Formula rhs; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;
+			_Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;
 			switch (la->kind) {
 			case _EQUAL: {
 				Get();
@@ -423,12 +423,12 @@ void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
 			}
 			case _ASSIGN: {
 				Get();
-				printf ("\nExpression assignment\n"); 
+				assignment_type = _HY_OPERATION_ASSIGNMENT_EXPRESSION; 
 				break;
 			}
 			}
-			logical_or(rhs, fpc);
-			_parser2013_handleAssignment (this, f,  rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
+			logical_or(*rhs, fpc);
+			_parser2013_handleAssignment (this, f,  *rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
 			
 		}
 }
@@ -453,19 +453,17 @@ void Parser::block(_ExecutionList &current_code_stream) {
 }
 
 void Parser::hyphy_batch_language() {
-		if (StartOf(2)) {
-			_ExecutionList current_code_stream; 
+		if (_parseExpressionsOnly ()) {
+			expression(*f, *fpc);
+			while (!(la->kind == _EOF)) {SynErr(43); Get();}
+		} else if (StartOf(2)) {
 			while (StartOf(1)) {
 				if (StartOf(1)) {
-					statement(current_code_stream);
+					statement(*hbl_stream);
 				} else {
-					block(current_code_stream);
+					block(*hbl_stream);
 				}
 			}
-		} else if (StartOf(1)) {
-			_Formula f; _FormulaParsingContext fpc; 
-			expression(f, fpc);
-			while (!(la->kind == _EOF)) {SynErr(43); Get();}
 		} else SynErr(44);
 }
 
@@ -569,7 +567,8 @@ void Parser::Parse() {
 	Expect(0);
 }
 
-Parser::Parser(Scanner *scanner) {
+Parser::Parser(Scanner *scanner, _Formula* _f, _FormulaParsingContext* _fpc,
+	                         _ExecutionList* _insrtuctions) {
 	maxT = 36;
 
 	ParserInitCaller<Parser>::CallInit(this);
@@ -579,6 +578,12 @@ Parser::Parser(Scanner *scanner) {
 	errDist = minErrDist;
 	this->scanner = scanner;
 	errors = new Errors();
+	f = _f;
+	fpc = _fpc;
+	hbl_stream = _insrtuctions;
+	if (!(hbl_stream || (f && fpc))) {
+	    FlagError ("Internal Error: incorrect Parser::Parser instantiation");
+	}
 }
 
 bool Parser::StartOf(int s) {

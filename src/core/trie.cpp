@@ -106,6 +106,11 @@ BaseRef _Trie::makeDynamic(void) {
 }
 
 //______________________________________________________________________________
+long _Trie::countitems(void) {
+  return payload.countitems() - emptySlots.countitems() - 1;
+}
+
+//______________________________________________________________________________
 void _Trie::Duplicate(BaseRef storage) {
   _Trie *newTrie = (_Trie *)storage;
   _String myAlphabet = Alphabet();
@@ -349,6 +354,8 @@ _String *_Trie::RetrieveStringFromPath(const _SimpleList &path,
 
   return this_string;
 }
+
+
 
 //______________________________________________________________________________
 void _Trie::DumpRaw() {

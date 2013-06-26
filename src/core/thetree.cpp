@@ -903,7 +903,8 @@ _String *_TheTree::TreeUserParams(void) {
 
 //______________________________________________________________________________
 // execute this operation with the second arg if necessary
-_PMathObj _TheTree::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext *context) {
+_PMathObj _TheTree::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext *context,
+  _PMathObj ) {
   switch (opCode) {
   case HY_OP_CODE_PSTREESTRING: //PlainTreeString
     return PlainTreeString(p, p2);

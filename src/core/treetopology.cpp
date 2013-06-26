@@ -334,7 +334,8 @@ void _TreeTopology::toFileStr(FILE *f) {
 
 //______________________________________________________________________________
 // execute this operation with the second arg if necessary
-_PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext *context) {
+_PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext *context,
+  _PMathObj ) {
 
   switch (opCode) {
   case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument

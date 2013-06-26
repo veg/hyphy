@@ -56,6 +56,10 @@ private:
 	Token *dummyToken;
 	int errDist;
 	int minErrDist;
+	
+	_Formula               * f;
+	_FormulaParsingContext * fpc;
+	_ExecutionList         * hbl_stream;
 
 	void SynErr(int n);
 	void Get();
@@ -63,6 +67,7 @@ private:
 	bool StartOf(int s);
 	void ExpectWeak(int n, int follow);
 	bool WeakSeparator(int n, int syFol, int repFol);
+	bool _parseExpressionsOnly (void) { return hbl_stream == NULL; }
 
 public:
 	enum {
@@ -99,7 +104,8 @@ public:
 
 
 
-	Parser(Scanner *scanner);
+	Parser(Scanner *scanner, _Formula* = NULL, _FormulaParsingContext* = NULL,
+	                         _ExecutionList* = NULL);
 	~Parser();
 	void SemErr(const wchar_t* msg);
 

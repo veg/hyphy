@@ -64,7 +64,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "matrix.h"
 
-extern _List BuiltInFunctions;
+extern _Trie BuiltInFunctions;
 
 class _ExecutionList;
 class _hyExecutionContext;
@@ -163,6 +163,7 @@ extern _AVLListX _hyApplicationGlobals;
 void SplitVariableIDsIntoLocalAndGlobal(const _SimpleList &inList,
                                         _List &outList);
 
+_Parameter OrNumbers(_Parameter, _Parameter);
 _Parameter AddNumbers(_Parameter, _Parameter);
 _Parameter SubNumbers(_Parameter, _Parameter);
 _Parameter MultNumbers(_Parameter, _Parameter);

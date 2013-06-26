@@ -98,6 +98,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define HY_OP_CODE_NONE -1 // noop
 
+#define HY_OP_COUNT 64L
+
 #define HY_OP_CODE_NOT 0                     // !
 #define HY_OP_CODE_NEQ (1 + HY_OP_CODE_NOT)  // !=
 #define HY_OP_CODE_IDIV (1 + HY_OP_CODE_NEQ) // $
@@ -145,12 +147,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HY_OP_CODE_LOG (1 + HY_OP_CODE_LNGAMMA)         // Log
 #define HY_OP_CODE_MACCESS (1 + HY_OP_CODE_LOG)         // MAccess
 #define HY_OP_CODE_MCOORD (1 + HY_OP_CODE_MACCESS)      // MCoord
+#define HY_OP_CODE_MSTORE (1 + HY_OP_CODE_MCOORD)    // MStore
 
-#define HY_OP_CODE_MAX (1 + HY_OP_CODE_MCOORD) // Max
+#define HY_OP_CODE_MAX (1 + HY_OP_CODE_MSTORE) // Max
 #define HY_OP_CODE_MIN (1 + HY_OP_CODE_MAX)    // Min
-#define HY_OP_CODE_NAMED_ARG                                                   \
-  (1 + HY_OP_CODE_MIN) // named argument ( x = value )
-#define HY_OP_CODE_PSTREESTRING (1 + HY_OP_CODE_NAMED_ARG) // PSTreeString
+
+#define HY_OP_CODE_PSTREESTRING (1 + HY_OP_CODE_MIN) // PSTreeString
 #define HY_OP_CODE_RANDOM (1 + HY_OP_CODE_PSTREESTRING)    // Random
 #define HY_OP_CODE_REROOTTREE (1 + HY_OP_CODE_RANDOM)      // RerootTree
 #define HY_OP_CODE_ROWS (1 + HY_OP_CODE_REROOTTREE)        // Rows

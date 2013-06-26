@@ -43,6 +43,7 @@
 #include "baseobj.h"
 #include "list.h"
 #include "hy_strings.h"
+#include "trie.h"
 #include "mathobj.h"
 
 
@@ -116,7 +117,7 @@
 
 #define _HY_OPERATION_OP_CLASS               (_HY_OPERATION_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN_REF)
 
-extern _List BuiltInFunctions;
+extern _Trie BuiltInFunctions;
 
 class _Stack;
 class _VariableContainer;
@@ -179,11 +180,12 @@ MATRIX                      |                                   |               
 _HY_OPERATION_DICTIONARY    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | matrix spec object
                             |                                   |                                   | see ::_AssociativeArray (_PMathObj)
 
-_HY_OPERATION_ASSIGNMENT    |  index of the variable to assign  | opCode (which operation to        | NULL
-_VALUE                      |  to                               | perform on the LHS)               | 
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | opCode (which operation to        | NULL
+_VALUE                      |  or the number of arguments to    | perform on the LHS)               | 
+                            |  consume for x[][] = y assignment |                                   |
 
-_HY_OPERATION_ASSIGNMENT    |  index of the variable to assign  | _HY_OPERATION_INVALID_REFERENCE   | *_Formula to assign 
-_EXPRESSION                 |  to                               |                                   | to the LHS
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | *_Formula to assign 
+_EXPRESSION                 |                                   |                                   | to the LHS
 
 
 _HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
@@ -234,17 +236,13 @@ public:
                              
   virtual BaseObj *makeDynamic(void);
 
-  bool ExecuteBuiltIn(_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute a built-in function
+  bool ExecuteBuiltIn(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute a built-in function
 
-  bool ExecuteFunctionCall (_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute an HBL function
+  bool ExecuteFunctionCall (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an HBL function
 
-  bool ExecuteAssignment (_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute an assignment 
+  bool ExecuteAssignment (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
                
-  bool Execute(_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute this operation
+  bool Execute(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute this operation
   // see the commend for _Formula::ExecuteFormula for the second argument
   
   bool      ExecuteFast (_SimpleFormulaDatum *stack,
@@ -252,7 +250,7 @@ public:
                     long& stackTop,
                     _String *errMsg = nil); //execute this operation
 
-  void ResolveDeferredAction (_VariableContainer* = nil, _String *errMsg = nil);
+  void ResolveDeferredAction (_hyExecutionContext*);
   
   bool ExecutePolynomial(_Stack &, _VariableContainer *nameSpace = nil,
                            _String *errMsg = nil);
@@ -260,11 +258,8 @@ public:
 
   virtual BaseObj *toStr(void); //convert the op to string
 
-  _String &GetCode(void) {
-    return (operationKind == _HY_OPERATION_BUILTIN)
-               ? *(_String *)BuiltInFunctions(reference)
-               : empty;
-  }
+  _String GetCode(void);
+  
   long &TheCode(void) { return operationKind == _HY_OPERATION_BUILTIN ? reference : attribute; }
   virtual bool IsAVariable(bool = true) const; // is this object a variable or not?
   virtual bool IsConstant(
@@ -314,7 +309,7 @@ public:
   bool IsVolatileOp    (void) const;
   bool HasSparseMatrixChanged (void) const;
   void UpdateLValue   (_SimpleList&, _SimpleList&, const long) const;
-  void PrepareLHS     (void);
+  long PrepareLHS     (void);
 
   bool CanResultsBeCached(const _Operation *, bool exp_only = false) const;
   void ToggleVarRef    (bool);

@@ -86,7 +86,7 @@ _Trie _HY_MatrixRandomValidPDFs;
 
 //______________________________________________________________________________
 int fexact_(long, long, double *, double, double, double, double *, double *);
-void MatrixIndexError(long, long, long, long);
+void MatrixIndexError(long, long, long, long, _String* = nil);
 
 // function prototypes
 _Parameter lnGamma(_Parameter), gammaDeviate(double, double = 1.);
@@ -255,11 +255,15 @@ _Parameter chisqDeviate(double df) {
 }
 
 //______________________________________________________________________________
-void MatrixIndexError(long hPos, long vPos, long hDim, long vDim) {
+void MatrixIndexError(long hPos, long vPos, long hDim, long vDim, _String *errBuffer) {
   _String errMsg("Invalid Matrix Index [");
   errMsg = errMsg & _String((long) hPos) & "][" & _String((long) vPos) &
            "] in a " & _String(hDim) & " by " & _String(vDim) & " matrix.";
-  WarnError(errMsg);
+  if (errBuffer) {
+    * errBuffer & errMsg;
+  } else {
+    WarnError(errMsg);
+  }
 }
 
 //______________________________________________________________________________
@@ -1294,7 +1298,8 @@ _PMathObj _Matrix::Sum(void) { return new _Constant(MaxElement(1)); }
 _PMathObj _Matrix::Execute(
     long opCode, _PMathObj p, _PMathObj p2,
     _hyExecutionContext *
-        context) // execute this operation with the second arg if necessary
+        context,
+        _MathObject *p3) // execute this operation with the second arg if necessary
     {
   //_Constant res;
   // why was static?? mod 07/21/2003
@@ -1395,6 +1400,18 @@ _PMathObj _Matrix::Execute(
 
   case HY_OP_CODE_MCOORD: // MCoord
     return MCoord(p, p2);
+    break;
+    
+  case HY_OP_CODE_MSTORE: { // MStore
+    long ind1, ind2;
+    if (p3 && MResolve(p, p2, ind1, ind2, context->GetErrorBuffer())) {
+      StoreValue(ind1, ind2, p3);
+      p3->AddAReference();
+      return p3;
+    }  else {
+      return nil;
+    }
+  }
     break;
   case HY_OP_CODE_RANDOM: // Random
     return Random(p);
@@ -5181,7 +5198,7 @@ _PMathObj _Matrix::MCoord(_PMathObj p, _PMathObj p2) {
 }
 
 //______________________________________________________________________________
-bool _Matrix::MResolve(_PMathObj p, _PMathObj p2, long &ind1, long &ind2) {
+bool _Matrix::MResolve(_PMathObj p, _PMathObj p2, long &ind1, long &ind2, _String *errBuffer) {
   ind1 = -1;
   ind2 = -1;
 
@@ -5195,11 +5212,11 @@ bool _Matrix::MResolve(_PMathObj p, _PMathObj p2, long &ind1, long &ind2) {
     ind2 = p2->Value();
   }
 
-  return CheckCoordinates(ind1, ind2);
+  return CheckCoordinates(ind1, ind2, errBuffer);
 }
 
 //______________________________________________________________________________
-bool _Matrix::CheckCoordinates(long &ind1, long &ind2) {
+bool _Matrix::CheckCoordinates(long &ind1, long &ind2, _String *errMsg) {
   if (hDim == 1) {
     if (ind2 < 0) {
       ind2 = ind1;
@@ -5255,6 +5272,19 @@ void _Matrix::MStore(long ind1, long ind2, _Formula &f, long opCode) {
         }
         Store(ind1, ind2, toStore);
       }
+    }
+  }
+}
+
+//______________________________________________________________________________
+void _Matrix::StoreValue(long ind1, long ind2, _PMathObj payload) {
+  if (ind2 >= 0) {          // element storage
+    if (storageType == _HY_MATRIX_FORMULA_TYPE) { // formulas
+      _Formula f (payload, false);
+      StoreFormula(ind1, ind2, f);
+    } else {
+      _Parameter toStore = payload->Value();
+      Store(ind1, ind2, toStore);
     }
   }
 }

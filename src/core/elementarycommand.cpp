@@ -8969,7 +8969,8 @@ bool _ElementaryCommand::HandleFprintf(_ExecutionList &currentProgram) {
 
             _FormulaParsingContext fpc(&errMsg, currentProgram.nameSpacePrefix);
             if (Parse(&f, argCopy, fpc) == HY_FORMULA_EXPRESSION) {
-              thePrintObject = f.Compute(0, currentProgram.nameSpacePrefix);
+              _hyExecutionContext localContext (currentProgram.nameSpacePrefix);
+              thePrintObject = f.Compute(0, &localContext);
             } else {
               if (errMsg.sLength)
                 throw(errMsg);

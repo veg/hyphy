@@ -133,7 +133,8 @@ bool ExpressionCalculator(_String data) {
 
   if (retCode != HY_FORMULA_FAILED) {
     if (retCode == HY_FORMULA_EXPRESSION) {
-      _PMathObj formRes = lhs.Compute(0, nil, nil, &errMsg);
+      _hyExecutionContext localContext (nil, &errMsg);
+      _PMathObj formRes = lhs.Compute(0, &localContext);
       if (errMsg.sLength) {
         WarnError(errMsg);
       } else {

@@ -68,9 +68,11 @@ public:
            _String *errorString = nil);
   _Formula(_PMathObj, bool isAVar = false);
   virtual ~_Formula(void);
-  _PMathObj Compute(long = 0, _VariableContainer * = nil,
+  
+  _PMathObj Compute(long = 0, _hyExecutionContext * = _hyDefaultExecutionContext,
                     _List *additionalCacheArguments = nil,
-                    _String *errMsg = nil, long unsigned type = HY_ANY_OBJECT);
+                    long unsigned type = HY_ANY_OBJECT);
+                    
   // compute the value of the formula
   // 1st argument : execute from this instruction onwards
   // see the commend for ExecuteFormula for the second argument
@@ -199,13 +201,15 @@ public:
   virtual _Formula operator/(const _Formula &);
   virtual _Formula operator^(const _Formula &);
   
-  void    PrepareLHS  (long);
+  long    FormulaType (void) const;
+  
+  long    PrepareLHS  (long);
   
 
   _Formula &PatchFormulasTogether(_Formula &, const _Formula &,
                                   const char op_code);
                                   
-  long     LValueIndex (const unsigned long start_at = 0) const;
+  long     LValueIndex (const unsigned long start_at = 0, const bool = false) const;
   /* 
     scan the formula from start_at and return the position of the 
     last _Operation that can serve as an l-value, e.g. a variable
