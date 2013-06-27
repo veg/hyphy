@@ -164,7 +164,7 @@ void _parser2013_createSparseMatrix (void* vp, _Formula& f, _FormulaParsingConte
     }
     
     if (is_const) {
-      is_const = hd->IsAConstant(true) && vd->IsAConstant(true);
+      is_const = hd->IsConstant() && vd->IsConstant();
     }
     
     
@@ -214,7 +214,7 @@ void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formu
   if (_parser2013_errorFree(vp) == false) return;
   f->SimplifyConstants();
   if (is_const) {
-    is_const = !f->IsEmpty () && f->IsAConstant(true);
+    is_const = !f->IsEmpty () && f->IsConstant();
   }
   matrix_entries << (long)f;
 }
@@ -254,7 +254,7 @@ void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entrie
   value->SimplifyConstants();
   
   if (is_const) {
-    is_const = key->IsAConstant() && value->IsAConstant();
+    is_const = key->IsConstant() && value->IsConstant();
   }
   
   dictionary_entries << (long)key;
@@ -286,7 +286,7 @@ void _parser2013_pushSparseElementEntry (void* vp, _FormulaParsingContext& fpc,
   for (long k = 0; k < 3; k ++) {
     f[k] ->SimplifyConstants();
     if (is_const) {
-      is_const = f[k]->IsAConstant(true);
+      is_const = f[k]->IsConstant();
     }
     matrix_entries << (long)(f[k]);
   }
@@ -330,6 +330,7 @@ bool    _parser2013_isSimpleStatement (void * vp) {
 bool    _parser2013_StringAndColon (void * vp) {
     Parser* p = (Parser*)vp;
     p->scanner->ResetPeek();
+    if (p->la->kind == p->_CLOSE_BRACE) return true;
     if (p->la->kind == p->_SINGLE_QUOTE_STRING || p->la->kind == p->_DOUBLE_QUOTE_STRING) {
         return p->scanner->Peek()->kind == p->_COLON;
     }

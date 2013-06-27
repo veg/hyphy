@@ -90,7 +90,9 @@ BaseRef _Formula::makeDynamic(void) {
 }
 
 //______________________________________________________________________________
-_Formula::~_Formula(void) { Clear(); }
+_Formula::~_Formula(void) { 
+  Clear(); 
+}
 
 //______________________________________________________________________________
 void _Formula::Clear(void) {

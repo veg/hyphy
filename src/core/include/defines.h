@@ -98,7 +98,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define HY_OP_CODE_NONE -1 // noop
 
-#define HY_OP_COUNT 64L
+#define HY_OP_COUNT 65L
 
 #define HY_OP_CODE_NOT 0                     // !
 #define HY_OP_CODE_NEQ (1 + HY_OP_CODE_NOT)  // !=
@@ -170,6 +170,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HY_OP_CODE_ZCDF (1 + HY_OP_CODE_TYPE)         // ZCDF
 #define HY_OP_CODE_POWER (1 + HY_OP_CODE_ZCDF)        // ^
 #define HY_OP_CODE_OR (1 + HY_OP_CODE_POWER)          // ||
+
+#define HY_OP_CODE_FSTORE (1 + HY_OP_CODE_OR)          // ||
 
 // END OPCODES
 

@@ -1402,12 +1402,17 @@ _PMathObj _Matrix::Execute(
     return MCoord(p, p2);
     break;
     
-  case HY_OP_CODE_MSTORE: { // MStore
+  case HY_OP_CODE_MSTORE: 
+  case HY_OP_CODE_FSTORE:{ // MStore, FStore
     long ind1, ind2;
     if (p3 && MResolve(p, p2, ind1, ind2, context->GetErrorBuffer())) {
-      StoreValue(ind1, ind2, p3);
-      p3->AddAReference();
-      return p3;
+      if (opCode == HY_OP_CODE_MSTORE) {
+        StoreValue(ind1, ind2, p3);
+        p3->AddAReference();
+        return p3;
+      }
+      StoreFormula(ind1, ind2, *(_Formula*)p3, true, true, true);
+      return new _MathObject;
     }  else {
       return nil;
     }
@@ -5261,7 +5266,7 @@ void _Matrix::MStore(long ind1, long ind2, _Formula &f, long opCode) {
       }
       StoreFormula(ind1, ind2, f);
     } else {
-      if (!f.IsAConstant(true)) {
+      if (!f.IsConstant()) {
         Convert2Formulas();
         StoreFormula(ind1, ind2, f);
       } else {
@@ -5283,8 +5288,7 @@ void _Matrix::StoreValue(long ind1, long ind2, _PMathObj payload) {
       _Formula f (payload, false);
       StoreFormula(ind1, ind2, f);
     } else {
-      _Parameter toStore = payload->Value();
-      Store(ind1, ind2, toStore);
+      Store(ind1, ind2, payload->Value());
     }
   }
 }
@@ -5426,10 +5430,11 @@ void _Matrix::StoreObject(long k, _MathObject *value, bool dup) {
 
 //______________________________________________________________________________
 void _Matrix::StoreFormula(long i, long j, _Formula &f, bool copyF,
-                           bool simplify) {
+                           bool simplify, bool auto_convert) {
 
   if (storageType != _HY_MATRIX_FORMULA_TYPE) {
-    return;
+    if (!auto_convert) return;
+    Convert2Formulas();
   }
 
   long lIndex = Hash(i, j);

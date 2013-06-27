@@ -140,7 +140,8 @@ struct _hy_op_definition {
   {HY_OP_CODE_TYPE,"Type",1L, nil},
   {HY_OP_CODE_ZCDF,"ZCDF",1L, nil},
   {HY_OP_CODE_POWER,"^",-1L, (Ptr) Power},
-  {HY_OP_CODE_OR,"||",-1L, (Ptr)OrNumbers}
+  {HY_OP_CODE_OR,"||",-1L, (Ptr)OrNumbers},
+  {HY_OP_CODE_FSTORE,"FStore",3L, nil}
 };
 
 #endif

@@ -105,7 +105,7 @@ void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fp
 			Expect(_MULTIPLY);
 		} else if (StartOf(1)) {
 			expression(*f, fpc);
-		} else SynErr(37);
+		} else SynErr(38);
 		_parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; 
 		while (la->kind == _COMMA) {
 			Get();
@@ -114,7 +114,7 @@ void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fp
 				Expect(_MULTIPLY);
 			} else if (StartOf(1)) {
 				expression(*f, fpc);
-			} else SynErr(38);
+			} else SynErr(39);
 			_parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; 
 		}
 		Expect(_CLOSE_BRACE);
@@ -122,7 +122,7 @@ void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fp
 }
 
 void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
-		while (!(StartOf(2))) {SynErr(39); Get();}
+		while (!(StartOf(2))) {SynErr(40); Get();}
 		assignment_op(f, fpc);
 }
 
@@ -182,7 +182,7 @@ void Parser::sparse_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 					matrix_element(*matrix_definition, fpc, is_const);
 				}
 			}
-		} else SynErr(40);
+		} else SynErr(41);
 		Expect(_CLOSE_BRACE);
 		if (is_matrix) {
 		   _parser2013_createSparseMatrix (this, f, fpc, hd, vd, matrix_definition, is_const);}
@@ -235,7 +235,7 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			function_call(f, fpc);
 		} else if (la->kind == _IDENTIFIER) {
 			ident(f, fpc);
-		} else SynErr(41);
+		} else SynErr(42);
 }
 
 void Parser::indexing_operation(_Formula& f, _FormulaParsingContext& fpc) {
@@ -258,13 +258,16 @@ void Parser::indexing_operation(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 		long op_code = HY_OP_CODE_NONE; 
-		if (la->kind == _MULTIPLY || la->kind == 22 /* "^" */) {
+		if (la->kind == _MULTIPLY || la->kind == 22 /* "^" */ || la->kind == 23 /* "&" */) {
 			if (la->kind == _MULTIPLY) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
-			} else {
+			} else if (la->kind == 22 /* "^" */) {
 				Get();
 				op_code = HY_OP_CODE_POWER; 
+			} else {
+				Get();
+				op_code = HY_OP_CODE_REF; 
 			}
 		}
 		indexing_operation(f, fpc);
@@ -289,10 +292,10 @@ void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 			if (la->kind == _MULTIPLY) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
-			} else if (la->kind == 23 /* "/" */) {
+			} else if (la->kind == 24 /* "/" */) {
 				Get();
 				op_code = HY_OP_CODE_DIV; 
-			} else if (la->kind == 24 /* "$" */) {
+			} else if (la->kind == 25 /* "$" */) {
 				Get();
 				op_code = HY_OP_CODE_IDIV; 
 			} else {
@@ -306,8 +309,8 @@ void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
 		long unary_code = HY_OP_CODE_NONE, op_code; 
-		if (la->kind == 26 /* "+" */ || la->kind == 27 /* "-" */) {
-			if (la->kind == 26 /* "+" */) {
+		if (la->kind == 27 /* "+" */ || la->kind == 28 /* "-" */) {
+			if (la->kind == 27 /* "+" */) {
 				Get();
 				unary_code = HY_OP_CODE_ADD; 
 			} else {
@@ -319,8 +322,8 @@ void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
 		if (unary_code != HY_OP_CODE_NONE) {
 		_parser2013_pushOp (this, f, fpc, unary_code , 1); 
 		} 
-		while (la->kind == 26 /* "+" */ || la->kind == 27 /* "-" */) {
-			if (la->kind == 26 /* "+" */) {
+		while (la->kind == 27 /* "+" */ || la->kind == 28 /* "-" */) {
+			if (la->kind == 27 /* "+" */) {
 				Get();
 				op_code = HY_OP_CODE_ADD; 
 			} else {
@@ -337,32 +340,32 @@ void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 		long op_code; 
 		while (StartOf(4)) {
 			switch (la->kind) {
-			case 28 /* "==" */: {
+			case 29 /* "==" */: {
 				Get();
 				op_code = HY_OP_CODE_EQ; 
 				break;
 			}
-			case 29 /* "!=" */: {
+			case 30 /* "!=" */: {
 				Get();
 				op_code = HY_OP_CODE_NEQ; 
 				break;
 			}
-			case 30 /* ">" */: {
+			case 31 /* ">" */: {
 				Get();
 				op_code = HY_OP_CODE_GREATER; 
 				break;
 			}
-			case 31 /* "<" */: {
+			case 32 /* "<" */: {
 				Get();
 				op_code = HY_OP_CODE_LESS; 
 				break;
 			}
-			case 32 /* ">=" */: {
+			case 33 /* ">=" */: {
 				Get();
 				op_code = HY_OP_CODE_GEQ; 
 				break;
 			}
-			case 33 /* "<=" */: {
+			case 34 /* "<=" */: {
 				Get();
 				op_code = HY_OP_CODE_LEQ; 
 				break;
@@ -375,7 +378,7 @@ void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::logical_and(_Formula& f, _FormulaParsingContext& fpc) {
 		logical_comp(f, fpc);
-		while (la->kind == 34 /* "&&" */) {
+		while (la->kind == 35 /* "&&" */) {
 			Get();
 			logical_comp(f, fpc);
 			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); 
@@ -384,7 +387,7 @@ void Parser::logical_and(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::logical_or(_Formula& f, _FormulaParsingContext& fpc) {
 		logical_and(f, fpc);
-		while (la->kind == 35 /* "||" */) {
+		while (la->kind == 36 /* "||" */) {
 			Get();
 			logical_and(f, fpc);
 			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); 
@@ -392,7 +395,7 @@ void Parser::logical_or(_Formula& f, _FormulaParsingContext& fpc) {
 }
 
 void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
-		while (!(StartOf(2))) {SynErr(42); Get();}
+		while (!(StartOf(2))) {SynErr(43); Get();}
 		logical_or(f, fpc);
 		if (StartOf(5)) {
 			_Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;
@@ -455,7 +458,7 @@ void Parser::block(_ExecutionList &current_code_stream) {
 void Parser::hyphy_batch_language() {
 		if (_parseExpressionsOnly ()) {
 			expression(*f, *fpc);
-			while (!(la->kind == _EOF)) {SynErr(43); Get();}
+			while (!(la->kind == _EOF)) {SynErr(44); Get();}
 		} else if (StartOf(2)) {
 			while (StartOf(1)) {
 				if (StartOf(1)) {
@@ -464,7 +467,7 @@ void Parser::hyphy_batch_language() {
 					block(*hbl_stream);
 				}
 			}
-		} else SynErr(44);
+		} else SynErr(45);
 }
 
 
@@ -569,7 +572,7 @@ void Parser::Parse() {
 
 Parser::Parser(Scanner *scanner, _Formula* _f, _FormulaParsingContext* _fpc,
 	                         _ExecutionList* _insrtuctions) {
-	maxT = 36;
+	maxT = 37;
 
 	ParserInitCaller<Parser>::CallInit(this);
 	dummyToken = NULL;
@@ -590,13 +593,13 @@ bool Parser::StartOf(int s) {
 	const bool T = true;
 	const bool x = false;
 
-	static bool set[6][38] = {
-		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
-		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
-		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x},
-		{x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x}
+	static bool set[6][39] = {
+		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
+		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,T,T,x, x,x,x},
+		{x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x}
 	};
 
 
@@ -640,28 +643,29 @@ void Errors::SynErr(int line, int col, int n) {
 			case 20: s = coco_string_create(L"TIMES_EQUAL expected"); break;
 			case 21: s = coco_string_create(L"DIV_EQUAL expected"); break;
 			case 22: s = coco_string_create(L"\"^\" expected"); break;
-			case 23: s = coco_string_create(L"\"/\" expected"); break;
-			case 24: s = coco_string_create(L"\"$\" expected"); break;
-			case 25: s = coco_string_create(L"\"%\" expected"); break;
-			case 26: s = coco_string_create(L"\"+\" expected"); break;
-			case 27: s = coco_string_create(L"\"-\" expected"); break;
-			case 28: s = coco_string_create(L"\"==\" expected"); break;
-			case 29: s = coco_string_create(L"\"!=\" expected"); break;
-			case 30: s = coco_string_create(L"\">\" expected"); break;
-			case 31: s = coco_string_create(L"\"<\" expected"); break;
-			case 32: s = coco_string_create(L"\">=\" expected"); break;
-			case 33: s = coco_string_create(L"\"<=\" expected"); break;
-			case 34: s = coco_string_create(L"\"&&\" expected"); break;
-			case 35: s = coco_string_create(L"\"||\" expected"); break;
-			case 36: s = coco_string_create(L"??? expected"); break;
-			case 37: s = coco_string_create(L"invalid matrix_row"); break;
+			case 23: s = coco_string_create(L"\"&\" expected"); break;
+			case 24: s = coco_string_create(L"\"/\" expected"); break;
+			case 25: s = coco_string_create(L"\"$\" expected"); break;
+			case 26: s = coco_string_create(L"\"%\" expected"); break;
+			case 27: s = coco_string_create(L"\"+\" expected"); break;
+			case 28: s = coco_string_create(L"\"-\" expected"); break;
+			case 29: s = coco_string_create(L"\"==\" expected"); break;
+			case 30: s = coco_string_create(L"\"!=\" expected"); break;
+			case 31: s = coco_string_create(L"\">\" expected"); break;
+			case 32: s = coco_string_create(L"\"<\" expected"); break;
+			case 33: s = coco_string_create(L"\">=\" expected"); break;
+			case 34: s = coco_string_create(L"\"<=\" expected"); break;
+			case 35: s = coco_string_create(L"\"&&\" expected"); break;
+			case 36: s = coco_string_create(L"\"||\" expected"); break;
+			case 37: s = coco_string_create(L"??? expected"); break;
 			case 38: s = coco_string_create(L"invalid matrix_row"); break;
-			case 39: s = coco_string_create(L"this symbol not expected in expression"); break;
-			case 40: s = coco_string_create(L"invalid sparse_matrix"); break;
-			case 41: s = coco_string_create(L"invalid primitive"); break;
-			case 42: s = coco_string_create(L"this symbol not expected in assignment_op"); break;
-			case 43: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
-			case 44: s = coco_string_create(L"invalid hyphy_batch_language"); break;
+			case 39: s = coco_string_create(L"invalid matrix_row"); break;
+			case 40: s = coco_string_create(L"this symbol not expected in expression"); break;
+			case 41: s = coco_string_create(L"invalid sparse_matrix"); break;
+			case 42: s = coco_string_create(L"invalid primitive"); break;
+			case 43: s = coco_string_create(L"this symbol not expected in assignment_op"); break;
+			case 44: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
+			case 45: s = coco_string_create(L"invalid hyphy_batch_language"); break;
 
 		default:
 		{

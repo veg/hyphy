@@ -180,9 +180,10 @@ _Operation::~_Operation(void) {
        operationKind == _HY_OPERATION_DICTIONARY) {
       ((_SimpleList*)payload)->ClearFormulasInList();
     } else {
-      if (operationKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION) 
+      if (operationKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
         delete ((_Formula*) payload);
         payload = nil;
+      }
     }
     DeleteObject(payload);
   }
@@ -330,18 +331,15 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
           }
           
           lhs_var -> SetValue (rhs, false);
-          DeleteObject (lhs);
           rhs->AddAReference();
           theScrap.theStack.Place (rhs);
         } else {
-          _Formula fFixed;
-          fFixed.DuplicateReference((_Formula*)payload);
-          lhs_var->SetFormula(fFixed);
+          lhs_var->SetFormula(*(_Formula*)payload);
           theScrap.theStack.Place (new _MathObject);
-          return true;
-        }
+         }
         
-        return true;
+       DeleteObject (lhs);
+       return true;
       } else {
         // this handles x[][] ?= y assignments
         
@@ -376,6 +374,8 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
                           
         if (rhs) {
           res = lhs_accessors[0] -> Execute(HY_OP_CODE_MSTORE, lhs_accessors[1], lhs_accessors[2], context, rhs);
+        } else {
+          res = lhs_accessors[0] -> Execute(HY_OP_CODE_FSTORE, lhs_accessors[1], lhs_accessors[2], context, (_PMathObj)payload);
         }
         
         for (long k = 0; k < reference; k++) {
@@ -384,7 +384,7 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
         DeleteObject(rhs);
         
         if (res) {
-          theScrap.theStack.Place (rhs);        
+          theScrap.theStack.Place (res);        
           return true;
         }
         return false;
@@ -968,7 +968,7 @@ bool _Operation::IsAssociativeOp (void) const {
 bool _Operation::IsVolatileOp (void) const {
   
   if (operationKind & _HY_OPERATION_OP_CLASS) {
-    if (reference == HY_OP_CODE_RANDOM || reference == HY_OP_CODE_TIME || reference == HY_OP_CODE_BRANCHLENGTH) {
+    if (reference == HY_OP_CODE_RANDOM || reference == HY_OP_CODE_TIME) {
       return true;
     }
   }

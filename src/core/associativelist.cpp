@@ -359,7 +359,7 @@ _String *_AssociativeList::Serialize(_String &avlName) {
   (*outString) << "{";
   bool doComma = false;
   _List *meKeys = GetKeys();
-  for (long k = 0; k < meKeys->lLength; k = k + 1) {
+  for (unsigned long k = 0; k < meKeys->lLength; k ++) {
     _String *thisKey = (_String *)(*meKeys)(k);
     if (thisKey) {
       if (doComma) {
@@ -511,11 +511,23 @@ _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
     case HY_OP_CODE_MCOORD: // MCoord
       return MCoord(p);
       break;
+      
+     case HY_OP_CODE_MSTORE: // MStore
+      p3->AddAReference();
+      if (p->ObjectClass() == STRING) {
+        MStore (p, p3, false);
+      } else {
+        _FString key ((_String*)p->toStr());
+        MStore (&key, p3, false);
+      }
+      p3->AddAReference();
+      return p3;
+      break;
   
     case HY_OP_CODE_ROWS: // Rows - get keys
       if (avl.emptySlots.lLength) {
         _List dataListCompact;
-        for (long k = 0; k < avl.dataList->lLength; k++) {
+        for (unsigned long k = 0; k < avl.dataList->lLength; k++) {
           BaseRef anItem = ((BaseRef *)avl.dataList->lData)[k];
           if (anItem) {
             dataListCompact << anItem;

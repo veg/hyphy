@@ -307,7 +307,7 @@ public:
   void Store(long, long, _Parameter); // write access to an element in a matrix
   void StoreObject(long, long, _MathObject *, bool dup = false);
   void StoreObject(long, _MathObject *, bool dup = false);
-  void StoreFormula(long, long, _Formula &, bool = true, bool = true);
+  void StoreFormula(long, long, _Formula &, bool = true, bool = true, bool = false);
   void NonZeroEntries(_SimpleList &);
 
   void UpdateDiag(long, long, _MathObject *);

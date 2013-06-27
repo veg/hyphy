@@ -161,7 +161,7 @@ _Variable::_Variable(_String &s, _String &f, bool isG) {
   SetBounds(DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
   InsertVar(this);
   varFormula = new _Formula(f);
-  if (varFormula->IsAConstant()) {
+  if (varFormula->IsConstant()) {
     _PMathObj theP = varFormula->Compute();
     if (theP) {
       SetValue(theP);
@@ -455,7 +455,6 @@ void _Variable::SetFormula(_Formula &theF) {
     _PMathObj theP = theF.Compute();
     if (theP) {
       myF = new _Formula((_PMathObj) theP->makeDynamic(), false);
-      checkPointer(myF);
     } else {
       return;
     }

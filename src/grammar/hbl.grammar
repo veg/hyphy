@@ -193,6 +193,7 @@ reference_like <_Formula& f, _FormulaParsingContext& fpc>
   [ 
     MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
   | "^"  (. op_code = HY_OP_CODE_POWER; .)
+  | "&"  (. op_code = HY_OP_CODE_REF; .)
   ]
   indexing_operation <f, fpc> 
   (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
