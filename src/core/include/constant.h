@@ -98,7 +98,10 @@ public:
   virtual _Parameter Value(void);
   virtual _PMathObj FormatNumberString(_PMathObj, _PMathObj);
   virtual _PMathObj Compute(void) { return this; }
-  ;
+
+  virtual _PMathObj
+  Execute(long opCode, _PMathObj p = nil, _PMathObj p2 = nil,
+          _hyExecutionContext *context = _hyDefaultExecutionContext, _PMathObj p3 = nil);
 
   virtual void Initialize(void);
   virtual void Duplicate(BaseRef);

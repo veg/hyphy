@@ -42,12 +42,10 @@
 #include "variablecontainer.h"
 #include "formulaparsingcontext.h"
 
-_FormulaParsingContext::_FormulaParsingContext(_String *err, _VariableContainer *scope) {
-  assignment_ref_id = -1;
-  assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
-  is_volatile = false;
+_FormulaParsingContext::_FormulaParsingContext(_String *err, _VariableContainer *scope, long state) {
   err_msg = err;
   formula_scope = scope;
+  current_parsing_state = state;
 }
 
 _String _FormulaParsingContext::contextualizeRef(_String &ref) {
@@ -55,4 +53,12 @@ _String _FormulaParsingContext::contextualizeRef(_String &ref) {
     return *formula_scope->GetName() & '.' & ref;
   }
   return ref;
+}
+
+void _FormulaParsingContext :: toggleReference(bool on_off) {
+  if (on_off) {
+    current_parsing_state = current_parsing_state | _HY_FPC_REFERENCE;
+  } else {
+    current_parsing_state = current_parsing_state ^ _HY_FPC_REFERENCE;  
+  }
 }

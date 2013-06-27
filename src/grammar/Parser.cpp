@@ -258,19 +258,23 @@ void Parser::indexing_operation(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 		long op_code = HY_OP_CODE_NONE; 
-		if (la->kind == _MULTIPLY || la->kind == 22 /* "^" */ || la->kind == 23 /* "&" */) {
-			if (la->kind == _MULTIPLY) {
-				Get();
-				op_code = HY_OP_CODE_MUL; 
-			} else if (la->kind == 22 /* "^" */) {
-				Get();
-				op_code = HY_OP_CODE_POWER; 
-			} else {
-				Get();
-				op_code = HY_OP_CODE_REF; 
+		if (StartOf(3)) {
+			if (la->kind == _MULTIPLY || la->kind == 22 /* "^" */) {
+				if (la->kind == _MULTIPLY) {
+					Get();
+					op_code = HY_OP_CODE_MUL; 
+				} else {
+					Get();
+					op_code = HY_OP_CODE_POWER; 
+				}
 			}
-		}
-		indexing_operation(f, fpc);
+			indexing_operation(f, fpc);
+		} else if (la->kind == 23 /* "&" */) {
+			Get();
+			op_code = HY_OP_CODE_REF; fpc.toggleReference (true);
+			ident(f, fpc);
+			fpc.toggleReference (false); 
+		} else SynErr(43);
 		if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); 
 }
 
@@ -288,7 +292,7 @@ void Parser::power_like(_Formula& f, _FormulaParsingContext& fpc) {
 void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 		power_like(f, fpc);
 		long op_code; 
-		while (StartOf(3)) {
+		while (StartOf(4)) {
 			if (la->kind == _MULTIPLY) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
@@ -338,7 +342,7 @@ void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
 void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 		addition_like(f, fpc);
 		long op_code; 
-		while (StartOf(4)) {
+		while (StartOf(5)) {
 			switch (la->kind) {
 			case 29 /* "==" */: {
 				Get();
@@ -395,9 +399,9 @@ void Parser::logical_or(_Formula& f, _FormulaParsingContext& fpc) {
 }
 
 void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
-		while (!(StartOf(2))) {SynErr(43); Get();}
+		while (!(StartOf(2))) {SynErr(44); Get();}
 		logical_or(f, fpc);
-		if (StartOf(5)) {
+		if (StartOf(6)) {
 			_Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;
 			switch (la->kind) {
 			case _EQUAL: {
@@ -458,7 +462,7 @@ void Parser::block(_ExecutionList &current_code_stream) {
 void Parser::hyphy_batch_language() {
 		if (_parseExpressionsOnly ()) {
 			expression(*f, *fpc);
-			while (!(la->kind == _EOF)) {SynErr(44); Get();}
+			while (!(la->kind == _EOF)) {SynErr(45); Get();}
 		} else if (StartOf(2)) {
 			while (StartOf(1)) {
 				if (StartOf(1)) {
@@ -467,7 +471,7 @@ void Parser::hyphy_batch_language() {
 					block(*hbl_stream);
 				}
 			}
-		} else SynErr(45);
+		} else SynErr(46);
 }
 
 
@@ -593,10 +597,11 @@ bool Parser::StartOf(int s) {
 	const bool T = true;
 	const bool x = false;
 
-	static bool set[6][39] = {
+	static bool set[7][39] = {
 		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
 		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
 		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,x,x,T, T,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,T,T,x, x,x,x},
 		{x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x}
@@ -663,9 +668,10 @@ void Errors::SynErr(int line, int col, int n) {
 			case 40: s = coco_string_create(L"this symbol not expected in expression"); break;
 			case 41: s = coco_string_create(L"invalid sparse_matrix"); break;
 			case 42: s = coco_string_create(L"invalid primitive"); break;
-			case 43: s = coco_string_create(L"this symbol not expected in assignment_op"); break;
-			case 44: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
-			case 45: s = coco_string_create(L"invalid hyphy_batch_language"); break;
+			case 43: s = coco_string_create(L"invalid reference_like"); break;
+			case 44: s = coco_string_create(L"this symbol not expected in assignment_op"); break;
+			case 45: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
+			case 46: s = coco_string_create(L"invalid hyphy_batch_language"); break;
 
 		default:
 		{

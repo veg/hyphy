@@ -40,21 +40,21 @@
 #ifndef __FORMULAPARSINGCONTEXT__
 #define __FORMULAPARSINGCONTEXT__
 
+#define _HY_FPC_NORMAL    0x0000L
+#define _HY_FPC_REFERENCE 0x0001L
+
 class _FormulaParsingContext {
 
-  long assignment_ref_id;
-  char assignment_ref_type;
-  bool is_volatile;
-  _String *err_msg;
+   _String *err_msg;
   _VariableContainer *formula_scope;
+  long                current_parsing_state;
 
 public:
-  _FormulaParsingContext(_String * = nil, _VariableContainer * = nil);
-  bool &isVolatile(void) { return is_volatile; }
-  long &assignmentRefID(void) { return assignment_ref_id; }
-  char &assignmentRefType(void) { return assignment_ref_type; }
+  _FormulaParsingContext(_String * = nil, _VariableContainer * = nil, long = _HY_FPC_NORMAL);
   _String *errMsg(void) { return err_msg; }
   _VariableContainer *formulaScope(void) { return formula_scope; }
+  void toggleReference (bool);
+  bool isReference (void) { return current_parsing_state & _HY_FPC_REFERENCE; }
   _String contextualizeRef(_String &);
 };
 

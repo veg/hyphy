@@ -349,7 +349,7 @@ bool _ExecutionList::TryToMakeSimple(void) {
 
         long parseCode = Parse(f, *formulaString, fpc, f2);
 
-        if (parseCode == HY_FORMULA_EXPRESSION ||
+        /*if (parseCode == HY_FORMULA_EXPRESSION ||
             parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
           if (f->AmISimple(stackDepth, varList)) {
             aStatement->simpleParameters << parseCode;
@@ -366,7 +366,7 @@ bool _ExecutionList::TryToMakeSimple(void) {
             }
             break;
           }
-        }
+        }*/
 
         delete f;
         delete f2;

@@ -190,12 +190,20 @@ indexing_operation <_Formula& f, _FormulaParsingContext& fpc>
 
 reference_like <_Formula& f, _FormulaParsingContext& fpc>
 = (. long op_code = HY_OP_CODE_NONE; .)
+  (
+  (
   [ 
     MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
   | "^"  (. op_code = HY_OP_CODE_POWER; .)
-  | "&"  (. op_code = HY_OP_CODE_REF; .)
   ]
-  indexing_operation <f, fpc> 
+  indexing_operation <f, fpc>
+  ) 
+  | 
+  (  "&"  (. op_code = HY_OP_CODE_REF; fpc.toggleReference (true);.)
+      ident <f, fpc>
+      (. fpc.toggleReference (false); .)
+  ) 
+  )
   (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
   .
   

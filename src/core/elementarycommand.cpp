@@ -822,6 +822,7 @@ void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
     return;
   }
 
+  /*
   if (!simpleParameters.lLength) { // not compiled yet
     _Formula f, f2;
 
@@ -854,7 +855,7 @@ void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
     } else {
       return;
     }
-  }
+  }*/
 
   ExecuteFormula((_Formula *)simpleParameters.lData[1],
                  (_Formula *)simpleParameters.lData[2],
@@ -7149,8 +7150,8 @@ void _ElementaryCommand::ExecuteCase26(_ExecutionList &chain) {
           _Formula rhs, lhs;
           _FormulaParsingContext fpc(nil, chain.nameSpacePrefix);
           ind2 = Parse(&rhs, *replicateSource, fpc, &lhs);
-          ExecuteFormula(&rhs, &lhs, ind2, fpc.assignmentRefID(),
-                         chain.nameSpacePrefix, fpc.assignmentRefType());
+          //ExecuteFormula(&rhs, &lhs, ind2, fpc.assignmentRefID(),
+          //               chain.nameSpacePrefix, fpc.assignmentRefType());
         }
 
         (*constraintAccumulator) << replicateSource;

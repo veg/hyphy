@@ -111,7 +111,11 @@ void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& 
                 _hyApplicationGlobals.Find(&ident) >= 0) {
             f.Push(new _Operation( ident, true, globalKey, nil, takeVarReference));
         } else {
-            f.Push(new _Operation( ident, true, globalKey, fpc.formulaScope(), takeVarReference));
+            _Operation * id_op = new _Operation( ident, true, globalKey, fpc.formulaScope(), takeVarReference);
+            if (fpc.isReference()) {
+              id_op->SetAttribute (_HY_OPERATION_TOGGLE);
+            }
+            f.Push (id_op);
         }
     }
 }
