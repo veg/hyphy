@@ -281,7 +281,8 @@ void    FlagError (_String st)
     }
 #endif
 
-#if defined __UNIX__ && !defined __HYPHYQT__
+
+#if defined __UNIX__ && !defined __HYPHYQT_ &&! defined __HYPHY_GTK__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif
@@ -363,7 +364,8 @@ void WarnError (_String st)
 #endif
 #endif
 
-#if defined __UNIX__ && !defined __HYPHY_QT__
+
+#if defined __UNIX__ && !defined __HYPHY_GTK__ && !defined __HYPHY_QT__
     if (dropIntoDebugMode)
         while (ExpressionCalculator()) ;
 #endif

@@ -54,7 +54,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "batchlan.h"
 #include "calcnode.h"
 #include <unistd.h>
-#include <curses.h>
+//#include <curses.h>
 #include <termios.h>
 #ifdef   __MP2__
 #include <pthread.h>
