@@ -104,6 +104,10 @@ public:
         nInstances ++;
     }
 
+    virtual void     RemoveAReference (void)     {
+        nInstances --;
+    }
+
     long             nInstances;
 
 
@@ -145,13 +149,22 @@ double        TimerDifferenceFunction   (bool);
 #define       USE_AVL_NAMES
 #define       HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
 
-#define     PRINTF_FORMAT_STRING    "%g"
+#define     PRINTF_FORMAT_STRING    "%.16g"
 typedef     double       _Parameter; // standard number type - used everywhere in matrices.
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ || defined __HYPHYQT__
 void    yieldCPUTime        (void);
 bool    handleGUI           (bool = false);
+#endif
+
+
+#ifdef _SLKP_USE_SSE_INTRINSICS
+#include <pmmintrin.h>
+#endif
+
+#ifdef _SLKP_USE_AVX_INTRINSICS
+#include <immintrin.h>
 #endif
 
 #endif

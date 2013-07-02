@@ -39,32 +39,29 @@ template <class node_data>
 node<node_data>* StepWiseTraverserLevel (node_data& level, node<node_data>* root)
 {
 	static node<node_data>* laststep;
-	node<node_data>* curstep, *crashdummy;
-	int goingup = false;
+	node   <node_data>  * curstep, 
+                        * crashdummy;
+                        
+	bool   goingup = false;
 		
-	if (root)
-	{
+	if (root) {
 		laststep = root;
 		level = 0;
 		return root;
 	}
 	
 	curstep = laststep;
-	while (curstep)
-	{
-		if (!goingup)
-		{
+	while (curstep) {
+		if (!goingup) {
 			crashdummy = curstep->go_down(1);
-			if (crashdummy)
-			{
+			if (crashdummy) {
 				level++;
 				curstep=crashdummy;
 				break;
 			}
 		}
 		crashdummy = curstep->go_next();
-		if (crashdummy)
-		{
+		if (crashdummy) {
 			curstep=crashdummy;
 			break;
 		}
@@ -76,13 +73,14 @@ node<node_data>* StepWiseTraverserLevel (node_data& level, node<node_data>* root
 	return curstep;	
 }
 
+
 //-------------------------------------------------------------
 
 template <class node_data>
 node<node_data>* StepWiseTraverser (node<node_data>* root)
 {
-	long duh = 0;
-	return StepWiseTraverserLevel (duh, root);
+	long   ignored_level = 0;
+	return StepWiseTraverserLevel (ignored_level, root);
 }
 
 //-------------------------------------------------------------
@@ -332,8 +330,7 @@ template <class node_data> void node<node_data>::delete_tree(bool delSelf){
 template <class node_data> node<node_data>* node<node_data>::duplicate_tree(){
  		
  	node<node_data>* result = new node<node_data>;
- 	for (int i=1; i<=get_num_nodes(); i++)
- 	{
+ 	for (int i=1; i<=get_num_nodes(); i++) {
 		result->add_node(*(go_down(i)->duplicate_tree()));
  	}
  	result->in_object = in_object;

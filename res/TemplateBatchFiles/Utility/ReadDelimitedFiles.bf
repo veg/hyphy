@@ -2,22 +2,19 @@
 
 function ReadCSVTable (fileName, haveHeader)
 {
-	if (Abs(fileName) == 0)
-	{
+	if (Abs(fileName) == 0) {
 		fscanf (PROMPT_FOR_FILE, "Lines", inData);
 	}
-	else
-	{
+	else {
 		fscanf (fileName, "Lines", inData);		
 	}
-	if (haveHeader)
-	{
+	if (haveHeader) {
 		output = {};
 		output[0] = splitOnRegExp (inData[0],"\\,");
 	}
 	felMXString = "";
 	felMXString * 256;
-	felMXString * "_tempMatrix={";
+	felMXString * "{";
 	if (haveHeader > 1)
 	{
 		rowHeaders = {Columns(inData) - 1, 1};
@@ -34,24 +31,83 @@ function ReadCSVTable (fileName, haveHeader)
 	}
 	else
 	{
-		for (lineID = haveHeader; lineID < Columns(inData); lineID = lineID + 1)
-		{
+		for (lineID = haveHeader; lineID < Columns(inData); lineID += 1) {
 			felMXString * ("{" + inData[lineID] + "}\n");
 		}
 	}
 	felMXString * "}";
 	felMXString * 0;
-	ExecuteCommands (felMXString);
-	felMXString = 0;
+	felMXString = Eval (felMXString);
 	inData = 0;
 	if (haveHeader)
 	{
-		output[1] = _tempMatrix;
-		_tempMatrix = 0;
+		output[1] = felMXString;
+		felMXString = 0;
 		return output;
 	}
-	return _tempMatrix;
+	return felMXString;
 }
+
+/*----------------------------------------------------------------*/
+
+lfunction ReadCSVTableText (fileName, haveHeader)
+{
+	if (Abs(fileName) == 0) {
+		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+	}
+	else {
+		fscanf (fileName, "Lines", inData);		
+	}
+	if (haveHeader) {
+		output = {};
+		output[0] = splitOnRegExp (inData[0],"\\,");
+	}
+	
+	_theMatrix = {};
+	
+	if (haveHeader > 1)
+	{
+		rowHeaders = {Columns(inData) - 1, 1};
+		for (lineID = 1; lineID < Columns(inData); lineID += 1)
+		{
+			_tempMatrix = inData[lineID]$"\\,";
+			if (_tempMatrix[0]>=0)
+			{
+				rowHeaders [lineID-1] = (inData[lineID])[0][_tempMatrix[0]-1];
+				felMXString * ("{" + (inData[lineID])[_tempMatrix[0]+1][Abs(inData[lineID])-1] + "}\n");
+			}
+		}		
+		output [2] = rowHeaders;
+	}
+	else
+	{
+		for (lineID = haveHeader; lineID < Columns(inData); lineID += 1) {
+			values = splitOnRegExp (inData[lineID], "\\,");
+			_theMatrix + {};
+			for (columnID = 0; columnID < Abs (values); columnID += 1) {
+			    theEntry = values[columnID];
+			    isQuoted = Abs(theEntry)>=2 && theEntry[0]=="\"" && theEntry[Abs(theEntry)-1] == "\"";
+			    if (isQuoted) {
+			        if (Abs(theEntry) == 2) {
+			            (_theMatrix[Abs(_theMatrix)-1]) + "";
+			        }
+			        else {
+			            (_theMatrix[Abs(_theMatrix)-1]) + theEntry[1][Abs(theEntry)-2];
+			        }
+			    } else {
+			        (_theMatrix[Abs(_theMatrix)-1]) + theEntry;			    
+			    }
+			}
+		}
+	}
+	if (haveHeader) {
+		output[1] = _theMatrix;
+		_theMatrix = 0;
+		return output;
+	}
+	return _theMatrix;
+}
+
 
 
 /*----------------------------------------------------------------*/
@@ -360,7 +416,23 @@ function normalizeSequenceID (seqName, alreadyDefined&)
 
 function normalizeSequenceNamesInAFilter (filterName)
 {
-	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
+	return normalizeSequenceNamesInAFilterWithTree (filterName, "");
+}
+
+/*----------------------------------------------------------------*/
+
+function normalizeSequenceNamesInAFilterWithTree (filterName, treeName)
+{
+    if (Abs (treeName) > 0) {
+        LoadFunctionLibrary ("TreeTools");
+        ExecuteCommands ("_treeAVL = `treeName`^0");
+        _node_id_by_name = {};
+        for (_nodeID = 1; _nodeID < Abs(_treeAVL); _nodeID += 1) {
+            _node_id_by_name [(_treeAVL[_nodeID])["Name"]] = _nodeID;
+        }
+    }
+    
+ 	ExecuteCommands ("GetString(_seqNames,`filterName`,-1)");
 	
 	_renamingBuffer = {};
 	
@@ -371,8 +443,16 @@ function normalizeSequenceNamesInAFilter (filterName)
 		if (_seqName2 != _seqNames[_k])
 		{
 			ExecuteCommands ("SetParameter (`filterName`,_k,_seqName2)");
+			if (Abs (treeName) > 0) {
+			    (_treeAVL[_node_id_by_name [_seqNames[_k]]])["Name"] = _seqName2;
+			}
+
 			_totalRenamed += 1;
 		}
+	}
+	
+	if (_totalRenamed && Abs (treeName) > 0) {
+	    ExecuteCommands ("Topology `treeName` = " + PostOrderAVL2String (_treeAVL));
 	}
 	
 	return _totalRenamed;

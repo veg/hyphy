@@ -122,7 +122,10 @@ public:
     // matrix name, <optional comma separated variable declarations, inititalizations>
     // also should be passed the pointer to a container tree
 
+    _CalcNode           (_CalcNode* source, _VariableContainer* parentTree);
+ 
     virtual             ~_CalcNode      (void);
+    virtual             _PMathObj      Compute                             (void);
 
     virtual unsigned long        ObjectClass     (void) {
         return TREE_NODE;
@@ -148,9 +151,10 @@ public:
     // change the codeBase value for this node
     // this will resize the vector used to handle frequencies
 
-    void                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil);
+    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil);
     // reexponentiate the transition matrix and
     // store it in compExp.
+    // return TRUE if the matrix is an explicit exponential form
 
     virtual bool        HasChanged       (void);
     virtual bool        NeedToExponentiate(long = -1);
@@ -207,6 +211,8 @@ public:
     }
     bool                MatchSubtree    (_CalcNode*);
     virtual void        RemoveModel     (void);
+    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree);
+    
     virtual long        CheckForReferenceNode
     (void);
 
@@ -221,6 +227,8 @@ public:
     virtual void        ClearCategoryMap(void) {
         remapMyCategories.Clear();
     }
+    
+    _VariableContainer*           ParentTree      (void);
 
     virtual void        SetupCategoryMap(_List&, _SimpleList&, _SimpleList&);
     /* 20090324: SLKP
@@ -363,7 +371,6 @@ public:
     virtual                 ~_TreeTopology                      (void);
 
     virtual  _FString*      Compare                             (_PMathObj);
-    virtual  _PMathObj      Compute                             (void);
     virtual  BaseRef        makeDynamic                         (void);
     node<long>* CopyTreeStructure                   (node<long>*, bool);
     virtual  bool           FinalizeNode                        (node<long>*, long, _String&, _String&, _String&, _String* = NULL);
@@ -373,7 +380,7 @@ public:
     bool            IsCurrentNodeTheRoot                (void);
     bool            IsDegenerate                        (void);
 
-    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil);
+    virtual _PMathObj       Execute                             (long, _PMathObj = nil , _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual void            EdgeCount                           (long&, long&);
     // SLKP 20100827: a utility function to count edges in a tree
     //              : note that the root node WILL be counted as an internal node
@@ -517,6 +524,7 @@ public:
     _TheTree ();                                                // default constructor - doesn't do much
     _TheTree (_String name, _String& parms, bool = true);       // builds a tree from a string
     _TheTree (_String name, _TreeTopology*);                    // builds a tree from a tree topology
+    _TheTree (_String name, _TheTree*);                    // builds a tree from another tree
 
 
     virtual                 ~_TheTree                   (void);
@@ -550,7 +558,7 @@ public:
         return TREE;
     }
 
-    virtual  _PMathObj      Execute                     (long, _PMathObj = nil , _PMathObj = nil);
+    virtual  _PMathObj      Execute                     (long, _PMathObj = nil , _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual  _PMathObj      TEXTreeString               (_PMathObj);
     virtual  _PMathObj      PlainTreeString             (_PMathObj,_PMathObj);
 
@@ -624,9 +632,9 @@ public:
     }
 
     void        ScanAndAttachVariables          (void);
-    void        ScanForVariables                (_AVLList& l, _AVLList& l2);
+    void        ScanForVariables                (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2);
-    void        ScanForGVariables               (_AVLList&, _AVLList&);
+    void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0);
     void        ScanForCVariables               (_AVLList&);
     void        MolecularClock                  (_String&, _List&);
 

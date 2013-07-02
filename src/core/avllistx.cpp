@@ -129,6 +129,23 @@ long  _AVLListX::InsertData (BaseRef b, long d, bool)
 
 //______________________________________________________________
 
+long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
+    long exists = Find (b);
+    if (exists >= 0) {
+        if (op == 0) {
+            SetXtra (exists, GetXtra(exists) + d);
+        } else {
+            SetXtra (exists, d);       
+        }
+    } else {
+        Insert (b,d);
+    }
+    return exists;
+}
+
+
+//______________________________________________________________
+
 void _AVLListX::DeleteXtra (long i)
 {
     xtraD.lData[i] = -1;

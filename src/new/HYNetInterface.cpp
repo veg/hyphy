@@ -145,7 +145,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
 
                                 for (long itCount = 0; itCount < loopMax; itCount ++) {
                                     if (verbI > 5) {
-                                        sprintf (buffer, "\nNeural Network Pass %ld. Building a training set...\n", itCount);
+                                        snprintf (buffer, sizeof(buffer), "\nNeural Network Pass %ld. Building a training set...\n", itCount);
                                         BufferToConsole (buffer);
                                     }
 
@@ -188,7 +188,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
 
                                         long    nowDone = (cellCount+1)*100./fullDimension;
                                         if (nowDone > lastDone) {
-                                            sprintf (buffer,"%ld%% done\n", lastDone = nowDone);
+                                            snprintf (buffer, sizeof(buffer),"%ld%% done\n", lastDone = nowDone);
                                             BufferToConsole (buffer);
                                         }
                                     }
@@ -213,7 +213,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
                                     time2 = tObj->Value();
 
                                     if (verbI > 5) {
-                                        sprintf (buffer,"Done Resampling in %g seconds. Computing Error...\n", time2-time1);
+                                        snprintf (buffer, sizeof(buffer),"Done Resampling in %g seconds. Computing Error...\n", time2-time1);
                                         BufferToConsole (buffer);
                                     }
 
@@ -252,7 +252,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
 
 
                                     if (verbI > 5) {
-                                        sprintf (buffer, "Done Error Checking in %g seconds. Got max abs error %g on the pair %g %g\n", time1-time2, absError, maxValT, maxValE);
+                                        snprintf (buffer, sizeof(buffer), "Done Error Checking in %g seconds. Got max abs error %g on the pair %g %g\n", time1-time2, absError, maxValT, maxValE);
                                         BufferToConsole (buffer);
                                     }
                                     if (absError <= errorTerm) {

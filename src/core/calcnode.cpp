@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "calcnode.h"
 #include "scfg.h"
+#include "parser.h"
 
 #include "category.h"
 #include "batchlan.h"
@@ -79,9 +80,11 @@ long*       nonZeroNodes = nil,
     pthread_mutex_t  matrixMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-char        isDefiningATree         = false,
-            takeBranchLengths       = false,
-            autoSolveBranchLengths  = false;
+char        isDefiningATree         = 0,
+            takeBranchLengths       = 0,
+            autoSolveBranchLengths  = 0;
+
+_Parameter  ignoringInternalNames   = 0.0;
 
 _Parameter  treeLayoutVert,
             scalingLogConstant    = log (1.e300);
@@ -98,6 +101,7 @@ _String     expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
             autoConvertBL         = "AUTOMATICALLY_CONVERT_BRANCH_LENGTHS",
             splitNodeNames         = "SPLIT_NODE_NAMES",
             internalNodePrefix     = "INTERNAL_NODE_PREFIX",
+            ignoreUserINames       = "IGNORE_INTERNAL_NODE_LABELS",
             cotNode               = "COT_NODE",
             cotSplit             = "COT_SPLIT",
             cotBranchLength         = "COT_BRANCH_LENGTH",
@@ -209,6 +213,15 @@ _CalcNode::_CalcNode    (_String name, _String parms, int codeBase, _VariableCon
 }
 
 //_______________________________________________________________________________________________
+_CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_VariableContainer (sourceNode->ContextFreeName(), "", theP) {
+    _String model = sourceNode->GetModelName();
+    InitializeCN (model, 0, theP);
+    if (model.sLength) { // copy model parameter values 
+        CopyMatrixParameters(sourceNode, true);
+    }
+}
+
+//_______________________________________________________________________________________________
 void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache)
 {
     cBase         = 0;
@@ -265,13 +278,13 @@ void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* t
                                    dv,
                                    dv2;
 
-                for (long k = 0; k<iVariables->lLength; k+=2) {
+                for (unsigned long k = 0; k<iVariables->lLength; k+=2) {
                     iv  << iVariables->lData[k];
                     iv2 << iVariables->lData[k+1];
                 }
 
                 if (dVariables)
-                    for (long k = 0; k<dVariables->lLength; k+=2) {
+                    for (unsigned long k = 0; k<dVariables->lLength; k+=2) {
                         dv  << dVariables->lData[k];
                         dv2 << dVariables->lData[k+1];
                     }
@@ -419,10 +432,19 @@ long    _CalcNode::FreeUpMemory (long)
 void _CalcNode::RemoveModel (void)
 {
     Clear();
-    if ((compExp) && (referenceNode < 0)) {
+    if (compExp && referenceNode < 0) {
         DeleteObject (compExp);
         compExp = nil;
     }
+}
+
+//__________________________________________________________________________________
+
+void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* theConext)
+{
+    RemoveModel    ();
+    DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
+    InitializeCN   (modelName, 0 , theConext);
 }
 
 //_______________________________________________________________________________________________
@@ -658,7 +680,7 @@ long        _CalcNode::CheckForReferenceNode(void)
 
 bool        _CalcNode::NeedToExponentiate(long catID)
 {
-    if (isInOptimize&&(referenceNode>=0)) {
+    if (isInOptimize && referenceNode>=0) {
         return ((_CalcNode*)LocateVar(referenceNode))->NeedToExponentiate(catID);
     }
 
@@ -671,7 +693,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
             return true;
         }
 
-        for (long i = 0; i<categoryVariables.lLength; i++)
+        for (unsigned long i = 0; i<categoryVariables.lLength; i++)
             if (LocateVar (categoryVariables.lData[i])->HasChanged()) {
                 return true;
             }
@@ -680,7 +702,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
             return true;
         }
 
-        for (long i = 0; i<categoryVariables.lLength; i++)
+        for (unsigned long i = 0; i<categoryVariables.lLength; i++)
             if (((_CategoryVariable*)LocateVar (categoryVariables.lData[i]))->HaveParametersChanged(remapMyCategories.lData[catID*(categoryVariables.lLength+1)+i+1])) {
                 return true;
             }
@@ -689,7 +711,7 @@ bool        _CalcNode::NeedToExponentiate(long catID)
 }
 
 //_______________________________________________________________________________________________
-void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags)
+bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps)
 {
     // assumed that NeedToExponentiate was called prior to this function
 
@@ -705,7 +727,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 compExp = rN->compExp;
             }
 
-            return;
+            return false;
         } else {
             if (referenceNode<-1) {
                 slaveNodes++;
@@ -713,22 +735,17 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     if (slaveNodes == -referenceNode) {
                         slaveNodes = 0;
                     }
-                    return;
+                    return false;
                 }
             }
         }
 
-#ifdef __MP__
-    if (matrixTasks) {
-        pthread_mutex_lock(&matrixMutex);
-    }
-#endif
+
     _Variable* curVar, *locVar;
 
-    long i;
 
     if (iVariables)
-        for (i=0; i<iVariables->lLength; i+=2)
+        for (unsigned long i=0; i<iVariables->lLength; i+=2)
             if (iVariables->lData[i+1]>=0) {
                 curVar = LocateVar (iVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -738,7 +755,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             }
 
     if (dVariables)
-        for (i=0; i<dVariables->lLength; i+=2)
+        for (unsigned long i=0; i<dVariables->lLength; i+=2)
             if (dVariables->lData[i+1]>=0) {
                 curVar = LocateVar (dVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -747,7 +764,7 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 }
             }
 
-    for (i=0; i<categoryVariables.lLength; i++) {
+    for (unsigned long i=0; i<categoryVariables.lLength; i++) {
         if (categoryIndexVars.lData[i]<0) {
             continue;
         }
@@ -761,64 +778,70 @@ void        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             DeleteObject(GetCompExp(categID));
         } else if (compExp) {
             DeleteObject (compExp);
+            compExp = nil;
         }
 
     bool    isExplicitForm  = HasExplicitFormModel ();
+    
+    if (isExplicitForm && bufferedOps) {
+        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
+        SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
+        return false;
+    }
 
-    _Matrix * myModelMatrix = GetModelMatrix();
+    unsigned long      previous_length = queue && tags ? queue->lLength: 0;
+    _Matrix * myModelMatrix = GetModelMatrix(queue,tags); 
+    
+    if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
+        if (queue->lLength > previous_length) {
+            return true;
+        } else {
+            WarnError ("Internal error");
+            return false;
+        }
+    } else {
 
-    if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
-        _Matrix *temp = (_Matrix*)(isExplicitForm?myModelMatrix->makeDynamic():myModelMatrix->MultByFreqs(theModel));
+        if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
+            _Matrix *temp = nil;
+            if (isExplicitForm) {
+                temp = (_Matrix*)myModelMatrix->makeDynamic();
+            } else {
+                temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
+            }
 
-        if (dVariables)
-            for (i=0; i<dVariables->lLength; i+=2)
-                if (dVariables->lData[i+1]>=0) {
-                    curVar = LocateVar (dVariables->lData[i+1]);
-                    if (!curVar->IsIndependent()) {
-                        locVar = LocateVar (dVariables->lData[i]);
-                        if (locVar->IsIndependent()) {
-                            locVar->SetValue (curVar->Compute());
+            if (dVariables)
+                for (unsigned long i=0; i<dVariables->lLength; i+=2)
+                    if (dVariables->lData[i+1]>=0) {
+                        curVar = LocateVar (dVariables->lData[i+1]);
+                        if (!curVar->IsIndependent()) {
+                            locVar = LocateVar (dVariables->lData[i]);
+                            if (locVar->IsIndependent()) {
+                                locVar->SetValue (curVar->Compute());
+                            }
                         }
                     }
-                }
 
-        if (storeRateMatrix) {
-            storeRateMatrix->Duplicate(temp);
-            return;
-        }
-
-#ifdef __MP__
-        if (matrixTasks) {
-            temp = (_Matrix*) temp->makeDynamic();
-            pthread_mutex_unlock(&matrixMutex);
-        }
-#endif
-
-#ifdef  _SLKP_LFENGINE_REWRITE_
-        if (queue) {
-            (*queue) << temp;
-            if (tags) {
-                (*tags) << (isExplicitForm == 0);
+            if (storeRateMatrix) {
+                storeRateMatrix->Duplicate(temp);
+                return isExplicitForm;
             }
-            return;
-        }
-#endif
 
-        SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);
-#ifdef __MP__
-        if (matrixTasks) {
-            DeleteObject (temp);
-        }
-#endif
 
-    } else {
-#ifdef __MP__
-        if (matrixTasks) {
-            pthread_mutex_unlock(&matrixMutex);
+            if (queue) {
+                (*queue) << temp;
+                if (tags) {
+                    (*tags) << (isExplicitForm);
+                }
+                return isExplicitForm;
+            }
+
+            SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate()), totalCategs>1?categID:-1);
+
+        } else {
+            compExp = (_Matrix*)myModelMatrix->Evaluate(false);
         }
-#endif
-        compExp = (_Matrix*)myModelMatrix->Evaluate(false);
     }
+    return false;
 }
 
 //_______________________________________________________________________________________________
@@ -840,7 +863,7 @@ _Matrix*        _CalcNode::ComputeModelMatrix  (bool)
                 *locVar;
 
     if (iVariables)
-        for (long i=0; i<iVariables->lLength; i+=2)
+        for (unsigned long i=0; i<iVariables->lLength; i+=2)
             if (iVariables->lData[i+1]>=0) {
                 curVar = LocateVar (iVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -850,7 +873,7 @@ _Matrix*        _CalcNode::ComputeModelMatrix  (bool)
             }
 
     if (dVariables)
-        for (long i=0; i<dVariables->lLength; i+=2)
+        for (unsigned long i=0; i<dVariables->lLength; i+=2)
             if (dVariables->lData[i+1]>=0) {
                 curVar = LocateVar (dVariables->lData[i+1]);
                 if (curVar->IsIndependent()) {
@@ -1012,6 +1035,8 @@ void    _TheTree::PreTreeConstructor (bool)
     if (iv) {
         iNodePrefix = *((_FString*)iv)->theString;
     }
+    checkParameter(ignoreUserINames, ignoringInternalNames, 0.0);
+    
 }
 
 //_______________________________________________________________________________________________
@@ -1026,6 +1051,7 @@ void    _TreeTopology::PreTreeConstructor (bool)
     if (iv) {
         iNodePrefix = *((_FString*)iv)->theString;
     }
+    checkParameter(ignoreUserINames, ignoringInternalNames, 0.0);
 }
 
 //_______________________________________________________________________________________________
@@ -1047,7 +1073,7 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
         node<long> *node_temp = theRoot->go_down(1);
         if (!node_temp) {
             WarnError (_String("Vacuos Tree Supplied"));
-            isDefiningATree = false;
+            isDefiningATree = 0;
             return;
         }
         if (node_temp->get_num_nodes()) {
@@ -1152,9 +1178,6 @@ void    _TreeTopology::PostTreeConstructor (bool dupMe)
 //_______________________________________________________________________________________________
 _TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_TreeTopology (&name)
 {
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    scalingForUnderflow = nil;
-#endif
     PreTreeConstructor   (dupMe);
     if (MainTreeConstructor  (parms)) {
         PostTreeConstructor  (dupMe);
@@ -1164,12 +1187,9 @@ _TheTree::_TheTree              (_String name, _String& parms, bool dupMe):_Tree
 //_______________________________________________________________________________________________
 _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology (&name)
 {
-#if USE_SCALING_TO_FIX_UNDERFLOW
-    scalingForUnderflow = nil;
-#endif
     PreTreeConstructor   (false);
     if (top->theRoot) {
-        isDefiningATree         = true;
+        isDefiningATree         = 1;
         theRoot                 = top->theRoot->duplicate_tree ();
         node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
         while (topTraverser) {
@@ -1191,7 +1211,7 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
             FinalizeNode (topTraverser, 0, nodeName, nodeParams, nodeVS);
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
-        isDefiningATree         = false;
+        isDefiningATree         = 0;
         PostTreeConstructor      (false);
     } else {
         WarnError ("Can't create an empty tree");
@@ -1200,11 +1220,38 @@ _TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology
 }
 
 //_______________________________________________________________________________________________
+_TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopology (&name)
+{
+    PreTreeConstructor   (false);
+    if (otherTree->theRoot) {
+        isDefiningATree         = 1;
+        theRoot                 = otherTree->theRoot->duplicate_tree ();
+        
+        node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
+        
+        
+        while (topTraverser) {
+            _CalcNode   *sourceNode = (_CalcNode*)LocateVar(topTraverser->in_object),
+                          copiedNode (sourceNode, this);
+            topTraverser->init (copiedNode.theIndex);
+            topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
+        }
+        
+        isDefiningATree         = 0;
+        PostTreeConstructor      (false);
+    } else {
+        WarnError ("Can't create an empty tree");
+        return;
+    }
+}
+
+
+//_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty)
 {
     PreTreeConstructor   (false);
     if (top->theRoot) {
-        isDefiningATree         = true;
+        isDefiningATree         = 1;
         theRoot                 = top->theRoot->duplicate_tree ();
         node<long>*topTraverser = DepthWiseStepTraverser (theRoot);
         while (topTraverser && topTraverser->parent) {
@@ -1220,7 +1267,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), empty)
             DeleteObject (nodeSpec);
             topTraverser = DepthWiseStepTraverser ((node<long>*)nil);
         }
-        isDefiningATree         = false;
+        isDefiningATree         = 0;
     } else {
         WarnError ("Can't create an empty tree");
         return;
@@ -1252,8 +1299,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     long i,
          nodeCount=0,
          lastNode;
-
-
+    
     _Parameter      checkABL;
 
     checkParameter  (acceptBranchLengths, checkABL, 1.0);
@@ -1275,10 +1321,10 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     bool        isInLiteral = false;
 
     node<long>* currentNode = theRoot = nil,
-                * newNode   = nil,
-                  * parentNode  = nil;
+              * newNode     = nil,
+              * parentNode  = nil;
 
-    isDefiningATree         = true;
+    isDefiningATree         = 1;
 
     for (i=0; i<parms.sLength; i++) {
         switch (parms[i]) {
@@ -1293,7 +1339,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                     parentNode = currentNode->get_parent();
                     if (!parentNode) {
                         WarnError ((_String("'(' is out of context: ...")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                        isDefiningATree = false;
+                        isDefiningATree = 0;
                         return false;
                     } else {
                         parentNode->add_node (*newNode);
@@ -1322,7 +1368,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             if (lastNode<0) {
                 WarnError ((_String(parms[i])&_String(" is out of context:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
                 //PurgeTree();
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             parentNode = (node<long>*)nodeStack(lastNode);
@@ -1334,7 +1380,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                 checkPointer (newNode = new node<long>);
                 if (!(parentNode = parentNode->get_parent())) {
                     WarnError ((_String("',' is out of context:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                    isDefiningATree = false;
+                    isDefiningATree = 0;
                     return false;
                 }
                 currentNode = newNode;
@@ -1350,7 +1396,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             lastNode = parms.Find ("}",i+1,-1);
             if (lastNode<0) {
                 WarnError ((_String("'{' has no matching '}':")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             nodeParameters = parms.Cut (i+1,lastNode-1);
@@ -1362,7 +1408,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             lastNode = parms.Find ("]",i+1,-1);
             if (lastNode<0) {
                 WarnError ((_String("'[' has no matching ']':")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
             nodeComment = parms.Cut (i+1,lastNode-1);
@@ -1416,7 +1462,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
 
             if (!isInLiteral && !(isalnum(c)|| c=='_')) {
                 WarnError ((_String("Node names should begin with a letter, a number, or an underscore. Had:")&parms.Cut(i>31?i-32:0,i)&"?"&parms.Cut(i+1,parms.sLength-i>32?i+32:-1)));
-                isDefiningATree = false;
+                isDefiningATree = 0;
                 return false;
             }
 
@@ -1433,14 +1479,15 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
                     if (lastNode<parms.sLength) {
                         lastNode++;
                         c = parms[lastNode];
-                        if (c == '\'')
+                        if (c == '\'') {
                             if (isInLiteral) {
                                 break;
                             } else {
                                 WarnError ((_String("Unxpected \'. Had:")&parms.Cut(lastNode>31?lastNode-32:0,lastNode)&"?"&parms.Cut(lastNode+1,parms.sLength-lastNode>32?lastNode+32:-1)));
-                                isDefiningATree = false;
+                                isDefiningATree = 0;
                                 return false;
                             }
+                        }
                     } else {
                         break;
                     }
@@ -1448,7 +1495,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
             if (isInLiteral) {
                 if (c!='\'') {
                     WarnError ((_String("Unterminated \'. Had:")&parms.Cut(lastNode>31?lastNode-32:0,lastNode)&"?"&parms.Cut(lastNode+1,parms.sLength-lastNode>32?lastNode+32:-1)));
-                    isDefiningATree = false;
+                    isDefiningATree = 0;
                     return false;
                 }
                 nodeName        = parms.Cut(i,lastNode-1);
@@ -1476,12 +1523,12 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
     }
 
     if (!theRoot) {
-        isDefiningATree = false;
+        isDefiningATree = 0;
         WarnError ("Can't create empty trees.");
         return false;
     }
 
-    isDefiningATree = false;
+    isDefiningATree = 0;
     return true;
 
 }
@@ -1490,10 +1537,11 @@ bool    _TreeTopology::MainTreeConstructor  (_String& parms, bool checkNames)
 
 bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeName, _String& nodeParameters, _String& nodeValue, _String* nodeComment)
 {
-    bool isAutoGenerated = (nodeName.sLength == 0);
+    bool isAutoGenerated = (nodeName.sLength == 0 || !CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0);
     if (isAutoGenerated) {
         nodeName = iNodePrefix & number;
     } else {
+        
         if (!nodeName.IsValidIdentifier(false)) {
             _String oldName (nodeName);
             nodeName.ConvertToAnIdent();
@@ -1516,9 +1564,10 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeNa
 
     }
 
+    char saveIDT = isDefiningATree;
     isDefiningATree = isAutoGenerated?2:1;
     _CalcNode cNt (nodeName,nodeParameters, 4, this, aCache);
-    isDefiningATree = 1;
+    isDefiningATree = saveIDT;
     nodie->init (cNt.theIndex);
 
 
@@ -1595,7 +1644,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeNa
 
 bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String& nodeName, _String& nodeParameters, _String& nodeValue, _String* nodeComment)
 {
-    if (!nodeName.sLength) {
+    if (!nodeName.sLength || !CheckEqual(ignoringInternalNames,0.0) && nodie->get_num_nodes()>0) {
         nodeName = iNodePrefix & number;
     }
 
@@ -1903,9 +1952,11 @@ BaseRef  _TheTree::makeDynamicCopy (_String* replacementName)
     return res;
 }
 
+
+
 //_______________________________________________________________________________________________
 
-_PMathObj       _TreeTopology::Compute  (void)
+_PMathObj       _CalcNode::Compute  (void)
 {
     return this;
 }
@@ -2470,21 +2521,21 @@ _String*    _TheTree::TreeUserParams (void)
 
 //__________________________________________________________________________________
 
-_PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute this operation with the second arg if necessary
+_PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
 
     switch (opCode) {
     case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
         if (p->ObjectClass()!=NUMBER) {
-            _String errMsg ("Invalid (not a number) 2nd argument is call to $ for trees.");
-            WarnError (errMsg);
+            context->ReportError ("Invalid (not a number) 2nd argument is call to $ for trees.");
+            return new _MathObject;
         }
         _Constant*  cc     = (_Constant*)TipCount();
         long        size   = cc->Value()/p->Value();
 
         if  ((size<=4)||(size>cc->Value()/2)) {
-            _String errMsg ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
-            WarnError (errMsg);
+            context->ReportError ("Poor choice of the 2nd numeric agrument in to $ for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
+            return new _MathObject;
         }
 
         long        checkSize = 1,
@@ -2544,7 +2595,8 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
     break;
 
     case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
-        return SplitsIdentity (p);
+        if (p) 
+            return SplitsIdentity (p);
         break;
 
     case HY_OP_CODE_ADD: // +
@@ -2557,9 +2609,9 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 
     case HY_OP_CODE_LEQ: { // MatchPattern (<=)
         if ((p->ObjectClass()!=TREE)&&(p->ObjectClass()!=TOPOLOGY)) {
-            _String errMsg ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
-            WarnError (errMsg);
-        }
+            context->ReportError ("Invalid (not a tree/topology) 2nd argument is call to <= for trees/topologies.");
+            return new _MathObject;
+       }
         _String  res (((_TreeTopology*)p)->MatchTreePattern (this));
         return new _Constant (!res.beginswith ("Unequal"));
         break;
@@ -2608,11 +2660,11 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
         return Type();
         break;
     case HY_OP_CODE_POWER: //^
-        return AVLRepresentation (p);
-        break;
+        if (p)
+            return AVLRepresentation (p);
     }
 
-    WarnNotDefined (this, opCode);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }
@@ -2620,7 +2672,7 @@ _PMathObj _TreeTopology::Execute (long opCode, _PMathObj p, _PMathObj p2)   // e
 
 //__________________________________________________________________________________
 
-_PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execute this operation with the second arg if necessary
+_PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
 
     switch (opCode) {
@@ -2635,7 +2687,7 @@ _PMathObj _TheTree::Execute (long opCode, _PMathObj p, _PMathObj p2)   // execut
         break;
     }
 
-    return  _TreeTopology::Execute (opCode,p,p2);
+    return  _TreeTopology::Execute (opCode,p,p2,context);
 
 }
 
@@ -2946,11 +2998,11 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
 
     for (long sc=0; sc <= branchCount+leafCount; sc++) {
         char       buffer[256];
-        sprintf  (buffer, "%.15f", branchSpans(sc,0));
+        snprintf  (buffer, 256, "%.15f", branchSpans(sc,0));
         nodeName = buffer;
         branchSpans.Store(sc,0,nodeName.toNum());
         timeSplitsAVL.Insert (nodeName.makeDynamic(),0,false,true);
-        sprintf  (buffer, "%.15f", branchSpans(sc,1));
+        snprintf  (buffer, 256, "%.15f", branchSpans(sc,1));
         nodeName = buffer;
         branchSpans.Store(sc,1,nodeName.toNum());
         timeSplitsAVL.Insert (nodeName.makeDynamic(),0,false,true);
@@ -2981,7 +3033,7 @@ _AssociativeList* _TreeTopology::FindCOT (_PMathObj p)
         }
 
         char       buffer[256];
-        sprintf  (buffer, "%.15f", T0);
+        snprintf  (buffer, 256, "%.15f", T0);
         nodeName = buffer;
         tcache.Clear();
         long       startingPos =  timeSplitsAVL.Find (&nodeName,tcache),
@@ -5279,7 +5331,7 @@ _PMathObj _TheTree::PlainTreeString (_PMathObj p, _PMathObj p2)
                     vScale *= 10.;
                 }
 
-                _String rulerLabel (vScale);
+                _String rulerLabel (vScale, "%5.2g");
 
                 while (vScale*hScale > (treeLayout==1?treeRadius/3:treeWidth-newRoot->in_object.h)) {
                     vScale     *= 0.5;
@@ -6316,12 +6368,14 @@ bool _TheTree::HaveStringBranchLengths (void)
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2)
+void _TheTree::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
 {
+    unsigned long traversal_order = 0;
     _CalcNode* curNode = DepthWiseTraversal (true);
     while (curNode) {
-        curNode->ScanForVariables(l,l2);
+        curNode->ScanForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order);
         curNode = DepthWiseTraversal();
+        traversal_order += 1;
     }
 }
 
@@ -6351,33 +6405,43 @@ void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2)
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld)
+void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger, long weight)
 {
     _CalcNode*  curNode = DepthWiseTraversal (true);
     _SimpleList cL;
     _AVLList    cLL (&cL);
 
     while (curNode) {
-        _Matrix *modelM = curNode->GetModelMatrix();
-        if (modelM && cLL.Find(modelM) < 0) {
+    
+        _Formula *explicitFormMExp = curNode->GetExplicitFormModel ();
+        _Matrix  *modelM = explicitFormMExp?nil:curNode->GetModelMatrix();
+        
+        if (explicitFormMExp && cLL.Find ((BaseRef)explicitFormMExp) < 0 || modelM && cLL.Find(modelM) < 0) {
             _SimpleList temp;
             {
                 _AVLList tempA (&temp);
-                (modelM)->ScanForVariables(tempA, true);
+                if (modelM) {
+                    modelM->ScanForVariables(tempA, true);
+                } else {
+                    explicitFormMExp->ScanFForVariables(tempA, true, false, true, true);
+                }
                 tempA.ReorderList();
             }
-            for (long i=0; i<temp.lLength; i++) {
+            for (unsigned long i=0; i<temp.lLength; i++) {
                 long p = temp.lData[i];
                 _Variable* v = LocateVar (p);
                 if (v&&v->IsGlobal()) {
                     if(v->IsIndependent()) {
                         li.Insert ((BaseRef)p);
+                        if (tagger) {
+                            tagger->UpdateValue((BaseRef)p, weight, 0);
+                        }
                     } else {
                         ld.Insert ((BaseRef)p);
                     }
                 }
             }
-            cLL.Insert (modelM);
+            cLL.Insert (modelM?(BaseRef)modelM:(BaseRef)explicitFormMExp);
         }
         curNode -> ScanForGVariables(li,ld);
         curNode = DepthWiseTraversal();
@@ -9668,7 +9732,7 @@ void     _TheTree::WeightedCharacterDifferences (_Parameter siteLikelihood, _Mat
                 }
             }
 
-#if !defined __UNIX__ || defined __HEADLESS__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
             if ((cBase>=20)&&(offset<1)) {
                 yieldCPUTime();
                 if (terminateExecution) {
@@ -9697,7 +9761,7 @@ _AVLListX*  _TheTree::ConstructNodeToIndexMap (bool doINodes)
     * whichL = doINodes?&flatNodes:&flatLeaves;
     _AVLListX   * result = new _AVLListX (nodes);
 
-    for (long   pistolero = 0; pistolero < whichL->lLength; pistolero++) {
+    for (unsigned long   pistolero = 0; pistolero < whichL->lLength; pistolero++) {
         result->Insert ((BaseRef)whichL->lData[pistolero], pistolero, false);
     }
 

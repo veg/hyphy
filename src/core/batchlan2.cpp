@@ -41,17 +41,13 @@
 #include      "scfg.h"
 #include      <ctype.h>
 
-#if defined __AFYP_REWRITE_BGM__
 #include      "bayesgraph.h"
-#else
-#include      "bgm.h"
-#endif
 
 #ifndef __HYPHY_NO_SQLITE__
 #include "sqlite3.h"
 #endif
 
-#if !defined __HEADLESS__
+#if !defined __HEADLESS__ && !defined __UNIX__
 #include      "HYUtils.h"
 #endif
 
@@ -86,6 +82,7 @@ _String     sqlOpen                 ("SQL_OPEN"),
             seqAlignGapCodon3x2     ("SEQ_ALIGN_PARTIAL_3x2_SCORES"),
             seqAlignGapCodon3x4     ("SEQ_ALIGN_PARTIAL_3x4_SCORES"),
             seqAlignGapCodon3x5     ("SEQ_ALIGN_PARTIAL_3x5_SCORES"),
+            seqAlignDoLocal         ("SEQ_ALIGN_LOCAL_ALIGNMENT"),
             completeFlag            ("COMPLETE"),
             conditionalWeights      ("WEIGHTS"),
             siteProbabilities       ("SITE_LOG_LIKELIHOODS"),
@@ -129,7 +126,6 @@ _AVLListX    _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux),
 
 int          _HYSQLCallBack                     (void* data,int callCount);
 //int        _HYSQLBusyCallBack                 (void* exList,int cc,char** rd,char** cn);
-_String      ProcessStringArgument              (_String*);
 bool         RecurseDownTheTree                 (_SimpleList&, _List&, _List&, _List&, _SimpleList&);
 // this is a ReplicateConstraint helper
 
@@ -176,13 +172,14 @@ bool      _ElementaryCommand::ExtractValidateAddHBLCommand (_String& current_str
 void        _HBL_Init_Const_Arrays  (void)
 {
     // init GetString lookups
-    _HY_GetStringGlobalTypes.Insert(new _String("LikelihoodFunction"), 0);
-    _HY_GetStringGlobalTypes.Insert(new _String("DataSet"), 1);
-    _HY_GetStringGlobalTypes.Insert(new _String("DataSetFilter"), 2);
-    _HY_GetStringGlobalTypes.Insert(new _String("UserFunction"), 3);
-    _HY_GetStringGlobalTypes.Insert(new _String("Tree"), 4);
-    _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), 5);
-    _HY_GetStringGlobalTypes.Insert(new _String("Variable"), 6);
+    _HY_GetStringGlobalTypes.Insert(new _String("LikelihoodFunction"), HY_BL_LIKELIHOOD_FUNCTION);
+    _HY_GetStringGlobalTypes.Insert(new _String("DataSet"), HY_BL_DATASET);
+    _HY_GetStringGlobalTypes.Insert(new _String("DataSetFilter"), HY_BL_DATASET_FILTER);
+    _HY_GetStringGlobalTypes.Insert(new _String("UserFunction"), HY_BL_HBL_FUNCTION);
+    _HY_GetStringGlobalTypes.Insert(new _String("Tree"), HY_BL_TREE);
+    _HY_GetStringGlobalTypes.Insert(new _String("SCFG"), HY_BL_SCFG);
+    _HY_GetStringGlobalTypes.Insert(new _String("Variable"), HY_BL_VARIABLE);
+	_HY_GetStringGlobalTypes.Insert(new _String("BayesianGraphicalModel"), HY_BL_BGM);
 
 
     _HY_ValidHBLExpressions.Insert ("function ",                            HY_HBL_COMMAND_FUNCTION);
@@ -202,19 +199,12 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION);
     _HY_ValidHBLExpressions.Insert ("LikelihoodFunction3 ",					HY_HBL_COMMAND_LIKELIHOOD_FUNCTION_3);
     _HY_ValidHBLExpressions.Insert ("MolecularClock(",                      HY_HBL_COMMAND_MOLECULAR_CLOCK);
-    _HY_ValidHBLExpressions.Insert ("fprintf(",                             HY_HBL_COMMAND_FPRINTF);
-    _HY_ValidHBLExpressions.Insert ("GetString(",                           HY_HBL_COMMAND_GET_STRING);
     _HY_ValidHBLExpressions.Insert ("fscanf(",                              HY_HBL_COMMAND_FSCANF);
     _HY_ValidHBLExpressions.Insert ("sscanf(",                              HY_HBL_COMMAND_SSCANF);
-    _HY_ValidHBLExpressions.Insert ("Export(",                              HY_HBL_COMMAND_EXPORT);
     _HY_ValidHBLExpressions.Insert ("ReplicateConstraint(",					HY_HBL_COMMAND_REPLICATE_CONSTRAINT);
-    _HY_ValidHBLExpressions.Insert ("Import",                               HY_HBL_COMMAND_IMPORT);
+    //_HY_ValidHBLExpressions.Insert ("Import(",                              HY_HBL_COMMAND_IMPORT);
     _HY_ValidHBLExpressions.Insert ("category ",                            HY_HBL_COMMAND_CATEGORY);
-    _HY_ValidHBLExpressions.Insert ("ClearConstraints(",					HY_HBL_COMMAND_CLEAR_CONSTRAINTS);
-    _HY_ValidHBLExpressions.Insert ("SelectTemplateModel(",					HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL);
-    _HY_ValidHBLExpressions.Insert ("UseModel(",                            HY_HBL_COMMAND_USE_MODEL);
     _HY_ValidHBLExpressions.Insert ("Model ",                               HY_HBL_COMMAND_MODEL);
-    _HY_ValidHBLExpressions.Insert ("SetParameter(",                        HY_HBL_COMMAND_SET_PARAMETER);
     _HY_ValidHBLExpressions.Insert ("ChoiceList(",                          HY_HBL_COMMAND_SET_CHOICE_LIST);
     _HY_ValidHBLExpressions.Insert ("OpenDataPanel(",                       HY_HBL_COMMAND_OPEN_DATA_PANEL);
     _HY_ValidHBLExpressions.Insert ("GetInformation(",                      HY_HBL_COMMAND_GET_INFORMATION);
@@ -223,26 +213,21 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("LoadFunctionLibrary(",					HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY);
     _HY_ValidHBLExpressions.Insert ("OpenWindow(",                          HY_HBL_COMMAND_OPEN_WINDOW);
     _HY_ValidHBLExpressions.Insert ("SpawnLikelihoodFunction(",				HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION);
-    _HY_ValidHBLExpressions.Insert ("Differentiate(",                       HY_HBL_COMMAND_DIFFERENTIATE);
     _HY_ValidHBLExpressions.Insert ("FindRoot(",                            HY_HBL_COMMAND_FIND_ROOT);
     _HY_ValidHBLExpressions.Insert ("MPIReceive(",                          HY_HBL_COMMAND_MPI_RECEIVE);
     _HY_ValidHBLExpressions.Insert ("MPISend(",                             HY_HBL_COMMAND_MPI_SEND);
     _HY_ValidHBLExpressions.Insert ("GetDataInfo(",                         HY_HBL_COMMAND_GET_DATA_INFO);
     _HY_ValidHBLExpressions.Insert ("StateCounter(",                        HY_HBL_COMMAND_STATE_COUNTER);
     _HY_ValidHBLExpressions.Insert ("Integrate(",                           HY_HBL_COMMAND_INTEGRATE);
-    _HY_ValidHBLExpressions.Insert ("GetURL(",                              HY_HBL_COMMAND_GET_URL);
     _HY_ValidHBLExpressions.Insert ("DoSQL(",                               HY_HBL_COMMAND_DO_SQL);
     _HY_ValidHBLExpressions.Insert ("Topology ",                            HY_HBL_COMMAND_TOPOLOGY);
     _HY_ValidHBLExpressions.Insert ("AlignSequences(",                      HY_HBL_COMMAND_ALIGN_SEQUENCES);
     _HY_ValidHBLExpressions.Insert ("GetNeutralNull(",                      HY_HBL_COMMAND_GET_NEUTRAL_NULL);
     _HY_ValidHBLExpressions.Insert ("#profile",                             HY_HBL_COMMAND_PROFILE);
-    _HY_ValidHBLExpressions.Insert ("DeleteObject(",                        HY_HBL_COMMAND_DELETE_OBJECT);
-    _HY_ValidHBLExpressions.Insert ("RequireVersion(",                      HY_HBL_COMMAND_REQUIRE_VERSION);
     _HY_ValidHBLExpressions.Insert ("SCFG ",                                HY_HBL_COMMAND_SCFG);
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
-    _HY_ValidHBLExpressions.Insert ("assert(",                              HY_HBL_COMMAND_ASSERT);      
 /*
 const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, length options
 */
@@ -336,6 +321,60 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MolecularClock(", HY_HBL_COMMAND_MOLECULAR_CLOCK,false),
                                                                 -2, 
                                                                 "MolecularClock(tree or tree node, local variable 1 [optional ,<local variable 2>, ..., <local variable N>])",','));
+
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FPRINTF,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("fprintf(", HY_HBL_COMMAND_FPRINTF,false),
+                                                                -2,
+                                                                "fprintf(stdout|MESSAGE_LOG|TEMP_FILE_NAME|PROMPT_FOR_FILE|file path, object 1 [optional ,<object 2>, ..., <object N>])",','));
+
+    
+    lengthOptions.Clear();lengthOptions.Populate (1,2,1); // 2
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXPORT, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Export(", HY_HBL_COMMAND_EXPORT,false),
+                                                                -1, 
+                                                                "Export (<string variable ID>, <object ID>)",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
+
+    lengthOptions.Clear();lengthOptions.Populate (2,2,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_URL, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetURL(", HY_HBL_COMMAND_GET_URL,false),
+                                    -1, 
+                                    "GetURL (<receptacle>,<URL>[, SAVE_TO_FILE])",
+                                        ',',
+                                        true,
+                                        false,
+                                        false,
+                                        &lengthOptions));
+
+    lengthOptions.Clear();lengthOptions.Populate (2,3,1); // 3 or 4
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_STRING, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetString(", HY_HBL_COMMAND_GET_STRING,false),
+                                    -1, 
+                                    "GetString(<receptacle>,<object>,<index>,[optional <second index>])",
+                                        ',',
+                                        true,
+                                        false,
+                                        false,
+                                        &lengthOptions));
+                                        
+
+    lengthOptions.Clear();lengthOptions.Populate (2,3,1); // 3 or 4
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_DIFFERENTIATE, 
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Differentiate(", HY_HBL_COMMAND_DIFFERENTIATE,false),
+                                    -1, 
+                                    "Differentiate(<receptacle>, <the expression to differentiate>, <variable to differentiate>[, number of times, default = 1])",
+                                    ',',
+                                    true,
+                                    false,
+                                    false,
+                                    &lengthOptions));
+                                        
 // matrix global arrays
 
 
@@ -421,65 +460,6 @@ _AssociativeList *   CheckAssociativeListArg (_String* mxName)
     return nil;
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase17 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    _String errMsg;
-    if (parameters.lLength == 2) {
-        _FString        * outLF = new _FString (new _String (8192L,1));
-        checkPointer    (outLF);
-        _String         objectID (chain.AddNameSpaceToID(*(_String*)parameters(1)));
-        _LikelihoodFunction * lf = FindLikeFuncByName (objectID);
-        if (!lf) {
-            long modelSpec = FindModelName (objectID);
-
-            if (modelSpec<0) {
-                long modelSpec = FindDataSetFilterName (objectID);
-                if (modelSpec < 0) {
-                    WarnError (objectID & " does not refer to an existing likelihood function/model specification");
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF);
-                    return ;
-                } else {
-                    outLF->theString->Finalize();
-                    DeleteObject (outLF->theString);
-                    checkPointer (outLF->theString = new _String ((_String*)((_DataSetFilter*)dataSetFilterList(modelSpec))->toStr()));
-                }
-            } else {
-                SerializeModel (*outLF->theString,modelSpec,nil,true);
-                outLF->theString->Finalize();
-            }
-        } else {
-            lf->SerializeLF (*outLF->theString);
-            outLF->theString->Finalize();
-        }
-        objectID = chain.AddNameSpaceToID(*(_String*)parameters(0));
-        CheckReceptacleAndStore (&objectID, "Export", true, outLF, false);
-    } else {
-        _Matrix* m[2];
-        for (long k=1; k<3; k++)
-            if ((m[k-1] = (_Matrix*)FetchObjectFromVariableByType ((_String*)parameters(k),MATRIX)) == nil) {
-                errMsg =  _String("Identifier ")&*(_String*)parameters(k)&" does not refer to a valid matrix variable";
-                acknError (errMsg);
-                return;
-            }
-
-        _String fName (*(_String*)parameters(0));
-        fName.ProcessFileName();
-        if (terminateExecution) {
-            return;
-        }
-        FILE*   theDump = doFileOpen (fName.getStr(),"w");
-        if (!theDump) {
-            WarnError (((_String)("File ")& fName &_String(" couldn't be open for writing.")));
-            return;
-        }
-        m[1]->ExportMatrixExp(m[0],theDump);
-        fclose (theDump);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -585,6 +565,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain)
     chain.currentCommand++;
 
     _String dataObjectID = chain.AddNameSpaceToID(*(_String*)parameters(1));
+    
     long dsID           = (parameters.lLength>2)?FindDataSetName (dataObjectID):-1;
     bool isFilter       = false;
 
@@ -889,314 +870,6 @@ void      _ElementaryCommand::ExecuteCase21 (_ExecutionList& chain)
 
 }
 
-//____________________________________________________________________________________
-//  20110608: SLKP, major cleanup and refactor
-
-void      _ElementaryCommand::ExecuteCase33 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-    // first check to see if matrix parameters here are valid
-
-    _String *currentArgument = (_String*)parameters(0),
-             errMsg,
-             *result = nil;
-
-    long    f,
-            sID,
-            sID2 = -1;
-
-    _Variable * theReceptacle = CheckReceptacle (&AppendContainerName(*currentArgument,chain.nameSpacePrefix),blGetString,true);
-
-    if (!theReceptacle) {
-        return;
-    }
-
-
-    sID = ProcessNumericArgument ((_String*)parameters(2),chain.nameSpacePrefix);
-    if (parameters.lLength>3) {
-        sID2 = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
-    }
-
-    currentArgument = (_String*)parameters(1);
-
-    _String temp = ProcessStringArgument (currentArgument);
-
-    if (temp.sLength) {
-        currentArgument = &temp;
-    }
-
-    f = _HY_GetStringGlobalTypes.Find(currentArgument);
-    if (f >=0 ) {
-        f = _HY_GetStringGlobalTypes.GetXtra (f);
-    }
-
-    switch (f) {
-
-    case 0: // LikelihoodFunction
-        if (sID<likeFuncNamesList.lLength) {
-            result = (_String*)likeFuncNamesList(sID)->makeDynamic();
-        }
-        break;
-    case 1: // DataSet
-        if (sID<dataSetNamesList.lLength) {
-            result = (_String*)dataSetNamesList(sID)->makeDynamic();
-        }
-        break;
-    case 2: // DataSetFilter
-        if (sID<dataSetFilterNamesList.lLength) {
-            result = (_String*)dataSetFilterNamesList(sID)->makeDynamic();
-        }
-        break;
-    case 3: // UserFunction
-        if (sID<batchLanguageFunctions.lLength) {
-            _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
-            resAVL->MStore ("ID", new _FString (*(_String*)batchLanguageFunctionNames(sID)), false);
-            resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(sID)), false);
-            theReceptacle->SetValue (resAVL,false);
-            return;
-        }
-    case 4: { // Tree
-        // 20110608 SLKP: REFACTOR into a separate function
-        // I am sure this is used somewhere else (perhaps for other types)
-        long tc = 0;
-        _SimpleList nts;
-        long        rt,
-                    vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
-
-        for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
-            if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == TREE) {
-                if (tc==sID) {
-                    result = (_String*)variableNames.Retrieve(vi)->makeDynamic();
-                    break;
-                } else {
-                    tc++;
-                }
-            }
-
-        break;
-    }
-    case 5: // SCFG
-        if (sID<scfgNamesList.lLength) {
-            result = (_String*)scfgNamesList(sID)->makeDynamic();
-        }
-        break;
-    default: { // everything else...
-        // decide what kind of object current argument represents
-        _String nmspaced       = AppendContainerName(*currentArgument,chain.nameSpacePrefix);
-        long    typeFlag       = HY_BL_ANY,
-                index          = -1;
-        BaseRef theObject      = _HYRetrieveBLObjectByName (nmspaced, typeFlag, &index);
-
-        if (theObject) {
-            switch (typeFlag) {
-            case HY_BL_DATASET: {
-                _DataSet* dataSetObject = (_DataSet*)theObject;
-                if (sID>=0 && sID<dataSetObject->NoOfSpecies()) {
-                    result = (_String*)(dataSetObject->GetNames())(sID)->makeDynamic();
-                } else {
-                    if (sID < 0) {
-                        theReceptacle->SetValue (new _Matrix (dataSetObject->GetNames()), false);
-                        return;
-                    }
-                }
-                break;
-            }
-            case HY_BL_DATASET_FILTER: {
-                _DataSetFilter* dataSetFilterObject = (_DataSetFilter*)theObject;
-
-                if (sID >=0 && sID<dataSetFilterObject->NumberSpecies()) {
-                    result = (_String*)(dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(sID))->makeDynamic();
-                } else {
-                    if (sID < 0) {
-                        _List filterSeqNames;
-                        for (long seqID=0; seqID<dataSetFilterObject->NumberSpecies(); seqID++) {
-                            filterSeqNames << (dataSetFilterObject->GetData()->GetNames())(dataSetFilterObject->theNodeMap(seqID));
-                        }
-                        theReceptacle->SetValue (new _Matrix (filterSeqNames), false);
-                        return;
-                    }
-                }
-                break;
-            }
-            case HY_BL_BGM: {
-#if defined __AFYP_REWRITE_BGM__
-                _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) theObject;
-
-                switch (sID) {
-                case 0: {   // return associative list containing node score cache
-                    _AssociativeList        * export_alist  = new _AssociativeList;
-
-                    if (this_bgm -> ExportCache (export_alist)) {
-                        theReceptacle -> SetValue (export_alist, false);
-                    } else {
-                        ReportWarning (_String("Failed to export node score cache."));
-                    }
-
-                    return;
-                }
-                case 1: {   // return associative list with network structure and parameters
-                    result = new _String (1024L, true);
-                    this_bgm -> SerializeBGM (*result);
-                    result->Finalize();
-                    theReceptacle->SetValue (new _FString (result),false);
-                    return;
-                }
-                default: {
-                    WarnError (_String ("Unrecognized index ") & sID & "in call to GetString on BGM object");
-                    return;
-                }
-                }
-#endif
-                break;
-            }
-            case HY_BL_LIKELIHOOD_FUNCTION:
-            case HY_BL_SCFG: {
-                _LikelihoodFunction *lf = (_LikelihoodFunction*)theObject;
-                if (sID>=0) {
-                    if (sID<lf->GetIndependentVars().lLength) {
-                        result = (_String*)(LocateVar(lf->GetIndependentVars().lData[sID])->GetName())->makeDynamic();
-                    } else {
-                        if (sID<lf->GetIndependentVars().lLength+lf->GetDependentVars().lLength) {
-                            result = (_String*)(LocateVar(lf->GetDependentVars().lData[sID-lf->GetIndependentVars().lLength])->GetName())->makeDynamic();
-                        } else {
-                            ReportWarning(_String(sID) & " is too high an index in call to GetString for likelihood function/scfg " & nmspaced);
-                        }
-                    }
-                } else {
-
-                    _AssociativeList* resList = lf->CollectLFAttributes ();
-                    if (typeFlag == HY_BL_SCFG) {
-                        ((Scfg*)lf)->AddSCFGInfo (resList);
-                    }
-                    theReceptacle->SetValue (resList,false);
-                    return;
-                }
-                break;
-            }
-            case HY_BL_MODEL: {
-                if (sID>=0) {
-                    _Variable*      theMx = (_Variable*)theObject;
-
-                    if (sID2 < 0) { // get the sID's parameter name
-                        _SimpleList     modelP;
-                        _AVLList        modelPA (&modelP);
-                        theMx->ScanForVariables(modelPA,false);
-                        modelPA.ReorderList();
-                        if (sID<modelP.lLength) {
-                            result = (_String*)LocateVar(modelP.lData[sID])->GetName()->makeDynamic();
-                        } else {
-                            ReportWarning(_String(sID) & " is too high a parameter index in call to GetString for model " & (_String*)modelNames(index));
-                        }
-
-                    } else { // get the formula for cell (sID, sID2)
-                        _Formula * cellFla = ((_Matrix*)theMx->GetValue())->GetFormula (sID,sID2);
-                        if (cellFla) {
-                            result = new _String((_String*)cellFla->toStr());
-                        }
-                    }
-
-                } else {
-                    _Variable   * tV, * tV2;
-                    bool         mByF;
-                    RetrieveModelComponents (index, tV, tV2, mByF);
-
-                    if (tV) {
-                        if (sID == -1) { // branch length expression
-                            result = ((_Matrix*)tV->GetValue())->BranchLengthExpression((_Matrix*)tV2->GetValue(),mByF);
-                        } else
-                            /*
-                                returns an AVL with keys
-                                "RATE_MATRIX" - the ID of the rate matrix
-                                "EQ_FREQS"    - the ID of eq. freq. vector
-                                "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
-                            */
-                        {
-                            _AssociativeList * resList = new _AssociativeList;
-                            resList->MStore ("RATE_MATRIX",new _FString(*tV->GetName()),false);
-                            resList->MStore ("EQ_FREQS",new _FString(*tV2->GetName()),true);
-                            resList->MStore ("MULT_BY_FREQ",new _Constant (mByF),false);
-                            theReceptacle->SetValue (resList,false);
-                            return;
-                        }
-                    }
-                }
-                break;
-            }
-            case HY_BL_HBL_FUNCTION: {
-                _AssociativeList * resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
-                resAVL->MStore ("ID", new _FString (*(_String*)batchLanguageFunctionNames(index)), false);
-                resAVL->MStore ("Arguments", new _Matrix(*(_List*)batchLanguageFunctionParameterLists(index)), false);
-                resAVL->MStore("Body", new _FString (((_ExecutionList*)batchLanguageFunctions(index))->sourceText,false),false);
-                theReceptacle->SetValue (resAVL,false);
-                return;
-            }
-            }
-        } else {
-            if (currentArgument->Equal(&versionString)) {
-                if (sID > 1.5)
-#ifdef __HEADLESS__
-                    result = new _String(_String ("Library version ") & __KERNEL__VERSION__);
-#else
-#ifdef __MAC__
-                    result = new _String(_String("Macintosh ") & __KERNEL__VERSION__);
-#else
-#ifdef __WINDOZE__
-                    result = new _String(_String("Windows ") & __KERNEL__VERSION__);
-#else
-                    result = new _String(_String("Source ") & __KERNEL__VERSION__);
-#endif
-#endif
-#endif
-                else if (sID > 0.5) {
-                    result = new _String(GetVersionString());
-                } else {
-                    result = new _String(__KERNEL__VERSION__);
-                }
-            } else if (currentArgument->Equal(&timeStamp)) {
-                result = new _String(GetTimeStamp(sID < 0.5));
-            } else {
-                _Variable* theVar = FetchVar(LocateVarByName (*currentArgument));
-                if (theVar) {
-                    if (theVar->IsIndependent()) {
-                        result = (_String*)theVar->toStr();
-                    } else {
-                        if (sID == -1)
-                            // list of variables
-                        {
-                            _SimpleList vL;
-                            _AVLList    vAVL (&vL);
-                            theVar->ScanForVariables (vAVL, true);
-                            vAVL.ReorderList();
-                            _AssociativeList   * resL = (_AssociativeList *) checkPointer (new _AssociativeList);
-                            _List splitVars;
-                            SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
-                            InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
-                            InsertVarIDsInList (resL, "Local",   *(_SimpleList*)splitVars(1));
-
-                            theReceptacle->SetValue (resL,false);
-                            return;
-                        }
-
-                        else {  // formula string
-                            result = (_String*)theVar->GetFormulaString ();
-                        }
-                    }
-                } else {
-                    ReportWarning (*currentArgument & " is not a validly defined object in call to GetString");
-                }
-            }
-        }
-    }
-    }
-
-    if (result) {
-        theReceptacle->SetValue (new _FString (result),false);
-    } else {
-        theReceptacle->SetValue (new _MathObject(), false);
-    }
-    // default invalid return.
-
-}
 
 //____________________________________________________________________________________
 
@@ -1392,10 +1065,11 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
 
                 if (charVector && charCount) {
                     // now check that all characters
-                    bool        doLocal     = false,
-                                doAffine = false,
-                                doLinear  = true,
-                                doCodon     = false;
+                    bool        doLocal      = false,
+                                doAffine     = false,
+                                doLinear     = true,
+                                doCodon      = false,
+                                doFullLocal  = false;
 
 
                     long        codonCount = charCount*charCount*charCount;
@@ -1535,6 +1209,16 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                             } else {
                                 settingReport << "No";
                             }
+                            
+                            c = mappingTable->GetByKey (seqAlignDoLocal, NUMBER);
+                            if (c) {
+                                doFullLocal = c->Compute()->Value ()>0.5;
+                            }
+                            settingReport << "\n\tLocal alignment: ";
+                            settingReport << (doFullLocal?"Yes":"No");
+                            if (!doCodon && doFullLocal) {
+                                 settingReport << "\n\t Local alignment is currently available for the codon aligner only.";                           
+                            }
 
                             c = mappingTable->GetByKey (seqAlignGapAffine, NUMBER);
                             if (c) {
@@ -1583,7 +1267,7 @@ void      _ElementaryCommand::ExecuteCase55 (_ExecutionList& chain)
                                         _List         store;
                                         score = AlignStrings (str1->sData,string2->sData,str1r,str2r,ccount.lData,scoreMatrix->theData,scoreMatrix->GetVDim(),
                                                               gapCharacter,gapOpen,gapExtend,gapOpen2,gapExtend2,gapFrameshift,doLocal,doAffine,doCodon,
-                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData);
+                                                              charCount, codon3x5->theData, codon3x4->theData, codon3x2->theData, codon3x1->theData, doFullLocal);
 
                                         if ( str1r && str2r ) {
                                             _String * r_res = ( _String * ) checkPointer( new _String( str1r ) ),
@@ -2072,9 +1756,9 @@ void      _ElementaryCommand::ExecuteCase26 (_ExecutionList& chain)
                 replicateSource = (_String*)(theConstraints(ind1)->toStr());
                 if (applyNow) {
                     _Formula rhs, lhs;
-                    long     varRef;
-                    ind2 = Parse (&rhs,*replicateSource,varRef,chain.nameSpacePrefix,&lhs);
-                    ExecuteFormula(&rhs,&lhs,ind2,varRef);
+                    _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+                    ind2 = Parse (&rhs,*replicateSource,fpc,&lhs);
+                    ExecuteFormula(&rhs,&lhs,ind2,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                 }
                 (*constraintAccumulator) << replicateSource;
                 (*constraintAccumulator) << ';';
@@ -2320,8 +2004,9 @@ void      _ElementaryCommand::ExecuteCase63 (_ExecutionList& chain)
 
 void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
 {
+	ReportWarning (_String("ExecuteCase64()"));
     chain.currentCommand++;
-#if defined __AFYP_REWRITE_BGM__
+
     _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
 
     if (! (avl1)) {
@@ -2329,37 +2014,9 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
     } else {
         _BayesianGraphicalModel * bgm   = new _BayesianGraphicalModel ((_AssociativeList *) avl1);
 
-#else
-    _PMathObj   avl1    = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(1),chain.nameSpacePrefix), ASSOCIATIVE_LIST),
-                avl2 = FetchObjectFromVariableByType (&AppendContainerName(*(_String*)parameters(2),chain.nameSpacePrefix), ASSOCIATIVE_LIST);
-
-    if (! (avl1 && avl2)) {
-        WarnError (_String ("Both arguments (") & *(_String*)parameters(1) & " and " & *(_String*)parameters(2) &
-                   " in a call to BGM = ... must evaluate to associative arrays");
-    } else {
-        // is this a dynamic Bayesian network?
-        _Parameter      dynamicArg;
-        checkParameter (isDynamicGraph, dynamicArg, 0.);
-        bool is_dynamic_graph = (dynamicArg > 0) ? TRUE : FALSE;
-
-        Bgm     * bgm;  // pointer to base class
-
-        long    num_nodes   = ((_Matrix *) avl1)->GetSize() + ((_Matrix *) avl2)->GetSize();
-
-        if (num_nodes < 2) {
-            WarnError (_String("Cannot construct a Bgm object on less than 2 nodes, received ") & num_nodes);
-            return;
-        } else {
-            if (is_dynamic_graph)   {
-                bgm = new _DynamicBgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-            } else {
-                bgm = new Bgm ((_AssociativeList*)avl1, (_AssociativeList*)avl2);
-            }
-        }
-#endif
         _String bgmName     = AppendContainerName (*(_String *) parameters(0), chain.nameSpacePrefix);
         long    bgmIndex    = FindBgmName (bgmName);
-
+		
         if (bgmIndex == -1) {   // not found
             for (bgmIndex = 0; bgmIndex < bgmNamesList.lLength; bgmIndex++) {
                 // locate empty strings in name list
@@ -2381,6 +2038,8 @@ void    _ElementaryCommand::ExecuteCase64 (_ExecutionList& chain)
             bgmNamesList.Replace(bgmIndex,&bgmName,true);
             bgmList.Replace(bgmIndex,bgm,false);
         }
+		
+		ReportWarning(_String("Created BGM ") & bgmName & " at index " & bgmIndex);
     }
 }
 
@@ -2455,8 +2114,9 @@ bool    _ElementaryCommand::ConstructNN (_String&source, _ExecutionList&target)
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
-// syntax: BGM ident = (<discrete nodes>, <continuous nodes>)
+// syntax: BGM ident = (<nodes>)
 {
+	ReportWarning(_String("ConstructBGM()"));
     // locate ident in HBL string
     long    mark1 = source.FirstSpaceIndex(0,-1,1),
             mark2 = source.Find ('=', mark1, -1);
@@ -2469,7 +2129,6 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
         return false;
     }
 
-
     // extract arguments from remainder of HBL string
     _List pieces;
 
@@ -2478,21 +2137,15 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
         ExtractConditions (source,mark1+1,pieces,',');
     }
 
-#if defined __AFYP_REWRITE_BGM__
     if (pieces.lLength != 1) {
         WarnError ("Expected: BGM ident = (<nodes>)");
         return false;
     }
-#else
-    if (pieces.lLength < 2) {
-        WarnError ("Expected: BGM ident = (<discrete nodes>, <continuous nodes>)");
-        return false;
-    }
-#endif
 
     _ElementaryCommand * bgm = new _ElementaryCommand (64);
     bgm->parameters && (&bgmID);
     bgm->addAndClean(target,&pieces,0);
+	
     return true;
 }
 
@@ -2521,7 +2174,7 @@ void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mb
 
 void    RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool & mbf)
 {
-    if (modelTypeList.lData[mid] == 0) {
+    if (mid >= 0 && modelTypeList.lData[mid] == 0) {
         mm = LocateVar(modelMatrixIndices.lData[mid]);
     } else {
         mm = nil;
@@ -2546,19 +2199,27 @@ bool    IsModelReversible (long mid)
     return false;
 }
 
+//____________________________________________________________________________________
+
+bool    IsModelOfExplicitForm (long modelID) {
+    if (modelID != HY_NO_MODEL) {
+        return modelTypeList.lData[modelID] != 0;
+    }
+    return false;
+}
 
 //____________________________________________________________________________________
 
 void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, bool inclG, long modelID2, bool inclCat)
 {
     if (modelID != HY_NO_MODEL) {
-        if (modelTypeList.lData[modelID] == 0)
-            // standard rate matrix
-        {
+        // standard rate matrix
+        if (modelTypeList.lData[modelID] == 0) {
             ((_Matrix*) (LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
-        } else
-            // formula based
-        {
+        } else {
+        // formula based
+            // inclG was replaced with false in a previous commit. This caused problems in the optimizer and in
+            // likelihood reporting (it was consistently worse than optimizer results)
             ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
         }
     }
@@ -2600,6 +2261,7 @@ _String _HYHBLTypeToText (long type) {
     result.Trim (0,result.sLength-2);
     return result;
 }
+
 
 //____________________________________________________________________________________
 
@@ -2670,6 +2332,9 @@ BaseRef _HYRetrieveBLObjectByName    (_String& name, long& type, long *index, bo
             type = HY_BL_MODEL;
             if (index) {
                 *index = loc;
+            }
+            if (IsModelOfExplicitForm(loc)) {
+                return (BaseRef)modelMatrixIndices.lData[loc];
             }
             return LocateVar (modelMatrixIndices.lData[loc]);
         }

@@ -1,3 +1,6 @@
+ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
+runATest ();
+
 function getTestName ()
 {
 	return "GetString";
@@ -5,15 +8,31 @@ function getTestName ()
 
 function getTestedFunctions ()
 {
-	return {{"_ExecutionList::ExecuteCase33"}};
+	return {{"_ExecutionList::HandleGetString"}};
 }	
+
+function factorial (N) {
+    f = 1; 
+    for (k = 2; k <= N; k+=1) {
+        f = f * k;
+    }
+    return f;
+}
 
 function runTest ()
 {
 	/* define some auxiliary objects here */
-
+	
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult  	   = 0;
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// ERROR HANDLING
+	//-----------------------------------------------------------------------------------------------------------------
+	
+    assert (runCommandWithSoftErrors ("GetString (a+b, HYPHY_VERSION, 0)", " is not a valid variable identifier in call to GetString"), "Failed error checking for an invalid receptacle");
+    assert (runCommandWithSoftErrors ("GetString (data, this_object_better_not_exist, 0)", " is not an allowed argument type"), "Failed error checking for an invalid argument");
+
 	
 	//-----------------------------------------------------------------------------------------------------------------
 	// VERSION STRINGS
@@ -88,25 +107,87 @@ function runTest ()
 	
 	assert (Type (variableInfo) == "AssociativeList" && (variableInfo["Global"])[0] == "Z" && (variableInfo["Local"])[0] == "Y", "Retrieve the variables invovled in the constraint");
 
-	//Topology T 			   = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
+	//-----------------------------------------------------------------------------------------------------------------
+	// HBL User Function
+	//-----------------------------------------------------------------------------------------------------------------
 
+	GetString (functionInfo, factorial, -1);
+	assert (Type (functionInfo) == "AssociativeList", "Retrieve information about a user function");
+	ExecuteCommands ("function " + functionInfo["ID"] + "(" + Join(",", functionInfo["Arguments"]) + ") {" + functionInfo["Body"] + "} fact5 = factorial (5);");
+	assert (fact5 == 120, "HBL function component retrieval 5! != " + fact5);
 	
-	
+	//-----------------------------------------------------------------------------------------------------------------
+	// SUBSTITUTION MODELS
+	//-----------------------------------------------------------------------------------------------------------------
+
+    global R = 1;
+    binaryModel = {{*,rate1}{R*rate2,*}};
+    freqs       = {{0.5,0.5}};
+    Model         testModel1 = (binaryModel, freqs, 0);
+    Model         testModel2 =("Exp(binaryModel)",freqs,EXPLICIT_FORM_MATRIX_EXPONENTIAL);
+
+    GetString (modelInfo1, testModel1,       1);
+    GetString (modelInfo2, testModel1,       2);
+    GetString (modelBL, testModel1,         -1);
+    GetString (modelBits, testModel1,       -2);
+    GetString (modelInfo1_0, testModel1,    1,0);
+
+ 
+	assert (Type (modelInfo2) == "Unknown" && modelInfo1 == "rate2" && modelBL == "0.5*rate1+0.5*R*rate2" && modelInfo1_0 == "R*rate2" &&
+	        Type (modelBits) == "AssociativeList" && modelBits["EQ_FREQS"] == "freqs", "Retrieve information about a substitution model");
+
+    GetString (modelInfo1, testModel2,       0);
+    GetString (modelBL, testModel2,         -1);
+    GetString (modelBits, testModel2,       -2);
+    GetString (modelInfo1_0, testModel2,    1,0);
+
+	assert ( modelInfo1 == "rate1" && Type (modelInfo2) == "Unknown" && Type (modelBL) == "Unknown" && Type (modelInfo1_0) == "Unknown" , "Retrieve information about a substitution model in explicit form");
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// Likelihood Functions
+	//-----------------------------------------------------------------------------------------------------------------
+
+    ExecuteAFile (PATH_TO_CURRENT_BF  + "res" + DIRECTORY_SEPARATOR + "test_likefunc.nex");
+    ExecuteAFile (PATH_TO_CURRENT_BF  + "res" + DIRECTORY_SEPARATOR + "test_likefunc2.nex");
+
+    GetString (likelihoodFunctionInfoArgument, lf, 10);
+    GetString (likelihoodFunctionInfoArgumentDep, lf, 18);
+    GetString (likelihoodFunctionInfoArgumentFail, lf, 65536);
+	assert (Type (likelihoodFunctionInfoArgumentFail) == "Unknown" && likelihoodFunctionInfoArgument == "givenTree.B_US_83_RF_ACC_M17451.synRate" &&
+	              likelihoodFunctionInfoArgumentDep == "GT", "Retrieve information about likelihood function parameters");
+
+    GetString (likelihoodFunctionInfoArgumentTotal, lf, -1);
+
+ 	//-----------------------------------------------------------------------------------------------------------------
+	// Global Retrieval by Type
+	//-----------------------------------------------------------------------------------------------------------------
+
+
+    GetString (objectID0, LikelihoodFunction, 0);
+    GetString (objectID1, DataSet, 1);
+    GetString (objectID2, DataSetFilter, 2000);
+    GetString (objectInfo, UserFunction, 0);
+    GetString (objectInfoInvalid, UserFunction, 5000);
+    GetString (treeInfo, Tree, 1);
+    GetString (treeInfoInvalid, Tree, 8192); 
+    DeleteObject (lf);
+    GetString (objectID0_2, LikelihoodFunction, 0);
+
+	assert (Type (objectID2) == "Unknown" && objectID0 == "lf" && objectID1 == "ds" && Type (objectInfo) == "AssociativeList" && Type (objectInfoInvalid) == "Unknown" &&
+	        objectID0_2 == "IntermediateCodon_AA_LF", "Retrieve identifiers of HBL objects by index");
+
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// SCFG
+	//-----------------------------------------------------------------------------------------------------------------
+    
+    ExecuteAFile (PATH_TO_CURRENT_BF + "res" + DIRECTORY_SEPARATOR + "SCFG" + DIRECTORY_SEPARATOR + "scfgG6c.bf", {"0": "small.txt"});
+    GetString (scfgID, SCFG, 0);
+    assert (scfgID == "G6", "Retrieve an SCFG identifier");
+    ExecuteCommands ("GetString (scfgInfoTotal, `scfgID`, -1)");
+    assert ((scfgInfoTotal["TERMINALS"])[2] == "<", "Retrieve SCFG components");
+
 	testResult = 1;
 		
 	return testResult;
-}
-
-/* execution stub */
-
-fprintf    (stdout, "[Running COVERAGE TEST '", getTestName(), "']\n");
-result  =  runTest();
-
-if (result)
-{
-	fprintf (stdout, "[TEST PASSED]\n");
-}
-else
-{
-	fprintf (stdout, "[TEST FAILED]\n");
 }

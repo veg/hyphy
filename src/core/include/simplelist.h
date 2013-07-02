@@ -85,17 +85,25 @@ class _SimpleList:public BaseObj
         virtual ~_SimpleList(void);
 
 
-        /*
+        /**
+         * Data constructor list of longs supplied as a variable
+         * @param long the first string to add to the list
+         * @param const unsigned long the number of additional long arguments supplied to the constructor
+         * @param 2-N: long to be added to the list
+         */
+        _SimpleList(const long, const unsigned long, ...);
+
+    /*
         ==============================================================
         Operator Overloads
         ==============================================================
         */
 
         // element location functions - read/write
-        long& operator [] (long);
+        long& operator [] (const long);
 
         // element location functions - read only
-        long operator () (unsigned long);
+        long operator () (const unsigned long);
 
         // assignment operator
         virtual _SimpleList operator = (_SimpleList);
@@ -117,6 +125,15 @@ class _SimpleList:public BaseObj
         Methods
         ==============================================================
         */
+
+        /**
+        * Retrieve the element in position index if index if positive or 
+        * length + index if index is negative
+        * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
+        * @param index The index of the elemnt to retrieve 
+        * @return the value of the element at the specified index.
+        */
+        long GetElement (const long index);
 
         /**
         * Find the position of a search string in the list of strings (ONLY)
@@ -266,6 +283,14 @@ class _SimpleList:public BaseObj
 
 
         /**
+        * SLKP: 20090508
+        * Return the sum of all values in the list 
+        * Example: _SimpleList([4, 1, 2]).Sum() = 7 
+        * @return the sum of all values in the list 
+        */
+        long Sum (void);
+
+        /**
         * Populate a Simple List with integers incrementally.
         * Example: SimpleList sl.Populate(4, 1, 2) = [1, 3, 5, 7]
         * @param s The substring to find
@@ -334,6 +359,7 @@ class _SimpleList:public BaseObj
         * @return Nothing. Acts on the List object it was called from. 
         */
         void Permute(long);
+    
 
         /**
         * TODO:Permute elements in blocks of given size with possible replacement
@@ -343,7 +369,17 @@ class _SimpleList:public BaseObj
         */
         void PermuteWithReplacement(long);
 
-
+    
+        /**
+         * Select a number of list elements at random (either with or w/o replacement)
+         * Example: SimpleList(1,3,5,7).Subset(2) = (1,7)
+         * @param size How many elements to select (values >= lLength are rest to lLength)
+         * @param select Sample with our without replacement 
+         * @return Return the list of sampled elements
+         */
+        _SimpleList* Subset (unsigned long size, const bool replacement = false);
+    
+    
         /**
         * Retrive the last value and shorted the list by 1
         * Example: SimpleList(1,3,5,7).Pop() = 7 

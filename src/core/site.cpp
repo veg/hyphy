@@ -1548,156 +1548,10 @@ void    _DataSet::toFileStr (FILE* dest)
 
 
 //_________________________________________________________
-void    _DataSet::constructFreq (long* d, _Matrix*m, char positions, long column, long counter, int level,
-                                 int shifter, int index)
-{
-    for(int i=0; i<theTT->baseLength; i++) {
-        if (d[level*theTT->baseLength+i]) {
-            if (level) {
-                constructFreq (d,m,positions,column,counter, level-1,shifter*theTT->baseLength,index + i*shifter);
-            } else {
-                m->theData[(index + i*shifter)*positions+column]+=1.0/counter;
-            }
-        }
-    }
-}
-
-//_________________________________________________________
-void    _DataSet::constructFreq (long* d, _Parameter *m, char positions, long column, long counter, int level,
-                                 int shifter, int index)
-{
-    for(int i=0; i<theTT->baseLength; i++)
-        if (d[level*theTT->baseLength+i]) {
-            if (level) {
-                constructFreq (d,m,positions,column,counter, level-1,shifter*theTT->baseLength,index + i*shifter);
-            } else {
-                m[(index + i*shifter)*positions+column]+=1.0/counter;
-            }
-        }
-}
-
-//_________________________________________________________
-
-_Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps)
-{
-    long    vD,
-            hD = 1,
-            i,
-            j;
-
-    if (hSegmentation.lLength==0||vSegmentation.lLength<unit) { // default segmentation
-        if (hSegmentation.lLength==0) {
-            j = NoOfSpecies();
-            hSegmentation.RequestSpace (j);
-            for (long i = 0; i<j; i++) {
-                hSegmentation<<i;
-            }
-        }
-        if (vSegmentation.lLength<unit) {
-            vSegmentation.Clear();
-            j = GetNoTypes();
-            vSegmentation.RequestSpace (j);
-            for (long i = 0; i<j; i++) {
-                vSegmentation<<i;
-            }
-        }
-    }
-
-    if (unit%atom!=0) {
-        ReportWarning (_String ("Atom should divide Unit in HarvestFrequencies call. Bailing out by setting atom = 1"));
-        atom = 1; // default bailout
-    }
-
-    // create the output Matrix
-
-
-    for (i=0; i<atom; i++) {
-        hD*=theTT->baseLength;
-    }
-
-    vD = posSpec?unit/atom:1;
-
-    _Matrix     out (hD, vD, false, true);
-
-    long     positions  =   unit/atom,
-             *store        = new long[atom*theTT->baseLength];
-
-    checkPointer(store);
-
-    for (i = 0; i<vSegmentation.lLength; i+=unit) { // loop over the set of segments
-        // make sure the partition is kosher
-
-        if (i+unit>vSegmentation.lLength) {
-            break;
-        }
-
-        for (long jj=i; jj<i+unit; jj+=atom) {
-            long   k = (jj-i)/atom,
-                   count,
-                   m,
-                   ll;
-
-            for (ll = 0; ll<hSegmentation.lLength; ll++)
-                // loop down each column
-            {
-                int l = hSegmentation.lData[ll];
-                count = 1;
-                // build atomic probabilities
-                for (m = 0; m<atom; m++ ) {
-                    theTT->TokenCode ((*this)(vSegmentation.lData[jj+m],l,atom), store+theTT->baseLength*m,countGaps);
-                }
-
-                long index = 0, shifter = 1;
-                for (int m = atom-1; m>=0; m--) {
-                    int smcount = 0;
-                    for (int n = 0; n<theTT->baseLength; n++) {
-                        if (store[theTT->baseLength*m+n]) {
-                            index += shifter*n;
-                            smcount++;
-                        }
-                    }
-                    shifter*=theTT->baseLength;
-                    count *=smcount;
-                }
-
-                if (count>1) {
-                    constructFreq (store, &out, posSpec?positions:1, posSpec?k:0, count, atom-1 , 1, 0);
-                } else {
-                    out.theData[posSpec?index*positions+k:index] += count;
-                }
-            }
-        }
-    }
-
-    delete[] store;
-    //scale the matrix now
-
-    hD = out.GetHDim();
-    vD = out.GetVDim();
-    for (i=0; i<vD; i++) {
-        _Parameter temp = 0.0;
-
-        for (long r=hD-1; r>=0; r--) {
-            temp+=out.theData[r*vD+i];
-        }
-
-        {
-            for (long r=i; r<vD*hD; r+=posSpec?positions:1) {
-                out.theData[r]/=temp;
-            }
-        }
-    }
-
-
-    return (_Matrix*)out.makeDynamic();
-}
-
-//_________________________________________________________
 
 void    _DataSet::AddName (_String& s)
 {
-    s.Trim(0,s.FirstNonSpaceIndex (0,-1,-1));
-    theNames&&(&s);
+    theNames.AppendNewInstance (new _String (s,0,s.FirstNonSpaceIndex (0,-1,-1)));
 }
 
 
@@ -1998,7 +1852,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric (_Matrix* freqs, _List& values, _Da
                 testV += ((_Matrix*)(((_Matrix**)values.lData)[k]))->theData[site*dimension+state];
             }
 
-        sprintf     (buffer, "%20.18g", testV);
+        snprintf (buffer, sizeof(buffer), "%20.18g", testV);
         _String     testS (buffer);
         long        f = siteIndices.Find (&testS);
 
@@ -2841,8 +2695,8 @@ void    _DataSet::ProcessPartition (_String& input2 , _SimpleList& target , bool
     if (!input.IsALiteralArgument(true)) { // not a literal argument
         _Formula fmla, lhs;
 
-        long     varRef = 0,
-                 outcome = Parse (&fmla, input, varRef, nil,&lhs);
+        _FormulaParsingContext fpc;
+        long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
             WarnError (input & _String(" is an invalid partition specification"));
@@ -4428,7 +4282,7 @@ long    _DataSetFilter::Translate2Frequencies (_String& str, _Parameter* parvect
 
 
         if (count>1) {
-            theData->constructFreq (storeP, &out, 1, 0, count, unitLength-1 , 1, 0);
+            theData->constructFreq (storeP, out.theData, 1, 0, count, unitLength-1 , 1, 0);
         } else if (count == 1) {
             out.theData[index] = count;
         }
@@ -5291,10 +5145,19 @@ void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase)
 //_________________________________________________________
 void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 {
-    int  fNS = CurrentLine.FirstNonSpaceIndex();
-    _String     Name (CurrentLine.Cut (fNS, fNS+9));
-    CurrentLine.Trim(fNS+10,-1); // chop out the name
-    ds.AddName(Name);
+    int  fNS      = CurrentLine.FirstNonSpaceIndex(),
+         space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
+    
+    // hack for PAML support
+    if (space2 > fNS && isspace(CurrentLine.getChar (space2+1))) {
+        _String     sequence_name (CurrentLine,fNS, space2);
+        CurrentLine.Trim(space2+2,-1); // chop out the name
+        ds.AddName(sequence_name);        
+    } else {
+        _String     sequence_name (CurrentLine,fNS, fNS+9);
+        CurrentLine.Trim(fNS+10,-1); // chop out the name
+        ds.AddName(sequence_name);
+    }
 }
 
 
@@ -5693,16 +5556,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
 #endif
 
             nexusBF.ExecuteAndClean(bfl);
-
-            //DeleteObject (lastNexusDataMatrix);
-            lastNexusDataMatrix = nil;
             nexusBFBody         = empty;
         } else if (execBF == 0) {
             nexusBFBody         = empty;
         }
     }
 
-    //return (_DataSet*)result.makeDynamic();
     return result;
 }
 
@@ -6012,10 +5871,11 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         break;
     }
 
-    case 2: { // phylip sequential
-        // print PHYLIP format header
-        //fprintf (dest,"$FORMAT:\"PHYLIPS\"\n");
-        // print number of species and sites
+    case 2:     // phylip sequential
+    case 11:    // PAML 
+    {
+        
+        
         if (dest) {
             fprintf (dest,"%ld\t%ld\n",theNodeMap.lLength,theOriginalOrder.lLength);
         } else {
@@ -6026,14 +5886,19 @@ void    _DataSetFilter::internalToStr (FILE*dest,_String& rec)
         }
         // proceed to spool out the data
         for ( i = 0; i<theNodeMap.lLength; i++) {
-            _String * curName = (_String *)theData->GetNames() (theNodeMap(i)), choppedTo10Chars;
-            if (curName->Length()>=10) {
-                choppedTo10Chars = curName->Cut(0,9)&' ';
-            } else {
-                choppedTo10Chars = *curName;
-                while (choppedTo10Chars.Length()<11) {
-                    choppedTo10Chars=choppedTo10Chars&' ';
+            _String * curName = (_String *)theData->GetNames() (theNodeMap(i)), 
+                     choppedTo10Chars;
+            if (outputFormat == 2) {
+                if (curName->Length()>=10) {
+                    choppedTo10Chars = curName->Cut(0,9)&' ';
+                } else {
+                    choppedTo10Chars = *curName;
+                    while (choppedTo10Chars.Length()<11) {
+                        choppedTo10Chars=choppedTo10Chars&' ';
+                    }
                 }
+            } else {
+                choppedTo10Chars = *curName & "  ";
             }
 
             if (dest) {
@@ -6508,8 +6373,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName)
 
     if (pos==-1) {
         dataSetNamesList << setName;
-        dataSetList<<ds;
-        DeleteObject (ds);
+        dataSetList.AppendNewInstance(ds);
     } else {
 #if !defined __UNIX__ && ! defined __HEADLESS__
         if (!RequestDataSetReplace (pos)) {
@@ -6549,3 +6413,117 @@ bool    StoreADataSet (_DataSet* ds, _String* setName)
 
     return true;
 }
+
+//_________________________________________________________
+
+_Matrix * _DataSet::HarvestFrequencies (char unit, char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps)
+{
+    unsigned long    vD,
+                     hD = 1L;
+            
+    if (hSegmentation.lLength == 0L || vSegmentation.lLength<unit) { // revert to default (all data)
+        if (hSegmentation.lLength==0) {
+            hSegmentation.Populate (NoOfSpecies(),0,1);
+        }
+        if (vSegmentation.lLength<unit) {
+            vSegmentation.Clear();
+            vSegmentation.Populate (GetNoTypes(),0,1);
+        }
+    }
+
+    if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
+        WarnError ("Atom should divide unit in HarvestFrequencies call");
+        return new _Matrix (1,1);
+    }
+
+    // create the output Matrix
+
+    for (unsigned long i=0; i<atom; i++) {
+        hD*=theTT->baseLength;
+    }
+
+    vD = posSpec?unit/atom:1;
+
+    _Matrix   *  out = (_Matrix*) checkPointer(new _Matrix (hD, vD, false, true));
+
+    long     positions  =   unit/atom,
+             *store        = new long[atom*theTT->baseLength];
+
+    for (unsigned long i = 0; i<vSegmentation.lLength; i+=unit) { // loop over the set of segments
+        // make sure the partition is kosher
+
+        if (i+unit>vSegmentation.lLength) {
+            break;
+        }
+
+        for (unsigned long jj=i; jj<i+unit; jj+=atom) {
+            long   k = (jj-i)/atom;
+            
+            for (unsigned long ll = 0; ll<hSegmentation.lLength; ll++)
+                // loop down each column
+            {
+                int l = hSegmentation.lData[ll];
+                unsigned long count = 1L;
+                // build atomic probabilities
+                for (unsigned long m = 0; m<atom; m++ ) {
+                    theTT->TokenCode ((*this)(vSegmentation.lData[jj+m],l,atom), store+theTT->baseLength*m,countGaps);
+                }
+
+                long index = 0, shifter = 1;
+                for (int m = atom-1; m>=0; m--) {
+                    int smcount = 0;
+                    for (int n = 0; n<theTT->baseLength; n++) {
+                        if (store[theTT->baseLength*m+n]) {
+                            index += shifter*n;
+                            smcount++;
+                        }
+                    }
+                    shifter*=theTT->baseLength;
+                    count *=smcount;
+                }
+
+                if (count>1) {
+                    constructFreq (store, out->theData, posSpec?positions:1, posSpec?k:0, count, atom-1 , 1, 0);
+                } else {
+                    out->theData[posSpec?index*positions+k:index] += count;
+                }
+            }
+        }
+    }
+
+    delete[] store;
+    //scale the matrix now
+
+    hD = out->GetHDim();
+    vD = out->GetVDim();
+    for (unsigned long i=0; i<vD; i++) { // normalize each _column_ to sum to 1.
+        _Parameter temp = 0.0;
+
+        for (long r=hD-1; r>=0; r--) {
+            temp+=out->theData[r*vD+i];
+        }
+
+        for (long r=i; r<vD*hD; r+=posSpec?positions:1) {
+            out->theData[r]/=temp;
+        }
+    }
+
+
+    return out;
+}
+
+//_________________________________________________________
+void    _DataSet::constructFreq (long* d, _Parameter *m, char positions, long column, long counter, int level, int shifter, int index) {
+    for(unsigned i=0; i<theTT->baseLength; i++) {
+        if (d[level*theTT->baseLength+i]) {
+            if (level) {
+                constructFreq (d,m,positions,column,counter, level-1,shifter*theTT->baseLength,index + i*shifter);
+            } else {
+                m[(index + i*shifter)*positions+column]+=1.0/counter;
+            }
+        }
+    }
+}
+
+
+

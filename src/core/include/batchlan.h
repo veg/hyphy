@@ -46,7 +46,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "trie.h"
 #include <stdio.h>
 
-
+#define  HY_BL_ERROR_HANDLING_DEFAULT 0
+#define  HY_BL_ERROR_HANDLING_SOFT    1
 
 //____________________________________________________________________________________
 struct    _CELInternals {
@@ -70,12 +71,14 @@ struct    _HBLCommandExtras {
                         needs_verb;
 };
 
+class _ElementaryCommand;
+
 //____________________________________________________________________________________
 class   _ExecutionList: public _List // a sequence of commands to be executed
 {
 public:
     _ExecutionList (); // doesn't do much
-    _ExecutionList (_String&, _String* = nil, bool = false);
+    _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
 
     virtual
     ~_ExecutionList (void);
@@ -88,7 +91,7 @@ public:
 
     virtual
     void        Duplicate                   (BaseRef);
-    bool        BuildList                   (_String&, _SimpleList* = nil, bool = false);
+    bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
 
     _PMathObj   Execute                     (void);             // run this execution list
     _PMathObj   GetResult                   (void) {
@@ -102,15 +105,34 @@ public:
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
     void        SetNameSpace                (_String);
+    _String     GetFileName                 (void);
     _String*    GetNameSpace                (void);
-    _String     AddNameSpaceToID            (_String&);
+    _String     AddNameSpaceToID            (_String&, _String * = nil);
     _String     TrimNameSpaceFromID         (_String&);
     _String*    FetchFromStdinRedirect      (void);
+    _ElementaryCommand* FetchLastCommand (void) {
+        if (currentCommand - 1 < lLength && currentCommand > 0) {
+            return (_ElementaryCommand*)(*this)(currentCommand - 1);
+        }
+        return nil;
+    }
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
     }
+    
+    bool        IsErrorState    (void)     {
+            return errorState;
+    }
 
+    void              ReportAnExecutionError (_String  errMsg, bool doCommand = true, bool appendToExisting = false);
+    /**
+     * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
+     * @param errMsg -- the current command text stream
+     * @param doCommand -- add standard text about the current command
+     * @param appendToExisting -- append text to existing error
+     
+     */
 
 
     // data fields
@@ -118,6 +140,8 @@ public:
 
     long                            currentCommand;
     char                            doProfile;
+    int                             errorHandlingMode; // how does this execution list handle errors
+    bool                            errorState;
 
     _PMathObj                       result;
 
@@ -161,16 +185,13 @@ public:
     void      ExecuteCase4   (_ExecutionList&);
     void      ExecuteCase5   (_ExecutionList&);
     void      ExecuteDataFilterCases (_ExecutionList&);
-    void      ExecuteCase8   (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase17  (_ExecutionList&);
     void      ExecuteCase21  (_ExecutionList&);
     void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
     void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase32  (_ExecutionList&); // list selection handler
-    void      ExecuteCase33  (_ExecutionList&); // index string selector
     void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
     void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
     void      ExecuteCase37  (_ExecutionList&); // GetInformation
@@ -178,13 +199,11 @@ public:
     void      ExecuteCase39  (_ExecutionList&); // Execute Commands
     void      ExecuteCase40  (_ExecutionList&); // Open Window
     void      ExecuteCase41  (_ExecutionList&); // Spawn LF
-    void      ExecuteCase42  (_ExecutionList&); // Differentiate
     void      ExecuteCase43  (_ExecutionList&); // FindRoot
     void      ExecuteCase44  (_ExecutionList&); // MPISend
     void      ExecuteCase45  (_ExecutionList&); // MPIReceive
     void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
-    void      ExecuteCase51  (_ExecutionList&); // GetURL
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
@@ -195,6 +214,7 @@ public:
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
+    bool      HandleFprintf                         (_ExecutionList&);
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
     bool      HandleComputeLFFunction               (_ExecutionList&);
@@ -206,6 +226,11 @@ public:
     bool      HandleDeleteObject                    (_ExecutionList&);
     bool      HandleClearConstraints                (_ExecutionList&);
     bool      HandleMolecularClock                  (_ExecutionList&);
+    bool      HandleGetURL                          (_ExecutionList&);
+    bool      HandleGetString                       (_ExecutionList&);
+    bool      HandleExport                          (_ExecutionList&);
+    bool      HandleDifferentiate                   (_ExecutionList&);
+    long      GetCode                               (void) { return code; };
     
     static  _String   FindNextCommand       (_String&, bool = false);
     // finds & returns the next command block in input
@@ -260,9 +285,6 @@ public:
     static  bool      ConstructExport       (_String&, _ExecutionList&);
     // construct a matrix export command
 
-    static  bool      ConstructImport       (_String&, _ExecutionList&);
-    // construct a matrix import command
-
     static  bool      ConstructGetString    (_String&, _ExecutionList&);
     // construct a matrix import command
 
@@ -271,9 +293,6 @@ public:
 
     static  bool      ConstructTree         (_String&, _ExecutionList&);
     // construct a tree
-
-    static  bool      ConstructFprintf      (_String&, _ExecutionList&);
-    // construct a fprintf command
 
     static  bool      ConstructFscanf       (_String&, _ExecutionList&);
     // construct a fscanf command
@@ -315,8 +334,6 @@ public:
 
     static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
 
-    static  bool      ConstructDifferentiate(_String&, _ExecutionList&);
-
     static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
 
     static  bool      ConstructGetInformation
@@ -331,8 +348,6 @@ public:
     static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
 
     static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetURL       (_String&, _ExecutionList&);
 
     static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
 
@@ -361,6 +376,7 @@ public:
     static  bool      MakeGeneralizedLoop   (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
 
 protected:
+
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
     // internal command used
@@ -464,6 +480,8 @@ platformDirectorySeparator,
 defFileNameValue,
 defFileString,
 blConstructCM,
+blFprintfRedirect               ,
+blFprintfDevNull                ,
 globalPolynomialCap             ,
 enforceGlobalPolynomialCap      ,
 dropPolynomialTerms             ,
@@ -539,6 +557,9 @@ bgmNodeOrder                    ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
 assertionBehavior               ,
+dialogPrompt                    ,
+_hyLastExecutionError           ,
+_hyExecutionErrorMode           ,
 #ifdef      __HYPHYMPI__
 mpiNodeID                       ,
 mpiNodeCount                    ,
@@ -549,9 +570,11 @@ hfCountGap                      ;
 extern  _ExecutionList              *currentExecutionList;
 
 extern  _AVLList                    loadedLibraryPaths;
-extern  _AVLListX                   _HY_HBLCommandHelper;
+extern  _AVLListX                   _HY_HBLCommandHelper,
+                                    _HY_GetStringGlobalTypes;
                                     
-extern  _Trie                       _HY_ValidHBLExpressions;
+extern  _Trie                       _HY_ValidHBLExpressions,
+                                    _HY_HBL_Namespaces;
 
 extern  long                        globalRandSeed,
                                     matrixExpCount;
@@ -579,10 +602,10 @@ _String ReturnFileDialogInput        (void);
 _String*ProcessCommandArgument       (_String*);
 _String WriteFileDialogInput         (void);
 _Parameter
-ProcessNumericArgument       (_String*,_VariableContainer*);
-_String ProcessLiteralArgument       (_String*,_VariableContainer*);
+ProcessNumericArgument               (_String*,_VariableContainer*, _ExecutionList* = nil);
+_String ProcessLiteralArgument       (_String*,_VariableContainer*, _ExecutionList* = nil);
 _AssociativeList*
-ProcessDictionaryArgument (_String* data, _VariableContainer* theP);
+ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
 _String GetStringFromFormula         (_String*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
@@ -606,10 +629,16 @@ CheckAssociativeListArg      (_String*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
 bool    IsModelReversible            (long);
+bool    IsModelOfExplicitForm        (long);
+
 void    ReadModelList                (void);
+_String ProcessStringArgument        (_String* data);
+_String*_HBLObjectNameByType         (const long type, const long index, bool correct_for_empties = true);
+_String _hblCommandAccessor          (_ExecutionList*, long);
+_String _HYGenerateANameSpace             (void);
 
 _PMathObj
-ProcessAnArgumentByType      (_String*, _VariableContainer*, long);
+ProcessAnArgumentByType      (_String*, _VariableContainer*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);
 
@@ -639,6 +668,7 @@ void    ReturnCurrentCallStack       (_List&, _List&);
 */
 
 BaseRef _HYRetrieveBLObjectByName       (_String& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
+
 _String _HYHBLTypeToText                (long type);
 _String _HYStandardDirectory            (const unsigned long);
 

@@ -212,17 +212,36 @@ _Formula* _VariableContainer::GetExplicitFormModel (void)
     return nil;
 }
 
+//__________________________________________________________________________________
+
+_String _VariableContainer::GetModelName (void) {
+    _String * res = _HBLObjectNameByType (HY_BL_MODEL, theModel, false);
+    if (res) {
+        return *res;
+    }
+    return empty;
+}
 
 //__________________________________________________________________________________
 
-_Matrix* _VariableContainer::GetModelMatrix (void)
+_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags)
 {
     if (theModel == -1) {
         return nil;
     }
 
     if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
-        return (_Matrix*) ((_Formula*)modelMatrixIndices.lData[theModel])->Compute();
+        if (queue && tags) {
+            long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (queue);
+            if (currentQueueLength) {
+                for (long k = 0; k < currentQueueLength; k++) 
+                    (*tags) << currentQueueLength;
+                return nil;
+            }
+        }
+        _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.lData[theModel])->Compute();
+        result->CheckIfSparseEnough(true);
+        return result;
     }
 
     return (_Matrix*) (LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
@@ -314,6 +333,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
             f = LocateVarByName (varName);
             if (f<0) {
                 _Variable v (varName);
+                //printf ("%x %s\n", v.theName, v.theName->sData);
                 f = v.theIndex;
             } else {
                 f = variableNames.GetXtra (f);
@@ -448,7 +468,7 @@ _VariableContainer::~_VariableContainer(void)
 
 bool _VariableContainer::HasChanged (void)
 {
-    long i;
+    unsigned long i;
     if (iVariables)
         for (i = 0; i<iVariables->lLength; i+=2)
             if (LocateVar (iVariables->lData[i])->HasChanged()) {
@@ -524,20 +544,23 @@ bool _VariableContainer::NeedToExponentiate (bool ignoreCats)
     }
 
     if (iVariables)
-        for (long i = 0; i<iVariables->lLength && iVariables->lData[i+1] >= 0; i+=2) {
+        for (unsigned long i = 0; i<iVariables->lLength && iVariables->lData[i+1] >= 0; i+=2) {
             if (LocateVar (iVariables->lData[i])->HasChanged(ignoreCats)) {
+                //printf ("%s -> %s\n", theName->sData, LocateVar (iVariables->lData[i])->theName->sData);
                 return true;
             }
         }
 
     if (gVariables)
-        for (long i = 0; i<gVariables->lLength; i++)
+        for (unsigned long i = 0; i<gVariables->lLength; i++)
             if (LocateVar (gVariables->lData[i])->HasChanged(ignoreCats)) {
+                //printf ("%s -> %s\n", theName->sData, LocateVar (gVariables->lData[i])->theName->sData);
                 return true;
             }
     if (dVariables)
-        for (long i = 0; i<dVariables->lLength && dVariables->lData[i+1] >= 0; i+=2)
+        for (unsigned long i = 0; i<dVariables->lLength && dVariables->lData[i+1] >= 0; i+=2)
             if (LocateVar (dVariables->lData[i])->HasChanged(ignoreCats)) {
+                //printf ("%s -> %s\n", theName->sData, LocateVar (dVariables->lData[i])->theName->sData);
                 return true;
             }
 
@@ -606,9 +629,9 @@ bool      _VariableContainer::RemoveDependance (long varIndex)
 
         if (f!=-1) {
 
-            //printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
-            //      GetName()->sData);
-
+            /*printf ("Moving dep->ind for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
+                  GetName()->sData);
+             */
 
             /*if (dVariables->lData[f+1]>=0)
             {
@@ -691,11 +714,70 @@ long      _VariableContainer::CheckAndAddUserExpression (_String& pName, long st
 }
 
 //__________________________________________________________________________________
-void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source)
+void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, bool match_by_name)
 {
-    if (iVariables && source->iVariables)
-        for (long i=0; i<iVariables->lLength && i< source->iVariables->lLength; i+=2) {
-            LocateVar (iVariables->lData[i])->SetValue(LocateVar (source->iVariables->lData[i])->Compute());
+    if (iVariables && (source->iVariables || source->dVariables))
+        if (match_by_name) {
+            _List source_vars,
+                  target_vars;
+                  
+            _SimpleList model_vars_in_source,
+                        model_vars_in_target;
+                        
+            if (source->iVariables) 
+                for (unsigned long i=0; i< source->iVariables->lLength; i+=2) {
+                    long   template_var_index = source->iVariables->lData[i+1];
+                    if (template_var_index >= 0) {
+                        source_vars << LocateVar (template_var_index)->GetName();
+                        model_vars_in_source << i;
+                    }             
+                }
+           
+            if (source->dVariables) 
+                for (unsigned long i=0; i< source->dVariables->lLength; i+=2) {
+                    long   template_var_index = source->dVariables->lData[i+1];
+                    if (template_var_index >= 0) {
+                        source_vars << LocateVar (template_var_index)->GetName();
+                        model_vars_in_source << (-2-i);
+                    }             
+                }
+
+            for (unsigned long i=0; i<iVariables->lLength; i+=2) {
+                long   template_var_index = iVariables->lData[i+1];
+                if (template_var_index >= 0) {
+                    target_vars << LocateVar (template_var_index)->GetName();
+                    model_vars_in_target << i;
+                }
+            }
+
+
+            _SimpleList the_mapping;
+            
+            
+            target_vars.Map (source_vars, the_mapping);
+            /*
+            printf ("\n_VariableContainer::CopyMatrixParameters %s :\n\t%s\n\t%s\n\t%s\n", theName->sData, _String((_String*)source_vars.toStr()).sData, 
+            _String((_String*)target_vars.toStr()).sData, 
+            _String((_String*)the_mapping.toStr()).sData);
+            */
+            
+            for (unsigned long i=0; i<the_mapping.lLength; i++) {
+                long source_var = the_mapping[i];
+                if (source_var >= 0) {
+                    long which_idx = model_vars_in_source.lData[source_var];
+                    if (which_idx >= 0) {
+                        LocateVar (iVariables->lData[model_vars_in_target.lData[i]])->SetValue(LocateVar (source->iVariables->lData[which_idx])->Compute());
+                    } else {
+                        LocateVar (iVariables->lData[model_vars_in_target.lData[i]])->SetValue(LocateVar (source->dVariables->lData[-which_idx-2])->Compute());                    
+                    }
+                }
+            }
+            
+            
+        } else {
+            for (unsigned long i=0; i<iVariables->lLength && i< source->iVariables->lLength; i+=2) {
+                LocateVar (iVariables->lData[i])->SetValue(LocateVar (source->iVariables->lData[i])->Compute());
+            }        
         }
 
     _PMathObj srcVal = source->Compute();
@@ -797,7 +879,7 @@ bool      _VariableContainer::SetMDependance (_SimpleList& mDep)
                 }
             }
         else
-            for (long k=0; iVariables && k<mDep.lLength; k++) {
+            for (unsigned long k=0; iVariables && k<mDep.lLength; k++) {
                 SetDependance (mDep.lData[k]);
             }
 
@@ -885,22 +967,22 @@ void      _VariableContainer::ClearConstraints(void)
 void  _VariableContainer::CompileListOfDependents (_SimpleList& rec)
 {
     if (iVariables)
-        for (long i=0; i<iVariables->lLength; i+=2) {
+        for (unsigned long i=0; i<iVariables->lLength; i+=2) {
             LocateVar(iVariables->lData[i])->CompileListOfDependents (rec);
         }
 
     if (gVariables)
-        for (long i=0; i<gVariables->lLength; i++) {
+        for (unsigned long i=0; i<gVariables->lLength; i++) {
             LocateVar(gVariables->lData[i])->CompileListOfDependents (rec);
         }
 
     if (dVariables) {
-        for (long i=0; i<dVariables->lLength; i+=2) {
+        for (unsigned long i=0; i<dVariables->lLength; i+=2) {
             LocateVar(dVariables->lData[i])->CompileListOfDependents (rec);
         }
 
         {
-            for (long i=0; i<dVariables->lLength; i+=2) {
+            for (unsigned long i=0; i<dVariables->lLength; i+=2) {
                 long f = rec.Find (dVariables->lData[i]);
                 if (f>=0) {
                     rec.Delete (f);
@@ -916,11 +998,11 @@ void  _VariableContainer::CompileListOfDependents (_SimpleList& rec)
 void _VariableContainer::MarkDone (void)
 {
     if (iVariables)
-        for (long i = 0; i<iVariables->lLength && iVariables->lData[i+1] >= 0; i+=2) {
+        for (unsigned long i = 0; i<iVariables->lLength && iVariables->lData[i+1] >= 0; i+=2) {
             LocateVar (iVariables->lData[i])->MarkDone();
         }
     if (gVariables)
-        for (long i = 0; i<gVariables->lLength; i++) {
+        for (unsigned long i = 0; i<gVariables->lLength; i++) {
             LocateVar (gVariables->lData[i])->MarkDone();
         }
 }
@@ -987,13 +1069,13 @@ bool _VariableContainer::IsConstant (void)
     }
 
     if (dVariables)
-        for (long i = 0; i<dVariables->lLength; i+=2)
+        for (unsigned long i = 0; i<dVariables->lLength; i+=2)
             if (!LocateVar(dVariables->lData[i])->IsConstant()) {
                 return false;
             }
 
     if (gVariables)
-        for (long i = 0; i<gVariables->lLength; i++)
+        for (unsigned long i = 0; i<gVariables->lLength; i++)
             if (!LocateVar(gVariables->lData[i])->IsConstant()) {
                 return false;
             }
@@ -1003,28 +1085,34 @@ bool _VariableContainer::IsConstant (void)
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2)
+void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight)
 {
     if (iVariables)
-        for (long i = 0; i<iVariables->lLength; i+=2) {
+        for (unsigned long i = 0; i<iVariables->lLength; i+=2) {
             l.Insert ((BaseRef)iVariables->lData[i]);
+            if (tagger) {
+                tagger->UpdateValue ((BaseRef)iVariables->lData[i], weight, 0);
+            }
         }
     if (dVariables)
-        for (long i = 0; i<dVariables->lLength; i+=2) {
+        for (unsigned long i = 0; i<dVariables->lLength; i+=2) {
             l2.Insert ((BaseRef)dVariables->lData[i]);
             _SimpleList temp;
             {
                 _AVLList  ta (&temp);
-                LocateVar (dVariables->lData[i])->ScanForVariables(ta, true);
+                LocateVar (dVariables->lData[i])->ScanForVariables(ta, true, tagger, weight);
                 ta.ReorderList();
             }
             // see if any of them are global
-            for (long j=0; j<temp.lLength; j++) {
+            for (unsigned long j=0; j<temp.lLength; j++) {
                 long p = temp.lData[j];
                 _Variable * v = LocateVar(p);
                 if (!v->IsGlobal() && v->IsIndependent()) {
                     l.Insert ((BaseRef)p);
-                }
+                    if (tagger) {
+                        tagger->UpdateValue ((BaseRef)p, weight, 0);
+                    }
+               }
             }
         }
 }
@@ -1034,7 +1122,7 @@ void _VariableContainer::ScanForVariables (_AVLList& l,_AVLList& l2)
 void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&)
 {
     if (dVariables)
-        for (long i = 0; i<dVariables->lLength; i+=2) {
+        for (unsigned long i = 0; i<dVariables->lLength; i+=2) {
             l.Insert ((BaseRef)dVariables->lData[i]);
         }
 }
@@ -1044,7 +1132,7 @@ void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&)
 void _VariableContainer::GetListOfModelParameters (_List& rec)
 {
     if (iVariables)
-        for (long i = 1; i<iVariables->lLength; i+=2) {
+        for (unsigned long i = 1; i<iVariables->lLength; i+=2) {
             long p = iVariables->lData[i];
             if (p>=0) {
                 rec << LocateVar(p)->GetName();
@@ -1054,21 +1142,24 @@ void _VariableContainer::GetListOfModelParameters (_List& rec)
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanForGVariables (_AVLList& l,_AVLList& l2)
+void _VariableContainer::ScanForGVariables (_AVLList& l,_AVLList& l2, _AVLListX* tagger, long weight)
 {
     if (gVariables)
-        for (long i = 0; i<gVariables->lLength; i++) {
+        for (unsigned long i = 0; i<gVariables->lLength; i++) {
             long p = gVariables->lData[i];
             _Variable *v = LocateVar (p);
             if (v->IsIndependent()) {
                 l.Insert ((BaseRef)p);
+                if (tagger) {
+                    tagger->UpdateValue((BaseRef)p, weight, 0);
+                }
             } else {
                 l2.Insert ((BaseRef)p);
             }
         }
     // additionally, check to see if there is any implicit dependence on the global variables yet unseen
     if (dVariables)
-        for (long i = 0; i<dVariables->lLength; i+=2) {
+        for (unsigned long i = 0; i<dVariables->lLength; i+=2) {
             _SimpleList temp;
             {
                 _AVLList  al (&temp);
@@ -1077,12 +1168,15 @@ void _VariableContainer::ScanForGVariables (_AVLList& l,_AVLList& l2)
                 al.ReorderList();
             }
             // see if any of them are global
-            for (long j=0; j<temp.lLength; j++) {
+            for (unsigned long j=0; j<temp.lLength; j++) {
                 long p = temp.lData[j];
                 _Variable * v = LocateVar(p);
                 if (v->IsGlobal()) { // good sign!
                     if (v->IsIndependent()) {
                         l.Insert ((BaseRef)p);
+                        if (tagger) {
+                            tagger->UpdateValue((BaseRef)p, weight, 0);
+                        }
                     } else {
                         l2.Insert ((BaseRef)p);
                     }

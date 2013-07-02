@@ -108,7 +108,7 @@ _List::_List (BaseRef br)
 }
 
 // Data constructor (variable number of string constants)
-_List::_List (char* firstString, const unsigned long number, ...)
+_List::_List (const char* firstString, const unsigned long number, ...)
 {
     va_list vl;
     AppendNewInstance (new _String (firstString));
@@ -391,11 +391,12 @@ unsigned long _List::Count()
 }
 
 // Delete item at index (>=0)
-void  _List::Delete (long index)
+void  _List::Delete (long index, bool delete_object)
 {
-    if ((index>=0)&&(index<lLength)) {
-        BaseRef theObj = ((BaseRef*)lData)[index];
-        DeleteObject (theObj);
+    if (index>=0 && index<lLength) {
+        if (delete_object) {
+            DeleteObject (((BaseRef*)lData)[index]);
+        }
         lLength--;
         if (lLength-index)
             for (unsigned long i = index; i < lLength; i++) {
@@ -415,7 +416,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
 {
     if (toDelete.lLength) {
         long k = 0;
-        for (long i = 0; i<lLength; i++) {
+        for (unsigned long i = 0; i<lLength; i++) {
             if (k<toDelete.lLength && i==toDelete.lData[k]) {
                 DeleteObject (((BaseRef*)lData)[i]);
                 //if (k<toDelete.lLength)
@@ -449,7 +450,7 @@ bool _List::Equal(_List& l2)
         return false;
     }
 
-    for (long i=0; i<lLength; i++)
+    for (unsigned long i=0; i<lLength; i++)
         if (!((_String*)lData[i])->Equal ((_String*)l2.lData[i])) {
             return false;
         }
@@ -607,9 +608,8 @@ BaseRef _List::makeDynamic(void)
 
 void  _List::Replace (long index, BaseRef newObj, bool dup)
 {
-    if ((index>=0)&&(index<lLength)) {
-        BaseRef theObj = ((BaseRef*)lData)[index];
-        DeleteObject (theObj);
+    if (index>=0 && index<lLength) {
+        DeleteObject (((BaseRef*)lData)[index]);
         ((BaseRef*)lData)[index] = dup?newObj->makeDynamic():newObj;
     }
 }
@@ -653,4 +653,32 @@ BaseRef _List::toStr(void)
     s->Finalize();
     return s;
 }
+
+void    _List::Map (_List& target, _SimpleList& mapping) {
+    mapping.Clear();
+    if (lLength == 0) {
+        return ;
+    }
+    _List     aux;
+    _AVLListX theMapping (&aux);
+    for (unsigned long t = 0; t < target.lLength; t++) {
+        _String * s = (_String *)target.GetItem(t)->toStr();
+        theMapping.Insert (s, t);
+        //printf ("Target %ld:%s\n", t, s->sData);
+    }
+    
+    mapping.Clear();
+    for (unsigned long s = 0; s < lLength; s++) {
+        _String * s_object = (_String*)GetItem (s)->toStr();
+        //printf ("Source %ld : %s\n", s, s_object->sData);
+        long      idx = theMapping.Find (s_object);
+        if (idx >= 0) {
+            mapping << theMapping.GetXtra (idx);
+        } else {
+            mapping << -1;
+        }
+        DeleteObject (s_object);
+    }
+}
+
 

@@ -128,7 +128,7 @@ public:
     _Polynomial             (_Parameter);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();
-    virtual                 _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil);   // execute this operation with the list of Args
+    virtual                 _MathObject* Execute (long opCode, _MathObject* p = nil , _MathObject* p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
 
     virtual BaseObj*        makeDynamic(void);
     virtual void            Duplicate  (BaseRef);
@@ -172,8 +172,7 @@ public:
         compList1.Duplicate(&c1);
         compList2.Duplicate(&c2);
     }
-    virtual void            ScanForVariables
-    (_AVLList &l, bool globals = false);
+    virtual void            ScanForVariables (_AVLList &l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
     virtual bool            HasChanged (void);
     friend  void            ResetPolynomialCheck
     (_Polynomial*);

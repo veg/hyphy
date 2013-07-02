@@ -1,0 +1,79 @@
+<<<<<<< HEAD
+if (NON_EMPTY_SELECTION)
+{
+	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);
+
+	if (data_rows % 2 == 0)
+	{
+		temp = -1;
+		data_columns = -1;
+		
+		for (count = 0; count<data_rows; count = count+1)
+		{
+			temp2 = SELECTED_CHART_COLS[count];
+			if (temp<0)
+			{
+				temp = temp2;
+			}
+			else
+			{
+				if (temp!=temp2)
+				{
+					if (data_columns<0)
+					{
+						data_columns = temp2;
+					}
+					else
+					{
+						if (temp2!=data_columns)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))
+		{
+			for (count = 0; count < data_rows; count = count+2)
+			{
+				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])
+				{
+					break;
+				}
+			}
+		
+			if (count==data_rows)
+			{
+			
+				SELECTED_CHART_ROWS = {2,data_rows/2};
+				for (count = 0; count < data_rows; count = count+2)
+				{
+					SELECTED_CHART_ROWS[0][count/2]=SELECTED_CHART_DATA[count];
+					SELECTED_CHART_ROWS[1][count/2]=SELECTED_CHART_DATA[count+1];
+				}
+				SELECTED_CHART_DATA = SELECTED_CHART_ROWS;
+				
+                LoadFunctionLibrary ("ProbabilityDistributions");
+                lfit = linearFit (Transpose(SELECTED_CHART_DATA));
+                        
+                 
+							
+				fprintf (stdout, "\n\nCorrelation coefficient:",lfit["Correlation"],"\n");
+				fprintf (stdout, "\nLinear fit :\n\t y = ",lfit["Intercept"]," + ", lfit["Slope"], " * x\n");
+				fprintf (stdout, "\nB = ",lfit["Slope"], " +/- ", Sqrt (lfit["Var(Slope)"]),"\nA = ",lfit["Intercept"], " +/- ", Sqrt (lfit["Var(Intercept)"]),"\n");
+				return;
+			}
+		}
+	}
+
+	fprintf (stdout, "Please select two columns with independent values (1st column) and dependent values (2nd columns).\n");
+}
+else
+{
+	NON_EMPTY_SELECTION = -1;
+}
+=======
+if (NON_EMPTY_SELECTION){	data_rows  	 = Columns 	(SELECTED_CHART_ROWS);	if (data_rows % 2 == 0)	{		temp = -1;		data_columns = -1;				for (count = 0; count<data_rows; count = count+1)		{			temp2 = SELECTED_CHART_COLS[count];			if (temp<0)			{				temp = temp2;			}			else			{				if (temp!=temp2)				{					if (data_columns<0)					{						data_columns = temp2;					}					else					{						if (temp2!=data_columns)						{							break;						}					}				}			}		}				if ((count == data_rows)&&(data_columns>=0)&&(temp>=0))		{			for (count = 0; count < data_rows; count = count+2)			{				if (SELECTED_CHART_ROWS[count]!=SELECTED_CHART_ROWS[count+1])				{					break;				}			}					if (count==data_rows)			{							SELECTED_CHART_ROWS = {2,data_rows/2};				for (count = 0; count < data_rows; count = count+2)				{					SELECTED_CHART_ROWS[0][count/2]=SELECTED_CHART_DATA[count];					SELECTED_CHART_ROWS[1][count/2]=SELECTED_CHART_DATA[count+1];				}				SELECTED_CHART_DATA = SELECTED_CHART_ROWS;				data_rows = data_rows/2;								sx = 0;				sy = 0;				ss = data_rows;				for (count = 0; count<data_rows; count = count+1)				{					sx = sx+SELECTED_CHART_DATA[0][count];					sy = sy+SELECTED_CHART_DATA[1][count];				}								sxoss = sx/ss;								fitB = 0;				st2  = 0;								sxx = 0;				syy = 0;				sxy = 0;				ax  = sx/data_rows;				ay  = sy/data_rows;								for (count = 0; count<data_rows; count = count+1)				{					xt = SELECTED_CHART_DATA[0][count]-ax;					yt = SELECTED_CHART_DATA[1][count]-ay;					sxx = sxx+(xt)^2;					syy = syy+(yt)^2;					sxy = sxy+xt*yt;					t = SELECTED_CHART_DATA[0][count]-sxoss;					st2 = st2+t*t;					fitB = fitB + t*SELECTED_CHART_DATA[1][count];				}								fitB = fitB/st2;				fitA = (sy-sx*fitB)/ss;				varA = Sqrt ((1+sx*sx/(ss*st2))/ss);				varB = Sqrt (1/st2);											fprintf (stdout, "\n\nCorrelation coefficient:",sxy/Sqrt(sxx*syy),"\n");				fprintf (stdout, "\nLinear fit :\n\t y = ",fitA," + ", fitB, " * x\n");				fprintf (stdout, "\nB = ",fitB, " +/- ", Sqrt (varB),"\nA = ",fitA, " +/- ", Sqrt (varA),"\n");				return;			}		}	}	fprintf (stdout, "Please select two columns with independent values (1st column) and dependent values (2nd columns).\n");}else{	NON_EMPTY_SELECTION = -1;}
+>>>>>>> 9d85cc92f6c2b2d70b633744b7b79f99b3c9ad0d

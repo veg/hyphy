@@ -187,7 +187,7 @@ _String _HYColor::HTMLColor (void)
 {
     char out[7];
 
-    sprintf (out, "%x%x%x", R, G, B);
+    snprintf (out, 7, "%x%x%x", R, G, B);
 
     return _String (out);
 }

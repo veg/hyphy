@@ -1880,7 +1880,7 @@ void    _HYDataPanel::ShowCodonUsage (long partIndex)
     char            buffer [1024];
     _String         rec;
 
-    sprintf         (buffer,"\nCodon Usage Report\n\nAltogether : %ld codons\n\nBy codon:\n\n", cCount);
+    snprintf (buffer, sizeof(buffer),"\nCodon Usage Report\n\nAltogether : %ld codons\n\nBy codon:\n\n", cCount);
     BufferToConsole (buffer);
 
     char            nucs[] = "ACGT";
@@ -1892,7 +1892,7 @@ void    _HYDataPanel::ShowCodonUsage (long partIndex)
             _Parameter cUsage = codonUsage->theData[k];
             if (cUsage) {
                 CodeTo3AA (rec, k, gCode);
-                sprintf (buffer,"%c%c%c(%s) : %10ld (%10.4g %%)\n", nucs[k/16], nucs[(k%16)/4], nucs[k%4], rec.getStr(), (long)(cUsage*cCount), 100.*cUsage);
+                snprintf (buffer, sizeof(buffer),"%c%c%c(%s) : %10ld (%10.4g %%)\n", nucs[k/16], nucs[(k%16)/4], nucs[k%4], rec.getStr(), (long)(cUsage*cCount), 100.*cUsage);
                 BufferToConsole (buffer);
             }
         }
@@ -1909,12 +1909,12 @@ void    _HYDataPanel::ShowCodonUsage (long partIndex)
                 if ((gCode->lData[k] == kk)&&(cUsage)) {
                     if (t) {
                         CodeTo3AA (rec, k, gCode);
-                        sprintf (buffer,"%s=>\t", rec.getStr());
+                        snprintf (buffer, sizeof(buffer),"%s=>\t", rec.getStr());
                         t = false;
                         BufferToConsole (buffer);
 
                     }
-                    sprintf (buffer,"%c%c%c:%6ld (%6.4g %%)\t", nucs[k/16], nucs[(k%16)/4], nucs[k%4], (long)(cUsage*cCount), 100.*cUsage);
+                    snprintf (buffer, sizeof(buffer),"%c%c%c:%6ld (%6.4g %%)\t", nucs[k/16], nucs[(k%16)/4], nucs[k%4], (long)(cUsage*cCount), 100.*cUsage);
                     BufferToConsole (buffer);
                 } else if (gCode->lData[k] == 10) {
                     code++;
@@ -2530,7 +2530,7 @@ void    _HYDataPanel::OptimizeLikelihoodFunction (void)
             DeleteObject (res);
             ComputeLikelihoodFunction (2);
             char    buffer [1024];
-            sprintf (buffer,"\n\tTime taken = %g seconds\n\tLF evaluations/second = % g\n",
+            snprintf (buffer, sizeof(buffer),"\n\tTime taken = %g seconds\n\tLF evaluations/second = % g\n",
                      endingTime->Value()-startingTime->Value(),
                      startingLFEvalsCount/(endingTime->Value()-startingTime->Value()));
             BufferToConsole (buffer);
@@ -3302,13 +3302,13 @@ void    _HYDataPanel::BuildLikelihoodFunction (_String* lName, _SimpleList* subs
 
         char    buffer [1024];
 
-        sprintf (buffer,"\nCreated likelihood function '%s' with\n %ld\tpartitions,\n %ld\tshared parameters,\n %ld\tlocal parameters,\n %ld\tconstrained parameters.\n",
+        snprintf (buffer, sizeof(buffer),"\nCreated likelihood function '%s' with\n %ld\tpartitions,\n %ld\tshared parameters,\n %ld\tlocal parameters,\n %ld\tconstrained parameters.\n",
                  errMsg.getStr(), lf->CountObjects (0),  lf->CountObjects (1),  lf->CountObjects (2),  lf->CountObjects (3));
 
         BufferToConsole (buffer);
 
         lf->ComputePruningEfficiency (k,g);
-        sprintf (buffer,"\nPruning efficiency %ld vs %ld (%g %% savings)\n", g,k, 100.-g*100./k);
+        snprintf (buffer, sizeof(buffer),"\nPruning efficiency %ld vs %ld (%g %% savings)\n", g,k, 100.-g*100./k);
         BufferToConsole (buffer);
     } else {
         if (topConstr.sLength) {
@@ -6315,19 +6315,19 @@ void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
             _Matrix*  freqs = ds->HarvestFrequencies(1,1,false,sp->speciesIndex,sp->selection);
             long      totCount = sp->speciesIndex.lLength*sp->selection.lLength;
             if (buffer.Equal (&contextString1)) {
-                sprintf (bufferS,"\nNucleotide counts and frequencies (%luu sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
+                snprintf (bufferS, sizeof(bufferS),"\nNucleotide counts and frequencies (%luu sites)\nA:\t%g\t%g\nC:\t%g\t%g\nG:\t%g\t%g\nT:\t%g\t%g\n",sp->selection.lLength,
                          (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1],(totCount*(*freqs)[2]),(*freqs)[2],(totCount*(*freqs)[3]),(*freqs)[3]);
                 BufferToConsole (bufferS);
             } else if (buffer.Equal (&contextString2)) {
-                sprintf (bufferS,"\nAminoacid counts and frequencies (%lu sites)",sp->selection.lLength);
+                snprintf (bufferS, sizeof(bufferS),"\nAminoacid counts and frequencies (%lu sites)",sp->selection.lLength);
                 BufferToConsole (bufferS);
                 for (long k=0; k<aminoAcidOneCharCodes.sLength; k++) {
-                    sprintf (bufferS,"\n%c:\t%g\t%g",aminoAcidOneCharCodes.sData[k],(totCount*(*freqs)[k]),(*freqs)[k]);
+                    snprintf (bufferS, sizeof(bufferS),"\n%c:\t%g\t%g",aminoAcidOneCharCodes.sData[k],(totCount*(*freqs)[k]),(*freqs)[k]);
                     BufferToConsole (bufferS);
                 }
                 NLToConsole ();
             } else {
-                sprintf (bufferS,"\nBinary counts and frequencies (%lu sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
+                snprintf (bufferS, sizeof(bufferS),"\nBinary counts and frequencies (%lu sites)\n0:\t%g\t%g\n1:\t%g\t%g\n",sp->selection.lLength,
                          (totCount*(*freqs)[0]),(*freqs)[0],(totCount*(*freqs)[1]),(*freqs)[1]);
                 BufferToConsole (bufferS);
             }
@@ -6428,7 +6428,7 @@ void _HYDataPanel::ProcessContextualPopUpMain (long l, long t)
                         sp->_MarkForUpdate();
                         UpdateSelDepPartitionOperations();
                         char buffer [256];
-                        sprintf (buffer,"%lu (%g %%) mismatches found\n",noMatch.lLength,
+                        snprintf (buffer, sizeof(buffer),"%lu (%g %%) mismatches found\n",noMatch.lLength,
                                  noMatch.lLength*100./(_Parameter)sp->columnStrings.lLength);
                         BufferToConsole (buffer);
                     }
@@ -6681,7 +6681,7 @@ void _HYDataPanel::ProcessContextualPopUpAux (long l, long t)
                     sp->_MarkForUpdate();
                     UpdateSelDepPartitionOperations();
                     char    buffer[128];
-                    sprintf (buffer,"Found %lu sites in rate class %c\n",matches.lLength,c);
+                    snprintf (buffer, sizeof(buffer),"Found %lu sites in rate class %c\n",matches.lLength,c);
                     BufferToConsole (buffer);
                 }
             } else {
@@ -7964,7 +7964,7 @@ void  _HYDataPanel::ShowConstantSites (bool deletions, bool relaxed, bool sequen
     sp->BuildPane();
     sp->_MarkForUpdate();
     char    buffer[128];
-    sprintf (buffer,"%ld(%4.4g%%) %s found\n",fndc,fnd,outWord.sData);
+    snprintf (buffer, sizeof(buffer),"%ld(%4.4g%%) %s found\n",fndc,fnd,outWord.sData);
     BufferToConsole (buffer);
 }
 
@@ -8010,7 +8010,7 @@ void  _HYDataPanel::ShowDuplicateSequences (bool relaxed)
     sp->_MarkForUpdate();
 
     char    buffer[256];
-    sprintf (buffer,"%lu(%4.4g%%) duplicate sequences found\n", duplicateSequences.lLength ,((_Parameter)duplicateSequences.lLength)/sp->speciesIndex.lLength*100.);
+    snprintf (buffer, sizeof(buffer),"%lu(%4.4g%%) duplicate sequences found\n", duplicateSequences.lLength ,((_Parameter)duplicateSequences.lLength)/sp->speciesIndex.lLength*100.);
     BufferToConsole (buffer);
     for (long idx = 0; idx < duplicateSequences.lLength; idx++) {
         BufferToConsole ("\t");

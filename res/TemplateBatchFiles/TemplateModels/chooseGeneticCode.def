@@ -79,6 +79,29 @@ _alphabeticalAAOrdering	   = "ACDEFGHIKLMNPQRSTVWY";
 
 _aaLetterToCode			   = {};
 
+_singleAALetterToFullName  = {
+"A": "Alanine",
+"C": "Cysteine",
+"D": "Aspartic Acid",
+"E": "Glutamic Acid",
+"F": "Phenylalanine",
+"G": "Glycine",
+"H": "Histidine",
+"I": "Isoleucine",
+"K": "Lysine",
+"L": "Leucine",
+"M": "Methionine",
+"N": "Aspargine",
+"P": "Proline",
+"Q": "Glutamine",
+"R": "Arginine",
+"S": "Serine",
+"T": "Theronine",
+"V": "Valine",
+"W": "Tryptophan",
+"Y": "Tyrosine",
+"X": "Stop Codon"
+};
 
 for (_idx = 0; _idx < Abs (_hyphyAAOrdering); _idx = _idx+1)
 {
@@ -104,6 +127,19 @@ if (!skipCodeSelectionStep)
 	
 	ApplyGeneticCodeTable (modelType);
 }
+
+/*----------------------------------------------------------------------------------------------------------*/
+
+function CountSenseCodons (code) {
+    sense_count = 0;
+    for (_idx = 0; _idx < 64; _idx += 1) {
+        if (IsStop (_idx, code) == 0) {
+            sense_count += 1;
+        }
+    }
+    return sense_count;
+}
+
 
 /*----------------------------------------------------------------------------------------------------------*/
 
@@ -298,17 +334,15 @@ function mapCodonsToAAGivenMapping (codonSeq,aaSequence, mapping)
 	for (aaPos = 0; aaPos < seqLen; aaPos += 1)
 	{
 		advance = 1;
-		if (aaSequence[aaPos] == "-")
-		{
-			if (currentAA != "X")
-			{
+		if (aaSequence[aaPos] == "-") {
+			if (currentAA != "X") {
 				translString * "---";
 				advance = 0;
 			}
 		}
-		else
-		{
-			assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings");
+		else {
+			assert (aaSequence[aaPos] == currentAA, "Incompatible codon and protein strings at position " + aaPos 
+			        + " : codon '" + codonSeq[seqPos][seqPos+2] + "'(" + aaSequence[aaPos] + ") a.a. '`currentAA`'");
 		}
 
 		if (advance)
@@ -395,6 +429,22 @@ function defineCodonToAA ()
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+function findAllCodonsForAA (aa)
+{	
+	codonsForAA = {};
+	
+	for (p1=0; p1<64; p1=p1+1)
+	{
+		if (_hyphyAAOrdering[_Genetic_Code[p1]] == aa) {
+		    codonsForAA [p1] = 1;
+		}
+	}
+	
+	return codonsForAA;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 function RawToSense (code)
 /* 
     given:
@@ -471,8 +521,7 @@ function translateCodonToAA (codonSeq,mapping,offset)
 	seqLen = Abs (codonSeq);
 	translString = "";
 	translString * (seqLen/3+1);
-	for (seqPos = offset; seqPos < seqLen; seqPos = seqPos+3)
-	{
+	for (seqPos = offset; seqPos < seqLen; seqPos += 3) {
 		codon = codonSeq[seqPos][seqPos+2];
 		prot  = mapping[codon];
 		if (Abs(prot))
@@ -489,6 +538,8 @@ function translateCodonToAA (codonSeq,mapping,offset)
 	
 	return translString;
 }
+
+
 
 /*----------------------------------------------------------------------------------------------------------*/
 

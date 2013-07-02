@@ -466,7 +466,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     for (long i2 = 0; i2 < countT; i2++)
                     {
                         char buf [255];
-                        sprintf (buf, "%d=>%d %s %s %s %s\n", i, i2, firstArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
+                        snprintf (buf, sizeof(buf), "%d=>%d %s %s %s %s\n", i, i2, firstArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
                                                                 lastArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
                                                                 precursorArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
                                                                 followArray.lData[indexNT_T (i,i2)]?"Yes":"No ");
@@ -507,7 +507,7 @@ void        Scfg::ClearParseTree    (void)
                 delete (aNode);
             }
         }
-        delete parseTree;
+        delete [] parseTree;
         parseTree = nil;
     }
 }
@@ -530,9 +530,9 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
         _String  anExpression = *expression->theString;
 
         _Formula lhs;
-        long     varCode;
+        _FormulaParsingContext fpc;
 
-        if (Parse   (aFormula, anExpression, varCode, nil, &lhs) != HY_FORMULA_EXPRESSION) { // not a valid expression
+        if (Parse   (aFormula, anExpression, fpc, &lhs) != HY_FORMULA_EXPRESSION) { // not a valid expression
             errorMessage = _String ("Invalid probability expression: ") & expression->theString;
         } else {
             ruleProbabilities << expression->theString;
@@ -623,9 +623,9 @@ _String*    Scfg::VerifyValues  (void)
         char buf [256];
         if (r->lLength==2)
         {
-            sprintf(buf, "rule %d [%d->%d] Pr %f\n", k,r->lData[0],r->lData[1],aValue);
+            snprintf (buf, sizeof(buf), "rule %d [%d->%d] Pr %f\n", k,r->lData[0],r->lData[1],aValue);
         } else {
-            sprintf(buf, "rule %d [%d->%d,%d] Pr %f\n", k,r->lData[0],r->lData[1],r->lData[2],aValue);
+            snprintf (buf, sizeof(buf), "rule %d [%d->%d,%d] Pr %f\n", k,r->lData[0],r->lData[1],r->lData[2],aValue);
         }
         BufferToConsole(buf);
         */
@@ -690,7 +690,7 @@ void    Scfg::RandomSampleVerify  (long samples)
 
                 if ((errMsg=VerifyValues ())) {
                     char buf [256];
-                    sprintf(buf, "Breaking from RandomSampleVerify() on iteration %ld of %ld", it, samples);
+                    snprintf (buf, sizeof(buf), "Breaking from RandomSampleVerify() on iteration %ld of %ld", it, samples);
                     BufferToConsole(buf);
 
                     break;
@@ -732,7 +732,7 @@ void    Scfg::SetStringCorpus  (_String* varID)
         t << ((_FString*)theString)->theString;
 #ifdef _NEVER_DEFINED_
         char buf [255];     // DEBUG
-        sprintf (buf, "\nSetStringCorpus() string = %s\n", (const char *) *((_FString*)theString)->theString);
+        snprintf (buf, sizeof(buf), "\nSetStringCorpus() string = %s\n", (const char *) *((_FString*)theString)->theString);
         BufferToConsole (buf);
 #endif
         _Matrix wrapper (t);
@@ -770,7 +770,7 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
                     for (long end = start; end < aString->theString->sLength; end++)
                     {
                         char buf [255];
-                        sprintf (buf, "%2d %2d %2d => %4d\n", start, end, nt, scfgIndexIntoAnArray (start,end,nt,aString->theString->sLength));
+                        snprintf (buf, sizeof(buf), "%2d %2d %2d => %4d\n", start, end, nt, scfgIndexIntoAnArray (start,end,nt,aString->theString->sLength));
                         BufferToConsole (buf);
                     }*/
             DeleteObject (tokenized);
@@ -781,7 +781,7 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
     char buf [255];
     for (long c = 0; c < corpusChar.lLength; c++)
     {
-        sprintf (buf, "string %d in corpusChar = %s\n", c, (const char *) *((_String *) corpusChar.lData[c]));
+        snprintf (buf, sizeof(buf), "string %d in corpusChar = %s\n", c, (const char *) *((_String *) corpusChar.lData[c]));
         BufferToConsole (buf);
     }
     */
@@ -941,9 +941,9 @@ _Parameter      Scfg::Compute (void)
         }
 
         /*
-        sprintf (buf, "\nComputing inside prob for string: %s\n", (const char *) *(_String *)corpusChar(stringID));
+        snprintf (buf, sizeof(buf), "\nComputing inside prob for string: %s\n", (const char *) *(_String *)corpusChar(stringID));
         BufferToConsole (buf);
-        sprintf (buf, "\tstart symbol = %d\n\tfirst = %d\n", startSymbol, first);
+        snprintf (buf, sizeof(buf), "\tstart symbol = %d\n\tfirst = %d\n", startSymbol, first);
         BufferToConsole (buf);
         */
 
@@ -970,7 +970,7 @@ _Parameter      Scfg::Compute (void)
     }
 
     /*char buf [256];
-    sprintf(buf, "Compute() total inside calls = %d\n", insideCalls);
+    snprintf (buf, sizeof(buf), "Compute() total inside calls = %d\n", insideCalls);
     BufferToConsole(buf);*/
 
     insideCalls = 0;    // reset counter
@@ -1022,7 +1022,7 @@ _Parameter      Scfg::Compute (void)
                 checkzero += temp;
 
                 if (temp < 0.0) {       // can't allow any negative eigenvalues!
-                    sprintf (buf, "WARNING: negative eigenvalue.\n");
+                    snprintf (buf, sizeof(buf), "WARNING: negative eigenvalue.\n");
                     BufferToConsole (buf);
 
                     return res - 100.0;     // return a large negative number (worse log-likelihood)
@@ -1038,20 +1038,20 @@ _Parameter      Scfg::Compute (void)
             {
                 for (long j = 0; j < fi.GetVDim(); j++)
                 {
-                    sprintf (buf, "%lf\t", fi (i, j) );
+                    snprintf (buf, sizeof(buf), "%lf\t", fi (i, j) );
                     BufferToConsole (buf);
                 }
-                sprintf (buf, "\n");
+                snprintf (buf, sizeof(buf), "\n");
                 BufferToConsole (buf);
             }
-            sprintf (buf, "\n");
+            snprintf (buf, sizeof(buf), "\n");
             BufferToConsole (buf);
 
         //  return res - 100.0;
         //}
 
 
-        sprintf (buf, "log determinant = %lf\n", logdet);
+        snprintf (buf, sizeof(buf), "log determinant = %lf\n", logdet);
         BufferToConsole (buf);
         */
 
@@ -1067,31 +1067,31 @@ _Parameter      Scfg::Compute (void)
         for (long i = 0; i < ludFisher->GetHDim(); i++) {   // display matrix
             for (long j = 0; j < ludFisher->GetVDim(); j++) {
                 _Parameter  temp = (*ludFisher) (i,j);
-                sprintf (buf, "%5.3lf\t", temp);
+                snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
                 BufferToConsole (buf);
             }
-            sprintf (buf, "\n");
+            snprintf (buf, sizeof(buf), "\n");
             BufferToConsole (buf);
         }
 
-        sprintf (buf, "\n");
+        snprintf (buf, sizeof(buf), "\n");
         BufferToConsole (buf);
 
         _Parameter  trace       = 1.0;
 
         for (long diag = 0; diag < ludFisher->GetHDim(); diag++) {          // diagonal of LU contains the eigenvalues
             _Parameter  temp = (*ludFisher) (diag,diag);
-            sprintf (buf, "%5.3lf\t", temp);
+            snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
             BufferToConsole (buf);
 
             trace *= temp;      // product of eigenvalues is the determinant
         }
 
-        sprintf (buf, "<- trace\n");
+        snprintf (buf, sizeof(buf), "<- trace\n");
         BufferToConsole (buf);
 
         /*
-        sprintf (buf, "penalize %f\n", 0.5 * log(fabs(trace)) );
+        snprintf (buf, sizeof(buf), "penalize %f\n", 0.5 * log(fabs(trace)) );
         BufferToConsole (buf);
         */
 
@@ -1186,7 +1186,7 @@ void    setIndexBit             (long start,long end,long nt,long stringLength,_
     long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
     theArray.lData[theIndex/32] |= bitMaskArray.masks[theIndex%32];
     /*char str255 [255];
-    sprintf (str255,"Store %d %d %d %d into %x\n", start, end, nt, stringLength, theIndex, theArray.lData[theIndex/32]);
+    snprintf (str255, sizeof(str255),"Store %d %d %d %d into %x\n", start, end, nt, stringLength, theIndex, theArray.lData[theIndex/32]);
     BufferToConsole (str255);*/
 }
 
@@ -1196,7 +1196,7 @@ bool    getIndexBit             (long start,long end,long nt,long stringLength,_
 {
     long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
     /*char str255 [255];
-    sprintf (str255,"Fetch %d %d %d %d from %x to give %d\n", start, end, nt, stringLength, theArray.lData[theIndex/32], (theArray.lData[theIndex/32] & (bitMaskArray.masks[theIndex%32])) > 0);
+    snprintf (str255, sizeof(str255),"Fetch %d %d %d %d from %x to give %d\n", start, end, nt, stringLength, theArray.lData[theIndex/32], (theArray.lData[theIndex/32] & (bitMaskArray.masks[theIndex%32])) > 0);
     BufferToConsole (str255);*/
     return (theArray.lData[theIndex/32] & bitMaskArray.masks[theIndex%32]) > 0;
 }
@@ -1345,7 +1345,7 @@ _Parameter   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
     if (insideProbValue > 0.0) {
         /*
         char str255[255];
-        sprintf     (str255, "%d->%d:%d \t p = %g\n", ntIndex, from, to, insideProbValue);
+        snprintf (str255, sizeof(str255), "%d->%d:%d \t p = %g\n", ntIndex, from, to, insideProbValue);
         BufferToConsole (str255);
         */
 
@@ -1368,7 +1368,7 @@ _Parameter   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
         /* ******** DEBUGGING ******** */
         /*
         char buf [255];
-        sprintf(buf, "inside %d\t%d\t%d\t%lf\n", from, to, ntIndex, insideProbValue);
+        snprintf (buf, sizeof(buf), "inside %d\t%d\t%d\t%lf\n", from, to, ntIndex, insideProbValue);
         BufferToConsole(buf);
          */
     }
@@ -1430,7 +1430,7 @@ _Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
     if (firstOutside)
     {
         char buf [256];
-        sprintf(buf, "outside %d\t%d\t%d\n", from,to,ntIndex);
+        snprintf (buf, sizeof(buf), "outside %d\t%d\t%d\n", from,to,ntIndex);
         BufferToConsole(buf);
     }
     */
@@ -1468,7 +1468,7 @@ _Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
 
     /*
     char buf [256];
-    sprintf(buf, "%d\t%d\t%d\n", from, to, ntIndex);
+    snprintf (buf, sizeof(buf), "%d\t%d\t%d\n", from, to, ntIndex);
     BufferToConsole(buf);
     */
 
@@ -1572,7 +1572,7 @@ _Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
     if (outsideProbValue > 0.0) {
         /* DEBUGGING */
         //char str255[255];
-        //sprintf       (str255, "%d->%d:%d \t p = %g\n", ntIndex, from, to, outsideProbValue);
+        //snprintf (str255, sizeof(str255), "%d->%d:%d \t p = %g\n", ntIndex, from, to, outsideProbValue);
         //BufferToConsole (str255);
         /* --------- */
 
@@ -1647,7 +1647,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                 _Formula *  thatRule = probabilities.GetFormula (nextrule, 0);
                 if ( thisRule->EqualFormula (thatRule) ) {
                     *thisLink << nextrule;
-                    sprintf (buf, "linked rule %ld to %ld\n", ruleCount+1, nextrule+1);
+                    snprintf (buf, sizeof(buf), "linked rule %ld to %ld\n", ruleCount+1, nextrule+1);
                     BufferToConsole (buf);
                 }
             }
@@ -1744,7 +1744,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                     } // end loop over [s]
 
                     /*
-                    sprintf (buf, "string = %d\tnt = %d\tdenom = %f\n", stringID, ntIndex, denom);
+                    snprintf (buf, sizeof(buf), "string = %d\tnt = %d\tdenom = %f\n", stringID, ntIndex, denom);
                     BufferToConsole (buf);
                      */
 
@@ -1779,7 +1779,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                             // update i->m production probability
 
                             /*
-                             sprintf(buf, "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
+                             snprintf (buf, sizeof(buf), "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
                              BufferToConsole(buf);
                              */
 
@@ -1793,7 +1793,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                         _SimpleList *   ijkRules = ((_SimpleList**)byNT3.lData)[ntIndex];
 
                         /*
-                         sprintf(buf, "nt %d has %d ijk rules\n", ntIndex, ijkRules->lLength);
+                         snprintf (buf, sizeof(buf), "nt %d has %d ijk rules\n", ntIndex, ijkRules->lLength);
                          BufferToConsole(buf);
                          */
                         {
@@ -1811,7 +1811,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                 }
 
                                 /*
-                                sprintf (buf, "rule %d (%d->%d,%d)\tPr = %f\n", ruleIndex, ntIndex, jIndex, kIndex, ruleProb);
+                                snprintf (buf, sizeof(buf), "rule %d (%d->%d,%d)\tPr = %f\n", ruleIndex, ntIndex, jIndex, kIndex, ruleProb);
                                 BufferToConsole (buf);
                                  */
 
@@ -1853,7 +1853,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                                 }
 
                                 /*
-                                 sprintf(buf, "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
+                                 snprintf (buf, sizeof(buf), "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
                                  BufferToConsole(buf);
                                  */
 
@@ -1869,7 +1869,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
 
             } else {    // stringProb <= 0
-                sprintf (buf, "WARNING: String probability <= 0 (%f)\n", stringProb);
+                snprintf (buf, sizeof(buf), "WARNING: String probability <= 0 (%f)\n", stringProb);
                 BufferToConsole (buf);
             }
 
@@ -1907,13 +1907,13 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
             _Parameter      linkNumer   = 0.,
                             linkDenom = 0.;
             /*
-            sprintf (buf, "Link %d contains ", linkIndex);
+            snprintf (buf, sizeof(buf), "Link %d contains ", linkIndex);
             BufferToConsole (buf);
              */
             {
                 for (long lcount = 0; lcount < thisLink->lLength; lcount++) {
                     /*
-                    sprintf (buf, "%d(%3.3f/%3.3f) ", thisLink->lData[lcount], nextProbs.theData[thisLink->lData[lcount]],
+                    snprintf (buf, sizeof(buf), "%d(%3.3f/%3.3f) ", thisLink->lData[lcount], nextProbs.theData[thisLink->lData[lcount]],
                             nextProbs.theData[nRules+thisLink->lData[lcount]]);
                     BufferToConsole (buf);
                      */
@@ -1927,7 +1927,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                 nextProbs.theData[thisLink->lData[lcount]] = linkNumer / thisLink->lLength;
                 nextProbs.theData[nRules+thisLink->lData[lcount]] = linkDenom / thisLink->lLength;
                 /*
-                 sprintf (buf, "\t all set to %3.3f/%3.3f\n", linkNumer, linkDenom);
+                 snprintf (buf, sizeof(buf), "\t all set to %3.3f/%3.3f\n", linkNumer, linkDenom);
                  BufferToConsole(buf);
                  */
             }
@@ -1954,7 +1954,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                 if (nextProbs.theData[nRules+ruleCount] > 0.0) {    // skip productions with denominators = 0
                     // Temporary fix -- AFYP, Sept 27, 2006
                     /*
-                    sprintf(buf, "set rule %d from %f to %f\n", ruleCount, LookUpRuleProbability(ruleCount),
+                    snprintf (buf, sizeof(buf), "set rule %d from %f to %f\n", ruleCount, LookUpRuleProbability(ruleCount),
                          nextProbs.theData[ruleCount] / nextProbs.theData[nRules+ruleCount]);
                     BufferToConsole(buf);
                      */
@@ -1980,7 +1980,7 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
         ++rep;
 
         /*
-        sprintf (buf, "Iteration %d, Log L = %f\n", rep, newLk);
+        snprintf (buf, sizeof(buf), "Iteration %d, Log L = %f\n", rep, newLk);
         BufferToConsole (buf);
         */
 
@@ -1989,14 +1989,14 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
         }
 
         if (newLk < oldLk) {
-            sprintf (buf, "\nERROR: log L = %f is lower than previous value %f at step %ld \n", newLk, oldLk, rep);
+            snprintf (buf, sizeof(buf), "\nERROR: log L = %f is lower than previous value %f at step %ld \n", newLk, oldLk, rep);
             BufferToConsole (buf);
             // break;
         }
 
     } while (fabs(newLk - oldLk) > SCFG_OPTIMIZATION_THRESHOLD);    // should be non-absolute - afyp 11/30/2006
 
-    sprintf (buf, "Used %ld iterations in expectation maximization.\n", rep);
+    snprintf (buf, sizeof(buf), "Used %ld iterations in expectation maximization.\n", rep);
     BufferToConsole (buf);
 
     delete  thisLink;   // release allocated memory
@@ -2153,7 +2153,7 @@ _String *   Scfg::BestParseTree(void)
                     if (maxLk > 0) {
                         mxID = theMatrix->Store (maxLk);    // store most likely production and bisect for triplet
 
-                        // sprintf(buf, "stored triplet into matrix ID %d\n", mxID);
+                        // snprintf (buf, sizeof(buf), "stored triplet into matrix ID %d\n", mxID);
                         // BufferToConsole(buf);
 
                         insertFlag = theAVL->Insert ((BaseRef)tripletIndex, mxID);
@@ -2162,7 +2162,7 @@ _String *   Scfg::BestParseTree(void)
                             argMaxYZK << maxRight;
                             argMaxYZK << maxBisect;
                             /*
-                             sprintf(buf, "(%d,%d,%d) stored (%d,%d,%d) with L=%f\n", from,to,ntIndex, maxLeft,maxRight,maxBisect, maxLk);
+                             snprintf (buf, sizeof(buf), "(%d,%d,%d) stored (%d,%d,%d) with L=%f\n", from,to,ntIndex, maxLeft,maxRight,maxBisect, maxLk);
                              BufferToConsole(buf);
                              */
                         }
@@ -2205,25 +2205,25 @@ void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX 
                     k           = theYZKs->lData[matrixIndex * 3 + 2];
 #ifdef __NEVER_DEFINED__
         if (y == 0 && z == 0 && k == 0) {   // node terminates
-            sprintf(buf, "%d:%d", i, v);
+            snprintf (buf, sizeof(buf), "%d:%d", i, v);
             // BufferToConsole(buf);
             (*parseString) << (const char *) buf;
         } else {                        // node spawns two children
 
-            sprintf(buf, "(");
+            snprintf (buf, sizeof(buf), "(");
             // BufferToConsole(buf);
             (*parseString) << (const char *) buf;
 
             CykTraceback(i,k,y,stringIndex,theAVL,theYZKs,theMatrix,parseString);
 
-            sprintf(buf, ",");
+            snprintf (buf, sizeof(buf), ",");
             // BufferToConsole(buf);
             (*parseString) << (const char *) buf;
 
             CykTraceback(k+1,j,z,stringIndex,theAVL,theYZKs,theMatrix,parseString);
 
-            sprintf(nodename, "Node%d", tripletIndex);
-            sprintf(buf, ")%s:%d", nodename, v);
+            snprintf (nodename, sizeof(nodename), "Node%d", tripletIndex);
+            snprintf (buf, sizeof(buf), ")%s:%d", nodename, v);
             // BufferToConsole(buf);
             (*parseString) << (const char *) buf;
 
@@ -2232,13 +2232,13 @@ void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX 
         if (y==0 && z==0 && k==0) { // node terminates
             (*parseTreeString) = (*parseTreeString) & "(" & v & " " & corpusString->sData[i] & ")";
             /*
-            sprintf (buf, "(%d %s)", v, corpusString->sData[i]);
+            snprintf (buf, sizeof(buf), "(%d %s)", v, corpusString->sData[i]);
             (*parseString) << (const char *) buf;
              */
         } else {
             (*parseTreeString) = (*parseTreeString) & "(" & v & " ";
             /*
-            sprintf (buf, "(%d ", v);
+            snprintf (buf, sizeof(buf), "(%d ", v);
             (*parseString) << (const char *) buf;
             */
 
@@ -2251,7 +2251,7 @@ void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX 
             (*parseTreeString) = (*parseTreeString) & ")";
 
             /*
-            sprintf (buf, ")");
+            snprintf (buf, sizeof(buf), ")");
             (*parseString) << (const char *) buf;
              */
         }

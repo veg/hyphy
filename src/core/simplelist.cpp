@@ -31,7 +31,7 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 */
 
 #include "hy_strings.h"
-#include "errorfns.h"
+#include "errorfns.h" 
 #include "list.h"
 #include "simplelist.h"
 #include "parser.h"
@@ -41,6 +41,8 @@ GNU libavl 2.0.1 by Ben Pfaff (http://www.msu.edu/~pfaffben/avl/index.html)
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+#include <stdarg.h>
+
 #ifdef    __HYPHYDMALLOC__
 #include "dmalloc.h"
 #endif
@@ -91,11 +93,33 @@ _SimpleList::_SimpleList (_SimpleList& l, long from, long to)
     } else {
         Initialize           ();
         NormalizeCoordinates (from, to, l.lLength);
-
+        RequestSpace(to-from);
+        long upto = to-from ; 
+        for (long k = 0; k < upto; k++) {
+            lData[k] = l.lData[from+k];
+        }
+        /*
         for (long i = from; i < to; i++) {
             (*this) << l.lData[i];
         }
+        */
     }
+}
+
+// Data constructor (variable number of long constants)
+_SimpleList::_SimpleList (const long value1, const unsigned long number, ...)
+{
+    Initialize (true);
+    va_list vl;
+    
+    (*this) << value1;
+    
+    va_start(vl,number);
+    for (unsigned long arg_id =0;arg_id<number;arg_id++) {
+        const long this_arg =va_arg(vl,long);
+        (*this) << this_arg;
+    }
+    va_end(vl);
 }
 
 //Destructor
@@ -119,22 +143,21 @@ Operator Overloads
 */
 
 //Element location functions (0,llength - 1)
-long& _SimpleList::operator [] (long i)
+long& _SimpleList::operator [] (const long i)
 {
     if (lLength == 0) {
         return lData[0];
     }
 
-    unsigned long in = (unsigned long)i;
+    const unsigned long in = (const unsigned long)i;
     if (in>lLength-1) {
-        in = lLength-1;
+        return lData[lLength-1];
     }
 
     return lData[in];
 }
-
 //Element location functions (0,llength - 1)
-long _SimpleList::operator () (unsigned long i)
+long _SimpleList::operator () (const unsigned long i)
 {
     //if (lLength == 0) return 0;
     //Is there a reason why this is commented out?
@@ -199,7 +222,7 @@ bool _SimpleList::operator >> (long br)
 
 void _SimpleList::operator << (_SimpleList& source)
 {
-    for (long k=0; k<source.lLength; k++) {
+    for (unsigned long k=0; k<source.lLength; k++) {
         (*this) << source.lData[k];
     }
 }
@@ -209,6 +232,25 @@ void _SimpleList::operator << (_SimpleList& source)
 Methods
 ==============================================================
 */
+
+
+//Element location functions (0,llength - 1), negative values return 
+// elements from the end of the list
+
+long _SimpleList::GetElement (const long index)
+{
+    if (index >= 0) {
+        if ((const unsigned long) index < lLength) {
+            return lData [index];
+        }
+    } 
+    if ((const unsigned long) (-index) <= lLength) {
+        return lData[lLength + index];
+    }
+    warnError(_String("List index '") & (long)((const unsigned long) (-index)) & "' out of range in _SimpleList::GetElement on list of length " & long (lLength));    
+    return 0;
+}
+
 
 long  _SimpleList::BinaryFind (long s, long startAt)
 {
@@ -264,10 +306,18 @@ long  _SimpleList::BinaryInsert (long n)
 
 void _SimpleList::ClearFormulasInList(void)
 {
-    for (long k = 0; k < lLength; k++)
+    for (unsigned long k = 0; k < lLength; k++)
         if (lData[k]) {
             delete (_Formula*)lData[k];
         }
+}
+
+long _SimpleList::Sum (void) {
+    long sum = 0;
+    for (unsigned long k = 0; k < lLength; k++) {
+       sum += lData[k];
+    }
+    return sum;
 }
 
 long  _SimpleList::Compare (long i, long j)
@@ -411,7 +461,7 @@ void  _SimpleList::Clear (bool completeClear)
 void _SimpleList::DebugVarList(void)
 {
     printf ("\nVariable list dump:\n");
-    for  (long e = 0; e < lLength; e++) {
+    for  (unsigned long e = 0; e < lLength; e++) {
         if (lData[e] >= 0) {
             _Variable * theV = LocateVar (lData[e]);
             if (theV) {
@@ -451,7 +501,7 @@ void  _SimpleList::DeleteDuplicates (void)
         _SimpleList noDups;
 
         long    lastValue = lData[0]+1;
-        for (long k=0; k<lLength; k++) {
+        for (unsigned long k=0; k<lLength; k++) {
             long thisValue = lData[k];
             if (thisValue!=lastValue) {
                 noDups << thisValue;
@@ -470,8 +520,8 @@ void  _SimpleList::DeleteDuplicates (void)
 void  _SimpleList::DeleteList (const _SimpleList& toDelete)
 {
     if (toDelete.lLength) {
-        long k = 0;
-        for (long i = 0; i<lLength; i++) {
+        unsigned long k = 0;
+        for (unsigned long i = 0; i<lLength; i++) {
             if (k<toDelete.lLength && i==toDelete.lData[k])
                 //if (k<toDelete.lLength)
             {
@@ -1139,6 +1189,30 @@ void _SimpleList::Offset (long shift)
     }
 }
 
+_SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
+{
+    _SimpleList* result = new _SimpleList;
+    if (size > 0) {
+        size = MIN(size, lLength);
+        if (replacement) {
+            for (long k = 0; k < size; k++) {
+                (*result) << lData[genrand_int32()%lLength];
+            }
+        } else {
+            (*result) << (*this);
+            for (long k = 0; k < size; k++) {
+                long idx = lData[genrand_int32()%(lLength-k)];
+                long t = result->lData[k];
+                result->lData[k] = result->lData[idx];
+                result->lData[idx] = t;
+            }
+            result->lLength = size;
+            result->TrimMemory();
+        }
+    }
+    return result;
+}
+
 // Create a permutation of the list's elements
 void  _SimpleList::Permute (long blockLength)
 {
@@ -1416,7 +1490,7 @@ BaseRef _SimpleList::toStr(void)
 
         for (unsigned long i = 0; i<lLength; i++) {
             char c[32];
-            sprintf(c,"%ld",((long*)lData)[i]),
+            snprintf (c, sizeof(c),"%ld",((long*)lData)[i]),
                     (*s) << c;
             if (i<lLength-1) {
                 (*s) << ',';

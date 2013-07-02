@@ -1150,13 +1150,13 @@ void    _HYParameterTable::HandleLRT (void)
 
 
         char            cb[128];
-        sprintf             (cb,"\nLikelihood Ratio Test\n\n\t 2*LR = %g\n\t DF = %ld\n\t P-Value = ",2.*(H_A-H_0),DF_A-DF_0);
+        snprintf (cb, sizeof(cb),"\nLikelihood Ratio Test\n\n\t 2*LR = %g\n\t DF = %ld\n\t P-Value = ",2.*(H_A-H_0),DF_A-DF_0);
         if (P>0.0) {
             _Constant       c1 (2.*(H_A-H_0)),
                             c2 (DF_A-DF_0), *c3 = (_Constant*)c1.CChi2(&c2);
 
             BufferToConsole (cb);
-            sprintf         (cb,"%g \n ",1.-c3->Value());
+            snprintf (cb, sizeof(cb),"%g \n ",1.-c3->Value());
             BufferToConsole (cb);
             DeleteObject    (c3);
         } else {
@@ -3399,7 +3399,7 @@ void    _HYParameterTable::OpenCategoryPlotWindow (_CategoryVariable* thisCV)
             checkPointer (thisRow);
 
             x = thisCV->GetIntervalValue(counter);
-            sprintf (buffer,"%.6g",x);
+            snprintf (buffer, sizeof(buffer),"%.6g",x);
 
             thisRow->AppendNewInstance(new _String (counter));
             thisRow->AppendNewInstance(new _String (buffer));
@@ -3415,12 +3415,12 @@ void    _HYParameterTable::OpenCategoryPlotWindow (_CategoryVariable* thisCV)
 
         tW = ComputeTableCellPlacement (classLabels, cellPlacement, margins, labelFont);
 
-        /*sprintf (buffer,"E[X] = %8g",y);
+        /*snprintf (buffer, sizeof(buffer),"E[X] = %8g",y);
         set.left = GetVisibleStringWidth (*((_String*)classLabels (counter)),labelFont);
         if (set.left > set.top)
             set.top = set.left;
         classLabels.InsertElement (new _String (buffer),0,false);
-        sprintf (buffer,"Var[X] = %8g",z-y*y);
+        snprintf (buffer, sizeof(buffer),"Var[X] = %8g",z-y*y);
         set.left = GetVisibleStringWidth (*((_String*)classLabels (counter)),labelFont);
         if (set.left > set.top)
             set.top = set.left;
@@ -3533,10 +3533,10 @@ void    _HYParameterTable::OpenCategoryPlotWindow (_CategoryVariable* thisCV)
             0,0,0
         });
         graph->DrawTable (classLabels,cellPlacement,HY_ALIGN_LEFT, margins,set);
-        sprintf (buffer,"E[X]   = %8.3g", y);
+        snprintf (buffer, sizeof(buffer),"E[X]   = %8.3g", y);
         set.top += set.bottom+3+labelFont.size;
         graph->DisplayText (buffer,set.top,set.left+margins.left, true);
-        sprintf (buffer,"Var[X] = %8.3g", z-y*y);
+        snprintf (buffer, sizeof(buffer),"Var[X] = %8.3g", z-y*y);
         graph->DisplayText (buffer,set.top+6+labelFont.size,set.left+margins.left, true);
         set.right  = set.left = leftMargin;
         set.top    = 10;

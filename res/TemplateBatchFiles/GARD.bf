@@ -58,32 +58,6 @@ FILE_SEPARATOR			   		= "__FILE_SEPARATOR__";
 
 ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"NJ.bf");
 
-/* ________________________________________________________________________________________________*/
-
-
-function InitializeDistances (dummy)
-{
-	HarvestFrequencies (_dNucFreq,filteredData,1,1,0);
-	_d_fR = _dNucFreq[0]+_dNucFreq[2];
-	_d_fY = _dNucFreq[1]+_dNucFreq[3];
-	
-	if (_dNucFreq[0] == 0 || _dNucFreq[1] == 0 || _dNucFreq[2] == 0 || _dNucFreq[3] == 0)
-	{
-		_useK2P = 1;
-	}
-	else
-	{
-		_d_TN_K1 = 2*_dNucFreq[0]*_dNucFreq[2]/_d_fR;
-		_d_TN_K2 = 2*_dNucFreq[1]*_dNucFreq[3]/_d_fY;
-		_d_TN_K3 = 2*(_d_fR*_d_fY-_dNucFreq[0]*_dNucFreq[2]*_d_fY/_d_fR-_dNucFreq[1]*_dNucFreq[3]*_d_fR/_d_fY);
-		_useK2P = 0;
-	}
-	
-	
-	summingVector = {{1}{1}{1}{1}};
-
-	return 0;
-}
 
 /* ________________________________________________________________________________________________*/
 

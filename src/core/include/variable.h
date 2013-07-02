@@ -109,15 +109,7 @@ public:
     long        GetIndex (void) {
         return theIndex;
     }
-    virtual     void        ScanForVariables (_AVLList& l, bool globals = false) {
-        if (varValue) {
-            varValue->ScanForVariables (l, globals);
-        }
-        if (varFormula && varFormula->theFormula.lLength) {
-            varFormula->ScanFForVariables(l,globals);
-        }
-    }
-
+    virtual     void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
     virtual     bool        IsContainer (void) {
         return false;
     }
@@ -137,7 +129,10 @@ public:
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
 
-    _String*    GetName                 (void) {
+    _String     ContextFreeName                 (void);
+    _String     ParentObjectName                 (void);
+ 
+    _String*    GetName                         (void) {
         return theName;
     }
     _String*    GetFormulaString        (void) {
@@ -145,6 +140,7 @@ public:
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
+    virtual     _PMathObj   ComputeReference        (_PMathObj);
 
 
     friend      void        ResetVariables          (void);
@@ -169,5 +165,9 @@ public:
     _Formula*  varFormula;
 
 };
+
+long    DereferenceVariable (long index, _PMathObj context, char reference_type);
+long    DereferenceString   (_PMathObj, _PMathObj context, char reference_type);
+
 
 #endif

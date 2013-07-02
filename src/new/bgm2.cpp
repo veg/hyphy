@@ -173,7 +173,7 @@ void * CacheNodeScoreThread (void * arg)
 
 
         char buf [256];
-        sprintf (buf, "orphan score = %f\n", score);
+        snprintf (buf, sizeof(buf), "orphan score = %f\n", score);
         BufferToConsole (buf);
 
 
@@ -341,10 +341,10 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-    sprintf (buf, "family_nlevels: ");
+    snprintf (buf, sizeof(buf), "family_nlevels: ");
     BufferToConsole (buf);
     for (long bug = 0; bug < family_nlevels.lLength; bug++) {
-        sprintf (buf, "%d ", family_nlevels.lData[bug]);
+        snprintf (buf, sizeof(buf), "%d ", family_nlevels.lData[bug]);
         BufferToConsole (buf);
     }
     NLToConsole ();
@@ -396,21 +396,21 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-    sprintf (buf, "complete cases N_ijk: \n");
+    snprintf (buf, sizeof(buf), "complete cases N_ijk: \n");
     BufferToConsole (buf);
     for (long j = 0; j < num_parent_combos; j++) {
         for (long k = 0; k < family_nlevels.lData[0]; k++) {
-            sprintf (buf, "%d ", (long) n_ijk (j,k));
+            snprintf (buf, sizeof(buf), "%d ", (long) n_ijk (j,k));
             BufferToConsole (buf);
         }
         NLToConsole ();
     }
     NLToConsole ();
 
-    sprintf (buf, "impute: \n");
+    snprintf (buf, sizeof(buf), "impute: \n");
     BufferToConsole (buf);
     for (long bug = 0; bug < impute.GetUsed(); bug++) {
-        sprintf (buf, "%d ", (long) impute (0, bug));
+        snprintf (buf, sizeof(buf), "%d ", (long) impute (0, bug));
         BufferToConsole (buf);
 
         if (bug % family_size == family_size - 1) {
@@ -436,12 +436,12 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-    sprintf (buf, "observed_freqs: \n");
+    snprintf (buf, sizeof(buf), "observed_freqs: \n");
     BufferToConsole (buf);
 
     for (long fam = 0; fam < family_size; fam++) {
         for (long lev = 0; lev < family_nlevels.lData[fam]; lev++) {
-            sprintf (buf, "%f ", observed_freqs (fam, lev));
+            snprintf (buf, sizeof(buf), "%f ", observed_freqs (fam, lev));
             BufferToConsole (buf);
         }
         NLToConsole ();
@@ -492,10 +492,10 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-    sprintf (buf, "impute: \n");
+    snprintf (buf, sizeof(buf), "impute: \n");
     BufferToConsole (buf);
     for (long bug = 0; bug < impute.GetUsed(); bug++) {
-        sprintf (buf, "%d ", (long) impute (0, bug));
+        snprintf (buf, sizeof(buf), "%d ", (long) impute (0, bug));
         BufferToConsole (buf);
 
         if (bug % family_size == family_size - 1) {
@@ -504,15 +504,15 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
     }
     NLToConsole ();
 
-    sprintf (buf, "m_ijk: \n");
+    snprintf (buf, sizeof(buf), "m_ijk: \n");
     BufferToConsole (buf);
     for (long j = 0; j < num_parent_combos; j++) {
         for (long k = 0; k < family_nlevels.lData[0]; k++) {
-            sprintf (buf, "%d ", (long) m_ijk (j,k));
+            snprintf (buf, sizeof(buf), "%d ", (long) m_ijk (j,k));
             BufferToConsole (buf);
         }
 
-        sprintf (buf, "| %d", (long) m_ij (j,0));
+        snprintf (buf, sizeof(buf), "| %d", (long) m_ij (j,0));
         BufferToConsole (buf);
 
         NLToConsole ();
@@ -569,7 +569,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-    sprintf (buf, "log_prior_impute = %f\nlast_score = %f\n", log_prior_impute, last_score);
+    snprintf (buf, sizeof(buf), "log_prior_impute = %f\nlast_score = %f\n", log_prior_impute, last_score);
     BufferToConsole (buf);
 #endif
 
@@ -616,7 +616,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-        sprintf (buf, "imp = %d\nimp_case = %d\nimp_var = %d\nnum_incomplete_cases=%d\n", imp, imp_case, imp_var, num_incomplete_cases);
+        snprintf (buf, sizeof(buf), "imp = %d\nimp_case = %d\nimp_var = %d\nnum_incomplete_cases=%d\n", imp, imp_case, imp_var, num_incomplete_cases);
         BufferToConsole (buf);
 #endif
 
@@ -653,10 +653,10 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-        sprintf (buf, "proposed impute: \n");
+        snprintf (buf, sizeof(buf), "proposed impute: \n");
         BufferToConsole (buf);
         for (long bug = 0; bug < impute.GetUsed(); bug++) {
-            sprintf (buf, "%d ", (long) impute (0, bug));
+            snprintf (buf, sizeof(buf), "%d ", (long) impute (0, bug));
             BufferToConsole (buf);
 
             if (bug % family_size == family_size - 1) {
@@ -680,7 +680,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
             }
 
 #ifdef __DEBUG_IDS__
-            sprintf (buf, "old_index = %d\nnew_index = %d\n", old_index, new_index);
+            snprintf (buf, sizeof(buf), "old_index = %d\nnew_index = %d\n", old_index, new_index);
             BufferToConsole (buf);
 #endif
             //  It shouldn't be necessary to re-calculate log_prior_impute from scratch every time
@@ -768,11 +768,11 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 #ifdef __DEBUG_IDS__
-        sprintf (buf, "proposed m_ijk: \n");
+        snprintf (buf, sizeof(buf), "proposed m_ijk: \n");
         BufferToConsole (buf);
         for (long j = 0; j < num_parent_combos; j++) {
             for (long k = 0; k < family_nlevels.lData[0]; k++) {
-                sprintf (buf, "%d ", (long) m_ijk (j,k));
+                snprintf (buf, sizeof(buf), "%d ", (long) m_ijk (j,k));
                 BufferToConsole (buf);
             }
             NLToConsole ();
@@ -800,7 +800,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
         lk_ratio    = exp(log_score - last_score);
 
 #ifdef __DEBUG_IDS__
-        sprintf (buf, "prior = %f, log_score = %f, last_score = %f, lk_ratio = %f\n", log_prior_impute, log_score, last_score, lk_ratio);
+        snprintf (buf, sizeof(buf), "prior = %f, log_score = %f, last_score = %f, lk_ratio = %f\n", log_prior_impute, log_score, last_score, lk_ratio);
         BufferToConsole (buf);
 #endif
         if (lk_ratio > 1. || genrand_real2() < lk_ratio) {  // accept proposed imputation
@@ -810,7 +810,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
             last_m_ijk = m_ijk;
             last_m_ij = m_ij;
 #ifdef __DEBUG_IDS__
-            sprintf (buf, "accept\n\n");
+            snprintf (buf, sizeof(buf), "accept\n\n");
             BufferToConsole (buf);
 #endif
         } else {    // revert to original imputation
@@ -822,7 +822,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
             m_ijk = last_m_ijk;
             m_ij = last_m_ij;
 #ifdef __DEBUG_IDS__
-            sprintf (buf, "reject\n\n");
+            snprintf (buf, sizeof(buf), "reject\n\n");
             BufferToConsole (buf);
 #endif
         }
@@ -835,7 +835,7 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
                 prior_denom->Store (log_prior_impute);  // append to _GrowingVector objects
                 post_chain->Store (log_score);
 #ifdef __DEBUG_IDS__
-                sprintf (buf, "%f, %f\n", log_prior_impute, log_score);
+                snprintf (buf, sizeof(buf), "%f, %f\n", log_prior_impute, log_score);
                 BufferToConsole (buf);
 #endif
             }
@@ -847,15 +847,15 @@ _Parameter  Bgm::ImputeDiscreteScore (long node_id, _SimpleList & parents)
 
 
 
-    sprintf (buf, "Node %ld, parents(%ld): ", node_id, parents.lLength);
+    snprintf (buf, sizeof(buf), "Node %ld, parents(%ld): ", node_id, parents.lLength);
     BufferToConsole (buf);
     for (long par = 0; par < parents.lLength; par++) {
-        sprintf (buf, " %ld", parents.lData[par]);
+        snprintf (buf, sizeof(buf), " %ld", parents.lData[par]);
         BufferToConsole (buf);
     }
 
 
-    sprintf (buf, "  sum(prior) = %f  E[log score] = %f\n", LogSumExpo (prior_denom), expect_log_score);
+    snprintf (buf, sizeof(buf), "  sum(prior) = %f  E[log score] = %f\n", LogSumExpo (prior_denom), expect_log_score);
     BufferToConsole (buf);
 
     DeleteObject (prior_denom);

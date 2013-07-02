@@ -207,6 +207,11 @@ bool    GlobalStartup (void)
     _HBL_Init_Const_Arrays  ();
 
 
+#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
+    if (_hy_mpi_node_rank == 0) {
+#endif
+
+
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
 #ifndef __HYPHYMPI__
@@ -250,6 +255,9 @@ bool    GlobalStartup (void)
         p++;
     }
     messageFileName = fileName;
+#endif
+#if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
+    }
 #endif
 
     return globalErrorFile && globalMessageFile;
@@ -304,7 +312,7 @@ bool    GlobalShutdown (void)
 #if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
 
 #else
-            printf ("\nCheck %s for details on execution errors.\n",errorFileName.getStr());
+            fprintf (stderr, "\nCheck %s for details on execution errors.\n",errorFileName.getStr());
 #endif
             res = false;
             fclose (globalErrorFile);
@@ -322,7 +330,7 @@ bool    GlobalShutdown (void)
         if (ftell(globalMessageFile)) {
 #if defined (__MAC__) || defined (__WINDOZE__) || defined (__HYPHYMPI__) || defined (__HYPHY_GTK__)
 #else
-            printf ("\nCheck %s details of this run.\n",messageFileName.getStr());
+            fprintf (stderr, "\nCheck %s details of this run.\n",messageFileName.getStr());
 #endif
             fclose (globalMessageFile);
         } else {
@@ -360,6 +368,7 @@ void    PurgeAll (bool all)
     batchLanguageFunctionClassification.Clear();
     executionStack.Clear();
     loadedLibraryPaths.Clear(true);
+    _HY_HBL_Namespaces.Clear();
     if (all) {
         likeFuncList.Clear();
         likeFuncNamesList.Clear();
@@ -377,11 +386,6 @@ void    PurgeAll (bool all)
         variablePtrs.Clear();
         freeSlots.Clear();
         lastMatrixDeclared = -1;
-        /*if (_hy_mpi_node_rank == 0)
-        {
-            for (
-        }
-        else*/
         {
             variableNames.Clear(true);
         }
@@ -392,7 +396,7 @@ void    PurgeAll (bool all)
     scanfLastFilePath = empty;
     setParameter (randomSeed,globalRandSeed);
     isInFunction        = false;
-    isDefiningATree     = false;
+    isDefiningATree     = 0;
 #ifdef __HYPHYMPI__
     int            size;
 
@@ -405,25 +409,15 @@ void    PurgeAll (bool all)
 //____________________________________________________________________________________
 void    DeleteObject (BaseRef theObject)
 {
-    if (theObject)
+    if (theObject) {
         if (theObject->nInstances<=1) {
             delete (theObject);
         } else {
             theObject->nInstances--;
         }
+    }
 }
 
-//____________________________________________________________________________________
-#ifdef __HYALTIVEC__
-char* VecMemAllocate (long chunk)
-{
-    char* result = (char*)vec_malloc (chunk);
-    if (!result) {
-        warnError(-108);
-    }
-    return result;
-}
-#endif
 
 #ifndef __HYPHYDMALLOC__
 //____________________________________________________________________________________
@@ -466,58 +460,7 @@ void        yieldCPUTime(void)
     }
 }
 
-#ifdef __WINDOZE__
-#include <Windows.h>
-#endif
-#else
-
-#ifdef __MAC__
-#include "Timer.h"
-
-void    yieldCPUTime(void)
-{
-    handleGUI(true);
-}
-#endif
-
-#ifdef __WINDOZE__
-#include        "Windows.h"
-#include        "preferences.h"
-#include        "HYSharedMain.h"
-#include        "HYPlatformWindow.h"
-
-extern  bool    hyphyExiting;
-
-void            yieldCPUTime     (void)
-{
-    MessageLoop();
-    if (hyphyExiting) {
-        WritePreferences    ();
-        ExitProcess(0);
-    }
-
-    while (isSuspended) {
-        MessageLoop(false,false);
-        if (hyphyExiting) {
-            WritePreferences    ();
-            ExitProcess         (0);
-        }
-    }
-}
-#endif
-
-#ifdef  __HYPHY_GTK__
-
-#include <gtk/gtk.h>
-void    yieldCPUTime (void)
-{
-    while (gtk_events_pending ()) {
-        gtk_main_iteration();
-    }
-}
-
-#endif
-#endif
+#endif 
 
 //____________________________________________________________________________________
 

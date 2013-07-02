@@ -582,27 +582,22 @@ function _buildAncestralCacheInternal (_lfID, _lfComponentID, doSample)
 	function _countSubstitutionsByBranchSite (_ancID, _siteID, _filter)
 	{
 		_result = {0,1};
-		if (Abs (_ancestralRecoveryCache[_ancID]))
-		{
-			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"]))
-			{
+		if (Abs (_ancestralRecoveryCache[_ancID])) {
+			if (_siteID >= 0 && _siteID < Columns ((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
 				TREE_OUTPUT_OPTIONS = {};
 				_thisColumn 		= ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
 				_bacSiteC 		    = (_ancestralRecoveryCache[_ancID])["CHARS"];
 				_bacSiteDim 		= Columns (_bacSiteC);
 				_bacCounter 		= Rows (_thisColumn)-1;
 				_result				= {_bacCounter,1};
-				_unit				= {1,_bacSiteDim}["1"];
 
-
-				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1)
-				{
+				for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
 					_bacParentID   = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator+1])["Parent"]-1;
 					_myState	   = _thisColumn[_bacTreeIterator];
 					_pState		   = _thisColumn[_bacParentID];
 					_bacSiteMx			= {_bacSiteDim,_bacSiteDim};
 					_expandSubstitutionMap (_pState,_myState,_ancID,"_bacSiteMx");
-					_result[_bacTreeIterator] = (_unit*(_bacSiteMx$_filter)*Transpose(_unit))[0]>=1;
+					_result[_bacTreeIterator] = (+(_bacSiteMx$_filter))>=1;
 				}
 				
 			}

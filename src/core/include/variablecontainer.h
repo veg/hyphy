@@ -43,7 +43,7 @@
 #include "variable.h"
 #include "baseobj.h"
 #include "list.h"
-#include "avllist.h"
+#include "avllistx.h"
 #include "avllistxl.h"
 #include "operation.h"
 
@@ -83,9 +83,9 @@ public:
 
     void        ScanAndAttachVariables      (void);
 
-    virtual     void        ScanForVariables            (_AVLList&,_AVLList&);
+    virtual     void        ScanForVariables            (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&);
-    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&);
+    virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
 
     virtual     bool        IsModelVar                  (long);
     virtual     bool        IsConstant                  (void);
@@ -115,7 +115,7 @@ public:
     virtual     void        CompileListOfDependents     (_SimpleList&);
 
     void        MatchParametersToList       (_List&, bool doAll = false, bool indOnly = false);
-    _Matrix*    GetModelMatrix              (void);
+    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil);
     _Matrix*    GetFreqMatrix               (void);
     bool        HasExplicitFormModel        (void);
     _Formula*   GetExplicitFormModel        (void);
@@ -123,17 +123,19 @@ public:
     long        GetModelIndex               (void) {
         return theModel;
     }
+    
+    _String     GetModelName                (void);
+    
     long        GetModelDimension           (void);
     /* 20100316 SLKP
         return the dimension of the model; needed to handle the case
         of explicit model exponentials
      */
 
-    void        CopyMatrixParameters        (_VariableContainer*);
-    void        GetListOfModelParameters    (_List&);
-    _String*    GetSaveableListOfUserParameters
-    (void);
-    void        TrimMemory                  (void);
+    void        CopyMatrixParameters                (_VariableContainer*, bool match_by_name = false);
+    void        GetListOfModelParameters            (_List&);
+    _String*    GetSaveableListOfUserParameters     (void);
+    void        TrimMemory                          (void);
     _VariableContainer* GetTheParent                (void) {
         return theParent;
     }

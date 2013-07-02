@@ -56,6 +56,19 @@ BaseRef _AVLListXL::GetXtra (long d)
     return xtraD(d);
 }
 
+
+//______________________________________________________________
+
+BaseRef _AVLListXL::GetDataByKey(BaseRef key)
+{
+    long f = Find (key);
+    if (f < 0) {
+        return nil;
+    }
+    return GetXtra(f);
+}
+
+
 //______________________________________________________________
 
 void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup)
@@ -93,6 +106,18 @@ BaseRef _AVLListXL::toStr (void)
     return str;
 }
 
+
+//______________________________________________________________
+
+long  _AVLListXL::UpdateValue(BaseRef b, BaseRef d, bool do_copy, bool copy_key) {
+    long exists = Find (b);
+    if (exists >= 0) {
+        SetXtra (exists, d, do_copy);       
+    } else {
+        Insert (copy_key?b->makeDynamic():b,(long)d, do_copy);
+    }
+    return exists;
+}
 
 //______________________________________________________________
 

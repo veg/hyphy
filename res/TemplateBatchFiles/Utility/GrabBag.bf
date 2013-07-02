@@ -173,13 +173,23 @@ function splitFilePath (_filePath)
 /*---------------------------------------------------------*/
 /* fix global variables in a LF at their current values */
    
-function fixGlobalParameters (_lfName)
-{
-	ExecuteCommands ("GetString (_lfInfo," + _lfName + ",-1);");
+function fixGlobalParameters (_lfName) {
+	GetString (_lfInfo,^_lfName,-1);
 	_lfInfo = _lfInfo["Global Independent"];
-	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx = _gb_idx + 1)
-	{
+	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx += 1) {
 		ExecuteCommands (_lfInfo[_gb_idx] + ":=" + _lfInfo[_gb_idx] + "__;");
+	} 	
+	return 0;
+}
+
+/*---------------------------------------------------------*/
+/* unconstrain global variables in a LF at their current values */
+   
+function unconstrainGlobalParameters (_lfName) {
+	GetString (_lfInfo,^_lfName,-1);
+	_lfInfo = _lfInfo["Global Constrained"];
+	for (_gb_idx = 0; _gb_idx < Columns (_lfInfo); _gb_idx += 1) {
+		ExecuteCommands (_lfInfo[_gb_idx] + "=" + _lfInfo[_gb_idx]);
 	} 	
 	return 0;
 }
@@ -268,21 +278,6 @@ function exportVarList (_varList)
 /*---------------------------------------------------------*/
 /* restore values of global parameters */
    
-
-function restoreGlobalParameters (_paramStash)
-{
-	_stashKeys = Rows(_paramStash);
-	for (_gb_idx = 0; _gb_idx < Abs (_paramStash); _gb_idx = _gb_idx + 1)
-	{
-		ExecuteCommands (_stashKeys[_gb_idx] + "=" + _paramStash[_stashKeys[_gb_idx]] + ";");
-	} 	
-	return 0;
-}
-
-/*---------------------------------------------------------*/
-/* restore values of global parameters */
-   
-
 function restoreGlobalParameters (_paramStash)
 {
 	_stashKeys = Rows(_paramStash);
@@ -854,7 +849,7 @@ function mapStrings (sourceStr,targetStr)
 	{
 		targetIndexing [targetStr[_i]] = _i + 1;
 	}
-	_d = Abs (targetStr);
+	_d = Abs (sourceStr);
 	for (_i = 0; _i < _d; _i += 1)
 	{
 		mapping [_i] = targetIndexing[sourceStr[_i]] - 1;
@@ -947,3 +942,25 @@ function _formatTimeString (secondCount)
 	return _timeString;
 }	
 
+/*---------------------------------------------------------------------*/
+
+lfunction _constrainVariablesAndDescendants (variable) {
+    GetInformation (allVars, "^" + (variable&&6) + "\\..+$");
+    for (k = 0; k < Columns (allVars); k += 1) {
+        variableID    = allVars[k];
+        current_value = ^variableID;
+        ^variableID := current_value__;
+    }
+    return 0;
+}
+
+/*---------------------------------------------------------------------*/
+
+lfunction _unconstrainVariablesAndDescendants (variable) {
+    GetInformation (allVars, "^" + (variable&&6) + "\\..+$");
+    for (k = 0; k < Columns (allVars); k += 1) {
+        variableID    = allVars[k];
+        ClearConstraints (^variableID);
+    }
+    return 0;
+}

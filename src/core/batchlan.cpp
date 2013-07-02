@@ -46,11 +46,8 @@
 #include "scfg.h"
 #include "HYNetInterface.h"
 
-#if defined __AFYP_REWRITE_BGM__
 #include "bayesgraph.h"
-#else
-#include "bgm.h"
-#endif
+
 
 //#include "profiler.h"
 #ifndef __HEADLESS__
@@ -98,6 +95,10 @@ extern  long    lastFileTypeSelection;
 #endif
 #endif
 
+#if defined __HYPHYQT__
+#include "HYSharedMain.h"
+#include "hyphy_qt_helpers.h"
+#endif
 
 
 #ifdef      __MACPROFILE__
@@ -128,7 +129,6 @@ batchLanguageFunctionParameterLists,
 compiledFormulaeParameters,
 modelNames,
 executionStack,
-openFileHandlesBackend,
 standardLibraryPaths,
 standardLibraryExtensions,
 loadedLibraryPathsBackend;
@@ -210,19 +210,16 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 covarianceParameterList         ("COVARIANCE_PARAMETER"),
                                 matrixEvalCount                 ("MATRIX_EXPONENTIATION_COUNTS"),
                                 scfgCorpus                      ("SCFG_STRING_CORPUS"),
+                                _hyLastExecutionError           ("LAST_HBL_EXECUTION_ERROR"),
+                                _hyExecutionErrorMode           ("HBL_EXECUTION_ERROR_HANDLING"),
 
                                 bgmData                         ("BGM_DATA_MATRIX"),
                                 bgmScores                       ("BGM_SCORE_CACHE"),
                                 bgmGraph                        ("BGM_GRAPH_MATRIX"),
                                 bgmNodeOrder                    ("BGM_NODE_ORDER"),
-#if defined __AFYP_REWRITE_BGM__
+
                                 bgmConstraintMx                 ("BGM_CONSTRAINT_MATRIX"),
                                 bgmParameters                   ("BGM_NETWORK_PARAMETERS"),
-#else
-                                bgmWeights                      ("BGM_WEIGHT_MATRIX"),
-                                bgmBanMx                        ("BGM_BAN_MATRIX"),
-                                bgmEnforceMx                    ("BGM_ENFORCE_MATRIX"),
-#endif
 
                                 pathToCurrentBF                 ("PATH_TO_CURRENT_BF"),
                                 hfCountGap                      ("COUNT_GAPS_IN_FREQUENCIES"),
@@ -235,6 +232,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 blFprintfRedirect               ("GLOBAL_FPRINTF_REDIRECT"),
                                 blFprintfDevNull                ("/dev/null"),
                                 getDataInfoReturnsOnlyTheIndex  ("GET_DATA_INFO_RETURNS_ONLY_THE_INDEX"),
+                                alwaysReloadLibraries           ("ALWAYS_RELOAD_FUNCTION_LIBRARIES"),
                                 dialogPrompt,
                                 baseDirectory,
                                 lastModelUsed,
@@ -273,7 +271,6 @@ extern      _Parameter          toPolyOrNot,
 extern      _SimpleList         freeSlots;
 
 
-_AVLListX   openFileHandles     (&openFileHandlesBackend);
 _AVLList    loadedLibraryPaths  (&loadedLibraryPathsBackend);
 
 _ExecutionList
@@ -443,83 +440,95 @@ _String*    ProcessCommandArgument (_String* data)
 
 bool    numericalParameterSuccessFlag = true;
 
-_Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP)
-{
-
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    numericalParameterSuccessFlag = true;
-    if (formRes&& formRes->ObjectClass()==NUMBER) {
-        return formRes->Value();
-    } else {
-        if (formRes&& formRes->ObjectClass()==STRING) {
-            return _String((_String*)((_FString*)formRes)->toStr()).toNum();
+_Parameter  ProcessNumericArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram) {
+    _String   errMsg;
+    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
+     
+    if (!errMsg.sLength) {
+        _PMathObj formRes = nameForm.Compute();
+        numericalParameterSuccessFlag = true;
+        if (formRes&& formRes->ObjectClass()==NUMBER) {
+            return formRes->Value();
         } else {
-            _String errMsg (*data);
-            errMsg = errMsg & " was expected to be a numerical argument";
-            WarnError (errMsg);
+            if (formRes&& formRes->ObjectClass()==STRING) {
+                return _String((_String*)((_FString*)formRes)->toStr()).toNum();
+            } else {
+                errMsg = (_String("'") & *data & "' was expected to be a numerical argument.");
+            }
         }
     }
+    
+    if (currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    } else {
+        WarnError(errMsg);
+    }
+    
     numericalParameterSuccessFlag = false;
     return 0.0;
 }
 
 //____________________________________________________________________________________
 
-_PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* theP, long objectType)
+_PMathObj   ProcessAnArgumentByType (_String* expression, _VariableContainer* theP, long objectType, _ExecutionList* currentProgram)
 {
-    _Formula  expressionProcessor (*expression, theP);
-    _PMathObj expressionResult = expressionProcessor.Compute();
-    if (expressionResult && expressionResult->ObjectClass()==objectType) {
-        return (_PMathObj)expressionResult->makeDynamic();
+    _String   errMsg;
+
+    _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);
+    
+    if (errMsg.sLength) {
+        currentProgram->ReportAnExecutionError (errMsg);
     }
-
-    return nil;
-}
-
-
-//____________________________________________________________________________________
-
-_String ProcessLiteralArgument (_String* data, _VariableContainer* theP)
-{
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    if (formRes && formRes->ObjectClass()==STRING) {
-        return *((_FString*)formRes)->theString;
-    }
-
-    return empty;
-}
-
-//____________________________________________________________________________________
-
-_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP)
-{
-    _Formula  nameForm (*data,theP);
-    _PMathObj formRes = nameForm.Compute();
-    if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST) {
-        formRes->AddAReference();
-        return (_AssociativeList*)formRes;
-    }
-
-    return nil;
-}
-
-//____________________________________________________________________________________
-
-_String ProcessStringArgument (_String* data)
-{
-    if (data->sLength>2) {
-        if (data->sData[data->sLength-1]=='_' && data->sData[data->sLength-2]=='_') {
-            _String varName (*data,0,data->sLength-3);
-            _FString* theVar = (_FString*)FetchObjectFromVariableByType(&varName,STRING);
-            if (theVar) {
-                return *theVar->theString;
-            }
+    else {
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
+        if (expressionResult && expressionResult->ObjectClass()==objectType) {
+            return (_PMathObj)expressionResult->makeDynamic();
         }
     }
+    
+    return nil;
+}
+
+
+//____________________________________________________________________________________
+
+_String ProcessLiteralArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
+{
+    _String   errMsg;
+    
+    _Formula  expressionProcessor (*data, theP, currentProgram?&errMsg:nil);
+    
+    if (errMsg.sLength) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    }
+    else {
+        _PMathObj expressionResult = expressionProcessor.Compute(0,theP);
+        if (expressionResult && expressionResult->ObjectClass()==STRING) {
+            return *((_FString*)expressionResult)->theString;
+        }
+    }
+    
     return empty;
 }
+
+//____________________________________________________________________________________
+
+_AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram)
+{
+    _String   errMsg;
+    _Formula  nameForm (*data,theP, currentProgram?&errMsg:nil);
+    if (errMsg.sLength && currentProgram) {
+        currentProgram->ReportAnExecutionError (errMsg);
+    } else {
+        _PMathObj formRes = nameForm.Compute();
+        if (formRes && formRes->ObjectClass()==ASSOCIATIVE_LIST) {
+            formRes->AddAReference();
+            return (_AssociativeList*)formRes;
+        }
+    }
+    return nil;
+}
+
 
 
 
@@ -600,122 +609,6 @@ long    FindBgmName (_String&s)
 
 
 
-//____________________________________________________________________________________
-
-_String ReturnDialogInput(bool dispPath)
-{
-    if (!dispPath) {
-        NLToConsole ();
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    } else {
-        NLToConsole ();
-        if (pathNames.lLength) {
-            StringToConsole(*(_String*)pathNames(pathNames.lLength-1));
-        } else {
-            StringToConsole (baseDirectory);
-        }
-
-        StringToConsole (dialogPrompt);
-        BufferToConsole (":");
-    }
-    return StringFromConsole();
-}
-
-
-//____________________________________________________________________________________
-
-_String ReturnFileDialogInput(void)
-{
-    if (currentExecutionList && currentExecutionList->stdinRedirect) {
-        _String outS (currentExecutionList->FetchFromStdinRedirect());
-        if (outS.sLength) {
-            return outS;
-        }
-    }
-
-#ifdef __HEADLESS__
-    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
-#else
-#ifdef __MAC__
-    _String feedback =  MacSimpleFileOpen();
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-    return feedback;
-#else
-#ifdef __WINDOZE__
-    _String feedback = ReturnFileDialogSelectionWin(false);
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-    return feedback;
-#else
-#ifdef __HYPHY_GTK__
-    if (PopUpFileDialog (dialogPrompt)) {
-        return *argFileName;
-    }
-
-    terminateExecution = true;
-    return empty;
-#else
-    return ReturnDialogInput(true);
-#endif
-#endif
-#endif
-#endif
-}
-
-//____________________________________________________________________________________
-
-_String WriteFileDialogInput(void)
-{
-    if (currentExecutionList && currentExecutionList->stdinRedirect) {
-        _String outS (currentExecutionList->FetchFromStdinRedirect());
-        if (outS.sLength) {
-            return outS;
-        }
-    }
-
-    defFileNameValue = ProcessLiteralArgument (&defFileString,nil);
-    _String feedback;
-
-#ifdef __HEADLESS__
-    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
-#else
-#ifdef __MAC__
-    feedback =  MacSimpleFileSave();
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __WINDOZE__
-
-    feedback = ReturnFileDialogSelectionWin(true);
-    if (feedback.sLength==0) {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __HYPHY_GTK__
-    if (PopUpFileDialog (dialogPrompt)) {
-        return *argFileName;
-    } else {
-        terminateExecution = true;
-    }
-#endif
-
-#ifdef __UNIX__
-    feedback = ReturnDialogInput(true);
-#endif
-
-#endif
-    defFileNameValue = empty;
-    return feedback;
-}
 
 //__________________________________________________________
 
@@ -992,12 +885,7 @@ void KillModelRecord (long mdID)
         if (freqMatrix && saveTheseVariables.Find ((BaseRef)freqMatrix->GetIndex()) < 0) {
             DeleteVariable (*freqMatrix->GetName());
         }
-
-        //DeleteVariable (*LocateVar(mID)->GetName());
     }
-
-
-
 
     if (mdID<modelNames.lLength-1) {
         modelMatrixIndices.lData[mdID] = -1;
@@ -1027,19 +915,27 @@ void KillModelRecord (long mdID)
 //____________________________________________________________________________________
 _ExecutionList::_ExecutionList ()
 {
-    result         = nil;
-    currentCommand = 0;
-    cli            = nil;
-    profileCounter = nil;
-    stdinRedirect  = nil;
-    stdinRedirectAux = nil;
-    doProfile      = 0;
-    nameSpacePrefix = nil;
+    result              = nil;
+    currentCommand      = 0;
+    cli                 = nil;
+    profileCounter      = nil;
+    stdinRedirect       = nil;
+    stdinRedirectAux    = nil;
+    doProfile           = 0;
+    nameSpacePrefix     = nil;
+    
+    if (currentExecutionList) {
+        errorHandlingMode  = currentExecutionList->errorHandlingMode;
+        errorState         = currentExecutionList->errorState;
+    } else {
+        errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+        errorState = false;
+    }
 
 } // doesn't do much
 
 //____________________________________________________________________________________
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource)
+_ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copySource, bool* successFlag)
 {
     currentCommand = 0;
     result         = nil;
@@ -1049,13 +945,25 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID, bool copy
     stdinRedirect  = nil;
     stdinRedirectAux = nil;
     nameSpacePrefix = nil;
+    
     if (namespaceID) {
         SetNameSpace (*namespaceID);
     }
     if (copySource) {
         sourceText.Duplicate (&source);
     }
-    BuildList (source);
+    if (currentExecutionList) {
+        errorHandlingMode  = currentExecutionList->errorHandlingMode;
+        errorState         = currentExecutionList->errorState;
+    } else {
+        errorHandlingMode = HY_BL_ERROR_HANDLING_DEFAULT;
+        errorState = false;
+    }
+
+    bool result = BuildList (source, nil, false, true);
+    if (successFlag) {
+        *successFlag = result;
+    }
 }
 
 //____________________________________________________________________________________
@@ -1095,6 +1003,8 @@ BaseRef     _ExecutionList::makeDynamic (void)
     Res->cli                = nil;
     Res->profileCounter     = nil;
     Res->doProfile          = doProfile;
+    Res->errorHandlingMode  = errorHandlingMode;
+    Res->errorState         = errorState;
 
     if(result) {
         Res->result = (_PMathObj)result->makeDynamic();
@@ -1113,6 +1023,35 @@ void        _ExecutionList::Duplicate   (BaseRef source)
 
     if (s->result) {
         s->result=(_PMathObj)result->makeDynamic();
+    }
+
+    errorHandlingMode  = s->errorHandlingMode;
+    errorState         = s->errorState;
+}
+
+
+//____________________________________________________________________________________
+void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand, bool appendToExisting) {
+    if (doCurrentCommand) {
+        _ElementaryCommand *theCommand = FetchLastCommand();
+        if (theCommand) {
+            errMsg = errMsg & " in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(theCommand->GetCode());
+        }
+    }
+    errorState = true;
+    switch (errorHandlingMode) {
+        case HY_BL_ERROR_HANDLING_SOFT:
+            if (appendToExisting) {
+              _FString * existing = (_FString*) FetchObjectFromVariableByType(&_hyLastExecutionError, STRING);
+              if (existing) {
+                errMsg = *existing->theString & '\n' & errMsg;
+              }
+            }
+            setParameter(_hyLastExecutionError, new _FString (errMsg, false), false);
+            
+            break;
+        default: 
+            WarnError (errMsg);
     }
 }
 
@@ -1136,11 +1075,25 @@ _String*    _ExecutionList::FetchFromStdinRedirect (void)
     return sendBack;
 }
 
+//____________________________________________________________________________________
+
+_String       _ExecutionList::GetFileName     (void)  {
+    if (sourceFile.sLength) {
+        return sourceFile;
+    } else {
+        if (pathNames.lLength)
+            return *(_String*)pathNames.GetElement (-1);
+    }
+    return empty;
+}
 // doesn't do much
 //____________________________________________________________________________________
 
 _PMathObj       _ExecutionList::Execute     (void)      // run this execution list
 {
+
+    setParameter(_hyLastExecutionError, new _MathObject, false);
+    
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
     executionStack       << this;
@@ -1200,6 +1153,9 @@ _PMathObj       _ExecutionList::Execute     (void)      // run this execution li
     }
 
     executionStack.Delete (executionStack.lLength-1);
+    if (result == nil) {
+        result = new _MathObject();
+    }
 
     return result;
 }
@@ -1240,7 +1196,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
     bool            status      = true;
 
-    for (long k = 0; k<lLength && status; k++) {
+    for (unsigned long k = 0; k<lLength && status; k++) {
         _ElementaryCommand * aStatement = (_ElementaryCommand*)(*this)(k);
         switch (aStatement->code) {
         case 0: {
@@ -1252,20 +1208,21 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
                 checkPointer ((BaseRef)(f&&f2));
 
-                long          varRef,
-                              parseCode = Parse(f,*formulaString,varRef,nameSpacePrefix,f2);
+                _FormulaParsingContext fpc (nil, nameSpacePrefix);
+
+                long          parseCode = Parse(f,*formulaString,fpc,f2);
 
                 if (parseCode == HY_FORMULA_EXPRESSION || parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
                     if (f->AmISimple(stackDepth,varList)) {
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
-                        aStatement->simpleParameters<<varRef;
+                        aStatement->simpleParameters<<fpc.assignmentRefID();
 
                         formulaeToConvert << (long)f;
 
                         if (HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-                            parseCodes        << varRef;
+                            parseCodes        << fpc.assignmentRefID();
                         } else {
                             parseCodes        << -1;
                         }
@@ -1285,12 +1242,9 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             if (aStatement->simpleParameters.lLength == 3 || aStatement->parameters.lLength) {
                 if (aStatement->parameters.lLength) {
                     _Formula f;
-                    long     varRef;
-                    //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
+                    _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
-                    long status = Parse (&f, *(_String*)aStatement->parameters(0), varRef, nameSpacePrefix,nil);
-
-                    //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
+                    long status = Parse (&f, *(_String*)aStatement->parameters(0), fpc);
 
                     if (status== HY_FORMULA_EXPRESSION) {
                         aStatement->simpleParameters<<long(f.makeDynamic());
@@ -1324,15 +1278,15 @@ bool        _ExecutionList::TryToMakeSimple     (void)
         _SimpleList  avlData;
         _AVLListX    avlList (&avlData);
 
-        for (long fi = 0; fi < formulaeToConvert.lLength; fi++) {
+        for (unsigned long fi = 0; fi < formulaeToConvert.lLength; fi++) {
             ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
         }
 
-        for (long vi = 0; vi < varList.lLength; vi++) {
+        for (unsigned long vi = 0; vi < varList.lLength; vi++) {
             avlList.Insert ((BaseRef)varList.lData[vi], vi);
         }
 
-        for (long ri = 0; ri<parseCodes.lLength; ri++) {
+        for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
             if (parseCodes.lData[ri] < 0) {
                 cli->storeResults << -1;
             } else {
@@ -1411,7 +1365,7 @@ BaseRef  _ExecutionList::toStr (void)
     step ("\n\nStep"),
     dot (".");
 
-    for (long i=0; i<countitems(); i++) {
+    for (unsigned long i=0; i<countitems(); i++) {
         (*result) << &step;
         _String lineNumber (i);
         (*result)<< &lineNumber;
@@ -1451,12 +1405,24 @@ _String*     _ExecutionList::GetNameSpace ()
 
 //____________________________________________________________________________________
 
-_String  _ExecutionList::AddNameSpaceToID (_String& theID)
+_String  _ExecutionList::AddNameSpaceToID (_String& theID, _String * extra)
 {
-    if (nameSpacePrefix) {
-        return (*nameSpacePrefix->GetName())&'.'&theID;
+    _String check_dereferences,
+            name_space;
+            
+    if (extra && extra->sLength) {
+        if (nameSpacePrefix) {
+            name_space = (*nameSpacePrefix->GetName())&'.'& *extra;
+        } else {
+            name_space = *extra;
+        }
+    } else {
+        if (nameSpacePrefix) {
+            name_space = (*nameSpacePrefix->GetName());        
+        }
     }
-    return theID;
+            
+    return AppendContainerName (theID, &name_space);
 }
 
 //____________________________________________________________________________________
@@ -1471,13 +1437,14 @@ _String  _ExecutionList::TrimNameSpaceFromID (_String& theID)
     return theID;
 }
 
-
 //____________________________________________________________________________________
+
 
 _String  blFor                  ("for("),               // moved
          blWhile                    ("while("),         // moved
          blFunction                 ("function "),      // moved
          blFFunction                ("ffunction "),     // moved
+         blLFunction                ("lfunction "),     // moved
          blReturn                   ("return "),        // moved
          blReturn2              ("return("),            // moved
          blIf                       ("if("),            // moved
@@ -1530,15 +1497,13 @@ _String  blFor                  ("for("),               // moved
          blRequireVersion           ("RequireVersion("),
          blSCFG                     ("SCFG "),
          blNN                       ("NeuralNet "),
-         blBGM                      ("BGM "),
+         blBGM                      ("BayesianGraphicalModel "),
          blSimulateDataSet          ("SimulateDataSet"),
          blAssert                   ("assert(");
 
 
 
-//____________________________________________________________________________________
-
-bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed)
+bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success)
 {
     if (terminateExecution) {
         return false;
@@ -1576,17 +1541,22 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                          condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                     if (condition_index_match < 0) {
                         // try to see if the command accepts a variable number of arguments (at least X)
-                        if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
+                       _String parseFail;
+                       if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
                             if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
-                                 acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
-                                 DeleteObject (pieces);
-                                 return false;
-                           
-                            }
+                                 parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
+                             }
                         } else {
-                            acknError (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                            parseFail = _String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ";
+                        }
+                        if (parseFail.sLength) {
+                            if (currentExecutionList) {
+                                currentExecutionList->ReportAnExecutionError(parseFail, false, true);
+                            } else {
+                                acknError (parseFail);
+                            }
                             DeleteObject (pieces);
-                            return false;
+                            return false;  
                         }
                     }
                     if (commandExtraInfo->do_trim) {
@@ -1631,6 +1601,11 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
             case HY_HBL_COMMAND_DELETE_OBJECT:
             case HY_HBL_COMMAND_CLEAR_CONSTRAINTS:
             case HY_HBL_COMMAND_MOLECULAR_CLOCK:
+            case HY_HBL_COMMAND_GET_URL:
+            case HY_HBL_COMMAND_GET_STRING:
+            case HY_HBL_COMMAND_EXPORT:
+            case HY_HBL_COMMAND_DIFFERENTIATE:
+            case HY_HBL_COMMAND_FPRINTF:
                 _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                 handled = true;
                 break;
@@ -1643,161 +1618,150 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
         // 20111212: this horrendous switch statement should be replaced with a 
         // prefix tree lookup 
 
-        if (!handled)
-        if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)) { // function declaration
-            _ElementaryCommand::ConstructFunction (currentLine, *this);
-        } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
-            _ElementaryCommand::ConstructReturn (currentLine, *this);
-        } else if (currentLine.startswith (blIf)) { // if-then-else statement
-            _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
-        } else if (currentLine.startswith (blElse)) { // else clause of an if-then-else statement
-            if (lastif.countitems()) {
-                long    temp = countitems(),
-                        lc   = lastif.countitems(),
-                        lif  = lastif.lData[lc-1];
+        if (!handled) {
+            if (currentLine.startswith (blFunction)||currentLine.startswith (blFFunction)||currentLine.startswith (blLFunction)) { // function declaration
+                _ElementaryCommand::ConstructFunction (currentLine, *this);
+            } else if (currentLine.startswith (blReturn) || currentLine.startswith (blReturn2)) { // function return statement
+                _ElementaryCommand::ConstructReturn (currentLine, *this);
+            } else if (currentLine.startswith (blIf)) { // if-then-else statement
+                _ElementaryCommand::BuildIfThenElse (currentLine, *this, bc);
+            } else if (currentLine.startswith (blElse)) { // else clause of an if-then-else statement
+                if (lastif.countitems()) {
+                    long    temp = countitems(),
+                            lc   = lastif.countitems(),
+                            lif  = lastif.lData[lc-1];
 
-                _ElementaryCommand      * stuff = new _ElementaryCommand ();
-                stuff->MakeJumpCommand  (nil,0,0,*this);
-                AppendNewInstance       (stuff);
-                currentLine.Trim        (4,-1);
+                    _ElementaryCommand      * stuff = new _ElementaryCommand ();
+                    stuff->MakeJumpCommand  (nil,0,0,*this);
+                    AppendNewInstance       (stuff);
+                    currentLine.Trim        (4,-1);
 
-                long  index         = currentLine.Length()-1,
-                      scopeIn     = 0;
+                    long  index         = currentLine.Length()-1,
+                          scopeIn     = 0;
 
-                while (currentLine.sData[scopeIn]=='{' && currentLine.sData[index]=='}') {
-                    scopeIn++;
-                    index--;
-                }
+                    while (currentLine.sData[scopeIn]=='{' && currentLine.sData[index]=='}') {
+                        scopeIn++;
+                        index--;
+                    }
 
-                if (scopeIn) {
-                    currentLine.Trim (scopeIn,index);
-                }
+                    if (scopeIn) {
+                        currentLine.Trim (scopeIn,index);
+                    }
 
-                BuildList (currentLine,bc,true);
+                    BuildList (currentLine,bc,true);
 
-                if (lif<0 || lif>=lLength) {
+                    if (lif<0 || lif>=lLength) {
+                        WarnError ("'else' w/o an if to latch on to...");
+                        return false;
+                    }
+
+                    ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
+                    ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
+
+                    while (lastif.countitems()>=lc) {
+                        lastif.Delete(lastif.countitems()-1);
+                    }
+                } else {
                     WarnError ("'else' w/o an if to latch on to...");
                     return false;
                 }
 
-                ((_ElementaryCommand*)((*this)(lif)))->MakeJumpCommand(nil,-1,temp+1,*this);
-                ((_ElementaryCommand*)(*this)(temp))->simpleParameters[0]=countitems();
-
-                while (lastif.countitems()>=lc) {
-                    lastif.Delete(lastif.countitems()-1);
-                }
-            } else {
-                WarnError ("'else' w/o an if to latch on to...");
-                return false;
-            }
-
-        } else if (currentLine.startswith (blDo)) { // do {} while statement
-            _ElementaryCommand::BuildDoWhile (currentLine, *this);
-        }  else if (currentLine.startswith (blInclude)) { // #include
-            _ElementaryCommand::ProcessInclude (currentLine, *this);
-        } else if (currentLine.startswith (blDataSet)) { // data set definition
-            _ElementaryCommand::ConstructDataSet (currentLine, *this);
-        } else if (currentLine.startswith (blDataSetFilter)) { // data set filter definition
-            _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
-        } else if (currentLine.startswith (blConstructCM)) { // construct category assignments matrix
-            _ElementaryCommand::ConstructCategoryMatrix (currentLine, *this);
-        } else if (currentLine.startswith (blTree) || currentLine.startswith (blTopology)) { // tree definition
-            _ElementaryCommand::ConstructTree (currentLine, *this);
-        } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
-            _ElementaryCommand::ConstructLF (currentLine, *this);
-        } else if (currentLine.startswith (blfprintf)) { // fpintf call
-            _ElementaryCommand::ConstructFprintf (currentLine, *this);
-        } else if (currentLine.startswith (blGetString)) { // get string from an object
-            _ElementaryCommand::ConstructGetString (currentLine, *this);
-        } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
-            _ElementaryCommand::ConstructFscanf (currentLine, *this);
-        } else if (currentLine.startswith (blExport)) { // polymatrix export matrix
-            _ElementaryCommand::ConstructExport (currentLine, *this);
-        } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
-            _ElementaryCommand::ConstructReplicateConstraint (currentLine, *this);
-        } else if (currentLine.startswith (blImport)) { // polymatrix import
-            _ElementaryCommand::ConstructImport (currentLine, *this);
-        } else if (currentLine.startswith (blCategory)) { // category variable declaration
-            _ElementaryCommand::ConstructCategory (currentLine, *this);
-        } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
-            _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
-        } else if (currentLine.startswith (blModel)) { // Model declaration
-            _ElementaryCommand::ConstructModel (currentLine, *this);
-        } else if (currentLine.startswith (blChoiceList)) { // choice list
-            _ElementaryCommand::ConstructChoiceList (currentLine, *this);
-        } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
-            _ElementaryCommand::ConstructOpenDataPanel (currentLine, *this);
-        } else if (currentLine.startswith (blGetInformation)) { // get information
-            _ElementaryCommand::ConstructGetInformation (currentLine, *this);
-        } else if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary))
-            // execute commands
-        {
-            _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
-        } else if (currentLine.startswith (blOpenWindow)) { // execute commands
-            _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
-        } else if (currentLine.startswith (blSpawnLF)) { // execute commands
-            _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
-        } else if (currentLine.startswith (blDifferentiate)) { // differentiate an expr
-            _ElementaryCommand::ConstructDifferentiate (currentLine, *this);
-        } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
-            // find a root of an expression in an interval
-            // or an integral
-        {
-            _ElementaryCommand::ConstructFindRoot (currentLine, *this);
-        } else if (currentLine.startswith (blMPISend)) { // MPI Send
-            _ElementaryCommand::ConstructMPISend (currentLine, *this);
-        } else if (currentLine.startswith (blMPIReceive)) { // MPI Receive
-            _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
-        } else if (currentLine.startswith (blGetDataInfo)) { // Get Data Info
-            _ElementaryCommand::ConstructGetDataInfo (currentLine, *this);
-        } else if (currentLine.startswith (blStateCounter)) { // Get Data Info
-            _ElementaryCommand::ConstructStateCounter (currentLine, *this);
-        } else if (currentLine.startswith (blGetURL)) { // Get URL
-            _ElementaryCommand::ConstructGetURL (currentLine, *this);
-        } else if (currentLine.startswith (blDoSQL)) { // Do SQL
-            _ElementaryCommand::ConstructDoSQL (currentLine, *this);
-        } else if (currentLine.startswith (blAlignSequences)) { // Do AlignSequences
-            _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
-        } else if (currentLine.startswith (blHBLProfile)) { // #profile
-            _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
-        } else if (currentLine.startswith (blSCFG)) { // SCFG definition
-            _ElementaryCommand::ConstructSCFG (currentLine, *this);
-        } else if (currentLine.startswith (blNN)) { // Neural Net definition
-            _ElementaryCommand::ConstructNN (currentLine, *this);
-        } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
-            _ElementaryCommand::ConstructBGM (currentLine, *this);
-        } 
-        // plain ol' formula - parse it as such!
-        else {
-            _String checker (currentLine);
-            if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length()) {
-                if (currentLine.Length()>1)
-                    while (currentLine[currentLine.Length()-1]==';') {
-                        currentLine.Trim (0,currentLine.Length()-2);
+            } else if (currentLine.startswith (blDo)) { // do {} while statement
+                _ElementaryCommand::BuildDoWhile (currentLine, *this);
+            }  else if (currentLine.startswith (blInclude)) { // #include
+                _ElementaryCommand::ProcessInclude (currentLine, *this);
+            } else if (currentLine.startswith (blDataSet)) { // data set definition
+                _ElementaryCommand::ConstructDataSet (currentLine, *this);
+            } else if (currentLine.startswith (blDataSetFilter)) { // data set filter definition
+                _ElementaryCommand::ConstructDataSetFilter (currentLine, *this);
+            } else if (currentLine.startswith (blConstructCM)) { // construct category assignments matrix
+                _ElementaryCommand::ConstructCategoryMatrix (currentLine, *this);
+            } else if (currentLine.startswith (blTree) || currentLine.startswith (blTopology)) { // tree definition
+                _ElementaryCommand::ConstructTree (currentLine, *this);
+            } else if (currentLine.startswith (blLF) || currentLine.startswith (blLF3)) { // LF definition
+                _ElementaryCommand::ConstructLF (currentLine, *this);
+            } else if (currentLine.startswith (blfscanf) || currentLine.startswith (blsscanf)) { // fscanf call
+                _ElementaryCommand::ConstructFscanf (currentLine, *this);
+            } else if (currentLine.startswith (blReplicate)) { // replicate constraint statement
+                _ElementaryCommand::ConstructReplicateConstraint (currentLine, *this);
+            } else if (currentLine.startswith (blCategory)) { // category variable declaration
+                _ElementaryCommand::ConstructCategory (currentLine, *this);
+            } else if (currentLine.startswith (blGetNeutralNull)) { // select a template model
+                _ElementaryCommand::ConstructGetNeutralNull (currentLine, *this);
+            } else if (currentLine.startswith (blModel)) { // Model declaration
+                _ElementaryCommand::ConstructModel (currentLine, *this);
+            } else if (currentLine.startswith (blChoiceList)) { // choice list
+                _ElementaryCommand::ConstructChoiceList (currentLine, *this);
+            } else if (currentLine.startswith (blOpenDataPanel)) { // open data panel window
+                _ElementaryCommand::ConstructOpenDataPanel (currentLine, *this);
+            } else if (currentLine.startswith (blGetInformation)) { // get information
+                _ElementaryCommand::ConstructGetInformation (currentLine, *this);
+            } else if (currentLine.startswith (blExecuteCommands) || currentLine.startswith (blExecuteAFile) || currentLine.startswith (blLoadFunctionLibrary))
+                // execute commands
+            {
+                _ElementaryCommand::ConstructExecuteCommands (currentLine, *this);
+            } else if (currentLine.startswith (blOpenWindow)) { // execute commands
+                _ElementaryCommand::ConstructOpenWindow (currentLine, *this);
+            } else if (currentLine.startswith (blSpawnLF)) { // execute commands
+                _ElementaryCommand::ConstructSpawnLF (currentLine, *this);
+            } else if (currentLine.startswith (blFindRoot)||currentLine.startswith (blIntegrate))
+                // find a root of an expression in an interval
+                // or an integral
+            {
+                _ElementaryCommand::ConstructFindRoot (currentLine, *this);
+            } else if (currentLine.startswith (blMPISend)) { // MPI Send
+                _ElementaryCommand::ConstructMPISend (currentLine, *this);
+            } else if (currentLine.startswith (blMPIReceive)) { // MPI Receive
+                _ElementaryCommand::ConstructMPIReceive (currentLine, *this);
+            } else if (currentLine.startswith (blGetDataInfo)) { // Get Data Info
+                _ElementaryCommand::ConstructGetDataInfo (currentLine, *this);
+            } else if (currentLine.startswith (blStateCounter)) { // Get Data Info
+                _ElementaryCommand::ConstructStateCounter (currentLine, *this);
+            } else if (currentLine.startswith (blDoSQL)) { // Do SQL
+                _ElementaryCommand::ConstructDoSQL (currentLine, *this);
+            } else if (currentLine.startswith (blAlignSequences)) { // Do AlignSequences
+                _ElementaryCommand::ConstructAlignSequences (currentLine, *this);
+            } else if (currentLine.startswith (blHBLProfile)) { // #profile
+                _ElementaryCommand::ConstructProfileStatement (currentLine, *this);
+            } else if (currentLine.startswith (blSCFG)) { // SCFG definition
+                _ElementaryCommand::ConstructSCFG (currentLine, *this);
+            } else if (currentLine.startswith (blNN)) { // Neural Net definition
+                _ElementaryCommand::ConstructNN (currentLine, *this);
+            } else if (currentLine.startswith (blBGM)) {    // Bayesian Graphical Model definition
+                _ElementaryCommand::ConstructBGM (currentLine, *this);
+            } 
+            // plain ol' formula - parse it as such!
+            else {
+                _String checker (currentLine);
+                if (_ElementaryCommand::FindNextCommand (checker).Length()==currentLine.Length()) {
+                    if (currentLine.Length()>1)
+                        while (currentLine[currentLine.Length()-1]==';') {
+                            currentLine.Trim (0,currentLine.Length()-2);
+                        }
+                    else {
+                        continue;
                     }
-                else {
-                    continue;
-                }
-                _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
-                oddCommand->code = 0;
-                oddCommand->parameters&&(&currentLine);
-                AppendNewInstance (oddCommand);
-            } else {
-                while (currentLine.Length()) {
-                    _String part (_ElementaryCommand::FindNextCommand (currentLine));
-                    BuildList (part,bc,processed);
+                    _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
+                    oddCommand->code = 0;
+                    oddCommand->parameters&&(&currentLine);
+                    AppendNewInstance (oddCommand);
+                } else {
+                    while (currentLine.Length()) {
+                        _String part (_ElementaryCommand::FindNextCommand (currentLine));
+                        BuildList (part,bc,processed);
+                    }
                 }
             }
+            
+            /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
+                WarnError (_String ("Missing semicolon before ") & currentLine);
+                return false;
+            }*/
         }
-        
-        /*if (currentLine.sLength > 1 || currentLine.sLength == 1 && currentLine.getChar(0) != ';'){
-            WarnError (_String ("Missing semicolon before ") & currentLine);
-            return false;
-        }*/
     }
     s.sData = savePointer;
     s.DuplicateErasing (&empty);
-    return countitems();
+    return empty_is_success || countitems();
 }
 
 //____________________________________________________________________________________
@@ -1890,6 +1854,22 @@ void      _ElementaryCommand::Duplicate (BaseRef source)
 
 //____________________________________________________________________________________
 
+_String _hblCommandAccessor (_ExecutionList* theList, long index) {
+    if (theList) {
+        if (index >= 0) {
+            if (index < theList->lLength) {
+                _ElementaryCommand * aCommand = (_ElementaryCommand*)theList->GetItem (index);
+                return _String ((_String*)aCommand->toStr());
+            } else {
+                return "<END EXECUTION>";
+            }
+        }
+    }
+    return _String ("command index ") & index;
+}
+
+//____________________________________________________________________________________
+
 BaseRef   _ElementaryCommand::toStr      (void)
 {
     _String result, *converted = nil;
@@ -1906,9 +1886,12 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = "Branch ";
         if (simpleParameters.countitems()==3) {
             converted = (_String*)((_Formula*)simpleParameters(2))->toStr();
-            result = result&" under condition "&*converted&" to "&_String(simpleParameters(0))&" else "&_String(simpleParameters(1));
+            result = result& "under condition '"& *converted&"'\n\tto\n\t\t"&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(0))&
+                        "\n\telse\n\t\t"&
+                        _hblCommandAccessor (currentExecutionList,simpleParameters(1));
         } else {
-            result = result&" to "&_String(simpleParameters(0));
+            result = result&"to "& _hblCommandAccessor (currentExecutionList,simpleParameters(0));
         }
 
         break;
@@ -1977,16 +1960,17 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result & " from string " &*converted;
         break;
 
-    case 8: // print stuff to file (or stdout)
+    case HY_HBL_COMMAND_FPRINTF: // print stuff to file (or stdout)
 
         converted = (_String*)parameters(0)->toStr();
-        result = _String("Print to File ")& (*converted) & ":";
+        result = _String("fprintf(")& (*converted);
         DeleteObject (converted);
 
         converted = nil;
         for (k = 1; k<parameters.countitems(); k++) {
-            result = result&*((_String*)parameters(k))&"\n";
+            result = result&*","& *((_String*)parameters(k));
         }
+        result = result & ")";
 
 
         break;
@@ -2073,6 +2057,14 @@ BaseRef   _ElementaryCommand::toStr      (void)
         }
         break;
 
+    case HY_HBL_COMMAND_EXPORT:
+        converted = (_String*)parameters(1)->toStr();
+        result = _String("Export ")&(*converted);
+        DeleteObject(converted);
+        converted = (_String*)parameters(0)->toStr();
+        checkPointer(converted);
+        result = result& _String(" to ")& *converted;
+        break;
 
     case HY_HBL_COMMAND_MOLECULAR_CLOCK: // a call to MolecularClock
         converted = (_String*)parameters(0)->toStr();
@@ -2182,7 +2174,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
     }
 
-    case 33: { // get string from object
+    case HY_HBL_COMMAND_GET_STRING: { // get string from object
         converted = (_String*)parameters(2)->toStr();
         result = _String ("Get string ")&*converted;
         DeleteObject (converted);
@@ -2292,15 +2284,15 @@ BaseRef   _ElementaryCommand::toStr      (void)
         break;
     }
 
-    case 42: { // Differentiate
+    case HY_HBL_COMMAND_DIFFERENTIATE: { // Differentiate
         converted = (_String*)parameters(1)->toStr();
-        result = _String("Differentiate ")&(*converted);
+        result = _String("Differentiate '")&(*converted);
         DeleteObject(converted);
         converted = (_String*)parameters(2)->toStr();
-        result = result& _String(" on ")&(*converted);
+        result = result& _String("' on ")&(*converted);
         DeleteObject(converted);
         if (parameters.lLength==4) {
-            converted = (_String*)parameters(2)->toStr();
+            converted = (_String*)parameters(3)->toStr();
             result = result& _String(" ")&(*converted) & " times ";
             DeleteObject(converted);
         }
@@ -2396,7 +2388,7 @@ BaseRef   _ElementaryCommand::toStr      (void)
         result = result& ',' &(*converted) & ')';
         break;
     }
-    case 51: { //GetURL
+    case HY_HBL_COMMAND_GET_URL: { //GetURL
         converted = (_String*)parameters(0)->toStr();
         result = blGetURL&(*converted);
         DeleteObject(converted);
@@ -2512,19 +2504,20 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         _Formula f,
                  f2;
 
-        _String* theFla     = (_String*)parameters(0);
+        _String* theFla     = (_String*)parameters(0),
+                 errMsg;
 
-        bool    doNotCompileThisFormula = false;
+        _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
-        long    varRef,
-                parseCode = Parse(&f,(*theFla),varRef,chain.nameSpacePrefix,&f2,true,&doNotCompileThisFormula);
+        long     parseCode = Parse(&f,(*theFla),fpc,&f2);
 
         if (parseCode != HY_FORMULA_FAILED ) {
-            if (doNotCompileThisFormula == false) { // not a matrix constant
+            if (fpc.isVolatile() == false) { // not a matrix constant
                 simpleParameters    <<parseCode;
                 simpleParameters    <<long (f.makeDynamic());
                 simpleParameters    <<long (f2.makeDynamic());
-                simpleParameters    <<varRef;
+                simpleParameters    <<fpc.assignmentRefID   ();
+                simpleParameters    <<fpc.assignmentRefType ();
 
                 _SimpleList*        varList = new _SimpleList;
                 _AVLList            varListA (varList);
@@ -2534,7 +2527,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
                 listOfCompiledFormulae<<(long)this;
                 compiledFormulaeParameters.AppendNewInstance(varList);
             } else {
-                ExecuteFormula(&f,&f2,parseCode,varRef,chain.nameSpacePrefix);
+                ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                 return;
             }
         } else {
@@ -2542,10 +2535,10 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain)
         }
     }
 
-    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix);
+    ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
 
     if (terminateExecution) {
-        WarnError (_String("Problem occurred in line:")&*this);
+        WarnError (_String("Problem occurred in line: ")&*this);
         return;
     }
 }
@@ -2563,10 +2556,10 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
     if (simpleParameters.lLength==3 || parameters.lLength) {
         if ( parameters.lLength && simpleParameters.lLength < 3) {
             _Formula f;
-            long     varRef;
             //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 
-            long status = Parse (&f, *(_String*)parameters(0), varRef, chain.nameSpacePrefix,nil);
+            _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
+            long status = Parse (&f, *(_String*)parameters(0), fpc);
 
             //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
 
@@ -2697,166 +2690,6 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain)
     //StoreADataSet (ds, (_String*)parameters(0));
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase8 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String* targetName = (_String*)parameters(0),
-             fnm;
-
-
-    FILE*    dest = nil;
-
-    int     out2    = 0;
-    bool    doClose = true,
-            skipFilePathEval = false;
-
-    if (targetName->Equal(&stdoutDestination)) {
-        _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
-        if (redirect && redirect->theString->sLength) {
-            if (redirect->theString->Equal (&blFprintfDevNull)) {
-                return;
-            } else {
-                skipFilePathEval = true;
-                targetName = redirect->theString;
-            }
-        } else {
-            out2=1;
-        }
-    }
-
-    checkParameter (printDigitsSpec,printDigits,0);
-
-    if (!out2) {
-        fnm = *targetName;
-        if (fnm.Equal(&messageLogDestination)) {
-            if ((dest = globalMessageFile) == nil) {
-                return;
-            }
-        } else {
-            if (skipFilePathEval == false && !fnm.IsALiteralArgument()) {
-                fnm = GetStringFromFormula (&fnm,chain.nameSpacePrefix);
-            }
-
-            fnm.ProcessFileName(true,false,(Ptr)chain.nameSpacePrefix);
-            if (terminateExecution) {
-                return;
-            }
-
-            long k  = openFileHandles.Find (&fnm);
-            doClose = k<0;
-
-            if (!doClose) {
-                dest = (FILE*)openFileHandles.GetXtra (k);
-            } else {
-                if ((dest = doFileOpen (fnm.getStr(), "a")) == nil) {
-                    WarnError (_String  ("Could not create/open output file at path '") & fnm & "'.");
-                    return;
-                }
-            }
-        }
-    }
-
-    long literalshift = simpleParameters.lLength?0:-1;
-    for (long i = 1; i<parameters.lLength; i++) {
-        if (literalshift>=0) {
-            if (i==simpleParameters(literalshift)) {
-                if (!out2) {
-                    fprintf (dest,"%s", ((_String*)parameters(i))->getStr());
-                } else {
-                    StringToConsole (*(_String*)parameters(i));
-                }
-
-                if (literalshift<simpleParameters.lLength-1) {
-                    literalshift++;
-                } else {
-                    literalshift = -1;
-                }
-                continue;
-            }
-        }
-
-        _String *varname = ProcessCommandArgument((_String*)parameters(i));
-
-        if (!varname) {
-            return;
-        }
-
-        BaseRef    thePrintObject   =   nil;
-        _Formula   f;
-
-        if (varname->Equal(&clearFile)) {
-            if (!out2 && dest) {
-                fclose (dest);
-                dest = doFileOpen (fnm.getStr(), "w");
-                long k = openFileHandles.Find (&fnm);
-                if (k>=0) {
-                    openFileHandles.SetXtra(k, (long)dest);
-                }
-            }
-        } else if (varname->Equal(&keepFileOpen) && !out2) {
-            if (openFileHandles.Find (&fnm) < 0) {
-                openFileHandles.Insert (fnm.makeDynamic(), (long)dest);
-            }
-
-            doClose = false;
-        } else if (varname->Equal(&closeFile) && !out2) {
-            openFileHandles.Delete (&fnm, true);
-            doClose = true;
-        } else if (varname->Equal(&systemVariableDump)) {
-            thePrintObject=&variableNames;
-        } else if (varname->Equal(&selfDump)) {
-            thePrintObject=&chain;
-        } else {
-            // check for possible string reference
-
-            _String    temp    = ProcessStringArgument (varname),
-                       nmspace;
-
-            if (temp.sLength > 0) {
-                nmspace = AppendContainerName(temp,chain.nameSpacePrefix);
-                if (temp.IsValidIdentifier()) {
-                    thePrintObject = FetchObjectFromVariableByType (&nmspace,HY_ANY_OBJECT);
-                }
-            } else {
-                nmspace = AppendContainerName(*varname,chain.nameSpacePrefix);
-            }
-
-
-            if (thePrintObject == nil) {
-                long typeFlag = HY_BL_ANY;
-
-                thePrintObject = _HYRetrieveBLObjectByName (nmspace, typeFlag);
-
-                if (!thePrintObject) {
-                    long    varRef = -1;
-                    _String argCopy = *varname;
-                    if (Parse (&f,argCopy, varRef, chain.nameSpacePrefix,nil) == HY_FORMULA_EXPRESSION) {
-                        thePrintObject = f.Compute();
-                    }
-                }
-            }
-        }
-
-        if (thePrintObject)
-            if (!out2) {
-                thePrintObject->toFileStr (dest);
-            } else {
-                _String outS ((_String*)thePrintObject->toStr());
-                StringToConsole (outS);
-            }
-    }
-#if !defined __UNIX__ || defined __HEADLESS__
-    if (!dest) {
-        yieldCPUTime();
-    }
-#endif
-    if (dest && dest!=globalMessageFile && doClose) {
-        fclose (dest);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -3194,6 +3027,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
 
 //____________________________________________________________________________________
 
+
 void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -3218,8 +3052,10 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
                     _String tryPath = *((_String*)standardLibraryPaths(p)) & filePath & *((_String*)standardLibraryExtensions(e));
 
                     // printf ("%s\n", tryPath.sData);
+                    _Parameter reload = 0.;
+                    checkParameter(alwaysReloadLibraries, reload, 0.);
 
-                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2) {
+                    if (loadedLibraryPaths.Find(&tryPath) >= 0 && parameters.lLength == 2 && reload < 0.5) {
                         ReportWarning (_String("Already loaded '") & originalPath & "' from " & tryPath);
                         return;
                     }
@@ -3330,24 +3166,30 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
     if (theCommand.beginswith ("#NEXUS")) {
         ReadDataSetFile (nil,1,&theCommand,nil,namespc);
     } else {
-        _ExecutionList exc (theCommand,namespc);
-
-        exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
-        exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
-
-        if (simpleParameters.lLength && exc.TryToMakeSimple()) {
-            ReportWarning ("Successfully compiled an execution list.");
-            exc.ExecuteSimple ();
+        bool result = false;
+        _ExecutionList exc (theCommand,namespc, false, &result);
+        
+        if (!result) {
+            chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
         } else {
-            exc.Execute();
-        }
 
-        exc.stdinRedirectAux = nil;
-        exc.stdinRedirect    = nil;
-        if (exc.result) {
-            DeleteObject (chain.result);
-            chain.result = exc.result;
-            exc.result = nil;
+            exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
+            exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+
+            if (simpleParameters.lLength && exc.TryToMakeSimple()) {
+                ReportWarning ("Successfully compiled an execution list.");
+                exc.ExecuteSimple ();
+            } else {
+                exc.Execute();
+            }
+
+            exc.stdinRedirectAux = nil;
+            exc.stdinRedirect    = nil;
+            if (exc.result) {
+                DeleteObject (chain.result);
+                chain.result = exc.result;
+                exc.result = nil;
+            }
         }
     }
 
@@ -3364,8 +3206,6 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain)
         pathNames.Delete (pathNames.lLength-1);
     }
 }
-
-//____________________________________________________________________________________
 
 void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
 {
@@ -3779,8 +3619,6 @@ void      _ElementaryCommand::ExecuteCase40 (_ExecutionList& chain)
 #endif
 }
 
-//____________________________________________________________________________________
-
 void      _ElementaryCommand::ExecuteCase41 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -4176,13 +4014,16 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
                     defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment.") & ':' & matrixExpression;
             // try to parse the expression, confirm that it is a square  matrix,
             // and that it is a valid transition matrix
-            long                varRef = 0;
             isExpressionBased = (_Formula*)checkPointer(new _Formula);
-            long parseCode = Parse(isExpressionBased,matrixExpression,varRef,chain.nameSpacePrefix);
+            _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+            long parseCode = Parse(isExpressionBased,matrixExpression,fpc);
             if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
                 WarnError (defErrMsg );
                 return;
             }
+            
+            //for (unsigned long k = 0; k < isExpressionBased
+            
             checkMatrix = (_Matrix*)isExpressionBased->Compute();
 
 
@@ -4554,14 +4395,14 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-#ifndef __UNIX__
+#if defined __HYPHYQT__
                 SetStatusLine ("Waiting for user selection.");
                 _String* param = (_String*)parameters(1);
 
                 _SimpleList std(2,0,1),
                             all(theChoices->lLength,0,1);
 
-                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength);
+                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,(Ptr)_hyPrimaryConsoleWindow);
 #else
                 _String* param = (_String*)parameters(1);
                 printf ("\n\n\t\t\t+");
@@ -4728,9 +4569,6 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
 }
 
 
-
-//____________________________________________________________________________________
-
 void      _ElementaryCommand::ExecuteCase36 (_ExecutionList& chain)
 {
     chain.currentCommand++;
@@ -4810,12 +4648,12 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
     _String matrixName = chain.AddNameSpaceToID(*(_String*)parameters(0)),
             *objectName = (_String*)parameters(1);
 
-#if defined __AFYP_REWRITE_BGM__
+
     long    sID;
     if (parameters.lLength > 2) {
         sID = ProcessNumericArgument ((_String*)parameters(2), chain.nameSpacePrefix);
     }
-#endif
+
 
     _Matrix *result = nil;
 
@@ -4910,50 +4748,30 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
                 result = (_Matrix*) checkPointer(new _Matrix (catVars));
             } else {
-                f = bgmNamesList.Find (&objectNameID);
-                if (f >= 0) {   // then hey, it's a BGM!
-#if !defined __AFYP_REWRITE_BGM__
-                    /*
-                    Bgm * lf = (Bgm *) bgmList (f);
-                    // result = lf->ExportNodeScores();
-                    if (sID == 0)
-                        result = lf->GetStructure();
-                    else if (sID == 1)
-                        result = lf->GetNodeOrder();
-                    else
-                    {
-                        WarnError (_String("Integer argument (") & sID & "in GetInformation() has no assigned return value, returning NULL\n");
-                    }
-                     */
-#endif
+				if ((f = dataSetFilterNamesList.Find (&objectNameID))>=0)
+					// return a vector of strings - each with actual characters of the corresponding sequence
+				{
+					_DataSetFilter* daFilter = (_DataSetFilter*)dataSetFilterList (f);
+					result = daFilter->GetFilterCharacters();
+				} else {
+					// it's a tree node with a rate matrix assigned
+					f = FindModelName (objectNameID);
+					if (f>=0)
+						// for models, return the list of variables in the model
+					{
+						_SimpleList modelParms;
+						_AVLList    modelParmsA (&modelParms);
 
-                } else {
-                    // it's a data set filter
-                    if ((f = dataSetFilterNamesList.Find (&objectNameID))>=0)
-                        // return a vector of strings - each with actual characters of the corresponding sequence
-                    {
-                        _DataSetFilter* daFilter = (_DataSetFilter*)dataSetFilterList (f);
-                        result = daFilter->GetFilterCharacters();
-                    } else {
-                        // it's a tree node with a rate matrix assigned
-                        f = FindModelName (objectNameID);
-                        if (f>=0)
-                            // for models, return the list of variables in the model
-                        {
-                            _SimpleList modelParms;
-                            _AVLList    modelParmsA (&modelParms);
+						LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
+						_List       modelPNames;
 
-                            LocateVar (modelMatrixIndices.lData[f])->ScanForVariables(modelParmsA,false);
-                            _List       modelPNames;
+						for (unsigned long vi=0; vi<modelParms.lLength; vi++) {
+							modelPNames << LocateVar(modelParms.lData[vi])->GetName();
+						}
 
-                            for (long vi=0; vi<modelParms.lLength; vi++) {
-                                modelPNames << LocateVar(modelParms.lData[vi])->GetName();
-                            }
-
-                            result = new _Matrix (modelPNames);
-                        }
-                    }
-                }
+						result = new _Matrix (modelPNames);
+					}
+				}
             }
         }
     }
@@ -4967,43 +4785,6 @@ void      _ElementaryCommand::ExecuteCase37 (_ExecutionList& chain)
 
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase42 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String *currentArgument = (_String*)parameters(0),
-             errMsg,
-             result;
-
-    _Variable * theReceptacle = CheckReceptacle(&AppendContainerName(*currentArgument,chain.nameSpacePrefix),blDifferentiate,true);
-    if (theReceptacle) {
-        long        f = 1;
-        _String     exprString =  *(_String*)parameters(1);
-        _Formula    theExpression (exprString);
-
-        if (terminateExecution) {
-            return;
-        }
-
-        if (parameters.lLength==4) {
-            f = ProcessNumericArgument ((_String*)parameters(3),chain.nameSpacePrefix);
-            if (f<=0) {
-                f = 1;
-            }
-        }
-
-        _Formula * theResult = theExpression.Differentiate (*(_String*)parameters(2));
-        for (; f>1; f--) {
-            _Formula * temp = theResult->Differentiate (*(_String*)parameters(2));
-            delete (theResult);
-            theResult = temp;
-        }
-        theReceptacle->SetFormula (*theResult);
-        delete (theResult);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -5329,45 +5110,6 @@ void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain)
 }
 
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase51 (_ExecutionList& chain)
-{
-    chain.currentCommand++;
-
-    _String url   (ProcessLiteralArgument((_String*)parameters(1),chain.nameSpacePrefix)),
-            *arg1 = (_String*)parameters(0),
-             *act  = parameters.lLength>2?(_String*)parameters(2):nil,
-              errMsg;
-
-    if (act==nil) {
-        _Variable * rec = CheckReceptacle (&AppendContainerName(*arg1,chain.nameSpacePrefix),blGetURL);
-
-        if (!rec) {
-            return;
-        }
-
-        if (Get_a_URL(url)) {
-            rec->SetValue(new _FString (url,false),false);
-        } else {
-            errMsg = url;
-        }
-    } else {
-        if (act->Equal(&getURLFileFlag)) {
-            _String fileName (ProcessLiteralArgument(arg1,chain.nameSpacePrefix));
-            fileName.ProcessFileName (true,false,(Ptr)chain.nameSpacePrefix);
-            if (!Get_a_URL(url, &fileName)) {
-                errMsg = url;
-            }
-        } else {
-            errMsg = "Unknown action flag";
-        }
-    }
-    if (errMsg.sLength) {
-        errMsg = errMsg & " in call to GetURL.";
-        WarnError (errMsg);
-    }
-}
 
 //____________________________________________________________________________________
 
@@ -5500,7 +5242,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain)
                                         newFilter->SetupConversion ();
 
                                         /*char buffer[255];
-                                        sprintf (buffer,"%d %d\n",siteCount, newFilter->GetFullLengthSpecies(),unitSize);
+                                        snprintf (buffer, sizeof(buffer),"%d %d\n",siteCount, newFilter->GetFullLengthSpecies(),unitSize);
                                         BufferToConsole (buffer);
                                         */
                                         _Matrix*   rootStates = nil;
@@ -5718,7 +5460,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
                 if (formRes->ObjectClass () == STRING) {
                     tr = new _TheTree (treeIdent,*((_FString*)formRes)->theString,false);
                 } else if (formRes->ObjectClass () == TOPOLOGY) {
-                    tr = new _TheTree (treeIdent,(_TreeTopology*)nameForm.Compute());
+                    tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
+                } else if (formRes->ObjectClass () == TREE) {
+                    for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
+                        //printf ("%s\n", LocateVar(leftOverVars.lData[i])->GetName()->sData);
+                        DeleteVariable(leftOverVars.lData[i], true);
+                    }
+                    leftOverVars.Clear();
+                    tr = new _TheTree (treeIdent,(_TheTree*)formRes);
                 }
             }
         } else {
@@ -5782,9 +5531,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 8: // print stuff to file (or stdout)
-        ExecuteCase8(chain);
-        break;
+    case HY_HBL_COMMAND_FPRINTF: { // print stuff to file (or stdout)
+        return HandleFprintf(chain);
+    }
 
     case HY_HBL_COMMAND_HARVEST_FREQUENCIES: { // or HarvestFrequencies
         return HandleHarvestFrequencies(chain);
@@ -5858,8 +5607,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
     }
     break;
 
-    case 17: // matrix export operation
-        ExecuteCase17 (chain);
+    case HY_HBL_COMMAND_EXPORT: // matrix export operation
+        HandleExport (chain);
         break;
 
     case 18: // matrix import operation
@@ -5951,8 +5700,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase32 (chain);
         break;
 
-    case 33:
-        ExecuteCase33 (chain);
+    case HY_HBL_COMMAND_GET_STRING:
+        HandleGetString (chain);
         break;
 
     case HY_HBL_COMMAND_SET_PARAMETER:
@@ -5984,8 +5733,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase41 (chain);
         break;
 
-    case 42:
-        ExecuteCase42 (chain);
+    case HY_HBL_COMMAND_DIFFERENTIATE:
+        return HandleDifferentiate (chain);
         break;
 
     case 43:
@@ -6019,9 +5768,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) // perform this
         ExecuteCase38 (chain, true);
         break;
 
-    case 51:
-        ExecuteCase51 (chain);
-        break;
+    case HY_HBL_COMMAND_GET_URL:
+        return HandleGetURL (chain);
 
     case 52:
         ExecuteCase52 (chain);
@@ -6263,12 +6011,13 @@ _String   _ElementaryCommand::FindNextCommand  (_String& input, bool useSoftTrim
                 matrixScope--;
             } else {
                 scopeIn--;
-                if (!parenIn && !bracketIn)
+                if (!parenIn && !bracketIn) {
                     if (scopeIn >=0 && isDoWhileLoop.lLength && isDoWhileLoop.lData[isDoWhileLoop.lLength-1] == scopeIn) {
                         isDoWhileLoop.Delete (isDoWhileLoop.lLength-1);
                     } else if (scopeIn == 0) {
                         break;
                     }
+                }
 
             }
             lastChar = 0;
@@ -7058,7 +6807,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
+/*bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&target)
 
 {
 
@@ -7090,7 +6839,7 @@ bool    _ElementaryCommand::ConstructFprintf (_String&source, _ExecutionList&tar
 
     fpr->addAndClean(target, nil, 0);
     return true;
-}
+}*/
 
 //____________________________________________________________________________________
 
@@ -7207,21 +6956,6 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructDifferentiate (_String&source, _ExecutionList&target)
-// syntax: Differentiate (receptacle, expression, variable, [number of times, default = 1])
-{
-    _List pieces;
-    ExtractConditions (source,blDifferentiate.sLength,pieces,',');
-    if (pieces.lLength<3||pieces.lLength>4) {
-        WarnError ("Expected: Differentiate (receptacle, expression, variable, [number of times, default = 1]).");
-        return false;
-    }
-
-    _ElementaryCommand * dif = new _ElementaryCommand (42);
-    dif->addAndClean(target,&pieces,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructFindRoot (_String&source, _ExecutionList&target)
@@ -7288,41 +7022,6 @@ bool    _ElementaryCommand::ConstructCategoryMatrix (_String&source, _ExecutionL
     constuctCatMatrix->addAndClean (target, &pieces, 0);
     return true;
 }
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructExport (_String&source, _ExecutionList&target)
-// syntax: Export (filename,base matrix, exp matrix)
-// or: Export (stringID, likelihood function ID);
-{
-    _List pieces;
-    ExtractConditions (source,blExport.sLength,pieces,',');
-    if (pieces.lLength!=3 && pieces.lLength!=2) {
-        _String errMsg ("Expected: Export (filename,base matrix, exp matrix) or Export (stringID, likelihood function ID)");
-        WarnError (errMsg);
-        return false;
-    }
-    _ElementaryCommand * dsf = makeNewCommand (17);
-    dsf->addAndClean    (target, &pieces, 0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructImport (_String&source, _ExecutionList&target)
-// syntax: Import (filename,base matrix, exp matrix)
-{
-
-    _List pieces;
-    ExtractConditions (source,blImport.sLength,pieces,',');
-    if (pieces.lLength!=2) {
-        WarnError ("Expected: Import (matrix ident,filename)");
-        return false;
-    }
-
-    _ElementaryCommand * dsf = new _ElementaryCommand (18);
-    dsf->addAndClean(target,&pieces,0);
-    return true;
-}
-
 
 
 //____________________________________________________________________________________
@@ -7417,20 +7116,6 @@ bool    _ElementaryCommand::ConstructSpawnLF (_String&source, _ExecutionList&tar
     return true;
 }
 
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructGetString (_String&source, _ExecutionList&target)
-// syntax: GetString (receptacle_ID,object,string Index)
-{
-    _List pieces;
-    ExtractConditions (source,blGetString.sLength,pieces,',');
-    if (pieces.lLength!=3 && pieces.lLength!=4) {
-        WarnError ("Expected: GetString (receptacle_ID,object,string index<, optional second index>)");
-        return false;
-    }
-    _ElementaryCommand * gs = new _ElementaryCommand (33);
-    gs->addAndClean(target,&pieces,0);
-    return true;
-}
 
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructGetDataInfo (_String&source, _ExecutionList&target)
@@ -7444,23 +7129,6 @@ bool    _ElementaryCommand::ConstructGetDataInfo (_String&source, _ExecutionList
     }
     _ElementaryCommand * gdi = new _ElementaryCommand(46);
     gdi->addAndClean(target,&pieces,0);
-    return true;
-}
-
-//____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructGetURL (_String&source, _ExecutionList&target)
-// syntax: GetURL (receptacle,URL string<,action flag>)
-{
-
-    _List pieces;
-    ExtractConditions (source,blGetURL.sLength,pieces,',');
-    if (pieces.lLength!=2 && pieces.lLength!=3) {
-        WarnError ("Expected: syntax: GetURL (receptacle,URL string<,action flag>))");
-        return false;
-    }
-
-    _ElementaryCommand * gurl = new _ElementaryCommand(51);
-    gurl->addAndClean(target,&pieces,0);
     return true;
 }
 
@@ -7487,19 +7155,13 @@ bool    _ElementaryCommand::ConstructGetInformation (_String&source, _ExecutionL
 
     _List pieces;
     ExtractConditions (source,blGetInformation.sLength,pieces,',');
-#if defined __AFYP_REWRITE_BGM__
+
     if (pieces.lLength < 2) {
         _String errMsg ("Expected at least 2 arguments: GetInformation(object,receptacle,...);");
         WarnError (errMsg);
         return false;
     }
-#else
-    if (pieces.lLength!=2) {
-        _String errMsg ("Expected syntax: GetInformation(object,receptacle);");
-        WarnError (errMsg);
-        return false;
-    }
-#endif
+
     else {
         _String *s0 = (_String*)pieces(0),
                  *s1 = (_String*)pieces(1);
@@ -7553,6 +7215,8 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
     return true;
 }
 
+
+
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)
 // syntax: function <ident> (comma separated list of parameters) {body}
@@ -7564,9 +7228,10 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     isInFunction = true;
 
-    bool    isFFunction = source.beginswith (blFFunction);
+    bool    isFFunction = source.beginswith (blFFunction),
+            isLFunction = source.beginswith (blLFunction);
 
-    long    mark1 = source.FirstNonSpaceIndex(isFFunction?blFFunction.sLength:blFunction.sLength,-1,1),
+    long    mark1 = source.FirstNonSpaceIndex((isFFunction||isLFunction)?blFFunction.sLength:blFunction.sLength,-1,1),
             mark2 = source.Find ('(', mark1, -1);
 
 
@@ -7577,6 +7242,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     }
 
     _String*    funcID  = (_String*)checkPointer(new _String(source.Cut (mark1,mark2-1)));
+
     *funcID = chain.AddNameSpaceToID (*funcID);
 
     // now look for the opening paren
@@ -7596,12 +7262,27 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         return false;
     }
 
+    _String extraNamespace;
+    if (isLFunction)
+        extraNamespace = _HYGenerateANameSpace();
+    
     for (long k = 0; k < pieces.lLength; k++) {
-        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k))),false);
+        pieces.Replace (k,new _String(chain.AddNameSpaceToID (*(_String*)pieces(k), & extraNamespace)),false);
     }
 
     _String          sfunctionBody (source, upto+1,source.Length()-2);
-    _ExecutionList * functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+    _ExecutionList * functionBody;
+        if (isLFunction) {
+            _String * existing_namespace = chain.GetNameSpace();
+            if (existing_namespace) {
+                extraNamespace = *existing_namespace & '.' & extraNamespace;
+            }
+            functionBody = new _ExecutionList (sfunctionBody,&extraNamespace,true);
+        }
+        else {
+            functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
+        }
+    
 
     //  take care of all the return statements
     while (returnlist.lLength) {

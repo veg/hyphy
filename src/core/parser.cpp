@@ -68,7 +68,7 @@ _Parameter printDigits;
 
 
 // indices of all independent variables
-void            DeleteVariable (long dv);
+
 
 _List           FunctionNameList,
                 BuiltInFunctions;
@@ -81,8 +81,9 @@ _SimpleList     FunctionArgumentCount,
 bool            useGlobalUpdateFlag = false;
 
 
-_String     UnOps ("-,!,+,Abs,Sin,Cos,Tan,Exp,Log,Arctan,Time,Gamma,Transpose,Sqrt,Erf,Rows,Columns,LUDecompose,Inverse,BranchCount,TipCount,ZCDF,Eigensystem,Simplex,Type,Eval,LnGamma,"),
-            HalfOps (":<>=!&|");
+_String         HalfOps (":<>=!&|");
+
+_Trie           UnOps;
 
 _SimpleList opPrecedence,
             BinOps,
@@ -98,7 +99,7 @@ long_max = (_Parameter)LONG_MAX;
 //Used in formula, and constant
 
 #ifndef  __HYALTIVEC__
-_Parameter  machineEps = 1e-12,
+_Parameter  machineEps = 2.*DBL_EPSILON,
 tolerance  = DBL_EPSILON;
 #else
 _Parameter  machineEps = 1e-7,
@@ -131,15 +132,14 @@ _Variable * LocateVar (long index)
 }
 
 //__________________________________________________________________________________
-BaseRef     parameterToString (_Parameter value)
+void     parameterToCharBuffer (_Parameter value, char* dump, long length)
 {
-    char dump [255];
     long digs = printDigits;
     if (digs<=0 || digs>15) {
         if (round(value) == value && fabs (value) < long_max) {
-            sprintf (dump,"%ld",lrint (value));
+            snprintf (dump,length, "%ld",lrint (value));
         } else {
-            sprintf (dump,PRINTF_FORMAT_STRING,value);
+            snprintf (dump,length, PRINTF_FORMAT_STRING,value);
         }
     } else {
         _String format("%-");
@@ -148,8 +148,16 @@ BaseRef     parameterToString (_Parameter value)
 #else
         format = format&_String(digs)&'g';
 #endif
-        sprintf (dump,(const char*)format.sData,value);
+        snprintf (dump,length,(const char*)format.sData,value);
     }
+}
+
+
+//__________________________________________________________________________________
+BaseRef     parameterToString (_Parameter value)
+{
+    char dump [256];
+    parameterToCharBuffer (value, dump, 256);
     return new _String (dump);
 }
 
@@ -195,6 +203,28 @@ _String FetchObjectNameFromType (const unsigned long objectClass) {
 }
 
 //__________________________________________________________________________________
+_String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex)
+{
+    if (objectIndex >=0 && objectIndex < variableNames.countitems()) {
+            long tc = 0;
+            _SimpleList nts;
+            long        rt,
+                        vi = variableNames.Traverser (nts, rt, variableNames.GetRoot());
+
+            for (; vi >= 0; vi = variableNames.Traverser (nts, rt))
+                if (FetchVar(variableNames.GetXtra (vi))->ObjectClass () == objectClass) {
+                    if (tc==objectIndex) {
+                        return (_String*)variableNames.Retrieve(vi);
+                        break;
+                    } else {
+                        tc++;
+                    }
+                }    
+    }
+    return nil;
+}
+
+//__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long objectClass, long command_id, _String *errMsg)
 {
     if (id) {
@@ -213,6 +243,7 @@ _PMathObj   FetchObjectFromVariableByType (_String* id, const unsigned long obje
     }
     return nil;
 }
+
 
 //__________________________________________________________________________________
 _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg)
@@ -389,7 +420,7 @@ void DeleteVariable (long dv, bool deleteself)
             }
         }
 
-        for (long k=0; k< toDelete.lLength; k++) {
+        for (unsigned long k=0; k< toDelete.lLength; k++) {
             DeleteVariable (*(_String*)toDelete(k));
         }
     }
@@ -464,7 +495,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                 }
             }
 
-            for (long k=0; k<toDelete.lLength; k++) {
+            for (unsigned long k=0; k<toDelete.lLength; k++) {
                 //StringToConsole (*(_String*)toDelete(k));
                 //BufferToConsole ("\n");
                 DeleteTreeVariable (*(_String*)toDelete(k),parms,false);
@@ -488,7 +519,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        _String errMsg = *name & " is not a variable identifier in call to " & fID;
+        _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
         WarnError (errMsg);
         return nil;
     }
@@ -502,10 +533,15 @@ _Variable* CheckReceptacle (_String* name, _String fID, bool checkValid, bool is
     return FetchVar(f);
 }
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal)
+_Variable* CheckReceptacleCommandID (_String* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
 {
     if (checkValid && (!name->IsValidIdentifier())) {
-        WarnError (_String ("'") & *name & "' is not a variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
+        _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
+        if (context) {
+            context->ReportAnExecutionError(errMsg);
+        } else {
+            WarnError (errMsg);
+        }
         return nil;
     }
     
@@ -580,9 +616,8 @@ void  InsertVar (_Variable* theV)
 
     if (pos < 0) {
         if (isDefiningATree == 1) {
-            _String errMsg (*theV->GetName());
-            errMsg = errMsg& " is already being used - please rename one of the two variables.";
-            WarnError(errMsg);
+            WarnError(_String("Error while creating a tree: duplicate node name '") & *theV->GetName() & "'");
+            return;
         }
 
         theV->theIndex = variableNames.GetXtra(-pos-1);
@@ -605,15 +640,27 @@ void  InsertVar (_Variable* theV)
 //__________________________________________________________________________________
 _String&  AppendContainerName (_String& inString, _VariableContainer* theP)
 {
+    return AppendContainerName (inString, theP?theP->GetName():nil);
+}
+
+//__________________________________________________________________________________
+_String&  AppendContainerName (_String& inString, _String* namescp)
+{
     static _String returnMe;
 
-    if (!theP) {
+    if (_hyApplicationGlobals.Find (&inString) >= 0) {
         return inString;
     }
+    
+    unsigned char reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && namescp -> sLength? namescp : nil);
+    
 
-    returnMe = *theP->GetName() & '.' & inString;
-    return returnMe;
+    if (reference_type != HY_STRING_INVALID_REFERENCE) {
+        return returnMe;
+    }
+    return inString;
 }
+
 
 //__________________________________________________________________________________
 void  RenameVariable (_String* oldName, _String* newName)
@@ -637,9 +684,9 @@ void  RenameVariable (_String* oldName, _String* newName)
         }
     }
 
-    for (long k = 0; k < toRename.lLength; k++) {
+    for (unsigned long k = 0; k < toRename.lLength; k++) {
         _Variable * thisVar = FetchVar (xtras.lData[k]);
-        thisVar->GetName()->nInstances --;
+        thisVar->GetName()->RemoveAReference();
         if (k) {
             thisVar->theName = new _String(thisVar->GetName()->Replace(oldNamePrefix,newNamePrefix,true));
         } else {
@@ -669,7 +716,41 @@ void  ReplaceVar (_Variable* theV)
 void    SetupOperationLists (void)
 {
 
+    _List all_unary_ops ("-",29,
+                         "!",
+                         "+",
+                         "*",
+                         "^",
+                         "&",
+                         "Abs",
+                         "Sin",
+                         "Cos",
+                         "Tan",
+                         "Exp",
+                         "Log",
+                         "Arctan",
+                         "Time",
+                         "Gamma",
+                         "Transpose",
+                         "Sqrt",
+                         "Erf",
+                         "Rows",
+                         "Columns",
+                         "LUDecompose",
+                         "Inverse",
+                         "BranchCount",
+                         "TipCount",
+                         "ZCDF",
+                         "Eigensystem",
+                         "Simplex",
+                         "Type",
+                         "Eval",
+                         "LnGamma"
+                         );
+ 
 
+    UnOps.Insert (all_unary_ops);
+        
     BinOps<<'|'*256+'|';
     opPrecedence<<1;
     BinOps<<'&'*256+'&';
@@ -722,6 +803,9 @@ void    SetupOperationLists (void)
         //HY_OP_CODE_MOD
         BuiltInFunctions.AppendNewInstance (new _String ('%'));
 
+        //HY_OP_CODE_REF
+        BuiltInFunctions.AppendNewInstance (new _String ('&'));
+ 
         //HY_OP_CODE_AND
         BuiltInFunctions.AppendNewInstance (new _String ("&&"));
         simpleOperationCodes    << HY_OP_CODE_AND;
@@ -774,6 +858,8 @@ void    SetupOperationLists (void)
 
         //HY_OP_CODE_ABS
         BuiltInFunctions.AppendNewInstance (new _String ("Abs"));
+        simpleOperationCodes<<HY_OP_CODE_ABS;
+        simpleOperationFunctions<<(long)AbsNumber;
 
         //HY_OP_CODE_ARCTAN
         BuiltInFunctions.AppendNewInstance (new _String ("Arctan"));
@@ -1038,6 +1124,9 @@ void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAl
     }
 
 }
+
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bool sorted)
 {
     if (partName.sLength==0) {
@@ -1060,6 +1149,8 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _List& names, bo
 
     partName = tryName;
 }
+//__________________________________________________________________________________
+
 void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names, bool)
 {
     if (partName.sLength==0) {
@@ -1076,6 +1167,9 @@ void  FindUnusedObjectName (_String& prefix, _String& partName, _AVLListX& names
 
     partName = tryName;
 }
+
+//__________________________________________________________________________________
+
 void  FinishDeferredSF (void)
 {
     if (deferSetFormula->lLength) {

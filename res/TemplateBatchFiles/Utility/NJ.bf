@@ -1,7 +1,7 @@
 /* ________________________________________________________________________________________________*/
 
 
-function InitializeDistances (dummy)
+function InitializeDistances ()
 {
 	HarvestFrequencies (_dNucFreq,filteredData,1,1,0);
 	_d_fR = _dNucFreq[0]+_dNucFreq[2];
@@ -20,7 +20,6 @@ function InitializeDistances (dummy)
 	}
 	
 	
-	summingVector = {{1}{1}{1}{1}};
 
 	return 0;
 }
@@ -239,7 +238,7 @@ function InferTreeTopologyFromMatrix (distancesFlag)
 
 function InferTreeTopology(distancesFlag)
 {
-	InitializeDistances (0);
+	InitializeDistances ();
 	distanceMatrix = {filteredData.species,filteredData.species};
 		
 	for (i = 0; i<filteredData.species; i=i+1)

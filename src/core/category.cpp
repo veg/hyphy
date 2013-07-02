@@ -313,8 +313,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     param = (_String*)parameters(3);
 
     if (!covariantVar) {
-        long varR = 0;
-        Parse (&density, *param, varR, theP,nil); // check if the formula is good
+        _FormulaParsingContext fpc (nil, theP);
+        Parse (&density, *param, fpc); // check if the formula is good
     }
 
     if (!density.IsEmpty()) {
@@ -350,8 +350,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             ReportWarning (errorMsg & _String("Runtime integration of probability density can be _very_ slow - please provide the analytic form for cumulative distribution if known."));
         } else {
             if(check) {
-                long varR = 0;
-                Parse(&cumulative,*param,varR,theP,nil);
+                _FormulaParsingContext fpc (nil, theP);
+                Parse(&cumulative,*param,fpc);
                 {
                     _SimpleList   densityVars,
                                   existingVars (scannedVarsList);
@@ -399,10 +399,10 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 density.Clear();
                 _Parameter dns = 1.0/(x_max-x_min);
                 errorMsg = _String(dns);
-                long varR = 0;
-                Parse(&density, errorMsg,varR,nil,nil);
+                _FormulaParsingContext fpc;
+                Parse(&density, errorMsg,fpc);
                 errorMsg = _String(dns)&"*(_x_-"&_String(x_min)&")";
-                Parse(&cumulative, errorMsg,varR,nil,nil);
+                Parse(&cumulative, errorMsg,fpc);
             }
         }
     } else { // enumerated interval parameters
@@ -511,8 +511,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
     if (parameters.countitems()>7) { // aux mean formula
         param = (_String*)parameters(7);
-        long  varR = 0;
-        Parse    (&meanC,*param,varR,theP,nil);
+        _FormulaParsingContext fpc (nil, theP);
+        Parse    (&meanC,*param,fpc);
 
         if (parameters.lLength>8) {
             _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
@@ -933,7 +933,7 @@ _Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void)
 //___________________________________________________________________________________________
 bool    _CategoryVariable::HaveParametersChanged (long catID)
 {
-    for (long i=0; i<parameterList.lLength; i++) {
+    for (unsigned long i=0; i<parameterList.lLength; i++) {
         _Variable * p = LocateVar(parameterList.lData[i]);
         if (p->HasChanged())
             if (catID == -1 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID]) {
@@ -947,7 +947,7 @@ bool    _CategoryVariable::HaveParametersChanged (long catID)
 //___________________________________________________________________________________________
 bool    _CategoryVariable::IsConstant (void)
 {
-    for (long i=0; i<parameterList.lLength; i++)
+    for (unsigned long i=0; i<parameterList.lLength; i++)
         if (LocateVar(parameterList.lData[i])->IsConstant() == false) {
             return false;
         }
@@ -962,18 +962,18 @@ bool    _CategoryVariable::IsGlobal (void)
 }
 
 //___________________________________________________________________________________________
-void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals)
+void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight)
 {
-    density.ScanFForVariables(l,true);
-    weights->ScanForVariables(l,true);
-    values->ScanForVariables(l,true);
+    density.ScanFForVariables(l,true, false, true, false, tagger, weight);
+    weights->ScanForVariables(l,true,tagger, weight);
+    values->ScanForVariables(l,true,tagger, weight);
 
     if (hiddenMarkovModel != HY_NO_MODEL) {
-        GetHiddenMarkov()->ScanForVariables (l,true);
-        GetHiddenMarkovFreqs()->ScanForVariables (l,true);
+        GetHiddenMarkov()->ScanForVariables (l,true, tagger, weight);
+        GetHiddenMarkovFreqs()->ScanForVariables (l,true, tagger, weight);
     }
     if (intervalSplitter != HY_NO_MODEL) {
-        LocateVar(intervalSplitter)->ScanForVariables (l, globals);
+        LocateVar(intervalSplitter)->ScanForVariables (l, globals, tagger, weight);
     }
 
     if (globals) {

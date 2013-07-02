@@ -784,11 +784,12 @@ void    _Polynomial::Duplicate  (BaseRef tp)
 //__________________________________________________________________________________
 
 
-_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execute this operation with the second arg if necessary
+_PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj, _hyExecutionContext* context)   // execute this operation with the second arg if necessary
 {
     switch (opCode) {
     case HY_OP_CODE_MUL: //*
-        return Mult(p);
+        if (p)
+            return Mult(p);
         break;
     case HY_OP_CODE_ADD: // +
         if (p) {
@@ -808,13 +809,12 @@ _PMathObj _Polynomial::Execute (long opCode, _PMathObj p, _PMathObj)   // execut
         return Type();
         break;
     case HY_OP_CODE_POWER: // ^
-        return Raise(p);
+        if (p)
+            Raise(p);
         break;
     }
 
-    //_String errMsg ("Operation ");
-    //errMsg = errMsg&*(_String*)BuiltInFunctions(opCode)&" is not defined for polynomials";
-    //WarnError (errMsg);
+    WarnNotDefined (this, opCode, context);
     return nil;
 
 }
@@ -2630,7 +2630,7 @@ BaseObj* _Polynomial::toStr (void)
 
         for (i=0; i<theTerms->NumberOfTerms(); i++) {
             char        number [100];
-            sprintf     (number,PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
+            snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
             if (i>0 && number[0]!='-') {
                 result<<'+';
             }
@@ -2691,7 +2691,7 @@ void _Polynomial::toFileStr (FILE*f)
         fprintf(f,")=");
         for (i=0; i<theTerms->NumberOfTerms(); i++) {
             char number [100];
-            sprintf(number,PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
+            snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
             if ((i>0)&&(number[0]!='-')) {
                 fprintf(f,"+");
             }
@@ -2717,25 +2717,25 @@ void _Polynomial::toFileStr (FILE*f)
 }
 
 //__________________________________________________________________________________
-void    _Polynomial::ScanForVariables (_AVLList&l, bool globals)
+void    _Polynomial::ScanForVariables (_AVLList&l, bool globals, _AVLListX* tagger, long weight)
 {
     for (long i = 0; i<variableIndex.lLength; i++) {
         long vi = variableIndex(i);
 
-        //if (l.Find(vi)==-1)
-        //{
         _Variable* v = LocateVar (vi);
         if (v->IsGlobal()) {
             if (globals) {
                 l.Insert ((BaseRef)vi);
+                if (tagger) {
+                    tagger->UpdateValue((BaseRef)vi, weight, 0);
+                }
             }
-            //l<<vi;
-        } else
-            //l<<vi;
-        {
+        } else {
             l.Insert ((BaseRef)vi);
-        }
-        //}
+            if (tagger) {
+                tagger->UpdateValue((BaseRef)vi, weight, 0);
+            }
+       }
     }
 }
 

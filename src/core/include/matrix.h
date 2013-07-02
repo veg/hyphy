@@ -145,7 +145,7 @@ public:
     _PMathObj           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
 
-    virtual _PMathObj   Execute (long opCode, _PMathObj p = nil, _PMathObj p2 = nil);
+    virtual _PMathObj   Execute (long opCode, _PMathObj p = nil, _PMathObj p2 = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     // execute this operation with the list of Args
 
     _PMathObj   MAccess (_PMathObj, _PMathObj);
@@ -178,8 +178,8 @@ public:
     virtual _PMathObj   ComputeNumeric (bool = false);  // returns the numeric value of this matrix
     virtual _PMathObj   RetrieveNumeric (void); // returns the numeric value of this matrix
 
-    virtual void        ScanForVariables  (_AVLList&, bool inclG = false);
-    virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true);
+    virtual void        ScanForVariables  (_AVLList&, bool inclG = false, _AVLListX* tagger = nil,long weight = 0);
+    virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true, _AVLListX* tagger = nil,long weight = 0);
     // scans for all local independent variables on which the matrix depends
     // and stores them in the list passed as the parameter
 
@@ -274,6 +274,7 @@ public:
     void        StoreObject         (long, long, _MathObject*, bool dup = false);
     void        StoreObject         (long,  _MathObject*,bool dup = false);
     void        StoreFormula        (long, long, _Formula&, bool = true, bool = true);
+    void        NonZeroEntries      (_SimpleList&);
 
     void        UpdateDiag          (long ,long , _MathObject*);
 
@@ -313,34 +314,35 @@ public:
 
     virtual     BaseRef     makeDynamic (void); // duplicate this object into a dynamic copy
 
-    virtual     void        Duplicate (BaseRef obj); // duplicate this object into a dynamic copy
+    virtual     void        Duplicate   (BaseRef obj); // duplicate this object into a dynamic copy
 
-    virtual     BaseRef     toStr (void);       // convert this matrix to a string
+    virtual     BaseRef     toStr       (void);       // convert this matrix to a string
 
-    virtual     void        toFileStr (FILE*dest);
+    virtual     void        toFileStr   (FILE*dest);
 
-    bool        AmISparse   (void);
+    bool        AmISparse               (void);
 
-    _Parameter  ExpNumberOfSubs
-    (_Matrix*,bool);
+    _Parameter  ExpNumberOfSubs         (_Matrix*,bool);
 
-    virtual     bool        IsVariable (void) {
+    virtual     bool        IsVariable  (void) {
         return storageType != 1;
     }
     // is this matrix a constant or a variable quantity?
 
-    virtual     bool        IsConstant (void);
+    virtual     bool        IsConstant  (void);
 
     virtual     bool        IsPrintable (void) {
         return storageType != 2;
     }
+    
+    virtual     bool        Equal       (_PMathObj);
 
-    void        ExportMatrixExp (_Matrix*, FILE*);
-    bool        ImportMatrixExp (FILE*);
+    void        ExportMatrixExp         (_Matrix*, FILE*);
+    bool        ImportMatrixExp         (FILE*);
 
-    _Parameter  FisherExact     (_Parameter, _Parameter, _Parameter);
+    _Parameter  FisherExact             (_Parameter, _Parameter, _Parameter);
 
-    virtual     bool        HasChanged (void);
+    virtual     bool        HasChanged  (void);
     // have any variables which are referenced by the elements changed?
 
     virtual     long
@@ -704,7 +706,7 @@ public:
      */
 
     virtual BaseRef     toStr           (void);
-    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil);
+    virtual _PMathObj   Execute         (long opCode, _PMathObj = nil, _PMathObj = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual BaseRef     makeDynamic     (void);
     virtual _PMathObj   Compute         (void);
     virtual void        Merge           (_PMathObj);

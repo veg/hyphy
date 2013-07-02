@@ -52,13 +52,15 @@ _String _hyMarginalSupportMatrix ("marginal_support_matrix");
 
 void    _LikelihoodFunction::DetermineLocalUpdatePolicy (void)
 {
-    for (long k = 0; k < theTrees.lLength; k ++) {
-        long catCount = ((_TheTree*)LocateVar(theTrees(k)))->categoryCount;
+    for (unsigned long k = 0; k < theTrees.lLength; k ++) {
+        unsigned long catCount = ((_TheTree*)LocateVar(theTrees(k)))->categoryCount;
+        
         _List * lup = new _List,
-        * mte = new _List;
+              * mte = new _List;
 
         computedLocalUpdatePolicy.AppendNewInstance (new _SimpleList (catCount,0,0));
-        for (long l = 0; l < catCount; l++) {
+        
+        for (unsigned long l = 0; l < catCount; l++) {
             lup->AppendNewInstance (new _SimpleList);
             mte->AppendNewInstance (new _List);
         }
@@ -1322,6 +1324,8 @@ void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value)
         computationalResults.Store(new_value);
     }
 }
+
+
 
 //_______________________________________________________________________________________________
 #ifdef __HYPHYMPI__

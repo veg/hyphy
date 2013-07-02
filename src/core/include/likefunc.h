@@ -175,7 +175,7 @@ public:
     void        SetIthDependent           (long, _Parameter);   // set the value of i-th dependent variable
     bool        IsIthParameterGlobal      (long);
 
-    void        SetAllIndependent         (_Matrix*);
+    long        SetAllIndependent         (_Matrix*);
 
 
     void        UpdateIndependent (long,bool,_SimpleList* = nil,_SimpleList* = nil);
@@ -227,7 +227,7 @@ public:
     _CategoryVariable*
     FindCategoryVar         (long);
     // return the category variable for a given partition
-    void        RankVariables           (void);
+    void        RankVariables           (_AVLListX* tagger = nil);
     _SimpleList&GetTheTrees             (void) {
         return theTrees;
     }
@@ -237,6 +237,9 @@ public:
     _SimpleList&GetBaseFreqs            (void) {
         return theProbabilities;
     }
+    
+    void        FillInConditionals      (long = -1);
+    
     void        Setup                   (void);
     bool&       HasBeenOptimized (void) {
         return hasBeenOptimized;
@@ -256,7 +259,10 @@ public:
 #if defined _SLKP_LFENGINE_REWRITE_
 #if defined _OPENMP
     void        SetThreadCount            (long tc) {
-        lfThreadCount = tc;
+        if (tc != lfThreadCount) {
+            lfThreadCount = tc;
+            FillInConditionals ();
+        }
     }
     long        GetThreadCount            (void) {
         return lfThreadCount;
@@ -291,7 +297,7 @@ public:
     }
 
     /**
-       @return  an associative array with a variety of metrics (see http://www.datam0nk3y.org/hyphywiki/index.php/GetString#Functionality)
+       @return  an associative array with a variety of metrics (see GetString on HyPhy wiki)
                 about this LF.
        @author  SLKP
        @version 20110608
@@ -350,7 +356,7 @@ protected:
     void            GradientLocateTheBump (_Parameter, _Parameter&, _Matrix&, _Matrix&);
     void            GradientDescent       (_Parameter& , _Matrix& );
     void            ConjugateGradientDescent
-    (_Parameter , _Matrix& , bool localOnly = false, long = 0x7fffffff);
+    (_Parameter , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil);
 
     _Parameter      SetParametersAndCompute
     (long, _Parameter, _Matrix* = nil, _Matrix* = nil);
@@ -647,9 +653,10 @@ private:
                         siteCorrectionsBackup,
                         cachedBranches,
                         // for models with categories, a list of site by site scaling operation counts
-                        partScalingCache
+                        partScalingCache,
                         // used to store site by site scalers in computations that are performed
                         // on a site-by-site basis; includes scratch cache for remapping
+                        gradientBlocks
                         ;
 
 #ifdef  _OPENMP

@@ -331,8 +331,7 @@ public:
     void         ResetIHelper           (void);
 private:
 
-    void        constructFreq           (long*, _Matrix*, char, long, long, int, int, int);
-    void        constructFreq           (long*, _Parameter *, char, long, long, int, int, int);
+     void        constructFreq           (long*, _Parameter *, char, long, long, int, int, int);
 
     _SimpleList theMap,
                 theFrequencies;         // remapping vector, and the counter of frequencies
