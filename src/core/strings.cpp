@@ -2097,7 +2097,7 @@ bool    _String::ProcessFileName (bool isWrite, bool acceptStringVars, Ptr theP,
             while (sData[k]==':') {
                 f = lastPath->FindBackwards(':',0,f)-1;
                 if (f==-1) {
-                    return;
+                    return true;
                 }
                 k++;
             }
