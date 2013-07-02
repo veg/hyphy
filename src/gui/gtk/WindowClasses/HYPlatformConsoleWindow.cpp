@@ -558,5 +558,6 @@ void _HYConsoleWindow::_PaintStatusBar(Ptr,bool force)
         gdk_draw_drawable (theWindow->window, _hyConsoleWindowGC, offBitmap, 0, 0, theWindow->allocation.x, theWindow->allocation.y+theWindow->allocation.height-wRC.height, -1, -1);
         g_object_unref (offBitmap);
     }
+    yieldCPUTime();
 }
 

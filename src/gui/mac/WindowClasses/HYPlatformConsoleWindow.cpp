@@ -231,7 +231,7 @@ void _HYConsoleWindow::_PaintStatusBar(Ptr, bool force)
         if (diff < -vL) {
             return;
         }
-        lastMeasure = curMeasure;
+         lastMeasure = curMeasure;
     }
 
     GrafPtr saveport;
@@ -388,6 +388,7 @@ void _HYConsoleWindow::_PaintStatusBar(Ptr, bool force)
     DisposeGWorld (offScreenMap);
 
     SetPort(saveport);
+    yieldCPUTime();
 }
 
 //EOF

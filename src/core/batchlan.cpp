@@ -4395,14 +4395,21 @@ void      _ElementaryCommand::ExecuteCase32 (_ExecutionList& chain)
                 WarnError ("Unhandled request for data from standard input in ChoiceList in headless HyPhy");
                 return;
 #else
-#if defined __HYPHYQT__
+#if defined __HYPHYQT__ || defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
                 SetStatusLine ("Waiting for user selection.");
                 _String* param = (_String*)parameters(1);
 
                 _SimpleList std(2,0,1),
                             all(theChoices->lLength,0,1);
 
-                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,(Ptr)_hyPrimaryConsoleWindow);
+                choice = HandleListSelection (*theChoices,std, all, *param, sel,fixedLength,
+                
+                #ifdef __HYPHYQT__
+                (Ptr)_hyPrimaryConsoleWindow
+                #else
+                (Ptr)hyphyConsoleWindow
+                #endif
+                );
 #else
                 _String* param = (_String*)parameters(1);
                 printf ("\n\n\t\t\t+");

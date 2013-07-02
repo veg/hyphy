@@ -4880,9 +4880,52 @@ _HYGuiObject*   FindWindowByID (long ID)
 }
 //____________________________________________________________________________________________
 
-void yieldCPUTime (void) {
-    handleGUI();
+#ifdef __MAC__
+#include "Timer.h"
+
+void    yieldCPUTime(void)
+{
+    handleGUI(true);
 }
+#endif
+
+#ifdef __WINDOZE__
+#include        "Windows.h"
+#include        "preferences.h"
+#include        "HYSharedMain.h"
+#include        "HYPlatformWindow.h"
+
+extern  bool    hyphyExiting;
+
+void            yieldCPUTime     (void)
+{
+    MessageLoop();
+    if (hyphyExiting) {
+        WritePreferences    ();
+        ExitProcess(0);
+    }
+
+    while (isSuspended) {
+        MessageLoop(false,false);
+        if (hyphyExiting) {
+            WritePreferences    ();
+            ExitProcess         (0);
+        }
+    }
+}
+#endif
+
+#ifdef  __HYPHY_GTK__
+
+#include <gtk/gtk.h>
+void    yieldCPUTime (void)
+{
+    while (gtk_events_pending ()) {
+        gtk_main_iteration();
+    }
+}
+
+#endif
 
 
 

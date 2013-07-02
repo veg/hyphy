@@ -23,7 +23,6 @@
 #include "calcnode.h"
 
 
-
 Ptr     ProcureIconResource     (long);
 
 long    GetVisibleStringWidth   (_String&, _HYFont&);
@@ -78,6 +77,9 @@ void    PlaceStringInClipboard  (_String&,Ptr);
 
 #include <Menus.h>
 
+_String MacSimpleFileSave       (void);
+_String MacSimpleFileOpen       (void);
+_String ChooseAFolder (_String& promptString);
 
 
 void    StringToStr255      (_String&, Str255&);

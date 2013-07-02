@@ -44,6 +44,9 @@
 #include "hyphy_qt_helpers.h"
 #endif
 
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
+#include "HYUtils.h"
+#endif
 
 _Trie   _HY_HBL_Namespaces;
 _List   templateModelList;
@@ -290,7 +293,22 @@ _String ReturnFileDialogInput(void)
 #ifdef __HEADLESS__
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
-#else
+#endif
+
+#ifdef __MAC__
+    resolvedFilePath =  MacSimpleFileOpen();
+#endif
+
+#ifdef __WINDOZE__
+    resolvedFilePath =  ReturnFileDialogSelectionWin(false);
+#endif
+
+#ifdef __HYPHY_GTK__
+    if (PopUpFileDialog (dialogPrompt)) {
+        resolvedFilePath = *argFileName;
+    }
+#endif 
+
 #ifdef __HYPHYQT__  
     resolvedFilePath = _hyQTFileDialog (dialogPrompt,empty, false);
 #endif
@@ -298,7 +316,7 @@ _String ReturnFileDialogInput(void)
 #if defined __UNIX__ && ! defined __HYPHYQT__
     resolvedFilePath = ReturnDialogInput(true);
 #endif
-#endif
+
     
     if (resolvedFilePath.sLength == 0) {
         terminateExecution = true;
@@ -339,6 +357,20 @@ _String WriteFileDialogInput(void) {
     WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
     return empty;
 #else
+  #ifdef __MAC__
+      resolvedFilePath =  MacSimpleFileSave();
+  #endif
+
+  #ifdef __WINDOZE__
+
+      resolvedFilePath = ReturnFileDialogSelectionWin(true);
+  #endif
+
+  #ifdef __HYPHY_GTK__
+      if (PopUpFileDialog (dialogPrompt)) {
+          resolvedFilePath = *argFileName;
+      } 
+  #endif
     #ifdef __HYPHYQT__  
         resolvedFilePath = _hyQTFileDialog (dialogPrompt,defFileNameValue, true);
     #endif
