@@ -762,7 +762,7 @@ _String     DoMacToPOSIX (const _String& in)
     CFRelease (posixPath);
     posixPath = CFURLCopyFileSystemPath (convertorURL, kCFURLPOSIXPathStyle);
     CFRelease (convertorURL);
-    _String  newFNAME  (CFStringGetLength(posixPath),0);
+    _String  newFNAME  (CFStringGetLength(posixPath),false);
     CFStringGetCString (posixPath, newFNAME.sData, newFNAME.sLength+1, kCFStringEncodingASCII);
     CFRelease (posixPath);
     return newFNAME;

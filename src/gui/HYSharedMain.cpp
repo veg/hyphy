@@ -76,6 +76,12 @@ _SimpleList      windowPtrs,
 
 _String*         argFileName = nil;
 
+#ifdef __HYPHYQT__
+  #define _HY_MAIN_CONSOLE_REFERENCE _hyPrimaryConsoleWindow->
+#else
+  #define _HY_MAIN_CONSOLE_REFERENCE
+#endif
+
 //_________________________________________________________________________
 
 void    PrepareToExecuteBatchFile  (void)
@@ -95,7 +101,7 @@ void    DoneWithExecutionOfBatchFile (bool doPost)
 
 #ifdef __HYPHYQT__
     ClearStatusLine();
-    _hyPrimaryConsoleWindow->DisplayPrompt();
+    _HY_MAIN_CONSOLE_REFERENCE DisplayPrompt();
 #endif
 
 }
@@ -110,9 +116,9 @@ bool    ExecuteBatchFile (void)
 
     _String justTheName     (*argFileName,argFileName->FindBackwards (GetPlatformDirectoryChar(),0,-1)+1,-1);
 
-    _hyPrimaryConsoleWindow->AddStringToRecentMenu   (justTheName, *argFileName);
-    _hyPrimaryConsoleWindow->SetStatusLine           (justTheName,"Loading","00:00:00", -1);
-    _hyPrimaryConsoleWindow->StartBarTimer           ();
+    _HY_MAIN_CONSOLE_REFERENCE AddStringToRecentMenu   (justTheName, *argFileName);
+    _HY_MAIN_CONSOLE_REFERENCE SetStatusLine           (justTheName,"Loading","00:00:00", -1);
+    _HY_MAIN_CONSOLE_REFERENCE StartBarTimer           ();
     
     _String info = _String("Running '") & *argFileName & "'\n";
     StringToConsole(info);
@@ -126,7 +132,7 @@ bool    ExecuteBatchFile (void)
     ReadBatchFile           (*argFileName,ex);
     ex.Execute();
 
-    _hyPrimaryConsoleWindow->StopBarTimer            ();
+    _HY_MAIN_CONSOLE_REFERENCE StopBarTimer            ();
     
     setParameter            (VerbosityLevelString, 0.0, nil);
     BufferToConsole         ("\n");
@@ -200,17 +206,17 @@ void    ExecuteAPostProcessor (_String justTheName)
     volumeName  = baseDirectory.Cut (0, baseDirectory.Find(':'));
 #endif
 
-    _hyPrimaryConsoleWindow->SetStatusLine ( justTheName, "Loading", "00:00:00", -1);
+    _HY_MAIN_CONSOLE_REFERENCE SetStatusLine ( justTheName, "Loading", "00:00:00", -1);
 
     PushFilePath      (pathName);
     ReadBatchFile     (postFile, postEx);
-    _hyPrimaryConsoleWindow->StartBarTimer     ();
+    _HY_MAIN_CONSOLE_REFERENCE StartBarTimer     ();
     terminateExecution = false;
     postEx.Execute    ();
-    _hyPrimaryConsoleWindow->SetStatusLine     (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
+    _HY_MAIN_CONSOLE_REFERENCE SetStatusLine     (justTheName, "Finished", empty, -1, HY_SL_FILE|HY_SL_TASK);
     PopFilePath       ();
     terminateExecution = false;
-    _hyPrimaryConsoleWindow->StopBarTimer      ();
+    _HY_MAIN_CONSOLE_REFERENCE StopBarTimer      ();
     DoneWithExecutionOfBatchFile ();
 }
 

@@ -1,6 +1,6 @@
 ; Based on the example from http://www.seas.gwu.edu/~drum/java/lectures/appendix/installer/install.html
 
-!define VERSION "2.1.0"
+!define VERSION "2.2.0"
 !define PACKAGE_NAME "HyPhy"
 
 Icon "../../src/gui/res/Windows/desk.ico"

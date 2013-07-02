@@ -4878,6 +4878,11 @@ _HYGuiObject*   FindWindowByID (long ID)
     }
     return nil;
 }
+//____________________________________________________________________________________________
+
+void yieldCPUTime (void) {
+    handleGUI();
+}
 
 
 

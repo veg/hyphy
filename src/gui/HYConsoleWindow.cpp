@@ -73,7 +73,8 @@ _String  startEchoing  ("Begin saving to file"),
 extern   _String            dialogPrompt,
          baseDirectory;
 
-_HYConsoleWindow*           hyphyConsoleWindow = nil;
+_HYConsoleWindow*  hyphyConsoleWindow = nil,
+                * _hyPrimaryConsoleWindow = nil;
 
 _List    userHookins;
 
@@ -589,7 +590,7 @@ void    FlushConsoleBuffer (void)
 
 //_________________________________________________________________________
 
-void    StringToConsole (_String & s)
+void    StringToConsole (_String & s, _SimpleList* )
 {
 
     if (s.sLength) {
@@ -615,10 +616,10 @@ void    StringToConsole (_String & s)
 
 //_________________________________________________________________________
 
-void    BufferToConsole (const char* buffer)
+void    BufferToConsole (const char* buffer, _SimpleList* dummy)
 {
     _String s (buffer);
-    StringToConsole (s);
+    StringToConsole (s, dummy);
 }
 
 //_________________________________________________________________________
