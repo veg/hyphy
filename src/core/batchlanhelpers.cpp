@@ -313,7 +313,7 @@ _String ReturnFileDialogInput(void)
     resolvedFilePath = _hyQTFileDialog (dialogPrompt,empty, false);
 #endif
     
-#if defined __UNIX__ && ! defined __HYPHYQT__
+#if defined __UNIX__ && ! defined __HYPHYQT__ && ! defined __HYPHY_GTK__
     resolvedFilePath = ReturnDialogInput(true);
 #endif
 
@@ -375,7 +375,7 @@ _String WriteFileDialogInput(void) {
         resolvedFilePath = _hyQTFileDialog (dialogPrompt,defFileNameValue, true);
     #endif
             
-    #if defined __UNIX__ && ! defined __HYPHYQT__
+    #if defined __UNIX__ && ! defined __HYPHYQT__ && ! defined __HYPHY_GTK__
         resolvedFilePath = ReturnDialogInput(true);
     #endif
 #endif

@@ -342,7 +342,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
             WarnError ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
             return false;
 #else
-#if defined __UNIX__ && !defined __HYPHYQT__
+#if defined __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
             while (model_id == HY_MAX_LONG_VALUE) {
                 printf ("\n\n               +--------------------------+\n");
                 printf     ("               | Select a standard model. |\n");
@@ -365,7 +365,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 }
             }
 #endif
-#if !defined __UNIX__ ||  defined __HYPHYQT__
+#if !defined __UNIX__ ||  defined __HYPHYQT__ ||  defined __HYPHY_GTK__
             _SimpleList choiceDummy (2,0,1), selDummy;
             model_id = HandleListSelection (templateModelList, choiceDummy, matchingModels, "Choose one of the standard substitution models",selDummy,1,nil);
             if (model_id==-1) {
@@ -1407,7 +1407,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
         currentProgram.ReportAnExecutionError (errMsg);
     }
     
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
     if (print_to_stdout) {
         yieldCPUTime();
     }
