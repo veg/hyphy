@@ -92,7 +92,10 @@ public:
 		_PLUS_EQUAL=18,
 		_MINUS_EQUAL=19,
 		_TIMES_EQUAL=20,
-		_DIV_EQUAL=21
+		_DIV_EQUAL=21,
+		_GLOBAL_VAR_TOKEN=22,
+		_IF_TOKEN=23,
+		_ELSE_TOKEN=24
 	};
 	int maxT;
 
@@ -109,7 +112,7 @@ public:
 	~Parser();
 	void SemErr(const wchar_t* msg);
 
-	void ident(_Formula& f, _FormulaParsingContext& fpc);
+	void ident(_Formula& f, _FormulaParsingContext& fpc, bool global_tag);
 	void number(_Formula& f, _FormulaParsingContext& fpc);
 	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
 	void expression(_Formula& f, _FormulaParsingContext& fpc);

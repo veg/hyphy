@@ -79,6 +79,8 @@ void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, 
 
 void _parser2013_createSparseMatrix (void* vp, _Formula&, _FormulaParsingContext&, 
           _Formula*, _Formula*, _SimpleList*, bool); 
+          
+
 
 
 _Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _SimpleList* entries, 
@@ -107,6 +109,9 @@ void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext
 
 void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
 
+void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
+void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
+void _parser2013_pushSetJumpCommmandIndices (void *vp, _ExecutionList&, long, long);
 
 // grammar conflict resolvers
 

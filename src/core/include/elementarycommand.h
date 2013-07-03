@@ -41,6 +41,10 @@
 #include "trie.h"
 #include "legacy_parser.h"
 
+#define   _HY_HBL_JUMP_TO_BEGINNING        (-1L)
+#define   _HY_HBL_JUMP_TO_END              0x7FFFFFFFL
+#define   _HY_HBL_COMMAND_SIMPLE_STATEMENT 0x00000000L
+#define   _HY_HBL_COMMAND_JUMP_STATEMENT   0x000000001L
 
 #include <stdio.h>
 
@@ -58,19 +62,66 @@ class _ElementaryCommand :
     {
 public:
 
+/*
+ 
+code == _HY_HBL_COMMAND_SIMPLE_STATEMENT
+  parameters -- empty
+  simpleParameters -- a single entry list with the _Formula object describing the statement
+  
+code == _HY_HBL_COMMAND_JUMP_STATEMENT
+  parameters -- empty
+  simpleParameters -- a list with one or two entries (one entry if the jump is unconditional)
+                   -- the first entry is the command index to go to (could be -1 to go to the beginning
+                      or MAX_LONG to go to the end)
+                   -- the second entry (if present) is the _Formula object for the condition which
+                      determines if the jump is taken (otherwise the instruction flow is uninterrupted)
+                      The jump is taken if the condition evaluates to 0.
+                      
+                      
+  for example the code 
+  
+  if (x > 1) {
+    x += 1;
+  } else {
+    x -= 1;
+  }
+  y = x;
+  
+  will 'compile' to the following instruction list
+  
+  0: _HY_HBL_COMMAND_JUMP_STATEMENT (to 3 if not x > 1)
+  1: _HY_HBL_COMMAND_SIMPLE_STATEMENT (x += 1;)
+  2: _HY_HBL_COMMAND_JUMP_STATEMENT (to 4 unconditionally)
+  3: _HY_HBL_COMMAND_SIMPLE_STATEMENT (x -= 1;)
+  4: _HY_HBL_COMMAND_SIMPLE_STATEMENT (y = x)
+  
+
+*/
+
+
+
   _ElementaryCommand(void); //dummy default constructor
   _ElementaryCommand(long); // with operation code
   _ElementaryCommand(
       _String &command);    // process this string (and maybe an entire scope)
                             // starting at a given position
+                            
   virtual ~_ElementaryCommand(void);
 
   virtual BaseRef makeDynamic(void);
   virtual void Duplicate(BaseRef);
   virtual BaseRef toStr(void);
+  
+  void    AppendToSimpleParameters (const long);
+  void    SetSimpleParameter (const long, const long);
+  void    AppendToParameters (const BaseRef);
 
-  bool Execute(_ExecutionList &); // perform this command in a given list
-  void ExecuteCase0(_ExecutionList &);
+  bool Execute     (_ExecutionList &); // perform this command in a given list
+  
+  bool ExecuteSimpleStatement (_ExecutionList &);
+  bool ExecuteJumpStatement (_ExecutionList &);
+  
+  
   void ExecuteCase4(_ExecutionList &);
   void ExecuteCase5(_ExecutionList &);
   void ExecuteDataFilterCases(_ExecutionList &);
@@ -282,7 +333,7 @@ protected: // data members
 
   _List parameters;             // a list of parameters
   _SimpleList simpleParameters; // a list of numeric parameters
-  int code;                     // code describing this command
+  long code;                     // code describing this command
 
 };
 

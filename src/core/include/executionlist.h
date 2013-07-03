@@ -70,6 +70,7 @@ public:
 
   _PMathObj Execute(void); // run this execution list
   _PMathObj GetResult(void) { return result; }
+  
   void ExecuteSimple(void); // run a simple compiled list
   bool
   TryToMakeSimple(void);    // see if a list can be made into a compiled version
@@ -79,6 +80,10 @@ public:
   void ResetFormulae(void); // decompile formulas (for reference functions)
   void ResetNameSpace(void);
   void SetNameSpace(_String);
+  
+  _hyExecutionContext * GetExecutionContext (void) {return &execution_context;}
+  
+    
   _String GetFileName(void);
   _String *GetNameSpace(void);
   _String AddNameSpaceToID(_String &, _String * = nil);
@@ -117,6 +122,8 @@ public:
   bool errorState;
 
   _PMathObj result;
+  
+  _hyExecutionContext execution_context;
 
   _VariableContainer *nameSpacePrefix;
 

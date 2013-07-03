@@ -47,7 +47,10 @@ TOKENS
   PLUS_EQUAL               = "+=".
   MINUS_EQUAL               = "-=".
   TIMES_EQUAL               = "*=".
-  DIV_EQUAL               = "/=".
+  DIV_EQUAL                 = "/=".
+  GLOBAL_VAR_TOKEN          = "global".
+  IF_TOKEN                  = "if".
+  ELSE_TOKEN                = "else".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO CR LF
@@ -62,8 +65,8 @@ PRODUCTIONS
 
 
 /*------------------------------------------------------------------------*/
-ident <_Formula& f, _FormulaParsingContext& fpc>
-= IDENTIFIER  (. _parser2013_pushIdentifier (this, f, fpc, t->val, false, false); .)
+ident <_Formula& f, _FormulaParsingContext& fpc, bool global_tag>
+= IDENTIFIER  (. _parser2013_pushIdentifier (this, f, fpc, t->val, global_tag, false); .)
 .
 
 /*------------------------------------------------------------------------*/
@@ -166,7 +169,7 @@ primitive  <_Formula& f, _FormulaParsingContext& fpc>
 | sparse_matrix <f, fpc>
 | NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
 | IF (_parser2013_IdentFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
-| ident <f, fpc> 
+| ident <f, fpc, false> 
 //| primitive <f, fpc> '[' expression <f,fpc> ']'
 .
 
@@ -200,7 +203,7 @@ reference_like <_Formula& f, _FormulaParsingContext& fpc>
   ) 
   | 
   (  "&"  (. op_code = HY_OP_CODE_REF; fpc.toggleReference (true);.)
-      ident <f, fpc>
+      ident <f, fpc, false>
       (. fpc.toggleReference (false); .)
   ) 
   )
@@ -326,9 +329,42 @@ SYNC assignment_op <f, fpc>
 
 /*------------------------------------------------------------------------*/
 statement <_ExecutionList &current_code_stream>
-=   (. _Formula f; _FormulaParsingContext fpc; .)
-expression <f, fpc> SEMICOLON
-    (.    _String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); .)
+=   (. _Formula * f = new _Formula; _FormulaParsingContext fpc; .)
+    (
+    (
+        GLOBAL_VAR_TOKEN ident <*f, fpc, true> SEMICOLON 
+        (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
+    ) 
+    |
+    (   
+        (. long index_if = current_code_stream.countitems(),
+                index_else = -1L; .)
+        IF_TOKEN OPEN_PARENTHESIS
+            expression <*f, fpc> 
+        CLOSE_PARENTHESIS (. _parser2013_pushJumpOntoList (this, current_code_stream, f); .)
+        block <current_code_stream> 
+        [
+            (. index_else = current_code_stream.countitems(); _parser2013_pushJumpOntoList (this, current_code_stream, NULL); .)
+            ELSE_TOKEN 
+            block <current_code_stream> 
+        ]
+        (. 
+            
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_if,
+                                                         index_else >= 0L ? index_else + 1 : current_code_stream.countitems ());
+            if (index_else >= 0L) {
+                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_else,
+                                                              current_code_stream.countitems ());
+            }
+        .)
+        
+    )
+    |
+    (
+        expression <*f, fpc> SEMICOLON
+        (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
+    )
+    )
 
 .
 
@@ -346,7 +382,7 @@ CLOSE_BRACE
 hyphy_batch_language 
 = 
 (IF (_parseExpressionsOnly ()) expression <*f, *fpc> SYNC /* a single expression for calculator-style parsing */
-| {statement <*hbl_stream> | block <*hbl_stream>} 
+| {block <*hbl_stream> | statement <*hbl_stream> } 
 )
 .
 

@@ -330,8 +330,8 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
              rhs = op_result;
           }
           
-          lhs_var -> SetValue (rhs, false);
           rhs->AddAReference();
+          lhs_var -> SetValue (rhs, false);
           theScrap.theStack.Place (rhs);
         } else {
           lhs_var->SetFormula(*(_Formula*)payload);

@@ -659,6 +659,10 @@ int main (int argc, char* argv[])
 		coco_string_delete(fileName);
 		delete parser;
 		delete scanner;
+    printf ("Created the following ExecutionList\n\n%s\n\n",
+            _String ((_String*) tester.toStr()).sData);
+            
+    tester.Execute();
     GlobalShutdown();
     return 0;
 	}
