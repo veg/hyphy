@@ -56,6 +56,10 @@ private:
 	Token *dummyToken;
 	int errDist;
 	int minErrDist;
+	
+	_Formula               * f;
+	_FormulaParsingContext * fpc;
+	_ExecutionList         * hbl_stream;
 
 	void SynErr(int n);
 	void Get();
@@ -63,6 +67,7 @@ private:
 	bool StartOf(int s);
 	void ExpectWeak(int n, int follow);
 	bool WeakSeparator(int n, int syFol, int repFol);
+	bool _parseExpressionsOnly (void) { return hbl_stream == NULL; }
 
 public:
 	enum {
@@ -75,7 +80,22 @@ public:
 		_OPEN_PARENTHESIS=6,
 		_CLOSE_PARENTHESIS=7,
 		_EQUAL=8,
-		_ASSIGN=9
+		_ASSIGN=9,
+		_COMMA=10,
+		_CLOSE_BRACE=11,
+		_OPEN_BRACE=12,
+		_CLOSE_BRACKET=13,
+		_OPEN_BRACKET=14,
+		_MULTIPLY=15,
+		_COLON=16,
+		_SEMICOLON=17,
+		_PLUS_EQUAL=18,
+		_MINUS_EQUAL=19,
+		_TIMES_EQUAL=20,
+		_DIV_EQUAL=21,
+		_GLOBAL_VAR_TOKEN=22,
+		_IF_TOKEN=23,
+		_ELSE_TOKEN=24
 	};
 	int maxT;
 
@@ -87,18 +107,21 @@ public:
 
 
 
-	Parser(Scanner *scanner);
+	Parser(Scanner *scanner, _Formula* = NULL, _FormulaParsingContext* = NULL,
+	                         _ExecutionList* = NULL);
 	~Parser();
 	void SemErr(const wchar_t* msg);
 
-	void ident(_Formula& f, _FormulaParsingContext& fpc);
+	void ident(_Formula& f, _FormulaParsingContext& fpc, bool global_tag);
 	void number(_Formula& f, _FormulaParsingContext& fpc);
-	void matrix_row();
+	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
 	void expression(_Formula& f, _FormulaParsingContext& fpc);
-	void dense_matrix();
+	void dense_matrix(_Formula& f, _FormulaParsingContext& fpc);
+	void matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const);
+	void sparse_matrix(_Formula& f, _FormulaParsingContext& fpc);
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);
-	void lvalue(_Formula& f, _FormulaParsingContext& fpc);
+	void indexing_operation(_Formula& f, _FormulaParsingContext& fpc);
 	void reference_like(_Formula& f, _FormulaParsingContext& fpc);
 	void power_like(_Formula& f, _FormulaParsingContext& fpc);
 	void multiplication_like(_Formula& f, _FormulaParsingContext& fpc);
@@ -106,6 +129,7 @@ public:
 	void logical_comp(_Formula& f, _FormulaParsingContext& fpc);
 	void logical_and(_Formula& f, _FormulaParsingContext& fpc);
 	void logical_or(_Formula& f, _FormulaParsingContext& fpc);
+	void assignment_op(_Formula& f, _FormulaParsingContext& fpc);
 	void statement(_ExecutionList &current_code_stream);
 	void block(_ExecutionList &current_code_stream);
 	void hyphy_batch_language();

@@ -54,6 +54,9 @@ void _parser2013_pushNumber         (void * vp, _Formula& f, _FormulaParsingCont
 void _parser2013_pushString         (void * vp, _Formula& f, _FormulaParsingContext& fpc, const wchar_t* value);
     // process a string stored in value and push it onto 'f'
 
+void _parser2013_pushObject        (void * vp, _Formula& f, _FormulaParsingContext& fpc, _PMathObj);
+    // push an object onto the formula
+
 void _parser2013_pushNone        (void * vp, _Formula& f, _FormulaParsingContext& fpc);
 // process None onto 'f'
 
@@ -68,13 +71,59 @@ void _parser2013_pushFunctionCall           (void * vp, _Formula& f, _FormulaPar
 // a blank entry in the list implies that the argument is positional
 // generally speaking, all positional arguments need to preceed all named arguments
 
+void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc, unsigned long & global_count, unsigned long& local_count);
+
+long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc);
+
+void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, _SimpleList&, _Formula*, _Formula*, _Formula*, bool & );
+
+void _parser2013_createSparseMatrix (void* vp, _Formula&, _FormulaParsingContext&, 
+          _Formula*, _Formula*, _SimpleList*, bool); 
+          
+
+
+
+_Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _SimpleList* entries, 
+      const unsigned long n_rows, const unsigned long n_cols, const bool is_const); 
+/*
+
+  Create a _Matrix object from the list of entries, stored row by row
+  elements row by row
+    
+  is_const is set to true is each entry of the matrix is a number
+  
+  
+*/
+
+void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs, 
+                                        _FormulaParsingContext& fpc, long assignment_type,
+                                        long op_code, long lvalue_index);
+
+
+void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, 
+                                        _FormulaParsingContext& fpc, bool & is_const);
+                                        
+void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext& fpc, 
+                                  _SimpleList& dictionary_entries, bool is_const);
+                                        
+
+void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
+
+void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
+void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
+void _parser2013_pushSetJumpCommmandIndices (void *vp, _ExecutionList&, long, long);
+
 // grammar conflict resolvers
 
-bool    _parser2013_isFollowedByAnOpenParenthesis (void * p);
+bool    _parser2013_IdentFollowedByAnOpenParenthesis (void * p);
+bool    _parser2013_TwoOpenBraces                   (void * p);
 bool    _parser2013_isSimpleStatement             (void * p);
+bool    _parser2013_isFollowedByAnCommaOrClosingBrace (void *p);
+bool    _parser2013_StringAndColon (void *p);
 
 // Utility functions
 
-void    _parser2013_reportError                   (void * vp, const _String);
-
+void    _parser2013_reportError                   (void * vp, const _String, _FormulaParsingContext&);
+bool    _parser2013_errorFree                     (void * vp);
+long    _parser2013_expected_arguments            (const long);
 #endif

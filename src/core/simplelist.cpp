@@ -223,7 +223,7 @@ Methods
 //Element location functions (0,llength - 1), negative values return
 // elements from the end of the list
 
-long _SimpleList::GetElement(const long index) {
+long _SimpleList::GetElement(const long index) const{
   if (index >= 0) {
     if ((const unsigned long) index < lLength) {
       return lData[index];
@@ -238,7 +238,7 @@ long _SimpleList::GetElement(const long index) {
   return 0;
 }
 
-long _SimpleList::BinaryFind(long s, long startAt) {
+long _SimpleList::BinaryFind(long s, long startAt) const {
   long top = lLength - 1, bottom = startAt, middle;
 
   if (top == -1) {
@@ -1237,6 +1237,7 @@ long _SimpleList::Pop(void) {
   return 0;
 }
 
+
 //Length constructor and populator
 void _SimpleList::Populate(long l, long start, long step) {
   RequestSpace(l);
@@ -1615,6 +1616,8 @@ void SortLists(_SimpleList *ref, _SimpleList *index) {
     (*ref).RecursiveIndexSort(0, (*ref).lLength - 1, index);
   }
 }
+
+
 
 /*
 ==============================================================

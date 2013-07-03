@@ -92,6 +92,28 @@ bool _AssociativeList::ParseStringRepresentation(_String &serializedForm,
 }
 
 //______________________________________________________________________________
+_AssociativeList::_AssociativeList (_PMathObj definition): avl(&theData) {
+    _SimpleList* defs = (_SimpleList*) definition; 
+    
+    for (unsigned long i = 0L; i < defs->lLength; i+=2) {
+    
+        _Formula * key   = (_Formula*) defs->GetElement(i),
+                 * obj = (_Formula*) defs->GetElement(i+1);
+        
+        _PMathObj  key_value = key->Compute(), 
+                   obj_value = obj->Compute();
+                   
+         if (key_value && obj_value) {
+            _String string_key ((_String*)key_value->toStr());
+            MStore(string_key, obj_value, true);
+              
+         } else {
+           break;
+         }
+    }
+}
+
+//______________________________________________________________________________
 BaseRef _AssociativeList::toStr(void) {
   _String defName("_hyphyAssociativeArray");
   return Serialize(defName);
@@ -128,7 +150,7 @@ _PMathObj _AssociativeList::MAccess(_PMathObj p) {
   }
   if (f >= 0) {
     _PMathObj res = (_PMathObj) avl.GetXtra(f);
-    res->nInstances++;
+    res->AddAReference();
     return res;
   } else {
     return new _Constant(0.0);
@@ -165,13 +187,13 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList().AppendNewInstance(new _Operation());
         actionFormula.GetList()
-            .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+            .AppendNewInstance(new _Operation( 
               _HY_OPERATION_FUNCTION_CALL, fID, 2, NULL));
 
         if (fID2 >= 0) {
           testFormula.GetList().AppendNewInstance(new _Operation());
           testFormula.GetList()
-              .AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+              .AppendNewInstance(new _Operation( 
               _HY_OPERATION_FUNCTION_CALL, fID2, 1, NULL));
         }
 
@@ -337,7 +359,7 @@ _String *_AssociativeList::Serialize(_String &avlName) {
   (*outString) << "{";
   bool doComma = false;
   _List *meKeys = GetKeys();
-  for (long k = 0; k < meKeys->lLength; k = k + 1) {
+  for (unsigned long k = 0; k < meKeys->lLength; k ++) {
     _String *thisKey = (_String *)(*meKeys)(k);
     if (thisKey) {
       if (doComma) {
@@ -456,7 +478,7 @@ _PMathObj _AssociativeList::Sum(void) {
 //______________________________________________________________________________
 // execute this operation with the second arg if necessary
 _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
-                                    _hyExecutionContext *context) {
+                                    _hyExecutionContext *context, _PMathObj p3) {
   switch (opCode) {
     case HY_OP_CODE_ADD: // +
       if (p) {
@@ -489,11 +511,23 @@ _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
     case HY_OP_CODE_MCOORD: // MCoord
       return MCoord(p);
       break;
+      
+     case HY_OP_CODE_MSTORE: // MStore
+      p3->AddAReference();
+      if (p->ObjectClass() == STRING) {
+        MStore (p, p3, false);
+      } else {
+        _FString key ((_String*)p->toStr());
+        MStore (&key, p3, false);
+      }
+      p3->AddAReference();
+      return p3;
+      break;
   
     case HY_OP_CODE_ROWS: // Rows - get keys
       if (avl.emptySlots.lLength) {
         _List dataListCompact;
-        for (long k = 0; k < avl.dataList->lLength; k++) {
+        for (unsigned long k = 0; k < avl.dataList->lLength; k++) {
           BaseRef anItem = ((BaseRef *)avl.dataList->lData)[k];
           if (anItem) {
             dataListCompact << anItem;

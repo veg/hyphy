@@ -68,9 +68,11 @@ public:
            _String *errorString = nil);
   _Formula(_PMathObj, bool isAVar = false);
   virtual ~_Formula(void);
-  _PMathObj Compute(long = 0, _VariableContainer * = nil,
+  
+  _PMathObj Compute(long = 0, _hyExecutionContext * = _hyDefaultExecutionContext,
                     _List *additionalCacheArguments = nil,
-                    _String *errMsg = nil);
+                    long unsigned type = HY_ANY_OBJECT);
+                    
   // compute the value of the formula
   // 1st argument : execute from this instruction onwards
   // see the commend for ExecuteFormula for the second argument
@@ -136,7 +138,7 @@ public:
   bool HasChangedSimple(_SimpleList &);
   bool EqualFormula(_Formula *);
   bool IsAConstant(
-      void); //  does this formula include variables, or is it just a constant?
+      bool deep = false); //  does this formula include variables, or is it just a constant?
   bool IsConstant(
       void); //  does this formula depend on something other that constants and
              // fixed parameters?
@@ -159,7 +161,7 @@ public:
 
   bool AmISimple(long &stackDepth, _SimpleList &variableIndex);
   bool ConvertToSimple(_SimpleList &variableIndex);
-  void ConvertFromSimple(_SimpleList &variableIndex);
+  void ConvertFromSimple(void);
   void SimplifyConstants(void);
   _Variable *Dereference(bool,
                          _hyExecutionContext * = _hyDefaultExecutionContext);
@@ -198,12 +200,27 @@ public:
   virtual _Formula operator*(const _Formula &);
   virtual _Formula operator/(const _Formula &);
   virtual _Formula operator^(const _Formula &);
+  
+  long    FormulaType (void) const;
+  
+  long    PrepareLHS  (long);
+  
 
   _Formula &PatchFormulasTogether(_Formula &, const _Formula &,
                                   const char op_code);
+                                  
+  long     LValueIndex (const unsigned long start_at = 0, const bool = false) const;
+  /* 
+    scan the formula from start_at and return the position of the 
+    last _Operation that can serve as an l-value, e.g. a variable
+    ident, a reference, or a matrix/associative array access.
+    Returns HY_NOT_FOUND upon failure
+  */
 
 protected:
 
+  inline  _Operation* getIthOp (unsigned long) const; 
+  
   void internalToStr(_String &result, node<long> *, long opLevel,
                      _List *matchNames, _Operation * = nil);
   void ConvertToTree(bool err_msg = true);

@@ -135,7 +135,7 @@ void _Polynomial::Duplicate(BaseRef tp) {
 _PMathObj _Polynomial::Execute(
     long opCode, _PMathObj p, _PMathObj,
     _hyExecutionContext *
-        context) // execute this operation with the second arg if necessary
+        context, _PMathObj) // execute this operation with the second arg if necessary
     {
   switch (opCode) {
   case HY_OP_CODE_MUL: //*

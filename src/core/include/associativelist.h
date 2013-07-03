@@ -48,6 +48,11 @@ class _AssociativeList : public _MathObject {
 
 public:
   _AssociativeList(void);
+  _AssociativeList(_PMathObj); 
+
+  /* construct an object from a list of key : value pairs 
+    supplied as formulas in the _SimpleList argument */
+
   virtual ~_AssociativeList(void) {}
 
   //SLKP 20090803
@@ -60,7 +65,8 @@ public:
   virtual BaseRef toStr(void);
   virtual _PMathObj
   Execute(long opCode, _PMathObj = nil, _PMathObj = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _PMathObj = nil);
   virtual BaseRef makeDynamic(void);
   virtual _PMathObj Compute(void);
 

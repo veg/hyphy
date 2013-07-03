@@ -466,6 +466,7 @@ void _LikelihoodFunction::Init(void) {
     branchCaches = nil;
     parameterValuesAndRanges = nil;
 #ifdef _OPENMP
+    lfThreadCount = 1;
     SetThreadCount(systemCPUCount);
 #endif
 
@@ -746,8 +747,9 @@ bool _LikelihoodFunction::Construct(_List &triplets, _VariableContainer *theP) {
   // modified the code to take arguments as a pre-partitioned list, instead of the string;
   // this will make building LFs from matrices of strings possible
   // from triplets
-  // format: datasetfilter name, tree name, frequency matrix name; etc...    Clear();
-
+  // format: datasetfilter name, tree name, frequency matrix name; etc...    
+  
+  Clear();
   long i = 0;
   for (; i < (long) triplets.lLength - 2; i += 3) {
     _String *objectName;
@@ -10074,7 +10076,7 @@ void _LikelihoodFunction::StateCounter(long functionCallback) {
     PrepareToCompute();
     computationalResults.Clear();
 
-    _Operation * functionCallbackOp = new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER 
+    _Operation * functionCallbackOp = new _Operation( 
         _HY_OPERATION_FUNCTION_CALL, functionCallback, 
         _HYFetchFunctionParameters (functionCallback)->lLength, 
         NULL);

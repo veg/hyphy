@@ -353,7 +353,8 @@ _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
   if (errMsg.sLength) {
     currentProgram->ReportAnExecutionError(errMsg);
   } else {
-    _PMathObj expressionResult = expressionProcessor.Compute(0, theP);
+    _hyExecutionContext localContext (theP);
+    _PMathObj expressionResult = expressionProcessor.Compute(0, &localContext);
     if (expressionResult && expressionResult->ObjectClass() == objectType) {
       return (_PMathObj) expressionResult->makeDynamic();
     }
@@ -372,7 +373,8 @@ _String ProcessLiteralArgument(_String *data, _VariableContainer *theP,
   if (errMsg.sLength) {
     currentProgram->ReportAnExecutionError(errMsg);
   } else {
-    _PMathObj expressionResult = expressionProcessor.Compute(0, theP);
+    _hyExecutionContext localContext (theP);
+    _PMathObj expressionResult = expressionProcessor.Compute(0, &localContext);
     if (expressionResult && expressionResult->ObjectClass() == STRING) {
       return *((_FString *)expressionResult)->theString;
     }
@@ -1015,4 +1017,9 @@ _ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id) {
     if (func_id < batchLanguageFunctions.lLength) 
         return (_ExecutionList*)batchLanguageFunctions.GetItem(func_id);
     return nil;
+}
+
+//______________________________________________________________________________
+long  _HYGetHBLCallType (unsigned long const index) {
+  return batchLanguageFunctionClassification.GetElement(index);
 }

@@ -551,7 +551,7 @@ _PMathObj _FString::Evaluate(_hyExecutionContext *context) {
     _String s(*theString);
     _Formula evaluator(s, (_VariableContainer *)context->GetContext());
     _PMathObj evalTo =
-        evaluator.Compute(0, (_VariableContainer *)context->GetContext());
+        evaluator.Compute(0, context);
 
     if (evalTo && !terminateExecution) {
       evalTo->AddAReference();
@@ -600,7 +600,7 @@ _PMathObj _FString::Dereference(bool ignore_context,
 
 //______________________________________________________________________________
 _PMathObj _FString::Execute(long opCode, _PMathObj p, _PMathObj p2, 
-                            _hyExecutionContext* context) {
+                            _hyExecutionContext* context, _PMathObj p3) {
 
   // execute this operation with the second arg if necessary
   switch (opCode) {

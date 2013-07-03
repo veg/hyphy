@@ -88,7 +88,8 @@ public:
   virtual _PMathObj CharAccess(_PMathObj, _PMathObj);
   virtual _PMathObj
   Execute(long opCode, _MathObject *p = nil, _MathObject *p2 = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _MathObject *p3 = nil);
   virtual BaseRef toStr(void);
 
   virtual bool IsVariable(void) { return true; }

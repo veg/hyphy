@@ -604,7 +604,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
   bool isExplicitForm = HasExplicitFormModel();
 
   if (isExplicitForm && bufferedOps) {
-    _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, nil, bufferedOps);
+    _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, _hyDefaultExecutionContext, bufferedOps);
     SetCompExp((_Matrix *)bufferedExp->makeDynamic(),totalCategs > 1 ? categID : -1);
     return false;
   }
@@ -621,7 +621,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
     }
   } else {
 
-    if (myModelMatrix->MatrixType() != _POLYNOMIAL_TYPE) {
+    if (myModelMatrix->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
       _Matrix *temp = nil;
       if (isExplicitForm) {
         temp = (_Matrix *)myModelMatrix->makeDynamic();
@@ -701,7 +701,7 @@ _Matrix *_CalcNode::ComputeModelMatrix(bool) {
 
   _Matrix *modelMx = GetModelMatrix();
   if (modelMx && modelMx->ObjectClass() == MATRIX &&
-      modelMx->MatrixType() != _POLYNOMIAL_TYPE) {
+      modelMx->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
     return (_Matrix *)modelMx->ComputeNumeric();
   }
 
@@ -914,7 +914,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
           nodeConditions[l]->GetList().Delete(0);
           _Formula newConstraint;
           newConstraint.Duplicate((BaseRef) nodeConditions[k]);
-          _Operation mins(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_SUB, 2L);
+          _Operation mins( HY_OP_CODE_SUB, 2L);
           for (unsigned long op_index = 0; op_index < nodeConditions[l]->GetList().lLength; op_index++) {
             _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(op_index);
             if (curOp->GetOpKind() == _HY_OPERATION_BUILTIN) {
@@ -933,9 +933,9 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
   if (!first) {
     _Formula *result = nodeConditions[k];
   
-    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER _HY_OPERATION_VAR, 
+    result->GetList().AppendNewInstance(new _Operation( _HY_OPERATION_VAR, 
         iVariables->lData[f - 1], _HY_OPERATION_INVALID_REFERENCE, NULL));
-    result->GetList().AppendNewInstance(new _Operation(_HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER HY_OP_CODE_ADD, 2L));
+    result->GetList().AppendNewInstance(new _Operation( HY_OP_CODE_ADD, 2L));
 
     free(nodeConditions);
     return result;

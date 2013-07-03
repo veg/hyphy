@@ -818,3 +818,18 @@ _PMathObj _Constant::Max (_PMathObj theObj)
     }
     return   (_PMathObj) theObj->makeDynamic();
 }
+
+//______________________________________________________________________________
+_PMathObj _Constant::Execute(
+    long opCode, _PMathObj p, _PMathObj p2,
+    _hyExecutionContext *
+        context, _PMathObj p3) // execute this operation with the second arg if necessary
+    {
+  
+  switch (opCode) {
+    case HY_OP_CODE_REF:
+      return LocateVar (Value()) -> ComputeReference (context->GetContext());
+      
+  }
+  return _MathObject::Execute (opCode, p, p2, context, p3);
+}

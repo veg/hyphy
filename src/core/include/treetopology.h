@@ -109,7 +109,8 @@ public:
 
   virtual _PMathObj
   Execute(long, _PMathObj = nil, _PMathObj = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _PMathObj = nil);
   virtual void EdgeCount(long &, long &);
   // SLKP 20100827: a utility function to count edges in a tree
   //              : note that the root node WILL be counted as an internal node

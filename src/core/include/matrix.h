@@ -45,10 +45,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 #include "associativelist.h"
 #include "trie.h"
-
-#define _POLYNOMIAL_TYPE 0
-#define _NUMERICAL_TYPE 1
-#define _FORMULA_TYPE 2
+    
+#define _HY_MATRIX_POLYNOMIAL_TYPE     0L
+#define _HY_MATRIX_NUMERICAL_TYPE      1L
+#define _HY_MATRIX_FORMULA_TYPE        2L
+#define _HY_MATRIX_FAST_EXECUTION_TYPE 3L
 
 #define HY_MATRIX_COLUMN_VECTOR 1
 #define HY_MATRIX_ROW_VECTOR 2
@@ -101,7 +102,7 @@ public:
 
   _Matrix(long theHDim, long theVDim, bool sparse = false,
           bool allocateStorage =
-              false); // create an empty matrix of given dimensions;
+              false, bool isFla = false); // create an empty matrix of given dimensions;
 
   // creates an empty matrix of given dimensions;
   // the first flag specifies whether it is sparse or not
@@ -120,6 +121,25 @@ public:
   // if <= 0 - a row matrix is returned
 
   _Matrix(_List &); //make string matrix from a list
+  
+  _Matrix (_PMathObj, bool);
+  /* create a sparse matrix from a list of data objects 
+     is bool is false, then _PMathObj is a list of formulas
+     stored in a _SimpleList obj, of the following format:
+     
+     [0] -- number of rows (must be >=0)
+     [1] -- number of columns (must be >=0)
+      n>=0
+     [3*n+2] -- the row to store the n-th element in
+     [3*n+3] -- the column to store the n-th element in 
+     [3*n+4] -- the value/object to store as the n-th element
+     
+     if bool is true (the matrix is a constant), then the same format
+     holds, except the object is a _List and all the values are 
+     _Constants
+     
+  */
+  
 
   _Matrix(_Parameter *, unsigned long, unsigned long);
   /*
@@ -151,7 +171,8 @@ public:
 
   virtual _PMathObj
   Execute(long opCode, _PMathObj p = nil, _PMathObj p2 = nil,
-          _hyExecutionContext *context = _hyDefaultExecutionContext);
+          _hyExecutionContext *context = _hyDefaultExecutionContext,
+          _PMathObj p3 = nil);
   // execute this operation with the list of Args
 
   _PMathObj MAccess(_PMathObj, _PMathObj);
@@ -159,11 +180,12 @@ public:
   _PMathObj MCoord(_PMathObj, _PMathObj);
   // implements the M[i][j] operation for formulas
 
-  void MStore(long, long, _Formula &, long = -1);
-  bool MResolve(_PMathObj, _PMathObj, long &, long &);
+  void MStore(long, long, _Formula &, long = HY_OP_CODE_NONE);
+  void StoreValue (long, long, _PMathObj);
+  bool MResolve(_PMathObj, _PMathObj, long &, long &, _String* = nil);
   // resolve coordiates from two Number arguments
 
-  bool CheckCoordinates(long &, long &);
+  bool CheckCoordinates(long &, long &, _String* errMsg = nil);
   // validate matrix coordinates
 
   void MStore(_PMathObj, _PMathObj, _Formula &, long = HY_OP_CODE_NONE);
@@ -285,7 +307,7 @@ public:
   void Store(long, long, _Parameter); // write access to an element in a matrix
   void StoreObject(long, long, _MathObject *, bool dup = false);
   void StoreObject(long, _MathObject *, bool dup = false);
-  void StoreFormula(long, long, _Formula &, bool = true, bool = true);
+  void StoreFormula(long, long, _Formula &, bool = true, bool = true, bool = false);
   void NonZeroEntries(_SimpleList &);
 
   void UpdateDiag(long, long, _MathObject *);
@@ -480,6 +502,8 @@ protected:
 
 private:
 
+  void       updateMatrixValue     (void);
+  bool       isNonEmptyDenseSquare (void) const;
   _Parameter computePFDR(_Parameter, _Parameter);
   void InitMxVar(_SimpleList &, _Parameter);
   bool ProcessFormulas(long &, _SimpleList &, _SimpleList &, _SimpleList &,

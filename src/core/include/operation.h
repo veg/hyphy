@@ -43,46 +43,87 @@
 #include "baseobj.h"
 #include "list.h"
 #include "hy_strings.h"
+#include "trie.h"
 #include "mathobj.h"
 
 
 #define _HY_OPERATION_INVALID_REFERENCE (-1L)
+#define _HY_OPERATION_TOGGLE   1L
 #define _HY_OPERATION_MIN_PRECEDENCE (-1L)
-#define _HY_OPERATION_MAX_PRECEDENCE 0x7FFFFFFF
+#define _HY_OPERATION_MAX_PRECEDENCE 0x07FFFFFFF
 
 #define _HY_OPERATION_DUMMY_ARGUMENT_PLACEHOLDER empty,
 
 
-#define _HY_OPERATION_NOOP   0L  
+#define _HY_OPERATION_NOOP                0x000000L  
 // this operation does nothing
-#define _HY_OPERATION_VALUE  1L  
+#define _HY_OPERATION_VALUE               0x000001L  
 // this operation contains an object to be pushed on the stack
-#define _HY_OPERATION_VAR    2L  
+#define _HY_OPERATION_VAR                 0x000002L  
 // this operation contains a reference to a variable whose computed value will be pushed on the stack
-#define _HY_OPERATION_VAR_OBJ    3L  
+#define _HY_OPERATION_VAR_OBJ             0x000004L  
 // this operation contains a reference to a variable whose value will be pushed on the stack 
 // e.g. for matrix/avl assignments
-#define _HY_OPERATION_REF    4L
+#define _HY_OPERATION_REF                 0x000008L
 // this operation contains a reference to a string variable whose value will
 // used to look up another variable whose computed value will be pushed on the stack
-#define _HY_OPERATION_BUILTIN 5L
+#define _HY_OPERATION_BUILTIN             0x000010L
 // this operation refers to a built-in function or operation
-#define _HY_OPERATION_FUNCTION_CALL 6L
+#define _HY_OPERATION_FUNCTION_CALL          0x000020L
 // this operation will call an HBL function
-#define _HY_OPERATION_DEFERRED_FUNCTION_CALL 7L
+#define _HY_OPERATION_DEFERRED_FUNCTION_CALL 0x000040L
 // this operation contains a reference to an HBL function ID
 // whose name will be looked up and bound at the time of first call
-#define _HY_OPERATION_DEFERRED_INLINE 8L
+#define _HY_OPERATION_DEFERRED_INLINE        0x000080L
 // this operation represents an ident__ call, where the value of ident at
 // the time of execute/deferral resolution is substituted as _HY_OPERATION_VALUE
 
+#define _HY_OPERATION_SPARSE_MATRIX  0x000100L
+// this operation constructs a sparse matrix at run time
+// this for example, can handle matrices of variable dimensions
+// in the new check syntax now/execute later framework
+
+#define _HY_OPERATION_DICTIONARY      0x000200L
+// this operation constructs a dictionary at run time
+
+#define _HY_OPERATION_ASSIGNMENT_VALUE       0x000800L
+
+// assign a value of the form LHS or RHS
+// handles x = y
+// x += y
+// x -= y
+// x *= y
+// x /= y etc
 
 
-extern _List BuiltInFunctions;
+#define _HY_OPERATION_ASSIGNMENT_EXPRESSION  0x001000L
+#define _HY_OPERATION_ASSIGNMENT_BOUND       0x002000L
+
+
+#define _HY_OPERATION_FAST_EXEC_VALUE        0x010000L
+// the analog of _HY_OPERATION_VALUE for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_VAR          0x020000L
+// the analog of _HY_OPERATION_VAR for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_VAR_OBJ      0x040000L
+// the analog of _HY_OPERATION_VAR_OBJ for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_BUILTIN      0x080000L
+// the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
+#define _HY_OPERATION_FAST_EXEC_BUILTIN_REF  0x100000L
+// the analog of _HY_OPERATION_BUILTIN for 'Simple' formulas
+// but using 'references' instead of 'values' to access arguments
+// used by matrix[]
+
+#define _HY_OPERATION_FAST_EXEC              (_HY_OPERATION_FAST_EXEC_VALUE | _HY_OPERATION_FAST_EXEC_VAR | _HY_OPERATION_FAST_EXEC_VAR_OBJ | _HY_OPERATION_FAST_EXEC_BUILTIN |_HY_OPERATION_FAST_EXEC_BUILTIN_REF)
+
+#define _HY_OPERATION_OP_CLASS               (_HY_OPERATION_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN | _HY_OPERATION_FAST_EXEC_BUILTIN_REF)
+
+extern _Trie BuiltInFunctions;
 
 class _Stack;
 class _VariableContainer;
 class _Formula;
+union _SimpleFormulaDatum;
+
 //__________________________________________________________________________________
 class _Operation : public BaseObj {
 
@@ -108,18 +149,59 @@ protected:
 operationKind               |  reference                        | attribute                         | payload 
 ----------------------------+-----------------------------------+-----------------------------------+---------+
 _HY_OPERATION_NOOP          |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | NULL        
+
 _HY_OPERATION_VALUE         |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
+
 _HY_OPERATION_VAR           |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
-_HY_OPERATION_VAR_OBJ       |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
+                                                                  or _HY_OPERATION_TOGGLE
+                                                                  to place the INDEX of the 
+                                                                  variable on the stack 
+                                                                  (for assignments)
+                                                                  
+_HY_OPERATION_VAR_OBJ       |  index of the variable            | same as _HY_OPERATION_VAR         | NULL
+
 _HY_OPERATION_REF           |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
+
 _HY_OPERATION_BUILTIN       |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | NULL
                             |                                   | the stack                         |
+
 _HY_OPERATION_FUNCTION_CALL |  index of the function to call    | number of terms to consume from   | NULL OR
                             |                                   | the stack                         | named argument list
+
 _HY_OPERATION_DEFERRED_     |  _HY_OPERATION_INVALID_REFERENCE  | number of terms to consume from   | function id
 FUNCTION_CALL               |                                   | the stack                         | 
+
 _HY_OPERATION_DEFERRED_     |  index of the variable            | _HY_OPERATION_INVALID_REFERENCE   | NULL
-INLINE                      |                                   |                          | 
+INLINE                      |                                   |                                   | 
+
+_HY_OPERATION_SPARSE_       |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | matrix spec object
+MATRIX                      |                                   |                                   | see _Matrix::_Matrix  (_PMathObj)
+
+_HY_OPERATION_DICTIONARY    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | matrix spec object
+                            |                                   |                                   | see ::_AssociativeArray (_PMathObj)
+
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | opCode (which operation to        | NULL
+_VALUE                      |  or the number of arguments to    | perform on the LHS)               | 
+                            |  consume for x[][] = y assignment |                                   |
+
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | *_Formula to assign 
+_EXPRESSION                 |                                   |                                   | to the LHS
+
+
+_HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
+_VALUE                      |                                   |                                   | (must be a scalar)
+
+_HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
+_VAR                        |                                   | 'compiled' _SimpleFormulaDatum*   | 
+
+_HY_OPERATION_FAST_EXEC     |  index of the variable            | index of the variable in the      | NULL
+_VAR_OBJ                    |                                   | 'compiled' _SimpleFormulaDatum*   | 
+
+_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | the 'shortcut' function
+BUILTIN                     |                                   | the stack                         | to call
+
+_HY_OPERATION_FAST_EXEC     |  opCode (e.g. HY_OP_CODE_ADD)     | number of terms to consume from   | the 'shortcut' function
+BUILTIN_REF                 |                                   | the stack                         | to call
 
  
 */
@@ -127,14 +209,14 @@ INLINE                      |                                   |               
 public:
   _Operation(void);
   
-  _Operation(_String&, bool isUserFunction, _String &, const long);
+  _Operation(bool isUserFunction, _String &, const long);
   // construct the operation by its symbol and, if relevant -
   // number of operands
-  _Operation(_String&, const long, const long);
-  _Operation(_String&, const long, const long, const long, _PMathObj);
+  _Operation(const long, const long);
+  _Operation(const long, const long, const long, _PMathObj);
 
   // store a variable or a constant
-  _Operation(_String&, _String &, bool, bool = false, _VariableContainer * = nil,
+  _Operation(_String &, bool, bool = false, _VariableContainer * = nil,
              bool take_a_reference = false, bool deferred_inline = false);
     
   _Operation(_PMathObj);
@@ -154,17 +236,21 @@ public:
                              
   virtual BaseObj *makeDynamic(void);
 
-  bool ExecuteBuiltIn(_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute a built-in function
+  bool ExecuteBuiltIn(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute a built-in function
 
-  bool ExecuteFunctionCall (_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute a built-in function
+  bool ExecuteFunctionCall (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an HBL function
 
-  bool Execute(_Stack &, _VariableContainer * = nil,
-               _String *errMsg = nil); //execute this operation
+  bool ExecuteAssignment (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
+               
+  bool Execute(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute this operation
   // see the commend for _Formula::ExecuteFormula for the second argument
   
-  void ResolveDeferredAction (_VariableContainer* = nil, _String *errMsg = nil);
+  bool      ExecuteFast (_SimpleFormulaDatum *stack,
+                    _SimpleFormulaDatum *varValues,
+                    long& stackTop,
+                    _String *errMsg = nil); //execute this operation
+
+  void ResolveDeferredAction (_hyExecutionContext*);
   
   bool ExecutePolynomial(_Stack &, _VariableContainer *nameSpace = nil,
                            _String *errMsg = nil);
@@ -172,11 +258,8 @@ public:
 
   virtual BaseObj *toStr(void); //convert the op to string
 
-  _String &GetCode(void) {
-    return (operationKind == _HY_OPERATION_BUILTIN)
-               ? *(_String *)BuiltInFunctions(reference)
-               : empty;
-  }
+  _String GetCode(void);
+  
   long &TheCode(void) { return operationKind == _HY_OPERATION_BUILTIN ? reference : attribute; }
   virtual bool IsAVariable(bool = true) const; // is this object a variable or not?
   virtual bool IsConstant(
@@ -201,7 +284,7 @@ public:
 
   virtual bool AssignmentVariable(void) const { return operationKind == _HY_OPERATION_VAR_OBJ; }
 
-  virtual bool HasChanged(void) const;
+  virtual bool HasChanged(bool ignore_cats, const _SimpleList * variable_index = nil) const;
 
   virtual void SetAttribute(long d) { attribute  = d; }
 
@@ -223,11 +306,18 @@ public:
   long GetOpKind    (void) const { return operationKind;}
   long GetReference  (void) const { return reference;}
   bool IsAssociativeOp (void) const;
+  bool IsVolatileOp    (void) const;
+  bool HasSparseMatrixChanged (void) const;
+  void UpdateLValue   (_SimpleList&, _SimpleList&, const long) const;
+  long PrepareLHS     (void);
 
   bool CanResultsBeCached(const _Operation *, bool exp_only = false) const;
+  void ToggleVarRef    (bool);
 
   virtual bool EqualOp  (const _Operation *) const;
   _PMathObj    FetchReferencedObject (void) const;
+  bool         ToggleFastExec (bool on_off, const _SimpleList* variable_index);
+  // returns TRUE if the operation is volatile (e.g Time or Random)
 
 };
 

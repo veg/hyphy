@@ -349,7 +349,7 @@ bool _ExecutionList::TryToMakeSimple(void) {
 
         long parseCode = Parse(f, *formulaString, fpc, f2);
 
-        if (parseCode == HY_FORMULA_EXPRESSION ||
+        /*if (parseCode == HY_FORMULA_EXPRESSION ||
             parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
           if (f->AmISimple(stackDepth, varList)) {
             aStatement->simpleParameters << parseCode;
@@ -366,7 +366,7 @@ bool _ExecutionList::TryToMakeSimple(void) {
             }
             break;
           }
-        }
+        }*/
 
         delete f;
         delete f2;
@@ -456,44 +456,6 @@ void _ExecutionList::ExecuteSimple(void) {
 //______________________________________________________________________________
 // run this execution list
 void _ExecutionList::ResetFormulae(void) {
-  currentCommand = 0;
-  while (currentCommand < lLength) {
-    _ElementaryCommand *thisCommand =
-        ((_ElementaryCommand **)lData)[currentCommand];
-    if (thisCommand->code == 0) {
-      if (thisCommand->simpleParameters.lLength) {
-        //printf ("[ResetFormulae] %s\n", thisCommand->sData);
-        _Formula *f = (_Formula *)thisCommand->simpleParameters.lData[1],
-                 *f2 = (_Formula *)thisCommand->simpleParameters.lData[2];
-        if (f) {
-          delete f;
-        }
-        if (f2) {
-          delete f2;
-        }
-        thisCommand->simpleParameters.Clear();
-        long k = listOfCompiledFormulae.Find((long) thisCommand);
-        if (k >= 0) {
-          listOfCompiledFormulae.Delete(k);
-          //printf ("[ResetFormulae:listOfCompiledFormulae %d]\n",k);
-          compiledFormulaeParameters.Delete(k);
-          //printf ("[ResetFormulae:compiledFormulaeParameters %d]\n",k);
-        }
-      }
-    } else {
-      if (thisCommand->code == 4) {
-        if (thisCommand->parameters.lLength &&
-            thisCommand->simpleParameters.lLength == 3) {
-          _Formula *f = (_Formula *)thisCommand->simpleParameters.lData[2];
-          if (f) {
-            delete f;
-          }
-          thisCommand->simpleParameters.Delete(2);
-        }
-      }
-    }
-    currentCommand++;
-  }
 }
 
 //______________________________________________________________________________
@@ -501,10 +463,9 @@ BaseRef _ExecutionList::toStr(void) {
 
   _String *result = new _String(1, true), step("\n\nStep"), dot(".");
 
-  for (unsigned long i = 0; i < countitems(); i++) {
+  for (long i = 0; i < countitems(); i++) {
     (*result) << &step;
-    _String lineNumber(i);
-    (*result) << &lineNumber;
+    (*result) << _String(i);
     (*result) << '.';
     result->AppendNewInstance((_String *)(*this)(i)->toStr());
   }

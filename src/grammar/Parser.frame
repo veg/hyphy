@@ -59,6 +59,10 @@ private:
 	Token *dummyToken;
 	int errDist;
 	int minErrDist;
+	
+	_Formula               * f;
+	_FormulaParsingContext * fpc;
+	_ExecutionList         * hbl_stream;
 
 	void SynErr(int n);
 	void Get();
@@ -66,6 +70,7 @@ private:
 	bool StartOf(int s);
 	void ExpectWeak(int n, int follow);
 	bool WeakSeparator(int n, int syFol, int repFol);
+	bool _parseExpressionsOnly (void) { return hbl_stream == NULL; }
 
 public:
 -->constantsheader
@@ -77,7 +82,8 @@ public:
 
 -->declarations
 
-	Parser(Scanner *scanner);
+	Parser(Scanner *scanner, _Formula* = NULL, _FormulaParsingContext* = NULL,
+	                         _ExecutionList* = NULL);
 	~Parser();
 	void SemErr(const wchar_t* msg);
 
@@ -258,7 +264,8 @@ void Parser::Parse() {
 -->parseRoot
 }
 
-Parser::Parser(Scanner *scanner) {
+Parser::Parser(Scanner *scanner, _Formula* _f, _FormulaParsingContext* _fpc,
+	                         _ExecutionList* _insrtuctions) {
 -->constants
 	ParserInitCaller<Parser>::CallInit(this);
 	dummyToken = NULL;
@@ -267,6 +274,12 @@ Parser::Parser(Scanner *scanner) {
 	errDist = minErrDist;
 	this->scanner = scanner;
 	errors = new Errors();
+	f = _f;
+	fpc = _fpc;
+	hbl_stream = _insrtuctions;
+	if (!(hbl_stream || (f && fpc))) {
+	    FlagError ("Internal Error: incorrect Parser::Parser instantiation");
+	}
 }
 
 bool Parser::StartOf(int s) {

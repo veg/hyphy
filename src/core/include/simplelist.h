@@ -131,7 +131,7 @@ public:
   * @param index The index of the elemnt to retrieve
   * @return the value of the element at the specified index.
   */
-  long GetElement(const long index);
+  long GetElement(const long index) const;
 
   /**
   * Find the position of a search string in the list of strings (ONLY)
@@ -140,7 +140,7 @@ public:
   * @param startAt Index to start at
   * @return -1 if not found, index if found
   */
-  virtual long BinaryFind(long, long startAt = 0);
+  virtual long BinaryFind(long, long startAt = 0) const;
 
   // insert an element into the sorted list preserving the sortedness
   long BinaryInsert(long);

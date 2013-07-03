@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_strings.h"
 #include "list.h"
 
-#define HY_TRIE_NOTFOUND -1L
+#define HY_TRIE_NOTFOUND HY_NOT_FOUND
 #define HY_TRIE_INVALID_LETTER -2L
 
 /*_____________________________________________________________________________
@@ -126,6 +126,14 @@ public:
    * The destructor
    * @return Nothing.
    */
+   
+  virtual long countitems (void); 
+  /**
+   * Counts the number of strings in this Trie
+   * @return the number of strings.
+   */
+  
+  
 
   long Find(const _String &key, _SimpleList *path = nil, bool prefixOK = false);
   /**
@@ -238,8 +246,7 @@ public:
   * retrive the _String object spelling the path
   * @param path -- the traversal path (pairs of node index, character index)
   * @param
-  * @return the number of elements successfully deleted (including those not
-  * present)
+  * @return the string spelling the path
   */
 
   _String Alphabet(void);

@@ -88,9 +88,9 @@ bool Parser::WeakSeparator(int n, int syFol, int repFol) {
 	}
 }
 
-void Parser::ident(_Formula& f, _FormulaParsingContext& fpc) {
+void Parser::ident(_Formula& f, _FormulaParsingContext& fpc, bool global_tag) {
 		Expect(_IDENTIFIER);
-		_parser2013_pushIdentifier (this, f, fpc, t->val, false, false); 
+		_parser2013_pushIdentifier (this, f, fpc, t->val, global_tag, false); 
 }
 
 void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
@@ -98,31 +98,99 @@ void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
 		_parser2013_pushNumber (this, f, fpc, t->val); 
 }
 
-void Parser::matrix_row() {
-		Expect(10 /* "{" */);
-		_Formula f; _FormulaParsingContext fpc; 
-		expression(f, fpc);
-		while (la->kind == 11 /* "," */) {
+void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const) {
+		Expect(_OPEN_BRACE);
+		_Formula* f = new _Formula; unsigned long my_column_count = 0; 
+		if (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) {
+			Expect(_MULTIPLY);
+		} else if (StartOf(1)) {
+			expression(*f, fpc);
+		} else SynErr(41);
+		_parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; 
+		while (la->kind == _COMMA) {
 			Get();
-			expression(f, fpc);
+			f = new _Formula; 
+			if (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) {
+				Expect(_MULTIPLY);
+			} else if (StartOf(1)) {
+				expression(*f, fpc);
+			} else SynErr(42);
+			_parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; 
 		}
-		Expect(12 /* "}" */);
+		Expect(_CLOSE_BRACE);
+		_parser2013_matrix_checkRowLengths (this, fpc, column_count, my_column_count); 
 }
 
 void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
-		while (!(StartOf(1))) {SynErr(30); Get();}
-		logical_or(f, fpc);
+		while (!(StartOf(2))) {SynErr(43); Get();}
+		assignment_op(f, fpc);
 }
 
-void Parser::dense_matrix() {
-		Expect(10 /* "{" */);
-		printf ("\nStart matrix declaration"); 
-		matrix_row();
-		while (la->kind == 10 /* "{" */) {
-			matrix_row();
+void Parser::dense_matrix(_Formula& f, _FormulaParsingContext& fpc) {
+		Expect(_OPEN_BRACE);
+		_SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; 
+		matrix_row(matrix_entries, fpc, n_cols, is_const);
+		n_rows ++; 
+		while (la->kind == _OPEN_BRACE) {
+			matrix_row(matrix_entries, fpc, n_cols, is_const);
+			n_rows ++; 
 		}
-		Expect(12 /* "}" */);
-		printf ("\nEnd matrix declaration"); 
+		Expect(_CLOSE_BRACE);
+		_parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, fpc, &matrix_entries, n_rows, n_cols, is_const));  
+}
+
+void Parser::matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const) {
+		Expect(_OPEN_BRACE);
+		_Formula * h = new _Formula, * v = new _Formula, * d = new _Formula; 
+		expression(*h, fpc);
+		Expect(_COMMA);
+		expression(*v, fpc);
+		Expect(_COMMA);
+		expression(*d, fpc);
+		Expect(_CLOSE_BRACE);
+		_parser2013_pushSparseElementEntry (this, fpc, matrix_definition, h, v, d, is_const); 
+}
+
+void Parser::sparse_matrix(_Formula& f, _FormulaParsingContext& fpc) {
+		Expect(_OPEN_BRACE);
+		bool is_matrix = false; _SimpleList* matrix_definition = new _SimpleList; 
+		_Formula * hd = new _Formula, *vd = new _Formula; bool is_const = true; 
+		if (_parser2013_StringAndColon (this)) {
+			if (StartOf(1)) {
+				_Formula *key = new _Formula, *value = new _Formula; 
+				expression(*key, fpc);
+				Expect(_COLON);
+				expression(*value, fpc);
+				_parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); 
+			}
+			while (la->kind == _COMMA) {
+				_Formula *key = new _Formula, *value = new _Formula; 
+				Get();
+				expression(*key, fpc);
+				Expect(_COLON);
+				expression(*value, fpc);
+				_parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); 
+			}
+		} else if (StartOf(1)) {
+			is_matrix = true; 
+			expression(*hd, fpc);
+			if (la->kind == _COMMA) {
+				Get();
+				expression(*vd, fpc);
+				while (la->kind == _COMMA) {
+					Get();
+					matrix_element(*matrix_definition, fpc, is_const);
+				}
+			}
+		} else SynErr(44);
+		Expect(_CLOSE_BRACE);
+		if (is_matrix) {
+		   _parser2013_createSparseMatrix (this, f, fpc, hd, vd, matrix_definition, is_const);}
+		else {
+		   _parser2013_createDictionary (this, f, fpc, *matrix_definition, is_const);
+		   delete (hd); delete (vd);
+		}
+		
 }
 
 void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
@@ -130,10 +198,10 @@ void Parser::function_call(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_IDENTIFIER);
 		_String func_id (t->val); 
 		Expect(_OPEN_PARENTHESIS);
-		while (StartOf(2)) {
+		while (StartOf(1)) {
 			expression(f, fpc);
 			argument_names.AppendNewInstance(new _String);
-			while (la->kind == 11 /* "," */) {
+			while (la->kind == _COMMA) {
 				Get();
 				expression(f, fpc);
 				argument_names.AppendNewInstance(new _String);
@@ -156,41 +224,64 @@ void Parser::primitive(_Formula& f, _FormulaParsingContext& fpc) {
 			Get();
 			expression(f, fpc);
 			Expect(_CLOSE_PARENTHESIS);
-		} else if (la->kind == 10 /* "{" */) {
-			dense_matrix();
+		} else if (_parser2013_TwoOpenBraces (this)) {
+			dense_matrix(f, fpc);
+		} else if (la->kind == _OPEN_BRACE) {
+			sparse_matrix(f, fpc);
 		} else if (la->kind == _NONE_OBJECT) {
 			Get();
 			_parser2013_pushNone (this, f, fpc); 
-		} else if (_parser2013_isFollowedByAnOpenParenthesis(this)) {
+		} else if (_parser2013_IdentFollowedByAnOpenParenthesis(this)) {
 			function_call(f, fpc);
 		} else if (la->kind == _IDENTIFIER) {
-			ident(f, fpc);
-		} else SynErr(31);
+			ident(f, fpc, false);
+		} else SynErr(45);
 }
 
-void Parser::lvalue(_Formula& f, _FormulaParsingContext& fpc) {
-		ident(f, fpc);
+void Parser::indexing_operation(_Formula& f, _FormulaParsingContext& fpc) {
+		primitive(f, fpc);
+		int bracket_count = 0; 
+		if (la->kind == _OPEN_BRACKET) {
+			Get();
+			expression(f, fpc);
+			Expect(_CLOSE_BRACKET);
+			bracket_count ++; 
+			if (la->kind == _OPEN_BRACKET) {
+				Get();
+				expression(f, fpc);
+				Expect(_CLOSE_BRACKET);
+				bracket_count ++; 
+			}
+		}
+		if (bracket_count > 0) { _parser2013_pushOp (this, f, fpc, HY_OP_CODE_MACCESS, bracket_count+1);} 
 }
 
 void Parser::reference_like(_Formula& f, _FormulaParsingContext& fpc) {
 		long op_code = HY_OP_CODE_NONE; 
-		if (la->kind == 13 /* "*" */ || la->kind == 14 /* "^" */) {
-			if (la->kind == 13 /* "*" */) {
-				Get();
-				op_code = HY_OP_CODE_MUL; 
-			} else {
-				Get();
-				op_code = HY_OP_CODE_POWER; 
+		if (StartOf(3)) {
+			if (la->kind == _MULTIPLY || la->kind == 25 /* "^" */) {
+				if (la->kind == _MULTIPLY) {
+					Get();
+					op_code = HY_OP_CODE_MUL; 
+				} else {
+					Get();
+					op_code = HY_OP_CODE_POWER; 
+				}
 			}
-		}
-		primitive(f, fpc);
+			indexing_operation(f, fpc);
+		} else if (la->kind == 26 /* "&" */) {
+			Get();
+			op_code = HY_OP_CODE_REF; fpc.toggleReference (true);
+			ident(f, fpc, false);
+			fpc.toggleReference (false); 
+		} else SynErr(46);
 		if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); 
 }
 
 void Parser::power_like(_Formula& f, _FormulaParsingContext& fpc) {
 		reference_like(f, fpc);
 		long op_code; 
-		while (la->kind == 14 /* "^" */) {
+		while (la->kind == 25 /* "^" */) {
 			Get();
 			op_code = HY_OP_CODE_POWER; 
 			reference_like(f, fpc);
@@ -201,14 +292,14 @@ void Parser::power_like(_Formula& f, _FormulaParsingContext& fpc) {
 void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 		power_like(f, fpc);
 		long op_code; 
-		while (StartOf(3)) {
-			if (la->kind == 13 /* "*" */) {
+		while (StartOf(4)) {
+			if (la->kind == _MULTIPLY) {
 				Get();
 				op_code = HY_OP_CODE_MUL; 
-			} else if (la->kind == 15 /* "/" */) {
+			} else if (la->kind == 27 /* "/" */) {
 				Get();
 				op_code = HY_OP_CODE_DIV; 
-			} else if (la->kind == 16 /* "$" */) {
+			} else if (la->kind == 28 /* "$" */) {
 				Get();
 				op_code = HY_OP_CODE_IDIV; 
 			} else {
@@ -221,10 +312,22 @@ void Parser::multiplication_like(_Formula& f, _FormulaParsingContext& fpc) {
 }
 
 void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
+		long unary_code = HY_OP_CODE_NONE, op_code; 
+		if (la->kind == 30 /* "+" */ || la->kind == 31 /* "-" */) {
+			if (la->kind == 30 /* "+" */) {
+				Get();
+				unary_code = HY_OP_CODE_ADD; 
+			} else {
+				Get();
+				unary_code = HY_OP_CODE_SUB; 
+			}
+		}
 		multiplication_like(f, fpc);
-		long op_code; 
-		while (la->kind == 18 /* "+" */ || la->kind == 19 /* "-" */) {
-			if (la->kind == 18 /* "+" */) {
+		if (unary_code != HY_OP_CODE_NONE) {
+		_parser2013_pushOp (this, f, fpc, unary_code , 1); 
+		} 
+		while (la->kind == 30 /* "+" */ || la->kind == 31 /* "-" */) {
+			if (la->kind == 30 /* "+" */) {
 				Get();
 				op_code = HY_OP_CODE_ADD; 
 			} else {
@@ -239,34 +342,34 @@ void Parser::addition_like(_Formula& f, _FormulaParsingContext& fpc) {
 void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 		addition_like(f, fpc);
 		long op_code; 
-		while (StartOf(4)) {
+		while (StartOf(5)) {
 			switch (la->kind) {
-			case 20 /* "==" */: {
+			case 32 /* "==" */: {
 				Get();
 				op_code = HY_OP_CODE_EQ; 
 				break;
 			}
-			case 21 /* "!=" */: {
+			case 33 /* "!=" */: {
 				Get();
 				op_code = HY_OP_CODE_NEQ; 
 				break;
 			}
-			case 22 /* ">" */: {
+			case 34 /* ">" */: {
 				Get();
 				op_code = HY_OP_CODE_GREATER; 
 				break;
 			}
-			case 23 /* "<" */: {
+			case 35 /* "<" */: {
 				Get();
 				op_code = HY_OP_CODE_LESS; 
 				break;
 			}
-			case 24 /* ">=" */: {
+			case 36 /* ">=" */: {
 				Get();
 				op_code = HY_OP_CODE_GEQ; 
 				break;
 			}
-			case 25 /* "<=" */: {
+			case 37 /* "<=" */: {
 				Get();
 				op_code = HY_OP_CODE_LEQ; 
 				break;
@@ -279,7 +382,7 @@ void Parser::logical_comp(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::logical_and(_Formula& f, _FormulaParsingContext& fpc) {
 		logical_comp(f, fpc);
-		while (la->kind == 26 /* "&&" */) {
+		while (la->kind == 38 /* "&&" */) {
 			Get();
 			logical_comp(f, fpc);
 			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); 
@@ -288,60 +391,115 @@ void Parser::logical_and(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::logical_or(_Formula& f, _FormulaParsingContext& fpc) {
 		logical_and(f, fpc);
-		while (la->kind == 27 /* "||" */) {
+		while (la->kind == 39 /* "||" */) {
 			Get();
 			logical_and(f, fpc);
 			_parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); 
 		}
 }
 
+void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
+		while (!(StartOf(2))) {SynErr(47); Get();}
+		logical_or(f, fpc);
+		if (StartOf(6)) {
+			_Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;
+			switch (la->kind) {
+			case _EQUAL: {
+				Get();
+				break;
+			}
+			case _PLUS_EQUAL: {
+				Get();
+				op_code = HY_OP_CODE_ADD; 
+				break;
+			}
+			case _MINUS_EQUAL: {
+				Get();
+				op_code = HY_OP_CODE_SUB; 
+				break;
+			}
+			case _TIMES_EQUAL: {
+				Get();
+				op_code = HY_OP_CODE_MUL; 
+				break;
+			}
+			case _DIV_EQUAL: {
+				Get();
+				op_code = HY_OP_CODE_DIV; 
+				break;
+			}
+			case _ASSIGN: {
+				Get();
+				assignment_type = _HY_OPERATION_ASSIGNMENT_EXPRESSION; 
+				break;
+			}
+			}
+			logical_or(*rhs, fpc);
+			_parser2013_handleAssignment (this, f,  *rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
+			
+		}
+}
+
 void Parser::statement(_ExecutionList &current_code_stream) {
-		if (_parser2013_isSimpleStatement (this)) {
-			_Formula f; _FormulaParsingContext fpc; 
-			expression(f, fpc);
-			Expect(28 /* ";" */);
-			_String s ((_String*)f.Compute()->toStr()); printf ("Formula: %s\n", s.sData); 
-		} else if (la->kind == _IDENTIFIER) {
-			_Formula f, f2; _FormulaParsingContext fpc;
-			lvalue(f2, fpc);
-			if (la->kind == _EQUAL) {
+		_Formula * f = new _Formula; _FormulaParsingContext fpc; 
+		if (la->kind == _GLOBAL_VAR_TOKEN) {
+			Get();
+			ident(*f, fpc, true);
+			Expect(_SEMICOLON);
+			_parser2013_pushStatementOntoList (this, current_code_stream, f); 
+		} else if (la->kind == _IF_TOKEN) {
+			long index_if = current_code_stream.countitems(),
+			    index_else = -1L; 
+			Get();
+			Expect(_OPEN_PARENTHESIS);
+			expression(*f, fpc);
+			Expect(_CLOSE_PARENTHESIS);
+			_parser2013_pushJumpOntoList (this, current_code_stream, f); 
+			block(current_code_stream);
+			if (la->kind == _ELSE_TOKEN) {
+				index_else = current_code_stream.countitems(); _parser2013_pushJumpOntoList (this, current_code_stream, NULL); 
 				Get();
-			} else if (la->kind == _ASSIGN) {
-				Get();
-			} else SynErr(32);
-			expression(f, fpc);
-			Expect(28 /* ";" */);
-			printf ("\nvalue assignment"); 
-		} else SynErr(33);
+				block(current_code_stream);
+			}
+			_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_if,
+			                                            index_else >= 0L ? index_else + 1 : current_code_stream.countitems ());
+			if (index_else >= 0L) {
+			   _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_else,
+			                                                 current_code_stream.countitems ());
+			}
+			
+		} else if (StartOf(1)) {
+			expression(*f, fpc);
+			Expect(_SEMICOLON);
+			_parser2013_pushStatementOntoList (this, current_code_stream, f); 
+		} else SynErr(48);
 }
 
 void Parser::block(_ExecutionList &current_code_stream) {
-		Expect(10 /* "{" */);
-		while (StartOf(2)) {
-			if (StartOf(2)) {
+		Expect(_OPEN_BRACE);
+		while (StartOf(7)) {
+			if (StartOf(7)) {
 				statement(current_code_stream);
 			} else {
 				block(current_code_stream);
 			}
 		}
-		Expect(12 /* "}" */);
+		Expect(_CLOSE_BRACE);
 }
 
 void Parser::hyphy_batch_language() {
-		if (StartOf(1)) {
-			_ExecutionList current_code_stream; 
-			while (StartOf(2)) {
-				if (StartOf(2)) {
-					statement(current_code_stream);
+		if (_parseExpressionsOnly ()) {
+			expression(*f, *fpc);
+			while (!(la->kind == _EOF)) {SynErr(49); Get();}
+		} else if (StartOf(8)) {
+			while (StartOf(7)) {
+				if (la->kind == _OPEN_BRACE) {
+					block(*hbl_stream);
 				} else {
-					block(current_code_stream);
+					statement(*hbl_stream);
 				}
 			}
-		} else if (StartOf(2)) {
-			_Formula f; _FormulaParsingContext fpc; 
-			expression(f, fpc);
-			while (!(la->kind == _EOF)) {SynErr(34); Get();}
-		} else SynErr(35);
+		} else SynErr(50);
 }
 
 
@@ -444,8 +602,9 @@ void Parser::Parse() {
 	Expect(0);
 }
 
-Parser::Parser(Scanner *scanner) {
-	maxT = 29;
+Parser::Parser(Scanner *scanner, _Formula* _f, _FormulaParsingContext* _fpc,
+	                         _ExecutionList* _insrtuctions) {
+	maxT = 40;
 
 	ParserInitCaller<Parser>::CallInit(this);
 	dummyToken = NULL;
@@ -454,18 +613,28 @@ Parser::Parser(Scanner *scanner) {
 	errDist = minErrDist;
 	this->scanner = scanner;
 	errors = new Errors();
+	f = _f;
+	fpc = _fpc;
+	hbl_stream = _insrtuctions;
+	if (!(hbl_stream || (f && fpc))) {
+	    FlagError ("Internal Error: incorrect Parser::Parser instantiation");
+	}
 }
 
 bool Parser::StartOf(int s) {
 	const bool T = true;
 	const bool x = false;
 
-	static bool set[5][31] = {
-		{T,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{T,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,T,T, T,T,T,x, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x,x}
+	static bool set[9][42] = {
+		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
+		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x},
+		{x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x},
+		{T,T,T,T, T,T,T,x, x,x,x,x, T,x,x,T, x,x,x,x, x,x,T,T, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x}
 	};
 
 
@@ -496,32 +665,47 @@ void Errors::SynErr(int line, int col, int n) {
 			case 7: s = coco_string_create(L"CLOSE_PARENTHESIS expected"); break;
 			case 8: s = coco_string_create(L"EQUAL expected"); break;
 			case 9: s = coco_string_create(L"ASSIGN expected"); break;
-			case 10: s = coco_string_create(L"\"{\" expected"); break;
-			case 11: s = coco_string_create(L"\",\" expected"); break;
-			case 12: s = coco_string_create(L"\"}\" expected"); break;
-			case 13: s = coco_string_create(L"\"*\" expected"); break;
-			case 14: s = coco_string_create(L"\"^\" expected"); break;
-			case 15: s = coco_string_create(L"\"/\" expected"); break;
-			case 16: s = coco_string_create(L"\"$\" expected"); break;
-			case 17: s = coco_string_create(L"\"%\" expected"); break;
-			case 18: s = coco_string_create(L"\"+\" expected"); break;
-			case 19: s = coco_string_create(L"\"-\" expected"); break;
-			case 20: s = coco_string_create(L"\"==\" expected"); break;
-			case 21: s = coco_string_create(L"\"!=\" expected"); break;
-			case 22: s = coco_string_create(L"\">\" expected"); break;
-			case 23: s = coco_string_create(L"\"<\" expected"); break;
-			case 24: s = coco_string_create(L"\">=\" expected"); break;
-			case 25: s = coco_string_create(L"\"<=\" expected"); break;
-			case 26: s = coco_string_create(L"\"&&\" expected"); break;
-			case 27: s = coco_string_create(L"\"||\" expected"); break;
-			case 28: s = coco_string_create(L"\";\" expected"); break;
-			case 29: s = coco_string_create(L"??? expected"); break;
-			case 30: s = coco_string_create(L"this symbol not expected in expression"); break;
-			case 31: s = coco_string_create(L"invalid primitive"); break;
-			case 32: s = coco_string_create(L"invalid statement"); break;
-			case 33: s = coco_string_create(L"invalid statement"); break;
-			case 34: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
-			case 35: s = coco_string_create(L"invalid hyphy_batch_language"); break;
+			case 10: s = coco_string_create(L"COMMA expected"); break;
+			case 11: s = coco_string_create(L"CLOSE_BRACE expected"); break;
+			case 12: s = coco_string_create(L"OPEN_BRACE expected"); break;
+			case 13: s = coco_string_create(L"CLOSE_BRACKET expected"); break;
+			case 14: s = coco_string_create(L"OPEN_BRACKET expected"); break;
+			case 15: s = coco_string_create(L"MULTIPLY expected"); break;
+			case 16: s = coco_string_create(L"COLON expected"); break;
+			case 17: s = coco_string_create(L"SEMICOLON expected"); break;
+			case 18: s = coco_string_create(L"PLUS_EQUAL expected"); break;
+			case 19: s = coco_string_create(L"MINUS_EQUAL expected"); break;
+			case 20: s = coco_string_create(L"TIMES_EQUAL expected"); break;
+			case 21: s = coco_string_create(L"DIV_EQUAL expected"); break;
+			case 22: s = coco_string_create(L"GLOBAL_VAR_TOKEN expected"); break;
+			case 23: s = coco_string_create(L"IF_TOKEN expected"); break;
+			case 24: s = coco_string_create(L"ELSE_TOKEN expected"); break;
+			case 25: s = coco_string_create(L"\"^\" expected"); break;
+			case 26: s = coco_string_create(L"\"&\" expected"); break;
+			case 27: s = coco_string_create(L"\"/\" expected"); break;
+			case 28: s = coco_string_create(L"\"$\" expected"); break;
+			case 29: s = coco_string_create(L"\"%\" expected"); break;
+			case 30: s = coco_string_create(L"\"+\" expected"); break;
+			case 31: s = coco_string_create(L"\"-\" expected"); break;
+			case 32: s = coco_string_create(L"\"==\" expected"); break;
+			case 33: s = coco_string_create(L"\"!=\" expected"); break;
+			case 34: s = coco_string_create(L"\">\" expected"); break;
+			case 35: s = coco_string_create(L"\"<\" expected"); break;
+			case 36: s = coco_string_create(L"\">=\" expected"); break;
+			case 37: s = coco_string_create(L"\"<=\" expected"); break;
+			case 38: s = coco_string_create(L"\"&&\" expected"); break;
+			case 39: s = coco_string_create(L"\"||\" expected"); break;
+			case 40: s = coco_string_create(L"??? expected"); break;
+			case 41: s = coco_string_create(L"invalid matrix_row"); break;
+			case 42: s = coco_string_create(L"invalid matrix_row"); break;
+			case 43: s = coco_string_create(L"this symbol not expected in expression"); break;
+			case 44: s = coco_string_create(L"invalid sparse_matrix"); break;
+			case 45: s = coco_string_create(L"invalid primitive"); break;
+			case 46: s = coco_string_create(L"invalid reference_like"); break;
+			case 47: s = coco_string_create(L"this symbol not expected in assignment_op"); break;
+			case 48: s = coco_string_create(L"invalid statement"); break;
+			case 49: s = coco_string_create(L"this symbol not expected in hyphy_batch_language"); break;
+			case 50: s = coco_string_create(L"invalid hyphy_batch_language"); break;
 
 		default:
 		{

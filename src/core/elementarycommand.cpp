@@ -120,35 +120,42 @@ _ElementaryCommand::_ElementaryCommand(_String &s) {
   _String::Duplicate(&s);
 }
 
+
+
 //______________________________________________________________________________
 _ElementaryCommand::~_ElementaryCommand(void) {
   if (nInstances == 1) {
-    if (code == 4) {
-      if (simpleParameters.lLength > 2) {
-        _Formula *f = (_Formula *)simpleParameters(2);
-        delete (f);
-      }
-    } else if (code == 0) {
-      if (simpleParameters.lLength) {
-        //long k = listOfCompiledFormulae.Find ((long)this);
-        //listOfCompiledFormulae.Delete (k);
-        //compiledFormulaeParameters.Delete (k);
+      switch (code) {
+        case _HY_HBL_COMMAND_SIMPLE_STATEMENT:
+          delete (_Formula*) simpleParameters.GetElement(0L);
+          break;
+        case _HY_HBL_COMMAND_JUMP_STATEMENT:
+          if (simpleParameters.lLength > 1) {
+            delete (_Formula*) simpleParameters.GetElement(1L);
+          }
 
-        _Formula *f = (_Formula *)simpleParameters(2);
-        delete (f);
-        f = (_Formula *)simpleParameters(1);
-        delete (f);
-        simpleParameters.Clear();
       }
-    } else if ((code == 6) || (code == 9)) {
-      for (long i = 0; i < simpleParameters.lLength; i++) {
-        _Formula *f = (_Formula *)simpleParameters(i);
-        delete (f);
-      }
-    }
   }
 
 }
+
+//______________________________________________________________________________
+void    _ElementaryCommand::AppendToSimpleParameters (const long sp) {
+  simpleParameters << sp;
+}
+
+//______________________________________________________________________________
+void    _ElementaryCommand::SetSimpleParameter (const long index, const long sp) {
+  simpleParameters[index] = sp;
+}
+
+
+//______________________________________________________________________________
+void    _ElementaryCommand::AppendToParameters (const BaseRef p) {
+  parameters.Place (p);
+}
+
+
 
 //______________________________________________________________________________
 BaseRef _ElementaryCommand::makeDynamic(void) {
@@ -189,25 +196,18 @@ BaseRef _ElementaryCommand::toStr(void) {
   long k;
   switch (code) {
 
-  case 0: // formula reparser
-    converted = (_String *)((parameters(0))->toStr());
-    result = *converted;
+  case _HY_HBL_COMMAND_SIMPLE_STATEMENT: // formula reparser
+    result = "A simple HBL statement";
     break;
 
-  case 4:
+  case _HY_HBL_COMMAND_JUMP_STATEMENT:
 
-    result = "Branch ";
-    if (simpleParameters.countitems() == 3) {
-      converted = (_String *)((_Formula *)simpleParameters(2))->toStr();
-      result = result & "under condition '" & *converted & "'\n\tto\n\t\t" &
-               _hblCommandAccessor(currentExecutionList, simpleParameters(0)) &
-               "\n\telse\n\t\t" &
-               _hblCommandAccessor(currentExecutionList, simpleParameters(1));
+    result = _String ("Jump to ") & simpleParameters.GetElement (0);
+    if (simpleParameters.lLength > 1) {
+      result = result & " subject to a condition";
     } else {
-      result = result & "to " &
-               _hblCommandAccessor(currentExecutionList, simpleParameters(0));
+      result = result & " unconditionally";
     }
-
     break;
 
   case 5: // data set contruction
@@ -809,6 +809,7 @@ BaseRef _ElementaryCommand::toStr(void) {
 }
 
 //______________________________________________________________________________
+/*
 void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
   chain.currentCommand++;
 
@@ -822,39 +823,6 @@ void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
     return;
   }
 
-  if (!simpleParameters.lLength) { // not compiled yet
-    _Formula f, f2;
-
-    _String *theFla = (_String *)parameters(0), errMsg;
-
-    _FormulaParsingContext fpc(nil, chain.nameSpacePrefix);
-
-    long parseCode = Parse(&f, (*theFla), fpc, &f2);
-
-    if (parseCode != HY_FORMULA_FAILED) {
-      if (fpc.isVolatile() == false) { // not a matrix constant
-        simpleParameters << parseCode;
-        simpleParameters << long(f.makeDynamic());
-        simpleParameters << long(f2.makeDynamic());
-        simpleParameters << fpc.assignmentRefID();
-        simpleParameters << fpc.assignmentRefType();
-
-        _SimpleList *varList = new _SimpleList;
-        _AVLList varListA(varList);
-        f.ScanFForVariables(varListA, true, true, true, true);
-        f2.ScanFForVariables(varListA, true, true);
-        varListA.ReorderList();
-        listOfCompiledFormulae << (long) this;
-        compiledFormulaeParameters.AppendNewInstance(varList);
-      } else {
-        ExecuteFormula(&f, &f2, parseCode, fpc.assignmentRefID(),
-                       chain.nameSpacePrefix, fpc.assignmentRefType());
-        return;
-      }
-    } else {
-      return;
-    }
-  }
 
   ExecuteFormula((_Formula *)simpleParameters.lData[1],
                  (_Formula *)simpleParameters.lData[2],
@@ -866,6 +834,7 @@ void _ElementaryCommand::ExecuteCase0(_ExecutionList &chain) {
     return;
   }
 }
+*/
 
 //______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase4(_ExecutionList &chain) {
@@ -1167,7 +1136,7 @@ void _ElementaryCommand::ExecuteCase11(
   _String lfID = chain.AddNameSpaceToID(
       *(_String *)parameters(0)); // the ID of the likelihood function
   long likeFuncObjectID = FindLikeFuncName(lfID);
-  if (likeFuncObjectID == -1)
+  if (likeFuncObjectID == HY_NOT_FOUND)
       // not an existing LF ID
       {
     _LikelihoodFunction *lkf = new _LikelihoodFunction();
@@ -3929,431 +3898,58 @@ void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 }
 
 //______________________________________________________________________________
+bool _ElementaryCommand::ExecuteSimpleStatement (_ExecutionList& chain) {
+  _Formula *f = (_Formula*) simpleParameters.GetElement(0L);  
+  _PMathObj statement_result = f->Compute(0L, chain.GetExecutionContext());
+  if (statement_result) {
+    printf ("_ElementaryCommand::ExecuteSimpleStatement %s\n", _String((_String*)statement_result->toStr()).sData);
+  }
+  return statement_result != NULL;
+}
+
+//______________________________________________________________________________
+bool _ElementaryCommand::ExecuteJumpStatement (_ExecutionList& chain) {
+  bool take_the_jump = true;
+  
+  if (simpleParameters.countitems() > 1) {
+    _Formula *f = (_Formula*) simpleParameters.GetElement(1L);  
+    _PMathObj statement_result = f->Compute(0L, chain.GetExecutionContext(), nil, NUMBER);
+    if (statement_result != NULL) {
+      take_the_jump = CheckEqual(statement_result->Value(), 0.0);
+    } else {
+      return false;
+    }
+  }
+  if (take_the_jump) {
+    chain.currentCommand = simpleParameters.GetElement(0L);
+  } else {
+      chain.currentCommand++;
+  }
+  return true;
+}
+
+//______________________________________________________________________________
 bool _ElementaryCommand::Execute(
     _ExecutionList &chain) // perform this command in a given list
     {
   _String errMsg;
 
+  printf ("Executing command code %ld, simpleParameters[0] = %ld\n", code, simpleParameters.GetElement(0L));
+
   switch (code) {
 
-  case 0: // formula reparser
-    ExecuteCase0(chain);
-    break;
-
-  case 4:
-    ExecuteCase4(chain);
-    break;
-
-  case 5: // data set contruction
-
-    ExecuteCase5(chain);
-    break;
-
-  case 6:  // data set filter construction
-  case 27: // Permute
-  case 28: // Bootstrap
-    ExecuteDataFilterCases(chain);
-    break;
-
-  case 7: { // build a tree
+  case _HY_HBL_COMMAND_SIMPLE_STATEMENT: // a simple statement
     chain.currentCommand++;
-
-    _String treeIdent = chain.AddNameSpaceToID(*(_String *)parameters(0)),
-            treeString = *(_String *)parameters(1);
-
-    SetStatusLine(_String("Constructing Tree ") & treeIdent);
-    long varID = LocateVarByName(treeIdent);
-
-    _Parameter rtv = 0.0;                           // mod 11/19/2003
-    checkParameter(replaceTreeStructure, rtv, 0.0); // mod 11/19/2003
-
-    _SimpleList leftOverVars; // mod 02/03/2003
-    if (varID >= 0)
-      if (FetchVar(varID)->ObjectClass() == TREE) {
-        if (rtv > 0.5) {
-          DeleteVariable(*FetchVar(varID)->GetName()); // mod 11/19/2003
-        } else {
-          DeleteTreeVariable(*FetchVar(varID)->GetName(), leftOverVars,
-                             true); // mod 02/03/2003
-        }
-      }
-
-    treeString.ProcessParameter();
-
-    _TheTree *tr = nil;
-
-    if (treeString.getChar(0) != '(') {
-      _Formula nameForm(treeString, chain.nameSpacePrefix);
-      _PMathObj formRes = nameForm.Compute();
-      if (formRes) {
-        if (formRes->ObjectClass() == STRING) {
-          tr =
-              new _TheTree(treeIdent, *((_FString *)formRes)->theString, false);
-        } else if (formRes->ObjectClass() == TOPOLOGY) {
-          tr = new _TheTree(treeIdent, (_TreeTopology *)formRes);
-        } else if (formRes->ObjectClass() == TREE) {
-          for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
-            //printf ("%s\n",
-            //LocateVar(leftOverVars.lData[i])->GetName()->sData);
-            DeleteVariable(leftOverVars.lData[i], true);
-          }
-          leftOverVars.Clear();
-          tr = new _TheTree(treeIdent, (_TheTree *)formRes);
-        }
-      }
-    } else {
-      tr = new _TheTree(treeIdent, treeString, false);
-    }
-
-    if (!tr) {
-      WarnError("Illegal right hand side in call to Tree id = ...; it must be "
-                "a string, a Newick tree spec or a topology");
-      return false;
-    }
-
-    //_TheTree tr (*(_String*)parameters(0),treeStr);
-
-    /*for (varID = 0; varID < leftOverVars.lLength; varID++)
-        {
-            _Variable* theVar = LocateVar (leftOverVars.lData[varID]);
-            if (theVar)
-                printf ("%d = %s\n", leftOverVars.lData[varID],
-    theVar->GetName()->getStr());
-            else
-                printf ("%d Deleted!!!\n", leftOverVars.lData[varID],
-    theVar->GetName()->getStr());
-
-        }*/
-
-    if (leftOverVars.lLength) { 
-    // mod 02/03/2003 - the entire "if" block
-      _SimpleList indep, dep, holder;
-      {
-        _AVLList indepA(&indep), depA(&dep);
-
-        tr->ScanForVariables(indepA, depA);
-        //tr.ScanForVariables (indepA,depA);
-        indepA.ReorderList();
-        depA.ReorderList();
-      }
-
-      //indep.Sort();
-      //dep.Sort();
-
-      holder.Union(indep, dep);
-      leftOverVars.Sort();
-      indep.Subtract(leftOverVars, holder);
-
-      /* the bit with freeSlots is here b/c
-         some nodes variables may have been deleted during the unroot
-         in the tree constructor and we don't want to delete them twice,
-         do we? 08/22/2003 */
-
-      dep.Clear();
-      dep.Duplicate(&freeSlots);
-      dep.Sort();
-      holder.Subtract(indep, dep);
-      for (varID = holder.lLength - 1; varID >= 0; varID--) {
-        DeleteVariable(*LocateVar(holder.lData[varID])->GetName());
-      }
-      tr->Clear();
-    }
-    SetStatusLine("Idle");
-
-  } break;
-
-  case HY_HBL_COMMAND_FPRINTF: { // print stuff to file (or stdout)
-    return HandleFprintf(chain);
-  }
-
-  case HY_HBL_COMMAND_HARVEST_FREQUENCIES: { // or HarvestFrequencies
-    return HandleHarvestFrequencies(chain);
-  }
-
-  case HY_HBL_COMMAND_OPTIMIZE: // optimize the likelihood function
-  case HY_HBL_COMMAND_COVARIANCE_MATRIX: {
-    return HandleOptimizeCovarianceMatrix(chain,
-                                          code == HY_HBL_COMMAND_OPTIMIZE);
-  }
-
-  case 11: // build the likelihood function
-
-    ExecuteCase11(chain);
-    break;
-
-  case 12: // data set contruction by simulation
-
-    ExecuteCase12(chain);
-    break;
-
-  case 14: {
-    if (parameters.lLength) {
-      DeleteObject(chain.result);
-      _Formula returnValue(*(_String *)parameters(0), chain.nameSpacePrefix);
-      chain.result = returnValue.Compute();
-      if (chain.result) {
-        chain.result = (_PMathObj) chain.result->makeDynamic();
-      }
-    }
-    chain.currentCommand = simpleParameters(0);
-    if (chain.currentCommand < 0) {
-      chain.currentCommand = 0x7fffffff;
-    }
-  } break;
-
-  case 16: { // data set merger operation
-    chain.currentCommand++;
-    SetStatusLine("Merging Datasets");
-    _SimpleList dsIndex;
-    for (long di = 1; di < parameters.lLength; di++) {
-      _String dsname = chain.AddNameSpaceToID(*(_String *)parameters(di));
-      long f = FindDataSetName(dsname);
-      if (f == -1) {
-        WarnError(((_String)("Identifier ") & dsname &
-                   _String(" doesn't correspond to a valid dataset.")));
-        return false;
-      } else {
-        dsIndex << f;
-      }
-    }
-
-    _DataSet *mergeResult =
-        (simpleParameters(0) == 1 || simpleParameters(0) == -1)
-            ? _DataSet::Concatenate(dsIndex)
-            : _DataSet::Combine(dsIndex);
-    // xlc mod 03/08/2005
-    _String *resultName =
-        new _String(chain.AddNameSpaceToID(*(_String *)parameters(0)));
-
-    if (StoreADataSet(mergeResult, resultName) && simpleParameters(0) < 0)
-        // purge all the datasets except the resulting one
-        {
-      long newSetID = FindDataSetName(*resultName);
-      for (long di = 0; di < dsIndex.lLength; di++)
-        if (dsIndex.lData[di] != newSetID) {
-          KillDataSetRecord(dsIndex.lData[di]);
-        }
-    }
-
-    DeleteObject(resultName);
-
-  } break;
-
-  case HY_HBL_COMMAND_EXPORT: // matrix export operation
-    HandleExport(chain);
-    break;
-
-  case 18: // matrix import operation
-           {
-    bool importResult = true;
-    chain.currentCommand++;
-    _String fName(*(_String *)parameters(1));
-    fName.ProcessFileName();
-    if (terminateExecution) {
-      return false;
-    }
-    FILE *theDump = doFileOpen(fName.getStr(), "rb");
-    if (!theDump) {
-      WarnError(((_String)("File ") & fName &
-                 _String(" couldn't be open for reading.")));
-      return false;
-    }
-
-    fName = chain.AddNameSpaceToID(*(_String *)parameters(0));
-    _Variable *result =
-        CheckReceptacle(&fName, blImport.Cut(0, blImport.sLength - 2), true);
-    if (result) {
-      _Matrix *storage = new _Matrix(1, 1, false, true);
-      result->SetValue(storage, false);
-      lastMatrixDeclared = result->GetAVariable();
-      if (!storage->ImportMatrixExp(theDump)) {
-        WarnError("Matrix import failed - the file has an invalid format.");
-        importResult = false;
-        DeleteObject(storage);
-      }
-    } else {
-      importResult = false;
-    }
-    fclose(theDump);
-    return importResult;
-  } break;
-
-  case HY_HBL_COMMAND_MOLECULAR_CLOCK: // molecular_clock constraint
-    HandleMolecularClock(chain);
-    break;
-
-  case 20: // category variable construction
-           {
-    chain.currentCommand++;
-    _String cName = chain.AddNameSpaceToID(*(_String *)parameters(0));
-    _List parms(parameters);
-    parms.Delete(0);
-    _CategoryVariable newCat(cName, &parms, chain.nameSpacePrefix);
-    ReplaceVar(&newCat);
-  } break;
-
-  case 21: // construct the category matrix
-    ExecuteCase21(chain);
-    break;
-
-  case HY_HBL_COMMAND_CLEAR_CONSTRAINTS: // clear constraints
-    HandleClearConstraints(chain);
-    break;
-
-  case HY_HBL_COMMAND_SET_DIALOG_PROMPT: { // set dialog prompt
-    chain.currentCommand++;
-    dialogPrompt =
-        ProcessLiteralArgument((_String *)parameters(0), chain.nameSpacePrefix);
-  } break;
-
-  case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL: // prompt for a model file
-    return HandleSelectTemplateModel(chain);
-
-  case 25: // fscanf
-  case 56: // sscanf
-
-    ExecuteCase25(chain, code == 56);
-    break;
-
-  case 26: // replicate constraint
-    ExecuteCase26(chain);
-    break;
-
-  case HY_HBL_COMMAND_USE_MODEL:
-    return HandleUseModel(chain);
-
-  case 31:
-    ExecuteCase31(chain);
-    break;
-
-  case 32:
-    ExecuteCase32(chain);
-    break;
-
-  case HY_HBL_COMMAND_GET_STRING:
-    HandleGetString(chain);
-    break;
-
-  case HY_HBL_COMMAND_SET_PARAMETER:
-    return HandleSetParameter(chain);
-
-  case 36:
-    ExecuteCase36(chain);
-    break;
-
-  case 37:
-    ExecuteCase37(chain);
-    break;
-
-  case 38:
-    ExecuteCase38(chain, false);
-    break;
-
-  case 39:
-  case 62:
-  case 66:
-    ExecuteCase39(chain);
-    break;
-
-  case 40:
-    ExecuteCase40(chain);
-    break;
-
-  case 41:
-    ExecuteCase41(chain);
-    break;
-
-  case HY_HBL_COMMAND_DIFFERENTIATE:
-    return HandleDifferentiate(chain);
-    break;
-
-  case 43:
-    ExecuteCase43(chain);
-    break;
-
-  case 44:
-    ExecuteCase44(chain);
-    break;
-
-  case 45:
-    ExecuteCase45(chain);
-    break;
-
-  case 46:
-    ExecuteCase46(chain);
-    break;
-
-  case 47:
-    ExecuteCase47(chain);
-    break;
-
-  case 48:
-    ExecuteCase43(chain);
-    break;
-
-  case HY_HBL_COMMAND_LFCOMPUTE:
-    return HandleComputeLFFunction(chain);
-
-  case 50:
-    ExecuteCase38(chain, true);
-    break;
-
-  case HY_HBL_COMMAND_GET_URL:
-    return HandleGetURL(chain);
-
-  case 52:
-    ExecuteCase52(chain);
-    break;
-
-  case 53:
-    ExecuteCase53(chain);
-    break;
-
-  case 54:
-    ExecuteCase54(chain);
-    break;
-
-  case 55:
-    ExecuteCase55(chain);
-    break;
-
-  case 57:
-    ExecuteCase57(chain);
-    break;
-
-  case 58:
-    ExecuteCase58(chain);
-    break;
-
-  case HY_HBL_COMMAND_DELETE_OBJECT:
-    HandleDeleteObject(chain);
-    break;
-
-  case HY_HBL_COMMAND_REQUIRE_VERSION:
-    HandleRequireVersion(chain);
-    break;
-
-  case 61:
-    ExecuteCase61(chain);
-    break;
-
-  case 63:
-    ExecuteCase63(chain);
-    break;
-
-  case 64:
-    ExecuteCase64(chain);
-    break;
-
-  case HY_HBL_COMMAND_ASSERT:
-    HandleAssert(chain);
-    break;
-
+    return ExecuteSimpleStatement(chain);
+  case _HY_HBL_COMMAND_JUMP_STATEMENT: // a jump command
+    return ExecuteJumpStatement(chain);
   default:
     chain.currentCommand++;
-  }
 
-  return true;
+  }
+  
+  return false;
+
 }
 
 //______________________________________________________________________________
@@ -7149,8 +6745,8 @@ void _ElementaryCommand::ExecuteCase26(_ExecutionList &chain) {
           _Formula rhs, lhs;
           _FormulaParsingContext fpc(nil, chain.nameSpacePrefix);
           ind2 = Parse(&rhs, *replicateSource, fpc, &lhs);
-          ExecuteFormula(&rhs, &lhs, ind2, fpc.assignmentRefID(),
-                         chain.nameSpacePrefix, fpc.assignmentRefType());
+          //ExecuteFormula(&rhs, &lhs, ind2, fpc.assignmentRefID(),
+          //               chain.nameSpacePrefix, fpc.assignmentRefType());
         }
 
         (*constraintAccumulator) << replicateSource;
@@ -7600,7 +7196,7 @@ _ElementaryCommand::HandleHarvestFrequencies(_ExecutionList &currentProgram) {
   long objectType = HY_BL_DATASET | HY_BL_DATASET_FILTER;
   BaseRef sourceObject =
       _HYRetrieveBLObjectByName(dataID, objectType, nil, false);
-
+      
   long unit = ProcessNumericArgument((_String *)parameters(2),currentProgram.nameSpacePrefix),
        posspec = ProcessNumericArgument((_String *)parameters(4), currentProgram.nameSpacePrefix),
        atom = ProcessNumericArgument((_String *)parameters(3), currentProgram.nameSpacePrefix);
@@ -8969,7 +8565,8 @@ bool _ElementaryCommand::HandleFprintf(_ExecutionList &currentProgram) {
 
             _FormulaParsingContext fpc(&errMsg, currentProgram.nameSpacePrefix);
             if (Parse(&f, argCopy, fpc) == HY_FORMULA_EXPRESSION) {
-              thePrintObject = f.Compute(0, currentProgram.nameSpacePrefix);
+              _hyExecutionContext localContext (currentProgram.nameSpacePrefix);
+              thePrintObject = f.Compute(0, &localContext);
             } else {
               if (errMsg.sLength)
                 throw(errMsg);
