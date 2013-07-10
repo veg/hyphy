@@ -828,6 +828,14 @@ bool _Operation::ReportOperationExecutionError(_String text, _String *errMsg) co
 }
 
 //______________________________________________________________________________
+long _Operation::OperandCount   (void) const {
+  long ncount = 0;
+  StackDepth (ncount);
+  return -ncount + 1;
+}
+
+
+//______________________________________________________________________________
 void _Operation::StackDepth(long &depth) const {
   
   switch (operationKind) {
@@ -838,20 +846,27 @@ void _Operation::StackDepth(long &depth) const {
     case _HY_OPERATION_DEFERRED_INLINE:
     case _HY_OPERATION_SPARSE_MATRIX:
     case _HY_OPERATION_DICTIONARY:
-    case _HY_OPERATION_ASSIGNMENT_VALUE:
       depth++;
       break;
       
     case _HY_OPERATION_BUILTIN:
     case _HY_OPERATION_FUNCTION_CALL:
     case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
-      depth += attribute-1;  
+      depth -= attribute-1;
+      break;
       
-    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
     case _HY_OPERATION_ASSIGNMENT_BOUND:
       depth --;
+      break;
       
-      
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
+    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+      if (reference == _HY_OPERATION_INVALID_REFERENCE) {
+        depth --;
+      } else {
+        depth -= reference;
+      }
+      break;
   }
   
 }

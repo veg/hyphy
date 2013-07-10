@@ -111,7 +111,7 @@ BaseRef _Formula::toStr(_List *matchedNames, bool dropTree) {
   ConvertToTree(false);
 
   _String *result =
-      (_String *)checkPointer(new _String((unsigned long) 16, true));
+      (_String *)new _String((unsigned long) 16, true);
 
   long savepd = printDigits;
   printDigits = 0;
@@ -260,16 +260,20 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
   isConstant = isConstant && firstConst && (numChildren == 1 || secondConst);
 
   if (op->IsComputed()) {
-    if (isConstant && !op->IsVolatileOp()) {
+    if (isConstant) {
       // this executes the subxpression starting at the current
       // node
-      _Stack scrap;
-      for (k = 1; k <= numChildren; k++) {
-        ((_Operation *)theFormula(startNode->go_down(k)->get_data()))
-            ->Execute(scrap);
+      if (op->IsVolatileOp()) {
+        isConstant = false;
+      } else {
+        _Stack scrap;
+        for (k = 1; k <= numChildren; k++) {
+          ((_Operation *)theFormula(startNode->go_down(k)->get_data()))
+              ->Execute(scrap);
+        }
+        op->Execute(scrap);
+        newVal = (_PMathObj) scrap.Pop();
       }
-      op->Execute(scrap);
-      newVal = (_PMathObj) scrap.Pop(); 
     } else {
       if (op->GetOpKind () == _HY_OPERATION_BUILTIN && (firstConst || secondConst)) {
         theVal =
@@ -521,8 +525,42 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
         result << ')';
       }
       return;
-      
     }
+      
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
+    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+    case _HY_OPERATION_ASSIGNMENT_BOUND: {
+        long op_count = currentNode->get_num_nodes();
+        if (currentNode) {
+          
+          long up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE);
+          
+          if (up_to == 1) {
+            internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+          } else {
+            char delims [4] = {'(',')','[',']'};
+            for (long k = 1; k <= up_to; k++) {
+              result << delims[2*(k>1)];
+              internalToStr(result, currentNode->go_down(k), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+              result << delims[2*(k>1)+1];
+            }
+          }
+          if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
+            result << '=';
+            internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+         } else {
+            if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
+              result << ":=";
+            } else {
+              result << ":<";
+            }
+            result << (_String*)((_Formula*)thisNodeOperation->GetPayload())->toStr();
+          }
+        
+        }
+      }
+      return;
+      
     default: {
       _PMathObj opValue = thisNodeOperation->GetPayload();
       if (opValue) {
@@ -1982,18 +2020,22 @@ void _Formula::ConvertToTree(bool err_msg) {
     
       // work to do
     _SimpleList nodeStack;
+    bool can_convert = true;
     
     _Operation *currentOp;
     for (unsigned long i = 0; i < theFormula.lLength; i++) {
       currentOp = (_Operation *)theFormula(i);
+      long opKind = currentOp->GetOpKind();
       
-      switch (currentOp->GetOpKind()) {
+      switch (opKind) {
         case _HY_OPERATION_VALUE:
         case _HY_OPERATION_VAR:
         case _HY_OPERATION_VAR_OBJ:
         case _HY_OPERATION_REF:
         case _HY_OPERATION_NOOP:
-        case _HY_OPERATION_DEFERRED_INLINE: {
+        case _HY_OPERATION_DEFERRED_INLINE:
+        case _HY_OPERATION_DICTIONARY:
+        case _HY_OPERATION_SPARSE_MATRIX: {
           node<long> *leafNode = new node<long>;
           leafNode->init(i);
           nodeStack << (long) leafNode;
@@ -2002,8 +2044,18 @@ void _Formula::ConvertToTree(bool err_msg) {
           
         case  _HY_OPERATION_FUNCTION_CALL:
         case  _HY_OPERATION_DEFERRED_FUNCTION_CALL:
-        case  _HY_OPERATION_BUILTIN:  {
-          unsigned long nTerms = currentOp->GetAttribute();
+        case  _HY_OPERATION_BUILTIN:
+        case  _HY_OPERATION_ASSIGNMENT_VALUE:
+        case  _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+        case  _HY_OPERATION_ASSIGNMENT_BOUND: {
+          long nTerms = currentOp->OperandCount();
+          
+          if (opKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION ||
+              opKind == _HY_OPERATION_ASSIGNMENT_BOUND) {
+              // need to push the expression encoded in payload _Formula onto the tree
+              nTerms --;
+          }
+          
           if (nTerms > nodeStack.lLength) {
             if (err_msg) {
               WarnError(
@@ -2013,27 +2065,35 @@ void _Formula::ConvertToTree(bool err_msg) {
             theTree = nil;
             return;
           }
-          
+
           node<long> *operationNode = new node<long>;
           operationNode->init(i);
           for (unsigned long j = 0; j < nTerms; j++) {
             operationNode->prepend_node(
                                         *((node<long> *)nodeStack(nodeStack.lLength - 1)));
-            nodeStack.Delete(nodeStack.lLength - 1);
+            nodeStack.Pop();
           }
           nodeStack << (long) operationNode;
+          break;
         }
+          
+        default:
+          can_convert = false;
+          break;
       }
     }
     
-    if (nodeStack.lLength != 1) {
+    if (can_convert == false || nodeStack.lLength != 1) {
       if (err_msg) {
-        WarnError((_String) "The expression '" & _String((_String *)toStr()) &
-                  "' has " & (long) nodeStack.lLength &
-                  " terms left on the stack after evaluation");
+        if (can_convert) {
+          WarnError((_String) "The expression '" & _String((_String *)toStr()) &
+                    "' has " & (long) nodeStack.lLength &
+                    " terms left on the stack after evaluation");
+        } else {
+          WarnError((_String) "Failed to convert the formula to a parse tree: unsupported operation type");
+        }
       }
       theTree = nil;
-      return;
     } else {
       theTree = (node<long> *)nodeStack(0);
     }
