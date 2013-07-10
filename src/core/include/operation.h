@@ -310,6 +310,7 @@ public:
   bool HasSparseMatrixChanged (void) const;
   void UpdateLValue   (_SimpleList&, _SimpleList&, const long) const;
   long PrepareLHS     (void);
+  long OperandCount   (void) const;
 
   bool CanResultsBeCached(const _Operation *, bool exp_only = false) const;
   void ToggleVarRef    (bool);

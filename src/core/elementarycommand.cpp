@@ -198,8 +198,8 @@ BaseRef _ElementaryCommand::toStr(void) {
 
     case _HY_HBL_COMMAND_SIMPLE_STATEMENT: {
       _Formula *f = (_Formula*) simpleParameters.GetElement(0L);
-      result = _String("A simple HBL statement")
-        & _String ((_String*)f->GetList().toStr());
+      result = _String("A simple HBL statement:")
+        & _String ((_String*)f->toStr());
     }
     break;
 
@@ -207,7 +207,9 @@ BaseRef _ElementaryCommand::toStr(void) {
 
     result = _String ("Jump to ") & simpleParameters.GetElement (0);
     if (simpleParameters.lLength > 1) {
-      result = result & " subject to a condition";
+      _Formula *f = (_Formula*) simpleParameters.GetElement(1L);
+      result = result & " subject to condition: " 
+       & _String ((_String*)f->toStr());
     } else {
       result = result & " unconditionally";
     }
