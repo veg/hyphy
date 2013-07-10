@@ -411,8 +411,11 @@ long  SelectATemplate (void)
     std<<2;
     std<<1;
 
-    //return -1;
+#ifdef __HYPHYQT__
+    return -1;
+#else
     return HandleHierListSelection (availableTemplateFiles, std, vc, "Select a standard analysis to run",selection,1);
+#endif
 }
 
 //____________________________________________________________________________________________
