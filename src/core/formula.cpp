@@ -260,16 +260,20 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
   isConstant = isConstant && firstConst && (numChildren == 1 || secondConst);
 
   if (op->IsComputed()) {
-    if (isConstant && !op->IsVolatileOp()) {
+    if (isConstant) {
       // this executes the subxpression starting at the current
       // node
-      _Stack scrap;
-      for (k = 1; k <= numChildren; k++) {
-        ((_Operation *)theFormula(startNode->go_down(k)->get_data()))
-            ->Execute(scrap);
+      if (op->IsVolatileOp()) {
+        isConstant = false;
+      } else {
+        _Stack scrap;
+        for (k = 1; k <= numChildren; k++) {
+          ((_Operation *)theFormula(startNode->go_down(k)->get_data()))
+              ->Execute(scrap);
+        }
+        op->Execute(scrap);
+        newVal = (_PMathObj) scrap.Pop();
       }
-      op->Execute(scrap);
-      newVal = (_PMathObj) scrap.Pop(); 
     } else {
       if (op->GetOpKind () == _HY_OPERATION_BUILTIN && (firstConst || secondConst)) {
         theVal =

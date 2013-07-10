@@ -196,8 +196,11 @@ BaseRef _ElementaryCommand::toStr(void) {
   long k;
   switch (code) {
 
-  case _HY_HBL_COMMAND_SIMPLE_STATEMENT: // formula reparser
-    result = "A simple HBL statement";
+    case _HY_HBL_COMMAND_SIMPLE_STATEMENT: {
+      _Formula *f = (_Formula*) simpleParameters.GetElement(0L);
+      result = _String("A simple HBL statement")
+        & _String ((_String*)f->GetList().toStr());
+    }
     break;
 
   case _HY_HBL_COMMAND_JUMP_STATEMENT:
@@ -3934,7 +3937,7 @@ bool _ElementaryCommand::Execute(
     {
   _String errMsg;
 
-  printf ("Executing command code %ld, simpleParameters[0] = %ld\n", code, simpleParameters.GetElement(0L));
+        //printf ("Executing command code %ld, simpleParameters[0] = %ld\n", code, simpleParameters.GetElement(0L));
 
   switch (code) {
 
