@@ -27,17 +27,15 @@ Coco/R itself) does not fall under the GNU General Public License.
 -----------------------------------------------------------------------*/
 
 
-#if !defined(Coco_COCO_PARSER_H__)
-#define Coco_COCO_PARSER_H__
+#if !defined(COCO_PARSER_H__)
+#define COCO_PARSER_H__
 
-#include "Tab.h"
-#include "DFA.h"
-#include "ParserGen.h"
+#include "wchar.h"
+#include "parser2013.h"
 
 
 #include "Scanner.h"
 
-namespace Coco {
 
 
 class Errors {
@@ -55,21 +53,13 @@ public:
 
 class Parser {
 private:
-	enum {
-		_EOF=0,
-		_ident=1,
-		_number=2,
-		_string=3,
-		_badString=4,
-		_char=5,
-		_ddtSym=42,
-		_optionSym=43
-	};
-	int maxT;
-
 	Token *dummyToken;
 	int errDist;
 	int minErrDist;
+	
+	_Formula               * f;
+	_FormulaParsingContext * fpc;
+	_ExecutionList         * hbl_stream;
 
 	void SynErr(int n);
 	void Get();
@@ -77,76 +67,77 @@ private:
 	bool StartOf(int s);
 	void ExpectWeak(int n, int follow);
 	bool WeakSeparator(int n, int syFol, int repFol);
+	bool _parseExpressionsOnly (void) { return hbl_stream == NULL; }
 
 public:
+	enum {
+		_EOF=0,
+		_IDENTIFIER=1,
+		_FLOAT=2,
+		_SINGLE_QUOTE_STRING=3,
+		_DOUBLE_QUOTE_STRING=4,
+		_NONE_OBJECT=5,
+		_OPEN_PARENTHESIS=6,
+		_CLOSE_PARENTHESIS=7,
+		_EQUAL=8,
+		_ASSIGN=9,
+		_COMMA=10,
+		_CLOSE_BRACE=11,
+		_OPEN_BRACE=12,
+		_CLOSE_BRACKET=13,
+		_OPEN_BRACKET=14,
+		_MULTIPLY=15,
+		_COLON=16,
+		_SEMICOLON=17,
+		_PLUS_EQUAL=18,
+		_MINUS_EQUAL=19,
+		_TIMES_EQUAL=20,
+		_DIV_EQUAL=21,
+		_GLOBAL_VAR_TOKEN=22,
+		_IF_TOKEN=23,
+		_ELSE_TOKEN=24
+	};
+	int maxT;
+
 	Scanner *scanner;
 	Errors  *errors;
 
 	Token *t;			// last recognized token
 	Token *la;			// lookahead token
 
-int id;
-	int str;
-
-	FILE* trace;		// other Coco objects referenced in this ATG
-	Tab *tab;
-	DFA *dfa;
-	ParserGen *pgen;
-
-	bool genScanner;
-	wchar_t* tokenString;  // used in declarations of literal tokens
-	wchar_t* noString;     // used in declarations of literal tokens
-
-	// This method will be called by the contructor if it exits.
-	// This support is specific to the C++ version of Coco/R.
-	void Init() {
-		tab = NULL;
-		dfa = NULL;
-		pgen = NULL;
-		id  = 0;
-		str = 1;
-		tokenString = NULL;
-		noString = coco_string_create(L"-none-");
-	}
-
-	// Uncomment this method if cleanup is necessary,
-	// this method will be called by the destructor if it exists.
-	// This support is specific to the C++ version of Coco/R.
-	// void Destroy() {
-		// nothing to do
-	// }
-/*-------------------------------------------------------------------------*/
 
 
-
-	Parser(Scanner *scanner);
+	Parser(Scanner *scanner, _Formula* = NULL, _FormulaParsingContext* = NULL,
+	                         _ExecutionList* = NULL);
 	~Parser();
 	void SemErr(const wchar_t* msg);
 
-	void Coco();
-	void SetDecl();
-	void TokenDecl(int typ);
-	void TokenExpr(Graph* &g);
-	void Set(CharSet* &s);
-	void AttrDecl(Symbol *sym);
-	void SemText(Position* &pos);
-	void Expression(Graph* &g);
-	void SimSet(CharSet* &s);
-	void Char(int &n);
-	void Sym(wchar_t* &name, int &kind);
-	void Term(Graph* &g);
-	void Resolver(Position* &pos);
-	void Factor(Graph* &g);
-	void Attribs(Node *p);
-	void Condition();
-	void TokenTerm(Graph* &g);
-	void TokenFactor(Graph* &g);
+	void ident(_Formula& f, _FormulaParsingContext& fpc, bool global_tag);
+	void number(_Formula& f, _FormulaParsingContext& fpc);
+	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
+	void expression(_Formula& f, _FormulaParsingContext& fpc);
+	void dense_matrix(_Formula& f, _FormulaParsingContext& fpc);
+	void matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const);
+	void sparse_matrix(_Formula& f, _FormulaParsingContext& fpc);
+	void function_call(_Formula& f, _FormulaParsingContext& fpc);
+	void primitive(_Formula& f, _FormulaParsingContext& fpc);
+	void indexing_operation(_Formula& f, _FormulaParsingContext& fpc);
+	void reference_like(_Formula& f, _FormulaParsingContext& fpc);
+	void power_like(_Formula& f, _FormulaParsingContext& fpc);
+	void multiplication_like(_Formula& f, _FormulaParsingContext& fpc);
+	void addition_like(_Formula& f, _FormulaParsingContext& fpc);
+	void logical_comp(_Formula& f, _FormulaParsingContext& fpc);
+	void logical_and(_Formula& f, _FormulaParsingContext& fpc);
+	void logical_or(_Formula& f, _FormulaParsingContext& fpc);
+	void assignment_op(_Formula& f, _FormulaParsingContext& fpc);
+	void statement(_ExecutionList &current_code_stream);
+	void block(_ExecutionList &current_code_stream);
+	void hyphy_batch_language();
 
 	void Parse();
 
 }; // end Parser
 
-} // namespace
 
 
 #endif
