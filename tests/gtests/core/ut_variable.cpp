@@ -58,13 +58,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _VariableTest : public ::testing::Test {
+class DISABLED__VariableTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _VariableTest() {
+  DISABLED__VariableTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -83,7 +83,7 @@ protected:
     _PMathObjtest = new _PMathObj();
   }
 
-  virtual ~_VariableTest() {
+  virtual ~DISABLED__VariableTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -127,7 +127,7 @@ protected:
 };
 
 
-TEST_F(_VariableTest, CheckAndSetTest) {
+TEST_F(DISABLED__VariableTest, CheckAndSetTest) {
 
   _Variabletest->CheckAndSet(*_Parametertest, *booltest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -135,7 +135,7 @@ TEST_F(_VariableTest, CheckAndSetTest) {
 }
 
 
-TEST_F(_VariableTest, CheckFForDependenceTest) {
+TEST_F(DISABLED__VariableTest, CheckFForDependenceTest) {
 
   bool resultbool = _Variabletest->CheckFForDependence(*longtest, *booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -143,7 +143,7 @@ TEST_F(_VariableTest, CheckFForDependenceTest) {
 }
 
 
-TEST_F(_VariableTest, ClearConstraintsTest) {
+TEST_F(DISABLED__VariableTest, ClearConstraintsTest) {
 
   _Variabletest->ClearConstraints();
   //EXPECT_EQ (_Variabletest, 0);
@@ -151,7 +151,7 @@ TEST_F(_VariableTest, ClearConstraintsTest) {
 }
 
 
-TEST_F(_VariableTest, CompileListOfDependentsTest) {
+TEST_F(DISABLED__VariableTest, CompileListOfDependentsTest) {
 
   _Variabletest->CompileListOfDependents(*_SimpleListtest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -159,7 +159,7 @@ TEST_F(_VariableTest, CompileListOfDependentsTest) {
 }
 
 
-TEST_F(_VariableTest, ComputeTest) {
+TEST_F(DISABLED__VariableTest, ComputeTest) {
 
   _PMathObj result_PMathObj = _Variabletest->Compute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -167,7 +167,7 @@ TEST_F(_VariableTest, ComputeTest) {
 }
 
 
-TEST_F(_VariableTest, ComputeReferenceTest) {
+TEST_F(DISABLED__VariableTest, ComputeReferenceTest) {
 
   _PMathObj result_PMathObj = _Variabletest->ComputeReference(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -175,7 +175,7 @@ TEST_F(_VariableTest, ComputeReferenceTest) {
 }
 
 
-TEST_F(_VariableTest, ContextFreeNameTest) {
+TEST_F(DISABLED__VariableTest, ContextFreeNameTest) {
 
   _String result_String = _Variabletest->ContextFreeName();
   //EXPECT_EQ (result_String, 0);
@@ -183,7 +183,7 @@ TEST_F(_VariableTest, ContextFreeNameTest) {
 }
 
 
-TEST_F(_VariableTest, DuplicateTest) {
+TEST_F(DISABLED__VariableTest, DuplicateTest) {
 
   _Variabletest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -191,7 +191,7 @@ TEST_F(_VariableTest, DuplicateTest) {
 }
 
 
-TEST_F(_VariableTest, EnsureTheValueIsInBoundsTest) {
+TEST_F(DISABLED__VariableTest, EnsureTheValueIsInBoundsTest) {
 
   _Variabletest->EnsureTheValueIsInBounds();
   //EXPECT_EQ (_Variabletest, 0);
@@ -199,7 +199,7 @@ TEST_F(_VariableTest, EnsureTheValueIsInBoundsTest) {
 }
 
 
-TEST_F(_VariableTest, HasChangedTest) {
+TEST_F(DISABLED__VariableTest, HasChangedTest) {
 
   bool resultbool = _Variabletest->HasChanged(*booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -207,7 +207,7 @@ TEST_F(_VariableTest, HasChangedTest) {
 }
 
 
-TEST_F(_VariableTest, InitializeTest) {
+TEST_F(DISABLED__VariableTest, InitializeTest) {
 
   _Variabletest->Initialize();
   //EXPECT_EQ (_Variabletest, 0);
@@ -215,7 +215,7 @@ TEST_F(_VariableTest, InitializeTest) {
 }
 
 
-TEST_F(_VariableTest, IsConstantTest) {
+TEST_F(DISABLED__VariableTest, IsConstantTest) {
 
   bool resultbool = _Variabletest->IsConstant();
   //EXPECT_EQ (resultbool, 0);
@@ -223,7 +223,7 @@ TEST_F(_VariableTest, IsConstantTest) {
 }
 
 
-TEST_F(_VariableTest, IsVariableTest) {
+TEST_F(DISABLED__VariableTest, IsVariableTest) {
 
   bool resultbool = _Variabletest->IsVariable();
   //EXPECT_EQ (resultbool, 0);
@@ -231,7 +231,7 @@ TEST_F(_VariableTest, IsVariableTest) {
 }
 
 
-TEST_F(_VariableTest, MarkDoneTest) {
+TEST_F(DISABLED__VariableTest, MarkDoneTest) {
 
   _Variabletest->MarkDone();
   //EXPECT_EQ (_Variabletest, 0);
@@ -239,7 +239,7 @@ TEST_F(_VariableTest, MarkDoneTest) {
 }
 
 
-TEST_F(_VariableTest, ParentObjectNameTest) {
+TEST_F(DISABLED__VariableTest, ParentObjectNameTest) {
 
   _String result_String = _Variabletest->ParentObjectName();
   //EXPECT_EQ (result_String, 0);
@@ -247,7 +247,7 @@ TEST_F(_VariableTest, ParentObjectNameTest) {
 }
 
 
-TEST_F(_VariableTest, PostMarkChangedTest) {
+TEST_F(DISABLED__VariableTest, PostMarkChangedTest) {
 
   _Variabletest->PostMarkChanged();
   //EXPECT_EQ (_Variabletest, 0);
@@ -255,7 +255,7 @@ TEST_F(_VariableTest, PostMarkChangedTest) {
 }
 
 
-TEST_F(_VariableTest, PreMarkChangedTest) {
+TEST_F(DISABLED__VariableTest, PreMarkChangedTest) {
 
   _Variabletest->PreMarkChanged();
   //EXPECT_EQ (_Variabletest, 0);
@@ -263,7 +263,7 @@ TEST_F(_VariableTest, PreMarkChangedTest) {
 }
 
 
-TEST_F(_VariableTest, ScanForVariablesTest) {
+TEST_F(DISABLED__VariableTest, ScanForVariablesTest) {
 
   _Variabletest->ScanForVariables(*_AVLListtest, *booltest, _AVLListXtest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -271,7 +271,7 @@ TEST_F(_VariableTest, ScanForVariablesTest) {
 }
 
 
-TEST_F(_VariableTest, SetBoundsTest) {
+TEST_F(DISABLED__VariableTest, SetBoundsTest) {
 
   _Variabletest->SetBounds(*_Parametertest, *_Parametertest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -279,7 +279,7 @@ TEST_F(_VariableTest, SetBoundsTest) {
 }
 
 
-TEST_F(_VariableTest, SetFormulaTest) {
+TEST_F(DISABLED__VariableTest, SetFormulaTest) {
 
   _Variabletest->SetFormula(*_Formulatest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -287,7 +287,7 @@ TEST_F(_VariableTest, SetFormulaTest) {
 }
 
 
-TEST_F(_VariableTest, SetNumericValueTest) {
+TEST_F(DISABLED__VariableTest, SetNumericValueTest) {
 
   _Variabletest->SetNumericValue(*_Parametertest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -295,7 +295,7 @@ TEST_F(_VariableTest, SetNumericValueTest) {
 }
 
 
-TEST_F(_VariableTest, SetValueTest) {
+TEST_F(DISABLED__VariableTest, SetValueTest) {
 
   _Variabletest->SetValue(*_PMathObjtest, *booltest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -303,7 +303,7 @@ TEST_F(_VariableTest, SetValueTest) {
 }
 
 
-TEST_F(_VariableTest, makeDynamicTest) {
+TEST_F(DISABLED__VariableTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _Variabletest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -311,7 +311,7 @@ TEST_F(_VariableTest, makeDynamicTest) {
 }
 
 
-TEST_F(_VariableTest, toFileStrTest) {
+TEST_F(DISABLED__VariableTest, toFileStrTest) {
 
   _Variabletest->toFileStr(FILEtest);
   //EXPECT_EQ (_Variabletest, 0);
@@ -319,7 +319,7 @@ TEST_F(_VariableTest, toFileStrTest) {
 }
 
 
-TEST_F(_VariableTest, toStrTest) {
+TEST_F(DISABLED__VariableTest, toStrTest) {
 
   BaseRef resultBaseRef = _Variabletest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

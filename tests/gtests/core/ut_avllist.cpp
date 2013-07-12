@@ -60,13 +60,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _AVLListTest : public ::testing::Test {
+class DISABLED__AVLListTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _AVLListTest() {
+  DISABLED__AVLListTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -79,7 +79,7 @@ protected:
     _AVLListtest = new _AVLList(_SimpleListtest);
   }
 
-  virtual ~_AVLListTest() {
+  virtual ~DISABLED__AVLListTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -111,7 +111,7 @@ protected:
 };
 
 
-TEST_F(_AVLListTest, ClearTest) {
+TEST_F(DISABLED__AVLListTest, ClearTest) {
 
   _AVLListtest->Clear(*booltest);
   //EXPECT_EQ (_AVLListtest, 0);
@@ -119,7 +119,7 @@ TEST_F(_AVLListTest, ClearTest) {
 }
 
 
-TEST_F(_AVLListTest, ConsistencyCheckTest) {
+TEST_F(DISABLED__AVLListTest, ConsistencyCheckTest) {
 
   _AVLListtest->ConsistencyCheck();
   //EXPECT_EQ (_AVLListtest, 0);
@@ -127,7 +127,7 @@ TEST_F(_AVLListTest, ConsistencyCheckTest) {
 }
 
 
-TEST_F(_AVLListTest, DeleteTest) {
+TEST_F(DISABLED__AVLListTest, DeleteTest) {
 
   _AVLListtest->Delete(*BaseReftest, *booltest);
   //EXPECT_EQ (_AVLListtest, 0);
@@ -135,7 +135,7 @@ TEST_F(_AVLListTest, DeleteTest) {
 }
 
 
-TEST_F(_AVLListTest, FindTest) {
+TEST_F(DISABLED__AVLListTest, FindTest) {
 
   long resultlong = _AVLListtest->Find(*BaseReftest);
   //EXPECT_EQ (resultlong, 0);
@@ -143,7 +143,7 @@ TEST_F(_AVLListTest, FindTest) {
 }
 
 
-TEST_F(_AVLListTest, Find1Test) {
+TEST_F(DISABLED__AVLListTest, Find1Test) {
 
   long resultlong = _AVLListtest->Find(*BaseReftest, *_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -151,7 +151,7 @@ TEST_F(_AVLListTest, Find1Test) {
 }
 
 
-TEST_F(_AVLListTest, FindBestTest) {
+TEST_F(DISABLED__AVLListTest, FindBestTest) {
 
   char resultchar = _AVLListtest->FindBest(*BaseReftest, *longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -159,7 +159,7 @@ TEST_F(_AVLListTest, FindBestTest) {
 }
 
 
-TEST_F(_AVLListTest, FindLongTest) {
+TEST_F(DISABLED__AVLListTest, FindLongTest) {
 
   long resultlong = _AVLListtest->FindLong(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -167,7 +167,7 @@ TEST_F(_AVLListTest, FindLongTest) {
 }
 
 
-TEST_F(_AVLListTest, FirstTest) {
+TEST_F(DISABLED__AVLListTest, FirstTest) {
 
   long resultlong = _AVLListtest->First();
   //EXPECT_EQ (resultlong, 0);
@@ -175,7 +175,7 @@ TEST_F(_AVLListTest, FirstTest) {
 }
 
 
-TEST_F(_AVLListTest, GetByIndexTest) {
+TEST_F(DISABLED__AVLListTest, GetByIndexTest) {
 
   long resultlong = _AVLListtest->GetByIndex(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -183,7 +183,7 @@ TEST_F(_AVLListTest, GetByIndexTest) {
 }
 
 
-TEST_F(_AVLListTest, HasDataTest) {
+TEST_F(DISABLED__AVLListTest, HasDataTest) {
 
   bool resultbool = _AVLListtest->HasData(*longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -191,7 +191,7 @@ TEST_F(_AVLListTest, HasDataTest) {
 }
 
 
-TEST_F(_AVLListTest, InsertTest) {
+TEST_F(DISABLED__AVLListTest, InsertTest) {
 
   long resultlong = _AVLListtest->Insert(*BaseReftest, *longtest, *booltest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -199,7 +199,7 @@ TEST_F(_AVLListTest, InsertTest) {
 }
 
 
-TEST_F(_AVLListTest, InsertDataTest) {
+TEST_F(DISABLED__AVLListTest, InsertDataTest) {
 
   long resultlong = _AVLListtest->InsertData(*BaseReftest, *longtest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -207,7 +207,7 @@ TEST_F(_AVLListTest, InsertDataTest) {
 }
 
 
-TEST_F(_AVLListTest, LastTest) {
+TEST_F(DISABLED__AVLListTest, LastTest) {
 
   long resultlong = _AVLListtest->Last();
   //EXPECT_EQ (resultlong, 0);
@@ -215,7 +215,7 @@ TEST_F(_AVLListTest, LastTest) {
 }
 
 
-TEST_F(_AVLListTest, NextTest) {
+TEST_F(DISABLED__AVLListTest, NextTest) {
 
   long resultlong = _AVLListtest->Next(*longtest, *_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -223,7 +223,7 @@ TEST_F(_AVLListTest, NextTest) {
 }
 
 
-TEST_F(_AVLListTest, PrevTest) {
+TEST_F(DISABLED__AVLListTest, PrevTest) {
 
   long resultlong = _AVLListtest->Prev(*longtest, *_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -231,7 +231,7 @@ TEST_F(_AVLListTest, PrevTest) {
 }
 
 
-TEST_F(_AVLListTest, ReorderListTest) {
+TEST_F(DISABLED__AVLListTest, ReorderListTest) {
 
   _AVLListtest->ReorderList(_SimpleListtest);
   //EXPECT_EQ (_AVLListtest, 0);
@@ -239,7 +239,7 @@ TEST_F(_AVLListTest, ReorderListTest) {
 }
 
 
-TEST_F(_AVLListTest, RetrieveTest) {
+TEST_F(DISABLED__AVLListTest, RetrieveTest) {
 
   BaseRef resultBaseRef = _AVLListtest->Retrieve(*longtest);
   //EXPECT_EQ (resultBaseRef, 0);
@@ -247,7 +247,7 @@ TEST_F(_AVLListTest, RetrieveTest) {
 }
 
 
-TEST_F(_AVLListTest, TraverserTest) {
+TEST_F(DISABLED__AVLListTest, TraverserTest) {
 
   long resultlong = _AVLListtest->Traverser(*_SimpleListtest, *longtest, *longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -255,7 +255,7 @@ TEST_F(_AVLListTest, TraverserTest) {
 }
 
 
-TEST_F(_AVLListTest, countitemsTest) {
+TEST_F(DISABLED__AVLListTest, countitemsTest) {
 
   long resultlong = _AVLListtest->countitems();
   //EXPECT_EQ (resultlong, 0);
@@ -263,7 +263,7 @@ TEST_F(_AVLListTest, countitemsTest) {
 }
 
 
-TEST_F(_AVLListTest, toStrTest) {
+TEST_F(DISABLED__AVLListTest, toStrTest) {
 
   BaseRef resultBaseRef = _AVLListtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

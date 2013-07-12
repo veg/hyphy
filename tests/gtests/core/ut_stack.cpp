@@ -51,13 +51,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _StackTest : public ::testing::Test {
+class DISABLED__StackTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _StackTest() {
+  DISABLED__StackTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -69,7 +69,7 @@ protected:
     _PMathObjtest = new _PMathObj();
   }
 
-  virtual ~_StackTest() {
+  virtual ~DISABLED__StackTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -99,7 +99,7 @@ protected:
 };
 
 
-TEST_F(_StackTest, DuplicateTest) {
+TEST_F(DISABLED__StackTest, DuplicateTest) {
 
   _Stacktest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Stacktest, 0);
@@ -107,7 +107,7 @@ TEST_F(_StackTest, DuplicateTest) {
 }
 
 
-TEST_F(_StackTest, InitializeTest) {
+TEST_F(DISABLED__StackTest, InitializeTest) {
 
   _Stacktest->Initialize();
   //EXPECT_EQ (_Stacktest, 0);
@@ -115,7 +115,7 @@ TEST_F(_StackTest, InitializeTest) {
 }
 
 
-TEST_F(_StackTest, PopTest) {
+TEST_F(DISABLED__StackTest, PopTest) {
 
   _PMathObj result_PMathObj = _Stacktest->Pop(*booltest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -123,7 +123,7 @@ TEST_F(_StackTest, PopTest) {
 }
 
 
-TEST_F(_StackTest, PushTest) {
+TEST_F(DISABLED__StackTest, PushTest) {
 
   bool resultbool = _Stacktest->Push(*_PMathObjtest, *booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -131,7 +131,7 @@ TEST_F(_StackTest, PushTest) {
 }
 
 
-TEST_F(_StackTest, ResetTest) {
+TEST_F(DISABLED__StackTest, ResetTest) {
 
   _Stacktest->Reset();
   //EXPECT_EQ (_Stacktest, 0);
@@ -139,7 +139,7 @@ TEST_F(_StackTest, ResetTest) {
 }
 
 
-TEST_F(_StackTest, StackDepthTest) {
+TEST_F(DISABLED__StackTest, StackDepthTest) {
 
   long resultlong = _Stacktest->StackDepth();
   //EXPECT_EQ (resultlong, 0);

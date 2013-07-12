@@ -63,13 +63,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _ExecutionListTest : public ::testing::Test {
+class DISABLED__ExecutionListTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _ExecutionListTest() {
+  DISABLED__ExecutionListTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -83,7 +83,7 @@ protected:
     booltest = new bool();
   }
 
-  virtual ~_ExecutionListTest() {
+  virtual ~DISABLED__ExecutionListTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -117,7 +117,7 @@ protected:
 };
 
 
-TEST_F(_ExecutionListTest, AddNameSpaceToIDTest) {
+TEST_F(DISABLED__ExecutionListTest, AddNameSpaceToIDTest) {
 
   _String result_String = _ExecutionListtest->AddNameSpaceToID(*_Stringtest, _Stringtest);
   //EXPECT_EQ (result_String, 0);
@@ -125,7 +125,7 @@ TEST_F(_ExecutionListTest, AddNameSpaceToIDTest) {
 }
 
 
-TEST_F(_ExecutionListTest, BuildListTest) {
+TEST_F(DISABLED__ExecutionListTest, BuildListTest) {
 
   bool resultbool = _ExecutionListtest->BuildList(*_Stringtest, _SimpleListtest, *booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -133,7 +133,7 @@ TEST_F(_ExecutionListTest, BuildListTest) {
 }
 
 
-TEST_F(_ExecutionListTest, DuplicateTest) {
+TEST_F(DISABLED__ExecutionListTest, DuplicateTest) {
 
   _ExecutionListtest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -141,7 +141,7 @@ TEST_F(_ExecutionListTest, DuplicateTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ExecuteTest) {
+TEST_F(DISABLED__ExecutionListTest, ExecuteTest) {
 
   _PMathObj result_PMathObj = _ExecutionListtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -149,7 +149,7 @@ TEST_F(_ExecutionListTest, ExecuteTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ExecuteAndCleanTest) {
+TEST_F(DISABLED__ExecutionListTest, ExecuteAndCleanTest) {
 
   long resultlong = _ExecutionListtest->ExecuteAndClean(*longtest, _Stringtest);
   //EXPECT_EQ (resultlong, 0);
@@ -157,7 +157,7 @@ TEST_F(_ExecutionListTest, ExecuteAndCleanTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ExecuteSimpleTest) {
+TEST_F(DISABLED__ExecutionListTest, ExecuteSimpleTest) {
 
   _ExecutionListtest->ExecuteSimple();
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -165,7 +165,7 @@ TEST_F(_ExecutionListTest, ExecuteSimpleTest) {
 }
 
 
-TEST_F(_ExecutionListTest, FetchFromStdinRedirectTest) {
+TEST_F(DISABLED__ExecutionListTest, FetchFromStdinRedirectTest) {
 
   _String* result_String = _ExecutionListtest->FetchFromStdinRedirect();
   //EXPECT_EQ (result_String*, 0);
@@ -173,7 +173,7 @@ TEST_F(_ExecutionListTest, FetchFromStdinRedirectTest) {
 }
 
 
-TEST_F(_ExecutionListTest, GetFileNameTest) {
+TEST_F(DISABLED__ExecutionListTest, GetFileNameTest) {
 
   _String result_String = _ExecutionListtest->GetFileName();
   //EXPECT_EQ (result_String, 0);
@@ -181,7 +181,7 @@ TEST_F(_ExecutionListTest, GetFileNameTest) {
 }
 
 
-TEST_F(_ExecutionListTest, GetNameSpaceTest) {
+TEST_F(DISABLED__ExecutionListTest, GetNameSpaceTest) {
 
   _String* result_String = _ExecutionListtest->GetNameSpace();
   //EXPECT_EQ (result_String*, 0);
@@ -189,7 +189,7 @@ TEST_F(_ExecutionListTest, GetNameSpaceTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ReportAnExecutionErrorTest) {
+TEST_F(DISABLED__ExecutionListTest, ReportAnExecutionErrorTest) {
 
   _ExecutionListtest->ReportAnExecutionError(*_Stringtest);
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -197,7 +197,7 @@ TEST_F(_ExecutionListTest, ReportAnExecutionErrorTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ResetFormulaeTest) {
+TEST_F(DISABLED__ExecutionListTest, ResetFormulaeTest) {
 
   _ExecutionListtest->ResetFormulae();
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -205,7 +205,7 @@ TEST_F(_ExecutionListTest, ResetFormulaeTest) {
 }
 
 
-TEST_F(_ExecutionListTest, ResetNameSpaceTest) {
+TEST_F(DISABLED__ExecutionListTest, ResetNameSpaceTest) {
 
   _ExecutionListtest->ResetNameSpace();
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -213,7 +213,7 @@ TEST_F(_ExecutionListTest, ResetNameSpaceTest) {
 }
 
 
-TEST_F(_ExecutionListTest, SetNameSpaceTest) {
+TEST_F(DISABLED__ExecutionListTest, SetNameSpaceTest) {
 
   _ExecutionListtest->SetNameSpace(*_Stringtest);
   //EXPECT_EQ (_ExecutionListtest, 0);
@@ -221,7 +221,7 @@ TEST_F(_ExecutionListTest, SetNameSpaceTest) {
 }
 
 
-TEST_F(_ExecutionListTest, TrimNameSpaceFromIDTest) {
+TEST_F(DISABLED__ExecutionListTest, TrimNameSpaceFromIDTest) {
 
   _String result_String = _ExecutionListtest->TrimNameSpaceFromID(*_Stringtest);
   //EXPECT_EQ (result_String, 0);
@@ -229,7 +229,7 @@ TEST_F(_ExecutionListTest, TrimNameSpaceFromIDTest) {
 }
 
 
-TEST_F(_ExecutionListTest, TryToMakeSimpleTest) {
+TEST_F(DISABLED__ExecutionListTest, TryToMakeSimpleTest) {
 
   bool resultbool = _ExecutionListtest->TryToMakeSimple();
   //EXPECT_EQ (resultbool, 0);
@@ -237,7 +237,7 @@ TEST_F(_ExecutionListTest, TryToMakeSimpleTest) {
 }
 
 
-TEST_F(_ExecutionListTest, makeDynamicTest) {
+TEST_F(DISABLED__ExecutionListTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _ExecutionListtest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -245,7 +245,7 @@ TEST_F(_ExecutionListTest, makeDynamicTest) {
 }
 
 
-TEST_F(_ExecutionListTest, toStrTest) {
+TEST_F(DISABLED__ExecutionListTest, toStrTest) {
 
   BaseRef resultBaseRef = _ExecutionListtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

@@ -58,13 +58,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _FStringTest : public ::testing::Test {
+class DISABLED__FStringTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _FStringTest() {
+  DISABLED__FStringTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -80,7 +80,7 @@ protected:
     _FStringtest = new _FString(*_Stringtest, *booltest);
   }
 
-  virtual ~_FStringTest() {
+  virtual ~DISABLED__FStringTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -119,7 +119,7 @@ protected:
 };
 
 
-TEST_F(_FStringTest, AddTest) {
+TEST_F(DISABLED__FStringTest, AddTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Add(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -127,7 +127,7 @@ TEST_F(_FStringTest, AddTest) {
 }
 
 
-TEST_F(_FStringTest, AddOnTest) {
+TEST_F(DISABLED__FStringTest, AddOnTest) {
 
   long resultlong = _FStringtest->AddOn(*_PMathObjtest);
   //EXPECT_EQ (resultlong, 0);
@@ -135,7 +135,7 @@ TEST_F(_FStringTest, AddOnTest) {
 }
 
 
-TEST_F(_FStringTest, AreEqualTest) {
+TEST_F(DISABLED__FStringTest, AreEqualTest) {
 
   _PMathObj result_PMathObj = _FStringtest->AreEqual(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -143,7 +143,7 @@ TEST_F(_FStringTest, AreEqualTest) {
 }
 
 
-TEST_F(_FStringTest, AreEqualCISTest) {
+TEST_F(DISABLED__FStringTest, AreEqualCISTest) {
 
   _PMathObj result_PMathObj = _FStringtest->AreEqualCIS(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -151,7 +151,7 @@ TEST_F(_FStringTest, AreEqualCISTest) {
 }
 
 
-TEST_F(_FStringTest, CharAccessTest) {
+TEST_F(DISABLED__FStringTest, CharAccessTest) {
 
   _PMathObj result_PMathObj = _FStringtest->CharAccess(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -159,7 +159,7 @@ TEST_F(_FStringTest, CharAccessTest) {
 }
 
 
-TEST_F(_FStringTest, CountGlobalObjectsTest) {
+TEST_F(DISABLED__FStringTest, CountGlobalObjectsTest) {
 
   _PMathObj result_PMathObj = _FStringtest->CountGlobalObjects();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -167,7 +167,7 @@ TEST_F(_FStringTest, CountGlobalObjectsTest) {
 }
 
 
-TEST_F(_FStringTest, DereferenceTest) {
+TEST_F(DISABLED__FStringTest, DereferenceTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Dereference(*booltest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -175,7 +175,7 @@ TEST_F(_FStringTest, DereferenceTest) {
 }
 
 
-TEST_F(_FStringTest, DifferentiateTest) {
+TEST_F(DISABLED__FStringTest, DifferentiateTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Differentiate(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -183,7 +183,7 @@ TEST_F(_FStringTest, DifferentiateTest) {
 }
 
 
-TEST_F(_FStringTest, DuplicateTest) {
+TEST_F(DISABLED__FStringTest, DuplicateTest) {
 
   _FStringtest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_FStringtest, 0);
@@ -191,7 +191,7 @@ TEST_F(_FStringTest, DuplicateTest) {
 }
 
 
-TEST_F(_FStringTest, EqualAmbTest) {
+TEST_F(DISABLED__FStringTest, EqualAmbTest) {
 
   _PMathObj result_PMathObj = _FStringtest->EqualAmb(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -199,7 +199,7 @@ TEST_F(_FStringTest, EqualAmbTest) {
 }
 
 
-TEST_F(_FStringTest, EqualRegExpTest) {
+TEST_F(DISABLED__FStringTest, EqualRegExpTest) {
 
   _PMathObj result_PMathObj = _FStringtest->EqualRegExp(*_PMathObjtest, *booltest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -207,7 +207,7 @@ TEST_F(_FStringTest, EqualRegExpTest) {
 }
 
 
-TEST_F(_FStringTest, EvaluateTest) {
+TEST_F(DISABLED__FStringTest, EvaluateTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Evaluate(_hyExecutionContexttest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -215,7 +215,7 @@ TEST_F(_FStringTest, EvaluateTest) {
 }
 
 
-TEST_F(_FStringTest, ExecuteTest) {
+TEST_F(DISABLED__FStringTest, ExecuteTest) {
 
   //_PMathObj result_PMathObj = _FStringtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -223,7 +223,7 @@ TEST_F(_FStringTest, ExecuteTest) {
 }
 
 
-TEST_F(_FStringTest, FileExistsTest) {
+TEST_F(DISABLED__FStringTest, FileExistsTest) {
 
   _PMathObj result_PMathObj = _FStringtest->FileExists();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -231,7 +231,7 @@ TEST_F(_FStringTest, FileExistsTest) {
 }
 
 
-TEST_F(_FStringTest, GreaterTest) {
+TEST_F(DISABLED__FStringTest, GreaterTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Greater(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -239,7 +239,7 @@ TEST_F(_FStringTest, GreaterTest) {
 }
 
 
-TEST_F(_FStringTest, GreaterEqTest) {
+TEST_F(DISABLED__FStringTest, GreaterEqTest) {
 
   _PMathObj result_PMathObj = _FStringtest->GreaterEq(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -247,7 +247,7 @@ TEST_F(_FStringTest, GreaterEqTest) {
 }
 
 
-TEST_F(_FStringTest, JoinTest) {
+TEST_F(DISABLED__FStringTest, JoinTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Join(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -255,7 +255,7 @@ TEST_F(_FStringTest, JoinTest) {
 }
 
 
-TEST_F(_FStringTest, LessTest) {
+TEST_F(DISABLED__FStringTest, LessTest) {
 
   _PMathObj result_PMathObj = _FStringtest->Less(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -263,7 +263,7 @@ TEST_F(_FStringTest, LessTest) {
 }
 
 
-TEST_F(_FStringTest, LessEqTest) {
+TEST_F(DISABLED__FStringTest, LessEqTest) {
 
   _PMathObj result_PMathObj = _FStringtest->LessEq(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -271,7 +271,7 @@ TEST_F(_FStringTest, LessEqTest) {
 }
 
 
-TEST_F(_FStringTest, MapStringToVectorTest) {
+TEST_F(DISABLED__FStringTest, MapStringToVectorTest) {
 
   _PMathObj result_PMathObj = _FStringtest->MapStringToVector(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -279,7 +279,7 @@ TEST_F(_FStringTest, MapStringToVectorTest) {
 }
 
 
-TEST_F(_FStringTest, NotEqualTest) {
+TEST_F(DISABLED__FStringTest, NotEqualTest) {
 
   _PMathObj result_PMathObj = _FStringtest->NotEqual(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -287,7 +287,7 @@ TEST_F(_FStringTest, NotEqualTest) {
 }
 
 
-TEST_F(_FStringTest, ReplaceReqExpTest) {
+TEST_F(DISABLED__FStringTest, ReplaceReqExpTest) {
 
   _PMathObj result_PMathObj = _FStringtest->ReplaceReqExp(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -295,7 +295,7 @@ TEST_F(_FStringTest, ReplaceReqExpTest) {
 }
 
 
-TEST_F(_FStringTest, RerootTreeTest) {
+TEST_F(DISABLED__FStringTest, RerootTreeTest) {
 
   _PMathObj result_PMathObj = _FStringtest->RerootTree();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -303,7 +303,7 @@ TEST_F(_FStringTest, RerootTreeTest) {
 }
 
 
-TEST_F(_FStringTest, makeDynamicTest) {
+TEST_F(DISABLED__FStringTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _FStringtest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -311,7 +311,7 @@ TEST_F(_FStringTest, makeDynamicTest) {
 }
 
 
-TEST_F(_FStringTest, toStrTest) {
+TEST_F(DISABLED__FStringTest, toStrTest) {
 
   BaseRef resultBaseRef = _FStringtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

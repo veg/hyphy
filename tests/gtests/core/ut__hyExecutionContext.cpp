@@ -53,13 +53,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _hyExecutionContextTest : public ::testing::Test {
+class DISABLED__hyExecutionContextTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _hyExecutionContextTest() {
+  DISABLED__hyExecutionContextTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -70,7 +70,7 @@ protected:
     _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~_hyExecutionContextTest() {
+  virtual ~DISABLED__hyExecutionContextTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -98,7 +98,7 @@ protected:
 };
 
 
-TEST_F(_hyExecutionContextTest, GetContextTest) {
+TEST_F(DISABLED__hyExecutionContextTest, GetContextTest) {
 
   _VariableContainer* result_VariableContainer = _hyExecutionContexttest->GetContext();
   //EXPECT_EQ (result_VariableContainer*, 0);
@@ -106,7 +106,7 @@ TEST_F(_hyExecutionContextTest, GetContextTest) {
 }
 
 
-TEST_F(_hyExecutionContextTest, GetErrorBufferTest) {
+TEST_F(DISABLED__hyExecutionContextTest, GetErrorBufferTest) {
 
   _String* result_String = _hyExecutionContexttest->GetErrorBuffer();
   //EXPECT_EQ (result_String*, 0);
@@ -114,7 +114,7 @@ TEST_F(_hyExecutionContextTest, GetErrorBufferTest) {
 }
 
 
-TEST_F(_hyExecutionContextTest, ReportErrorTest) {
+TEST_F(DISABLED__hyExecutionContextTest, ReportErrorTest) {
 
   _hyExecutionContexttest->ReportError(*_Stringtest);
   //EXPECT_EQ (_hyExecutionContexttest, 0);

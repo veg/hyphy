@@ -57,13 +57,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class BaseObjTest : public ::testing::Test {
+class DISABLED_BaseObjTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  BaseObjTest() {
+  DISABLED_BaseObjTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -72,7 +72,7 @@ protected:
     BaseObjtest = new BaseObj();
   }
 
-  virtual ~BaseObjTest() {
+  virtual ~DISABLED_BaseObjTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -96,7 +96,7 @@ protected:
 };
 
 
-TEST_F(BaseObjTest, makeDynamicTest) {
+TEST_F(DISABLED_BaseObjTest, makeDynamicTest) {
 
   BaseObj* resultBaseObj = BaseObjtest->makeDynamic();
   //EXPECT_EQ (resultBaseObj*, 0);
@@ -104,7 +104,7 @@ TEST_F(BaseObjTest, makeDynamicTest) {
 }
 
 
-TEST_F(BaseObjTest, toErrStrTest) {
+TEST_F(DISABLED_BaseObjTest, toErrStrTest) {
 
   BaseRef resultBaseRef = BaseObjtest->toErrStr();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -112,7 +112,7 @@ TEST_F(BaseObjTest, toErrStrTest) {
 }
 
 
-TEST_F(BaseObjTest, toFileStrTest) {
+TEST_F(DISABLED_BaseObjTest, toFileStrTest) {
 
   BaseObjtest->toFileStr(FILEtest);
   //EXPECT_EQ (BaseObjtest, 0);
@@ -120,7 +120,7 @@ TEST_F(BaseObjTest, toFileStrTest) {
 }
 
 
-TEST_F(BaseObjTest, toStrTest) {
+TEST_F(DISABLED_BaseObjTest, toStrTest) {
 
   BaseRef resultBaseRef = BaseObjtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

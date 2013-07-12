@@ -57,13 +57,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _VariableContainerTest : public ::testing::Test {
+class DISABLED__VariableContainerTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _VariableContainerTest() {
+  DISABLED__VariableContainerTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -80,7 +80,7 @@ protected:
     _AVLListtest = new _AVLList(_SimpleListtest);
   }
 
-  virtual ~_VariableContainerTest() {
+  virtual ~DISABLED__VariableContainerTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -120,7 +120,7 @@ protected:
 };
 
 
-TEST_F(_VariableContainerTest, CheckAndAddUserExpressionTest) {
+TEST_F(DISABLED__VariableContainerTest, CheckAndAddUserExpressionTest) {
 
   long resultlong = _VariableContainertest->CheckAndAddUserExpression(*_Stringtest);
   //EXPECT_EQ (resultlong, 0);
@@ -128,7 +128,7 @@ TEST_F(_VariableContainerTest, CheckAndAddUserExpressionTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ClearTest) {
+TEST_F(DISABLED__VariableContainerTest, ClearTest) {
 
   _VariableContainertest->Clear();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -136,7 +136,7 @@ TEST_F(_VariableContainerTest, ClearTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ClearConstraintsTest) {
+TEST_F(DISABLED__VariableContainerTest, ClearConstraintsTest) {
 
   _VariableContainertest->ClearConstraints();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -144,7 +144,7 @@ TEST_F(_VariableContainerTest, ClearConstraintsTest) {
 }
 
 
-TEST_F(_VariableContainerTest, CompileListOfDependentsTest) {
+TEST_F(DISABLED__VariableContainerTest, CompileListOfDependentsTest) {
 
   _VariableContainertest->CompileListOfDependents(*_SimpleListtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -152,7 +152,7 @@ TEST_F(_VariableContainerTest, CompileListOfDependentsTest) {
 }
 
 
-TEST_F(_VariableContainerTest, CopyMatrixParametersTest) {
+TEST_F(DISABLED__VariableContainerTest, CopyMatrixParametersTest) {
 
   _VariableContainertest->CopyMatrixParameters(_VariableContainertest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -160,7 +160,7 @@ TEST_F(_VariableContainerTest, CopyMatrixParametersTest) {
 }
 
 
-TEST_F(_VariableContainerTest, CountAllTest) {
+TEST_F(DISABLED__VariableContainerTest, CountAllTest) {
 
   long resultlong = _VariableContainertest->CountAll();
   //EXPECT_EQ (resultlong, 0);
@@ -168,7 +168,7 @@ TEST_F(_VariableContainerTest, CountAllTest) {
 }
 
 
-TEST_F(_VariableContainerTest, CountIndependentsTest) {
+TEST_F(DISABLED__VariableContainerTest, CountIndependentsTest) {
 
   long resultlong = _VariableContainertest->CountIndependents();
   //EXPECT_EQ (resultlong, 0);
@@ -176,7 +176,7 @@ TEST_F(_VariableContainerTest, CountIndependentsTest) {
 }
 
 
-TEST_F(_VariableContainerTest, DuplicateTest) {
+TEST_F(DISABLED__VariableContainerTest, DuplicateTest) {
 
   _VariableContainertest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -184,7 +184,7 @@ TEST_F(_VariableContainerTest, DuplicateTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetExplicitFormModelTest) {
+TEST_F(DISABLED__VariableContainerTest, GetExplicitFormModelTest) {
 
   _Formula* result_Formula = _VariableContainertest->GetExplicitFormModel();
   //EXPECT_EQ (result_Formula*, 0);
@@ -192,7 +192,7 @@ TEST_F(_VariableContainerTest, GetExplicitFormModelTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetFreqMatrixTest) {
+TEST_F(DISABLED__VariableContainerTest, GetFreqMatrixTest) {
 
   _Matrix* result_Matrix = _VariableContainertest->GetFreqMatrix();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -200,7 +200,7 @@ TEST_F(_VariableContainerTest, GetFreqMatrixTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetIthDependentTest) {
+TEST_F(DISABLED__VariableContainerTest, GetIthDependentTest) {
 
   _Variable* result_Variable = _VariableContainertest->GetIthDependent(*longtest);
   //EXPECT_EQ (result_Variable*, 0);
@@ -208,7 +208,7 @@ TEST_F(_VariableContainerTest, GetIthDependentTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetIthIndependentTest) {
+TEST_F(DISABLED__VariableContainerTest, GetIthIndependentTest) {
 
   _Variable* result_Variable = _VariableContainertest->GetIthIndependent(*longtest);
   //EXPECT_EQ (result_Variable*, 0);
@@ -216,7 +216,7 @@ TEST_F(_VariableContainerTest, GetIthIndependentTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetIthParameterTest) {
+TEST_F(DISABLED__VariableContainerTest, GetIthParameterTest) {
 
   _Variable* result_Variable = _VariableContainertest->GetIthParameter(*longtest);
   //EXPECT_EQ (result_Variable*, 0);
@@ -224,7 +224,7 @@ TEST_F(_VariableContainerTest, GetIthParameterTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetListOfModelParametersTest) {
+TEST_F(DISABLED__VariableContainerTest, GetListOfModelParametersTest) {
 
   _VariableContainertest->GetListOfModelParameters(*_Listtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -232,7 +232,7 @@ TEST_F(_VariableContainerTest, GetListOfModelParametersTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetModelDimensionTest) {
+TEST_F(DISABLED__VariableContainerTest, GetModelDimensionTest) {
 
   long resultlong = _VariableContainertest->GetModelDimension();
   //EXPECT_EQ (resultlong, 0);
@@ -240,7 +240,7 @@ TEST_F(_VariableContainerTest, GetModelDimensionTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetModelMatrixTest) {
+TEST_F(DISABLED__VariableContainerTest, GetModelMatrixTest) {
 
   _Matrix* result_Matrix = _VariableContainertest->GetModelMatrix(_Listtest, _SimpleListtest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -248,7 +248,7 @@ TEST_F(_VariableContainerTest, GetModelMatrixTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetModelNameTest) {
+TEST_F(DISABLED__VariableContainerTest, GetModelNameTest) {
 
   _String result_String = _VariableContainertest->GetModelName();
   //EXPECT_EQ (result_String, 0);
@@ -256,7 +256,7 @@ TEST_F(_VariableContainerTest, GetModelNameTest) {
 }
 
 
-TEST_F(_VariableContainerTest, GetSaveableListOfUserParametersTest) {
+TEST_F(DISABLED__VariableContainerTest, GetSaveableListOfUserParametersTest) {
 
   _String* result_String = _VariableContainertest->GetSaveableListOfUserParameters();
   //EXPECT_EQ (result_String*, 0);
@@ -264,7 +264,7 @@ TEST_F(_VariableContainerTest, GetSaveableListOfUserParametersTest) {
 }
 
 
-TEST_F(_VariableContainerTest, HasChangedTest) {
+TEST_F(DISABLED__VariableContainerTest, HasChangedTest) {
 
   bool resultbool = _VariableContainertest->HasChanged();
   //EXPECT_EQ (resultbool, 0);
@@ -272,7 +272,7 @@ TEST_F(_VariableContainerTest, HasChangedTest) {
 }
 
 
-TEST_F(_VariableContainerTest, HasExplicitFormModelTest) {
+TEST_F(DISABLED__VariableContainerTest, HasExplicitFormModelTest) {
 
   bool resultbool = _VariableContainertest->HasExplicitFormModel();
   //EXPECT_EQ (resultbool, 0);
@@ -280,7 +280,7 @@ TEST_F(_VariableContainerTest, HasExplicitFormModelTest) {
 }
 
 
-TEST_F(_VariableContainerTest, HasLocalsTest) {
+TEST_F(DISABLED__VariableContainerTest, HasLocalsTest) {
 
   bool resultbool = _VariableContainertest->HasLocals();
   //EXPECT_EQ (resultbool, 0);
@@ -288,7 +288,7 @@ TEST_F(_VariableContainerTest, HasLocalsTest) {
 }
 
 
-TEST_F(_VariableContainerTest, InitializeVarContTest) {
+TEST_F(DISABLED__VariableContainerTest, InitializeVarContTest) {
 
   //_VariableContainertest->InitializeVarCont(*_Stringtest, *_Stringtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -296,7 +296,7 @@ TEST_F(_VariableContainerTest, InitializeVarContTest) {
 }
 
 
-TEST_F(_VariableContainerTest, IsConstantTest) {
+TEST_F(DISABLED__VariableContainerTest, IsConstantTest) {
 
   bool resultbool = _VariableContainertest->IsConstant();
   //EXPECT_EQ (resultbool, 0);
@@ -304,7 +304,7 @@ TEST_F(_VariableContainerTest, IsConstantTest) {
 }
 
 
-TEST_F(_VariableContainerTest, IsModelVarTest) {
+TEST_F(DISABLED__VariableContainerTest, IsModelVarTest) {
 
   bool resultbool = _VariableContainertest->IsModelVar(*longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -312,7 +312,7 @@ TEST_F(_VariableContainerTest, IsModelVarTest) {
 }
 
 
-TEST_F(_VariableContainerTest, KillUserExpressionTest) {
+TEST_F(DISABLED__VariableContainerTest, KillUserExpressionTest) {
 
   _VariableContainertest->KillUserExpression(*longtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -320,7 +320,7 @@ TEST_F(_VariableContainerTest, KillUserExpressionTest) {
 }
 
 
-TEST_F(_VariableContainerTest, MarkDoneTest) {
+TEST_F(DISABLED__VariableContainerTest, MarkDoneTest) {
 
   _VariableContainertest->MarkDone();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -328,7 +328,7 @@ TEST_F(_VariableContainerTest, MarkDoneTest) {
 }
 
 
-TEST_F(_VariableContainerTest, MatchParametersToListTest) {
+TEST_F(DISABLED__VariableContainerTest, MatchParametersToListTest) {
 
   _VariableContainertest->MatchParametersToList(*_Listtest, *booltest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -336,7 +336,7 @@ TEST_F(_VariableContainerTest, MatchParametersToListTest) {
 }
 
 
-TEST_F(_VariableContainerTest, NeedToExponentiateTest) {
+TEST_F(DISABLED__VariableContainerTest, NeedToExponentiateTest) {
 
   bool resultbool = _VariableContainertest->NeedToExponentiate(*booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -344,7 +344,7 @@ TEST_F(_VariableContainerTest, NeedToExponentiateTest) {
 }
 
 
-TEST_F(_VariableContainerTest, RemoveDependanceTest) {
+TEST_F(DISABLED__VariableContainerTest, RemoveDependanceTest) {
 
   bool resultbool = _VariableContainertest->RemoveDependance(*longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -352,7 +352,7 @@ TEST_F(_VariableContainerTest, RemoveDependanceTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ScanAndAttachVariablesTest) {
+TEST_F(DISABLED__VariableContainerTest, ScanAndAttachVariablesTest) {
 
   _VariableContainertest->ScanAndAttachVariables();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -360,7 +360,7 @@ TEST_F(_VariableContainerTest, ScanAndAttachVariablesTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ScanForDVariablesTest) {
+TEST_F(DISABLED__VariableContainerTest, ScanForDVariablesTest) {
 
   _VariableContainertest->ScanForDVariables(*_AVLListtest, *_AVLListtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -368,7 +368,7 @@ TEST_F(_VariableContainerTest, ScanForDVariablesTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ScanForGVariablesTest) {
+TEST_F(DISABLED__VariableContainerTest, ScanForGVariablesTest) {
 
   _VariableContainertest->ScanForGVariables(*_AVLListtest, *_AVLListtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -376,7 +376,7 @@ TEST_F(_VariableContainerTest, ScanForGVariablesTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ScanForVariablesTest) {
+TEST_F(DISABLED__VariableContainerTest, ScanForVariablesTest) {
 
   _VariableContainertest->ScanForVariables(*_AVLListtest, *_AVLListtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -384,7 +384,7 @@ TEST_F(_VariableContainerTest, ScanForVariablesTest) {
 }
 
 
-TEST_F(_VariableContainerTest, ScanModelBasedVariablesTest) {
+TEST_F(DISABLED__VariableContainerTest, ScanModelBasedVariablesTest) {
 
   //_VariableContainertest->ScanModelBasedVariables(*_Stringtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -392,7 +392,7 @@ TEST_F(_VariableContainerTest, ScanModelBasedVariablesTest) {
 }
 
 
-TEST_F(_VariableContainerTest, SetDependanceTest) {
+TEST_F(DISABLED__VariableContainerTest, SetDependanceTest) {
 
   long resultlong = _VariableContainertest->SetDependance(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -400,7 +400,7 @@ TEST_F(_VariableContainerTest, SetDependanceTest) {
 }
 
 
-TEST_F(_VariableContainerTest, SetMDependanceTest) {
+TEST_F(DISABLED__VariableContainerTest, SetMDependanceTest) {
 
   bool resultbool = _VariableContainertest->SetMDependance(*_SimpleListtest);
   //EXPECT_EQ (resultbool, 0);
@@ -408,7 +408,7 @@ TEST_F(_VariableContainerTest, SetMDependanceTest) {
 }
 
 
-TEST_F(_VariableContainerTest, SetModelTest) {
+TEST_F(DISABLED__VariableContainerTest, SetModelTest) {
 
   _VariableContainertest->SetModel(*longtest, _AVLListXLtest);
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -416,7 +416,7 @@ TEST_F(_VariableContainerTest, SetModelTest) {
 }
 
 
-TEST_F(_VariableContainerTest, SortVarsTest) {
+TEST_F(DISABLED__VariableContainerTest, SortVarsTest) {
 
   //_VariableContainertest->SortVars();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -424,7 +424,7 @@ TEST_F(_VariableContainerTest, SortVarsTest) {
 }
 
 
-TEST_F(_VariableContainerTest, TrimMemoryTest) {
+TEST_F(DISABLED__VariableContainerTest, TrimMemoryTest) {
 
   _VariableContainertest->TrimMemory();
   //EXPECT_EQ (_VariableContainertest, 0);
@@ -432,7 +432,7 @@ TEST_F(_VariableContainerTest, TrimMemoryTest) {
 }
 
 
-TEST_F(_VariableContainerTest, makeDynamicTest) {
+TEST_F(DISABLED__VariableContainerTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _VariableContainertest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -440,7 +440,7 @@ TEST_F(_VariableContainerTest, makeDynamicTest) {
 }
 
 
-TEST_F(_VariableContainerTest, toStrTest) {
+TEST_F(DISABLED__VariableContainerTest, toStrTest) {
 
   BaseRef resultBaseRef = _VariableContainertest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

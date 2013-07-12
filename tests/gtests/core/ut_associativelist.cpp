@@ -52,13 +52,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _AssociativeListTest : public ::testing::Test {
+class DISABLED__AssociativeListTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _AssociativeListTest() {
+  DISABLED__AssociativeListTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -73,7 +73,7 @@ protected:
     _PMathObjtest = new _PMathObj();
   }
 
-  virtual ~_AssociativeListTest() {
+  virtual ~DISABLED__AssociativeListTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -109,7 +109,7 @@ protected:
 };
 
 
-TEST_F(_AssociativeListTest, ComputeTest) {
+TEST_F(DISABLED__AssociativeListTest, ComputeTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->Compute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -117,7 +117,7 @@ TEST_F(_AssociativeListTest, ComputeTest) {
 }
 
 
-TEST_F(_AssociativeListTest, DeleteByKeyTest) {
+TEST_F(DISABLED__AssociativeListTest, DeleteByKeyTest) {
 
   _AssociativeListtest->DeleteByKey(*_PMathObjtest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -125,7 +125,7 @@ TEST_F(_AssociativeListTest, DeleteByKeyTest) {
 }
 
 
-TEST_F(_AssociativeListTest, DuplicateTest) {
+TEST_F(DISABLED__AssociativeListTest, DuplicateTest) {
 
   _AssociativeListtest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -133,7 +133,7 @@ TEST_F(_AssociativeListTest, DuplicateTest) {
 }
 
 
-TEST_F(_AssociativeListTest, ExecuteTest) {
+TEST_F(DISABLED__AssociativeListTest, ExecuteTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->Execute(*longtest, *_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -141,7 +141,7 @@ TEST_F(_AssociativeListTest, ExecuteTest) {
 }
 
 
-TEST_F(_AssociativeListTest, FillInListTest) {
+TEST_F(DISABLED__AssociativeListTest, FillInListTest) {
 
   _AssociativeListtest->FillInList(*_Listtest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -149,7 +149,7 @@ TEST_F(_AssociativeListTest, FillInListTest) {
 }
 
 
-TEST_F(_AssociativeListTest, GetByKeyTest) {
+TEST_F(DISABLED__AssociativeListTest, GetByKeyTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->GetByKey(*_Stringtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -157,7 +157,7 @@ TEST_F(_AssociativeListTest, GetByKeyTest) {
 }
 
 
-TEST_F(_AssociativeListTest, GetByKey1Test) {
+TEST_F(DISABLED__AssociativeListTest, GetByKey1Test) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->GetByKey(*_Stringtest, *longtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -165,7 +165,7 @@ TEST_F(_AssociativeListTest, GetByKey1Test) {
 }
 
 
-TEST_F(_AssociativeListTest, GetByKey2Test) {
+TEST_F(DISABLED__AssociativeListTest, GetByKey2Test) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->GetByKey(*longtest, *longtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -173,7 +173,7 @@ TEST_F(_AssociativeListTest, GetByKey2Test) {
 }
 
 
-TEST_F(_AssociativeListTest, GetKeysTest) {
+TEST_F(DISABLED__AssociativeListTest, GetKeysTest) {
 
   _List* result_List = _AssociativeListtest->GetKeys();
   //EXPECT_EQ (result_List*, 0);
@@ -181,7 +181,7 @@ TEST_F(_AssociativeListTest, GetKeysTest) {
 }
 
 
-TEST_F(_AssociativeListTest, MAccessTest) {
+TEST_F(DISABLED__AssociativeListTest, MAccessTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->MAccess(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -189,7 +189,7 @@ TEST_F(_AssociativeListTest, MAccessTest) {
 }
 
 
-TEST_F(_AssociativeListTest, MCoordTest) {
+TEST_F(DISABLED__AssociativeListTest, MCoordTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->MCoord(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -197,7 +197,7 @@ TEST_F(_AssociativeListTest, MCoordTest) {
 }
 
 
-TEST_F(_AssociativeListTest, MIteratorTest) {
+TEST_F(DISABLED__AssociativeListTest, MIteratorTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->MIterator(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -205,7 +205,7 @@ TEST_F(_AssociativeListTest, MIteratorTest) {
 }
 
 
-TEST_F(_AssociativeListTest, MStoreTest) {
+TEST_F(DISABLED__AssociativeListTest, MStoreTest) {
 
   _AssociativeListtest->MStore(*_PMathObjtest, *_PMathObjtest, *booltest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -213,7 +213,7 @@ TEST_F(_AssociativeListTest, MStoreTest) {
 }
 
 
-TEST_F(_AssociativeListTest, MStore1Test) {
+TEST_F(DISABLED__AssociativeListTest, MStore1Test) {
 
   _AssociativeListtest->MStore(*_Stringtest, *_PMathObjtest, *booltest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -221,7 +221,7 @@ TEST_F(_AssociativeListTest, MStore1Test) {
 }
 
 
-TEST_F(_AssociativeListTest, MStore2Test) {
+TEST_F(DISABLED__AssociativeListTest, MStore2Test) {
 
   _AssociativeListtest->MStore(*_Stringtest, *_Stringtest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -229,7 +229,7 @@ TEST_F(_AssociativeListTest, MStore2Test) {
 }
 
 
-TEST_F(_AssociativeListTest, MergeTest) {
+TEST_F(DISABLED__AssociativeListTest, MergeTest) {
 
   _AssociativeListtest->Merge(*_PMathObjtest);
   //EXPECT_EQ (_AssociativeListtest, 0);
@@ -237,7 +237,7 @@ TEST_F(_AssociativeListTest, MergeTest) {
 }
 
 
-TEST_F(_AssociativeListTest, ParseStringRepresentationTest) {
+TEST_F(DISABLED__AssociativeListTest, ParseStringRepresentationTest) {
 
   bool resultbool = _AssociativeListtest->ParseStringRepresentation(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
@@ -245,7 +245,7 @@ TEST_F(_AssociativeListTest, ParseStringRepresentationTest) {
 }
 
 
-TEST_F(_AssociativeListTest, SerializeTest) {
+TEST_F(DISABLED__AssociativeListTest, SerializeTest) {
 
   _String* result_String = _AssociativeListtest->Serialize(*_Stringtest);
   //EXPECT_EQ (result_String*, 0);
@@ -253,7 +253,7 @@ TEST_F(_AssociativeListTest, SerializeTest) {
 }
 
 
-TEST_F(_AssociativeListTest, SumTest) {
+TEST_F(DISABLED__AssociativeListTest, SumTest) {
 
   _PMathObj result_PMathObj = _AssociativeListtest->Sum();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -261,7 +261,7 @@ TEST_F(_AssociativeListTest, SumTest) {
 }
 
 
-TEST_F(_AssociativeListTest, makeDynamicTest) {
+TEST_F(DISABLED__AssociativeListTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _AssociativeListtest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -269,7 +269,7 @@ TEST_F(_AssociativeListTest, makeDynamicTest) {
 }
 
 
-TEST_F(_AssociativeListTest, toStrTest) {
+TEST_F(DISABLED__AssociativeListTest, toStrTest) {
 
   BaseRef resultBaseRef = _AssociativeListtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

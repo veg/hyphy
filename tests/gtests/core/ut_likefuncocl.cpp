@@ -60,13 +60,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _OCLEvaluatorTest : public ::testing::Test {
+class DISABLED__OCLEvaluatorTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _OCLEvaluatorTest() {
+  DISABLED__OCLEvaluatorTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -79,7 +79,7 @@ protected:
     //_OCLEvaluatortest = new _OCLEvaluator();
   }
 
-  virtual ~_OCLEvaluatorTest() {
+  virtual ~DISABLED__OCLEvaluatorTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -111,7 +111,7 @@ protected:
 };
 
 
-//TEST_F(_OCLEvaluatorTest, CleanupTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, CleanupTest) {
 
 //  _OCLEvaluatortest->Cleanup(*inttest);
 //  //EXPECT_EQ (_OCLEvaluatortest, 0);
@@ -119,7 +119,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, initTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, initTest) {
 
 //  _OCLEvaluatortest->init(*longtest, *longtest);
 //  //EXPECT_EQ (_OCLEvaluatortest, 0);
@@ -127,7 +127,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, launchmdsoclTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, launchmdsoclTest) {
 
 //  double resultdouble = _OCLEvaluatortest->launchmdsocl();
 //  //EXPECT_EQ (resultdouble, 0);
@@ -135,7 +135,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, oclmainTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, oclmainTest) {
 
 //  double resultdouble = _OCLEvaluatortest->oclmain();
 //  //EXPECT_EQ (resultdouble, 0);
@@ -143,7 +143,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, roundDoubleUpToNextPowerOfTwoTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, roundDoubleUpToNextPowerOfTwoTest) {
 
 //  double resultdouble = _OCLEvaluatortest->roundDoubleUpToNextPowerOfTwo(*doubletest);
 //  //EXPECT_EQ (resultdouble, 0);
@@ -151,7 +151,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, roundUpToNextPowerOfTwoTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, roundUpToNextPowerOfTwoTest) {
 
 //  int resultint = _OCLEvaluatortest->roundUpToNextPowerOfTwo(*inttest);
 //  //EXPECT_EQ (resultint, 0);
@@ -159,7 +159,7 @@ protected:
 //}
 
 
-//TEST_F(_OCLEvaluatorTest, setupContextTest) {
+//TEST_F(DISABLED__OCLEvaluatorTest, setupContextTest) {
 
 //  int resultint = _OCLEvaluatortest->setupContext();
 //  //EXPECT_EQ (resultint, 0);

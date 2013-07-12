@@ -56,13 +56,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _CStringTest : public ::testing::Test {
+class DISABLED__CStringTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _CStringTest() {
+  DISABLED__CStringTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -77,7 +77,7 @@ protected:
     booltest = new bool();
   }
 
-  virtual ~_CStringTest() {
+  virtual ~DISABLED__CStringTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -113,7 +113,7 @@ protected:
 };
 
 
-TEST_F(_CStringTest, BestCompressTest) {
+TEST_F(DISABLED__CStringTest, BestCompressTest) {
 
   _Parameter result_Parameter = _CStringtest->BestCompress(*chartest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -121,7 +121,7 @@ TEST_F(_CStringTest, BestCompressTest) {
 }
 
 
-TEST_F(_CStringTest, DecompressTest) {
+TEST_F(DISABLED__CStringTest, DecompressTest) {
 
   _String* result_String = _CStringtest->Decompress();
   //EXPECT_EQ (result_String*, 0);
@@ -129,7 +129,7 @@ TEST_F(_CStringTest, DecompressTest) {
 }
 
 
-TEST_F(_CStringTest, DecompressFrequencyTest) {
+TEST_F(DISABLED__CStringTest, DecompressFrequencyTest) {
 
   _String* result_String = _CStringtest->DecompressFrequency();
   //EXPECT_EQ (result_String*, 0);
@@ -137,7 +137,7 @@ TEST_F(_CStringTest, DecompressFrequencyTest) {
 }
 
 
-TEST_F(_CStringTest, DecompressLZWTest) {
+TEST_F(DISABLED__CStringTest, DecompressLZWTest) {
 
   _String* result_String = _CStringtest->DecompressLZW();
   //EXPECT_EQ (result_String*, 0);
@@ -145,7 +145,7 @@ TEST_F(_CStringTest, DecompressLZWTest) {
 }
 
 
-TEST_F(_CStringTest, DuplicateTest) {
+TEST_F(DISABLED__CStringTest, DuplicateTest) {
 
   _CStringtest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_CStringtest, 0);
@@ -153,7 +153,7 @@ TEST_F(_CStringTest, DuplicateTest) {
 }
 
 
-TEST_F(_CStringTest, FinalizeTest) {
+TEST_F(DISABLED__CStringTest, FinalizeTest) {
 
   _CStringtest->Finalize();
   //EXPECT_EQ (_CStringtest, 0);
@@ -161,7 +161,7 @@ TEST_F(_CStringTest, FinalizeTest) {
 }
 
 
-TEST_F(_CStringTest, FreeUpMemoryTest) {
+TEST_F(DISABLED__CStringTest, FreeUpMemoryTest) {
 
   long resultlong = _CStringtest->FreeUpMemory(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -169,7 +169,7 @@ TEST_F(_CStringTest, FreeUpMemoryTest) {
 }
 
 
-TEST_F(_CStringTest, FrequencyCompressTest) {
+TEST_F(DISABLED__CStringTest, FrequencyCompressTest) {
 
   _Parameter result_Parameter = _CStringtest->FrequencyCompress(*chartest, *booltest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -177,7 +177,7 @@ TEST_F(_CStringTest, FrequencyCompressTest) {
 }
 
 
-TEST_F(_CStringTest, LZWCompressTest) {
+TEST_F(DISABLED__CStringTest, LZWCompressTest) {
 
   _Parameter result_Parameter = _CStringtest->LZWCompress(*chartest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -185,7 +185,7 @@ TEST_F(_CStringTest, LZWCompressTest) {
 }
 
 
-TEST_F(_CStringTest, SelectAlphaTest) {
+TEST_F(DISABLED__CStringTest, SelectAlphaTest) {
 
   _String* result_String = _CStringtest->SelectAlpha(*chartest);
   //EXPECT_EQ (result_String*, 0);
@@ -193,7 +193,7 @@ TEST_F(_CStringTest, SelectAlphaTest) {
 }
 
 
-TEST_F(_CStringTest, makeDynamicTest) {
+TEST_F(DISABLED__CStringTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _CStringtest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -201,7 +201,7 @@ TEST_F(_CStringTest, makeDynamicTest) {
 }
 
 
-TEST_F(_CStringTest, operatorDoubleLessTest) {
+TEST_F(DISABLED__CStringTest, operatorDoubleLessTest) {
 
   //_CStringtest->operatorDoubleLess(_Stringtest);
   //EXPECT_EQ (_CStringtest, 0);
@@ -209,7 +209,7 @@ TEST_F(_CStringTest, operatorDoubleLessTest) {
 }
 
 
-TEST_F(_CStringTest, operatorDoubleLess1Test) {
+TEST_F(DISABLED__CStringTest, operatorDoubleLess1Test) {
 
   //_CStringtest->operatorDoubleLess(*chartest);
   //EXPECT_EQ (_CStringtest, 0);

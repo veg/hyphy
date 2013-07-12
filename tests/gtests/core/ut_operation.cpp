@@ -58,13 +58,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _OperationTest : public ::testing::Test {
+class DISABLED__OperationTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _OperationTest() {
+  DISABLED__OperationTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -80,7 +80,7 @@ protected:
     booltest = new bool();
   }
 
-  virtual ~_OperationTest() {
+  virtual ~DISABLED__OperationTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -118,116 +118,116 @@ protected:
 };
 
 
-TEST_F(_OperationTest, CanResultsBeCachedTest) {
+//TEST_F(DISABLED__OperationTest, CanResultsBeCachedTest) {
 
-  bool resultbool = _Operationtest->CanResultsBeCached(_Operationtest, *booltest);
-  //EXPECT_EQ (resultbool, 0);
+//  bool resultbool = _Operationtest->CanResultsBeCached(_Operationtest, *booltest);
+//  //EXPECT_EQ (resultbool, 0);
 
-}
-
-
-TEST_F(_OperationTest, DuplicateTest) {
-
-  _Operationtest->Duplicate(*BaseReftest);
-  //EXPECT_EQ (_Operationtest, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, EqualOpTest) {
+//TEST_F(DISABLED__OperationTest, DuplicateTest) {
 
-  bool resultbool = _Operationtest->EqualOp(_Operationtest);
-  //EXPECT_EQ (resultbool, 0);
+//  _Operationtest->Duplicate(*BaseReftest);
+//  //EXPECT_EQ (_Operationtest, 0);
 
-}
-
-
-TEST_F(_OperationTest, ExecuteTest) {
-
-  bool resultbool = _Operationtest->Execute(*_Stacktest, _VariableContainertest);
-  //EXPECT_EQ (resultbool, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, ExecutePolynomialTest) {
+//TEST_F(DISABLED__OperationTest, EqualOpTest) {
 
-  bool resultbool = _Operationtest->ExecutePolynomial(*_Stacktest);
-  //EXPECT_EQ (resultbool, 0);
+//  bool resultbool = _Operationtest->EqualOp(_Operationtest);
+//  //EXPECT_EQ (resultbool, 0);
 
-}
-
-
-TEST_F(_OperationTest, HasChangedTest) {
-
-  bool resultbool = _Operationtest->HasChanged();
-  //EXPECT_EQ (resultbool, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, InitializeTest) {
+//TEST_F(DISABLED__OperationTest, ExecuteTest) {
 
-  _Operationtest->Initialize();
-  //EXPECT_EQ (_Operationtest, 0);
+//  bool resultbool = _Operationtest->Execute(*_Stacktest, _VariableContainertest);
+//  //EXPECT_EQ (resultbool, 0);
 
-}
-
-
-TEST_F(_OperationTest, IsAFunctionCallTest) {
-
-  bool resultbool = _Operationtest->IsAFunctionCall();
-  //EXPECT_EQ (resultbool, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, IsAVariableTest) {
+//TEST_F(DISABLED__OperationTest, ExecutePolynomialTest) {
 
-  bool resultbool = _Operationtest->IsAVariable(*booltest);
-  //EXPECT_EQ (resultbool, 0);
+//  bool resultbool = _Operationtest->ExecutePolynomial(*_Stacktest);
+//  //EXPECT_EQ (resultbool, 0);
 
-}
-
-
-TEST_F(_OperationTest, IsConstantTest) {
-
-  bool resultbool = _Operationtest->IsConstant();
-  //EXPECT_EQ (resultbool, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, ReportOperationExecutionErrorTest) {
+//TEST_F(DISABLED__OperationTest, HasChangedTest) {
 
-  //bool resultbool = _Operationtest->ReportOperationExecutionError(*_Stringtest, _Stringtest);
-  //EXPECT_EQ (resultbool, 0);
+//  bool resultbool = _Operationtest->HasChanged();
+//  //EXPECT_EQ (resultbool, 0);
 
-}
-
-
-TEST_F(_OperationTest, StackDepthTest) {
-
-  _Operationtest->StackDepth(*longtest);
-  //EXPECT_EQ (_Operationtest, 0);
-
-}
+//}
 
 
-TEST_F(_OperationTest, makeDynamicTest) {
+//TEST_F(DISABLED__OperationTest, InitializeTest) {
 
-  BaseRef resultBaseRef = _Operationtest->makeDynamic();
-  //EXPECT_EQ (resultBaseRef, 0);
+//  _Operationtest->Initialize();
+//  //EXPECT_EQ (_Operationtest, 0);
 
-}
+//}
 
 
-TEST_F(_OperationTest, toStrTest) {
+//TEST_F(DISABLED__OperationTest, IsAFunctionCallTest) {
 
-  BaseRef resultBaseRef = _Operationtest->toStr();
-  //EXPECT_EQ (resultBaseRef, 0);
+//  bool resultbool = _Operationtest->IsAFunctionCall();
+//  //EXPECT_EQ (resultbool, 0);
 
-}
+//}
+
+
+//TEST_F(DISABLED__OperationTest, IsAVariableTest) {
+
+//  bool resultbool = _Operationtest->IsAVariable(*booltest);
+//  //EXPECT_EQ (resultbool, 0);
+
+//}
+
+
+//TEST_F(DISABLED__OperationTest, IsConstantTest) {
+
+//  bool resultbool = _Operationtest->IsConstant();
+//  //EXPECT_EQ (resultbool, 0);
+
+//}
+
+
+//TEST_F(DISABLED__OperationTest, ReportOperationExecutionErrorTest) {
+
+//  //bool resultbool = _Operationtest->ReportOperationExecutionError(*_Stringtest, _Stringtest);
+//  //EXPECT_EQ (resultbool, 0);
+
+//}
+
+
+//TEST_F(DISABLED__OperationTest, StackDepthTest) {
+
+//  _Operationtest->StackDepth(*longtest);
+//  //EXPECT_EQ (_Operationtest, 0);
+
+//}
+
+
+//TEST_F(DISABLED__OperationTest, makeDynamicTest) {
+
+//  BaseRef resultBaseRef = _Operationtest->makeDynamic();
+//  //EXPECT_EQ (resultBaseRef, 0);
+
+//}
+
+
+//TEST_F(DISABLED__OperationTest, toStrTest) {
+
+//  BaseRef resultBaseRef = _Operationtest->toStr();
+//  //EXPECT_EQ (resultBaseRef, 0);
+
+//}
 
 
 }

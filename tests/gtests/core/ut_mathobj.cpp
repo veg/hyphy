@@ -52,13 +52,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _MathObjectTest : public ::testing::Test {
+class DISABLED__MathObjectTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _MathObjectTest() {
+  DISABLED__MathObjectTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -67,7 +67,7 @@ protected:
     _MathObjecttest = new _MathObject();
   }
 
-  virtual ~_MathObjectTest() {
+  virtual ~DISABLED__MathObjectTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -91,7 +91,7 @@ protected:
 };
 
 
-TEST_F(_MathObjectTest, ExecuteTest) {
+TEST_F(DISABLED__MathObjectTest, ExecuteTest) {
 
   //_PMathObj result_PMathObj = _MathObjecttest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -99,7 +99,7 @@ TEST_F(_MathObjectTest, ExecuteTest) {
 }
 
 
-TEST_F(_MathObjectTest, TypeTest) {
+TEST_F(DISABLED__MathObjectTest, TypeTest) {
 
   _PMathObj result_PMathObj = _MathObjecttest->Type();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -107,7 +107,7 @@ TEST_F(_MathObjectTest, TypeTest) {
 }
 
 
-TEST_F(_MathObjectTest, makeDynamicTest) {
+TEST_F(DISABLED__MathObjectTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _MathObjecttest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

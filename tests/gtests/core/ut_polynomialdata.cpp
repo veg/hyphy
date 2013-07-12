@@ -55,13 +55,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _PolynomialDataTest : public ::testing::Test {
+class DISABLED__PolynomialDataTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _PolynomialDataTest() {
+  DISABLED__PolynomialDataTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -73,7 +73,7 @@ protected:
     _PolynomialDatatest = new _PolynomialData(*_PolynomialDatatest);
   }
 
-  virtual ~_PolynomialDataTest() {
+  virtual ~DISABLED__PolynomialDataTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -103,7 +103,7 @@ protected:
 };
 
 
-TEST_F(_PolynomialDataTest, AddTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, AddTermTest) {
 
   _PolynomialDatatest->AddTerm(*_Parametertest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -111,7 +111,7 @@ TEST_F(_PolynomialDataTest, AddTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, AddTerm1Test) {
+TEST_F(DISABLED__PolynomialDataTest, AddTerm1Test) {
 
   _PolynomialDatatest->AddTerm(longtest, *_Parametertest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -119,7 +119,7 @@ TEST_F(_PolynomialDataTest, AddTerm1Test) {
 }
 
 
-TEST_F(_PolynomialDataTest, AddTerm2Test) {
+TEST_F(DISABLED__PolynomialDataTest, AddTerm2Test) {
 
   //_PolynomialDatatest->AddTerm(longtest, *_Parametertest, longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -127,7 +127,7 @@ TEST_F(_PolynomialDataTest, AddTerm2Test) {
 }
 
 
-TEST_F(_PolynomialDataTest, BinaryRaiseTest) {
+TEST_F(DISABLED__PolynomialDataTest, BinaryRaiseTest) {
 
   _Parameter result_Parameter = _PolynomialDatatest->BinaryRaise(*_Parametertest, *longtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -135,7 +135,7 @@ TEST_F(_PolynomialDataTest, BinaryRaiseTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, ChopTermsTest) {
+TEST_F(DISABLED__PolynomialDataTest, ChopTermsTest) {
 
   _PolynomialDatatest->ChopTerms();
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -143,7 +143,7 @@ TEST_F(_PolynomialDataTest, ChopTermsTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, CompareTermsTest) {
+TEST_F(DISABLED__PolynomialDataTest, CompareTermsTest) {
 
   char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -151,7 +151,7 @@ TEST_F(_PolynomialDataTest, CompareTermsTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, CompareTerms1Test) {
+TEST_F(DISABLED__PolynomialDataTest, CompareTerms1Test) {
 
   //char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -159,7 +159,7 @@ TEST_F(_PolynomialDataTest, CompareTerms1Test) {
 }
 
 
-TEST_F(_PolynomialDataTest, CompareTerms2Test) {
+TEST_F(DISABLED__PolynomialDataTest, CompareTerms2Test) {
 
   //char resultchar = _PolynomialDatatest->CompareTerms(longtest, longtest, longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -167,7 +167,7 @@ TEST_F(_PolynomialDataTest, CompareTerms2Test) {
 }
 
 
-TEST_F(_PolynomialDataTest, DeleteTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, DeleteTermTest) {
 
   _PolynomialDatatest->DeleteTerm(*longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -175,7 +175,7 @@ TEST_F(_PolynomialDataTest, DeleteTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, DuplicateTest) {
+TEST_F(DISABLED__PolynomialDataTest, DuplicateTest) {
 
   _PolynomialDatatest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -183,7 +183,7 @@ TEST_F(_PolynomialDataTest, DuplicateTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, FindTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, FindTermTest) {
 
   long resultlong = _PolynomialDatatest->FindTerm(longtest, longtest, *longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -191,7 +191,7 @@ TEST_F(_PolynomialDataTest, FindTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, GetTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, GetTermTest) {
 
   long* resultlong = _PolynomialDatatest->GetTerm(*longtest);
   //EXPECT_EQ (resultlong*, 0);
@@ -199,7 +199,7 @@ TEST_F(_PolynomialDataTest, GetTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, IsFirstANumberTest) {
+TEST_F(DISABLED__PolynomialDataTest, IsFirstANumberTest) {
 
   bool resultbool = _PolynomialDatatest->IsFirstANumber();
   //EXPECT_EQ (resultbool, 0);
@@ -207,7 +207,7 @@ TEST_F(_PolynomialDataTest, IsFirstANumberTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, MultiplyTermsTest) {
+TEST_F(DISABLED__PolynomialDataTest, MultiplyTermsTest) {
 
   _PolynomialDatatest->MultiplyTerms(longtest, longtest, longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -215,7 +215,7 @@ TEST_F(_PolynomialDataTest, MultiplyTermsTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, RaiseTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, RaiseTermTest) {
 
   _PolynomialDatatest->RaiseTerm(longtest, *longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -223,7 +223,7 @@ TEST_F(_PolynomialDataTest, RaiseTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, RearrangeTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, RearrangeTermTest) {
 
   //_PolynomialDatatest->RearrangeTerm(longtest, longtest, longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -231,7 +231,7 @@ TEST_F(_PolynomialDataTest, RearrangeTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, ResortTermsTest) {
+TEST_F(DISABLED__PolynomialDataTest, ResortTermsTest) {
 
   _PolynomialDatatest->ResortTerms(longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -239,7 +239,7 @@ TEST_F(_PolynomialDataTest, ResortTermsTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, SumOfPowersTest) {
+TEST_F(DISABLED__PolynomialDataTest, SumOfPowersTest) {
 
   long resultlong = _PolynomialDatatest->SumOfPowers(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -247,7 +247,7 @@ TEST_F(_PolynomialDataTest, SumOfPowersTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, WeightedSumOfPowersTest) {
+TEST_F(DISABLED__PolynomialDataTest, WeightedSumOfPowersTest) {
 
   long resultlong = _PolynomialDatatest->WeightedSumOfPowers(*longtest, _Parametertest);
   //EXPECT_EQ (resultlong, 0);
@@ -255,7 +255,7 @@ TEST_F(_PolynomialDataTest, WeightedSumOfPowersTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, WriteTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, WriteTermTest) {
 
   _PolynomialDatatest->WriteTerm(longtest, *longtest);
   //EXPECT_EQ (_PolynomialDatatest, 0);
@@ -263,7 +263,7 @@ TEST_F(_PolynomialDataTest, WriteTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, checkMeTest) {
+TEST_F(DISABLED__PolynomialDataTest, checkMeTest) {
 
   bool resultbool = _PolynomialDatatest->checkMe();
   //EXPECT_EQ (resultbool, 0);
@@ -271,7 +271,7 @@ TEST_F(_PolynomialDataTest, checkMeTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, checkTermTest) {
+TEST_F(DISABLED__PolynomialDataTest, checkTermTest) {
 
   bool resultbool = _PolynomialDatatest->checkTerm(*_Parametertest, *longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -279,7 +279,7 @@ TEST_F(_PolynomialDataTest, checkTermTest) {
 }
 
 
-TEST_F(_PolynomialDataTest, makeDynamicTest) {
+TEST_F(DISABLED__PolynomialDataTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _PolynomialDatatest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

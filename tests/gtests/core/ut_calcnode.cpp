@@ -64,13 +64,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _CalcNodeTest : public ::testing::Test {
+class DISABLED__CalcNodeTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _CalcNodeTest() {
+  DISABLED__CalcNodeTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -91,7 +91,7 @@ protected:
 //    node<long>test = new node<long>();
   }
 
-  virtual ~_CalcNodeTest() {
+  virtual ~DISABLED__CalcNodeTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -139,7 +139,7 @@ protected:
 };
 
 
-TEST_F(_CalcNodeTest, BranchLengthTest) {
+TEST_F(DISABLED__CalcNodeTest, BranchLengthTest) {
 
   _Parameter result_Parameter = _CalcNodetest->BranchLength();
   //EXPECT_EQ (result_Parameter, 0);
@@ -147,7 +147,7 @@ TEST_F(_CalcNodeTest, BranchLengthTest) {
 }
 
 
-TEST_F(_CalcNodeTest, CheckForReferenceNodeTest) {
+TEST_F(DISABLED__CalcNodeTest, CheckForReferenceNodeTest) {
 
   long resultlong = _CalcNodetest->CheckForReferenceNode();
   //EXPECT_EQ (resultlong, 0);
@@ -155,7 +155,7 @@ TEST_F(_CalcNodeTest, CheckForReferenceNodeTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ComputeTest) {
+TEST_F(DISABLED__CalcNodeTest, ComputeTest) {
 
   _PMathObj result_PMathObj = _CalcNodetest->Compute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -163,7 +163,7 @@ TEST_F(_CalcNodeTest, ComputeTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ComputeModelMatrixTest) {
+TEST_F(DISABLED__CalcNodeTest, ComputeModelMatrixTest) {
 
   _Matrix* result_Matrix = _CalcNodetest->ComputeModelMatrix(*booltest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -171,7 +171,7 @@ TEST_F(_CalcNodeTest, ComputeModelMatrixTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ConvertFromSimpleMatrixTest) {
+TEST_F(DISABLED__CalcNodeTest, ConvertFromSimpleMatrixTest) {
 
   _CalcNodetest->ConvertFromSimpleMatrix();
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -179,7 +179,7 @@ TEST_F(_CalcNodeTest, ConvertFromSimpleMatrixTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ConvertToSimpleMatrixTest) {
+TEST_F(DISABLED__CalcNodeTest, ConvertToSimpleMatrixTest) {
 
   long resultlong = _CalcNodetest->ConvertToSimpleMatrix();
   //EXPECT_EQ (resultlong, 0);
@@ -187,7 +187,7 @@ TEST_F(_CalcNodeTest, ConvertToSimpleMatrixTest) {
 }
 
 
-TEST_F(_CalcNodeTest, DuplicateTest) {
+TEST_F(DISABLED__CalcNodeTest, DuplicateTest) {
 
   _CalcNodetest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -195,7 +195,7 @@ TEST_F(_CalcNodeTest, DuplicateTest) {
 }
 
 
-TEST_F(_CalcNodeTest, FreeUpMemoryTest) {
+TEST_F(DISABLED__CalcNodeTest, FreeUpMemoryTest) {
 
   long resultlong = _CalcNodetest->FreeUpMemory(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -203,7 +203,7 @@ TEST_F(_CalcNodeTest, FreeUpMemoryTest) {
 }
 
 
-TEST_F(_CalcNodeTest, GetCompExpTest) {
+TEST_F(DISABLED__CalcNodeTest, GetCompExpTest) {
 
   _Matrix* result_Matrix = _CalcNodetest->GetCompExp(*longtest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -211,7 +211,7 @@ TEST_F(_CalcNodeTest, GetCompExpTest) {
 }
 
 
-TEST_F(_CalcNodeTest, HasChangedTest) {
+TEST_F(DISABLED__CalcNodeTest, HasChangedTest) {
 
   bool resultbool = _CalcNodetest->HasChanged();
   //EXPECT_EQ (resultbool, 0);
@@ -219,7 +219,7 @@ TEST_F(_CalcNodeTest, HasChangedTest) {
 }
 
 
-TEST_F(_CalcNodeTest, InitializeCNTest) {
+TEST_F(DISABLED__CalcNodeTest, InitializeCNTest) {
 
   _CalcNodetest->InitializeCN(*_Stringtest, *inttest, _VariableContainertest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -227,7 +227,7 @@ TEST_F(_CalcNodeTest, InitializeCNTest) {
 }
 
 
-TEST_F(_CalcNodeTest, LocateMeInTreeTest) {
+TEST_F(DISABLED__CalcNodeTest, LocateMeInTreeTest) {
 
 //  node<long>* resultnode<long> = _CalcNodetest->LocateMeInTree();
 //  //EXPECT_EQ (resultnode<long>*, 0);
@@ -235,7 +235,7 @@ TEST_F(_CalcNodeTest, LocateMeInTreeTest) {
 }
 
 
-TEST_F(_CalcNodeTest, MatchSubtreeTest) {
+TEST_F(DISABLED__CalcNodeTest, MatchSubtreeTest) {
 
   bool resultbool = _CalcNodetest->MatchSubtree(_CalcNodetest);
   //EXPECT_EQ (resultbool, 0);
@@ -243,7 +243,7 @@ TEST_F(_CalcNodeTest, MatchSubtreeTest) {
 }
 
 
-TEST_F(_CalcNodeTest, NeedToExponentiateTest) {
+TEST_F(DISABLED__CalcNodeTest, NeedToExponentiateTest) {
 
   bool resultbool = _CalcNodetest->NeedToExponentiate(*longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -251,7 +251,7 @@ TEST_F(_CalcNodeTest, NeedToExponentiateTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ParentTreeTest) {
+TEST_F(DISABLED__CalcNodeTest, ParentTreeTest) {
 
   _VariableContainer* result_VariableContainer = _CalcNodetest->ParentTree();
   //EXPECT_EQ (result_VariableContainer*, 0);
@@ -259,7 +259,7 @@ TEST_F(_CalcNodeTest, ParentTreeTest) {
 }
 
 
-TEST_F(_CalcNodeTest, RecomputeMatrixTest) {
+TEST_F(DISABLED__CalcNodeTest, RecomputeMatrixTest) {
 
   bool resultbool = _CalcNodetest->RecomputeMatrix(*longtest, *longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -267,7 +267,7 @@ TEST_F(_CalcNodeTest, RecomputeMatrixTest) {
 }
 
 
-TEST_F(_CalcNodeTest, RecurseMCTest) {
+TEST_F(DISABLED__CalcNodeTest, RecurseMCTest) {
 
   //_Formula* result_Formula = _CalcNodetest->RecurseMC(*longtest, node<long>test);
   //EXPECT_EQ (result_Formula*, 0);
@@ -275,7 +275,7 @@ TEST_F(_CalcNodeTest, RecurseMCTest) {
 }
 
 
-TEST_F(_CalcNodeTest, RemoveModelTest) {
+TEST_F(DISABLED__CalcNodeTest, RemoveModelTest) {
 
   _CalcNodetest->RemoveModel();
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -283,7 +283,7 @@ TEST_F(_CalcNodeTest, RemoveModelTest) {
 }
 
 
-TEST_F(_CalcNodeTest, ReplaceModelTest) {
+TEST_F(DISABLED__CalcNodeTest, ReplaceModelTest) {
 
   //TODO
   //_CalcNodetest->ReplaceModel(*_Stringtest);
@@ -292,7 +292,7 @@ TEST_F(_CalcNodeTest, ReplaceModelTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetCodeBaseTest) {
+TEST_F(DISABLED__CalcNodeTest, SetCodeBaseTest) {
 
   _CalcNodetest->SetCodeBase(*inttest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -300,7 +300,7 @@ TEST_F(_CalcNodeTest, SetCodeBaseTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetCompExpTest) {
+TEST_F(DISABLED__CalcNodeTest, SetCompExpTest) {
 
   _CalcNodetest->SetCompExp(_Matrixtest, *longtest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -308,7 +308,7 @@ TEST_F(_CalcNodeTest, SetCompExpTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetCompMatrixTest) {
+TEST_F(DISABLED__CalcNodeTest, SetCompMatrixTest) {
 
   _CalcNodetest->SetCompMatrix(*longtest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -316,7 +316,7 @@ TEST_F(_CalcNodeTest, SetCompMatrixTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetDependanceTest) {
+TEST_F(DISABLED__CalcNodeTest, SetDependanceTest) {
 
   long resultlong = _CalcNodetest->SetDependance(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -324,7 +324,7 @@ TEST_F(_CalcNodeTest, SetDependanceTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetModelTest) {
+TEST_F(DISABLED__CalcNodeTest, SetModelTest) {
 
   _CalcNodetest->SetModel(*longtest, _AVLListXLtest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -332,7 +332,7 @@ TEST_F(_CalcNodeTest, SetModelTest) {
 }
 
 
-TEST_F(_CalcNodeTest, SetupCategoryMapTest) {
+TEST_F(DISABLED__CalcNodeTest, SetupCategoryMapTest) {
   //TODO
   //_CalcNodetest->SetupCategoryMap(*_Listtest);
   //EXPECT_EQ (_CalcNodetest, 0);
@@ -340,7 +340,7 @@ TEST_F(_CalcNodeTest, SetupCategoryMapTest) {
 }
 
 
-TEST_F(_CalcNodeTest, makeDynamicTest) {
+TEST_F(DISABLED__CalcNodeTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _CalcNodetest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -348,7 +348,7 @@ TEST_F(_CalcNodeTest, makeDynamicTest) {
 }
 
 
-TEST_F(_CalcNodeTest, operatorBracketsTest) {
+TEST_F(DISABLED__CalcNodeTest, operatorBracketsTest) {
 
   //TODO
   //_Parameter result_Parameter = _CalcNodetest->operatorBrackets(*longtest);
@@ -357,7 +357,7 @@ TEST_F(_CalcNodeTest, operatorBracketsTest) {
 }
 
 
-TEST_F(_CalcNodeTest, toStrTest) {
+TEST_F(DISABLED__CalcNodeTest, toStrTest) {
 
   BaseRef resultBaseRef = _CalcNodetest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

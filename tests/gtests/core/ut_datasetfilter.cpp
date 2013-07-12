@@ -54,13 +54,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _DataSetFilterTest : public ::testing::Test {
+class DISABLED__DataSetFilterTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _DataSetFilterTest() {
+  DISABLED__DataSetFilterTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -80,7 +80,7 @@ protected:
     _Parametertest = new _Parameter();
   }
 
-  virtual ~_DataSetFilterTest() {
+  virtual ~DISABLED__DataSetFilterTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -126,7 +126,7 @@ protected:
 };
 
 
-TEST_F(_DataSetFilterTest, CompareTwoSitesTest) {
+TEST_F(DISABLED__DataSetFilterTest, CompareTwoSitesTest) {
 
   //TODO
   //bool resultbool = _DataSetFiltertest->CompareTwoSites(*longtest, *longtest);
@@ -135,7 +135,7 @@ TEST_F(_DataSetFilterTest, CompareTwoSitesTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, CompareTwoSitesCharTest) {
+TEST_F(DISABLED__DataSetFilterTest, CompareTwoSitesCharTest) {
 
   //TODO
   //bool resultbool = _DataSetFiltertest->CompareTwoSitesChar(*longtest);
@@ -144,7 +144,7 @@ TEST_F(_DataSetFilterTest, CompareTwoSitesCharTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, ComputePairwiseDifferencesTest) {
+TEST_F(DISABLED__DataSetFilterTest, ComputePairwiseDifferencesTest) {
 
   _Matrix* result_Matrix = _DataSetFiltertest->ComputePairwiseDifferences(*longtest, *longtest, *chartest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -152,7 +152,7 @@ TEST_F(_DataSetFilterTest, ComputePairwiseDifferencesTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, ComputePairwiseDifferences1Test) {
+TEST_F(DISABLED__DataSetFilterTest, ComputePairwiseDifferences1Test) {
 
   _DataSetFiltertest->ComputePairwiseDifferences(*_Matrixtest, *longtest, *longtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -160,7 +160,7 @@ TEST_F(_DataSetFilterTest, ComputePairwiseDifferences1Test) {
 }
 
 
-TEST_F(_DataSetFilterTest, ComputePatternToSiteMapTest) {
+TEST_F(DISABLED__DataSetFilterTest, ComputePatternToSiteMapTest) {
 
   _List* result_List = _DataSetFiltertest->ComputePatternToSiteMap();
   //EXPECT_EQ (result_List*, 0);
@@ -168,7 +168,7 @@ TEST_F(_DataSetFilterTest, ComputePatternToSiteMapTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, ConvertCodeToLettersBufferedTest) {
+TEST_F(DISABLED__DataSetFilterTest, ConvertCodeToLettersBufferedTest) {
   //TODO
   //_DataSetFiltertest->ConvertCodeToLettersBuffered(*longtest, *chartest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -176,7 +176,7 @@ TEST_F(_DataSetFilterTest, ConvertCodeToLettersBufferedTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, CopyFilterTest) {
+TEST_F(DISABLED__DataSetFilterTest, CopyFilterTest) {
 
   _DataSetFiltertest->CopyFilter(_DataSetFiltertest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -184,7 +184,7 @@ TEST_F(_DataSetFilterTest, CopyFilterTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, CorrectCodeTest) {
+TEST_F(DISABLED__DataSetFilterTest, CorrectCodeTest) {
 
   long resultlong = _DataSetFiltertest->CorrectCode(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -192,7 +192,7 @@ TEST_F(_DataSetFilterTest, CorrectCodeTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, CountAndResolveTest) {
+TEST_F(DISABLED__DataSetFilterTest, CountAndResolveTest) {
 
   _SimpleList* result_SimpleList = _DataSetFiltertest->CountAndResolve(*longtest, _Parametertest);
   //EXPECT_EQ (result_SimpleList*, 0);
@@ -200,7 +200,7 @@ TEST_F(_DataSetFilterTest, CountAndResolveTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FilterDeletionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, FilterDeletionsTest) {
 
   _DataSetFiltertest->FilterDeletions(_SimpleListtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -208,7 +208,7 @@ TEST_F(_DataSetFilterTest, FilterDeletionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FindAllSitesLikeThisOneTest) {
+TEST_F(DISABLED__DataSetFilterTest, FindAllSitesLikeThisOneTest) {
 
   //TODO
   //_DataSetFiltertest->FindAllSitesLikeThisOne(*longtest);
@@ -217,7 +217,7 @@ TEST_F(_DataSetFilterTest, FindAllSitesLikeThisOneTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FindSpeciesNameTest) {
+TEST_F(DISABLED__DataSetFilterTest, FindSpeciesNameTest) {
 
   long resultlong = _DataSetFiltertest->FindSpeciesName(*_Listtest, *_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -225,7 +225,7 @@ TEST_F(_DataSetFilterTest, FindSpeciesNameTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FindUniqueSequencesTest) {
+TEST_F(DISABLED__DataSetFilterTest, FindUniqueSequencesTest) {
 
   //TODO
   //long resultlong = _DataSetFiltertest->FindUniqueSequences(*_SimpleListtest);
@@ -234,7 +234,7 @@ TEST_F(_DataSetFilterTest, FindUniqueSequencesTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FreeUpMemoryTest) {
+TEST_F(DISABLED__DataSetFilterTest, FreeUpMemoryTest) {
 
   long resultlong = _DataSetFiltertest->FreeUpMemory(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -242,7 +242,7 @@ TEST_F(_DataSetFilterTest, FreeUpMemoryTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, FreezeTest) {
+TEST_F(DISABLED__DataSetFilterTest, FreezeTest) {
 
   _DataSetFiltertest->Freeze(*longtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -250,7 +250,7 @@ TEST_F(_DataSetFilterTest, FreezeTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GenerateConsensusStringTest) {
+TEST_F(DISABLED__DataSetFilterTest, GenerateConsensusStringTest) {
 
   _String result_String = _DataSetFiltertest->GenerateConsensusString(_SimpleListtest);
   //EXPECT_EQ (result_String, 0);
@@ -258,7 +258,7 @@ TEST_F(_DataSetFilterTest, GenerateConsensusStringTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetCharTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetCharTest) {
 
   char resultchar = _DataSetFiltertest->GetChar(*longtest, *longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -266,7 +266,7 @@ TEST_F(_DataSetFilterTest, GetCharTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetDimensionTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetDimensionTest) {
 
   long resultlong = _DataSetFiltertest->GetDimension(*booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -274,7 +274,7 @@ TEST_F(_DataSetFilterTest, GetDimensionTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetExclusionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetExclusionsTest) {
 
   _String* result_String = _DataSetFiltertest->GetExclusions();
   //EXPECT_EQ (result_String*, 0);
@@ -282,7 +282,7 @@ TEST_F(_DataSetFilterTest, GetExclusionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetFilterCharactersTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetFilterCharactersTest) {
 
   _Matrix* result_Matrix = _DataSetFiltertest->GetFilterCharacters(*booltest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -290,7 +290,7 @@ TEST_F(_DataSetFilterTest, GetFilterCharactersTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetOriginalToShortMapTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetOriginalToShortMapTest) {
 
   long resultlong = _DataSetFiltertest->GetOriginalToShortMap(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -298,7 +298,7 @@ TEST_F(_DataSetFilterTest, GetOriginalToShortMapTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GetSequenceCharactersTest) {
+TEST_F(DISABLED__DataSetFilterTest, GetSequenceCharactersTest) {
 
   _String* result_String = _DataSetFiltertest->GetSequenceCharacters(*longtest);
   //EXPECT_EQ (result_String*, 0);
@@ -306,7 +306,7 @@ TEST_F(_DataSetFilterTest, GetSequenceCharactersTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GrabSiteTest) {
+TEST_F(DISABLED__DataSetFilterTest, GrabSiteTest) {
 
   _DataSetFiltertest->GrabSite(*longtest, *longtest, chartest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -314,7 +314,7 @@ TEST_F(_DataSetFilterTest, GrabSiteTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, GrabSite1Test) {
+TEST_F(DISABLED__DataSetFilterTest, GrabSite1Test) {
 
   //TODO
   //_DataSetFiltertest->GrabSite(*longtest, *longtest);
@@ -323,7 +323,7 @@ TEST_F(_DataSetFilterTest, GrabSite1Test) {
 }
 
 
-TEST_F(_DataSetFilterTest, HarvestFrequenciesTest) {
+TEST_F(DISABLED__DataSetFilterTest, HarvestFrequenciesTest) {
 
   _Matrix* result_Matrix = _DataSetFiltertest->HarvestFrequencies(*chartest, *chartest, *booltest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -331,7 +331,7 @@ TEST_F(_DataSetFilterTest, HarvestFrequenciesTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, HasDeletionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, HasDeletionsTest) {
 
   bool resultbool = _DataSetFiltertest->HasDeletions(*longtest, _AVLListtest);
   //EXPECT_EQ (resultbool, 0);
@@ -339,7 +339,7 @@ TEST_F(_DataSetFilterTest, HasDeletionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, HasExclusionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, HasExclusionsTest) {
 
   //TODO
   //long resultlong = _DataSetFiltertest->HasExclusions(*longtest, _SimpleListtest);
@@ -348,7 +348,7 @@ TEST_F(_DataSetFilterTest, HasExclusionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, IsConstantTest) {
+TEST_F(DISABLED__DataSetFilterTest, IsConstantTest) {
 
   bool resultbool = _DataSetFiltertest->IsConstant(*longtest, *booltest);
   //EXPECT_EQ (resultbool, 0);
@@ -356,7 +356,7 @@ TEST_F(_DataSetFilterTest, IsConstantTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, LookupConversionTest) {
+TEST_F(DISABLED__DataSetFilterTest, LookupConversionTest) {
 
   long resultlong = _DataSetFiltertest->LookupConversion(*chartest, _Parametertest);
   //EXPECT_EQ (resultlong, 0);
@@ -364,7 +364,7 @@ TEST_F(_DataSetFilterTest, LookupConversionTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, MapStringToCharIndexTest) {
+TEST_F(DISABLED__DataSetFilterTest, MapStringToCharIndexTest) {
 
   long resultlong = _DataSetFiltertest->MapStringToCharIndex(*_Stringtest);
   //EXPECT_EQ (resultlong, 0);
@@ -372,7 +372,7 @@ TEST_F(_DataSetFilterTest, MapStringToCharIndexTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, MatchStartNEndTest) {
+TEST_F(DISABLED__DataSetFilterTest, MatchStartNEndTest) {
 
   _DataSetFiltertest->MatchStartNEnd(*_SimpleListtest, *_SimpleListtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -380,7 +380,7 @@ TEST_F(_DataSetFilterTest, MatchStartNEndTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, PairFilterTest) {
+TEST_F(DISABLED__DataSetFilterTest, PairFilterTest) {
 
   //TODO
   //_DataSetFilter* result_DataSetFilter = _DataSetFiltertest->PairFilter(*longtest, *longtest);
@@ -389,7 +389,7 @@ TEST_F(_DataSetFilterTest, PairFilterTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, PairwiseCompareTest) {
+TEST_F(DISABLED__DataSetFilterTest, PairwiseCompareTest) {
 
   _Matrix* result_Matrix = _DataSetFiltertest->PairwiseCompare(_SimpleListtest, _SimpleListtest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -397,7 +397,7 @@ TEST_F(_DataSetFilterTest, PairwiseCompareTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, PatternToSiteMapperTest) {
+TEST_F(DISABLED__DataSetFilterTest, PatternToSiteMapperTest) {
 
   //TODO
   //_DataSetFiltertest->PatternToSiteMapper(**sourcetest, **targettest, *chartest);
@@ -406,7 +406,7 @@ TEST_F(_DataSetFilterTest, PatternToSiteMapperTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, RetrieveStateTest) {
+TEST_F(DISABLED__DataSetFilterTest, RetrieveStateTest) {
 
   //TODO
   //_DataSetFiltertest->RetrieveState(*longtest, *longtest);
@@ -415,7 +415,7 @@ TEST_F(_DataSetFilterTest, RetrieveStateTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SetDimensionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, SetDimensionsTest) {
 
   _DataSetFiltertest->SetDimensions();
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -423,7 +423,7 @@ TEST_F(_DataSetFilterTest, SetDimensionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SetExclusionsTest) {
+TEST_F(DISABLED__DataSetFilterTest, SetExclusionsTest) {
 
   _DataSetFiltertest->SetExclusions(_Stringtest, *booltest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -431,7 +431,7 @@ TEST_F(_DataSetFilterTest, SetExclusionsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SetFilterTest) {
+TEST_F(DISABLED__DataSetFilterTest, SetFilterTest) {
 
   //TODO
   //_DataSetFiltertest->SetFilter(_DataSettest, *chartest);
@@ -440,7 +440,7 @@ TEST_F(_DataSetFilterTest, SetFilterTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SetMapTest) {
+TEST_F(DISABLED__DataSetFilterTest, SetMapTest) {
 
   _DataSetFiltertest->SetMap(*_Stringtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -448,7 +448,7 @@ TEST_F(_DataSetFilterTest, SetMapTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SetupConversionTest) {
+TEST_F(DISABLED__DataSetFilterTest, SetupConversionTest) {
 
   _DataSetFiltertest->SetupConversion();
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -456,7 +456,7 @@ TEST_F(_DataSetFilterTest, SetupConversionTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, SiteFrequencyTest) {
+TEST_F(DISABLED__DataSetFilterTest, SiteFrequencyTest) {
 
   long resultlong = _DataSetFiltertest->SiteFrequency(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -464,7 +464,7 @@ TEST_F(_DataSetFilterTest, SiteFrequencyTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, Translate2FrequenciesTest) {
+TEST_F(DISABLED__DataSetFilterTest, Translate2FrequenciesTest) {
 
   //TODO
   //long resultlong = _DataSetFiltertest->Translate2Frequencies(*_Stringtest, _Parametertest);
@@ -473,7 +473,7 @@ TEST_F(_DataSetFilterTest, Translate2FrequenciesTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, Translate2Frequencies1Test) {
+TEST_F(DISABLED__DataSetFilterTest, Translate2Frequencies1Test) {
 
   //TODO
   //long resultlong = _DataSetFiltertest->Translate2Frequencies(*chartest, _Parametertest);
@@ -482,7 +482,7 @@ TEST_F(_DataSetFilterTest, Translate2Frequencies1Test) {
 }
 
 
-TEST_F(_DataSetFilterTest, UnFreezeTest) {
+TEST_F(DISABLED__DataSetFilterTest, UnFreezeTest) {
 
   _DataSetFiltertest->UnFreeze(*longtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -490,7 +490,7 @@ TEST_F(_DataSetFilterTest, UnFreezeTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, XferwCorrectionTest) {
+TEST_F(DISABLED__DataSetFilterTest, XferwCorrectionTest) {
 
   //TODO
   //_DataSetFiltertest->XferwCorrection(*_Matrixtest, _Parametertest);
@@ -499,7 +499,7 @@ TEST_F(_DataSetFilterTest, XferwCorrectionTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, XferwCorrection1Test) {
+TEST_F(DISABLED__DataSetFilterTest, XferwCorrection1Test) {
 
   //TODO
   //_DataSetFiltertest->XferwCorrection(_Parametertest, _Parametertest);
@@ -508,7 +508,7 @@ TEST_F(_DataSetFilterTest, XferwCorrection1Test) {
 }
 
 
-TEST_F(_DataSetFilterTest, XferwCorrection2Test) {
+TEST_F(DISABLED__DataSetFilterTest, XferwCorrection2Test) {
 
   //TODO
   //_DataSetFiltertest->XferwCorrection(longtest, _Parametertest);
@@ -517,7 +517,7 @@ TEST_F(_DataSetFilterTest, XferwCorrection2Test) {
 }
 
 
-TEST_F(_DataSetFilterTest, internalToStrTest) {
+TEST_F(DISABLED__DataSetFilterTest, internalToStrTest) {
 
   //TODO
   //_DataSetFiltertest->internalToStr(FILEtest, *_Stringtest);
@@ -526,7 +526,7 @@ TEST_F(_DataSetFilterTest, internalToStrTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, makeDynamicTest) {
+TEST_F(DISABLED__DataSetFilterTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _DataSetFiltertest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -534,7 +534,7 @@ TEST_F(_DataSetFilterTest, makeDynamicTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, operatorParenthsTest) {
+TEST_F(DISABLED__DataSetFilterTest, operatorParenthsTest) {
 
   //TODO
   //_String result_String = _DataSetFiltertest->operatorParenths();
@@ -543,7 +543,7 @@ TEST_F(_DataSetFilterTest, operatorParenthsTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, toFileStrTest) {
+TEST_F(DISABLED__DataSetFilterTest, toFileStrTest) {
 
   _DataSetFiltertest->toFileStr(FILEtest);
   //EXPECT_EQ (_DataSetFiltertest, 0);
@@ -551,7 +551,7 @@ TEST_F(_DataSetFilterTest, toFileStrTest) {
 }
 
 
-TEST_F(_DataSetFilterTest, toStrTest) {
+TEST_F(DISABLED__DataSetFilterTest, toStrTest) {
 
   BaseRef resultBaseRef = _DataSetFiltertest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

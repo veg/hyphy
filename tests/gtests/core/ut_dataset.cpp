@@ -54,13 +54,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _DataSetTest : public ::testing::Test {
+class DISABLED__DataSetTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _DataSetTest() {
+  DISABLED__DataSetTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -78,7 +78,7 @@ protected:
     _Parametertest = new _Parameter();
   }
 
-  virtual ~_DataSetTest() {
+  virtual ~DISABLED__DataSetTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -120,7 +120,7 @@ protected:
 };
 
 
-TEST_F(_DataSetTest, AddNameTest) {
+TEST_F(DISABLED__DataSetTest, AddNameTest) {
 
   _DataSettest->AddName(*_Stringtest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -128,7 +128,7 @@ TEST_F(_DataSetTest, AddNameTest) {
 }
 
 
-TEST_F(_DataSetTest, AddSiteTest) {
+TEST_F(DISABLED__DataSetTest, AddSiteTest) {
 
   _DataSettest->AddSite(*chartest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -136,7 +136,7 @@ TEST_F(_DataSetTest, AddSiteTest) {
 }
 
 
-TEST_F(_DataSetTest, CheckAlphabetConsistencyTest) {
+TEST_F(DISABLED__DataSetTest, CheckAlphabetConsistencyTest) {
 
   _Parameter result_Parameter = _DataSettest->CheckAlphabetConsistency();
   //EXPECT_EQ (result_Parameter, 0);
@@ -144,7 +144,7 @@ TEST_F(_DataSetTest, CheckAlphabetConsistencyTest) {
 }
 
 
-TEST_F(_DataSetTest, CheckCompatibilityTest) {
+TEST_F(DISABLED__DataSetTest, CheckCompatibilityTest) {
 
   //TODO:
   //_TranslationTable* result_TranslationTable = _DataSettest->CheckCompatibility(*_SimpleListtest);
@@ -153,7 +153,7 @@ TEST_F(_DataSetTest, CheckCompatibilityTest) {
 }
 
 
-TEST_F(_DataSetTest, CheckMappingTest) {
+TEST_F(DISABLED__DataSetTest, CheckMappingTest) {
 
   _DataSettest->CheckMapping(*longtest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -161,7 +161,7 @@ TEST_F(_DataSetTest, CheckMappingTest) {
 }
 
 
-TEST_F(_DataSetTest, ClearTest) {
+TEST_F(DISABLED__DataSetTest, ClearTest) {
 
   _DataSettest->Clear();
   //EXPECT_EQ (_DataSettest, 0);
@@ -169,7 +169,7 @@ TEST_F(_DataSetTest, ClearTest) {
 }
 
 
-TEST_F(_DataSetTest, CombineTest) {
+TEST_F(DISABLED__DataSetTest, CombineTest) {
 
   _DataSet* result_DataSet = _DataSettest->Combine(*_SimpleListtest);
   //EXPECT_EQ (result_DataSet*, 0);
@@ -177,7 +177,7 @@ TEST_F(_DataSetTest, CombineTest) {
 }
 
 
-TEST_F(_DataSetTest, CompactTest) {
+TEST_F(DISABLED__DataSetTest, CompactTest) {
 
   _DataSettest->Compact(*longtest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -185,7 +185,7 @@ TEST_F(_DataSetTest, CompactTest) {
 }
 
 
-TEST_F(_DataSetTest, ComputeSizeTest) {
+TEST_F(DISABLED__DataSetTest, ComputeSizeTest) {
 
   long resultlong = _DataSettest->ComputeSize();
   //EXPECT_EQ (resultlong, 0);
@@ -193,7 +193,7 @@ TEST_F(_DataSetTest, ComputeSizeTest) {
 }
 
 
-TEST_F(_DataSetTest, ConcatenateTest) {
+TEST_F(DISABLED__DataSetTest, ConcatenateTest) {
 
   _DataSet* result_DataSet = _DataSettest->Concatenate(*_SimpleListtest);
   //EXPECT_EQ (result_DataSet*, 0);
@@ -201,7 +201,7 @@ TEST_F(_DataSetTest, ConcatenateTest) {
 }
 
 
-TEST_F(_DataSetTest, ConvertRepresentationsTest) {
+TEST_F(DISABLED__DataSetTest, ConvertRepresentationsTest) {
 
   _DataSettest->ConvertRepresentations();
   //EXPECT_EQ (_DataSettest, 0);
@@ -209,7 +209,7 @@ TEST_F(_DataSetTest, ConvertRepresentationsTest) {
 }
 
 
-TEST_F(_DataSetTest, FinalizeTest) {
+TEST_F(DISABLED__DataSetTest, FinalizeTest) {
 
   _DataSettest->Finalize();
   //EXPECT_EQ (_DataSettest, 0);
@@ -217,7 +217,7 @@ TEST_F(_DataSetTest, FinalizeTest) {
 }
 
 
-TEST_F(_DataSetTest, FindAllSitesLikeThisOneTest) {
+TEST_F(DISABLED__DataSetTest, FindAllSitesLikeThisOneTest) {
 
   _DataSettest->FindAllSitesLikeThisOne(*longtest, *_SimpleListtest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -225,7 +225,7 @@ TEST_F(_DataSetTest, FindAllSitesLikeThisOneTest) {
 }
 
 
-TEST_F(_DataSetTest, GetCharDimensionTest) {
+TEST_F(DISABLED__DataSetTest, GetCharDimensionTest) {
 
   long resultlong = _DataSettest->GetCharDimension();
   //EXPECT_EQ (resultlong, 0);
@@ -233,7 +233,7 @@ TEST_F(_DataSetTest, GetCharDimensionTest) {
 }
 
 
-TEST_F(_DataSetTest, GetFreqTypeTest) {
+TEST_F(DISABLED__DataSetTest, GetFreqTypeTest) {
 
   long resultlong = _DataSettest->GetFreqType(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -241,7 +241,7 @@ TEST_F(_DataSetTest, GetFreqTypeTest) {
 }
 
 
-TEST_F(_DataSetTest, GetNoTypesTest) {
+TEST_F(DISABLED__DataSetTest, GetNoTypesTest) {
 
   long resultlong = _DataSettest->GetNoTypes();
   //EXPECT_EQ (resultlong, 0);
@@ -249,14 +249,14 @@ TEST_F(_DataSetTest, GetNoTypesTest) {
 }
 
 
-TEST_F(_DataSetTest, HarvestFrequenciesTest) {
+TEST_F(DISABLED__DataSetTest, HarvestFrequenciesTest) {
   //TODO
   //_Matrix* result_Matrix = _DataSettest->HarvestFrequencies(*chartest, *chartest, *booltest);
   //EXPECT_EQ (result_Matrix*, 0);
 }
 
 
-TEST_F(_DataSetTest, MatchIndicesTest) {
+TEST_F(DISABLED__DataSetTest, MatchIndicesTest) {
 
   //TODO
   //_DataSettest->MatchIndices(*_Formulatest, *_SimpleListtest, *booltest);
@@ -265,7 +265,7 @@ TEST_F(_DataSetTest, MatchIndicesTest) {
 }
 
 
-TEST_F(_DataSetTest, ProcessPartitionTest) {
+TEST_F(DISABLED__DataSetTest, ProcessPartitionTest) {
 
   //TODO
   //_DataSettest->ProcessPartition(*_Stringtest, *_SimpleListtest);
@@ -274,7 +274,7 @@ TEST_F(_DataSetTest, ProcessPartitionTest) {
 }
 
 
-TEST_F(_DataSetTest, ResetIHelperTest) {
+TEST_F(DISABLED__DataSetTest, ResetIHelperTest) {
 
   _DataSettest->ResetIHelper();
   //EXPECT_EQ (_DataSettest, 0);
@@ -282,7 +282,7 @@ TEST_F(_DataSetTest, ResetIHelperTest) {
 }
 
 
-TEST_F(_DataSetTest, SetTranslationTableTest) {
+TEST_F(DISABLED__DataSetTest, SetTranslationTableTest) {
 
   _DataSettest->SetTranslationTable(_DataSettest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -290,7 +290,7 @@ TEST_F(_DataSetTest, SetTranslationTableTest) {
 }
 
 
-TEST_F(_DataSetTest, SetTranslationTable1Test) {
+TEST_F(DISABLED__DataSetTest, SetTranslationTable1Test) {
 
   _DataSettest->SetTranslationTable(_TranslationTabletest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -298,14 +298,14 @@ TEST_F(_DataSetTest, SetTranslationTable1Test) {
 }
 
 
-TEST_F(_DataSetTest, Write2SiteTest) {
+TEST_F(DISABLED__DataSetTest, Write2SiteTest) {
 
   _DataSettest->Write2Site(*longtest, *chartest);
   //EXPECT_EQ (_DataSettest, 0);
 
 }
 
-TEST_F(_DataSetTest, makeDynamicTest) {
+TEST_F(DISABLED__DataSetTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _DataSettest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -313,7 +313,7 @@ TEST_F(_DataSetTest, makeDynamicTest) {
 }
 
 
-TEST_F(_DataSetTest, operatorParenthsTest) {
+TEST_F(DISABLED__DataSetTest, operatorParenthsTest) {
 
   //TODO
   //char resultchar = _DataSettest->operatorParenths();
@@ -322,7 +322,7 @@ TEST_F(_DataSetTest, operatorParenthsTest) {
 }
 
 
-TEST_F(_DataSetTest, toFileStrTest) {
+TEST_F(DISABLED__DataSetTest, toFileStrTest) {
 
   _DataSettest->toFileStr(FILEtest);
   //EXPECT_EQ (_DataSettest, 0);
@@ -330,7 +330,7 @@ TEST_F(_DataSetTest, toFileStrTest) {
 }
 
 
-TEST_F(_DataSetTest, toStrTest) {
+TEST_F(DISABLED__DataSetTest, toStrTest) {
 
   BaseRef resultBaseRef = _DataSettest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

@@ -54,13 +54,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _CustomFunctionTest : public ::testing::Test {
+class DISABLED__CustomFunctionTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _CustomFunctionTest() {
+  DISABLED__CustomFunctionTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -70,7 +70,7 @@ protected:
     _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~_CustomFunctionTest() {
+  virtual ~DISABLED__CustomFunctionTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -96,7 +96,7 @@ protected:
 };
 
 
-TEST_F(_CustomFunctionTest, ComputeTest) {
+TEST_F(DISABLED__CustomFunctionTest, ComputeTest) {
 
   _Parameter result_Parameter = _CustomFunctiontest->Compute();
   //EXPECT_EQ (result_Parameter, 0);

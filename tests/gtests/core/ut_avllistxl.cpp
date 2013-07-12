@@ -59,13 +59,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _AVLListXLTest : public ::testing::Test {
+class DISABLED__AVLListXLTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _AVLListXLTest() {
+  DISABLED__AVLListXLTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -78,7 +78,7 @@ protected:
     _AVLListXLtest = new _AVLListXL(_SimpleListtest);
   }
 
-  virtual ~_AVLListXLTest() {
+  virtual ~DISABLED__AVLListXLTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -110,7 +110,7 @@ protected:
 };
 
 
-TEST_F(_AVLListXLTest, ClearTest) {
+TEST_F(DISABLED__AVLListXLTest, ClearTest) {
 
   _AVLListXLtest->Clear(*booltest);
   //EXPECT_EQ (_AVLListXLtest, 0);
@@ -118,7 +118,7 @@ TEST_F(_AVLListXLTest, ClearTest) {
 }
 
 
-TEST_F(_AVLListXLTest, DeleteXtraTest) {
+TEST_F(DISABLED__AVLListXLTest, DeleteXtraTest) {
 
   _AVLListXLtest->DeleteXtra(*longtest);
   //EXPECT_EQ (_AVLListXLtest, 0);
@@ -126,7 +126,7 @@ TEST_F(_AVLListXLTest, DeleteXtraTest) {
 }
 
 
-TEST_F(_AVLListXLTest, GetDataByKeyTest) {
+TEST_F(DISABLED__AVLListXLTest, GetDataByKeyTest) {
 
   BaseRef resultBaseRef = _AVLListXLtest->GetDataByKey(*BaseReftest);
   //EXPECT_EQ (resultBaseRef, 0);
@@ -134,7 +134,7 @@ TEST_F(_AVLListXLTest, GetDataByKeyTest) {
 }
 
 
-TEST_F(_AVLListXLTest, GetXtraTest) {
+TEST_F(DISABLED__AVLListXLTest, GetXtraTest) {
 
   BaseRef resultBaseRef = _AVLListXLtest->GetXtra(*longtest);
   //EXPECT_EQ (resultBaseRef, 0);
@@ -142,7 +142,7 @@ TEST_F(_AVLListXLTest, GetXtraTest) {
 }
 
 
-TEST_F(_AVLListXLTest, InsertDataTest) {
+TEST_F(DISABLED__AVLListXLTest, InsertDataTest) {
 
   long resultlong = _AVLListXLtest->InsertData(*BaseReftest, *longtest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -150,7 +150,7 @@ TEST_F(_AVLListXLTest, InsertDataTest) {
 }
 
 
-TEST_F(_AVLListXLTest, SetXtraTest) {
+TEST_F(DISABLED__AVLListXLTest, SetXtraTest) {
 
   _AVLListXLtest->SetXtra(*longtest, *BaseReftest, *booltest);
   //EXPECT_EQ (_AVLListXLtest, 0);
@@ -158,7 +158,7 @@ TEST_F(_AVLListXLTest, SetXtraTest) {
 }
 
 
-TEST_F(_AVLListXLTest, UpdateValueTest) {
+TEST_F(DISABLED__AVLListXLTest, UpdateValueTest) {
 
   long resultlong = _AVLListXLtest->UpdateValue(*BaseReftest, *BaseReftest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -166,7 +166,7 @@ TEST_F(_AVLListXLTest, UpdateValueTest) {
 }
 
 
-TEST_F(_AVLListXLTest, toStrTest) {
+TEST_F(DISABLED__AVLListXLTest, toStrTest) {
 
   BaseRef resultBaseRef = _AVLListXLtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

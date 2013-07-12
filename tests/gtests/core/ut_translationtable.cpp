@@ -57,13 +57,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _TranslationTableTest : public ::testing::Test {
+class DISABLED__TranslationTableTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _TranslationTableTest() {
+  DISABLED__TranslationTableTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -76,7 +76,7 @@ protected:
     _TranslationTabletest = new _TranslationTable(*_TranslationTabletest);
   }
 
-  virtual ~_TranslationTableTest() {
+  virtual ~DISABLED__TranslationTableTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -108,7 +108,7 @@ protected:
 };
 
 
-TEST_F(_TranslationTableTest, AddBaseSetTest) {
+TEST_F(DISABLED__TranslationTableTest, AddBaseSetTest) {
 
   _TranslationTabletest->AddBaseSet(*_Stringtest);
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -116,7 +116,7 @@ TEST_F(_TranslationTableTest, AddBaseSetTest) {
 }
 
 
-TEST_F(_TranslationTableTest, AddTokenCodeTest) {
+TEST_F(DISABLED__TranslationTableTest, AddTokenCodeTest) {
 
   //_TranslationTabletest->AddTokenCode(*chartest, *_Stringtest);
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -124,7 +124,7 @@ TEST_F(_TranslationTableTest, AddTokenCodeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, CheckTypeTest) {
+TEST_F(DISABLED__TranslationTableTest, CheckTypeTest) {
 
   //bool resultbool = _TranslationTabletest->CheckType(*chartest);
   //EXPECT_EQ (resultbool, 0);
@@ -132,7 +132,7 @@ TEST_F(_TranslationTableTest, CheckTypeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, CheckValidAlphabetTest) {
+TEST_F(DISABLED__TranslationTableTest, CheckValidAlphabetTest) {
 
   //bool resultbool = _TranslationTabletest->CheckValidAlphabet(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
@@ -140,7 +140,7 @@ TEST_F(_TranslationTableTest, CheckValidAlphabetTest) {
 }
 
 
-TEST_F(_TranslationTableTest, ClearTest) {
+TEST_F(DISABLED__TranslationTableTest, ClearTest) {
 
   _TranslationTabletest->Clear();
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -148,7 +148,7 @@ TEST_F(_TranslationTableTest, ClearTest) {
 }
 
 
-TEST_F(_TranslationTableTest, CodeToLetterTest) {
+TEST_F(DISABLED__TranslationTableTest, CodeToLetterTest) {
 
   char resultchar = _TranslationTabletest->CodeToLetter(longtest);
   //EXPECT_EQ (resultchar, 0);
@@ -156,7 +156,7 @@ TEST_F(_TranslationTableTest, CodeToLetterTest) {
 }
 
 
-TEST_F(_TranslationTableTest, ConvertCodeToLettersTest) {
+TEST_F(DISABLED__TranslationTableTest, ConvertCodeToLettersTest) {
 
   //_String result_String = _TranslationTabletest->ConvertCodeToLetters(*longtest, *chartest);
   //EXPECT_EQ (result_String, 0);
@@ -164,7 +164,7 @@ TEST_F(_TranslationTableTest, ConvertCodeToLettersTest) {
 }
 
 
-TEST_F(_TranslationTableTest, DetectTypeTest) {
+TEST_F(DISABLED__TranslationTableTest, DetectTypeTest) {
 
   char resultchar = _TranslationTabletest->DetectType();
   //EXPECT_EQ (resultchar, 0);
@@ -172,7 +172,7 @@ TEST_F(_TranslationTableTest, DetectTypeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, DuplicateTest) {
+TEST_F(DISABLED__TranslationTableTest, DuplicateTest) {
 
   _TranslationTabletest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -180,7 +180,7 @@ TEST_F(_TranslationTableTest, DuplicateTest) {
 }
 
 
-TEST_F(_TranslationTableTest, GetDefaultAlphabetTest) {
+TEST_F(DISABLED__TranslationTableTest, GetDefaultAlphabetTest) {
 
   //_String* result_String = _TranslationTabletest->GetDefaultAlphabet(*longtest);
   //EXPECT_EQ (result_String*, 0);
@@ -188,7 +188,7 @@ TEST_F(_TranslationTableTest, GetDefaultAlphabetTest) {
 }
 
 
-TEST_F(_TranslationTableTest, GetGapCharTest) {
+TEST_F(DISABLED__TranslationTableTest, GetGapCharTest) {
 
   char resultchar = _TranslationTabletest->GetGapChar();
   //EXPECT_EQ (resultchar, 0);
@@ -196,7 +196,7 @@ TEST_F(_TranslationTableTest, GetGapCharTest) {
 }
 
 
-TEST_F(_TranslationTableTest, GetSkipCharTest) {
+TEST_F(DISABLED__TranslationTableTest, GetSkipCharTest) {
 
   char resultchar = _TranslationTabletest->GetSkipChar();
   //EXPECT_EQ (resultchar, 0);
@@ -204,7 +204,7 @@ TEST_F(_TranslationTableTest, GetSkipCharTest) {
 }
 
 
-TEST_F(_TranslationTableTest, IsCharLegalTest) {
+TEST_F(DISABLED__TranslationTableTest, IsCharLegalTest) {
 
   //bool resultbool = _TranslationTabletest->IsCharLegal(*chartest);
   //EXPECT_EQ (resultbool, 0);
@@ -212,7 +212,7 @@ TEST_F(_TranslationTableTest, IsCharLegalTest) {
 }
 
 
-TEST_F(_TranslationTableTest, LengthOfAlphabetTest) {
+TEST_F(DISABLED__TranslationTableTest, LengthOfAlphabetTest) {
 
   long resultlong = _TranslationTabletest->LengthOfAlphabet();
   //EXPECT_EQ (resultlong, 0);
@@ -220,7 +220,7 @@ TEST_F(_TranslationTableTest, LengthOfAlphabetTest) {
 }
 
 
-TEST_F(_TranslationTableTest, MergeTablesTest) {
+TEST_F(DISABLED__TranslationTableTest, MergeTablesTest) {
 
   _TranslationTable* result_TranslationTable = _TranslationTabletest->MergeTables(_TranslationTabletest);
   //EXPECT_EQ (result_TranslationTable*, 0);
@@ -228,7 +228,7 @@ TEST_F(_TranslationTableTest, MergeTablesTest) {
 }
 
 
-TEST_F(_TranslationTableTest, PrepareForChecksTest) {
+TEST_F(DISABLED__TranslationTableTest, PrepareForChecksTest) {
 
   _TranslationTabletest->PrepareForChecks();
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -236,7 +236,7 @@ TEST_F(_TranslationTableTest, PrepareForChecksTest) {
 }
 
 
-TEST_F(_TranslationTableTest, RetrieveCharactersTest) {
+TEST_F(DISABLED__TranslationTableTest, RetrieveCharactersTest) {
 
   //_String* result_String = _TranslationTabletest->RetrieveCharacters();
   //EXPECT_EQ (result_String*, 0);
@@ -244,7 +244,7 @@ TEST_F(_TranslationTableTest, RetrieveCharactersTest) {
 }
 
 
-TEST_F(_TranslationTableTest, SetStandardTypeTest) {
+TEST_F(DISABLED__TranslationTableTest, SetStandardTypeTest) {
 
   //_TranslationTabletest->SetStandardType(*chartest);
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -252,7 +252,7 @@ TEST_F(_TranslationTableTest, SetStandardTypeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, SplitTokenCodeTest) {
+TEST_F(DISABLED__TranslationTableTest, SplitTokenCodeTest) {
 
   //_TranslationTabletest->SplitTokenCode(*longtest);
   //EXPECT_EQ (_TranslationTabletest, 0);
@@ -260,7 +260,7 @@ TEST_F(_TranslationTableTest, SplitTokenCodeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, TokenCodeTest) {
+TEST_F(DISABLED__TranslationTableTest, TokenCodeTest) {
 
   //bool resultbool = _TranslationTabletest->TokenCode(*chartest, longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -268,7 +268,7 @@ TEST_F(_TranslationTableTest, TokenCodeTest) {
 }
 
 
-TEST_F(_TranslationTableTest, TokenCode1Test) {
+TEST_F(DISABLED__TranslationTableTest, TokenCode1Test) {
 
   //long resultlong = _TranslationTabletest->TokenCode(*chartest);
   //EXPECT_EQ (resultlong, 0);
@@ -276,7 +276,7 @@ TEST_F(_TranslationTableTest, TokenCode1Test) {
 }
 
 
-TEST_F(_TranslationTableTest, makeDynamicTest) {
+TEST_F(DISABLED__TranslationTableTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _TranslationTabletest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

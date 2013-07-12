@@ -54,13 +54,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _FormulaParsingContextTest : public ::testing::Test {
+class DISABLED__FormulaParsingContextTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _FormulaParsingContextTest() {
+  DISABLED__FormulaParsingContextTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -71,7 +71,7 @@ protected:
     _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~_FormulaParsingContextTest() {
+  virtual ~DISABLED__FormulaParsingContextTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -99,7 +99,7 @@ protected:
 };
 
 
-TEST_F(_FormulaParsingContextTest, contextualizeRefTest) {
+TEST_F(DISABLED__FormulaParsingContextTest, contextualizeRefTest) {
 
   _String result_String = _FormulaParsingContexttest->contextualizeRef(*_Stringtest);
   //EXPECT_EQ (result_String, 0);

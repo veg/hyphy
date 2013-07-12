@@ -59,13 +59,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _SiteTest : public ::testing::Test {
+class DISABLED__SiteTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _SiteTest() {
+  DISABLED__SiteTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -76,7 +76,7 @@ protected:
     _Stringtest = new _String(FILEtest);
   }
 
-  virtual ~_SiteTest() {
+  virtual ~DISABLED__SiteTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -104,7 +104,7 @@ protected:
 };
 
 
-TEST_F(_SiteTest, ArchiveTest) {
+TEST_F(DISABLED__SiteTest, ArchiveTest) {
 
   _Sitetest->Archive();
   //EXPECT_EQ (_Sitetest, 0);
@@ -112,7 +112,7 @@ TEST_F(_SiteTest, ArchiveTest) {
 }
 
 
-TEST_F(_SiteTest, ClearTest) {
+TEST_F(DISABLED__SiteTest, ClearTest) {
 
   _Sitetest->Clear();
   //EXPECT_EQ (_Sitetest, 0);
@@ -120,7 +120,7 @@ TEST_F(_SiteTest, ClearTest) {
 }
 
 
-TEST_F(_SiteTest, CompleteTest) {
+TEST_F(DISABLED__SiteTest, CompleteTest) {
 
   _Sitetest->Complete();
   //EXPECT_EQ (_Sitetest, 0);
@@ -128,7 +128,7 @@ TEST_F(_SiteTest, CompleteTest) {
 }
 
 
-TEST_F(_SiteTest, DuplicateTest) {
+TEST_F(DISABLED__SiteTest, DuplicateTest) {
 
   _Sitetest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Sitetest, 0);
@@ -136,7 +136,7 @@ TEST_F(_SiteTest, DuplicateTest) {
 }
 
 
-TEST_F(_SiteTest, PrepareToUseTest) {
+TEST_F(DISABLED__SiteTest, PrepareToUseTest) {
 
   _Sitetest->PrepareToUse();
   //EXPECT_EQ (_Sitetest, 0);
@@ -144,7 +144,7 @@ TEST_F(_SiteTest, PrepareToUseTest) {
 }
 
 
-TEST_F(_SiteTest, makeDynamicTest) {
+TEST_F(DISABLED__SiteTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _Sitetest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

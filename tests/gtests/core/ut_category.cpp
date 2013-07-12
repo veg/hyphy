@@ -52,13 +52,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _CategoryVariableTest : public ::testing::Test {
+class DISABLED__CategoryVariableTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _CategoryVariableTest() {
+  DISABLED__CategoryVariableTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -76,7 +76,7 @@ protected:
     _AVLListtest = new _AVLList(_SimpleListtest);
   }
 
-  virtual ~_CategoryVariableTest() {
+  virtual ~DISABLED__CategoryVariableTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -118,14 +118,14 @@ protected:
 };
 
 
-TEST_F(_CategoryVariableTest, ChangeNumberOfIntervalsTest) {
+TEST_F(DISABLED__CategoryVariableTest, ChangeNumberOfIntervalsTest) {
 
   _CategoryVariabletest->ChangeNumberOfIntervals(*longtest);
   //EXPECT_EQ (_CategoryVariabletest, 0);
 
 }
 
-TEST_F(_CategoryVariableTest, ComputeHiddenMarkovTest) {
+TEST_F(DISABLED__CategoryVariableTest, ComputeHiddenMarkovTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->ComputeHiddenMarkov();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -133,14 +133,14 @@ TEST_F(_CategoryVariableTest, ComputeHiddenMarkovTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, ComputeHiddenMarkovFreqsTest) {
+TEST_F(DISABLED__CategoryVariableTest, ComputeHiddenMarkovFreqsTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->ComputeHiddenMarkovFreqs();
   //EXPECT_EQ (result_Matrix*, 0);
 
 }
 
-TEST_F(_CategoryVariableTest, DuplicateTest) {
+TEST_F(DISABLED__CategoryVariableTest, DuplicateTest) {
 
   _CategoryVariabletest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_CategoryVariabletest, 0);
@@ -148,7 +148,7 @@ TEST_F(_CategoryVariableTest, DuplicateTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetCurrentStateTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetCurrentStateTest) {
 
   long resultlong = _CategoryVariabletest->GetCurrentState();
   //EXPECT_EQ (resultlong, 0);
@@ -156,7 +156,7 @@ TEST_F(_CategoryVariableTest, GetCurrentStateTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetHiddenMarkovTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetHiddenMarkovTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->GetHiddenMarkov();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -164,7 +164,7 @@ TEST_F(_CategoryVariableTest, GetHiddenMarkovTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetHiddenMarkovFreqsTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetHiddenMarkovFreqsTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->GetHiddenMarkovFreqs();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -172,7 +172,7 @@ TEST_F(_CategoryVariableTest, GetHiddenMarkovFreqsTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetIntervalEndsTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetIntervalEndsTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->GetIntervalEnds();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -180,7 +180,7 @@ TEST_F(_CategoryVariableTest, GetIntervalEndsTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetIntervalValueTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetIntervalValueTest) {
 
   _Parameter result_Parameter = _CategoryVariabletest->GetIntervalValue(*longtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -188,7 +188,7 @@ TEST_F(_CategoryVariableTest, GetIntervalValueTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetIntervalWeightTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetIntervalWeightTest) {
 
   _Parameter result_Parameter = _CategoryVariabletest->GetIntervalWeight(*longtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -196,7 +196,7 @@ TEST_F(_CategoryVariableTest, GetIntervalWeightTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetValuesTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetValuesTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->GetValues();
   //EXPECT_EQ (result_Matrix*, 0);
@@ -204,7 +204,7 @@ TEST_F(_CategoryVariableTest, GetValuesTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, GetWeightsTest) {
+TEST_F(DISABLED__CategoryVariableTest, GetWeightsTest) {
 
   _Matrix* result_Matrix = _CategoryVariabletest->GetWeights(*booltest);
   //EXPECT_EQ (result_Matrix*, 0);
@@ -212,7 +212,7 @@ TEST_F(_CategoryVariableTest, GetWeightsTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, HaveParametersChangedTest) {
+TEST_F(DISABLED__CategoryVariableTest, HaveParametersChangedTest) {
 
   bool resultbool = _CategoryVariabletest->HaveParametersChanged(*longtest);
   //EXPECT_EQ (resultbool, 0);
@@ -220,7 +220,7 @@ TEST_F(_CategoryVariableTest, HaveParametersChangedTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, IsConstantTest) {
+TEST_F(DISABLED__CategoryVariableTest, IsConstantTest) {
 
   bool resultbool = _CategoryVariabletest->IsConstant();
   //EXPECT_EQ (resultbool, 0);
@@ -228,7 +228,7 @@ TEST_F(_CategoryVariableTest, IsConstantTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, IsGlobalTest) {
+TEST_F(DISABLED__CategoryVariableTest, IsGlobalTest) {
 
   bool resultbool = _CategoryVariabletest->IsGlobal();
   //EXPECT_EQ (resultbool, 0);
@@ -236,7 +236,7 @@ TEST_F(_CategoryVariableTest, IsGlobalTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, IsLayeredTest) {
+TEST_F(DISABLED__CategoryVariableTest, IsLayeredTest) {
 
   bool resultbool = _CategoryVariabletest->IsLayered();
   //EXPECT_EQ (resultbool, 0);
@@ -244,7 +244,7 @@ TEST_F(_CategoryVariableTest, IsLayeredTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, IsUncorrelatedTest) {
+TEST_F(DISABLED__CategoryVariableTest, IsUncorrelatedTest) {
 
   bool resultbool = _CategoryVariabletest->IsUncorrelated();
   //EXPECT_EQ (resultbool, 0);
@@ -252,7 +252,7 @@ TEST_F(_CategoryVariableTest, IsUncorrelatedTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, MeanTest) {
+TEST_F(DISABLED__CategoryVariableTest, MeanTest) {
 
   _Parameter result_Parameter = _CategoryVariabletest->Mean();
   //EXPECT_EQ (result_Parameter, 0);
@@ -260,7 +260,7 @@ TEST_F(_CategoryVariableTest, MeanTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, ScanForGVariablesTest) {
+TEST_F(DISABLED__CategoryVariableTest, ScanForGVariablesTest) {
 
   _CategoryVariabletest->ScanForGVariables(*_AVLListtest);
   //EXPECT_EQ (_CategoryVariabletest, 0);
@@ -268,7 +268,7 @@ TEST_F(_CategoryVariableTest, ScanForGVariablesTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, ScanForVariablesTest) {
+TEST_F(DISABLED__CategoryVariableTest, ScanForVariablesTest) {
 
   _CategoryVariabletest->ScanForVariables(*_AVLListtest, *booltest);
   //EXPECT_EQ (_CategoryVariabletest, 0);
@@ -276,7 +276,7 @@ TEST_F(_CategoryVariableTest, ScanForVariablesTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, SerializeCategoryTest) {
+TEST_F(DISABLED__CategoryVariableTest, SerializeCategoryTest) {
 
   _CategoryVariabletest->SerializeCategory(*_Stringtest);
   //EXPECT_EQ (_CategoryVariabletest, 0);
@@ -284,7 +284,7 @@ TEST_F(_CategoryVariableTest, SerializeCategoryTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, SetIntervalValueTest) {
+TEST_F(DISABLED__CategoryVariableTest, SetIntervalValueTest) {
 
   _Parameter result_Parameter = _CategoryVariabletest->SetIntervalValue(*longtest, *booltest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -292,7 +292,7 @@ TEST_F(_CategoryVariableTest, SetIntervalValueTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, makeDynamicTest) {
+TEST_F(DISABLED__CategoryVariableTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _CategoryVariabletest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -300,7 +300,7 @@ TEST_F(_CategoryVariableTest, makeDynamicTest) {
 }
 
 
-TEST_F(_CategoryVariableTest, toStrTest) {
+TEST_F(DISABLED__CategoryVariableTest, toStrTest) {
 
   BaseRef resultBaseRef = _CategoryVariabletest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

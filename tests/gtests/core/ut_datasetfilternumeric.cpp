@@ -55,13 +55,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _DataSetFilterNumericTest : public ::testing::Test {
+class DISABLED__DataSetFilterNumericTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _DataSetFilterNumericTest() {
+  DISABLED__DataSetFilterNumericTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -72,7 +72,7 @@ protected:
     _DataSetFilterNumerictest = new _DataSetFilterNumeric();
   }
 
-  virtual ~_DataSetFilterNumericTest() {
+  virtual ~DISABLED__DataSetFilterNumericTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -100,7 +100,7 @@ protected:
 };
 
 
-TEST_F(_DataSetFilterNumericTest, CompareTwoSitesTest) {
+TEST_F(DISABLED__DataSetFilterNumericTest, CompareTwoSitesTest) {
 
   //TODO
   //bool resultbool = _DataSetFilterNumerictest->CompareTwoSites(*longtest, *longtest);
@@ -109,7 +109,7 @@ TEST_F(_DataSetFilterNumericTest, CompareTwoSitesTest) {
 }
 
 
-TEST_F(_DataSetFilterNumericTest, getProbabilityVectorTest) {
+TEST_F(DISABLED__DataSetFilterNumericTest, getProbabilityVectorTest) {
 
   _Parameter* result_Parameter = _DataSetFilterNumerictest->getProbabilityVector(*longtest, *longtest);
   //EXPECT_EQ (result_Parameter*, 0);
@@ -117,7 +117,7 @@ TEST_F(_DataSetFilterNumericTest, getProbabilityVectorTest) {
 }
 
 
-TEST_F(_DataSetFilterNumericTest, makeDynamicTest) {
+TEST_F(DISABLED__DataSetFilterNumericTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _DataSetFilterNumerictest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

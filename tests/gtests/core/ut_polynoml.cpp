@@ -54,13 +54,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _PolynomialTest : public ::testing::Test {
+class DISABLED__PolynomialTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _PolynomialTest() {
+  DISABLED__PolynomialTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -76,7 +76,7 @@ protected:
     _Parametertest = new _Parameter();
   }
 
-  virtual ~_PolynomialTest() {
+  virtual ~DISABLED__PolynomialTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -114,7 +114,7 @@ protected:
 };
 
 
-TEST_F(_PolynomialTest, AddTest) {
+TEST_F(DISABLED__PolynomialTest, AddTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Add(_MathObjecttest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -122,7 +122,7 @@ TEST_F(_PolynomialTest, AddTest) {
 }
 
 
-TEST_F(_PolynomialTest, CheckTermTest) {
+TEST_F(DISABLED__PolynomialTest, CheckTermTest) {
 
   _Polynomialtest->CheckTerm();
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -130,7 +130,7 @@ TEST_F(_PolynomialTest, CheckTermTest) {
 }
 
 
-TEST_F(_PolynomialTest, ComputeTest) {
+TEST_F(DISABLED__PolynomialTest, ComputeTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Compute();
   //EXPECT_EQ (result_MathObject*, 0);
@@ -138,7 +138,7 @@ TEST_F(_PolynomialTest, ComputeTest) {
 }
 
 
-TEST_F(_PolynomialTest, ComputePTest) {
+TEST_F(DISABLED__PolynomialTest, ComputePTest) {
 
   //_Parameter result_Parameter = _Polynomialtest->ComputeP(_Parametertest, _Parametertest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -146,7 +146,7 @@ TEST_F(_PolynomialTest, ComputePTest) {
 }
 
 
-TEST_F(_PolynomialTest, ComputePolynomialTest) {
+TEST_F(DISABLED__PolynomialTest, ComputePolynomialTest) {
 
   _Parameter result_Parameter = _Polynomialtest->ComputePolynomial();
   //EXPECT_EQ (result_Parameter, 0);
@@ -154,7 +154,7 @@ TEST_F(_PolynomialTest, ComputePolynomialTest) {
 }
 
 
-TEST_F(_PolynomialTest, Convert2ComputationFormTest) {
+TEST_F(DISABLED__PolynomialTest, Convert2ComputationFormTest) {
 
   _Polynomialtest->Convert2ComputationForm(_SimpleListtest, _SimpleListtest);
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -162,7 +162,7 @@ TEST_F(_PolynomialTest, Convert2ComputationFormTest) {
 }
 
 
-TEST_F(_PolynomialTest, Convert2OperationFormTest) {
+TEST_F(DISABLED__PolynomialTest, Convert2OperationFormTest) {
 
   //_Polynomialtest->Convert2OperationForm();
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -170,7 +170,7 @@ TEST_F(_PolynomialTest, Convert2OperationFormTest) {
 }
 
 
-TEST_F(_PolynomialTest, DuplicateTest) {
+TEST_F(DISABLED__PolynomialTest, DuplicateTest) {
 
   _Polynomialtest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -178,7 +178,7 @@ TEST_F(_PolynomialTest, DuplicateTest) {
 }
 
 
-TEST_F(_PolynomialTest, EqualTest) {
+TEST_F(DISABLED__PolynomialTest, EqualTest) {
 
   bool resultbool = _Polynomialtest->Equal(_MathObjecttest);
   //EXPECT_EQ (resultbool, 0);
@@ -186,7 +186,7 @@ TEST_F(_PolynomialTest, EqualTest) {
 }
 
 
-TEST_F(_PolynomialTest, ExecuteTest) {
+TEST_F(DISABLED__PolynomialTest, ExecuteTest) {
 
   //_PMathObj result_PMathObj = _Polynomialtest->Execute();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -194,7 +194,7 @@ TEST_F(_PolynomialTest, ExecuteTest) {
 }
 
 
-TEST_F(_PolynomialTest, HasChangedTest) {
+TEST_F(DISABLED__PolynomialTest, HasChangedTest) {
 
   bool resultbool = _Polynomialtest->HasChanged();
   //EXPECT_EQ (resultbool, 0);
@@ -202,7 +202,7 @@ TEST_F(_PolynomialTest, HasChangedTest) {
 }
 
 
-TEST_F(_PolynomialTest, IsANumberTest) {
+TEST_F(DISABLED__PolynomialTest, IsANumberTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->IsANumber(*booltest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -210,7 +210,7 @@ TEST_F(_PolynomialTest, IsANumberTest) {
 }
 
 
-TEST_F(_PolynomialTest, IsMaxElementTest) {
+TEST_F(DISABLED__PolynomialTest, IsMaxElementTest) {
 
   bool resultbool = _Polynomialtest->IsMaxElement(*_Parametertest);
   //EXPECT_EQ (resultbool, 0);
@@ -218,7 +218,7 @@ TEST_F(_PolynomialTest, IsMaxElementTest) {
 }
 
 
-TEST_F(_PolynomialTest, IsObjectEmptyTest) {
+TEST_F(DISABLED__PolynomialTest, IsObjectEmptyTest) {
 
   bool resultbool = _Polynomialtest->IsObjectEmpty();
   //EXPECT_EQ (resultbool, 0);
@@ -226,7 +226,7 @@ TEST_F(_PolynomialTest, IsObjectEmptyTest) {
 }
 
 
-TEST_F(_PolynomialTest, MinusTest) {
+TEST_F(DISABLED__PolynomialTest, MinusTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Minus();
   //EXPECT_EQ (result_MathObject*, 0);
@@ -234,7 +234,7 @@ TEST_F(_PolynomialTest, MinusTest) {
 }
 
 
-TEST_F(_PolynomialTest, MultTest) {
+TEST_F(DISABLED__PolynomialTest, MultTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Mult(_MathObjecttest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -242,7 +242,7 @@ TEST_F(_PolynomialTest, MultTest) {
 }
 
 
-TEST_F(_PolynomialTest, PlusTest) {
+TEST_F(DISABLED__PolynomialTest, PlusTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Plus(_MathObjecttest, *booltest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -250,7 +250,7 @@ TEST_F(_PolynomialTest, PlusTest) {
 }
 
 
-TEST_F(_PolynomialTest, RaiseTest) {
+TEST_F(DISABLED__PolynomialTest, RaiseTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Raise(_MathObjecttest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -258,7 +258,7 @@ TEST_F(_PolynomialTest, RaiseTest) {
 }
 
 
-TEST_F(_PolynomialTest, RankTermsTest) {
+TEST_F(DISABLED__PolynomialTest, RankTermsTest) {
 
   _Polynomialtest->RankTerms(_SimpleListtest);
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -266,7 +266,7 @@ TEST_F(_PolynomialTest, RankTermsTest) {
 }
 
 
-TEST_F(_PolynomialTest, ScanForVariablesTest) {
+TEST_F(DISABLED__PolynomialTest, ScanForVariablesTest) {
 
   _Polynomialtest->ScanForVariables(*_AVLListtest, *booltest, _AVLListXtest);
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -274,7 +274,7 @@ TEST_F(_PolynomialTest, ScanForVariablesTest) {
 }
 
 
-TEST_F(_PolynomialTest, SubTest) {
+TEST_F(DISABLED__PolynomialTest, SubTest) {
 
   _MathObject* result_MathObject = _Polynomialtest->Sub(_MathObjecttest);
   //EXPECT_EQ (result_MathObject*, 0);
@@ -282,7 +282,7 @@ TEST_F(_PolynomialTest, SubTest) {
 }
 
 
-TEST_F(_PolynomialTest, makeDynamicTest) {
+TEST_F(DISABLED__PolynomialTest, makeDynamicTest) {
 
   BaseObj* resultBaseObj = _Polynomialtest->makeDynamic();
   //EXPECT_EQ (resultBaseObj*, 0);
@@ -290,7 +290,7 @@ TEST_F(_PolynomialTest, makeDynamicTest) {
 }
 
 
-TEST_F(_PolynomialTest, toFileStrTest) {
+TEST_F(DISABLED__PolynomialTest, toFileStrTest) {
 
   _Polynomialtest->toFileStr(FILEtest);
   //EXPECT_EQ (_Polynomialtest, 0);
@@ -298,7 +298,7 @@ TEST_F(_PolynomialTest, toFileStrTest) {
 }
 
 
-TEST_F(_PolynomialTest, toStrTest) {
+TEST_F(DISABLED__PolynomialTest, toStrTest) {
 
   BaseObj* resultBaseObj = _Polynomialtest->toStr();
   //EXPECT_EQ (resultBaseObj*, 0);

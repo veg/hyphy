@@ -52,13 +52,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _TrieTest : public ::testing::Test {
+class DISABLED__TrieTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _TrieTest() {
+  DISABLED__TrieTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -73,7 +73,7 @@ protected:
     _Trietest = new _Trie(_Stringtest);
   }
 
-  virtual ~_TrieTest() {
+  virtual ~DISABLED__TrieTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -109,7 +109,7 @@ protected:
 };
 
 
-TEST_F(_TrieTest, AlphabetTest) {
+TEST_F(DISABLED__TrieTest, AlphabetTest) {
 
   _String result_String = _Trietest->Alphabet();
   //EXPECT_EQ (result_String, 0);
@@ -117,7 +117,7 @@ TEST_F(_TrieTest, AlphabetTest) {
 }
 
 
-TEST_F(_TrieTest, ClearTest) {
+TEST_F(DISABLED__TrieTest, ClearTest) {
 
   _Trietest->Clear(*booltest);
   //EXPECT_EQ (_Trietest, 0);
@@ -125,7 +125,7 @@ TEST_F(_TrieTest, ClearTest) {
 }
 
 
-TEST_F(_TrieTest, DeleteTest) {
+TEST_F(DISABLED__TrieTest, DeleteTest) {
 
   bool resultbool = _Trietest->Delete(*_Stringtest);
   //EXPECT_EQ (resultbool, 0);
@@ -133,7 +133,7 @@ TEST_F(_TrieTest, DeleteTest) {
 }
 
 
-TEST_F(_TrieTest, Delete1Test) {
+TEST_F(DISABLED__TrieTest, Delete1Test) {
 
   bool resultbool = _Trietest->Delete(chartest);
   //EXPECT_EQ (resultbool, 0);
@@ -141,7 +141,7 @@ TEST_F(_TrieTest, Delete1Test) {
 }
 
 
-TEST_F(_TrieTest, Delete2Test) {
+TEST_F(DISABLED__TrieTest, Delete2Test) {
 
   //long resultlong = _Trietest->Delete(*_Listtest);
   //EXPECT_EQ (resultlong, 0);
@@ -149,7 +149,7 @@ TEST_F(_TrieTest, Delete2Test) {
 }
 
 
-TEST_F(_TrieTest, DumpRawTest) {
+TEST_F(DISABLED__TrieTest, DumpRawTest) {
 
   //_Trietest->DumpRaw();
   //EXPECT_EQ (_Trietest, 0);
@@ -157,7 +157,7 @@ TEST_F(_TrieTest, DumpRawTest) {
 }
 
 
-TEST_F(_TrieTest, DuplicateTest) {
+TEST_F(DISABLED__TrieTest, DuplicateTest) {
 
   _Trietest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Trietest, 0);
@@ -165,7 +165,7 @@ TEST_F(_TrieTest, DuplicateTest) {
 }
 
 
-TEST_F(_TrieTest, FindTest) {
+TEST_F(DISABLED__TrieTest, FindTest) {
 
   long resultlong = _Trietest->Find(*_Stringtest, _SimpleListtest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -173,7 +173,7 @@ TEST_F(_TrieTest, FindTest) {
 }
 
 
-TEST_F(_TrieTest, Find1Test) {
+TEST_F(DISABLED__TrieTest, Find1Test) {
 
   long resultlong = _Trietest->Find(*chartest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -181,7 +181,7 @@ TEST_F(_TrieTest, Find1Test) {
 }
 
 
-TEST_F(_TrieTest, FindNextLetterTest) {
+TEST_F(DISABLED__TrieTest, FindNextLetterTest) {
 
   //long resultlong = _Trietest->FindNextLetter(*chartest);
   //EXPECT_EQ (resultlong, 0);
@@ -189,7 +189,7 @@ TEST_F(_TrieTest, FindNextLetterTest) {
 }
 
 
-TEST_F(_TrieTest, FindNextUnusedIndexTest) {
+TEST_F(DISABLED__TrieTest, FindNextUnusedIndexTest) {
 
   //long resultlong = _Trietest->FindNextUnusedIndex(*booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -197,7 +197,7 @@ TEST_F(_TrieTest, FindNextUnusedIndexTest) {
 }
 
 
-TEST_F(_TrieTest, GetValueTest) {
+TEST_F(DISABLED__TrieTest, GetValueTest) {
 
   long resultlong = _Trietest->GetValue(*longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -205,7 +205,7 @@ TEST_F(_TrieTest, GetValueTest) {
 }
 
 
-TEST_F(_TrieTest, GetValueFromStringTest) {
+TEST_F(DISABLED__TrieTest, GetValueFromStringTest) {
 
   long resultlong = _Trietest->GetValueFromString(*_Stringtest);
   //EXPECT_EQ (resultlong, 0);
@@ -213,7 +213,7 @@ TEST_F(_TrieTest, GetValueFromStringTest) {
 }
 
 
-TEST_F(_TrieTest, InsertTest) {
+TEST_F(DISABLED__TrieTest, InsertTest) {
 
   long resultlong = _Trietest->Insert(*_Stringtest, *longtest);
   //EXPECT_EQ (resultlong, 0);
@@ -221,7 +221,7 @@ TEST_F(_TrieTest, InsertTest) {
 }
 
 
-TEST_F(_TrieTest, Insert1Test) {
+TEST_F(DISABLED__TrieTest, Insert1Test) {
 
   long resultlong = _Trietest->Insert(chartest, *longtest, *booltest);
   //EXPECT_EQ (resultlong, 0);
@@ -229,7 +229,7 @@ TEST_F(_TrieTest, Insert1Test) {
 }
 
 
-TEST_F(_TrieTest, Insert2Test) {
+TEST_F(DISABLED__TrieTest, Insert2Test) {
 
   //long resultlong = _Trietest->Insert(*_Listtest, _SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -237,7 +237,7 @@ TEST_F(_TrieTest, Insert2Test) {
 }
 
 
-TEST_F(_TrieTest, InsertNextLetterTest) {
+TEST_F(DISABLED__TrieTest, InsertNextLetterTest) {
 
   //long resultlong = _Trietest->InsertNextLetter(*chartest);
   //EXPECT_EQ (resultlong, 0);
@@ -245,7 +245,7 @@ TEST_F(_TrieTest, InsertNextLetterTest) {
 }
 
 
-TEST_F(_TrieTest, RetrieveKeyByPayloadTest) {
+TEST_F(DISABLED__TrieTest, RetrieveKeyByPayloadTest) {
 
   _String result_String = _Trietest->RetrieveKeyByPayload(*longtest);
   //EXPECT_EQ (result_String, 0);
@@ -253,7 +253,7 @@ TEST_F(_TrieTest, RetrieveKeyByPayloadTest) {
 }
 
 
-TEST_F(_TrieTest, RetrieveStringFromPathTest) {
+TEST_F(DISABLED__TrieTest, RetrieveStringFromPathTest) {
 
   //_String* result_String = _Trietest->RetrieveStringFromPath(*_SimpleListtest);
   //EXPECT_EQ (result_String*, 0);
@@ -261,7 +261,7 @@ TEST_F(_TrieTest, RetrieveStringFromPathTest) {
 }
 
 
-TEST_F(_TrieTest, SetAlphabetTest) {
+TEST_F(DISABLED__TrieTest, SetAlphabetTest) {
 
   //_Trietest->SetAlphabet(_Stringtest, *booltest);
   //EXPECT_EQ (_Trietest, 0);
@@ -269,7 +269,7 @@ TEST_F(_TrieTest, SetAlphabetTest) {
 }
 
 
-TEST_F(_TrieTest, UpdateValueTest) {
+TEST_F(DISABLED__TrieTest, UpdateValueTest) {
 
   _Trietest->UpdateValue(*longtest, *longtest);
   //EXPECT_EQ (_Trietest, 0);
@@ -277,7 +277,7 @@ TEST_F(_TrieTest, UpdateValueTest) {
 }
 
 
-TEST_F(_TrieTest, makeDynamicTest) {
+TEST_F(DISABLED__TrieTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _Trietest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -285,7 +285,7 @@ TEST_F(_TrieTest, makeDynamicTest) {
 }
 
 
-TEST_F(_TrieTest, toStrTest) {
+TEST_F(DISABLED__TrieTest, toStrTest) {
 
   BaseRef resultBaseRef = _Trietest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

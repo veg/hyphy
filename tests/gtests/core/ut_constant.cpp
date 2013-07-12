@@ -59,13 +59,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _ConstantTest : public ::testing::Test {
+class DISABLED__ConstantTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _ConstantTest() {
+  DISABLED__ConstantTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -76,7 +76,7 @@ protected:
     _PMathObjtest = new _PMathObj();
   }
 
-  virtual ~_ConstantTest() {
+  virtual ~DISABLED__ConstantTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -106,7 +106,7 @@ protected:
 };
 
 
-TEST_F(_ConstantTest, AbsTest) {
+TEST_F(DISABLED__ConstantTest, AbsTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Abs();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -114,7 +114,7 @@ TEST_F(_ConstantTest, AbsTest) {
 }
 
 
-TEST_F(_ConstantTest, AddTest) {
+TEST_F(DISABLED__ConstantTest, AddTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Add(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -122,7 +122,7 @@ TEST_F(_ConstantTest, AddTest) {
 }
 
 
-TEST_F(_ConstantTest, ArctanTest) {
+TEST_F(DISABLED__ConstantTest, ArctanTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Arctan();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -130,7 +130,7 @@ TEST_F(_ConstantTest, ArctanTest) {
 }
 
 
-TEST_F(_ConstantTest, AreEqualTest) {
+TEST_F(DISABLED__ConstantTest, AreEqualTest) {
 
   _PMathObj result_PMathObj = _Constanttest->AreEqual(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -138,7 +138,7 @@ TEST_F(_ConstantTest, AreEqualTest) {
 }
 
 
-TEST_F(_ConstantTest, AssignTest) {
+TEST_F(DISABLED__ConstantTest, AssignTest) {
 
   _Constanttest->Assign(*_PMathObjtest);
   //EXPECT_EQ (_Constanttest, 0);
@@ -146,7 +146,7 @@ TEST_F(_ConstantTest, AssignTest) {
 }
 
 
-TEST_F(_ConstantTest, BetaTest) {
+TEST_F(DISABLED__ConstantTest, BetaTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Beta(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -154,7 +154,7 @@ TEST_F(_ConstantTest, BetaTest) {
 }
 
 
-TEST_F(_ConstantTest, CChi2Test) {
+TEST_F(DISABLED__ConstantTest, CChi2Test) {
 
   _PMathObj result_PMathObj = _Constanttest->CChi2(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -162,7 +162,7 @@ TEST_F(_ConstantTest, CChi2Test) {
 }
 
 
-TEST_F(_ConstantTest, CGammaDistTest) {
+TEST_F(DISABLED__ConstantTest, CGammaDistTest) {
 
   _PMathObj result_PMathObj = _Constanttest->CGammaDist(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -170,7 +170,7 @@ TEST_F(_ConstantTest, CGammaDistTest) {
 }
 
 
-TEST_F(_ConstantTest, CosTest) {
+TEST_F(DISABLED__ConstantTest, CosTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Cos();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -178,7 +178,7 @@ TEST_F(_ConstantTest, CosTest) {
 }
 
 
-TEST_F(_ConstantTest, DivTest) {
+TEST_F(DISABLED__ConstantTest, DivTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Div(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -186,7 +186,7 @@ TEST_F(_ConstantTest, DivTest) {
 }
 
 
-TEST_F(_ConstantTest, DuplicateTest) {
+TEST_F(DISABLED__ConstantTest, DuplicateTest) {
 
   _Constanttest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_Constanttest, 0);
@@ -194,7 +194,7 @@ TEST_F(_ConstantTest, DuplicateTest) {
 }
 
 
-TEST_F(_ConstantTest, EqualTest) {
+TEST_F(DISABLED__ConstantTest, EqualTest) {
 
   bool resultbool = _Constanttest->Equal(*_PMathObjtest);
   //EXPECT_EQ (resultbool, 0);
@@ -202,7 +202,7 @@ TEST_F(_ConstantTest, EqualTest) {
 }
 
 
-TEST_F(_ConstantTest, ErfTest) {
+TEST_F(DISABLED__ConstantTest, ErfTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Erf();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -210,7 +210,7 @@ TEST_F(_ConstantTest, ErfTest) {
 }
 
 
-TEST_F(_ConstantTest, ExpTest) {
+TEST_F(DISABLED__ConstantTest, ExpTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Exp();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -218,7 +218,7 @@ TEST_F(_ConstantTest, ExpTest) {
 }
 
 
-TEST_F(_ConstantTest, FormatNumberStringTest) {
+TEST_F(DISABLED__ConstantTest, FormatNumberStringTest) {
 
   _PMathObj result_PMathObj = _Constanttest->FormatNumberString(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -226,7 +226,7 @@ TEST_F(_ConstantTest, FormatNumberStringTest) {
 }
 
 
-TEST_F(_ConstantTest, GammaTest) {
+TEST_F(DISABLED__ConstantTest, GammaTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Gamma();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -234,7 +234,7 @@ TEST_F(_ConstantTest, GammaTest) {
 }
 
 
-TEST_F(_ConstantTest, GammaDistTest) {
+TEST_F(DISABLED__ConstantTest, GammaDistTest) {
 
   _PMathObj result_PMathObj = _Constanttest->GammaDist(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -242,7 +242,7 @@ TEST_F(_ConstantTest, GammaDistTest) {
 }
 
 
-TEST_F(_ConstantTest, GreaterTest) {
+TEST_F(DISABLED__ConstantTest, GreaterTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Greater(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -250,7 +250,7 @@ TEST_F(_ConstantTest, GreaterTest) {
 }
 
 
-TEST_F(_ConstantTest, GreaterEqTest) {
+TEST_F(DISABLED__ConstantTest, GreaterEqTest) {
 
   _PMathObj result_PMathObj = _Constanttest->GreaterEq(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -258,7 +258,7 @@ TEST_F(_ConstantTest, GreaterEqTest) {
 }
 
 
-TEST_F(_ConstantTest, IBetaTest) {
+TEST_F(DISABLED__ConstantTest, IBetaTest) {
 
   _PMathObj result_PMathObj = _Constanttest->IBeta(*_PMathObjtest, *_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -266,7 +266,7 @@ TEST_F(_ConstantTest, IBetaTest) {
 }
 
 
-TEST_F(_ConstantTest, IGammaTest) {
+TEST_F(DISABLED__ConstantTest, IGammaTest) {
 
   _PMathObj result_PMathObj = _Constanttest->IGamma(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -274,7 +274,7 @@ TEST_F(_ConstantTest, IGammaTest) {
 }
 
 
-TEST_F(_ConstantTest, InitializeTest) {
+TEST_F(DISABLED__ConstantTest, InitializeTest) {
 
   _Constanttest->Initialize();
   //EXPECT_EQ (_Constanttest, 0);
@@ -282,7 +282,7 @@ TEST_F(_ConstantTest, InitializeTest) {
 }
 
 
-TEST_F(_ConstantTest, InvChi2Test) {
+TEST_F(DISABLED__ConstantTest, InvChi2Test) {
 
   _PMathObj result_PMathObj = _Constanttest->InvChi2(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -290,7 +290,7 @@ TEST_F(_ConstantTest, InvChi2Test) {
 }
 
 
-TEST_F(_ConstantTest, LAndTest) {
+TEST_F(DISABLED__ConstantTest, LAndTest) {
 
   _PMathObj result_PMathObj = _Constanttest->LAnd(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -298,7 +298,7 @@ TEST_F(_ConstantTest, LAndTest) {
 }
 
 
-TEST_F(_ConstantTest, LNotTest) {
+TEST_F(DISABLED__ConstantTest, LNotTest) {
 
   _PMathObj result_PMathObj = _Constanttest->LNot();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -306,7 +306,7 @@ TEST_F(_ConstantTest, LNotTest) {
 }
 
 
-TEST_F(_ConstantTest, LOrTest) {
+TEST_F(DISABLED__ConstantTest, LOrTest) {
 
   _PMathObj result_PMathObj = _Constanttest->LOr(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -314,7 +314,7 @@ TEST_F(_ConstantTest, LOrTest) {
 }
 
 
-TEST_F(_ConstantTest, LessTest) {
+TEST_F(DISABLED__ConstantTest, LessTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Less(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -322,7 +322,7 @@ TEST_F(_ConstantTest, LessTest) {
 }
 
 
-TEST_F(_ConstantTest, LessEqTest) {
+TEST_F(DISABLED__ConstantTest, LessEqTest) {
 
   _PMathObj result_PMathObj = _Constanttest->LessEq(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -330,7 +330,7 @@ TEST_F(_ConstantTest, LessEqTest) {
 }
 
 
-TEST_F(_ConstantTest, LnGammaTest) {
+TEST_F(DISABLED__ConstantTest, LnGammaTest) {
 
   _PMathObj result_PMathObj = _Constanttest->LnGamma();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -338,7 +338,7 @@ TEST_F(_ConstantTest, LnGammaTest) {
 }
 
 
-TEST_F(_ConstantTest, LogTest) {
+TEST_F(DISABLED__ConstantTest, LogTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Log();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -346,7 +346,7 @@ TEST_F(_ConstantTest, LogTest) {
 }
 
 
-TEST_F(_ConstantTest, MaxTest) {
+TEST_F(DISABLED__ConstantTest, MaxTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Max(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -354,7 +354,7 @@ TEST_F(_ConstantTest, MaxTest) {
 }
 
 
-TEST_F(_ConstantTest, MinTest) {
+TEST_F(DISABLED__ConstantTest, MinTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Min(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -362,7 +362,7 @@ TEST_F(_ConstantTest, MinTest) {
 }
 
 
-TEST_F(_ConstantTest, MinusTest) {
+TEST_F(DISABLED__ConstantTest, MinusTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Minus();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -370,7 +370,7 @@ TEST_F(_ConstantTest, MinusTest) {
 }
 
 
-TEST_F(_ConstantTest, MultTest) {
+TEST_F(DISABLED__ConstantTest, MultTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Mult(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -378,7 +378,7 @@ TEST_F(_ConstantTest, MultTest) {
 }
 
 
-TEST_F(_ConstantTest, NotEqualTest) {
+TEST_F(DISABLED__ConstantTest, NotEqualTest) {
 
   _PMathObj result_PMathObj = _Constanttest->NotEqual(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -386,7 +386,7 @@ TEST_F(_ConstantTest, NotEqualTest) {
 }
 
 
-TEST_F(_ConstantTest, RaiseTest) {
+TEST_F(DISABLED__ConstantTest, RaiseTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Raise(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -394,7 +394,7 @@ TEST_F(_ConstantTest, RaiseTest) {
 }
 
 
-TEST_F(_ConstantTest, RandomTest) {
+TEST_F(DISABLED__ConstantTest, RandomTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Random(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -402,7 +402,7 @@ TEST_F(_ConstantTest, RandomTest) {
 }
 
 
-TEST_F(_ConstantTest, SinTest) {
+TEST_F(DISABLED__ConstantTest, SinTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Sin();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -410,7 +410,7 @@ TEST_F(_ConstantTest, SinTest) {
 }
 
 
-TEST_F(_ConstantTest, SqrtTest) {
+TEST_F(DISABLED__ConstantTest, SqrtTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Sqrt();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -418,7 +418,7 @@ TEST_F(_ConstantTest, SqrtTest) {
 }
 
 
-TEST_F(_ConstantTest, SubTest) {
+TEST_F(DISABLED__ConstantTest, SubTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Sub(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -426,7 +426,7 @@ TEST_F(_ConstantTest, SubTest) {
 }
 
 
-TEST_F(_ConstantTest, SumTest) {
+TEST_F(DISABLED__ConstantTest, SumTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Sum();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -434,7 +434,7 @@ TEST_F(_ConstantTest, SumTest) {
 }
 
 
-TEST_F(_ConstantTest, TanTest) {
+TEST_F(DISABLED__ConstantTest, TanTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Tan();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -442,7 +442,7 @@ TEST_F(_ConstantTest, TanTest) {
 }
 
 
-TEST_F(_ConstantTest, TimeTest) {
+TEST_F(DISABLED__ConstantTest, TimeTest) {
 
   _PMathObj result_PMathObj = _Constanttest->Time();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -450,7 +450,7 @@ TEST_F(_ConstantTest, TimeTest) {
 }
 
 
-TEST_F(_ConstantTest, ValueTest) {
+TEST_F(DISABLED__ConstantTest, ValueTest) {
 
   _Parameter result_Parameter = _Constanttest->Value();
   //EXPECT_EQ (result_Parameter, 0);
@@ -458,7 +458,7 @@ TEST_F(_ConstantTest, ValueTest) {
 }
 
 
-TEST_F(_ConstantTest, ZCDFTest) {
+TEST_F(DISABLED__ConstantTest, ZCDFTest) {
 
   _PMathObj result_PMathObj = _Constanttest->ZCDF();
   //EXPECT_EQ (result_PMathObj, 0);
@@ -466,7 +466,7 @@ TEST_F(_ConstantTest, ZCDFTest) {
 }
 
 
-TEST_F(_ConstantTest, lDivTest) {
+TEST_F(DISABLED__ConstantTest, lDivTest) {
 
   _PMathObj result_PMathObj = _Constanttest->lDiv(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -474,7 +474,7 @@ TEST_F(_ConstantTest, lDivTest) {
 }
 
 
-TEST_F(_ConstantTest, longDivTest) {
+TEST_F(DISABLED__ConstantTest, longDivTest) {
 
   _PMathObj result_PMathObj = _Constanttest->longDiv(*_PMathObjtest);
   //EXPECT_EQ (result_PMathObj, 0);
@@ -482,7 +482,7 @@ TEST_F(_ConstantTest, longDivTest) {
 }
 
 
-TEST_F(_ConstantTest, makeDynamicTest) {
+TEST_F(DISABLED__ConstantTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _Constanttest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -490,7 +490,7 @@ TEST_F(_ConstantTest, makeDynamicTest) {
 }
 
 
-TEST_F(_ConstantTest, toStrTest) {
+TEST_F(DISABLED__ConstantTest, toStrTest) {
 
   BaseRef resultBaseRef = _Constanttest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

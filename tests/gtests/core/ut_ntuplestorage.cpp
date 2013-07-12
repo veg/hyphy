@@ -52,13 +52,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _NTupleStorageTest : public ::testing::Test {
+class DISABLED__NTupleStorageTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _NTupleStorageTest() {
+  DISABLED__NTupleStorageTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -70,7 +70,7 @@ protected:
     _Parametertest = new _Parameter();
   }
 
-  virtual ~_NTupleStorageTest() {
+  virtual ~DISABLED__NTupleStorageTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -100,7 +100,7 @@ protected:
 };
 
 
-TEST_F(_NTupleStorageTest, CheckKTupleTest) {
+TEST_F(DISABLED__NTupleStorageTest, CheckKTupleTest) {
 
   bool resultbool = _NTupleStoragetest->CheckKTuple(*_SimpleListtest);
   //EXPECT_EQ (resultbool, 0);
@@ -108,7 +108,7 @@ TEST_F(_NTupleStorageTest, CheckKTupleTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, DirectIndexTest) {
+TEST_F(DISABLED__NTupleStorageTest, DirectIndexTest) {
 
   //_Parameter result_Parameter = _NTupleStoragetest->DirectIndex(*longtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -116,7 +116,7 @@ TEST_F(_NTupleStorageTest, DirectIndexTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, IndexTest) {
+TEST_F(DISABLED__NTupleStorageTest, IndexTest) {
 
   long resultlong = _NTupleStoragetest->Index(*_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -124,7 +124,7 @@ TEST_F(_NTupleStorageTest, IndexTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, IndexToTupleTest) {
+TEST_F(DISABLED__NTupleStorageTest, IndexToTupleTest) {
 
   //_NTupleStoragetest->IndexToTuple(*longtest);
   //EXPECT_EQ (_NTupleStoragetest, 0);
@@ -132,7 +132,7 @@ TEST_F(_NTupleStorageTest, IndexToTupleTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, RetrieveTest) {
+TEST_F(DISABLED__NTupleStorageTest, RetrieveTest) {
 
   _Parameter result_Parameter = _NTupleStoragetest->Retrieve(*_SimpleListtest);
   //EXPECT_EQ (result_Parameter, 0);
@@ -140,7 +140,7 @@ TEST_F(_NTupleStorageTest, RetrieveTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, StoreTest) {
+TEST_F(DISABLED__NTupleStorageTest, StoreTest) {
 
   long resultlong = _NTupleStoragetest->Store(*_Parametertest, *_SimpleListtest);
   //EXPECT_EQ (resultlong, 0);
@@ -148,7 +148,7 @@ TEST_F(_NTupleStorageTest, StoreTest) {
 }
 
 
-TEST_F(_NTupleStorageTest, makeDynamicTest) {
+TEST_F(DISABLED__NTupleStorageTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _NTupleStoragetest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);

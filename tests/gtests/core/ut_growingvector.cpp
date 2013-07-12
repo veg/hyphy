@@ -51,13 +51,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace {
 
 // The fixture for testing class Foo.
-class _GrowingVectorTest : public ::testing::Test {
+class DISABLED__GrowingVectorTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  _GrowingVectorTest() {
+  DISABLED__GrowingVectorTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
@@ -70,7 +70,7 @@ protected:
     booltest = new bool();
   }
 
-  virtual ~_GrowingVectorTest() {
+  virtual ~DISABLED__GrowingVectorTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -102,7 +102,7 @@ protected:
 };
 
 
-TEST_F(_GrowingVectorTest, ClearTest) {
+TEST_F(DISABLED__GrowingVectorTest, ClearTest) {
 
   _GrowingVectortest->Clear();
   //EXPECT_EQ (_GrowingVectortest, 0);
@@ -110,7 +110,7 @@ TEST_F(_GrowingVectorTest, ClearTest) {
 }
 
 
-TEST_F(_GrowingVectorTest, DuplicateTest) {
+TEST_F(DISABLED__GrowingVectorTest, DuplicateTest) {
 
   _GrowingVectortest->Duplicate(*BaseReftest);
   //EXPECT_EQ (_GrowingVectortest, 0);
@@ -118,7 +118,7 @@ TEST_F(_GrowingVectorTest, DuplicateTest) {
 }
 
 
-TEST_F(_GrowingVectorTest, StoreTest) {
+TEST_F(DISABLED__GrowingVectorTest, StoreTest) {
 
   long resultlong = _GrowingVectortest->Store(*_Parametertest);
   //EXPECT_EQ (resultlong, 0);
@@ -126,7 +126,7 @@ TEST_F(_GrowingVectorTest, StoreTest) {
 }
 
 
-TEST_F(_GrowingVectorTest, makeDynamicTest) {
+TEST_F(DISABLED__GrowingVectorTest, makeDynamicTest) {
 
   BaseRef resultBaseRef = _GrowingVectortest->makeDynamic();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -134,7 +134,7 @@ TEST_F(_GrowingVectorTest, makeDynamicTest) {
 }
 
 
-TEST_F(_GrowingVectorTest, operatorDoubleLessTest) {
+TEST_F(DISABLED__GrowingVectorTest, operatorDoubleLessTest) {
 
   //_GrowingVectortest->operatorDoubleLess(*_SimpleListtest);
   //EXPECT_EQ (_GrowingVectortest, 0);
