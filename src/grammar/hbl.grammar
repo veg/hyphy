@@ -36,6 +36,8 @@ TOKENS
   CLOSE_PARENTHESIS        = ')'.
   EQUAL                    = '='.
   ASSIGN                   = ":=".
+  ASSIGN_LOWER_BOUND       = ":<".
+  ASSIGN_UPPER_BOUND       = ":>".
   COMMA                    = ','.
   CLOSE_BRACE              = '}'.
   OPEN_BRACE               = '{'.
@@ -311,11 +313,13 @@ SYNC logical_or <f, fpc>
     | TIMES_EQUAL (. op_code = HY_OP_CODE_MUL; .)
     | DIV_EQUAL (. op_code = HY_OP_CODE_DIV; .)
     | ASSIGN (. assignment_type = _HY_OPERATION_ASSIGNMENT_EXPRESSION; .)
+    | ASSIGN_LOWER_BOUND (. assignment_type = _HY_OPERATION_ASSIGNMENT_LOWER_BOUND; .)
+    | ASSIGN_UPPER_BOUND (. assignment_type = _HY_OPERATION_ASSIGNMENT_UPPER_BOUND; .)
 )
 logical_or <*rhs, fpc> 
 (. 
     _parser2013_handleAssignment (this, f,  *rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
-.) 
+.)
 ]
 .
 

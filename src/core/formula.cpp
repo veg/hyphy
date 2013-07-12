@@ -434,6 +434,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
   }
   
   switch (thisNodeOperation->GetOpKind()) {
+
     case _HY_OPERATION_BUILTIN: {
         // check if it's a built-in binary operation
       long precedence_level = thisNodeOperation->GetOperationPrecedence();
@@ -529,12 +530,20 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       
     case _HY_OPERATION_ASSIGNMENT_VALUE:
     case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
-    case _HY_OPERATION_ASSIGNMENT_BOUND: {
+    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
+    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: {
+
         long op_count = currentNode->get_num_nodes();
+        printf("%d", op_count);
         if (currentNode) {
-          
-          long up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE);
-          
+          long up_to;
+          if(thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE
+             || thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
+            up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE);
+          } else {
+            up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND);
+          }
+
           if (up_to == 1) {
             internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
           } else {
@@ -548,12 +557,12 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
           if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
             result << '=';
             internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
-         } else {
-            if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
-              result << ":=";
-            } else {
-              result << ":<";
-            }
+          } else if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND 
+                     || thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND) {
+            result << ":<";
+            internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+          } else {
+            result << ":=";
             result << (_String*)((_Formula*)thisNodeOperation->GetPayload())->toStr();
           }
         
@@ -1982,6 +1991,7 @@ long _Formula::FormulaType(void) const {
   }
   return HY_FORMULA_EXPRESSION;
 }
+
 //______________________________________________________________________________
 long _Formula::ObjectClass(void) {
   if (theStack.theStack.lLength) {
@@ -2047,11 +2057,14 @@ void _Formula::ConvertToTree(bool err_msg) {
         case  _HY_OPERATION_BUILTIN:
         case  _HY_OPERATION_ASSIGNMENT_VALUE:
         case  _HY_OPERATION_ASSIGNMENT_EXPRESSION:
-        case  _HY_OPERATION_ASSIGNMENT_BOUND: {
+        case  _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
+        case  _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: {
           long nTerms = currentOp->OperandCount();
           
-          if (opKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION ||
-              opKind == _HY_OPERATION_ASSIGNMENT_BOUND) {
+          //if (opKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION
+          //    || opKind == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND
+          //    || opKind == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND ) {
+          if (opKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
               // need to push the expression encoded in payload _Formula onto the tree
               nTerms --;
           }

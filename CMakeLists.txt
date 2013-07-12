@@ -165,9 +165,15 @@ set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
 #-------------------------------------------------------------------------------
 # gtest dependency
 #-------------------------------------------------------------------------------
-add_subdirectory(contrib/gtest-1.6.0)
+#add_subdirectory(contrib/gtest-1.6.0)
+#set_property(
+#    TARGET gtest gtest_main
+#    PROPERTY EXCLUDE_FROM_ALL true
+#)
+
+add_subdirectory(contrib/gmock-1.6.0)
 set_property(
-    TARGET gtest gtest_main
+    TARGET gmock gmock_main
     PROPERTY EXCLUDE_FROM_ALL true
 )
 
@@ -190,7 +196,7 @@ add_custom_target(uninstall
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
-file(GLOB SRC_GTESTS tests/gtests/*.cpp)
+file(GLOB SRC_GTESTS tests/gtests/core/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
 file(GLOB SRC_GRAMMAR src/grammar/*.cpp)
@@ -249,8 +255,10 @@ include_directories(
     contrib/tinyxml
     contrib/pugixml/src/
     src/ocl/
+    #contrib/gtest-1.6.0/include
+    contrib/gmock-1.6.0/include
+    contrib/gmock-1.6.0/gtest/include
     src/grammar
-    contrib/gtest-1.6.0/include
     tests/gtests
     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
@@ -417,8 +425,8 @@ add_executable(
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
 )
-add_dependencies(HYPHYGTEST gtest)
-target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
+add_dependencies(HYPHYGTEST gmock)
+target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gmock)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
 set_property(

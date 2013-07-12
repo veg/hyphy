@@ -10,7 +10,6 @@
 #include <tr1/tuple>
 #include <iostream>
 #include "gtest/gtest.h"
-#include "ut_lists.h"
 
 #include "hy_strings.h"
 #include "list.h"

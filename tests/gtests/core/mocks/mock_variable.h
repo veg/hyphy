@@ -1,0 +1,49 @@
+class Mock_Variable : public _Variable {
+ public:
+  MOCK_METHOD0(Initialize,
+      void(void));
+  MOCK_METHOD1(Duplicate,
+      void(BaseRef));
+  MOCK_METHOD0(makeDynamic,
+      BaseRef(void));
+  MOCK_METHOD0(toStr,
+      BaseRef(void));
+  MOCK_METHOD1(toFileStr,
+      void(FILE));
+  MOCK_METHOD0(MarkDone,
+      void(void));
+  MOCK_METHOD0(Compute,
+      _PMathObj(void));
+  MOCK_METHOD0(IsVariable,
+      bool(void));
+  MOCK_METHOD0(IsIndependent,
+      bool(void));
+  MOCK_METHOD0(IsConstant,
+      bool(void));
+  MOCK_METHOD1(HasChanged,
+      bool());
+  MOCK_METHOD0(PreMarkChanged,
+      void());
+  MOCK_METHOD0(PostMarkChanged,
+      void());
+  MOCK_METHOD0(IsGlobal,
+      bool(void));
+  MOCK_METHOD0(IsCategory,
+      bool(void));
+  MOCK_METHOD0(GetAVariable,
+      long(void));
+  MOCK_METHOD0(ObjectClass,
+      unsigned long(void));
+  MOCK_METHOD4(ScanForVariables,
+      void(_AVLList, bool, _AVLListX, long));
+  MOCK_METHOD0(IsContainer,
+      bool(void));
+  MOCK_METHOD0(ClearConstraints,
+      void(void));
+  MOCK_METHOD2(CheckFForDependence,
+      bool(, ));
+  MOCK_METHOD1(CompileListOfDependents,
+      void(_SimpleList));
+  MOCK_METHOD1(ComputeReference,
+      _PMathObj(_PMathObj));
+};

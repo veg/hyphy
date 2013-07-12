@@ -1,0 +1,146 @@
+
+_Constanttest = new _Constant(-4.5);
+_PMathObjtest = new _Constant(-4.5);
+_Parametertest = new _Parameter(-4.5);
+_Stringtest = new _String("TGATGTAGTACCAATAGATAATGTTAGTAATAATACTAACCATAGTAACCATACTAAATATAACTATACTAACTATAGGTTAATAAATTGTAATACTTCAGTCATTACACAGGCCTGTCCAAAGGTATCCTTTGAACCAATTCCCATACATTATTGTGCCCCGGCTGGTTTT");
+booltest = new bool(true);
+inttest = new int(10);
+longtest = new long(10);
+doubletest = new double(10);
+chartest = new char('A');
+
+
+
+
+_Formulatest;
+_LikelihoodFunctiontest;
+_MathObjecttest;
+_Operationtest;
+_PolynomialDatatest;
+_Polynomialtest;
+_SimpleListtest;
+_TheTreetest;
+_TranslationTabletest;
+_TreeTopologytest;
+_Variabletest;
+_hyExecutionContexttest;
+node<long>test;
+node<nodeCoord>test;
+unsignedtest;
+
+#TODO:
+NexusFile
+
+_AVLListtest = new _AVLList(&_SimpleListtest)
+_AVLListXtest = new _AVLListX(&_SimpleListtest)
+_AVLListXLtest = new _AVLListXL(&_SimpleListtest)
+_AssociativeListtest = new _AssociativeList()
+_CStringtest = new _CString(_Stringtest)
+_CStringtest = new _CString(&chartest)
+_CStringtest = new _CString(chartest)
+_CStringtest = new _CString(longtest, booltest)
+_CStringtest = new _CString()
+_CalcNodetest = new _CalcNode()
+_CalcNodetest = new _CalcNode(&_CalcNodetest, &_VariableContainertest)
+_CalcNodetest = new _CalcNode()
+_CategoryVariabletest = new _CategoryVariable(_Stringtest, &_Listtest, &_VariableContainertest)
+_CategoryVariabletest = new _CategoryVariable()
+_CategoryVariabletest = new _CategoryVariable(_CategoryVariabletest)
+_Constanttest = new _Constant(_Parametertest)
+_Constanttest = new _Constant(_String&test)
+_Constanttest = new _Constant()
+_CustomFunctiontest = new _CustomFunction(&_Stringtest)
+_DataSettest = new _DataSet(&FILEtest)
+_DataSettest = new _DataSet(longtest)
+_DataSettest = new _DataSet()
+_DataSetFiltertest = new _DataSetFilter(&_DataSettest, _Stringtest)
+_DataSetFiltertest = new _DataSetFilter()
+_DataSetFilterNumerictest = new _DataSetFilterNumeric()
+_DataSetFilterNumerictest = new _DataSetFilterNumeric()
+_ElementaryCommandtest = new _ElementaryCommand(_Stringtest)
+_ElementaryCommandtest = new _ElementaryCommand(longtest)
+_ElementaryCommandtest = new _ElementaryCommand()
+_ExecutionListtest = new _ExecutionList()
+_ExecutionListtest = new _ExecutionList()
+_FStringtest = new _FString(_Stringtest, booltest)
+_FStringtest = new _FString(&_Stringtest)
+_FStringtest = new _FString(longtest)
+_FStringtest = new _FString()
+_Formulatest = new _Formula(_PMathObjtest, booltest)
+_Formulatest = new _Formula()
+_Formulatest = new _Formula()
+_FormulaParsingContexttest = new _FormulaParsingContext(&_Stringtest, &_VariableContainertest)
+_GrowingVectortest = new _GrowingVector(booltest)
+_LikelihoodFunctiontest = new _LikelihoodFunction(_LikelihoodFunctiontest)
+_LikelihoodFunctiontest = new _LikelihoodFunction(_Stringtest, &_VariableContainertest)
+_LikelihoodFunctiontest = new _LikelihoodFunction()
+_Listtest = new _List()
+_Listtest = new _List(BaseReftest)
+_Listtest = new _List(BaseReftest, chartest)
+_Listtest = new _List(_Listtest, longtest, longtest)
+_Listtest = new _List(&chartest, longtest)
+_Listtest = new _List(longtest)
+_Matrixtest = new _Matrix()
+_Matrixtest = new _Matrix(_Listtest)
+_Matrixtest = new _Matrix(_Matrixtest)
+_Matrixtest = new _Matrix()
+_Matrixtest = new _Matrix(_SimpleListtest, longtest)
+_Matrixtest = new _Matrix(_Stringtest, booltest, &_VariableContainertest)
+_Matrixtest = new _Matrix(longtest, longtest, booltest, booltest)
+_NTupleStoragetest = new _NTupleStorage()
+_NTupleStoragetest = new _NTupleStorage(longtest, longtest)
+_Operationtest = new _Operation(_PMathObjtest)
+_Operationtest = new _Operation(_Stringtest, longtest)
+_Operationtest = new _Operation()
+_Operationtest = new _Operation(longtest, longtest)
+_Operationtest = new _Operation()
+_Polynomialtest = new _Polynomial(_Parametertest)
+_Polynomialtest = new _Polynomial(_Polynomialtest)
+_Polynomialtest = new _Polynomial(_SimpleListtest)
+_Polynomialtest = new _Polynomial(_Variabletest)
+_Polynomialtest = new _Polynomial()
+_PolynomialDatatest = new _PolynomialData(_PolynomialDatatest)
+_PolynomialDatatest = new _PolynomialData(longtest)
+_PolynomialDatatest = new _PolynomialData(longtest, longtest, &_Parametertest)
+_PolynomialDatatest = new _PolynomialData()
+_SimpleListtest = new _SimpleList()
+_SimpleListtest = new _SimpleList(_SimpleListtest, longtest, longtest)
+_SimpleListtest = new _SimpleList(longtest, longtest)
+_6SimpleListtest = new _SimpleList(longtest)
+_SimpleListtest = new _SimpleList(longtest, longtest, longtest)
+_SimpleListtest = new _SimpleList(longtest)
+_Sitetest = new _Site(_Stringtest)
+_Sitetest = new _Site(chartest)
+_Sitetest = new _Site(longtest)
+_Sitetest = new _Site()
+_Stacktest = new _Stack()
+_Stringtest = new _String(&FILEtest)
+_Stringtest = new _String(_Parametertest, &chartest)
+_Stringtest = new _String(&_Stringtest)
+_Stringtest = new _String(_Stringtest)
+_Stringtest = new _String(_Stringtest, longtest, longtest)
+_Stringtest = new _String(&chartest)
+_Stringtest = new _String(chartest)
+_Stringtest = new _String(longtest)
+_Stringtest = new _String(longtest, booltest)
+_Stringtest = new _String()
+_TheTreetest = new _TheTree()
+_TheTreetest = new _TheTree(_Stringtest, _Stringtest, booltest)
+_TheTreetest = new _TheTree(_Stringtest, &_TheTreetest)
+_TheTreetest = new _TheTree(_Stringtest, &_TreeTopologytest)
+_TranslationTabletest = new _TranslationTable(_TranslationTabletest)
+_TranslationTabletest = new _TranslationTable(_Stringtest)
+_TranslationTabletest = new _TranslationTable()
+_TreeTopologytest = new _TreeTopology()
+_TreeTopologytest = new _TreeTopology(&_Stringtest)
+_TreeTopologytest = new _TreeTopology(_Stringtest, _Stringtest, booltest)
+_TreeTopologytest = new _TreeTopology(&_TheTreetest)
+_Trietest = new _Trie(&_Stringtest)
+_Variabletest = new _Variable(_Stringtest, _Stringtest, booltest)
+_Variabletest = new _Variable(_Stringtest, booltest)
+_Variabletest = new _Variable()
+_VariableContainertest = new _VariableContainer()
+_VariableContainertest = new _VariableContainer()
+_hyExecutionContexttest = new _hyExecutionContext(&_VariableContainertest, _String*test)
+nodetest = new node()
+ptr_arraytest = new ptr_array()
