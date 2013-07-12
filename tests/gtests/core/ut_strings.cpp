@@ -10,7 +10,6 @@
 #include <tr1/tuple>
 #include <iostream>
 #include "gtest/gtest.h"
-#include "ut_strings.h"
 
 
 #include "hy_strings.h"
@@ -79,7 +78,7 @@ TEST_F(StringTest,InitializeTest)
     empty.Initialize();
 
     EXPECT_EQ (test.sData, (char*)NULL);
-    EXPECT_EQ (test.sLength, 0);
+    EXPECT_EQ(test.sLength, 0);
 
     EXPECT_EQ (empty.sData, (char*)NULL);
     EXPECT_EQ (empty.sLength, 0);

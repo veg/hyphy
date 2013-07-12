@@ -97,7 +97,8 @@
 
 
 #define _HY_OPERATION_ASSIGNMENT_EXPRESSION  0x001000L
-#define _HY_OPERATION_ASSIGNMENT_BOUND       0x002000L
+#define _HY_OPERATION_ASSIGNMENT_LOWER_BOUND 0x002000L
+#define _HY_OPERATION_ASSIGNMENT_UPPER_BOUND 0x003000L
 
 
 #define _HY_OPERATION_FAST_EXEC_VALUE        0x010000L
@@ -239,6 +240,8 @@ public:
   bool ExecuteBuiltIn(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute a built-in function
 
   bool ExecuteFunctionCall (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an HBL function
+
+  bool ExecuteBounds (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
 
   bool ExecuteAssignment (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
                

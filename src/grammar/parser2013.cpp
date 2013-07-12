@@ -226,14 +226,20 @@ void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formu
 void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs, 
                                     _FormulaParsingContext& fpc, long assignment_type,
                                     long op_code, long lvalue_index) {
+
   if (_parser2013_errorFree(vp) == false) return;
   if (lvalue_index == HY_NOT_FOUND) {
     _parser2013_reportError(vp, _String ("Invalid LHS in assignment"), fpc);
   } else {
-    if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE || 
-        assignment_type == _HY_OPERATION_ASSIGNMENT_EXPRESSION ) {
+
+    if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE 
+        || assignment_type == _HY_OPERATION_ASSIGNMENT_EXPRESSION 
+        || assignment_type == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND 
+        || assignment_type == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND
+        ) {
+
       long reference = lhs.PrepareLHS (lvalue_index);
-      if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE) {
+      if (assignment_type != _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
         lhs.GetList() << rhs.GetList(); 
         lhs.Push (new _Operation (assignment_type, reference, op_code, NULL));
       } else {
@@ -246,6 +252,7 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
       
     }
   }
+
   delete (&rhs);
   
 }

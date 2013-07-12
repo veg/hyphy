@@ -149,6 +149,12 @@ BaseRef _Operation::toStr(void) {
     case _HY_OPERATION_ASSIGNMENT_VALUE:
       (*res) << "LHS = RHS";
        break;
+    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND:
+      (*res) << "LHS :< RHS";
+       break;
+    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
+      (*res) << "LHS :> RHS";
+       break;
     case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
       (*res) << "LHS := RHS";
       break;
@@ -306,21 +312,63 @@ long  _Operation::PrepareLHS(void) {
   return _HY_OPERATION_INVALID_REFERENCE;
 }
 
+
+bool _Operation::ExecuteBounds (_Stack& theScrap, _hyExecutionContext* context) {
+
+  _PMathObj rhs = theScrap.Pop();
+
+  if (reference == _HY_OPERATION_INVALID_REFERENCE) {
+    // this handles x ?= y assignments
+    _PMathObj lhs = theScrap.Pop();
+              
+    _Variable *lhs_var = LocateVar((long)lhs->Compute()->Value()); 
+
+    if (attribute != HY_OP_CODE_NONE) {
+       _PMathObj op_result = lhs_var->Compute()->Execute(attribute, rhs);
+       if (!op_result) {
+          return false;
+       }
+       DeleteObject (rhs);
+       rhs = op_result;
+    }
+
+    rhs->AddAReference();
+
+    if(operationKind == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND) {
+      lhs_var->SetBounds(lhs_var->GetLowerBound(), rhs->Value());
+    } else {
+      lhs_var->SetBounds( rhs->Value(), lhs_var->GetUpperBound());
+    }
+
+    theScrap.theStack.Place (rhs);
+    DeleteObject (lhs);
+    return true;
+
+  } else {
+     return ReportOperationExecutionError( "Can't set bounds like this  in the following context: ", context->GetErrorBuffer());
+  }
+
+  return true;
+
+}
+
 //______________________________________________________________________________
 
 bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* context) {
   
   if (operationKind == _HY_OPERATION_ASSIGNMENT_VALUE
       || _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
-      
-      _PMathObj rhs = operationKind == _HY_OPERATION_ASSIGNMENT_VALUE ? theScrap.Pop() : NULL;
+
+      _PMathObj rhs = NULL;
+      rhs = operationKind == _HY_OPERATION_ASSIGNMENT_VALUE ? theScrap.Pop() : NULL;
+
       if (reference == _HY_OPERATION_INVALID_REFERENCE) {
         // this handles x ?= y assignments
         _PMathObj lhs = theScrap.Pop();
                   
         _Variable *lhs_var = LocateVar((long)lhs->Compute()->Value()); 
         
-        if (operationKind == _HY_OPERATION_ASSIGNMENT_VALUE) {
+        if (operationKind == _HY_OPERATION_ASSIGNMENT_VALUE ) {
           if (attribute != HY_OP_CODE_NONE) {
              _PMathObj op_result = lhs_var->Compute()->Execute(attribute, rhs);
              if (!op_result) {
@@ -329,14 +377,13 @@ bool _Operation::ExecuteAssignment (_Stack& theScrap, _hyExecutionContext* conte
              DeleteObject (rhs);
              rhs = op_result;
           }
-          
           rhs->AddAReference();
           lhs_var -> SetValue (rhs, false);
           theScrap.theStack.Place (rhs);
         } else {
           lhs_var->SetFormula(*(_Formula*)payload);
           theScrap.theStack.Place (new _MathObject);
-         }
+       }
         
        DeleteObject (lhs);
        return true;
@@ -628,11 +675,13 @@ bool _Operation::Execute(_Stack &theScrap, _hyExecutionContext* context) {
     case _HY_OPERATION_ASSIGNMENT_VALUE: 
     case _HY_OPERATION_ASSIGNMENT_EXPRESSION: 
       return ExecuteAssignment (theScrap, context);
+
+    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND: 
+    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: 
+      return ExecuteBounds (theScrap, context);
     
-      
     case _HY_OPERATION_NOOP:
       return true;
-      
       
   }
   return false;
@@ -807,6 +856,8 @@ bool _Operation::IsConstant(void) const {
       return true;
       
     case _HY_OPERATION_ASSIGNMENT_VALUE:
+    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
+    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND:
       return true;
       
   }
@@ -855,11 +906,13 @@ void _Operation::StackDepth(long &depth) const {
       depth -= attribute-1;
       break;
       
-    case _HY_OPERATION_ASSIGNMENT_BOUND:
-      depth --;
-      break;
+    //case _HY_OPERATION_ASSIGNMENT_BOUND:
+    //  depth --;
+    //  break;
       
     case _HY_OPERATION_ASSIGNMENT_VALUE:
+    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
+    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND:
     case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
       if (reference == _HY_OPERATION_INVALID_REFERENCE) {
         depth --;
