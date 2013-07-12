@@ -241,6 +241,8 @@ public:
 
   bool ExecuteFunctionCall (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an HBL function
 
+  bool ExecuteBounds (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
+
   bool ExecuteAssignment (_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute an assignment 
                
   bool Execute(_Stack &, _hyExecutionContext* = _hyDefaultExecutionContext); //execute this operation
