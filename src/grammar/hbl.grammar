@@ -53,6 +53,9 @@ TOKENS
   GLOBAL_VAR_TOKEN          = "global".
   IF_TOKEN                  = "if".
   ELSE_TOKEN                = "else".
+  FOR_TOKEN                 = "for".
+  CONTINUE                  = "continue".
+  BREAK                     = "break".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO CR LF
@@ -334,13 +337,13 @@ SYNC assignment_op <f, fpc>
 /*------------------------------------------------------------------------*/
 statement <_ExecutionList &current_code_stream>
 =   (. _Formula * f = new _Formula; _FormulaParsingContext fpc; .)
-    (
-    (
+    ( 
+    ( // global var_id declaration
         GLOBAL_VAR_TOKEN ident <*f, fpc, true> SEMICOLON 
         (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
     ) 
     |
-    (   
+    (   // if () block else block
         (. long index_if = current_code_stream.countitems(),
                 index_else = -1L; .)
         IF_TOKEN OPEN_PARENTHESIS
@@ -364,7 +367,67 @@ statement <_ExecutionList &current_code_stream>
         
     )
     |
+    ( // for (start;  condition; increment) block
+      (.    
+            long index_for = current_code_stream.countitems();
+            bool has_conditional = false;
+            _Formula * increment = NULL;
+      .)
+        FOR_TOKEN OPEN_PARENTHESIS
+            [expression <*f,fpc> 
+                    (. 
+                       _parser2013_pushStatementOntoList (this, current_code_stream, f); 
+                       index_for = current_code_stream.countitems();
+                       f = NULL;
+                    .) 
+            ] 
+            SEMICOLON
+            [       (. if (!f) f = new _Formula; .)
+                    expression <*f,fpc> 
+                    (.  
+                        _parser2013_pushJumpOntoList (this, current_code_stream, f);
+                        has_conditional = true;
+                        f = NULL;
+                    .)
+            ] 
+            SEMICOLON
+            [   (. increment = new _Formula; .)
+                expression <*increment,fpc> 
+            ] 
+            CLOSE_PARENTHESIS 
+            (. _parser2013_addLoopContext (this); .)
+            block <current_code_stream> 
+            (.
+                long increment_command_index = -1L;
+                if (increment) {
+                    increment_command_index = current_code_stream.countitems();
+                    _parser2013_pushStatementOntoList (this, current_code_stream, increment);
+                }
+                
+                _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
+                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                              current_code_stream.countitems()-1,
+                                                              index_for);
+                if (has_conditional) {
+                    _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
+                                                                  current_code_stream.countitems ());
+                }
+                _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
+                                                   current_code_stream.countitems ());
+            .)
+    )
+    |
     (
+        CONTINUE SEMICOLON
+        (. _parser2013_handleContinueBreak (this, current_code_stream, true); .)
+    )
+    |
+    (
+        BREAK SEMICOLON
+        (. _parser2013_handleContinueBreak (this, current_code_stream, false); .)
+    )
+    |
+    ( // expression; 
         expression <*f, fpc> SEMICOLON
         (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
     )
@@ -375,10 +438,13 @@ statement <_ExecutionList &current_code_stream>
 /*------------------------------------------------------------------------*/
 block <_ExecutionList &current_code_stream>
 = 
+(
 OPEN_BRACE
-{statement <current_code_stream> | 
- block <current_code_stream>}
+{statement <current_code_stream>}
 CLOSE_BRACE
+)
+|
+statement <current_code_stream>
 .
 
 /*------------------------------------------------------------------------*/
@@ -386,7 +452,7 @@ CLOSE_BRACE
 hyphy_batch_language 
 = 
 (IF (_parseExpressionsOnly ()) expression <*f, *fpc> SYNC /* a single expression for calculator-style parsing */
-| {block <*hbl_stream> | statement <*hbl_stream> } 
+| {block <*hbl_stream>} 
 )
 .
 

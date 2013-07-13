@@ -112,6 +112,9 @@ void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formu
 void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
 void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
 void _parser2013_pushSetJumpCommmandIndices (void *vp, _ExecutionList&, long, long);
+void  _parser2013_addLoopContext (void *vp);
+void  _parser2013_popLoopContext (void *vp, _ExecutionList&, long, long);
+void  _parser2013_handleContinueBreak (void *vp, _ExecutionList&, bool);
 
 // grammar conflict resolvers
 
@@ -120,6 +123,7 @@ bool    _parser2013_TwoOpenBraces                   (void * p);
 bool    _parser2013_isSimpleStatement             (void * p);
 bool    _parser2013_isFollowedByAnCommaOrClosingBrace (void *p);
 bool    _parser2013_StringAndColon (void *p);
+
 
 // Utility functions
 

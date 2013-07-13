@@ -564,6 +564,10 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
           }
 
           if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
+            long opCode = thisNodeOperation->GetAttribute();
+            if (opCode != _HY_OPERATION_INVALID_REFERENCE) {
+              result << BuiltInFunctions.RetrieveKeyByPayload (opCode);
+            }
             result << '=';
             internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
           } else {

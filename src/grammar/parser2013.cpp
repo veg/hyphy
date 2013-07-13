@@ -302,6 +302,29 @@ void _parser2013_pushSparseElementEntry (void* vp, _FormulaParsingContext& fpc,
   }
 }
 
+void  _parser2013_addLoopContext (void *vp) {
+  Parser* p = (Parser*)vp;
+  p->loop_contexts.AppendNewInstance(new _SimpleList);
+}
+
+
+void  _parser2013_popLoopContext (void *vp, _ExecutionList&current_command_stream, long loop_start, long loop_end) {
+  if (_parser2013_errorFree(vp) == false) return;
+  Parser * p = (Parser*) vp;
+  if (p->loop_contexts.countitems() > 0L) {
+    _SimpleList * last_loop_context = (_SimpleList *)p->loop_contexts.Pop();
+    for (long command = 0; command < last_loop_context->countitems(); command += 2) {
+      _parser2013_pushSetJumpCommmandIndices (vp, current_command_stream,
+                                              last_loop_context->GetElement(command),
+                                              last_loop_context->GetElement(command+1)?
+                                              loop_start: loop_end);
+    }
+  } else {
+    _FormulaParsingContext fpc;
+    _parser2013_reportError(vp, "_parser2013_popLoopContext called without a loop context", fpc);
+  }
+}
+
 
 
   // LL(1) resolvers
@@ -398,6 +421,26 @@ void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_comman
   a_statement->AppendToSimpleParameters((long)f);
   current_command_stream.Place (a_statement);
 }
+
+void  _parser2013_handleContinueBreak (void *vp, _ExecutionList&current_command_stream, bool is_continue) {
+  if (_parser2013_errorFree(vp) == false) return;
+  Parser * p = (Parser*) vp;
+  
+  if (p->loop_contexts.countitems() == 0L) {
+    _FormulaParsingContext fpc;
+    _parser2013_reportError(vp, "break or continue statement outside a loop", fpc);
+    return;
+  } else {
+    _SimpleList * most_recent_loop = (_SimpleList *)p->loop_contexts.GetElement(-1L);
+    (*most_recent_loop) << current_command_stream.countitems();
+    (*most_recent_loop) << is_continue;
+  }
+  
+  _ElementaryCommand * a_statement = new _ElementaryCommand (_HY_HBL_COMMAND_JUMP_STATEMENT);
+  a_statement->AppendToSimpleParameters(current_command_stream.countitems());  
+  current_command_stream.Place (a_statement);
+}
+
 
 void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f) {
   if (_parser2013_errorFree(vp) == false) return;
