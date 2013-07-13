@@ -527,22 +527,50 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       }
       return;
     }
-      
-    case _HY_OPERATION_ASSIGNMENT_VALUE:
-    case _HY_OPERATION_ASSIGNMENT_EXPRESSION:
+
     case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
     case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: {
 
-        long op_count = currentNode->get_num_nodes();
-        printf("%d", op_count);
-        if (currentNode) {
-          long up_to;
-          if(thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE
-             || thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_EXPRESSION) {
-            up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE);
-          } else {
-            up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND);
+      long op_count = currentNode->get_num_nodes();
+
+      if (currentNode) {
+
+        long up_to;
+        if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND) {
+          up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND);
+        } else {
+          up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND);
+        }
+
+        if (up_to == 1) {
+          internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+        } else {
+          char delims [4] = {'(',')','[',']'};
+          for (long k = 1; k <= up_to; k++) {
+            result << delims[2*(k>1)];
+            internalToStr(result, currentNode->go_down(k), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+            result << delims[2*(k>1)+1];
           }
+        }
+        
+        if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND) {
+          result << ":<";
+        } else {
+          result << ":>";
+        }
+
+        internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+      }
+      return;
+    }
+
+
+    case _HY_OPERATION_ASSIGNMENT_VALUE:
+    case _HY_OPERATION_ASSIGNMENT_EXPRESSION: {
+        long op_count = currentNode->get_num_nodes();
+        if (currentNode) {
+
+          long up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE);
 
           if (up_to == 1) {
             internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
@@ -554,12 +582,9 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
               result << delims[2*(k>1)+1];
             }
           }
+
           if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
             result << '=';
-            internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
-          } else if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND 
-                     || thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND) {
-            result << ":<";
             internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
           } else {
             result << ":=";
@@ -568,6 +593,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
         
         }
       }
+
       return;
       
     default: {

@@ -337,7 +337,7 @@ bool _Operation::ExecuteBounds (_Stack& theScrap, _hyExecutionContext* context) 
     if(operationKind == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND) {
       lhs_var->SetBounds(lhs_var->GetLowerBound(), rhs->Value());
     } else {
-      lhs_var->SetBounds( rhs->Value(), lhs_var->GetUpperBound());
+      lhs_var->SetBounds(rhs->Value(), lhs_var->GetUpperBound());
     }
 
     theScrap.theStack.Place (rhs);
