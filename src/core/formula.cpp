@@ -593,7 +593,8 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
         _String *conv = (_String *)opValue->toStr();
         if (opValue->ObjectClass() == STRING) {
           result << '"';
-          result.AppendNewInstance(conv);
+          result.EscapeAndAppend(*conv);
+          DeleteObject(conv);
           result << '"';
         } else {
           if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
