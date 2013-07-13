@@ -60,6 +60,7 @@ private:
 	_Formula               * f;
 	_FormulaParsingContext * fpc;
 	_ExecutionList         * hbl_stream;
+	
 
 	void SynErr(int n);
 	void Get();
@@ -81,8 +82,8 @@ public:
 		_CLOSE_PARENTHESIS=7,
 		_EQUAL=8,
 		_ASSIGN=9,
-		_ASSIGN_LOWER_BOUND=10,
-		_ASSIGN_UPPER_BOUND=11,
+		_ASSIGN_UPPER_BOUND=10,
+		_ASSIGN_LOWER_BOUND=11,
 		_COMMA=12,
 		_CLOSE_BRACE=13,
 		_OPEN_BRACE=14,
@@ -97,7 +98,10 @@ public:
 		_DIV_EQUAL=23,
 		_GLOBAL_VAR_TOKEN=24,
 		_IF_TOKEN=25,
-		_ELSE_TOKEN=26
+		_ELSE_TOKEN=26,
+		_FOR_TOKEN=27,
+		_CONTINUE=28,
+		_BREAK=29
 	};
 	int maxT;
 
@@ -106,6 +110,7 @@ public:
 
 	Token *t;			// last recognized token
 	Token *la;			// lookahead token
+	_List                  loop_contexts;
 
 
 

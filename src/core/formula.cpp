@@ -514,7 +514,13 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       return;
     }
     case _HY_OPERATION_FUNCTION_CALL: {
-      result << *_HBLObjectNameByType(HY_BL_HBL_FUNCTION, thisNodeOperation->GetReference());
+    case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
+      
+      if (thisNodeOperation->GetOpKind() == _HY_OPERATION_FUNCTION_CALL) {
+        result << *_HBLObjectNameByType(HY_BL_HBL_FUNCTION, thisNodeOperation->GetReference());
+      } else {
+        result << (_String*)thisNodeOperation->GetPayload();
+      }
       if (currentNode) {
         result << '(';
         for (long k = 1; k <= thisNodeOperation->GetAttribute(); k++) {
@@ -528,41 +534,21 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       return;
     }
 
-    case _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
-    case _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: {
-
-      long op_count = currentNode->get_num_nodes();
+    case _HY_OPERATION_ASSIGNMENT_BOUND:
 
       if (currentNode) {
 
-        long up_to;
-        if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND) {
-          up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND);
-        } else {
-          up_to = op_count - (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND);
-        }
-
-        if (up_to == 1) {
-          internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
-        } else {
-          char delims [4] = {'(',')','[',']'};
-          for (long k = 1; k <= up_to; k++) {
-            result << delims[2*(k>1)];
-            internalToStr(result, currentNode->go_down(k), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
-            result << delims[2*(k>1)+1];
-          }
-        }
-        
-        if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND) {
+        internalToStr(result, currentNode->go_down(1), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+         
+        if (thisNodeOperation->GetAttribute() == _HY_OPERATION_ASSIGNMENT_BOUND_UPPER) {
           result << ":<";
         } else {
           result << ":>";
         }
-
-        internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
+        internalToStr(result, currentNode->go_down(2), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
       }
       return;
-    }
+    
 
 
     case _HY_OPERATION_ASSIGNMENT_VALUE:
@@ -584,6 +570,10 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
           }
 
           if (thisNodeOperation->GetOpKind() == _HY_OPERATION_ASSIGNMENT_VALUE) {
+            long opCode = thisNodeOperation->GetAttribute();
+            if (opCode != _HY_OPERATION_INVALID_REFERENCE) {
+              result << BuiltInFunctions.RetrieveKeyByPayload (opCode);
+            }
             result << '=';
             internalToStr(result, currentNode->go_down(op_count), _HY_OPERATION_MIN_PRECEDENCE, matchNames);
           } else {
@@ -595,6 +585,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       }
 
       return;
+    
       
     default: {
       _PMathObj opValue = thisNodeOperation->GetPayload();
@@ -602,7 +593,8 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
         _String *conv = (_String *)opValue->toStr();
         if (opValue->ObjectClass() == STRING) {
           result << '"';
-          result.AppendNewInstance(conv);
+          result.EscapeAndAppend(*conv);
+          DeleteObject(conv);
           result << '"';
         } else {
           if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
@@ -2083,8 +2075,7 @@ void _Formula::ConvertToTree(bool err_msg) {
         case  _HY_OPERATION_BUILTIN:
         case  _HY_OPERATION_ASSIGNMENT_VALUE:
         case  _HY_OPERATION_ASSIGNMENT_EXPRESSION:
-        case  _HY_OPERATION_ASSIGNMENT_UPPER_BOUND:
-        case  _HY_OPERATION_ASSIGNMENT_LOWER_BOUND: {
+        case  _HY_OPERATION_ASSIGNMENT_BOUND: {
           long nTerms = currentOp->OperandCount();
           
           //if (opKind == _HY_OPERATION_ASSIGNMENT_EXPRESSION
