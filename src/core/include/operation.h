@@ -97,8 +97,10 @@
 
 
 #define _HY_OPERATION_ASSIGNMENT_EXPRESSION  0x001000L
-#define _HY_OPERATION_ASSIGNMENT_LOWER_BOUND 0x002000L
-#define _HY_OPERATION_ASSIGNMENT_UPPER_BOUND 0x003000L
+#define _HY_OPERATION_ASSIGNMENT_BOUND       0x002000L
+
+#define _HY_OPERATION_ASSIGNMENT_BOUND_LOWER 0x000000L
+#define _HY_OPERATION_ASSIGNMENT_BOUND_UPPER 0x000001L
 
 
 #define _HY_OPERATION_FAST_EXEC_VALUE        0x010000L
@@ -185,9 +187,13 @@ _HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | opCode (which 
 _VALUE                      |  or the number of arguments to    | perform on the LHS)               | 
                             |  consume for x[][] = y assignment |                                   |
 
-_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | *_Formula to assign 
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  |_HY_OPERATION_..._BOUND_LOWER or   | NULL
+_BOUND                      |                                   |_HY_OPERATION_..._BOUND_UPPER      |
+
+_HY_OPERATION_ASSIGNMENT    |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | *_Formula to assign
 _EXPRESSION                 |                                   |                                   | to the LHS
 
+ 
 
 _HY_OPERATION_FAST_EXEC     |  _HY_OPERATION_INVALID_REFERENCE  | _HY_OPERATION_INVALID_REFERENCE   | object to push on stack
 _VALUE                      |                                   |                                   | (must be a scalar)

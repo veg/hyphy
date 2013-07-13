@@ -435,12 +435,12 @@ void Parser::assignment_op(_Formula& f, _FormulaParsingContext& fpc) {
 			}
 			case _ASSIGN_LOWER_BOUND: {
 				Get();
-				assignment_type = _HY_OPERATION_ASSIGNMENT_LOWER_BOUND; 
+				assignment_type = _HY_OPERATION_ASSIGNMENT_BOUND; op_code = _HY_OPERATION_ASSIGNMENT_BOUND_LOWER; 
 				break;
 			}
 			case _ASSIGN_UPPER_BOUND: {
 				Get();
-				assignment_type = _HY_OPERATION_ASSIGNMENT_UPPER_BOUND; 
+				assignment_type = _HY_OPERATION_ASSIGNMENT_BOUND; op_code = _HY_OPERATION_ASSIGNMENT_BOUND_UPPER; 
 				break;
 			}
 			}
@@ -675,8 +675,8 @@ void Errors::SynErr(int line, int col, int n) {
 			case 7: s = coco_string_create(L"CLOSE_PARENTHESIS expected"); break;
 			case 8: s = coco_string_create(L"EQUAL expected"); break;
 			case 9: s = coco_string_create(L"ASSIGN expected"); break;
-			case 10: s = coco_string_create(L"ASSIGN_LOWER_BOUND expected"); break;
-			case 11: s = coco_string_create(L"ASSIGN_UPPER_BOUND expected"); break;
+			case 10: s = coco_string_create(L"ASSIGN_UPPER_BOUND expected"); break;
+			case 11: s = coco_string_create(L"ASSIGN_LOWER_BOUND expected"); break;
 			case 12: s = coco_string_create(L"COMMA expected"); break;
 			case 13: s = coco_string_create(L"CLOSE_BRACE expected"); break;
 			case 14: s = coco_string_create(L"OPEN_BRACE expected"); break;

@@ -234,8 +234,7 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
 
     if (assignment_type == _HY_OPERATION_ASSIGNMENT_VALUE 
         || assignment_type == _HY_OPERATION_ASSIGNMENT_EXPRESSION 
-        || assignment_type == _HY_OPERATION_ASSIGNMENT_UPPER_BOUND 
-        || assignment_type == _HY_OPERATION_ASSIGNMENT_LOWER_BOUND
+        || assignment_type == _HY_OPERATION_ASSIGNMENT_BOUND 
         ) {
 
       long reference = lhs.PrepareLHS (lvalue_index);
