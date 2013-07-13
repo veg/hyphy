@@ -656,12 +656,14 @@ int main (int argc, char* argv[])
 		Parser  *parser = new Parser(scanner, NULL, NULL, &tester);
 		parser->Parse();
 		coco_string_delete(fileName);
-		delete parser;
-		delete scanner;
-    printf ("Created the following ExecutionList\n\n%s\n\n",
-            _String ((_String*) tester.toStr()).sData);
-            
-    tester.Execute();
+    delete scanner;
+    if (_parser2013_errorFree (parser)) {
+      printf ("Created the following ExecutionList\n\n%s\n\n",
+              _String ((_String*) tester.toStr()).sData);
+              
+      tester.Execute();
+    }
+    delete parser;
     GlobalShutdown();
     return 0;
 	}

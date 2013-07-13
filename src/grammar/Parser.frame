@@ -63,6 +63,7 @@ private:
 	_Formula               * f;
 	_FormulaParsingContext * fpc;
 	_ExecutionList         * hbl_stream;
+	
 
 	void SynErr(int n);
 	void Get();
@@ -79,6 +80,7 @@ public:
 
 	Token *t;			// last recognized token
 	Token *la;			// lookahead token
+	_List                  loop_contexts;
 
 -->declarations
 

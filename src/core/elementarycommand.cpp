@@ -208,7 +208,7 @@ BaseRef _ElementaryCommand::toStr(void) {
     result = _String ("Jump to ") & simpleParameters.GetElement (0);
     if (simpleParameters.lLength > 1) {
       _Formula *f = (_Formula*) simpleParameters.GetElement(1L);
-      result = result & " subject to condition: " 
+      result = result & " subject to condition == FALSE: " 
        & _String ((_String*)f->toStr());
     } else {
       result = result & " unconditionally";

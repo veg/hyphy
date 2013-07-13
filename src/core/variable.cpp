@@ -211,7 +211,7 @@ _PMathObj _Variable::Compute(void) // compute or return the value
     }
 
     if (varFlags & HY_VARIABLE_NOTSET) {
-      ReportWarning(_String("Variable '") & *GetName() &
+      FlagError (_String("Variable '") & *GetName() &
                     "' was not initialized prior to being used");
     }
 
