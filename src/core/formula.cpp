@@ -514,7 +514,13 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       return;
     }
     case _HY_OPERATION_FUNCTION_CALL: {
-      result << *_HBLObjectNameByType(HY_BL_HBL_FUNCTION, thisNodeOperation->GetReference());
+    case _HY_OPERATION_DEFERRED_FUNCTION_CALL:
+      
+      if (thisNodeOperation->GetOpKind() == _HY_OPERATION_FUNCTION_CALL) {
+        result << *_HBLObjectNameByType(HY_BL_HBL_FUNCTION, thisNodeOperation->GetReference());
+      } else {
+        result << (_String*)thisNodeOperation->GetPayload();
+      }
       if (currentNode) {
         result << '(';
         for (long k = 1; k <= thisNodeOperation->GetAttribute(); k++) {
@@ -579,6 +585,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       }
 
       return;
+    
       
     default: {
       _PMathObj opValue = thisNodeOperation->GetPayload();
