@@ -238,7 +238,7 @@ function InferTreeTopologyFromMatrix (distancesFlag)
 
 function InferTreeTopology(distancesFlag)
 {
-	InitializeDistances ();
+	InitializeDistances (0);
 	distanceMatrix = {filteredData.species,filteredData.species};
 		
 	for (i = 0; i<filteredData.species; i=i+1)
