@@ -55,6 +55,7 @@ TOKENS
   ELSE_TOKEN                = "else".
   FOR_TOKEN                 = "for".
   WHILE_TOKEN               = "while".
+  DO_TOKEN                  = "do".
   CONTINUE                  = "continue".
   BREAK                     = "break".
 
@@ -421,8 +422,7 @@ statement <_ExecutionList &current_code_stream>
             const long index_for = current_code_stream.countitems();
       .)
         WHILE_TOKEN OPEN_PARENTHESIS
-        [   
-            expression <*f,fpc> 
+        [expression <*f,fpc> 
             (. 
                _parser2013_pushJumpOntoList (this, current_code_stream, f);
                f = NULL;
@@ -447,6 +447,43 @@ statement <_ExecutionList &current_code_stream>
 
 
         .)
+    )
+    |
+    ( // do block while ( statement ) ;
+      (.    
+            const long do_begin = current_code_stream.countitems();
+      .)
+
+        DO_TOKEN 
+        (. _parser2013_addLoopContext (this); .)
+        block <current_code_stream> 
+
+        WHILE_TOKEN OPEN_PARENTHESIS
+        [expression <*f,fpc> 
+            (. 
+               // we could avoid the second jump (NULL expr) if we could
+               // NOT(f) or assign the "else" side of the jump
+
+               _parser2013_pushJumpOntoList (this, current_code_stream, f);
+               _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
+
+               _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                             current_code_stream.countitems()-2,
+                                                             current_code_stream.countitems());
+
+               _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                             current_code_stream.countitems()-1,
+                                                             do_begin);
+
+
+                _parser2013_popLoopContext (this, current_code_stream, do_begin, 
+                                                  current_code_stream.countitems ());
+
+                f = NULL;
+              .) 
+        ] 
+        CLOSE_PARENTHESIS 
+        SEMICOLON
     )
     |
     (

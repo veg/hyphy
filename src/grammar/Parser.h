@@ -101,8 +101,9 @@ public:
 		_ELSE_TOKEN=26,
 		_FOR_TOKEN=27,
 		_WHILE_TOKEN=28,
-		_CONTINUE=29,
-		_BREAK=30
+		_DO_TOKEN=29,
+		_CONTINUE=30,
+		_BREAK=31
 	};
 	int maxT;
 
