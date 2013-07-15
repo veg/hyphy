@@ -68,7 +68,10 @@ set(HYPHY_VERSION 2.1)
 
 
 set(MACOSX_LION false)
+set(MACOSX false)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(MACOSX true)
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
         set(MACOSX_LION true)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
@@ -101,9 +104,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC46 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
-    if(${MACOSX_LION})
+    if(${MACOSX})
         set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
-    endif(${MACOSX_LION})
+    endif(${MACOSX})
 
     if(${GCC45})
         set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3 ")
