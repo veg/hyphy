@@ -54,6 +54,7 @@ TOKENS
   IF_TOKEN                  = "if".
   ELSE_TOKEN                = "else".
   FOR_TOKEN                 = "for".
+  WHILE_TOKEN               = "while".
   CONTINUE                  = "continue".
   BREAK                     = "break".
 
@@ -371,7 +372,7 @@ statement <_ExecutionList &current_code_stream>
       (.    
             long index_for = current_code_stream.countitems();
             bool has_conditional = false;
-            _Formula * increment = NULL;
+            _Formula * increment = new _Formula;
       .)
         FOR_TOKEN OPEN_PARENTHESIS
             [expression <*f,fpc> 
@@ -391,18 +392,16 @@ statement <_ExecutionList &current_code_stream>
                     .)
             ] 
             SEMICOLON
-            [   (. increment = new _Formula; .)
+            [   
                 expression <*increment,fpc> 
             ] 
             CLOSE_PARENTHESIS 
             (. _parser2013_addLoopContext (this); .)
             block <current_code_stream> 
             (.
-                long increment_command_index = -1L;
-                if (increment) {
-                    increment_command_index = current_code_stream.countitems();
-                    _parser2013_pushStatementOntoList (this, current_code_stream, increment);
-                }
+
+                long increment_command_index = current_code_stream.countitems();
+                _parser2013_pushStatementOntoList (this, current_code_stream, increment);
                 
                 _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
                 _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
@@ -415,6 +414,39 @@ statement <_ExecutionList &current_code_stream>
                 _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
                                                    current_code_stream.countitems ());
             .)
+    )
+    |
+    ( // while ( statement ) block
+      (.    
+            const long index_for = current_code_stream.countitems();
+      .)
+        WHILE_TOKEN OPEN_PARENTHESIS
+        [   
+            expression <*f,fpc> 
+            (. 
+               _parser2013_pushJumpOntoList (this, current_code_stream, f);
+               f = NULL;
+            .) 
+        ] 
+        CLOSE_PARENTHESIS 
+        (. _parser2013_addLoopContext (this); .)
+        block <current_code_stream> 
+        (.
+
+            _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
+
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                          current_code_stream.countitems()-1,
+                                                          index_for);
+
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
+                                                          current_code_stream.countitems ());
+
+            _parser2013_popLoopContext (this, current_code_stream, index_for, 
+                                              current_code_stream.countitems ());
+
+
+        .)
     )
     |
     (

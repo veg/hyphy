@@ -403,8 +403,8 @@ set_target_properties(
     PROPERTIES
     #COMPILE_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
     #LINK_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O1"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O1"
 )
 
 set_property(
