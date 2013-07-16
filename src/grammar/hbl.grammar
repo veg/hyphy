@@ -429,7 +429,6 @@ statement <_ExecutionList &current_code_stream>
             .) 
         ] 
         CLOSE_PARENTHESIS 
-        (. _parser2013_addLoopContext (this); .)
         block <current_code_stream> 
         (.
 
@@ -442,9 +441,6 @@ statement <_ExecutionList &current_code_stream>
             _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
                                                           current_code_stream.countitems ());
 
-            _parser2013_popLoopContext (this, current_code_stream, index_for, 
-                                              current_code_stream.countitems ());
-
 
         .)
     )
@@ -455,7 +451,6 @@ statement <_ExecutionList &current_code_stream>
       .)
 
         DO_TOKEN 
-        (. _parser2013_addLoopContext (this); .)
         block <current_code_stream> 
 
         WHILE_TOKEN OPEN_PARENTHESIS
@@ -475,9 +470,6 @@ statement <_ExecutionList &current_code_stream>
                                                              current_code_stream.countitems()-1,
                                                              do_begin);
 
-
-                _parser2013_popLoopContext (this, current_code_stream, do_begin, 
-                                                  current_code_stream.countitems ());
 
                 f = NULL;
               .) 

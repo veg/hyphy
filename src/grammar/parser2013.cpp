@@ -308,7 +308,9 @@ void  _parser2013_addLoopContext (void *vp) {
 }
 
 
-void  _parser2013_popLoopContext (void *vp, _ExecutionList&current_command_stream, long loop_start, long loop_end) {
+void  _parser2013_popLoopContext (void *vp, 
+                                  _ExecutionList&current_command_stream, 
+                                  long loop_start, long loop_end) {
   if (_parser2013_errorFree(vp) == false) return;
   Parser * p = (Parser*) vp;
   if (p->loop_contexts.countitems() > 0L) {
