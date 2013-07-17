@@ -541,7 +541,10 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 				
 			}
 			Expect(_CLOSE_PARENTHESIS);
+			_parser2013_addLoopContext (this); 
 			block(current_code_stream);
+			long increment_command_index = current_code_stream.countitems();
+			
 			_parser2013_pushJumpOntoList (this, current_code_stream, NULL);
 			
 			_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
@@ -551,6 +554,8 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 			_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
 			                                             current_code_stream.countitems ());
 			
+			_parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
+			                                  current_code_stream.countitems ());
 			
 			
 			break;
@@ -559,21 +564,27 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 			const long do_begin = current_code_stream.countitems();
 			
 			Get();
+			_parser2013_addLoopContext (this); 
 			block(current_code_stream);
 			Expect(_WHILE_TOKEN);
 			Expect(_OPEN_PARENTHESIS);
 			if (StartOf(1)) {
 				expression(*f,fpc);
+				long increment_command_index = current_code_stream.countitems();
+				
 				_parser2013_pushJumpOntoList (this, current_code_stream, f);
 				_parser2013_pushJumpOntoList (this, current_code_stream, NULL);
 				
 				_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
-				                                             current_code_stream.countitems()-2,
-				                                             current_code_stream.countitems());
+				                                            current_code_stream.countitems()-2,
+				                                            current_code_stream.countitems());
 				
 				_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
-				                                             current_code_stream.countitems()-1,
-				                                             do_begin);
+				                                            current_code_stream.countitems()-1,
+				                                            do_begin);
+				
+				_parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : do_begin, 
+				                                  current_code_stream.countitems ());
 				
 				
 				f = NULL;

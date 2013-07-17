@@ -429,8 +429,11 @@ statement <_ExecutionList &current_code_stream>
             .) 
         ] 
         CLOSE_PARENTHESIS 
+        (. _parser2013_addLoopContext (this); .)
         block <current_code_stream> 
         (.
+
+            long increment_command_index = current_code_stream.countitems();
 
             _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
 
@@ -441,6 +444,8 @@ statement <_ExecutionList &current_code_stream>
             _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
                                                           current_code_stream.countitems ());
 
+            _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
+                                               current_code_stream.countitems ());
 
         .)
     )
@@ -451,6 +456,7 @@ statement <_ExecutionList &current_code_stream>
       .)
 
         DO_TOKEN 
+        (. _parser2013_addLoopContext (this); .)
         block <current_code_stream> 
 
         WHILE_TOKEN OPEN_PARENTHESIS
@@ -458,6 +464,8 @@ statement <_ExecutionList &current_code_stream>
             (. 
                // we could avoid the second jump (NULL expr) if we could
                // NOT(f) or assign the "else" side of the jump
+
+                long increment_command_index = current_code_stream.countitems();
 
                _parser2013_pushJumpOntoList (this, current_code_stream, f);
                _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
@@ -469,6 +477,9 @@ statement <_ExecutionList &current_code_stream>
                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
                                                              current_code_stream.countitems()-1,
                                                              do_begin);
+
+                _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : do_begin, 
+                                                   current_code_stream.countitems ());
 
 
                 f = NULL;
