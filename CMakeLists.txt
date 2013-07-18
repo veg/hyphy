@@ -165,17 +165,17 @@ set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
 #-------------------------------------------------------------------------------
 # gtest dependency
 #-------------------------------------------------------------------------------
-#add_subdirectory(contrib/gtest-1.6.0)
-#set_property(
-#    TARGET gtest gtest_main
-#    PROPERTY EXCLUDE_FROM_ALL true
-#)
-
-add_subdirectory(contrib/gmock-1.6.0)
+add_subdirectory(contrib/gtest-1.6.0)
 set_property(
-    TARGET gmock gmock_main
+    TARGET gtest gtest_main
     PROPERTY EXCLUDE_FROM_ALL true
 )
+
+#add_subdirectory(contrib/gmock-1.6.0)
+#set_property(
+#    TARGET gmock gmock_main
+#    PROPERTY EXCLUDE_FROM_ALL true
+#)
 
 
 #-------------------------------------------------------------------------------
