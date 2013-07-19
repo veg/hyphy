@@ -787,7 +787,7 @@ void SetupOperationLists(void) {
   _TrieIterator ti (BuiltInFunctions);
   _String *key = ti.Last();
   while (key) {
-    printf ("%s\n", key->sData);
+    printf ("%s (%ld)\n", key->sData, BuiltInFunctions.GetValue (ti.CurrentIndex()));
     DeleteObject(key);
     key = ti.Previous ();
   }
