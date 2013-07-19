@@ -80,7 +80,8 @@ public:
 
 	Token *t;			// last recognized token
 	Token *la;			// lookahead token
-	_List                  loop_contexts;
+	_List loop_contexts;
+	_List function_contexts;
 
 -->declarations
 

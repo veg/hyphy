@@ -94,7 +94,7 @@ void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& 
   _String ident (value);
   long curOpl = ident.sLength;
   if (curOpl > 2 && ident[curOpl - 1] == '_' &&
-      ident[curOpl - 2] == '_') { // instant variable refrence
+      ident[curOpl - 3] == '_') { // instant variable refrence
     _String realVarName(ident, 0, curOpl - 3);
     
     realVarName = fpc.contextualizeRef(realVarName);
@@ -307,7 +307,6 @@ void  _parser2013_addLoopContext (void *vp) {
   p->loop_contexts.AppendNewInstance(new _SimpleList);
 }
 
-
 void  _parser2013_popLoopContext (void *vp, 
                                   _ExecutionList&current_command_stream, 
                                   long loop_start, long loop_end) {
@@ -327,9 +326,7 @@ void  _parser2013_popLoopContext (void *vp,
   }
 }
 
-
-
-  // LL(1) resolvers
+// LL(1) resolvers
 
 bool    _parser2013_IdentFollowedByAnOpenParenthesis (void * vp) {
   Parser* p = (Parser*)vp;
@@ -441,6 +438,23 @@ void  _parser2013_handleContinueBreak (void *vp, _ExecutionList&current_command_
   _ElementaryCommand * a_statement = new _ElementaryCommand (_HY_HBL_COMMAND_JUMP_STATEMENT);
   a_statement->AppendToSimpleParameters(current_command_stream.countitems());  
   current_command_stream.Place (a_statement);
+}
+
+void  _parser2013_handleReturn (void *vp, _ExecutionList&current_command_stream, _Formula* f) {
+
+  if (_parser2013_errorFree(vp) == false) return;
+  Parser * p = (Parser*) vp;
+
+  if(!f->IsEmpty()) {
+    _ElementaryCommand* return_statement = new _ElementaryCommand (_HY_HBL_COMMAND_SIMPLE_STATEMENT);
+    return_statement->AppendToSimpleParameters((long)f);
+    current_command_stream.Place (return_statement);
+  }
+
+  _ElementaryCommand* end_statement = new _ElementaryCommand (_HY_HBL_COMMAND_JUMP_STATEMENT);
+  end_statement->AppendToSimpleParameters(HY_MAX_LONG_VALUE);  
+  current_command_stream.Place (end_statement);
+
 }
 
 

@@ -58,6 +58,8 @@ TOKENS
   DO_TOKEN                  = "do".
   CONTINUE                  = "continue".
   BREAK                     = "break".
+  FUNCTION_TOKEN            = "function".
+  RETURN                    = "return".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO CR LF
@@ -497,6 +499,13 @@ statement <_ExecutionList &current_code_stream>
     (
         BREAK SEMICOLON
         (. _parser2013_handleContinueBreak (this, current_code_stream, false); .)
+    )
+    |
+    (
+        RETURN 
+        {expression <*f,fpc>}
+        SEMICOLON
+        (. _parser2013_handleReturn (this, current_code_stream, f); .)
     )
     |
     ( // expression; 

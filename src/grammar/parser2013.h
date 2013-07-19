@@ -66,7 +66,7 @@ void _parser2013_pushIdentifier     (void * vp, _Formula& f, _FormulaParsingCont
 void _parser2013_pushOp           (void * vp, _Formula& f, _FormulaParsingContext& fpc, long op_code, long num_terms);
 // push an operation given it's internal op_code and the number of terms
 
-void _parser2013_pushFunctionCall           (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& fundID, const _List&);
+void _parser2013_pushFunctionCall (void * vp, _Formula& f, _FormulaParsingContext& fpc, _String& fundID, const _List&);
 // push a function call given the function id and the list of 'named' arguments
 // a blank entry in the list implies that the argument is positional
 // generally speaking, all positional arguments need to preceed all named arguments
@@ -115,6 +115,7 @@ void _parser2013_pushSetJumpCommmandIndices (void *vp, _ExecutionList&, long, lo
 void  _parser2013_addLoopContext (void *vp);
 void  _parser2013_popLoopContext (void *vp, _ExecutionList&, long, long);
 void  _parser2013_handleContinueBreak (void *vp, _ExecutionList&, bool);
+void  _parser2013_handleReturn (void *vp, _ExecutionList&, _Formula* f);
 
 // grammar conflict resolvers
 
