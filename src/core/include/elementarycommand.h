@@ -70,12 +70,16 @@ code == _HY_HBL_COMMAND_SIMPLE_STATEMENT
   
 code == _HY_HBL_COMMAND_JUMP_STATEMENT
   parameters -- empty
-  simpleParameters -- a list with one or two entries (one entry if the jump is unconditional)
+  simpleParameters -- a list with 1-3 entries (one entry if the jump is unconditional)
                    -- the first entry is the command index to go to (could be -1 to go to the beginning
                       or MAX_LONG to go to the end)
                    -- the second entry (if present) is the _Formula object for the condition which
                       determines if the jump is taken (otherwise the instruction flow is uninterrupted)
-                      The jump is taken if the condition evaluates to 0.
+                      The jump is taken if the condition evaluates to 0, UNLESS
+                   -- the third entry is present; in which case 
+                      the jump is taken if the condition evaluates 
+                      to NON-zero
+                  
                       
                       
   for example the code 

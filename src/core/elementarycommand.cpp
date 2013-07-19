@@ -3920,8 +3920,11 @@ bool _ElementaryCommand::ExecuteJumpStatement (_ExecutionList& chain) {
     _Formula *f = (_Formula*) simpleParameters.GetElement(1L);  
     _PMathObj statement_result = f->Compute(0L, chain.GetExecutionContext(), nil, NUMBER);
     if (statement_result != NULL) {
-      take_the_jump = CheckEqual(statement_result->Value(), 0.0);
-    } else {
+       take_the_jump = CheckEqual(statement_result->Value(), 0.0);
+       if (simpleParameters.countitems() > 2) {
+         take_the_jump = !take_the_jump;
+       }
+   } else {
       return false;
     }
   }

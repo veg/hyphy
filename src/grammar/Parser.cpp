@@ -503,7 +503,6 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 				expression(*f,fpc);
 				_parser2013_pushJumpOntoList (this, current_code_stream, f);
 				has_conditional = true;
-				f = NULL;
 				
 			}
 			Expect(_SEMICOLON);
@@ -543,6 +542,7 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 			Expect(_CLOSE_PARENTHESIS);
 			_parser2013_addLoopContext (this); 
 			block(current_code_stream);
+			if (f) delete (f); // unused formula; avoid memory leak
 			long increment_command_index = current_code_stream.countitems();
 			
 			_parser2013_pushJumpOntoList (this, current_code_stream, NULL);
@@ -572,12 +572,7 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 				expression(*f,fpc);
 				long increment_command_index = current_code_stream.countitems();
 				
-				_parser2013_pushJumpOntoList (this, current_code_stream, f);
-				_parser2013_pushJumpOntoList (this, current_code_stream, NULL);
-				
-				_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
-				                                            current_code_stream.countitems()-2,
-				                                            current_code_stream.countitems());
+				_parser2013_pushJumpOntoList (this, current_code_stream, f, true);
 				
 				_parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
 				                                            current_code_stream.countitems()-1,
@@ -592,6 +587,7 @@ void Parser::statement(_ExecutionList &current_code_stream) {
 			}
 			Expect(_CLOSE_PARENTHESIS);
 			Expect(_SEMICOLON);
+			if (f) delete (f); 
 			break;
 		}
 		case _CONTINUE: {

@@ -297,4 +297,6 @@ public:
 // pointer to a math object
 typedef _MathObject *_PMathObj;
 
+extern  _PMathObj     _hyGlobalNoneObject;
+
 #endif

@@ -62,7 +62,7 @@ void _Trie::Clear(bool all) {
 }
 
 //______________________________________________________________________________
-_String _Trie::Alphabet(void) {
+_String _Trie::Alphabet(void) const {
   _String result(256L, true);
   for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
     if (charMap.lData[charIndex] >= 0)
@@ -106,7 +106,7 @@ BaseRef _Trie::makeDynamic(void) {
 }
 
 //______________________________________________________________________________
-long _Trie::countitems(void) {
+long _Trie::countitems(void) const {
   return payload.countitems() - emptySlots.countitems() - 1;
 }
 
@@ -291,7 +291,7 @@ unsigned long _Trie::Insert(const _List &key, const _SimpleList *values) {
 bool _Trie::Delete(const _String &key) {
   _SimpleList history;
   long found_key = Find(key, &history);
-  if (found_key >= 0) {
+  if (found_key >= 0L) {
     // now traverse the history list backwards and delete all keys that have no
     // children
     for (long k = history.lLength - 1; k >= 0; k--) {

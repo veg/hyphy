@@ -37,13 +37,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef __PARSER2013_
-#define __PARSER2013__
+#ifndef __HY_PARSER2013_
+#define __HY_PARSER2013_
 
-#include "legacy_parser.h"
-#include "batchlan.h"
-#include "executionlist.h"
-#include "formula.h"
 #include "wchar.h"
 
 // parser support functions
@@ -110,7 +106,7 @@ void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext
 void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
 
 void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
-void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
+void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f, bool jump_if_true = false);
 void _parser2013_pushSetJumpCommmandIndices (void *vp, _ExecutionList&, long, long);
 void  _parser2013_addLoopContext (void *vp);
 void  _parser2013_popLoopContext (void *vp, _ExecutionList&, long, long);

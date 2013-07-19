@@ -142,8 +142,8 @@ void _Variable::toFileStr(FILE *f) {
 }
 
 //______________________________________________________________________________
-_Variable::_Variable(_String &s, bool isG) {
-  theName = (_String *)checkPointer(new _String(s));
+_Variable::_Variable(const _String &s, bool isG) {
+  theName = new _String(s);
   varFlags = HY_VARIABLE_NOTSET | (isG ? HY_VARIABLE_GLOBAL : 0);
   varValue = nil;
   varFormula = nil;
@@ -152,7 +152,7 @@ _Variable::_Variable(_String &s, bool isG) {
 }
 
 //______________________________________________________________________________
-_Variable::_Variable(_String &s, _String &f, bool isG) {
+_Variable::_Variable(const _String &s, _String &f, bool isG) {
   //hasBeenChanged = false;
   //isGlobal = isG;
   theName = (_String *)checkPointer(new _String(s));

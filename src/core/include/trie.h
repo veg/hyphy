@@ -127,7 +127,7 @@ public:
    * @return Nothing.
    */
    
-  virtual long countitems (void); 
+  virtual long countitems (void) const;
   /**
    * Counts the number of strings in this Trie
    * @return the number of strings.
@@ -157,7 +157,7 @@ public:
 
   long GetValueFromString(const _String &key);
   /**
-   * A convenience function which calls Find and then GetValue if teh key is
+   * A convenience function which calls Find and then GetValue if the key is
    * found
    * @param  key      -- the string to search for
    * @return the value associated with the key if found, HY_TRIE_NOTFOUND
@@ -249,7 +249,7 @@ public:
   * @return the string spelling the path
   */
 
-  _String Alphabet(void);
+  _String Alphabet(void) const;
   /**
    * Return the valid alphabet for this Trie
    * @return The string containing all the letters allowed for strings in this

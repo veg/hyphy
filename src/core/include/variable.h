@@ -54,8 +54,8 @@ class _Variable : public _Constant {
 public:
 
   _Variable(void);
-  _Variable(_String &, bool isG = false);            // name
-  _Variable(_String &, _String &, bool isG = false); // name and formula
+  _Variable(const _String &, bool isG = false);            // name
+  _Variable(const _String &, _String &, bool isG = false); // name and formula
 
   virtual ~_Variable(void);
 

@@ -40,6 +40,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "legacy_parser.h"
 #include "mathobj.h"
 
+_PMathObj _hyGlobalNoneObject = new _MathObject;
+
 _PMathObj _MathObject::Execute(
     long opCode, _PMathObj p, _PMathObj p2,
     _hyExecutionContext *

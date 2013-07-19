@@ -224,7 +224,7 @@ Methods
 // elements from the end of the list
 
 long _SimpleList::GetElement(const long index) const{
-  if (index >= 0) {
+  if (index >= 0L) {
     if ((const unsigned long) index < lLength) {
       return lData[index];
     }
@@ -235,7 +235,7 @@ long _SimpleList::GetElement(const long index) const{
   warnError(_String("List index '") & (long)((const unsigned long)(-index)) &
             "' out of range in _SimpleList::GetElement on list of length " &
             long(lLength));
-  return 0;
+  return 0L;
 }
 
 long _SimpleList::BinaryFind(long s, long startAt) const {

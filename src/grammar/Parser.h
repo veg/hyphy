@@ -31,6 +31,7 @@ Coco/R itself) does not fall under the GNU General Public License.
 #define COCO_PARSER_H__
 
 #include "wchar.h"
+#include "executionlist.h"
 #include "parser2013.h"
 
 

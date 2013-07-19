@@ -1,4 +1,5 @@
 #include "wchar.h"
+#include "executionlist.h"
 #include "parser2013.h"
 
 COMPILER hyphy_batch_language
@@ -389,7 +390,6 @@ statement <_ExecutionList &current_code_stream>
                     (.  
                         _parser2013_pushJumpOntoList (this, current_code_stream, f);
                         has_conditional = true;
-                        f = NULL;
                     .)
             ] 
             SEMICOLON
@@ -432,7 +432,7 @@ statement <_ExecutionList &current_code_stream>
         (. _parser2013_addLoopContext (this); .)
         block <current_code_stream> 
         (.
-
+            if (f) delete (f); // unused formula; avoid memory leak
             long increment_command_index = current_code_stream.countitems();
 
             _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
@@ -467,13 +467,8 @@ statement <_ExecutionList &current_code_stream>
 
                 long increment_command_index = current_code_stream.countitems();
 
-               _parser2013_pushJumpOntoList (this, current_code_stream, f);
-               _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
-
-               _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
-                                                             current_code_stream.countitems()-2,
-                                                             current_code_stream.countitems());
-
+               _parser2013_pushJumpOntoList (this, current_code_stream, f, true);
+ 
                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
                                                              current_code_stream.countitems()-1,
                                                              do_begin);
@@ -487,6 +482,7 @@ statement <_ExecutionList &current_code_stream>
         ] 
         CLOSE_PARENTHESIS 
         SEMICOLON
+            (. if (f) delete (f); .)
     )
     |
     (

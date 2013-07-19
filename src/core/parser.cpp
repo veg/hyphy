@@ -37,6 +37,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "stdlib.h"
 #include "string.h"
 
+#include "trieiterator.h"
+
 #include <stdio.h>
 #include "time.h"
 
@@ -781,7 +783,15 @@ void SetupOperationLists(void) {
     hyReservedWords.AppendNewInstance(new _String("global"));
     hyReservedWords.Sort();
   }
-
+  
+  _TrieIterator ti (BuiltInFunctions);
+  _String *key = ti.Last();
+  while (key) {
+    printf ("%s\n", key->sData);
+    DeleteObject(key);
+    key = ti.Previous ();
+  }
+  DeleteObject(key);
 }
 
 //______________________________________________________________________________

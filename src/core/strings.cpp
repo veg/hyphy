@@ -124,9 +124,9 @@ _String::_String(void) {
 }
 
 //Length constructor
-_String::_String(unsigned long sL, bool flag) {
+_String::_String(unsigned long sL, bool buffer) {
 
-  if (flag) {
+  if (buffer) {
     sLength = 0;
     nInstances = sL > storageIncrement ? sL : storageIncrement;
     sData = (char *)MemAllocate(nInstances * sizeof(char));
@@ -138,16 +138,10 @@ _String::_String(unsigned long sL, bool flag) {
   } else {
     sLength = sL;
     sData = (char *)MemAllocate(sL + 1);
-    /* if (sData == addrBreak && _hy_mpi_node_rank == 1)
-     {
-         printf ("Here %d %d\n", sLength, getpid());
-         sleep (10);
-         loopCount--;
-         assert (loopCount > 0);
-     }*/
-
     if (sData) {
-      memset(sData, 0, sL + 1);
+      for (unsigned long l = 0L; l <= sL; l++) {
+        sData[l] = (char)0L;
+      }
     } else {
       sLength = 0;
       warnError(-108);
@@ -305,6 +299,7 @@ void _String::operator=(_String s) {
   }
   Duplicate(&s);
 }
+
 
 // lexicographic comparison
 bool _String::operator==(_String s) { return Equal(&s); }

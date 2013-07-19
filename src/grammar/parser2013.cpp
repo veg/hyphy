@@ -444,12 +444,15 @@ void  _parser2013_handleContinueBreak (void *vp, _ExecutionList&current_command_
 }
 
 
-void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f) {
+void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f, bool jump_if_true) {
   if (_parser2013_errorFree(vp) == false) return;
   _ElementaryCommand * a_statement = new _ElementaryCommand (_HY_HBL_COMMAND_JUMP_STATEMENT); 
   a_statement->AppendToSimpleParameters(current_command_stream.countitems());
   if (f) {
     a_statement->AppendToSimpleParameters((long)f);
+    if (jump_if_true) {
+      a_statement->AppendToSimpleParameters (1L);
+    }
   }
   current_command_stream.Place (a_statement);
 }
