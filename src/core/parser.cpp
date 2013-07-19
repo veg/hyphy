@@ -710,10 +710,10 @@ void SetupOperationLists(void) {
       "-", 29, "!", "+", "*", "^", "&", "Abs", "Sin", "Cos", "Tan", "Exp",
       "Log", "Arctan", "Time", "Gamma", "Transpose", "Sqrt", "Erf", "Rows",
       "Columns", "LUDecompose", "Inverse", "BranchCount", "TipCount", "ZCDF",
-      "Eigensystem", "Simplex", "Type", "Eval", "LnGamma"),
-      _all_binary_ops (
+      "Eigensystem", "Simplex", "Type", "Eval", "LnGamma");
+      //_all_binary_ops (
       
-      );
+      //);
 
   UnOps.Insert(all_unary_ops);
 

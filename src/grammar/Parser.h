@@ -100,8 +100,12 @@ public:
 		_IF_TOKEN=25,
 		_ELSE_TOKEN=26,
 		_FOR_TOKEN=27,
-		_CONTINUE=28,
-		_BREAK=29
+		_WHILE_TOKEN=28,
+		_DO_TOKEN=29,
+		_CONTINUE=30,
+		_BREAK=31,
+		_FUNCTION_TOKEN=32,
+		_RETURN=33
 	};
 	int maxT;
 
@@ -110,7 +114,8 @@ public:
 
 	Token *t;			// last recognized token
 	Token *la;			// lookahead token
-	_List                  loop_contexts;
+	_List loop_contexts;
+	_List function_contexts;
 
 
 
