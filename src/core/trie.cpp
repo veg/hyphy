@@ -125,7 +125,7 @@ void _Trie::Duplicate(BaseRef storage) {
 
 //______________________________________________________________________________
 long _Trie::FindNextLetter(const char letter,
-                           const unsigned long current_index) {
+                           const unsigned long current_index) const {
   long letterKey = charMap.lData[(const unsigned char) letter];
   if (letterKey >= 0) {
     _SimpleList *thisList = ((_SimpleList **)lData)[current_index];
@@ -173,7 +173,7 @@ long _Trie::InsertNextLetter(const char letter,
 }
 
 //______________________________________________________________________________
-long _Trie::Find(const _String &key, _SimpleList *path, bool prefixOK) {
+long _Trie::Find(const _String &key, _SimpleList *path, bool prefixOK) const {
   long current_index = 0, next_index = 0;
   for (long k = 0; k <= key.sLength && current_index >= 0; k++) {
     next_index = FindNextLetter(key.sData[k], current_index);
@@ -190,7 +190,7 @@ long _Trie::Find(const _String &key, _SimpleList *path, bool prefixOK) {
 }
 
 //______________________________________________________________________________
-long _Trie::Find(const char key, bool prefixOK) {
+long _Trie::Find(const char key, bool prefixOK) const {
   long current_index = 0, next_index = FindNextLetter(key, current_index);
   if (next_index < 0 && prefixOK) {
     next_index = FindNextLetter(0, current_index);
@@ -215,7 +215,7 @@ void _Trie::UpdateValue(const long key, const long value) {
 }
 
 //______________________________________________________________________________
-long _Trie::GetValue(const long key) {
+long _Trie::GetValue(const long key) const {
   if (key >= 0 && key < payload.lLength)
     return payload.lData[key];
 

@@ -149,6 +149,6 @@ _String*     _TrieIterator::BuildPath (void){
     (*res) << alphabet.sData[current_list->lData[current_position]];
   }
   
-  last_retrieved_index = traversal_history.GetElement(-1L);
+  last_retrieved_index = traversal_history.GetElement(-2L);
   return res;
 }

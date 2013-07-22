@@ -135,7 +135,7 @@ public:
   
   
 
-  long Find(const _String &key, _SimpleList *path = nil, bool prefixOK = false);
+  long Find(const _String &key, _SimpleList *path = nil, bool prefixOK = false) const;
   /**
    * Determine if 'key' is in the trie
    * @param  key      -- the string to search for
@@ -146,7 +146,7 @@ public:
    * HY_TRIE_NOTFOUND/HY_TRIE_INVALID_LETTER otherwise
    */
 
-  long Find(const char key, bool prefixOK = false);
+  long Find(const char key, bool prefixOK = false) const;
   /**
    * Determine if 'key' is in the trie
    * @param  key      -- the character to search for
@@ -196,7 +196,7 @@ public:
    * @return None
    */
 
-  long GetValue(const long key);
+  long GetValue(const long key) const;
   /**
          * Retrieve the value associated with the key _index_
          * @param  key -- the index of the key (returned by Find for
@@ -267,7 +267,7 @@ public:
 private:
 
   void SetAlphabet(const _String *, bool);
-  long FindNextLetter(const char letter, const unsigned long currentIndex);
+  long FindNextLetter(const char letter, const unsigned long currentIndex) const;
   /**
    * Given a current position in the trie (current_index), try to walk down the
    * next character
