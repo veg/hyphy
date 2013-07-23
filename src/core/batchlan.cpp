@@ -356,7 +356,7 @@ _PMathObj ProcessAnArgumentByType(_String *expression, _VariableContainer *theP,
     _hyExecutionContext localContext (theP);
     _PMathObj expressionResult = expressionProcessor.Compute(0, &localContext);
     if (expressionResult && expressionResult->ObjectClass() == objectType) {
-      return (_PMathObj) expressionResult->makeDynamic();
+      return dynamic_cast<_PMathObj>(expressionResult->makeDynamic());
     }
   }
 
@@ -395,7 +395,7 @@ _AssociativeList *ProcessDictionaryArgument(_String *data,
     _PMathObj formRes = nameForm.Compute();
     if (formRes && formRes->ObjectClass() == ASSOCIATIVE_LIST) {
       formRes->AddAReference();
-      return (_AssociativeList *)formRes;
+      return dynamic_cast<_AssociativeList*>(formRes);
     }
   }
   return nil;
@@ -431,7 +431,7 @@ long FindModelName(_String &s) {
 _LikelihoodFunction *FindLikeFuncByName(_String &s) {
   long i = FindLikeFuncName(s);
   if (i >= 0) {
-    return (_LikelihoodFunction *)likeFuncList(i);
+    return dynamic_cast<_LikelihoodFunction*>(likeFuncList(i));
   }
   return nil;
 }
@@ -532,7 +532,7 @@ void KillLFRecord(long lfID, bool completeKill) {
   /* compile the list of variables which will no longer be referenced */
 
   if (lfID >= 0) {
-    _LikelihoodFunction *me = (_LikelihoodFunction *)likeFuncList(lfID);
+    _LikelihoodFunction *me = dynamic_cast<_LikelihoodFunction*>(likeFuncList(lfID));
 
     if (completeKill) {
       _SimpleList wastedVars, otherVars, myVars, otherModels, wastedModels;
@@ -545,7 +545,7 @@ void KillLFRecord(long lfID, bool completeKill) {
       for (k = 0; k < likeFuncList.lLength; k++)
         if (k != lfID) {
           if (((_String *)likeFuncNamesList(k))->sLength) {
-            _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(k);
+            _LikelihoodFunction *lf = dynamic_cast<_LikelihoodFunction*>(likeFuncList(k));
             otherVars << lf->GetIndependentVars();
             otherVars << lf->GetDependentVars();
             for (long kk = lf->GetTheTrees().lLength - 1; kk >= 0; kk--) {
@@ -609,7 +609,7 @@ void KillLFRecord(long lfID, bool completeKill) {
 
 //______________________________________________________________________________
 void KillLFRecordFull(long lfID) {
-  _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(lfID);
+  _LikelihoodFunction *lf = dynamic_cast<_LikelihoodFunction*>(likeFuncList(lfID));
 
   long k;
   //for (k=lf->GetTheFilters().lLength-1; k>=0; k--)
@@ -975,13 +975,13 @@ void SerializeModel(_String &rec, long theModel, _AVLList *alreadyDone,
   if (matrices.lLength) {
     for (long k = 0; k < matrices.lLength; k++) {
       _Variable *tV = LocateVar(matrices.lData[k]);
-      ((_Matrix *)tV->GetValue())->Serialize(rec, *tV->GetName());
+      (dynamic_cast<_Matrix*>( tV->GetValue()))->Serialize(rec, *tV->GetName());
       rec << '\n';
     }
   }
 
   if (do2) {
-    ((_Matrix *)tV2->GetValue())->Serialize(rec, *tV2->GetName());
+    (dynamic_cast<_Matrix*>(tV2->GetValue()))->Serialize(rec, *tV2->GetName());
   }
 
   rec << "\nModel ";
@@ -1008,14 +1008,14 @@ void SerializeModel(_String &rec, long theModel, _AVLList *alreadyDone,
 //______________________________________________________________________________
 _List   *_HYFetchFunctionParameters (const unsigned long func_id) {
     if (func_id < batchLanguageFunctionParameterLists.lLength) 
-        return (_List*)batchLanguageFunctionParameterLists.GetItem(func_id);
+        return dynamic_cast<_List*>( batchLanguageFunctionParameterLists.GetItem(func_id));
     return nil;
 }
 
 //______________________________________________________________________________
 _ExecutionList   *_HYFetchFunctionBody (const unsigned long func_id) {
     if (func_id < batchLanguageFunctions.lLength) 
-        return (_ExecutionList*)batchLanguageFunctions.GetItem(func_id);
+        return dynamic_cast <_ExecutionList*> (batchLanguageFunctions.GetItem(func_id));
     return nil;
 }
 
