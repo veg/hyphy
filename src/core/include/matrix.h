@@ -86,7 +86,7 @@ struct _CompiledMatrixData {
 /*__________________________________________________________________________________________________________________________________________
  */
 
-class _Matrix : public _MathObject {
+class _Matrix : public virtual _MathObject {
 
 public:
 

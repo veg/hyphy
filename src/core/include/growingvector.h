@@ -42,7 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "matrix.h"
 
-class _GrowingVector : public _Matrix
+class _GrowingVector : public virtual _Matrix
                        // automatically growing matrix class
                        {
 

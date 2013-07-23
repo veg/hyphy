@@ -122,7 +122,7 @@ BaseRef _AssociativeList::toStr(void) {
 //______________________________________________________________________________
 void _AssociativeList::Duplicate(BaseRef br) {
   nInstances = 1;
-  _AssociativeList *copyMe = (_AssociativeList *)br;
+  _AssociativeList *copyMe = dynamic_cast <_AssociativeList*> (br);
   theData.Duplicate(&copyMe->theData);
   avl.leftChild.Duplicate(&copyMe->avl.leftChild);
   avl.rightChild.Duplicate(&copyMe->avl.rightChild);
@@ -149,7 +149,7 @@ _PMathObj _AssociativeList::MAccess(_PMathObj p) {
     f = avl.Find(&s);
   }
   if (f >= 0) {
-    _PMathObj res = (_PMathObj) avl.GetXtra(f);
+    _PMathObj res = dynamic_cast <_MathObject*> (avl.GetXtra(f));
     res->AddAReference();
     return res;
   } else {
@@ -175,11 +175,13 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
         WarnError("The first argument in an iterator call for Associative "
                   "Arrays must be a valid identifier of a function taking two "
                   "arguments (key, value)");
+        return nil;
       } else {
         if (fID2 >= 0 && batchLanguageFunctionParameters.lData[fID2] != 1) {
           WarnError("The second argument in an iterator call for Associative "
                     "Arrays must be either empty or a valid identifier of a "
                     "function taking a single argument");
+          return nil;
         }
 
         _Formula testFormula, actionFormula;
@@ -215,7 +217,7 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
             }
             ((_Operation **)actionFormula.GetList().lData)[0]->SetPayload(fKey);
             ((_Operation **)actionFormula.GetList().lData)[1]
-                ->SetPayload((_PMathObj) avl.GetXtra(cn));
+                ->SetPayload(dynamic_cast<_PMathObj>(avl.GetXtra(cn)));
             actionFormula.Compute();
             done++;
           }
@@ -242,7 +244,7 @@ _PMathObj _AssociativeList::MIterator(_PMathObj p, _PMathObj p2) {
       if (index >= 0) {
         return s->Equal(&AVL_ITERATOR_ORDER)
                    ? (new _FString(*((_String **)avl.dataList->lData)[index],false))
-                   : ((_PMathObj) avl.GetXtra(index)->makeDynamic());
+                   : (dynamic_cast<_PMathObj>( avl.GetXtra(index)->makeDynamic()));
       } else {
         WarnError("Index out of bounds in call to AVL iterator (by index)");
       }
@@ -262,7 +264,7 @@ _PMathObj _AssociativeList::GetByKey(_String &key, long objType) {
   long f = avl.Find(&key);
 
   if (f >= 0) {
-    _PMathObj res = (_PMathObj) avl.GetXtra(f);
+    _PMathObj res = dynamic_cast<_PMathObj>(avl.GetXtra(f));
     if (res->ObjectClass() == objType) {
       return res;
     }
@@ -276,7 +278,7 @@ _PMathObj _AssociativeList::GetByKey(_String &key) {
   long f = avl.Find(&key);
 
   if (f >= 0) {
-    return (_PMathObj) avl.GetXtra(f);
+    return dynamic_cast<_PMathObj>(avl.GetXtra(f));
   }
 
   return nil;
@@ -294,7 +296,7 @@ void _AssociativeList::DeleteByKey(_PMathObj p) {
     avl.Delete(((_FString *)p)->theString, true);
   } else {
     if (p->ObjectClass() == ASSOCIATIVE_LIST) {
-      _List *keys2remove = ((_AssociativeList *)p)->GetKeys();
+      _List *keys2remove = dynamic_cast<_AssociativeList*>(p)->GetKeys();
       for (long ki = 0; ki < keys2remove->lLength; ki++) {
         avl.Delete((_String *)(*keys2remove)(ki), true);
       }
@@ -319,7 +321,7 @@ void _AssociativeList::MStore(_PMathObj p, _PMathObj inObject, bool repl,
   if (f >= 0) { // already exists - replace
     if (opCode == HY_OP_CODE_ADD) {
       _PMathObj newObject =
-          ((_PMathObj) avl.GetXtra(f))->Execute(HY_OP_CODE_ADD, inObject);
+          dynamic_cast<_PMathObj>(avl.GetXtra(f))->Execute(HY_OP_CODE_ADD, inObject);
       if (repl == false) {
         DeleteObject(inObject);
       } else {
@@ -393,7 +395,7 @@ _String *_AssociativeList::Serialize(_String &avlName) {
 _PMathObj _AssociativeList::Compute(void) { return this; }
 
 //______________________________________________________________________________
-_List *_AssociativeList::GetKeys(void) { return (_List *)avl.dataList; }
+_List *_AssociativeList::GetKeys(void) { return dynamic_cast<_List*>(avl.dataList); }
 
 //______________________________________________________________________________
 void _AssociativeList::FillInList(_List &fillMe) {
@@ -418,7 +420,7 @@ void _AssociativeList::Merge(_PMathObj p) {
 
   if (p && p->ObjectClass() == ASSOCIATIVE_LIST) {
 
-    _AssociativeList *rhs = (_AssociativeList *)p;
+    _AssociativeList *rhs = dynamic_cast<_AssociativeList*>(p);
 
     _SimpleList hist;
     long ls, cn = rhs->avl.Traverser(hist, ls, rhs->avl.GetRoot());
@@ -429,8 +431,8 @@ void _AssociativeList::Merge(_PMathObj p) {
          */
 
     while (cn >= 0) {
-      MStore(*(_String *)(*(_List *)rhs->avl.dataList)(cn),
-             (_PMathObj) rhs->avl.GetXtra(cn), true);
+      MStore(*(_String *)(*rhs->GetKeys())(cn),
+             dynamic_cast<_PMathObj>(rhs->avl.GetXtra(cn)), true);
       cn = rhs->avl.Traverser(hist, ls);
     }
   } else {
@@ -447,27 +449,26 @@ _PMathObj _AssociativeList::Sum(void) {
   long ls, cn = avl.Traverser(hist, ls, avl.GetRoot());
 
   while (cn >= 0) {
-    _PMathObj value = (_PMathObj) avl.GetXtra(cn);
+    _PMathObj value = dynamic_cast <_PMathObj> (avl.GetXtra(cn));
     switch (value->ObjectClass()) {
-    case NUMBER:
-      sum += ((_Constant *)value)->Value();
-      break;
-    case STRING:
-      sum += ((_FString *)value)->theString->toNum();
-      break;
-    case MATRIX: {
-      _Constant *sumOfValue = (_Constant *)((_Matrix *)value->Compute())->Sum();
-      sum += sumOfValue->Value();
-      DeleteObject(sumOfValue);
-      break;
-    }
-    case ASSOCIATIVE_LIST: {
-      _Constant *sumOfValue =
-          (_Constant *)((_AssociativeList *)value->Compute())->Sum();
-      sum += sumOfValue->Value();
-      DeleteObject(sumOfValue);
-      break;
-    }
+      case NUMBER:
+        sum += value->Value();
+        break;
+      case STRING:
+        sum += ((_FString *)value)->theString->toNum();
+        break;
+      case MATRIX: {
+        _PMathObj sumOfValue = (dynamic_cast<_Matrix*>(value)->Compute())->Sum();
+        sum += sumOfValue->Value();
+        DeleteObject(sumOfValue);
+        break;
+      }
+      case ASSOCIATIVE_LIST: {
+        _PMathObj sumOfValue = (dynamic_cast<_AssociativeList*>(value)->Compute())->Sum();
+        sum += sumOfValue->Value();
+        DeleteObject(sumOfValue);
+        break;
+      }
     }
     cn = avl.Traverser(hist, ls);
   }
@@ -535,7 +536,7 @@ _PMathObj _AssociativeList::Execute(long opCode, _PMathObj p, _PMathObj p2,
         }
         return new _Matrix(dataListCompact);
       } else {
-        return new _Matrix(*(_List *)avl.dataList);
+        return new _Matrix(*GetKeys());
       }
       break;
   
