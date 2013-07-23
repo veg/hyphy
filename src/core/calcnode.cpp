@@ -224,6 +224,8 @@ _CalcNode::_CalcNode    (_CalcNode* sourceNode, _VariableContainer* theP):_Varia
 //_______________________________________________________________________________________________
 void    _CalcNode::InitializeCN     ( _String& parms, int, _VariableContainer* theP, _AVLListXL* aCache)
 {
+    if (theIndex < 0) return;
+    
     cBase         = 0;
     theProbs      = nil;
     compExp       = nil;
@@ -1619,6 +1621,8 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String& nodeNa
     }
 
     _CalcNode *nodeVar = (_CalcNode*)LocateVar(cNt.theIndex);
+    
+    if (nodeVar == NULL) return false;
 
     nodeVar->SetValue (&val);
 

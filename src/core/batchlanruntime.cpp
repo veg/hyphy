@@ -44,7 +44,7 @@
 #include      "bayesgraph.h"
 #include      "scfg.h"
 
-#if defined __MAC__ || defined __WINDOZE__ || defined HYPHY_GTK
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
     #include "HYConsoleWindow.h"
     #include "HYDialogs.h"
 

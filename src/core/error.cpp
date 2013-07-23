@@ -42,15 +42,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <Dialogs.h>
 #include "HYUtils.h"
 #include "HYConsoleWindow.h"
+#include "HYDialogs.h"
 #endif
 
 #ifdef __WINDOZE__
 void WinErrorBox(_String&, bool);
+#include "HYDialogs.h"
 #endif
 
 #ifdef __HYPHY_GTK__
 #include <gtk/gtk.h>
 #include "HYConsoleWindow.h"
+#include "HYDialogs.h"
 #endif
 
 #ifdef   __UNIX__
@@ -380,7 +383,11 @@ void WarnError (_String st)
     abort ();
 #else
     PurgeAll(true);
+    #if defined __MAC__ or defined __WINDOZE__ or defined __HYPHY_GTK__
+      ProblemReport (errMsg);
+    #endif
     exit(1);
+    
 #endif
 
 #endif
