@@ -45,7 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class _Site;
 
-class _DataSetFilter : public BaseObj {
+class _DataSetFilter : public virtual BaseObj {
 
 public:
 

@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "simplelist.h"
 
-class _List : public _SimpleList {
+class _List : public virtual _SimpleList {
 
 public:
 

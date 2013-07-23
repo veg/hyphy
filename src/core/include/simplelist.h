@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "baseobj.h"
 
-class _SimpleList : public BaseObj {
+class _SimpleList : public virtual BaseObj {
   friend class _AVLList;
 
 protected:

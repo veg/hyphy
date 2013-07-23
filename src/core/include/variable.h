@@ -47,7 +47,7 @@
 #include "operation.h"
 #include "formula.h"
 
-class _Variable : public _Constant {
+class _Variable : public virtual _Constant {
 
   friend class _Operation;
 

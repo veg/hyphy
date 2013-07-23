@@ -42,8 +42,13 @@
 
 #include "mathobj.h"
 
-class _Constant : public _MathObject // a numerical constant
+class _Constant : public virtual _MathObject // a numerical constant
                   {
+
+private:
+  static _Parameter _LnGamma (_Parameter);
+  static _Parameter _IGamma (_Parameter, _Parameter);
+  static _Parameter _Gamma (_Parameter);
 
 public:
 
@@ -110,7 +115,6 @@ public:
   virtual unsigned long ObjectClass(void) { return NUMBER; }
   virtual void SetValue(_Parameter pl) { theValue = pl; }
 
-public:
   _Parameter theValue;
 };
 

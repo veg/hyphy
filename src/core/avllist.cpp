@@ -400,7 +400,7 @@ BaseRef _AVLList::Retrieve(long idx) {
 //______________________________________________________________________________
 void _AVLList::Clear(bool cL) {
   if (cL) {
-    ((_List *)dataList)->Clear();
+    dynamic_cast<_List*>(dataList)->Clear();
   } else {
     dataList->Clear();
   }

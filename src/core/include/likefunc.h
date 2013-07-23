@@ -125,7 +125,7 @@ struct  MSTCache {
 
 //_______________________________________________________________________________________
 
-class   _LikelihoodFunction: public BaseObj
+class   _LikelihoodFunction: public virtual BaseObj
 {
 
 public:

@@ -178,7 +178,7 @@ public:
 
 class Scfg
 #ifdef _USE_HYPHY_HOOKS_
-    : public _LikelihoodFunction
+    : public virtual _LikelihoodFunction
 #endif
 {
 

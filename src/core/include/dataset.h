@@ -78,7 +78,7 @@ struct _DSHelper {
   ~_DSHelper(void) { DeleteObject(incompletePatterns); }
 };
 
-class _DataSet : public _List // a complete data set
+class _DataSet : public virtual _List, public virtual _AssociativeList // a complete data set
                  {
 public:
 
@@ -89,6 +89,8 @@ public:
   virtual ~_DataSet(void);
 
   virtual BaseRef makeDynamic(void);
+  
+  virtual void Duplicate (BaseRef);
 
   void AddSite(char);
 

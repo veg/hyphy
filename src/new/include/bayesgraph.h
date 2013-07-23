@@ -63,7 +63,7 @@
 #define		MIN_SAMPLE_SIZE				5
 
 
-class _BayesianGraphicalModel : public _LikelihoodFunction
+class _BayesianGraphicalModel : public virtual _LikelihoodFunction
 {
 public:
     /* constructors */

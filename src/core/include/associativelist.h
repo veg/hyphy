@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistxl.h"
 #include "elementarycommand.h"
 
-class _AssociativeList : public _MathObject {
+class _AssociativeList : public virtual _MathObject {
 
 public:
   _AssociativeList(void);

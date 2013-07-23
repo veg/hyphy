@@ -48,7 +48,7 @@
 #include "hy_strings.h"
 #include "_hyExecutionContext.h"
 
-class _MathObject : public BaseObj //abstract math operations class
+class _MathObject : public virtual BaseObj //abstract math operations class
                     {
 
 public:

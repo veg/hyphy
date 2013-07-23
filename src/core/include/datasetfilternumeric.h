@@ -42,7 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "datasetfilter.h"
 
-class _DataSetFilterNumeric : public _DataSetFilter {
+class _DataSetFilterNumeric : public virtual _DataSetFilter {
 
 public:
 

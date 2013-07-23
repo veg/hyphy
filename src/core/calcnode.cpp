@@ -605,7 +605,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
 
   if (isExplicitForm && bufferedOps) {
     _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, _hyDefaultExecutionContext, bufferedOps);
-    SetCompExp((_Matrix *)bufferedExp->makeDynamic(),totalCategs > 1 ? categID : -1);
+    SetCompExp(dynamic_cast <_Matrix*> (bufferedExp->makeDynamic()),totalCategs > 1 ? categID : -1);
     return false;
   }
 
@@ -624,9 +624,9 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
     if (myModelMatrix->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
       _Matrix *temp = nil;
       if (isExplicitForm) {
-        temp = (_Matrix *)myModelMatrix->makeDynamic();
+        temp = dynamic_cast <_Matrix*>(myModelMatrix->makeDynamic());
       } else {
-        temp = (_Matrix *)myModelMatrix->MultByFreqs(theModel);
+        temp = dynamic_cast <_Matrix*>(myModelMatrix->MultByFreqs(theModel));
       }
 
       if (dVariables)
@@ -824,7 +824,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
                                bool first, char rooted) {
   long descendants = whereAmI->get_num_nodes(),
        f = iVariables ? iVariables->FindStepping(varToConstrain, 2, 1) : -1, k,
-       l, m, start = 0;
+       l, start = 0;
 
   if ((f < 0) && (!first)) { // bad bongos!
     _String errMsg("Molecular clock constraint has failed, since variable ");

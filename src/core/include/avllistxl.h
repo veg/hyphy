@@ -48,7 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
-class _AVLListXL : public _AVLList {
+class _AVLListXL : public virtual _AVLList {
 
 public:
 

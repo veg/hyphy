@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __CUSTOMFUNCTION__
 #define __CUSTOMFUNCTION__
 
-class _CustomFunction : public _LikelihoodFunction {
+class _CustomFunction : public virtual _LikelihoodFunction {
 
 public:
 

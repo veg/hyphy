@@ -45,7 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
-class _AVLListX : public _AVLList {
+class _AVLListX : public virtual _AVLList {
 
 public:
   /* SLKP: 20090817
