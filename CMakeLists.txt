@@ -474,7 +474,7 @@ endif((${GTK2_FOUND}))
 # hyphy qt target
 #-------------------------------------------------------------------------------
 
-find_package(Qt4)
+find_package(Qt4 4.7)
 
 if((${QT4_FOUND}))
 

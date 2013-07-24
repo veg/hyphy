@@ -443,6 +443,7 @@ bool    PopUpFileDialog(_String ps, _String* defaultLocation)
     gtk_widget_show (fileSelector);
     gtk_window_set_modal (GTK_WINDOW(fileSelector),true);
     gtk_main ();
+    printf ("\nPopUpFileDialog:%s\n", argFileName->sData);
     if (argFileName->sLength) {
         lastOpenFilePath = argFileName->Cut(0,argFileName->FindBackwards('/',0,-1));
     }
