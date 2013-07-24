@@ -439,7 +439,7 @@ void InsertStringListIntoAVL(_AssociativeList *theList, _String theKey,
 _Matrix *CheckMatrixArg(_String *mxName, bool onlyStrings) {
   _Variable *mVar = FetchVar(LocateVarByName(*mxName));
   if (mVar && mVar->ObjectClass() == MATRIX) {
-    _Matrix *mx = (_Matrix *)mVar->GetValue();
+    _Matrix *mx = dynamic_cast<_Matrix*>(mVar->GetValue());
     if (onlyStrings && (!mx->IsAStringMatrix())) {
       return nil;
     }
@@ -452,7 +452,7 @@ _Matrix *CheckMatrixArg(_String *mxName, bool onlyStrings) {
 _AssociativeList *CheckAssociativeListArg(_String *mxName) {
   _Variable *mVar = FetchVar(LocateVarByName(*mxName));
   if (mVar && mVar->ObjectClass() == ASSOCIATIVE_LIST) {
-    return (_AssociativeList *)mVar->GetValue();
+    return dynamic_cast<_AssociativeList*>(mVar->GetValue());
   }
   return nil;
 }
@@ -543,7 +543,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
         for (; j < avVars.lLength; j++) {
           firstVar = firstCNode->GetIthParameter(avVars.lData[j]);
           if (firstVar->GetName()->EqualWithWildChar((_String *)theParts.lData[k], '?')) {
-            (*(_SimpleList *)(otherGoodVars(i - 1))) << avVars.lData[j];
+            (* dynamic_cast<_SimpleList*> (otherGoodVars(i - 1))) << avVars.lData[j];
             avVars.Delete(j);
             found1 = true;
             break;
@@ -552,7 +552,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
         if (!found1) {
           goodVars.Delete(index);
           for (long ff = 0; ff < i - 1; ff++) {
-            ((_SimpleList *)(otherGoodVars(i - 1)))->Delete(index);
+            (dynamic_cast<_SimpleList*> (otherGoodVars(i - 1)))->Delete(index);
           }
           index--;
         }
@@ -573,7 +573,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
           if (ind > 0)
             newConstraint =
                 newConstraint &
-                *(CNode->GetIthParameter((*(_SimpleList *)(otherGoodVars(partIndex.lData[ind] - 1))).lData[index])->GetName());
+                *(CNode->GetIthParameter((*dynamic_cast<_SimpleList*>(otherGoodVars(partIndex.lData[ind] - 1))).lData[index])->GetName());
           else
             newConstraint =
                 newConstraint &
@@ -602,15 +602,15 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
 void RetrieveModelComponents(long mid, _Matrix *&mm, _Matrix *&fv, bool &mbf) {
   if (mid >= 0 && mid < modelTypeList.lLength) {
     if (modelTypeList.lData[mid] == 0) {
-      mm = (_Matrix *)FetchObjectFromVariableByTypeIndex(
-          modelMatrixIndices.lData[mid], MATRIX);
+      mm = dynamic_cast<_Matrix*> (FetchObjectFromVariableByTypeIndex(
+          modelMatrixIndices.lData[mid], MATRIX));
     } else {
       mm = nil;
     }
 
     long fvi = modelFrequenciesIndices.lData[mid];
-    fv = (_Matrix *)FetchObjectFromVariableByTypeIndex(
-        fvi >= 0 ? fvi : (-fvi - 1), MATRIX);
+    fv = dynamic_cast<_Matrix*> (FetchObjectFromVariableByTypeIndex(
+        fvi >= 0 ? fvi : (-fvi - 1), MATRIX));
     mbf = (fvi >= 0);
   } else {
     mm = fv = nil;
@@ -656,7 +656,7 @@ void ScanModelForVariables(long modelID, _AVLList &theReceptacle, bool inclG,
   if (modelID != HY_NO_MODEL) {
     // standard rate matrix
     if (modelTypeList.lData[modelID] == 0) {
-      ((_Matrix *)(LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle, inclG, modelID2, inclCat);
+      (dynamic_cast<_Matrix*>(LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle, inclG, modelID2, inclCat);
     } else {
       // formula based
       // inclG was replaced with false in a previous commit. This caused
