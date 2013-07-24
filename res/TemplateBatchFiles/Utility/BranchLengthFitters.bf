@@ -5,7 +5,11 @@ lfunction extractBranchLengthsFromTreeAsDict (tree_id) {
     _bls = BranchLength (^tree_id, -1);
     _bns = BranchName  (^tree_id, -1);
     
-    return _bls;
+    for (k = 0; k < Columns (_bns) - 1; k += 1) {
+        _treeLengthDict[_bns[k]] = _bls[k];
+    }
+    
+    return _treeLengthDict;
 }
 
 
@@ -32,7 +36,7 @@ lfunction getNucRevBranchLengthsAndParameters (datafilter_id, tree_id) {
    ExecuteCommands           ("Tree 	tree = " + Eval("Format (^tree_id,1,1)"));
    LikelihoodFunction 	LF = (nucs,	tree);
    Optimize                  (res,LF);
-   fprintf                   (stdout, LF, "\n", extractBranchLengthsFromTreeAsDict (&tree));
    
-   return 0;
+   
+   return {"AC": AC, "AT": AT, "CG": CG, "CT": CT, "GT": GT, "lengths": extractBranchLengthsFromTreeAsDict (&tree)};
 }
