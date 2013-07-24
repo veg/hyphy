@@ -336,7 +336,7 @@ _Parameter _CalcNode::BranchLength(void) {
     }
   }
 
-  freqMx = (_Matrix *)freqMx->ComputeNumeric();
+  freqMx = dynamic_cast<_Matrix*> (freqMx->ComputeNumeric());
   categoryCounter = 0;
 
   do {
@@ -604,7 +604,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
   bool isExplicitForm = HasExplicitFormModel();
 
   if (isExplicitForm && bufferedOps) {
-    _Matrix *bufferedExp = (_Matrix *)GetExplicitFormModel()->Compute(0, _hyDefaultExecutionContext, bufferedOps);
+    _Matrix *bufferedExp = dynamic_cast<_Matrix*> (GetExplicitFormModel()->Compute(0, _hyDefaultExecutionContext, bufferedOps));
     SetCompExp(dynamic_cast <_Matrix*> (bufferedExp->makeDynamic()),totalCategs > 1 ? categID : -1);
     return false;
   }
@@ -658,7 +658,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
                  totalCategs > 1 ? categID : -1);
 
     } else {
-      compExp = (_Matrix *)myModelMatrix->Evaluate(false);
+      compExp = dynamic_cast<_Matrix*>(myModelMatrix->Evaluate(false));
     }
   }
   return false;
@@ -702,7 +702,7 @@ _Matrix *_CalcNode::ComputeModelMatrix(bool) {
   _Matrix *modelMx = GetModelMatrix();
   if (modelMx && modelMx->ObjectClass() == MATRIX &&
       modelMx->MatrixType() != _HY_MATRIX_POLYNOMIAL_TYPE) {
-    return (_Matrix *)modelMx->ComputeNumeric();
+    return dynamic_cast<_Matrix*>(modelMx->ComputeNumeric());
   }
 
   return nil;
