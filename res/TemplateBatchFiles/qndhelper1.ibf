@@ -679,8 +679,9 @@ function ReceiveJobs3 (sendOrNot)
 
 /*------------------------------------------------------------------------*/
 
-_DO_TREE_REBALANCE_ = 1;
-
+if (_DO_TREE_REBALANCE_ == None) {
+    _DO_TREE_REBALANCE_ = 1;
+}
 
 if (pipeThroughFlag == 0)
 {
