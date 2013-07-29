@@ -202,7 +202,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
         sv.ReorderList();
       }
 
-      _Matrix *tryMatrix = (_Matrix *)probabilities.GetTheMatrix();
+      _Matrix *tryMatrix = dynamic_cast<_Matrix*> (probabilities.GetTheMatrix());
       // check to see if it is a matrix spec
       if (tryMatrix) {
         _Matrix *weightMatrix = (_Matrix *)tryMatrix;
@@ -248,7 +248,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
                         (BaseRef) probVars.lData[v],
                         (long)(new _SimpleList(intervals, 0, 0)), false);
                   }
-                  ((_SimpleList *)variableDependanceAllocations.GetXtra(f))->lData[k] = 1;
+                  dynamic_cast<_SimpleList *>(variableDependanceAllocations.GetXtra(f))->lData[k] = 1;
                 }
               }
             }
@@ -464,9 +464,8 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
       scannedVarsList.Union(densityVars, existingVars);
     }
     // check to see if it is a matrix spec
-    _PMathObj tryMatrix = cumulative.GetTheMatrix();
-    if (tryMatrix) {
-      _Matrix *catMatrix = (_Matrix *)tryMatrix;
+    _Matrix* catMatrix = cumulative.GetTheMatrix();
+    if (catMatrix) {
       if (!(((catMatrix->GetHDim() == 1) &&
              (catMatrix->GetVDim() == intervals)) ||
             ((catMatrix->GetHDim() == intervals) &&
@@ -496,7 +495,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
                       (BaseRef) densityVars.lData[v],
                       (long)(new _SimpleList(intervals, 0, 0)), false);
                 }
-                ((_SimpleList *)variableDependanceAllocations.GetXtra(f))->lData[k] = 1;
+                dynamic_cast<_SimpleList *>(variableDependanceAllocations.GetXtra(f))->lData[k] = 1;
               }
               scannedVarsList.Union(densityVars, existingVars);
             }
@@ -514,7 +513,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
 
   // disallow category -> category dependance
   for (long i = 0; i < scannedVarsList.lLength; i++) {
-    _Variable *curVar = (_Variable *)variablePtrs(scannedVarsList.lData[i]);
+    _Variable *curVar = dynamic_cast<_Variable*>(variablePtrs(scannedVarsList.lData[i]));
     if (curVar->IsCategory()) {
       errorMsg =
           errorMsg &
@@ -599,7 +598,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
     long vf =
         variableDependanceAllocations.Find((BaseRef) parameterList.lData[vid]);
     if (vf >= 0) {
-      affectedClasses << (_SimpleList *)(variableDependanceAllocations.GetXtra(vf));
+      affectedClasses << variableDependanceAllocations.GetXtra(vf);
     } else if (exclude.Find(parameterList.lData[vid]) >= 0) {
       affectedClasses.AppendNewInstance(new _SimpleList(intervals, 0, 0));
     } else {
@@ -678,9 +677,8 @@ void _CategoryVariable::ChangeNumberOfIntervals(long newi) {
 //______________________________________________________________________________
 BaseRef _CategoryVariable::makeDynamic(void) {
   _CategoryVariable *result = new _CategoryVariable();
-  checkPointer(result);
   result->Duplicate(this);
-  return result;
+  return dynamic_cast<BaseRef>(result);
 }
 //______________________________________________________________________________
 void _CategoryVariable::Duplicate(BaseRef s) {
@@ -743,40 +741,31 @@ void _CategoryVariable::Clear(void) {
 //______________________________________________________________________________
 BaseRef _CategoryVariable::toStr(void) {
   UpdateIntervalsAndValues(true);
-  _String result(10, true), *s, st;
+  _String *result = new _String (64L, true);
   if (weights) {
-    st = "\nClass weights are:";
-    result << &st;
-    _Matrix *cw = (_Matrix *)weights->ComputeNumeric();
+    (*result) << "\nClass weights are:";
+    _Matrix *cw = weights->ComputeNumeric();
     checkWeightMatrix(*cw);
-    s = (_String *)cw->toStr();
-    result << s;
-    result << '\n';
-    DeleteObject(s);
+    result->AppendNewInstance (dynamic_cast<_String*>(cw->toStr()));
+    (*result) << '\n';
   }
   if (values) {
-    st = "Classes represented by:";
-    result << &st;
-    s = (_String *)values->toStr();
-    result << s;
-    DeleteObject(s);
+    (*result) << "Classes represented by:";
+    result->AppendNewInstance (dynamic_cast<_String*>(values->toStr()));
   }
   if (intervalEnds) {
-    st = "Interval ends:";
-    result << &st;
-    s = (_String *)intervalEnds->toStr();
-    result << s;
-    DeleteObject(s);
+    (*result) << "Interval ends:";
+    result->AppendNewInstance (dynamic_cast<_String*>(intervalEnds->toStr()));
   }
   if (!density.IsEmpty()) {
-    result << "\nSupported on [";
-    result << _String(x_min);
-    result << ',';
-    result << _String(x_max);
-    result << "]\n";
+    (*result) << "\nSupported on [";
+    (*result) << _String(x_min);
+    (*result) << ',';
+    (*result) << _String(x_max);
+    (*result) << "]\n";
   }
-  result.Finalize();
-  return result.makeDynamic();
+  result->Finalize();
+  return result;
 }
 
 //______________________________________________________________________________
@@ -785,7 +774,7 @@ _Parameter _CategoryVariable::SetIntervalValue(long ival, bool recalc) {
   if (recalc) {
     newIntervalValue = GetValues()->theData[ival];
   } else {
-    newIntervalValue = ((_Matrix *)values->RetrieveNumeric())->theData[ival];
+    newIntervalValue = values->RetrieveNumeric()->theData[ival];
   }
   SetValue(new _Constant(newIntervalValue), false);
   return newIntervalValue;
@@ -904,7 +893,7 @@ _Matrix *_CategoryVariable::GetIntervalEnds(void) {
 //______________________________________________________________________________
 _Matrix *_CategoryVariable::ComputeHiddenMarkov(void) {
   _Variable *theMX = LocateVar(modelMatrixIndices.lData[hiddenMarkovModel]);
-  return (_Matrix *)((_Matrix *)theMX->GetValue())->ComputeNumeric();
+  return dynamic_cast<_Matrix*>(theMX->GetValue())->ComputeNumeric();
 }
 
 //______________________________________________________________________________
@@ -914,13 +903,13 @@ _Matrix *_CategoryVariable::ComputeHiddenMarkovFreqs(void) {
     fIndex = -fIndex - 1;
   }
   _Variable *theMX = LocateVar(fIndex);
-  return (_Matrix *)((_Matrix *)theMX->GetValue())->ComputeNumeric();
+  return dynamic_cast<_Matrix*>(theMX->GetValue())->ComputeNumeric();
 }
 
 //______________________________________________________________________________
 _Matrix *_CategoryVariable::GetHiddenMarkov(void) {
   _Variable *theMX = LocateVar(modelMatrixIndices.lData[hiddenMarkovModel]);
-  return (_Matrix *)theMX->GetValue();
+  return dynamic_cast<_Matrix*>(theMX->GetValue());
 }
 
 //______________________________________________________________________________
@@ -930,7 +919,7 @@ _Matrix *_CategoryVariable::GetHiddenMarkovFreqs(void) {
     fIndex = -fIndex - 1;
   }
   _Variable *theMX = LocateVar(fIndex);
-  return (_Matrix *)theMX->GetValue();
+  return dynamic_cast<_Matrix*>(theMX->GetValue());
 }
 
 //______________________________________________________________________________
