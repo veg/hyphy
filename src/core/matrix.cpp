@@ -320,9 +320,9 @@ bool _Matrix::HasChanged(void) {
       return true;
 
     for (unsigned long vid = 0; vid < cmd->varIndex.lLength; vid++) {
-      if (((_Variable *)(((BaseRef *)(
-              variablePtrs.lData))[cmd->varIndex.lData[vid]]))->HasChanged())
+      if (LocateVar (cmd->varIndex.lData[vid])->HasChanged()) {
         return true;
+      }
     }
     // SLKP 20120404 need to add a check for "volatile" formulae, i.e. Time and
     // Random
@@ -647,7 +647,7 @@ void _Matrix::EigenDecomp(_Matrix &real, _Matrix &imag) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::Eigensystem(void) {
+_AssociativeList* _Matrix::Eigensystem(void) {
   // find the eigenvectors of a symmetric matrix using Jacobi rotations
   // The original matrix is preserved.
   // returns an associative list with a sorted vector of eigenvalues and
@@ -812,7 +812,7 @@ _PMathObj _Matrix::Eigensystem(void) {
   }
 
   _Constant sc(0.0);
-  dss = (_Matrix *)ds->SortMatrixOnColumn(&sc);
+  dss = ds->SortMatrixOnColumn(&sc);
   DeleteObject(ds);
   {
     for (long r = 0; r < hDim; r++) {
@@ -853,7 +853,7 @@ _PMathObj _Matrix::Eigensystem(void) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::LUDecompose(void) {
+_Matrix* _Matrix::LUDecompose(void) {
   // perform the LU decomposition using Crout's algorithm with partial pivoting
   // The original matrix is preserved.
   // after performing this decomposition, the routine LUSolve can be called with
@@ -863,7 +863,7 @@ _PMathObj _Matrix::LUDecompose(void) {
   // by a vector of row interchanges
   if (!isNonEmptyDenseSquare()) {
     WarnError("LUDecompose only works with numerical non-empty square dense matrices");
-    return new _Matrix();
+    return new _Matrix(0L, 0L);
   }
 
   _Parameter *scalings = new _Parameter[hDim];
@@ -903,7 +903,7 @@ _PMathObj _Matrix::LUDecompose(void) {
           _String("LUDecompose doesn't work on singular matrices (row ") & i &
           ')';
       WarnError(errorMsg);
-      return nil;
+      return new _Matrix(0L, 0L);
     }
     scalings[i] = 1.0 / rowMax;
   }
@@ -973,54 +973,53 @@ _PMathObj _Matrix::LUDecompose(void) {
 // takes a matrix in LU decomposed state and a vector of row permutation
 // returned by LU
 // returns a vector of solutions
-_PMathObj _Matrix::LUSolve(_PMathObj p) {
+_Matrix* _Matrix::LUSolve(_PMathObj p) {
 
   if ((storageType != _HY_MATRIX_NUMERICAL_TYPE) || (hDim + 1 != vDim) ||
       (vDim <= 0)) { // only works for numerical matrices at this stage
     _String errorMsg("LUSolve only works with numerical non-empty matrices of "
                      "dimension nx(n+1) returned by LUDecompose.");
     WarnError(errorMsg);
-    return nil;
+    return new _Matrix(0L, 0L);
   }
   if (p->ObjectClass() == MATRIX) {
-    _Matrix *b = (_Matrix *)p;
+    _Matrix *b = dynamic_cast<_Matrix*>(p);
     if (!((b->hDim != hDim) || (b->vDim != 1) || (b->storageType != _HY_MATRIX_NUMERICAL_TYPE))) {
       _Parameter sum;
-      _Matrix result(*b);
-      result.CheckIfSparseEnough(true);
+      _Matrix* result = new _Matrix(*b);
+      result->CheckIfSparseEnough(true);
       long i, j, trueI, firstI = -1;
       for (i = 0; i < hDim; i++) {
         trueI = (*this)(i, vDim - 1);
         if ((trueI < 0) || (trueI >= hDim)) {
           break;
         }
-        sum = result.theData[trueI];
-        result.theData[trueI] = result.theData[i];
+        sum = result->theData[trueI];
+        result->theData[trueI] = result->theData[i];
         if (firstI >= 0)
           for (j = firstI; j < i; j++) {
-            sum -= theData[i * vDim + j] * result.theData[j];
+            sum -= theData[i * vDim + j] * result->theData[j];
           }
         else if (sum) {
           firstI = i;
         }
-        result.theData[i] = sum;
+        result->theData[i] = sum;
       }
       if (i == hDim) {
         for (i = hDim - 1; i > -1; i--) {
-          sum = result.theData[i];
+          sum = result->theData[i];
           for (j = i + 1; j < hDim; j++) {
-            sum -= theData[i * vDim + j] * result.theData[j];
+            sum -= theData[i * vDim + j] * result->theData[j];
           }
-          result.theData[i] = sum / theData[i * vDim + i];
+          result->theData[i] = sum / theData[i * vDim + i];
         }
-        return (_PMathObj) result.makeDynamic();
+        return result;
       }
     }
   }
-  _String errorMsg("LUSolve expects the 2nd parameter to be a column vector "
+  WarnError("LUSolve expects the 2nd parameter to be a column vector "
                    "defining the right hand side of LUx=b");
-  WarnError(errorMsg);
-  return new _Matrix(1, 1, false, true);
+  return new _Matrix(0L, 0L);
 
 }
 
@@ -1032,7 +1031,7 @@ _PMathObj _Matrix::LUSolve(_PMathObj p) {
 //       Requires that matrix is symmetric and positive
 //       definite.
 //   algorithm based on Numerical Recipes
-_PMathObj _Matrix::CholeskyDecompose(void) {
+_Matrix* _Matrix::CholeskyDecompose(void) {
 
   if (!isNonEmptyDenseSquare()) {
     WarnError ("CholeskyDecompose only works with numerical non-empty square dense matrices");
@@ -1043,7 +1042,6 @@ _PMathObj _Matrix::CholeskyDecompose(void) {
   _Parameter sum;
   _Matrix *lowerTri = new _Matrix((_Matrix &)*this); // duplication constructor
 
-  checkPointer(lowerTri);
 
   for (long i = 0; i < n; i++) {
     for (long j = i; j < n; j++) {
@@ -1105,62 +1103,62 @@ _PMathObj _Matrix::Log(void) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::Inverse(void) {
+_Matrix* _Matrix::Inverse(void) {
   if (!isNonEmptyDenseSquare()) {
     WarnError ("Inverse only works with numerical non-empty square dense matrices");
-    return new _MathObject;
+    return new _Matrix (0L, 0L);
   }
 
-  _Matrix *LUdec = (_Matrix *)LUDecompose();
+  _Matrix *LUdec = LUDecompose();
   if (LUdec) {
-    _Matrix b(hDim, 1, false, true), result(hDim, vDim, false, true);
+    _Matrix b(hDim, 1, false, true), 
+            *result = new _Matrix(hDim, vDim, false, true);
+            
     b.theData[0] = 1.0;
-    for (long i = 0; i < hDim; i++) {
+    for (unsigned long i = 0; i < hDim; i++) {
       if (i) {
         b.theData[i] = 1.0;
         b.theData[i - 1] = 0.0;
       }
-      _Matrix *invVector = (_Matrix *)LUdec->LUSolve(&b);
-      _Matrix *corrTerm = (_Matrix *)(*this * (*invVector) - b).makeDynamic();
-      _Matrix *corrX = (_Matrix *)LUdec->LUSolve(corrTerm);
+      _Matrix *invVector = LUdec->LUSolve(&b);
+      _Matrix *corrTerm = dynamic_cast<_Matrix*>((*this * (*invVector) - b).makeDynamic());
+      _Matrix *corrX = LUdec->LUSolve(corrTerm);
       *invVector -= *corrX;
       DeleteObject(corrX);
       DeleteObject(corrTerm);
       for (long j = 0; j < hDim; j++) {
-        result.theData[j * vDim + i] = invVector->theData[j];
+        result->theData[j * vDim + i] = invVector->theData[j];
       }
       DeleteObject(invVector);
     }
     DeleteObject(LUdec);
-    return (_PMathObj) result.makeDynamic();
+    return result;
   }
-  return new _Matrix(1, 1, false, true);
+  return new _Matrix (0L, 0L);
 
 }
 
 //______________________________________________________________________________
 // multiply this transition probs matrix by frequencies
-_PMathObj _Matrix::MultByFreqs(long freqID) {
+_Matrix* _Matrix::MultByFreqs(long freqID) {
 
-  _PMathObj value = ComputeNumeric(true);
+  _Matrix* value = ComputeNumeric(true);
   if (freqID >= 0) {
     _Matrix *freqMatrix = nil;
     freqID = modelFrequenciesIndices.lData[freqID];
     if (freqID >= 0) {
-      freqMatrix = (_Matrix *)LocateVar(freqID)->GetValue();
+      freqMatrix = dynamic_cast <_Matrix *> (LocateVar(freqID)->GetValue());
       if (freqMatrix->storageType != _HY_MATRIX_NUMERICAL_TYPE) {
         if (freqMatrix->theValue) {
-          freqMatrix = (_Matrix *)freqMatrix->theValue;
+          freqMatrix = dynamic_cast <_Matrix *> (freqMatrix->theValue);
         } else {
-          freqMatrix = (_Matrix *)freqMatrix->ComputeNumeric();
+          freqMatrix = freqMatrix->ComputeNumeric();
         }
       }
     }
 
     if (theIndex) {
-      _Matrix *vm = (_Matrix *)value;
-      _Parameter *dp = vm->theData;
-
+      _Parameter *dp = value->theData;
       _Parameter *tempDiags = new _Parameter[hDim];
 
       for (long i = 0; i < hDim; i++) {
@@ -1191,12 +1189,12 @@ _PMathObj _Matrix::MultByFreqs(long freqID) {
         }
 
       for (long j = 0; j < hDim; j++) {
-        vm->Store(j, j, -tempDiags[j]);
+        value->Store(j, j, -tempDiags[j]);
       }
 
       delete[] tempDiags;
     } else {
-      _Parameter *theMatrix = ((_Matrix *)value)->theData;
+      _Parameter *theMatrix = value->theData;
 
       if (freqMatrix) {
         if (freqMatrix->theIndex) {
@@ -1259,31 +1257,30 @@ void _Matrix::updateMatrixValue(void) {
  
 }
 //______________________________________________________________________________
-_PMathObj _Matrix::ComputeNumeric(bool copy) {
+_Matrix* _Matrix::ComputeNumeric(bool copy) {
   if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     if (storageType == _HY_MATRIX_POLYNOMIAL_TYPE && ANALYTIC_COMPUTATION_FLAG) {
       return this;
     }
 
     updateMatrixValue();
-    return theValue;
+    return dynamic_cast<_Matrix*>(theValue);
   }
 
   if (copy) {
     if (theValue) {
       DeleteObject(theValue);
     }
-    theValue = (_Matrix *)makeDynamic();
-    return theValue;
+   return theValue = dynamic_cast<_Matrix*>(makeDynamic());
   }
   return this;
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::RetrieveNumeric(void) {
+_Matrix* _Matrix::RetrieveNumeric(void) {
   if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     if (theValue) {
-      return theValue;
+      return dynamic_cast<_Matrix*>(theValue);
     }
 
     return ComputeNumeric();
@@ -1330,7 +1327,7 @@ _PMathObj _Matrix::Execute(
     if (p) {
       return SubObj(p);
     } else {
-      return (_PMathObj)((*this) * (-1.0)).makeDynamic();
+      return dynamic_cast<_Matrix*>(((*this) * (-1.0)).makeDynamic());
     }
     break;
   case HY_OP_CODE_LESS: // <
@@ -1428,7 +1425,7 @@ _PMathObj _Matrix::Execute(
     return SimplexSolve();
     break;
   case HY_OP_CODE_TRANSPOSE: { // Transpose
-    _Matrix *result = (_Matrix *)makeDynamic();
+    _Matrix *result = dynamic_cast<_Matrix*>(makeDynamic());
     result->Transpose();
     return result;
   }
@@ -1986,7 +1983,7 @@ BaseRef _Matrix::makeDynamic(void) {
 //______________________________________________________________________________
 void _Matrix::Duplicate(BaseRef obj) {
 
-  _Matrix *m = (_Matrix *)obj;
+  _Matrix *m = dynamic_cast<_Matrix*> (obj);
   Clear();
   DuplicateMatrix(this, m);
 }
@@ -2030,7 +2027,7 @@ _Matrix::_Matrix (_PMathObj data, bool is_const) {
        n_cols = 0L;
   
   _SimpleList * values = (_SimpleList*) data;
-  _List * values_l = (_List*) values;  
+  _List * values_l = (_List*) data;  
 
   if (is_const) {
     n_rows = ((_PMathObj)values_l->Element (0))->Compute()->Value();
@@ -2379,10 +2376,10 @@ void _Matrix::ScanForVariables2(_AVLList &theReceptacle, bool inclG,
 
       // 20100316 SLKP: I am pretty sure this is broken...
       if (cachedDeps && cachedDeps->ObjectClass() == ASSOCIATIVE_LIST) {
-        definedCache = (_AssociativeList *)cachedDeps->GetValue();
+        definedCache = dynamic_cast <_AssociativeList*> (cachedDeps->GetValue());
         _String matrixKey(modelID);
         _Matrix *cachedValues =
-            (_Matrix *)definedCache->GetByKey(matrixKey, MATRIX);
+            dynamic_cast<_Matrix *> (definedCache->GetByKey(matrixKey, MATRIX));
 
         if (cachedValues == nil) {
           _Formula **theFormulas = (_Formula **)theData;
@@ -2586,7 +2583,7 @@ bool _Matrix::ProcessFormulas(long &stackLength, _SimpleList &varList,
 //______________________________________________________________________________
 _Matrix *_Matrix::branchLengthStencil(void) {
   _Matrix *stencil =
-      (_Matrix *)FetchObjectFromVariableByType(&BRANCH_LENGTH_STENCIL, MATRIX);
+       dynamic_cast<_Matrix*> (FetchObjectFromVariableByType(&BRANCH_LENGTH_STENCIL, MATRIX));
   if (stencil) {
     if (stencil->isNonEmptyDenseSquare()) {
       stencil->CheckIfSparseEnough(true);
@@ -2772,10 +2769,10 @@ void _Matrix::MakeMeGeneral(void) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::Evaluate(bool replace) {
+_Matrix* _Matrix::Evaluate(bool replace) {
 
   // evaluate the matrix  overwriting (or not) the old one
-  _Matrix result(hDim, vDim, bool(theIndex), true);
+  _Matrix *result = new _Matrix(hDim, vDim, bool(theIndex), true);
 
   if (storageType == _HY_MATRIX_FORMULA_TYPE) {
     _PMathObj formValue = nil;
@@ -2786,10 +2783,10 @@ _PMathObj _Matrix::Evaluate(bool replace) {
         if (theIndex[i] != -1) {
           formValue = theFormulas[i]->Compute();
           if (formValue) {
-            result[HashBack(i)] = formValue->Value();
+            (*result)[HashBack(i)] = formValue->Value();
             //DeleteObject (formValue);
           } else {
-            result[HashBack(i)] = 0;
+            (*result)[HashBack(i)] = 0;
           }
         }
       }
@@ -2799,22 +2796,22 @@ _PMathObj _Matrix::Evaluate(bool replace) {
         for (long i = 0; i < hDim; i++) {
           long k = Hash(i, i);
           if ((k >= 0) && theFormulas[k]->IsEmpty()) {
-            _Parameter *st = &result[k];
+            _Parameter *st = &(*result)[k];
             *st = 0;
             for (long j = 0; j < vDim; j++) {
               if (j == i) {
                 continue;
               }
-              *st -= result(i, j);
+              *st -= (*result)(i, j);
             }
           } else if (k < 0) {
-            _Parameter *st = &result[i * vDim + i];
+            _Parameter *st = &(*result)[i * vDim + i];
             *st = 0;
             for (long j = 0; j < vDim; j++) {
               if (j == i) {
                 continue;
               }
-              *st -= result(i, j);
+              *st -= (*result)(i, j);
             }
           }
         }
@@ -2823,10 +2820,10 @@ _PMathObj _Matrix::Evaluate(bool replace) {
         if (theFormulas[i] != (_Formula *)ZEROPOINTER) {
           formValue = theFormulas[i]->Compute();
           if (formValue && formValue->ObjectClass() == NUMBER) {
-            result.theData[i] = formValue->Value();
+            result->theData[i] = formValue->Value();
             //DeleteObject (formValue);
           } else {
-            result.theData[i] = 0;
+            result->theData[i] = 0;
           }
         }
       }
@@ -2839,12 +2836,12 @@ _PMathObj _Matrix::Evaluate(bool replace) {
               _Parameter st = 0;
               long k = i / vDim, j;
               for (j = k * vDim; j < k * vDim + k; j++) {
-                st -= result.theData[j];
+                st -= result->theData[j];
               }
               for (j = k * vDim + k + 1; j < (k + 1) * vDim; j++) {
-                st -= result.theData[j];
+                st -= result->theData[j];
               }
-              result.theData[i] = st;
+              result->theData[i] = st;
             }
           }
         }
@@ -2859,10 +2856,10 @@ _PMathObj _Matrix::Evaluate(bool replace) {
         if (IsNonEmpty(i)) {
           polValue = thePoly[i]->Compute();
           if (polValue) {
-            result[HashBack(i)] = polValue->Value();
+            (*result)[HashBack(i)] = polValue->Value();
             DeleteObject(polValue);
           } else {
-            result[i] = 0;
+            (*result)[i] = 0;
           }
         }
       }
@@ -2872,10 +2869,10 @@ _PMathObj _Matrix::Evaluate(bool replace) {
         if (thePoly[i] != (_MathObject *)ZEROPOINTER) {
           polValue = thePoly[i]->Compute();
           if (polValue) {
-            result[i] = polValue->Value();
+            (*result)[i] = polValue->Value();
             DeleteObject(polValue);
           } else {
-            result[i] = 0;
+            (*result)[i] = 0;
           }
         }
       }
@@ -2883,9 +2880,10 @@ _PMathObj _Matrix::Evaluate(bool replace) {
   }
 
   if (replace) {
-    *this = result;
+    Swap (*result);
+    DeleteObject (result);
   } else {
-    return (_PMathObj) result.makeDynamic();
+    return result;
   }
   return nil;
 }
@@ -2962,7 +2960,7 @@ void _Matrix::FillInList(_List &fillMe, bool doNumeric) {
 
 //______________________________________________________________________________
 // evaluate the matrix  overwriting the old one
-_PMathObj _Matrix::EvaluateSimple(void) {
+_Matrix* _Matrix::EvaluateSimple(void) {
   _Matrix *result = new _Matrix(hDim, vDim, bool(theIndex), true);
   checkPointer(result);
 
@@ -2978,8 +2976,7 @@ _PMathObj _Matrix::EvaluateSimple(void) {
         }
       } else {
         cmd->varValues[i].reference =
-            (Ptr)((_Matrix *)LocateVar(cmd->varIndex.lData[i])->Compute())
-                ->theData;
+            (Ptr)(dynamic_cast <_Matrix*> (LocateVar(cmd->varIndex.lData[i])->Compute())->theData);
       }
     }
   }
@@ -4768,7 +4765,7 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
 
   if (p->ObjectClass() == MATRIX) {
     if (p2 == nil) {
-      _Matrix *nn = (_Matrix *)p;
+      _Matrix *nn = dynamic_cast<_Matrix *>(p);
       if (nn->storageType == _HY_MATRIX_NUMERICAL_TYPE)
         if (nn->hDim == hDim && nn->vDim == vDim) {
           _SimpleList hL, vL;
@@ -4837,8 +4834,8 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
                     "an indexing matrix in call to []");
     } else {
       if (p2->ObjectClass() == MATRIX) {
-        _Matrix *nn = (_Matrix *)((_Matrix *)p)->ComputeNumeric();
-        _Matrix *nn2 = (_Matrix *)((_Matrix *)p2)->ComputeNumeric();
+        _Matrix *nn  = dynamic_cast<_Matrix *>(p)->ComputeNumeric();
+        _Matrix *nn2 = dynamic_cast<_Matrix *>(p2)->ComputeNumeric();
 
         if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == _HY_MATRIX_NUMERICAL_TYPE &&
             nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == _HY_MATRIX_NUMERICAL_TYPE) {
@@ -5080,7 +5077,7 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
       if (!theIndex) {
         _Formula *entryFla = (((_Formula **)theData)[ind1 * vDim + ind2]);
         if (entryFla) {
-          return (_PMathObj) entryFla->Compute()->makeDynamic();
+          return dynamic_cast<_PMathObj>(entryFla->Compute()->makeDynamic());
         } else {
           return new _Constant(0.0);
         }
@@ -5089,8 +5086,8 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
         if (p < 0) {
           return new _Constant(0.0);
         } else {
-          return (_PMathObj)(((_Formula **)theData)[p])->Compute()
-              ->makeDynamic();
+          return dynamic_cast<_PMathObj>((((_Formula **)theData)[p])->Compute()
+              ->makeDynamic());
         }
       }
     } else {
@@ -5105,13 +5102,13 @@ _PMathObj _Matrix::MAccess(_PMathObj p, _PMathObj p2) {
         _MathObject *cell;
         if (!theIndex) {
           cell =
-              (_MathObject *)GetMatrixObject(ind1 * vDim + ind2)->makeDynamic();
+              dynamic_cast<_PMathObj> (GetMatrixObject(ind1 * vDim + ind2)->makeDynamic());
         } else {
           long p = Hash(ind1, ind2);
           if (p < 0) {
             cell = new _Constant(0.0);
           } else {
-            cell = (_MathObject *)GetMatrixObject(p)->makeDynamic();
+            cell = dynamic_cast<_PMathObj>(GetMatrixObject(p)->makeDynamic());
           }
         }
         return cell;
@@ -5388,7 +5385,7 @@ void _Matrix::StoreObject(long i, long j, _MathObject *value, bool dup) {
   }
 
   if (dup) {
-    value = (_MathObject *)value->makeDynamic();
+    value = dynamic_cast<_Matrix*>(value->makeDynamic());
   }
   if (lIndex < 0) {
     theIndex[-lIndex - 2] = i * vDim + j;
@@ -5469,7 +5466,7 @@ void _Matrix::Swap(_Matrix &m) {
   long *tIndex, t;
 
   _Parameter *tData;
-  _PMathObj tObj;
+  _Matrix* tObj;
   _CompiledMatrixData *tCmd;
 
   SWAP(theData, m.theData, tData);
@@ -5738,7 +5735,7 @@ void _Matrix::ConvertFormulas2Poly(bool force2numbers) {
               }
             }
             DeleteObject(tempStorage[i]);
-            tempStorage[i] = (_Polynomial *)diag.makeDynamic();
+            tempStorage[i] = dynamic_cast <_Polynomial*> (diag.makeDynamic());
           }
         }
       }
@@ -5773,7 +5770,7 @@ void _Matrix::ConvertFormulas2Poly(bool force2numbers) {
             DeleteObject(temp);
           }
           DeleteObject(tempStorage[i]);
-          tempStorage[i] = (_Polynomial *)diag.makeDynamic();
+          tempStorage[i] = dynamic_cast <_Polynomial*> (diag.makeDynamic());
         }
       }
     }
@@ -5960,11 +5957,11 @@ void _Matrix::RecursiveIndexSort(long from, long to, _SimpleList *index) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
+_Matrix* _Matrix::SortMatrixOnColumn(_PMathObj mp) {
 
   if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     WarnError("Only numeric matrices can be sorted");
-    return new _MathObject();
+    return new _Matrix(0L, 0L);
   }
 
   if (theData == nil) {
@@ -5977,7 +5974,7 @@ _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
       mp->Value() > GetVDim() - 1) {
     bool goodMe = false;
     if (mp->ObjectClass() == MATRIX) {
-      _Matrix *sortOnM = (_Matrix *)((_Matrix *)mp)->ComputeNumeric();
+      _Matrix *sortOnM = (dynamic_cast <_Matrix*> (mp))->ComputeNumeric();
       long sortBy = sortOnM->GetHDim() * sortOnM->GetVDim(),
            maxColumnID = GetVDim();
 
@@ -5986,7 +5983,7 @@ _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
         if (idx < 0 || idx >= maxColumnID) {
           WarnError(_String("Invalid column index to sort on in call to ") &
                     __func__ & " : " & idx);
-          return new _MathObject();
+          return new _Matrix;
         }
         sortOn << idx;
       }
@@ -5996,7 +5993,7 @@ _PMathObj _Matrix::SortMatrixOnColumn(_PMathObj mp) {
       _String errMsg("Invalid column index to sort the matrix on:");
       errMsg = errMsg & _String((_String *)mp->toStr());
       WarnError(errMsg);
-      return new _MathObject;
+      return new _Matrix;
     }
   } else {
     sortOn << mp->Value();
@@ -6133,7 +6130,7 @@ _PMathObj _Matrix::PathLogLikelihood(_PMathObj mp) {
     errMsg = ("Second argument in call to < (PathLogLikelihood) must be a "
               "square matrix");
     if (mp->ObjectClass() == MATRIX) {
-      m = (_Matrix *)mp->Compute();
+      m = dynamic_cast<_Matrix*>(mp->Compute());
       if (m->GetHDim() == m->GetVDim()) {
         errMsg = empty;
       }
@@ -6366,7 +6363,7 @@ _PMathObj _Matrix::Random(_PMathObj kind) {
     //  "ARG0" ... "ARGn" - whatever parameter arguments (matrices) are required
     // for the p.d.f.
 
-    _AssociativeList *pdfArgs = (_AssociativeList *)kind;
+    _AssociativeList *pdfArgs = dynamic_cast<_AssociativeList *> (kind);
     _List *keys = pdfArgs->GetKeys();
     _String pdfkey("PDF"), *arg0 = (_String *)(*keys)(0);
 
@@ -6380,17 +6377,17 @@ _PMathObj _Matrix::Random(_PMathObj kind) {
       case _HY_MATRIX_RANDOM_DIRICHLET:
         return (_Matrix *)DirichletDeviate();
       case _HY_MATRIX_RANDOM_GAUSSIAN:
-        return (_Matrix *)GaussianDeviate(
-            *(_Matrix *)pdfArgs->GetByKey(arg, MATRIX));
+        return GaussianDeviate(
+            * dynamic_cast<_Matrix*>(pdfArgs->GetByKey(arg, MATRIX)));
       case _HY_MATRIX_RANDOM_WISHART:
-        return (_Matrix *)WishartDeviate(
-            *(_Matrix *)pdfArgs->GetByKey(arg, MATRIX));
+        return WishartDeviate(
+            * dynamic_cast<_Matrix*>(pdfArgs->GetByKey(arg, MATRIX)));
       case _HY_MATRIX_RANDOM_INVERSE_WISHART:
-        return (_Matrix *)InverseWishartDeviate(
-            *(_Matrix *)pdfArgs->GetByKey(arg, MATRIX));
+        return InverseWishartDeviate(
+            * dynamic_cast<_Matrix*>(pdfArgs->GetByKey(arg, MATRIX)));
       case _HY_MATRIX_RANDOM_MULTINOMIAL:
-        return (_Matrix *)MultinomialSample(
-            (_Constant *)pdfArgs->GetByKey(arg, NUMBER));
+        return MultinomialSample(
+            dynamic_cast<_Constant*>(pdfArgs->GetByKey(arg, MATRIX)));
       default:
         errMsg =
             _String("String argument passed to Random not a supported PDF: '") &
@@ -6453,7 +6450,7 @@ _PMathObj _Matrix::K_Means(_PMathObj classes) {
           "Invalid number of clusters is call to K-means (must be >=1):") &
                _String((_String *)classes->toStr());
     } else {
-      arg = (_Matrix *)classes->Compute();
+      arg = dynamic_cast<_Matrix*> (classes->Compute());
       if (arg->GetVDim() != 1 || arg->GetHDim() != 2 ||
           (clusterCount = arg->theData[0]) < 1 ||
           (iterCount = arg->theData[1]) < 1) {
@@ -6663,7 +6660,7 @@ _PMathObj _Matrix::ProfileMeanFit(_PMathObj classes) {
           _String("Invalid second argument for ProfileMeanFit (must be a "
                   "column vector):") & _String((_String *)classes->toStr());
     } else {
-      arg = (_Matrix *)classes->Compute();
+      arg = dynamic_cast<_Matrix*> (classes->Compute());
       if (arg->GetVDim() != 1) {
         errMsg = _String("Invalid second argument is call to ProfileMeanFit "
                          "(must be a column vector):") &
@@ -6797,9 +6794,10 @@ void _Matrix::PopulateConstantMatrix(const _Parameter v) {
 _PMathObj _Matrix::AddObj(_PMathObj mp) {
   if (_Matrix::ObjectClass() != mp->ObjectClass()) {
     if (mp->ObjectClass() == STRING) {
-      _Matrix *convMatrix = new _Matrix(*((_FString *)mp)->theString), *res;
-      checkPointer(convMatrix);
-      res = (_Matrix *)AddObj(convMatrix);
+      _Matrix *convMatrix = new _Matrix(*((_FString *)mp)->theString), 
+              *res;
+              
+      res = dynamic_cast<_Matrix*>(AddObj(convMatrix));
       DeleteObject(convMatrix);
       return res;
     }
@@ -6834,13 +6832,11 @@ _PMathObj _Matrix::AddObj(_PMathObj mp) {
     return new _Matrix(1, 1);
   }
 
-  _Matrix *m = (_Matrix *)mp;
+  _Matrix *m = dynamic_cast<_Matrix*>(mp);
   AgreeObjects(*m);
   _Matrix *result = new _Matrix(
       hDim, vDim, bool((theIndex != nil) && (m->theIndex != nil)), storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
-  if (!result) {
-    checkPointer(result);
-  }
+
   Add(*result, *m);
   return result;
 }
@@ -6875,7 +6871,7 @@ bool _Matrix::Equal(_PMathObj mp) {
     return false;
   }
 
-  _Matrix *m = (_Matrix *)mp;
+  _Matrix *m = dynamic_cast<_Matrix*>(mp);
 
   if (m->storageType == storageType && storageType == _HY_MATRIX_NUMERICAL_TYPE &&
       (bool) m->theIndex == (bool)
@@ -6914,7 +6910,7 @@ _PMathObj _Matrix::SubObj(_PMathObj mp) {
     return new _Matrix(1, 1);
   }
 
-  _Matrix *m = (_Matrix *)mp;
+  _Matrix *m = dynamic_cast<_Matrix*>(mp);
   AgreeObjects(*m);
   _Matrix *result =
       new _Matrix(hDim, vDim, bool(theIndex && m->theIndex), storageType != _HY_MATRIX_POLYNOMIAL_TYPE);
@@ -6995,10 +6991,10 @@ _PMathObj _Matrix::MultObj(_PMathObj mp) {
       return new _Matrix(1, 1);
     } else {
       _Parameter theV = mp->Value();
-      return (_PMathObj)((*this) * theV).makeDynamic();
+      return dynamic_cast <_PMathObj>(((*this) * theV).makeDynamic());
     }
 
-  _Matrix *m = (_Matrix *)mp;
+  _Matrix *m = dynamic_cast<_Matrix*>(mp);
   if (!CheckDimensions(*m))
     return new _MathObject;
   AgreeObjects(*m);
@@ -7019,7 +7015,7 @@ _PMathObj _Matrix::MultElements(_PMathObj mp, bool elementWiseDivide) {
     return new _Matrix(1, 1);
   }
 
-  _Matrix *m = (_Matrix *)mp;
+  _Matrix *m = dynamic_cast<_Matrix*>(mp);
 
   if ((GetHDim() != m->GetHDim()) || (GetVDim() != m->GetVDim())) {
     WarnError("Element-wise multiplication/division requires matrixes of the "
@@ -8645,7 +8641,7 @@ void _Matrix::CopyABlock(_Matrix *source, long startRow, long startColumn,
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::DirichletDeviate(void) {
+_Matrix* _Matrix::DirichletDeviate(void) {
   /* -----------------------------------------------------------
       DirichletDeviate()
           Generate vector of random deviates from the Dirichlet
@@ -8656,41 +8652,43 @@ _PMathObj _Matrix::DirichletDeviate(void) {
   _String errMsg;
   long dim;
   _Parameter denom = 0.;
-  _Matrix res(1, dim = GetHDim() * GetVDim(), false, true); // row vector
 
   if (storageType != _HY_MATRIX_NUMERICAL_TYPE) {
     errMsg = "Only numeric vectors can be passed to <= (DirichletDeviate)";
-  }
+  } else {
+    if (IsAVector()) {
+      // generate a random deviate from gamma distribution for each hyperparameter
+      _Matrix * res = new _Matrix (1, dim = GetHDim() * GetVDim(), false, true); // row vector
+      for (unsigned long i = 0; i < dim; i++) {
+        if (theData[i] < 0) {
+          WarnError(
+              _String("Dirichlet not defined for negative parameter values."));
+          return new _Matrix(1, 1, false, true);
+        }
 
-  if (IsAVector()) {
-    // generate a random deviate from gamma distribution for each hyperparameter
-    for (long i = 0; i < dim; i++) {
-      if (theData[i] < 0) {
-        WarnError(
-            _String("Dirichlet not defined for negative parameter values."));
-        return new _Matrix(1, 1, false, true);
+        res->Store(0, i, gammaDeviate(theData[i]));
+        denom += res->theData[i];
       }
 
-      res.Store(0, i, gammaDeviate(theData[i]));
-      denom += res(0, i);
-    }
+      denom = 1./ denom;
 
-    // normalize by sum
-    for (long i = 0; i < dim; i++) {
-      res.Store(0, i, res(0, i) / denom);
-    }
+      // normalize by sum
+      for (unsigned long i = 0; i < dim; i++) {
+        res->Store(0, i, res->theData[i] * denom);
+      }
 
-    return (_PMathObj) res.makeDynamic();
-  } else {
-    errMsg = "Argument must be a row- or column-vector.";
+      return res;
+    } else {
+      errMsg = "Argument must be a row- or column-vector.";
+    }
   }
 
   WarnError(errMsg);
-  return new _Matrix(1, 1, false, true);
+  return new _Matrix;
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::GaussianDeviate(_Matrix &cov) {
+_Matrix*  _Matrix::GaussianDeviate(_Matrix &cov) {
   /* ------------------------------------------------------
         GaussianDeviate()
             Generate vector of random deviates from k-
@@ -8719,29 +8717,29 @@ _PMathObj _Matrix::GaussianDeviate(_Matrix &cov) {
 
   if (cov.GetHDim() == kdim && cov.GetVDim() == kdim) {
     _Matrix *cov_cd = (_Matrix *)cov.CholeskyDecompose();
-    _Matrix gaussvec(1, kdim, false, true);
+    _Matrix * gaussvec = new _Matrix(1, kdim, false, true);
 
     //ReportWarning (_String("\nCholesky decomposition of cov = ") & (_String *)
     //cov_cd->toStr());
 
     // fill column vector with independent standard normal deviates
     for (long i = 0; i < kdim; i++) {
-      gaussvec.Store(0, i, gaussDeviate());
+      gaussvec->Store(0, i, gaussDeviate());
     }
 
     //ReportWarning (_String ("\nvector of gaussian deviates = ") & (_String *)
     //gaussvec.toStr());
 
     // left multiply vector by Cholesky decomposition of covariance matrix
-    gaussvec *= (_Matrix &)(*cov_cd);
+    (*gaussvec) *= (_Matrix &)(*cov_cd);
 
     // shift mean
     for (long i = 0; i < kdim; i++) {
-      gaussvec.Store(0, i, gaussvec(0, i) + theData[i]);
+      gaussvec->Store(0, i, gaussvec->theData[i] + theData[i]);
     }
 
     DeleteObject(cov_cd);
-    return (_PMathObj) gaussvec.makeDynamic();
+    return gaussvec;
   }
 
   WarnError(_String("Error in _Matrix::GaussianDeviate(), incompatible "
@@ -8751,12 +8749,12 @@ _PMathObj _Matrix::GaussianDeviate(_Matrix &cov) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::MultinomialSample(_Constant *replicates) {
+_Matrix* _Matrix::MultinomialSample(_Constant *replicates) {
   _String errMsg;
   long values = GetHDim();
   unsigned long samples = replicates ? replicates->Value() : 0;
 
-  _Matrix *eval = (_Matrix *)Compute(), *sorted = nil, *result = nil;
+  _Matrix *eval = dynamic_cast<_Matrix*>(Compute()), *sorted = nil, *result = nil;
 
   if (samples < 1) {
     errMsg = "Expected a numerical (>=1) value for the number of replicates";
@@ -8764,7 +8762,7 @@ _PMathObj _Matrix::MultinomialSample(_Constant *replicates) {
     errMsg = "Expecting numerical Nx2 (with N>=1) matrix.";
   } else {
     _Constant one(1.);
-    sorted = (_Matrix *)eval->SortMatrixOnColumn(&one);
+    sorted = eval->SortMatrixOnColumn(&one);
 
     _Parameter sum = 0.;
 
@@ -8865,7 +8863,7 @@ _PMathObj _Matrix::MultinomialSample(_Constant *replicates) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::InverseWishartDeviate(_Matrix &df) {
+_Matrix* _Matrix::InverseWishartDeviate(_Matrix &df) {
   /* ---------------------------------------------------
       InverseWishartDeviate()
           Generates a random matrix whose inverse
@@ -8899,13 +8897,13 @@ _PMathObj _Matrix::InverseWishartDeviate(_Matrix &df) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Matrix::WishartDeviate(_Matrix &df) {
+_Matrix* _Matrix::WishartDeviate(_Matrix &df) {
   // calls default constructor
   _Matrix diag; 
   return WishartDeviate(df, diag);
 }
 
-_PMathObj _Matrix::WishartDeviate(_Matrix &df, _Matrix &decomp) {
+_Matrix* _Matrix::WishartDeviate(_Matrix &df, _Matrix &decomp) {
   /* ---------------------------------------------------
      WishartDeviate()
         Generates a random matrix following the Wishart
@@ -8990,5 +8988,5 @@ _PMathObj _Matrix::WishartDeviate(_Matrix &df, _Matrix &decomp) {
   decomp *= (_Matrix &)rd_transpose; // D^T A^T A D
   //ReportWarning (_String("D^T A^T A D=") & (_String *)decomp.toStr());
 
-  return (_PMathObj) decomp.makeDynamic();
+  return dynamic_cast<_Matrix*>(decomp.makeDynamic());
 }

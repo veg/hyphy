@@ -231,7 +231,7 @@ void ReturnCurrentCallStack(_List &, _List &);
     @version 20120324
 */
 
-BaseRef _HYRetrieveBLObjectByName(_String &name, long &type, long *index = nil,
+_PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index = nil,
                                   bool errMsg = false,
                                   bool tryLiteralLookup = false);
 

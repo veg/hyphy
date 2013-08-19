@@ -355,7 +355,7 @@ void ReturnCurrentCallStack(_List &calls, _List &stdins) {
     for (long callLevel = executionStack.lLength - 1; callLevel >= 0;
          callLevel--) {
       _ExecutionList *currentLevel =
-          (_ExecutionList *)executionStack(callLevel);
+          dynamic_cast<_ExecutionList *>( executionStack(callLevel));
 
       calls.AppendNewInstance(
           new _String((_String *)((_ElementaryCommand *)(*currentLevel)(

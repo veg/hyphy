@@ -704,7 +704,7 @@ _String _HYHBLTypeToText(long type) {
 }
 
 //______________________________________________________________________________
-BaseRef _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
+_PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
                                   bool errMsg, bool tryLiteralLookup) {
   long loc = -1;
   if (type & HY_BL_DATASET) {

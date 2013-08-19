@@ -50,6 +50,7 @@
 
 class _Variable;
 class _VariableContainer;
+class _Matrix;
 
 union _SimpleFormulaDatum {
   _Parameter value;
@@ -157,7 +158,7 @@ public:
       the i-th term of the formula
   */
   void Clear(void);
-  _PMathObj GetTheMatrix(void);
+  _Matrix* GetTheMatrix(void);
 
   bool AmISimple(long &stackDepth, _SimpleList &variableIndex);
   bool ConvertToSimple(_SimpleList &variableIndex);

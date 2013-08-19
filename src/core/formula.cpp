@@ -1968,7 +1968,7 @@ void _Formula::SimplifyConstants(void) {
 }
 
 //______________________________________________________________________________
-_PMathObj _Formula::GetTheMatrix(void) {
+_Matrix* _Formula::GetTheMatrix(void) {
   if (theFormula.lLength == 1) {
     _Operation *firstOp = (_Operation *)theFormula(0);
     switch (firstOp->GetOpKind()) {
@@ -1976,7 +1976,7 @@ _PMathObj _Formula::GetTheMatrix(void) {
        case _HY_OPERATION_VALUE: {
           _PMathObj ret = firstOp->GetPayload();
           if (ret && (ret->ObjectClass() == MATRIX)) {
-            return ret;
+            return dynamic_cast<_Matrix*>(ret);
           } 
           break;
       }
@@ -1986,7 +1986,7 @@ _PMathObj _Formula::GetTheMatrix(void) {
         _Variable *firstVar = LocateVar(firstOp->GetReference());
         _PMathObj ret = firstVar->GetValue();
         if (ret && (ret->ObjectClass() == MATRIX)) {
-          return ret;
+          return dynamic_cast<_Matrix*>(ret);
         }
         break;
       }

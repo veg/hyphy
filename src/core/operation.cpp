@@ -219,7 +219,7 @@ _Operation::_Operation(bool isUserFunction, _String &opc, const long opNo = 2) {
     Initialize (isUserFunction?_HY_OPERATION_FUNCTION_CALL:_HY_OPERATION_BUILTIN,opCode,opNo);
   } else {
     if (isUserFunction) {
-      Initialize (_HY_OPERATION_DEFERRED_FUNCTION_CALL,_HY_OPERATION_INVALID_REFERENCE,opNo,(_PMathObj)opc.makeDynamic());
+      Initialize (_HY_OPERATION_DEFERRED_FUNCTION_CALL,_HY_OPERATION_INVALID_REFERENCE,opNo,dynamic_cast<_MathObject*>(opc.makeDynamic()));
     } else {
       WarnError(_String("'") & opc & "' is not a defined built-in function or operation.");
       Initialize ();
@@ -513,7 +513,7 @@ bool _Operation::ExecuteFunctionCall (_Stack& theScrap, _hyExecutionContext* con
         existingDVars << theV->GetAVariable();
         displacedVars << theV;
         variablePtrs.Replace(theV->GetAVariable(),
-                             (_PMathObj) newV.makeDynamic());
+                             newV.makeDynamic());
         DeleteObject(nthterm);
       }
     } else {
@@ -568,14 +568,14 @@ bool _Operation::ExecuteFunctionCall (_Stack& theScrap, _hyExecutionContext* con
   
   for (unsigned long dv = 0; dv < displacedVars.lLength; dv++) {
     variablePtrs.Replace(existingDVars.lData[dv],
-                         (_PMathObj) displacedVars(dv));
+                         displacedVars(dv));
   }
   
   
   for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
     _Variable *theV = LocateVar(existingIVars.lData[dv2]);
     DeleteObject(theV->varValue);
-    theV->varValue = ((_PMathObj) displacedValues(dv2));
+    theV->varValue = dynamic_cast<_MathObject*> (displacedValues(dv2));
   }
   
   
@@ -626,18 +626,17 @@ bool _Operation::Execute(_Stack &theScrap, _hyExecutionContext* context) {
       return true;
     case _HY_OPERATION_VAR:
       if (attribute == _HY_OPERATION_INVALID_REFERENCE) {
-        theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])->Compute());
+        theScrap.Push( dynamic_cast<_Variable*>(((BaseRef *)variablePtrs.lData)[reference])->Compute());
       } else {
         theScrap.Push(new _Constant (reference), false);
       }
       return true;
     case _HY_OPERATION_REF:
-      theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])
-                    ->ComputeReference(nil), false);
+      theScrap.Push(dynamic_cast<_Variable*>(((BaseRef *)variablePtrs.lData)[reference])->ComputeReference(nil), false);
       return true;
     case _HY_OPERATION_VAR_OBJ:
       if (attribute == _HY_OPERATION_INVALID_REFERENCE) {
-        theScrap.Push(((_Variable *)((BaseRef *)variablePtrs.lData)[reference])
+        theScrap.Push(dynamic_cast<_Variable*>(((BaseRef *)variablePtrs.lData)[reference])
                       ->GetValue());
       } else {
         theScrap.Push(new _Constant (reference), false);      

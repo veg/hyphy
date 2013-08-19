@@ -67,6 +67,7 @@ extern _Trie _HY_MatrixRandomValidPDFs;
 //_____________________________________________________________________________________________
 
 class _Formula;
+class _AssociativeList;
 /*__________________________________________________________________________________________________________________________________________
  */
 
@@ -165,7 +166,7 @@ public:
   virtual bool
   IsAVector(char = 0); // is a vector? 0 - either row or column; 1 column; 2 row
 
-  _PMathObj Evaluate(bool replace =
+  _Matrix* Evaluate(bool replace =
                          true); // evaluates the matrix if contains formulas
                                 // if replace is true, overwrites the original
 
@@ -204,9 +205,9 @@ public:
   // implements the M[i][j]= operation for objects
   virtual _PMathObj Compute(void); // returns the numeric value of this matrix
 
-  virtual _PMathObj
+  virtual _Matrix*
   ComputeNumeric(bool = false); // returns the numeric value of this matrix
-  virtual _PMathObj
+  virtual _Matrix*
   RetrieveNumeric(void);        // returns the numeric value of this matrix
 
   virtual void ScanForVariables(_AVLList &, bool inclG = false,
@@ -284,12 +285,12 @@ public:
   _Matrix *Exponentiate(void); // exponent of a matrix
   void Transpose(void);        // transpose a matrix
   _Matrix Gauss(void);         // Gaussian Triangularization process
-  _PMathObj LUDecompose(void);
-  _PMathObj CholeskyDecompose(void);
+  _Matrix* LUDecompose(void);
+  _Matrix* CholeskyDecompose(void);
   // added by afyp July 6, 2009
-  _PMathObj Eigensystem(void);
-  _PMathObj LUSolve(_PMathObj);
-  _PMathObj Inverse(void);
+  _AssociativeList * Eigensystem(void);
+  _Matrix* LUSolve(_PMathObj);
+  _Matrix* Inverse(void);
   _PMathObj Abs(void); // returns the norm of a matrix
                        // if it is a vector - returns the Euclidean length
                        // otherwise returns the largest element
@@ -394,9 +395,9 @@ public:
    */
 
   _Formula *GetFormula(long, long);
-  _PMathObj MultByFreqs(long);
-  _PMathObj EvaluateSimple(void);
-  _PMathObj SortMatrixOnColumn(_PMathObj);
+  _Matrix*  MultByFreqs(long);
+  _Matrix*  EvaluateSimple(void);
+  _Matrix*  SortMatrixOnColumn(_PMathObj);
   _PMathObj K_Means(_PMathObj);
   _PMathObj pFDR(_PMathObj); // positive false discovery rate
   _PMathObj PoissonLL(
@@ -404,17 +405,18 @@ public:
                   // parameter value
 
   // added by afyp, July 1, 2009
-  _PMathObj
+  _Matrix*
   DirichletDeviate(void); // this matrix used for alpha hyperparameters
-  _PMathObj GaussianDeviate(
+  _Matrix* GaussianDeviate(
       _Matrix &); //  "   "   "   "       mean hyperparameter, additional
                   // argument for variance
-  _PMathObj InverseWishartDeviate(
+  _Matrix* InverseWishartDeviate(
       _Matrix &); //  "   "   "   "       rho hyperparameter, additional for phi
                   // matrix
-  _PMathObj WishartDeviate(_Matrix &, _Matrix &), WishartDeviate(_Matrix &);
+  _Matrix* WishartDeviate(_Matrix &, _Matrix &);
+  _Matrix* WishartDeviate(_Matrix &);
 
-  _PMathObj MultinomialSample(_Constant *);
+  _Matrix* MultinomialSample(_Constant *);
   /* SLKP 20110208: an internal function to draw the multinomial sample
 
         the matrix _base_ must be 2xN, where each _row_ lists
@@ -609,7 +611,7 @@ private:
 
   _CompiledMatrixData *cmd;
 
-  _PMathObj theValue; // stores evaluated values of the matrix
+  _Matrix* theValue; // stores evaluated values of the matrix
 };
 
 extern _Matrix *GlobalFrequenciesMatrix;

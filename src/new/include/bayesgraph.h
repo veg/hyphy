@@ -152,7 +152,7 @@ public:
     void            GetNodeOrder (_Matrix * order);
     void            GetStructure (_Matrix * graph);
     void            GetConstraints (_Matrix * graph) {
-        graph = (_Matrix *) constraint_graph.makeDynamic();
+        graph = dynamic_cast<_Matrix *> (constraint_graph.makeDynamic());
     }
 
 protected:
