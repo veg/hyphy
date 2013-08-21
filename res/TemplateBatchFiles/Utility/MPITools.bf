@@ -11,11 +11,18 @@ function runAnalysisOnManyFiles (pathList, analysisName, verboseFlag, callbackIn
 		{
 			if (verboseFlag)
 			{
-				fprintf (stdout, "[MPITools: Warning] Filepath ", pathList[fileID], " couldn't be open for reading and will be skipped\n");
+				fprintf (stdout, "[MPITools: Warning] Filepath ", pathList[_fileLine], " couldn't be open for reading and will be skipped\n");
 			}
 			continue;
 		}
 		_analysisOptions = Eval("`callbackInput` (_fileLine, pathList[_fileLine])");
+		if (Abs(_analysisOptions) == 0) {
+                        if (verboseFlag)
+                        {
+                                fprintf (stdout, "[MPITools: Warning] Filepath ", pathList[_fileLine], " was marked as cached and will be skipped\n");
+                        }
+			continue;
+		}
 		_SendAnMPIJob   (_fileLine, analysisName, _analysisOptions, callbackOutput,verboseFlag);
 	}
 	
@@ -44,7 +51,7 @@ function _SendAnMPIJob (jobNumber, fileID, options, callbackOutput, verboseFlag)
 		_mpiNode = _ReceiveAnMPIJob (callbackOutput, verboseFlag);
 	}
 	
-	_MPI_NODE_STATUS[_mpiNode] = jobNumber;
+	_MPI_NODE_STATUS[_mpiNode] = jobNumber + 1;
 	if (verboseFlag)
 	{
 		fprintf (stdout, "[MPITools] Sending filepath ", pathList[jobNumber], " (ID ", jobNumber+1, ") to node ", _mpiNode+1, "\n");
