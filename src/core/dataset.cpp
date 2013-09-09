@@ -675,10 +675,10 @@ void _DataSet::FindAllSitesLikeThisOne(long index, _SimpleList &receptacle) {
 }
 
 //______________________________________________________________________________
-_TranslationTable *_DataSet::CheckCompatibility(_SimpleList &ref,
+_TranslationTable *_DataSet::CheckCompatibility(_List &objects,
                                                 char concatOrCombine) {
 
-  _DataSet *currentSet = (_DataSet *)dataSetList(ref(0));
+  _DataSet *currentSet = dynamic_cast<_DataSet*> (objects(0));
 
   _TranslationTable *theEnd = new _TranslationTable(*(currentSet->theTT));
   checkPointer(theEnd);
@@ -687,9 +687,9 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList &ref,
 
   char emptyChar = theEnd->GetSkipChar();
 
-  for (long k = 1; k < ref.lLength; k++) {
+  for (unsigned long k = 1; k < objects.lLength; k++) {
 
-    currentSet = (_DataSet *)dataSetList(ref(k));
+    currentSet = dynamic_cast<_DataSet*> (objects(k));
     _TranslationTable *tryMe = theEnd->MergeTables(currentSet->theTT);
 
     if (tryMe) {
@@ -706,19 +706,12 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList &ref,
         }
       }
     }
-    _String warningMessage("The data set:");
+    _String warningMessage("The data set argument with index '");
     warningMessage =
-        warningMessage & *((_String *)dataSetNamesList(ref(k))) &
-        _String(" was found incompatible with one of the following data sets:");
-    for (long i = 0; i < k; i++) {
-      warningMessage = warningMessage & *((_String *)dataSetNamesList(ref(i))) &
-                       _String(",");
-    }
-    warningMessage =
-        warningMessage &
-        _String(" and was dropped from the dataset merging operation");
+        warningMessage & (k+1) &
+        _String("' was found incompatible with one of the previous arguments and was dropped from the dataset merging operation");
     ReportWarning(warningMessage);
-    ref.Delete(k);
+    objects.Delete(k);
     k--;
   }
 
@@ -734,15 +727,14 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList &ref,
 // it can be done,
 // otherwise the incompatible datasets will be ignored during this
 // operation.
-_DataSet *_DataSet::Concatenate(_SimpleList ref) {
+_DataSet *_DataSet::Concatenate(_List& objects) {
 
   _TranslationTable *jointTable;
 
-  jointTable = CheckCompatibility(ref, 1);
+  jointTable = CheckCompatibility(objects, 1);
 
   _DataSet *bigDataSet = new _DataSet;
-  checkPointer(bigDataSet);
-
+ 
   bigDataSet->theTT = jointTable;
 
   // pass one - determine the max max number of species present and what dataset
@@ -754,8 +746,8 @@ _DataSet *_DataSet::Concatenate(_SimpleList ref) {
 
   char emptySlot = jointTable->GetSkipChar();
 
-  for (long i = 0; i < ref.lLength; i++) {
-    currentSet = (_DataSet *)dataSetList(ref(i));
+  for (unsigned long i = 0; i < objects.lLength; i++) {
+    currentSet = dynamic_cast <_DataSet *>(objects(i));
 
     long specCount = currentSet->NoOfSpecies(),
          siteCount = currentSet->NoOfColumns();
@@ -769,28 +761,28 @@ _DataSet *_DataSet::Concatenate(_SimpleList ref) {
     }
   }
 
-  for (long k = 1; k < maxSpecies; k++) {
+  for (unsigned long k = 1; k < maxSpecies; k++) {
     siteIndex = 0;
-    for (long i = 0; i < ref.lLength; i++) {
+    for (unsigned long i = 0; i < objects.lLength; i++) {
 
-      currentSet = (_DataSet *)dataSetList(ref.lData[i]);
+      currentSet = dynamic_cast <_DataSet *>(objects(i));
       long cns = currentSet->NoOfSpecies(), cnc = currentSet->NoOfColumns();
 
       if (cns <= k) {
-        for (long j = 0; j < cnc; j++, siteIndex++) {
+        for (unsigned long j = 0; j < cnc; j++, siteIndex++) {
           bigDataSet->Write2Site(siteIndex, emptySlot);
         }
       } else {
-        for (long j = 0; j < cnc; j++, siteIndex++) {
+        for (unsigned long j = 0; j < cnc; j++, siteIndex++) {
           bigDataSet->Write2Site(siteIndex, (*currentSet)(j, k, 1));
         }
       }
     }
   }
 
-  currentSet = (_DataSet *)dataSetList(ref(maxDataSet));
+  currentSet =  dynamic_cast <_DataSet *>(objects(maxDataSet));
   {
-    for (long i = 0; i < maxSpecies; i++) {
+    for (unsigned long i = 0; i < maxSpecies; i++) {
       bigDataSet->AddName(*((_String *)(currentSet->GetNames())(i)));
     }
   }
@@ -801,7 +793,7 @@ _DataSet *_DataSet::Concatenate(_SimpleList ref) {
 }
 
 //______________________________________________________________________________
-_DataSet *_DataSet::Combine(_SimpleList ref) {
+_DataSet *_DataSet::Combine(_List& objects) {
 
   // combines (adds rows together) several datasets
   // in case the number of species in the datasets are different the
@@ -812,37 +804,34 @@ _DataSet *_DataSet::Combine(_SimpleList ref) {
   // otherwise the incompatible datasets will be ignored during this
   // operation.
 
-  _TranslationTable *jointTable;
-
-  jointTable = CheckCompatibility(ref, 0);
+  _TranslationTable *jointTable = CheckCompatibility(objects, 0);
 
   _DataSet *bigDataSet = new _DataSet;
-  checkPointer(bigDataSet);
   bigDataSet->theTT = jointTable;
 
   // pass one - determine the max max number of sites present and what dataset
   // are they coming from
 
-  long i, j, k, maxSites = 0, sitesAvail, nsc = 0;
+  long j, maxSites = 0, sitesAvail, nsc = 0;
 
   _DataSet *currentSet;
 
   char emptySlot = jointTable->GetSkipChar();
 
-  for (i = 0; i < ref.lLength; i++) {
-    currentSet = (_DataSet *)dataSetList(ref(i));
+  for (unsigned long i = 0; i < objects.lLength; i++) {
+    currentSet = dynamic_cast <_DataSet *>(objects(i));
     if (currentSet->NoOfColumns() > maxSites) {
       maxSites = currentSet->NoOfColumns();
     }
     nsc += currentSet->NoOfSpecies();
   }
 
-  for (k = 0; k < ref.lLength; k++) {
-    currentSet = (_DataSet *)dataSetList(ref(k));
+  for (unsigned long k = 0; k < objects.lLength; k++) {
+    currentSet = dynamic_cast <_DataSet *>(objects(k));
     sitesAvail = currentSet->NoOfColumns();
 
     long cns = currentSet->NoOfSpecies();
-    for (i = 0; i < cns; i++) {
+    for (unsigned long i = 0; i < cns; i++) {
       bigDataSet->AddName(*((_String *)(currentSet->GetNames())(i)));
 
       if (!(k || i)) {
