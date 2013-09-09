@@ -155,10 +155,10 @@ public:
                                    _String *, _TranslationTable *);
   friend long ProcessLine(_String &s, FileState *fs, _DataSet &ds);
 
-  static _DataSet *Concatenate(_SimpleList);
-  static _DataSet *Combine(_SimpleList);
+  static _DataSet *Concatenate(_List&);
+  static _DataSet *Combine(_List&);
 
-  static _TranslationTable *CheckCompatibility(_SimpleList &ref,
+  static _TranslationTable *CheckCompatibility(_List &objects,
                                                char concatOrCombine);
 
   void ProcessPartition(_String &, _SimpleList &, bool, _SimpleList * = nil,
