@@ -6089,8 +6089,8 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
                 
     if (check_value != A_LARGE_NUMBER) {
       if (!CheckEqual(check_value, maxSoFar)) {
-        WarnError (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & check_value & "] does not match the last recorded LF maximum [" & maxSoFar & "]");
-        return;
+        ReportWarning (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & check_value & "] does not match the last recorded LF maximum [" & maxSoFar & "]");
+        //return;
       }
     }
     
