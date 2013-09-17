@@ -118,7 +118,14 @@ _Parameter  GreaterThanE(_Parameter x, _Parameter y)
     return x>=y;
 }
 _Parameter  Power       (_Parameter x, _Parameter y)
-{
+{ 
+    if (x==0.0) {
+      if (y > 0.0) {
+        return 0.0;
+      } else {
+        return 1.0;
+      }
+    }
     return pow(x,y);
 }
 _Parameter  MaxNumbers  (_Parameter x, _Parameter y)

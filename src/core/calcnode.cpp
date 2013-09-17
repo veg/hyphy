@@ -42,6 +42,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#ifndef     __ALTIVEC__
 //#define     ALMOST_ZERO  1e-305
 
+//#define _UBER_VERBOSE_MX_UPDATE_DUMP
+#define _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL 28
+
+
 #define     ANCESTRAL_SCALING_MAX 16
 #define     ALMOST_ZERO           0.0
 //#else
@@ -64,6 +68,8 @@ extern      _String      VerbosityLevelString,
 
 long*       nonZeroNodes = nil,
             nonZeroNodesDim = 0;
+            
+extern      long    likeFuncEvalCallCount;
 
 #ifdef      __MP__
     #include <pthread.h>
@@ -719,6 +725,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     if (isInOptimize)
         if (referenceNode >= 0) {
+            //fprintf (stderr, "\n\n********** REFERENCE NODE ******************\n\n");
             _CalcNode* rN = (_CalcNode*)LocateVar(referenceNode);
             rN->RecomputeMatrix (categID, totalCategs, storeRateMatrix);
 
@@ -753,6 +760,11 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 if (curVar->IsIndependent()) {
                     locVar = LocateVar (iVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
+                    #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
+                      }
+                    #endif
                 }
             }
 
@@ -763,8 +775,23 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 if (curVar->IsIndependent()) {
                     locVar = LocateVar (dVariables->lData[i]);
                     curVar->SetValue(locVar->Compute());
+                    #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+                      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
+                      }
+                    #endif
                 }
             }
+    
+    #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+      if (likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
+        for (unsigned long i=0; i<gVariables->lLength; i++) {
+          _Variable* curVar = LocateVar(gVariables->GetElement(i));
+          fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
+        }
+      }
+    #endif
+
 
     for (unsigned long i=0; i<categoryVariables.lLength; i++) {
         if (categoryIndexVars.lData[i]<0) {

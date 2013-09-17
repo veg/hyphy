@@ -1868,12 +1868,13 @@ _Parameter  _LikelihoodFunction::Compute        (void)
 
     bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
-    printf ("Likelihood function evaluation %ld\n", likeFuncEvalCallCount+1);
+    fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
     for (unsigned long i=0; i<indexInd.lLength; i++) {
         _Variable *v = LocateVar (indexInd.lData[i]);
         if (v->HasChanged()) {
-            printf ("%s changed\n", v->GetName()->sData);
+          fprintf (stderr, "[CHANGED] ");
         }
+        fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
     }
 #endif
     if (computeMode == 0 || computeMode == 3) {
@@ -1902,7 +1903,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    printf ("Did compute %g\n", result);
+                    fprintf (stderr, "Did compute %g\n", result);
 #endif
                     _Parameter                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
@@ -2065,7 +2066,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
-        printf ("%g\n", result);
+        fprintf (stderr, "%g\n", result);
 #endif
         if (isnan (result)) {
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
@@ -4611,6 +4612,10 @@ DecideOnDivideBy (this);
                 }
 
                 if (convergenceMode > 2) {
+                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                    ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
+                    break;
+                }
                     _Matrix             bestMSoFar;
                     GetAllIndependent   (bestMSoFar);
                     _Parameter prec = MIN (diffs[0], diffs[1]);
@@ -4628,10 +4633,10 @@ DecideOnDivideBy (this);
                     
                     if (gradientBlocks.lLength) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
-                            ConjugateGradientDescent (prec, bestMSoFar,true,5,(_SimpleList*)(gradientBlocks(b)));
+                            ConjugateGradientDescent (prec, bestMSoFar,true,5,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                         }
                     } else {
-                        ConjugateGradientDescent (prec, bestMSoFar,true,5);
+                        ConjugateGradientDescent (prec, bestMSoFar,true,5,nil,maxSoFar);
                     }
                     
                     GetAllIndependent   (bestMSoFar);
@@ -5233,10 +5238,17 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [512];
-        snprintf (buf, sizeof(buf), "\n[INITIAL BRACKET %g %g/%g %g]", middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
+        snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
         BufferToConsole (buf);
     }
 
+    /*
+    if (likeFuncEvalCallCount > 0) {
+      printf ("\n\n\nCHECK INDEX 6\n\n\n");
+      SetIthIndependent(6L, GetIthIndependent(6L));
+    }
+    */
+    
     while (1) {
 
         while ((middle-leftStep)<lowerBound) {
@@ -5277,6 +5289,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         }
 
 
+        
         if (CheckEqual(middle,saveL)) {
             middleValue = saveLV;
         } else if (CheckEqual(middle,saveR)) {
@@ -5284,7 +5297,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         } else if (CheckEqual(middle,saveM)) {
             middleValue = saveMV;
         } else {
-            middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+             middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
         }
 
         left = middle-leftStep;
@@ -5313,7 +5326,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (verbosityLevel > 100) {
             char buf [512];
-            snprintf (buf, 512, "\n[BRACKET: %g (%.20g) - %g (%.20g) - %g (%.20g)]", left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
+            snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %g (diff: %15.12g) - %g (logL: %15.12g) - %g (diff: %15.12g)]", index, left, leftValue-middleValue, middle, middleValue, right, rightValue-middleValue);
             BufferToConsole (buf);
         }
 
@@ -5377,11 +5390,13 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             //if (index < 0) printf ("\nmiddle>=practicalUB\n");
             break;
         }
+        /*
         if (middle-lowerBound < STD_GRAD_STEP*0.5) {
             middleValue         = SetParametersAndCompute (index, middle = lowerBound+STD_GRAD_STEP*0.5, &currentValues, gradient);
             //if (index < 0) printf ("\nmiddle-lowerBound < STD_GRAD_STEP*0.5\n");
             break;
         }
+        */
         first = false;
 
     }
@@ -5397,7 +5412,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [256];
-        snprintf (buf, 256, "\n[BRACKET SUCCESSFUL: %.16g - %.16g -% .16g. steps, L=%g, R=%g, values %.16g - %.16g - %.16g]", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+        snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET SUCCESSFUL: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
 
@@ -6064,14 +6079,21 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters)
-{
+void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, _Parameter check_value) {
 
     _Parameter  gradientStep     = STD_GRAD_STEP,
                 temp,
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
+                
+    if (check_value != A_LARGE_NUMBER) {
+      if (!CheckEqual(check_value, maxSoFar)) {
+        WarnError (_String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & check_value & "] does not match the last recorded LF maximum [" & maxSoFar & "]");
+        return;
+      }
+    }
+    
 
     _SimpleList freeze;
 
@@ -6088,7 +6110,7 @@ void    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Ma
 
     long        vl = verbosityLevel;
 
-    char        buffer[256];
+    char        buffer[1024];
 
     unit.PopulateConstantMatrix (1.);
 
@@ -6592,7 +6614,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             
             if (verbosityLevel > 50) {
                 char buf [256];
-                snprintf (buf, 256, "\n[GOLDEN RATIO INTERVAL CHECK: %g %g (%g = %g) %g %g]", left, XM, X, fabs(X-XM), right, right-left);
+                snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) (current max = %15.12g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", index, bestVal, left, XM, X, fabs(X-XM), right, right-left);
                 BufferToConsole (buf);
             }
             
@@ -6633,7 +6655,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             
             if (verbosityLevel > 50) {
                 char buf [256];
-                snprintf (buf, 256, "\n[GOLDEN RATIO TRY: param %g, log L %g]", U, FU);
+                snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO TRY: param %g, log L %g]", index, U, FU);
                 BufferToConsole (buf);
             }
             
@@ -6673,7 +6695,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         
         if (verbosityLevel > 50) {
             char buf [256];
-            snprintf (buf, 256, "\n[GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, from %g to %g, delta Log L = %g ]\n\n", brentPrec, bestVal, X, middleValue+FX);
+            snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %g/%g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
             BufferToConsole (buf);
         }
         middleValue = -FX;
@@ -7928,7 +7950,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                     }
                     
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    printf ("\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
+                    fprintf (stderr, "\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
 #endif
                     if (snID != *cbid) {
                         RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
@@ -7968,9 +7990,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
             }
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-            printf ("%d matrices, %d branches marked for rate class %d\n", matrices->lLength, branches->lLength, catID);
+            fprintf (stderr, "%d matrices, %d branches marked for rate class %d\n", matrices->lLength, branches->lLength, catID);
             if (matrices->lLength == 0) {
-                printf ("Hmm\n");
+                fprintf (stderr, "Hmm\n");
             }
 #endif
             if (matrices->lLength) {
@@ -7991,7 +8013,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
             _Parameter sum  = 0.;
             if (doCachedComp >= 3) {
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                printf ("CACHE compute branch %d\n",doCachedComp-3);
+                fprintf (stderr, "CACHE compute branch %d\n",doCachedComp-3);
 #endif
                 sum = t->ComputeLLWithBranchCache (*sl,
                                                    doCachedComp-3,
@@ -8012,7 +8034,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
             long sitesPerP    = df->NumberDistinctSites() / np + 1;
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                printf ("NORMAL compute lf \n");
+                fprintf (stderr, "NORMAL compute lf \n");
 #endif
 
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)

@@ -47,6 +47,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "dmalloc.h"
 #endif
 
+
+//#define _UBER_VERBOSE_DUMP_MATRICES
+//#define _UBER_VERBOSE_DUMP 27
+
 extern  long likeFuncEvalCallCount,
         matrixExpCount;
 
@@ -174,7 +178,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
              hasExpForm = true;
         }
-        //printf ("NodeID %d. Old length %ld, new length %ld\n", nodeID, didIncrease,matrixQueue.lLength); 
+        #ifdef _UBER_VERBOSE_DUMP
+          if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
+            printf ("NodeID %d (%s). Old length %ld, new length %ld\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength); 
+        #endif
         if ((didIncrease = (matrixQueue.lLength - didIncrease))) {
             for (long copies = 0; copies < didIncrease; copies++) {
                 nodesToDo << thisNode;
@@ -188,9 +195,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     
-
 #ifdef _OPENMP
-    long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
+    unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
     matrixExpCount += matrixQueue.lLength;
 #endif
 
@@ -204,6 +210,9 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     }
     
     
+  
+
+
     if (computedExponentials) {
         _CalcNode * current_node         = nil;
         _List       buffered_exponentials;
@@ -234,6 +243,25 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
         }
         DeleteObject(computedExponentials);
+    #ifdef _UBER_VERBOSE_DUMP_MATRICES
+      if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
+        fprintf (stderr, "\n T_MATRIX = {"); 
+        for (unsigned long nodeID = 0; nodeID < flatLeaves.lLength + flatTree.lLength - 1; nodeID++) {
+            bool    isLeaf     = nodeID < flatLeaves.lLength;
+
+            _CalcNode * current_node = isLeaf? (((_CalcNode**) flatCLeaves.lData)[nodeID]):
+                              (((_CalcNode**) flatTree.lData)  [nodeID - flatLeaves.lLength]);
+            if (nodeID) {
+              fprintf (stderr, ",");
+            }
+            fprintf (stderr, "\n\"%s\":%s", current_node->GetName()->sData, _String((_String*)current_node->GetCompExp()->toStr()).sData); 
+            
+          }
+        fprintf (stderr, "\n};\n"); 
+      }
+    #endif
+
+
     }
 }
 
