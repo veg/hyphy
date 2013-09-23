@@ -47,6 +47,8 @@
 #include "operation.h"
 #include "formula.h"
 
+#define _HY2VARIABLE(X) (dynamic_cast <_Variable*>(X))
+
 class _Variable : public virtual _Constant {
 
   friend class _Operation;

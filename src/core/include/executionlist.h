@@ -53,6 +53,8 @@ struct _CELInternals {
 
 };
 
+#define _HY2EXECUTIONLIST(X) (dynamic_cast<_ExecutionList*>(X))
+
 class _ExecutionList : public _List // a sequence of commands to be executed
                        {
 public:

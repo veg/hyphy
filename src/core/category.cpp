@@ -682,7 +682,7 @@ BaseRef _CategoryVariable::makeDynamic(void) {
 }
 //______________________________________________________________________________
 void _CategoryVariable::Duplicate(BaseRef s) {
-  _CategoryVariable *cv = (_CategoryVariable *)s;
+  _CategoryVariable *cv = dynamic_cast<_CategoryVariable *>(s);
   Clear();
   intervals = cv->intervals;
   density.Duplicate((BaseRef) & cv->density);
@@ -692,23 +692,23 @@ void _CategoryVariable::Duplicate(BaseRef s) {
   x_min = cv->x_min;
   x_max = cv->x_max;
   if (cv->values) {
-    values = (_Matrix *)cv->values->makeDynamic();
+    values = dynamic_cast<_Matrix*> (cv->values->makeDynamic());
   } else {
     values = nil;
   }
   if (cv->intervalEnds) {
-    intervalEnds = (_Matrix *)cv->intervalEnds->makeDynamic();
+    intervalEnds = dynamic_cast<_Matrix *> (cv->intervalEnds->makeDynamic());
   } else {
     intervalEnds = nil;
   }
   if (cv->weights) {
-    weights = (_Matrix *)cv->weights->makeDynamic();
+    weights = dynamic_cast<_Matrix *>(cv->weights->makeDynamic());
   } else {
     weights = nil;
   }
 
   if (cv->conditionalWeights) {
-    conditionalWeights = (_Matrix *)cv->conditionalWeights->makeDynamic();
+    conditionalWeights = dynamic_cast<_Matrix *>(cv->conditionalWeights->makeDynamic());
   } else {
     conditionalWeights = nil;
   }

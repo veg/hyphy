@@ -78,6 +78,8 @@ struct _DSHelper {
   ~_DSHelper(void) { DeleteObject(incompletePatterns); }
 };
 
+#define _HY2DATASET(X) (dynamic_cast<_DataSet*>(X))
+
 class _DataSet : public virtual _List, public virtual _AssociativeList // a complete data set
                  {
 public:

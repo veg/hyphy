@@ -39,7 +39,7 @@ _Formula::_Formula(_PMathObj p, bool isAVar) {
   if (!isAVar) {
     theFormula.AppendNewInstance(new _Operation(p));
   } else {
-    _Variable *v = (_Variable *)p;
+    _Variable *v =  _HY2VARIABLE(p);
     theFormula.AppendNewInstance(
         new _Operation(  *v->GetName(), true, v->IsGlobal(), nil));
   }
@@ -61,8 +61,9 @@ void _Formula::Duplicate(BaseRef f) {
     theTree = nil;
   }
 
+
   if (f_cast->resultCache) {
-    resultCache = (_List *)f_cast->resultCache->makeDynamic();
+    resultCache = new _List (f_cast->resultCache);
   } else {
     resultCache = nil;
   }
@@ -415,8 +416,9 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
       if (variableIDX >= 0) {
         _String *vName = LocateVar(variableIDX)->GetName();
         if (matchNames) {
-          _List *p1 = (_List *)(*matchNames)(0),
-          *p2 = (_List *)(*matchNames)(1);
+        
+          _List *p1 = _HY2LIST ((*matchNames)(0)),
+                *p2 = _HY2LIST ((*matchNames)(1));
           
           long f = p1->Find(vName);
           
@@ -1295,12 +1297,12 @@ long _Formula::ExtractMatrixExpArguments(_List *storage) {
           _Stack temp;
           thisOp->Execute(temp);
 
-          _Matrix *currentArg = (_Matrix *)temp.Pop(true),
-                  *cachedArg = (_Matrix *)((_PMathObj)(*resultCache)(cacheID)),
+          _Matrix *currentArg = _HY2MATRIX  (temp.Pop(true)),
+                  *cachedArg = _HY2MATRIX   ((*resultCache)(cacheID)),
                   *diff = nil;
 
           if (cachedArg->ObjectClass() == MATRIX) {
-            diff = (_Matrix *)cachedArg->SubObj(currentArg);
+            diff = _HY2MATRIX (cachedArg->SubObj(currentArg));
           }
 
           if (diff && diff->MaxElement() <= 1e-12) {
@@ -1335,8 +1337,8 @@ _Variable *_Formula::Dereference(bool ignore_context,
   _PMathObj computedValue =
       Compute(0, theContext);
   if (computedValue && computedValue->ObjectClass() == STRING) {
-    result = (_Variable *)((_FString *)computedValue)
-        ->Dereference(ignore_context, theContext, true);
+    result = _HY2VARIABLE (((_FString *)computedValue)
+        ->Dereference(ignore_context, theContext, true));
   }
 
   if (!result) {
@@ -1382,13 +1384,12 @@ _PMathObj _Formula::Compute(long startAt, _hyExecutionContext* execContext,
               break;
             }
 
-            _Matrix *currentArg = (_Matrix *)theStack.Pop(false),
-                    *cachedArg =
-                        (_Matrix *)((_PMathObj)(*resultCache)(cacheID)),
+            _Matrix *currentArg = _HY2MATRIX (theStack.Pop(false)),
+                    *cachedArg =  _HY2MATRIX((*resultCache)(cacheID)),
                     *diff = nil;
 
             if (cachedArg->ObjectClass() == MATRIX) {
-              diff = (_Matrix *)cachedArg->SubObj(currentArg);
+              diff = _HY2MATRIX (cachedArg->SubObj(currentArg));
             }
 
             bool no_difference = diff && diff->MaxElement() <= 1e-12;
@@ -1398,10 +1399,10 @@ _PMathObj _Formula::Compute(long startAt, _hyExecutionContext* execContext,
                                   nextOp->CanResultsBeCached(thisOp, true))) {
               DeleteObject(theStack.Pop());
               if (no_difference) {
-                theStack.Push((_PMathObj)(*resultCache)(cacheID + 1));
+                theStack.Push((*resultCache)(cacheID + 1));
               } else {
 
-                theStack.Push((_PMathObj)(*additionalCacheArguments)(0));
+                theStack.Push((*additionalCacheArguments)(0));
                 resultCache->Replace(cacheID, theStack.Pop(false), true);
                 resultCache->Replace(cacheID + 1,
                                      (*additionalCacheArguments)(0), false);
@@ -1470,7 +1471,7 @@ bool _Formula::CheckSimpleTerm(_PMathObj thisObj) {
     long oc = thisObj->ObjectClass();
     if (oc != NUMBER) {
       if (oc == MATRIX) {
-        _Matrix *mv = (_Matrix *)thisObj->Compute();
+        _Matrix *mv = _HY2MATRIX (thisObj->Compute());
         if (mv->IsIndependent() && !mv->SparseDataStructure()) {
           return true;
         }
@@ -1550,9 +1551,9 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm(bool makeComplex) {
 
     if (thisMatrix && thisMatrix->ObjectClass() == MATRIX)
       if (makeComplex) {
-        ((_Matrix*)thisMatrix)->MakeMeGeneral();
+         _HY2MATRIX (thisMatrix)->MakeMeGeneral();
       } else {
-        ((_Matrix*)thisMatrix)->MakeMeSimple();
+         _HY2MATRIX (thisMatrix)->MakeMeSimple();
       }
   }
 }
@@ -1828,7 +1829,7 @@ void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
       } else {
         _PMathObj op_load = theObj->GetPayload();
         if (op_load && op_load->ObjectClass() == MATRIX) {
-          ((_Matrix *)op_load)->ScanForVariables(l, includeGlobals, tagger, weight);
+           _HY2MATRIX (op_load)->ScanForVariables(l, includeGlobals, tagger, weight);
         }
       }
     }

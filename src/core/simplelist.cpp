@@ -83,7 +83,7 @@ _SimpleList::_SimpleList(unsigned long l) {
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList(_SimpleList &l, long from, long to) {
+_SimpleList::_SimpleList(const _SimpleList &l, long from, long to) {
   if (from == 0 && to == -1) { // copy the whole thing
     Duplicate(&l);
   } else {

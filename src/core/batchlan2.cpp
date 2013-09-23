@@ -704,6 +704,14 @@ _String _HYHBLTypeToText(long type) {
 }
 
 //______________________________________________________________________________
+_PMathObj _HYRetrieveBLObjectByNameFixedType (_String &name, long type, long *index,
+                                  bool errMsg, bool tryLiteralLookup) {
+   long t = type;
+   return _HYRetrieveBLObjectByName (name, t, index, errMsg, tryLiteralLookup);
+}
+
+
+//______________________________________________________________________________
 _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
                                   bool errMsg, bool tryLiteralLookup) {
   long loc = -1;
@@ -714,7 +722,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return dataSetList(loc);
+      return dynamic_cast<_PMathObj> (dataSetList(loc));
     }
   }
 
@@ -725,7 +733,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return dataSetFilterList(loc);
+      return dynamic_cast<_PMathObj> (dataSetFilterList(loc));
     }
   }
 
@@ -736,7 +744,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return likeFuncList(loc);
+      return dynamic_cast<_PMathObj> (likeFuncList(loc));
     }
   }
 
@@ -747,7 +755,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return scfgList(loc);
+      return dynamic_cast<_PMathObj>(scfgList(loc));
     }
   }
 
@@ -758,7 +766,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return bgmList(loc);
+      return dynamic_cast<_PMathObj> (bgmList(loc));
     }
   }
 
@@ -773,7 +781,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
         *index = loc;
       }
       if (IsModelOfExplicitForm(loc)) {
-        return (BaseRef) modelMatrixIndices.lData[loc];
+        return (_PMathObj) (modelMatrixIndices(loc));
       }
       return LocateVar(modelMatrixIndices.lData[loc]);
     }
@@ -786,7 +794,7 @@ _PMathObj _HYRetrieveBLObjectByName(_String &name, long &type, long *index,
       if (index) {
         *index = loc;
       }
-      return batchLanguageFunctions(loc);
+      return dynamic_cast<_PMathObj>(batchLanguageFunctions(loc));
     }
   }
 

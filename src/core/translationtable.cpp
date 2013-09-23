@@ -428,7 +428,7 @@ bool _TranslationTable::TokenCode(const char token, long *receptacle,
 //______________________________________________________________________________
 void _TranslationTable::PrepareForChecks(void) {
   if (checkTable == NULL) {
-    checkTable = MemAllocate(256);
+    checkTable = new unsigned char [256];
   }
 
   memset(checkTable, 0, 256);

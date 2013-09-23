@@ -43,6 +43,8 @@
 #include "mathobj.h"
 #include "_hyExecutionContext.h"
 
+#define _HY2FSTRING(X) (dynamic_cast<_FString*>(X))
+
 //__________________________________________________________________________________
 
 class _FString : public _MathObject // strings encountered in formulas

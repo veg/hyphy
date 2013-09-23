@@ -130,8 +130,9 @@ BaseRef _FString::makeDynamic(void) {
 //______________________________________________________________________________
 void _FString::Duplicate(BaseRef o) {
   DeleteObject(theString);
-  _FString *m = (_FString *)o;
-  theString = (_String *)m->theString->makeDynamic();
+  _FString *m = _HY2FSTRING(o);
+  
+  theString = new _String (*(_String *)m->theString);
 }
 
 //______________________________________________________________________________
@@ -211,9 +212,9 @@ _PMathObj _FString::Join(_PMathObj p) {
   _List theStrings;
 
   if (p->ObjectClass() == MATRIX) {
-    ((_Matrix *)(p->Compute()))->FillInList(theStrings, true);
+    _HY2MATRIX (p->Compute())->FillInList(theStrings, true);
   } else if (p->ObjectClass() == ASSOCIATIVE_LIST) {
-    ((_AssociativeList *)(p->Compute()))->FillInList(theStrings);
+     _HY2ASSOCIATIVE_LIST(p->Compute())->FillInList(theStrings);
   }
 
   return new _FString((_String *)theStrings.Join(theString));
@@ -268,7 +269,7 @@ _PMathObj _FString::EqualRegExp(_PMathObj p, bool matchAll) {
 _PMathObj _FString::ReplaceReqExp(_PMathObj p) {
   if (theString && theString->sLength) {
     if (p->ObjectClass() == MATRIX) {
-      _Matrix *m = (_Matrix *)p;
+      _Matrix *m = _HY2MATRIX (p);
 
       if (m->IsAStringMatrix() && m->GetHDim() * m->GetVDim() >= 2) {
         _FString *theStr = (_FString *)m->GetFormula(0, 0)->Compute(),
@@ -627,7 +628,7 @@ _PMathObj _FString::Execute(long opCode, _PMathObj p, _PMathObj p2,
     }
 
     if (pVal < 0.0) {
-      return (_PMathObj) makeDynamic();
+      return dynamic_cast<_PMathObj> (makeDynamic());
     } else {
       _String *t = nil;
       if (CheckEqual(pVal, 2.0) || CheckEqual(pVal, 3.0) ||
@@ -705,7 +706,7 @@ _PMathObj _FString::Execute(long opCode, _PMathObj p, _PMathObj p2,
     _Formula f(cpyString);
     _PMathObj fv = f.Compute();
     if (fv && fv->ObjectClass() == NUMBER) {
-      return ((_Constant *)fv)->FormatNumberString(p, p2);
+      return fv->FormatNumberString(p, p2);
     } else {
       ReportWarning(_String("Failed to evaluate ") & *theString &
                     " to a number in call to Format (string...)");
@@ -754,7 +755,7 @@ _PMathObj _FString::Execute(long opCode, _PMathObj p, _PMathObj p2,
 _PMathObj _FString::MapStringToVector(_PMathObj p) {
 
   if (theString->sLength && p->ObjectClass() == MATRIX) {
-    _Matrix *factoringMatrix = (_Matrix *)p;
+    _Matrix *factoringMatrix =  _HY2MATRIX (p);
 
     if (factoringMatrix->IsAVector() && factoringMatrix->IsAStringMatrix()) {
       long mapper[255],

@@ -43,6 +43,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "simplelist.h"
 
+#define _HY2LIST(X) (dynamic_cast<_List*>(X))
+
 class _List : public virtual _SimpleList {
 
 public:

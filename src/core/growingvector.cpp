@@ -82,6 +82,7 @@ void _GrowingVector::Clear(void) {
 //______________________________________________________________________________
 void _GrowingVector::Duplicate(BaseRef obj) {
   _Matrix::Duplicate(obj);
-  used = ((_GrowingVector *)obj)->used;
-  isColumn = ((_GrowingVector *)obj)->isColumn;
+  _GrowingVector* copyFrom = dynamic_cast<_GrowingVector*>(obj);
+  used = copyFrom->used;
+  isColumn = copyFrom->isColumn;
 }

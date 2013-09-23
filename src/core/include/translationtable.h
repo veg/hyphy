@@ -72,7 +72,7 @@ public:
   _TranslationTable(_TranslationTable &);
   virtual ~_TranslationTable(void) {
     if (checkTable) {
-      free(checkTable);
+      delete [] checkTable;
     }
   }
   virtual BaseRef makeDynamic(void);
@@ -118,7 +118,7 @@ private:
   _String tokensAdded, baseSet;
 
   _SimpleList translationsAdded;
-  char *checkTable;
+  unsigned char *checkTable;
   // if null - then assume default translation table;
 };
 

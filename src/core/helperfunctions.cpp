@@ -116,6 +116,7 @@ bool GlobalStartup(void) {
   _hyApplicationGlobals.Insert(new _String(hyphyLibDirectory));
   _hyApplicationGlobals.Insert(new _String(platformDirectorySeparator));
   _hyApplicationGlobals.Insert(new _String(pathToCurrentBF));
+  _hyApplicationGlobals.Insert(new _String(useLastModel));
 
   _String dd(GetPlatformDirectoryChar());
 

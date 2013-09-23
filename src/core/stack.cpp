@@ -55,7 +55,7 @@ _Stack::~_Stack(void) {}
 
 //______________________________________________________________________________
 // push object onto the stack
-bool _Stack::Push(_PMathObj newObj, bool dup) {
+bool _Stack::Push(BaseRef newObj, bool dup) {
   if (dup)
     theStack << (newObj);
   else

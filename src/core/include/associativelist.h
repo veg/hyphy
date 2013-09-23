@@ -44,6 +44,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "avllistxl.h"
 #include "elementarycommand.h"
 
+
+#define _HY2ASSOCIATIVE_LIST(X) (dynamic_cast <_AssociativeList*> (X))
+
 class _AssociativeList : public virtual _MathObject {
 
 public:

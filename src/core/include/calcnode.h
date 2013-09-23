@@ -48,6 +48,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ROOTED_LEFT 1
 #define ROOTED_RIGHT 2
 
+#define _HY2CALCNODE(X) (dynamic_cast<_CalcNode*>(X))
+
 //_______________________________________________________________________________________________
 
 class _CalcNode : public _VariableContainer {

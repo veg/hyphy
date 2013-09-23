@@ -62,6 +62,7 @@
 #define     DIRICHLET_FLATTENING_CONST  0.5
 #define		MIN_SAMPLE_SIZE				5
 
+#define _HY2BGM(X) (dynamic_cast<_BayesianGraphicalModel*>(X))
 
 class _BayesianGraphicalModel : public virtual _LikelihoodFunction
 {

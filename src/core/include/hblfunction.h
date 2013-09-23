@@ -60,13 +60,18 @@
  
 //____________________________________________________________________________________
 
-class _HBLFunction : public _Variable, _ExecutionList  {
+class _HBLFunction : public virtual _MathObject, _ExecutionList  {
   
-  _HBLFunction          (const _String& id, _Trie& names, _List& values);
+  _HBLFunction          (_Trie& names, _List& values);
   virtual               ~_HBLFunction (void);
   
   _PMathObj             Call (const _Trie*, const _List *, _hyExecutionContext* = _hyDefaultExecutionContext);
   virtual               unsigned long        ObjectClass (void) {return HBL_FUNCTION; }
+  virtual               void Duplicate (BaseRef);
+  virtual               BaseRef toStr();
+  virtual               void    toFileStr(FILE*);
+  virtual               BaseRef makeDynamic ();
+  
   
 private:
   

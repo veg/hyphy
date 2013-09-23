@@ -176,6 +176,8 @@ public:
 /*      - calculate inside/outside probabilities of a given string  */
 /* ================================================================ */
 
+#define _HY2SCFG(X) (dynamic_cast<Scfg*>(X))
+
 class Scfg
 #ifdef _USE_HYPHY_HOOKS_
     : public virtual _LikelihoodFunction

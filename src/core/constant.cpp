@@ -203,7 +203,12 @@ _PMathObj _Constant::Raise (_PMathObj theObj)
                 WarnError (errMsg.sData);
             }
 
-        return     new _Constant (0.0);
+        if (expon != 0.0) {
+          return     new _Constant (0.0);
+        }
+        else {
+          return     new _Constant (1.0);
+        }
     }
 }
 

@@ -42,6 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "matrix.h"
 
+#define _HY2GROWINGVECTOR(X) (dynamic_cast <_GrowingVector*>(X))
+
 class _GrowingVector : public virtual _Matrix
                        // automatically growing matrix class
                        {

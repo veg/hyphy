@@ -123,6 +123,8 @@ struct  MSTCache {
 
 };
 
+#define _HY2LIKELIHOODFUNCTION(X) (dynamic_cast <_LikelihoodFunction*> (X))
+
 //_______________________________________________________________________________________
 
 class   _LikelihoodFunction: public virtual BaseObj
@@ -149,8 +151,8 @@ public:
 
     virtual void        Duplicate (BaseRef);         // duplicate an object into this one
 
-    _SimpleList&GetIndependentVars (void); // return a list of all indepenent variables
-    _SimpleList&GetDependentVars   (void); // get all dependent vars of this object
+    _SimpleList&GetIndependentVars (long = -1); // return a list of all indepenent variables
+    _SimpleList&GetDependentVars   (long = -1); // get all dependent vars of this object
     _SimpleList&GetCategoryVars    (void); // get all category variables
     void        GetGlobalVars      (_SimpleList&);
 
@@ -368,7 +370,7 @@ protected:
     void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, _Parameter&, _Parameter&);
 
     bool            HasBlockChanged       (long);
-    long            BlockLength           (long);
+    long            BlockLength           (const unsigned long) const;
     void            PartitionCatVars      (_SimpleList&, long);
     // 20090210: extract variable indices for category variables in i-th partition
     // and append them to _SimpleList
@@ -398,6 +400,10 @@ protected:
 
 
 private:
+
+    _DataSetFilter *GetIthFilter                (const unsigned long) const;
+    _TheTree       *GetIthTree                  (const unsigned long) const;
+    _Matrix        *GetIthEFV                   (const unsigned long) const;
 
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);
@@ -499,6 +505,15 @@ private:
     bool            HasPartitionChanged         (long);
     void            SetupParameterMapping       (void);
     void            CleanupParameterMapping     (void);
+    
+    _SimpleList    *categoryTravsersalVariableTypes (const unsigned long i)  {
+                          return _HY2SIMPLELIST ((*_HY2LIST (categoryTraversalTemplate (i)))(4));}
+
+    _SimpleList    *categoryTravsersalCategoryCounts (const unsigned long i)  {
+                          return _HY2SIMPLELIST ((*_HY2LIST (categoryTraversalTemplate (i)))(1));}
+
+    _List          *categoryTravsersalVariableReferences (const unsigned long i)  {
+                          return _HY2LIST ((*_HY2LIST (categoryTraversalTemplate (i)))(0));}
 
     _SimpleList     theTrees,
                     theDataFilters,

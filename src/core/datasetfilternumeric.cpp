@@ -43,10 +43,10 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
   _SimpleList baseFreqs;
 
   freqs->ConvertToSimpleList(baseFreqs);
-  dimension = ((_Matrix *)values(0))->GetVDim();
+  dimension = dynamic_cast<_Matrix *>(values(0))->GetVDim();
 
   theNodeMap.Populate(ds->GetNames().lLength, 0, 1);
-  theOriginalOrder.Populate(((_Matrix *)values(0))->GetHDim() / categoryCount,
+  theOriginalOrder.Populate(dynamic_cast<_Matrix *>(values(0))->GetHDim() / categoryCount,
                             0, 1);
 
   //theMap.Populate           (theFrequencies.lLength,0,1);
@@ -92,7 +92,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
     _SimpleList *sameScore = nil;
 
     if (f >= 0) {
-      sameScore = (_SimpleList *)siteIndices.GetXtra(f);
+      sameScore = dynamic_cast<_SimpleList *>(siteIndices.GetXtra(f));
       for (long k = 0; k < sameScore->lLength; k++) {
         bool fit = true;
         f = sameScore->lData[k];
@@ -146,7 +146,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
   for (long cc = 0; cc < categoryCount;
        cc++, refShifter += theOriginalOrder.lLength * dimension) {
     for (long spec = 0; spec < theNodeMap.lLength; spec++) {
-      _Matrix *specMatrix = (_Matrix *)values(spec);
+      _Matrix *specMatrix = dynamic_cast<_Matrix *>(values(spec));
       for (long site = 0; site < theFrequencies.lLength; site++)
         for (long state = 0; state < dimension; state++, storeHere++) {
           *storeHere = specMatrix->theData[refShifter + theMap.lData[site] * dimension + state];

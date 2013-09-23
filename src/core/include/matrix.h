@@ -62,6 +62,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HY_MATRIX_RANDOM_INVERSE_WISHART 04L
 #define _HY_MATRIX_RANDOM_MULTINOMIAL 05L
 
+#define _HY2MATRIX(X) (dynamic_cast <_Matrix*> (X))
+
+
 extern _Trie _HY_MatrixRandomValidPDFs;
 
 //_____________________________________________________________________________________________
@@ -320,7 +323,7 @@ public:
   // matrix of given dimensions and storage class (normal/sparse)
   // and storage type (pointer/array)
 
-  friend void DuplicateMatrix(_Matrix *, _Matrix *);
+  static void DuplicateMatrix(_Matrix *, _Matrix *);
   // an auxiliary function which duplicates a matrix
 
   _Parameter MaxElement(char doSum = 0, long * = nil);

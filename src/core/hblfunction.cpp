@@ -40,8 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hblfunction.h"
 #include "trieiterator.h"
 
-_HBLFunction :: _HBLFunction (const _String&id, _Trie& names, _List& values) :
-_Variable (id, true), _ExecutionList () {
+_HBLFunction :: _HBLFunction (_Trie& names, _List& values) : _ExecutionList () {
   if (names.countitems() != values.countitems()) {
     WarnError ("Internal Error in _HBLFunction :: _HBLFunction; the lengths of argument arrays must be the same");
   }

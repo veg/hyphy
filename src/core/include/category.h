@@ -55,6 +55,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define INFINITE_BOUND 1e10
 #endif
 
+#define _HY2CATEGORYVARIABLE(X) (dynamic_cast<_CategoryVariable*>(X))
+
 //__________________________________________________________________________________
 
 class _CategoryVariable : public _Variable {

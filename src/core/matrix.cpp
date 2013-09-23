@@ -1879,7 +1879,7 @@ bool _Matrix::IncreaseStorage(void) {
 }
 
 //______________________________________________________________________________
-void DuplicateMatrix(_Matrix *targetMatrix, _Matrix *sourceMatrix) {
+void _Matrix::DuplicateMatrix(_Matrix *targetMatrix, _Matrix *sourceMatrix) {
   if (targetMatrix == sourceMatrix) {
     return;
   }
@@ -2306,7 +2306,7 @@ _Matrix::_Matrix(_String &s, bool isNumeric, _VariableContainer *theP) {
 }
 
 //______________________________________________________________________________
-_Matrix::_Matrix(_Matrix &m) { DuplicateMatrix(this, &m); }
+_Matrix::_Matrix(_Matrix &m) { _Matrix::DuplicateMatrix(this, &m); }
 
 //______________________________________________________________________________
 _Matrix::_Matrix(_SimpleList &sl, long colArg) {

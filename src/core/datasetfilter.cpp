@@ -127,7 +127,7 @@ unsigned long _DataSetFilter::FindUniqueSequences(_SimpleList &indices,
 
       _SimpleList *sameScore = nil;
       if (f >= 0) {
-        sameScore = (_SimpleList *)sequenceHashes.GetXtra(f);
+        sameScore = dynamic_cast <_SimpleList*> (sequenceHashes.GetXtra(f));
         for (long k = 0; k < sameScore->lLength; k++) {
           bool fit = true;
           f = sameScore->lData[k];
@@ -299,7 +299,7 @@ void _DataSetFilter::SetFilter(_DataSet *ds, char unit,
 
   if (isFilteredAlready) {
     if ((Ptr) this == (Ptr) ds) {
-      firstOne = (_DataSetFilter *)makeDynamic();
+      firstOne = dynamic_cast <_DataSetFilter*> (makeDynamic());
       copiedSelf = true;
     } else {
       firstOne = (_DataSetFilter *)ds;
@@ -435,7 +435,7 @@ void _DataSetFilter::SetFilter(_DataSet *ds, char unit,
 
     if (f >= 0) {
 
-      sameScore = (_SimpleList *)siteIndices.GetXtra(f);
+      sameScore = dynamic_cast<_SimpleList*>(siteIndices.GetXtra(f));
       for (long k = 0; k < sameScore->lLength; k++) {
         bool fit = true;
         f = sameScore->lData[k];
@@ -938,7 +938,7 @@ _SimpleList *_DataSetFilter::CountAndResolve(long pattern, _Parameter *storage,
     if (ambStates.lLength) {
       _SimpleList ambResolutions(dimension, 0, 0);
       for (long t = 0; t < ambStates.lLength; t++) {
-        _SimpleList *stateResolutions = (_SimpleList *)ambStates(t);
+        _SimpleList *stateResolutions = dynamic_cast<_SimpleList *>(ambStates(t));
 
         if (!randomly) {
           long totalSum = 0, idx = 0;

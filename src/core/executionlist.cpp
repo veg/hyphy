@@ -146,7 +146,7 @@ BaseRef _ExecutionList::makeDynamic(void) {
   Res->errorState = errorState;
 
   if (result) {
-    Res->result = (_PMathObj) result->makeDynamic();
+    Res->result = dynamic_cast<_PMathObj> (result->makeDynamic());
   }
 
   return Res;
@@ -157,10 +157,10 @@ void _ExecutionList::Duplicate(BaseRef source) {
 
   _List::Duplicate(source);
 
-  _ExecutionList *s = (_ExecutionList *)source;
+  _ExecutionList *s = _HY2EXECUTIONLIST (source);
 
   if (s->result) {
-    s->result = (_PMathObj) result->makeDynamic();
+    s->result = dynamic_cast <_PMathObj> (result->makeDynamic());
   }
 
   errorHandlingMode = s->errorHandlingMode;
@@ -215,7 +215,7 @@ _String *_ExecutionList::FetchFromStdinRedirect(void) {
   }
   _String *sendBack = (_String *)stdinRedirect->GetXtra(d);
   sendBack->nInstances++;
-  stdinRedirect->Delete((*(_List *)stdinRedirect->dataList)(d), true);
+  stdinRedirect->Delete((* _HY2LIST(stdinRedirect->dataList))(d), true);
   return sendBack;
 }
 
@@ -254,7 +254,7 @@ _PMathObj _ExecutionList::Execute(void) // run this execution list
   setParameter(hyphyLibDirectory, &lp);
 
   if (stashed) {
-    stashed = (_FString *)stashed->makeDynamic();
+    stashed =  _HY2FSTRING (stashed->makeDynamic());
   }
   setParameter(pathToCurrentBF, &cfp);
 

@@ -43,9 +43,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "dataset.h"
 #include "site.h"
 
+#define _HY2DATASETFILTER(X) (dynamic_cast <_DataSetFilter*> (X))
+
 class _Site;
 
-class _DataSetFilter : public virtual BaseObj {
+class _DataSetFilter : public virtual _AssociativeList {
 
 public:
 
@@ -79,7 +81,7 @@ public:
     theNodeMap.Duplicate(&newMap);
   }
 
-  long NumberDistinctSites(void) { return theFrequencies.lLength; }
+  long NumberDistinctSites(void) const { return theFrequencies.lLength; }
 
   long NumberSpecies(void) { return theNodeMap.lLength; }
 
@@ -98,7 +100,7 @@ public:
   void ComputePairwiseDifferences(_Matrix &, long, long);
   _Matrix *ComputePairwiseDifferences(long, long, char = 0);
 
-  BaseRef GetMap(void) { return theNodeMap.lLength ? &theNodeMap : NULL; }
+  _SimpleList* GetMap(void) { return theNodeMap.lLength ? &theNodeMap : NULL; }
 
   virtual _String &operator()(unsigned long site, unsigned long pos);
   // site indexes unique sites

@@ -44,6 +44,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "growingvector.h"
 #include "datasetfilternumeric.h"
 
+#define _HY2TREE(X) (dynamic_cast<_TheTree*>(X))
+
+
 class _TheTree : public _TreeTopology {
 
   // theModel matrix of _TheTree contains the column matrix of probabilities,

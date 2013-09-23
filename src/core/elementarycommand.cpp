@@ -570,8 +570,8 @@ BaseRef _ElementaryCommand::toStr(void) {
       _String inputName((_String *)parameters(2)->toStr());
       result = result & " reading input from " & inputName;
       _AssociativeList *inputValues =
-          (_AssociativeList *)FetchObjectFromVariableByType(&inputName,
-                                                            ASSOCIATIVE_LIST);
+          (_AssociativeList *)dynamic_cast<_AssociativeList*>(FetchObjectFromVariableByType(&inputName,
+                                                            ASSOCIATIVE_LIST));
       if (inputValues) {
         result = result & '\n' & _String((_String *)inputValues->toStr());
       }
@@ -1023,8 +1023,9 @@ void _ElementaryCommand::ExecuteCase11(
   if (assumeList) {
     likelihoodFunctionSpec = new _List(parameters, 1, -1);
   } else {
-    _Matrix *matrixOfStrings = (_Matrix *)ProcessAnArgumentByType(
-        (_String *)parameters(1), chain.nameSpacePrefix, MATRIX);
+    _Matrix *matrixOfStrings = dynamic_cast<_Matrix *>(ProcessAnArgumentByType(
+        dynamic_cast<_String *>(parameters(1)), chain.nameSpacePrefix, MATRIX));
+        
     if (matrixOfStrings && matrixOfStrings->IsAStringMatrix()) {
       likelihoodFunctionSpec = new _List;
       matrixOfStrings->FillInList(*likelihoodFunctionSpec);
@@ -1051,8 +1052,10 @@ void _ElementaryCommand::ExecuteCase11(
 
     if (FindDataSetFilterName(
             AppendContainerName(*dataset, chain.nameSpacePrefix)) != -1) {
-      _TheTree *thisTree = (_TheTree *)FetchObjectFromVariableByType(
-          &AppendContainerName(*tree, chain.nameSpacePrefix), TREE);
+            
+      _TheTree *thisTree = dynamic_cast <_TheTree*> (FetchObjectFromVariableByType(
+          &AppendContainerName(*tree, chain.nameSpacePrefix), TREE));
+      
       if (thisTree) {
         _CalcNode *thisNode = thisTree->DepthWiseTraversal(true);
         if (!freq) { // no explicit frequency parameter; grab one from the tree
@@ -1164,7 +1167,8 @@ void _ElementaryCommand::ExecuteCase11(
     }
   } else {
     _LikelihoodFunction *lkf =
-        (_LikelihoodFunction *)likeFuncList(likeFuncObjectID);
+        dynamic_cast<_LikelihoodFunction*>(likeFuncList(likeFuncObjectID));
+        
     if (!lkf->Construct(passThisToLFConstructor, chain.nameSpacePrefix)) {
       KillLFRecord(likeFuncObjectID, false);
     }
@@ -1273,7 +1277,7 @@ void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
       return;
     }
 
-    ((_LikelihoodFunction *)likeFuncList(f))
+    dynamic_cast<_LikelihoodFunction *> (likeFuncList(f))
         ->Simulate(*ds, theExclusions, catValues, catNames);
 
     if (catValues) {
@@ -1289,7 +1293,7 @@ void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
     _String newCorpus = chain.AddNameSpaceToID(*(_String *)parameters(0));
     CheckReceptacleAndStore(
         &newCorpus, " SimulateDataSet (SCFG)", true,
-        new _FString(((Scfg *)scfgList(s2))->SpawnRandomString()), false);
+        new _FString(dynamic_cast<Scfg *> (scfgList(s2))->SpawnRandomString()), false);
   }
 }
 
@@ -1311,13 +1315,14 @@ void _ElementaryCommand::ExecuteCase38(_ExecutionList &chain, bool sample) {
     _DataSet *ds = (_DataSet *)checkPointer(new _DataSet);
     _String *dsName = new _String(
         AppendContainerName(*(_String *)parameters(0), chain.nameSpacePrefix));
-    _LikelihoodFunction *lf = ((_LikelihoodFunction *)likeFuncList(objectID));
+        
+    _LikelihoodFunction *lf = dynamic_cast <_LikelihoodFunction *> (likeFuncList(objectID));
 
     _Matrix *partitionList = nil;
     if (parameters.lLength > 2) {
       _String secondArg = *(_String *)parameters(2);
-      partitionList = (_Matrix *)ProcessAnArgumentByType(
-          &secondArg, chain.nameSpacePrefix, MATRIX);
+      partitionList = dynamic_cast<_Matrix *>(ProcessAnArgumentByType(
+          &secondArg, chain.nameSpacePrefix, MATRIX));
     }
     _SimpleList partsToDo;
     if (lf->ProcessPartitionList(partsToDo, partitionList,
@@ -1336,7 +1341,7 @@ void _ElementaryCommand::ExecuteCase38(_ExecutionList &chain, bool sample) {
           &AppendContainerName(*(_String *)parameters(0),
                                chain.nameSpacePrefix),
           " ReconstructAncestors (SCFG)", true,
-          new _FString(((Scfg *)scfgList(objectID))->BestParseTree()), false);
+          new _FString(dynamic_cast<Scfg *>(scfgList(objectID))->BestParseTree()), false);
     } else {
       errMsg = (((_String)("Likelihood Function/SCFG") & *likef &
                  _String(" has not been initialized")));
@@ -1454,7 +1459,7 @@ void _ElementaryCommand::ExecuteCase39(_ExecutionList &chain) {
         return;
       }
     } else {
-      _AssociativeList *stdinRedirect = (_AssociativeList *)inAVL;
+      _AssociativeList *stdinRedirect = dynamic_cast<_AssociativeList *>(inAVL);
 
       checkPointer(inArgAux = new _List);
       checkPointer(inArg = new _AVLListXL(inArgAux));
@@ -2402,7 +2407,7 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
         return;
       }
       //for (unsigned long k = 0; k < isExpressionBased
-      checkMatrix = (_Matrix *)isExpressionBased->Compute();
+      checkMatrix = dynamic_cast<_Matrix *> (isExpressionBased->Compute());
 
     } else {
 
@@ -2423,7 +2428,7 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
         return;
       }
 
-      checkMatrix = (_Matrix *)checkVar->GetValue();
+      checkMatrix = dynamic_cast <_Matrix *>(checkVar->GetValue());
 
     }
   }
@@ -2456,7 +2461,8 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
     return;
   }
 
-  checkMatrix = (_Matrix *)checkVar->GetValue();
+  checkMatrix = dynamic_cast <_Matrix *>(checkVar->GetValue());
+  
   if (checkMatrix->GetVDim() == 1) {
     if (checkMatrix->GetHDim() != matrixDim) {
       WarnError(*parameterName &
@@ -2556,29 +2562,29 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
   }
 }
 
-//______________________________________________________________________________
+  //______________________________________________________________________________
 void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
-
+  
   chain.currentCommand++;
-  // first check to see if matrix parameters here are valid
+    // first check to see if matrix parameters here are valid
   long f = LocateVarByName(AppendContainerName(*(_String *)parameters(3),
                                                chain.nameSpacePrefix)),
-       fixedLength = ProcessNumericArgument((_String *)parameters(2),
-                                            chain.nameSpacePrefix);
-
+  fixedLength = ProcessNumericArgument((_String *)parameters(2),
+                                       chain.nameSpacePrefix);
+  
   _String saveTheArg;
   _SimpleList sel, exclusions;
-
+  
   _Variable *holder;
-
+  
   if (fixedLength < 0) {
     fixedLength = 1;
     saveTheArg = *(_String *)parameters(2) &
-                 " should represent a non-negative integer in call to "
-                 "ChoiceList. The value was reset to 1";
+    " should represent a non-negative integer in call to "
+    "ChoiceList. The value was reset to 1";
     ReportWarning(saveTheArg);
   }
-
+  
   if (f >= 0) {
     holder = FetchVar(f);
     if (holder->ObjectClass() == NUMBER) {
@@ -2586,7 +2592,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
         exclusions << f;
       }
     } else if (holder->ObjectClass() == MATRIX) {
-      _Matrix *theExcl = (_Matrix *)holder->GetValue()->Compute();
+      _Matrix *theExcl = dynamic_cast<_Matrix *>(holder->GetValue()->Compute());
       for (long k = theExcl->GetHDim() * theExcl->GetVDim() - 1; k >= 0; k--) {
         f = (*theExcl)[k];
         if (f >= 0) {
@@ -2596,18 +2602,18 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
       exclusions.Sort();
     }
   }
-
+  
   holder = CheckReceptacle(
-      &AppendContainerName(*(_String *)parameters(0), chain.nameSpacePrefix),
-      "Choice List", true);
+                           &AppendContainerName(*(_String *)parameters(0), chain.nameSpacePrefix),
+                           "Choice List", true);
   holder->SetBounds(-2.0, holder->GetUpperBound());
-
+  
   bool validChoices = simpleParameters.lData[0] == 0;
-
-  // some data structure present - process accordingly
+  
+    // some data structure present - process accordingly
   if (simpleParameters.lData[0]) {
     saveTheArg = *(_String *)parameters(4);
-    // see if there is a "standard argument"
+      // see if there is a "standard argument"
     _List choices;
     if (saveTheArg == _String("LikelihoodFunction")) {
       parameters.Delete(4);
@@ -2615,14 +2621,14 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
         if (exclusions.BinaryFind(f) >= 0) {
           continue;
         }
-
+        
         if (likeFuncList.lData[f]) {
           _List thisPair;
           thisPair << likeFuncNamesList(f);
           _String likeFuncDesc("Likelihood Function \"");
           likeFuncDesc =
-              likeFuncDesc & *(_String *)likeFuncNamesList(f) & ("\".");
-
+          likeFuncDesc & *(_String *)likeFuncNamesList(f) & ("\".");
+          
           thisPair &&&likeFuncDesc;
           choices &&&thisPair;
         }
@@ -2631,54 +2637,52 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
       parameters &&&choices;
     } else {
       _String nmspName = AppendContainerName(saveTheArg, chain.nameSpacePrefix);
-      f = FindDataSetFilterName(nmspName);
-      if (f >= 0) {
+      
+      long      type = HY_BL_DATASET | HY_BL_DATASET_FILTER | HY_BL_MODEL,
+      objIDX;
+      
+      _PMathObj fetchedObject = _HYRetrieveBLObjectByName (AppendContainerName(saveTheArg, chain.nameSpacePrefix),
+                                                           type, &objIDX);
+      if (fetchedObject) {
         parameters.Delete(4);
-        _DataSetFilter *theFilter = (_DataSetFilter *)dataSetFilterList(f);
-        for (f = 0; f < theFilter->NumberSpecies(); f++) {
-          if (exclusions.BinaryFind(f) >= 0) {
-            continue;
-          }
-
-          _List thisPair;
-          thisPair << theFilter->GetData()->GetNames()(f);
-          _String spNumber("Taxon ");
-          spNumber = spNumber & (f + 1) & '(' &
-                     *(_String *)theFilter->GetData()->GetNames()(f) & ')';
-          thisPair &&&spNumber;
-          choices &&&thisPair;
-        }
-        validChoices = true;
-        parameters &&&choices;
-      } else {
-        f = FindDataSetName(nmspName);
-        if (f >= 0) {
-          parameters.Delete(4);
-          _DataSet *theSet = (_DataSet *)dataSetList(f);
-          for (f = 0; f < theSet->NoOfSpecies(); f++) {
-            if (exclusions.BinaryFind(f) >= 0) {
-              continue;
+        
+        switch (type) {
+          case HY_BL_DATASET: 
+          case HY_BL_DATASET_FILTER: {
+            
+            _DataSetFilter *theFilter = (type == HY_BL_DATASET) ? nil: dynamic_cast<_DataSetFilter *>(fetchedObject);
+            _DataSet *theSet = (type == HY_BL_DATASET) ? dynamic_cast<_DataSet *>(fetchedObject) : theFilter->GetData();
+            
+            unsigned long upto = (type == HY_BL_DATASET) ? theSet->NoOfSpecies(): theFilter -> NumberSpecies();
+            
+            for (unsigned long f = 0; f <upto; f++) {
+              if (exclusions.BinaryFind(f) >= 0) {
+                continue;
+              }
+              
+              long internal_index = (type == HY_BL_DATASET) ? f : theFilter->theNodeMap.GetElement (f);
+              
+              _List * thisPair = new _List;
+              (*thisPair) << theSet->GetNames()(internal_index);
+              
+              _String spNumber("Taxon ");
+              
+              spNumber = spNumber & (f + 1) & '(' &
+              *(_String *)theFilter->GetData()->GetNames()(f) & ')';
+              
+              (*thisPair) && &spNumber;
+              choices.AppendNewInstance (thisPair);
             }
-            _List thisPair;
-            thisPair << theSet->GetNames()(f);
-            _String spNumber("Taxon ");
-            spNumber = spNumber & (f + 1) & '(' &
-                       *(_String *)theSet->GetNames()(f) & ')';
-            thisPair &&&spNumber;
-            choices &&&thisPair;
+            validChoices = true;
+            parameters && &choices;
+            break;
           }
-          validChoices = true;
-          parameters &&&choices;
-        } else {
-          if (saveTheArg == lastModelParameterList) {
-            f = lastMatrixDeclared;
-          } else {
-            f = modelNames.Find(&nmspName);
-          }
-
-          if (f >= 0) {
-            parameters.Delete(4);
-            _Variable *theSet = LocateVar(modelMatrixIndices.lData[f]);
+          case HY_BL_MODEL: {
+            _Matrix *modelMatrix,*freqIndex;
+            bool mbf;
+            
+            RetrieveModelComponents (objIDX, modelMatrix, freqIndex, mbf);
+            
             _SimpleList modelParms;
             _String ts("All Parameters");
             _List tl;
@@ -2687,13 +2691,16 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
             tl &&&ts;
             choices &&&tl;
             _AVLList modelParmsA(&modelParms);
-            theSet->ScanForVariables(modelParmsA, false);
+            
+            modelMatrix->ScanForVariables(modelParmsA, false);
+            freqIndex->ScanForVariables (modelParmsA, false);
+            
             modelParmsA.ReorderList();
-            for (f = 0; f < modelParms.lLength; f++) {
+            for (unsigned f = 0; f < modelParms.lLength; f++) {
               if (exclusions.BinaryFind(f) >= 0) {
                 continue;
               }
-
+              
               _List thisPair;
               thisPair << LocateVar(modelParms.lData[f])->GetName();
               _String spNumber("Constrain parameter ");
@@ -2701,48 +2708,54 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               thisPair &&&spNumber;
               choices &&&thisPair;
             }
-            validChoices = true;
-            parameters &&&choices;
-          } else {
-            f = LocateVarByName(nmspName);
-            if (f >= 0) {
-              _Variable *theV = FetchVar(f);
-              if (theV->ObjectClass() == MATRIX) {
-                _Matrix *vM = (_Matrix *)theV->GetValue();
-                if (vM->IsAStringMatrix() && (vM->GetVDim() == 2)) {
-                  parameters.Delete(4);
-                  for (f = 0; f < vM->GetHDim(); f++) {
-                    if (exclusions.BinaryFind(f) < 0) {
-                      _Formula *f1 = vM->GetFormula(f, 0),
-                               *f2 = vM->GetFormula(f, 1);
-
-                      if (f1 && f2) {
-                        _PMathObj p1 = f1->Compute(), p2 = f2->Compute();
-
-                        if (p1 && p2 && (p1->ObjectClass() == STRING) &&
-                            (p2->ObjectClass() == STRING)) {
-                          _List thisPair;
-                          thisPair << ((_FString *)p1)->theString;
-                          thisPair << ((_FString *)p2)->theString;
-                          choices &&&thisPair;
-                        }
-                      }
+            
+          }
+        }
+        
+        validChoices = true;
+        parameters &&&choices;
+        
+      } else {
+        f = LocateVarByName(nmspName);
+        if (f >= 0) {
+          _Variable *theV = FetchVar(f);
+          if (theV->ObjectClass() == MATRIX) {
+            _Matrix *vM = dynamic_cast<_Matrix *>(theV->GetValue());
+            if (vM->IsAStringMatrix() && (vM->GetVDim() == 2)) {
+              parameters.Delete(4);
+              for (f = 0; f < vM->GetHDim(); f++) {
+                if (exclusions.BinaryFind(f) < 0) {
+                  _Formula *f1 = vM->GetFormula(f, 0),
+                  *f2 = vM->GetFormula(f, 1);
+                  
+                  if (f1 && f2) {
+                    _PMathObj p1 = f1->Compute(), p2 = f2->Compute();
+                    
+                    if (p1 && p2 && (p1->ObjectClass() == STRING) &&
+                        (p2->ObjectClass() == STRING)) {
+                      _List thisPair;
+                      thisPair << ((_FString *)p1)->theString;
+                      thisPair << ((_FString *)p2)->theString;
+                      choices &&&thisPair;
                     }
                   }
-                  validChoices = true;
-                  parameters &&&choices;
                 }
               }
+              validChoices = true;
+              parameters &&&choices;
+              
+              
             }
           }
         }
       }
     }
   }
-
+  
   if (validChoices) {
     long choice = -1;
-    _List *theChoices = (_List *)parameters(4);
+    _List *theChoices = dynamic_cast<_List *>(parameters(4));
+    
     if (fixedLength > theChoices->lLength) {
       _String e = "List of selections is too short in ChoiceList";
       acknError(e);
@@ -2751,7 +2764,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
         if (fixedLength == 1) {
           _String buffer(chain.FetchFromStdinRedirect());
           for (choice = 0; choice < theChoices->lLength; choice++)
-            if (buffer.Equal((_String *)(*(_List *)(*theChoices)(choice))(0))) {
+            if (buffer.Equal((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0))) {
               break;
             }
           if (choice == theChoices->lLength) {
@@ -2768,7 +2781,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               _String buffer(chain.FetchFromStdinRedirect());
               for (choice = 0; choice < theChoices->lLength; choice++)
                 if (buffer.Equal(
-                        (_String *)(*(_List *)(*theChoices)(choice))(0))) {
+                                 (_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0))) {
                   break;
                 }
               if (choice < theChoices->lLength && sel.Find(choice) == -1) {
@@ -2788,18 +2801,18 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               if (buffer.sLength) {
                 for (choice = 0; choice < theChoices->lLength; choice++)
                   if (buffer.Equal(
-                          (_String *)(*(_List *)(*theChoices)(choice))(0))) {
+                                   (_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0))) {
                     break;
                   }
-
+                
                 if (choice < theChoices->lLength && sel.Find(choice) == -1) {
                   sel << choice;
                 } else {
                   WarnError(
-                      _String("Not a valid (or duplicate) option: '") & buffer &
-                      "' passed to ChoiceList (with multiple selections) '" &
-                      ((_String *)parameters(1))->sData &
-                      "' using redirected stdin input");
+                            _String("Not a valid (or duplicate) option: '") & buffer &
+                            "' passed to ChoiceList (with multiple selections) '" &
+                            ((_String *)parameters(1))->sData &
+                            "' using redirected stdin input");
                   return;
                 }
               } else {
@@ -2816,39 +2829,39 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
 #if defined __HYPHYQT__
         SetStatusLine("Waiting for user selection.");
         _String *param = (_String *)parameters(1);
-
+        
         _SimpleList std(2, 0, 1), all(theChoices->lLength, 0, 1);
-
+        
         choice =
-            HandleListSelection(*theChoices, std, all, *param, sel, fixedLength,
-                                (Ptr) _hyPrimaryConsoleWindow);
+        HandleListSelection(*theChoices, std, all, *param, sel, fixedLength,
+                            (Ptr) _hyPrimaryConsoleWindow);
 #else
         _String *param = (_String *)parameters(1);
         printf("\n\n\t\t\t+");
-
+        
         for (f = 1; f < param->sLength + 1; f++) {
           printf("-");
         }
-
+        
         printf("+\n\t\t\t|%s|\n\t\t\t+", param->getStr());
-
+        
         for (f = 1; f < param->sLength + 1; f++) {
           printf("-");
         }
-
+        
         printf("+\n\n");
-
+        
         long loopits = 1;
-
+        
         if (fixedLength == 1) {
           while (choice == -1) {
             for (choice = 0; choice < theChoices->lLength; choice++) {
               printf(
-                  "\n\t(%ld):[%s] %s", choice + 1,
-                  ((_String *)(*(_List *)(*theChoices)(choice))(0))->getStr(),
-                  ((_String *)(*(_List *)(*theChoices)(choice))(1))->getStr());
+                     "\n\t(%ld):[%s] %s", choice + 1,
+                     ((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0))->getStr(),
+                     ((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(1))->getStr());
             }
-
+            
             printf("\n\n Please choose an option (or press q to cancel "
                    "selection):");
             _String buffer(StringFromConsole());
@@ -2874,8 +2887,8 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               for (choice = 0; choice < theChoices->lLength; choice++) {
                 if (sel.Find(choice) == -1) {
                   printf("\n\t(%ld):%s", choice + 1,
-                         ((_String *)(*(_List *)(*theChoices)(choice))(1))
-                             ->getStr());
+                         ((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(1))
+                         ->getStr());
                 }
               }
               printf("\n\n Please choose option %ld of %ld (or press q to "
@@ -2904,10 +2917,10 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               for (choice = 0; choice < theChoices->lLength; choice++) {
                 if (sel.Find(choice) == -1) {
                   printf("\n\t(%ld):[%s] %s", choice + 1,
-                         ((_String *)(*(_List *)(*theChoices)(choice))(0))
-                             ->getStr(),
-                         ((_String *)(*(_List *)(*theChoices)(choice))(1))
-                             ->getStr());
+                         ((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0))
+                         ->getStr(),
+                         ((_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(1))
+                         ->getStr());
                 }
               }
               printf("\n\n Please choose option %ld, enter d to complete "
@@ -2921,7 +2934,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               if (buffer.sData[0] == 'd' || buffer.sData[0] == 'D') {
                 break;
               }
-
+              
               choice = buffer.toNum();
               if ((choice >= 1) && (choice <= theChoices->lLength)) {
                 if (sel.Find(choice) == -1) {
@@ -2939,13 +2952,12 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
 #endif
 #endif
       }
-
+      
       _Variable *sStrV = CheckReceptacle(&selectionStrings, empty, false);
-
+      
       if (fixedLength == 1) {
         if (choice >= 0) {
-          _FString choiceString(*(_String *)((_List *)(*theChoices)(choice))
-                                    ->lData[0]);
+          _FString choiceString(*(_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0));
           sStrV->SetValue(&choiceString);
           for (long k = 0; k < exclusions.lLength; k++) {
             if (choice >= exclusions.lData[k]) {
@@ -2971,9 +2983,9 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
         } else {
           for (f = 0; f < fixedLength; f++) {
             choice = sel.lData[f];
-
+            
             _FString *choiceString = new _FString(
-                (*(_String *)((_List *)(*theChoices)(choice))->lData[0]));
+                                                  *(_String *)(*dynamic_cast<_List*>((*theChoices)(choice)))(0));
             _Formula sf(choiceString);
             selMatrix.MStore(0, f, sf);
             for (long k = 0; k < exclusions.lLength; k++) {
@@ -2984,13 +2996,13 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
               }
             }
             selVector[f] = choice;
-            //DeleteObject (choiceString);
+              //DeleteObject (choiceString);
           }
           sStrV->SetValue(&selMatrix);
         }
         holder->SetValue(&selVector);
       }
-
+      
       if (choice < 0) {
         terminateExecution = true;
       }
@@ -2998,7 +3010,7 @@ void _ElementaryCommand::ExecuteCase32(_ExecutionList &chain) {
   } else {
     WarnError("List of selections is invalid in ChoiceList");
   }
-
+  
   if (simpleParameters.lData[0]) {
     parameters.Delete(4);
     parameters &&&saveTheArg;
@@ -3019,7 +3031,7 @@ void _ElementaryCommand::ExecuteCase36(_ExecutionList &chain) {
                   " is not a valid data set in call to OpenDataPanel");
     return;
   }
-  _DataSet *theDS = (_DataSet *)dataSetList(f);
+  _DataSet *theDS = dynamic_cast<_DataSet *>(dataSetList(f));
 
   // process species list
   result =
@@ -3163,7 +3175,7 @@ void _ElementaryCommand::ExecuteCase37(_ExecutionList &chain) {
     } else {
       f = likeFuncNamesList.Find(&objectNameID);
       if (f >= 0) { // it's a likelihood function
-        _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(f);
+        _LikelihoodFunction *lf =  dynamic_cast<_LikelihoodFunction*>(likeFuncList(f));
         f = lf->GetCategoryVars().lLength;
         if (f == 0) {
           f++;
@@ -3181,7 +3193,7 @@ void _ElementaryCommand::ExecuteCase37(_ExecutionList &chain) {
         if ((f = dataSetFilterNamesList.Find(&objectNameID)) >= 0) {
           // return a vector of strings - each with actual characters of the
           // corresponding sequence
-          _DataSetFilter *daFilter = (_DataSetFilter *)dataSetFilterList(f);
+          _DataSetFilter *daFilter = dynamic_cast <_DataSetFilter *>(dataSetFilterList(f));
           result = daFilter->GetFilterCharacters();
         } else {
           // it's a tree node with a rate matrix assigned
@@ -3395,13 +3407,13 @@ void _ElementaryCommand::ExecuteCase46(_ExecutionList &chain) {
   _String *arg1 = (_String *)parameters(1), *arg2 = (_String *)parameters(0),
           errMsg;
 
-  long k = dataSetFilterNamesList.Find(
-      &AppendContainerName(*arg1, chain.nameSpacePrefix));
+  long t = HY_BL_DATASET_FILTER;
+      
+  _DataSetFilter *dsf = dynamic_cast<_DataSetFilter*> 
+    (_HYRetrieveBLObjectByName (AppendContainerName(*arg1, chain.nameSpacePrefix), t, nil,true));
+                                              
 
-  if (k < 0) {
-    errMsg = *arg1 & " is not a defined data set filter ID ";
-  } else {
-    _DataSetFilter *dsf = (_DataSetFilter *)dataSetFilterList(k);
+  if (dsf) {
     _Variable *stVar = CheckReceptacle(
         &AppendContainerName(*arg2, chain.nameSpacePrefix), "GetDataInfo");
 
@@ -3409,7 +3421,7 @@ void _ElementaryCommand::ExecuteCase46(_ExecutionList &chain) {
       if (parameters.lLength == 2) {
         _Matrix *res = new _Matrix(1, dsf->duplicateMap.lLength, false, true);
         checkPointer(res);
-        for (k = 0; k < dsf->duplicateMap.lLength; k++) {
+        for (unsigned long k = 0; k < dsf->duplicateMap.lLength; k++) {
           res->theData[k] = dsf->duplicateMap.lData[k];
         }
         stVar->SetValue(res, false);
@@ -3419,9 +3431,9 @@ void _ElementaryCommand::ExecuteCase46(_ExecutionList &chain) {
                                                    chain.nameSpacePrefix);
           if (checker == _String("CHARACTERS")) {
             _List characters;
-            k = dsf->GetDimension(true);
+            unsigned long k = dsf->GetDimension(true);
             long fd = dsf->GetUnitLength();
-            for (long idx = 0; idx < k; idx++) {
+            for (unsigned long idx = 0; idx < k; idx++) {
               characters.AppendNewInstance(new _String(
                   dsf->ConvertCodeToLetters(dsf->CorrectCode(idx), fd)));
             }
@@ -3543,34 +3555,30 @@ void _ElementaryCommand::ExecuteCase47(_ExecutionList &chain) {
 
   _String *arg1 = (_String *)parameters(0), *arg2 = (_String *)parameters(1),
           errMsg;
+          
+  _LikelihoodFunction* lf = dynamic_cast<_LikelihoodFunction*> (_HYRetrieveBLObjectByNameFixedType (AppendContainerName(*arg1, chain.nameSpacePrefix),
+                    HY_BL_LIKELIHOOD_FUNCTION, nil, false, true));
 
-  long k = FindLikeFuncName(AppendContainerName(*arg1, chain.nameSpacePrefix));
-
-  if (k < 0) {
-    _String litArg = ProcessLiteralArgument(arg1, chain.nameSpacePrefix);
-    k = FindLikeFuncName(litArg);
-    if (k < 0) {
+  if (!lf) {
       errMsg = *arg1 & " is not a defined likelihood function ID ";
-    }
   }
 
   if (errMsg.sLength == 0) {
-    _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(k);
-    _String callBack = ProcessLiteralArgument(arg2, chain.nameSpacePrefix);
-
-    k = batchLanguageFunctionNames.Find(&callBack);
-
-    if (k < 0) {
+    long callback_idx;
+    
+    _PMathObj callback = _HYRetrieveBLObjectByNameFixedType (AppendContainerName(*arg2, chain.nameSpacePrefix),
+                                                             HY_BL_HBL_FUNCTION, &callback_idx, false, true);
+    
+    if (!callback) {
       errMsg = *arg2 & " is not a defined user batch language function ";
     } else {
-      if (batchLanguageFunctionParameters.lData[k] != 2) {
+      if (_HYFetchFunctionParameters(callback_idx)->countitems() != 2) {
         errMsg = *arg2 & " callback function must depend on 2 parameters ";
       } else {
-        lf->StateCounter(k);
+        lf->StateCounter(callback_idx);
       }
     }
   }
-
   if (errMsg.sLength) {
     errMsg = errMsg & " in call to StateCounter.";
     WarnError(errMsg);
@@ -3611,7 +3619,7 @@ void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 
   if (alphabet && treeVar && freqVar) {
     if (alphabet->ObjectClass() == MATRIX) {
-      _Matrix *alphabetMatrix = (_Matrix *)alphabet->GetValue();
+      _Matrix *alphabetMatrix = dynamic_cast<_Matrix*> (alphabet->GetValue());
 
       if (alphabetMatrix->IsAStringMatrix() && alphabetMatrix->GetHDim() == 2 &&
           alphabetMatrix->GetVDim() > 1) {
@@ -3758,7 +3766,7 @@ void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 
                       spawningTree->SetUp();
                       spawningTree->InitializeTreeFrequencies(
-                          (_Matrix *)freqVar->Compute(), true);
+                          dynamic_cast<_Matrix*>(freqVar->Compute()), true);
                       errMsg =
                           *(_String *)dataSetFilterNamesList(filterID) & ',' &
                           *spawningTree->GetName() & ',' & *freqVar->GetName();
@@ -5606,9 +5614,8 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
   if (dsID == -1) {
     dsID = (parameters.lLength > 2) ? FindDataSetFilterName(dataObjectID) : -1;
     if (dsID == -1) {
-      _AssociativeList *numericFilter =
-          (_AssociativeList *)FetchObjectFromVariableByType(&dataObjectID,
-                                                            ASSOCIATIVE_LIST);
+      _AssociativeList *numericFilter = _HY2ASSOCIATIVE_LIST (FetchObjectFromVariableByType(&dataObjectID,
+                                                            ASSOCIATIVE_LIST));
       if (numericFilter) {
         _String errCode;
 
@@ -5623,8 +5630,7 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
         _String namesKey("FILTER_NAMES"), dataKey("FILTER_ARRAYS"),
             freqKey("FILTER_FREQS");
 
-        _Matrix *sequenceNames =
-            (_Matrix *)numericFilter->GetByKey(namesKey, MATRIX);
+        _Matrix *sequenceNames = _HY2MATRIX(numericFilter->GetByKey(namesKey, MATRIX));
         _List seqNames;
         if (sequenceNames) {
           sequenceNames->FillInList(seqNames);
@@ -5634,10 +5640,10 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
                     namesKey & " argument in call to CreateFilter";
         } else {
           _AssociativeList *dataList =
-              (_AssociativeList *)numericFilter->GetByKey(dataKey,
-                                                          ASSOCIATIVE_LIST);
+              _HY2ASSOCIATIVE_LIST (numericFilter->GetByKey(dataKey,
+                                                          ASSOCIATIVE_LIST));
           _Matrix *freqList =
-              (_Matrix *)numericFilter->GetByKey(freqKey, MATRIX);
+              _HY2MATRIX (numericFilter->GetByKey(freqKey, MATRIX));
 
           if (dataList && freqList) {
             _List goodSeqs;
@@ -5650,7 +5656,8 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
                   freqKey & " argument in call to CreateFilter";
             } else {
               for (long k = 0; k < seqNames.lLength; k = k + 1) {
-                _Matrix *dataMx = (_Matrix *)dataList->GetByKey(k, MATRIX);
+                _Matrix *dataMx = _HY2MATRIX (dataList->GetByKey(k, MATRIX));
+                
                 if (dataMx && dataMx->MatrixType() == 1) {
                   if (categDim < 0) {
                     categDim = dataMx->GetVDim();
@@ -5677,8 +5684,7 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
                 errCode = (*(_String *)parameters(0)) & "_internal_ds";
                 dsID = FindDataSetName(errCode);
                 if (dsID < 0) {
-                  dataSetList << dummyDS;
-                  DeleteObject(dummyDS);
+                  dataSetList.AppendNewInstance (dummyDS);
                   dataSetNamesList &&&errCode;
                 } else {
                   dataSetList.Replace(dsID, dummyDS, false);
@@ -5736,7 +5742,7 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
   _DataSetFilter *thedf;
 
   if (status != -1) {
-    thedf = (_DataSetFilter *)dataSetFilterList(status);
+    thedf = _HY2DATASETFILTER (dataSetFilterList(status));
   } else {
     thedf = new _DataSetFilter();
     checkPointer(thedf);
@@ -5760,14 +5766,14 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
   vL.RequestSpace(1024);
 
   if (!isFilter) {
-    dataset = (_DataSet *)dataSetList(dsID);
+    dataset = _HY2DATASET (dataSetList(dsID));
     dataset->ProcessPartition(hSpecs, hL, false);
     if (code != 6 && vSpecs.sLength == 0) {
       vSpecs = _String("0-") & _String(dataset->NoOfColumns() - 1);
     }
     dataset->ProcessPartition(vSpecs, vL, true);
   } else {
-    _DataSetFilter *dataset1 = (_DataSetFilter *)dataSetFilterList(dsID);
+    _DataSetFilter *dataset1 = _HY2DATASETFILTER (dataSetFilterList(dsID));
     dataset1->GetData()->ProcessPartition(
         hSpecs, hL, false, &dataset1->theNodeMap, &dataset1->theOriginalOrder);
 
@@ -5811,7 +5817,7 @@ void _ElementaryCommand::ExecuteDataFilterCases(_ExecutionList &chain) {
         GetStringFromFormula((_String *)parameters(5), chain.nameSpacePrefix);
     thedf->SetExclusions(&hSpecs);
   } else if ((code != 6) && isFilter) {
-    _DataSetFilter *df1 = (_DataSetFilter *)dataSetFilterList(dsID);
+    _DataSetFilter *df1 = _HY2DATASETFILTER (dataSetFilterList(dsID));
     if (df1->theExclusions.lLength) {
       thedf->theExclusions.Duplicate(&df1->theExclusions);
       thedf->SetDimensions();
@@ -5840,11 +5846,12 @@ void _ElementaryCommand::ExecuteCase21(_ExecutionList &chain) {
     _Matrix *partitionList = nil;
     if (parameters.lLength > 3) {
       _String secondArg = *(_String *)parameters(3);
-      partitionList = (_Matrix *)ProcessAnArgumentByType(
-          &secondArg, chain.nameSpacePrefix, MATRIX);
+      partitionList = _HY2MATRIX (ProcessAnArgumentByType(
+          &secondArg, chain.nameSpacePrefix, MATRIX));
     }
     _SimpleList partsToDo;
-    _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(objectID);
+    _LikelihoodFunction *lf = _HY2LIKELIHOODFUNCTION (likeFuncList(objectID));
+    
     if (lf->ProcessPartitionList(partsToDo, partitionList,
                                  _hyStatusConditionProbsMatrix)) {
       char runMode = _hyphyLFConstructCategoryMatrixConditionals;
@@ -5862,16 +5869,14 @@ void _ElementaryCommand::ExecuteCase21(_ExecutionList &chain) {
       ob = lf->ConstructCategoryMatrix(partsToDo, runMode, true, &resultID);
     }
   } else {
-    _TheTree *testTree =
-        (_TheTree *)FetchObjectFromVariableByType(&objectName, TREE);
+    _TheTree *testTree = _HY2TREE (FetchObjectFromVariableByType(&objectName, TREE));
+    
     if (testTree) {
       long pid = 0;
       objectID = testTree->IsLinkedToALF(pid);
       if (objectID >= 0) {
-        _LikelihoodFunction *anLF =
-            (_LikelihoodFunction *)likeFuncList(objectID);
-        _DataSetFilter *dsf =
-            (_DataSetFilter *)dataSetFilterList(anLF->GetTheFilters()(pid));
+        _LikelihoodFunction *anLF = _HY2LIKELIHOODFUNCTION  (likeFuncList(objectID));
+        _DataSetFilter *dsf       = _HY2DATASETFILTER       (dataSetFilterList(anLF->GetTheFilters()(pid)));
         anLF->PrepareToCompute();
         anLF->Compute();
         objectID = dsf->NumberDistinctSites();
@@ -6145,8 +6150,8 @@ void _ElementaryCommand::ExecuteCase55(_ExecutionList &chain) {
             doCodon = c->Compute()->Value() > 0.5;
           }
 
-          _Matrix *scoreMatrix =
-              (_Matrix *)mappingTable->GetByKey(seqAlignScore, MATRIX);
+          _Matrix *scoreMatrix = _HY2MATRIX(mappingTable->GetByKey(seqAlignScore, MATRIX));
+          
           if (scoreMatrix && scoreMatrix->GetHDim() ==
                                  (doCodon ? codonCount + 1 : charCount) &&
               scoreMatrix->GetVDim() == scoreMatrix->GetHDim()) {
@@ -6161,14 +6166,15 @@ void _ElementaryCommand::ExecuteCase55(_ExecutionList &chain) {
                     *codon3x1 = nil;
 
             if (doCodon) {
-              codon3x5 = (_Matrix *)mappingTable->GetByKey(seqAlignGapCodon3x5,
-                                                           MATRIX);
-              codon3x4 = (_Matrix *)mappingTable->GetByKey(seqAlignGapCodon3x4,
-                                                           MATRIX);
-              codon3x2 = (_Matrix *)mappingTable->GetByKey(seqAlignGapCodon3x2,
-                                                           MATRIX);
-              codon3x1 = (_Matrix *)mappingTable->GetByKey(seqAlignGapCodon3x1,
-                                                           MATRIX);
+              codon3x5 = _HY2MATRIX (mappingTable->GetByKey(seqAlignGapCodon3x5,
+                                                           MATRIX));
+              codon3x4 = _HY2MATRIX (mappingTable->GetByKey(seqAlignGapCodon3x4,
+                                                           MATRIX));
+              codon3x2 = _HY2MATRIX (mappingTable->GetByKey(seqAlignGapCodon3x2,
+                                                           MATRIX));
+              codon3x1 = _HY2MATRIX (mappingTable->GetByKey(seqAlignGapCodon3x1,
+                                                           MATRIX));
+                                                           
               if (codon3x5 && codon3x4 && codon3x2 && codon3x1 &&
                   codon3x5->GetHDim() == codonCount + 1 &&
                   codon3x4->GetHDim() == codonCount + 1 &&
@@ -6802,9 +6808,9 @@ void _ElementaryCommand::ExecuteCase57(_ExecutionList &chain) {
     if (sv && sv->ObjectClass() == MATRIX) {
       if (nsv && nsv->ObjectClass() == MATRIX) {
         _Matrix *sMatrix =
-            (_Matrix *)((_Matrix *)sv->Compute())->ComputeNumeric();
-        _Matrix *nsMatrix =
-            (_Matrix *)((_Matrix *)nsv->Compute())->ComputeNumeric();
+            _HY2MATRIX (sv->Compute())->ComputeNumeric(),
+                *nsMatrix =
+            _HY2MATRIX (nsv->Compute())->ComputeNumeric();
 
         sMatrix->CheckIfSparseEnough(true);
         nsMatrix->CheckIfSparseEnough(true);
@@ -6812,9 +6818,10 @@ void _ElementaryCommand::ExecuteCase57(_ExecutionList &chain) {
         if (sMatrix->GetHDim() == sMatrix->GetVDim() &&
             nsMatrix->GetHDim() == nsMatrix->GetVDim() &&
             sMatrix->GetHDim() == nsMatrix->GetVDim()) {
-          _LikelihoodFunction *theLF = (_LikelihoodFunction *)likeFuncList(f);
+            
+          _LikelihoodFunction *theLF = _HY2LIKELIHOODFUNCTION (likeFuncList(f));
 
-          if (((_DataSetFilter *)dataSetFilterList(theLF->GetTheFilters()(0)))
+          if (_HY2DATASETFILTER (dataSetFilterList(theLF->GetTheFilters()(0)))
                   ->GetDimension(true) == sMatrix->GetHDim()) {
             long itCount = itCountV;
             if (itCount > 0) {
@@ -6950,10 +6957,11 @@ void _ElementaryCommand::ExecuteCase61(_ExecutionList &chain) {
         *(_String *)parameters(2) &
         " in a call to SCFG = ... must be evaluate to associative arrays");
   } else {
-    Scfg *scfg = new Scfg((_AssociativeList *)avl1, (_AssociativeList *)avl2,
+    Scfg *scfg = new Scfg(_HY2ASSOCIATIVE_LIST(avl1), _HY2ASSOCIATIVE_LIST(avl2),
                           start ? start->Value() : 0);
     _String scfgName =
         AppendContainerName(*(_String *)parameters(0), chain.nameSpacePrefix);
+        
     long f = FindSCFGName(scfgName);
 
     if (f == -1) {
@@ -6963,9 +6971,8 @@ void _ElementaryCommand::ExecuteCase61(_ExecutionList &chain) {
         }
 
       if (f == scfgNamesList.lLength) {
-        scfgList << scfg;
+        scfgList.AppendNewInstance (scfg);
         scfgNamesList &&(&scfgName);
-        DeleteObject(scfg);
       } else {
         scfgNamesList.Replace(f, &scfgName, true);
         scfgList.lData[f] = (long) scfg;
@@ -7044,7 +7051,7 @@ void _ElementaryCommand::ExecuteCase64(_ExecutionList &chain) {
               " in call to BGM = ... must evaluate to associative array");
   } else {
     _BayesianGraphicalModel *bgm =
-        new _BayesianGraphicalModel((_AssociativeList *)avl1);
+        new _BayesianGraphicalModel(_HY2ASSOCIATIVE_LIST (avl1));
 
     _String bgmName =
         AppendContainerName(*(_String *)parameters(0), chain.nameSpacePrefix);
@@ -7226,7 +7233,7 @@ _ElementaryCommand::HandleHarvestFrequencies(_ExecutionList &currentProgram) {
       hSpecs = *(_String *)parameters(6);
     }
 
-    _DataSet *dataset = (_DataSet *)sourceObject;
+    _DataSet *dataset = _HY2DATASET (sourceObject);
     _SimpleList hL, vL;
     dataset->ProcessPartition(hSpecs, hL, false);
     dataset->ProcessPartition(vSpecs, vL, true);
@@ -7235,7 +7242,7 @@ _ElementaryCommand::HandleHarvestFrequencies(_ExecutionList &currentProgram) {
 
   } else { // harvest from a DataSetFilter
     if (objectType == HY_BL_DATASET_FILTER) {
-      receptacle = ((_DataSetFilter *)sourceObject)->HarvestFrequencies(unit, atom, posspec, cghf > 0.5);
+      receptacle = _HY2DATASETFILTER(sourceObject)->HarvestFrequencies(unit, atom, posspec, cghf > 0.5);
     } else {
       errMsg = _String("'") & dataID & "' is neither a DataSet nor a DataSetFilter";
     }
@@ -7302,7 +7309,7 @@ bool _ElementaryCommand::HandleOptimizeCovarianceMatrix(
         // a list of variables stored as keys in an associative array
         if (restrictVariable->ObjectClass() == ASSOCIATIVE_LIST) {
           checkPointer(restrictor = new _SimpleList);
-          _List *restrictedVariables = ((_AssociativeList *)restrictVariable->GetValue())->GetKeys();
+          _List *restrictedVariables =  _HY2ASSOCIATIVE_LIST (restrictVariable->GetValue())->GetKeys();
           for (unsigned long iid = 0; iid < restrictedVariables->lLength; iid++) {
             _String varID = currentProgram.AddNameSpaceToID(*(_String *)(*restrictedVariables)(iid));
             variableIDs << LocateVarByName(varID);
@@ -7328,11 +7335,11 @@ bool _ElementaryCommand::HandleOptimizeCovarianceMatrix(
           }
         }
       }
-      result->SetValue((_Matrix *)lkf->CovarianceMatrix(restrictor), false);
+      result->SetValue(lkf->CovarianceMatrix(restrictor), false);
       DeleteObject(restrictor);
     } else {
       // BGM
-      _Matrix *optRes = (_Matrix *)lkf->CovarianceMatrix(nil);
+      _Matrix *optRes = _HY2MATRIX (lkf->CovarianceMatrix(nil));
       if (optRes) {
         result->SetValue(optRes, false);
       }
@@ -7419,8 +7426,8 @@ _ElementaryCommand::HandleSelectTemplateModel(_ExecutionList &currentProgram) {
     _String filterName(
         currentProgram.AddNameSpaceToID(*(_String *)parameters(0)));
     long objectType = HY_BL_DATASET_FILTER;
-    _DataSetFilter *thisDF = (_DataSetFilter *)_HYRetrieveBLObjectByName(
-        filterName, objectType, nil, true);
+    _DataSetFilter *thisDF = _HY2DATASETFILTER (_HYRetrieveBLObjectByName(
+        filterName, objectType, nil, true));
     // decide what this DF is comprised of
 
     _String dataType;
@@ -7458,7 +7465,7 @@ _ElementaryCommand::HandleSelectTemplateModel(_ExecutionList &currentProgram) {
 
     for (unsigned long model_index = 0; model_index < templateModelList.lLength;
          model_index++) {
-      _List *model_components = (_List *)templateModelList(model_index);
+      _List *model_components = _HY2LIST(templateModelList(model_index));
 
       if (dataType.Equal((_String *)model_components->GetItem(3))) {
         _String *dim = (_String *)model_components->GetItem(2);
@@ -7478,7 +7485,7 @@ _ElementaryCommand::HandleSelectTemplateModel(_ExecutionList &currentProgram) {
     if (currentProgram.stdinRedirect) {
       errMsg = currentProgram.FetchFromStdinRedirect();
       for (model_id = 0; model_id < matchingModels.lLength; model_id++)
-        if (errMsg.Equal((_String *)(*(_List *)templateModelList(matchingModels(model_id)))(0))) {
+        if (errMsg.Equal((_String *)(*_HY2LIST(templateModelList(matchingModels(model_id))))(0))) {
           break;
         }
 
@@ -7500,15 +7507,17 @@ _ElementaryCommand::HandleSelectTemplateModel(_ExecutionList &currentProgram) {
             printf("               +--------------------------+\n\n\n");
 
         for (model_id = 0; model_id < matchingModels.lLength; model_id++) {
-          printf("\n\t(%s):%s", ((_String *)(*(_List *)templateModelList(matchingModels(model_id)))(0))->getStr(),
-                 ((_String *)(*(_List *)templateModelList(matchingModels(model_id)))(1))->getStr());
+          _List * this_item = _HY2LIST(templateModelList(matchingModels(model_id)));
+          
+          printf("\n\t(%s):%s",((_String*) (*this_item)[0]) ->getStr(),
+                 ((_String*) (*this_item)[1]) ->getStr());
         }
         printf("\n\n Please type in the abbreviation for the model you want to use:");
         dataType.CopyDynamicString(StringFromConsole());
         dataType.UpCase();
         for (model_id = 0; model_id < matchingModels.lLength; model_id++) {
           if (dataType.Equal((_String *)(
-                  *(_List *)templateModelList(matchingModels(model_id)))(0))) {
+                  *_HY2LIST (templateModelList(matchingModels(model_id))))(0))) {
             break;
           }
         }
@@ -7529,7 +7538,7 @@ _ElementaryCommand::HandleSelectTemplateModel(_ExecutionList &currentProgram) {
 #endif
 #endif
     }
-    modelFile = _HYStandardDirectory(HY_HBL_DIRECTORY_TEMPLATE_MODELS) & *((_String *)(*(_List *)templateModelList(matchingModels(model_id)))(4));
+    modelFile = _HYStandardDirectory(HY_HBL_DIRECTORY_TEMPLATE_MODELS) & *((_String *)(*_HY2LIST (templateModelList(matchingModels(model_id))))(4));
     PushFilePath(modelFile, false);
   }
 
@@ -7648,12 +7657,12 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
   case HY_BL_BGM: { // BGM Branch
     currentArgument = (_String *)parameters(1);
 
-    _BayesianGraphicalModel *lkf = (_BayesianGraphicalModel *)theObject;
+    _BayesianGraphicalModel *lkf = _HY2BGM (theObject);
     // set data matrix
     if (currentArgument->Equal(&bgmData)) {
-      _Matrix *dataMx = (_Matrix *)FetchObjectFromVariableByType(
+      _Matrix *dataMx = _HY2MATRIX (FetchObjectFromVariableByType(
           &AppendContainerName(*(_String *)parameters(2),currentProgram.nameSpacePrefix),
-          MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+          MATRIX, HY_HBL_COMMAND_SET_PARAMETER));
 
       if (dataMx) {
         long num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
@@ -7672,8 +7681,8 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
     } else if (currentArgument->Equal(&bgmScores)) {
         // restore node score cache
       _AssociativeList *cacheAVL =
-          (_AssociativeList *)FetchObjectFromVariableByType(
-              &AppendContainerName(*(_String *)parameters(2),currentProgram.nameSpacePrefix),ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+          _HY2ASSOCIATIVE_LIST (FetchObjectFromVariableByType(
+              &AppendContainerName(*(_String *)parameters(2),currentProgram.nameSpacePrefix),ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER));
       if (cacheAVL) {
         ((_BayesianGraphicalModel *)lkf)->ImportCache(cacheAVL);
       } else {
@@ -7681,15 +7690,15 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
       }
     } else if (currentArgument->Equal(&bgmGraph)) {
         // set structure to user-specified adjacency matrix
-        _Matrix *graphMx = (_Matrix *)FetchObjectFromVariableByType(
+        _Matrix *graphMx = _HY2MATRIX (FetchObjectFromVariableByType(
             &AppendContainerName(*(_String *)parameters(2), currentProgram.nameSpacePrefix),
-            MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+            MATRIX, HY_HBL_COMMAND_SET_PARAMETER));
 
       if (graphMx) {
         long num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
 
         if (graphMx->GetHDim() == num_nodes && graphMx->GetVDim() == num_nodes) {
-            ((_BayesianGraphicalModel *)lkf)->SetStructure((_Matrix *)graphMx->makeDynamic());
+            ((_BayesianGraphicalModel *)lkf)->SetStructure(_HY2MATRIX (graphMx->makeDynamic()));
 
         } else {
           currentProgram.ReportAnExecutionError(
@@ -7702,15 +7711,15 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
 
     } else if (currentArgument->Equal(&bgmConstraintMx)) {
       // set constraint matrix
-      _Matrix *constraintMx = (_Matrix *)FetchObjectFromVariableByType(
+      _Matrix *constraintMx = _HY2MATRIX (FetchObjectFromVariableByType(
           &AppendContainerName(*(_String *)parameters(2), currentProgram.nameSpacePrefix),
-          MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+          MATRIX, HY_HBL_COMMAND_SET_PARAMETER));
 
       if (constraintMx) {
         long num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
 
         if (constraintMx->GetHDim() == num_nodes && constraintMx->GetVDim() == num_nodes) {
-          ((_BayesianGraphicalModel *)lkf)->SetConstraints((_Matrix *)constraintMx->makeDynamic());
+          _HY2BGM (lkf)->SetConstraints(_HY2MATRIX (constraintMx->makeDynamic()));
         } else {
           currentProgram.ReportAnExecutionError(
               "Dimensions of constraint matrix do not match current graph");
@@ -7721,24 +7730,22 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
       }
     } else if (currentArgument->Equal(&bgmNodeOrder)) {
        // set node order
-      _Matrix *orderMx = (_Matrix *)FetchObjectFromVariableByType(
+      _Matrix *orderMx = _HY2MATRIX (FetchObjectFromVariableByType(
           &AppendContainerName(*(_String *)parameters(2), currentProgram.nameSpacePrefix),
-          MATRIX, HY_HBL_COMMAND_SET_PARAMETER);
+          MATRIX, HY_HBL_COMMAND_SET_PARAMETER));
 
       if (orderMx) {
         // UNDER DEVELOPMENT  April 17, 2008 afyp
         long num_nodes = ((_BayesianGraphicalModel *)lkf)->GetNumNodes();
 
-        _SimpleList *orderList = new _SimpleList();
-
-        orderList->Populate(num_nodes, 0, 0);
+        _SimpleList orderList (num_nodes, 0, 0);
 
         if (orderMx->GetVDim() == num_nodes) {
           for (long i = 0; i < num_nodes; i++) {
-            orderList->lData[i] = (long)((*orderMx)(0, i));
+            orderList.lData[i] = (long)((*orderMx)(0, i));
           }
 
-          ((_BayesianGraphicalModel *)lkf)->SetNodeOrder((_SimpleList *)orderList->makeDynamic());
+          (_HY2BGM (lkf))->SetNodeOrder(&orderList);
 
         } else {
           currentProgram.ReportAnExecutionError("Length of order vector doesn't match number of nodes in graph");
@@ -7750,10 +7757,11 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
     } else if (currentArgument->Equal(&bgmParameters)) {
         // set network parameters
       _AssociativeList *inAVL =
-          (_AssociativeList *)FetchObjectFromVariableByType(
+              _HY2ASSOCIATIVE_LIST (FetchObjectFromVariableByType(
               &AppendContainerName(*(_String *)parameters(2),
                                    currentProgram.nameSpacePrefix),
-              ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER);
+              ASSOCIATIVE_LIST, HY_HBL_COMMAND_SET_PARAMETER));
+              
       if (inAVL) {
         ((_BayesianGraphicalModel *)lkf)->ImportCache(inAVL);
       } else {
@@ -7771,9 +7779,9 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
   case HY_BL_LIKELIHOOD_FUNCTION: {
     currentArgument = (_String *)parameters(1);
     if (typeFlag == HY_BL_SCFG && currentArgument->Equal(&scfgCorpus)) {
-      ((Scfg *)theObject)->SetStringCorpus((_String *)parameters(2));
+      (_HY2SCFG (theObject))->SetStringCorpus((_String *)parameters(2));
     } else {
-      _LikelihoodFunction *lkf = (_LikelihoodFunction *)theObject;
+      _LikelihoodFunction *lkf =  _HY2LIKELIHOODFUNCTION (theObject);
       currentArgument = (_String *)parameters(1);
       long g = ProcessNumericArgument(currentArgument, currentProgram.nameSpacePrefix);
 
@@ -7792,9 +7800,9 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
     _DataSet *ds = nil;
     long f = ProcessNumericArgument((_String *)parameters(1), currentProgram.nameSpacePrefix);
     if (typeFlag == HY_BL_DATASET) {
-      ds = (_DataSet *)theObject;
+      ds = _HY2DATASET(theObject);
     } else {
-      _DataSetFilter *dsf = (_DataSetFilter *)theObject;
+      _DataSetFilter *dsf = _HY2DATASETFILTER (theObject);
       ds = dsf->GetData();
       if (f >= 0 && f < dsf->theNodeMap.lLength) {
         f = dsf->theNodeMap.lData[f];
@@ -7818,7 +7826,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
   // Dataset and Datasetfilter
   default:
     // check to see if this is a calcnode
-    _CalcNode *treeNode = (_CalcNode *)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
+    _CalcNode *treeNode = _HY2CALCNODE (FetchObjectFromVariableByType(&nmspc, TREE_NODE));
     if (treeNode) {
       if (*((_String *)parameters(1)) == _String("MODEL")) {
 
@@ -7835,7 +7843,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &currentProgram) {
             return false;
           }
           long pID,
-              lfID = ((_TheTree *)parentTree->Compute())->IsLinkedToALF(pID);
+              lfID = _HY2TREE (parentTree->Compute())->IsLinkedToALF(pID);
           if (lfID >= 0) {
             currentProgram.ReportAnExecutionError(
                 (*parentTree->GetName()) &
@@ -8105,7 +8113,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
       resAVL->MStore("ID", new _FString(*result), false);
       resAVL->MStore(
           "Arguments",
-          new _Matrix(*(_List *)batchLanguageFunctionParameterLists(sID)),
+          new _Matrix(*_HYFetchFunctionParameters (sID)),
           false);
       theReceptacle->SetValue(resAVL, false);
       return true;
@@ -8135,7 +8143,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
     if (theObject) {
       switch (typeFlag) {
       case HY_BL_DATASET: {
-        _DataSet *dataSetObject = (_DataSet *)theObject;
+        _DataSet *dataSetObject = _HY2DATASET (theObject);
         if (sID >= 0 && sID < dataSetObject->NoOfSpecies()) {
           result = (_String *)(dataSetObject->GetNames())(sID)->makeDynamic();
         } else {
@@ -8147,7 +8155,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
         break;
       }
       case HY_BL_DATASET_FILTER: {
-        _DataSetFilter *dataSetFilterObject = (_DataSetFilter *)theObject;
+        _DataSetFilter *dataSetFilterObject = _HY2DATASETFILTER (theObject);
 
         if (sID >= 0 && sID < dataSetFilterObject->NumberSpecies()) {
           result = (_String *)(dataSetFilterObject->GetData()->GetNames())(
@@ -8167,7 +8175,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
       }
       case HY_BL_BGM: {
         //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
-        _BayesianGraphicalModel *this_bgm = (_BayesianGraphicalModel *)theObject;
+        _BayesianGraphicalModel *this_bgm = _HY2BGM (theObject);
 
         switch (sID) {
         case HY_HBL_GET_STRING_BGM_SCORE:
@@ -8200,7 +8208,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
       case HY_BL_LIKELIHOOD_FUNCTION:
       case HY_BL_SCFG: {
 
-        _LikelihoodFunction *lf = (_LikelihoodFunction *)theObject;
+        _LikelihoodFunction *lf = _HY2LIKELIHOODFUNCTION (theObject);
         if (sID >= 0) {
           if (sID < lf->GetIndependentVars().lLength) {
             result = (_String *)(LocateVar(lf->GetIndependentVars().lData[sID])->GetName())->makeDynamic();
@@ -8212,7 +8220,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
         } else {
           _AssociativeList *resList = lf->CollectLFAttributes();
           if (typeFlag == HY_BL_SCFG) {
-            ((Scfg *)lf)->AddSCFGInfo(resList);
+            _HY2SCFG (lf) ->AddSCFGInfo(resList);
           }
           theReceptacle->SetValue(resList, false);
           return true;
@@ -8234,8 +8242,8 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
 
           } else { // get the formula for cell (sID, sID2)
             if (!IsModelOfExplicitForm(index)) {
-              _Variable *theMx = (_Variable *)theObject;
-              _Formula *cellFla = ((_Matrix *)theMx->GetValue())->GetFormula(sID, sID2);
+              _Variable *theMx = _HY2VARIABLE (theObject);
+              _Formula *cellFla = _HY2MATRIX (theMx->GetValue())->GetFormula(sID, sID2);
               if (cellFla) {
                 result = new _String((_String *)cellFla->toStr());
               }
@@ -8249,7 +8257,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
 
           if (tV) {
             if (sID == -1) { // branch length expression
-              result = ((_Matrix *)tV->GetValue())->BranchLengthExpression((_Matrix *)tV2->GetValue(), mByF);
+              result = _HY2MATRIX (tV->GetValue())->BranchLengthExpression(_HY2MATRIX (tV2->GetValue()), mByF);
             } else /*
                        returns an AVL with keys
                        "RATE_MATRIX" - the ID of the rate matrix
@@ -8272,8 +8280,8 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
       case HY_BL_HBL_FUNCTION: {
         _AssociativeList *resAVL = (_AssociativeList *)checkPointer(new _AssociativeList);
         resAVL->MStore("ID", new _FString(*_HBLObjectNameByType(HY_BL_HBL_FUNCTION, index, false)), false);
-        resAVL->MStore("Arguments",new _Matrix(*(_List *)batchLanguageFunctionParameterLists(index)),false);
-        resAVL->MStore("Body", new _FString(((_ExecutionList *)batchLanguageFunctions(index))->sourceText, false), false);
+        resAVL->MStore("Arguments",new _Matrix( *_HYFetchFunctionParameters(index)),false);
+        resAVL->MStore("Body", new _FString(_HYFetchFunctionBody (index)->sourceText, false), false);
         theReceptacle->SetValue(resAVL, false);
         return true;
       }
@@ -8319,8 +8327,8 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &currentProgram) {
                   (_AssociativeList *)checkPointer(new _AssociativeList);
               _List splitVars;
               SplitVariableIDsIntoLocalAndGlobal(vL, splitVars);
-              InsertVarIDsInList(resL, "Global", *(_SimpleList *)splitVars(0));
-              InsertVarIDsInList(resL, "Local", *(_SimpleList *)splitVars(1));
+              InsertVarIDsInList(resL, "Global", *(_HY2SIMPLELIST (splitVars(0))));
+              InsertVarIDsInList(resL, "Local", *(_HY2SIMPLELIST (splitVars(1))));
 
               theReceptacle->SetValue(resL, false);
               return true;
@@ -8380,15 +8388,15 @@ bool _ElementaryCommand::HandleExport(_ExecutionList &currentProgram) {
   } else {
     switch (typeFlag) {
     case HY_BL_LIKELIHOOD_FUNCTION: {
-      ((_LikelihoodFunction *)objectToExport)->SerializeLF(*outLF->theString);
+      _HY2LIKELIHOODFUNCTION (objectToExport)->SerializeLF(*outLF->theString);
       outLF->theString->Finalize();
       break;
     }
     case HY_BL_DATASET_FILTER: {
       outLF->theString->Finalize();
       DeleteObject(outLF->theString);
-      checkPointer(outLF->theString = new _String(
-          (_String *)((_DataSetFilter *)objectToExport)->toStr()));
+      outLF->theString = new _String(
+          (_String *)_HY2DATASETFILTER(objectToExport)->toStr());
       break;
     }
     case HY_BL_MODEL: {
