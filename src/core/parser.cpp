@@ -102,9 +102,10 @@ _Parameter twoOverSqrtPi = 2. / sqrtPi;
 //______________________________________________________________________________
 void DeleteTreeVariable(long, _SimpleList &, bool);
 
+
 //______________________________________________________________________________
 _Variable *LocateVar(long index) {
-  return (_Variable *)(((BaseRef *)variablePtrs.lData)[index]);
+  return _HY2VARIABLE (variablePtrs.GetItem(index));
 }
 
 //______________________________________________________________________________
@@ -143,7 +144,7 @@ void SplitVariableIDsIntoLocalAndGlobal(const _SimpleList &theList,
 
   for (unsigned long k = 0; k < theList.lLength; k++) {
     long varID = theList.lData[k];
-    (*(_SimpleList *)splitStorage(1 - LocateVar(varID)->IsGlobal())) << varID;
+    (*_HY2SIMPLELIST (splitStorage(1 - LocateVar(varID)->IsGlobal()))) << varID;
   }
 }
 
@@ -247,7 +248,7 @@ long LocateVarByName(_String &name) { return variableNames.Find(&name); }
 
 //______________________________________________________________________________
 _Variable *FetchVar(long index) {
-  return index >= 0 ? (_Variable *)variablePtrs(variableNames.GetXtra(index))
+  return index >= 0 ? _HY2VARIABLE (variablePtrs.GetItem(variableNames.GetXtra(index)))
                     : nil;
 }
 
@@ -910,9 +911,9 @@ void FinishDeferredSF(void) {
       }
     }
 
-    for (long j = 0; j < likeFuncList.lLength; j++)
+    for (unsigned long j = 0; j < likeFuncList.lLength; j++)
       if (((_String *)likeFuncNamesList(j))->sLength) {
-        _LikelihoodFunction *lf = (_LikelihoodFunction *)likeFuncList(j);
+        _LikelihoodFunction *lf = _HY2LIKELIHOODFUNCTION (likeFuncList(j));
         for (long k = 0; k < deferSetFormula->lLength; k++) {
           lf->UpdateIndependent(deferSetFormula->lData[k],
                                 deferIsConstant.lData[k]);

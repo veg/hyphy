@@ -948,7 +948,7 @@ void _Operation::ResolveDeferredAction (_hyExecutionContext* context ){
     else {
       if (operationKind == _HY_OPERATION_DEFERRED_INLINE) {
         Initialize (_HY_OPERATION_VALUE, _HY_OPERATION_INVALID_REFERENCE, _HY_OPERATION_INVALID_REFERENCE,
-                    (_PMathObj) LocateVar(reference)->Compute()->makeDynamic());
+                    dynamic_cast<_PMathObj> (LocateVar(reference)->Compute()->makeDynamic()));
       }
     }
 }

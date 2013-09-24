@@ -372,8 +372,8 @@ bool _TheTree::FinalizeNode(node<long> *nodie, long number, _String &nodeName,
             _Variable *tV, *tV2;
             bool mByF;
             RetrieveModelComponents(nodeModelID, tV, tV2, mByF);
-            _String *result = ((_Matrix *)tV->GetValue())
-                ->BranchLengthExpression((_Matrix *)tV2->GetValue(), mByF);
+            _String *result = (_HY2MATRIX (tV->GetValue()))
+                ->BranchLengthExpression(_HY2MATRIX (tV2->GetValue()), mByF);
             if (result->sLength) {
               expressionToSolveFor = new _Formula(*result);
               for (unsigned long cc = 0; cc < cNt.categoryVariables.lLength;
@@ -439,68 +439,44 @@ bool _TheTree::FinalizeNode(node<long> *nodie, long number, _String &nodeName,
 //______________________________________________________________________________
 _CalcNode *_TheTree::DepthWiseTraversal(bool init) {
   DepthWiseT(init);
-
-  if (currentNode) {
-    return (_CalcNode *)(((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________
 _CalcNode *_TheTree::DepthWiseTraversalRight(bool init) {
 
   DepthWiseTRight(init);
-
-  if (currentNode) {
-    return (_CalcNode *)(((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________
 _CalcNode *_TheTree::LeafWiseTraversal(bool init) {
   LeafWiseT(init);
-  if (currentNode) {
-    return (_CalcNode *)(
-        ((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________
 _CalcNode *_TheTree::StepWiseTraversal(bool init) {
   StepWiseT(init);
-
-  if (currentNode) {
-    return (_CalcNode *)(
-        ((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________
 _CalcNode *_TheTree::StepWiseTraversalLevel(long &level, bool init) {
   StepWiseTLevel(level, init);
-
-  if (currentNode) {
-    return (_CalcNode *)(
-        ((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________
 _CalcNode *_TheTree::DepthWiseTraversalLevel(long &level, bool init) {
   DepthWiseTLevel(level, init);
-
-  if (currentNode) {
-    return (_CalcNode *)(
-        ((BaseRef *)variablePtrs.lData)[currentNode->in_object]);
-  }
-  return nil;
+  return currentNode ? _HY2CALCNODE (variablePtrs.GetItem (currentNode->in_object)) 
+                     : nil;
 }
 
 //______________________________________________________________________________

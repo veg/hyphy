@@ -1071,9 +1071,14 @@ bool StoreADataSet(_DataSet *ds, _String *setName) {
     return false;
   }
 
-  long pos = FindDataSetName(*setName);
+  long pos;
+  
+  _DataSet *existingDS = _HY2DATASET (_HYRetrieveBLObjectByNameFixedType (*setName,
+          HY_BL_DATASET, &pos, false, false));
+  
+      FindDataSetName(*setName);
 
-  if (pos == -1) {
+  if (!existingDS) {
     dataSetNamesList << setName;
     dataSetList.AppendNewInstance(ds);
   } else {
@@ -1085,8 +1090,6 @@ bool StoreADataSet(_DataSet *ds, _String *setName) {
     }
 #endif
 
-    _DataSet *existingDS = (_DataSet *)dataSetList(pos);
-
     bool isDifferent =
         existingDS->NoOfSpecies() != ds->NoOfSpecies() ||
         existingDS->NoOfColumns() != ds->NoOfColumns() ||
@@ -1095,7 +1098,7 @@ bool StoreADataSet(_DataSet *ds, _String *setName) {
 
     for (long dfIdx = 0; dfIdx < dataSetFilterNamesList.lLength; dfIdx++)
       if (((_String *)dataSetFilterNamesList(dfIdx))->sLength) {
-        _DataSetFilter *aDF = (_DataSetFilter *)dataSetFilterList(dfIdx);
+        _DataSetFilter *aDF = _HY2DATASETFILTER (dataSetFilterList(dfIdx));
         if (aDF->GetData() == existingDS) {
           if (isDifferent) {
             ReportWarning(_String("Overwriting dataset '") & *setName &

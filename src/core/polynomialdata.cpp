@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "math.h"
 #include "polynoml.h"
 #include "polynomialdata.h"
+#include "stdlib.h"
 
 extern _Parameter dropPrecision, drop2Precision, topPolyCap, dropTerms,
     enforcePolyCap, *varCheckArray, dropThreshold, maximumPolyTermsPerVariable,

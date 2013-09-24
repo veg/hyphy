@@ -83,7 +83,7 @@ _SimpleList::_SimpleList(unsigned long l) {
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList(const _SimpleList &l, long from, long to) {
+_SimpleList::_SimpleList(_SimpleList &l, long from, long to) {
   if (from == 0 && to == -1) { // copy the whole thing
     Duplicate(&l);
   } else {
@@ -553,7 +553,7 @@ void _SimpleList::Displace(long start, long end, long delta) {
 }
 
 void _SimpleList::Duplicate(BaseRef theRef) {
-  _SimpleList *l = (_SimpleList *)theRef;
+  _SimpleList *l = _HY2SIMPLELIST (theRef);
   lLength = l->lLength;
   laLength = l->laLength;
   lData = l->lData;

@@ -722,30 +722,33 @@ _Matrix *_CalcNode::GetCompExp(long catID) {
 }
 
 //______________________________________________________________________________
+_CalcNode::_CalcNode (_CalcNode& sourceNode) {
+    _VariableContainer::Duplicate(&sourceNode);
+    res->categoryVariables.Duplicate((BaseRef) & categoryVariables);
+    //res->randomVariables.Duplicate ((BaseRef)&randomVariables);
+    res->categoryIndexVars.Duplicate((BaseRef) & categoryIndexVars);
+    //res->randomIndexVars.Duplicate ((BaseRef)&randomIndexVars);
+    res->theValue = theValue;
+    res->cBase = cBase;
+    if (cBase) {
+      res->theProbs = new _Parameter[cBase];
+      checkPointer(res->theProbs);
+      memcpy(res->theProbs, theProbs, sizeof(_Parameter) * cBase);
+    } else {
+      res->theProbs = nil;
+    }
+    res->compExp = compExp;
+    if (compExp) {
+      compExp->nInstances++;
+    }
+    res->referenceNode = referenceNode;
+    res->slaveNodes = slaveNodes;
+    return res;
+}
+
+//______________________________________________________________________________
 BaseRef _CalcNode::makeDynamic(void) {
-  _CalcNode *res = new (_CalcNode);
-  checkPointer(res);
-  res->_VariableContainer::Duplicate(this);
-  res->categoryVariables.Duplicate((BaseRef) & categoryVariables);
-  //res->randomVariables.Duplicate ((BaseRef)&randomVariables);
-  res->categoryIndexVars.Duplicate((BaseRef) & categoryIndexVars);
-  //res->randomIndexVars.Duplicate ((BaseRef)&randomIndexVars);
-  res->theValue = theValue;
-  res->cBase = cBase;
-  if (cBase) {
-    res->theProbs = new _Parameter[cBase];
-    checkPointer(res->theProbs);
-    memcpy(res->theProbs, theProbs, sizeof(_Parameter) * cBase);
-  } else {
-    res->theProbs = nil;
-  }
-  res->compExp = compExp;
-  if (compExp) {
-    compExp->nInstances++;
-  }
-  res->referenceNode = referenceNode;
-  res->slaveNodes = slaveNodes;
-  return res;
+    return new _CalcNode (*this);
 }
 
 //______________________________________________________________________________

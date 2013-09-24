@@ -127,7 +127,7 @@ void PopulateArraysForASimpleFormula(_SimpleList &vars,
     if (varValue->ObjectClass() == NUMBER) {
       values[k2].value = varValue->Value();
     } else {
-      values[k2].reference = (Ptr)((_Matrix *)varValue)->theData;
+      values[k2].reference = (Ptr)(_HY2MATRIX(varValue))->theData;
     }
   }
 }
@@ -410,7 +410,7 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
       newF.DuplicateReference(f2);
     } else {
       newF.theFormula.AppendNewInstance(
-          new _Operation((_PMathObj) f2->Compute(0, &localContext)->makeDynamic()));
+          new _Operation(_HY2MATHOBJ (f2->Compute(0, &localContext)->makeDynamic())));
     }
 
     long stackD = -1, last0 = 0;
@@ -431,10 +431,10 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
       _PMathObj lvalue = f->Compute(0, &localContext);
       f->theFormula.lLength = stackD;
       if (lvalue->ObjectClass() == MATRIX) {
-        mmx = (_Matrix *)lvalue;
+        mmx = _HY2MATRIX (lvalue);
       }
       if (lvalue->ObjectClass() == ASSOCIATIVE_LIST) {
-        mma = (_AssociativeList *)lvalue;
+        mma = _HY2ASSOCIATIVE_LIST (lvalue);
       }
       last0++;
     } else {
@@ -443,11 +443,11 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
 
       if (mmo) {
         if (mmo->ObjectClass() == MATRIX) {
-          mmx = (_Matrix *)(mmo->GetValue());
+          mmx = _HY2MATRIX (mmo->GetValue());
           ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
         } else {
           if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
-            mma = (_AssociativeList *)(mmo->GetValue());
+            mma = _HY2ASSOCIATIVE_LIST (mmo->GetValue());
             ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
           }
         }
@@ -473,7 +473,7 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
     }
 
     if (mmx) { // matrix LHS
-      _Matrix *mcoord = (_Matrix *)coordMx;
+      _Matrix *mcoord = _HY2MATRIX(coordMx);
 
       long hC = mcoord->theData[0], vC = mcoord->theData[1];
 
@@ -923,7 +923,7 @@ void ExportDepVariables(_String &glVars, _String &locVars,
 
       for (unsigned long i2 = 0; i2 < _globalVariablesList.lLength; i2++) {
         long updatedIndex = writeOrder.lData[i2];
-        _SimpleList *depList = (_SimpleList *)dependancyLists(i2);
+        _SimpleList *depList = _HY2SIMPLELIST (dependancyLists(i2));
         for (unsigned long i3 = 0; i3 < depList->lLength; i3++) {
           long i4 = _globalVariablesList.Find(depList->lData[i3]);
           if (i4 >= 0 && updatedIndex < writeOrder.lData[i4]) {

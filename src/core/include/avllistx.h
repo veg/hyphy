@@ -45,6 +45,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_____________________________________________________________________________
 
+#define _HY2AVLLISTX(X) (dynamic_cast<_AVLListX*>(X))
+
 class _AVLListX : public virtual _AVLList {
 
 public:

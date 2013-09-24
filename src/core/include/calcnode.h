@@ -69,6 +69,7 @@ public:
   // also should be passed the pointer to a container tree
 
   _CalcNode(_CalcNode *source, _VariableContainer *parentTree);
+  _CalcNode(_CalcNode&);
 
   virtual ~_CalcNode(void);
   virtual _PMathObj Compute(void);

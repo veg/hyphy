@@ -453,7 +453,7 @@ private:
     // allows the calculation of the probability vector while setting a specific interior branch
     // to a given sequence
 
-    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, const _SimpleList*, long);
+    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, _SimpleList*, long);
     /*
         SLKP 20090420
 
@@ -469,11 +469,11 @@ private:
         compute the log likelihood of the partition using the forward HMM algorithm with scaling
      */
 
-    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  const _SimpleList* , long );
+    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  _SimpleList* , long );
     /* Viterbi decoding for HMM; parameter meanings as in SumUpHiddenMarkov,
        except the first, which will store the optimal path to be returned */
 
-    _Parameter              SumUpSiteLikelihoods        (long, const _Parameter*, const _SimpleList&);
+    _Parameter              SumUpSiteLikelihoods        (long, const _Parameter*, _SimpleList&);
     /*
      SLKP 20090318
 

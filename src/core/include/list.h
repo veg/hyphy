@@ -116,7 +116,7 @@ public:
   * Element location functions - read only
   * used to avoid (*list)(3) which are hard to read
   */
-  virtual BaseRef GetItem(const unsigned long);
+  virtual BaseRef GetItem(const unsigned long) const;
 
   /**
   * Element location functions - read only

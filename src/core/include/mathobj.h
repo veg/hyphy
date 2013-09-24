@@ -48,6 +48,8 @@
 #include "hy_strings.h"
 #include "_hyExecutionContext.h"
 
+#define _HY2MATHOBJ(X) (dynamic_cast<_MathObject*>(X))
+
 class _MathObject : public virtual BaseObj //abstract math operations class
                     {
 
