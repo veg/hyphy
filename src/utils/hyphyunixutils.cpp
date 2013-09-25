@@ -4,7 +4,7 @@
 
 
 #ifndef __HYPHY_NO_CURL__
-#define __HYPHYCURL__
+//#define __HYPHYCURL__
 #endif
 
 #ifdef  __HYPHYCURL__
