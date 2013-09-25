@@ -158,7 +158,15 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
-set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
+set(DEFAULT_LIBRARIES dl pthread ssl)
+
+#-------------------------------------------------------------------------------
+# LIBCurl support
+#-------------------------------------------------------------------------------
+find_package(CURL)
+if(${CURL_FOUND})
+    set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} crypto curl")
+endif(${CURL_FOUND})
 
 #-------------------------------------------------------------------------------
 # gtest dependency
