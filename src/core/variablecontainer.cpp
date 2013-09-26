@@ -55,10 +55,15 @@ _VariableContainer::_VariableContainer(void) {
   gVariables = nil;
 }
 
+  //______________________________________________________________________________
+_VariableContainer::_VariableContainer(_VariableContainer& copyFrom) {
+  Duplicate(&copyFrom);
+}
+
 //______________________________________________________________________________
 void _VariableContainer::Duplicate(BaseRef theO) {
   _Variable::Duplicate(theO);
-  _VariableContainer *theVC = (_VariableContainer *)theO;
+  _VariableContainer *theVC = _HY2VARIABLECONTAINER(theO);
   theParent = theVC->theParent;
   theModel = theVC->theModel;
   if (theVC->iVariables) {
@@ -117,11 +122,7 @@ void _VariableContainer::TrimMemory() {
 
 //______________________________________________________________________________
 BaseRef _VariableContainer::makeDynamic(void) {
-  _VariableContainer *res = new _VariableContainer;
-  checkPointer(res);
-  memcpy((char *)res, (char *)this, sizeof(_VariableContainer)); // ???
-  res->Duplicate(this);
-  return res;
+  return new _VariableContainer(*this);
 }
 
 //______________________________________________________________________________
@@ -215,18 +216,18 @@ _Matrix *_VariableContainer::GetModelMatrix(_List *queue, _SimpleList *tags) {
       long currentQueueLength = ((_Formula *)modelMatrixIndices.lData[theModel])
           ->ExtractMatrixExpArguments(queue);
       if (currentQueueLength) {
-        for (long k = 0; k < currentQueueLength; k++)
+        for (unsigned long k = 0; k < currentQueueLength; k++)
           (*tags) << currentQueueLength;
         return nil;
       }
     }
-    _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.lData[theModel])
-        ->Compute();
+    _Matrix* result = _HY2MATRIX(((_Formula *)modelMatrixIndices.lData[theModel])
+        ->Compute());
     result->CheckIfSparseEnough(true);
     return result;
   }
 
-  return (_Matrix *)(LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
+  return _HY2MATRIX(LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
 }
 
 //______________________________________________________________________________
@@ -246,9 +247,9 @@ _Matrix *_VariableContainer::GetFreqMatrix(void) {
   if (theModel >= 0) {
     long freqID = modelFrequenciesIndices.lData[theModel];
     if (freqID >= 0) {
-      return (_Matrix *)(LocateVar(freqID)->GetValue());
+      return _HY2MATRIX(LocateVar(freqID)->GetValue());
     } else {
-      return (_Matrix *)(LocateVar(-freqID - 1)->GetValue());
+      return _HY2MATRIX(LocateVar(-freqID - 1)->GetValue());
     }
   }
   return nil;
@@ -274,7 +275,7 @@ void _VariableContainer::ScanModelBasedVariables(_String &fullName,
 
         long freqID = modelFrequenciesIndices.lData[theModel];
         if (freqID >= 0) {
-          ((_Matrix *)(LocateVar(freqID)->GetValue()))
+          _HY2MATRIX(LocateVar(freqID)->GetValue())
               ->ScanForVariables2(ma, true, -1, false);
         }
 
@@ -290,8 +291,8 @@ void _VariableContainer::ScanModelBasedVariables(_String &fullName,
 
     }
 
-    for (long i = 0; i < mVars.lLength; i++) {
-      _Variable *aVar = (_Variable *)variablePtrs(mVars.lData[i]);
+    for (unsigned long i = 0; i < mVars.lLength; i++) {
+      _Variable *aVar = LocateVar(mVars.lData[i]);
       if (aVar->IsGlobal()) {
         //if (curVar->IsIndependent())
         {

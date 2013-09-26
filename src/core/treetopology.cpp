@@ -2451,7 +2451,7 @@ BaseRef _TreeTopology::makeDynamic(void) {
   res->flatTree.Duplicate(&flatTree);
   res->flatCLeaves.Duplicate(&flatCLeaves);
   if (compExp) {
-    res->compExp = (_Matrix *)compExp->makeDynamic();
+    res->compExp = new _Matrix (*compExp);
   } else {
     res->compExp = nil;
   }
@@ -3107,8 +3107,11 @@ _AssociativeList *_TreeTopology::SplitsIdentity(_PMathObj p) {
 
   _FString *treeR = new _FString();
 
-  _Constant *bc = (_Constant *)BranchCount();
-  result->theData[0] = bc->Value();
+  long leaves, ints;
+  EdgeCount(leaves, ints);
+  ints --;
+
+  result->theData[0] = ints;
   result->theData[1] = -1;
 
   if (p && (p->ObjectClass() == TOPOLOGY || p->ObjectClass() == TREE)) {
@@ -3120,7 +3123,7 @@ _AssociativeList *_TreeTopology::SplitsIdentity(_PMathObj p) {
 
     ConvertToPSW(nameMap, &iNames, psw);
     ComputeClusterTable(clusters, psw);
-    if (((_TreeTopology *)p)->ConvertToPSW(nameMap, nil, psw2, true)) {
+    if (_HY2TREETOPOLOGY(p)->ConvertToPSW(nameMap, nil, psw2, true)) {
       _SimpleList workSpace;
       long leafCount = psw.Element(-2);
 
@@ -3219,8 +3222,6 @@ _AssociativeList *_TreeTopology::SplitsIdentity(_PMathObj p) {
     }
 
   }
-
-  DeleteObject(bc);
 
   _AssociativeList *resultList = new _AssociativeList;
   resultList->MStore("CLUSTERS", result, false);

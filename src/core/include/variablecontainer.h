@@ -54,6 +54,9 @@
 // other variables locally.
 
 class _Matrix;
+
+#define _HY2VARIABLECONTAINER(X) (dynamic_cast<_VariableContainer*>(X))
+
 class _VariableContainer : public _Variable {
 
   friend class _Operation;
@@ -62,6 +65,7 @@ class _VariableContainer : public _Variable {
 public:
 
   _VariableContainer(void);
+  _VariableContainer (_VariableContainer&);
   _VariableContainer(_String theName, _String theTmplt = "",
                      _VariableContainer *theP = nil);
   // name, matrix constructor, the parent (if there is one)

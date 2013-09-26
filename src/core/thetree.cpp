@@ -1399,6 +1399,52 @@ node<nodeCoord> *_TheTree::AlignedTipsMapping(bool first, bool respectRoot) {
   }
 }
 
+  //_______________________________________________________________________________________________
+
+void    _TheTree::MolecularClock (_String& baseNode, _List& varsToConstrain)
+{
+  node<long>* topNode = nil;
+  _CalcNode * curNode = StepWiseTraversal (true);
+  if (!baseNode.Length()) { // called Molecular Clock on the entire tree
+    topNode = &GetRoot();
+    _String*  childNameP;
+    if (rooted == ROOTED_LEFT) { // run separate constraint on the right child of the root
+      childNameP = LocateVar(theRoot->go_down(theRoot->get_num_nodes())->in_object)->GetName();
+      _String childName = childNameP->Cut(childNameP->Find('.')+1,-1);
+      MolecularClock (childName, varsToConstrain);
+    } else if (rooted == ROOTED_RIGHT) {
+      childNameP = LocateVar(theRoot->go_down(1)->in_object)->GetName();
+      _String childName = childNameP->Cut(childNameP->Find('.')+1,-1);
+      MolecularClock (childName, varsToConstrain);
+    }
+  } else {
+    baseNode = _String(".")&baseNode;
+    while (curNode) {
+      if (curNode->GetName()->endswith(baseNode)) {
+        topNode = currentNode;
+        break;
+      }
+      curNode = StepWiseTraversal();
+    }
+  }
+  
+  if (!topNode) {
+    WarnError (_String ("Molecular clock constraint has failed, since node '")
+               &baseNode
+               &"' is not a part of tree '"
+               &*GetName() & "'");
+  } else
+    for (unsigned long k=1; k<varsToConstrain.lLength; k++) {
+      long varIndex = LocateVarByName (*(_String*)varsToConstrain (k));
+      if (varIndex<0) {
+        WarnError (_String ("Molecular clock constraint has failed, since variable' ") &*(_String*)varsToConstrain (k) &"' is undefined.");
+        return ;
+      }
+      curNode->RecurseMC (variableNames.GetXtra(varIndex), topNode, true, rooted);
+    }
+}
+
+
 //______________________________________________________________________________
 void _TheTree::ScaledBranchReMapping(node<nodeCoord> *theNode, _Parameter tw) {
   theNode->in_object.h -= tw;
@@ -5658,3 +5704,149 @@ _Parameter _TheTree::Process3TaxonNumericFilter(_DataSetFilterNumeric *dsf,
   }
   return overallResult + myLog(currentAccumulator);
 }
+
+  //_______________________________________________________________________________________________
+
+bool     _TheTree::IntPopulateLeaves (_DataSetFilter* dsf, long index, long)
+  // assign proper values to leaf conditional probability vectors
+{
+  bool allGaps = true;
+  
+  for (unsigned long nodeCount = 0; nodeCount<flatLeaves.lLength; nodeCount++) {
+    _CalcNode * travNode = _HY2CALCNODE(flatCLeaves.GetItem(nodeCount));
+
+    allGaps &= ((travNode->lastState = dsf->Translate2Frequencies ((*dsf)(index,nodeCount), travNode->theProbs, true))<0);
+    if (allGaps) // check to see if all
+      for (long b = 0; b < cBase; b++)
+        if (travNode->theProbs[b] == 0.0) {
+          allGaps = false;
+          break;
+        }
+    
+    ((_CalcNode*)LocateVar((((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object)))->cBase=-1;
+  }
+  
+  return allGaps;
+}
+
+
+  //_______________________________________________________________________________________________
+
+void     _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, long lastIndex, _Matrix& resultMatrix)
+  // assume current values of all parameters
+  // return 2 sets of vectors for each branch
+  //   - top-down  conditionals
+  //   - bottom-up conditionals
+  //   resultMatrix is assumed to contain
+  //      uniqueSites X (flatLeaves.lLength+flatTree.lLength)*cBase*2 X categoryCount
+{
+  
+  long      globalShifter        = (flatLeaves.lLength+flatTree.lLength)*cBase,
+  catShifer             = dsf->NumberDistinctSites() * 2 * globalShifter;
+  
+  IntPopulateLeaves (dsf, index,lastIndex);
+  
+  /* pass 1; populate top-down vectors */
+  /* ugly top-bottom algorithm for debuggability and compactness */
+  
+  for (unsigned long catCount   = 0; catCount < categoryCount; catCount ++) {
+    _Parameter* currentStateVector = resultMatrix.theData + 2*globalShifter*index + catShifer*catCount,
+    *   vecPointer         = currentStateVector;
+    
+    for (unsigned  long nodeCount = 0; nodeCount<flatCLeaves.lLength; nodeCount++) {
+      _Parameter *leafVec     = _HY2CALCNODE(flatCLeaves.GetItem (nodeCount))->theProbs;
+      
+      for (long cc = 0; cc < cBase; cc++,vecPointer++) {
+        *vecPointer = leafVec[cc];
+      }
+    }
+    
+    for (unsigned  long iNodeCount = 0; iNodeCount < flatTree.lLength; iNodeCount++) {
+      node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
+      
+      for (unsigned  long cc = 0; cc < cBase; cc++,vecPointer++) {
+        _Parameter      tmp = 1.0;
+        for (unsigned  long nc = 0; nc < thisINode->nodes.length; nc++) {
+          _Parameter  tmp2 = 0.0;
+          _CalcNode   * child         = (_CalcNode*) LocateVar(thisINode->nodes.data[nc]->in_object);
+          _Parameter  * childSupport  = currentStateVector + child->nodeIndex*cBase,
+          * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
+          
+          for (long cc2 = 0; cc2 < cBase; cc2++) {
+            tmp2 += transMatrix[cc2] * childSupport[cc2];
+          }
+          
+          tmp *= tmp2;
+        }
+        *vecPointer = tmp;
+      }
+    }
+    RecoverNodeSupportStates2 (&GetRoot(),currentStateVector+globalShifter,currentStateVector,categoryCount>1?catCount:(-1));
+  }
+  /* pass 2; populate bottom-up vectors */
+  /* for this we need to traverse the tree pre-order */
+  /* because speed is not much of a concern, use a recursive call for compactness */
+  
+}
+
+  //_______________________________________________________________________________________________
+
+void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* resultVector, _Parameter* forwardVector, long catID)
+{
+  _CalcNode   * thisNodeC     = (_CalcNode*)LocateVar(thisNode->in_object);
+  _Parameter  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
+  
+  if (thisNode->parent) {
+    if (thisNode->parent->parent) {
+      for (unsigned long cc = 0; cc < cBase; cc++,vecPointer++) {
+        _Parameter tmp = 1.0;
+        for (unsigned long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
+          _Parameter  tmp2            = 0.0;
+          _CalcNode   * child         = (_CalcNode*)LocateVar (thisNode->parent->nodes.data[nc]->in_object);
+          bool          invert        = (child == thisNodeC);
+          if (invert) {
+            child = (_CalcNode*)LocateVar (thisNode->parent->in_object);
+          }
+          
+          _Parameter  * childSupport  = invert?resultVector + cBase*child->nodeIndex
+          :forwardVector + child->nodeIndex*cBase,
+          * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
+          
+          for (long cc2 = 0; cc2 < cBase; cc2++) {
+            tmp2 += transMatrix[cc2] * childSupport[cc2];
+          }
+          
+          tmp *= tmp2;
+        }
+        *vecPointer = tmp;
+      }
+    } else {
+      for (unsigned long cc = 0; cc < cBase; cc++,vecPointer++) {
+        _Parameter tmp = 1.0;
+        for (unsigned long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
+          _Parameter  tmp2            = 0.0;
+          _CalcNode   * child         = (_CalcNode*)LocateVar (thisNode->parent->nodes.data[nc]->in_object);
+          if (child != thisNodeC) {
+            _Parameter  * childSupport  = forwardVector + child->nodeIndex*cBase,
+            * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
+            
+            for (long cc2 = 0; cc2 < cBase; cc2++) {
+              tmp2 += transMatrix[cc2] * childSupport[cc2];
+            }
+            
+            tmp *= tmp2;
+          }
+        }
+        *vecPointer = tmp;
+      }
+    }
+  } else
+    for (unsigned long cc=0; cc<cBase; cc++) {
+      vecPointer [cc] = 1.0;
+    }
+  
+  for (long nc = 0; nc < thisNode->nodes.length; nc++) {
+    RecoverNodeSupportStates2 (thisNode->nodes.data[nc],resultVector,forwardVector,catID);
+  }
+}
+

@@ -72,8 +72,14 @@ void _Variable::Initialize(void) {
 }
 
 //______________________________________________________________________________
+
+_Variable::_Variable (_Variable& copyFrom) {
+  Duplicate (&copyFrom);
+}
+
+//______________________________________________________________________________
 void _Variable::Duplicate(BaseRef r) {
-  _Variable *v = (_Variable *)r;
+  _Variable *v = _HY2VARIABLE(r);
   //theFormula.Duplicate (&(v->theFormula));
   if (v->varFormula) {
     varFormula = new _Formula();
@@ -87,22 +93,19 @@ void _Variable::Duplicate(BaseRef r) {
   theValue = v->theValue;
   varValue = v->varValue;
   if (varValue) {
-    varValue->nInstances++;
+    varValue->AddAReference();
   }
   theIndex = v->theIndex;
   theName = v->theName;
-  theName->nInstances++;
+  theName->AddAReference();
   lowerBound = v->lowerBound;
   upperBound = v->upperBound;
-  //hasBeenChanged = v->hasBeenChanged;
   varFlags = v->varFlags;
 }
 
 //______________________________________________________________________________
 BaseRef _Variable::makeDynamic(void) {
-  _Variable *res = new _Variable;
-  res->Duplicate(this);
-  return res;
+  return new _Variable (*this);
 }
 
 //______________________________________________________________________________
@@ -223,13 +226,13 @@ _PMathObj _Variable::Compute(void) // compute or return the value
         return varValue;
       } else if (varFormula->HasChanged() || !varValue) {
         DeleteObject(varValue);
-        varValue = (_PMathObj) varFormula->Compute()->makeDynamic();
+        varValue = _HY2MATHOBJ(varFormula->Compute()->makeDynamic());
       }
 
       varFlags |= HY_DEP_V_COMPUTED;
     } else if (varFormula->HasChanged() || !varValue) {
       DeleteObject(varValue);
-      varValue = (_PMathObj) varFormula->Compute()->makeDynamic();
+      varValue = _HY2MATHOBJ(varFormula->Compute()->makeDynamic());
     }
 
   }
@@ -274,7 +277,7 @@ void _Variable::SetValue(_PMathObj theP, bool dup) {
         if (freeSlots.Find(i) >= 0) {
           continue;
         }
-        _Variable *theV = (_Variable *)variablePtrs(i);
+        _Variable *theV = LocateVar(i);
         if (theV->IsContainer()) {
           _VariableContainer *theVC = (_VariableContainer *)theV;
           if (!theVC->RemoveDependance(theIndex)) {
@@ -288,7 +291,7 @@ void _Variable::SetValue(_PMathObj theP, bool dup) {
       }
       for (i = 0; i < likeFuncList.lLength; i++)
         if (((_String *)likeFuncNamesList(i))->sLength) {
-          ((_LikelihoodFunction *)likeFuncList(i))->UpdateDependent(theIndex);
+          _HY2LIKELIHOODFUNCTION(likeFuncList(i))->UpdateDependent(theIndex);
         }
 
       //_Formula::Clear();
@@ -325,11 +328,11 @@ void _Variable::SetValue(_PMathObj theP, bool dup) {
     }
     if (valueClass == TREE) {
       variablePtrs.lData[theIndex] =
-          (long)(((_TheTree *)theP)->makeDynamicCopy(GetName()));
+          (long)(_HY2TREE(theP)->makeDynamicCopy(GetName()));
       DeleteObject(this);
     } else {
       if (dup) {
-        varValue = (_PMathObj) theP->makeDynamic();
+        varValue = _HY2MATHOBJ(theP->makeDynamic());
       } else {
         varValue = theP;
       }
@@ -397,7 +400,7 @@ void _Variable::SetBounds(_Parameter lb, _Parameter ub) {
 //______________________________________________________________________________
 void _Variable::EnsureTheValueIsInBounds(void) {
   if (ObjectClass() == NUMBER && IsIndependent()) {
-    _Constant *myValue = (_Constant *)Compute();
+    _PMathObj myValue = Compute();
     if (myValue->Value() < lowerBound) {
       SetValue(new _Constant(lowerBound), false);
     } else if (myValue->Value() > upperBound) {
@@ -410,22 +413,11 @@ void _Variable::EnsureTheValueIsInBounds(void) {
 void _Variable::ClearConstraints(void) {
   if (IsCategory()) {
     _Variable newVar(*GetName(), IsGlobal());
-    newVar.SetValue((_PMathObj) Compute()->makeDynamic(), false);
+    newVar.SetValue(_HY2MATHOBJ(Compute()->makeDynamic()), false);
     ReplaceVar(&newVar);
-    /*_Matrix * modelMatrix =
-    (_Matrix*)LocateVar(modelMatrixIndices.lData[1])->GetValue();
-    for (long k=0; k<4; k++)
-        for (long k2 = 0; k2<4; k2++)
-            if (k!=k2)
-            {
-                StringToConsole
-    (*(_String*)modelMatrix->GetFormula(k,k2)->toStr());
-                BufferToConsole ("\n");
-            }
-    */
   } else {
     if (!IsIndependent()) {
-      SetValue((_PMathObj) Compute()->makeDynamic(), false);
+      SetValue(_HY2MATHOBJ(Compute()->makeDynamic()), false);
     }
     SetBounds(DEFAULTLOWERBOUND, DEFAULTUPPERBOUND);
   }
@@ -454,7 +446,7 @@ void _Variable::SetFormula(_Formula &theF) {
   if (isAConstant) {
     _PMathObj theP = theF.Compute();
     if (theP) {
-      myF = new _Formula((_PMathObj) theP->makeDynamic(), false);
+      myF = new _Formula(_HY2MATHOBJ(theP->makeDynamic()), false);
     } else {
       return;
     }
@@ -533,7 +525,7 @@ void _Variable::SetFormula(_Formula &theF) {
       {
         for (long i = 0; i < likeFuncList.lLength; i++)
           if (((_String *)likeFuncNamesList(i))->sLength) {
-            ((_LikelihoodFunction *)likeFuncList(i))
+            _HY2LIKELIHOODFUNCTION(likeFuncList(i))
                 ->UpdateIndependent(theIndex, isAConstant);
           }
       }
@@ -602,7 +594,7 @@ void _Variable::MarkDone(void) {
 _PMathObj _Variable::ComputeReference(_PMathObj context) {
   _String reference_string(*GetName());
   reference_string =
-      AppendContainerName(reference_string, (_VariableContainer *)context);
+      AppendContainerName(reference_string, _HY2VARIABLECONTAINER(context));
 
   return new _FString(reference_string, false);
 }
@@ -632,7 +624,7 @@ long DereferenceString(_PMathObj v, _PMathObj context, char reference_type) {
     _String referencedVariable = *value->theString;
     if (reference_type == HY_STRING_LOCAL_DEREFERENCE && context) {
       referencedVariable = AppendContainerName(referencedVariable,
-                                               (_VariableContainer *)context);
+                                               _HY2VARIABLECONTAINER(context));
     }
     return LocateVarByName(referencedVariable);
   }

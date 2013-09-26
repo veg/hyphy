@@ -57,12 +57,15 @@
  
  
 */
- 
+
+#define _HY2HBLFUNCTION(X) (dynamic_cast<_HBLFunction*>(X))
+
 //____________________________________________________________________________________
 
 class _HBLFunction : public virtual _MathObject, _ExecutionList  {
   
   _HBLFunction          (_Trie& names, _List& values);
+  _HBLFunction          (_HBLFunction&);
   virtual               ~_HBLFunction (void);
   
   _PMathObj             Call (const _Trie*, const _List *, _hyExecutionContext* = _hyDefaultExecutionContext);

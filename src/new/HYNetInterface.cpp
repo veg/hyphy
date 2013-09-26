@@ -43,7 +43,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
         _Variable*    boundsMatrix              =   FetchVar  (LocateVarByName (*matrix));
 
         if (boundsMatrix && (boundsMatrix->ObjectClass() == MATRIX)) {
-            _Matrix  *    bmatrix               =   (_Matrix*)      boundsMatrix->GetValue ();
+            _Matrix  *    bmatrix               =   _HY2MATRIX(boundsMatrix->GetValue ());
 
             if (bmatrix->IsAStringMatrix() && (bmatrix->GetVDim () == 3)) {
                 _Variable*    modelMatrix           =   LocateVar       (modelMatrixIndices.lData[modelIdx]);
@@ -100,7 +100,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
                             _String             fName       = ProcessLiteralArgument (&ModelNNFile,nil);
                             FILE*               nnFile      = doFileOpen (fName.getStr(), "w");
                             if (nnFile) {
-                                _Matrix*            modelMatrix = (_Matrix*) LocateVar(modelMatrixIndices.lData[modelIdx])->GetValue();
+                                _Matrix*            modelMatrix = _HY2MATRIX(LocateVar(modelMatrixIndices.lData[modelIdx])->GetValue());
 
                                 _Parameter          mainSteps,
                                                     checkSteps,
@@ -156,8 +156,8 @@ void         TrainModelNN   (_String* model, _String* matrix)
                                     _Matrix             inData (mainSteps, variableMap.lLength, false, true);
                                     _Parameter          *md = inData.theData;
 
-                                    for (long matrixC = 0; matrixC < mainSteps; matrixC++) {
-                                        _Parameter  *   ed = ((_Matrix*)tIn (matrixC))->theData;
+                                    for (unsigned long matrixC = 0; matrixC < mainSteps; matrixC++) {
+                                        _Parameter  *   ed = _HY2MATRIX(tIn.GetItem(matrixC))->theData;
                                         fprintf (varSamples, "\n%g",*ed);
                                         *md = *ed;
                                         ed++;
@@ -181,7 +181,7 @@ void         TrainModelNN   (_String* model, _String* matrix)
                                         _Matrix outVector (mainSteps, 1, false, true);
 
                                         for (long oc = 0; oc < mainSteps; oc++) {
-                                            outVector.theData[oc] = ((_Matrix*)tOut(oc))->theData[cellCount];
+                                            outVector.theData[oc] = _HY2MATRIX(tOut.GetItem(oc))->theData[cellCount];
                                         }
 
                                         thisCell->studyAll (inData.theData, outVector.theData, mainSteps);
@@ -221,8 +221,8 @@ void         TrainModelNN   (_String* model, _String* matrix)
                                                 maxValE;
 
                                     for (long verCount = 0; verCount < checkSteps; verCount++) {
-                                        _Parameter*  inData     = ((_Matrix*)tIn(verCount))->theData,
-                                                     *  outData  = ((_Matrix*)tOut(verCount))->theData;
+                                        _Parameter*  inData     = _HY2MATRIX(tIn.GetItem (verCount))->theData,
+                                                  *  outData    = _HY2MATRIX(tOut.GetItem (verCount))->theData;
 
                                         for (long cellCount = 0; cellCount < fullDimension; cellCount++) {
                                             Net         *thisCell = matrixNet[cellCount];

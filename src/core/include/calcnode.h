@@ -229,10 +229,6 @@ typedef bool _HYTopologyTraversalFunction(node<long> *, Ptr);
 
 class _TheTree; // forward declaration for xlc
 
-//_______________________________________________________________________________________________
-#if USE_SCALING_TO_FIX_UNDERFLOW
-extern _Parameter scalingLogConstant;
-#endif
 
 //_______________________________________________________________________________________________
 

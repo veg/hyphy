@@ -58,6 +58,7 @@ public:
   _Variable(void);
   _Variable(const _String &, bool isG = false);            // name
   _Variable(const _String &, _String &, bool isG = false); // name and formula
+  _Variable(_Variable&);
 
   virtual ~_Variable(void);
 

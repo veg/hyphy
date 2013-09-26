@@ -266,7 +266,7 @@ long    DisplayListOfChoices (void)
     _List       categoryHeadings;
 
     for (choice = 0; choice< availableTemplateFiles.lLength; choice++) {
-        thisLine = (_String*)(*(_List*)availableTemplateFiles(choice))(2);
+        thisLine = (_String*)_HY2LIST(availableTemplateFiles(choice))->GetItem(2);
         if (thisLine->sData[0]=='!') {
             categoryDelimiters<<choice;
             fileAbbr = *thisLine;
@@ -279,8 +279,8 @@ long    DisplayListOfChoices (void)
     if (categoryDelimiters.lLength==0) {
         while (choice == -1) {
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                printf ("\n\t(%s):%s",((_String*)(*(_List*)availableTemplateFiles(choice))(0))->getStr(),
-                        ((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
+                printf ("\n\t(%s):%s",((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(0)))->getStr(),
+                        ((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(1)))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the file you want to use (or press ENTER to process custom batch file):");
             fgets (buffer,2048,stdin);
@@ -291,7 +291,7 @@ long    DisplayListOfChoices (void)
             }
             fileAbbr.UpCase();
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                if (fileAbbr.Equal((_String*)(*(_List*)availableTemplateFiles(choice))(0))) {
+                if (fileAbbr.Equal((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(0)))) {
                     break;
                 }
             }
@@ -349,7 +349,7 @@ long    DisplayListOfChoices (void)
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
-                    printf ("\n\t(%ld) %s",choice-start+1,((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
+                    printf ("\n\t(%ld) %s",choice-start+1,((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(1)))->getStr());
                 }
 
                 printf ("\n\n Please select the file you want to use (or press ENTER to return to the list of analysis types):");
@@ -386,7 +386,7 @@ long    DisplayListOfPostChoices (void)
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
                 printf ("\n\t(%ld):%s",choice+1,
-                        ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
+                        ((_String*)(_HY2LIST(availablePostProcessors(choice))->GetItem(0)))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
             fileAbbr = *StringFromConsole();
@@ -735,7 +735,7 @@ int main (int argc, char* argv[])
                 }
 
                 if (selection >= 0) {
-                    templ= templ&*(_String*)(*(_List*)availableTemplateFiles(selection))(2);
+                    templ= templ&*(_String*)_HY2LIST(availableTemplateFiles(selection))->GetItem(2);
                 }
 
                 PushFilePath (templ);
@@ -770,7 +770,7 @@ int main (int argc, char* argv[])
                 long choice = DisplayListOfPostChoices();
                 while (choice != -1) {
                     _ExecutionList postEx;
-                    argFile = *(_String*)(*(_List*)availablePostProcessors(choice-1))(1);
+                    argFile = *(_String*)_HY2LIST(availablePostProcessors(choice-1))->GetItem(1);
                     PushFilePath (argFile);
                     ReadBatchFile (argFile, postEx);
                     postEx.Execute();

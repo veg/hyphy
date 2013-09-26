@@ -327,19 +327,19 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
 
             if (num_parents == 0) {
                 if ((valuePtr = cache_import->GetByKey(keyString, NUMBER))) {
-                    (*node_scores) && (_Constant *) valuePtr;    // append duplicate
+                    (*node_scores) && valuePtr;    // append duplicate
                 } else {
                     errMsg = _String ("Expecting numerical value in associative list for key ") & keyString;
                 }
             } else if (num_parents == 1) {
                 if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
-                    (*node_scores) && (_Matrix *) valuePtr;
+                    (*node_scores) && valuePtr;
                 } else {
                     errMsg = _String ("Expecting matrix in associative list for key ") & keyString;
                 }
             } else {
                 if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
-                    (*node_scores) && (_NTupleStorage *) valuePtr;
+                    (*node_scores) && valuePtr;
                 } else {
                     errMsg = _String("Expecting matrix (_NTupleStorage) object in associative list for key ") & keyString;
                 }
@@ -704,7 +704,7 @@ _Parameter  _BayesianGraphicalModel::BottcherScore (_Matrix & yb, _Matrix & zbpa
 		return -A_LARGE_NUMBER;
 	}
 	
-    _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
+    _Matrix *           eigenvalues = _HY2MATRIX(eigen->GetByKey(0, MATRIX));
     _Parameter          log_det         = 0.;   // compute determinant on log scale to avoid overflow
 
     // determinant is product of eigenvalues (should be > 0 for positive definite matrices)

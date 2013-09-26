@@ -119,7 +119,7 @@ BaseObj *_Polynomial::makeDynamic(void) {
 
 //______________________________________________________________________________
 void _Polynomial::Duplicate(BaseRef tp) {
-  _Polynomial *p = (_Polynomial *)tp;
+  _Polynomial *p = dynamic_cast<_Polynomial*>(tp);
   variableIndex.Clear();
   variableIndex.Duplicate(&p->variableIndex);
   compList1.Duplicate(&p->compList1);
@@ -236,13 +236,11 @@ bool _Polynomial::Equal(_MathObject *m) {
   if (m->ObjectClass() == POLYNOMIAL || m->ObjectClass() == NUMBER) {
     _Polynomial *diff = (_Polynomial *)Sub(m);
     if (diff) {
-      _Constant *v = (_Constant *)diff->IsANumber(true);
-      if (v != nil) {
+      _PMathObj v = diff->IsANumber(true);
+      if (v) {
         result = fabs(v->Value()) < 1.e-6;
         DeleteObject(v);
       }
-      //_String * diffS = (_String*)diff->toStr();
-      //printf ("%s\n", diffS->getStr());
       DeleteObject(diff);
     }
 
@@ -910,7 +908,7 @@ _MathObject *_Polynomial::Mult(_MathObject *m) {
 
   if (objectT == NUMBER) { // a number or a monomial
     Convert2OperationForm();
-    _Parameter nb = ((_Constant *)m)->Value();
+    _Parameter nb = m->Value();
     if (nb == 0.0) {
       return new _Polynomial;
     }

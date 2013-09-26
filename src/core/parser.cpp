@@ -611,9 +611,8 @@ void InsertVar(_Variable *theV) {
   }
 
   if (freeSlots.lLength) {
-    theV->theIndex = freeSlots.lData[freeSlots.lLength - 1];
-    variablePtrs[theV->theIndex] = theV->makeDynamic();
-    freeSlots.Delete(freeSlots.lLength - 1);
+    theV->theIndex = freeSlots.Pop();
+    variablePtrs[theV->theIndex] = new _Variable (*theV);
   } else {
     theV->theIndex = variablePtrs.lLength;
     variablePtrs &&theV;

@@ -172,8 +172,12 @@ public:
                      _Parameter * = nil);
                      
   _Parameter Process3TaxonNumericFilter(_DataSetFilterNumeric *dsf,
-                                                long catID);
+                                                long catID = 0);
                    
+  bool        IntPopulateLeaves   (_DataSetFilter*, long, long);
+  void        RecoverNodeSupportStates        (_DataSetFilter*, long, long, _Matrix&);
+  void        RecoverNodeSupportStates2       (node<long>*,_Parameter*,_Parameter*,long);
+  
 
   bool AllBranchesHaveModels(long);
   void ScanSubtreeVars(_List &, char, _CalcNode *);

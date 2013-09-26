@@ -52,6 +52,32 @@ _HBLFunction :: _HBLFunction (_Trie& names, _List& values) : _ExecutionList () {
 _HBLFunction::~_HBLFunction (void) {
 }
 
+BaseRef _HBLFunction::toStr (void) {
+    // TBI
+  return new _String;
+}
+
+void _HBLFunction::toFileStr(FILE*) {
+    // TBI
+}
+
+
+BaseRef _HBLFunction::makeDynamic() {
+  return new _HBLFunction (*this);
+}
+
+void _HBLFunction::Duplicate(BaseRef src) {
+  _HBLFunction * srcF = _HY2HBLFUNCTION (src);
+  _ExecutionList::Duplicate (src);
+  _MathObject::Duplicate(src);
+  parameters.Duplicate (&srcF->parameters);
+  default_values.Duplicate (&srcF->default_values);
+}
+
+_HBLFunction :: _HBLFunction (_HBLFunction & from) {
+  Duplicate (&from);
+}
+
 _PMathObj _HBLFunction::Call (const _Trie* names_arguments, const _List* values, _hyExecutionContext * parent_context) {
   return NULL;
 }

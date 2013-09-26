@@ -386,6 +386,11 @@ void _DataSet::SetTranslationTable(_TranslationTable *newTT) {
 }
 
 //______________________________________________________________________________
+void _DataSet::Duplicate(BaseRef obj) {
+    // TBI
+}
+
+//______________________________________________________________________________
 void _DataSet::Finalize(void) {
   if (streamThrough) {
     fclose(streamThrough);
