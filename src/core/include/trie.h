@@ -92,6 +92,8 @@ public:
    * default (or if an empty string is passed), all ASCII characters are allowed
    * @return Nothing.
    */
+   
+   _Trie (_Trie&);
 
   virtual BaseRef toStr(void);
   /**

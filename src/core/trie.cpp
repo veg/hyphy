@@ -99,10 +99,12 @@ void _Trie::SetAlphabet(const _String *alphabet, bool doClear) {
 
 //______________________________________________________________________________
 BaseRef _Trie::makeDynamic(void) {
-  _Trie *newTrie = new _Trie();
-  newTrie->Duplicate(newTrie);
-  return newTrie;
+  return new _Trie (*this);
+}
 
+//______________________________________________________________________________
+_Trie::_Trie(_Trie & source) {
+  Duplicate(&source);
 }
 
 //______________________________________________________________________________
@@ -112,7 +114,7 @@ long _Trie::countitems(void) const {
 
 //______________________________________________________________________________
 void _Trie::Duplicate(BaseRef storage) {
-  _Trie *newTrie = (_Trie *)storage;
+  _Trie *newTrie = dynamic_cast<_Trie*>(storage);
   _String myAlphabet = Alphabet();
   newTrie->SetAlphabet(&myAlphabet, true);
   newTrie->_List::Duplicate((_List *)this);

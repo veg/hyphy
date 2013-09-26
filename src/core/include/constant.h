@@ -42,6 +42,8 @@
 
 #include "mathobj.h"
 
+#define _HY2CONSTANT(X) (dynamic_cast<_Constant*>(X))
+
 class _Constant : public virtual _MathObject // a numerical constant
                   {
 

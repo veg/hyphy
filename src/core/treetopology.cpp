@@ -344,10 +344,13 @@ _PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExec
           "Invalid (not a number) 2nd argument is call to $ for trees.");
       return new _MathObject;
     }
-    _Constant *cc = (_Constant *)TipCount();
-    long size = cc->Value() / p->Value();
+    
+    long leaves, ints;
+    EdgeCount(leaves, ints);
 
-    if ((size <= 4) || (size > cc->Value() / 2)) {
+    long size = leaves / p->Value();
+
+    if (size <= 4 || size > leaves / 2) {
       context->ReportError("Poor choice of the 2nd numeric agrument in to $ "
                            "for tree. Either the resulting cluster size is too "
                            "big(>half of the tree), or too small (<4)!");
@@ -359,26 +362,25 @@ _PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExec
     while (tol < size - 2) {
       _List *resL = SplitTreeIntoClusters(size, tol);
 
-      checkSize = cc->Value();
+      checkSize = leaves;
 
       if (resL->lLength) {
         _Matrix *mRes = new _Matrix(resL->lLength, 2, false, true);
         checkPointer(mRes);
 
-        for (long k = 0; k < resL->lLength; k++) {
-          _List *thisList = (_List *)(*resL)(k);
-          long nL = ((_Constant *)(*thisList)(1))->Value();
+        for (unsigned long k = 0; k < resL->lLength; k++) {
+          _List *thisList = _HY2LIST (resL->GetItem(k));
+          long nL = _HY2CONSTANT (thisList->GetItem(1)) ->Value();
           mRes->Store(k, 0, nL);
           mRes->Store(k, 1, thisList->lLength - 2);
           checkSize -= nL;
         }
 
         if (checkSize == 0) {
-          DeleteObject(cc);
           _Matrix selMatrix(1, resL->lLength, false, true);
           _List sortedList;
-          for (long k = 0; k < resL->lLength; k++) {
-            _List *thisList = (_List *)(*resL)(k);
+          for (unsigned long k = 0; k < resL->lLength; k++) {
+           _List *thisList = _HY2LIST (resL->GetItem(k));
             sortedList << (_String *)(*thisList)(0);
             _FString *choiceString = new _FString(*(_String *)(*thisList)(0));
             _Formula sf(choiceString);
@@ -403,8 +405,7 @@ _PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExec
       tol++;
     }
 
-    DeleteObject(cc);
-    return new _Matrix(1, 1, false, true);
+     return new _Matrix(1, 1, false, true);
   } break;
 
   case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
@@ -426,7 +427,7 @@ _PMathObj _TreeTopology::Execute(long opCode, _PMathObj p, _PMathObj p2, _hyExec
                            "to <= for trees/topologies.");
       return new _MathObject;
     }
-    _String res(((_TreeTopology *)p)->MatchTreePattern(this));
+    _String res(_HY2TREETOPOLOGY(p)->MatchTreePattern(this));
     return new _Constant(!res.beginswith("Unequal"));
     break;
   }
@@ -496,7 +497,7 @@ void _TreeTopology::FindCOTHelper(node<long> *aNode, long parentIndex,
 
   //bool        isRoot      = parentIndex < 0;
 
-  _SimpleList *childLeaves = (_SimpleList *)childLists(myIndex);
+  _SimpleList *childLeaves =_HY2SIMPLELIST(childLists.GetItem(myIndex));
 
   _Matrix *lookup = parentIndex >= 0 ? &distances : &rootDistances;
 
@@ -636,7 +637,8 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
       for (long ci = currentNode->get_num_nodes(); ci; ci--) {
         long childIndex = addressToIndexMap2.GetXtra(
             addressToIndexMap2.Find((BaseRef) currentNode->go_down(ci)));
-        _SimpleList *childLeaves = (_SimpleList *)childLists(childIndex);
+            
+        _SimpleList *childLeaves = _HY2SIMPLELIST (childLists.GetItem(childIndex));
 
         myLength = branchLengths.theData[childIndex];
 
@@ -666,7 +668,7 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
   for (long ci = theRoot->get_num_nodes(); ci; ci--) {
     long childIndex = addressToIndexMap2.GetXtra(
         addressToIndexMap2.Find((BaseRef) theRoot->go_down(ci)));
-    _SimpleList *childLeaves = (_SimpleList *)childLists(childIndex);
+    _SimpleList *childLeaves = _HY2SIMPLELIST (childLists.GetItem(childIndex));
     _Parameter myLength = branchLengths.theData[childIndex];
     for (long ci2 = 0; ci2 < childLeaves->lLength; ci2++) {
       tIndex = childLeaves->lData[ci2];
@@ -694,7 +696,7 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
 
   for (long ci = distances.GetHDim() - 1; ci >= 0; ci--) {
     _Parameter T = branchLengths.theData[ci];
-    _SimpleList *childLeaves = (_SimpleList *)childLists(ci);
+    _SimpleList *childLeaves = _HY2SIMPLELIST  (childLists.GetItem(ci));
     long ci2 = 0;
 
     if (CheckEqual(power, 2.0)) {
@@ -817,9 +819,8 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
   long iv, k = timeSplitsAVL.Traverser(tcache, iv, timeSplitsAVL.GetRoot());
 
   for (long pc = 0; k >= 0; k = timeSplitsAVL.Traverser(tcache, iv), pc++) {
-    timeSplitsAVL.SetXtra(k, pc);
     cotCDFPoints.Store(
-        pc, 0, ((_String *)(*((_List *)timeSplitsAVL.dataList))(k))->toNum());
+        pc, 0, ((_String*)timeSplitsAVL.Retrieve (k))->toNum());
   }
 
   for (long mxc = 0; mxc <= branchCount + leafCount; mxc++) {
@@ -840,7 +841,7 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
     for (long pc = timeSplitsAVL.GetXtra(k); k >= 0;
          k = timeSplitsAVL.Next(k, tcache), pc++) {
       _Parameter ub =
-          ((_String *)(*((_List *)timeSplitsAVL.dataList))(k))->toNum();
+          ((_String*)timeSplitsAVL.Retrieve (k))->toNum();
       if (ub < T1 || CheckEqual(T1, ub)) {
         cotCDFPoints.Store(pc, 1, cotCDFPoints(pc, 1) + 1);
       } else {
@@ -880,12 +881,10 @@ _AssociativeList *_TreeTopology::FindCOT(_PMathObj p)
         }
 
         _Parameter T = branchLengths.theData[branchIndex];
-        _SimpleList *childLeaves = (_SimpleList *)childLists(branchIndex);
+        _SimpleList *childLeaves = _HY2SIMPLELIST (childLists(branchIndex));
 
         _Parameter dTT = 0.0;
-        tSample -=
-            ((_String *)(*(_List *)lengthToIndexMap.dataList)(branchIndex))
-                ->toNum();
+        tSample -= ((_String*)lengthToIndexMap.Retrieve(branchIndex))->toNum();
 
         long ci2 = 0;
         for (long ci3 = 0; ci3 < leafCount; ci3++) {
@@ -918,10 +917,10 @@ _FString *_TreeTopology::Compare(_PMathObj p) {
   long objClass = p->ObjectClass();
 
   if (objClass == TREE || objClass == TOPOLOGY) {
-    _String cmp = CompareTrees((_TreeTopology *)p);
+    _String cmp = CompareTrees(_HY2TREETOPOLOGY (p));
     if (cmp.startswith(eqWithReroot)) {
       (*res->theString) = cmp.Cut(
-          eqWithReroot.sLength + ((_TreeTopology *)p)->GetName()->sLength + 1,
+          eqWithReroot.sLength + _HY2TREETOPOLOGY (p)->GetName()->sLength + 1,
           cmp.sLength - 2);
     } else if (cmp.startswith(eqWithoutReroot)) {
       (*res->theString) = _String(' ');
@@ -1056,7 +1055,7 @@ char _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
       for (k6 = 0; k6 < stSizes.lLength; k6++)
         // potential subtree match
         if (stSizes.lData[k6] == childNodes->lLength) {
-          _SimpleList *potMap = (_SimpleList *)nodeMap(k6);
+          _SimpleList *potMap = _HY2SIMPLELIST (nodeMap.GetItem(k6));
           long k7;
           for (k7 = 0; k7 < childNodes->lLength; k7++)
             if (potMap->lData[childNodes->lData[k7]] == 0) {
@@ -1096,7 +1095,7 @@ char _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
 
       for (long k8 = 0; k8 < stSizes.lLength; k8++) {
         if (stSizes.lData[k8] > 0) {
-          _SimpleList *potMap = (_SimpleList *)nodeMap(k8);
+          _SimpleList *potMap = _HY2SIMPLELIST (nodeMap.GetItem(k8));
           for (long k9 = 0; k9 < unmatchedPatterns.lLength; k9++) {
             if (rematchedPatterns.lData[k9] < 0) {
               _SimpleList *childNodes = (_SimpleList *)n1
@@ -1141,11 +1140,6 @@ char _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
           return 0;
         }
     }
-
-    /*_String nm1, nm2;
-    tree2->GetNodeName (n1,nm1);
-    GetNodeName (n2,nm2);
-    printf ("Node match %s, %s\n",  nm1.sData, nm2.sData, "\n");*/
 
     return 1;
   }
@@ -1196,7 +1190,7 @@ char _TreeTopology::internalTreeCompare(node<long> *n1, node<long> *n2,
             DeleteObject(patched);
           }
 
-          patched = (_SimpleList *)patternList(k);
+          patched = _HY2SIMPLELIST (patternList.GetItem(k));
           (*patched) << k1;
         }
       }
@@ -1204,10 +1198,9 @@ char _TreeTopology::internalTreeCompare(node<long> *n1, node<long> *n2,
         node<long> *dummy = new node<long>;
         checkPointer(dummy);
         dummy->parent = n1->parent;
-        _SimpleList *children = (_SimpleList *)patternList(k2),
+        _SimpleList *children = _HY2SIMPLELIST (patternList.GetItem(k2)),
                     *newLeaves = new _SimpleList;
 
-        checkPointer(newLeaves);
         dummy->in_object = (long) newLeaves;
 
         for (long k3 = 0; k3 < children->lLength; k3++) {
@@ -2293,7 +2286,7 @@ bool _TreeTopology::FinalizeNode(node<long> *nodie, long number,
   flatTree &&&nodeName;
   flatCLeaves &&&nodeParameters;
 
-  ((_GrowingVector *)compExp)->Store(nodeValue.ProcessTreeBranchLength());
+  _HY2GROWINGVECTOR (compExp)->Store(nodeValue.ProcessTreeBranchLength());
 
   nodeName = empty;
   nodeParameters = empty;
@@ -2324,7 +2317,7 @@ node<long> *_TreeTopology::FindNodeByName(_String *match) {
 //______________________________________________________________________________
 void _TreeTopology::AddANode(_PMathObj newNode) {
   if (newNode->ObjectClass() == ASSOCIATIVE_LIST) {
-    _AssociativeList *newNodeSpec = (_AssociativeList *)newNode;
+    _AssociativeList *newNodeSpec = _HY2ASSOCIATIVE_LIST (newNode);
     _FString *newName =
                  (_FString *)newNodeSpec->GetByKey(newNodeGraftName, STRING),
              *newLocation =

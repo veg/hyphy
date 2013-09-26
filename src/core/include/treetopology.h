@@ -42,6 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "calcnode.h"
 
+#define _HY2TREETOPOLOGY(X) (dynamic_cast<_TreeTopology*>(X))
+
 class _TreeTopology : public _CalcNode {
 
 protected:

@@ -724,26 +724,24 @@ _Matrix *_CalcNode::GetCompExp(long catID) {
 //______________________________________________________________________________
 _CalcNode::_CalcNode (_CalcNode& sourceNode) {
     _VariableContainer::Duplicate(&sourceNode);
-    res->categoryVariables.Duplicate((BaseRef) & categoryVariables);
+    categoryVariables.Duplicate((BaseRef) & sourceNode.categoryVariables);
     //res->randomVariables.Duplicate ((BaseRef)&randomVariables);
-    res->categoryIndexVars.Duplicate((BaseRef) & categoryIndexVars);
+    categoryIndexVars.Duplicate((BaseRef) & sourceNode.categoryIndexVars);
     //res->randomIndexVars.Duplicate ((BaseRef)&randomIndexVars);
-    res->theValue = theValue;
-    res->cBase = cBase;
+    theValue = sourceNode.theValue;
+    cBase = sourceNode.cBase;
     if (cBase) {
-      res->theProbs = new _Parameter[cBase];
-      checkPointer(res->theProbs);
-      memcpy(res->theProbs, theProbs, sizeof(_Parameter) * cBase);
+      theProbs = new _Parameter[cBase];
+      memcpy(theProbs, sourceNode.theProbs, sizeof(_Parameter) * cBase);
     } else {
-      res->theProbs = nil;
+      theProbs = nil;
     }
-    res->compExp = compExp;
+    compExp = sourceNode.compExp;
     if (compExp) {
-      compExp->nInstances++;
+      compExp->AddAReference();
     }
-    res->referenceNode = referenceNode;
-    res->slaveNodes = slaveNodes;
-    return res;
+    referenceNode = sourceNode.referenceNode;
+    slaveNodes = sourceNode.slaveNodes;
 }
 
 //______________________________________________________________________________

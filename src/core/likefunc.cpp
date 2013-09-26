@@ -208,9 +208,7 @@ void setComputingArrays(node<long> *, node<long> *, _SimpleList &,
                         _SimpleList &, _SimpleList &, _SimpleList &,
                         _SimpleList &, long &);
 
-#ifdef __MP__
-void *StateCounterMP(void *);
-#endif
+
 _SimpleList Fibonacci;
 
 _Parameter go2Bound = 0, precision, optimizationPrecMethod, maxItersPerVar,
@@ -4181,11 +4179,7 @@ _Matrix *_LikelihoodFunction::Optimize() {
         for (i = 0; i < theTrees.lLength; i++) {
             _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
             cT->SetUpMatrices(cT->categoryCount);
-            /*#if USE_SCALING_TO_FIX_UNDERFLOW
-                cT->AllocateUnderflowScalers
-            (((_DataSetFilter*)dataSetFilterList
-            (theDataFilters(i)))->NumberDistinctSites());
-            #endif
+            /*
             if (mstCache&&(intermediateP>0.5))
             {
                 long  cacheSize = mstCache->cacheSize[i];
@@ -9982,253 +9976,11 @@ BaseRef _LikelihoodFunction::toStr(void) {
 
 }
 
-//______________________________________________________________________________
-#ifdef __MP__
-void *StateCounterMP(void * arg) {
-    WancReleafTask *theTask = (WancReleafTask *)arg;
-
-    _Parameter vls = VerbosityLevel();
-
-    for (long sites = theTask->startAt; sites < theTask->endAt; sites++) {
-        _Parameter siteLikelihood = theTask->tree->ThreadReleafTreeCache(
-            theTask->dsf, sites, ((sites > theTask->startAt) ? sites - 1 : -1),
-            0, theTask->tree->flatCLeaves.lLength - 1, sites,
-            theTask->threadIndex);
-        //pthread_mutex_lock(&wancMutex);
-
-        _Matrix res1(theTask->tree->GetCodeBase(), theTask->tree->GetCodeBase(),
-                     false, true),
-            res2(theTask->tree->GetCodeBase(), theTask->tree->GetCodeBase(),
-                 false, true);
-
-        //pthread_mutex_unlock(&wancMutex);
-
-        if (vls > 9.99) {
-            char buffer[64];
-            snprintf(buffer, sizeof(buffer),
-                     "WeightedCharacterDifferences at site %ld\n", sites);
-            BufferToConsole(buffer);
-        }
-
-        theTask->tree->WeightedCharacterDifferences(
-            siteLikelihood, &res1, &res2, theTask->threadIndex);
-
-        _SimpleList *dSites = (_SimpleList *)(*theTask->dupList)(sites);
-        StateCounterResultHandler(*theTask->fla, dSites, *theTask->doneSites,
-                                  *theTask->lastDone, theTask->totalUniqueSites,
-                                  res1, res2);
-    }
-    return nil;
-}
-
-#endif
-
-//______________________________________________________________________________
-
-void StateCounterResultHandler(
-    _Formula & fla, _SimpleList * dSites, long & doneSites, long & lastDone,
-    long totalUniqueSites, _Matrix & res1, _Matrix & res2) {
-#ifdef __MP__
-    //if (systemCPUCount>1)
-    //  pthread_mutex_lock(&wancMutex);
-#endif
-
-    setParameter(stateCountMatrix, &res1);
-    setParameter(wStateCountMatrix, &res2);
-
-    for (long dupSites = 0; dupSites < dSites->lLength; dupSites++) {
-        _Operation tempO(new _Constant(dSites->lData[dupSites]));
-        fla.GetList().InsertElement(&tempO, 1, true);
-        fla.Compute();
-        fla.GetList().Delete(1);
-    }
-    doneSites++;
-    if (((doneSites - lastDone) * 100.) / totalUniqueSites > 1.) {
-        lastDone = doneSites;
-#if !defined __UNIX__ || defined __HEADLESS__
-        SetStatusBarValue((doneSites * 100.) / totalUniqueSites, 1., 0.);
-#endif
-#ifdef __MAC__
-        handleGUI(true);
-#endif
-        if (terminateExecution) {
-            return;
-        }
-    }
-#if defined __UNIX__ && !defined __HEADLESS__ && !defined __HYPHYQT__
-    if (VerbosityLevel() == 1) {
-        UpdateOptimizationStatus(
-            doneSites, (doneSites * 100.) / totalUniqueSites, 1, false);
-    }
-#endif
-
-
-#ifdef __MP__
-    //if (systemCPUCount>1)
-    //  pthread_mutex_unlock(&wancMutex);
-#endif
-}
 
 //______________________________________________________________________________
 void _LikelihoodFunction::StateCounter(long functionCallback) {
-    PrepareToCompute();
-    computationalResults.Clear();
 
-    _Operation * functionCallbackOp = new _Operation( 
-        _HY_OPERATION_FUNCTION_CALL, functionCallback, 
-        _HYFetchFunctionParameters (functionCallback)->lLength, 
-        NULL);
-
-    _Formula fla;
-
-    fla.GetList().AppendNewInstance (functionCallbackOp);
-
-    long totalUniqueSites = 0, doneSites = 0, lastDone = 0;
-    {
-        for (unsigned long i = 0; i < theTrees.lLength; i++) {
-            _DataSetFilter *dsf = GetIthFilter (i);
-            totalUniqueSites += dsf->NumberDistinctSites();
-        }
-    }
-    for (unsigned long i = 0; i < theTrees.lLength; i++) {
-        long offset = -1;
-
-        _TheTree *tree      = GetIthTree (i);
-        _DataSetFilter *dsf = GetIthFilter (i);
-        _Matrix *glFreqs = GetIthEFV (i);
- 
-        tree->InitializeTreeFrequencies(glFreqs->ComputeNumeric());
-
-        _List duplicateMatches;
-
-        while (fla.GetList().countitems() > 1) {
-            fla.GetList().Delete(0);
-        }
-
-        {
-            _Operation tempO(new _Constant(i + 1));
-            fla.GetList().InsertElement(&tempO, 0, true);
-        }
-
-        for (unsigned long mapper = 0; mapper < dsf->duplicateMap.lLength; mapper++) {
-            long matched = dsf->duplicateMap.lData[mapper];
-
-            if (duplicateMatches.lLength <= matched) {
-                duplicateMatches.AppendNewInstance (new _SimpleList);
-            }
-
-            (*_HY2SIMPLELIST (duplicateMatches(matched))) << mapper;
-        }
-
-        _Parameter scaler = 0.;
-
-        _CalcNode *rambler = tree->DepthWiseTraversal(true);
-
-        while (!tree->IsCurrentNodeTheRoot()) {
-            _Parameter bLength = rambler->BranchLength();
-            _Constant tConst(bLength);
-            rambler->SetValue(&tConst);
-            scaler += bLength;
-            rambler = tree->DepthWiseTraversal(false);
-        }
-
-        rambler = tree->DepthWiseTraversal(true);
-
-        while (!tree->IsCurrentNodeTheRoot()) {
-            _Parameter bLength = rambler->Value();
-            _Constant tConst(bLength / scaler);
-            rambler->SetValue(&tConst);
-            rambler = tree->DepthWiseTraversal(false);
-        }
-
-        _SimpleList *dSites = _HY2SIMPLELIST (duplicateMatches(0));
-        
-        SetStatusLine(
-            "Weighted ancestor counting...Computing transition matrices.");
-#ifdef __MAC__
-        handleGUI(true);
-#endif
-#if defined __UNIX__ && !defined __HEADLESS__ && !defined __HYPHYQT__
-        if (VerbosityLevel() == 1) {
-            UpdateOptimizationStatus(0, 0, 0, true);
-        }
-#endif
-#ifdef __MP__
-        long tstep = (dsf->NumberDistinctSites() - 1) / systemCPUCount;
-        if ((systemCPUCount > 1) && tstep) {
-            tree->BuildTopLevelCache();
-            tree->AllocateResultsCache(dsf->NumberDistinctSites());
-            offset = 0;
-            for (long idx = 0; idx < tree->flatCLeaves.lLength; idx++) {
-                ((_CalcNode *)tree->flatCLeaves(idx))->theProbs[0] = idx;
-            }
-            for (long idx = 0; idx < tree->flatTree.lLength; idx++) {
-                ((_CalcNode *)tree->flatTree(idx))->theProbs[0] =
-                    idx + tree->flatCLeaves.lLength;
-            }
-        }
-        _Parameter siteLikelihood =
-            tree->ReleafTreeAndCheck(dsf, 0, tree->HasCache());
-#else
-        _Parameter siteLikelihood = tree->ReleafTreeAndCheck(dsf, 0, false);
-#endif
-#if !defined __UNIX__ || defined __HEADLESS__
-        SetStatusLine("Weighted ancestor counting...Doing the counting.");
-        SetStatusBarValue(0, 1., 0.);
-#endif
-#ifdef __MAC__
-        handleGUI(true);
-#endif
-        if (terminateExecution) {
-            return;
-        }
-
-        if (1) {
-            _Matrix res1(tree->GetCodeBase(), tree->GetCodeBase(), false, true),
-                res2(tree->GetCodeBase(), tree->GetCodeBase(), false, true);
-            tree->WeightedCharacterDifferences(siteLikelihood, &res1, &res2,
-                                               offset);
-            StateCounterResultHandler(fla, dSites, doneSites, lastDone,
-                                      totalUniqueSites, res1, res2);
-        }
-
-        for (unsigned long sites = 1; sites < dsf->theFrequencies.lLength; sites++) {
-            dSites = _HY2SIMPLELIST (duplicateMatches(sites));
-
-            // populate tips
-
-            siteLikelihood = tree->ReleafTree(dsf, sites, sites - 1, 0,
-                                              tree->flatCLeaves.lLength - 1);
-
-            _Matrix res1(tree->GetCodeBase(), tree->GetCodeBase(), false, true),
-                res2(tree->GetCodeBase(), tree->GetCodeBase(), false, true);
-
-            tree->WeightedCharacterDifferences(siteLikelihood, &res1, &res2);
-
-            StateCounterResultHandler(fla, dSites, doneSites, lastDone,
-                                      totalUniqueSites, res1, res2);
-        }
-    }
-
-    /*#ifdef __MP__
-    }
-    #endif*/
-
-#if !defined __UNIX__ || defined __HEADLESS__
-    SetStatusBarValue(-1, 1., 0.);
-    SetStatusLine("Idle");
-#endif
-#ifdef __MAC__
-    handleGUI(true);
-#endif
-
-#if defined __UNIX__ && !defined __HEADLESS__ && !defined __HYPHYQT__
-    if (VerbosityLevel() == 1) {
-        UpdateOptimizationStatus(0, 0, 2, false);
-    }
-#endif
-
-    DoneComputing();
+    FlagError ("This function has not been ported to the new LF engine");
 }
 
 //______________________________________________________________________________
@@ -11292,11 +11044,6 @@ void _LikelihoodFunction::PrepareToCompute(bool disableClear) {
                 categCount = locCC;
             }
             cT->SetUpMatrices(locCC);
-
-#if USE_SCALING_TO_FIX_UNDERFLOW
-            cT->AllocateUnderflowScalers(((_DataSetFilter *)dataSetFilterList(
-                theDataFilters(i)))->NumberDistinctSites());
-#endif
 
         }
 

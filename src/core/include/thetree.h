@@ -108,62 +108,17 @@ public:
 
   void InitializeTreeFrequencies(_Matrix *, bool = false);
 
-  _Parameter ReleafTreeAndCheck(_DataSetFilter *, long, bool,
-                                long categID = -1);
-  _Parameter ReleafTreeAndCheckChar4(_DataSetFilter *, long, bool,
-                                     long categID = -1);
-
-  _Parameter ReleafTree(_DataSetFilter *, long, long, long, long);
-  _Parameter ReleafTreeDegenerate(_DataSetFilter *, long);
-
-  _Parameter ReleafTreeCache(_DataSetFilter *, long, long, long, long, long);
-#if USE_SCALING_TO_FIX_UNDERFLOW
-  _Parameter ThreadReleafTreeCache(_DataSetFilter *, long, long, long, long,
-                                   long, long offset = 0, long fixAttempt = 0,
-                                   _Parameter = 690.);
-  _Parameter doScaling(_DataSetFilter *, long, long, long, long, _Parameter,
-                       bool, bool);
-#else
-  _Parameter ThreadReleafTreeCache(_DataSetFilter *, long, long, long, long,
-                                   long, long offset = 0);
-#endif
-
-  _Parameter Process3TaxonNumericFilter(_DataSetFilterNumeric *, long = 0);
-
-  void ThreadMatrixUpdate(long, bool);
-  void SerialMatrixUpdate(long, bool);
-  void MatrixCacheUpdate(void);
-
-  _Parameter ThreadReleafTreeCharCache(_DataSetFilter *, long, long, long, long,
-                                       long, long offset = 0);
-  _Parameter ReleafTreeCharDegenerate(_DataSetFilter *, long);
-  _Parameter ReleafTreeChar4(_DataSetFilter *, long, long, long, long, long);
-  _Parameter ReleafTreeChar4Degenerate(_DataSetFilter *, long);
-
-  _Parameter ThreadReleafTreeChar4(_DataSetFilter *, long, long, long, long,
-                                   long, long offset = 0);
-  _Parameter ReleafTreeChar4(_DataSetFilter *, long, long, long, long);
-
-  _Parameter Probij(long, long, _CalcNode *);
-  _Parameter PruneTree(long categID = -1);
-  _Parameter PruneTreeChar(long categID = -1);
-  _Parameter PruneTreeCharCache(long categID = -1);
-  _Parameter PruneTreeChar4(long categID = -1);
-  _Parameter PruneTreeChar4Cache(long categID = -1);
 
   _List *RecoverAncestralSequences(_DataSetFilter *, _SimpleList &, _List &,
                                    _Parameter *, _Parameter *, long, long *,
                                    _GrowingVector *, bool = false);
-  void RecoverNodeSupportStates(_DataSetFilter *, long, long, _Matrix &);
-  void RecoverNodeSupportStates2(node<long> *, _Parameter *, _Parameter *,
-                                 long);
+
   _List *SampleAncestors(_DataSetFilter *, node<long> *);
   void PurgeTree(void);
 
   long ComputeReleafingCost(_DataSetFilter *, long, long, _SimpleList * = nil,
                             long = 0);
   long ComputeReleafingCostChar(_DataSetFilter *, long, long);
-  void DumpingOrder(_DataSetFilter *, _SimpleList &);
   void SetTreeCodeBase(long);
   long IsLinkedToALF(long &);
 
@@ -215,6 +170,10 @@ public:
   void TreePSRecurse(node<nodeCoord> *, _String &, _Parameter, _Parameter, long,
                      long, long, long, _AssociativeList * = nil, char = 0,
                      _Parameter * = nil);
+                     
+  _Parameter Process3TaxonNumericFilter(_DataSetFilterNumeric *dsf,
+                                                long catID);
+                   
 
   bool AllBranchesHaveModels(long);
   void ScanSubtreeVars(_List &, char, _CalcNode *);
@@ -224,8 +183,7 @@ public:
   void CompileListOfModels(_SimpleList &);
 
   void MarkMatches(_DataSetFilter *, long, long);
-  long GetLowerBoundOnCost(_DataSetFilter *);
-  long GetLowerBoundOnCostWithOrder(_DataSetFilter *, _SimpleList *);
+  long GetLowerBoundOnCost(_DataSetFilter *, _SimpleList * = nil);
   _SimpleList &GetLeftINodes(void) { return leftiNodes; }
   bool MatchLeavesToDF(_SimpleList &, _DataSetFilter *, bool);
   virtual void RemoveModel(void);
@@ -338,16 +296,7 @@ public:
 
 protected:
 
-  bool IntPopulateLeaves(_DataSetFilter *, long, long);
 
-  _Parameter ConditionalBranchLikelihood(node<long> *, node<long> *,
-                                         _Parameter *, _Parameter *, long,
-                                         long);
-
-  _Parameter ConditionalNodeLikelihood(node<long> *, node<long> *, _Parameter *,
-                                       _Parameter *, long, long);
-
-  _List *MapCBaseToCharacters(_DataSetFilter *, bool = true);
 
   virtual void PreTreeConstructor(bool);
   virtual void PostTreeConstructor(bool);
