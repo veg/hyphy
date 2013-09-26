@@ -152,6 +152,7 @@ BaseRef _List::operator()(const unsigned long i) {
 
 // Element location functions (0,llength - 1)
 BaseRef _List::GetItem(const unsigned long i) const { return ((BaseRef *)lData)[i]; }
+void _List::SetItem(const unsigned long i, BaseRef obj) { ((BaseRef *)lData)[i] = obj; }
 
 // Assignment operator
 _List _List::operator=(_List &l) {

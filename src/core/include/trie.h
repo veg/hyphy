@@ -53,7 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 //_____________________________________________________________________________
-class _Trie : public _List {
+class _Trie : public virtual _List {
 protected:
   // data members
   _SimpleList charMap, /** charMap[c] maps a valid character to the internal

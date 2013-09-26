@@ -119,6 +119,12 @@ public:
   virtual BaseRef GetItem(const unsigned long) const;
 
   /**
+  * Element storage functions - assuming the space is already allocated
+  * used to avoid (*list)[3] = x which are hard to read
+  */
+  virtual void SetItem(const unsigned long, BaseRef);
+  
+      /**
   * Element location functions - read only
   */
   virtual _List operator=(_List &);

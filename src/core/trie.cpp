@@ -130,7 +130,7 @@ long _Trie::FindNextLetter(const char letter,
                            const unsigned long current_index) const {
   long letterKey = charMap.lData[(const unsigned char) letter];
   if (letterKey >= 0) {
-    _SimpleList *thisList = ((_SimpleList **)lData)[current_index];
+    _SimpleList *thisList = _HY2SIMPLELIST(GetItem(current_index));
     letterKey = thisList->FindStepping(letterKey, 2, 0);
     if (letterKey < 0)
       return HY_TRIE_NOTFOUND;
@@ -145,7 +145,7 @@ long _Trie::FindNextUnusedIndex(bool alloc) {
   if (emptySlots.lLength) {
     long newIndex = emptySlots.Pop();
     if (alloc)
-      ((_SimpleList **)lData)[newIndex] = new _SimpleList;
+      SetItem(newIndex, new _SimpleList);
     return newIndex;
   }
   payload << 0;
@@ -165,7 +165,7 @@ long _Trie::InsertNextLetter(const char letter,
   long letter_key = charMap.lData[(const unsigned char) letter];
   if (letter_key >= 0) {
     long next_index = FindNextUnusedIndex(letter != 0);
-    _SimpleList *currentList = ((_SimpleList **)lData)[current_index];
+    _SimpleList *currentList = _HY2SIMPLELIST (GetItem (current_index));
     (*currentList) << letter_key;
     (*currentList) << next_index;
     parents.lData[next_index] = current_index;
@@ -297,18 +297,18 @@ bool _Trie::Delete(const _String &key) {
     // now traverse the history list backwards and delete all keys that have no
     // children
     for (long k = history.lLength - 1; k >= 0; k--) {
-      _SimpleList *current_list = ((_SimpleList **)lData)[history.lData[k]];
+      _SimpleList *current_list = _HY2SIMPLELIST (GetItem (history.lData[k]));
       if (current_list == nil || current_list->lLength <= 1) {
         emptySlots << history.lData[k];
         payload.lData[history.lData[k]] = 0L;
         parents.lData[history.lData[k]] = -1L;
-        _SimpleList *parentList = ((_SimpleList **)lData)[history.lData[k - 1]];
+        _SimpleList *parentList =  _HY2SIMPLELIST (GetItem (history.lData[k-1]));
         unsigned long parentNode =
             parentList->FindStepping(history.lData[k], 2, 1) - 1;
         parentList->Delete(parentNode);
         parentList->Delete(parentNode);
         DeleteObject(current_list);
-        ((_SimpleList **)lData)[history.lData[k]] = nil;
+        SetItem (history.lData[k], nil);
       }
     }
     return true;
@@ -344,7 +344,7 @@ _String *_Trie::RetrieveStringFromPath(const _SimpleList &path,
           *my_alph = alphabet ? alphabet : new _String(Alphabet());
 
   for (long k = 0; k < path.lLength - 4; k += 2) {
-    _SimpleList *current_list = ((_SimpleList **)lData)[path.lData[k]];
+    _SimpleList *current_list = _HY2SIMPLELIST (GetItem(path.lData[k]));
     long current_position = path.lData[k + 1];
     (*this_string) << my_alph->sData[current_list->lData[current_position]];
   }
@@ -365,7 +365,7 @@ void _Trie::DumpRaw() {
   for (long k = 0; k < lLength; k++) {
     if (emptySlots.Find(k) < 0) {
       printf("Position %ld:\n", k);
-      _SimpleList *this_list = ((_SimpleList **)lData)[k];
+      _SimpleList *this_list = _HY2SIMPLELIST (GetItem (k));
       for (long m = 0; m < this_list->lLength; m += 2) {
         printf("'%c'(%ld) -> %ld\n", (char) this_list->lData[m],
                this_list->lData[m], this_list->lData[m + 1]);
@@ -384,7 +384,7 @@ BaseRef _Trie::toStr() {
 
   _SimpleList traversal_history,
       // 2 indices per entry: node and current position (in multiples of 2)
-      *root_list = ((_SimpleList **)lData)[0];
+      *root_list = _HY2SIMPLELIST (GetItem (0L));
 
   traversal_history << 0;
   traversal_history << 0;
@@ -394,8 +394,8 @@ BaseRef _Trie::toStr() {
   (*serialized) << '{';
   while (!(traversal_history.lLength == 2 &&
            traversal_history.lData[1] == root_list->lLength)) {
-    _SimpleList *current_list = ((_SimpleList **)lData)[
-        traversal_history.lData[traversal_history.lLength - 2]];
+    _SimpleList *current_list = _HY2SIMPLELIST (GetItem (
+        traversal_history.lData[traversal_history.lLength - 2]));
     long current_position =
         traversal_history.lData[traversal_history.lLength - 1];
     // if current list is empty, then generate a string based on the path, and
@@ -452,7 +452,7 @@ _String _Trie::RetrieveKeyByPayload(const long key) {
     for (long i = 0; i < parent_indices.lLength - 1; i++) {
       traversal_history << parent_indices.lData[i];
       traversal_history
-          << (((_SimpleList **)lData)[parent_indices.lData[i]])
+          << _HY2SIMPLELIST (GetItem(parent_indices.lData[i]))
                      ->FindStepping(parent_indices.lData[i + 1], 2, 1) - 1;
     }
     traversal_history << key_index;
