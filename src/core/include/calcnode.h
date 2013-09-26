@@ -52,7 +52,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //_______________________________________________________________________________________________
 
-class _CalcNode : public _VariableContainer {
+class _CalcNode : public virtual _VariableContainer {
 
 public:
 

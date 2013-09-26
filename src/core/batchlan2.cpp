@@ -501,7 +501,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
   // do this constraint now
 
   if (doThisOne && good) { // not a root - so we apply the constraint
-    _CalcNode *firstCNode = (_CalcNode *)LocateVar(firstNode->get_data());
+    _CalcNode *firstCNode = _HY2CALCNODE(LocateVar(firstNode->get_data()));
     _SimpleList goodVars;
     _List otherGoodVars;
     _Variable *firstVar;
@@ -524,7 +524,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
 
     for (i = 1; i < theNodes.lLength; i++) {
       otherNode = (node<long> *)theNodes(i);
-      firstCNode = (_CalcNode *)LocateVar(otherNode->get_data());
+      firstCNode = _HY2CALCNODE (LocateVar(otherNode->get_data()));
       _SimpleList dummy;
       otherGoodVars &&&dummy;
       long theseInd = firstCNode->CountAll();
@@ -568,7 +568,7 @@ bool RecurseDownTheTree(_SimpleList &theNodes, _List &theNames,
           newConstraint = newConstraint & *(_String *)theParts(ind);
         } else {
           otherNode = (node<long> *)theNodes(partIndex.lData[ind]);
-          _CalcNode *CNode = (_CalcNode *)LocateVar(otherNode->get_data());
+          _CalcNode *CNode = _HY2CALCNODE (LocateVar(otherNode->get_data()));
 
           if (ind > 0)
             newConstraint =

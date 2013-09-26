@@ -57,6 +57,8 @@ union _SimpleFormulaDatum {
   Ptr reference;
 };
 
+#define _HY2FORMULA(X) (reinterpret_cast<_Formula*>(X))
+
 class _Formula // a computational formula
     {
 
@@ -151,7 +153,7 @@ public:
       given a variable index as an argument, returns true if
       the formula depends on a it; false otherwise
   */
-  _Operation *GetIthTerm(long);
+  _Operation *GetIthTerm(const long) const;
   /*
       SLKP 20090315: added a missing utility function
       given an index (i) as the argument, the function retrieves

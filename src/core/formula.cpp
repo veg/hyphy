@@ -1931,9 +1931,9 @@ bool _Formula::DependsOnVariable(long idx) {
 }
 
 //______________________________________________________________________________
-_Operation *_Formula::GetIthTerm(long idx) {
+_Operation *_Formula::GetIthTerm(const long idx) const {
   if (idx >= 0 && idx < theFormula.lLength) {
-    return ((_Operation **)theFormula.lData)[idx];
+    return _HY2OPERATION(theFormula->GetItem(idx));
   }
   return nil;
 }

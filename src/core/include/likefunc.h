@@ -306,6 +306,10 @@ public:
     */
 
     _AssociativeList*CollectLFAttributes         (void);
+    _DataSetFilter *GetIthFilter                (const unsigned long) const;
+    _TheTree       *GetIthTree                  (const unsigned long) const;
+    _Matrix        *GetIthEFV                   (const unsigned long) const;
+
 protected:
 
     _Matrix*        PairwiseDistances       (long index);
@@ -401,9 +405,6 @@ protected:
 
 private:
 
-    _DataSetFilter *GetIthFilter                (const unsigned long) const;
-    _TheTree       *GetIthTree                  (const unsigned long) const;
-    _Matrix        *GetIthEFV                   (const unsigned long) const;
 
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);

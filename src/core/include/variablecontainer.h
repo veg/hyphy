@@ -57,7 +57,7 @@ class _Matrix;
 
 #define _HY2VARIABLECONTAINER(X) (dynamic_cast<_VariableContainer*>(X))
 
-class _VariableContainer : public _Variable {
+class _VariableContainer : public virtual _Variable {
 
   friend class _Operation;
   friend class _Variable;

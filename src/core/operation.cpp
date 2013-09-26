@@ -66,9 +66,7 @@ void _Operation::Initialize(const long kind, const long ref,const long attr,cons
 
 //______________________________________________________________________________
 BaseRef _Operation::makeDynamic(void) {
-  _Operation *res = new _Operation;
-  res->Duplicate(this);
-  return res;
+  return new _Operation (*this);
 }
 
 //______________________________________________________________________________

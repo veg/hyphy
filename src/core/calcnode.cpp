@@ -443,7 +443,7 @@ long _CalcNode::CheckForReferenceNode(void) {
           _Variable *thisDep = LocateVar(dVariables->lData[idx]);
           //while (thisDep->NumberOperations() == 1)
           while (thisDep->varFormula && thisDep->varFormula->NumberOperations() == 1) {
-            _Operation *op = (_Operation *)thisDep->varFormula->GetList()(0);
+            _Operation *op = thisDep->varFormula->GetIthTerm(0);
             long isVar = op->GetAVariable();
             if (isVar >= 0) {
               thisDep = LocateVar(isVar);

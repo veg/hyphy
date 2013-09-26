@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "helperfunctions.h"
 
 //_____________________________________________________________________________
-class _AVLList : public BaseObj {
+class _AVLList : public virtual BaseObj {
 
 public:
 

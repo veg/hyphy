@@ -40,6 +40,10 @@
 #include "Parser.h"
 #include "hy_globals.h"
 
+#include <typeinfo>
+#include <iostream>
+using namespace std;
+
 
   // parser support functions
 
@@ -144,7 +148,10 @@ _Matrix* _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _
   if (is_const) {
     for (unsigned long r = 0UL; r < n_rows; r ++) {
       for (unsigned long c = 0UL; c < n_cols; c++, overall_index++) {
-        m->Store(r, c, ((_Formula*)entries->GetElement (overall_index))->Compute()->Value());
+        _Formula *f = ((_Formula*)(entries->GetElement (overall_index)));
+        _PMathObj rs = f->Compute();
+        cout << rs->Value() << endl;
+        m->Store(r, c, _HY2FORMULA (entries->GetElement (overall_index))->Compute()->Value());
       }
     }
     entries->ClearFormulasInList();
