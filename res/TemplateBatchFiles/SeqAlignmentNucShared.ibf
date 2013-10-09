@@ -119,7 +119,7 @@ if (doLongestSequence > 0)
 
 SeqAlignments 	 = {};
 startingPosition = {seqCount,2};
-refInsertions	 = {refLength,1};
+refInsertions	 = {refLength+1,1};
 
 fprintf (stdout,"\nPerforming pairwise alignment with reference sequences\n");
 
