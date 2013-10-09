@@ -56,7 +56,7 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #include "likefunc.h"
 
 #ifndef __HYPHY_NO_CURL__
-#define __HYPHYCURL__
+//#define __HYPHYCURL__
 #endif
 
 #ifdef  __HYPHYCURL__
