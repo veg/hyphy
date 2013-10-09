@@ -44,6 +44,12 @@
     #include "hyphymain.h"
 #endif
 
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
+    #include "HYConsoleWindow.h"
+    #include "HYDialogs.h"
+
+#endif
+
 extern  _Parameter  lnGamma (_Parameter);
 
 

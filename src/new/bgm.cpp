@@ -40,6 +40,17 @@
 
 #if not defined __AFYP_REWRITE_BGM__
 
+#ifdef __HYPHYQT__
+    #include "hyphymain.h"
+#endif
+
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
+    #include "HYConsoleWindow.h"
+    #include "HYDialogs.h"
+
+#endif
+
+
 //#define       __AFYP_DEVELOPMENT__
 #define     __MISSING_DATA__
 
