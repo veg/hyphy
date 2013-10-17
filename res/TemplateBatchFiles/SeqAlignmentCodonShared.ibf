@@ -7,7 +7,11 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]="ACGT";
 	LoadFunctionLibrary ("GrabBag");
 	protScoreMatrix = alignOptions["SEQ_ALIGN_SCORE_MATRIX"];
+	no_tp = alignOptions["SEQ_ALIGN_NO_TP"];
+
 	alignOptions = {};
+	
+	
 	
     
  	protLetters = "ARNDCQEGHILKMFPSTWYV";
@@ -25,6 +29,7 @@ if (!_HY_NUC_CODON_HAVE_SCORE_MATRIX || Type(scoreMatrix)!="Matrix" || Rows (sco
 	alignOptions ["SEQ_ALIGN_FRAMESHIFT"]	= 	3*Max(maxScore,-minScore);
 	alignOptions ["SEQ_ALIGN_CODON_ALIGN"]	= 	1;
 	alignOptions ["SEQ_ALIGN_CHARACTER_MAP"]=  "ACGT";
+	alignOptions ["SEQ_ALIGN_NO_TP"]        =  no_tp;
    
     _cdnaln_partialScoreMatrices = cSM2partialSMs(_cdnaln_cdnScoreMatrix,0);
     
