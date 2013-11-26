@@ -424,6 +424,8 @@ function defineCodonToAA ()
 		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
 	}
 	
+	codonToAAMap ["---"] = "-";
+	
 	return codonToAAMap;
 }
 
