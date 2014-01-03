@@ -1856,10 +1856,9 @@ void _Formula::ScanFForType(_SimpleList &l, int type) {
 //______________________________________________________________________________
 bool _Formula::CheckFForDependence(long varID, bool checkAll) {
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    _Operation *theObj = (_Operation *)theFormula(i);
-    long f;
+    _Operation *theObj = GetIthTerm (i);
     if (theObj->IsAVariable()) {
-      f = theObj->GetAVariable();
+      long f = theObj->GetAVariable();
       if (f >= 0) {
         if (f == varID) {
           return true;
@@ -1884,8 +1883,8 @@ void _Formula::LocalizeFormula(_Formula &ref, _String &parentName,
                                _SimpleList &dv, _SimpleList &idv) {
 
   for (unsigned long i = 0; i < ref.theFormula.lLength; i++) {
-    if (((_Operation *)ref.theFormula(i))->IsAVariable()) {
-      long vIndex = ((_Operation *)ref.theFormula(i))->GetAVariable();
+    if (ref.GetIthTerm(i)->IsAVariable()) {
+      long vIndex = ref.GetIthTerm(i)->GetAVariable();
       _Variable *theV = LocateVar(vIndex);
 
       if (theV->IsGlobal()) {

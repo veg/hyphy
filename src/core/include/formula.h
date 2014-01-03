@@ -57,9 +57,9 @@ union _SimpleFormulaDatum {
   Ptr reference;
 };
 
-#define _HY2FORMULA(X) (reinterpret_cast<_Formula*>(X))
+#define _HY2FORMULA(X) (dynamic_cast<_Formula*>(X))
 
-class _Formula // a computational formula
+class _Formula: public virtual BaseObj // a computational formula
     {
 
   friend class _Variable;

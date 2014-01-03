@@ -47,6 +47,8 @@
 #include "avllistxl.h"
 #include "operation.h"
 
+#define   HY_VARIABLECONTAINER_NOT_INDEPENDENT (-2L)
+
 //__________________________________________________________________________________
 
 // this class defines a computational (or storage) class which, as a variable,

@@ -549,8 +549,7 @@ void KillLFRecord(long lfID, bool completeKill) {
             otherVars << lf->GetIndependentVars();
             otherVars << lf->GetDependentVars();
             for (long kk = lf->GetTheTrees().lLength - 1; kk >= 0; kk--) {
-              _TheTree *thisTree =
-                  (_TheTree *)LocateVar(lf->GetTheTrees().lData[kk]);
+              _TheTree *thisTree = lf->GetIthTree (kk);
               thisTree->CompileListOfModels(otherModels);
             }
           }

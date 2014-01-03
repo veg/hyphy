@@ -787,7 +787,7 @@ long _VariableContainer::SetDependance(long varIndex) {
     if (varIndex >= 0) {
       f = iVariables->FindStepping(varIndex, 2);
       if (f < 0) {
-        return -1;
+        return HY_NOT_FOUND;
       }
     } else {
       f = -varIndex - 1;
@@ -802,7 +802,7 @@ long _VariableContainer::SetDependance(long varIndex) {
       //printf ("Local variable %s\n", LocateVar
       //(iVariables->lData[f+1])->GetName()->sData);
       if (!LocateVar(iVariables->lData[f + 1])->IsIndependent()) {
-        return -2;
+        return HY_VARIABLECONTAINER_NOT_INDEPENDENT;
       }
     }
 
@@ -818,7 +818,7 @@ long _VariableContainer::SetDependance(long varIndex) {
       _Variable *dVar = LocateVar(dVariables->lData[insPos]);
       if (!dVar) {
         FlagError("Internal error in SetDependance()");
-        return -1;
+        return HY_NOT_FOUND;
       }
       if (!thisName->Greater(dVar->GetName())) {
         break;
@@ -841,7 +841,7 @@ long _VariableContainer::SetDependance(long varIndex) {
 
     return varIndex;
   }
-  return -1;
+  return HY_NOT_FOUND;
 }
 
 //______________________________________________________________________________

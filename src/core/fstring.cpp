@@ -472,7 +472,7 @@ _PMathObj _FString::RerootTree(void) {
 
       for (long k = 1; k <= myNodeCount; k++) {
         tNodeCount +=
-            ((_CalcNode *)LocateVar(cNode->go_down(k)->in_object))->Value();
+            _HY2CALCNODE(LocateVar(cNode->go_down(k)->in_object))->Value();
       }
 
       iterator->SetNumericValue(tNodeCount + 1.0);
@@ -501,7 +501,7 @@ _PMathObj _FString::RerootTree(void) {
     if (cNode->get_num_nodes()) {
       for (long k = cNode->get_num_nodes(); k; k--) {
         long tt =
-            ((_CalcNode *)LocateVar(cNode->go_down(k)->in_object))->Value();
+            _HY2CALCNODE(LocateVar(cNode->go_down(k)->in_object))->Value();
         if (tt < nodeMin) {
           nodeMin = tt;
         }

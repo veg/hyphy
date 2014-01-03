@@ -279,11 +279,10 @@ void _Variable::SetValue(_PMathObj theP, bool dup) {
         }
         _Variable *theV = LocateVar(i);
         if (theV->IsContainer()) {
-          _VariableContainer *theVC = (_VariableContainer *)theV;
-          if (!theVC->RemoveDependance(theIndex)) {
+          if (!_HY2VARIABLECONTAINER (theV)->RemoveDependance(theIndex)) {
             ReportWarning(
                 (_String("Can't make variable ") & *GetName() &
-                 " independent in the context of " & *theVC->GetName() &
+                 " independent in the context of " & *theV->GetName() &
                  " because its template variable is not independent."));
             continue;
           }
@@ -512,10 +511,9 @@ void _Variable::SetFormula(_Formula &theF) {
       for (; i >= 0; i = variableNames.Traverser(tcache, iv)) {
         _Variable *theV = FetchVar(i);
         if (theV->IsContainer()) {
-          _VariableContainer *theVC = (_VariableContainer *)theV;
-          if (theVC->SetDependance(theIndex) == -2) {
+          if (_HY2VARIABLECONTAINER (theV)->SetDependance(theIndex) == HY_VARIABLECONTAINER_NOT_INDEPENDENT) {
             ReportWarning((_String("Can't make variable ") & *GetName() &
-                           " dependent in the context of " & *theVC->GetName() &
+                           " dependent in the context of " & *theV->GetName() &
                            " because its template variable is bound by another "
                            "relation in the global context."));
             continue;
