@@ -472,11 +472,7 @@ long _CalcNode::CheckForReferenceNode(void) {
                 if (rN == -1) {
                   thisDep = FetchVar(dot);
 
-                  if (thisDep->ObjectClass() != TREE_NODE) {
-                    break;
-                  }
-
-                  if (((_CalcNode *)thisDep)->GetModelIndex() != modIdx) {
+                  if (thisDep->ObjectClass() != TREE_NODE || _HY2CALCNODE (thisDep)->GetModelIndex() != modIdx) {
                     break;
                   }
 
@@ -500,7 +496,7 @@ long _CalcNode::CheckForReferenceNode(void) {
 //______________________________________________________________________________
 bool _CalcNode::NeedToExponentiate(long catID) {
   if (isInOptimize && referenceNode >= 0) {
-    return ((_CalcNode *)LocateVar(referenceNode))->NeedToExponentiate(catID);
+    return _HY2CALCNODE (LocateVar(referenceNode))->NeedToExponentiate(catID);
   }
 
   if (_VariableContainer::NeedToExponentiate(catID >= 0)) {
@@ -538,7 +534,7 @@ bool _CalcNode::RecomputeMatrix(long categID, long totalCategs,
   if (isInOptimize)
   {
     if (referenceNode >= 0) {
-      _CalcNode *rN = (_CalcNode *)LocateVar(referenceNode);
+      _CalcNode *rN = _HY2CALCNODE (LocateVar(referenceNode));
       rN->RecomputeMatrix(categID, totalCategs, storeRateMatrix);
 
       if (totalCategs > 1) {
@@ -768,7 +764,7 @@ void *MatrixUpdateFunction(void *arg) {
 node<long> *_CalcNode::LocateMeInTree(void) {
 
   _String baseNode = GetName()->Cut(0, GetName()->Find('.') - 1);
-  _TheTree *parentTree = (_TheTree *)FetchVar(LocateVarByName(baseNode));
+  _TheTree *parentTree = _HY2TREE (FetchVar(LocateVarByName(baseNode)));
   _CalcNode *curNode = parentTree->StepWiseTraversal(true);
 
   baseNode = GetName()->Cut(GetName()->FindBackwards('.', 0, -1), -1);
@@ -829,9 +825,10 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
 
   if ((f < 0) && (!first)) { // bad bongos!
     _String errMsg("Molecular clock constraint has failed, since variable ");
-    errMsg = errMsg & *LocateVar(varToConstrain)->GetName();
-    errMsg = errMsg & " is not an independent member of the node ";
-    errMsg = errMsg & *GetName();
+    errMsg = errMsg & *LocateVar(varToConstrain)->GetName() 
+             & " is not an independent member of the node "
+             & *GetName();
+             
     WarnError(errMsg);
     return nil;
   }
@@ -853,12 +850,11 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
 
   // internal node - must do some work
 
-  _Formula **nodeConditions =
-      (_Formula **)MemAllocate((descendants - start) * sizeof(_Formula *));
+  _Formula **nodeConditions = new _Formula * [descendants - start];
 
   for (k = start + 1; k <= descendants; k++) {
     node<long> *downWeGo = whereAmI->go_down(k);
-    if (!(nodeConditions[k - 1 - start] = ((_CalcNode *)LocateVar(
+    if (!(nodeConditions[k - 1 - start] = _HY2CALCNODE(LocateVar(
             downWeGo->get_data()))->RecurseMC(varToConstrain, downWeGo))) {
       for (long f2 = 0; f2 < k - start - 1; f2++) {
         delete nodeConditions[f2];
@@ -878,7 +874,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
 
   if (k == descendants - start) { // all underlying branches are "simple"
     for (k = 1; k < descendants - start; k++) {
-      LocateVar(((_Operation *)((*(nodeConditions[k])).GetList()(0)))
+      LocateVar(nodeConditions[k]->GetIthTerm (0)
                     ->GetAVariable())->SetFormula(*nodeConditions[0]);
       delete (nodeConditions[k]);
       nodeConditions[k] = nil;
@@ -896,7 +892,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
         if (l == k) {
           continue;
         }
-        LocateVar(((_Operation *)((*(nodeConditions[l])).GetList()(0)))->GetAVariable())->SetFormula(*nodeConditions[k]);
+        LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->SetFormula(*nodeConditions[k]);
         delete (nodeConditions[l]);
         nodeConditions[l] = nil;
       }
@@ -907,17 +903,16 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
           continue;
         }
         if (nodeConditions[l]->GetList().lLength == 1) {
-          LocateVar(((_Operation *)((*(nodeConditions[l])).GetList()(0)))
-                        ->GetAVariable())->SetFormula(*nodeConditions[k]);
+            LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->SetFormula(*nodeConditions[k]);
         } else { // solve for a non-additive constraint
           _Variable *nonAdd =
-              LocateVar(((_Operation *)((*(nodeConditions[l])).GetList()(0)))->GetAVariable());
+              LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable());
           nodeConditions[l]->GetList().Delete(0);
           _Formula newConstraint;
           newConstraint.Duplicate((BaseRef) nodeConditions[k]);
           _Operation mins( HY_OP_CODE_SUB, 2L);
           for (unsigned long op_index = 0; op_index < nodeConditions[l]->GetList().lLength; op_index++) {
-            _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(op_index);
+            _Operation *curOp = nodeConditions[l]->GetIthTerm(op_index);
             if (curOp->GetOpKind() == _HY_OPERATION_BUILTIN) {
               newConstraint.GetList() && &mins;
             } else {
@@ -938,7 +933,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
         iVariables->lData[f - 1], _HY_OPERATION_INVALID_REFERENCE, NULL));
     result->GetList().AppendNewInstance(new _Operation( HY_OP_CODE_ADD, 2L));
 
-    free(nodeConditions);
+    delete [] nodeConditions;
     return result;
   }
 
@@ -947,7 +942,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
       delete nodeConditions[k];
     }
 
-  free(nodeConditions);
+  delete [] nodeConditions;
   return nil;
 }
 
