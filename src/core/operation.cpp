@@ -76,13 +76,13 @@ _Operation::_Operation(_Operation& copyFrom) {
 
 //______________________________________________________________________________
 void _Operation::Duplicate(BaseRef r) {
-  _Operation *o = (_Operation *)r;
+  _Operation *o = _HY2OPERATION(r);
   operationKind = o->operationKind;
   reference = o->reference;
   attribute = o->attribute;
   payload   = o->payload;
   if (payload) {
-    payload->nInstances++;
+    payload->AddAReference();
   }
 }
 
