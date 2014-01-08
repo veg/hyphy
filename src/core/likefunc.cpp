@@ -637,7 +637,7 @@ bool _LikelihoodFunction::MapTreeTipsToData(long f, bool leafScan) {
 //______________________________________________________________________________
 bool _LikelihoodFunction::UpdateFilterSize(long f) {
     // from triplets
-    _TheTree *t = (_TheTree *)LocateVar(theTrees.lData[f]);
+    _TheTree *t = GetIthTree (f);
     _CalcNode *travNode = t->StepWiseTraversal(true);
     _DataSetFilter *df = (_DataSetFilter *)dataSetFilterList.lData[f];
 
@@ -962,7 +962,7 @@ bool _LikelihoodFunction::Construct(_List &triplets, _VariableContainer *theP) {
               }
           }
 
-          computingTemplate = (_Formula *)templateFormula.makeDynamic();
+          computingTemplate = new _Formula(templateFormula.makeDynamic();
 
           if (templateKind < 0 ||
               templateKind == _hyphyLFComputationalTemplateBySite) {
@@ -1236,7 +1236,7 @@ _DataSetFilter* _LikelihoodFunction::GetIthFilter (unsigned long index) const {
 
 
 _TheTree* _LikelihoodFunction::GetIthTree (unsigned long index) const {
-  return (_TheTree *)LocateVar(theTrees.GetElement(index));
+  return _HY2TREE(LocateVar(theTrees.GetElement(index)));
 }
 
 _Matrix* _LikelihoodFunction::GetIthEFV (unsigned long index) const {

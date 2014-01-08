@@ -1942,12 +1942,12 @@ void _Matrix::DuplicateMatrix(_Matrix *targetMatrix, _Matrix *sourceMatrix) {
         if (sourceMatrix->theIndex) {
           for (long i = 0; i < sourceMatrix->lDim; i++)
             if (sourceMatrix->IsNonEmpty(i)) {
-              newFormulas[i] = (_Formula *)theFormulas[i]->makeDynamic();
+              newFormulas[i] = new _Formula (*_HY2FORMULA(theFormulas[i]));
             }
         } else
           for (long i = 0; i < sourceMatrix->lDim; i++)
             if (theFormulas[i] != (_Formula *)ZEROPOINTER) {
-              newFormulas[i] = (_Formula *)theFormulas[i]->makeDynamic();
+              newFormulas[i] = new _Formula (*_HY2FORMULA(theFormulas[i]));
             } else {
               newFormulas[i] = ZEROPOINTER;
             }
@@ -2283,7 +2283,7 @@ _Matrix::_Matrix(_String &s, bool isNumeric, _VariableContainer *theP) {
 
             (*this)[vDim * hPos + vPos];
             k = Hash(hPos, vPos);
-            ((_Formula **)theData)[k] = (_Formula *)theTerm.makeDynamic();
+            ((_Formula **)theData)[k] = new _Formula (theTerm);
           }
           i = j;
         }

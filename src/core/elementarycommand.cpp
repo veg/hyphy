@@ -3157,10 +3157,9 @@ void _ElementaryCommand::ExecuteCase37(_ExecutionList &chain) {
           }
         } else {
           if (theObject->ObjectClass() == TREE_NODE) {
-            _CalcNode *theNode = (_CalcNode *)theObject;
+            _CalcNode *theNode = _HY2CALCNODE(theObject);
             if (theNode->GetModelIndex() != HY_NO_MODEL) {
-              checkPointer(result = new _Matrix);
-              theNode->RecomputeMatrix(0, 1, result);
+              theNode->RecomputeMatrix(0, 1, new _Matrix);
             }
           }
 
@@ -3658,7 +3657,7 @@ void _ElementaryCommand::ExecuteCase52(_ExecutionList &chain) {
 
             if (treeVar->ObjectClass() == TREE) {
               if (freqVar->ObjectClass() == MATRIX) {
-                _TheTree *spawningTree = (_TheTree *)treeVar;
+                _TheTree *spawningTree = _HY2TREE(treeVar);
 
                 if (!(parameters.lLength > 6 &&
                       (spawningTree->CountTreeCategories() > 1))) {
@@ -6037,7 +6036,7 @@ void _ElementaryCommand::ExecuteCase54(_ExecutionList &chain) {
       _Variable *testTree = FetchVar(LocateVarByName(
           AppendContainerName(*treeSpec, chain.nameSpacePrefix)));
       if (testTree && testTree->ObjectClass() == TREE) {
-        tr = new _TreeTopology((_TheTree *)testTree);
+        tr = new _TreeTopology(_HY2TREE(testTree));
       } else {
         _String flaData(*treeSpec);
         _Formula nameForm(flaData, chain.nameSpacePrefix);
@@ -6724,9 +6723,9 @@ void _ElementaryCommand::ExecuteCase26(_ExecutionList &chain) {
 
     _Variable *thisNode = FetchVar(ind2);
     if (thisNode->ObjectClass() == TREE_NODE) {
-      thisArgs << (long)((_CalcNode *)thisNode)->LocateMeInTree();
+      thisArgs << (long)_HY2CALCNODE(thisNode)->LocateMeInTree();
     } else if (thisNode->ObjectClass() == TREE) {
-      thisArgs << (long) & ((_TheTree *)thisNode)->GetRoot();
+      thisArgs << (long) & _HY2TREE (thisNode)->GetRoot();
     } else {
       WarnError(
           *(_String *)parameters(ind1) &
@@ -7994,7 +7993,7 @@ bool _ElementaryCommand::HandleMolecularClock(_ExecutionList &currentProgram) {
 
   _TheTree *theTree = nil;
   if (theObject->ObjectClass() == TREE_NODE) {
-    theTree = (_TheTree *)((_VariableContainer *)theObject)->GetTheParent();
+    theTree =   _HY2TREE(_HY2VARIABLECONTAINER(theObject)->GetTheParent());
     if (!theTree) {
       WarnError(_String("Internal error - orphaned tree node '") & theBaseNode &
                 "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(
@@ -8006,7 +8005,7 @@ bool _ElementaryCommand::HandleMolecularClock(_ExecutionList &currentProgram) {
     theBaseNode = theObject->GetName()->Cut(treeName.sLength + 1, -1);
   } else {
     treeName = *theObject->GetName();
-    theTree = (_TheTree *)theObject;
+    theTree = _HY2TREE(theObject);
     theBaseNode = empty;
   }
 

@@ -566,7 +566,7 @@ void KillLFRecord(long lfID, bool completeKill) {
       myVars.Clear();
 
       for (k = me->GetTheTrees().lLength - 1; k >= 0; k--) {
-        _TheTree *thisTree = (_TheTree *)LocateVar(me->GetTheTrees().lData[k]);
+        _TheTree *thisTree = _HY2TREE (LocateVar(me->GetTheTrees().lData[k]));
         thisTree->CompileListOfModels(myVars);
         _CalcNode *tNode = thisTree->DepthWiseTraversal(true);
         while (tNode) {
@@ -625,7 +625,7 @@ void KillLFRecordFull(long lfID) {
   l.Clear();
 
   for (k = lf->GetTheTrees().lLength - 1; k >= 0; k--) {
-    _TheTree *thisTree = (_TheTree *)LocateVar(lf->GetTheTrees().lData[k]);
+    _TheTree *thisTree = _HY2TREE (LocateVar(lf->GetTheTrees().lData[k]));
     thisTree->CompileListOfModels(l);
     DeleteVariable(*thisTree->GetName());
   }

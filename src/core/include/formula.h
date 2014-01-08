@@ -67,6 +67,7 @@ class _Formula: public virtual BaseObj // a computational formula
 
 public:
   _Formula(void);
+  _Formula (_Formula&);
   _Formula(_String &, _VariableContainer *theParent = nil,
            _String *errorString = nil);
   _Formula(_PMathObj, bool isAVar = false);

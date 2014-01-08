@@ -33,6 +33,12 @@ _Formula::_Formula(void) {
 }
 
 //______________________________________________________________________________
+
+_Formula::_Formula(_Formula& src) {
+  Duplicate (&src);
+}
+
+//______________________________________________________________________________
 _Formula::_Formula(_PMathObj p, bool isAVar) {
   theTree = nil;
   resultCache = nil;
@@ -50,7 +56,7 @@ void _Formula::Initialize(void) {}
 
 //______________________________________________________________________________
 void _Formula::Duplicate(BaseRef f) {
-  _Formula *f_cast = (_Formula *)f;
+  _Formula *f_cast = _HY2FORMULA(f);
 
   theFormula.Duplicate(&f_cast->theFormula);
   theStack.theStack.Duplicate(&f_cast->theStack.theStack);
@@ -122,10 +128,10 @@ BaseRef _Formula::toStr(_List *matchedNames, bool dropTree) {
   } else {
     if (theFormula.lLength) {
       (*result) << "RPN:";
-      internalToStr(*result, nil, 0, nil, (_Operation *)(theFormula(0)));
+      internalToStr(*result, nil, 0, nil, GetIthTerm (0));
       for (unsigned long k = 1; k < theFormula.lLength; k++) {
         (*result) << ',';
-        internalToStr(*result, nil, 0, nil, (_Operation *)(theFormula(k)));
+        internalToStr(*result, nil, 0, nil, GetIthTerm(k));
       }
     }
   }
@@ -144,9 +150,8 @@ BaseRef _Formula::toStr(_List *matchedNames, bool dropTree) {
 //______________________________________________________________________________
 node<long> *_Formula::DuplicateFormula(node<long> *src, _Formula &tgt) {
   node<long> *resNode = new node<long>;
-  checkPointer(resNode);
 
-  tgt.theFormula &&(_Operation *)theFormula(src->in_object);
+  tgt.theFormula && GetIthTerm(src->in_object);
 
   resNode->in_object = tgt.theFormula.lLength - 1;
 
@@ -241,7 +246,7 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
 
   _PMathObj newVal = nil;
 
-  _Operation *op = (_Operation *)theFormula(startNode->get_data());
+  _Operation *op = GetIthTerm(startNode->get_data());
 
   if (numChildren == 0) {
     return !op->IsAVariable();
@@ -269,7 +274,7 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
       } else {
         _Stack scrap;
         for (k = 1; k <= numChildren; k++) {
-          ((_Operation *)theFormula(startNode->go_down(k)->get_data()))
+          GetIthTerm(startNode->go_down(k)->get_data())
               ->Execute(scrap);
         }
         op->Execute(scrap);
@@ -278,8 +283,8 @@ bool _Formula::InternalSimplify(node<long> *startNode) {
     } else {
       if (op->GetOpKind () == _HY_OPERATION_BUILTIN && (firstConst || secondConst)) {
         theVal =
-            ((_Operation *)theFormula(startNode->go_down(firstConst ? 1 : 2)
-                                          ->get_data()))->GetPayload()->Value();
+            GetIthTerm(startNode->go_down(firstConst ? 1 : 2)
+                                          ->get_data())->GetPayload()->Value();
 
         switch (op->GetReference()) {
         case HY_OP_CODE_MUL: {           // *
@@ -375,7 +380,7 @@ void _Formula::internalToStr(_String &result, node<long> *currentNode,
                              _Operation *thisNodeOperation) {
   
   if (!thisNodeOperation) {
-    thisNodeOperation = (_Operation *)theFormula(currentNode->get_data());
+    thisNodeOperation = GetIthTerm(currentNode->get_data());
   }
   
     // decide what to do about this operation
@@ -1932,7 +1937,7 @@ bool _Formula::DependsOnVariable(long idx) {
 //______________________________________________________________________________
 _Operation *_Formula::GetIthTerm(const long idx) const {
   if (idx >= 0 && idx < theFormula.lLength) {
-    return _HY2OPERATION(theFormula->GetItem(idx));
+    return _HY2OPERATION(theFormula.GetItem(idx));
   }
   return nil;
 }
@@ -1970,7 +1975,7 @@ void _Formula::SimplifyConstants(void) {
 //______________________________________________________________________________
 _Matrix* _Formula::GetTheMatrix(void) {
   if (theFormula.lLength == 1) {
-    _Operation *firstOp = (_Operation *)theFormula(0);
+    _Operation *firstOp = GetIthTerm (0);
     switch (firstOp->GetOpKind()) {
     
        case _HY_OPERATION_VALUE: {
@@ -2052,7 +2057,7 @@ void _Formula::ConvertToTree(bool err_msg) {
     
     _Operation *currentOp;
     for (unsigned long i = 0; i < theFormula.lLength; i++) {
-      currentOp = (_Operation *)theFormula(i);
+      currentOp = GetIthTerm(i);
       long opKind = currentOp->GetOpKind();
       
       switch (opKind) {
@@ -2172,7 +2177,7 @@ node<long> *_Formula::InternalDifferentiate(node<long> *currentSubExpression,
                                             long varID, _SimpleList &varRefs,
                                             _SimpleList &dydx, _Formula &tgt) {
 
-  _Operation *op = (_Operation *)theFormula(currentSubExpression->in_object);
+  _Operation *op = _HY2OPERATION(theFormula(currentSubExpression->in_object));
   
   switch (op->GetOpKind()) {
     case _HY_OPERATION_VALUE: {
