@@ -962,7 +962,7 @@ bool _LikelihoodFunction::Construct(_List &triplets, _VariableContainer *theP) {
               }
           }
 
-          computingTemplate = new _Formula(templateFormula.makeDynamic();
+          computingTemplate = new _Formula(templateFormula);
 
           if (templateKind < 0 ||
               templateKind == _hyphyLFComputationalTemplateBySite) {
@@ -1022,7 +1022,7 @@ _LikelihoodFunction::_LikelihoodFunction(_LikelihoodFunction &lf) {
     templateKind = lf.templateKind;
 
     if (lf.computingTemplate) {
-        computingTemplate = (_Formula *)lf.computingTemplate->makeDynamic();
+        computingTemplate = new _Formula (*lf.computingTemplate);
     } else {
         computingTemplate = nil;
     }
@@ -1037,7 +1037,6 @@ _LikelihoodFunction::_LikelihoodFunction(_LikelihoodFunction &lf) {
 // dynamic copy of this object
 BaseRef _LikelihoodFunction::makeDynamic(void) {
     _LikelihoodFunction *res = new _LikelihoodFunction;
-    memcpy((char *)res, (char *)this, sizeof(_LikelihoodFunction));
     res->Duplicate(this);
     return res;
 }
@@ -1060,7 +1059,7 @@ void _LikelihoodFunction::Duplicate(BaseRef obj) {
     templateKind = lf->templateKind;
 
     if (lf->computingTemplate) {
-        computingTemplate = (_Formula *)lf->computingTemplate->makeDynamic();
+        computingTemplate = new _Formula (*lf->computingTemplate);
     } else {
         computingTemplate = nil;
     }
@@ -2472,8 +2471,8 @@ long _LikelihoodFunction::BlockLength(const unsigned long index) const {
 }
 
 //______________________________________________________________________________
-bool _LikelihoodFunction::HasBlockChanged(long index) {
-    return ((_TheTree *)LocateVar(theTrees(index)))->HasChanged2();
+bool _LikelihoodFunction::HasBlockChanged(const long index) {
+    return GetIthTree (index)->HasChanged2();
 }
 
 //______________________________________________________________________________
@@ -3192,7 +3191,7 @@ void _LikelihoodFunction::GetInitialValues(void) {
 
         _DataSetFilter *df = GetIthFilter (index);
 
-        _TheTree *t = (_TheTree *)LocateVar(theTrees.lData[index]);
+        _TheTree *t = GetIthTree (index);
         long mDim = df->NumberSpecies();
 
         if (df->GetData()->GetTT()->CheckType(
@@ -3484,10 +3483,9 @@ void _LikelihoodFunction::SetReferenceNodes(void) {
         _List mappedNodes;
         _SimpleList mappedTo, canMap;
 
-        long i;
-
-        for (i = 0; i < theTrees.lLength; i++) {
-            _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
+  
+        for (unsigned long i = 0; i < theTrees.lLength; i++) {
+            _TheTree *cT = GetIthTree (i);
 
             _CalcNode *aNode = cT->DepthWiseTraversal(true);
 
@@ -3505,11 +3503,11 @@ void _LikelihoodFunction::SetReferenceNodes(void) {
 
         if (mappedNodes.lLength) {
             canMap.Sort();
-            for (i = 0; i < mappedNodes.lLength; i++) {
+            for (unsigned long i = 0; i < mappedNodes.lLength; i++) {
                 if (canMap.BinaryFind(mappedTo.lData[i]) >= 0) {
                     _CalcNode *travNode = _HY2CALCNODE(mappedNodes(i));
                     travNode->SetRefNode(mappedTo.lData[i]);
-                    ((_CalcNode *)LocateVar(mappedTo.lData[i]))->AddRefNode();
+                    _HY2CALCNODE (LocateVar(mappedTo.lData[i]))->AddRefNode();
                     _String msg =
                         _String("Matrix for node ") &
                         travNode->GetName()->getStr() & " mapped to " &
@@ -4143,7 +4141,7 @@ _Matrix *_LikelihoodFunction::Optimize() {
 
 
     for (i = 0; i < theTrees.lLength; i++) {
-        ((_TheTree *)(LocateVar(theTrees(i))))->CountTreeCategories();
+        GetIthTree (i)->CountTreeCategories();
     }
 
     SetupLFCaches();
@@ -4177,91 +4175,8 @@ _Matrix *_LikelihoodFunction::Optimize() {
         checkParameter(useFullMST, intermediateP, 0.0);
 
         for (i = 0; i < theTrees.lLength; i++) {
-            _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
+            _TheTree *cT = GetIthTree (i);
             cT->SetUpMatrices(cT->categoryCount);
-            /*
-            if (mstCache&&(intermediateP>0.5))
-            {
-                long  cacheSize = mstCache->cacheSize[i];
-                if (cacheSize)
-                {
-                    j = cT->GetLeafCount()+cT->GetINodeCount();
-
-                    _Parameter**        mstResultCacheIndex = new _Parameter*
-            [cacheSize+1];
-                    checkPointer        (mstResultCacheIndex);
-
-                    for (long kk=0; kk<cacheSize; kk++)
-                    {
-                        _Parameter*     cacheVector = new _Parameter
-            [j*cT->GetCodeBase()];
-                        checkPointer (cacheVector);
-                        mstResultCacheIndex[kk] = cacheVector;
-                    }
-
-                    mstResultCacheIndex[cacheSize] = nil;
-                    mstCache->resultCache << (long)mstResultCacheIndex;
-
-
-                    long        **      mstStateCacheIndex = new long*
-            [cacheSize+1];
-                    checkPointer        (mstStateCacheIndex);
-
-                    for (long kk2=0; kk2<cacheSize; kk2++)
-                    {
-                        long*       cacheVector = new long [j];
-                        checkPointer (cacheVector);
-                        mstStateCacheIndex[kk2] = cacheVector;
-                    }
-
-                    mstStateCacheIndex[cacheSize] = nil;
-                    mstCache->statesCache << (long)mstStateCacheIndex;
-
-
-                    char        **      mstStateNCacheIndex = new char*
-            [cacheSize+1];
-                    checkPointer        (mstStateNCacheIndex);
-
-                    j = cT->GetINodeCount();
-
-                    for (long kk3=0; kk3<cacheSize; kk3++)
-                    {
-                        char*       cacheVector = new char [j];
-                        checkPointer (cacheVector);
-                        mstStateNCacheIndex[kk3] = cacheVector;
-                    }
-
-                    mstStateCacheIndex[cacheSize] = nil;
-                    mstCache->statesNCache << (long)mstStateNCacheIndex;
-
-                    mstCache->stashedLeafOrders && ((_SimpleList*)leafSkips(i));
-                    ((_SimpleList*)leafSkips(i))->Clear();
-                    ((_DataSetFilter*)dataSetFilterList.lData[theDataFilters.lData[i]])->MatchStartNEnd(*(_SimpleList*)mstCache->computingOrder(i),*(_SimpleList*)leafSkips(i),(_SimpleList*)mstCache->parentOrder(i));
-                    ReportWarning (_String("Using Full MST heurisic on block ")
-            & i & " of likelihood function " & ((_String*)likeFuncNamesList
-            (lockedLFID))->getStr());
-                }
-                else
-                {
-                    mstCache->resultCache  << 0;
-                    mstCache->statesCache  << 0;
-                    mstCache->statesNCache << 0;
-                    _SimpleList tl;
-                    mstCache->stashedLeafOrders && & tl;
-                }
-            }   */
-            //if (dupTrees.lData[i] == 0)
-            //{
-            /*  _DataSetFilter* dsf = (_DataSetFilter*)dataSetFilterList
-                (theDataFilters.lData[i]);
-                _Constant*  tC = (_Constant*)cT->TipCount();
-                if ((precision>.1)&&((dsf->GetUnitLength()>1)||(tC->Value()>7)))
-                {
-                    cT->BuildTopLevelCache();
-                    cT->AllocateResultsCache(dsf->NumberDistinctSites());
-                }
-                DeleteObject (tC); */
-            //}
         }
 
         hasBeenSetUp = 1;
@@ -5360,8 +5275,8 @@ void _LikelihoodFunction::CleanUpOptimize(void) {
 #ifdef __HYPHYMPI__
     if (hyphyMPIOptimizerMode == _hyphyLFMPIModeNone) {
 #endif
-        for (long i = 0; i < theTrees.lLength; i++) {
-            _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
+        for (unsigned long i = 0; i < theTrees.lLength; i++) {
+            _TheTree *cT = GetIthTree (i);
             cT->CleanUpMatrices();
             cT->KillTopLevelCache();
         }
@@ -7536,7 +7451,7 @@ long _LikelihoodFunction::DependOnModel(_String & modelTitle) {
         long modelIndex = FindModelName(modelTitle);
         if (modelIndex != HY_NO_MODEL) {
             for (long k = 0; k < theTrees.lLength; k++) {
-                _TheTree *t = (_TheTree *)LocateVar(theTrees.lData[k]);
+                _TheTree *t = GetIthTree (k);
                 _CalcNode *cN = t->DepthWiseTraversal(true);
                 while (cN) {
                     if (cN->GetModelIndex() == modelIndex) {
@@ -7569,8 +7484,7 @@ void _LikelihoodFunction::ScanAllVariables(void) {
         _AVLList avl(&allVariables);
         for (unsigned long i = 0; i < theProbabilities.lLength; i++) {
             long iNodeCount, lNodeCount;
-            ((_TheTree *)(LocateVar(theTrees(i))))
-                ->EdgeCount(iNodeCount, lNodeCount);
+            GetIthTree (i)->EdgeCount(iNodeCount, lNodeCount);
             treeSizes << (iNodeCount + lNodeCount);
             (LocateVar(theProbabilities(i)))->ScanForVariables(
                 avl, true, &rankVariables, treeSizes.GetElement(-1) << 16);
@@ -7616,18 +7530,24 @@ void _LikelihoodFunction::ScanAllVariables(void) {
         }
 
         for (unsigned long i = 0; i < theTrees.lLength; i++) {
-            ((_TheTree *)(LocateVar(theTrees(i))))->ScanAndAttachVariables();
-            ((_TheTree *)(LocateVar(theTrees(i))))->ScanForGVariables(
-                iia, iid, &rankVariables, treeSizes.GetElement(i) << 16);
+            _TheTree *ithTree = GetIthTree (i);
+            ithTree->ScanAndAttachVariables();
+            ithTree->ScanForGVariables(iia, iid, &rankVariables, treeSizes.GetElement(i) << 16);
+            ithTree->ScanForVariables(iia, iid, &rankVariables,
+                                 1 + treeSizes.GetElement(i));
+            ithTree->ScanForDVariables (iid, iia);
+            ithTree->SetUp();
         }
         
-        for (unsigned long i = 0; i < theTrees.lLength; i++) {
+        /*
+          // 20140108: Unclear why there were two loops for this
+          for (unsigned long i = 0; i < theTrees.lLength; i++) {
             _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
             cT->ScanForVariables(iia, iid, &rankVariables,
-                                 1 + treeSizes.GetElement(i));
+                                 1 + treeSizes.GetElement(i));;
             cT->ScanForDVariables(iid, iia);
             cT->SetUp();
-        }
+        }*/
 
         iia.ReorderList();
         iid.ReorderList();
@@ -7644,7 +7564,7 @@ void _LikelihoodFunction::ScanAllVariables(void) {
         _SimpleList localCategVars;
         {
             _AVLList ca(&localCategVars);
-            ((_TheTree *)(LocateVar(theTrees(i))))->ScanForCVariables(ca);
+            GetIthTree (i)->ScanForCVariables(ca);
             ca.ReorderList();
         }
 
@@ -7688,7 +7608,7 @@ void _LikelihoodFunction::ScanAllVariables(void) {
         _SimpleList categVars;
         {
             _AVLList ca(&categVars);
-            ((_TheTree *)(LocateVar(theTrees(i))))->ScanForCVariables(ca);
+            GetIthTree (i)->ScanForCVariables(ca);
             ca.ReorderList();
         }
 
@@ -7835,14 +7755,11 @@ void _LikelihoodFunction::ScanAllVariablesOnPartition(
         }
 
         for (long i2 = 0; i2 < pidx.lLength; i2++) {
-            _TheTree *cT =
-                (_TheTree *)(LocateVar(theTrees.lData[pidx.lData[i2]]));
-            cT->ScanForGVariables(iia, iid);
+            GetIthTree (pidx.lData[i2])->ScanForGVariables(iia, iid);
         }
 
         for (long i = 0; i < pidx.lLength; i++) {
-            _TheTree *cT =
-                (_TheTree *)(LocateVar(theTrees.lData[pidx.lData[i]]));
+            _TheTree *cT = GetIthTree (pidx.lData[i]);
             cT->ScanForVariables(iia, iid);
             cT->ScanForDVariables(iid, iia);
         }
@@ -7855,8 +7772,7 @@ void _LikelihoodFunction::ScanAllVariablesOnPartition(
     for (long i = 0; i < pidx.lLength; i++) {
         _SimpleList categVars;
         _AVLList ca(&categVars);
-        ((_TheTree *)(LocateVar(theTrees.lData[pidx.lData[i]])))
-            ->ScanForCVariables(ca);
+        GetIthTree (pidx.lData[i])->ScanForCVariables(ca);
         ca.ReorderList();
 
         if (categVars.lLength)
@@ -8718,7 +8634,7 @@ void _LikelihoodFunction::OptimalOrder(long index, _SimpleList & sl) {
          max = -1, k, intI, totalLength;
 
     _Parameter skipo = 1.0;
-    _TheTree *t = (_TheTree *)LocateVar(theTrees(index));
+    _TheTree *t = GetIthTree (index);
     checkParameter(optimizeSummationOrder, skipo, 1.0);
 
     if (!skipo || df->NumberDistinctSites() == 1 || t->IsDegenerate() ||
@@ -9114,8 +9030,8 @@ void _LikelihoodFunction::ComputePruningEfficiency(long & full, long & saved) {
 
     full = 0;
     saved = 0;
-    for (long i = 0; i < theTrees.lLength; i++) {
-        _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
+    for (unsigned long i = 0; i < theTrees.lLength; i++) {
+        _TheTree *cT = GetIthTree (i);
         _SimpleList *l = _HY2SIMPLELIST (leafSkips(i));
         _PMathObj lc = cT->TipCount();
 
@@ -9453,8 +9369,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
 
     for (long idx = 0; idx < redirectorT->lLength; idx++) {
         _SimpleList dT;
-        ((_TheTree *)LocateVar(redirectorT->lData[idx]))
-            ->CompileListOfModels(dT);
+        _HY2TREE(LocateVar(redirectorT->lData[idx]))->CompileListOfModels(dT);
 
         if (dT.lLength == 1) {
             dV2 << dT.lData[0];
@@ -9501,8 +9416,7 @@ void _LikelihoodFunction::SerializeLF(_String & rec, char opt,
             rec << "Tree ";
             rec << LocateVar(redirectorT->lData[idx])->GetName();
             rec << '=';
-            rec.AppendNewInstance((_String *)(
-                (_TheTree *)LocateVar(redirectorT->lData[idx]))->toStr());
+            rec.AppendNewInstance((_String*)_HY2TREE(LocateVar(redirectorT->lData[idx]))->toStr());
             rec << '\n';
         }
     }
@@ -9829,8 +9743,7 @@ BaseRef _LikelihoodFunction::toStr(void) {
         // traverse the trees now
         for (long treeCounter = 0; treeCounter < theTrees.lLength;
              treeCounter++) {
-            _TheTree *currentTree =
-                (_TheTree *)LocateVar(theTrees(treeCounter));
+            _TheTree *currentTree = GetIthTree (treeCounter);
             long level = 0, myLevel = 0, lastLevel = 0, l1, l2, j;
             res << "\nTree ";
             res << currentTree->GetName();
@@ -10095,7 +10008,7 @@ void _LikelihoodFunction::Simulate(
     long countIntermediates = target.GetNames().lLength;
 
     if (storeIntermediates && storeIntermediates->sLength == 0) {
-        _TheTree *datree = (_TheTree *)LocateVar(theTrees(0));
+        _TheTree *datree = GetIthTree (0);
         datree->AddNodeNamesToDS(&target, false, true, 0);
         countIntermediates = target.GetNames().lLength - countIntermediates;
     } else {
@@ -10187,7 +10100,7 @@ void _LikelihoodFunction::Simulate(
         }
 
         if (columnWise) {
-            _TheTree *cT = ((_TheTree *)(LocateVar(theTrees(i))));
+            _TheTree *cT = GetIthTree (i);
             cT->SetUpMatrices(1);
             while (good < vecSize) {
                 _Parameter randVal = genrand_real2(), sumSoFar = 0.0;
@@ -10432,8 +10345,7 @@ void _LikelihoodFunction::Simulate(
                     return;
                 } else {
                     intermediates = new _DataSet(iff);
-                    _TheTree *datree = (_TheTree *)LocateVar(theTrees(0));
-                    datree->AddNodeNamesToDS(intermediates, false, true, 0);
+                    GetIthTree (0)->AddNodeNamesToDS(intermediates, false, true, 0);
                 }
             } else {
                 intermediates = new _DataSet(vecSize);
@@ -10484,7 +10396,7 @@ void _LikelihoodFunction::BuildLeafProbs(
     _DataSetFilter * dsf, long DSOffset, _DataSet * intNodes) {
 
     long *curVector = nil, i, k, m;
-    _CalcNode *ccurNode = (_CalcNode *)LocateVar(curNode.get_data());
+    _CalcNode *ccurNode = _HY2CALCNODE (LocateVar(curNode.get_data()));
 
     if (!isRoot) {
 
@@ -10602,7 +10514,7 @@ bool _LikelihoodFunction::SingleBuildLeafProbs(
     if (!isRoot) {
 
         // first "mutate" the parent vector
-        _CalcNode *ccurNode = (_CalcNode *)LocateVar(curNode.get_data());
+        _CalcNode *ccurNode = _HY2CALCNODE(LocateVar(curNode.get_data()));
 
         if (ccurNode->NeedToExponentiate(-1)) {
             ccurNode->RecomputeMatrix(0, 1);
@@ -10679,7 +10591,7 @@ _AssociativeList *_LikelihoodFunction::SimulateCodonNeutral(
     } else {
         PrepareToCompute();
         Compute();
-        _TheTree *tree = (_TheTree *)LocateVar(theTrees(0));
+        _TheTree *tree = GetIthTree (0);
 
         long stateCount = nsCost->GetVDim();
         _FString aKey;
@@ -10883,7 +10795,7 @@ void _LikelihoodFunction::CodonNeutralSimulate(
 
     if (!isRoot) {
 
-        _CalcNode *ccurNode = (_CalcNode *)LocateVar(curNode.get_data());
+        _CalcNode *ccurNode = _HY2CALCNODE(LocateVar(curNode.get_data()));
         _Matrix *compExpMatrix = ccurNode->GetCompExp();
         long k = 0, n = compExpMatrix->GetVDim();
 
@@ -11464,7 +11376,7 @@ void _LikelihoodFunction::SetupCategoryCaches(void) {
       container->AppendNewInstance(hmmAndCOP);
       container->AppendNewInstance(varType);
 
-      ((_TheTree *)LocateVar(theTrees(partIndex)))->SetupCategoryMapsForNodes(
+      GetIthTree (partIndex)->SetupCategoryMapsForNodes(
           *catVarReferences, *catVarCounts, *catVarOffsets);
 
       categoryTraversalTemplate.AppendNewInstance(container);
@@ -12617,7 +12529,7 @@ _AssociativeList *_LikelihoodFunction::CollectLFAttributes(void) {
   for (long n = 0; n < vl->lLength; n++) {
     list1 << vl->lData[n];
     _SimpleList partModels;
-    ((_TheTree *)FetchVar(vl->lData[n]))->CompileListOfModels(partModels);
+    _HY2TREE(FetchVar(vl->lData[n]))->CompileListOfModels(partModels);
     if (partModels.lLength == 1) {
       modelList << modelNames(partModels.lData[0]);
     } else {

@@ -379,8 +379,7 @@ void DeleteVariable(long dv, bool deleteself) {
     } else {
       _Variable *delvar = (FetchVar(dv));
       if (delvar->IsContainer()) {
-        _VariableContainer *dc = (_VariableContainer *)delvar;
-        dc->Clear();
+        _HY2VARIABLECONTAINER(delvar)->Clear();
       }
     }
 
@@ -444,7 +443,7 @@ void DeleteTreeVariable(long dv, _SimpleList &parms, bool doDeps) {
       freeSlots << vidx;
       DeleteObject(delvar);
     } else {
-      ((_VariableContainer *)delvar)->Clear();
+      _HY2VARIABLECONTAINER(delvar)->Clear();
     }
     if (doDeps) {
       _List toDelete;
@@ -805,7 +804,7 @@ void CompileListOfUserExpressions(_SimpleList &varRefs, _List &rec,
   long i;
   _SimpleList startVars;
   _VariableContainer *firstVar =
-      (_VariableContainer *)LocateVar(varRefs.lData[0]);
+      _HY2VARIABLECONTAINER (LocateVar(varRefs.lData[0]));
 
   firstVar->ScanAndAttachVariables();
 
@@ -837,7 +836,7 @@ void CompileListOfUserExpressions(_SimpleList &varRefs, _List &rec,
   }
 
   for (i = varRefs.lLength - 1; i >= 1; i--) {
-    firstVar = (_VariableContainer *)LocateVar(varRefs.lData[i]);
+    firstVar = _HY2VARIABLECONTAINER(LocateVar(varRefs.lData[i]));
     firstVar->ScanAndAttachVariables();
     firstVar->MatchParametersToList(rec, doAll);
   }
@@ -906,7 +905,7 @@ void FinishDeferredSF(void) {
     for (; i >= 0; i = variableNames.Traverser(tcache, iv)) {
       _Variable *theV = FetchVar(i);
       if (theV->IsContainer()) {
-        ((_VariableContainer *)theV)->SetMDependance(*deferSetFormula);
+        _HY2VARIABLECONTAINER(theV)->SetMDependance(*deferSetFormula);
       }
     }
 

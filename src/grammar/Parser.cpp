@@ -98,7 +98,7 @@ void Parser::number(_Formula& f, _FormulaParsingContext& fpc) {
 		_parser2013_pushNumber (this, f, fpc, t->val); 
 }
 
-void Parser::matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const) {
+void Parser::matrix_row(_List & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const) {
 		Expect(_OPEN_BRACE);
 		_Formula* f = new _Formula; unsigned long my_column_count = 0; 
 		if (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) {
@@ -128,7 +128,7 @@ void Parser::expression(_Formula& f, _FormulaParsingContext& fpc) {
 
 void Parser::dense_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_OPEN_BRACE);
-		_SimpleList matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; 
+		_List matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; 
 		matrix_row(matrix_entries, fpc, n_cols, is_const);
 		n_rows ++; 
 		while (la->kind == _OPEN_BRACE) {
@@ -139,7 +139,7 @@ void Parser::dense_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 		_parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, fpc, &matrix_entries, n_rows, n_cols, is_const));  
 }
 
-void Parser::matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const) {
+void Parser::matrix_element(_List & matrix_definition, _FormulaParsingContext& fpc, bool& is_const) {
 		Expect(_OPEN_BRACE);
 		_Formula * h = new _Formula, * v = new _Formula, * d = new _Formula; 
 		expression(*h, fpc);
@@ -153,7 +153,7 @@ void Parser::matrix_element(_SimpleList & matrix_definition, _FormulaParsingCont
 
 void Parser::sparse_matrix(_Formula& f, _FormulaParsingContext& fpc) {
 		Expect(_OPEN_BRACE);
-		bool is_matrix = false; _SimpleList* matrix_definition = new _SimpleList; 
+		bool is_matrix = false; _List* matrix_definition = new _List; 
 		_Formula * hd = new _Formula, *vd = new _Formula; bool is_const = true; 
 		if (_parser2013_StringAndColon (this)) {
 			if (StartOf(1)) {

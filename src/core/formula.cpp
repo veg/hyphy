@@ -1443,12 +1443,13 @@ _PMathObj _Formula::Compute(long startAt, _hyExecutionContext* execContext,
       }
 
     } else {
-      for (unsigned long i = startAt; i < theFormula.lLength; i++)
-        if (!((_Operation *)(((BaseRef **)theFormula.lData)[i]))
-                ->Execute(theStack, execContext)) {
+      for (unsigned long i = startAt; i < theFormula.lLength; i++) {
+        _Operation * thisOp = getIthOp (i);
+        if (!thisOp->Execute(theStack, execContext)) {
           wellDone = false;
           break;
         }
+      }
     }
     if (theStack.theStack.lLength != 1 || !wellDone) {
       _String errorText =
@@ -1566,7 +1567,7 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm(bool makeComplex) {
 //______________________________________________________________________________
 
 _Operation* _Formula::getIthOp (unsigned long idx) const {
-  return ((_Operation *)(((BaseRef **)theFormula.lData)[idx]));
+  return ((_Operation **) theFormula.lData)[idx];
 }
 
 //______________________________________________________________________________
@@ -1926,7 +1927,7 @@ void _Formula::LocalizeFormula(_Formula &ref, _String &parentName,
 //______________________________________________________________________________
 bool _Formula::DependsOnVariable(long idx) {
   for (unsigned long f = 0; f < theFormula.lLength; f++) {
-    _Operation *anOp = ((_Operation **)theFormula.lData)[f];
+    _Operation *anOp = GetIthTerm (f);
     if (anOp->IsAVariable() && anOp->GetAVariable() == idx) {
       return true;
     }
@@ -1937,7 +1938,7 @@ bool _Formula::DependsOnVariable(long idx) {
 //______________________________________________________________________________
 _Operation *_Formula::GetIthTerm(const long idx) const {
   if (idx >= 0 && idx < theFormula.lLength) {
-    return _HY2OPERATION(theFormula.GetItem(idx));
+    return ((_Operation**)theFormula.lData)[idx];
   }
   return nil;
 }
@@ -1945,7 +1946,7 @@ _Operation *_Formula::GetIthTerm(const long idx) const {
 //______________________________________________________________________________
 bool _Formula::IsAConstant(bool deep) {
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->IsAVariable(deep)) {
+    if (GetIthTerm (i) ->IsAVariable(deep)) {
       return false;
     }
   }
@@ -1955,7 +1956,7 @@ bool _Formula::IsAConstant(bool deep) {
 //______________________________________________________________________________
 bool _Formula::IsConstant(void) {
   for (unsigned long i = 0; i < theFormula.lLength; i++) {
-    if (((_Operation *)((BaseRef **)theFormula.lData)[i])->IsConstant() ==
+    if (GetIthTerm (i)->IsConstant() ==
         false) {
       return false;
     }

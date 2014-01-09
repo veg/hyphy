@@ -43,18 +43,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "baseobj.h"
 
-#define _HY2SIMPLELIST(X) (dynamic_cast<_SimpleList*>(X))
 
+/*
+  
+  A resizable list which stores _SIMPLE_ types
+  which require no custom constructor or descructor action, 
+  supports comparison operators and '+'
+*/ 
+
+template <typename PAYLOAD>
 class _SimpleList : public virtual BaseObj {
-  friend class _AVLList;
 
 protected:
   //memory allocated enough for this many slots
   unsigned long laLength;
-
-public:
-  //Data Members
-  long *lData;
+  PAYLOAD       *lData;
   unsigned long lLength; //actual length
 
   //Methods
@@ -65,20 +68,22 @@ public:
   ==============================================================
   */
 
+public:
+
   //does nothing
   _SimpleList();
 
   //length constructor
-  _SimpleList(unsigned long);
+  _SimpleList(const unsigned long);
 
   // stack copy contructor
-  _SimpleList(_SimpleList &, long = 0, long = -1);
+  _SimpleList(const _SimpleList &, long = 0, long = -1);
 
   // data constructor (1 member list)
-  _SimpleList(long);
+  _SimpleList(PAYLOAD);
 
   // arithmetic series populator: size, first item, step
-  _SimpleList(long, long, long);
+  _SimpleList(const unsigned long, const PAYLOAD, const PAYLOAD);
 
   //destructor
   virtual ~_SimpleList(void);
@@ -90,7 +95,7 @@ public:
    * to the constructor
    * @param 2-N: long to be added to the list
    */
-  _SimpleList(const long, const unsigned long, ...);
+  _SimpleList(const PAYLOAD, const unsigned long, ...);
 
   /*
       ==============================================================
@@ -99,10 +104,10 @@ public:
       */
 
   // element location functions - read/write
-  long &operator[](const long);
+  PAYLOAD &operator[](const long);
 
   // element location functions - read only
-  long operator()(const unsigned long);
+  PAYLOAD operator()(const unsigned long);
 
   // assignment operator
   virtual _SimpleList operator=(_SimpleList);
@@ -110,14 +115,14 @@ public:
   // append operator
   virtual _SimpleList operator&(_SimpleList);
 
-  // append number to this
-  virtual void operator<<(long);
+  // append an instance to this
+  virtual void operator<<(PAYLOAD);
 
   // append number to this if it's not in the list (search first). List assumed
   // unsorted.
-  virtual bool operator>>(long);
+  virtual bool operator>>(PAYLOAD);
 
-  virtual void operator<<(_SimpleList &);
+  virtual void operator<<(const _SimpleList &);
 
   /*
   ==============================================================
@@ -133,7 +138,7 @@ public:
   * @param index The index of the elemnt to retrieve
   * @return the value of the element at the specified index.
   */
-  long GetElement(const long index) const;
+  PAYLOAD GetElement(const long index) const;
 
   /**
   * Find the position of a search string in the list of strings (ONLY)
@@ -142,27 +147,22 @@ public:
   * @param startAt Index to start at
   * @return -1 if not found, index if found
   */
-  virtual long BinaryFind(long, long startAt = 0) const;
+  virtual long BinaryFind(PAYLOAD, long startAt = 0) const;
 
   // insert an element into the sorted list preserving the sortedness
-  long BinaryInsert(long);
+  long BinaryInsert(PAYLOAD);
 
   void Clear(bool = true);
 
-  /* SLKP: 20110209
-   * An UGLY hack to automate clearing lists that have pointers to formulas in
-   * them
-  */
-  void ClearFormulasInList(void);
 
   /**
-  * Compares two parts of the list
+  * Compares two elements of the list
   * Example: SimpleList sl(1,3,5).Compare(0,1) = -1
   * @param i The index to compare
   * @param j The second index to compare
   * @return -1 if i<j, 0 if i==j, or 1 if i>j
   */
-  virtual long Compare(long, long);
+  virtual long Compare(const long, const long);
   virtual long Compare(BaseRef, long);
 
   long CountCommonElements(_SimpleList &, bool = false);
@@ -172,15 +172,8 @@ public:
   * Example: SimpleList SimpleList([4, 1, 2]).countitems() = 4
   * @return Unsigned long of item length
   */
-  unsigned long countitems(void) const;
+  unsigned long countitems (void) const;
 
-  /**
-  * SLKP: 20090611
-  * Print the names of variables whose indices are
-  * contained in the list
-  * @return Nothing. Prints out to screen
-  */
-  void DebugVarList(void);
 
   // delete the item at a given poisiton
   void Delete(long, bool = true);
@@ -200,10 +193,10 @@ public:
   * @param toDelete SimpleList of indices to
   * @return Nothing. Acts on the List object it was called from.
   */
-  virtual void DeleteList(const _SimpleList &);
+  virtual void DeleteList(const _SimpleList<long> &);
 
   // shift a range of elements in the array
-  void Displace(long, long, long);
+  void Displace(const long, const long, const long);
 
   /**
   * Much like [] and () except negative indices return offsets from the end.
@@ -212,14 +205,14 @@ public:
   * @param index Which item you want.
   * @return A long
   */
-  long Element(long);
+  PAYLOAD Element(const long);
 
   /**
   * Checks if list is identical to other list
   * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4
   * @return true if equal.
   */
-  bool Equal(_SimpleList &);
+  bool Equal(_SimpleList <PAYLOAD>&);
 
   /**
   * Retain all those elements that are between (strictly) the 1st and the 2nd
@@ -229,7 +222,7 @@ public:
   * @param ub End of new list
   * @return Nothing. Operates on class that called it.
   */
-  virtual void FilterRange(long, long);
+  virtual void FilterRange(const PAYLOAD, const PAYLOAD);
 
   /**
   * Find the position of a search string in the list of strings (ONLY)
@@ -238,7 +231,7 @@ public:
   * @param startAt Index to start at
   * @return -1 if not found, index if found
   */
-  virtual long Find(const long, const long startAt = 0L) const;
+  virtual long Find(const PAYLOAD, const long startAt = 0L) const;
 
   /**
   * Same as find, but steps over indices
@@ -248,7 +241,7 @@ public:
   * @param startAt Index to start at
   * @return -1 if not found, index if found
   */
-  virtual long FindStepping(const long, const long, const long = 0L) const;
+  virtual long FindStepping(const PAYLOAD, const long, const long = 0L) const;
 
   /**
   * Flips the list
@@ -268,10 +261,9 @@ public:
   * @param pointer
   * @return Nothing. Acts on the List object it was called from.
   */
-  virtual void InsertElement(BaseRef br, long insertAt = -1, bool store = true,
-                             bool pointer = true);
+  virtual void InsertElement(const PAYLOAD, long insertAt = -1);
 
-  void Intersect(_SimpleList &, _SimpleList &);
+  void Intersect(_SimpleList <PAYLOAD>&, _SimpleList<PAYLOAD> &);
 
   BaseRef ListToPartitionString(void);
 
@@ -283,7 +275,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Min() = 1
   * @return maximum value in the list
   */
-  long Max(void);
+  PAYLOAD Max(void);
 
   /**
   * SLKP: 20090508
@@ -291,7 +283,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Sum() = 7
   * @return the sum of all values in the list
   */
-  long Sum(void);
+  PAYLOAD Sum(void);
 
   /**
   * Populate a Simple List with integers incrementally.
@@ -301,8 +293,8 @@ public:
   * @param increment by Pass true for a case sensitive search
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Merge(_SimpleList &l1, _SimpleList &l2, _SimpleList *mergeResults = nil,
-             _SimpleList *mergeResults2 = nil);
+  void Merge(_SimpleList <PAYLOAD> &l1, _SimpleList <PAYLOAD> &l2, _SimpleList <PAYLOAD> *mergeResults = nil,
+             _SimpleList <PAYLOAD> *mergeResults2 = nil);
 
   /**
   * SLKP: 20090508
@@ -310,7 +302,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Min() = 1
   * @return minimum value in the list
   */
-  long Min(void);
+  PAYLOAD Min(void);
 
   /**
   * Initialize the function to select all k-element subsets of a given simple
@@ -326,7 +318,7 @@ public:
   * : true - 'revolving door' method - TBA
   * @return true if successfully initialized
   */
-  bool NChooseKInit(_SimpleList &, _SimpleList &, unsigned long, bool = false);
+  bool NChooseKInit(_SimpleList <PAYLOAD> &, _SimpleList <PAYLOAD>&, unsigned long, bool = false);
 
   /**
   * Select the next k-tuple
@@ -336,7 +328,7 @@ public:
   * @return [bool] true is more k-tuples are available; [false] if the last one
   * has just been stored
   */
-  bool NChooseK(_SimpleList &, _SimpleList &);
+  bool NChooseK(_SimpleList <PAYLOAD> &, _SimpleList <PAYLOAD> &);
 
   /**
   * SLKP: 20090316
@@ -359,7 +351,7 @@ public:
   * @param shift Number to add
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Offset(long);
+  void Offset(PAYLOAD);
 
   /**
   * TODO:Permute elements in blocks of given size
@@ -367,7 +359,7 @@ public:
   * @param shift Number to add
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Permute(long);
+  void Permute(const long);
 
   /**
   * TODO:Permute elements in blocks of given size with possible replacement
@@ -375,7 +367,7 @@ public:
   * @param shift Number to add
   * @return Nothing. Acts on the List object it was called from.
   */
-  void PermuteWithReplacement(long);
+  void PermuteWithReplacement(const long);
 
   /**
    * Select a number of list elements at random (either with or w/o replacement)
@@ -385,10 +377,10 @@ public:
    * @param select Sample with our without replacement
    * @return Return the list of sampled elements
    */
-  _SimpleList *Subset(unsigned long size, const bool replacement = false);
+  _SimpleList <PAYLOAD> *Subset(unsigned long size, const bool replacement = false);
 
   /**
-  * Retrive the last value and shorted the list by 1
+  * Retrive the last value and shorten the list by 1
   * Example: SimpleList(1,3,5,7).Pop() = 7
   * @return Return last value from the list
   */
@@ -402,23 +394,23 @@ public:
   * @param increment by Pass true for a case sensitive search
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Populate(long, long, long);
+  void Populate(const unsigned long, const PAYLOAD, const PAYLOAD);
 
   /**
   * TODO
   * Example: SimpleList sl(1,2,3).Flip() = [3,2,1]
   * @return Nothing. Acts on the List object it was called from.
   */
-  void RecursiveIndexSort(long from, long to, _SimpleList *index);
+  void RecursiveIndexSort(long from, long to, _SimpleList <long> *index);
 
   /**
   * Request space for a given # of elements
   * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4
   * @return true if equal.
   */
-  void RequestSpace(long);
+  void RequestSpace(const long);
 
-  void Subtract(_SimpleList &, _SimpleList &);
+  void Subtract(_SimpleList <PAYLOAD> &, _SimpleList <PAYLOAD> &);
 
   /**
   * Swaps two positions
@@ -427,7 +419,7 @@ public:
   * @param j Second index to swap with
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Swap(long, long); //swap two elements
+  void Swap(const long, const long); //swap two elements
 
   virtual BaseRef toStr(void);
 
@@ -442,9 +434,9 @@ public:
   * @param shift Number to add
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Union(_SimpleList &, _SimpleList &);
+  void Union(_SimpleList <PAYLOAD> &, _SimpleList <PAYLOAD> &);
 
-  void XOR(_SimpleList &, _SimpleList &);
+  void XOR(_SimpleList <PAYLOAD> &, _SimpleList <PAYLOAD> &);
 
   /**
   * Sorts List
@@ -465,7 +457,7 @@ public:
   * the new_order->old_order mapping is returned in the array pointed to
   *
   */
-  _SimpleList *CountingSort(long, _SimpleList * = nil);
+  _SimpleList <PAYLOAD> *CountingSort(long, _SimpleList <PAYLOAD> * = nil);
 
   void BubbleSort(void);
   void QuickSort(long, long);
@@ -475,6 +467,9 @@ public:
 
 //TODO:Why is this a global function? If it needs to be, should be in
 //helpers.cpp
-void SortLists(_SimpleList *, _SimpleList *);
+template<typename PAYLOAD>
+void SortLists(_SimpleList<PAYLOAD> *, _SimpleList <PAYLOAD> *);
+
+#include "simplelist.cpp"
 
 #endif

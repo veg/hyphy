@@ -130,7 +130,7 @@ union _SimpleFormulaDatum;
 #define _HY2OPERATION(X) (dynamic_cast<_Operation*>(X))
 
 //__________________________________________________________________________________
-class _Operation : public virtual BaseObj {
+class _Operation : public BaseObj {
 
   friend class _Formula;
   friend class _Variable;

@@ -45,7 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define _HY2LIST(X) (dynamic_cast<_List*>(X))
 
-class _List : public virtual _SimpleList {
+class _List : public _SimpleList {
 
 public:
 

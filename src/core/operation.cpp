@@ -277,7 +277,7 @@ bool _Operation::ExecuteBuiltIn (_Stack& theScrap, _hyExecutionContext* context)
   
   long sL = theScrap.theStack.lLength;
   for (long k = attribute-1; k>=0; k--) {
-    terms[k] = (_PMathObj) theScrap.theStack.lData[--sL];
+    terms[k] = dynamic_cast <_MathObject*> ((BaseRef) theScrap.theStack.lData[--sL]);
   }
   theScrap.theStack.lLength = sL;
   op_result = terms[0]->Execute(reference, terms[1], terms[2], context);

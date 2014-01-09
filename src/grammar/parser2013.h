@@ -71,15 +71,15 @@ void _parser2013_matrix_checkRowLengths (void *vp, _FormulaParsingContext& fpc, 
 
 long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc);
 
-void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, _SimpleList&, _Formula*, _Formula*, _Formula*, bool & );
+void _parser2013_pushSparseElementEntry (void *vp, _FormulaParsingContext& fpc, _List&, _Formula*, _Formula*, _Formula*, bool & );
 
 void _parser2013_createSparseMatrix (void* vp, _Formula&, _FormulaParsingContext&, 
-          _Formula*, _Formula*, _SimpleList*, bool); 
+          _Formula*, _Formula*, _List*, bool); 
           
 
 
 
-_Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _SimpleList* entries, 
+_Matrix*  _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _List* entries, 
       const unsigned long n_rows, const unsigned long n_cols, const bool is_const); 
 /*
 
@@ -96,14 +96,14 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
                                         long op_code, long lvalue_index);
 
 
-void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, 
+void _parser2013_addADictionaryElement (void* vp, _List& dictionary_entries, _Formula* key, _Formula *value, 
                                         _FormulaParsingContext& fpc, bool & is_const);
                                         
 void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext& fpc, 
-                                  _SimpleList& dictionary_entries, bool is_const);
+                                  _List& dictionary_entries, bool is_const);
                                         
 
-void _parser2013_add_matrix_entry (void *vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
+void _parser2013_add_matrix_entry (void *vp, _List& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const);
 
 void _parser2013_pushStatementOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f);
 void _parser2013_pushJumpOntoList (void *vp, _ExecutionList& current_command_stream, _Formula* f, bool jump_if_true = false);

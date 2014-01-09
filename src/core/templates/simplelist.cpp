@@ -421,19 +421,6 @@ void _SimpleList::Clear(bool completeClear) {
   }
 }
 
-void _SimpleList::DebugVarList(void) {
-  printf("\nVariable list dump:\n");
-  for (unsigned long e = 0; e < lLength; e++) {
-    if (lData[e] >= 0) {
-      _Variable *theV = LocateVar(lData[e]);
-      if (theV) {
-        printf("[%s]\n", theV->GetName()->getStr());
-        continue;
-      }
-    }
-    printf("[Empty]\n");
-  }
-}
 
 //Delete item at index (>=0)
 void _SimpleList::Delete(long index, bool compact) {

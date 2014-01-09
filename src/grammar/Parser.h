@@ -124,10 +124,10 @@ public:
 
 	void ident(_Formula& f, _FormulaParsingContext& fpc, bool global_tag);
 	void number(_Formula& f, _FormulaParsingContext& fpc);
-	void matrix_row(_SimpleList & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
+	void matrix_row(_List & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const);
 	void expression(_Formula& f, _FormulaParsingContext& fpc);
 	void dense_matrix(_Formula& f, _FormulaParsingContext& fpc);
-	void matrix_element(_SimpleList & matrix_definition, _FormulaParsingContext& fpc, bool& is_const);
+	void matrix_element(_List & matrix_definition, _FormulaParsingContext& fpc, bool& is_const);
 	void sparse_matrix(_Formula& f, _FormulaParsingContext& fpc);
 	void function_call(_Formula& f, _FormulaParsingContext& fpc);
 	void primitive(_Formula& f, _FormulaParsingContext& fpc);

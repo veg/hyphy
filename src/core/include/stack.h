@@ -41,21 +41,19 @@
 #define __STACK__
 
 #include "mathobj.h"
+#include "list.h"
 
 //__________________________________________________________________________________
-class _Stack //computational stack
-    {
-
-  friend class _Formula;
-  friend class _Operation;
-  friend class _Variable;
+//computational stack
+ 
+class _Stack : public virtual _List {
 
 public:
 
   _Stack(void);
   ~_Stack(void);
 
-  bool Push(BaseRef, bool = true); // push object onto the stack
+  bool Push(_PMathObj, bool = true); // push object onto the stack
   _PMathObj Pop(bool del = true);    // pop object from the top of the stack
   long StackDepth(void);             // returns the depth of the stack
   void Reset(void);                  // clear the stack
@@ -63,9 +61,6 @@ public:
   virtual void Initialize(void);
   virtual void Duplicate(BaseRef);
 
-protected:
-
-  _List theStack;
 };
 
 #endif

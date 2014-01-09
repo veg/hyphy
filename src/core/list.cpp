@@ -258,7 +258,7 @@ Methods
 void _List::AppendNewInstance(BaseRef br) {
   if (br) {
     (*this) << br;
-    br->nInstances--;
+    br->RemoveAReference();
   } else {
     checkPointer(br);
   }

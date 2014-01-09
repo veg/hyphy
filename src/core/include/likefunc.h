@@ -373,7 +373,7 @@ protected:
     bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter*, _SimpleList* = nil);
     void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, _Parameter&, _Parameter&);
 
-    bool            HasBlockChanged       (long);
+    bool            HasBlockChanged       (const long);
     long            BlockLength           (const unsigned long) const;
     void            PartitionCatVars      (_SimpleList&, long);
     // 20090210: extract variable indices for category variables in i-th partition

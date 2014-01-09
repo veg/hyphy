@@ -415,8 +415,9 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
 
     long stackD = -1, last0 = 0;
 
+
     for (long opID = 0; opID < f->theFormula.lLength - 1; opID++) {
-      ((_Operation *)f->theFormula(opID))->StackDepth(stackD);
+      f->GetIthTerm (opID)->StackDepth(stackD);
       if (stackD == 0) {
         last0 = opID;
       }
@@ -439,16 +440,16 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
       last0++;
     } else {
       _Variable *mmo =
-          LocateVar(((_Operation *)f->theFormula(0))->GetAVariable());
+          LocateVar(f->GetIthTerm (0)->GetAVariable());
 
       if (mmo) {
         if (mmo->ObjectClass() == MATRIX) {
           mmx = _HY2MATRIX (mmo->GetValue());
-          ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+          f->GetIthTerm (0)->ToggleVarRef(true);
         } else {
           if (mmo->ObjectClass() == ASSOCIATIVE_LIST) {
             mma = _HY2ASSOCIATIVE_LIST (mmo->GetValue());
-            ((_Operation *)f->theFormula(0))->ToggleVarRef(true);
+            f->GetIthTerm (0)->ToggleVarRef(true);
           }
         }
       }
@@ -548,70 +549,6 @@ long HandleFormulaParsingError(_String errMsg, _String *saveError, _String &s,
   return HY_FORMULA_FAILED;
 }
 
-//______________________________________________________________________________
-bool checkLHS(_List *levelOps, _List *levelData, _String &errMsg, char &deref,
-              _Formula *f, _Variable *&lhs) {
-  bool check = true;
-
-  lhs = nil;
-
-  if (f->IsEmpty()) {
-    /* nothing has been added to the formula previously, so this should be a
-       simple assignment
-       to a variable */
-    if (levelOps->lLength == 0) {
-      if (levelData->lLength == 0) {
-        errMsg = "An empty left-hand side";
-        return false;
-      }
-    }
-  } else {
-    if (levelData->lLength > 0) {
-      errMsg = "Only simple variable references [e.g. var = value or *ref = "
-               "value or *(string expression) = value] can appear on the LHS "
-               "of assignments";
-      return false;
-    }
-  }
-
-  deref = HY_STRING_DIRECT_REFERENCE;
-  if (levelOps->lLength > 0) { // this is where 'f is non-empty' cases will go
-    check = false;
-    if (levelOps->lLength == 1) {
-      char buffered_op = ((_Operation *)((*levelOps)(0)))->TheCode();
-      if (buffered_op == HY_OP_CODE_MUL) {
-        check = true;
-        deref = HY_STRING_LOCAL_DEREFERENCE;
-      } else {
-        if (buffered_op == HY_OP_CODE_POWER) {
-          check = true;
-          deref = HY_STRING_GLOBAL_DEREFERENCE;
-        } else {
-          errMsg = "* and ^ are the two supported de-referencing operations";
-        }
-      }
-    } else {
-      errMsg = "Expressions (other than matrix/dict access) cannot appear on "
-               "the left-hand side of assignments";
-    }
-  } else {
-    if (levelData->lLength != 1) {
-      errMsg =
-          "The left hand side expression does not contain an object reference";
-      check = false;
-    }
-  }
-  if (check && levelData->lLength == 1) {
-    _Operation *theOp = (_Operation *)(*levelData)(0);
-    if (!theOp->IsAVariable(false)) {
-      errMsg = "The left-hand side of an assignment must be a variable (not a "
-               "constant)";
-      return false;
-    }
-    lhs = LocateVar(theOp->GetAVariable());
-  }
-  return check;
-}
 
 //______________________________________________________________________________
 long _parserHelperHandleInlineBoundCases(_String &s,

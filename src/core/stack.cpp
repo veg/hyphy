@@ -55,7 +55,7 @@ _Stack::~_Stack(void) {}
 
 //______________________________________________________________________________
 // push object onto the stack
-bool _Stack::Push(BaseRef newObj, bool dup) {
+bool _Stack::Push(_PMathObj newObj, bool dup) {
   if (dup)
     theStack << (newObj);
   else
@@ -66,7 +66,7 @@ bool _Stack::Push(BaseRef newObj, bool dup) {
 //______________________________________________________________________________
 // pop object from the top of the stack
 _PMathObj _Stack::Pop(bool del) {
-  _PMathObj r = (_PMathObj) theStack.lData[theStack.lLength - 1];
+  _PMathObj r = dynamic_cast <_PMathObj> (((BaseRef) theStack.lData[theStack.lLength - 1]));
   if (del) {
     theStack.lLength--;
   }

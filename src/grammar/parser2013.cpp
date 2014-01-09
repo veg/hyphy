@@ -124,7 +124,7 @@ void _parser2013_pushIdentifier (void* vp, _Formula& f, _FormulaParsingContext& 
   }
 }
 
-_Matrix* _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _SimpleList* entries, const unsigned long n_rows, 
+_Matrix* _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _List* entries, const unsigned long n_rows, 
                                         const unsigned long n_cols, const bool is_const) {
   
   if (_parser2013_errorFree(vp) == false) return new _Matrix;
@@ -148,18 +148,17 @@ _Matrix* _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _
   if (is_const) {
     for (unsigned long r = 0UL; r < n_rows; r ++) {
       for (unsigned long c = 0UL; c < n_cols; c++, overall_index++) {
-        _Formula *f = ((_Formula*)(entries->GetElement (overall_index)));
+        _Formula *f = _HY2FORMULA(entries->GetItem (overall_index));
         _PMathObj rs = f->Compute();
         cout << rs->Value() << endl;
-        m->Store(r, c, _HY2FORMULA (entries->GetElement (overall_index))->Compute()->Value());
+        m->Store(r, c, _HY2FORMULA ((*entries) (overall_index))->Compute()->Value());
       }
     }
-    entries->ClearFormulasInList();
   } else {
     overall_index = entries->countitems();
     _Formula ** fp = (_Formula**) m->theData;
     for (unsigned long c = 0UL; c < overall_index; c++) {
-      fp[c] = (_Formula*)entries->GetElement (c);
+      fp[c] = _HY2FORMULA ((*entries)(c));
     }
   }
   
@@ -167,7 +166,7 @@ _Matrix* _parser2013_createDenseMatrix (void* vp, _FormulaParsingContext& fpc, _
 }
 
 void _parser2013_createSparseMatrix (void* vp, _Formula& f, _FormulaParsingContext& fpc, 
-                                     _Formula* hd, _Formula* vd, _SimpleList* entries, bool is_const) {
+                                     _Formula* hd, _Formula* vd, _List* entries, bool is_const) {
   
   if (_parser2013_errorFree(vp) == false) return;
   if (vd->IsEmpty()) {
@@ -187,14 +186,13 @@ void _parser2013_createSparseMatrix (void* vp, _Formula& f, _FormulaParsingConte
     for (unsigned long k = 0; k < entries->lLength; k++) {
       constants->AppendNewInstance (new _Constant (((_Formula*)entries->GetElement(k))->Compute()->Value()));
     }
-    entries->ClearFormulasInList();
     DeleteObject(entries);
     f.Push (new _Operation (new _Matrix ((_PMathObj)constants, true)));
     DeleteObject (constants);
     
   } else {
-    entries->InsertElement ((BaseRef)hd, 0L, false, false);
-    entries->InsertElement ((BaseRef)vd, 1L, false, false);
+    entries->InsertElement (hd, 0L, false);
+    entries->InsertElement (vd, 1L, false);
     f.Push (new _Operation (_HY_OPERATION_SPARSE_MATRIX, _HY_OPERATION_INVALID_REFERENCE,
                             _HY_OPERATION_INVALID_REFERENCE, (_PMathObj) entries));
   }
@@ -221,13 +219,13 @@ long _parser2013_checkLvalue (void *vp, _Formula &f, _FormulaParsingContext& fpc
   return f.LValueIndex (0L, true);
 }
 
-void _parser2013_add_matrix_entry (void* vp, _SimpleList& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
+void _parser2013_add_matrix_entry (void* vp, _List& matrix_entries, _Formula* f, _FormulaParsingContext& fpc, bool & is_const) {
   if (_parser2013_errorFree(vp) == false) return;
   f->SimplifyConstants();
   if (is_const) {
     is_const = !f->IsEmpty () && f->IsConstant();
   }
-  matrix_entries << (long)f;
+  matrix_entries << f;
 }
 
 void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs, 
@@ -264,7 +262,7 @@ void  _parser2013_handleAssignment (void* vp, _Formula& lhs, _Formula &rhs,
 }
 
 
-void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entries, _Formula* key, _Formula *value, _FormulaParsingContext& fpc, bool & is_const) {
+void _parser2013_addADictionaryElement (void* vp, _List& dictionary_entries, _Formula* key, _Formula *value, _FormulaParsingContext& fpc, bool & is_const) {
   
   if (_parser2013_errorFree(vp) == false) return;
   key->SimplifyConstants();
@@ -274,13 +272,13 @@ void _parser2013_addADictionaryElement (void* vp, _SimpleList& dictionary_entrie
     is_const = key->IsConstant() && value->IsConstant();
   }
   
-  dictionary_entries << (long)key;
-  dictionary_entries << (long)value;
+  dictionary_entries << key;
+  dictionary_entries << value;
 }
 
 
 void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext& fpc, 
-                                   _SimpleList& dictionary_entries, bool is_const) {
+                                   _List& dictionary_entries, bool is_const) {
   
   if (_parser2013_errorFree(vp) == false) return;
   
@@ -297,7 +295,7 @@ void _parser2013_createDictionary (void* vp, _Formula &f, _FormulaParsingContext
 }
 
 void _parser2013_pushSparseElementEntry (void* vp, _FormulaParsingContext& fpc,
-                                         _SimpleList& matrix_entries, _Formula* r, _Formula* c, _Formula* d, bool & is_const ) {
+                                         _List& matrix_entries, _Formula* r, _Formula* c, _Formula* d, bool & is_const ) {
   if (_parser2013_errorFree(vp) == false) return;
   _Formula* f[3] = {r,c,d};
   for (long k = 0; k < 3; k ++) {
@@ -305,7 +303,7 @@ void _parser2013_pushSparseElementEntry (void* vp, _FormulaParsingContext& fpc,
     if (is_const) {
       is_const = f[k]->IsConstant();
     }
-    matrix_entries << (long)(f[k]);
+    matrix_entries << f[k];
   }
 }
 

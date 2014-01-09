@@ -86,6 +86,7 @@ extern _String expectedNumberOfSubs, stringSuppliedLengths, noInternalLabels,
 
 extern _Parameter _timesCharWidths[256], _maxTimesCharWidth;
 
+
 inline void _handle4x4_pruning_case(double *childVector, double *tMatrix,
                                     double *parentConditionals) {
 #ifdef _SLKP_USE_SSE_INTRINSICS

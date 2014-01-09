@@ -49,6 +49,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ROOTED_RIGHT 2
 
 #define _HY2CALCNODE(X) (dynamic_cast<_CalcNode*>(X))
+#define _FETCH_CALCNODE_FROM_VAR_ID(X) (_HY2CALCNODE(LocateVar(X)))
+
 
 //_______________________________________________________________________________________________
 

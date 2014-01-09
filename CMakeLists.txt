@@ -109,9 +109,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif(${MACOSX})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3 ")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3  ")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  ")
     endif(${GCC45})
 
     if(${GCC46})
@@ -252,6 +252,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
+    src/core/templates
     src/lib/Link 
     src/new/include
     contrib/SQLite-3.7.11 # SQLite
@@ -401,10 +402,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    #COMPILE_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    #LINK_FLAGS "${OpenMP_CXX_FLAGS} ${SSE_RELATED_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O1"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O1"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0"
 )
 
 set_property(

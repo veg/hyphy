@@ -173,7 +173,7 @@ void _TheTree::PostTreeConstructor(bool dupMe) {
         if (node_temp->get_num_nodes()) { // an internal node - make it a root
           node_temp->detach_parent();
           //node_temp = theRoot->go_down((i==1)?2:1);
-          _CalcNode *thecn = (_CalcNode *)LocateVar(theRoot->get_data());
+          _CalcNode *thecn = _FETCH_CALCNODE_FROM_VAR_ID(theRoot->get_data());
           _String pp = *thecn->theName;
           DeleteVariable(pp);
           if (i == 1) {
@@ -187,7 +187,7 @@ void _TheTree::PostTreeConstructor(bool dupMe) {
             theRoot = node_temp;
             rooted = ROOTED_RIGHT;
           }
-          thecn = (_CalcNode *)LocateVar(theRoot->get_data());
+          thecn = _FETCH_CALCNODE_FROM_VAR_ID(theRoot->get_data());
           pp = *thecn->theName;
           DeleteVariable(pp, false);
           if (i == 1) {
@@ -207,14 +207,14 @@ void _TheTree::PostTreeConstructor(bool dupMe) {
                                "what you meant to do.")));
         node<long> *node_temp = theRoot->go_down(1);
         node_temp->detach_parent();
-        _CalcNode *thecn = (_CalcNode *)LocateVar(theRoot->get_data());
+        _CalcNode *thecn = _FETCH_CALCNODE_FROM_VAR_ID(theRoot->get_data());
         _String pp = *thecn->theName;
         DeleteVariable(pp);
         node_temp->add_node(*theRoot->go_down(2));
         delete theRoot;
         theRoot = node_temp;
         rooted = ROOTED_LEFT;
-        thecn = (_CalcNode *)LocateVar(theRoot->get_data());
+        thecn = _FETCH_CALCNODE_FROM_VAR_ID(theRoot->get_data());
         pp = *thecn->theName;
         DeleteVariable(pp, false);
         ReportWarning(
@@ -297,7 +297,7 @@ _TheTree::_TheTree(_String name, _TheTree *otherTree) : _TreeTopology(&name) {
     node<long> *topTraverser = DepthWiseStepTraverser(theRoot);
 
     while (topTraverser) {
-      _CalcNode *sourceNode = (_CalcNode *)LocateVar(topTraverser->in_object),
+      _CalcNode *sourceNode = _FETCH_CALCNODE_FROM_VAR_ID(topTraverser->in_object),
                 copiedNode(sourceNode, this);
       topTraverser->init(copiedNode.theIndex);
       topTraverser = DepthWiseStepTraverser((node<long> *)nil);
@@ -412,7 +412,7 @@ bool _TheTree::FinalizeNode(node<long> *nodie, long number, _String &nodeName,
     }
   }
 
-  _CalcNode *nodeVar = (_CalcNode *)LocateVar(cNt.theIndex);
+  _CalcNode *nodeVar = _FETCH_CALCNODE_FROM_VAR_ID(cNt.theIndex);
 
   nodeVar->SetValue(&val);
 
@@ -520,7 +520,7 @@ node<long> *_TheTree::DuplicateTreeStructure(node<long> *theNode,
   if (1) {
     // process this node now
     _String replacedName = *GetName() & '.', *temp;
-    _CalcNode *sourceNode = new _CalcNode (*(_CalcNode *)LocateVar(theNode->get_data()));
+    _CalcNode *sourceNode = new _CalcNode (*_FETCH_CALCNODE_FROM_VAR_ID(theNode->get_data()));
     _String newNodeName = (LocateVar(sourceNode->GetAVariable())->GetName())
         ->Replace(replacedName, *replacementName, true);
     _Variable dummyVar(newNodeName);
@@ -531,7 +531,7 @@ node<long> *_TheTree::DuplicateTreeStructure(node<long> *theNode,
     sourceNode->theName->nInstances++;
     ReplaceVar(sourceNode);
     DeleteObject(sourceNode);
-    sourceNode = (_CalcNode *)LocateVar(j);
+    sourceNode = _FETCH_CALCNODE_FROM_VAR_ID(j);
     locNode->init(j);
 
 #ifndef USE_POINTER_VC
@@ -1202,7 +1202,7 @@ void _TheTree::GetBranchLength(node<long> *n, _String &r, bool getBL) {
     _Matrix *mm, *fv;
 
     RetrieveModelComponents(
-        ((_CalcNode *)LocateVar (n->in_object))->GetModelIndex(),
+        _FETCH_CALCNODE_FROM_VAR_ID(n->in_object)->GetModelIndex(),
         mm, fv, mbf);
 
     if (mm && fv) {
@@ -1212,13 +1212,13 @@ void _TheTree::GetBranchLength(node<long> *n, _String &r, bool getBL) {
     }
 
   } else {
-    r = ((_CalcNode *)LocateVar (n->in_object)) ->BranchLength();
+    r = _FETCH_CALCNODE_FROM_VAR_ID(n->in_object) ->BranchLength();
   }
 }
 
 //______________________________________________________________________________
 void _TheTree::GetBranchLength(node<long> *n, _Parameter &r) {
-  r = ((_CalcNode *)LocateVar (n->in_object)) ->BranchLength();
+    r = _FETCH_CALCNODE_FROM_VAR_ID (n->in_object) ->BranchLength();
 }
 
 //______________________________________________________________________________
@@ -1233,7 +1233,7 @@ void _TheTree::GetBranchValue(node<long> *n, _String &r) {
 
 //______________________________________________________________________________
 _String *_TheTree::GetBranchSpec(node<long> *n) {
-  _CalcNode *cn = (_CalcNode *)LocateVar (n->in_object);
+  _CalcNode *cn = _FETCH_CALCNODE_FROM_VAR_ID (n->in_object);
 
   _String *res = new _String(32L, true);
   long nModel = cn->GetTheModelID();
@@ -1300,7 +1300,7 @@ _String *_TheTree::GetBranchSpec(node<long> *n) {
 
 //______________________________________________________________________________
 void _TheTree::GetBranchVarValue(node<long> *n, _String &r, long idx) {
-  _CalcNode *travNode = (_CalcNode *)LocateVar (n->in_object);
+  _CalcNode *travNode = _FETCH_CALCNODE_FROM_VAR_ID (n->in_object);
   long iVarValue = travNode->iVariables->FindStepping(idx, 2, 1);
   if (iVarValue > 0)
       // user variable, but not in the model
@@ -1464,7 +1464,7 @@ _Parameter _TheTree::DetermineBranchLengthGivenScalingParameter(
     return 1.;
   }
 
-  _CalcNode *travNode = (_CalcNode *)LocateVar(varRef);
+  _CalcNode *travNode = _FETCH_CALCNODE_FROM_VAR_ID(varRef);
   _Parameter branchLength = BAD_BRANCH_LENGTH;
 
   if (mapMode == 1) {
@@ -2207,8 +2207,7 @@ void _TheTree::BuildTopLevelCache(void) {
     } else {
       travNode->cBase = 0;
       for (long k = 0; k < currentNode->nodes.length; k++) {
-        _CalcNode *cNode =
-            (_CalcNode *)LocateVar(currentNode->nodes.data[k]->in_object);
+        _CalcNode *cNode = _FETCH_CALCNODE_FROM_VAR_ID (currentNode->nodes.data[k]->in_object);
         if (k == 0) {
           travNode->categoryIndexVars
               << cNode->categoryIndexVars[cNode->categoryIndexVars.lLength - 2];
@@ -2228,7 +2227,7 @@ void _TheTree::BuildTopLevelCache(void) {
 
   for (long level = 0; level < theRoot->nodes.length; level++) {
     np = theRoot->nodes.data[level];
-    travNode = (_CalcNode *)LocateVar(np->in_object);
+    travNode = _FETCH_CALCNODE_FROM_VAR_ID (np->in_object);
     if (travNode->cBase > 1) {
       topLevelNodes << travNode->lastState;
       topLevelLeftL
@@ -2251,7 +2250,7 @@ void _TheTree::BuildTopLevelCache(void) {
           topLevelRightL.Delete(topLevelNodes.lLength - 1);
           topLevelNodes.Delete(topLevelNodes.lLength - 1);
           for (long k = 0; k < sndLevel.lLength; k++) {
-            travNode = (_CalcNode *)LocateVar(((node<long> *)sndLevel.lData[k])->in_object);
+            travNode = _FETCH_CALCNODE_FROM_VAR_ID(((node<long> *)sndLevel.lData[k])->in_object);
 
             topLevelNodes << travNode->lastState;
             topLevelLeftL << travNode->categoryIndexVars[travNode->categoryIndexVars.lLength - 2];
@@ -3456,7 +3455,7 @@ void _TheTree::MarkMatches(_DataSetFilter *dsf, long firstIndex,
   for (unsigned long n = 0; n < flatLeaves.lLength; n++) {
     if (!dsf->CompareTwoSites(firstIndex, secondIndex, n)) {
       node<long> *theTreeNode = ((node<long> *)(flatLeaves.lData[n]))->parent;
-      _CalcNode *cN = (_CalcNode*)LocateVar(theTreeNode->in_object);
+      _CalcNode *cN = _FETCH_CALCNODE_FROM_VAR_ID(theTreeNode->in_object);
       cN->cBase = -1;
     }
   }
@@ -3466,7 +3465,7 @@ void _TheTree::MarkMatches(_DataSetFilter *dsf, long firstIndex,
     if (travNode->cBase == -1) {
       node<long> *theTreeNode = ((node<long> *)(flatNodes.lData[f]))->parent;
       if (theTreeNode) {
-        _CalcNode *cN = (_CalcNode*)LocateVar(theTreeNode->in_object);
+        _CalcNode *cN = _FETCH_CALCNODE_FROM_VAR_ID(theTreeNode->in_object);
         cN->cBase = -1;
       }
     }
@@ -3539,7 +3538,7 @@ void _TheTree::ScanSubtreeVars(_List &rec, char flags, _CalcNode *startAt)
   }
 
   for (k = 0; k < scanVars.lLength; k++) {
-    thisV = (_VariableContainer *)LocateVar(scanVars.lData[k]);
+    thisV = _HY2VARIABLECONTAINER (LocateVar(scanVars.lData[k]));
     f = thisV->GetName()->FindBackwards('.', 0, -1);
     if (f >= 0) {
       chop = thisV->GetName()->Cut(f + 1, -1);
@@ -5641,13 +5640,13 @@ _Parameter _TheTree::Process3TaxonNumericFilter(_DataSetFilterNumeric *dsf,
                    dsf->categoryShifter * catID +
                    dsf->theNodeMap.lData[2] * dsf->shifter,
              *matrix0 =
-                 ((_CalcNode *)(LocateVar(theRoot->nodes.data[0]->in_object)))
+                 _FETCH_CALCNODE_FROM_VAR_ID(theRoot->nodes.data[0]->in_object)
                      ->GetCompExp(catID)->theData,
              *matrix1 =
-                 ((_CalcNode *)(LocateVar(theRoot->nodes.data[1]->in_object)))
+                 _FETCH_CALCNODE_FROM_VAR_ID(theRoot->nodes.data[1]->in_object)
                      ->GetCompExp(catID)->theData,
              *matrix2 =
-                 ((_CalcNode *)(LocateVar(theRoot->nodes.data[2]->in_object)))
+                 _FETCH_CALCNODE_FROM_VAR_ID(theRoot->nodes.data[2]->in_object)
                      ->GetCompExp(catID)->theData,
              overallResult = 0.;
 
@@ -5723,7 +5722,7 @@ bool     _TheTree::IntPopulateLeaves (_DataSetFilter* dsf, long index, long)
           break;
         }
     
-    ((_CalcNode*)LocateVar((((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object)))->cBase=-1;
+    (_FETCH_CALCNODE_FROM_VAR_ID((((node <long>*)(flatLeaves.lData[nodeCount]))->parent->in_object)))->cBase=-1;
   }
   
   return allGaps;
@@ -5768,7 +5767,7 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, lo
         _Parameter      tmp = 1.0;
         for (unsigned  long nc = 0; nc < thisINode->nodes.length; nc++) {
           _Parameter  tmp2 = 0.0;
-          _CalcNode   * child         = (_CalcNode*) LocateVar(thisINode->nodes.data[nc]->in_object);
+          _CalcNode   * child         = _FETCH_CALCNODE_FROM_VAR_ID(thisINode->nodes.data[nc]->in_object);
           _Parameter  * childSupport  = currentStateVector + child->nodeIndex*cBase,
           * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
           
@@ -5793,7 +5792,7 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter* dsf, long index, lo
 
 void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* resultVector, _Parameter* forwardVector, long catID)
 {
-  _CalcNode   * thisNodeC     = (_CalcNode*)LocateVar(thisNode->in_object);
+  _CalcNode   * thisNodeC     = _FETCH_CALCNODE_FROM_VAR_ID(thisNode->in_object);
   _Parameter  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
   
   if (thisNode->parent) {
@@ -5802,10 +5801,10 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
         _Parameter tmp = 1.0;
         for (unsigned long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
           _Parameter  tmp2            = 0.0;
-          _CalcNode   * child         = (_CalcNode*)LocateVar (thisNode->parent->nodes.data[nc]->in_object);
+          _CalcNode   * child         = _FETCH_CALCNODE_FROM_VAR_ID(thisNode->parent->nodes.data[nc]->in_object);
           bool          invert        = (child == thisNodeC);
           if (invert) {
-            child = (_CalcNode*)LocateVar (thisNode->parent->in_object);
+            child = _FETCH_CALCNODE_FROM_VAR_ID(thisNode->parent->in_object);
           }
           
           _Parameter  * childSupport  = invert?resultVector + cBase*child->nodeIndex
@@ -5825,7 +5824,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
         _Parameter tmp = 1.0;
         for (unsigned long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
           _Parameter  tmp2            = 0.0;
-          _CalcNode   * child         = (_CalcNode*)LocateVar (thisNode->parent->nodes.data[nc]->in_object);
+          _CalcNode   * child         = _FETCH_CALCNODE_FROM_VAR_ID(thisNode->parent->nodes.data[nc]->in_object);
           if (child != thisNodeC) {
             _Parameter  * childSupport  = forwardVector + child->nodeIndex*cBase,
             * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;

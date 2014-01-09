@@ -2026,26 +2026,18 @@ _Matrix::_Matrix (_PMathObj data, bool is_const) {
   long n_rows = 0L,
        n_cols = 0L;
   
-  _SimpleList * values = (_SimpleList*) data;
-  _List * values_l = (_List*) data;  
+  _List * values = (_List*) data;  
 
-  if (is_const) {
-    n_rows = ((_PMathObj)values_l->Element (0))->Compute()->Value();
-    n_cols = ((_PMathObj)values_l->Element (1))->Compute()->Value();
-  } else {
-    n_rows = ((_Formula*)values->Element (0))->Compute()->Value();
-    n_cols = ((_Formula*)values->Element (1))->Compute()->Value();
-  }
+  n_rows = ((_Formula*)values->GetItem (0))->Compute()->Value();
+  n_cols = ((_Formula*)values->GetItem (1))->Compute()->Value();
   
   
   
   if (n_rows >= 0 && n_cols >= 0) {
     CreateMatrix(this, n_rows, n_cols, true, is_const, !is_const);
     for (unsigned long k = 2; k < values->lLength; k+=3) {
-      long r = is_const? ((_PMathObj)values_l->Element (k))->Compute()->Value():
-                         ((_Formula*)values->Element (k))->Compute()->Value(),
-           c = is_const? ((_PMathObj)values_l->Element (k+1))->Compute()->Value():
-                         ((_Formula*)values->Element (k+1))->Compute()->Value();
+      long r = ((_Formula*)values->Element (k))->Compute()->Value(),
+           c = ((_Formula*)values->Element (k+1))->Compute()->Value();
 
           if (r < 0 || c < 0 || r >= n_rows || c >= n_cols) {
             MatrixIndexError(r, c, n_rows, n_cols);
@@ -2054,7 +2046,7 @@ _Matrix::_Matrix (_PMathObj data, bool is_const) {
 
           
       if (is_const) {
-        Store(r, c, ((_PMathObj)values_l->Element (k+2))->Compute()->Value());
+        Store(r, c, ((_Formula*)values->Element (k+2))->Compute()->Value());
       } else {
         StoreFormula(r, c, *((_Formula*)values->Element (k+2)),true);
       }
@@ -5443,7 +5435,7 @@ void _Matrix::StoreFormula(long i, long j, _Formula &f, bool copyF,
   if (lIndex < 0) {
     theIndex[-lIndex - 2] = i * vDim + j;
     ((_Formula **)theData)[-lIndex - 2] =
-        copyF ? (_Formula *)f.makeDynamic() : &f;
+        copyF ? new _Formula (f) : &f;
     if (simplify) {
       ((_Formula **)theData)[-lIndex - 2]->SimplifyConstants();
     }
@@ -5451,7 +5443,7 @@ void _Matrix::StoreFormula(long i, long j, _Formula &f, bool copyF,
     if (copyF && ((_Formula **)theData)[lIndex] != (_Formula *)ZEROPOINTER) {
       delete ((_Formula **)theData)[lIndex];
     }
-    ((_Formula **)theData)[lIndex] = copyF ? (_Formula *)f.makeDynamic() : &f;
+    ((_Formula **)theData)[lIndex] = copyF ? new _Formula (f) : &f;
     if (simplify) {
       ((_Formula **)theData)[lIndex]->SimplifyConstants();
     }
