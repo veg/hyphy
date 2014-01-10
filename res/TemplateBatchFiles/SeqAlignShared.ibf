@@ -547,7 +547,7 @@ function _handleAlignment (dataSetName, writeToFiles)
 	SeqAlignments 	 = {};
 	startingPosition = {unalSequenceCount,2};
 	refLength = Abs(ProteinSequences[0]);
-	refInsertions	 = {refLength,1};
+	refInsertions	 = {refLength+1,1};
 
 	fprintf (stdout,"\nPerforming pairwise alignment with reference sequences\n");
 

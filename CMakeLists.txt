@@ -499,7 +499,9 @@ if((${QT4_FOUND}))
     add_definitions(${QT_DEFINITIONS})
     add_definitions(-D__HYPHY_64__)
 
-    add_executable(HYPHYQT MACOSX_BUNDLE ${SRC_CORE}                  
+    add_executable(HYPHYQT MACOSX_BUNDLE 
+			  EXCLUDE_FROM_ALL 
+                           ${SRC_CORE}                  
                            ${SRC_NEW}                  
                            ${SRC_SQLITE3} 
                            ${QT_HYPHY_SOURCES}
@@ -507,6 +509,7 @@ if((${QT4_FOUND}))
                            ${hyphy_headers_moc} 
                            ${hyphy_ui_headers} 
                            ${RES_MACGUI}
+			   
                            )
 
     target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})
