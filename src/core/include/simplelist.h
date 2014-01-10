@@ -51,6 +51,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   supports comparison operators and '+'
 */ 
 
+class _String;
+
+#define HY_LIST_ALLOCATION_CHUNK 8UL
+#define HY_LIST_INSERT_AT_END    (-1L)
+
 template <typename PAYLOAD>
 class _SimpleList : public virtual BaseObj {
 
@@ -59,6 +64,9 @@ protected:
   unsigned long laLength;
   PAYLOAD       *lData;
   unsigned long lLength; //actual length
+  
+  void      CompactList (void);
+  void      ResizeList  (void);
 
   //Methods
 
@@ -77,10 +85,10 @@ public:
   _SimpleList(const unsigned long);
 
   // stack copy contructor
-  _SimpleList(const _SimpleList &, long = 0, long = -1);
+  _SimpleList(const _SimpleList <PAYLOAD>&, const long = 0, const long = HY_LIST_INSERT_AT_END);
 
   // data constructor (1 member list)
-  _SimpleList(PAYLOAD);
+  _SimpleList(const PAYLOAD);
 
   // arithmetic series populator: size, first item, step
   _SimpleList(const unsigned long, const PAYLOAD, const PAYLOAD);
@@ -110,19 +118,22 @@ public:
   PAYLOAD operator()(const unsigned long);
 
   // assignment operator
-  virtual _SimpleList operator=(_SimpleList);
+  virtual const _SimpleList<PAYLOAD> operator=(const _SimpleList<PAYLOAD>);
 
   // append operator
-  virtual _SimpleList operator&(_SimpleList);
+  virtual const _SimpleList<PAYLOAD> operator&(const _SimpleList<PAYLOAD>);
 
   // append an instance to this
-  virtual void operator<<(PAYLOAD);
+  
+  virtual void append    (const PAYLOAD);
+  
+  virtual void operator<<(const PAYLOAD);
 
   // append number to this if it's not in the list (search first). List assumed
   // unsorted.
-  virtual bool operator>>(PAYLOAD);
+  virtual bool operator>>(const PAYLOAD);
 
-  virtual void operator<<(const _SimpleList &);
+  virtual void operator<<(const _SimpleList <PAYLOAD>&);
 
   /*
   ==============================================================
@@ -138,7 +149,7 @@ public:
   * @param index The index of the elemnt to retrieve
   * @return the value of the element at the specified index.
   */
-  PAYLOAD GetElement(const long index) const;
+  inline PAYLOAD GetElement(const long index) const;
 
   /**
   * Find the position of a search string in the list of strings (ONLY)
@@ -147,10 +158,10 @@ public:
   * @param startAt Index to start at
   * @return -1 if not found, index if found
   */
-  virtual long BinaryFind(PAYLOAD, long startAt = 0) const;
+  virtual long BinaryFind(const PAYLOAD, const long startAt = 0) const;
 
   // insert an element into the sorted list preserving the sortedness
-  long BinaryInsert(PAYLOAD);
+  long BinaryInsert(const PAYLOAD);
 
   void Clear(bool = true);
 
@@ -163,9 +174,8 @@ public:
   * @return -1 if i<j, 0 if i==j, or 1 if i>j
   */
   virtual long Compare(const long, const long);
-  virtual long Compare(BaseRef, long);
 
-  long CountCommonElements(_SimpleList &, bool = false);
+  long CountCommonElements(const _SimpleList<PAYLOAD> &, bool at_least_one = false) const;
 
   /**
   //Lists length
@@ -176,9 +186,9 @@ public:
 
 
   // delete the item at a given poisiton
-  void Delete(long, bool = true);
+  void Delete(const long, bool compact_list = true);
 
-  virtual void Duplicate(BaseRef);
+  virtual void Duplicate  (BaseRef);
 
   /**
   * Delete all duplicates in a sorted list
@@ -196,7 +206,7 @@ public:
   virtual void DeleteList(const _SimpleList<long> &);
 
   // shift a range of elements in the array
-  void Displace(const long, const long, const long);
+  void Displace(long, long, long);
 
   /**
   * Much like [] and () except negative indices return offsets from the end.
@@ -212,7 +222,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4
   * @return true if equal.
   */
-  bool Equal(_SimpleList <PAYLOAD>&);
+  bool Equal(const _SimpleList <PAYLOAD>&);
 
   /**
   * Retain all those elements that are between (strictly) the 1st and the 2nd
@@ -261,11 +271,12 @@ public:
   * @param pointer
   * @return Nothing. Acts on the List object it was called from.
   */
-  virtual void InsertElement(const PAYLOAD, long insertAt = -1);
+  virtual void InsertElement(const PAYLOAD, const long insertAt = -1);
 
   void Intersect(_SimpleList <PAYLOAD>&, _SimpleList<PAYLOAD> &);
 
-  BaseRef ListToPartitionString(void);
+    // only specialized for long
+  _String* ListToPartitionString(void);
 
   virtual BaseRef makeDynamic(void);
 
@@ -275,7 +286,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Min() = 1
   * @return maximum value in the list
   */
-  PAYLOAD Max(void);
+  PAYLOAD Max(void) const;
 
   /**
   * SLKP: 20090508
@@ -283,7 +294,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Sum() = 7
   * @return the sum of all values in the list
   */
-  PAYLOAD Sum(void);
+  PAYLOAD Sum(void) const;
 
   /**
   * Populate a Simple List with integers incrementally.
@@ -293,8 +304,8 @@ public:
   * @param increment by Pass true for a case sensitive search
   * @return Nothing. Acts on the List object it was called from.
   */
-  void Merge(_SimpleList <PAYLOAD> &l1, _SimpleList <PAYLOAD> &l2, _SimpleList <PAYLOAD> *mergeResults = nil,
-             _SimpleList <PAYLOAD> *mergeResults2 = nil);
+  void Merge(_SimpleList <PAYLOAD> &l1, _SimpleList <PAYLOAD> &l2, _SimpleList <long> *mergeResults = nil,
+             _SimpleList <long> *mergeResults2 = nil);
 
   /**
   * SLKP: 20090508
@@ -302,7 +313,7 @@ public:
   * Example: _SimpleList([4, 1, 2]).Min() = 1
   * @return minimum value in the list
   */
-  PAYLOAD Min(void);
+  PAYLOAD Min(void) const;
 
   /**
   * Initialize the function to select all k-element subsets of a given simple
@@ -457,7 +468,10 @@ public:
   * the new_order->old_order mapping is returned in the array pointed to
   *
   */
-  _SimpleList <PAYLOAD> *CountingSort(long, _SimpleList <PAYLOAD> * = nil);
+  
+    // this only specialized for 'long'
+  
+  _SimpleList <PAYLOAD> *CountingSort(PAYLOAD, _SimpleList <long> * = nil);
 
   void BubbleSort(void);
   void QuickSort(long, long);

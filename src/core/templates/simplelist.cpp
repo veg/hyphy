@@ -58,33 +58,40 @@ Constructors
 */
 
 // Does nothing
-_SimpleList::_SimpleList() { Initialize(false); }
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList() {
+    Initialize(false);
+}
 
 //Data constructor (1 member list)
-_SimpleList::_SimpleList(long br) {
-  lLength = 1;
-  laLength = MEMORYSTEP;
-  lData = (long *)MemAllocate(laLength * sizeof(Ptr));
-  ((long *)lData)[0] = br;
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList(const PAYLOAD item) {
+  lLength     = 1UL;
+  laLength    = HY_LIST_ALLOCATION_CHUNK;
+  lData       = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
+  lData       = item;
 }
 
 //Length constructor and populator
-_SimpleList::_SimpleList(long l, long start, long step) {
-  Initialize(false);
-  Populate(l, start, step);
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList(const unsigned long l, const PAYLOAD start, const PAYLOAD step ){
+  Initialize  (false);
+  Populate    (l, start, step);
 }
 
 //Length constructor
-_SimpleList::_SimpleList(unsigned long l) {
-  lLength = 0;
-  laLength = (l / MEMORYSTEP + 1) * MEMORYSTEP;
-  lData = (long *)MemAllocate(laLength * sizeof(Ptr));
-  memset(lData, 0, laLength * sizeof(Ptr));
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList(unsigned long l) {
+  lLength  = 0UL;
+  laLength = (l / HY_LIST_ALLOCATION_CHUNK + 1) * HY_LIST_ALLOCATION_CHUNK;
+  lData    = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
+  memset     (lData, 0, laLength * sizeof (PAYLOAD));
 }
 
 //Stack copy contructor
-_SimpleList::_SimpleList(_SimpleList &l, long from, long to) {
-  if (from == 0 && to == -1) { // copy the whole thing
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList(const _SimpleList <PAYLOAD> &l, const long from, const long to) {
+  if (from == 0 && to == HY_LIST_INSERT_AT_END) { // copy the whole thing
     Duplicate(&l);
   } else {
     Initialize();
@@ -94,37 +101,34 @@ _SimpleList::_SimpleList(_SimpleList &l, long from, long to) {
     for (long k = 0; k < upto; k++) {
       lData[k] = l.lData[from + k];
     }
-    /*
-    for (long i = from; i < to; i++) {
-        (*this) << l.lData[i];
-    }
-    */
   }
 }
 
 // Data constructor (variable number of long constants)
-_SimpleList::_SimpleList(const long value1, const unsigned long number, ...) {
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::_SimpleList(const PAYLOAD value1, const unsigned long number, ...) {
   Initialize(true);
   va_list vl;
 
-  (*this) << value1;
+  append(value1);
 
   va_start(vl, number);
   for (unsigned long arg_id = 0; arg_id < number; arg_id++) {
-    const long this_arg = va_arg(vl, long);
-    (*this) << this_arg;
+    const PAYLOAD this_arg = (PAYLOAD)va_arg(vl, PAYLOAD);
+    append(this_arg);
   }
   va_end(vl);
 }
 
 //Destructor
-_SimpleList::~_SimpleList(void) {
-  if (nInstances <= 1) {
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD>::~_SimpleList(void) {
+  if (CanFreeMe()) {
     if (lData) {
       free(lData);
     }
   } else {
-    nInstances--;
+    RemoveAReference();
   }
 
 }
@@ -136,7 +140,8 @@ Operator Overloads
 */
 
 //Element location functions (0,llength - 1)
-long &_SimpleList::operator[](const long i) {
+template<typename PAYLOAD>
+PAYLOAD &_SimpleList<PAYLOAD>::operator[](const long i) {
   if (lLength == 0) {
     return lData[0];
   }
@@ -149,26 +154,25 @@ long &_SimpleList::operator[](const long i) {
   return lData[in];
 }
 //Element location functions (0,llength - 1)
-long _SimpleList::operator()(const unsigned long i) {
-  //if (lLength == 0) return 0;
-  //Is there a reason why this is commented out?
-  //if (i>=lLength) i = lLength-1;
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::operator()(const unsigned long i) {
   if (i < lLength) {
     return lData[i];
   }
-  warnError("List index out of range");
-  return HY_NOT_FOUND;
+  WarnError("List index out of range");
+  return lData[0];
 }
 
 //Assignment operator
-_SimpleList _SimpleList::operator=(_SimpleList l) {
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD> const _SimpleList<PAYLOAD>::operator=(const _SimpleList<PAYLOAD> l) {
   Clear();
-  lLength = l.lLength;
+  lLength  = l.lLength;
   laLength = l.laLength;
   if (laLength) {
-    checkPointer(lData = (long *)MemAllocate(laLength * sizeof(Ptr)));
+    lData = (long *)MemAllocate(laLength * sizeof(PAYLOAD));
     if (lLength) {
-      memcpy(lData, l.lData, lLength * sizeof(Ptr));
+      memcpy(lData, l.lData, lLength * sizeof(PAYLOAD));
     }
   }
 
@@ -176,19 +180,20 @@ _SimpleList _SimpleList::operator=(_SimpleList l) {
 }
 
 //Append operator
-_SimpleList _SimpleList::operator&(_SimpleList l) {
-  _SimpleList res(l.lLength + lLength);
-  if (!res.laLength) {
+template<typename PAYLOAD>
+const _SimpleList<PAYLOAD> _SimpleList<PAYLOAD>::operator&(const _SimpleList<PAYLOAD> l) {
+  _SimpleList<PAYLOAD> res(l.lLength + lLength);
+  if (res.laLength == 0UL) {
     return res;
   }
 
   if (lData && lLength) {
-    memcpy(res.lData, lData, lLength * sizeof(void *));
+    memcpy(res.lData, lData, lLength * sizeof(PAYLOAD));
   }
 
   if (l.lData && l.lLength) {
-    memcpy((char *)res.lData + lLength * sizeof(void *), l.lData,
-           l.lLength * sizeof(void *));
+    memcpy((char *)res.lData + lLength * sizeof(PAYLOAD), l.lData,
+           l.lLength * sizeof(PAYLOAD));
   }
 
   res.lLength = l.lLength + lLength;
@@ -196,21 +201,30 @@ _SimpleList _SimpleList::operator&(_SimpleList l) {
   return res;
 }
 
-void _SimpleList::operator<<(long br) {
-  InsertElement((BaseRef) br, -1, false, false);
+
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::append(const PAYLOAD item) {
+  InsertElement(item, HY_LIST_INSERT_AT_END);
 }
 
-bool _SimpleList::operator>>(long br) {
-  if (Find(br) == -1) {
-    InsertElement((BaseRef) br, -1, false, false);
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::operator<<(const PAYLOAD item) {
+  append (item);
+}
+
+template<typename PAYLOAD>
+bool _SimpleList<PAYLOAD>::operator>>(const PAYLOAD item) {
+  if (Find(item) == HY_NOT_FOUND) {
+    InsertElement(item, HY_LIST_INSERT_AT_END);
     return true;
   }
   return false;
 }
 
-void _SimpleList::operator<<(_SimpleList &source) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::operator<<(const _SimpleList<PAYLOAD> &source) {
   for (unsigned long k = 0; k < source.lLength; k++) {
-    (*this) << source.lData[k];
+    append(source.GetElement(k));
   }
 }
 
@@ -223,7 +237,8 @@ Methods
 //Element location functions (0,llength - 1), negative values return
 // elements from the end of the list
 
-long _SimpleList::GetElement(const long index) const{
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::GetElement(const long index) const{
   if (index >= 0L) {
     if ((const unsigned long) index < lLength) {
       return lData[index];
@@ -232,24 +247,28 @@ long _SimpleList::GetElement(const long index) const{
   if ((const unsigned long)(-index) <= lLength) {
     return lData[lLength + index];
   }
-  warnError(_String("List index '") & (long)((const unsigned long)(-index)) &
+  WarnError(_String("List index '") & (long)((const unsigned long)(-index)) &
             "' out of range in _SimpleList::GetElement on list of length " &
             long(lLength));
-  return 0L;
+  
+  return lData[0UL];
 }
 
-long _SimpleList::BinaryFind(long s, long startAt) const {
-  long top = lLength - 1, bottom = startAt, middle;
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::BinaryFind(const PAYLOAD item, const long startAt) const {
+  long top = lLength - 1L,
+       bottom = startAt,
+       middle;
 
-  if (top == -1) {
-    return -2;
+  if (top == -1L) {
+    return -2L;
   }
 
   while (top > bottom) {
-    middle = (top + bottom) / 2;
-    if (s < ((long *)lData)[middle]) {
-      top = middle == top ? top - 1 : middle;
-    } else if (s > ((long *)lData)[middle]) {
+    middle = (top + bottom) >> 1;
+    if (item < GetElement (middle)) {
+      top = middle == top ? top - 1L : middle;
+    } else if (item > GetElement (middle)) {
       bottom = middle == bottom ? bottom + 1 : middle;
     } else {
       return middle;
@@ -257,81 +276,66 @@ long _SimpleList::BinaryFind(long s, long startAt) const {
   }
 
   middle = top;
-  long comp = ((long *)lData)[middle] - s;
-  if (!comp) {
+  if (GetElement (middle) == item) {
     return middle;
+  } else {
+    if (GetElement (middle) < item) {
+      return -middle - 3;
+    }
   }
 
-  return comp < 0 ? -middle - 3 : -middle - 2;
+  return -middle - 2;
 }
 
-long _SimpleList::BinaryInsert(long n) {
-  if (!lLength) {
-    (*this) << n;
-    return 0;
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::BinaryInsert(const PAYLOAD item) {
+  if (lLength == 0UL) {
+    append (item);
+    return 0L;
   }
 
-  long pos = -BinaryFind(n) - 2;
+  long pos = -BinaryFind(item) - 2;
 
-  if (pos < 0) {
+  if (pos < 0L) {
     return -pos + 2;
   }
 
-  if (lData[pos] < n) {
+  if (lData[pos] < item) {
     pos++;
   }
 
-  InsertElement((BaseRef) n, pos, false, false);
+  InsertElement(item, pos);
 
   return pos >= lLength ? lLength - 1 : pos;
 }
 
-void _SimpleList::ClearFormulasInList(void) {
-  for (unsigned long k = 0; k < lLength; k++)
-    if (lData[k]) {
-      delete (_Formula *)lData[k];
-    }
-}
 
-long _SimpleList::Sum(void) {
-  long sum = 0;
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::Sum(void) const {
+  PAYLOAD sum = 0;
   for (unsigned long k = 0; k < lLength; k++) {
     sum += lData[k];
   }
   return sum;
 }
 
-long _SimpleList::Compare(long i, long j) {
-  long v1 = ((long *)lData)[i], v2 = ((long *)lData)[j];
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::Compare(const long i, const long j) {
+  PAYLOAD v1 = GetElement (i), v2 = GetElement (j);
 
   if (v1 < v2) {
     return -1;
   } else if (v1 == v2) {
     return 0;
-  } else {
-    return 1;
   }
-
-  //return ((long*)lData)[i]-((long*)lData)[j];
+  return 1;
 }
 
-long _SimpleList::Compare(BaseRef i, long j) {
-  long v1 = (long) i, v2 = ((long *)lData)[j];
-
-  if (v1 < v2) {
-    return -1;
-  } else if (v1 == v2) {
-    return 0;
-  } else {
-    return 1;
-  }
-
-  //return (long)i-((long*)lData)[j];
-}
 
 // Compute the number of shared of two sorted lists
-long _SimpleList::CountCommonElements(_SimpleList &l1, bool yesNo) {
-  long c1 = 0, c2 = 0, res = 0;
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::CountCommonElements(const _SimpleList &l1, bool at_least_one) const {
+  long c1 = 0L, c2 = 0L, res = 0L;
 
   while (c1 < l1.lLength && c2 < lLength) {
     while (l1.lData[c1] < lData[c2]) {
@@ -346,7 +350,7 @@ long _SimpleList::CountCommonElements(_SimpleList &l1, bool yesNo) {
 
     while (l1.lData[c1] == lData[c2]) {
       c2++;
-      if (yesNo) {
+      if (at_least_one) {
         return 1;
       } else {
         res++;
@@ -365,14 +369,21 @@ long _SimpleList::CountCommonElements(_SimpleList &l1, bool yesNo) {
       }
     }
   }
-
   return res;
 }
 
 //List length
-unsigned long _SimpleList::countitems(void) const { return lLength; }
+template<typename PAYLOAD>
+unsigned long _SimpleList<PAYLOAD>::countitems(void) const { return lLength; }
 
-_SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering) {
+
+template<typename PAYLOAD>
+_SimpleList<PAYLOAD> *_SimpleList<PAYLOAD>::CountingSort(PAYLOAD, _SimpleList<long>*) {
+  return new _SimpleList <PAYLOAD>;
+}
+
+template<>
+_SimpleList<long> *_SimpleList<long>::CountingSort(long upperBound, _SimpleList<long> *ordering) {
   if (ordering) {
     ordering->Clear();
   }
@@ -382,7 +393,11 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering) {
       upperBound = Max() + 1;
     }
 
-    _SimpleList buffer(upperBound, 0, 0), *result = new _SimpleList(lLength);
+    _SimpleList<long> buffer,
+               *result = new _SimpleList<long>(upperBound);
+    
+    buffer.Populate(upperBound, 0L, 0L);
+    
     for (long pass1 = 0; pass1 < lLength; pass1++) {
       buffer.lData[lData[pass1]]++;
     }
@@ -403,11 +418,12 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering) {
 
     return result;
   }
-  return new _SimpleList;
+  return new _SimpleList<long>;
 }
 
-void _SimpleList::Clear(bool completeClear) {
-  if (nInstances <= 1) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Clear(bool completeClear) {
+  if (CanFreeMe()) {
     lLength = 0;
     if (completeClear) {
       laLength = 0;
@@ -417,41 +433,53 @@ void _SimpleList::Clear(bool completeClear) {
       lData = nil;
     }
   } else {
-    nInstances--;
+    RemoveAReference();
   }
 }
 
-
-//Delete item at index (>=0)
-void _SimpleList::Delete(long index, bool compact) {
-  if (index >= 0 && index < lLength) {
-    lLength--;
-    if (lLength - index) {
-      memmove((Ptr) lData + sizeof(BaseRef) * (index),
-              (Ptr) lData + sizeof(BaseRef) * (index + 1),
-              sizeof(BaseRef) * (lLength - index));
-    }
-  }
-  if (compact && laLength - lLength > MEMORYSTEP) {
-    laLength -= ((laLength - lLength) / MEMORYSTEP) * MEMORYSTEP;
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::CompactList(void) {
+  if (laLength - lLength > HY_LIST_ALLOCATION_CHUNK) {
+    laLength -= ((laLength - lLength) / HY_LIST_ALLOCATION_CHUNK) * HY_LIST_ALLOCATION_CHUNK;
     if (laLength) {
-      lData = (long *)MemReallocate((char *)lData, laLength * sizeof(Ptr));
+      lData = (PAYLOAD *)MemReallocate(lData, laLength * sizeof(PAYLOAD));
     } else {
       free(lData);
       lData = nil;
     }
   }
+ 
+}
+
+
+//Delete item at index (>=0)
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Delete(const long index, bool compact_list) {
+  if (index >= 0L && (const unsigned long)index < lLength) {
+    lLength--;
+    if (lLength - index) {
+      memmove(lData + sizeof(PAYLOAD) * (index),
+              lData + sizeof(PAYLOAD) * (index + 1),
+              sizeof(PAYLOAD) * (lLength - index));
+    }
+  }
+  if (compact_list) {
+    CompactList ();
+  }
 
 }
 
 //Delete duplicates from a sorted list
-void _SimpleList::DeleteDuplicates(void) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::DeleteDuplicates(void) {
   if (lLength > 1) {
-    _SimpleList noDups;
+    _SimpleList <PAYLOAD> noDups;
 
-    long lastValue = lData[0] + 1;
-    for (unsigned long k = 0; k < lLength; k++) {
-      long thisValue = lData[k];
+    PAYLOAD lastValue = lData[0];
+    noDups << lastValue;
+    
+    for (unsigned long k = 1; k < lLength; k++) {
+      PAYLOAD thisValue = lData[k];
       if (thisValue != lastValue) {
         noDups << thisValue;
         lastValue = thisValue;
@@ -462,49 +490,41 @@ void _SimpleList::DeleteDuplicates(void) {
       Duplicate(&noDups);
     }
   }
-
 }
 
 //Delete items from a sorted list
-void _SimpleList::DeleteList(const _SimpleList &toDelete) {
-  if (toDelete.lLength) {
-    unsigned long k = 0;
-    for (unsigned long i = 0; i < lLength; i++) {
-      //if (k<toDelete.lLength) {
-      if (k < toDelete.lLength && i == toDelete.lData[k]) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::DeleteList(const _SimpleList<long> &indices_to_delete) {
+  if (indices_to_delete.lLength) {
+    unsigned long k = 0UL;
+    for (unsigned long i = 0UL; i < lLength; i++) {
+      if (k < indices_to_delete.lLength && i == indices_to_delete.lData[k]) {
         k++;
       } else {
         lData[i - k] = lData[i];
       }
     }
-    lLength -= toDelete.lLength;
+    lLength -= indices_to_delete.lLength;
   }
-  if (laLength - lLength > MEMORYSTEP) {
-    laLength -= ((laLength - lLength) / MEMORYSTEP) * MEMORYSTEP;
-    if (laLength) {
-      lData = (long *)MemReallocate((char *)lData, laLength * sizeof(Ptr));
-    } else {
-      free(lData);
-      lData = nil;
-    }
-  }
+  CompactList();
 }
 
 //Shift the range from start to end
-void _SimpleList::Displace(long start, long end, long delta) {
-  if (start < 0) {
-    start = 0;
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Displace(long start, long end, long delta) {
+  if (start <= 0L) {
+    start = 0L;
   } else if (start >= lLength) {
-    start = lLength - 1;
+    start = lLength - 1L;
   }
 
-  if (end < 0) {
-    end = lLength - 1;
+  if (end < 0L) {
+    end = lLength - 1L;
   } else if (end >= lLength) {
-    end = lLength - 1;
+    end = lLength - 1L;
   }
 
-  if ((end - start >= 0) && delta && (end - start < lLength - 1)) {
+  if (end - start >= 0L && delta && end - start < lLength - 1) {
     if (delta > 0 && lLength - end <= delta) { // shift up
       delta = lLength - end - 1;
     } else if (start - delta < 0) {
@@ -513,7 +533,7 @@ void _SimpleList::Displace(long start, long end, long delta) {
 
     if (delta) {
       long i, j, delta2 = end - start + 1;
-      _SimpleList swapList((unsigned long)(end - start + 1));
+      _SimpleList <PAYLOAD> swapList((unsigned long)(end - start + 1));
 
       for (i = start; i <= end; i++) {
         swapList << lData[i];
@@ -535,39 +555,40 @@ void _SimpleList::Displace(long start, long end, long delta) {
         lData[i] = swapList.lData[j];
       }
     }
-
   }
 }
 
-void _SimpleList::Duplicate(BaseRef theRef) {
-  _SimpleList *l = _HY2SIMPLELIST (theRef);
-  lLength = l->lLength;
-  laLength = l->laLength;
-  lData = l->lData;
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Duplicate(BaseRef theRef) {
+  _SimpleList<PAYLOAD> *l = dynamic_cast<_SimpleList<PAYLOAD> >(theRef);
+  lLength   = l->lLength;
+  laLength  = l->laLength;
+  lData     = l->lData;
   if (lData) {
-    checkPointer(lData = (long *)MemAllocate(laLength * sizeof(Ptr)));
-    memcpy((char *)lData, (char *)l->lData, lLength * sizeof(Ptr));
+    lData = (long *)MemAllocate(laLength * sizeof(PAYLOAD));
+    memcpy(lData, l->lData, lLength * sizeof(PAYLOAD));
   }
 }
 
 //Element location functions (0,llength - 1)
 //Negative indices return offsets from the end of the list
-long _SimpleList::Element(long index) {
-  if (index >= 0 && index < lLength) {
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::Element(const long index) {
+  if (index >= 0L && index < lLength) {
     return lData[index];
   } else if (-index <= lLength) {
-    return lData[(long) lLength + index];
+    return lData[lLength - (-index)];
   }
-
-  return 0;
+  return 0L;
 }
 
-bool _SimpleList::Equal(_SimpleList &l2) {
+template<typename PAYLOAD>
+bool _SimpleList<PAYLOAD>::Equal(const _SimpleList<PAYLOAD> &l2) {
   if (lLength != l2.lLength) {
     return false;
   }
 
-  for (long i = 0; i < lLength; i++)
+  for (unsigned long i = 0UL; i < lLength; i++)
     if (lData[i] != l2.lData[i]) {
       return false;
     }
@@ -575,31 +596,34 @@ bool _SimpleList::Equal(_SimpleList &l2) {
   return true;
 }
 
-long _SimpleList::Find(const long s, const long startAt) const {
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::Find(const PAYLOAD item, const long startAt) const {
   for (unsigned long i = startAt; i < lLength; i++) {
-    if (((long *)(lData))[i] == s) {
+    if (lData[i] == item) {
       return i;
     }
   }
   return HY_NOT_FOUND;
 }
 
-long _SimpleList::FindStepping(const long s, const long step,
+template<typename PAYLOAD>
+long _SimpleList<PAYLOAD>::FindStepping(const PAYLOAD item, const long step,
                                const long startAt) const {
   for (unsigned long i = startAt; i < lLength; i += step)
-    if (lData[i] == s) {
+    if (lData[i] == item) {
       return i;
     }
 
   return HY_NOT_FOUND;
 }
 
-void _SimpleList::FilterRange(long lb, long ub) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::FilterRange(const PAYLOAD lb, const PAYLOAD ub) {
   if (ub <= lb) {
     Clear();
   } else {
-    _SimpleList toDelete;
-    for (long k = 0; k < lLength; k++)
+    _SimpleList <long> toDelete;
+    for (unsigned long k = 0UL; k < lLength; k++)
       if (lData[k] <= lb || lData[k] >= ub) {
         toDelete << k;
       }
@@ -607,135 +631,132 @@ void _SimpleList::FilterRange(long lb, long ub) {
   }
 }
 
-void _SimpleList::Flip() {
-  for (long k = 0, l = lLength - 1; k < l; k++, l--) {
-    void *pt = ((void **)lData)[k];
-    ((void **)lData)[k] = ((void **)lData)[l];
-    ((void **)lData)[l] = pt;
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Flip() {
+  if (lLength > 0UL) {
+    for (unsigned long k = 0UL, l = lLength - 1UL; k < l; k++, l--) {
+      PAYLOAD pt = lData[k];
+      lData[k] = lData[l];
+      lData[l] = pt;
+    }
   }
 }
 
-void _SimpleList::Initialize(bool doMemAlloc) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Initialize(bool doMemAlloc) {
   BaseObj::Initialize();
-  lLength = 0;
+  lLength = 0UL;
   if (doMemAlloc) {
-    laLength = MEMORYSTEP;
-    lData = (long *)MemAllocate(laLength * sizeof(Ptr));
+    laLength = HY_LIST_ALLOCATION_CHUNK;
+    lData    = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
   } else {
     laLength = 0;
-    lData = nil;
+    lData    = nil;
   }
 }
 
-//Append & store operator
-void _SimpleList::InsertElement(BaseRef br, long insertAt, bool store,
-                                bool pointer) {
-  lLength++;
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::ResizeList(void) {
   if (lLength > laLength) {
-    unsigned long incBy = (MEMORYSTEP * 5 > lLength) ? MEMORYSTEP : lLength / 5;
-
+    unsigned long incBy = (HY_LIST_ALLOCATION_CHUNK * 5UL > lLength) ? HY_LIST_ALLOCATION_CHUNK : lLength / 5UL;
+    
     laLength += incBy;
-
-    //memAlloc += sizeof(Ptr)*incBy;
-
+    
     if (lData) {
-      lData = (long *)MemReallocate((char *)lData, laLength * sizeof(void *));
+      lData = (PAYLOAD *)MemReallocate(lData, laLength * sizeof(PAYLOAD));
     } else {
-      lData = (long *)MemAllocate(laLength * sizeof(void *));
+      lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
     }
-
+    
     if (!lData) {
       checkPointer(lData);
     }
   }
-  if (insertAt == -1) {
-    if (store) {
-      ((BaseRef *)lData)[lLength - 1] = br->makeDynamic();
-    } else {
-      ((BaseRef *)lData)[lLength - 1] = br;
-      if (pointer) {
-        br->nInstances++;
-      }
-    }
+}
+//Append & store operator
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::InsertElement(const PAYLOAD item, long insert_at) {
+  
+  lLength++;
+  ResizeList();
+  
+  if (insert_at == HY_LIST_INSERT_AT_END) {
+    lData[lLength-1UL] = item;
   } else {
-    //insertAt = insertAt>=lLength?lLength:insertAt;
-    insertAt = insertAt >= lLength ? lLength - 1 : insertAt;
-    long moveThisMany = (laLength - insertAt - 1);
-    if (moveThisMany < 32)
-      for (long k = insertAt + moveThisMany; k > insertAt; k--) {
+    insert_at = insert_at >= lLength ? lLength - 1UL : insert_at;
+    long moveThisMany = (laLength - insert_at - 1L);
+    if (moveThisMany < 32L)
+      for (long k = insert_at + moveThisMany; k > insert_at; k--) {
         lData[k] = lData[k - 1];
       }
     else {
-      memmove(((char **)lData) + (insertAt + 1), ((char **)lData) + insertAt,
-              moveThisMany * sizeof(void *));
-    }
-
-    if (store) {
-      ((BaseRef *)lData)[insertAt] = br->makeDynamic();
-    } else {
-      ((BaseRef *)lData)[insertAt] = br;
-      if (pointer) {
-        br->nInstances++;
-      }
+      memmove(lData + (insert_at + 1), lData + insert_at,
+              moveThisMany * sizeof(PAYLOAD));
     }
   }
-
 }
 
 //Convert a list into a partition style string
-BaseRef _SimpleList::ListToPartitionString() {
-  _String *result = new _String((unsigned long) 64, true), conv;
-
-  for (long k = 0; k < lLength; k++) {
-    long m;
-    for (m = k + 1; m < lLength; m++)
-      if (lData[m] - lData[m - 1] != 1) {
-        break;
-      }
-    if (m > k + 2) {
-      conv = lData[k];
-      (*result) << &conv;
-      (*result) << '-';
-      conv = lData[m - 1];
-      (*result) << &conv;
-      if (m < lLength) {
-        (*result) << ',';
-      }
-      k = m - 1;
-    } else {
-      conv = lData[k];
-      (*result) << &conv;
-      if (k < lLength - 1) {
-        (*result) << ',';
+template<typename PAYLOAD>
+_String* _SimpleList<PAYLOAD>::ListToPartitionString() {
+  return new _String;
+}
+  
+template<>
+_String* _SimpleList<long>::ListToPartitionString() {
+    _String *result = new _String((unsigned long) 64, true), conv;
+    
+    for (unsigned long k = 0; k < lLength; k++) {
+      long m;
+      for (m = k + 1; m < lLength; m++)
+        if (lData[m] - lData[m - 1] != 1) {
+          break;
+        }
+      if (m > k + 2) {
+        conv = lData[k];
+        (*result) << &conv;
+        (*result) << '-';
+        conv = lData[m - 1];
+        (*result) << &conv;
+        if (m < lLength) {
+          (*result) << ',';
+        }
+        k = m - 1;
+      } else {
+        conv = lData[k];
+        (*result) << &conv;
+        if (k < lLength - 1) {
+          (*result) << ',';
+        }
       }
     }
-  }
-  (*result).Finalize();
-  return result;
+    result->Finalize();
+    return result;
 }
 
-BaseRef _SimpleList::makeDynamic(void) {
-  _SimpleList *Res = new _SimpleList;
-  checkPointer(Res);
-  memcpy((char *)Res, (char *)this, sizeof(_SimpleList));
-  Res->nInstances = 1;
-  Res->lData = nil;
-  Res->Duplicate(this);
-  return Res;
+template<typename PAYLOAD>
+BaseRef _SimpleList<PAYLOAD>::makeDynamic(void) {
+  _SimpleList <PAYLOAD> *res = new _SimpleList <PAYLOAD>;
+  res->nInstances = 1;
+  res->lData = nil;
+  res->Duplicate(this);
+  return res;
 }
 
-long _SimpleList::Max(void) {
-  long res = LONG_MIN;
-  for (long e = 0; e < lLength; e++)
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::Max(void) const{
+  PAYLOAD res = lData[0];
+  for (unsigned long e = 1UL; e < lLength; e++)
     if (lData[e] > res) {
       res = lData[e];
     }
   return res;
 }
 
-long _SimpleList::Min(void) {
-  long res = LONG_MAX;
-  for (long e = 0; e < lLength; e++)
+template<typename PAYLOAD>
+PAYLOAD _SimpleList<PAYLOAD>::Min(void) const {
+  long res = lData[0];
+  for (unsigned long e = 0; e < lLength; e++)
     if (lData[e] < res) {
       res = lData[e];
     }
@@ -743,9 +764,10 @@ long _SimpleList::Min(void) {
 }
 
 //Merge 2 lists (sorted)
-void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
-                        _SimpleList *mergeResults1,
-                        _SimpleList *mergeResults2) {
+template<typename PAYLOAD>
+void _SimpleList<PAYLOAD>::Merge(_SimpleList<PAYLOAD> &l1, _SimpleList<PAYLOAD> &l2,
+                        _SimpleList<long> *mergeResults1,
+                        _SimpleList<long> *mergeResults2) {
   Clear();
   if (mergeResults1) {
     mergeResults1->Clear();
@@ -754,8 +776,14 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
     mergeResults2->Clear();
   }
   char advancing = -1;
-  long *list1 = l1.quickArrayAccess(), *list2 = l2.quickArrayAccess(), pos1 = 0,
-       pos2 = 0, nt1 = l1.lLength, nt2 = l2.lLength, c, i;
+
+  PAYLOAD * list1 = l1.lData,
+          * list2 = l2.lData;
+  
+  long pos1 = 0,
+       pos2 = 0,
+       nt1 = l1.lLength,
+       nt2 = l2.lLength;
 
   if (mergeResults1 && mergeResults2) {
     bool doMerge1 = false, doMerge2 = false;
@@ -767,18 +795,17 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
           continue;
         }
         list1++;
-        c = *list1 - *list2;
-        if (c <= 0) {
+        if (*list1 <= *list2) {
           if (doMerge1) {
             (*mergeResults1) << lLength;
           }
 
-          (*this) << *list1;
-          if (c < 0) {
+          append (*list1);
+          if (*list1 < *list2) {
             if (!doMerge2) {
               if (pos1 >= pos2) {
                 doMerge2 = true;
-                for (i = 0; i < pos2; i++) {
+                for (long i = 0L; i < pos2; i++) {
                   (*mergeResults2) << i;
                 }
               }
@@ -786,10 +813,11 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
             continue;
           }
         }
-        if (c > 0) {
+        
+        if (*list1 > *list2) {
           advancing = 1;
           if (!doMerge1) {
-            for (i = 0; i < pos1; i++) {
+            for (long i = 0; i < pos1; i++) {
               (*mergeResults1) << i;
             }
             doMerge1 = true;
@@ -797,7 +825,7 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
           if (doMerge2) {
             (*mergeResults2) << lLength;
           }
-          (*this) << *list2;
+          append(*list2);
           continue;
         }
 
@@ -808,17 +836,17 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
           continue;
         }
         list2++;
-        c = *list2 - *list1;
-        if (c <= 0) {
+          //c = *list2 - *list1;
+        if (*list2 <= *list1) {
           if (doMerge2) {
             (*mergeResults2) << lLength;
           }
-          (*this) << *list2;
-          if (c < 0) {
+          append (*list2);
+          if (*list2 < *list1) {
             if (!doMerge1) {
               if (pos2 >= pos1) {
                 doMerge1 = true;
-                for (i = 0; i < pos1; i++) {
+                for (long i = 0; i < pos1; i++) {
                   (*mergeResults1) << i;
                 }
               }

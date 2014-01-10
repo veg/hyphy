@@ -61,6 +61,9 @@ typedef double _Parameter;
 class BaseObj {
 
   //base object class
+private:
+  long nInstances;
+
 public:
 
   BaseObj();
@@ -75,17 +78,16 @@ public:
 
   virtual BaseObj *makeDynamic(void);
 
-  virtual long FreeUpMemory(long) { return 0L; }
-
   virtual void Initialize(void) { nInstances = 1; }
 
   virtual void Duplicate(BaseObj *ref) { nInstances = ++ref->nInstances; }
 
-  virtual void AddAReference(void) { nInstances++; }
+  inline void AddAReference(void) { nInstances++; }
 
-  virtual void RemoveAReference(void) { nInstances--; }
+  inline void RemoveAReference(void) { nInstances--; }
+  
+  inline bool CanFreeMe (void)  { return nInstances <= 1; }
 
-  long nInstances;
 
 };
 
