@@ -61,7 +61,18 @@ FILE *doFileOpen(const char *, const char *, bool = false);
 // 20110324: SLKP added the bool flag to allow automatic "Can't open file" error
 // reports
 double TimerDifferenceFunction(bool);
+/**
+* A utility function to ensure that the coordinate range is valid for a list of given length
+* Handles negative coordinates (offset from the end), start/end overrungs etc
+* Example: NormalizeCoordinates (1,-1,10) sets the second argument to 9
+* @param shift Number to add
+* @return Nothing. Acts on the from and to arguments.
+*/
+void NormalizeCoordinates(long &, long &, const unsigned long);
 
+void NormalizeCoordinates(long &from, long &to,
+                                       const unsigned long refLength);
+                                       
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ ||      \
     defined __HYPHYQT__
 void yieldCPUTime(void);

@@ -343,4 +343,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MAX_TEX_HEIGHT 150
 #define WIDTH_PER_BRANCH 10
 
+#ifndef MAX
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#define SWAP(a, b, c) ((c) = (a), (a) = (b), (b) = (c))
+
 #endif

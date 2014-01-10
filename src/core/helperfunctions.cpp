@@ -600,3 +600,15 @@ double genrand_res53(void) {
   return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
 }
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
+
+void NormalizeCoordinates(long &from, long &to,
+                                       const unsigned long refLength) {
+  if (to < 0) {
+    to = refLength + to;
+  } else {
+    to = to < refLength - 1 ? to : refLength - 1;
+  }
+  if (from < 0) {
+    from = refLength + from;
+  }
+}

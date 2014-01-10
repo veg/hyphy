@@ -42,11 +42,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 
 #include "baseobj.h"
-#include "simplelist.h"
-#include "list.h"
 #include "wchar.h"
 
-class _ExecutionList; // forward declaration
+class _ExecutionList;     // forward declaration
+template<typename PAYLOAD>
+class _hy_list_numeric; 
+
+typedef _hy_list_numeric<long> _SimpleList;
+
+class _List;
 
 #define HY_STRING_INVALID_REFERENCE 0x00
 #define HY_STRING_DIRECT_REFERENCE 0x01

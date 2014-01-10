@@ -43,17 +43,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __CLASSES__
 #define __CLASSES__
 
-#ifndef MAX
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#endif
-
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
-#define SWAP(a, b, c) ((c) = (a), (a) = (b), (b) = (c))
-#define DEBUG 0
-
 #include "simplelist.h"
 
 /*---------------------------------------------------------------------------*/
