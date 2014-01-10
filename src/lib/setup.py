@@ -42,7 +42,7 @@ utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
 sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles + swigFile + utilFiles
 
 includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
-includePaths += [linkPath, contribPath]
+includePaths += [linkPath, contribPath, sqlitePath]
 
 # check for 64bit and define as such
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
