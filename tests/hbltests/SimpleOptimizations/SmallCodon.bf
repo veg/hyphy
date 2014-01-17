@@ -43,6 +43,7 @@ BEGIN HYPHY;
 OPTIMIZATION_PRECISION = 0.001;
 VERBOSITY_LEVEL        = -1;
 
+
 global AT=1;
 global CT=1;
 global R=1;
