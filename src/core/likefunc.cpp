@@ -4649,6 +4649,8 @@ DecideOnDivideBy (this);
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %d", maxSoFar-lastMaxValue, precision, termFactor);
                 BufferToConsole (buffer);
+                snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
+                BufferToConsole (buffer);
 
             }
 
