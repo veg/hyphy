@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _AVLLIST_
 #define _AVLLIST_
 //#pragma once
-#include "simplelist.h"
+#include "hy_list_reference.h"
 #include "helperfunctions.h"
 
 //_____________________________________________________________________________

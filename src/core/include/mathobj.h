@@ -43,7 +43,7 @@
 #include "baseobj.h"
 #include "defines.h"
 #include "errorfns.h"
-#include "list.h"
+#include "hy_list_reference.h"
 #include "avllistx.h"
 #include "hy_strings.h"
 #include "_hyExecutionContext.h"

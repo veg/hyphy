@@ -41,7 +41,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __PARSER__
 
 #include "baseobj.h"
-#include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
 #include "errorfns.h"

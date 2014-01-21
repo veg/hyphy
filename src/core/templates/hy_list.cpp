@@ -158,18 +158,10 @@ PAYLOAD _hyList<PAYLOAD>::operator()(const unsigned long i)
 
 //Assignment operator
 template<typename PAYLOAD>
-_hyList<PAYLOAD> const _hyList<PAYLOAD>::operator=(const _hyList<PAYLOAD> l)
+_hyList<PAYLOAD> const _hyList<PAYLOAD>::operator=(const _hyList<PAYLOAD>& l)
 {
   Clear();
-  lLength  = l.lLength;
-  laLength = l.laLength;
-  if (laLength) {
-    lData = (long *)MemAllocate(laLength * sizeof(PAYLOAD));
-    if (lLength) {
-      memcpy(lData, l.lData, lLength * sizeof(PAYLOAD));
-    }
-  }
-
+  Clone (&l);
   return *this;
 }
 
@@ -187,7 +179,7 @@ const _hyList<PAYLOAD> _hyList<PAYLOAD>::operator&(const _hyList<PAYLOAD> l)
   }
 
   if (l.lData && l.lLength) {
-    memcpy((char *)res.lData + lLength * sizeof(PAYLOAD), l.lData,
+    memcpy(res.lData + lLength * sizeof(PAYLOAD), l.lData,
            l.lLength * sizeof(PAYLOAD));
   }
 
@@ -228,7 +220,17 @@ Methods
 ==============================================================
 */
 
-
+template<typename PAYLOAD>
+void _hyList<PAYLOAD>::Clone(const _hyList<PAYLOAD>* clone_from) {
+  lLength  = clone_from->lLength;
+  laLength = clone_from->laLength;
+  if (laLength) {
+    lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
+    if (lLength) {
+      memcpy(lData, clone_from->lData, lLength * sizeof(PAYLOAD));
+    }
+  }
+}
 
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::append(const PAYLOAD item)
@@ -485,7 +487,13 @@ PAYLOAD _hyList<PAYLOAD>::Element(const long index)
 }
 
 template<typename PAYLOAD>
-bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2)
+void _hyList<PAYLOAD>::SetItem(const unsigned long index, PAYLOAD item)
+{
+  lData[index] = item;
+}
+
+template<typename PAYLOAD>
+bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2) const
 {
   if (lLength != l2.lLength) {
     return false;
@@ -500,10 +508,17 @@ bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2)
 }
 
 template<typename PAYLOAD>
+bool _hyList<PAYLOAD>::ItemEqualToValue(unsigned long index, const _hyList <PAYLOAD>& value) const
+{
+  return lData[index] == value;
+}
+
+
+template<typename PAYLOAD>
 long _hyList<PAYLOAD>::Find(const PAYLOAD item, const long startAt) const
 {
   for (unsigned long i = startAt; i < lLength; i++) {
-    if (lData[i] == item) {
+    if (ItemEqualToValue (i, item)) {
       return i;
     }
   }
@@ -515,7 +530,7 @@ long _hyList<PAYLOAD>::FindStepping(const PAYLOAD item, const long step,
                                     const long startAt) const
 {
   for (unsigned long i = startAt; i < lLength; i += step)
-    if (lData[i] == item) {
+    if (ItemEqualToValue (i, item)) {
       return i;
     }
 

@@ -57,9 +57,9 @@ long _hyListOrderable<PAYLOAD>::BinaryFind(const PAYLOAD item, const long startA
 
   while (top > bottom) {
     middle = (top + bottom) >> 1;
-    if (item < this->lData[middle]) {
+    if (CompareToValue (middle, item) == HY_COMPARE_GREATER) {
       top = middle == top ? top - 1L : middle;
-    } else if (item > this->lData[middle]) {
+    } else if (CompareToValue (middle, item) == HY_COMPARE_LESS) {
       bottom = middle == bottom ? bottom + 1 : middle;
     } else {
       return middle;
@@ -67,10 +67,10 @@ long _hyListOrderable<PAYLOAD>::BinaryFind(const PAYLOAD item, const long startA
   }
 
   middle = top;
-  if (this->lData [middle] == item) {
+  if (ItemEqualToValue (middle,item)) {
     return middle;
   } else {
-    if (this->lData [middle] < item) {
+    if (CompareToValue(middle,item) == HY_COMPARE_LESS) {
       return -middle - 3;
     }
   }
@@ -91,7 +91,7 @@ long _hyListOrderable<PAYLOAD>::BinaryInsert(const PAYLOAD item) {
     return -pos + 2;
   }
 
-  if (this->lData[pos] < item) {
+  if (CompareToValue (pos,item) == HY_COMPARE_LESS) {
     pos++;
   }
 
@@ -111,7 +111,7 @@ template<typename PAYLOAD>
 PAYLOAD _hyListOrderable<PAYLOAD>::Max(void) const{
   PAYLOAD res = this->lData[0];
   for (unsigned long e = 1UL; e < this->lLength; e++)
-    if (this->lData[e] > res) {
+    if (CompareToValue (e, res) == HY_COMPARE_GREATER) {
       res = this->lData[e];
     }
   return res;
@@ -121,7 +121,7 @@ template<typename PAYLOAD>
 PAYLOAD _hyListOrderable<PAYLOAD>::Min(void) const{
   PAYLOAD res = this->lData[0];
   for (unsigned long e = 1UL; e < this->lLength; e++)
-    if (this->lData[e] < res) {
+    if (CompareToValue (e, res) == HY_COMPARE_LESS) {
       res = this->lData[e];
     }
   return res;
@@ -137,15 +137,27 @@ Sorting Functions
 */
 
 template<typename PAYLOAD>
-long _hyListOrderable<PAYLOAD>::Compare(const long i, const long j) {
+long _hyListOrderable<PAYLOAD>::Compare(const long i, const long j) const {
 
   if (this->lData[i] < this->lData[j]) {
-    return -1L;
+    return HY_COMPARE_LESS;
   } else if (this->lData[i] == this->lData[j]) {
-    return 0L;
+    return HY_COMPARE_EQUAL;
   }
-  return 1L;
+  return HY_COMPARE_GREATER;
 }
+
+template<typename PAYLOAD>
+long _hyListOrderable<PAYLOAD>::CompareToValue(const long item, const PAYLOAD& value) const {
+  
+  if (this->lData[item] < value) {
+    return HY_COMPARE_LESS;
+  } else if (this->lData[item] > value) {
+    return HY_COMPARE_GREATER;
+  }
+  return HY_COMPARE_EQUAL;
+}
+
 
 template<typename PAYLOAD>
 void _hyListOrderable<PAYLOAD>::BubbleSort(_hyListOrderable <long> * index_list) {
@@ -153,7 +165,7 @@ void _hyListOrderable<PAYLOAD>::BubbleSort(_hyListOrderable <long> * index_list)
   while (!done) {
     done = true;
     for (long i = this->lLength - 1, j = i - 1; i > 0; i--, j--) {
-      if (this->Compare(i, j) < 0) {
+      if (this->Compare(i, j) == HY_COMPARE_LESS) {
         done = false;
         this->Swap (i,j);
         if (index_list) {
@@ -177,13 +189,13 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
 
   if (middle)
     while (middle - bottommove >= from &&
-           this->Compare(middle - bottommove, middle) > 0L) {
+           this->Compare(middle - bottommove, middle) == HY_COMPARE_GREATER) {
       bottommove++;
     }
 
   if (from < to)
     while (middle + topmove <= to &&
-           this->Compare(middle + topmove, middle) < 0L) {
+           this->Compare(middle + topmove, middle) == HY_COMPARE_LESS) {
       topmove++;
     }
   // now shuffle
@@ -196,14 +208,14 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
       bottommove++;
 
       while (middle - bottommove >= from &&
-             Compare(middle - bottommove, middle) > 0L) {
+             Compare(middle - bottommove, middle) == HY_COMPARE_GREATER) {
         bottommove++;
       }
     }
   }
 
   for (unsigned long i = middle + topmove + 1; i <= top; i++) {
-    if (Compare(i, middle) < 0L) {
+    if (Compare(i, middle) == HY_COMPARE_LESS) {
       this->Swap (i, middle+topmove);
       if (index_list) {
         index_list->Swap (i,middle+topmove);
@@ -211,7 +223,7 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
       topmove++;
 
       while (middle + topmove <= to &&
-             Compare(middle + topmove, middle) < 0L) {
+             Compare(middle + topmove, middle) == HY_COMPARE_LESS) {
         topmove++;
       }
     }
@@ -304,7 +316,7 @@ void _hyListOrderable<PAYLOAD>::DeleteDuplicates(void) {
     
     for (unsigned long k = 1; k < this->lLength; k++) {
       PAYLOAD thisValue = this->lData[k];
-      if (thisValue != lastValue) {
+      if (!this->EqualToValue (k,lastValue)) {
         noDups << thisValue;
         lastValue = thisValue;
       }
@@ -321,7 +333,7 @@ long _hyListOrderable<PAYLOAD>::CountCommonElements(const _hyListOrderable &l1, 
   long c1 = 0L, c2 = 0L, res = 0L;
 
   while (c1 < l1.lLength && c2 < this->lLength) {
-    while (l1.lData[c1] < this->lData[c2]) {
+    while (l1.CompareToValue (c1,this->lData[c2]) == HY_COMPARE_LESS) {
       c1++;
       if (c1 == l1.lLength) {
         break;
@@ -330,8 +342,8 @@ long _hyListOrderable<PAYLOAD>::CountCommonElements(const _hyListOrderable &l1, 
     if (c1 == l1.lLength) {
       break;
     }
-
-    while (l1.lData[c1] == this->lData[c2]) {
+    
+    while (l1.EqualToValue (c1, this->lData[c2])) {
       c2++;
       if (at_least_one) {
         return 1;
@@ -345,7 +357,7 @@ long _hyListOrderable<PAYLOAD>::CountCommonElements(const _hyListOrderable &l1, 
     if (c1 == l1.lLength || c2 == this->lLength) {
       break;
     }
-    while (this->lData[c2] < l1.lData[c1]) {
+    while (CompareToValue (c2, l1.lData[c1]) == HY_COMPARE_LESS) {
       c2++;
       if (c2 == this->lLength) {
         break;
@@ -362,7 +374,7 @@ void _hyListOrderable<PAYLOAD>::FilterRange(const PAYLOAD lb, const PAYLOAD ub) 
   } else {
     _hyListOrderable <long> toDelete;
     for (unsigned long k = 0UL; k < this->lLength; k++)
-      if (this->lData[k] <= lb || this->lData[k] >= ub) {
+      if (CompareToValue (k,lb) != HY_COMPARE_GREATER || CompareToValue (k,ub) != HY_COMPARE_LESS) {
         toDelete << k;
       }
     this->DeleteList(toDelete);

@@ -70,15 +70,15 @@ public:
 
   virtual ~BaseObj(void) {}
 
-  virtual BaseObj *toStr(void);
+  virtual BaseObj *toStr (void) const;
 
-  virtual BaseObj *toErrStr(void);
+  virtual BaseObj *toErrStr (void) const;
 
-  virtual void toFileStr(FILE *);
+  virtual void toFileStr (FILE *) const;
 
   virtual BaseObj *makeDynamic(void);
 
-  virtual void Initialize(void) { nInstances = 1; }
+  virtual void Initialize(void) { nInstances = 1L; }
 
   virtual void Duplicate(BaseObj *ref) { nInstances = ++ref->nInstances; }
 
@@ -86,8 +86,10 @@ public:
 
   inline void RemoveAReference(void) { nInstances--; }
   
-  inline bool CanFreeMe (void)  { return nInstances <= 1; }
-
+  inline bool CanFreeMe (void)  const { return nInstances <= 1; }
+  
+    // comparison functions
+  
 
 };
 

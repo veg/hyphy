@@ -47,6 +47,9 @@
 #include "batchlan.h"
 #include "thetree.h"
 
+#include "hy_list.h"
+
+
 extern _SimpleList freeSlots;
 extern _SimpleList deferIsConstant;
 

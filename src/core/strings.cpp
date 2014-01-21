@@ -47,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "dmalloc.h"
 #endif
 
+#include "hy_list_numeric.h"
 #include "batchlan.h"
 #include "executionlist.h"
 #include "thetree.h"

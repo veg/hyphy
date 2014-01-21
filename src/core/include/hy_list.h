@@ -84,7 +84,7 @@ public:
   _hyList(const unsigned long);
 
   // stack copy contructor
-  _hyList(const _hyList <PAYLOAD>&, const long = 0, const long = HY_LIST_INSERT_AT_END);
+  _hyList(const _hyList <PAYLOAD>&, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
 
   // data constructor (1 member list)
   _hyList(const PAYLOAD);
@@ -114,10 +114,10 @@ public:
   PAYLOAD operator()(const unsigned long);
 
   // assignment operator
-  virtual const _hyList<PAYLOAD> operator=(const _hyList<PAYLOAD>);
+  const _hyList<PAYLOAD> operator=(const _hyList<PAYLOAD>&);
 
   // append operator
-  virtual const _hyList<PAYLOAD> operator&(const _hyList<PAYLOAD>);
+  const _hyList<PAYLOAD> operator&(const _hyList<PAYLOAD>);
 
   // append an instance to this
   
@@ -130,6 +130,8 @@ public:
   virtual bool operator>>(const PAYLOAD);
 
   virtual void operator<<(const _hyList <PAYLOAD>&);
+  
+  
 
   /*
   ==============================================================
@@ -137,6 +139,15 @@ public:
   ==============================================================
   */
 
+  /**
+   * Clear the current list and make a copy from the argment
+   * Argument is a pointer to make it possible to overload Clone
+   * @param clone_from the object to clone from
+   * @return None.
+   */
+
+  virtual void Clone (const _hyList<PAYLOAD>* clone_from);
+  
   /**
   * Retrieve the element in position index if index if positive or
   * length + index if index is negative
@@ -152,7 +163,16 @@ public:
   * @param compact Free allocated memory if true
   */
 
-  void          Clear(bool = true);
+  virtual void          Clear(bool = true);
+  
+  /**
+   * Element storage functions - assuming the space is already allocated
+   * used to avoid (*list)[3] = x which are hard to read
+   * @param index where to store the item (not range-checked)
+   * @param item the stuff to store
+   */
+  virtual void SetItem(const unsigned long, PAYLOAD);
+
 
   /**
   * Return the number of elements in the list
@@ -205,8 +225,16 @@ public:
   * Example: _hyList([4, 1, 2]).Equal(_hyList([4, 1, 2]) = true
   * @return true if equal.
   */
-  bool Equal(const _hyList <PAYLOAD>&);
+  bool Equal(const _hyList <PAYLOAD>&) const;
 
+
+  /**
+   * Checks if list if list element at 'index' is equal to a fixed value
+   * @param index the list index of the element to test
+   * @param value the value to compare the result to
+   * @return true if equal.
+   */
+  virtual bool ItemEqualToValue (unsigned long index, const _hyList <PAYLOAD>& value) const;
 
   /**
   * Find the position of an item in an unsorted list using linear search

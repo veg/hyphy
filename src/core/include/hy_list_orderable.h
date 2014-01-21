@@ -42,6 +42,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 #include "hy_list.h"
 
+#define HY_COMPARE_EQUAL 0L
+#define HY_COMPARE_LESS  (-1L)
+#define HY_COMPARE_GREATER  1L
+
+
+
 /*
   
   A resizable list which stores PAYLOAD types
@@ -101,10 +107,19 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param j The second index to compare
     * @return -1 if i<j, 0 if i==j, or 1 if i>j
     */
-    virtual long Compare(const long, const long);
+    virtual long Compare(const long, const long) const;
 
 
     /**
+     * Compares the element at a given index to a fixed value
+     * Example: _hyListOrderable sl(1,3,5).Compare(0,1) = -1
+     * @param item The index of the item to compare
+     * @param value The value to compare the index to
+     * @return -1 if i<j, 0 if i==j, or 1 if i>j
+     */
+    virtual long CompareToValue (const long item, const PAYLOAD& value) const;
+
+  /**
     * Retain all those elements that are between (strictly) the 1st and the 2nd
     * argument (lb < value < ub)
     * Example: _hyListOrderable(1,3,5,7).FilterRange(2,5) = [3]
