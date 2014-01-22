@@ -168,17 +168,13 @@ set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
 #-------------------------------------------------------------------------------
 # gtest dependency
 #-------------------------------------------------------------------------------
-add_subdirectory(contrib/gtest-1.6.0)
+add_subdirectory(contrib/gtest-1.7.0)
 set_property(
     TARGET gtest gtest_main
     PROPERTY EXCLUDE_FROM_ALL true
 )
 
-#add_subdirectory(contrib/gmock-1.6.0)
-#set_property(
-#    TARGET gmock gmock_main
-#    PROPERTY EXCLUDE_FROM_ALL true
-#)
+
 
 
 #-------------------------------------------------------------------------------
@@ -214,6 +210,7 @@ set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS} ${SRC_GRAMMAR})
 
+set (SRC_WORKING src/core/baseobj.cpp src/core/strings.cpp src/core/string_buffer.cpp)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout
@@ -259,9 +256,8 @@ include_directories(
     contrib/tinyxml
     contrib/pugixml/src/
     src/ocl/
-    #contrib/gtest-1.6.0/include
-    contrib/gmock-1.6.0/include
-    contrib/gmock-1.6.0/gtest/include
+    contrib/gtest-1.7.0/include
+    contrib/gtest-1.7.0/gtest/include
     src/grammar
     tests/gtests
     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
@@ -425,10 +421,10 @@ install(
 add_executable(
     HYPHYGTEST
     EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
+    ${SRC_WORKING} ${SRC_GTESTS}
 )
-add_dependencies(HYPHYGTEST gmock)
-target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gmock)
+add_dependencies(HYPHYGTEST gtest)
+target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
 add_custom_target(GTEST DEPENDS HYPHYGTEST)
 
 set_property(

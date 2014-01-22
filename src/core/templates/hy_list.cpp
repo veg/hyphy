@@ -461,9 +461,9 @@ void _hyList<PAYLOAD>::Displace(long start, long end, long delta)
 }
 
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::Duplicate(BaseRef theRef)
+void _hyList<PAYLOAD>::Duplicate(BaseRefConst theRef)
 {
-  _hyList<PAYLOAD> *l = dynamic_cast<_hyList<PAYLOAD> >(theRef);
+  const _hyList<PAYLOAD> *l = dynamic_cast<const _hyList<PAYLOAD> >(theRef);
   lLength   = l->lLength;
   laLength  = l->laLength;
   lData     = l->lData;
@@ -679,7 +679,7 @@ void _hyList<PAYLOAD>::Swap(const unsigned long i, const unsigned long j)
 template<typename PAYLOAD>
 BaseRef _hyList<PAYLOAD>::toStr(void)
 {
-  _String* stringified = new _String(16L);
+  _StringBuffer * stringified = new _StringBuffer ();
   (*stringified) << "_hyList with ";
   (*stringified) << (long)lLength;
   (*stringified) << " elements.";

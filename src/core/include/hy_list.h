@@ -41,7 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HY_LIST_
 //#pragma once
 #include "baseobj.h"
-#include "hy_strings.h"
+#include "hy_string_buffer.h"
 
 /*
   
@@ -179,7 +179,7 @@ public:
   * @return list length
   */
 
-  unsigned long countitems (void) const;
+  inline unsigned long countitems (void) const;
 
 
   /**
@@ -189,7 +189,7 @@ public:
   */  
   void         Delete(const long, bool compact_list = true);
 
-  virtual void    Duplicate  (BaseRef);
+  virtual void    Duplicate  (BaseRefConst);
   virtual BaseRef makeDynamic(void);
 
   /**

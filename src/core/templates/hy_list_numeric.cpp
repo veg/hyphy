@@ -91,7 +91,7 @@ template<typename PAYLOAD>
 BaseRef _hyListNumeric<PAYLOAD>::toStr(void)
 {
   if (this->lLength) {
-      _String * s = new _String (10L, true);
+      _StringBuffer * s = new _StringBuffer ();
       (*s) << '{';
 
       for (unsigned long i = 0UL; i<this->lLength; i++) {
@@ -102,7 +102,6 @@ BaseRef _hyListNumeric<PAYLOAD>::toStr(void)
       }
       (*s) << '}';
 
-      s->Finalize();
       return s;
   } else {
       return new _String ("{}");
@@ -113,7 +112,7 @@ BaseRef _hyListNumeric<PAYLOAD>::toStr(void)
 template<typename PAYLOAD>
 _String* _hyListNumeric<PAYLOAD>::ListToPartitionString (void) const
 {
-    _String *result = new _String ((unsigned long)64,true),
+    _StringBuffer *result = new _StringBuffer (64UL),
     conv;
 
     for (unsigned long k=0UL; k<this->lLength; k++) {
@@ -140,7 +139,6 @@ _String* _hyListNumeric<PAYLOAD>::ListToPartitionString (void) const
             }
         }
     }
-    (*result).Finalize();
     return result;
 }
 

@@ -37,42 +37,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include <tr1/tuple>
 #include <iostream>
 #include "gtest/gtest.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <math.h>
 
 //Generate necessary includes from the respective implementation file
 #include "baseobj.h"
-#include "likefunc.h"
-#include <sys/time.h>
-#include <unistd.h>
-#include    "baseobj.h"
-#include    "helperfunctions.h"
-#include    "hy_globals.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class DISABLED_BaseObjTest : public ::testing::Test {
+class BaseObjTest : public ::testing::Test {
 
 protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  DISABLED_BaseObjTest() {
+    BaseObjTest() {
     // You can do set-up work for each test here.
     // Create objects of every type needed. Performance doesn't matter.
 
-    FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
+        //FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
 
     BaseObjtest = new BaseObj();
   }
 
-  virtual ~DISABLED_BaseObjTest() {
+  virtual ~BaseObjTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -88,15 +79,14 @@ protected:
     // Code here will be called immediately after each test (right
     // before the destructor).
     delete BaseObjtest;
-    fclose (FILEtest);
+      //fclose (FILEtest);
   }
 
-  FILE* FILEtest;
   BaseObj* BaseObjtest;
 };
 
 
-TEST_F(DISABLED_BaseObjTest, makeDynamicTest) {
+TEST_F(BaseObjTest, makeDynamicTest) {
 
   BaseObj* resultBaseObj = BaseObjtest->makeDynamic();
   //EXPECT_EQ (resultBaseObj*, 0);
@@ -104,7 +94,7 @@ TEST_F(DISABLED_BaseObjTest, makeDynamicTest) {
 }
 
 
-TEST_F(DISABLED_BaseObjTest, toErrStrTest) {
+TEST_F(BaseObjTest, toErrStrTest) {
 
   BaseRef resultBaseRef = BaseObjtest->toErrStr();
   //EXPECT_EQ (resultBaseRef, 0);
@@ -112,15 +102,15 @@ TEST_F(DISABLED_BaseObjTest, toErrStrTest) {
 }
 
 
-TEST_F(DISABLED_BaseObjTest, toFileStrTest) {
+TEST_F(BaseObjTest, toFileStrTest) {
 
-  BaseObjtest->toFileStr(FILEtest);
+    //BaseObjtest->toFileStr(FILEtest);
   //EXPECT_EQ (BaseObjtest, 0);
 
 }
 
 
-TEST_F(DISABLED_BaseObjTest, toStrTest) {
+TEST_F(BaseObjTest, toStrTest) {
 
   BaseRef resultBaseRef = BaseObjtest->toStr();
   //EXPECT_EQ (resultBaseRef, 0);

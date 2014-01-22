@@ -76,11 +76,11 @@ public:
 
   virtual void toFileStr (FILE *) const;
 
-  virtual BaseObj *makeDynamic(void);
+  virtual BaseObj *makeDynamic(void) = 0;
 
   virtual void Initialize(void) { nInstances = 1L; }
 
-  virtual void Duplicate(BaseObj *ref) { nInstances = ++ref->nInstances; }
+  virtual void Duplicate(BaseObj const * ref) = 0;
 
   inline void AddAReference(void) { nInstances++; }
 
@@ -88,12 +88,14 @@ public:
   
   inline bool CanFreeMe (void)  const { return nInstances <= 1; }
   
+  inline bool SingleReference (void)  const { return nInstances == 1; }
     // comparison functions
   
 
 };
 
 typedef BaseObj *BaseRef;
+typedef BaseObj const * BaseRefConst;
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
 #include <pmmintrin.h>

@@ -37,18 +37,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HSTRINGS_
-#define _HSTRINGS_
+#ifndef _HY_STRINGS_
+#define _HY_STRINGS_
 //#pragma once
+
+#define HY_2014_REWRITE_MASK
 
 #include "baseobj.h"
 #include "wchar.h"
 
 class _ExecutionList;     // forward declaration
 template<typename PAYLOAD>
-class _hy_list_numeric; 
+class _hyListNumeric; 
 
-typedef _hy_list_numeric<long> _SimpleList;
+typedef _hyListNumeric <long> _SimpleList;
 
 class _List;
 
@@ -68,17 +70,17 @@ public:
   _String(void);
 
   /**
-  * Length constructor.
-  * @param sL Length of the string
-  * @param flag Allocates differently based on the flag
-  */
-  _String(unsigned long sL, bool flag = false);
-
-  /**
   * A constructor that converts a long to string.
   * @param sL The number to convert to string
   */
   _String(long);
+
+  /**
+   * A constructor that creates a string ready to hold the specified number of chars.
+   * @param sL The number of chars to hold
+   */
+  _String(const unsigned long sL);
+  
 
   /**
   * A constructor that converts a _Parameter(double) to string.
@@ -151,7 +153,7 @@ public:
   * @sa DuplicateErasing()
   * @sa CopyDynamicString()
   */
-  virtual void Duplicate(BaseRef);
+  virtual void Duplicate(BaseRefConst);
 
   /**
   * Erases old data and duplicates a string
@@ -223,72 +225,7 @@ public:
   */
   _String operator&(_String);
 
-  /**
-  * Append operator
-  * \n\n \b Example: \code _String new_string = _String("A") & _String("B")
-  * \endcode
-  * @return "AB"
-  * @sa EscapteAndAppend()
-  */
-  virtual void operator<<(const _String *);
 
-  /**
-  * Append operator
-  */
-  virtual void operator<<(const _String &);
-
-  /**
-  * Append operator
-  * \n\n \b Example: \code _String new_string = _String("A") & _String("B")
-  * \endcode
-  * @return "AB"
-  * @sa EscapteAndAppend()
-  */
-  void AppendNewInstance(_String *);
-
-  /**
-  * Append operator
-  * \n\n \b Example: \code _String new_string = _String("A") & _String("B")
-  * \endcode
-  * @return "AB"
-  * @sa AppendNewInstance()
-  */
-  virtual void operator<<(const char);
-
-  /**
-  * Escape all characters in a string and append to this string
-  * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
-  * \n Above code will transform string to "AB&lt;"
-  * @param c The character to escape and append
-  * @param mode What sort of escaping
-  * \n mode = 0 : normal "text" escaping
-  * \n mode = 1: PostScript escaping
-  * \n mode = 2: SQLite escaping
-  * \n mode = 3: SQLite escaping
-  * \n mode = 4: HTML escaping
-  * \n mode = 5: Regexp escaping
-  */
-  virtual void EscapeAndAppend(const char, char);
-
-  /**
-  * Escape all characters in a string and append to this string
-  * \n\n \b Example: \code _String("AB").EscapeAndAppend('<',4); \endcode
-  * \n Above code will transform string to "AB&lt;"
-  * @param s The string to escape and append
-  * @param mode What sort of escaping
-  * @see EscapeAndAppend(const char, char)
-  */
-  virtual void EscapeAndAppend(const _String &, char mode = 0);
-
-  /**
-  * Append into operator
-  */
-  virtual void operator<<(const char *);
-
-  /**
-  * Finalizes a string by putting a 0 at the end of the string.
-  */
-  virtual void Finalize(void);
 
   /**
   * Checks if the string contains the substring

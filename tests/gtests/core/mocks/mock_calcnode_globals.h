@@ -1,2 +1,0 @@
-class MockThreadMatrixTask : public ThreadMatrixTask {
-};

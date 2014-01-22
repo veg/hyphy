@@ -32,50 +32,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "baseobj.h"
-#ifdef __HYPHYMPI__
-#include "likefunc.h"
-extern int _hy_mpi_node_rank;
-#endif
-
-#if defined __UNIX__ || defined __HYPHY_GTK__
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
-#ifdef __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
-
-#ifdef __HYPHYXCODE__
-#include "HYUtils.h"
-#endif
-
-#ifdef __WINDOZE__
-#include <Windows.h>
-#endif
-
 #include    "baseobj.h"
-#include    "helperfunctions.h"
-#include    "hy_globals.h"
+#include    "hy_strings.h"
+
 
 BaseObj::BaseObj() { nInstances = 1; }
 
 //______________________________________________________________________________
-BaseRef BaseObj::toStr(void) { return new _String("<HyPhy Base Object>"); }
+BaseRef BaseObj::toStr(void) const { return new _String("<HyPhy Base Object>"); }
 
 //______________________________________________________________________________
-BaseRef BaseObj::toErrStr(void) { return toStr(); }
+BaseRef BaseObj::toErrStr(void) const { return toStr(); }
 
 //______________________________________________________________________________
-void BaseObj::toFileStr(FILE *dest) {
+void BaseObj::toFileStr(FILE *dest) const {
   _String *s = (_String *)toStr();
   fwrite(s->sData, 1, s->Length(), dest);
-  DeleteObject(s);
+  delete s;
 }
 
-//______________________________________________________________________________
-BaseObj *BaseObj::makeDynamic(void) {
-  warnError(-112);
-  return nil;
-}

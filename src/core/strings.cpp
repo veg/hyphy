@@ -48,9 +48,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "hy_list_numeric.h"
-#include "batchlan.h"
-#include "executionlist.h"
-#include "thetree.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -125,29 +122,11 @@ _String::_String(void) {
 }
 
 //Length constructor
-_String::_String(unsigned long sL, bool buffer) {
+_String::_String(const unsigned long sL) {
 
-  if (buffer) {
-    sLength = 0;
-    nInstances = sL > storageIncrement ? sL : storageIncrement;
-    sData = (char *)MemAllocate(nInstances * sizeof(char));
-    //sData = (char*)MemAllocate (storageIncrement*sizeof (char));
-    if (!sData) {
-      nInstances = 1;
-      warnError(-108);
-    }
-  } else {
     sLength = sL;
-    sData = (char *)MemAllocate(sL + 1);
-    if (sData) {
-      for (unsigned long l = 0L; l <= sL; l++) {
-        sData[l] = (char)0L;
-      }
-    } else {
-      sLength = 0;
-      warnError(-108);
-    }
-  }
+    sData = (char*)checkPointer(MemAllocate(sL + 1UL));
+    memset (sData, 0, sL + 1UL);
 }
 
 //Length constructor
@@ -260,14 +239,14 @@ _String::_String(FILE *F) {
 
 //Destructor
 _String::~_String(void) {
-  if (nInstances <= 1) {
+  if (CanFreeMe()) {
     if (sData) {
       free(sData);
       sData = nil;
     }
     sLength = 0;
   } else {
-    nInstances--;
+    RemoveAReference();
   }
 }
 
@@ -311,7 +290,7 @@ _String _String::operator&(_String s) {
     return empty;
   }
 
-  _String res(sLength + s.sLength, false);
+  _String res(sLength + s.sLength);
 
   if (sLength) {
     memcpy((res.sData), sData, sLength);
@@ -325,58 +304,6 @@ _String _String::operator&(_String s) {
   return res;
 }
 
-// append operator
-void _String::operator<<(const _String *s) {
-  if (s && s->sLength) {
-    if (nInstances < sLength + s->sLength) {
-      unsigned long incBy = sLength + s->sLength - nInstances;
-
-      if (incBy < storageIncrement) {
-        incBy = storageIncrement;
-      }
-
-      if (incBy < sLength / 8) {
-        incBy = sLength / 8;
-      }
-
-      nInstances += incBy;
-
-      sData = (char *)MemReallocate((char *)sData, nInstances * sizeof(char));
-
-      if (!sData) {
-        checkPointer(sData);
-      }
-    }
-
-    for (long k = 0; k < s->sLength; k++) {
-      sData[sLength + k] = s->sData[k];
-    }
-
-    //memcpy(sData+sLength,s->sData,s->sLength);
-    sLength += s->sLength;
-  }
-}
-
-// append operator
-void _String::operator<<(const _String &s) { (*this) << &s; }
-
-//Append operator
-void _String::operator<<(const char *str) {
-  _String conv(str);
-  (*this) << &conv;
-}
-
-//Append operator
-void _String::operator<<(const char c) {
-  if (nInstances <= sLength) {
-    nInstances += ((storageIncrement * 8 > sLength) ? storageIncrement
-                                                    : (sLength / 8 + 1));
-    checkPointer(sData = (char *)MemReallocate((char *)sData,
-                                               nInstances * sizeof(char)));
-  }
-
-  sData[sLength++] = c;
-}
 
 //Return good ole char*
 _String::operator const char *(void) { return sData; }
@@ -433,11 +360,6 @@ long _String::Adler32(void) {
   return b << 16 | a;
 }
 
-//Append and delete operator
-void _String::AppendNewInstance(_String *s) {
-  (*this) << s;
-  DeleteObject(s);
-}
 
 void _String::AppendAnAssignmentToBuffer(_String *id, _String *value,
                                          bool doFree, bool doQuotes,
@@ -538,7 +460,7 @@ void _String::CopyDynamicString(_String *s, bool flushMe) {
     free(sData);
   }
   sLength = s->sLength;
-  if (s->nInstances == 1) {
+  if (s->SingleReference ()) {
     sData = s->sData;
     s->sData = nil;
     DeleteObject(s);
@@ -549,7 +471,7 @@ void _String::CopyDynamicString(_String *s, bool flushMe) {
     } else {
       sData[0] = 0;
     }
-    s->nInstances--;
+    s->RemoveAReference();
   }
 }
 
@@ -592,8 +514,8 @@ void _String::Delete(long from, long to) {
   sData[sLength] = 0;
 }
 
-void _String::Duplicate(BaseRef ref) {
-  _String *s = (_String *)ref;
+void _String::Duplicate(BaseRefConst ref) {
+  _String *s = (_String const*)ref;
 
   sLength = s->sLength;
   sData = s->sData;
@@ -609,108 +531,12 @@ void _String::DuplicateErasing(BaseRef ref) {
   if (sData) {
     free(sData);
   }
-
   Duplicate(ref);
 
 }
 
-//Append operator
-void _String::EscapeAndAppend(const char c, char mode) {
-  if (mode == 2) {
-    (*this) << c;
-    switch (c) {
-    case '\'':
-      (*this) << c;
-    }
-    return;
-  } else {
-    if (mode == 1) {
-      switch (c) {
-      case '(':
-      case ')':
-      case '%':
-        (*this) << '\\';
-        (*this) << c;
-        return;
-      }
-    } else {
-      if (mode == 4) {
-        switch (c) {
-        case '"':
-          (*this) << "&quot;";
-          break;
-        case '\'':
-          (*this) << "&apos;";
-          break;
-        case '<':
-          (*this) << "&lt;";
-          break;
-        case '>':
-          (*this) << "&gt;";
-          break;
-        case '&':
-          (*this) << "&amp;";
-          break;
-        default:
-          (*this) << c;
-        }
-        return;
-      } else {
-        if (mode == 5) { // regexp
-          switch (c) {
-          case '[':
-          case '^':
-          case '$':
-          case '.':
-          case '|':
-          case '?':
-          case '*':
-          case '+':
-          case '(':
-          case ')':
-            (*this) << '\\';
-            (*this) << c;
-            break;
-          case '\\':
-            (*this) << "\\\\";
-            break;
-          default:
-            (*this) << c;
-          }
-          return;
 
-        }
-      }
-    }
-  }
-  switch (c) {
-  case '\n':
-    (*this) << '\\';
-    (*this) << 'n';
-    break;
-  case '\t':
-    (*this) << '\\';
-    (*this) << 't';
-    break;
-  case '"':
-    (*this) << '\\';
-    (*this) << '"';
-    break;
-  case '\\':
-    (*this) << '\\';
-    (*this) << '\\';
-    break;
-  default:
-    (*this) << c;
-  }
-}
 
-//Append operator
-void _String::EscapeAndAppend(const _String &s, char mode) {
-  for (long i = 0; i < s.sLength; i++) {
-    EscapeAndAppend(s.sData[i], mode);
-  }
-}
 
 //Replace string 1 with string 2, all occurences true/false
 void _String::FormatTimeString(long time_diff) {
