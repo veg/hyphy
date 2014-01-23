@@ -116,7 +116,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx ")
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
         PCL_CHECK_FOR_SSE3()
@@ -172,7 +172,7 @@ endif(${CURL_FOUND})
 #-------------------------------------------------------------------------------
 # gtest dependency
 #-------------------------------------------------------------------------------
-add_subdirectory(contrib/gtest-1.6.0)
+add_subdirectory(contrib/gtest-1.7.0)
 set_property(
     TARGET gtest gtest_main
     PROPERTY EXCLUDE_FROM_ALL true
@@ -199,17 +199,16 @@ file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
-file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
-set(SRC_SQLITE3 contrib/SQLite-3.7.11/sqlite3.c)
+set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
 
 
 #-------------------------------------------------------------------------------
@@ -225,18 +224,10 @@ set_property(
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 )
 
-
-set_property(
-    SOURCE ${SRC_PUGIXML}
-    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
-)
-
-
 set_property(
     SOURCE src/core/calcnode2.cpp
     PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
 )
-
 
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
@@ -250,15 +241,12 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 include_directories(
     src/core/include
     src/lib/Link src/new/include
-    contrib/SQLite-3.7.11 # SQLite
-    contrib/tinyxml
-    contrib/pugixml/src/
+    contrib/SQLite-3.8.2 # SQLite
     src/gui/include
     src/gui/include/Components
     src/gui/include/WindowClasses
-    contrib/gtest-1.6.0/include
+    contrib/gtest-1.7.0/include
     tests/gtests
-    /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
 
 
@@ -396,8 +384,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 install(
@@ -427,8 +415,8 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
 )
 
 #-------------------------------------------------------------------------------
@@ -609,14 +597,14 @@ if(APPLE)
     add_executable(HyPhy
         MACOSX_BUNDLE
 		EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUI}
     )
 
     add_executable(iHyPhyDebug
         MACOSX_BUNDLE
         EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
+        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
         ${RES_MACGUIDEBUG}
     )
 
@@ -632,8 +620,8 @@ if(APPLE)
     # install the hyphy hbl stdlib into the .app
     #---------------------------------------------------------------------------
 
-    get_target_property   (HYPHY_APPEXE HyPhy LOCATION)
-    get_filename_component(HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
+    get_target_property    (HYPHY_APPEXE HyPhy LOCATION)
+    get_filename_component (HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
 
     add_custom_command(
         TARGET HyPhy
@@ -646,8 +634,8 @@ if(APPLE)
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
     )
 
-    get_target_property   (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
-    get_filename_component(IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
+    get_target_property    (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
+    get_filename_component (IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
 
 	add_custom_target(
 		HYPHY_DMG
