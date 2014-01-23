@@ -27,6 +27,9 @@ but can be made to install anywhere by passing
 to cmake during the configuration, e.g.
 `cmake -DINSTALL_PREFIX=/opt/hyphy .`.
 
+Occasionally, you may have to specify which OSX SDK you are using. e.g.
+`cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`.
+
 If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
 then just `make` away with one of the following targets:

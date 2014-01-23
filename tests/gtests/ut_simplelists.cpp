@@ -7,7 +7,7 @@
  *
  */
 
-#include <tr1/tuple>
+//#include <tr1/tuple>
 #include <iostream>
 #include "gtest/gtest.h"
 #include "ut_simplelists.h"

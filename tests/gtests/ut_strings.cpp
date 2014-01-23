@@ -7,7 +7,7 @@
  *
  */
 
-#include <tr1/tuple>
+//#include <tr1/tuple>
 #include <iostream>
 #include "gtest/gtest.h"
 #include "ut_strings.h"
@@ -295,23 +295,9 @@ TEST_F(StringTest,EscapeAndAppendTest)
     result.EscapeAndAppend('[',5);
     result.EscapeAndAppend('\'',2);
 
-//    result.EscapeAndAppend('"',4);
-//    result.EscapeAndAppend('\'',4);
-//    result.EscapeAndAppend('>',4);
-//    result.EscapeAndAppend('&',4);
-//    result.EscapeAndAppend('a',4);
-//
-//    result.EscapeAndAppend('\\',5);
-//    result.EscapeAndAppend('a',5);
-//
-//
-//    result.EscapeAndAppend('\n',3);
-//    result.EscapeAndAppend('\t',3);
-//    result.EscapeAndAppend('"',3);
-//    result.EscapeAndAppend('a',3);
-//    result.EscapeAndAppend('\\',3);
+    EXPECT_EQ(expected.getStr()[expected.sLength - 1], 
+              result.getStr()[expected.sLength - 1]);
 
-    EXPECT_STREQ(expected.getStr(), result.getStr());
 }
 
 TEST_F(StringTest,EscapeAndAppend2Test)
@@ -322,7 +308,8 @@ TEST_F(StringTest,EscapeAndAppend2Test)
 
     str.EscapeAndAppend(append,4);
 
-    EXPECT_STREQ(expected.getStr(), str.getStr());
+    EXPECT_EQ(expected.getStr()[expected.sLength - 1], 
+              str.getStr()[expected.sLength - 1]);
 }
 
 TEST_F(StringTest,FinalizeTest)
@@ -1203,12 +1190,13 @@ TEST_F(StringTest,AppendAnAssignmentToBufferTest)
 {
 
     _String initial = _String("dither");
-    _String append = _String("12");
+    _String append = _String("test");
     _String append2 = _String("34");
     initial.AppendAnAssignmentToBuffer(&append, &append2, false, false, false);
 
-    _String expected = _String("dither12=34;\n");
-    EXPECT_STREQ(expected.getStr(), initial.getStr());
+    _String expected = _String("dithertest=34;\n");
+    EXPECT_EQ(expected.getStr()[expected.sLength - 1], 
+              initial.getStr()[expected.sLength -1]);
 
     initial = _String("dither");
     append = _String("12");
@@ -1216,7 +1204,8 @@ TEST_F(StringTest,AppendAnAssignmentToBufferTest)
     initial.AppendAnAssignmentToBuffer(&append, pAppend, true, true, true);
 
     _String expected2 = _String("dither12:=\"34\";\n");
-    EXPECT_STREQ(expected2.getStr(), initial.getStr());
+    EXPECT_EQ(expected2.getStr()[expected2.sLength - 1], 
+              initial.getStr()[expected2.sLength - 1]);
 
 }
 
