@@ -211,7 +211,8 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 categoryLogMultiplier           (".log_scale_multiplier"),
                                 optimizationHardLimit           ("OPTIMIZATION_TIME_HARD_LIMIT"),
                                 minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
-                                userSuppliedVariableGrouping    ("PARAMETER_GROUPING");
+                                userSuppliedVariableGrouping    ("PARAMETER_GROUPING"),
+                                addLFSmoothing                  ("LF_SMOOTHING_SCALER");
 
     
 extern _String useNexusFileData,
@@ -492,12 +493,15 @@ void _LikelihoodFunction::Init (void)
     nonConstantDep      = nil;
     evalsSinceLastSetup = 0;
     siteArrayPopulated  = false;
+    smoothingTerm       = 0.;
+    smoothingPenalty    = 0.;
 
     conditionalInternalNodeLikelihoodCaches = nil;
     conditionalTerminalNodeStateFlag        = nil;
     siteScalingFactors                      = nil;
     branchCaches                            = nil;
     parameterValuesAndRanges                = nil;
+    
 #ifdef  _OPENMP
     SetThreadCount      (systemCPUCount);
 #endif
@@ -2072,287 +2076,16 @@ _Parameter  _LikelihoodFunction::Compute        (void)
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -A_LARGE_NUMBER;
         }
+        
+        ComputeParameterPenalty ();
 
-        return result;
+        return result - smoothingPenalty;
     }
 
     WarnError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
     return -A_LARGE_NUMBER;
 
-#ifdef OLDHYPHYCODE
-    if (computingTemplate && templateKind > _hyphyLFComputationalTemplateByPartition) {
-        for (long i=0; i<theTrees.lLength; i++) {
-            if (HasBlockChanged(i)) {
-                _DataSetFilter  *df             = ((_DataSetFilter*)dataSetFilterList(theDataFilters.lData[i]));
-                long            blockWidth      = df->GetSiteCount();
 
-                _Matrix         *blockResult    = nil;
-                _String         mxName          = siteWiseMatrix & (long)(i+1);
-                _Variable*      matrixStorage   = CheckReceptacle (&mxName, empty, false);
-
-                if (matrixStorage->ObjectClass() == MATRIX) {
-                    blockResult = (_Matrix*)matrixStorage->GetValue();
-                }
-
-                bool            madeMatrix      = !blockResult;
-
-
-                if (blockDependancies.lData[i]) {
-                    categID         = 0;
-                    offsetCounter   = 1;
-                    long            nCat = ((_TheTree*)LocateVar(theTrees.lData[i]))->categoryCount;
-
-                    if (!madeMatrix) {
-                        if ((blockResult->GetHDim() != blockWidth) || (blockResult->GetVDim() != nCat)) {
-                            madeMatrix = true;
-                        } else {
-                            blockResult->CheckIfSparseEnough(true);
-                        }
-                    }
-
-                    if (madeMatrix) {
-                        blockResult         = new _Matrix (nCat,blockWidth,false,true);
-                        checkPointer    (blockResult);
-                    }
-
-                    //WriteAllCategoriesTemplate(i,  HighestBit( blockDependancies.lData[i]), blockDependancies.lData[i], LowestBit( blockDependancies.lData[i]), blockWidth,blockResult->theData,df->duplicateMap.lData);
-                } else {
-                    categID = 0; /* mod 07/23/2004 - was = -1 */
-                    ComputeBlock (i,siteResults->theData);
-                    if (!usedCachedResults)
-                        // remap compressed sites to full length
-                    {
-                        if (!madeMatrix) {
-                            if ((blockResult->GetHDim() != blockWidth) || (blockResult->GetVDim() != 1)) {
-                                madeMatrix = true;
-                            } else {
-                                blockResult->CheckIfSparseEnough(true);
-                            }
-                        }
-
-                        if (madeMatrix) {
-                            checkPointer (blockResult       = new _Matrix (1,blockWidth,false,true));
-                        }
-
-                        long*               dupMap = df->duplicateMap.lData;
-
-                        for (long k1 = 0; k1 < blockWidth; k1++) {
-                            blockResult->theData[k1] = siteResults->theData[dupMap[k1]];
-                        }
-                    }
-                }
-
-                if (madeMatrix) {
-                    matrixStorage->SetValue (blockResult);
-                    DeleteObject (blockResult);
-                }
-            }
-        }
-
-        likeFuncEvalCallCount++;
-        if (terminateExecution) {
-            return -1e100;
-        }
-        result = computingTemplate->Compute()->Value();
-        // mod 20060125 added the PostCompute call here
-        PostCompute();
-        return result;
-    } else {
-        if (indexCat.lLength==0) {
-            if (computingTemplate && templateKind != _hyphyLFComputationalTemplateByPartition)
-                for (long i=0; i<theTrees.lLength; i++) {
-                    ComputeBlockForTemplate (i);
-                }
-            else
-                for (long i=0; i<theTrees.lLength; i++) {
-                    result+=ComputeBlock (i);
-                }
-        } else {
-            long hDim      = siteResults->GetHDim();
-            _Parameter *sR = siteResults->fastIndex();
-
-            for (long j=0; j<theTrees.lLength; j++) {
-                for (long i=0; i<2*hDim; i++) {
-                    sR[i] = 0.;
-                }
-
-                long    blockLength = BlockLength(j);
-
-                if (blockDependancies.lData[j])
-                    // depends on some category variables
-                {
-                    if ( computationalResults.GetUsed() <= j || HasBlockChanged(j)) {
-                        offsetCounter = HasHiddenMarkov(blockDependancies.lData[j]);
-                        _DataSetFilter* df = ((_DataSetFilter*)dataSetFilterList(theDataFilters(j)));
-                        if (offsetCounter<0) {
-                            offsetCounter = 1;
-                            _Parameter blockResult = 0.0;
-
-                            long ff = HasHiddenMarkov(blockDependancies.lData[j],false);
-                            if (ff<0) {
-                                _SimpleList                         scalerTabs (blockLength, 0, 0);
-                                long                                cumulativeCorrection = 0;
-                                PopulateConditionalProbabilities    (j,_hyphyLFConditionProbsWeightedSum,siteResults->theData,scalerTabs);
-
-                                if (computingTemplate && templateKind)
-                                    // this needs fixing for scaling
-                                {
-                                    ComputeBlockForTemplate2 (j, bySiteResults->theData+j*bySiteResults->GetVDim(), sR, bySiteResults->GetVDim());
-                                } else
-                                    for (long pattern = 0; pattern < blockLength; pattern++) {
-                                        blockResult+=myLog(sR[pattern])*df->theFrequencies.lData[pattern];
-                                        cumulativeCorrection += scalerTabs.lData[pattern];
-                                    }
-
-                                blockResult -= cumulativeCorrection*_logLFScaler;
-
-                            } else
-                                // do constant on partition
-                            {
-                                long    mxDim = 1;
-                                for (long i=0; i<=ff; i++)
-                                    if (CheckNthBit (blockDependancies.lData[j],i)) {
-                                        _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[i]);
-                                        mxDim *= thisC->GetNumberOfIntervals();
-                                    }
-
-                                _Matrix ccache (mxDim,1,false,true);
-
-                                RecurseConstantOnPartition (j,0,blockDependancies.lData[j],ff,1,ccache);
-
-                                _Parameter maxValue = -1.e300;
-
-                                for (long i=0; i<mxDim; i++)
-                                    if (ccache.theData[i]>maxValue) {
-                                        maxValue = ccache.theData[i];
-                                    }
-
-                                for (long i=0; i<mxDim; i++) {
-                                    blockResult += exp (ccache.theData[i]-maxValue);
-                                }
-
-                                blockResult = myLog (blockResult)+maxValue;
-                            }
-
-                            UpdateBlockResult (j, blockResult);
-
-
-
-                            result  += blockResult;
-                            categID  = 0;
-                        } else {
-                            // do hidden markov
-                            _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[offsetCounter]);
-                            thisC->Refresh();
-
-                            long               ni               = thisC->GetNumberOfIntervals(),
-                                               bl                 = BlockLength (j),
-                                               hmmShifter        = 1;
-
-                            _Matrix            hmc (ni,bl,false,true);
-
-                            _Parameter         *p1 = hmc.fastIndex(),
-                                                *p2;
-
-                            for (long i=HighestBit(blockDependancies.lData[j]); i>=0; i--)
-                                if (CheckNthBit (blockDependancies.lData[j],i)) {
-                                    _CategoryVariable * aC = (_CategoryVariable*)LocateVar(indexCat.lData[i]);
-                                    if (! (aC->IsHiddenMarkov() || aC->IsConstantOnPartition())) {
-                                        hmmShifter *= aC->GetNumberOfIntervals();
-                                    }
-                                }
-
-                            offsetCounter = 1;
-                            categID       = 0;
-                            // SLKP mod: 20070301; fixed category indexing bug when HMM AND
-                            // another category is used
-                            for (long i=0; i<ni; i++) {
-                                categID     = hmmShifter * i;
-                                thisC->SetIntervalValue (i,!i);
-                                RecurseCategory (j,0,blockDependancies.lData[j],HighestBit(blockDependancies.lData[j]),1);
-                                p2 = siteResults->fastIndex();
-                                for   (long k = 0; k<bl; k++,p2++,p1++) {
-                                    *p1 = *p2;
-                                }
-                            }
-
-                            //result += SumUpHiddenMarkov (hmc, *hmm, *hmf, df->duplicateMap, bl);
-                        }
-                    } else {
-                        result+= computationalResults.theData[j];
-                    }
-                } else {
-                    if (computingTemplate && templateKind == 1)
-                        // 20060808: need to fill out site-by-site probabilities
-                        //categID = 0;
-                    {
-                        ComputeBlockForTemplate (j);
-                    } else {
-                        result+=ComputeBlock(j);
-                    }
-                }
-
-            }
-        }
-    }
-
-
-    PostCompute ();
-    likeFuncEvalCallCount++;
-
-    if (terminateExecution) {
-        return -1e100;
-    }
-
-
-    if (computingTemplate) {
-        siteArrayPopulated = true;
-        _Matrix               blockValues (theTrees.lLength,1,false,true);
-        siteWiseVar->SetValue (&blockValues);
-
-        _Matrix* varMxValue = (_Matrix*)siteWiseVar->GetValue();
-
-        if (templateKind == _hyphyLFComputationalTemplateBySite) {
-            long    blockWidth = bySiteResults->GetVDim();
-            result = 0.0;
-            for (long i=0; i<blockWidth; i++) {
-                for (long k=0; k<theTrees.lLength; k++) {
-                    varMxValue->theData[k] = bySiteResults->theData[k*blockWidth+i];
-                }
-
-                result += computingTemplate->Compute()->Value();
-            }
-            return result;
-        } else {
-            if (templateKind<0) {
-                _CategoryVariable * thisC = (_CategoryVariable*)LocateVar (-templateKind-1);
-
-                _SimpleList       rm (bySiteResults->GetVDim(), 0, 1);
-
-                //result              += SumUpHiddenMarkov (*bySiteResults, *hmm, *hmf, rm, bySiteResults->GetVDim());
-
-            } else
-                // _hyphyLFComputationalTemplateByPartition
-            {
-                for (long i=0; i<theTrees.lLength; i++) {
-                    blockValues.theData[i] = computationalResults.theData[i];
-                }
-
-                blockWiseVar->SetValue (&blockValues);
-                return     computingTemplate->Compute()->Value();
-            }
-        }
-
-    }
-
-//  if (likeFuncEvalCallCount>=10)
-//  {
-//      ProfilerDump("\pProfile");
-//      ProfilerTerm();
-//      exit(0);
-//  }
-    return result;
-#endif
 }
 //_______________________________________________________________________________________
 
@@ -4460,7 +4193,11 @@ DecideOnDivideBy (this);
 #define _HY_SLOW_CONVERGENCE_RATIO_INV 1./_HY_SLOW_CONVERGENCE_RATIO
 
 
-        while (inCount<termFactor) {
+        while (inCount<termFactor || smoothingTerm > 0.) {
+            if (smoothingTerm > 0. && inCount == termFactor) {
+              smoothingTerm = 0.;
+              inCount = 0;
+            }
             if (likeFuncEvalCallCount-lfCount>maxItersPerVar) {
                 ReportWarning ("Optimization routines returning before requested precision goal met. The maximum iteration number specified by MAXIMUM_ITERATIONS_PER_VARIABLE has been reached");
                 DeleteObject  (stepHistory);
@@ -4569,7 +4306,10 @@ DecideOnDivideBy (this);
                 UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
             }
 #endif
-
+            if (smoothingTerm > 0.) {
+              smoothingTerm *= 0.8;
+            }
+            
             _SimpleList nc2;
 
             long        ncp = 0,
@@ -4612,10 +4352,10 @@ DecideOnDivideBy (this);
                 }
 
                 if (convergenceMode > 2) {
-                if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
-                    ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
-                    break;
-                }
+                    if (hardLimitOnOptimizationValue < INFINITY && TimerDifferenceFunction(true) > hardLimitOnOptimizationValue) {
+                        ReportWarning (_String("Optimization terminated before convergence because the hard time limit was exceeded."));
+                        break;
+                    }
                     _Matrix             bestMSoFar;
                     GetAllIndependent   (bestMSoFar);
                     _Parameter prec = MIN (diffs[0], diffs[1]);
@@ -4907,6 +4647,10 @@ DecideOnDivideBy (this);
             if (verbosityLevel>5) {
                 snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g %g %g %g %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
                 BufferToConsole (buffer);
+                snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %d", maxSoFar-lastMaxValue, precision, termFactor);
+                BufferToConsole (buffer);
+                snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
+                BufferToConsole (buffer);
 
             }
 
@@ -4918,7 +4662,7 @@ DecideOnDivideBy (this);
                 currentPrecision = averageChange2;
             }
 
-            if (maxSoFar-lastMaxValue<precision/termFactor) {
+            if (maxSoFar-lastMaxValue<=precision/termFactor) {
                 inCount++;
             } else {
                 inCount = 0;

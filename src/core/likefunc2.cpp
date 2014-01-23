@@ -70,6 +70,31 @@ void    _LikelihoodFunction::DetermineLocalUpdatePolicy (void)
     }
 }
 
+
+/*--------------------------------------------------------------------------------------------------*/
+
+void    _LikelihoodFunction::ComputeParameterPenalty (void){
+  smoothingPenalty = 0.0;
+  if (smoothingTerm > 0.0) {
+      //printf ("\n_LikelihoodFunction::ComputeParameterPenalty\n");
+      for (unsigned long k = 0; k < indexInd.lLength; k ++) {
+        _Parameter lb = GetIthIndependentBound(k, true),
+                   ub = GetIthIndependentBound(k, false),
+                   mp = 0.5*(lb+ub),
+                   span = ub-lb,
+                   v  = GetIthIndependent(k);
+                   
+       _Parameter term = exp (50*log (2.*fabs (v-mp)/span));
+       /*if (term > 0.0) {
+        printf ("\n[_LikelihoodFunction::ComputeParameterPenalty %lu: %g %g %g %g]\n", k, lb, ub, v, term); 
+       }*/
+       smoothingPenalty += term;
+        // (2.*(v-mp)/span)^50
+      }
+  }
+}
+
+
 /*--------------------------------------------------------------------------------------------------*/
 
 void    _LikelihoodFunction::FlushLocalUpdatePolicy (void)
@@ -1151,6 +1176,11 @@ void _LikelihoodFunction::SetupParameterMapping (void)
 {
     parameterTransformationFunction.Clear();
     parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
+    checkParameter(addLFSmoothing, smoothingTerm, 0.0);
+    if (smoothingPenalty < 0.0) {
+      smoothingPenalty = 0.0;
+    }
+    
 
     for (unsigned long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
         _Variable* cv        = GetIthIndependentVar(pIndex);
@@ -1180,6 +1210,8 @@ void _LikelihoodFunction::SetupParameterMapping (void)
 
 void _LikelihoodFunction::CleanupParameterMapping (void)
 {
+    smoothingPenalty = 0.0;
+    smoothingTerm    = 0.0;
     DeleteObject (parameterValuesAndRanges);
     parameterValuesAndRanges = nil;
     parameterTransformationFunction.Clear();

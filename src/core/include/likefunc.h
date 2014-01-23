@@ -399,6 +399,11 @@ protected:
 
 private:
 
+
+    void            ComputeParameterPenalty     (void);
+    
+    
+    
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
@@ -595,6 +600,9 @@ private:
 
     _Formula*       computingTemplate;
     MSTCache*       mstCache;
+    
+    _Parameter      smoothingTerm,
+                    smoothingPenalty;
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     /*
@@ -738,7 +746,8 @@ useAdaptiveVariableStep            ,
 storeRootSupportFlag           ,
 supportMatrixVariable          ,
 optimizationStatusFile         ,
-autoParalellizeLF              ;
+autoParalellizeLF              ,
+addLFSmoothing                 ;
 
 
 
