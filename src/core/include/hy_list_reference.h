@@ -155,7 +155,7 @@ public:
    * Increments the reference counter
    * @param item add this reference
    */
-  virtual void operator<<(const PAYLOAD*);
+  virtual void operator<<(PAYLOAD*);
 
   /**
    * Append a reference to the dynamic copy of the argument
@@ -189,7 +189,7 @@ public:
    * @param value the value to compare the result to
    * @return true if equal.
    */
-  virtual bool ItemEqualToValue (unsigned long index, const _hyList <PAYLOAD*>& value) const;
+  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD*& value) const;
   
   /**
    * Compares two elements of the list
@@ -198,6 +198,9 @@ public:
    * @return -1 if i<j, 0 if i==j, or 1 if i>j
    */
    virtual long Compare(const long, const long) const;
+  
+    //   virtual BaseRef makeDynamic(void) const;
+
   
 };
 

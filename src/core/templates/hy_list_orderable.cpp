@@ -38,6 +38,51 @@
  */
 
 /*
+ ==============================================================
+ Constructors
+ ==============================================================
+ */ // Does nothing
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD>::_hyListOrderable() {
+}
+
+  //Data constructor (1 member list)
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const PAYLOAD item) : _hyList<PAYLOAD> (item) {
+}
+
+
+  //Length constructor
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD>::_hyListOrderable(unsigned long l) : _hyList<PAYLOAD> (l)
+{
+}
+
+  //Stack copy contructor
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const _hyListOrderable <PAYLOAD> &l, const long from, const long to)
+{
+  this->Clone (&l, from, to);
+}
+
+  // Data constructor (variable number of long constants)
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const PAYLOAD value1, const unsigned long number, ...)
+{
+  this->Initialize(true);
+  va_list vl;
+  
+  this->append(value1);
+  
+  va_start(vl, number);
+  for (unsigned long arg_id = 0; arg_id < number; arg_id++) {
+    const PAYLOAD this_arg = (PAYLOAD)va_arg(vl, PAYLOAD);
+    this->append(this_arg);
+  }
+  va_end(vl);
+}
+
+/*
 ==============================================================
 Search/Insert Functions
 ==============================================================
@@ -67,7 +112,7 @@ long _hyListOrderable<PAYLOAD>::BinaryFind(const PAYLOAD item, const long startA
   }
 
   middle = top;
-  if (ItemEqualToValue (middle,item)) {
+  if (this->ItemEqualToValue (middle,item)) {
     return middle;
   } else {
     if (CompareToValue(middle,item) == HY_COMPARE_LESS) {
@@ -377,7 +422,7 @@ void _hyListOrderable<PAYLOAD>::FilterRange(const PAYLOAD lb, const PAYLOAD ub) 
       if (CompareToValue (k,lb) != HY_COMPARE_GREATER || CompareToValue (k,ub) != HY_COMPARE_LESS) {
         toDelete << k;
       }
-    this->DeleteList(toDelete);
+    this->DeleteList(&toDelete);
   }
 }
 

@@ -261,3 +261,56 @@ void _StringBuffer::EscapeAndAppend(const _String &s, const _hyStringBufferEscap
   }
 }
 
+void _StringBuffer::AppendAnAssignmentToBuffer(_String *id, _String *value,
+                                         bool doFree, bool doQuotes,
+                                         bool doBind) {
+  (*this) << id;
+  if (doBind) {
+    (*this) << ':';
+  }
+  (*this) << '=';
+  if (doQuotes) {
+    (*this) << '"';
+  }
+  (*this) << value;
+  if (doQuotes) {
+    (*this) << '"';
+  }
+  (*this) << ";\n";
+  if (doFree) {
+    DeleteObject(value);
+  }
+}
+
+
+void _StringBuffer::AppendVariableValueAVL(_String *id, _SimpleList &varNumbers) {
+#ifndef HY_2014_REWRITE_MASK
+  for (long k = 0; k < varNumbers.lLength; k++) {
+    _Variable *tiv = LocateVar(varNumbers.lData[k]);
+    if (tiv) {
+      (*this) << id;
+      (*this) << "[\"";
+      (*this) << tiv->GetName();
+      (*this) << "\"]=";
+      _PMathObj varValue = tiv->Compute();
+      switch (varValue->ObjectClass()) {
+        case NUMBER:
+          (*this) << _String(varValue->Value());
+          break;
+        case STRING:
+          (*this) << '"';
+          EscapeAndAppend(*((_FString *)varValue)->theString);
+          (*this) << '"';
+          break;
+        default:
+          AppendNewInstance((_String *)(varValue->toStr()));
+          break;
+          
+      }
+      (*this) << ";\n";
+    }
+  }
+#endif
+}
+
+

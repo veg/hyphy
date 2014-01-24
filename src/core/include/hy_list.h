@@ -55,6 +55,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HY_LIST_ALLOCATION_CHUNK 8UL
 #define HY_LIST_INSERT_AT_END    (-1L)
 
+
 template <typename PAYLOAD>
 class _hyList : public virtual BaseObj {
 
@@ -66,6 +67,7 @@ protected:
   
   void          CompactList (void);
   void          ResizeList  (void);
+  
 
   //Methods
 
@@ -84,7 +86,7 @@ public:
   _hyList(const unsigned long);
 
   // stack copy contructor
-  _hyList(const _hyList <PAYLOAD>&, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
+  _hyList(const _hyList <PAYLOAD>&, const long = 0L, const long = HY_LIST_INSERT_AT_END);
 
   // data constructor (1 member list)
   _hyList(const PAYLOAD);
@@ -146,17 +148,15 @@ public:
    * @return None.
    */
 
-  virtual void Clone (const _hyList<PAYLOAD>* clone_from);
+  virtual void Clone (const _hyList<PAYLOAD>* clone_from, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
   
   /**
   * Retrieve the element in position index if index if positive or
-  * length + index if index is negative
-  * Example: _hyList(1,3,5,7).GetElement(1) = 3,
-  * _hyList(1,3,5,7).GetElement(-1) = 7
+  * no range checking is performed
   * @param index The index of the elemnt to retrieve
   * @return the value of the element at the specified index.
   */
-  inline PAYLOAD GetElement(const long index) const;
+  inline PAYLOAD AtIndex(const unsigned long index) const;
 
   /**
   * Clear the list (set lLength to 0)
@@ -190,7 +190,7 @@ public:
   void         Delete(const long, bool compact_list = true);
 
   virtual void    Duplicate  (BaseRefConst);
-  virtual BaseRef makeDynamic(void);
+  virtual BaseRef makeDynamic(void) const;
 
   /**
   * Delete a sorted list of indices in a sorted list
@@ -234,7 +234,7 @@ public:
    * @param value the value to compare the result to
    * @return true if equal.
    */
-  virtual bool ItemEqualToValue (unsigned long index, const _hyList <PAYLOAD>& value) const;
+  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD& value) const;
 
   /**
   * Find the position of an item in an unsorted list using linear search

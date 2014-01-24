@@ -63,7 +63,29 @@ template <typename PAYLOAD>
 class _hyListOrderable : public _hyList<PAYLOAD> {
   public:
   
-    /**
+    //does nothing
+  _hyListOrderable();
+  
+    //_hyList constructor
+  _hyListOrderable(const unsigned long);
+  
+    // stack copy contructor
+  _hyListOrderable(const _hyListOrderable <PAYLOAD>&, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
+  
+    // data constructor (1 member list)
+  _hyListOrderable(const PAYLOAD);
+  
+  
+  /**
+   * Data constructor list of longs supplied as a variable
+   * @param long the first string to add to the list
+   * @param const unsigned long the number of additional long arguments supplied
+   * to the constructor
+   * @param 2-N: long to be added to the list
+   */
+  _hyListOrderable(const PAYLOAD, const unsigned long, ...);
+
+  /**
     * Find the position of an item
     * Example: _hyListOrderable(1,3,5,7).Find(5,1) = 2
     * @param s The value to find

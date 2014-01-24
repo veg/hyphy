@@ -38,6 +38,8 @@
  */
 
 #include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
 #include "helperfunctions.h"
 #include "errorfns.h"
 
@@ -80,17 +82,8 @@ _hyList<PAYLOAD>::_hyList(unsigned long l)
 template<typename PAYLOAD>
 _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const long to)
 {
-  if (from == 0 && to == HY_LIST_INSERT_AT_END) { // copy the whole thing
-    Duplicate(&l);
-  } else {
-    Initialize();
-    NormalizeCoordinates(from, to, l.lLength);
-    RequestSpace(to - from);
-    long upto = to - from;
-    for (long k = 0; k < upto; k++) {
-      lData[k] = l.lData[from + k];
-    }
-  }
+  Initialize ();
+  Clone (&l, from, to);
 }
 
 // Data constructor (variable number of long constants)
@@ -175,11 +168,11 @@ const _hyList<PAYLOAD> _hyList<PAYLOAD>::operator&(const _hyList<PAYLOAD> l)
   }
 
   if (lData && lLength) {
-    memcpy(res.lData, lData, lLength * sizeof(PAYLOAD));
+    memcpy((Ptr)res.lData, (Ptr)lData, lLength * sizeof(PAYLOAD));
   }
 
   if (l.lData && l.lLength) {
-    memcpy(res.lData + lLength * sizeof(PAYLOAD), l.lData,
+    memcpy((Ptr)&(res.lData [lLength]), (Ptr)l.lData,
            l.lLength * sizeof(PAYLOAD));
   }
 
@@ -210,7 +203,7 @@ template<typename PAYLOAD>
 void _hyList<PAYLOAD>::operator<<(const _hyList<PAYLOAD> &source)
 {
   for (unsigned long k = 0; k < source.lLength; k++) {
-    append(source.GetElement(k));
+    append(source.AtIndex(k));
   }
 }
 
@@ -220,14 +213,25 @@ Methods
 ==============================================================
 */
 
+
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::Clone(const _hyList<PAYLOAD>* clone_from) {
-  lLength  = clone_from->lLength;
-  laLength = clone_from->laLength;
-  if (laLength) {
-    lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
-    if (lLength) {
-      memcpy(lData, clone_from->lData, lLength * sizeof(PAYLOAD));
+void _hyList<PAYLOAD>::Clone(const _hyList<PAYLOAD>* clone_from, const long from, const long to) {
+  if (from == 0UL && to == HY_LIST_INSERT_AT_END) {
+    lLength  = clone_from->lLength;
+    laLength = clone_from->laLength;
+    if (laLength) {
+      lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
+      if (lLength) {
+        memcpy((Ptr)lData, (Ptr)clone_from->lData, lLength * sizeof(PAYLOAD));
+      }
+    }
+  } else {
+    long f = from, t = to;
+    NormalizeCoordinates(f, t, clone_from->lLength);
+    long upto = t - f;
+    RequestSpace(upto);
+    for (long k = 0L; k < upto; k++) {
+      lData[k] = clone_from->lData[from + k];
     }
   }
 }
@@ -244,7 +248,7 @@ void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots)
   if (slots > laLength) {
     laLength = (slots / HY_LIST_ALLOCATION_CHUNK + 1) * HY_LIST_ALLOCATION_CHUNK;
     if (lData) {
-      checkPointer(lData = (PAYLOAD *)MemReallocate(lData,
+      checkPointer(lData = (PAYLOAD *)MemReallocate((Ptr)lData,
                            laLength * sizeof(PAYLOAD)));
     } else {
       checkPointer(lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD)));
@@ -253,21 +257,9 @@ void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots)
 }
 
 template<typename PAYLOAD>
-PAYLOAD _hyList<PAYLOAD>::GetElement(const long index) const
+PAYLOAD _hyList<PAYLOAD>::AtIndex(const unsigned long index) const
 {
-  if (index >= 0L) {
-    if ((const unsigned long) index < lLength) {
-      return lData[index];
-    }
-  }
-  if ((const unsigned long)(-index) <= lLength) {
-    return lData[lLength + index];
-  }
-  warnError(_String("List index '") & index &
-            "' out of range in _hyList::GetElement on list of length " &
-            lLength);
-
-  return lData[0UL];
+  return lData[index];
 }
 
 template<typename PAYLOAD>
@@ -300,7 +292,7 @@ void _hyList<PAYLOAD>::CompactList(void)
   if (laLength - lLength > HY_LIST_ALLOCATION_CHUNK) {
     laLength -= ((laLength - lLength) / HY_LIST_ALLOCATION_CHUNK) * HY_LIST_ALLOCATION_CHUNK;
     if (laLength) {
-      lData = (PAYLOAD *)MemReallocate(lData, laLength * sizeof(PAYLOAD));
+      lData = (PAYLOAD *)MemReallocate((Ptr)lData, laLength * sizeof(PAYLOAD));
     } else {
       free(lData);
       lData = nil;
@@ -347,11 +339,9 @@ void _hyList<PAYLOAD>::Initialize(bool doMemAlloc)
 }
 
 template<typename PAYLOAD>
-BaseRef _hyList<PAYLOAD>::makeDynamic(void)
+BaseRef _hyList<PAYLOAD>::makeDynamic(void) const
 {
   _hyList <PAYLOAD> *res = new _hyList <PAYLOAD>;
-  res->nInstances = 1;
-  res->lData = nil;
   res->Duplicate(this);
   return res;
 }
@@ -365,7 +355,7 @@ void _hyList<PAYLOAD>::ResizeList(void)
     laLength += incBy;
 
     if (lData) {
-      lData = (PAYLOAD *)MemReallocate(lData, laLength * sizeof(PAYLOAD));
+      lData = (PAYLOAD *)MemReallocate((Ptr)lData, laLength * sizeof(PAYLOAD));
     } else {
       lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
     }
@@ -397,16 +387,20 @@ void _hyList<PAYLOAD>::Delete(const long index, bool compact_list)
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::DeleteList(const _hyList<long> *indices_to_delete)
 {
-  if (indices_to_delete->lLength) {
+  
+  unsigned long del_list_length = indices_to_delete->countitems();
+  
+  if (del_list_length) {
     unsigned long k = 0UL;
+    
     for (unsigned long i = 0UL; i < lLength; i++) {
-      if (k < indices_to_delete->lLength && i == indices_to_delete->lData[k]) {
+      if (k < del_list_length && i == indices_to_delete->AtIndex(k)) {
         k++;
       } else {
         lData[i - k] = lData[i];
       }
     }
-    lLength -= indices_to_delete->lLength;
+    lLength -= del_list_length;
   }
   CompactList();
 }
@@ -463,13 +457,13 @@ void _hyList<PAYLOAD>::Displace(long start, long end, long delta)
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::Duplicate(BaseRefConst theRef)
 {
-  const _hyList<PAYLOAD> *l = dynamic_cast<const _hyList<PAYLOAD> >(theRef);
+  const _hyList<PAYLOAD> *l = dynamic_cast<const _hyList<PAYLOAD>* >(theRef);
   lLength   = l->lLength;
   laLength  = l->laLength;
   lData     = l->lData;
   if (lData) {
-    lData = (long *)MemAllocate(laLength * sizeof(PAYLOAD));
-    memcpy(lData, l->lData, lLength * sizeof(PAYLOAD));
+    lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
+    memcpy((Ptr)lData, (Ptr)l->lData, lLength * sizeof(PAYLOAD));
   }
 }
 
@@ -508,7 +502,7 @@ bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2) const
 }
 
 template<typename PAYLOAD>
-bool _hyList<PAYLOAD>::ItemEqualToValue(unsigned long index, const _hyList <PAYLOAD>& value) const
+bool _hyList<PAYLOAD>::ItemEqualToValue(unsigned long index, const PAYLOAD& value) const
 {
   return lData[index] == value;
 }
@@ -551,7 +545,7 @@ void _hyList<PAYLOAD>::Flip()
 }
 
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, long insert_at)
+void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, const long insert_at)
 {
 
   lLength++;
@@ -560,14 +554,14 @@ void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, long insert_at)
   if (insert_at == HY_LIST_INSERT_AT_END) {
     lData[lLength-1UL] = item;
   } else {
-    insert_at = insert_at >= lLength ? lLength - 1UL : insert_at;
-    long moveThisMany = (laLength - insert_at - 1L);
+    long insert_here = insert_at >= lLength ? lLength - 1UL : insert_at;
+    long moveThisMany = (laLength - insert_here - 1L);
     if (moveThisMany < 32L)
-      for (long k = insert_at + moveThisMany; k > insert_at; k--) {
+      for (long k = insert_here + moveThisMany; k > insert_here; k--) {
         lData[k] = lData[k - 1];
       }
     else {
-      memmove(lData + (insert_at + 1), lData + insert_at,
+      memmove(lData + (insert_here + 1), lData + insert_here,
               moveThisMany * sizeof(PAYLOAD));
     }
   }
@@ -663,6 +657,7 @@ PAYLOAD _hyList<PAYLOAD>::Pop(void)
   }
 
   warnError ("_hyList::Pop called on an empty list");
+  return lData[0UL];
 }
 
 

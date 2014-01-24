@@ -37,6 +37,52 @@
  
  */
 
+/*
+ ==============================================================
+ Constructors
+ ==============================================================
+ */ // Does nothing
+template<typename PAYLOAD>
+_hyListNumeric<PAYLOAD>::_hyListNumeric() {
+}
+
+  //Data constructor (1 member list)
+template<typename PAYLOAD>
+_hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD item) : _hyListOrderable<PAYLOAD> (item) {
+}
+
+
+  //Length constructor
+template<typename PAYLOAD>
+_hyListNumeric<PAYLOAD>::_hyListNumeric(unsigned long l) : _hyListOrderable<PAYLOAD> (l)
+{
+}
+
+  //Stack copy contructor
+template<typename PAYLOAD>
+_hyListNumeric<PAYLOAD>::_hyListNumeric(const _hyListNumeric <PAYLOAD> &l, const long from, const long to)
+{
+  this->Clone (&l, from, to);
+}
+
+  // Data constructor (variable number of long constants)
+template<typename PAYLOAD>
+_hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD value1, const unsigned long number, ...)
+{
+  this->Initialize(true);
+  va_list vl;
+  
+  this->append(value1);
+  
+  va_start(vl, number);
+  for (unsigned long arg_id = 0; arg_id < number; arg_id++) {
+    const PAYLOAD this_arg = (PAYLOAD)va_arg(vl, PAYLOAD);
+    this->append(this_arg);
+  }
+  va_end(vl);
+}
+
+
 template<typename PAYLOAD>
 _hyListNumeric<PAYLOAD>::_hyListNumeric (const unsigned long l, const PAYLOAD start, const PAYLOAD step) {
   this->Initialize(false);

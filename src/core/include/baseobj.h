@@ -76,7 +76,7 @@ public:
 
   virtual void toFileStr (FILE *) const;
 
-  virtual BaseObj *makeDynamic(void) = 0;
+  virtual BaseObj *makeDynamic(void) const = 0;
 
   virtual void Initialize(void) { nInstances = 1L; }
 

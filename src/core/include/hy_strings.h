@@ -50,9 +50,16 @@ class _ExecutionList;     // forward declaration
 template<typename PAYLOAD>
 class _hyListNumeric; 
 
+template<typename PAYLOAD>
+class _hyListReference;
+
 typedef _hyListNumeric <long> _SimpleList;
 
-class _List;
+class _String;
+
+typedef _hyListReference <_String> _List;
+
+
 
 #define HY_STRING_INVALID_REFERENCE 0x00
 #define HY_STRING_DIRECT_REFERENCE 0x01
@@ -139,7 +146,7 @@ public:
   * \n Usage: stringInstance.makeDynamic();
   * @return BaseRef
   */
-  virtual BaseRef makeDynamic(void);
+  virtual BaseRef makeDynamic(void) const;
 
   /**
   * Initializes _String object to 0 length and 0 sData
@@ -588,36 +595,7 @@ public:
   */
   void LoCase(void);
 
-  /**
-  * SLKP 20090817: A utility function to append a statement of the form
-  * \n\n \b Example:
-  * _String("hyphy").AppendAnAssignmentToBuffer("12","12",false,false,false)
-  * makes "hyphy12=12"
-  * @param id = value; to the current string assumed to be in the buffer form
-  * @param doFree free the 2nd string argument when done
-  * @param doQuotes put quotes around the value
-  * @param doBind use := instead of =
-  * @sa AppendNewInstance()
-  * @sa AppendVariableValueAVL()
-  */
 
-  void AppendAnAssignmentToBuffer(_String *, _String *, bool = true,
-                                  bool = false, bool = false);
-
-  /**
-  * SLKP 20090817:
-  * A utility function to append a statement of the form
-  * id["varname"] = varvalue; for each variable in the SimpleList arguments
-  * for String valued variables, their values are properly quoted
-  * @param id = value; to the current string assumed to be in the buffer form
-  * @param doFree free the 2nd string argument when done
-  * @param doQuotes put quotes around the value
-  * @param doBind use := instead of =
-  * @sa AppendNewInstance()
-  * @sa AppendAnAssignmentToBuffer()
-  */
-
-  void AppendVariableValueAVL(_String *, _SimpleList &);
 
   /**
   * Returns a list from a string split by a substr

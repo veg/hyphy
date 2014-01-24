@@ -60,9 +60,30 @@ template <typename PAYLOAD>
 class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
   public:
   
+        //does nothing
+      _hyListNumeric();
+      
+        //_hyList constructor
+      _hyListNumeric(const unsigned long);
+      
+        // stack copy contructor
+      _hyListNumeric(const _hyListNumeric <PAYLOAD>&, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
+      
+        // data constructor (1 member list)
+      _hyListNumeric(const PAYLOAD);
+
       // arithmetic series populator: size, first item, step
       _hyListNumeric(const unsigned long, const PAYLOAD, const PAYLOAD);
 
+
+      /**
+       * Data constructor list of longs supplied as a variable
+       * @param long the first string to add to the list
+       * @param const unsigned long the number of additional long arguments supplied
+       * to the constructor
+       * @param 2-N: long to be added to the list
+       */
+      _hyListNumeric(const PAYLOAD, const unsigned long, ...);
 
       /**
       * Populate a _hyListNumeric with integers incrementally.

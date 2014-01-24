@@ -48,6 +48,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "hy_list_numeric.h"
+#include "hy_list_reference.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -361,54 +362,6 @@ long _String::Adler32(void) {
 }
 
 
-void _String::AppendAnAssignmentToBuffer(_String *id, _String *value,
-                                         bool doFree, bool doQuotes,
-                                         bool doBind) {
-  (*this) << id;
-  if (doBind) {
-    (*this) << ':';
-  }
-  (*this) << '=';
-  if (doQuotes) {
-    (*this) << '"';
-  }
-  (*this) << value;
-  if (doQuotes) {
-    (*this) << '"';
-  }
-  (*this) << ";\n";
-  if (doFree) {
-    DeleteObject(value);
-  }
-}
-
-void _String::AppendVariableValueAVL(_String *id, _SimpleList &varNumbers) {
-  for (long k = 0; k < varNumbers.lLength; k++) {
-    _Variable *tiv = LocateVar(varNumbers.lData[k]);
-    if (tiv) {
-      (*this) << id;
-      (*this) << "[\"";
-      (*this) << tiv->GetName();
-      (*this) << "\"]=";
-      _PMathObj varValue = tiv->Compute();
-      switch (varValue->ObjectClass()) {
-      case NUMBER:
-        (*this) << _String(varValue->Value());
-        break;
-      case STRING:
-        (*this) << '"';
-        EscapeAndAppend(*((_FString *)varValue)->theString);
-        (*this) << '"';
-        break;
-      default:
-        AppendNewInstance((_String *)(varValue->toStr()));
-        break;
-
-      }
-      (*this) << ";\n";
-    }
-  }
-}
 
 _String _String::Chop(long from, long to) {
   if (!sLength) {
@@ -515,7 +468,7 @@ void _String::Delete(long from, long to) {
 }
 
 void _String::Duplicate(BaseRefConst ref) {
-  _String *s = (_String const*)ref;
+  _String const *s = (_String const*)ref;
 
   sLength = s->sLength;
   sData = s->sData;
@@ -563,17 +516,6 @@ void _String::FormatTimeString(long time_diff) {
   }
 }
 
-//Finalize buffer string
-void _String::Finalize(void) {
-
-  if (!(sData = MemReallocate(sData, sLength + 1))) {
-    warnError(-108);
-  }
-
-  sData[sLength] = 0;
-  nInstances = 1;
-
-}
 
 long _String::FindEndOfIdent(long start, long end, char wild) {
   if (sLength == 0) {
@@ -914,7 +856,7 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
   }
 
   if (rec) {
-    return rec->lLength;
+    return rec->countitems();
   }
 
   return pH;
@@ -924,7 +866,7 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 unsigned long _String::Length(void) { return sLength; }
 
 //Make dynamic copy
-BaseRef _String::makeDynamic(void) {
+BaseRef _String::makeDynamic(void) const{
   _String *r = new _String;
   r->Duplicate(this);
   return r;
@@ -1041,11 +983,11 @@ _String *_String::Sort(_SimpleList *index) {
   if (sLength) {
     _SimpleList charList(sLength);
     if (index) {
-      for (unsigned long i = 0; i < sLength; i++) {
+      for (unsigned long i = 0UL; i < sLength; i++) {
         charList << sData[i];
         (*index) << i;
       }
-      SortLists(&charList, index);
+      charList.Sort (true, index);
     } else {
       for (unsigned long i = 0; i < sLength; i++) {
         charList << sData[i];
@@ -1055,7 +997,7 @@ _String *_String::Sort(_SimpleList *index) {
     }
     _String *sorted = new _String(sLength);
     for (unsigned long i = 0; i < sLength; i++) {
-      sorted->sData[i] = charList.lData[i];
+      sorted->sData[i] = charList.AtIndex(i);
     }
 
     return sorted;
@@ -1076,15 +1018,15 @@ _List *_String::Tokenize(_String s) {
     long cp = 0, cpp;
     while ((cpp = Find(s, cp, -1)) != -1) {
       if (cpp > cp) {
-        res->AppendNewInstance(new _String(*this, cp, cpp - 1));
+        res->append(new _String(*this, cp, cpp - 1));
       } else {
-        (*res) && (&empty);
+        res->append (new _String);
       }
 
       cp = cpp + s.sLength;
     }
 
-    res->AppendNewInstance(new _String(*this, cp, -1));
+    res->append(new _String(*this, cp, -1));
   }
   return res;
 }
@@ -1099,7 +1041,7 @@ _Parameter _String::toNum(void) {
 
 //Return good ole char*
 BaseRef _String::toStr(void) {
-  nInstances++;
+  AddAReference();
   return this;
 }
 
@@ -1146,10 +1088,10 @@ Space Methods
 
 //Replace all space runs with a single space
 void _String::CompressSpaces(void) {
-  _String temp(sLength + 1, true);
+  _StringBuffer temp(sLength + 1);
   bool skipping = false;
 
-  for (long k = 0; k < sLength; k++)
+  for (unsigned long k = 0UL; k < sLength; k++)
     if (isspace(sData[k])) {
       if (!skipping) {
         skipping = true;
@@ -1158,8 +1100,7 @@ void _String::CompressSpaces(void) {
     } else {
       temp << sData[k];
       skipping = false;
-    }
-  temp.Finalize();
+  }
   *this = temp;
 }
 
@@ -1221,12 +1162,11 @@ long _String::FirstSpaceIndex(long start, long end, char direction) {
 
 //Remove all spaces
 void _String::KillSpaces(_String &result) {
-  _String temp(sLength + 1, true);
-  for (long k = 0; k < sLength; k++)
+  _StringBuffer temp(sLength + 1);
+  for (unsigned long k = 0UL; k < sLength; k++)
     if (!isspace(sData[k])) {
       temp << sData[k];
     }
-  temp.Finalize();
   result = temp;
 }
 
@@ -1494,9 +1434,11 @@ void _String::LoCase(void) {
 }
 
 void _String::ProcessParameter(void) {
+#ifndef HY_2014_REWRITE_MASK
   if (Equal(&getDString)) {
     *this = ReturnDialogInput();
   }
+#endif
 }
 
 //==============================================================
@@ -1506,6 +1448,7 @@ void _String::ProcessParameter(void) {
 bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
                               bool assume_platform_specific,
                               _ExecutionList *caller) {
+#ifndef HY_2014_REWRITE_MASK
   _String errMsg;
 
   try {
@@ -1746,6 +1689,7 @@ bool _String::ProcessFileName(bool isWrite, bool acceptStringVars, Ptr theP,
     }
   }
 #endif
+#endif
   return true;
 }
 
@@ -1886,6 +1830,7 @@ Identifier Methods
 */
 
 bool _String::IsValidIdentifier(bool strict) {
+#ifndef HY_2014_REWRITE_MASK
   if (sLength == 0) {
     return false;
   }
@@ -1906,8 +1851,13 @@ bool _String::IsValidIdentifier(bool strict) {
   }
 
   // check to see if it's not a keyword / function name etc
+  
+  return hyReservedWords.Find(this) == HY_NOT_FOUND;
+#else
+  return false;
+#endif
 
-  return hyReservedWords.Find(this) == -1;
+  
 }
 
 bool _String::IsValidRefIdentifier(void) {
@@ -1922,10 +1872,7 @@ bool _String::IsValidRefIdentifier(void) {
 
 //Convert a string to a valid ident
 void _String::ConvertToAnIdent(bool strict) {
-  _String *result = new _String((unsigned long) sLength + 1, true);
-  if (!result) {
-    checkPointer(result);
-  }
+  _StringBuffer *result = new _StringBuffer((unsigned long) sLength + 1UL);
 
   if (sLength) {
     if (strict) {
@@ -1946,7 +1893,7 @@ void _String::ConvertToAnIdent(bool strict) {
     }
 
     long l = 0;
-    for (long k = 1; k < sLength; k++) {
+    for (unsigned long k = 1UL; k < sLength; k++) {
       unsigned char c = sData[k];
       if (_hyValidIDChars.valid_chars[c]) {
         (*result) << c;
@@ -1957,7 +1904,6 @@ void _String::ConvertToAnIdent(bool strict) {
       }
     }
   }
-  result->Finalize();
 
   CopyDynamicString(result, true);
 }
@@ -2037,8 +1983,8 @@ void _String::RegExpMatchAll(Ptr pattern, _SimpleList &matchedPairs) {
     regmatch_t *matches = new regmatch_t[regEx->re_nsub + 1];
     int errNo = regexec(regEx, sData, regEx->re_nsub + 1, matches, 0);
     while (errNo == 0) {
-      long offset = matchedPairs.lLength
-                        ? matchedPairs.lData[matchedPairs.lLength - 1] + 1
+      long offset = matchedPairs.countitems()
+                        ? matchedPairs.Element(-1) + 1
                         : 0;
 
       matchedPairs << matches[0].rm_so + offset;
@@ -2070,7 +2016,7 @@ void _String::RegExpMatchOnce(_String *pattern, _SimpleList &matchedPairs,
 }
 
 _String _String::Random(const unsigned long length, const _String *alphabet) {
-  _String random(length + 1, true);
+  _StringBuffer random(length + 1);
   unsigned long alphabet_length = alphabet ? alphabet->sLength : 127;
   if (length > 0 && alphabet_length > 0) {
     for (unsigned long c = 0; c < length; c++) {
@@ -2083,12 +2029,12 @@ _String _String::Random(const unsigned long length, const _String *alphabet) {
     }
   }
 
-  random.Finalize();
   return random;
 }
 
 unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
                                                      _String *context) {
+#ifndef HY_2014_REWRITE_MASK
   char first_char = getChar(0);
   bool is_func_ref = getChar(sLength - 1) == '&';
 
@@ -2130,5 +2076,6 @@ unsigned char _String::ProcessVariableReferenceCases(_String &referenced_object,
   }
 
   referenced_object = empty;
+#endif
   return HY_STRING_INVALID_REFERENCE;
 }
