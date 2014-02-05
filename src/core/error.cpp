@@ -31,6 +31,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "errorfns.h"
 #include "hy_strings.h"
+
+#ifndef HY_2014_REWRITE_MASK
+
 #include "hy_globals.h"
 #include "batchlan.h"
 #include "executionlist.h"
@@ -51,81 +54,8 @@ _String errorReportFormatExpression("ERROR_REPORT_FORMAT_EXPRESSION"),
     errorReportFormatExpressionStack("_ERROR_CALL_STACK_"),
     errorReportFormatExpressionStdin("_ERROR_STDIN_");
 
-//______________________________________________________________________________
-_String DecodeError(long errCode) {
-  switch (errCode) {
-  case -101:
-    return "Incompatible Operands";
-    break;
-  case -102:
-    return "Operation Undefined for Type";
-    break;
-  case -103:
-    return "Incompatible Matrix Dimensions";
-    break;
-  case -104:
-    return "Bad Matrix Definition";
-    break;
-  case -105:
-    return "Matrix Index Out of Range";
-    break;
-  case -106:
-    return "Bad Matrix Index";
-    break;
-  case -108:
-    return "Memory Full";
-    break;
-  case -109:
-    return "Syntax Error";
-    break;
-  case -110:
-    return "Runtime Expression Error";
-    break;
-  case -111:
-    return "Non-polynomial expression encountered in polynomial calculation";
-    break;
-  case -171:
-    return "Dataset index reference out of range";
-    break;
-  case -200:
-    return "Export Matrix Called With a Non-polynomial Matrix Argument";
-    break;
-  case -666:
-    return "Attempting to operate on an undefined value; this is probably a "
-           "result of an earlier 'soft' error condition";
-    break;
-  default:
-    return "Unclassified Error";
-  }
-}
 
-//______________________________________________________________________________
-void warnError(long errCode) {
-  if (errCode == -108) {
-    warnError(DecodeError(errCode) & _String(" Exiting..."));
-  } else {
-    WarnError(DecodeError(errCode) & _String(" Exiting..."));
-  }
-}
 
-//______________________________________________________________________________
-void flagError(long errCode) { warnError(DecodeError(errCode)); }
-
-//______________________________________________________________________________
-void warnError(const char *theError) { FlagError(theError); }
-
-//______________________________________________________________________________
-void acknError(const char *theError) { WarnError(theError); }
-
-//______________________________________________________________________________
-void *checkPointer(void *p) {
-  if (p) {
-    return p;
-  }
-
-  warnError(-108);
-  return nil;
-}
 
 //______________________________________________________________________________
 void ReportWarning(_String st) {
@@ -371,3 +301,93 @@ void ReturnCurrentCallStack(_List &calls, _List &stdins) {
     }
   }
 }
+
+#else
+
+  //______________________________________________________________________________
+void WarnError(_String st) {
+}
+
+  //______________________________________________________________________________
+void FlagError(_String st) {
+}
+#endif
+
+//______________________________________________________________________________
+void *checkPointer(void *p) {
+  if (p) {
+    return p;
+  }
+  
+  warnError(-108);
+  return nil;
+}
+
+  //______________________________________________________________________________
+_String DecodeError(long errCode) {
+  switch (errCode) {
+    case -101:
+      return "Incompatible Operands";
+      break;
+    case -102:
+      return "Operation Undefined for Type";
+      break;
+    case -103:
+      return "Incompatible Matrix Dimensions";
+      break;
+    case -104:
+      return "Bad Matrix Definition";
+      break;
+    case -105:
+      return "Matrix Index Out of Range";
+      break;
+    case -106:
+      return "Bad Matrix Index";
+      break;
+    case -108:
+      return "Memory Full";
+      break;
+    case -109:
+      return "Syntax Error";
+      break;
+    case -110:
+      return "Runtime Expression Error";
+      break;
+    case -111:
+      return "Non-polynomial expression encountered in polynomial calculation";
+      break;
+    case -171:
+      return "Dataset index reference out of range";
+      break;
+    case -200:
+      return "Export Matrix Called With a Non-polynomial Matrix Argument";
+      break;
+    case -666:
+      return "Attempting to operate on an undefined value; this is probably a "
+      "result of an earlier 'soft' error condition";
+      break;
+    default:
+      return "Unclassified Error";
+  }
+}
+
+  //______________________________________________________________________________
+void warnError(long errCode) {
+  if (errCode == -108) {
+    warnError(DecodeError(errCode) & _String(" Exiting..."));
+  } else {
+    WarnError(DecodeError(errCode) & _String(" Exiting..."));
+  }
+}
+
+  //______________________________________________________________________________
+void flagError(long errCode) { warnError(DecodeError(errCode)); }
+
+  //______________________________________________________________________________
+void warnError(const char *theError) { FlagError(theError); }
+
+  //______________________________________________________________________________
+void acknError(const char *theError) { WarnError(theError); }
+
+
+

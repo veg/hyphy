@@ -40,7 +40,6 @@
 #include "errorfns.h"
 #include "hy_strings.h"
 #include "helperfunctions.h"
-#include "hy_globals.h"
 #include <time.h>
 #include <stdlib.h>
 
@@ -58,6 +57,10 @@
 
 #include <string.h>
 */
+
+#ifndef HY_2014_REWRITE_MASK
+
+#include "hy_globals.h"
 
 //______________________________________________________________________________
 FILE *doFileOpen(const char *fileName, const char *mode, bool warn) {
@@ -78,6 +81,7 @@ FILE *doFileOpen(const char *fileName, const char *mode, bool warn) {
   }
   return daFile;
 }
+
 
 //______________________________________________________________________________
 bool GlobalStartup(void) {
@@ -335,13 +339,15 @@ void PurgeAll(bool all) {
 #endif
 }
 
+#endif
+
 //______________________________________________________________________________
 void DeleteObject(BaseRef theObject) {
   if (theObject) {
-    if (theObject->nInstances <= 1) {
+    if (theObject->CanFreeMe()) {
       delete (theObject);
     } else {
-      theObject->nInstances--;
+      theObject->RemoveAReference();
     }
   }
 }

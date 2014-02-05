@@ -43,27 +43,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 
 //Generate necessary includes from the respective implementation file
-#include "baseobj.h"
+#include "hy_list.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class BaseObjTest : public ::testing::Test {
+template <typename DATA>
+class _hyListTest : public ::testing::Test {
 
 protected:
-  // You can remove any or all of the following functions if its body
-  // is empty.
 
-    BaseObjTest() {
-    // You can do set-up work for each test here.
-    // Create objects of every type needed. Performance doesn't matter.
-
-        //FILEtest = fopen ("./tests/gtests/res/HIV_gp120.nex" , "r");
-
-    BaseObjtest = new BaseObj();
+  _hyListTest() {
+    
   }
 
-  virtual ~BaseObjTest() {
+  virtual ~_hyListTest() {
     // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -78,44 +72,29 @@ protected:
   virtual void TearDown() {
     // Code here will be called immediately after each test (right
     // before the destructor).
-    delete BaseObjtest;
-      //fclose (FILEtest);
+    
   }
 
-  BaseObj* BaseObjtest;
+  // Per-test-case set-up.
+  // Called before the first test in this test case.
+  // Can be omitted if not needed.
+  static void SetUpTestCase() {
+      //shared_resource_ = new ...;
+  }
+
+  // Per-test-case tear-down.
+  // Called after the last test in this test case.
+  // Can be omitted if not needed.
+  static void TearDownTestCase() {
+      // delete shared_resource_;
+      // shared_resource_ = NULL;
+  }
+
+  _hyList <DATA> test_list;
+  
 };
 
-
-TEST_F(BaseObjTest, makeDynamicTest) {
-
-  BaseObj* resultBaseObj = BaseObjtest->makeDynamic();
-  //EXPECT_EQ (resultBaseObj*, 0);
-
-}
-
-
-TEST_F(BaseObjTest, toErrStrTest) {
-
-  BaseRef resultBaseRef = BaseObjtest->toErrStr();
-  //EXPECT_EQ (resultBaseRef, 0);
-
-}
-
-
-TEST_F(BaseObjTest, toFileStrTest) {
-
-    //BaseObjtest->toFileStr(FILEtest);
-  //EXPECT_EQ (BaseObjtest, 0);
-
-}
-
-
-TEST_F(BaseObjTest, toStrTest) {
-
-  BaseRef resultBaseRef = BaseObjtest->toStr();
-  //EXPECT_EQ (resultBaseRef, 0);
-
-}
+TYPED_TEST_CASE_P(_hyListTest);
 
 
 }

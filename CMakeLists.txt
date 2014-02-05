@@ -210,7 +210,7 @@ set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS} ${SRC_GRAMMAR})
 
-set (SRC_WORKING src/core/baseobj.cpp src/core/strings.cpp src/core/string_buffer.cpp)
+set (SRC_WORKING src/core/baseobj.cpp src/core/strings.cpp src/core/error.cpp src/core/string_buffer.cpp src/core/helperfunctions.cpp src/core/regex.cpp)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout
@@ -421,7 +421,7 @@ install(
 add_executable(
     HYPHYGTEST
     EXCLUDE_FROM_ALL
-    ${SRC_WORKING} ${SRC_GTESTS}
+    ${SRC_WORKING} ${SRC_GTESTS} tests/gtests/main.cpp
 )
 add_dependencies(HYPHYGTEST gtest)
 target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
