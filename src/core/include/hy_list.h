@@ -41,7 +41,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HY_LIST_
 //#pragma once
 #include "baseobj.h"
-#include "hy_string_buffer.h"
 
 /*
   
@@ -82,9 +81,6 @@ public:
   //does nothing
   _hyList();
 
-  //_hyList constructor
-  _hyList(const unsigned long);
-
   // stack copy contructor
   _hyList(const _hyList <PAYLOAD>&, const long = 0L, const long = HY_LIST_INSERT_AT_END);
 
@@ -95,13 +91,13 @@ public:
   virtual ~_hyList(void);
 
   /**
-   * Data constructor list of longs supplied as a variable
-   * @param long the first string to add to the list
-   * @param const unsigned long the number of additional long arguments supplied
-   * to the constructor
-   * @param 2-N: long to be added to the list
-   */
-  _hyList(const PAYLOAD, const unsigned long, ...);
+   * Data constructor from a static list of PAYLOAD objects
+   * @param const unsigned long the number of PAYLOAD arguments supplied
+   * to the constructor in the second argument
+   * @param const PAYLOAD: the static list of items to pass to the constructor
+  */
+  
+  _hyList(const unsigned long, const PAYLOAD []);
 
   /*
       ==============================================================
@@ -113,7 +109,7 @@ public:
   PAYLOAD &operator[](const long);
 
   // element location functions - read only
-  PAYLOAD operator()(const unsigned long);
+  PAYLOAD operator()(const unsigned long) const;
 
   // assignment operator
   const _hyList<PAYLOAD> operator=(const _hyList<PAYLOAD>&);
@@ -129,11 +125,11 @@ public:
 
   // append number to this if it's not in the list (search first). List assumed
   // unsorted.
-  virtual bool operator>>(const PAYLOAD);
+  virtual bool operator >> (const PAYLOAD);
 
-  virtual void operator<<(const _hyList <PAYLOAD>&);
+  virtual void operator << (const _hyList <PAYLOAD>&);
   
-  
+  virtual bool operator == (const _hyList <PAYLOAD>&) const;
 
   /*
   ==============================================================
@@ -181,6 +177,13 @@ public:
 
   inline unsigned long countitems (void) const;
 
+
+  /**
+  * Return the current allocated number of elements
+  * @return list length
+  */
+
+  inline unsigned long allocated (void) const;
 
   /**
   * delete the item at a given poisiton
@@ -233,8 +236,7 @@ public:
    * @param index the list index of the element to test
    * @param value the value to compare the result to
    * @return true if equal.
-   */
-  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD& value) const;
+   */  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD& value) const;
 
   /**
   * Find the position of an item in an unsorted list using linear search

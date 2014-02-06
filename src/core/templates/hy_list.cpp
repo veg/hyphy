@@ -39,9 +39,10 @@
 
 #include <stdarg.h>
 #include <string.h>
-#include <stdlib.h>
 #include "helperfunctions.h"
 #include "errorfns.h"
+#include "hy_string_buffer.h"
+
 
 
 /*
@@ -64,19 +65,9 @@ _hyList<PAYLOAD>::_hyList(const PAYLOAD item)
   lLength     = 1UL;
   laLength    = HY_LIST_ALLOCATION_CHUNK;
   lData       = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
-  lData       = item;
+  lData[0]    = item;
 }
 
-
-//Length constructor
-template<typename PAYLOAD>
-_hyList<PAYLOAD>::_hyList(unsigned long l)
-{
-  lLength  = 0UL;
-  laLength = (l / HY_LIST_ALLOCATION_CHUNK + 1) * HY_LIST_ALLOCATION_CHUNK;
-  lData    = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
-  memset     (lData, 0, laLength * sizeof (PAYLOAD));
-}
 
 //Stack copy contructor
 template<typename PAYLOAD>
@@ -88,19 +79,12 @@ _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const lon
 
 // Data constructor (variable number of long constants)
 template<typename PAYLOAD>
-_hyList<PAYLOAD>::_hyList(const PAYLOAD value1, const unsigned long number, ...)
+_hyList<PAYLOAD>::_hyList(const unsigned long number, const PAYLOAD items[])
 {
   Initialize(true);
-  va_list vl;
-
-  append(value1);
-
-  va_start(vl, number);
-  for (unsigned long arg_id = 0; arg_id < number; arg_id++) {
-    const PAYLOAD this_arg = (PAYLOAD)va_arg(vl, PAYLOAD);
-    append(this_arg);
+  for (unsigned long arg_id = 0UL; arg_id < number; arg_id++) {
+    append(items[arg_id]);
   }
-  va_end(vl);
 }
 
 //Destructor
@@ -140,7 +124,7 @@ PAYLOAD &_hyList<PAYLOAD>::operator[](const long i)
 }
 //Element location functions (0,llength - 1)
 template<typename PAYLOAD>
-PAYLOAD _hyList<PAYLOAD>::operator()(const unsigned long i)
+PAYLOAD _hyList<PAYLOAD>::operator()(const unsigned long i) const
 {
   if (i < lLength) {
     return lData[i];
@@ -207,6 +191,13 @@ void _hyList<PAYLOAD>::operator<<(const _hyList<PAYLOAD> &source)
   }
 }
 
+
+template<typename PAYLOAD>
+bool _hyList<PAYLOAD>::operator == (const _hyList<PAYLOAD> &source) const
+{
+  return this->Equal (source);
+}
+
 /*
 ==============================================================
 Methods
@@ -218,21 +209,19 @@ template<typename PAYLOAD>
 void _hyList<PAYLOAD>::Clone(const _hyList<PAYLOAD>* clone_from, const long from, const long to) {
   if (from == 0UL && to == HY_LIST_INSERT_AT_END) {
     lLength  = clone_from->lLength;
-    laLength = clone_from->laLength;
-    if (laLength) {
-      lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
-      if (lLength) {
-        memcpy((Ptr)lData, (Ptr)clone_from->lData, lLength * sizeof(PAYLOAD));
-      }
+    RequestSpace (clone_from->laLength);
+    if (lLength) {
+      memcpy((Ptr)lData, (Ptr)clone_from->lData, lLength * sizeof(PAYLOAD));
     }
   } else {
     long f = from, t = to;
     NormalizeCoordinates(f, t, clone_from->lLength);
-    long upto = t - f;
+    long upto = t - f + 1;
     RequestSpace(upto);
     for (long k = 0L; k < upto; k++) {
       lData[k] = clone_from->lData[from + k];
     }
+    lLength = upto;
   }
 }
 
@@ -268,6 +257,11 @@ unsigned long _hyList<PAYLOAD>::countitems(void) const
   return lLength;
 }
 
+template<typename PAYLOAD>
+unsigned long _hyList<PAYLOAD>::allocated(void) const
+{
+  return laLength;
+}
 
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::Clear(bool completeClear)
@@ -494,7 +488,7 @@ bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2) const
   }
 
   for (unsigned long i = 0UL; i < lLength; i++)
-    if (lData[i] != l2.lData[i]) {
+    if (ItemEqualToValue (i, l2 (i)) {
       return false;
     }
 

@@ -47,6 +47,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace {
 
+class _testPayload {
+  public:
+  
+  _testPayload (unsigned long p) { data = p; unused = 0UL; }
+  _testPayload (const _testPayload& o) { data = o.data; }
+  
+  bool operator == (const _testPayload & o) const { return data == o.data;} 
+  
+  unsigned long data, unused;
+};
+
 // The fixture for testing class Foo.
 template <typename DATA>
 class _hyListTest : public ::testing::Test {
@@ -75,6 +86,9 @@ protected:
     
   }
 
+_hyList <DATA> test_list;
+
+public:
   // Per-test-case set-up.
   // Called before the first test in this test case.
   // Can be omitted if not needed.
@@ -90,11 +104,73 @@ protected:
       // shared_resource_ = NULL;
   }
 
-  _hyList <DATA> test_list;
   
 };
 
 TYPED_TEST_CASE_P(_hyListTest);
 
 
+TYPED_TEST_P (_hyListTest, ConstuctorTests) {
+  
+   TypeParam array [5] = {(TypeParam)1, (TypeParam)4, (TypeParam)9, (TypeParam)16, (TypeParam)25};
+  
+  _hyList <TypeParam> null_list,
+          single_element_list ((TypeParam)16),
+          multiple_element_list (5,array),
+          full_stack_copy (multiple_element_list),
+          partial_stack_copy (multiple_element_list,2,HY_LIST_INSERT_AT_END);
+          
+  ASSERT_EQ (0UL, null_list.countitems()) << "Non-empty null list";
+  ASSERT_EQ (1UL, single_element_list.countitems()) << "Single element list has wrong length";
+  ASSERT_EQ (5UL, multiple_element_list.countitems()) << "Array of elements list has wrong length";
+  ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
+  ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
+  
+  EXPECT_EQ (single_element_list (0), full_stack_copy(3));   
+  for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
+    EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
+  }
+  
+  EXPECT_EQ (partial_stack_copy (0), multiple_element_list (2));
+  EXPECT_EQ (partial_stack_copy (2), full_stack_copy (4));
+  
 }
+
+TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
+  _hyList <TypeParam>  sequence,
+                       sequence2;
+  
+  for (long i = 1L; i <= 10; i++) {
+    sequence.append ((TypeParam) i);
+    sequence2.append ((TypeParam) i);
+  }
+  
+  EXPECT_EQ (10UL, sequence.countitems()) << "A sequence of appends failed to generate the right list length";
+  EXPECT_GE (sequence.allocated(), sequence.countitems()) << "The allocated space is less than the used space";
+  
+  for (long i = 1L; i <= 10; i++) {
+    sequence << (TypeParam) (i*i);
+  }
+  
+  EXPECT_EQ (20UL, sequence.countitems()) << "A sequence of << calls failed to generate the right list length";
+  
+  sequence >> sequence (0);
+  EXPECT_EQ (20UL, sequence.countitems()) << ">> added an already existing element";
+  
+  sequence >> (TypeParam)42;
+  EXPECT_EQ (21UL, sequence.countitems()) << ">> failed to add a new element";
+  
+  sequence << sequence2;
+  EXPECT_EQ (31UL, sequence.countitems()) << "A << call with a list argument failed to generate the right list length";
+  
+  EXPECT_EQ (sequence[100], sequence2.Element (-1)) << "Accessing past the end of the list or with negative coordinates failed";
+  
+}
+
+
+REGISTER_TYPED_TEST_CASE_P (_hyListTest, ConstuctorTests, AccessAndManipulationTests);
+
+}
+
+typedef ::testing::Types<char, long, double, _testPayload> _hyListTestTypes;
+INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListTest, _hyListTestTypes);
