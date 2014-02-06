@@ -207,10 +207,32 @@ TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   
   EXPECT_EQ (sequence4.AtIndex (3), sequence3.AtIndex (8)) << "SetItem failed to assign equal values to list items";
   
+  
+}
+  
+TYPED_TEST_P (_hyListTest, FindAddDelete) {
+  
+  _hyList <TypeParam>  list,
+                       list2;
+  
+  TypeParam key1 = (TypeParam)4,
+            key2 = (TypeParam)12;
+  
+  for (long i = 1L; i <= 10L; i++) {
+    list << (TypeParam) i;
+  }
+  
+  list2.Clone (&list);
+  EXPECT_EQ(3L, list.Find (key1)) << "Failed to find the correct element";
+  EXPECT_EQ(HY_NOT_FOUND, list.Find (key2)) << "Incorrectly found an element";
+  EXPECT_EQ(HY_NOT_FOUND, list.FindStepping (key1, 2)) << "Incorrectly found an element during a stepping search";
+  EXPECT_EQ(3L, list.FindStepping (key1, 2, 1)) << "Found an element during a stepping search";
+  
+    
 }
 
 
-REGISTER_TYPED_TEST_CASE_P (_hyListTest, ConstuctorTests, AccessAndManipulationTests);
+REGISTER_TYPED_TEST_CASE_P (_hyListTest, ConstuctorTests, AccessAndManipulationTests, FindAddDelete);
 
 }
 

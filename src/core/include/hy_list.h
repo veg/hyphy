@@ -236,7 +236,8 @@ public:
    * @param index the list index of the element to test
    * @param value the value to compare the result to
    * @return true if equal.
-   */  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD& value) const;
+   */
+  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD& value) const;
 
   /**
   * Find the position of an item in an unsorted list using linear search
