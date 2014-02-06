@@ -78,7 +78,7 @@ public:
 
   virtual BaseObj *makeDynamic(void) const = 0;
 
-  virtual void Initialize(void) { nInstances = 1L; }
+  virtual void Initialize(bool = false) { nInstances = 1L; }
 
   virtual void Duplicate(BaseObj const * ref) = 0;
 

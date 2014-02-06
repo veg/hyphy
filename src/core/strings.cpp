@@ -786,9 +786,9 @@ const char _String::getChar(long index) const {
   return defaultReturn;
 }
 
-void _String::Initialize(void) {
+void _String::Initialize(bool) {
   BaseObj::Initialize();
-  sLength = 0;
+  sLength = 0UL;
   if (sData) {
     free(sData);
     sData = nil;

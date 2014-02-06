@@ -151,7 +151,7 @@ public:
   /**
   * Initializes _String object to 0 length and 0 sData
   */
-  virtual void Initialize(void);
+  virtual void Initialize(bool = false);
 
   /**
   * Duplicates a string

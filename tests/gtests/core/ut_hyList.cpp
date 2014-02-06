@@ -131,16 +131,41 @@ TYPED_TEST_P (_hyListTest, ConstuctorTests) {
     EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
   }
   
+  EXPECT_TRUE(full_stack_copy == multiple_element_list) << "Failed list == list";
+  EXPECT_FALSE(full_stack_copy == partial_stack_copy) << "Failed list != list";
+  
   EXPECT_EQ (partial_stack_copy (0), multiple_element_list (2));
   EXPECT_EQ (partial_stack_copy (2), full_stack_copy (4));
+  
+  partial_stack_copy.Clear (false);
+  EXPECT_EQ (0UL, partial_stack_copy.countitems());
+  EXPECT_LT (0UL, partial_stack_copy.allocated());
+  partial_stack_copy.Clear (true);
+  EXPECT_EQ (0UL, partial_stack_copy.allocated());
+  
+  _hyList <TypeParam> * dynamicList1 = new _hyList<TypeParam> (multiple_element_list),
+  * dynamicList2 = dynamic_cast <_hyList<TypeParam>*> (multiple_element_list.makeDynamic());
+  
+  EXPECT_TRUE(*dynamicList1 == multiple_element_list) << "Failed new (list) == list";
+  EXPECT_TRUE(*dynamicList2 == multiple_element_list) << "Failed makeDynamic (list) == list";
+  
+  partial_stack_copy.Duplicate (&multiple_element_list);
+  EXPECT_TRUE(partial_stack_copy == multiple_element_list) << "Failed Duplicate(list) == list";
+  
+  delete dynamicList1;
+  DeleteObject (dynamicList2);
+  
+  
   
 }
 
 TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   _hyList <TypeParam>  sequence,
-                       sequence2;
+                       sequence2,
+                       sequence3,
+                       sequence4;
   
-  for (long i = 1L; i <= 10; i++) {
+  for (long i = 1L; i <= 10L; i++) {
     sequence.append ((TypeParam) i);
     sequence2.append ((TypeParam) i);
   }
@@ -148,8 +173,12 @@ TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   EXPECT_EQ (10UL, sequence.countitems()) << "A sequence of appends failed to generate the right list length";
   EXPECT_GE (sequence.allocated(), sequence.countitems()) << "The allocated space is less than the used space";
   
-  for (long i = 1L; i <= 10; i++) {
+  for (long i = 1L; i <= 10L; i++) {
     sequence << (TypeParam) (i*i);
+  }
+  
+  for (unsigned long idx = 0UL; idx < sequence.countitems(); idx++) {
+      EXPECT_EQ (sequence.AtIndex (idx), sequence(idx)) << "AtIndex != operator ()";
   }
   
   EXPECT_EQ (20UL, sequence.countitems()) << "A sequence of << calls failed to generate the right list length";
@@ -164,6 +193,19 @@ TYPED_TEST_P (_hyListTest, AccessAndManipulationTests) {
   EXPECT_EQ (31UL, sequence.countitems()) << "A << call with a list argument failed to generate the right list length";
   
   EXPECT_EQ (sequence[100], sequence2.Element (-1)) << "Accessing past the end of the list or with negative coordinates failed";
+  
+  sequence3 = sequence3 & sequence4;
+  EXPECT_EQ (0UL, sequence3.countitems()) << "The concatenation of two empty lists is not empty";
+  sequence3 = sequence & sequence2;
+  sequence4 = sequence;
+  sequence4 << sequence2;
+  
+  EXPECT_TRUE (sequence3 == sequence4) << "Failed test (C = A & B) == (C = A) << B";
+  
+  sequence4.SetItem (3, (TypeParam)123);
+  sequence3.SetItem (8, (TypeParam)123);
+  
+  EXPECT_EQ (sequence4.AtIndex (3), sequence3.AtIndex (8)) << "SetItem failed to assign equal values to list items";
   
 }
 

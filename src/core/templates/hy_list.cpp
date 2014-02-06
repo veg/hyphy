@@ -39,6 +39,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #include "helperfunctions.h"
 #include "errorfns.h"
 #include "hy_string_buffer.h"
@@ -146,10 +147,12 @@ _hyList<PAYLOAD> const _hyList<PAYLOAD>::operator=(const _hyList<PAYLOAD>& l)
 template<typename PAYLOAD>
 const _hyList<PAYLOAD> _hyList<PAYLOAD>::operator&(const _hyList<PAYLOAD> l)
 {
-  _hyList<PAYLOAD> res(l.lLength + lLength);
-  if (res.laLength == 0UL) {
+  _hyList<PAYLOAD> res;
+  unsigned long combined_length = l.lLength + lLength;
+  if (combined_length == 0UL) {
     return res;
   }
+  res.RequestSpace (combined_length);
 
   if (lData && lLength) {
     memcpy((Ptr)res.lData, (Ptr)lData, lLength * sizeof(PAYLOAD));
@@ -488,7 +491,7 @@ bool _hyList<PAYLOAD>::Equal(const _hyList<PAYLOAD> &l2) const
   }
 
   for (unsigned long i = 0UL; i < lLength; i++)
-    if (ItemEqualToValue (i, l2 (i)) {
+    if (!ItemEqualToValue (i, l2 (i))) {
       return false;
     }
 
