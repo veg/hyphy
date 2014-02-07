@@ -235,6 +235,15 @@ void _hyList<PAYLOAD>::append(const PAYLOAD item)
 }
 
 template<typename PAYLOAD>
+void _hyList<PAYLOAD>::append_multiple(const PAYLOAD item, const unsigned long copies)
+{
+  RequestSpace (laLength + copies);
+  for (unsigned long i = 0UL; i < copies; i++) {
+    append (item);
+  }
+}
+
+template<typename PAYLOAD>
 void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots)
 {
   if (slots > laLength) {
@@ -305,7 +314,7 @@ void _hyList<PAYLOAD>::TrimMemory(void)
     laLength = lLength;
     if (laLength) {
       if (lData) {
-        lData = (PAYLOAD *)MemReallocate(lData, laLength * sizeof(PAYLOAD));
+        lData = (PAYLOAD *)MemReallocate((Ptr)lData, laLength * sizeof(PAYLOAD));
       } else {
         lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
       }
@@ -370,9 +379,9 @@ void _hyList<PAYLOAD>::Delete(const long index, bool compact_list)
   if (index >= 0L && (const unsigned long)index < lLength) {
     lLength--;
     if (lLength - index) {
-      memmove(lData + sizeof(PAYLOAD) * (index),
-              lData + sizeof(PAYLOAD) * (index + 1),
-              sizeof(PAYLOAD) * (lLength - index));
+      for (unsigned long el = index; el < lLength; el ++)  {
+        lData[el] = lData[el+1];
+      }
     }
   }
   if (compact_list) {
@@ -405,46 +414,45 @@ void _hyList<PAYLOAD>::DeleteList(const _hyList<long> *indices_to_delete)
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::Displace(long start, long end, long delta)
 {
-  if (start <= 0L) {
+  if (start < 0L) {
     start = 0L;
   } else if (start >= lLength) {
     start = lLength - 1L;
   }
 
-  if (end < 0L) {
+  if (end < 0L || end >= lLength) {
     end = lLength - 1L;
-  } else if (end >= lLength) {
-    end = lLength - 1L;
-  }
-
+  } 
+  
   if (end - start >= 0L && delta && end - start < lLength - 1) {
     if (delta > 0 && lLength - end <= delta) { // shift up
       delta = lLength - end - 1;
-    } else if (start - delta < 0) {
-      delta = start;
+    } else if (start + delta < 0L) {
+      delta = -start;
     }
-
+    
     if (delta) {
-      long i, j, delta2 = end - start + 1;
-      _hyList <PAYLOAD> swapList((unsigned long)(end - start + 1));
+      unsigned long span = end - start + 1L;
+      
+      _hyList <PAYLOAD> swapList;
+      swapList.RequestSpace (span);
 
-      for (i = start; i <= end; i++) {
-        swapList << lData[i];
+      for (unsigned long i = start; i <= end; i++) {
+        swapList.append (lData[i]);
       }
 
-      if (delta > 0) {
-
-        for (i = end + 1; i <= end + delta; i++) {
-          lData[i - delta2] = lData[i];
+      if (delta > 0L) {
+        for (unsigned long i = end + 1L; i <= end + delta; i++) {
+          lData[i - span] = lData[i];
         }
 
       } else {
-        for (i = start - 1; i >= start + delta; i--) {
-          lData[i + delta2] = lData[i];
+        for (long i = start - 1L; i >= start + delta; i--) {
+          lData[i + span] = lData[i];
         }
       }
 
-      for (i = start + delta, j = 0; i <= end + delta; i++, j++) {
+      for (unsigned long i = start + delta, j = 0UL; i <= end + delta; i++, j++) {
         lData[i] = swapList.lData[j];
       }
     }
@@ -547,8 +555,9 @@ void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, const long insert_at)
 
   lLength++;
   ResizeList();
-
-  if (insert_at == HY_LIST_INSERT_AT_END) {
+  
+ 
+  if (insert_at == HY_LIST_INSERT_AT_END || insert_at < 0L) {
     lData[lLength-1UL] = item;
   } else {
     long insert_here = insert_at >= lLength ? lLength - 1UL : insert_at;
@@ -558,31 +567,32 @@ void _hyList<PAYLOAD>::InsertElement(const PAYLOAD item, const long insert_at)
         lData[k] = lData[k - 1];
       }
     else {
-      memmove(lData + (insert_here + 1), lData + insert_here,
+      memmove(&lData[insert_here + 1], &lData[insert_here],
               moveThisMany * sizeof(PAYLOAD));
     }
+    lData[insert_here] = item;
   }
 }
 
 
 template<typename PAYLOAD>
-_hyList<PAYLOAD> *_hyList<PAYLOAD>::Subset(unsigned long size, bool replacement)
+_hyList<PAYLOAD> *_hyList<PAYLOAD>::Subset(const unsigned long size, const bool replacement) const
 {
   _hyList<PAYLOAD> *result = new _hyList<PAYLOAD>;
   if (size > 0UL) {
-    size = MIN(size, lLength);
+    unsigned long sample_size = MIN(size, lLength);
     if (replacement) {
-      for (long k = 0; k < size; k++) {
-        append (lData[genrand_int32() % lLength]);
+      for (unsigned long k = 0UL; k < sample_size; k++) {
+        result->append (lData[genrand_int32() % lLength]);
       }
     } else {
       (*result) << (*this);
-      for (unsigned long k = 0UL; k < size; k++) {
-        long idx = lData[genrand_int32() % (lLength - k)];
+      for (unsigned long k = 0UL; k < sample_size; k++) {
+        long idx = genrand_int32() % (lLength - k);
         PAYLOAD t;
-        SWAP (result->lData[k], result->lData[idx], t);
+        SWAP (result->lData[k], result->lData[k+idx], t);
       }
-      result->lLength = size;
+      result->lLength = sample_size;
       result->TrimMemory();
     }
   }
@@ -596,21 +606,21 @@ void _hyList<PAYLOAD>::Permute(const unsigned long blockLength)
   unsigned long blockCount = lLength / blockLength;
 
   if (blockLength > 1UL) {
-    for (unsigned long k = 0; k < blockCount - 1; k ++) {
-      unsigned long k2 = genrand_real2() * (blockCount - k);
+    for (unsigned long k = 0UL; k < blockCount - 1; k ++) {
+      unsigned long k2 = genrand_int32() % (blockCount - k);
       if (k2) {
         k2 += k;
         k2 *= blockLength;
 
-        for (long j = 0; j < blockLength; j++) {
+        for (unsigned long j = 0UL; j < blockLength; j++) {
           PAYLOAD t;
           SWAP (lData[k2 + j],lData[k * blockLength + j],t);
         }
       }
     }
   } else {
-    for (unsigned long k = 0; k < blockCount - 1; k = k + 1) {
-      unsigned long k2 = genrand_real2() * (blockCount - k);
+    for (unsigned long k = 0; k < blockCount - 1; k ++) {
+      unsigned long k2 = genrand_int32() % (blockCount - k);
       if (k2) {
         k2 += k;
         PAYLOAD t;
@@ -625,24 +635,23 @@ template<typename PAYLOAD>
 void _hyList<PAYLOAD>::PermuteWithReplacement(const unsigned long blockLength)
 {
   unsigned long blockCount = lLength / blockLength;
-  _hyList<PAYLOAD> result((unsigned long)(blockCount * blockLength));
+  _hyList<PAYLOAD> result;
+  result.RequestSpace (blockCount * blockLength);
   if (blockLength > 1UL)
-    for (unsigned long i = 0; i < blockCount; i++) {
-      unsigned long sample = (unsigned long)(genrand_real2() * blockCount);
+    for (unsigned long i = 0UL; i < blockCount; i++) {
+      unsigned long sample = genrand_int32() % blockCount;
       sample *= blockLength;
-      for (unsigned long j = 0; j < blockLength; j++, sample++) {
-        result << lData[sample];
+      for (unsigned long j = 0UL; j < blockLength; j++) {
+        result << lData[sample + j];
       }
     }
   else {
-    for (unsigned long i = 0; i < blockCount; i++) {
-      unsigned long sample = genrand_real2() * blockCount;
+    for (unsigned long i = 0UL; i < blockCount; i++) {
+      unsigned long sample = genrand_int32() % blockCount;
       result << lData[sample];
     }
   }
-
-  Clear();
-  Duplicate(&result);
+  Clone (&result);
 }
 
 template<typename PAYLOAD>
@@ -687,10 +696,10 @@ bool _hyList<PAYLOAD>::NChooseKInit(_hyList <long> *state, _hyList <PAYLOAD>& st
                                const unsigned long stride, bool algorithm) {
   if (stride <= lLength && lLength) {
     state->Clear();
-    state->RequestSpace(stride + 3);
-    state->append(stride);
+    state->append_multiple (HY_NOT_FOUND, stride+3);
+    state->SetItem (0L, stride);
     store.Clear();
-    store.RequestSpace(stride);
+    store.append_multiple (lData[0], stride);
     return true;
   }
   return false;
@@ -700,28 +709,31 @@ bool _hyList<PAYLOAD>::NChooseKInit(_hyList <long> *state, _hyList <PAYLOAD>& st
 // http://www.math.upenn.edu/~wilf/website/CombinatorialAlgorithms.pdf
 template<typename PAYLOAD>
 bool _hyList<PAYLOAD>::NChooseK(_hyList <long> *state, _hyList <PAYLOAD>& store) {
-  if (state->lLength == 1) {  // first pass
-    state->append (0L);              // m
-    state->append (state->lData[0]); // h
-    state->lLength = state->lData[0] + 3;
-    store.lLength = state->lData[0];
+  if (state->AtIndex (1) == HY_NOT_FOUND) {  // first pass
+    state->SetItem (1L ,0L);                 // m
+    state->SetItem (2L, state->AtIndex (0)); // h
     
-    if (store.lLength == 0) {
+    if (store.countitems() == 0UL) {
       return false;
     }
   } else {
-    if (state->lData[1] < lLength - state->lData[2]) {
-      state->lData[2] = 0L;
+    if (state->AtIndex(1) < lLength - state->AtIndex(2)) {
+      state->SetItem(2UL,0L);
     }
-    state->lData[2]++;
-    state->lData[1] = state->lData[3 + state->lData[0] - state->lData[2]] + 1L;
+    (*state)[2]++;
+    (*state)[1] = state->AtIndex(3 + state->AtIndex(0) - state->AtIndex(2)) + 1L;
   }
-  for (long j = 1L; j <= state->lData[2]; j++) {
-    long anIndex = j + state->lData[0] - state->lData[2],
-         anIndex2 = state->lData[1] + j;
-    state->lData[anIndex + 2] = anIndex2 - 1;
-    store.lData[anIndex - 1] = lData[anIndex2 - 1];
+  
+  
+  for (long j = 1L; j <= state->AtIndex(2); j++) {
+    long anIndex = j + state->AtIndex (0) - state->AtIndex(2),
+         anIndex2 = state->AtIndex(1) + j -1 ;
+    (*state)[anIndex + 2] = anIndex2;
+    store[anIndex - 1] = lData[anIndex2];
   }
-  return state->lData[3] < lLength - state->lData[0];
+  
+  //printf ("[%ld %ld %ld %ld]\n", state->AtIndex(0),  state->AtIndex(1),  state->AtIndex(2),  state->AtIndex(3));
+  
+  return state->AtIndex (3) < lLength - state->AtIndex (0);
 }
 

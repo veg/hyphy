@@ -306,10 +306,12 @@ void ReturnCurrentCallStack(_List &calls, _List &stdins) {
 
   //______________________________________________________________________________
 void WarnError(_String st) {
+  exit (1);
 }
 
   //______________________________________________________________________________
 void FlagError(_String st) {
+  exit (1);
 }
 #endif
 

@@ -121,6 +121,10 @@ public:
   
   virtual void append    (const PAYLOAD);
   
+  // append an instance to this
+  
+  virtual void append_multiple    (const PAYLOAD, const unsigned long copies);
+
   virtual void operator<<(const PAYLOAD);
 
   // append number to this if it's not in the list (search first). List assumed
@@ -306,7 +310,7 @@ public:
    * @param replacement Sample with our without replacement
    * @return Return the list of sampled elements
    */
-  _hyList <PAYLOAD> *Subset(unsigned long size, const bool replacement = false);
+  _hyList <PAYLOAD> *Subset(const unsigned long size, const bool replacement = false) const;
 
   /**
   * Retrive the last value and shorten the list by 1

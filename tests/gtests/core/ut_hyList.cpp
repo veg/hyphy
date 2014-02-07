@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gtest/gtest.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 //Generate necessary includes from the respective implementation file
 #include "hy_list.h"
@@ -50,8 +51,9 @@ namespace {
 class _testPayload {
   public:
   
+  _testPayload (void) { data = 0UL; unused = 0UL;}
   _testPayload (unsigned long p) { data = p; unused = 0UL; }
-  _testPayload (const _testPayload& o) { data = o.data; }
+  _testPayload (const _testPayload& o) { data = o.data; unused = o.unused; }
   
   bool operator == (const _testPayload & o) const { return data == o.data;} 
   
@@ -228,11 +230,241 @@ TYPED_TEST_P (_hyListTest, FindAddDelete) {
   EXPECT_EQ(HY_NOT_FOUND, list.FindStepping (key1, 2)) << "Incorrectly found an element during a stepping search";
   EXPECT_EQ(3L, list.FindStepping (key1, 2, 1)) << "Found an element during a stepping search";
   
-    
+  TypeParam e1 = list2.Pop(),
+            e2 = list2.Pop();
+            
+  EXPECT_EQ(list.Element (9UL), e1) << "Popping last list element failed to return the right value";
+  EXPECT_EQ(list.Element (8UL), e2) << "Popping last list element failed to return the right value";
+  EXPECT_EQ (list.countitems()-2, list2.countitems()) << "Popping two elements did not shoren the list by two";
+  
+  list2.Clear();
+  for (long i = 0L; i < 3*HY_LIST_ALLOCATION_CHUNK; i++) {
+    list2 << (TypeParam) i;
+  }
+  
+  list2.Delete (0, false);
+  for (long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK; i++) {
+    list2.Delete (HY_LIST_ALLOCATION_CHUNK, true);
+  }
+      
+  EXPECT_EQ(2*HY_LIST_ALLOCATION_CHUNK-1, list2.countitems() ) << "List deletetion operation did not return the right length list";
+  for (long i = 0L; i < HY_LIST_ALLOCATION_CHUNK-1; i++) {
+    EXPECT_EQ((TypeParam)(i+1), list2.Element (i)) << "List deletion operation failed";
+  }
+  for (long i = HY_LIST_ALLOCATION_CHUNK; i < 2*HY_LIST_ALLOCATION_CHUNK-1; i++) {
+    EXPECT_EQ((TypeParam)(HY_LIST_ALLOCATION_CHUNK+i+1), list2.Element (i)) << "List deletion operation failed";
+  }
+  
+  list2.TrimMemory ();
+  EXPECT_EQ (list2.countitems(), list2.allocated()) << "Trim memory did not correctly trim the allocated buffer";
+  
+  _hyList <long> indicesToDeleteList;
+  for (long i = 0; i < HY_LIST_ALLOCATION_CHUNK - 1; i+=2) { 
+    indicesToDeleteList.append (i);
+  }
+  indicesToDeleteList << list2.countitems()-1;
+  indicesToDeleteList << list2.countitems();
+  
+  long run1 = HY_LIST_ALLOCATION_CHUNK/2;
+  
+  list2.DeleteList (&indicesToDeleteList); 
+  indicesToDeleteList.Clear();
+
+  for (long i = 0; i < list2.countitems(); i++) {
+    EXPECT_EQ ((TypeParam)(i < run1 ? 2*(i+1) : 2*HY_LIST_ALLOCATION_CHUNK + (i-run1) + 1) , list2.Element (i)) << "DeleteList did not correctly delete the elements";
+    indicesToDeleteList << i;
+  }
+  
+  list2.RequestSpace (HY_LIST_ALLOCATION_CHUNK * 2);
+  list2.DeleteList (&indicesToDeleteList); 
+  EXPECT_EQ(0UL, list2.countitems()) << "Should have seen an empty list after all the elements have been deleted";
+  EXPECT_EQ(0UL, list2.allocated()) << "Should have seen an empty list allocation after all the elements have been deleted";
+  
+  
 }
 
+TYPED_TEST_P (_hyListTest, InPlaceOperations) {
+  _hyList <TypeParam> list,
+                      list2;
+                      
+  for (long i = 0L; i < 100L; i++) {
+    list.append ((TypeParam) i);
+  }
+  
+  list2 = list;
+  list.Flip();
+  list.Flip();
+  EXPECT_TRUE(list == list2) << "Flip is not reversible for an even sized list";
+  list.InsertElement ((TypeParam)256, 1L);
+  list2 = list;
+  list.Flip();
+  list.Flip();
+  EXPECT_TRUE(list == list2) << "Flip is not reversible for an odd sized list";
 
-REGISTER_TYPED_TEST_CASE_P (_hyListTest, ConstuctorTests, AccessAndManipulationTests, FindAddDelete);
+  list.InsertElement ((TypeParam)256, 99L);
+  EXPECT_EQ(list.Element(1L), list.Element (99L)) << "Insertion of the same element in two different places failed";
+  
+  list2 = list;
+  list.Displace (10,20,2);
+  EXPECT_FALSE (list == list2) << "Displace produced a list equal to the original";
+  list.Displace (12,22,-2);
+  EXPECT_TRUE (list == list2) << "Displace roundtrip failed";
+  list.Displace (90,95,10);
+  list.Displace (96,HY_LIST_INSERT_AT_END,-6);
+  EXPECT_TRUE (list == list2) << "Displace roundtrip failed when hitting the right edge";
+  list.Displace (5,10,-20);
+  list.Displace (HY_LIST_INSERT_AT_END,5,5);
+  EXPECT_TRUE (list == list2) << "Displace roundtrip failed when hitting the left edge";
+  
+  list2.Swap (5,10);
+  EXPECT_EQ (list(10), list2(5)) << "Element swap failed";
+  EXPECT_EQ (list(5), list2(10)) << "Element swap failed";
+  
+  
+}
+
+TYPED_TEST_P (_hyListTest, SubsetsAndSelectors) {
+  time_t timer;
+  init_genrand (time(&timer));
+  
+  TypeParam array [4] = {(TypeParam)1L, (TypeParam)4L, (TypeParam)9L, (TypeParam)16L};
+
+  _hyList <TypeParam> list (4, array),
+                      list2 = list;
+  
+    
+  unsigned long iteration_limiter = 1000000UL,
+                current_iteration = 0UL,
+                base_array_size = list.countitems();
+                
+  char     *has_replacement,
+           with_replacement [] = " with replacement",
+           without_replacement [] = " without replacement";
+                
+  
+  for (long i = 0; i < 2; i++) {
+  
+    long array_size;
+  
+    if (i == 0) {
+      has_replacement = with_replacement;
+      array_size = base_array_size * base_array_size;
+    } else {
+      has_replacement = without_replacement;
+      array_size = base_array_size * (base_array_size-1);
+    }
+    
+    _hyList <unsigned long> counter;
+  
+    counter.append_multiple (0UL, array_size);
+         
+    while (counter.Find (0UL) != HY_NOT_FOUND && current_iteration < iteration_limiter) {
+      _hyList <TypeParam> * subset = list.Subset (2, i == 0);
+      
+      ASSERT_EQ (2UL, subset->countitems()) << " Incorrect subset list length";
+      unsigned long i0 = list.Find (subset->Element (0)),
+                    i1 = list.Find (subset->Element (1));
+                  
+      ASSERT_NE (HY_NOT_FOUND, i0) << "Subset list element not found in the original list";
+      ASSERT_NE (HY_NOT_FOUND, i1) << "Subset list element not found in the original list";
+      
+      if (i == 1) {
+        ASSERT_NE (i0, i1) << "Sampling without replacement generated items with replacement";
+      }
+      
+      i0 = base_array_size * i0 + i1;
+      if (i == 1) {
+        i0 -= 1 + (i0 > 5) + (i0 > 10);
+      }
+      //printf ("%ld :: %ld\n", i0, counter.Find (0UL));
+      counter[i0] ++;
+      current_iteration++;
+      delete subset;
+    }
+    
+    ASSERT_LT (current_iteration, iteration_limiter) << "Not all possible subsets have been generated " << has_replacement << ". Has not generated " << counter.Find (0UL);
+  }
+  
+  
+  
+  for (unsigned long repl = 0UL; repl < 2UL; repl ++) {
+    if (repl) {
+      has_replacement = with_replacement;
+    } else {
+      has_replacement = without_replacement;
+    }
+    for (unsigned long block = 1UL; block <= 2UL; block++) {
+      list2 = list;
+      long order [4] = {0L, 0L, 0L, 0L};
+      for (unsigned long i = 0L; i < 100; i++) {
+        _hyList <long> counter;
+        counter.append_multiple (HY_NOT_FOUND, base_array_size);
+        
+        if (repl) {
+          list2.PermuteWithReplacement (block);
+        } else {
+          list2.Permute (block);
+        }
+        for (unsigned long k = 0UL; k < list2.countitems(); k++) {
+          long idx = list.Find (list2.Element (k)); 
+          ASSERT_NE (HY_NOT_FOUND, idx) << "A permuted list contains elements different from the original list, block size " << block << has_replacement << " index " << k; 
+          counter[idx] = k;
+        }
+        
+        if (repl == 0) {
+          ASSERT_EQ (HY_NOT_FOUND, counter.Find (HY_NOT_FOUND)) << "A permuted list is missing some of the original elements, block size " << block << has_replacement;
+        }
+        
+        if (block == 2UL) {
+          for (unsigned long k = 0UL; k < counter.countitems(); k+=2) {
+            if (repl && counter (k) == HY_NOT_FOUND) {
+              continue;
+            }
+            ASSERT_EQ (counter(k) + 1, counter (k+1)) << "Failed to preserve within block-ordering in Permute (2) in block " << k << has_replacement;
+          }
+          if (repl) {
+            order [(counter(0UL) > 0) * 2 + (counter (2UL) > 0)] ++;
+          } else {
+            order[counter(0UL) > 0] ++;
+          }
+        }
+      
+      }
+      
+      if (block > 1) {
+        ASSERT_LE (0, order[0]) << "Missing 0 permutation order" << has_replacement;
+        ASSERT_LE (0, order[1]) << "Missing 1 permutation order" << has_replacement;
+        if (repl) {
+          ASSERT_LE (0, order[2]) << "Missing 2 permutation order" << has_replacement;
+          ASSERT_LE (0, order[3]) << "Missing 3 permutation order" << has_replacement;
+        }
+      }
+    }
+  }
+  
+  // N choose K testing
+  
+  _hyList <TypeParam> chosen_items;
+  _hyList <long> NKtest;
+  
+  ASSERT_TRUE (list.NChooseKInit (&NKtest, chosen_items, 3)) << "Failed to initialize N choose K iteration";
+  
+  long expected_orders [] [3] = { {0,1,2} , {0,1,3}, { 0, 2, 3 }, {1,2,3}};
+  
+  for (long i = 0; i < 4; i++) {  
+    if (i < 3) {
+      ASSERT_TRUE (list.NChooseK (&NKtest, chosen_items)) << "Failed to get the set " << (i+1) << " in N choose K"; 
+    } else {
+      ASSERT_FALSE (list.NChooseK (&NKtest, chosen_items)) << "Should stop after set " << (i+1) << " in N choose K"; 
+    }
+    for (long j = 0; j < 3; j++) {
+      EXPECT_EQ (expected_orders[i][j], list.Find (chosen_items (j))) << "Incorrect element " << (j) << " in set " << (i+1) << " in 4 choose 3";
+    }
+   }
+  
+}
+
+REGISTER_TYPED_TEST_CASE_P (_hyListTest, ConstuctorTests, AccessAndManipulationTests, FindAddDelete, InPlaceOperations, SubsetsAndSelectors);
 
 }
 
