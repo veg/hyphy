@@ -32,7 +32,7 @@
 #include "simplelist.h"
 #include "classes.h"
 #include "likefunc.h"
-#include "parser.h"
+#include "legacy_parser.h"
 #include <math.h>
 #include "matrix.h"
 #include "baseobj.h"
@@ -62,8 +62,9 @@
 #define     DIRICHLET_FLATTENING_CONST  0.5
 #define		MIN_SAMPLE_SIZE				5
 
+#define _HY2BGM(X) (dynamic_cast<_BayesianGraphicalModel*>(X))
 
-class _BayesianGraphicalModel : public _LikelihoodFunction
+class _BayesianGraphicalModel : public virtual _LikelihoodFunction
 {
 public:
     /* constructors */
@@ -152,7 +153,7 @@ public:
     void            GetNodeOrder (_Matrix * order);
     void            GetStructure (_Matrix * graph);
     void            GetConstraints (_Matrix * graph) {
-        graph = (_Matrix *) constraint_graph.makeDynamic();
+        graph = dynamic_cast<_Matrix *> (constraint_graph.makeDynamic());
     }
 
 protected:

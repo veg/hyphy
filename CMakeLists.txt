@@ -68,7 +68,10 @@ set(HYPHY_VERSION 2.1)
 
 
 set(MACOSX_LION false)
+set(MACOSX false)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(MACOSX true)
     if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
         set(MACOSX_LION true)
     endif(${CMAKE_SYSTEM_VERSION} VERSION_GREATER 11.0.0 OR ${CMAKE_SYSTEM_VERSION} VERSION_EQUAL 11.0.0)
@@ -79,6 +82,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     
 endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
+set (SSE_RELATED_FLAGS "")
 
 #-------------------------------------------------------------------------------
 # make it fast, scotty
@@ -100,14 +104,14 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(GCC46 true)
     endif(${GCC_VERSION} VERSION_GREATER 4.6 OR ${GCC_VERSION} VERSION_EQUAL 4.6)
 
-    if(${MACOSX_LION})
-        set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
-    endif(${MACOSX_LION})
+    #if(${MACOSX})
+    #    set(DEFAULT_WARNING_FLAGS "-Wno-int-to-pointer-cast -Wno-conversion-null -Wno-dangling-else -Wno-logical-op-parentheses")
+    #endif(${MACOSX})
 
     if(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3 ")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
     else(${GCC45})
-        set(DEFAULT_COMPILE_FLAGS "-g -fsigned-char -O3  ")
+        set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  ")
     endif(${GCC45})
 
     if(${GCC46})
@@ -116,18 +120,19 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
+        set(SSE_RELATED_FLAGS " -march=corei7-avx -mtune=corei7-avx ")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
         PCL_CHECK_FOR_SSE3()
         if(${HAVE_SSE3_EXTENSIONS})
             add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            set(SSE_RELATED_FLAGS " -msse3 ")
         endif(${HAVE_SSE3_EXTENSIONS})
     endif (${HAVE_AVX_EXTENSIONS})
     
-
+    set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ")    
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
@@ -179,6 +184,8 @@ set_property(
 )
 
 
+
+
 #-------------------------------------------------------------------------------
 # uninstall target
 #-------------------------------------------------------------------------------
@@ -197,8 +204,10 @@ add_custom_target(uninstall
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GUI src/gui/*.cpp src/gui/Components/*.cpp)
-file(GLOB SRC_GTESTS tests/gtests/*.cpp)
+file(GLOB SRC_GTESTS tests/gtests/core/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
+file(GLOB SRC_PUGIXML contrib/pugixml/src/*.cpp)
+file(GLOB SRC_GRAMMAR src/grammar/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
@@ -208,8 +217,9 @@ set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_PUGIXML} ${SRC_UTILS} ${SRC_GRAMMAR})
 
+set (SRC_WORKING src/core/baseobj.cpp src/core/strings.cpp src/core/error.cpp src/core/string_buffer.cpp src/core/helperfunctions.cpp src/core/regex.cpp)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout
@@ -240,12 +250,16 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
-    src/lib/Link src/new/include
-    contrib/SQLite-3.8.2 # SQLite
-    src/gui/include
-    src/gui/include/Components
-    src/gui/include/WindowClasses
+    src/core/templates
+    src/lib/Link 
+    src/new/include
+    contrib/SQLite-3.7.11 # SQLite
+    contrib/tinyxml
+    contrib/pugixml/src/
+    src/ocl/
     contrib/gtest-1.7.0/include
+    contrib/gtest-1.7.0/gtest/include
+    src/grammar
     tests/gtests
 )
 
@@ -320,8 +334,8 @@ if(${OPENCL_FOUND})
     set_target_properties(
         HYPHYOCL
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${SSE_RELATED_FLAGS}"
     )
     add_executable(
         cl2hdr
@@ -364,8 +378,8 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS} ${SSE_RELATED_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${SSE_RELATED_FLAGS}"
     )
 endif(${MPI_FOUND})
 
@@ -384,8 +398,13 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0"
+)
+
+set_property(
+    TARGET HYPHYDEBUG
+    APPEND PROPERTY COMPILE_DEFINITIONS __NEW_GRAMMAR__
 )
 
 install(
@@ -402,7 +421,7 @@ install(
 add_executable(
     HYPHYGTEST
     EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
+    ${SRC_WORKING} ${SRC_GTESTS} tests/gtests/main.cpp
 )
 add_dependencies(HYPHYGTEST gtest)
 target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
@@ -415,57 +434,10 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
 )
 
-#-------------------------------------------------------------------------------
-# hyphy gtk+ target
-#-------------------------------------------------------------------------------
-
-
-find_package(GTK2 2.6)
-
-if((${GTK2_FOUND}))
-	file(
-        GLOB SRC_GUI_GTK
-        src/gui/gtk/*.cpp
-        src/gui/gtk/Components/*.cpp
-        src/gui/gtk/WindowClasses/*.cpp
-    )
-	include_directories(
-        ${GTK2_INCLUDE_DIRS}
-        src/gui/gtk/include
-        src/gui/gtk/include/Components
-        /Developer/Headers/FlatCarbon
-    )
-	add_executable(
-        HYPHYGTK
-        EXCLUDE_FROM_ALL
-        ${SRC_GUI_GTK} ${SRC_GTKMAIN} ${SRC_GUI} ${SRC_COMMON}
-    )
-    target_link_libraries(HYPHYGTK ${DEFAULT_LIBRARIES} ${GTK2_LIBRARIES})
-
-	add_custom_target(GTK DEPENDS HYPHYGTK)
-
-	install(DIRECTORY src/gui/res/GTKResources/ DESTINATION lib/hyphy/GTKResources)
-
-	install(
-        TARGETS HYPHYGTK
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
-    set_property(
-        TARGET HYPHYGTK
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHY_GTK__ GDK_PIXBUF_ENABLE_BACKEND __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
-    )
-    set_target_properties(
-        HYPHYGTK
-        PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${GTK2_COMPILE_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${GTK2_LINK_FLAGS}"
-    )
-endif((${GTK2_FOUND}))
 
 #-------------------------------------------------------------------------------
 # hyphy qt target
@@ -478,7 +450,7 @@ if((${QT4_FOUND}))
     file(GLOB QT_HYPHY_SOURCES src/gui/qt/*.cpp src/gui/HYSharedMain.*) 
     file(GLOB QT_HYPHY_HEADERS src/gui/qt/include/*.h src/gui/include/HYSharedMain.*) 
     file(GLOB QT_HYPHY_UI src/gui/qt/ui/*ui)
-    set(RES_MACGUI src/gui/mac/HYPHYMP.icns src/gui/mac/HyPhy.rsrc)
+    set(RES_MACGUI src/gui/qt/mac/HYPHYMP.icns src/gui/qt/mac/HyPhy.rsrc)
 
     QT4_WRAP_CPP(hyphy_headers_moc ${QT_HYPHY_HEADERS})
     QT4_WRAP_UI(hyphy_ui_headers ${QT_HYPHY_UI})
@@ -516,11 +488,11 @@ if((${QT4_FOUND}))
             OUTPUT_NAME "HyPhyQt"
             MACOSX_BUNDLE_ICON_FILE "HYPHYMP.icns"
             MACOSX_BUNDLE_GUI_IDENTIFIER "org.hyphy"
-            MACOSX_BUNDLE_LONG_VERSION_STRING "1.4, Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            MACOSX_BUNDLE_LONG_VERSION_STRING "1.4, Copyright 1997-2013 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
             MACOSX_BUNDLE_BUNDLE_NAME "HyPhyQt"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "2.10beta"
             MACOSX_BUNDLE_BUNDLE_VERSION "2.10beta"
-            MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2011 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
+            MACOSX_BUNDLE_COPYRIGHT "Copyright 1997-2013 Sergei L Kosakovsky Pond, Art FY Poon, N Lance Hepler and Spencer V Muse"
             COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${QT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${QT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
         ) 
@@ -573,192 +545,3 @@ set_target_properties(
     LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
 )
 
-
-#-------------------------------------------------------------------------------
-# hyphy MacOSX gui target
-#-------------------------------------------------------------------------------
-if(APPLE)
-
-    #---------------------------------------------------------------------------
-    # MacOSX gui files
-    #---------------------------------------------------------------------------
-    set(RES_MACGUI src/gui/mac/HyPhy.rsrc src/gui/mac/HYPHYMP.icns)
-    set(RES_MACGUIDEBUG src/gui/mac/iHyPhyDebug.rsrc src/gui/mac/HYPHYMP.icns)
-    file(
-        GLOB SRC_MACGUI
-        src/gui/mac/*.cpp
-        src/gui/mac/Components/*.cpp
-        src/gui/mac/WindowClasses/*.cpp
-    )
-
-    #---------------------------------------------------------------------------
-    # MacOSX gui executable and directives
-    #---------------------------------------------------------------------------
-    add_executable(HyPhy
-        MACOSX_BUNDLE
-		EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
-        ${RES_MACGUI}
-    )
-
-    add_executable(iHyPhyDebug
-        MACOSX_BUNDLE
-        EXCLUDE_FROM_ALL
-        ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_GUI} ${SRC_MACGUI} ${SRC_MACMAIN}
-        ${RES_MACGUIDEBUG}
-    )
-
-    include_directories(src/gui/mac/include src/gui/mac/include/Components /Developer/Headers/FlatCarbon)
-    find_library(CARBON NAMES Carbon)
-    find_library(QUICKTIME NAMES Quicktime)
-    target_link_libraries(HyPhy ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
-    target_link_libraries(iHyPhyDebug ${DEFAULT_LIBRARIES} ${CARBON} ${QUICKTIME})
-    add_custom_target(MAC DEPENDS HyPhy)
-    add_custom_target(MACDebug DEPENDS iHyPhyDebug)
-
-    #---------------------------------------------------------------------------
-    # install the hyphy hbl stdlib into the .app
-    #---------------------------------------------------------------------------
-
-    get_target_property    (HYPHY_APPEXE HyPhy LOCATION)
-    get_filename_component (HYPHY_APPDIR ${HYPHY_APPEXE} PATH)
-
-    add_custom_command(
-        TARGET HyPhy
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_APPDIR}/../Resources/HBL
-    )
-    add_custom_command(
-        TARGET HyPhy
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${HYPHY_APPDIR}/../Resources/HBL
-    )
-
-    get_target_property    (IHYPHYDEBUG_APPEXE iHyPhyDebug LOCATION)
-    get_filename_component (IHYPHYDEBUG_APPDIR ${IHYPHYDEBUG_APPEXE} PATH)
-
-	add_custom_target(
-		HYPHY_DMG
-		DEPENDS HyPhy
-	)
-
-	set (HYPHY_DISTRIBUTE_DIR ${HYPHY_APPDIR}/../../../HyPhy${HYPHY_VERSION})
-
-	find_program (HAZ_DMG_CANVAS "dmgcanvas")
-
-	if (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
-		add_custom_command(
-				TARGET HYPHY_DMG
-				POST_BUILD
-				COMMAND ${HAZ_DMG_CANVAS} ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/MAC_dmg_template.dmgCanvas ${CMAKE_CURRENT_SOURCE_DIR}/installers/Mac/hyphy.dmg
-			)
-	else (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
-		add_custom_command(
-				TARGET HYPHY_DMG
-				POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E remove_directory ${HYPHY_DISTRIBUTE_DIR}
-				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}
-				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/Documentation/
-				COMMAND ${CMAKE_COMMAND} -E make_directory ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
-				COMMAND ${CMAKE_COMMAND} -E copy_directory ${HYPHY_DISTRIBUTE_DIR}/../HyPhy.app ${HYPHY_DISTRIBUTE_DIR}/HyPhy.app/
-				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/help/SelectionAnalyses.pdf ${HYPHY_DISTRIBUTE_DIR}/Documentation/
-				COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/help/Getting Started With HyPhy.pdf" ${HYPHY_DISTRIBUTE_DIR}/Documentation/
-				COMMAND ${CMAKE_COMMAND} -E remove -f ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
-				COMMAND hdiutil create -srcfolder ${HYPHY_DISTRIBUTE_DIR} -format UDBZ ${HYPHY_DISTRIBUTE_DIR}/../hyphy.dmg
-			)
-	endif (${HAZ_DMG_CANVAS} MATCHES ".+dmgcanvas$")
-
-    add_custom_command(
-        TARGET iHyPhyDebug
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
-    )
-    add_custom_command(
-        TARGET iHyPhyDebug
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${IHYPHYDEBUG_APPDIR}/../Resources/HBL
-    )
-
-    #---------------------------------------------------------------------------
-    # MacOSX gui-specific properties
-    #---------------------------------------------------------------------------
-    set_property(
-        TARGET HyPhy
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ APPNAME="HyPhy"
-    )
-    set_property(
-        TARGET iHyPhyDebug
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYXCODE__ __MAC__ __MP__ __MP2__ __HYPHYDEBUG__ APPNAME="iHyPhyDebug"
-    )
-    set_target_properties(
-        HyPhy
-        PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -fast -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare"
-		XCODE_ATTRIBUTE_ENABLE_OPENMP_SUPPORT YES
-		XCODE_GCC_AUTO_VECTORIZATION YES
-	)
-    set_target_properties(
-        iHyPhyDebug
-        PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -Wno-char-subscripts -Wno-deprecated -Wno-deprecated-declarations -Wno-sign-compare -g -O0"
-	)
-
-    set_property(
-        SOURCE
-        src/gui/mac/hydialogs.cpp
-        src/gui/mac/HYPlatformComponent.cpp
-        src/gui/mac/HYPlatformUtils.cpp
-        src/gui/mac/HYPlatformWindow.cpp
-        src/gui/mac/Components/HYPlatformCheckBox.cpp
-        src/gui/mac/Components/HYPlatformPullDown.cpp
-        src/gui/mac/WindowClasses/HYPlatformChartWindow.cpp
-        src/gui/mac/WindowClasses/HYPlatformConsoleWindow.cpp
-        src/gui/mac/WindowClasses/HYPlatformDataPanel.cpp
-        src/gui/mac/WindowClasses/HYPlatformModelWindow.cpp
-        src/gui/mac/WindowClasses/HYPlatformParameterTable.cpp
-        src/gui/mac/WindowClasses/HYPlatformPWindow.cpp
-        src/gui/mac/WindowClasses/HYPlatformTreePanel.cpp
-        src/gui/preferences.cpp
-        src/mains/mac.cpp
-        PROPERTY COMPILE_FLAGS "-fpascal-strings"
-    )
-    set_source_files_properties(
-        ${RES_MACGUI}
-        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
-    )
-
-    set_source_files_properties(
-        ${RES_MACGUIDEBUG}
-        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
-    )
-
-    set_target_properties(
-        HyPhy
-        PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
-    )
-
-    set_target_properties(
-        HyPhy MAC
-        PROPERTIES
-        OSX_ARCHITECTURES i386
-    )
-
-   
-    set_target_properties(
-        HyPhy HYPHY_DMG
-        PROPERTIES
-        OSX_ARCHITECTURES i386
-    )
-
-    set_target_properties(
-        iHyPhyDebug
-        PROPERTIES MACOSX_BUNDLE_INFO_PLIST src/gui/mac/Info.plist
-    )
-    set_target_properties(
-        iHyPhyDebug MACDebug
-        PROPERTIES
-        OSX_ARCHITECTURES i386
-    )
-endif(APPLE)

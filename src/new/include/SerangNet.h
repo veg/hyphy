@@ -16,7 +16,7 @@
 //#include <fstream.h>
 
 #include "baseobj.h"
-
+#include "helperfunctions.h"
 
 
 struct Node {

@@ -1,0 +1,49 @@
+x = 0;
+do {
+  if( x > 5 ) {
+    break;
+  }
+  x = x + 1;
+  x;
+} while (x < 10);
+x;
+
+x = 0;
+do {
+  if( x > 5 ) {
+    x = x + 2;
+    continue;
+  }
+  x = x + 1;
+  x;
+} while (x < 10);
+x;
+
+x = 0;
+while (x < 10 ) {
+  if( x > 5 ) {
+    break;
+  }
+  x = x + 1;
+  x;
+}
+x;
+
+x = 0;
+while (x < 10 ) {
+  if( x > 5 ) {
+    x = x + 2;
+    continue;
+  }
+  x = x + 1;
+  x;
+}
+x;
+
+for (x = 1; x< 10; x = x + 1) {
+  if(x > 5 && x < 8) {
+    continue;
+  }
+  x;
+}
+x;

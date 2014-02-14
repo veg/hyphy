@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -40,39 +40,38 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _AVLLISTX_
 #define _AVLLISTX_
 //#pragma once
-#include "list.h"
+#include "hy_list_reference.h"
 #include "avllist.h"
-
-#define  MEMORYSTEP 8
 
 //_____________________________________________________________________________
 
-class _AVLListX: public _AVLList
-{
+#define _HY2AVLLISTX(X) (dynamic_cast<_AVLListX*>(X))
 
-    public:
-        /* SLKP: 20090817
-            add key: index values from the list of strings
-         */
+class _AVLListX : public virtual _AVLList {
 
-        //Data Members
-        _SimpleList xtraD;
+public:
+  /* SLKP: 20090817
+      add key: index values from the list of strings
+   */
 
-        //Methods
-        _AVLListX(_SimpleList*);
+  //Data Members
+  _SimpleList xtraD;
 
-        virtual ~_AVLListX(void){}
-        virtual BaseRef toStr(void);
+  //Methods
+  _AVLListX(_SimpleList *);
 
-        virtual void Clear(bool = false);
-        virtual void DeleteXtra(long);
-        virtual void PopulateFromList(_List&);
+  virtual ~_AVLListX(void) {}
+  virtual BaseRef toStr(void);
 
-        virtual long InsertData(BaseRef, long, bool);
-        virtual long UpdateValue (BaseRef, long, long);
+  virtual void Clear(bool = false);
+  virtual void DeleteXtra(long);
+  virtual void PopulateFromList(_List &);
 
-        void        SetXtra(long,long);
-        long        GetXtra(long);
+  virtual long InsertData(BaseRef, long, bool);
+  virtual long UpdateValue(BaseRef, long, long);
+
+  void SetXtra(long, long);
+  long GetXtra(long);
 
 };
 

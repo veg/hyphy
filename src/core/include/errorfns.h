@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -42,50 +42,28 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 #include "baseobj.h"
 
-#define  _HYNOERROR 1
+#define _HYNOERROR 1
 
 //successful execution marker
 
-extern  int      gError;
-extern  bool  isFixable;
-
-
-bool gStatus(void);
-// global Error Status
-
-bool isError (long);
-// checks ToolBox function return, and if it is abnormal,
-// sets the error status to true;
-
-//bool acknError (bool);
+void acknError(const char *);
 // function acknoledges Error with either fixable (True) or terminal (False)
 // flag, the latter causes acknError to terminate the program
 // writes error number to stderror
 
-void acknError (const char*);
-// function acknoledges Error with either fixable (True) or terminal (False)
-// flag, the latter causes acknError to terminate the program
-// writes error number to stderror
-
-void    warnError (const char*);
+void warnError(const char *);
 // warns user of current error with a supplied string
 // writes to stderror
 
-void    warnError (long);
+void warnError(long);
 // warns user of current error with a built in string
 // writes to stderror
 
-void    flagError (long);
+void flagError(long);
 // reports the text of current error to the user with a built in string
 // writes to stderror
 // terminates execution of current BF
 
-void*   checkPointer  (void*);
-
-#if !defined __UNIX__  && !defined __HEADLESS__
-extern bool skipWarningMessages;
-#endif
+void *checkPointer(void *);
 
 #endif
-
-

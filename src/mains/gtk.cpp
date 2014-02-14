@@ -53,6 +53,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "batchlan.h"
 #include "calcnode.h"
+#include "executionlist.h"
 #include <unistd.h>
 //#include <curses.h>
 #include <termios.h>

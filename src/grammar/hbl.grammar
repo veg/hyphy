@@ -1,0 +1,527 @@
+#include "wchar.h"
+#include "executionlist.h"
+#include "parser2013.h"
+
+COMPILER hyphy_batch_language
+  
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+CHARACTERS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+  LETTER        = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  DIGIT         = "0123456789".
+  DOT           = '.'.
+  UNDERSCORE    = '_'.
+  CR            = '\r'.
+  LF            = '\n'.
+  TAB           = '\t'.
+  NOT_DQUOTE    = ANY - '"'.
+  NOT_SQUOTE    = ANY - '\''.
+  NOT_FIRST_CHAR = LETTER + DIGIT + UNDERSCORE. 
+
+ 
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+TOKENS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+  IDENTIFIER  = (LETTER|UNDERSCORE) {NOT_FIRST_CHAR} {DOT NOT_FIRST_CHAR {NOT_FIRST_CHAR}} .
+  FLOAT       = ((DIGIT {DIGIT} [DOT {DIGIT}]) | (DOT {DIGIT})) [('e'|'E') ['+'|'-'] DIGIT {DIGIT}] .
+  SINGLE_QUOTE_STRING      = '\'' {NOT_SQUOTE | "\\\'" } '\'' .
+  DOUBLE_QUOTE_STRING      = '"' {NOT_DQUOTE | "\\\"" } '"' .
+  NONE_OBJECT              = "None".
+  OPEN_PARENTHESIS         = '('.
+  CLOSE_PARENTHESIS        = ')'.
+  EQUAL                    = '='.
+  ASSIGN                   = ":=".
+  ASSIGN_UPPER_BOUND       = ":<".
+  ASSIGN_LOWER_BOUND       = ":>".
+  COMMA                    = ','.
+  CLOSE_BRACE              = '}'.
+  OPEN_BRACE               = '{'.
+  CLOSE_BRACKET            = ']'.
+  OPEN_BRACKET             = '['.
+  MULTIPLY                 = '*'.
+  COLON                    = ':'.
+  SEMICOLON                = ';'.
+  PLUS_EQUAL               = "+=".
+  MINUS_EQUAL               = "-=".
+  TIMES_EQUAL               = "*=".
+  DIV_EQUAL                 = "/=".
+  GLOBAL_VAR_TOKEN          = "global".
+  IF_TOKEN                  = "if".
+  ELSE_TOKEN                = "else".
+  FOR_TOKEN                 = "for".
+  WHILE_TOKEN               = "while".
+  DO_TOKEN                  = "do".
+  CONTINUE                  = "continue".
+  BREAK                     = "break".
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO CR LF
+
+IGNORE CR + LF + TAB
+ 
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+PRODUCTIONS
+/*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------------------*/
+ident <_Formula& f, _FormulaParsingContext& fpc, bool global_tag>
+= IDENTIFIER  (. _parser2013_pushIdentifier (this, f, fpc, t->val, global_tag, false); .)
+.
+
+/*------------------------------------------------------------------------*/
+number <_Formula& f, _FormulaParsingContext& fpc>
+= FLOAT  (. _parser2013_pushNumber (this, f, fpc, t->val); .)
+.
+
+/*------------------------------------------------------------------------*/
+
+matrix_row  <_List & matrix_entries, _FormulaParsingContext& fpc, unsigned long& column_count, bool& is_const>
+= OPEN_BRACE  (. _Formula* f = new _Formula; unsigned long my_column_count = 0; .)
+    (
+        IF (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) MULTIPLY 
+        | expression <*f, fpc>  
+    ) (. _parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; .)
+    {    
+        COMMA (. f = new _Formula; .)
+        (
+        IF (_parser2013_isFollowedByAnCommaOrClosingBrace (this)) MULTIPLY 
+        | expression <*f, fpc>  
+        ) (. _parser2013_add_matrix_entry (this, matrix_entries, f, fpc, is_const); my_column_count++; .)
+    } 
+  CLOSE_BRACE (. _parser2013_matrix_checkRowLengths (this, fpc, column_count, my_column_count); .)
+.
+
+dense_matrix <_Formula& f, _FormulaParsingContext& fpc>
+= OPEN_BRACE (. _List matrix_entries; unsigned long n_rows = 0; unsigned long n_cols = 0; bool is_const = true; .)
+    matrix_row  <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .)
+    {matrix_row <matrix_entries, fpc, n_cols, is_const> (. n_rows ++; .) }  
+  CLOSE_BRACE (. _parser2013_pushObject (this, f, fpc, _parser2013_createDenseMatrix (this, fpc, &matrix_entries, n_rows, n_cols, is_const));  .)
+.
+
+/*------------------------------------------------------------------------*/
+
+matrix_element  <_List & matrix_definition, _FormulaParsingContext& fpc, bool& is_const> 
+= OPEN_BRACE (. _Formula * h = new _Formula, * v = new _Formula, * d = new _Formula; .)
+        expression <*h, fpc> 
+        COMMA 
+        expression <*v, fpc> 
+        COMMA
+        expression <*d, fpc> 
+   CLOSE_BRACE (. _parser2013_pushSparseElementEntry (this, fpc, matrix_definition, h, v, d, is_const); .)
+.
+   
+sparse_matrix <_Formula& f, _FormulaParsingContext& fpc>
+= OPEN_BRACE  (. bool is_matrix = false; _List* matrix_definition = new _List; 
+        _Formula * hd = new _Formula, *vd = new _Formula; bool is_const = true; .)
+    (
+        IF (_parser2013_StringAndColon (this)) (
+            [ (. _Formula *key = new _Formula, *value = new _Formula; .)
+                expression <*key, fpc> COLON  expression <*value, fpc> 
+                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)
+            ]
+            {
+                (. _Formula *key = new _Formula, *value = new _Formula; .)
+                COMMA expression <*key, fpc> COLON  expression <*value, fpc> 
+                (. _parser2013_addADictionaryElement (this, *matrix_definition, key, value, fpc, is_const); .)            
+            }
+        )
+        |
+        ( (. is_matrix = true; .)
+            expression <*hd, fpc> 
+            [ COMMA expression <*vd, fpc> 
+            {COMMA matrix_element <*matrix_definition, fpc, is_const>}
+            ]
+        ) 
+    )  
+  CLOSE_BRACE 
+    (.  if (is_matrix) {
+            _parser2013_createSparseMatrix (this, f, fpc, hd, vd, matrix_definition, is_const);}
+        else {
+            _parser2013_createDictionary (this, f, fpc, *matrix_definition, is_const);
+            delete (hd); delete (vd);
+        }
+    .)
+.
+
+/*------------------------------------------------------------------------*/
+
+function_call <_Formula& f, _FormulaParsingContext& fpc>
+= (. _List argument_names; .)
+  IDENTIFIER (. _String func_id (t->val); .)
+  OPEN_PARENTHESIS
+  {expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.)
+  { COMMA expression <f, fpc> (. argument_names.AppendNewInstance(new _String);.) } 
+  }
+  CLOSE_PARENTHESIS
+  (. _parser2013_pushFunctionCall (this, f, fpc, func_id, argument_names); .)
+  .
+  
+
+/*------------------------------------------------------------------------*/
+
+primitive  <_Formula& f, _FormulaParsingContext& fpc>
+= number <f, fpc>
+| DOUBLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
+| SINGLE_QUOTE_STRING (. _parser2013_pushString (this, f, fpc, t->val); .)
+| OPEN_PARENTHESIS expression <f, fpc> CLOSE_PARENTHESIS 
+| IF (_parser2013_TwoOpenBraces (this)) dense_matrix <f, fpc>
+| sparse_matrix <f, fpc>
+| NONE_OBJECT (. _parser2013_pushNone (this, f, fpc); .)
+| IF (_parser2013_IdentFollowedByAnOpenParenthesis(this)) function_call <f, fpc> 
+| ident <f, fpc, false> 
+//| primitive <f, fpc> '[' expression <f,fpc> ']'
+.
+
+
+/*------------------------------------------------------------------------*/
+
+
+indexing_operation <_Formula& f, _FormulaParsingContext& fpc> 
+= primitive <f, fpc> (. int bracket_count = 0; .)
+  [
+  OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET (. bracket_count ++; .)
+  [
+    OPEN_BRACKET expression <f, fpc> CLOSE_BRACKET (. bracket_count ++; .)
+  ]
+  ]
+  (. if (bracket_count > 0) { _parser2013_pushOp (this, f, fpc, HY_OP_CODE_MACCESS, bracket_count+1);} .) 
+.
+
+  
+/*------------------------------------------------------------------------*/
+
+reference_like <_Formula& f, _FormulaParsingContext& fpc>
+= (. long op_code = HY_OP_CODE_NONE; .)
+  (
+  (
+  [ 
+    MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
+  | "^"  (. op_code = HY_OP_CODE_POWER; .)
+  ]
+  indexing_operation <f, fpc>
+  ) 
+  | 
+  (  "&"  (. op_code = HY_OP_CODE_REF; fpc.toggleReference (true);.)
+      ident <f, fpc, false>
+      (. fpc.toggleReference (false); .)
+  ) 
+  )
+  (. if (op_code != HY_OP_CODE_NONE) _parser2013_pushOp (this, f,fpc,op_code,1); .) 
+  .
+  
+/*------------------------------------------------------------------------*/
+
+power_like <_Formula& f, _FormulaParsingContext& fpc>
+= reference_like <f, fpc> (. long op_code; .)
+  {
+  "^"  (. op_code = HY_OP_CODE_POWER; .)
+  reference_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+multiplication_like <_Formula& f, _FormulaParsingContext& fpc>
+= power_like <f, fpc> (. long op_code; .)
+  {
+  (
+  MULTIPLY  (. op_code = HY_OP_CODE_MUL; .)
+  | "/" (. op_code = HY_OP_CODE_DIV; .)
+  | "$" (. op_code = HY_OP_CODE_IDIV; .)
+  | "%" (. op_code = HY_OP_CODE_MOD; .)
+  )
+  power_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+addition_like <_Formula& f, _FormulaParsingContext& fpc>
+= (. long unary_code = HY_OP_CODE_NONE, op_code; .)
+  [ 
+    (
+    "+"  (. unary_code = HY_OP_CODE_ADD; .)
+    | "-" (. unary_code = HY_OP_CODE_SUB; .)
+    )
+  ]
+  multiplication_like <f, fpc> (. 
+    if (unary_code != HY_OP_CODE_NONE) {
+     _parser2013_pushOp (this, f, fpc, unary_code , 1); 
+    } .)
+  {
+  (
+  "+"  (. op_code = HY_OP_CODE_ADD; .)
+  | "-" (. op_code = HY_OP_CODE_SUB; .)
+  )
+  multiplication_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+logical_comp <_Formula& f, _FormulaParsingContext& fpc>
+= addition_like <f, fpc> (. long op_code; .)
+  {
+  (
+  "=="  (. op_code = HY_OP_CODE_EQ; .)
+  | "!=" (. op_code = HY_OP_CODE_NEQ; .)
+  | ">"  (. op_code = HY_OP_CODE_GREATER; .)
+  | "<"  (. op_code = HY_OP_CODE_LESS; .)
+  | ">=" (. op_code = HY_OP_CODE_GEQ; .)
+  | "<=" (. op_code = HY_OP_CODE_LEQ; .)
+  )
+  addition_like <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, op_code , 2); .) 
+  }
+  .
+  
+/*------------------------------------------------------------------------*/
+
+logical_and <_Formula& f, _FormulaParsingContext& fpc>
+= logical_comp <f, fpc>
+  {
+  "&&" logical_comp <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_AND , 2); .) 
+  }
+  .
+
+/*------------------------------------------------------------------------*/
+
+logical_or <_Formula& f, _FormulaParsingContext& fpc>
+= logical_and <f, fpc>
+  {
+  "||" logical_and <f, fpc> 
+  (. _parser2013_pushOp (this, f, fpc, HY_OP_CODE_OR , 2); .) 
+  }
+  .
+/*------------------------------------------------------------------------*/
+
+assignment_op <_Formula& f, _FormulaParsingContext& fpc>
+=
+SYNC logical_or <f, fpc>  
+[   (. _Formula * rhs = new _Formula; long assignment_type = _HY_OPERATION_ASSIGNMENT_VALUE, op_code = HY_OP_CODE_NONE;.)
+(   
+    EQUAL 
+    | PLUS_EQUAL (. op_code = HY_OP_CODE_ADD; .)
+    | MINUS_EQUAL (. op_code = HY_OP_CODE_SUB; .)
+    | TIMES_EQUAL (. op_code = HY_OP_CODE_MUL; .)
+    | DIV_EQUAL (. op_code = HY_OP_CODE_DIV; .)
+    | ASSIGN (. assignment_type = _HY_OPERATION_ASSIGNMENT_EXPRESSION; .)
+    | ASSIGN_LOWER_BOUND (. assignment_type = _HY_OPERATION_ASSIGNMENT_BOUND; op_code = _HY_OPERATION_ASSIGNMENT_BOUND_LOWER; .)
+    | ASSIGN_UPPER_BOUND (. assignment_type = _HY_OPERATION_ASSIGNMENT_BOUND; op_code = _HY_OPERATION_ASSIGNMENT_BOUND_UPPER; .)
+)
+logical_or <*rhs, fpc> 
+(. 
+    _parser2013_handleAssignment (this, f,  *rhs, fpc, assignment_type, op_code, _parser2013_checkLvalue (this, f, fpc));   
+.)
+]
+.
+
+/*------------------------------------------------------------------------*/
+
+expression <_Formula& f, _FormulaParsingContext& fpc>
+=
+SYNC assignment_op <f, fpc>  
+.
+
+
+/*------------------------------------------------------------------------*/
+statement <_ExecutionList &current_code_stream>
+=   (. _Formula * f = new _Formula; _FormulaParsingContext fpc; .)
+    ( 
+    ( // global var_id declaration
+        GLOBAL_VAR_TOKEN ident <*f, fpc, true> SEMICOLON 
+        (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
+    ) 
+    |
+    (   // if () block else block
+        (. long index_if = current_code_stream.countitems(),
+                index_else = -1L; .)
+        IF_TOKEN OPEN_PARENTHESIS
+            expression <*f, fpc> 
+        CLOSE_PARENTHESIS (. _parser2013_pushJumpOntoList (this, current_code_stream, f); .)
+        block <current_code_stream> 
+        [
+            (. index_else = current_code_stream.countitems(); _parser2013_pushJumpOntoList (this, current_code_stream, NULL); .)
+            ELSE_TOKEN 
+            block <current_code_stream> 
+        ]
+        (. 
+            
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_if,
+                                                         index_else >= 0L ? index_else + 1 : current_code_stream.countitems ());
+            if (index_else >= 0L) {
+                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_else,
+                                                              current_code_stream.countitems ());
+            }
+        .)
+        
+    )
+    |
+    ( // for (start;  condition; increment) block
+      (.    
+            long index_for = current_code_stream.countitems();
+            bool has_conditional = false;
+            _Formula * increment = new _Formula;
+      .)
+        FOR_TOKEN OPEN_PARENTHESIS
+            [expression <*f,fpc> 
+                    (. 
+                       _parser2013_pushStatementOntoList (this, current_code_stream, f); 
+                       index_for = current_code_stream.countitems();
+                       f = NULL;
+                    .) 
+            ] 
+            SEMICOLON
+            [       (. if (!f) f = new _Formula; .)
+                    expression <*f,fpc> 
+                    (.  
+                        _parser2013_pushJumpOntoList (this, current_code_stream, f);
+                        has_conditional = true;
+                    .)
+            ] 
+            SEMICOLON
+            [   
+                expression <*increment,fpc> 
+            ] 
+            CLOSE_PARENTHESIS 
+            (. _parser2013_addLoopContext (this); .)
+            block <current_code_stream> 
+            (.
+
+                long increment_command_index = current_code_stream.countitems();
+                _parser2013_pushStatementOntoList (this, current_code_stream, increment);
+                
+                _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
+                _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                              current_code_stream.countitems()-1,
+                                                              index_for);
+                if (has_conditional) {
+                    _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
+                                                                  current_code_stream.countitems ());
+                }
+                _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
+                                                   current_code_stream.countitems ());
+            .)
+    )
+    |
+    ( // while ( statement ) block
+      (.    
+            const long index_for = current_code_stream.countitems();
+      .)
+        WHILE_TOKEN OPEN_PARENTHESIS
+        [expression <*f,fpc> 
+            (. 
+               _parser2013_pushJumpOntoList (this, current_code_stream, f);
+               f = NULL;
+            .) 
+        ] 
+        CLOSE_PARENTHESIS 
+        (. _parser2013_addLoopContext (this); .)
+        block <current_code_stream> 
+        (.
+            if (f) delete (f); // unused formula; avoid memory leak
+            long increment_command_index = current_code_stream.countitems();
+
+            _parser2013_pushJumpOntoList (this, current_code_stream, NULL);
+
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                          current_code_stream.countitems()-1,
+                                                          index_for);
+
+            _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, index_for,
+                                                          current_code_stream.countitems ());
+
+            _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : index_for, 
+                                               current_code_stream.countitems ());
+
+        .)
+    )
+    |
+    ( // do block while ( statement ) ;
+      (.    
+            const long do_begin = current_code_stream.countitems();
+      .)
+
+        DO_TOKEN 
+        (. _parser2013_addLoopContext (this); .)
+        block <current_code_stream> 
+
+        WHILE_TOKEN OPEN_PARENTHESIS
+        [expression <*f,fpc> 
+            (. 
+               // we could avoid the second jump (NULL expr) if we could
+               // NOT(f) or assign the "else" side of the jump
+
+                long increment_command_index = current_code_stream.countitems();
+
+               _parser2013_pushJumpOntoList (this, current_code_stream, f, true);
+ 
+               _parser2013_pushSetJumpCommmandIndices (this, current_code_stream, 
+                                                             current_code_stream.countitems()-1,
+                                                             do_begin);
+
+                _parser2013_popLoopContext (this, current_code_stream, increment_command_index >= 0L ? increment_command_index : do_begin, 
+                                                   current_code_stream.countitems ());
+
+
+                f = NULL;
+              .) 
+        ] 
+        CLOSE_PARENTHESIS 
+        SEMICOLON
+            (. if (f) delete (f); .)
+    )
+    |
+    (
+        CONTINUE SEMICOLON
+        (. _parser2013_handleContinueBreak (this, current_code_stream, true); .)
+    )
+    |
+    (
+        BREAK SEMICOLON
+        (. _parser2013_handleContinueBreak (this, current_code_stream, false); .)
+    )
+    |
+    ( // expression; 
+        expression <*f, fpc> SEMICOLON
+        (. _parser2013_pushStatementOntoList (this, current_code_stream, f); .)
+    )
+    )
+
+.
+
+/*------------------------------------------------------------------------*/
+block <_ExecutionList &current_code_stream>
+= 
+(
+OPEN_BRACE
+{statement <current_code_stream>}
+CLOSE_BRACE
+)
+|
+statement <current_code_stream>
+.
+
+/*------------------------------------------------------------------------*/
+
+hyphy_batch_language 
+= 
+(IF (_parseExpressionsOnly ()) expression <*f, *fpc> SYNC /* a single expression for calculator-style parsing */
+| {block <*hbl_stream>} 
+)
+.
+
+END hyphy_batch_language.

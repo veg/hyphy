@@ -123,9 +123,11 @@ struct  MSTCache {
 
 };
 
+#define _HY2LIKELIHOODFUNCTION(X) (dynamic_cast <_LikelihoodFunction*> (X))
+
 //_______________________________________________________________________________________
 
-class   _LikelihoodFunction: public BaseObj
+class   _LikelihoodFunction: public virtual BaseObj
 {
 
 public:
@@ -149,8 +151,8 @@ public:
 
     virtual void        Duplicate (BaseRef);         // duplicate an object into this one
 
-    _SimpleList&GetIndependentVars (void); // return a list of all indepenent variables
-    _SimpleList&GetDependentVars   (void); // get all dependent vars of this object
+    _SimpleList&GetIndependentVars (long = -1); // return a list of all indepenent variables
+    _SimpleList&GetDependentVars   (long = -1); // get all dependent vars of this object
     _SimpleList&GetCategoryVars    (void); // get all category variables
     void        GetGlobalVars      (_SimpleList&);
 
@@ -304,6 +306,10 @@ public:
     */
 
     _AssociativeList*CollectLFAttributes         (void);
+    _DataSetFilter *GetIthFilter                (const unsigned long) const;
+    _TheTree       *GetIthTree                  (const unsigned long) const;
+    _Matrix        *GetIthEFV                   (const unsigned long) const;
+
 protected:
 
     _Matrix*        PairwiseDistances       (long index);
@@ -367,8 +373,8 @@ protected:
     bool            SingleBuildLeafProbs  (node<long>&, long, _SimpleList&, _SimpleList&, _TheTree*, bool,_DataSetFilter*, _SimpleList* = nil);
     void            CodonNeutralSimulate  (node<long>&, long, bool,_Matrix*,_Matrix*, _Parameter&, _Parameter&);
 
-    bool            HasBlockChanged       (long);
-    long            BlockLength           (long);
+    bool            HasBlockChanged       (const long);
+    long            BlockLength           (const unsigned long) const;
     void            PartitionCatVars      (_SimpleList&, long);
     // 20090210: extract variable indices for category variables in i-th partition
     // and append them to _SimpleList
@@ -400,10 +406,6 @@ protected:
 private:
 
 
-    void            ComputeParameterPenalty     (void);
-    
-    
-    
     bool            SendOffToMPI                (long);
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
@@ -452,7 +454,7 @@ private:
     // allows the calculation of the probability vector while setting a specific interior branch
     // to a given sequence
 
-    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, const _SimpleList*, long);
+    _Parameter          SumUpHiddenMarkov (const _Parameter *, _Matrix&, _Matrix&, _SimpleList *, _SimpleList*, long);
     /*
         SLKP 20090420
 
@@ -468,11 +470,11 @@ private:
         compute the log likelihood of the partition using the forward HMM algorithm with scaling
      */
 
-    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  const _SimpleList* , long );
+    void                    RunViterbi (_Matrix & , const _Parameter * , _Matrix& , _Matrix& , _SimpleList * ,  _SimpleList* , long );
     /* Viterbi decoding for HMM; parameter meanings as in SumUpHiddenMarkov,
        except the first, which will store the optimal path to be returned */
 
-    _Parameter              SumUpSiteLikelihoods        (long, const _Parameter*, const _SimpleList&);
+    _Parameter              SumUpSiteLikelihoods        (long, const _Parameter*, _SimpleList&);
     /*
      SLKP 20090318
 
@@ -504,6 +506,15 @@ private:
     bool            HasPartitionChanged         (long);
     void            SetupParameterMapping       (void);
     void            CleanupParameterMapping     (void);
+    
+    _SimpleList    *categoryTravsersalVariableTypes (const unsigned long i)  {
+                          return _HY2SIMPLELIST ((*_HY2LIST (categoryTraversalTemplate (i)))(4));}
+
+    _SimpleList    *categoryTravsersalCategoryCounts (const unsigned long i)  {
+                          return _HY2SIMPLELIST ((*_HY2LIST (categoryTraversalTemplate (i)))(1));}
+
+    _List          *categoryTravsersalVariableReferences (const unsigned long i)  {
+                          return _HY2LIST ((*_HY2LIST (categoryTraversalTemplate (i)))(0));}
 
     _SimpleList     theTrees,
                     theDataFilters,
@@ -673,26 +684,6 @@ private:
 
 #endif
 };
-
-//_______________________________________________________________________________________
-
-class   _CustomFunction: public _LikelihoodFunction
-{
-
-public:
-
-    _CustomFunction         (_String*);
-
-    virtual     _Parameter  Compute                 (void);
-    virtual     void        RescanAllVariables      (void) {}
-
-
-
-    _Formula myBody;
-};
-
-
-//_______________________________________________________________________________________
 
 extern  bool forceRecomputation,
         isInOptimize;
