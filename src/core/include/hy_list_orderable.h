@@ -52,7 +52,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   
   A resizable list which stores PAYLOAD types
   
-  assumes that PAYLOAD understands the equal (==), assign (=), 
+  assumes that PAYLOAD understands the equal (==, !=), assign (=), 
   and stack copy operations, as well as all ordering operations 
   (<,>,<=,>=)  
 
@@ -66,8 +66,6 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     //does nothing
   _hyListOrderable();
   
-    //_hyList constructor
-  _hyListOrderable(const unsigned long);
   
     // stack copy contructor
   _hyListOrderable(const _hyListOrderable <PAYLOAD>&, const long = 0UL, const long = HY_LIST_INSERT_AT_END);
@@ -77,13 +75,13 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
   
   
   /**
-   * Data constructor list of longs supplied as a variable
-   * @param long the first string to add to the list
-   * @param const unsigned long the number of additional long arguments supplied
-   * to the constructor
-   * @param 2-N: long to be added to the list
-   */
-  _hyListOrderable(const PAYLOAD, const unsigned long, ...);
+   * Data constructor from a static list of PAYLOAD objects
+   * @param const unsigned long the number of PAYLOAD arguments supplied
+   * to the constructor in the second argument
+   * @param const PAYLOAD: the static list of items to pass to the constructor
+  */
+  
+  _hyListOrderable(const unsigned long, const PAYLOAD []);
 
   /**
     * Find the position of an item
@@ -201,6 +199,13 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @return Nothing. Acts on the List object it was called from.
     */
     void Subtract (const _hyListOrderable <PAYLOAD> &, const _hyListOrderable <PAYLOAD> &);
+    
+    
+    /**
+      @return the sortedness of the list (note that empty lists are considered sorted)
+
+    */
+    bool IsSorted (void) const; 
 
     /**
     * Runs the (quadratic) bubble-sort algoritm

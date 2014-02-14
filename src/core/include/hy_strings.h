@@ -197,6 +197,8 @@ public:
   */
   void CopyDynamicString(_String *, bool = true);
 
+
+  
   /**
   * Element location function
   * @see getChar()

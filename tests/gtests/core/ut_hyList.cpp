@@ -41,7 +41,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gtest/gtest.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 //Generate necessary includes from the respective implementation file
 #include "hy_list.h"
@@ -87,8 +86,6 @@ protected:
     // before the destructor).
     
   }
-
-_hyList <DATA> test_list;
 
 public:
   // Per-test-case set-up.
@@ -324,8 +321,6 @@ TYPED_TEST_P (_hyListTest, InPlaceOperations) {
 }
 
 TYPED_TEST_P (_hyListTest, SubsetsAndSelectors) {
-  time_t timer;
-  init_genrand (time(&timer));
   
   TypeParam array [4] = {(TypeParam)1L, (TypeParam)4L, (TypeParam)9L, (TypeParam)16L};
 

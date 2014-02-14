@@ -52,34 +52,17 @@ _hyListOrderable<PAYLOAD>::_hyListOrderable(const PAYLOAD item) : _hyList<PAYLOA
 }
 
 
-  //Length constructor
-template<typename PAYLOAD>
-_hyListOrderable<PAYLOAD>::_hyListOrderable(unsigned long l) : _hyList<PAYLOAD> (l)
-{
-}
-
   //Stack copy contructor
 template<typename PAYLOAD>
-_hyListOrderable<PAYLOAD>::_hyListOrderable(const _hyListOrderable <PAYLOAD> &l, const long from, const long to)
-{
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const _hyListOrderable <PAYLOAD> &l, const long from, const long to) {
+  this->Initialize ();
   this->Clone (&l, from, to);
 }
 
   // Data constructor (variable number of long constants)
 template<typename PAYLOAD>
-_hyListOrderable<PAYLOAD>::_hyListOrderable(const PAYLOAD value1, const unsigned long number, ...)
-{
-  this->Initialize(true);
-  va_list vl;
-  
-  this->append(value1);
-  
-  va_start(vl, number);
-  for (unsigned long arg_id = 0; arg_id < number; arg_id++) {
-    const PAYLOAD this_arg = (PAYLOAD)va_arg(vl, PAYLOAD);
-    this->append(this_arg);
-  }
-  va_end(vl);
+_hyListOrderable<PAYLOAD>::_hyListOrderable(const unsigned long number, const PAYLOAD items[]) : 
+_hyList<PAYLOAD> (number, items) {
 }
 
 /*
@@ -181,9 +164,26 @@ Sorting Functions
 ==============================================================
 */
 
+
+template<typename PAYLOAD>
+bool _hyListOrderable<PAYLOAD>::IsSorted (void) const {
+  
+  for (unsigned long i = 0UL; 1UL + i < this->countitems(); i++) {
+    if (this->Compare (i, i+1) == HY_COMPARE_GREATER) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 template<typename PAYLOAD>
 long _hyListOrderable<PAYLOAD>::Compare(const long i, const long j) const {
-
+  /*
+  if (i < 0 || j < 0 || i > (long)this->lLength || j > (long)this->lLength) {
+    printf ("Comparing out of bounds %ld %ld %ld\n", i, j, this->lLength);
+  }
+  */
   if (this->lData[i] < this->lData[j]) {
     return HY_COMPARE_LESS;
   } else if (this->lData[i] == this->lData[j]) {
@@ -209,8 +209,8 @@ void _hyListOrderable<PAYLOAD>::BubbleSort(_hyListOrderable <long> * index_list)
   bool done = false;
   while (!done) {
     done = true;
-    for (long i = this->lLength - 1, j = i - 1; i > 0; i--, j--) {
-      if (this->Compare(i, j) == HY_COMPARE_LESS) {
+    for (unsigned long i = 0UL, j = i + 1UL; i + 1UL < this->countitems(); i++, j++) {
+      if (this->Compare(i, j) == HY_COMPARE_GREATER) {
         done = false;
         this->Swap (i,j);
         if (index_list) {
@@ -223,36 +223,48 @@ void _hyListOrderable<PAYLOAD>::BubbleSort(_hyListOrderable <long> * index_list)
 
 template<typename PAYLOAD>
 void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsigned long to, _hyListOrderable <long> * index_list) {
+
+  if (from >= to || from >= this->countitems()) {
+    return;
+  } 
+  if (to >= this->countitems() && from < this->countitems()) {
+     this->QuickSort (from, this->countitems() - 1, index_list); 
+     return;
+  }
+
   unsigned long middle = (from + to) >> 1, 
                 top = to,
                 bottommove = 1UL, 
                 topmove = 1UL;
                 
-  long          imiddleV = index_list?index_list->lData[middle]:0L;
-       
-  PAYLOAD middleV = this->lData[middle];
-
-  if (middle)
-    while (middle - bottommove >= from &&
+  long          imiddleV = index_list?index_list->AtIndex(middle):0L;
+         
+  PAYLOAD middleV = this->AtIndex(middle);
+  
+  if (middle) {
+    while (middle >= from + bottommove &&
            this->Compare(middle - bottommove, middle) == HY_COMPARE_GREATER) {
       bottommove++;
     }
+  }
 
-  if (from < to)
+  if (from < to) {
     while (middle + topmove <= to &&
            this->Compare(middle + topmove, middle) == HY_COMPARE_LESS) {
       topmove++;
     }
+  }
+  
   // now shuffle
-  for (unsigned long i = from; i < middle - bottommove; i++) {
-    if (this->Compare(i, middle) > 0L) {
+  for (unsigned long i = from; i + bottommove < middle; i++) {
+    if (this->Compare(i, middle) == HY_COMPARE_GREATER) {
       this->Swap (i, middle-bottommove);
       if (index_list) {
         index_list->Swap (i, middle-bottommove);
       }
       bottommove++;
 
-      while (middle - bottommove >= from &&
+      while (middle >= from + bottommove &&
              Compare(middle - bottommove, middle) == HY_COMPARE_GREATER) {
         bottommove++;
       }
@@ -282,7 +294,7 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
       }
     }
   } else if (topmove > bottommove) {
-    long shift = topmove - bottommove;
+    unsigned long shift = topmove - bottommove;
     for (unsigned long i = 1UL; i < bottommove; i++) {
       this->Swap (middle-i, middle+i+shift);
       if (index_list) {
@@ -292,16 +304,16 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
     for (unsigned long i = 0UL; i < shift; i++) {
       this->lData[middle+i] = this->lData[middle+i+1];
       if (index_list) {
-        index_list->lData[middle+i] = index_list->lData[middle+i+1];
+        (*index_list)[middle+i] = index_list->AtIndex(middle+i+1);
       }
     }
     middle += shift;
     this->lData[middle] = middleV;
     if (index_list) {
-      index_list->lData[middle] = imiddleV;
+      (*index_list)[middle] = imiddleV;
     }
   } else {
-    long shift = bottommove - topmove;
+    unsigned long shift = bottommove - topmove;
     for (unsigned long i = 1UL; i < topmove; i++) {
       this->Swap (middle+i, middle-i-shift);
       if (index_list) {
@@ -311,26 +323,26 @@ void _hyListOrderable<PAYLOAD>::QuickSort(const unsigned long from, const unsign
     for (unsigned long i = 0UL; i < shift; i++) {
       this->lData[middle-i] = this->lData[middle-i-1];
       if (index_list) {
-        index_list->lData[middle-i] = index_list->lData[middle-i-1];
+        (*index_list)[middle-i] = index_list->AtIndex(middle-i-1);
       }
     }
     middle -= shift;
     this->lData[middle] = middleV;
     if (index_list) {
-      index_list->lData[middle] = imiddleV;
+      (*index_list)[middle] = imiddleV;
     }
   }
   if (to > middle + 1) {
     QuickSort(middle + 1, top, index_list);
   }
-  if (from < middle - 1) {
+  if (from + 1 < middle) {
     QuickSort(from, middle - 1,index_list);
   }
 }
 
 template<typename PAYLOAD>
 void _hyListOrderable<PAYLOAD>::Sort(bool ascending, _hyListOrderable <long> * index_list) {
-  if (this->lLength < 10) { 
+  if (this->countitems() < 10UL) { 
     this->BubbleSort(index_list);
   } else {
     this->QuickSort(0, this->lLength - 1, index_list);

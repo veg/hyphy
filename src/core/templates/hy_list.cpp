@@ -542,9 +542,8 @@ void _hyList<PAYLOAD>::Flip()
 {
   if (lLength > 0UL) {
     for (unsigned long k = 0UL, l = lLength - 1UL; k < l; k++, l--) {
-      PAYLOAD pt = lData[k];
-      lData[k] = lData[l];
-      lData[l] = pt;
+      PAYLOAD pt;
+      SWAP (lData[k], lData[l], pt);
     }
   }
 }
