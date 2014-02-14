@@ -170,7 +170,8 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param l2 the second list
     * @return Nothing. Acts on the List object it was called from.
     */
-    void Union(const _hyListOrderable <PAYLOAD> &, const _hyListOrderable <PAYLOAD> &);
+    void Union(const _hyListOrderable <PAYLOAD> *, const _hyListOrderable <PAYLOAD> *);
+    _hyListOrderable <PAYLOAD> operator + (const _hyListOrderable <PAYLOAD> &);
 
     /**
     * Computes the symmetric difference of two SORTED orderable lists, store the result in *this
@@ -179,7 +180,8 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param l2 the second list
     * @return Nothing. Acts on the List object it was called from.
     */
-    void XOR(const _hyListOrderable <PAYLOAD> &, const _hyListOrderable <PAYLOAD> &);
+    void XOR(const _hyListOrderable <PAYLOAD> *, const _hyListOrderable <PAYLOAD> *);
+    _hyListOrderable <PAYLOAD> operator % (const _hyListOrderable <PAYLOAD> &);
 
     /**
     * Computes the intersection of two SORTED orderable lists, store the result in *this
@@ -188,7 +190,8 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param l2 the second list
     * @return Nothing. Acts on the List object it was called from.
     */
-    void Intersect (const _hyListOrderable <PAYLOAD> &, const _hyListOrderable <PAYLOAD> &);
+    void Intersect (const _hyListOrderable <PAYLOAD> *, const _hyListOrderable <PAYLOAD> *);
+    _hyListOrderable <PAYLOAD> operator * (const _hyListOrderable <PAYLOAD> &);
 
 
     /**
@@ -198,7 +201,8 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param l2 the second list
     * @return Nothing. Acts on the List object it was called from.
     */
-    void Subtract (const _hyListOrderable <PAYLOAD> &, const _hyListOrderable <PAYLOAD> &);
+    void Subtract (const _hyListOrderable <PAYLOAD> *, const _hyListOrderable <PAYLOAD> *);
+    _hyListOrderable <PAYLOAD> operator - (const _hyListOrderable <PAYLOAD> &);
     
     
     /**
@@ -239,7 +243,6 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     
     /**
     * Merge two sorted lists into *this
-    * Example:  Sort([5,4,3,2,1]) = [1, 2, 3, 4, 5]
     * If provided to the function, the list passed as the third argument will have its elements ordered the same way
     * as the ordered list being sorted (this is useful to keep track of the sorted order of element indices)
     * @param l1 first list to merge
@@ -247,7 +250,7 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     * @param mergeResults1 if not NULL then store the indices of l1 entries in the merged array
     * @param mergeResults2 if not NULL then store the indices of l2 entries in the merged array
     */
-    void Merge(const _hyListOrderable <PAYLOAD> &l1, const _hyListOrderable <PAYLOAD> &l2, _hyListOrderable <long> *mergeResults1 = nil,
+    void Merge(const _hyListOrderable <PAYLOAD> *l1, const _hyListOrderable <PAYLOAD> *l2, _hyListOrderable <long> *mergeResults1 = nil,
              _hyListOrderable <long> *mergeResults2 = nil);
 
 };

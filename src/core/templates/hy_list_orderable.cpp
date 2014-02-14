@@ -113,19 +113,19 @@ long _hyListOrderable<PAYLOAD>::BinaryInsert(const PAYLOAD item) {
     return 0L;
   }
 
-  long pos = -BinaryFind(item) - 2;
+  long pos = -BinaryFind(item) - 2L;
 
   if (pos < 0L) {
-    return -pos + 2;
+    return -pos - 2L;
   }
 
-  if (CompareToValue (pos,item) == HY_COMPARE_LESS) {
+  if (pos < this->lLength && CompareToValue (pos,item) == HY_COMPARE_LESS) {
     pos++;
   }
 
   this->InsertElement(item, pos);
 
-  return pos >= this->lLength ? this->lLength - 1 : pos;
+  return pos >= this->lLength ? this->lLength - 1UL : pos;
 }
 
 
@@ -379,7 +379,7 @@ void _hyListOrderable<PAYLOAD>::DeleteDuplicates(void) {
       }
     }
 
-    if (noDups.lLength != this->lLength) {
+    if (noDups.lLength < this->lLength) {
       Duplicate(&noDups);
     }
   }
@@ -387,7 +387,7 @@ void _hyListOrderable<PAYLOAD>::DeleteDuplicates(void) {
 
 template<typename PAYLOAD>
 long _hyListOrderable<PAYLOAD>::CountCommonElements(const _hyListOrderable &l1, bool at_least_one) const {
-  long c1 = 0L, c2 = 0L, res = 0L;
+  unsigned long c1 = 0UL, c2 = 0UL, res = 0L;
 
   while (c1 < l1.lLength && c2 < this->lLength) {
     while (l1.CompareToValue (c1,this->lData[c2]) == HY_COMPARE_LESS) {
@@ -400,7 +400,7 @@ long _hyListOrderable<PAYLOAD>::CountCommonElements(const _hyListOrderable &l1, 
       break;
     }
     
-    while (l1.EqualToValue (c1, this->lData[c2])) {
+    while (l1.CompareToValue (c1, this->lData[c2]) == HY_COMPARE_EQUAL) {
       c2++;
       if (at_least_one) {
         return 1;
@@ -439,117 +439,146 @@ void _hyListOrderable<PAYLOAD>::FilterRange(const PAYLOAD lb, const PAYLOAD ub) 
 }
 
 template<typename PAYLOAD>
-void _hyListOrderable<PAYLOAD>::Union(const _hyListOrderable <PAYLOAD> & l1,const _hyListOrderable <PAYLOAD> & l2) {
+_hyListOrderable<PAYLOAD> _hyListOrderable<PAYLOAD>::operator + (const _hyListOrderable <PAYLOAD> & l1) {
+  _hyListOrderable result;
+  result.Union (this, &l1);
+  return result;
+}
+
+template<typename PAYLOAD>
+void _hyListOrderable<PAYLOAD>::Union(const _hyListOrderable <PAYLOAD> * l1,const _hyListOrderable <PAYLOAD> * l2) {
   this->Clear();
 
-  long c1 = 0, c2 = 0;
+  unsigned long nt1 = l1->countitems(),
+                nt2 = l2->countitems(),
+                c1 = 0UL,
+                c2 = 0UL;
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (l1.lData[c1] < l2.lData[c2]) {
-      (*this) << l1.lData[c1++];
-      if (c1 == l1.lLength) {
+  while (c1 < nt1 && c2 < nt2) {
+    while (l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_LESS) {
+      (*this) << l1->AtIndex(c1++);
+      if (c1 == nt1) {
         break;
       }
     }
 
-    if (c1 == l1.lLength) {
+    if (c1 == nt1) {
       break;
     }
 
-    while (l1.lData[c1] == l2.lData[c2]) {
-      (*this) << l1.lData[c1++];
+    while (l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_EQUAL) {
+      (*this) << l1->AtIndex(c1++);
       c2++;
-      if (c1 == l1.lLength || c2 == l2.lLength) {
+      if (c1 == nt1 || c2 == nt2) {
         break;
       }
     }
 
-    if (c1 == l1.lLength || c2 == l2.lLength) {
+    if (c1 == nt1 || c2 == nt2) {
       break;
     }
 
-    while (l2.lData[c2] < l1.lData[c1]) {
-      (*this) << l2.lData[c2++];
-      if (c2 == l2.lLength) {
+    while (l2->CompareToValue (c2, l1->AtIndex(c1)) == HY_COMPARE_LESS) {
+      (*this) << l2->AtIndex(c2++);
+      if (c2 == nt2) {
         break;
       }
     }
   }
 
-  while (c1 < l1.lLength) {
-    (*this) << l1.lData[c1++];
+  while (c1 < nt1) {
+    (*this) << l1->AtIndex(c1++);
   }
-  while (c2 < l2.lLength) {
-    (*this) << l2.lData[c2++];
+  while (c2 < nt2) {
+    (*this) << l2->AtIndex(c2++);
   }
 
 }
 
 template<typename PAYLOAD>
-void _hyListOrderable<PAYLOAD>::XOR(const _hyListOrderable <PAYLOAD> & l1,const _hyListOrderable <PAYLOAD> & l2) {
+_hyListOrderable<PAYLOAD> _hyListOrderable<PAYLOAD>::operator % (const _hyListOrderable <PAYLOAD> & l1) {
+  _hyListOrderable result;
+  result.XOR (this, &l1);
+  return result;
+}
+
+template<typename PAYLOAD>
+void _hyListOrderable<PAYLOAD>::XOR(const _hyListOrderable <PAYLOAD> * l1,const _hyListOrderable <PAYLOAD> * l2) {
   this->Clear();
 
-  long c1 = 0, c2 = 0;
+  unsigned long nt1 = l1->countitems(),
+                nt2 = l2->countitems(),
+                c1 = 0UL, 
+                c2 = 0UL;
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (c1 < l1.lLength && l1.lData[c1] < l2.lData[c2]) {
-      (*this) << l1.lData[c1++];
+  while (c1 < nt1 && c2 < nt2) {
+    while (c1 < nt1 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_LESS) {
+      (*this) << l1->AtIndex(c1++);
     }
-    if (c1 == l1.lLength) {
+    if (c1 == nt1) {
       break;
     }
-    while (c1 < l1.lLength && c2 < l2.lLength && l1.lData[c1] == l2.lData[c2]) {
+    while (c1 < nt1 && c2 < nt2 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_EQUAL) {
       c1++;
       c2++;
     }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
+    if (c1 == nt1 || c2 == nt2) {
       break;
     }
 
-    while (c2 < l2.lLength && l2.lData[c2] < l1.lData[c1]) {
-      (*this) << l2.lData[c2++];
+    while (c2 < nt2 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_GREATER) {
+      (*this) << l2->AtIndex(c2++);
     }
   }
 
-  while (c1 < l1.lLength) {
-    (*this) << l1.lData[c1++];
+  while (c1 < nt1) {
+    (*this) << l1->AtIndex(c1++);
   }
-  while (c2 < l2.lLength) {
-    (*this) << l2.lData[c2++];
+  while (c2 < nt2) {
+    (*this) << l2->AtIndex(c2++);
   }
 }
 
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD> _hyListOrderable<PAYLOAD>::operator * (const _hyListOrderable <PAYLOAD> & l1) {
+  _hyListOrderable result;
+  result.Intersect (this, &l1);
+  return result;
+}
 
 template<typename PAYLOAD>
-void _hyListOrderable<PAYLOAD>::Intersect(const _hyListOrderable <PAYLOAD> & l1,const _hyListOrderable <PAYLOAD> & l2) {
+void _hyListOrderable<PAYLOAD>::Intersect(const _hyListOrderable <PAYLOAD>* l1,const _hyListOrderable <PAYLOAD>* l2) {
   this->Clear();
 
-  long c1 = 0, c2 = 0;
+  unsigned long nt1 = l1->countitems(),
+                nt2 = l2->countitems(),
+                c1 = 0UL, 
+                c2 = 0UL;
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (l1.lData[c1] < l2.lData[c2]) {
+  while (c1 < nt1 && c2 < nt2) {
+    while (l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_LESS) {
       c1++;
-      if (c1 == l1.lLength) {
+      if (c1 == nt1) {
         break;
       }
     }
-    if (c1 == l1.lLength) {
+    if (c1 == nt1) {
       break;
     }
 
-    while (l1.lData[c1] == l2.lData[c2]) {
-      (*this) << l1.lData[c1++];
+    while (l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_EQUAL) {
+      (*this) << l1->AtIndex(c1++);
       c2++;
-      if (c1 == l1.lLength || c2 == l2.lLength) {
+      if (c1 == nt1 || c2 == nt2) {
         break;
       }
     }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
+    if (c1 == nt1 || c2 == nt2) {
       break;
     }
-    while (l2.lData[c2] < l1.lData[c1]) {
+    while (l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_GREATER) {
       c2++;
-      if (c2 == l2.lLength) {
+      if (c2 == nt2) {
         break;
       }
     }
@@ -557,38 +586,49 @@ void _hyListOrderable<PAYLOAD>::Intersect(const _hyListOrderable <PAYLOAD> & l1,
 }
 
 template<typename PAYLOAD>
-void _hyListOrderable<PAYLOAD>::Subtract(const _hyListOrderable <PAYLOAD> & l1,const _hyListOrderable <PAYLOAD> & l2) {
+_hyListOrderable<PAYLOAD> _hyListOrderable<PAYLOAD>::operator - (const _hyListOrderable <PAYLOAD> & l1) {
+  _hyListOrderable result;
+  result.Subtract (this, &l1);
+  return result;
+}
+
+template<typename PAYLOAD>
+void _hyListOrderable<PAYLOAD>::Subtract(const _hyListOrderable <PAYLOAD> * l1,const _hyListOrderable <PAYLOAD> * l2) {
   this->Clear();
 
-  long c1 = 0, c2 = 0;
+  unsigned long nt1 = l1->countitems(),
+                nt2 = l2->countitems(),
+                c1 = 0UL, 
+                c2 = 0UL;
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (c1 < l1.lLength && l1.lData[c1] < l2.lData[c2]) {
-      (*this) << l1.lData[c1++];
+  while (c1 < nt1 && c2 < nt2) {
+    while (c1 < nt1 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_LESS) {
+      (*this) << l1->AtIndex(c1++);
     }
-    if (c1 == l1.lLength) {
+    if (c1 == nt1) {
       break;
     }
-    while (c1 < l1.lLength && c2 < l2.lLength && l1.lData[c1] == l2.lData[c2]) {
+    
+    while (c1 < nt1 && c2 < nt2 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_EQUAL) {
       c1++;
       c2++;
     }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
+    if (c1 == nt1 || c2 == nt2) {
       break;
     }
-    while (c2 < l2.lLength && l2.lData[c2] < l1.lData[c1]) {
+    while (c2 < nt2 && l1->CompareToValue (c1, l2->AtIndex (c2)) == HY_COMPARE_GREATER) {
       c2++;
     }
   }
 
-  while (c1 < l1.lLength) {
-    (*this) << l1.lData[c1++];
+  while (c1 < nt1) {
+    (*this) << l1->AtIndex(c1++);
   }
 }
 
 
 template<typename PAYLOAD>
-void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> &l1, const _hyListOrderable <PAYLOAD> &l2, 
+void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, const _hyListOrderable <PAYLOAD> *l2, 
   _hyListOrderable <long> *mergeResults1, _hyListOrderable <long> *mergeResults2)
 {
   this->Clear();
@@ -602,156 +642,190 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> &l1, cons
   enum    machine_states {INIT, ADVANCE1, ADVANCE2, FLUSH1, FLUSH2} advancing = INIT;
 
   unsigned long    pos1 = 0,
-  pos2 = 0,
-  nt1 = l1.lLength,
-  nt2 = l2.lLength;
+                   pos2 = 0,
+                   nt1 = l1->countitems(),
+                   nt2 = l2->countitems();
+                   
+  
   
   
   bool   doMerge1 = false,
-  doMerge2 = false;
+         doMerge2 = false,
+         keep_going = true;
   
-  while (1) { // stuff left to do
-    if (advancing == ADVANCE1) { // advancing in the 1st list
-      pos1++;
-      if (pos1==nt1) {
-        advancing = FLUSH2;
-        continue;
-      }
-
-      if (l1->lData[pos1] <= l2->lData[pos2]) {
-        if (mergeResults1 && doMerge1) {
-          (*mergeResults1)<<this->lLength;
-        }
-        
-        this->append (l1->lData[pos1]);
-          
-        if (mergeResults2 && l1->lData[pos1] < l2->lData[pos2]) {
-          if (!doMerge2) {
-            if (pos1>=pos2) {
-              doMerge2 = true;
-              for (unsigned long i=0UL; i<pos2; i++) {
-                mergeResults2->append (i);
-              }
-            }
-          }
+  while (keep_going) { // stuff left to do
+    //printf ("STATE %u, pos1 %lu/%lu, pos2 %lu/%lu / %lu\n", advancing, pos1, (unsigned long)l1->AtIndex(pos1), pos2, (unsigned long)l2->AtIndex(pos2), this->countitems());
+    /*if (pos1 >= nt1 || pos2 >= nt2) {
+      WarnError ("FUBAR!");
+    }*/
+    
+    switch (advancing) {
+    
+      case ADVANCE1: { // advancing in the 1st list
+        pos1++;
+        if (pos1==nt1) {
+          advancing = FLUSH2;
           continue;
         }
-      }
-      
-      if (l1->lData[pos1] > l2->lData[pos2]) {
-        advancing = ADVANCE1;
-        if (mergeResults1 && !doMerge1) {
-          for (unsigned long i=0UL; i<pos1; i++) {
-            mergeResults1->append (i);
+
+        long cmp = l1->CompareToValue (pos1,l2->AtIndex(pos2));
+        //if (l1lData[pos1] <= l2->lData[pos2]) {
+        if ( cmp != HY_COMPARE_GREATER) {
+          if (mergeResults1 && doMerge1) {
+            (*mergeResults1)<<this->lLength;
           }
-          doMerge1 = true;
+          
+          this->append (l1->AtIndex(pos1));
+            
+  //        if (mergeResults2 && l1->lData[pos1] < l2->lData[pos2]) {
+          if (cmp == HY_COMPARE_LESS) {
+            if (mergeResults2 && !doMerge2 && pos1 >= pos2) {
+              doMerge2 = true;
+              for (unsigned long i=0UL; i<pos2; i++) {
+                  mergeResults2->append (i);
+              }
+            }
+            continue;
+          }
         }
         
-        if (mergeResults2 && doMerge2) {
-          (*mergeResults2)<<this->lLength;
-        }
-        
-        this->append (l2->lData[pos2]);
-        continue;
-      }
-      
-    } else if (advancing == ADVANCE2) { // advancing in the 2nd list
-      pos2++;
-      if (pos2==nt2) {
-        advancing = FLUSH1;
-        continue;
-      }
-
-      if (l2->lData[pos2] <= l1->lData[pos1]) {
-        if (mergeResults2 && doMerge2) {
-          (*mergeResults2)<<this->lLength;
-        }
-        this->append (l2->lData[pos2]);
-
-        if (l2->lData[pos2] < l1->lData[pos1]) {
+        if (cmp == HY_COMPARE_GREATER) {
+        //if (l1->lData[pos1] > l2->lData[pos2]) {
+          advancing = ADVANCE2;
           if (mergeResults1 && !doMerge1) {
-            if (pos2>=pos1) {
+            for (unsigned long i=0UL; i<pos1; i++) {
+              mergeResults1->append (i);
+            }
+            doMerge1 = true;
+          }
+          
+          if (mergeResults2 && doMerge2) {
+            (*mergeResults2)<<this->lLength;
+          }
+          
+          //printf ("this->append (l2->AtIndex(pos2))\n");
+          this->append (l2->AtIndex(pos2));
+          continue;
+        }
+        break;
+      } 
+      
+      case ADVANCE2: { // advancing in the 2nd list
+        pos2++;
+        if (pos2==nt2) {
+          advancing = FLUSH1;
+          continue;
+        }
+          
+        long cmp = l2->CompareToValue (pos2,l1->AtIndex(pos1));
+
+        //if (l2->lData[pos2] <= l1->lData[pos1]) {
+        if (cmp != HY_COMPARE_GREATER) {
+           if (mergeResults2 && doMerge2) {
+            (*mergeResults2)<<this->lLength;
+          }
+          
+          this->append (l2->AtIndex(pos2));
+
+          //if (l2->lData[pos2] < l1->lData[pos1] && mergeResults1 && !doMerge1 && pos2>=pos1) {
+          if (cmp == HY_COMPARE_LESS ) {
+           if(mergeResults1 && !doMerge1 && pos2>=pos1) {
               doMerge1 = true;
               for (unsigned long i=0UL; i<pos1; i++) {
                 (*mergeResults1)<<i;
               }
             }
+            continue;
           }
+        }
+        
+        //if (l2->lData[pos2] > l1->lData[pos1]) {
+        if (cmp == HY_COMPARE_GREATER) { 
+          advancing = ADVANCE1;
+          if (mergeResults2 && !doMerge2) {
+            for (unsigned long i=0UL; i<pos2; i++) {
+              (*mergeResults2)<<i;
+            }
+            doMerge2 = true;
+          }
+          if (mergeResults1 && doMerge1) {
+            (*mergeResults1)<<this->lLength;
+          }
+          this->append (l1->AtIndex(pos1));
           continue;
         }
-      }
-      
-      if (l2->lData[pos2] > l1->lData[pos1]) {
-        advancing = ADVANCE1;
-        if (mergeResults2 && !doMerge2) {
-          for (unsigned long i=0UL; i<pos2; i++) {
+        break;
+      } 
+      case FLUSH2: { // flush out the 2nd list
+        if (mergeResults1 && !doMerge1&& pos2<nt2 ) {
+          for (unsigned long i=0UL; i<nt1; i++) {
+            (*mergeResults1)<<i;
+          }
+        }
+        if (mergeResults2 && doMerge2)
+          while (pos2<nt2) {
+            (*mergeResults2)<<this->lLength;
+            this->append (l2->AtIndex(pos2++));
+          }
+        else
+          while (pos2<nt2) {
+            this->append (l2->AtIndex(pos2++));
+          }
+        keep_going = false;
+        break;
+      } 
+      case FLUSH1: { // flush out the 1st list
+        if (mergeResults2 && !doMerge2 && pos1<nt1) {
+          for (unsigned long i=0UL; i<nt2; i++) {
             (*mergeResults2)<<i;
           }
-          doMerge2 = true;
         }
-        if (mergeResults1 && doMerge1) {
-          (*mergeResults1)<<this->lLength;
-        }
-        this->append (l1->lData[pos1]);
-        continue;
-      }
-    } else if (advancing == FLUSH2) { // flush out the 2nd list
-      if (mergeResults1 && !doMerge1&& pos2<nt2 ) {
-        for (unsigned long i=0UL; i<nt1; i++) {
-          (*mergeResults1)<<i;
-        }
-      }
-      if (mergeResults2 && doMerge2)
-        while (pos2<nt2) {
-          (*mergeResults2)<<this->lLength;
-          this->append (l2->lData[pos2++]);
-        }
-      else
-        while (pos2<nt2) {
-          this->append (l2->lData[pos2++]);
-        }
-      break;
-    } else if (advancing == FLUSH1) { // flush out the 1st list
-      if (mergeResults2 && !doMerge2 && pos1<nt1) {
-        for (unsigned long i=0UL; i<nt2; i++) {
-          (*mergeResults2)<<i;
-        }
-      }
-      if (mergeResults1 && doMerge1)
-        while (pos1<nt1) {
-          (*mergeResults1)<<this->lLength;
-          this->append (l1->lData[pos1++]);
-        }
-      else
-        while (pos1<nt1) {
-          this->append (l1->lData[pos1++]);
-        }
-      break;
-    } else if (advancing == INIT) { // just starting
-      if (!nt1) { // first list is empty!
-        advancing = FLUSH2;
-        continue;
-      }
-      if (!nt2) { // second list is empty!
-        advancing = FLUSH1;
-        continue;
-      }
-      
-      if (l1->lData[pos1] <= l2->lData[pos2]) { // begin with the first list
-        this->append (l1->lData[pos1]);
-        advancing = ADVANCE1;
-        if (mergeResults2 && l1->lData[pos1] != l2->lData[pos2]) {
-          doMerge2 = true;
+        if (mergeResults1 && doMerge1)
+          while (pos1<nt1) {
+            (*mergeResults1)<<this->lLength;
+            this->append (l1->AtIndex(pos1++));
+          }
+        else
+          while (pos1<nt1) {
+            this->append (l1->AtIndex(pos1++));
+          }
+        keep_going = false;
+        break;
+      } 
+      case INIT: { // just starting
+        if (!nt1) { // first list is empty!
+          advancing = FLUSH2;
           continue;
         }
-      } else {
-        this->append (l1->lData[pos1]);
-        advancing = ADVANCE2;
-        doMerge1 = true;
-        continue;
+        if (!nt2) { // second list is empty!
+          advancing = FLUSH1;
+          continue;
+        }
+        
+        //if (l1->lData[pos1] <= l2->lData[pos2]) { // begin with the first list
+        
+        long cmp = l1->CompareToValue (pos1, l2->AtIndex(pos2));
+        
+        if (cmp != HY_COMPARE_GREATER) { // begin with the first list
+          this->append (l1->AtIndex(pos1));
+          advancing = ADVANCE1;
+          if (cmp != HY_COMPARE_EQUAL) {
+            if (mergeResults2) {
+              doMerge2 = true;
+            }
+            continue;
+          }
+        } else {
+          this->append (l2->AtIndex(pos1));
+          advancing = ADVANCE2;
+          if (mergeResults1) {
+            doMerge1 = true;
+          }
+          continue;
+        }
+        break;
       }
-      
-    }
+    } // end SWITCH
     
     if (advancing == ADVANCE1) { // moving up in the second term
       pos1++;
@@ -778,7 +852,7 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> &l1, cons
         advancing = FLUSH1;
         continue;
       } else {
-        advancing = ADVANCE2;
+        advancing = ADVANCE1;
         if (mergeResults1 && doMerge1) {
           (*mergeResults1)<<this->lLength-1UL;
         }
