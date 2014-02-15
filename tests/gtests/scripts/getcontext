@@ -1,3 +1,0 @@
-GetContext  ./core/_hyExecutionContext.cpp  /^_VariableContainer* _hyExecutionContext::GetContext (void) {$/;"  f class:_hyExecutionContext
-GetErrorBuffer  ./core/_hyExecutionContext.cpp  /^_String * _hyExecutionContext::GetErrorBuffer (void) {$/;"  f class:_hyExecutionContext
-ReportError ./core/_hyExecutionContext.cpp  /^void _hyExecutionContext::ReportError (_String errText) {$/;" f class:_hyExecutionContext
