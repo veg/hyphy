@@ -258,10 +258,11 @@ TYPED_TEST_P (_hyListOrderableTest, InsertionAndSearchTests) {
    _hyListOrderable <TypeParam> sorted        (6UL, array_sorted);
    TypeParam ONE  = 1L,
              FIVE = 5L,
-             FOUR = 4L;
+             FOUR = 4L,
+             NEGATIVE_ONE = -1L;
    
-   EXPECT_EQ (4L, sorted.BinaryFind (FIVE)) << "BinaryFind failed to correctly find 5 in the default list";
-   EXPECT_EQ (0L, sorted.BinaryFind (ONE)) << "BinaryFind failed to correctly find 1 in the default list";
+   EXPECT_EQ (4L, sorted.BinaryFind (FIVE))  << "BinaryFind failed to correctly find 5 in the default list";
+   EXPECT_EQ (0L, sorted.BinaryFind (ONE))   << "BinaryFind failed to correctly find 1 in the default list";
    EXPECT_EQ (-6L, sorted.BinaryFind (FOUR)) << "BinaryFind incorrectly found 4 in the default list";
    
     for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
@@ -275,11 +276,13 @@ TYPED_TEST_P (_hyListOrderableTest, InsertionAndSearchTests) {
           << this->dump_to_stream_as_longs (random_list).getStr();
       }
     }
-   
-   
-   
+
+    EXPECT_EQ (4L, sorted.BinaryInsert (FOUR)) << "BinaryInsert failed to correctly insert 4 in the correct position";
+    EXPECT_EQ (0L, sorted.BinaryInsert (NEGATIVE_ONE)) << "BinaryInsert failed to correctly insert -1 in the correct position";
+    //TODO: Is there a reason why we are returning the length of string when it is a duplicate?
+    EXPECT_EQ (9L, sorted.BinaryInsert (FOUR)) << "BinaryInsert failed to correctly insert 4 in the correct position";
+
    /*for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
-    
     unsigned long size = genrand_int32() % 512;
     _hyListOrderable <TypeParam> random_list (this->make_random_list (size, 100));
     random_list.Sort();
@@ -287,10 +290,17 @@ TYPED_TEST_P (_hyListOrderableTest, InsertionAndSearchTests) {
   }*/
 }
 
+TYPED_TEST_P (_hyListOrderableTest, SummaryTests) {
+   TypeParam array_sorted [6] = {(TypeParam)1, (TypeParam)2, (TypeParam)2, (TypeParam)3, (TypeParam)5, (TypeParam)10};
+   _hyListOrderable <TypeParam> sorted (6UL, array_sorted);
+   EXPECT_EQ ((TypeParam)10, sorted.Max()) << "Maximum value should be 10";
+}
 
-REGISTER_TYPED_TEST_CASE_P (_hyListOrderableTest, ConstuctorTests, SortingTests, InsertionAndSearchTests);
+REGISTER_TYPED_TEST_CASE_P (_hyListOrderableTest, ConstuctorTests, SortingTests, InsertionAndSearchTests, SummaryTests);
 
 typedef ::testing::Types<char, long, double, _testOrderablePayload> _hyListOrderableTestTypes;
 //typedef ::testing::Types<long> _hyListOrderableTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListOrderableTest, _hyListOrderableTestTypes);
 }
+
+

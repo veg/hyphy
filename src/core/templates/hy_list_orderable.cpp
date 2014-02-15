@@ -108,6 +108,7 @@ long _hyListOrderable<PAYLOAD>::BinaryFind(const PAYLOAD item, const long startA
 
 template<typename PAYLOAD>
 long _hyListOrderable<PAYLOAD>::BinaryInsert(const PAYLOAD item) {
+
   if (this->lLength == 0UL) {
     this->append (item);
     return 0L;
@@ -124,7 +125,6 @@ long _hyListOrderable<PAYLOAD>::BinaryInsert(const PAYLOAD item) {
   }
 
   this->InsertElement(item, pos);
-
   return pos >= this->lLength ? this->lLength - 1 : pos;
 }
 
@@ -136,7 +136,7 @@ Summary Functions
 */
 
 template<typename PAYLOAD>
-PAYLOAD _hyListOrderable<PAYLOAD>::Max(void) const{
+PAYLOAD _hyListOrderable<PAYLOAD>::Max(void) const {
   PAYLOAD res = this->lData[0];
   for (unsigned long e = 1UL; e < this->lLength; e++)
     if (CompareToValue (e, res) == HY_COMPARE_GREATER) {
@@ -146,7 +146,7 @@ PAYLOAD _hyListOrderable<PAYLOAD>::Max(void) const{
 }
 
 template<typename PAYLOAD>
-PAYLOAD _hyListOrderable<PAYLOAD>::Min(void) const{
+PAYLOAD _hyListOrderable<PAYLOAD>::Min(void) const {
   PAYLOAD res = this->lData[0];
   for (unsigned long e = 1UL; e < this->lLength; e++)
     if (CompareToValue (e, res) == HY_COMPARE_LESS) {
