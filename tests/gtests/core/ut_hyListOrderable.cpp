@@ -95,10 +95,10 @@ protected:
     
   }
   
-  _hyListOrderable <DATA> make_random_list (const unsigned long size, const unsigned long range) {
+  _hyListOrderable <DATA> make_random_list (const unsigned long size, const unsigned long range, const unsigned long offset = 0UL) {
     _hyListOrderable <DATA> random_list;
     for (unsigned long item = 0UL; item < size; item ++) {
-      random_list.append ((DATA) (genrand_int32() % range));
+      random_list.append ((DATA) (offset + genrand_int32() % range));
     }
     return random_list;
   }
@@ -252,55 +252,110 @@ TYPED_TEST_P (_hyListOrderableTest, SortingTests) {
 }
 
 TYPED_TEST_P (_hyListOrderableTest, InsertionAndSearchTests) {
-   TypeParam array_sorted [6] = {(TypeParam)1, (TypeParam)2, (TypeParam)2, (TypeParam)3, (TypeParam)5, (TypeParam)10};
-             
-             
-   _hyListOrderable <TypeParam> sorted        (6UL, array_sorted);
-   TypeParam ONE  = 1L,
-             FIVE = 5L,
-             FOUR = 4L,
-             NEGATIVE_ONE = -1L;
-   
-   EXPECT_EQ (4L, sorted.BinaryFind (FIVE))  << "BinaryFind failed to correctly find 5 in the default list";
-   EXPECT_EQ (0L, sorted.BinaryFind (ONE))   << "BinaryFind failed to correctly find 1 in the default list";
-   EXPECT_EQ (-6L, sorted.BinaryFind (FOUR)) << "BinaryFind incorrectly found 4 in the default list";
-   
-    for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
-      _hyListOrderable <TypeParam> random_list (this->make_random_list (genrand_int32() % 512, 100));
-      random_list.Sort();
-      ASSERT_EQ(true,random_list.IsSorted()) << "Failed to sort a randomly generated list";
-      if (random_list.countitems() > 0UL) {
-        unsigned long item = genrand_int32() % random_list.countitems();
-        ASSERT_EQ (random_list.AtIndex(item), random_list.AtIndex(random_list.BinaryFind (random_list.AtIndex (item))))
-          << "An existing item in a random sorted list was not found by BinaryFind\n" 
-          << this->dump_to_stream_as_longs (random_list).getStr();
-      }
-    }
-
-    EXPECT_EQ (4L, sorted.BinaryInsert (FOUR)) << "BinaryInsert failed to correctly insert 4 in the correct position";
-    EXPECT_EQ (0L, sorted.BinaryInsert (NEGATIVE_ONE)) << "BinaryInsert failed to correctly insert -1 in the correct position";
-    //TODO: Is there a reason why we are returning the length of string when it is a duplicate?
-    EXPECT_EQ (9L, sorted.BinaryInsert (FOUR)) << "BinaryInsert failed to correctly insert 4 in the correct position";
-
-   /*for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
-    unsigned long size = genrand_int32() % 512;
-    _hyListOrderable <TypeParam> random_list (this->make_random_list (size, 100));
+  TypeParam array_sorted [6] = {(TypeParam)1, (TypeParam)2, (TypeParam)2, (TypeParam)3, (TypeParam)5, (TypeParam)10};
+  
+  
+  _hyListOrderable <TypeParam> sorted        (6UL, array_sorted),
+                               insertionTest (sorted);
+  
+  TypeParam ONE  = 1L,
+  FIVE = 5L,
+  FOUR = 4L,
+  ONE27 = 127L;
+  
+  /**** BINARY FIND ****/
+  
+  EXPECT_EQ (4L, sorted.BinaryFind (FIVE)) << "BinaryFind failed to correctly find 5 in the default list";
+  EXPECT_EQ (0L, sorted.BinaryFind (ONE)) << "BinaryFind failed to correctly find 1 in the default list";
+  EXPECT_EQ (-6L, sorted.BinaryFind (FOUR)) << "BinaryFind incorrectly found 4 in the default list";
+  
+  for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
+    _hyListOrderable <TypeParam> random_list (this->make_random_list (genrand_int32() % 512, 100));
     random_list.Sort();
+    ASSERT_EQ(true,random_list.IsSorted()) << "Failed to sort a randomly generated list";
+    if (random_list.countitems() > 0UL) {
+      unsigned long item = genrand_int32() % random_list.countitems();
+      ASSERT_EQ (random_list.AtIndex(item), random_list.AtIndex(random_list.BinaryFind (random_list.AtIndex (item))))
+      << "An existing item in a random sorted list was not found by BinaryFind\n" 
+      << this->dump_to_stream_as_longs (random_list).getStr();
+    }
+  }
+
+  /**** BINARY INSERT ****/
+  
+  EXPECT_EQ (4L, sorted.BinaryInsert (FIVE)) << "BinaryInsert did not return the correct index for 5 in the default list";
+  EXPECT_EQ (6UL, sorted.countitems ())      << "BinaryInsert inserted an already exsiting element into the default list";
+
+  for (unsigned long iterations = 0UL; iterations < 1024UL; iterations ++) {
+    _hyListOrderable <TypeParam> random_list (this->make_random_list (genrand_int32() % 64, 120,5));
+    random_list.Sort();
+    ASSERT_EQ(true,random_list.IsSorted()) << "Failed to sort a randomly generated list"  
+        << this->dump_to_stream_as_longs (random_list).getStr();
     
-  }*/
+    unsigned long previous_length = random_list.countitems();
+    ASSERT_EQ (0L, random_list.BinaryInsert (ONE)) << "Element 0 was not inserted at the start of a random list";
+    ASSERT_EQ (previous_length+1, random_list.BinaryInsert (ONE27)) << "Element 127 was not inserted at the end of a random list";
+    ASSERT_EQ (previous_length+2, random_list.countitems()) << "The insertion of 0 and 127 did not increase the length of a random list by 2";
+    ASSERT_EQ(true,random_list.IsSorted()) << "Binary Insert did not preserve the sortedness of a list"  
+        << this->dump_to_stream_as_longs (random_list).getStr();
+  }
+  
 }
 
-TYPED_TEST_P (_hyListOrderableTest, SummaryTests) {
-   TypeParam array_sorted [6] = {(TypeParam)1, (TypeParam)2, (TypeParam)2, (TypeParam)3, (TypeParam)5, (TypeParam)10};
-   _hyListOrderable <TypeParam> sorted (6UL, array_sorted);
-   EXPECT_EQ ((TypeParam)10, sorted.Max()) << "Maximum value should be 10";
+TYPED_TEST_P (_hyListOrderableTest, MinMaxTest) {
+   TypeParam array [6] = {(TypeParam)10, (TypeParam)2, (TypeParam)3, (TypeParam)2, (TypeParam)5, (TypeParam)1},
+             array_sorted [6] = {(TypeParam)1, (TypeParam)2, (TypeParam)2, (TypeParam)3, (TypeParam)5, (TypeParam)10};
+                          
+   _hyListOrderable <TypeParam> unsorted      (6UL, array),
+                                sorted        (6UL, array_sorted);
+  
+    
+   EXPECT_EQ (unsorted.AtIndex (5), unsorted.Min ()) << "Min failed on an unsorted list";
+   EXPECT_EQ (sorted.AtIndex (0), sorted.Min ()) << "Min failed on a sorted list";
+   EXPECT_EQ (unsorted.AtIndex (0), unsorted.Max ()) << "Max failed on an unsorted list";
+   EXPECT_EQ (sorted.AtIndex (5), sorted.Max ()) << "Max failed on a sorted list";
+   
 }
 
-REGISTER_TYPED_TEST_CASE_P (_hyListOrderableTest, ConstuctorTests, SortingTests, InsertionAndSearchTests, SummaryTests);
+TYPED_TEST_P (_hyListOrderableTest, SetOperationTests) {
+  _hyListOrderable <TypeParam> evens,
+                               odds, 
+                               all,
+                               empty,
+                               holder;
+                               
+  for (unsigned long value = 0UL; value < 5UL; value++) {
+    all.append ((TypeParam) value);
+    if (value % 2) {
+      odds.append ((TypeParam) value);
+    } else {
+      evens.append ((TypeParam) value);
+    }
+  }
+  
+  EXPECT_EQ (all, odds + evens)   << "UNION operation failed (odds + evens)";
+  EXPECT_EQ (all, evens + odds)   << "UNION operation failed (evens + odds)";
+  EXPECT_EQ (empty, odds * evens) << "INTERSECTION operation failed (odds * evens)";
+  EXPECT_EQ (odds, odds - evens) << "DIFFERENCE operation failed (odds - evens)";
+  EXPECT_EQ (evens, evens- odds)  << "DIFFERENCE operation failed (evens - odds)";
+  EXPECT_EQ (all, odds % evens)   << "XOR operation failed (odds + evens)";
+  EXPECT_EQ (0L, odds.CountCommonElements (evens)) << "CountCommonElements failed (odds, evens)";
+  EXPECT_EQ (evens.countitems(), all.CountCommonElements (evens)) << "CountCommonElements failed (all, evens)";
+  EXPECT_EQ (odds.countitems(), odds.CountCommonElements (all)) << "CountCommonElements failed (odds, all)";
+  
+  holder.Merge (&evens, &odds);
+  EXPECT_EQ (all, holder) << "MERGE failed with (evens, odds)" 
+            << this->dump_to_stream_as_longs (holder).getStr();
+  holder.Merge (&odds, &evens);
+  EXPECT_EQ (all, holder) << "MERGE failed with (odds, evens)" 
+            << this->dump_to_stream_as_longs (holder).getStr();
+  
+}
+
+
+REGISTER_TYPED_TEST_CASE_P (_hyListOrderableTest, ConstuctorTests, SortingTests, InsertionAndSearchTests, MinMaxTest, SetOperationTests);
 
 typedef ::testing::Types<char, long, double, _testOrderablePayload> _hyListOrderableTestTypes;
 //typedef ::testing::Types<long> _hyListOrderableTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListOrderableTest, _hyListOrderableTestTypes);
 }
-
-
