@@ -127,7 +127,8 @@ class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
       /**
       * SLKP: 20090508
       * Implements a counting sort procedure, ASSUMING that all
-      * list values are in [0, upperBound-1]; if the 1st argument is _HY_LIST_NUMERIC_INVALID_VALUE_, it is
+      * list values are in [0, upperBound-1]; if the 1st argument is 
+      * _HY_LIST_NUMERIC_INVALID_VALUE_, it is
       * automatically determined. This only really makes sense for integer types
       * @return a pointer to the sorted list
       * if the second argument is not nil, then
