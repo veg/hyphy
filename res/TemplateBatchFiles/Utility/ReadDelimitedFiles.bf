@@ -3,10 +3,10 @@
 function ReadCSVTable (fileName, haveHeader)
 {
 	if (Abs(fileName) == 0) {
-		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Lines", inData);
 	}
 	else {
-		fscanf (fileName, "Lines", inData);		
+		fscanf (fileName, REWIND, "Lines", inData);		
 	}
 	if (haveHeader) {
 		output = {};
@@ -53,10 +53,10 @@ function ReadCSVTable (fileName, haveHeader)
 lfunction ReadCSVTableText (fileName, haveHeader)
 {
 	if (Abs(fileName) == 0) {
-		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Lines", inData);
 	}
 	else {
-		fscanf (fileName, "Lines", inData);		
+		fscanf (fileName, REWIND, "Lines", inData);		
 	}
 	if (haveHeader) {
 		output = {};
@@ -116,11 +116,11 @@ function ReadMatchRegExp (fileName, regExp)
 {
 	if (Abs(fileName) == 0)
 	{
-		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Lines", inData);
 	}
 	else
 	{
-		fscanf (fileName, "Lines", inData);		
+		fscanf (fileName, REWIND, "Lines", inData);		
 	}
 	
 	linesRead = Columns(inData);
@@ -153,11 +153,11 @@ function ReadSplitOnRegExpCallback (fileName, regExp,func)
 {
 	if (Abs(fileName) == 0)
 	{
-		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Lines", inData);
 	}
 	else
 	{
-		fscanf (fileName, "Lines", inData);		
+		fscanf (fileName, REWIND, "Lines", inData);		
 	}
 	
 	linesRead = Columns(inData);
@@ -195,11 +195,11 @@ function ReadTabTable (fileName, haveHeader)
 {
 	if (Abs(fileName) == 0)
 	{
-		fscanf (PROMPT_FOR_FILE, "Lines", inData);
+		fscanf (PROMPT_FOR_FILE, REWIND, "Lines", inData);
 	}
 	else
 	{
-		fscanf (fileName, "Lines", inData);		
+		fscanf (fileName, REWIND, "Lines", inData);		
 	}
 	if (haveHeader)
 	{
