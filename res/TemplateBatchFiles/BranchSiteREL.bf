@@ -51,7 +51,7 @@ bNames						 = BranchName (givenTree, -1);
 
 selectedBranches = {};
 
-LF_SMOOTHING_SCALER    = 0.001;
+//LF_SMOOTHING_SCALER    = 0.01;
 
 if (doSynRateVariation == 0) {
     selectTheseForTesting = {totalBranchCount + 2, 2};
