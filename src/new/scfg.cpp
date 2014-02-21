@@ -107,12 +107,12 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
             // check Terminal rules for consistency
             // traverse the T_Rules AVL, which is assumed to be indexed by 0..termRules-1
         {
-            _AssociativeList * aRule = (_AssociativeList*)T_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
+            _AssociativeList * aRule = _HY2ASSOCIATIVE_LIST(T_Rules->GetByKey (tc, ASSOCIATIVE_LIST));
             if (aRule) {
                 _FString    * literal       = (_FString*)aRule->GetByKey (_HYSCFG_TERM_KEY_T,STRING),
                               * expression  = (_FString*)aRule->GetByKey (_HYSCFG_KEY_P, STRING);
-
-                _Constant   * lhs           = (_Constant*)aRule->GetByKey (_HYSCFG_KEY_L, NUMBER);
+              
+                _Constant   * lhs           = _HY2CONSTANT (aRule->GetByKey (_HYSCFG_KEY_L, NUMBER));
 
                 if (literal && lhs && literal->theString->sLength) {
                     long index = tempTerminals.Insert (literal->theString);
@@ -241,13 +241,13 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                 // check Non-terminal rules for consistency
                 // traverse the NT_Rules AVL, which is assumed to be indexed by 0..nonTermRules-1
             {
-                _AssociativeList * aRule = (_AssociativeList*)NT_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
+                _AssociativeList * aRule = _HY2ASSOCIATIVE_LIST(NT_Rules->GetByKey (tc, ASSOCIATIVE_LIST));
                 if (aRule) {
                     _FString    * expression    = (_FString*)aRule->GetByKey     (_HYSCFG_KEY_P, STRING);
 
-                    _Constant   * lhs           = (_Constant*)aRule->GetByKey    (_HYSCFG_KEY_L, NUMBER),
-                                  * rhs1            = (_Constant*)aRule->GetByKey    (_HYSCFG_NT_KEY_1, NUMBER),
-                                    * rhs2           = (_Constant*)aRule->GetByKey    (_HYSCFG_NT_KEY_2, NUMBER);
+                    _Constant   * lhs           = _HY2CONSTANT(aRule->GetByKey    (_HYSCFG_KEY_L, NUMBER)),
+                                  * rhs1            = _HY2CONSTANT(aRule->GetByKey    (_HYSCFG_NT_KEY_1, NUMBER)),
+                                    * rhs2           = _HY2CONSTANT(aRule->GetByKey    (_HYSCFG_NT_KEY_2, NUMBER));
 
                     if (lhs && rhs1 && rhs2) {
                         ProcessAFormula (expression, ruleProbabilities, parsedFormulas, errorMessage);
@@ -299,25 +299,24 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
             bool         continueLoops = true;
 
             // prepopulate the list of rules stratified by the LHS non-terminal by empty lists
-            for (long ntC = 0; ntC < foundNT.lLength; ntC ++) {
-                _SimpleList emptyList;
-                byNT3 && & emptyList;
-                byNT2 && & emptyList;
+            for (unsigned long ntC = 0; ntC < foundNT.lLength; ntC ++) {
+                byNT3.AppendNewInstance(new _SimpleList);
+                byNT2.AppendNewInstance(new _SimpleList);
 
-                byRightNT1 && & emptyList;  // addition by AFYP, 2006-06-20
-                byRightNT2 && & emptyList;
+                byRightNT1.AppendNewInstance(new _SimpleList);  // addition by AFYP, 2006-06-20
+                byRightNT2.AppendNewInstance(new _SimpleList);
             }
 
-            for (long ruleIdx = 0; ruleIdx < rules.lLength; ruleIdx ++) {
-                _SimpleList *aList = (_SimpleList*)rules(ruleIdx);      // retrieve two- or three-integer list
+            for (unsigned long ruleIdx = 0; ruleIdx < rules.lLength; ruleIdx ++) {
+                _SimpleList *aList = _HY2SIMPLELIST (rules(ruleIdx));      // retrieve two- or three-integer list
                 if (aList->lLength == 3) { // NT->NT NT
-                    *((_SimpleList*)byNT3 (aList->lData[0])) << ruleIdx;
+                    *(_HY2SIMPLELIST(byNT3.GetItem(aList->lData[0]))) << ruleIdx;
                     /* addition by AFYP, 2006-06-20 */
-                    *((_SimpleList*)byRightNT1 (aList->lData[1])) << ruleIdx;
-                    *((_SimpleList*)byRightNT2 (aList->lData[2])) << ruleIdx;
+                    *(_HY2SIMPLELIST(byRightNT1.GetItem(aList->lData[1]))) << ruleIdx;
+                    *(_HY2SIMPLELIST(byRightNT2.GetItem(aList->lData[2]))) << ruleIdx;
                     /* ---------- end add --------- */
                 } else {
-                    *((_SimpleList*)byNT2 (aList->lData[0])) << ruleIdx;
+                    *(_HY2SIMPLELIST(byNT2.GetItem(aList->lData[0]))) << ruleIdx;
                     ntToTerminalMap.lData [indexNT_T (aList->lData[0],aList->lData[1])] = ruleIdx;
                 }
 
@@ -326,7 +325,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
             while (continueLoops) { // set status flags for all NT symbols based on production rules
                 continueLoops = false;
                 for (long ruleIdx = 0; ruleIdx < rules.lLength; ruleIdx ++) {
-                    _SimpleList *aList = (_SimpleList*)rules(ruleIdx);
+                    _SimpleList *aList = _HY2SIMPLELIST (rules(ruleIdx));
                     if (aList->lLength == 3) { // NT->NT NT
                         continueLoops = continueLoops || CheckANT (aList->lData[0],aList->lData[1],aList->lData[2], tempNT, startSymbol);
                     }
@@ -615,7 +614,7 @@ void    Scfg::ScanAllVariables  (void)
 
 _String*    Scfg::VerifyValues  (void)
 {
-    _Matrix * probValues = (_Matrix*)probabilities.Compute(); // initialize all the probability values
+    _Matrix * probValues = _HY2MATRIX(probabilities.Compute()); // initialize all the probability values
     for (long k=0; k<rules.lLength; k++) { // check that all probabilities are in [0,1]
         _Parameter  aValue = (*probValues)(k,0);
         /*
@@ -636,19 +635,17 @@ _String*    Scfg::VerifyValues  (void)
 
     // now check that for each non-terminal, the sum of all probabilities is 1
     {
-        for (long k=0; k<byNT2.lLength; k++) {
+        for (unsigned long k=0; k<byNT2.lLength; k++) {
             _Parameter    p_sum = 0.0;
-            _SimpleList * l2 = (_SimpleList*)byNT2(k),
-                          * l3 = (_SimpleList*)byNT3(k);
+            _SimpleList * l2 = _HY2SIMPLELIST(byNT2(k)),
+                          * l3 = _HY2SIMPLELIST(byNT3(k));
 
-            for (long r = 0; r < l2->lLength ; r++) {
+            for (unsigned long r = 0; r < l2->lLength ; r++) {
                 p_sum += (*probValues)(l2->lData[r],0);
             }
 
-            {
-                for (long r = 0; r < l3->lLength ; r++) {
-                    p_sum += (*probValues)(l3->lData[r],0);
-                }
+            for (unsigned long r = 0; r < l3->lLength ; r++) {
+                p_sum += (*probValues)(l3->lData[r],0);
             }
 
             if (!CheckEqual (p_sum, 1.0)) { // check within reasonable system precision
@@ -724,8 +721,8 @@ void    Scfg::SetStringCorpus  (_String* varID)
         theString = FetchObjectFromVariableByType (varID, STRING);
     }
 
-    if (theMatrix && ((_Matrix*)theMatrix)->IsAStringMatrix ()) {
-        SetStringCorpus ((_Matrix*)theMatrix);
+    if (theMatrix && _HY2MATRIX(theMatrix)->IsAStringMatrix ()) {
+        SetStringCorpus (_HY2MATRIX(theMatrix));
         return;
     } else if (theString) {
         _List t;
@@ -859,7 +856,7 @@ _String *   Scfg::GetRuleString (long ruleIdx)
     }
 
     _String * result = new _String (64L, true);
-    _SimpleList * aRule = (_SimpleList*) rules (ruleIdx);
+    _SimpleList * aRule = _HY2SIMPLELIST(rules.GetItem(ruleIdx));
     _String     * temp  = (_String*)probabilities.GetFormula (ruleIdx,0)->toStr();
 
     (*result) << "{";
@@ -877,8 +874,7 @@ _String *   Scfg::GetRuleString (long ruleIdx)
         (*result) << "} : ";
     }
 
-    (*result) << temp;
-    DeleteObject (temp);
+    result->AppendNewInstance(temp);
     result->Finalize ();
     return result;
 }
@@ -935,7 +931,7 @@ _Parameter      Scfg::Compute (void)
     for (long stringID = 0; stringID < corpusChar.lLength; stringID++) {
         // assuming that production probabilities have changed since last Compute(),
         // retain 0 and 1's but clear buffer of stored 0<Pr<1 values.
-        _Matrix * cachedProbs = (_Matrix*)(storedInsideP(stringID));
+        _Matrix * cachedProbs = _HY2MATRIX(storedInsideP(stringID));
         for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) { // reset 0,1 values to -1
             cachedProbs->Store (cid,0,-1.);
         }
@@ -1114,34 +1110,21 @@ void        Scfg::InitComputeStructures (void)
 {
     long maxStringLength = 0;
     for (long stringCount = 0; stringCount < corpusChar.lLength; stringCount++) {
-        _SimpleList             emptyList;
-        _GrowingVector  *aMatrix;
-        _AVLListX               *searchTree;
-
+ 
         long                    maxDimension = ((_String*)corpusChar(stringCount))->sLength;
         maxStringLength         = MAX (maxStringLength, maxDimension);
 
         // unused variable? -AFYP 2006-07-07
         maxDimension = (maxDimension*(maxDimension+1)/2*byNT2.lLength/32+1)*32;
 
-        insideProbsT  && & emptyList;
-        outsideProbsT && & emptyList;
+        insideProbsT.AppendNewInstance(new _SimpleList);
+        outsideProbsT.AppendNewInstance(new _SimpleList);
 
-        checkPointer (searchTree = new _AVLListX ((_SimpleList*)insideProbsT(stringCount)));
-        insideProbs << searchTree;
-        DeleteObject (searchTree);
+        insideProbs.AppendNewInstance(new _AVLListX (_HY2SIMPLELIST (insideProbsT(stringCount))));
+        outsideProbs.AppendNewInstance(new _AVLListX (_HY2SIMPLELIST(outsideProbsT(stringCount))));
 
-        checkPointer (searchTree = new _AVLListX ((_SimpleList*)outsideProbsT(stringCount)));
-        outsideProbs << searchTree;
-        DeleteObject (searchTree);
-
-        checkPointer (aMatrix = new _GrowingVector);
-        storedInsideP << aMatrix;
-        DeleteObject (aMatrix);
-
-        checkPointer (aMatrix = new _GrowingVector);
-        storedOutsideP << aMatrix;
-        DeleteObject (aMatrix);
+        storedInsideP.AppendNewInstance(new _GrowingVector);
+        storedOutsideP.AppendNewInstance(new _GrowingVector);
 
     }
     maxStringLength = (maxStringLength * (maxStringLength+1) * byNT2.lLength / 64)+1;
@@ -1233,7 +1216,7 @@ _Parameter   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
 
     /* look up the triple in the cache and decide if it's already been done */
 
-    _AVLListX *             theAVL = (_AVLListX*)insideProbs(stringIndex);
+    _AVLListX *             theAVL = _HY2AVLLISTX(insideProbs(stringIndex));
     // see if this is already done
     long    stringL         = ((_String**)corpusChar.lData)[stringIndex]->sLength,
             tripletIndex   = scfgIndexIntoAnArray(from,to,ntIndex,stringL),
@@ -1352,11 +1335,11 @@ _Parameter   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long 
         if (avlIndex < 0) {
             long    mxID = -1;
             if (insideProbValue < 1.0) {
-                mxID = ((_GrowingVector*)(storedInsideP(stringIndex)))->Store (insideProbValue);
+                mxID = _HY2GROWINGVECTOR(storedInsideP(stringIndex))->Store (insideProbValue);
             }
             theAVL->Insert ((BaseRef)tripletIndex, mxID);
         } else { // update values
-            ((_GrowingVector*)(storedInsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,insideProbValue);
+            _HY2GROWINGVECTOR(storedInsideP(stringIndex))->_Matrix::Store (matrixIndex,0,insideProbValue);
         }
     }
 
@@ -1397,8 +1380,8 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList)
 
     for (long k=0; k<corpusChar.lLength; k++) {
         long       strL    = ((_String*)corpusChar(k))->sLength,
-                   pNot0   = ((_AVLListX*)insideProbs(k))->dataList->lLength,
-                   p01     = ((_GrowingVector*)storedInsideP(k))->GetUsed();
+                   pNot0   = _HY2AVLLISTX(insideProbs(k))->dataList->lLength,
+                   p01     = _HY2GROWINGVECTOR(storedInsideP(k))->GetUsed();
 
         _Parameter totalPR = strL*(strL+1.)*0.5*byNT2.lLength;
         stats->Store (k,0,totalPR); // total number of tuples (i,j,v)
@@ -1406,8 +1389,7 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList)
         stats->Store (k,2,p01);     // number of tuples with probability in interval (0,1)
     }
     theList->MStore (_addSCFGInfoStats, stats, false);
-    stats = (_Matrix*)probabilities.Compute();
-    theList->MStore (_addSCFGInfoProbabilities, stats, true);
+    theList->MStore (_addSCFGInfoProbabilities, probabilities.Compute(), true);
 }
 
 
@@ -1473,7 +1455,7 @@ _Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
     */
 
     /* look up (s,t,i) in cache and decide if it has already been computed */
-    _AVLListX *     theAVL          = (_AVLListX*)outsideProbs(stringIndex);
+    _AVLListX *     theAVL          = _HY2AVLLISTX(outsideProbs(stringIndex));
 
     long            tripletIndex    = scfgIndexIntoAnArray(from,to,ntIndex,stringL),    // convert (s,t,i)
                     avlIndex     = theAVL->FindLong (tripletIndex),              // retrieve key
@@ -1579,11 +1561,11 @@ _Parameter   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long
         if (avlIndex < 0) { // triplet (s,t,i) not in search tree
             long    mxID = -1;
             if (outsideProbValue < 1.0) {
-                mxID = ((_GrowingVector*)(storedOutsideP(stringIndex)))->Store (outsideProbValue);
+                mxID = _HY2GROWINGVECTOR(storedOutsideP(stringIndex))->Store (outsideProbValue);
             }
             theAVL->Insert((BaseRef)tripletIndex, mxID);    // if Pr = 1.0, stores -1
         } else {    // update values
-            ((_GrowingVector*)(storedOutsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,outsideProbValue);
+            _HY2GROWINGVECTOR(storedOutsideP(stringIndex))->_Matrix::Store (matrixIndex,0,outsideProbValue);
         }
     }
 
@@ -1884,13 +1866,13 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
 
             // clear stored inside and outside probabilities -- need to re-estimate and re-fill AVLs
-            _Matrix * cachedProbs   = (_Matrix*)(storedInsideP(stringID));
+            _Matrix * cachedProbs   = _HY2MATRIX(storedInsideP(stringID));
             {
                 for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) {
                     cachedProbs->Store(cid,0,-1.);
                 }
             }
-            cachedProbs = (_Matrix*)(storedOutsideP(stringID));
+            cachedProbs = _HY2MATRIX(storedOutsideP(stringID));
             {
                 for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) {
                     cachedProbs->Store(cid,0,-1.);
@@ -2032,7 +2014,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
                     sum         = 0.;
 
     long            ruleIndex   = 0;
-    _SimpleList*    aList       = (_SimpleList*)byNT2(ntIndex),
+    _SimpleList*    aList       = _HY2SIMPLELIST(byNT2(ntIndex)),
                     *  aRule;
 
     // loop through terminal rules (X->x) and sum probabilities
@@ -2041,19 +2023,19 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
     }
 
     if (sum >= randomValue) {
-        aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
+        aRule = _HY2SIMPLELIST(rules(aList->lData[ruleIndex-1]));
         (*storageString) << aRule->lData[1];
         return nil;
     }
 
     ruleIndex = 0;
-    aList       = (_SimpleList*)byNT3(ntIndex);
+    aList       = _HY2SIMPLELIST(byNT3(ntIndex));
     for (; ruleIndex<aList->lLength && sum < randomValue ; ruleIndex++) {
         sum += LookUpRuleProbability (aList->lData[ruleIndex]);
     }
 
     if (sum >= randomValue) {
-        aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
+        aRule = _HY2SIMPLELIST(rules(aList->lData[ruleIndex-1]));
         SpawnRandomString (aRule->lData[1],storageString);
         SpawnRandomString (aRule->lData[2],storageString);
     } else {

@@ -30,6 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include "batchlan.h"
 #include "calcnode.h"
+#include "executionlist.h"
 #include <unistd.h>
 #if !defined __MINGW32__
 
@@ -47,7 +48,6 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 
 #ifdef  __UNITTEST__
 #include "gtest/gtest.h"
-#include "ut_strings.h"
 #endif
 
 #if defined   __MP2__ || defined __MP__
@@ -70,6 +70,15 @@ HANDLE _HY_MEGA_Pipe = INVALID_HANDLE_VALUE;
 #ifdef _OPENMP
 #include "omp.h"
 #endif
+
+
+#ifdef __NEW_GRAMMAR__
+#include "Parser.h"
+#include "Scanner.h"
+#include <sys/timeb.h>
+#include <wchar.h>
+#endif
+
 
 _List   availableTemplateFiles,
         availablePostProcessors,
@@ -257,7 +266,7 @@ long    DisplayListOfChoices (void)
     _List       categoryHeadings;
 
     for (choice = 0; choice< availableTemplateFiles.lLength; choice++) {
-        thisLine = (_String*)(*(_List*)availableTemplateFiles(choice))(2);
+        thisLine = (_String*)_HY2LIST(availableTemplateFiles(choice))->GetItem(2);
         if (thisLine->sData[0]=='!') {
             categoryDelimiters<<choice;
             fileAbbr = *thisLine;
@@ -270,8 +279,8 @@ long    DisplayListOfChoices (void)
     if (categoryDelimiters.lLength==0) {
         while (choice == -1) {
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                printf ("\n\t(%s):%s",((_String*)(*(_List*)availableTemplateFiles(choice))(0))->getStr(),
-                        ((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
+                printf ("\n\t(%s):%s",((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(0)))->getStr(),
+                        ((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(1)))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the file you want to use (or press ENTER to process custom batch file):");
             fgets (buffer,2048,stdin);
@@ -282,7 +291,7 @@ long    DisplayListOfChoices (void)
             }
             fileAbbr.UpCase();
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                if (fileAbbr.Equal((_String*)(*(_List*)availableTemplateFiles(choice))(0))) {
+                if (fileAbbr.Equal((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(0)))) {
                     break;
                 }
             }
@@ -340,7 +349,7 @@ long    DisplayListOfChoices (void)
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
-                    printf ("\n\t(%ld) %s",choice-start+1,((_String*)(*(_List*)availableTemplateFiles(choice))(1))->getStr());
+                    printf ("\n\t(%ld) %s",choice-start+1,((_String*)(_HY2LIST(availableTemplateFiles(choice))->GetItem(1)))->getStr());
                 }
 
                 printf ("\n\n Please select the file you want to use (or press ENTER to return to the list of analysis types):");
@@ -377,7 +386,7 @@ long    DisplayListOfPostChoices (void)
         while (choice == -1) {
             for (choice = 0; choice<availablePostProcessors.lLength; choice++) {
                 printf ("\n\t(%ld):%s",choice+1,
-                        ((_String*)(*(_List*)availablePostProcessors(choice))(0))->getStr());
+                        ((_String*)(_HY2LIST(availablePostProcessors(choice))->GetItem(0)))->getStr());
             }
             printf ("\n\n Please type in the abbreviation for the tool you want to use (or press q to exit):");
             fileAbbr = *StringFromConsole();
@@ -639,7 +648,27 @@ int main (int argc, char* argv[])
     }
 
     GlobalStartup();
-
+#ifdef __NEW_GRAMMAR__
+    if (argc == 2) {
+		wchar_t *fileName = coco_string_create(argv[1]);
+		Scanner *scanner = new Scanner(fileName);
+    _ExecutionList tester;
+		Parser  *parser = new Parser(scanner, NULL, NULL, &tester);
+		parser->Parse();
+		coco_string_delete(fileName);
+    delete scanner;
+    if (_parser2013_errorFree (parser)) {
+      printf ("Created the following ExecutionList\n\n%s\n\n",
+              _String ((_String*) tester.toStr()).sData);
+              
+      tester.Execute();
+    }
+    delete parser;
+    GlobalShutdown();
+    return 0;
+	}
+    
+#endif
     if (calculatorMode) {
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
@@ -706,7 +735,7 @@ int main (int argc, char* argv[])
                 }
 
                 if (selection >= 0) {
-                    templ= templ&*(_String*)(*(_List*)availableTemplateFiles(selection))(2);
+                    templ= templ&*(_String*)_HY2LIST(availableTemplateFiles(selection))->GetItem(2);
                 }
 
                 PushFilePath (templ);
@@ -741,7 +770,7 @@ int main (int argc, char* argv[])
                 long choice = DisplayListOfPostChoices();
                 while (choice != -1) {
                     _ExecutionList postEx;
-                    argFile = *(_String*)(*(_List*)availablePostProcessors(choice-1))(1);
+                    argFile = *(_String*)_HY2LIST(availablePostProcessors(choice-1))->GetItem(1);
                     PushFilePath (argFile);
                     ReadBatchFile (argFile, postEx);
                     postEx.Execute();

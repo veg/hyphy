@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -44,30 +44,29 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 #include "avllist.h"
 
-#define  MEMORYSTEP 8
+
 
 //_____________________________________________________________________________
 
-class _AVLListXL: public _AVLList
-{
+class _AVLListXL : public virtual _AVLList {
 
 public:
 
-    _AVLListXL(_SimpleList*);
-    BaseRef GetXtra(long);
+  _AVLListXL(_SimpleList *);
+  BaseRef GetXtra(long);
 
-    void SetXtra(long,BaseRef,bool);
+  void SetXtra(long, BaseRef, bool);
 
-    virtual ~_AVLListXL(void){}
-    virtual BaseRef toStr(void);
-    virtual BaseRef GetDataByKey (BaseRef);
+  virtual ~_AVLListXL(void) {}
+  virtual BaseRef toStr(void);
+  virtual BaseRef GetDataByKey(BaseRef);
 
-    virtual long InsertData(BaseRef, long,bool);
-    virtual void Clear(bool = false);
-    virtual void DeleteXtra(long);
-    virtual long UpdateValue (BaseRef, BaseRef, bool = false, bool = true);
+  virtual long InsertData(BaseRef, long, bool);
+  virtual void Clear(bool = false);
+  virtual void DeleteXtra(long);
+  virtual long UpdateValue(BaseRef, BaseRef, bool = false, bool = true);
 
-    _List xtraD;
+  _List xtraD;
 
 };
 

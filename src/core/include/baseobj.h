@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -41,22 +41,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _HBASEOBJ_
 //#pragma once
 
+typedef char *Ptr;
+typedef double _Parameter;
 
-typedef char* Ptr;
+#include "defines.h"
 
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TRUE
-#define TRUE  1
-#endif
-
-#ifndef nil
-#define nil   NULL
-#endif
-
-#ifdef      __HEADLESS__
+#ifdef __HEADLESS__
 #include "THyPhy.h"
 #endif
 
@@ -68,96 +58,44 @@ typedef char* Ptr;
 
 #include "stdio.h"
 
-class BaseObj
-{
+class BaseObj {
 
-    //base object class
+  //base object class
+private:
+  long nInstances;
+
 public:
 
-    BaseObj();
+  BaseObj();
 
-    virtual ~BaseObj(void) {}
+  virtual ~BaseObj(void) {}
 
-    virtual BaseObj* toStr (void);
+  virtual BaseObj *toStr (void) const;
 
-    virtual BaseObj* toErrStr (void);
+  virtual BaseObj *toErrStr (void) const;
 
-    virtual void     toFileStr (FILE*);
+  virtual void toFileStr (FILE *) const;
 
-    /*virtual operator const char*(void);*/
+  virtual BaseObj *makeDynamic(void) const = 0;
 
-    virtual BaseObj* makeDynamic (void);
+  virtual void Initialize(bool = false) { nInstances = 1L; }
 
-    virtual long     FreeUpMemory (long) {
-        return 0;
-    }
+  virtual void Duplicate(BaseObj const * ref) = 0;
 
-    virtual void     Initialize (void) {
-        nInstances=1;
-    }
+  inline void AddAReference(void) { nInstances++; }
 
-    virtual void     Duplicate (BaseObj* ref) {
-        nInstances=++ref->nInstances;
-    }
-
-    virtual void     AddAReference (void)     {
-        nInstances ++;
-    }
-
-    virtual void     RemoveAReference (void)     {
-        nInstances --;
-    }
-
-    long             nInstances;
-
+  inline void RemoveAReference(void) { nInstances--; }
+  
+  inline bool CanFreeMe (void)  const { return nInstances <= 1; }
+  
+  inline bool SingleReference (void)  const { return nInstances == 1; }
+    // comparison functions
+  
 
 };
 
-typedef BaseObj*  BaseRef;
-
-extern  void      DeleteObject (BaseRef); // delete a dynamic object
-
-
-#ifdef  __HYPHYDMALLOC__
-#define MemAllocate(X)      malloc(X)
-#define MemReallocate(X,Y)  realloc(X,Y)
-#else
-char*   MemAllocate (long);
-char*   MemReallocate (Ptr, long);
-#endif
-
-bool    GlobalStartup();
-bool    GlobalShutdown();
-
-
-extern  FILE*   globalErrorFile;
-extern  FILE*   globalMessageFile;
-extern  bool    terminateExecution,
-        skipWarningMessages;
-
-extern long     systemCPUCount;
-
-void          PurgeAll                  (bool   all = true);
-void          init_genrand              (unsigned long);
-unsigned long genrand_int32             (void);
-double        genrand_real2             (void);
-FILE*         doFileOpen                (const char *, const char *, bool = false);
-// 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
-double        TimerDifferenceFunction   (bool);
-
-#define       RAND_MAX_32               4294967295.0
-#define       USE_AVL_NAMES
-#define       HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
-
-#define     PRINTF_FORMAT_STRING    "%.16g"
-typedef     double       _Parameter; // standard number type - used everywhere in matrices.
-
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ || defined __HYPHYQT__
-void    yieldCPUTime        (void);
-bool    handleGUI           (bool = false);
-#endif
-
+typedef BaseObj *BaseRef;
+typedef BaseObj const * BaseRefConst;
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
 #include <pmmintrin.h>

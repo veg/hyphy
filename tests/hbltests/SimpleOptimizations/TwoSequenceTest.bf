@@ -12,6 +12,8 @@ modelLL    = {1,4};
 
 runTimer = Time(1);
 
+OPTIMIZATION_PRECISION = 0.001;
+
 fprintf (stdout, "\nRunning a series of model fits on two HIV-1 RT sequences\n");
 
 inputOptions = {};

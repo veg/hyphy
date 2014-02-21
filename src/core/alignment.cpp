@@ -1,10 +1,48 @@
+/*
+
+HyPhy - Hypothesis Testing Using Phylogenies.
+
+Copyright (C) 1997-now
+Core Developers:
+  Sergei L Kosakovsky Pond (spond@ucsd.edu)
+  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Steven Weaver (sweaver@ucsd.edu)
+  
+Module Developers:
+	Lance Hepler (nlhepler@gmail.com)
+	Martin Smith (martin.audacis@gmail.com)
+
+Significant contributions from:
+  Spencer V Muse (muse@stat.ncsu.edu)
+  Simon DW Frost (sdf22@cam.ac.uk)
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
 
 #include <cctype>
 #include <cstring>
 
 #include "alignment.h"
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 // match or skip whole codons
 #define HY_111_111 0
@@ -48,51 +86,36 @@
 #define HY_01011_11111 21
 #define HY_00111_11111 22
 
+// the local align move (i.e. take a direct shortcut to any internal position in
+// the alignment matrix)
 
-// the local align move (i.e. take a direct shortcut to any internal position in the alignment matrix)
 #define HY_LOCAL_ALIGN_SHORTCUT 23
-
 #define HY_3X5_START   13
 #define HY_3X5_COUNT   10
-
 #define HY_ALIGNMENT_TYPES_COUNT 24
 
-//____________________________________________________________________________________
+//r is CODON position in the reference,
+//q is NUC position in the query,
+//curr is a pointer to the current position in the scoring matrix,
+//prev is a pointer to the previous CODON in the scoring matrix
+//NOTE: moving by score_cols in the scoring matrix changes the CODON
+//      position in the scoring matrix, as we're only interested in CODON
+//      alignments to the reference
+//rpos is the position of r in the reference
+//do_local is true if we wish to perform a local alignment 
 
-long CodonAlignStringsStep( double * const score_matrix
-                          , long * const reference
-                          , long * const query
-                          , const long r
-                          , const long q
-                          , const long score_cols
-                          , const long char_count
-                          , const double miscall_cost
-                          , const double open_insertion
-                          , const double open_deletion
-                          , const double extend_insertion
-                          , const double extend_deletion
-                          , double * const cost_matrix
-                          , const long cost_stride
-                          , double * const insertion_matrix
-                          , double * const deletion_matrix
-                          , double * const codon3x5
-                          , double * const codon3x4
-                          , double * const codon3x2
-                          , double * const codon3x1
-                          , const    bool  do_local
-                          )
-{
-    /**
-     * r is CODON position in the reference,
-     * q is NUC position in the query,
-     * curr is a pointer to the current position in the scoring matrix,
-     * prev is a pointer to the previous CODON in the scoring matrix
-     * NOTE: moving by score_cols in the scoring matrix changes the CODON
-     *       position in the scoring matrix, as we're only interested in CODON
-     *       alignments to the reference
-     * rpos is the position of r in the reference
-     * do_local is true if we wish to perform a local alignment 
-     */
+long 
+CodonAlignStringsStep(double *const score_matrix, long *const reference,
+                      long *const query, const long r, const long q,
+                      const long score_cols, const long char_count,
+                      const double miscall_cost, const double open_insertion,
+                      const double open_deletion, const double extend_insertion,
+                      const double extend_deletion, double *const cost_matrix,
+                      const long cost_stride, double *const insertion_matrix,
+                      double *const deletion_matrix, double *const codon3x5,
+                      double *const codon3x4, double *const codon3x2,
+                      double *const codon3x1, const bool do_local) {
+
     const long curr = ( r - 0 ) * score_cols + q, // where we currently are
                prev = ( r - 1 ) * score_cols + q, // up a codon in the reference
                offset3x5 = HY_3X5_COUNT * char_count * char_count * char_count, // both 3x5 and 3x4 are
@@ -100,11 +123,11 @@ long CodonAlignStringsStep( double * const score_matrix
                offset3x2 = HY_3X2_COUNT * char_count * char_count,
                offset3x1 = HY_3X1_COUNT * char_count,
                rpos = r * 3; // the real position in R
+
     // mutable vars
-    long r_codon = -1,
-         q_codon = -1,
-         best_choice = 0,
-         i, choice, partial_codons[ 10 ]; // we need to multiply by 3 to get the NUC position
+    long r_codon = -1, q_codon = -1, best_choice = 0, i, choice,
+         partial_codons[10]; // we need to multiply by 3 to get the NUC position
+
     // 3x5 codon specifications (negative indices)
     long codon_spec_3x5[ 10 ][ 3 ] = {
         { 5, 4, 3 }, // 11100
@@ -126,9 +149,9 @@ long CodonAlignStringsStep( double * const score_matrix
         { 3, 2, 1 }  // 0111
     };
 
-    int    local_shortcut_came_from_this_move = -1;
+    int local_shortcut_came_from_this_move = -1;
 
-    double choices[ HY_ALIGNMENT_TYPES_COUNT ],
+    double choices[HY_ALIGNMENT_TYPES_COUNT],
            max_score = -A_LARGE_NUMBER,
            penalty;
 
@@ -143,18 +166,18 @@ long CodonAlignStringsStep( double * const score_matrix
     if ( r >= 1 ) {
         // if we're doing affine gaps (deletions)
         if ( deletion_matrix ) {
-            choices[ HY_111_000 ] = MAX(
-                score_matrix[ prev ] - open_deletion,
-                deletion_matrix[ prev ] - ( r > 1 ? extend_deletion : open_deletion )
+            choices[HY_111_000] = MAX(
+                score_matrix[prev] - open_deletion,
+                deletion_matrix[prev] - ( r > 1 ? extend_deletion : open_deletion )
             );
-            deletion_matrix[ curr ] = choices[ HY_111_000 ];
+            deletion_matrix[curr] = choices[HY_111_000];
         } else {
-            choices[ HY_111_000 ] = score_matrix[ prev ] - open_deletion;
+            choices[HY_111_000] = score_matrix[prev] - open_deletion;
         }
 
-        r_codon = ( reference[ rpos - 3 ]   * char_count
-                  + reference[ rpos - 2 ] ) * char_count
-                  + reference[ rpos - 1 ] ;
+        r_codon = ( reference[rpos - 3]   * char_count
+                  + reference[rpos - 2] ) * char_count
+                  + reference[rpos - 1] ;
 
         if ( r_codon < 0 ) {
             r_codon = cost_stride - 1;
@@ -368,7 +391,7 @@ long CodonAlignStringsStep( double * const score_matrix
     return best_choice;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void BacktrackAlign( signed char * const edit_ops
                           , long & edit_ptr
@@ -392,7 +415,7 @@ inline void BacktrackAlign( signed char * const edit_ops
     }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void BacktrackAlignCodon( signed char * const edit_ops
                                , long & edit_ptr
@@ -548,7 +571,7 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
 }
 
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 inline void MatchScore( char * r_str
                       , char * q_str
@@ -568,7 +591,7 @@ inline void MatchScore( char * r_str
     }
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 double AlignStrings( char * const r_str
                    , char * const q_str
@@ -1156,13 +1179,13 @@ double AlignStrings( char * const r_str
     return score;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 #define _ALIGNMENT_NOLOCAL      0x00
 #define _ALIGNMENT_LOCAL_START  0x01
 #define _ALIGNMENT_LOCAL_END    0x02
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _Parameter   CostOnly   (_String * s1,               // first string
                          _String * s2,               // second string
@@ -1467,7 +1490,7 @@ _Parameter   CostOnly   (_String * s1,               // first string
     return score;
 }
 
-//____________________________________________________________________________________
+//______________________________________________________________________________
 
 _Parameter      LinearSpaceAlign (_String *s1,                  // first string
                                   _String *s2,                      // second string

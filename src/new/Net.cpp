@@ -3,7 +3,7 @@
 // written consent of the author
 
 #include "SerangNet.h"
-#include "parser.h"
+#include "legacy_parser.h"
 //#include <iostream.h>
 
 Net::Net(int innum, int hiddennum, int outnum, _Parameter eps, _Parameter c, _Parameter m,int d, int t, bool v)

@@ -39,56 +39,48 @@
 
 #include "stack.h"
 
-//__________________________________________________________________________________
-_Stack::_Stack (void)
-{
+//______________________________________________________________________________
+_Stack::_Stack(void) {}
+
+//______________________________________________________________________________
+void _Stack::Initialize(void) { theStack.Initialize(); }
+
+//______________________________________________________________________________
+void _Stack::Duplicate(BaseRef s) {
+  theStack.Duplicate(&((_Stack *)s)->theStack);
 }
 
-//__________________________________________________________________________________
-void _Stack::Initialize (void)
-{
-    theStack.Initialize();
+//______________________________________________________________________________
+_Stack::~_Stack(void) {}
+
+//______________________________________________________________________________
+// push object onto the stack
+bool _Stack::Push(_PMathObj newObj, bool dup) {
+  if (dup)
+    theStack << (newObj);
+  else
+    theStack.AppendNewInstance(newObj);
+  return true;
 }
 
-//__________________________________________________________________________________
-void _Stack::Duplicate (BaseRef s)
-{
-    theStack.Duplicate(&((_Stack*)s)->theStack);
+//______________________________________________________________________________
+// pop object from the top of the stack
+_PMathObj _Stack::Pop(bool del) {
+  _PMathObj r = dynamic_cast <_PMathObj> (((BaseRef) theStack.lData[theStack.lLength - 1]));
+  if (del) {
+    theStack.lLength--;
+  }
+  return r;
 }
 
-//__________________________________________________________________________________
-_Stack::~_Stack (void)
-{
+//______________________________________________________________________________
+// returns the depth of the stack
+long _Stack::StackDepth(void) {
+  return theStack.lLength;
 }
 
-//__________________________________________________________________________________
-bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
-{
-    if (dup)
-        theStack<<(newObj);
-    else
-        theStack.AppendNewInstance(newObj);
-    return true;
-}
-
-//__________________________________________________________________________________
-_PMathObj _Stack::Pop (bool del)        // pop object from the top of the stack
-{
-    _PMathObj r = (_PMathObj)theStack.lData[theStack.lLength-1];
-    if (del) {
-        theStack.lLength--;
-    }
-    return r;
-}
-
-//__________________________________________________________________________________
-long _Stack::StackDepth (void)  // returns the depth of the stack
-{
-    return theStack.lLength;
-}
-
-//__________________________________________________________________________________
-void _Stack::Reset (void)   // clears the stack
-{
-    theStack.Clear();
+//______________________________________________________________________________
+// clears the stack
+void _Stack::Reset(void) {
+  theStack.Clear();
 }

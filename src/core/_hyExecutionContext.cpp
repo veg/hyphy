@@ -34,26 +34,26 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 _hyExecutionContext _hyDefaultExecutionContextAux (nil, nil),
                     *_hyDefaultExecutionContext = &_hyDefaultExecutionContextAux;
 
-//_____________________________________________________________
+//______________________________________________________________________________
 
 _hyExecutionContext::_hyExecutionContext (_VariableContainer *context, _String* errorBuffer) {
     contextSpec = context;
     errMsg      = errorBuffer;
 }
 
-//_____________________________________________________________
+//______________________________________________________________________________
 
 _VariableContainer* _hyExecutionContext::GetContext (void) {
     return contextSpec;
 }
 
-//_____________________________________________________________
+//______________________________________________________________________________
 
 _String * _hyExecutionContext::GetErrorBuffer (void) {
     return errMsg;
 }
 
-//_____________________________________________________________
+//______________________________________________________________________________
 
 void _hyExecutionContext::ReportError (_String errText) {
     if (errMsg) {
@@ -64,7 +64,7 @@ void _hyExecutionContext::ReportError (_String errText) {
     
 }
 
-//_____________________________________________________________
+//______________________________________________________________________________
 //EOF
 
 
