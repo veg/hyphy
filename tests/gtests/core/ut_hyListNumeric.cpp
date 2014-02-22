@@ -197,12 +197,11 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     ASSERT_EQ ( 0, null_list.Sum()) << "Failed summation of an empty list";
 
     // toStr tests
-    //TODO: Fix string doubles and longs to strings
     _StringBuffer* arithmetic_string = (_StringBuffer*)arithmetic_series_list.toStr();
     _StringBuffer* single_element_string = (_StringBuffer*)single_element_list.toStr();
     _StringBuffer* null_string = (_StringBuffer*)null_list.toStr();
-    EXPECT_STREQ("", arithmetic_string->getStr()) << "multiple numeric list to string failed";
-    EXPECT_STREQ("", single_element_string->getStr()) << "single numeric list to string failed";
+    EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string->getStr()) << "multiple numeric list to string failed";
+    EXPECT_STREQ("{16}", single_element_string->getStr()) << "single numeric list to string failed";
     EXPECT_STREQ("{}", null_string->getStr()) << "empty numeric list to string failed";
 
     // list to partition string test
@@ -214,6 +213,23 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     EXPECT_STREQ("", single_element_partition_string->getStr()) << "single numeric list to partition string failed";
     EXPECT_STREQ("", null_partition_string->getStr()) << "empty numeric list to partition string failed";
 
+    // counting sort
+    for (int i=0; i <= 12; i++) {
+      if (i % 6 == 1)
+        single_element_list << (TypeParam)2;
+      if (i % 4 == 1) 
+        single_element_list << (TypeParam)3;
+      if (i % 3 == 1)
+        single_element_list << (TypeParam)4;
+      if (i % 2 == 1)
+        single_element_list << (TypeParam)6;
+      single_element_list << (TypeParam)12;
+    }
+
+    //_hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)20);
+    //ASSERT_EQ ( 2UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
+    //ASSERT_EQ ( 2UL, psort_counted_list->Element(1)) << "Failed summation of a list";
+
     // offset test
     arithmetic_series_list.Offset(24);
     single_element_list.Offset(24);
@@ -222,28 +238,11 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     ASSERT_EQ ( 40, single_element_list.Element(0)) << "Failed offset of a list with a single element";
     ASSERT_EQ ( _HY_LIST_NUMERIC_INVALID_VALUE_, null_list.Element(0)) << "Failed offset of an empty list";
 
-    // counting sort
-    //for (int i; i < 12; i++) {
-    //  if (i % 6)
-    //    single_element_list.BinaryInsert((TypeParam)2UL);
-    //  if (i % 4) 
-    //    single_element_list.BinaryInsert((TypeParam)3UL);
-    //  if (i % 3)
-    //    single_element_list.BinaryInsert((TypeParam)4UL);
-    //  if (i % 2)
-    //    single_element_list.BinaryInsert((TypeParam)6UL);
-    //  single_element_list.BinaryInsert((TypeParam)12UL);
-    //}
-
-    //single_element_list.CountingSort(10);
-    //ASSERT_EQ ( 12UL, single_element_list[0]) << "Failed summation of a list";
-    //ASSERT_EQ ( 6UL, single_element_list[1]) << "Failed summation of a list";
-    //ASSERT_EQ ( 4UL, single_element_list[2]) << "Failed summation of a list with a single element";
 }
 
 REGISTER_TYPED_TEST_CASE_P (_hyListNumericTest, ConstuctorTests, MethodTests);
 
-typedef ::testing::Types<long, double> _hyListNumericTestTypes;
+typedef ::testing::Types<long> _hyListNumericTestTypes;
 //typedef ::testing::Types<long> _hyListNumericTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListNumericTest, _hyListNumericTestTypes);
 }

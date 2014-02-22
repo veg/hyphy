@@ -37,6 +37,11 @@
  
  */
 
+
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
 /*
  ==============================================================
  Constructors
@@ -132,12 +137,23 @@ void _hyListNumeric<PAYLOAD>::Populate (const unsigned long l, const PAYLOAD sta
 //Char* conversion
 template<typename PAYLOAD>
 BaseRef _hyListNumeric<PAYLOAD>::toStr(void) {
+
   if (this->lLength) {
       _StringBuffer* s = new _StringBuffer();
+      _StringBuffer* char_list = new _StringBuffer();
+
       (*s) << '{';
 
       for (unsigned long i = 0UL; i<this->lLength; i++) {
-          (*s) << this->lData[i];
+          char_list->Initialize();
+          for(PAYLOAD val = this->lData[i]; val; val /= 10) {
+              (*char_list) << "0123456789"[val % 10];
+          }
+
+          for(int j=0; j < char_list->sLength; j++) {
+              (*s) << char_list->sData[char_list->sLength - j - 1];
+          }
+
           if (i<this->lLength-1) {
               (*s) << ',';
           }
@@ -184,8 +200,6 @@ _String* _hyListNumeric<PAYLOAD>::ListToPartitionString (void) const {
     return result;
 }
 
-// SW: 20140219
-// Why is CountingSort intrinsic to _hyListNumeric?
 template<typename PAYLOAD>
 _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperBound, _hyListNumeric <long> * ordering)
 {
@@ -199,7 +213,7 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
         }
 
         _hyListNumeric<PAYLOAD> buffer,
-                    * result =  new _hyListNumeric <PAYLOAD> (this->lLength);
+                    *result =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
                   
         buffer.Populate (upperBound, 0L, 0L);
         
@@ -221,7 +235,6 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
                 result->lData[--buffer.lData[this->lData[pass3]]] = this->lData[pass3];
             }
         result->lLength = this->lLength;
-
         return result;
     }
     return new _hyListNumeric <PAYLOAD>;
