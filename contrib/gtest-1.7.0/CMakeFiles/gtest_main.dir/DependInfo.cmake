@@ -4,18 +4,13 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/sweaver/Programming/hyphy/contrib/gtest-1.7.0/src/gtest_main.cc" "/Users/sweaver/Programming/hyphy/contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
+  "/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc" "/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "Clang")
 
-# Preprocessor definitions for this target.
-SET(CMAKE_TARGET_DEFINITIONS
-  "__HYPHYCURL__"
-  )
-
 # Targets to which this target links.
 SET(CMAKE_TARGET_LINKED_INFO_FILES
-  "/Users/sweaver/Programming/hyphy/contrib/gtest-1.7.0/CMakeFiles/gtest.dir/DependInfo.cmake"
+  "/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/CMakeFiles/gtest.dir/DependInfo.cmake"
   )
 
 # The include file search paths:
