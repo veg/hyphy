@@ -133,6 +133,21 @@ void _hyListNumeric<PAYLOAD>::Populate (const unsigned long l, const PAYLOAD sta
     this->lLength = l;
 }
 
+template<typename PAYLOAD>
+void _hyListNumeric<PAYLOAD>::AppendNumtoStr(_StringBuffer* s, PAYLOAD num) const{
+
+    _StringBuffer* char_list = new _StringBuffer();
+
+    for(PAYLOAD val = num; val; val /= 10) {
+        (*char_list) << "0123456789"[val % 10];
+    }
+
+    for(int j=0; j < char_list->sLength; j++) {
+        (*s) << char_list->sData[char_list->sLength - j - 1];
+    }
+
+    return;
+}
 
 //Char* conversion
 template<typename PAYLOAD>
@@ -140,20 +155,11 @@ BaseRef _hyListNumeric<PAYLOAD>::toStr(void) {
 
   if (this->lLength) {
       _StringBuffer* s = new _StringBuffer();
-      _StringBuffer* char_list = new _StringBuffer();
 
       (*s) << '{';
 
       for (unsigned long i = 0UL; i<this->lLength; i++) {
-          char_list->Initialize();
-          for(PAYLOAD val = this->lData[i]; val; val /= 10) {
-              (*char_list) << "0123456789"[val % 10];
-          }
-
-          for(int j=0; j < char_list->sLength; j++) {
-              (*s) << char_list->sData[char_list->sLength - j - 1];
-          }
-
+          this->AppendNumtoStr(s, this->lData[i]);
           if (i<this->lLength-1) {
               (*s) << ',';
           }
@@ -170,8 +176,7 @@ BaseRef _hyListNumeric<PAYLOAD>::toStr(void) {
 template<typename PAYLOAD>
 _String* _hyListNumeric<PAYLOAD>::ListToPartitionString (void) const {
 
-    _StringBuffer *result = new _StringBuffer (64UL),
-    conv;
+    _StringBuffer *result = new _StringBuffer (64UL);
 
     for (unsigned long k=0UL; k<this->lLength; k++) {
         unsigned long m;
@@ -180,18 +185,15 @@ _String* _hyListNumeric<PAYLOAD>::ListToPartitionString (void) const {
                 break;
             }
         if (m>k+2) {
-            conv = this->lData[k];
-            (*result) << & conv;
+            this->AppendNumtoStr(result, this->lData[k]);
             (*result) << '-';
-            conv = this->lData[m-1];
-            (*result) << & conv;
+            this->AppendNumtoStr(result, this->lData[m-1]);
             if (m<this->lLength) {
                 (*result) << ',';
             }
             k = m-1;
         } else {
-            conv = this->lData[k];
-            (*result) << &conv;
+            this->AppendNumtoStr(result, this->lData[k]);
             if (k<this->lLength-1) {
                 (*result) << ',';
             }

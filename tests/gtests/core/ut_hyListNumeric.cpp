@@ -62,7 +62,6 @@ class _testNumericPayload {
   bool operator >  (const _testNumericPayload & o) const { return  ! ((*this) <= o); } 
   bool operator >= (const _testNumericPayload & o) const { return  ! ((*this) < o); } 
   operator unsigned long (void) {return data[0];}
-  
   unsigned long data[2];
 };
 
@@ -179,6 +178,7 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
   _hyListNumeric <TypeParam> null_list,
                                single_element_list((TypeParam)16),
                                arithmetic_series_list(10UL, (TypeParam)4UL, (TypeParam)4UL),
+                               seq_series_list(10UL, (TypeParam)4UL, (TypeParam)1UL),
                                full_stack_copy(arithmetic_series_list),
                                partial_stack_copy(arithmetic_series_list,2,HY_LIST_INSERT_AT_END);
              
@@ -206,11 +206,9 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
 
     // list to partition string test
     //TODO: Fix string doubles and longs to strings
-    _StringBuffer* arithmetic_partition_string = (_StringBuffer*)arithmetic_series_list.ListToPartitionString();
-    _StringBuffer* single_element_partition_string = (_StringBuffer*)single_element_list.ListToPartitionString();
+    _StringBuffer* seq_partition_string = (_StringBuffer*)seq_series_list.ListToPartitionString();
     _StringBuffer* null_partition_string = (_StringBuffer*)null_list.ListToPartitionString();
-    EXPECT_STREQ("", arithmetic_partition_string->getStr()) << "multiple numeric list to partition string failed";
-    EXPECT_STREQ("", single_element_partition_string->getStr()) << "single numeric list to partition string failed";
+    EXPECT_STREQ("4-13", seq_partition_string->getStr()) << "single numeric list to partition string failed";
     EXPECT_STREQ("", null_partition_string->getStr()) << "empty numeric list to partition string failed";
 
     // counting sort
@@ -243,6 +241,5 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
 REGISTER_TYPED_TEST_CASE_P (_hyListNumericTest, ConstuctorTests, MethodTests);
 
 typedef ::testing::Types<long> _hyListNumericTestTypes;
-//typedef ::testing::Types<long> _hyListNumericTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListNumericTest, _hyListNumericTestTypes);
 }

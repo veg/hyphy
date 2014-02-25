@@ -115,6 +115,12 @@ class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
       * @return Nothing. Acts on the List object it was called from.
       */
       void Offset(const PAYLOAD);
+
+      /**
+      * Appends a number to the passed string buffer
+      * @return void
+      */
+      void AppendNumtoStr(_StringBuffer*, const PAYLOAD) const;
       
       /**
       * Convert (a sorted) list into a partition string for consumption by datafilters etc
