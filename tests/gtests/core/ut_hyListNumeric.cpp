@@ -176,7 +176,7 @@ TYPED_TEST_P (_hyListNumericTest, ConstuctorTests) {
 TYPED_TEST_P (_hyListNumericTest, MethodTests) {
   
   _hyListNumeric <TypeParam> null_list,
-                               single_element_list((TypeParam)16),
+                               single_element_list((TypeParam)5),
                                arithmetic_series_list(10UL, (TypeParam)4UL, (TypeParam)4UL),
                                seq_series_list(10UL, (TypeParam)4UL, (TypeParam)1UL),
                                full_stack_copy(arithmetic_series_list),
@@ -190,10 +190,14 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     ASSERT_EQ ( direct_index[1], arithmetic_series_list.Element(-9)) << "Failed retrieving the correct element";
     ASSERT_EQ ( _HY_LIST_NUMERIC_INVALID_VALUE_, arithmetic_series_list.Element(12)) << "Should be null";
     ASSERT_EQ ( _HY_LIST_NUMERIC_INVALID_VALUE_, null_list.Element(0)) << "Failed retrieving the correct element";
+
+    ASSERT_EQ ( 20L, arithmetic_series_list[4]) << "Failed summation of a list";
+    ASSERT_EQ ( 4L, arithmetic_series_list[0]) << "Failed summation of a list";
+    ASSERT_EQ ( 8L, arithmetic_series_list[1]) << "Failed summation of a list";
     
     // summation
     ASSERT_EQ ( 220, arithmetic_series_list.Sum()) << "Failed summation of a list";
-    ASSERT_EQ ( 16, single_element_list.Sum()) << "Failed summation of a list with a single element";
+    ASSERT_EQ ( 5, single_element_list.Sum()) << "Failed summation of a list with a single element";
     ASSERT_EQ ( 0, null_list.Sum()) << "Failed summation of an empty list";
 
     // toStr tests
@@ -201,7 +205,7 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     _StringBuffer* single_element_string = (_StringBuffer*)single_element_list.toStr();
     _StringBuffer* null_string = (_StringBuffer*)null_list.toStr();
     EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string->getStr()) << "multiple numeric list to string failed";
-    EXPECT_STREQ("{16}", single_element_string->getStr()) << "single numeric list to string failed";
+    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
     EXPECT_STREQ("{}", null_string->getStr()) << "empty numeric list to string failed";
 
     // list to partition string test
@@ -224,16 +228,20 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
       single_element_list << (TypeParam)12;
     }
 
-    //_hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)20);
-    //ASSERT_EQ ( 2UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
-    //ASSERT_EQ ( 2UL, psort_counted_list->Element(1)) << "Failed summation of a list";
+    _hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)30);
+    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
+    single_element_string = (_StringBuffer*)psort_counted_list->toStr();
+
+    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
+    //ASSERT_EQ ( 16UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
+    //ASSERT_EQ ( 2UL, psort_counted_list->Element(1)) << "Failed Sorted Count List";
 
     // offset test
     arithmetic_series_list.Offset(24);
     single_element_list.Offset(24);
     null_list.Offset(24);
     ASSERT_EQ ( 36, arithmetic_series_list.Element(2)) << "Failed offset of a list";
-    ASSERT_EQ ( 40, single_element_list.Element(0)) << "Failed offset of a list with a single element";
+    ASSERT_EQ ( 29, single_element_list.Element(0)) << "Failed offset of a list with a single element";
     ASSERT_EQ ( _HY_LIST_NUMERIC_INVALID_VALUE_, null_list.Element(0)) << "Failed offset of an empty list";
 
 }

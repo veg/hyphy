@@ -138,8 +138,12 @@ void _hyListNumeric<PAYLOAD>::AppendNumtoStr(_StringBuffer* s, PAYLOAD num) cons
 
     _StringBuffer* char_list = new _StringBuffer();
 
-    for(PAYLOAD val = num; val; val /= 10) {
-        (*char_list) << "0123456789"[val % 10];
+    if(num != 0UL) {
+      for(PAYLOAD val = num; val; val /= 10) {
+          (*char_list) << "0123456789"[val % 10];
+      }
+    } else {
+      (*char_list) << "0";
     }
 
     for(int j=0; j < char_list->sLength; j++) {
@@ -212,30 +216,39 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
     if (this->lLength) {
         if (upperBound == _HY_LIST_NUMERIC_INVALID_VALUE_) {
             upperBound = this->Max()+1UL;
+        } else {
+          upperBound = upperBound + 1;
         }
 
-        _hyListNumeric<PAYLOAD> buffer,
-                    *result =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
+        _hyListNumeric<PAYLOAD> *count  =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
+        _hyListNumeric<PAYLOAD> *result =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
                   
-        buffer.Populate (upperBound, 0L, 0L);
+        count->Populate(upperBound, 0UL, 0UL);
         
-        for (unsigned long pass1 = 0UL; pass1 < this->lLength; pass1 ++) {
-            buffer.lData[this->lData[pass1]]++;
+        for (unsigned long pass1 = 0UL; pass1 < this->lLength; pass1++) {
+            count->lData[this->lData[pass1]]++;
         }
-        for (unsigned long pass2 = 1UL; pass2 < upperBound; pass2 ++) {
-            buffer.lData[pass2] += buffer.lData[pass2-1];
+
+        for (unsigned long pass2 = 1UL; pass2 < upperBound; pass2++) {
+            count->lData[pass2] += count->lData[pass2-1];
         }
+
+        _StringBuffer* arithmetic_string = (_StringBuffer*)count->toStr();
+        std::cout << arithmetic_string->getStr();
         
         if (ordering) {
-            ordering->Populate (this->lLength, 0L, 0L);
+            ordering->Populate (this->lLength, 0UL, 0UL);
             for (long pass3 = this->lLength-1; pass3 >=0L; pass3--) {
-                result->lData[--buffer.lData[this->lData[pass3]]] = this->lData[pass3];
-                ordering->lData[buffer.lData[this->lData[pass3]]] = pass3;
+                result->lData[--count->lData[this->lData[pass3]]] = this->lData[pass3];
+                ordering->lData[count->lData[this->lData[pass3]]] = pass3;
             }
-        } else
-            for (long pass3 = this->lLength-1; pass3 >=0L; pass3--) {
-                result->lData[--buffer.lData[this->lData[pass3]]] = this->lData[pass3];
+        } else {
+            for (long pass3 = this->lLength-1; pass3 >= 0L; pass3--) {
+                count->lData[this->lData[pass3]] = count->lData[this->lData[pass3]] - 1;
+                long i = count->lData[this->lData[pass3]];
+                result->lData[i] = this->lData[pass3];
             }
+        }
         result->lLength = this->lLength;
         return result;
     }
