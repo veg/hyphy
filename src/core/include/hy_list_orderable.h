@@ -252,6 +252,7 @@ class _hyListOrderable : public _hyList<PAYLOAD> {
     */
     void Merge(const _hyListOrderable <PAYLOAD> *l1, const _hyListOrderable <PAYLOAD> *l2, _hyListOrderable <long> *mergeResults1 = nil,
              _hyListOrderable <long> *mergeResults2 = nil);
+    _hyListOrderable <PAYLOAD> operator && (const _hyListOrderable <PAYLOAD> &);
 
 };
 

@@ -324,7 +324,7 @@ TYPED_TEST_P (_hyListOrderableTest, SetOperationTests) {
                                empty,
                                holder;
                                
-  for (unsigned long value = 0UL; value < 5UL; value++) {
+  for (unsigned long value = 0UL; value < 100UL; value++) {
     all.append ((TypeParam) value);
     if (value % 2) {
       odds.append ((TypeParam) value);
@@ -343,12 +343,92 @@ TYPED_TEST_P (_hyListOrderableTest, SetOperationTests) {
   EXPECT_EQ (evens.countitems(), all.CountCommonElements (evens)) << "CountCommonElements failed (all, evens)";
   EXPECT_EQ (odds.countitems(), odds.CountCommonElements (all)) << "CountCommonElements failed (odds, all)";
   
+  /*          
+  TypeParam array_sorted  [3] = {(TypeParam)0, (TypeParam)5, (TypeParam)8},
+            array_sorted2 [3] = {(TypeParam)5, (TypeParam)6,(TypeParam)9};
+            
+  _hyListOrderable<long> index,
+                         index2;
+  
+  _hyListOrderable <TypeParam> t1        (3UL, array_sorted),
+                               t2        (3UL, array_sorted2);
+  
+  holder.Merge (&t1,&t2,&index,&index2);
+  
+  
+  for (unsigned long ii = 0; ii < index.countitems(); ii++) {
+    printf ("index[%ld] = %ld\n", ii, index.Element (ii));
+  }
+
+  for (unsigned long ii = 0; ii < index2.countitems(); ii++) {
+    printf ("index2[%ld] = %ld\n", ii, index2.Element (ii));
+  }
+  ASSERT_EQ (index.countitems(), t1.countitems());
+  */
+
   holder.Merge (&evens, &odds);
   EXPECT_EQ (all, holder) << "MERGE failed with (evens, odds)" 
             << this->dump_to_stream_as_longs (holder).getStr();
   holder.Merge (&odds, &evens);
   EXPECT_EQ (all, holder) << "MERGE failed with (odds, evens)" 
             << this->dump_to_stream_as_longs (holder).getStr();
+            
+            
+            
+  for (unsigned long samples = 0UL; samples < 1024L; samples++) {
+      _hyListOrderable <TypeParam> x (this->make_random_list (genrand_int32() % 64, 100, 16)),
+                                   y (this->make_random_list (genrand_int32() % 64, 100)),
+                                   r1, 
+                                   r2;
+        
+        x.Sort ();
+        y.Sort ();
+        r1 = x+y - (x%y);
+        r2 = x*y;
+        ASSERT_EQ  (r1, r2) << "X+Y - (X XOR Y) != X*Y " <<  this->dump_to_stream_as_longs (r1).getStr() << "; X = " 
+          << this->dump_to_stream_as_longs (x).getStr() <<  "; Y = " << this->dump_to_stream_as_longs (y).getStr();
+        r1 = (x-y)+(y-x); // symmetric difference
+        r2 = x%y;
+        ASSERT_EQ  (r1, r2) << "(X-Y)+(Y-X) != X%Y " << this->dump_to_stream_as_longs (r1).getStr() << "; X = " 
+          << this->dump_to_stream_as_longs (x).getStr() <<  "; Y = " << this->dump_to_stream_as_longs (y).getStr();
+        x.DeleteDuplicates ();
+        y.DeleteDuplicates ();
+        
+        _hyListOrderable<long> index,
+                               index2;
+                               
+        r1.Merge (&x,&y,&index, &index2);
+        r2 = x+y;
+        r2.DeleteDuplicates();
+        
+        
+        ASSERT_EQ  (r1, r2) << "(X&&Y) != X+Y with duplicates removed " << this->dump_to_stream_as_longs (r1).getStr() << "; "
+          << this->dump_to_stream_as_longs (r2).getStr() << "; X = " 
+          << this->dump_to_stream_as_longs (x).getStr() <<  "; Y = " << this->dump_to_stream_as_longs (y).getStr();
+          
+        for (unsigned long i = 0L; i < index.countitems(); i++) {
+        
+           ASSERT_EQ (x.Element (i), r1.Element (index.Element (i))) << "Incorrect item index returned by Merge (1st list)" 
+            << "[" << i << "]\n" << this->dump_to_stream_as_longs (x).getStr() << "\n" 
+            << this->dump_to_stream_as_longs (y).getStr() << "\n" 
+            << this->dump_to_stream_as_longs (r1).getStr() << "\n" << index.countitems() << "\n"
+            << index.Element (i);
+        } 
+
+        for (unsigned long i = 0L; i < index2.countitems(); i++) {
+        
+           ASSERT_EQ (y.Element (i), r1.Element (index2.Element (i))) << "Incorrect item index returned by Merge (2nd list)" 
+            << "[" << i << "]\n" << this->dump_to_stream_as_longs (x).getStr() << "\n" 
+            << this->dump_to_stream_as_longs (y).getStr() << "\n" 
+            << this->dump_to_stream_as_longs (r1).getStr() << "\n" << index2.countitems() << "\n"
+            << index2.Element (i);
+        } 
+          
+        x.FilterRange ((TypeParam)0L, (TypeParam)64L);
+        y.FilterRange ((TypeParam)65L, (TypeParam)100L);
+        
+        ASSERT_EQ ((x*y).countitems(), 0UL) << "Non-overlapping range interestion expected to be empty";
+  }
   
 }
 
@@ -356,6 +436,7 @@ TYPED_TEST_P (_hyListOrderableTest, SetOperationTests) {
 REGISTER_TYPED_TEST_CASE_P (_hyListOrderableTest, ConstuctorTests, SortingTests, InsertionAndSearchTests, MinMaxTest, SetOperationTests);
 
 typedef ::testing::Types<char, long, double, _testOrderablePayload> _hyListOrderableTestTypes;
+
 //typedef ::testing::Types<long> _hyListOrderableTestTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(_typedList, _hyListOrderableTest, _hyListOrderableTestTypes);
 }

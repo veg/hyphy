@@ -373,14 +373,14 @@ void _hyListOrderable<PAYLOAD>::DeleteDuplicates(void) {
     
     for (unsigned long k = 1; k < this->lLength; k++) {
       PAYLOAD thisValue = this->lData[k];
-      if (!this->EqualToValue (k,lastValue)) {
+      if (!this->ItemEqualToValue (k,lastValue)) {
         noDups << thisValue;
         lastValue = thisValue;
       }
     }
 
     if (noDups.lLength < this->lLength) {
-      Duplicate(&noDups);
+      this->Clone(&noDups);
     }
   }
 }
@@ -626,6 +626,13 @@ void _hyListOrderable<PAYLOAD>::Subtract(const _hyListOrderable <PAYLOAD> * l1,c
   }
 }
 
+template<typename PAYLOAD>
+_hyListOrderable<PAYLOAD> _hyListOrderable<PAYLOAD>::operator && (const _hyListOrderable <PAYLOAD> & l1) {
+  _hyListOrderable result;
+  result.Merge (this, &l1);
+  return result;
+}
+
 
 template<typename PAYLOAD>
 void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, const _hyListOrderable <PAYLOAD> *l2, 
@@ -649,9 +656,7 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
   
   
   
-  bool   doMerge1 = false,
-         doMerge2 = false,
-         keep_going = true;
+  bool  keep_going = true;
   
   while (keep_going) { // stuff left to do
     //printf ("STATE %u, pos1 %lu/%lu, pos2 %lu/%lu / %lu\n", advancing, pos1, (unsigned long)l1->AtIndex(pos1), pos2, (unsigned long)l2->AtIndex(pos2), this->countitems());
@@ -671,7 +676,8 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         long cmp = l1->CompareToValue (pos1,l2->AtIndex(pos2));
         //if (l1lData[pos1] <= l2->lData[pos2]) {
         if ( cmp != HY_COMPARE_GREATER) {
-          if (mergeResults1 && doMerge1) {
+          if (mergeResults1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
             (*mergeResults1)<<this->lLength;
           }
           
@@ -679,8 +685,7 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
             
   //        if (mergeResults2 && l1->lData[pos1] < l2->lData[pos2]) {
           if (cmp == HY_COMPARE_LESS) {
-            if (mergeResults2 && !doMerge2 && pos1 >= pos2) {
-              doMerge2 = true;
+            if (mergeResults2 && mergeResults2->countitems () == 0UL && pos1 >= pos2) {
               for (unsigned long i=0UL; i<pos2; i++) {
                   mergeResults2->append (i);
               }
@@ -692,14 +697,14 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         if (cmp == HY_COMPARE_GREATER) {
         //if (l1->lData[pos1] > l2->lData[pos2]) {
           advancing = ADVANCE2;
-          if (mergeResults1 && !doMerge1) {
+          if (mergeResults1 && mergeResults1->countitems () == 0UL ) {
             for (unsigned long i=0UL; i<pos1; i++) {
+              //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
               mergeResults1->append (i);
             }
-            doMerge1 = true;
           }
           
-          if (mergeResults2 && doMerge2) {
+          if (mergeResults2) {
             (*mergeResults2)<<this->lLength;
           }
           
@@ -721,7 +726,7 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
 
         //if (l2->lData[pos2] <= l1->lData[pos1]) {
         if (cmp != HY_COMPARE_GREATER) {
-           if (mergeResults2 && doMerge2) {
+           if (mergeResults2) {
             (*mergeResults2)<<this->lLength;
           }
           
@@ -729,9 +734,9 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
 
           //if (l2->lData[pos2] < l1->lData[pos1] && mergeResults1 && !doMerge1 && pos2>=pos1) {
           if (cmp == HY_COMPARE_LESS ) {
-           if(mergeResults1 && !doMerge1 && pos2>=pos1) {
-              doMerge1 = true;
+           if(mergeResults1 && mergeResults1->countitems() == 0 && pos2>=pos1) {
               for (unsigned long i=0UL; i<pos1; i++) {
+                //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
                 (*mergeResults1)<<i;
               }
             }
@@ -742,13 +747,13 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         //if (l2->lData[pos2] > l1->lData[pos1]) {
         if (cmp == HY_COMPARE_GREATER) { 
           advancing = ADVANCE1;
-          if (mergeResults2 && !doMerge2) {
+          if (mergeResults2 && mergeResults2->countitems() == 0) {
             for (unsigned long i=0UL; i<pos2; i++) {
               (*mergeResults2)<<i;
             }
-            doMerge2 = true;
           }
-          if (mergeResults1 && doMerge1) {
+          if (mergeResults1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
             (*mergeResults1)<<this->lLength;
           }
           this->append (l1->AtIndex(pos1));
@@ -757,12 +762,13 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         break;
       } 
       case FLUSH2: { // flush out the 2nd list
-        if (mergeResults1 && !doMerge1&& pos2<nt2 ) {
-          for (unsigned long i=0UL; i<nt1; i++) {
+        if (mergeResults1 && pos2<nt2 ) {
+          for (unsigned long i=pos1; i<nt1; i++) {
+             //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
             (*mergeResults1)<<i;
           }
         }
-        if (mergeResults2 && doMerge2)
+        if (mergeResults2)
           while (pos2<nt2) {
             (*mergeResults2)<<this->lLength;
             this->append (l2->AtIndex(pos2++));
@@ -775,13 +781,14 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         break;
       } 
       case FLUSH1: { // flush out the 1st list
-        if (mergeResults2 && !doMerge2 && pos1<nt1) {
-          for (unsigned long i=0UL; i<nt2; i++) {
+        if (mergeResults2 && pos1<nt1) {
+          for (unsigned long i=pos2; i<nt2; i++) {
             (*mergeResults2)<<i;
           }
         }
-        if (mergeResults1 && doMerge1)
+        if (mergeResults1)
           while (pos1<nt1) {
+            //printf("MERGE line number %d in file %s\n", __LINE__, __FILE__);
             (*mergeResults1)<<this->lLength;
             this->append (l1->AtIndex(pos1++));
           }
@@ -807,54 +814,56 @@ void _hyListOrderable<PAYLOAD>::Merge(const _hyListOrderable <PAYLOAD> *l1, cons
         long cmp = l1->CompareToValue (pos1, l2->AtIndex(pos2));
         
         if (cmp != HY_COMPARE_GREATER) { // begin with the first list
-          this->append (l1->AtIndex(pos1));
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength;
+          }
+          this->append (l1->AtIndex(0UL));
           advancing = ADVANCE1;
           if (cmp != HY_COMPARE_EQUAL) {
-            if (mergeResults2) {
-              doMerge2 = true;
-            }
             continue;
           }
         } else {
-          this->append (l2->AtIndex(pos1));
-          advancing = ADVANCE2;
-          if (mergeResults1) {
-            doMerge1 = true;
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength;
           }
+          this->append (l2->AtIndex(0UL));
+          advancing = ADVANCE2;
           continue;
         }
         break;
       }
     } // end SWITCH
     
-    if (advancing == ADVANCE1) { // moving up in the second term
-      pos1++;
-      if (pos1==nt1) {
-        pos2++;
-        if (mergeResults2 && doMerge2) {
-          (*mergeResults2)<<this->lLength-1UL;
-        }
-        advancing = FLUSH2;
-        continue;
-      } else {
-        advancing = ADVANCE2;
-        if (mergeResults2 && doMerge2) {
-          (*mergeResults2)<<this->lLength-1UL;
-        }
-      }
-    } else {
-      pos2++;
-      if (pos2==nt2) {
+    if (keep_going) {
+      if (advancing == ADVANCE1) { // moving up in the second term
         pos1++;
-        if (mergeResults1 && doMerge1) {
-          (*mergeResults1)<<this->lLength-1UL;
+        if (pos1==nt1) {
+          pos2++;
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength-1UL;
+          }
+          advancing = FLUSH2;
+          continue;
+        } else {
+          advancing = ADVANCE2;
+          if (mergeResults2) {
+            (*mergeResults2)<<this->lLength-1UL;
+          }
         }
-        advancing = FLUSH1;
-        continue;
       } else {
-        advancing = ADVANCE1;
-        if (mergeResults1 && doMerge1) {
-          (*mergeResults1)<<this->lLength-1UL;
+        pos2++;
+        if (pos2==nt2) {
+          pos1++;
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength-1UL;
+          }
+          advancing = FLUSH1;
+          continue;
+        } else {
+          advancing = ADVANCE1;
+          if (mergeResults1) {
+            (*mergeResults1)<<this->lLength-1UL;
+          }
         }
       }
     }
