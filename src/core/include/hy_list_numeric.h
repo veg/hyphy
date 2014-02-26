@@ -115,6 +115,12 @@ class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
       * @return Nothing. Acts on the List object it was called from.
       */
       void Offset(const PAYLOAD);
+
+      /**
+      * Appends a number to the passed string buffer
+      * @return void
+      */
+      void AppendNumtoStr(_StringBuffer*, const PAYLOAD) const;
       
       /**
       * Convert (a sorted) list into a partition string for consumption by datafilters etc
@@ -127,7 +133,8 @@ class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
       /**
       * SLKP: 20090508
       * Implements a counting sort procedure, ASSUMING that all
-      * list values are in [0, upperBound-1]; if the 1st argument is _HY_LIST_NUMERIC_INVALID_VALUE_, it is
+      * list values are in [0, upperBound-1]; if the 1st argument is 
+      * _HY_LIST_NUMERIC_INVALID_VALUE_, it is
       * automatically determined. This only really makes sense for integer types
       * @return a pointer to the sorted list
       * if the second argument is not nil, then
@@ -136,6 +143,7 @@ class _hyListNumeric : public _hyListOrderable<PAYLOAD> {
       */
       
       _hyListNumeric <PAYLOAD> *CountingSort(PAYLOAD, _hyListNumeric <long> * = nil);
+
 
       virtual BaseRef toStr();
 

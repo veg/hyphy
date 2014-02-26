@@ -21,7 +21,7 @@ hyphyPath, srcDir = path.split(srcPath)
 #     resFiles = [(f, path.join(*(['..'] * 5 + f.split('/')))) for f in fh.read().split('\n') if f != '']
 
 contribPath = path.join(hyphyPath, 'contrib')
-sqlitePath = path.join(contribPath, 'SQLite-3.7.11')
+sqlitePath = path.join(contribPath, 'SQLite-3.8.2')
 
 linkPath = path.join(scriptPath, 'Link')
 coreSrcPath = path.join(srcPath, 'core')
@@ -42,7 +42,7 @@ utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
 sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles + swigFile + utilFiles
 
 includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
-includePaths += [linkPath, contribPath]
+includePaths += [linkPath, contribPath, sqlitePath]
 
 # check for 64bit and define as such
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []

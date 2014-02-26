@@ -163,7 +163,16 @@ endif(${MACOSX_LION} OR NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
 set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
-set(DEFAULT_LIBRARIES crypto curl dl pthread ssl)
+set(DEFAULT_LIBRARIES dl pthread)
+
+#-------------------------------------------------------------------------------
+# LIBCurl support
+#-------------------------------------------------------------------------------
+find_package(CURL)
+if(${CURL_FOUND})
+    set(DEFAULT_LIBRARIES dl pthread crypto curl ssl)
+    add_definitions (-D__HYPHYCURL__)
+endif(${CURL_FOUND})
 
 #-------------------------------------------------------------------------------
 # gtest dependency
@@ -202,7 +211,7 @@ file(GLOB SRC_GRAMMAR src/grammar/*.cpp)
 
 set(SRC_LINK src/lib/Link/THyPhy.cpp)
 set(SRC_PREFS src/gui/preferences.cpp)
-set(SRC_SQLITE3 contrib/SQLite-3.7.11/sqlite3.c)
+set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_GTKMAIN src/mains/gtk.cpp)
 set(SRC_MACMAIN src/mains/mac.cpp)
@@ -225,18 +234,10 @@ set_property(
     PROPERTY COMPILE_FLAGS "-Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 )
 
-
-set_property(
-    SOURCE ${SRC_PUGIXML}
-    PROPERTY COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
-)
-
-
 set_property(
     SOURCE src/core/calcnode2.cpp
     PROPERTY COMPILE_FLAGS "-fstrict-aliasing -funroll-loops"
 )
-
 
 #-------------------------------------------------------------------------------
 # shared compilation definitions and header includes
@@ -260,7 +261,6 @@ include_directories(
     contrib/gtest-1.7.0/gtest/include
     src/grammar
     tests/gtests
-    /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/include/
 )
 
 
@@ -319,7 +319,7 @@ if(${OPENCL_FOUND})
         EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
     )
-    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
     install(
         TARGETS HYPHYOCL
@@ -443,7 +443,7 @@ set_target_properties(
 # hyphy qt target
 #-------------------------------------------------------------------------------
 
-find_package(QT4)
+find_package(Qt4 4.7)
 
 if((${QT4_FOUND}))
 
@@ -459,7 +459,9 @@ if((${QT4_FOUND}))
     add_definitions(${QT_DEFINITIONS})
     add_definitions(-D__HYPHY_64__)
 
-    add_executable(HYPHYQT MACOSX_BUNDLE ${SRC_CORE}                  
+    add_executable(HYPHYQT MACOSX_BUNDLE 
+			  EXCLUDE_FROM_ALL 
+                           ${SRC_CORE}                  
                            ${SRC_NEW}                  
                            ${SRC_SQLITE3} 
                            ${QT_HYPHY_SOURCES}
@@ -467,6 +469,7 @@ if((${QT4_FOUND}))
                            ${hyphy_headers_moc} 
                            ${hyphy_ui_headers} 
                            ${RES_MACGUI}
+			   
                            )
 
     target_link_libraries(HYPHYQT ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY} ${DEFAULT_LIBRARIES})

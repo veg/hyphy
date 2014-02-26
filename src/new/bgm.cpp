@@ -40,6 +40,17 @@
 
 #if not defined __AFYP_REWRITE_BGM__
 
+#ifdef __HYPHYQT__
+    #include "hyphymain.h"
+#endif
+
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHY_GTK__
+    #include "HYConsoleWindow.h"
+    #include "HYDialogs.h"
+
+#endif
+
+
 //#define       __AFYP_DEVELOPMENT__
 #define     __MISSING_DATA__
 
@@ -2838,14 +2849,14 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 #if  defined __HEADLESS__
             SetStatusLine (statusLine);
 #else
-#if !defined __UNIX__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
             SetStatusLine     (empty,statusLine,empty,100*step/(nsteps),HY_SL_TASK|HY_SL_PERCENT);
             yieldCPUTime(); // let the GUI handle user actions
             if (terminateExecution) { // user wants to cancel the analysis
                 break;
             }
 #endif
-#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
             ConsoleBGMStatus (statusLine, 100.*step/(nsteps), progressReportFile);
 #endif
 #endif
@@ -2880,10 +2891,10 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
     DumpComputeLists (clist);
 
     /*SLKP 20070926; include progress report updates */
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
     SetStatusLine     (_HYBgm_STATUS_LINE_MCMC_DONE & (sample_lag < 0 ? _String(" burnin"):empty));
 #endif
-#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__
+#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
     ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC_DONE & (sample_lag < 0 ? _String(" burnin"):empty), -1.0, progressReportFile);
 #endif
     /* SLKP */

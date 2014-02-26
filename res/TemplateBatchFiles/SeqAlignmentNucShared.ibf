@@ -1,0 +1,290 @@
+SetDialogPrompt ("Sequence File:");
+
+doLongestSequence = 	(refSeq==1);
+
+if (refSeq > 1)
+{
+	DataSet        unal2 			= ReadDataFile 	(PROMPT_FOR_FILE);
+	refSeq = ">" + predefSeqNames [refSeq][0] + "\n" + RefSeqs[refSeq-2];
+	DataSet		   refD = ReadFromString (refSeq);
+	DataSet        unal = Combine (refD,unal2);
+}
+else
+{
+	
+	ChoiceList (refSeq2,"Insert a coordinate reference sequence?",1,SKIP_NONE,predefSeqNames2);
+	if (refSeq2 < 0)
+	{
+		return 0;
+	}
+	if (refSeq2)
+	{
+		DataSet        unal2 			= ReadDataFile 	(PROMPT_FOR_FILE);
+		refSeq = ">" + predefSeqNames [refSeq2][0] + "\n" + RefSeqs[refSeq2-1];
+		DataSet		   refD = ReadFromString (refSeq);
+		DataSet        unal = Combine (unal2,refD);
+        if (doLongestSequence)
+		{
+			doLongestSequence = 2;
+		}
+    }
+	else
+	{
+		DataSet        unal 			= ReadDataFile 	(PROMPT_FOR_FILE);
+	}
+}
+
+ChoiceList (doRC,"Try reverse complements?",1,SKIP_NONE,"No","Only align in the provided direction","Yes","Try both each sequences and its reverse complement.");
+if (doRC < 0)
+{
+	return 0;
+}
+
+DataSetFilter  filteredData 	= CreateFilter	(unal,1);
+
+ExecuteAFile ("Utility/NJ.bf");
+ExecuteAFile ("Utility/GrabBag.bf");
+GetInformation (UnalignedSeqs,filteredData);
+
+COUNT_GAPS_IN_FREQUENCIES = 0;
+InitializeDistances		   ();
+
+refSeqID = 0;
+maxL	 = 0;
+
+seqCount = Rows(UnalignedSeqs) * Columns(UnalignedSeqs);
+/* preprocess sequences */
+
+for (seqCounter = 0; seqCounter < seqCount; seqCounter = seqCounter+1)
+{
+	aSeq = UnalignedSeqs[seqCounter];
+	
+	UnalignedSeqs[seqCounter] = aSeq^{{"[^a-zA-Z]",""}};
+	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"^N+",""}};
+	//UnalignedSeqs[seqCounter] = UnalignedSeqs[seqCounter]^{{"N+$",""}};
+
+    if (doLongestSequence > 0 && seqCounter < seqCount - (refSeq2 > 0))
+	{
+		if (Abs (UnalignedSeqs[seqCounter]) > maxL)
+		{
+			maxL	 = Abs (UnalignedSeqs[seqCounter]);
+			refSeqID = seqCounter;
+		}
+	}
+    
+}
+
+s1 = UnalignedSeqs[refSeqID];
+
+if (checkReferenceSequenceForStopCodons)
+{
+    codonToAAMap		= defineCodonToAA();
+    isValid = 0;
+    for (offset = 0; offset < 3; offset +=1)
+    {
+        translString = translateCodonToAA (s1, codonToAAMap, offset);
+        stopPos = translString||"X";
+        if (stopPos[0] < 0)
+        {
+            isValid = 1;
+            break;
+        }
+    }
+    if (!isValid && doRC)
+    {
+        s1 = nucleotideReverseComplement(s1);
+        for (offset = 0; offset < 3; offset +=1)
+        {
+            translString = translateCodonToAA (s1, codonToAAMap, offset);
+            stopPos = translString||"X";
+            if (stopPos[0] < 0)
+            {
+                isValid = 1;
+                break;
+            }
+        }
+    }
+    assert (isValid, "The reference sequence must not contain stop codons in at least one of the frames");
+    s1 = s1[offset][offset+((Abs(s1)-offset)$3)*3-1];
+    UnalignedSeqs[refSeqID] = s1;
+}
+
+refLength 		 = Abs(UnalignedSeqs[refSeqID]);
+
+if (doLongestSequence > 0)
+{
+	GetString (refname, filteredData, refSeqID);
+	fprintf (stdout, "Set the reference sequence to ", refname, " (length = ", refLength, ")\n");
+}
+
+SeqAlignments 	 = {};
+startingPosition = {seqCount,2};
+refInsertions	 = {refLength+1,1};
+
+fprintf (stdout,"\nPerforming pairwise alignment with reference sequences\n");
+
+//pairwiseDistances = {seqCount,1};
+
+//fprintf (TEMP_FILE_NAME, CLEAR_FILE, KEEP_OPEN);
+//checkPointFile = LAST_FILE_PATH;
+	
+	
+for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1) {
+    if (seqCounter == refSeqID) {
+        continue;
+    }
+
+	s2 			 = UnalignedSeqs[seqCounter];
+	inStr 		 = {{s1,s2}};
+	AlignSequences(aligned, inStr, alignOptions);
+    
+	if (doRC) {
+		s2c = nucleotideReverseComplement (s2);
+		inStr 		 = {{s1,s2c}};
+		AlignSequences(aligned_rc, inStr, alignOptions);
+		if ((aligned_rc[0])[0] > (aligned[0])[0]) {
+			UnalignedSeqs[seqCounter] = s2c;
+			aligned = aligned_rc;
+		}
+	}
+	
+	
+
+	
+	//GetString (seqName,unal,seqCounter);
+   // fprintf (checkPointFile, "\n>ref\n", aligned[1], "\n>", seqName, "\n", aligned[2]); 
+    
+	if (doCodonAlignment) {
+        fixed = _cdn_alignment_cleanup ((aligned[0])[1], (aligned[0])[2],0);
+        
+        assert (Abs (fixed["REF"])%3 == 0);
+        assert (  (((aligned[0])[1] ^ {{"-",""}})&&1) == (((fixed["REF"]) ^ {{"-",""}})&&1), "Internal error correcting codon-based frameshifts:\n\n" + aligned[0] + "\n" + fixed + "\n");
+        
+        (aligned[0])[1] = fixed["REF"];
+        (aligned[0])[2] = fixed["QRY"];
+	}
+	
+	aligned = aligned[0];
+	SeqAlignments[seqCounter] = aligned;
+    
+    
+	aligned = aligned[1];
+	
+	myStartingPosition = aligned$"[^-]";
+	myEndingPosition  = Abs (aligned)-1;
+	
+	
+	while (aligned[myEndingPosition]=="-") {
+		myEndingPosition = myEndingPosition - 1;
+	}
+	
+	
+	startingPosition [seqCounter][0] = myStartingPosition[1];
+	startingPosition [seqCounter][1] = myEndingPosition;
+
+	refInsert = aligned||"-+";
+	if (refInsert[0]>=0) {
+		insCount = Rows (refInsert)/2;
+		offset = 0;
+		for (insN = 0; insN < insCount; insN = insN+1) {
+			insPos 		= refInsert[insN*2];
+			insLength	= refInsert[insN*2+1]-insPos+1;
+			insPos 		= insPos-offset;
+			if (refInsertions[insPos]<insLength) {
+				refInsertions[insPos]=insLength;
+			}
+			offset += insLength;
+		}
+	}
+	SetParameter (STATUS_BAR_STATUS_STRING, "Performing pairwise alignment with reference sequences ("+seqCounter+"/"+seqCount+" done)",0);
+}
+
+//fprintf (checkPointFile, CLOSE_FILE);
+
+/* produce a fully gapped reference sequence */
+
+fprintf (stdout,"\nMerging pairwise alignments into a MSA\n");
+
+fullRefSeq = "";
+fullRefSeq * refLength;
+fullRefSeq * (s1[0]);
+
+
+for (seqCounter=1;seqCounter<refLength;seqCounter+=1) {
+	gapCount = refInsertions[seqCounter];
+	for (k=0; k<gapCount;k=k+1)
+	{
+		fullRefSeq*("-");
+	}	
+	fullRefSeq  * (s1[seqCounter]);
+}
+
+fullRefSeq * 0;
+
+refLength = Abs(fullRefSeq);
+
+SetDialogPrompt ("Save alignment to:");
+
+GetString (seqName,unal,refSeqID);
+fprintf (PROMPT_FOR_FILE,CLEAR_FILE,">",seqName,"\n",fullRefSeq);
+fName = LAST_FILE_PATH;
+
+//fprintf (stdout, startingPosition, "\n", refInsertions, "\n");
+
+for (seqCounter = 0; seqCounter < seqCount; seqCounter += 1)
+{
+    if (seqCounter == refSeqID) {
+        continue;
+    }
+    
+	GetString (seqName,unal,seqCounter);
+	aligned = SeqAlignments[seqCounter];
+	
+	aligned1 = aligned[1];
+	aligned2 = aligned[2];
+	
+	s2 = startingPosition[seqCounter][0];
+	e2 = startingPosition[seqCounter][1];
+	
+	gappedSeq = "";
+	gappedSeq * Abs(aligned2);
+    
+	k=0;
+	
+	/*if (seqName == "D61_1959") {
+	    fprintf (stdout, "\n*** ", seqCounter, " ***\n");
+	}*/
+	
+	while (k<refLength)
+	{
+	    /*if (seqCounter == 10) {
+	        fprintf (stdout, k, "/", s2, " ", fullRefSeq[k]&&1, ":", aligned1[s2]&&1, ":", aligned2[s2]&&1, "\n");
+	    }*/
+		while ((fullRefSeq[k]&&1)!=(aligned1[s2]&&1) && k < refLength) {
+			gappedSeq*("-");
+			k += 1;
+		}
+		if (k == refLength) {
+			break;
+		}
+		gappedSeq*(aligned2[s2]);
+		s2 += 1;
+		k  += 1;
+	}
+
+	gappedSeq * 0;
+	/*if (seqCounter == 31) {
+        fprintf (stdout, "\n", startingPosition[seqCounter][0], "\n\n",fullRefSeq,"\n\n", aligned1, "\n\n", aligned2, "\n\n", gappedSeq, "\n\n");
+    }*/
+
+	if (refSeq2 && seqCounter == seqCount-1) {
+		fscanf (fName, "Raw", soFar);
+		fprintf (fName, CLEAR_FILE,">",seqName,"\n",gappedSeq,"\n",soFar);
+		
+	}
+	else {
+		fprintf (fName,"\n>",seqName,"\n",gappedSeq);
+	}
+}
+
+

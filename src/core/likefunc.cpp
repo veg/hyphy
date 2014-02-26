@@ -68,8 +68,8 @@ extern bool handleGUI(bool);
 void DecideOnDivideBy(_LikelihoodFunction *);
 long siteEvalCount = 0, divideBy = 10000000;
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
-    #if !defined __HEADLESS__ && !defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
+    #if !defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
         #include     "HYTreePanel.h"
         extern _HYTreePanel *feedbackTreePanel;
     #endif
@@ -1918,6 +1918,7 @@ _Parameter _LikelihoodFunction::Compute(void) {
         if (v->HasChanged()) {
             printf("%s changed\n", v->GetName()->sData);
         }
+        fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
     }
 #endif
     if (computeMode == 0 || computeMode == 3) {
@@ -4798,7 +4799,10 @@ DecideOnDivideBy(this);
                                          progressFileString);
             }
 #endif
-
+            if (smoothingTerm > 0.) {
+              smoothingTerm *= 0.8;
+            }
+            
             _SimpleList nc2;
             long ncp = 0, jjj;
             averageChange2 = 0.0;
@@ -5512,6 +5516,13 @@ long _LikelihoodFunction::Bracket(
         BufferToConsole(buf);
     }
 
+    /*
+    if (likeFuncEvalCallCount > 0) {
+      printf ("\n\n\nCHECK INDEX 6\n\n\n");
+      SetIthIndependent(6L, GetIthIndependent(6L));
+    }
+    */
+    
     while (1) {
 
         while ((middle - leftStep) < lowerBound) {
@@ -8330,7 +8341,7 @@ _Parameter _LikelihoodFunction::ComputeBlock(
             }
 
             //printf ("%d %d\n",likeFuncEvalCallCount, matrixExpCount);
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__
+#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
             if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
                 #pragma omp critical
                 yieldCPUTime();

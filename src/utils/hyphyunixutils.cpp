@@ -4,7 +4,7 @@
 
 
 #ifndef __HYPHY_NO_CURL__
-#define __HYPHYCURL__
+//#define __HYPHYCURL__
 #endif
 
 #ifdef  __HYPHYCURL__
@@ -71,6 +71,11 @@ bool    Get_a_URL (_String& urls, _String* fileName)
 
         curl_easy_setopt (curl, CURLOPT_URL, urls.sData );
         curl_easy_setopt (curl, CURLOPT_ERRORBUFFER, cErr);
+
+        //Do not check peer certificate, since we only ever get urls
+        curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0);
+        
         if (f) {
             curl_easy_setopt (curl, CURLOPT_FILE, (void*)f);
         } else {

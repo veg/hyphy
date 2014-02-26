@@ -61,8 +61,7 @@ _hyList<PAYLOAD>::_hyList()
 
 //Data constructor (1 member list)
 template<typename PAYLOAD>
-_hyList<PAYLOAD>::_hyList(const PAYLOAD item)
-{
+_hyList<PAYLOAD>::_hyList(const PAYLOAD item) {
   lLength     = 1UL;
   laLength    = HY_LIST_ALLOCATION_CHUNK;
   lData       = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD));
@@ -72,8 +71,7 @@ _hyList<PAYLOAD>::_hyList(const PAYLOAD item)
 
 //Stack copy contructor
 template<typename PAYLOAD>
-_hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const long to)
-{
+_hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const long to) {
   Initialize ();
   Clone (&l, from, to);
 }

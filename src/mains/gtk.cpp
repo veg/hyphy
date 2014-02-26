@@ -55,7 +55,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "calcnode.h"
 #include "executionlist.h"
 #include <unistd.h>
-#include <curses.h>
+//#include <curses.h>
 #include <termios.h>
 #ifdef   __MP2__
 #include <pthread.h>
