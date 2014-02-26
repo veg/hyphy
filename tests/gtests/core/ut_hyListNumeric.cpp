@@ -228,13 +228,9 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
       single_element_list << (TypeParam)12;
     }
 
-    _hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)30);
-    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
-    single_element_string = (_StringBuffer*)psort_counted_list->toStr();
-
-    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
-    //ASSERT_EQ ( 16UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
-    //ASSERT_EQ ( 2UL, psort_counted_list->Element(1)) << "Failed Sorted Count List";
+    _hyListNumeric <TypeParam>* psort_counted_list = single_element_list.CountingSort((TypeParam)13);
+    ASSERT_EQ ( 2UL, psort_counted_list->Element(0)) << "Failed Sorted Count List";
+    ASSERT_EQ ( 12UL, psort_counted_list->Element(24)) << "Failed Sorted Count List";
 
     // offset test
     arithmetic_series_list.Offset(24);

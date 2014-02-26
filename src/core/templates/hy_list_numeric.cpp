@@ -37,11 +37,6 @@
  
  */
 
-
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-
 /*
  ==============================================================
  Constructors
@@ -61,6 +56,7 @@ _hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD item) : _hyListOrderable<P
 template<typename PAYLOAD>
 _hyListNumeric<PAYLOAD>::_hyListNumeric(unsigned long l) : _hyListOrderable<PAYLOAD> (l)
 {
+  this->lData = (PAYLOAD *)MemAllocate(l * sizeof(PAYLOAD));
 }
 
   //Stack copy contructor
@@ -217,10 +213,10 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
         if (upperBound == _HY_LIST_NUMERIC_INVALID_VALUE_) {
             upperBound = this->Max()+1UL;
         } else {
-          upperBound = upperBound + 1;
+          upperBound = upperBound;
         }
 
-        _hyListNumeric<PAYLOAD> *count  =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
+        _hyListNumeric<PAYLOAD> *count  =  new _hyListNumeric <PAYLOAD> ((long)upperBound);
         _hyListNumeric<PAYLOAD> *result =  new _hyListNumeric <PAYLOAD> (this->lLength + 1);
                   
         count->Populate(upperBound, 0UL, 0UL);
@@ -233,9 +229,6 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
             count->lData[pass2] += count->lData[pass2-1];
         }
 
-        _StringBuffer* arithmetic_string = (_StringBuffer*)count->toStr();
-        std::cout << arithmetic_string->getStr();
-        
         if (ordering) {
             ordering->Populate (this->lLength, 0UL, 0UL);
             for (long pass3 = this->lLength-1; pass3 >=0L; pass3--) {
@@ -244,9 +237,7 @@ _hyListNumeric <PAYLOAD>*  _hyListNumeric<PAYLOAD>::CountingSort (PAYLOAD upperB
             }
         } else {
             for (long pass3 = this->lLength-1; pass3 >= 0L; pass3--) {
-                count->lData[this->lData[pass3]] = count->lData[this->lData[pass3]] - 1;
-                long i = count->lData[this->lData[pass3]];
-                result->lData[i] = this->lData[pass3];
+                result->lData[--count->lData[this->lData[pass3]]] = this->lData[pass3];
             }
         }
         result->lLength = this->lLength;
