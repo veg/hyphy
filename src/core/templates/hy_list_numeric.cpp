@@ -54,8 +54,7 @@ _hyListNumeric<PAYLOAD>::_hyListNumeric(const PAYLOAD item) : _hyListOrderable<P
 
   //Length constructor
 template<typename PAYLOAD>
-_hyListNumeric<PAYLOAD>::_hyListNumeric(unsigned long l) : _hyListOrderable<PAYLOAD> (l)
-{
+_hyListNumeric<PAYLOAD>::_hyListNumeric(unsigned long l) : _hyListOrderable<PAYLOAD> (l) {
   this->lData = (PAYLOAD *)MemAllocate(l * sizeof(PAYLOAD));
 }
 

@@ -48,23 +48,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace {
 
-class _testNumericPayload {
-  public:
-  _testNumericPayload (void) { data [0] = 0; data [1] = 0;}
-  _testNumericPayload (unsigned long p) { data[0] = p; data[1] = p; }
-  _testNumericPayload (unsigned long p, unsigned long p2) { data[0] = p; data[1] = p2; }
-  _testNumericPayload (const _testNumericPayload& o) { data[0] = o.data[1]; data[1] = o.data[1]; }
-  
-  bool operator == (const _testNumericPayload & o) const { return data[0] == o.data[0] && data[1] == o.data[1];} 
-  bool operator != (const _testNumericPayload & o) const { return ! ((*this) == o);} 
-  bool operator <  (const _testNumericPayload & o) const { if (data[0] < o.data[0]) return true; if (data [0] == o.data[0]) {return data[1] < o.data[1];} return false;} 
-  bool operator <= (const _testNumericPayload & o) const { return (*this) < o || (*this == o); } 
-  bool operator >  (const _testNumericPayload & o) const { return  ! ((*this) <= o); } 
-  bool operator >= (const _testNumericPayload & o) const { return  ! ((*this) < o); } 
-  operator unsigned long (void) {return data[0];}
-  unsigned long data[2];
-};
-
 // The fixture for testing class Foo.
 template <typename DATA>
 class _hyListNumericTest : public ::testing::Test {
@@ -93,29 +76,6 @@ protected:
     
   }
   
-  _hyListNumeric <DATA> make_random_list (const unsigned long size, const unsigned long range, const unsigned long offset = 0UL) {
-    _hyListNumeric <DATA> random_list;
-    for (unsigned long item = 0UL; item < size; item ++) {
-      random_list.append ((DATA) (offset + genrand_int32() % range));
-    }
-    return random_list;
-  }
-  
-  _StringBuffer dump_to_stream_as_longs (const _hyListNumeric<DATA>& data) {
-    _StringBuffer result;
-    char buffer [256];
-    result << '[';
-    for (unsigned long item = 0UL; item < data.countitems(); item++) {
-      if (item) {
-        result << ',';
-      }
-      snprintf(buffer,255,"%lu", (unsigned long)data.AtIndex (item));
-      result << buffer;
-    }
-    result << ']';
-    return result;
-  } 
-
 public:
   // Per-test-case set-up.
   // Called before the first test in this test case.
