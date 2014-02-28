@@ -242,7 +242,7 @@ void _hyList<PAYLOAD>::append_multiple(const PAYLOAD item, const unsigned long c
 }
 
 template<typename PAYLOAD>
-void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots)
+void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots, bool set_length)
 {
   if (slots > laLength) {
     laLength = (slots / HY_LIST_ALLOCATION_CHUNK + 1) * HY_LIST_ALLOCATION_CHUNK;
@@ -252,6 +252,9 @@ void _hyList<PAYLOAD>::RequestSpace(const unsigned long slots)
     } else {
       checkPointer(lData = (PAYLOAD *)MemAllocate(laLength * sizeof(PAYLOAD)));
     }
+  }
+  if (set_length) {
+    lLength = slots;
   }
 }
 
@@ -499,7 +502,7 @@ void _hyList<PAYLOAD>::Duplicate(BaseRefConst theRef)
 //Element location functions (0,llength - 1)
 //Negative indices return offsets from the end of the list
 template<typename PAYLOAD>
-PAYLOAD _hyList<PAYLOAD>::Element(const long index)
+PAYLOAD _hyList<PAYLOAD>::Element(const long index) const
 {
   if (index >= 0L && (unsigned long)index < lLength) {
     return lData[index];
@@ -701,7 +704,7 @@ void _hyList<PAYLOAD>::Swap(const unsigned long i, const unsigned long j)
 }
 
 template<typename PAYLOAD>
-BaseRef _hyList<PAYLOAD>::toStr(void)
+BaseRef _hyList<PAYLOAD>::toStr(void) const
 {
   _StringBuffer * stringified = new _StringBuffer ();
   (*stringified) << "_hyList with ";
