@@ -1040,9 +1040,8 @@ _Parameter _String::toNum(void) {
 }
 
 //Return good ole char*
-BaseRef _String::toStr(void) {
-  AddAReference();
-  return this;
+BaseRef _String::toStr(void) const{
+  return new _String (*this);
 }
 
 _Parameter _String::ProcessTreeBranchLength(void) {

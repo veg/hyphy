@@ -249,7 +249,7 @@ public:
   * Converts a good ole char*
   * \n\n \b Example: \code string.toStr(); \endcode
   */
-  virtual BaseRef toStr(void);
+  virtual BaseRef toStr(void) const;
 
   /**
   * Return good ole char*
