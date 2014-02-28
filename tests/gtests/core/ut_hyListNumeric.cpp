@@ -195,7 +195,6 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     EXPECT_STREQ("{}", null_string->getStr()) << "empty numeric list to string failed";
 
     // list to partition string test
-    //TODO: Fix string doubles and longs to strings
     _StringBuffer* seq_partition_string = (_StringBuffer*)joined.ListToPartitionString();
     _StringBuffer* null_partition_string = (_StringBuffer*)null_list.ListToPartitionString();
     EXPECT_STREQ("4-13,30,32,34,36,38", seq_partition_string->getStr()) << "single numeric list to partition string failed";
