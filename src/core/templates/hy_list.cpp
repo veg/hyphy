@@ -398,7 +398,7 @@ void _hyList<PAYLOAD>::DeleteList(const _hyList<long> *indices_to_delete)
     unsigned long k = 0UL;
     
     for (unsigned long i = 0UL; i < lLength; i++) {
-      if (k < del_list_length && i == indices_to_delete->AtIndex(k)) {
+      if (k < del_list_length && i == (unsigned long)indices_to_delete->AtIndex(k)) {
         k++;
       } else {
         lData[i - k] = lData[i];
@@ -412,46 +412,72 @@ void _hyList<PAYLOAD>::DeleteList(const _hyList<long> *indices_to_delete)
 template<typename PAYLOAD>
 void _hyList<PAYLOAD>::Displace(long start, long end, long delta)
 {
-  if (start < 0L) {
-    start = 0L;
-  } else if (start >= lLength) {
-    start = lLength - 1L;
-  }
 
-  if (end < 0L || end >= lLength) {
-    end = lLength - 1L;
-  } 
-  
-  if (end - start >= 0L && delta && end - start < lLength - 1) {
-    if (delta > 0 && lLength - end <= delta) { // shift up
-      delta = lLength - end - 1;
-    } else if (start + delta < 0L) {
-      delta = -start;
+  if (lLength > 0UL) {
+
+    unsigned long ustart, 
+                  uend;
+
+    if (start < 0L) {
+      ustart = 0L;
+    } else if ((unsigned long)start >= lLength) {
+      ustart = lLength - 1L;
+    } else {
+      ustart = start;
+    }
+
+    if (end < 0L || (unsigned long)end >= lLength) {
+      uend = lLength - 1L;
+    } else {
+      uend = end;
     }
     
-    if (delta) {
-      unsigned long span = end - start + 1L;
+    
+    if (uend >= ustart && delta != 0L && uend - ustart + 1UL < lLength) {
+      if (delta > 0L && lLength <= delta + uend) { // shift up
+        delta = lLength - uend - 1L;
+      } else if (start + delta < 0L) {
+        delta = -ustart;
+      }
       
-      _hyList <PAYLOAD> swapList;
-      swapList.RequestSpace (span);
+      if (delta) {
+        unsigned long span = uend - ustart + 1L;
+        
+        
+        if (delta > 0L) {
+          if (span > delta) {
+            Displace (uend+1UL, uend + delta, -span);
+            return;
+          }
+        } else {
+          if (span > -delta) {
+             Displace (ustart + delta, ustart - 1UL, span);
+             return;
+          }
+        }
+        
+        
+        _hyList <PAYLOAD> swapList;
+        swapList.RequestSpace (span);
 
-      for (unsigned long i = start; i <= end; i++) {
-        swapList.append (lData[i]);
-      }
-
-      if (delta > 0L) {
-        for (unsigned long i = end + 1L; i <= end + delta; i++) {
-          lData[i - span] = lData[i];
+        for (unsigned long i = ustart; i <= uend; i++) {
+          swapList.append (lData[i]);
         }
 
-      } else {
-        for (long i = start - 1L; i >= start + delta; i--) {
-          lData[i + span] = lData[i];
-        }
-      }
+        if (delta > 0L) {
+          for (unsigned long i = ustart; i <= ustart + delta; i++) {
+            lData[i] = lData[i+span];
+          }
 
-      for (unsigned long i = start + delta, j = 0UL; i <= end + delta; i++, j++) {
-        lData[i] = swapList.lData[j];
+        } else {
+          for (long i = (long)ustart - 1L; i >= (long)ustart + delta; i--) {
+            lData[i+span] = lData[i];
+          }
+        }
+  
+        for (unsigned long i = ustart + delta, j = 0UL; i <= uend + delta; i++, j++) {
+          lData[i] = swapList.lData[j];
+        }
       }
     }
   }
@@ -475,10 +501,10 @@ void _hyList<PAYLOAD>::Duplicate(BaseRefConst theRef)
 template<typename PAYLOAD>
 PAYLOAD _hyList<PAYLOAD>::Element(const long index)
 {
-  if (index >= 0L && index < lLength) {
+  if (index >= 0L && (unsigned long)index < lLength) {
     return lData[index];
-  } else if (-index <= lLength) {
-    return lData[lLength - (-index)];
+  } else if ((unsigned long)(-index) <= lLength) {
+    return lData[(long)lLength + index];
   }
   return lData[0];
 }

@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sweaver/Programming/hyphy/contrib/gtest-1.7.0
+# Install script for directory: /Volumes/TeraMonkey/Users/sergei/hyphy/contrib/gtest-1.7.0
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
