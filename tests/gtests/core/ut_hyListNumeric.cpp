@@ -187,18 +187,18 @@ TYPED_TEST_P (_hyListNumericTest, MethodTests) {
     ASSERT_EQ ( 0, null_list.Sum()) << "Failed summation of an empty list";
 
     // toStr tests
-    _StringBuffer* arithmetic_string = (_StringBuffer*)arithmetic_series_list.toStr();
-    _StringBuffer* single_element_string = (_StringBuffer*)single_element_list.toStr();
-    _StringBuffer* null_string = (_StringBuffer*)null_list.toStr();
-    EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string->getStr()) << "multiple numeric list to string failed";
-    EXPECT_STREQ("{5}", single_element_string->getStr()) << "single numeric list to string failed";
-    EXPECT_STREQ("{}", null_string->getStr()) << "empty numeric list to string failed";
+    _String arithmetic_string ((_String*)arithmetic_series_list.toStr());
+    _String single_element_string = ((_String*)single_element_list.toStr());
+    _String null_string = ((_String*)null_list.toStr());
+    EXPECT_STREQ("{4,8,12,16,20,24,28,32,36,40}", arithmetic_string.getStr()) << "multiple numeric list to string failed";
+    EXPECT_STREQ("{5}", single_element_string.getStr()) << "single numeric list to string failed";
+    EXPECT_STREQ("{}", null_string.getStr()) << "empty numeric list to string failed";
 
     // list to partition string test
-    _StringBuffer* seq_partition_string = (_StringBuffer*)joined.ListToPartitionString();
-    _StringBuffer* null_partition_string = (_StringBuffer*)null_list.ListToPartitionString();
-    EXPECT_STREQ("4-13,30,32,34,36,38", seq_partition_string->getStr()) << "single numeric list to partition string failed";
-    EXPECT_STREQ("", null_partition_string->getStr()) << "empty numeric list to partition string failed";
+    _String seq_partition_string ((_String*)joined.ListToPartitionString());
+    _String null_partition_string ((_String*)null_list.ListToPartitionString());
+    EXPECT_STREQ("4-13,30,32,34,36,38", seq_partition_string.getStr()) << "single numeric list to partition string failed";
+    EXPECT_STREQ("", null_partition_string.getStr()) << "empty numeric list to partition string failed";
 
     for (unsigned long i = 0UL; i < 128UL; i++) {
       _hyListNumeric<long> index;
