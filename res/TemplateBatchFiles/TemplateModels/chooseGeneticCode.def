@@ -541,8 +541,12 @@ function translateCodonToAA (codonSeq,mapping,offset)
 		}
 		else
 		{
-			translString * "?";
-		}
+		    if (codon == "---") {
+			    translString * "-";
+		    } else {
+			    translString * "?";
+			}
+	    }
 	} 
 	translString * 0;
 	translString = translString^{{"X$","?"}};
