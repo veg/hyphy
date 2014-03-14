@@ -145,6 +145,8 @@ _String     expectedNumberOfSubs  = "EXPECTED_NUMBER_OF_SUBSTITUTIONS",
             newNodeGraftName      = "NAME",
             newNodeGraftWhere      = "WHERE",
             newNodeGraftParent   = "PARENT",
+            newNodeGraftLength   = "LENGTH",
+            newNodeGraftParentLength = "PARENT_LENGTH",
             eqWithReroot        = "Equal with reroot at ",
             eqWithoutReroot       = "Equal without rerooting",
             iNodePrefix;
@@ -1725,20 +1727,25 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
     if (newNode->ObjectClass () == ASSOCIATIVE_LIST) {
         _AssociativeList * newNodeSpec = (_AssociativeList*)newNode;
         _FString         * newName     = (_FString*)newNodeSpec->GetByKey (newNodeGraftName, STRING),
-                           * newLocation = (_FString*)newNodeSpec->GetByKey (newNodeGraftWhere, STRING),
-                             * newParent   = (_FString*)newNodeSpec->GetByKey (newNodeGraftParent, STRING);
+                         * newLocation = (_FString*)newNodeSpec->GetByKey (newNodeGraftWhere, STRING),
+                         * newParent   = (_FString*)newNodeSpec->GetByKey (newNodeGraftParent, STRING);
+                         
+        _Constant        * branchLengthSelf = (_Constant*)newNodeSpec->GetByKey (newNodeGraftLength, NUMBER),
+                         * branchLengthParent = (_Constant*)newNodeSpec->GetByKey (newNodeGraftParentLength, NUMBER);
 
 
-        if (!newName) {
-            WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftName&"\") in call to _TreeTopology::AddANode");
-            return;
-        }
         if (!newLocation) {
             WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftWhere&"\") in call to _TreeTopology::AddANode");
             return;
         }
+        /*
         if (!newParent) {
             WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftParent&"\") in call to _TreeTopology::AddANode");
+            return;
+        }*/
+        
+        if (!newName) {
+            WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftName&"\") in call to _TreeTopology::AddANode");
             return;
         }
 
@@ -1748,20 +1755,39 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
             return;
         }
 
-        node<long>* newp = (node<long>*) checkPointer(new node<long>),
-                    * curp = graftAt->get_parent();
+        node<long>* newp = newParent ? (node<long>*) checkPointer(new node<long>) : nil,
+                  * curp = graftAt->get_parent();
 
-        newp->set_parent  (*curp);
-        newp->add_node    (*graftAt);
-        curp->replace_node(graftAt,newp);
+        if (newp) {
+          newp->set_parent  (*curp);
+          newp->add_node    (*graftAt);
+          curp->replace_node(graftAt,newp);
+        } 
 
         if (!newName->IsEmpty()) {
             node<long>* newt = (node<long>*) checkPointer(new node<long>);
-            newp->add_node(*newt);
-            FinalizeNode (newt, 0, *newName->theString,   empty, empty);
+            if (newp) {
+              newp->add_node(*newt);
+            } else {
+              graftAt->add_node (*newt);
+            }
+            if (branchLengthSelf) {
+              _String bl (branchLengthSelf->Value());
+              FinalizeNode (newt, 0, *newName->theString,   empty, bl);
+            } else {
+              FinalizeNode (newt, 0, *newName->theString,   empty, empty);
+            }
         }
 
-        FinalizeNode (newp, 0, *newParent->theString, empty, empty);
+        if (newp) {
+            if (branchLengthParent) {
+              _String bl (branchLengthSelf->Value());
+               FinalizeNode (newp, 0, *newParent->theString, empty, bl);
+            } else {
+              FinalizeNode (newp, 0, *newParent->theString, empty, empty);
+            }
+          
+        }
 
     } else {
         WarnError ("An invalid argument (not an associative array) supplied to _TreeTopology::AddANode");
