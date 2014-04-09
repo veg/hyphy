@@ -3972,6 +3972,11 @@ DecideOnDivideBy (this);
         if (optMethod!=7) {
             ConjugateGradientDescent (0.1, bestSoFar, true, 10);
         } else {
+            _Parameter current_precision = MAX(1., precision);
+            while (current_precision > precision) {
+              ConjugateGradientDescent(current_precision, bestSoFar, true);
+              current_precision *= 0.1;
+            }
             ConjugateGradientDescent(precision, bestSoFar, true);
         }
 #if !defined __UNIX__ || defined __HEADLESS__

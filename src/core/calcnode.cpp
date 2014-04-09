@@ -1738,14 +1738,10 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
             WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftWhere&"\") in call to _TreeTopology::AddANode");
             return;
         }
-        /*
-        if (!newParent) {
-            WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftParent&"\") in call to _TreeTopology::AddANode");
-            return;
-        }*/
         
-        if (!newName) {
-            WarnError (_String("Missing/invalid mandatory argument (\"")&newNodeGraftName&"\") in call to _TreeTopology::AddANode");
+        
+        if (! (newName || newParent)) {
+            WarnError (_String("At least one of '") & newNodeGraftName&"', '"& newNodeGraftParent &"') must be specified in call to _TreeTopology::AddANode");
             return;
         }
 
@@ -1764,7 +1760,7 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
           curp->replace_node(graftAt,newp);
         } 
 
-        if (!newName->IsEmpty()) {
+        if (newName && !newName->IsEmpty()) {
             node<long>* newt = (node<long>*) checkPointer(new node<long>);
             if (newp) {
               newp->add_node(*newt);
@@ -1779,7 +1775,7 @@ void    _TreeTopology::AddANode (_PMathObj newNode)
             }
         }
 
-        if (newp) {
+        if (newp && ! newParent->IsEmpty()) {
             if (branchLengthParent) {
               _String bl (branchLengthSelf->Value());
                FinalizeNode (newp, 0, *newParent->theString, empty, bl);

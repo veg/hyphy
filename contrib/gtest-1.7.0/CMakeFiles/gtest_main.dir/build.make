@@ -4,7 +4,7 @@
 #=============================================================================
 # Special targets provided by cmake.
 
-# Disable implicit rules so canonical targets will work.
+# Disable implicit rules so canoncical targets will work.
 .SUFFIXES:
 
 # Remove some rules from gmake that .SUFFIXES does not remove.
@@ -26,19 +26,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/Cellar/cmake/2.8.8/bin/cmake
+CMAKE_COMMAND = /usr/local/Cellar/cmake/2.8.5/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/Cellar/cmake/2.8.8/bin/cmake -E remove -f
+RM = /usr/local/Cellar/cmake/2.8.5/bin/cmake -E remove -f
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/Cellar/cmake/2.8.8/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/local/Cellar/cmake/2.8.5/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/sergei/hyphy2.2
+CMAKE_SOURCE_DIR = /Volumes/TeraMonkey/Users/sergei/hyphy2.2
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/sergei/hyphy2.2
+CMAKE_BINARY_DIR = /Volumes/TeraMonkey/Users/sergei/hyphy2.2
 
 # Include any dependencies generated for this target.
 include contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/depend.make
@@ -51,17 +51,17 @@ include contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/flags.make
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o: contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/flags.make
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o: contrib/gtest-1.7.0/src/gtest_main.cc
-	$(CMAKE_COMMAND) -E cmake_progress_report /Users/sergei/hyphy2.2/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /Volumes/TeraMonkey/Users/sergei/hyphy2.2/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS)   -DGTEST_HAS_PTHREAD=1   -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS)  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/gtest_main.dir/src/gtest_main.cc.i"
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)   -DGTEST_HAS_PTHREAD=1   -E /Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc > CMakeFiles/gtest_main.dir/src/gtest_main.cc.i
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -E /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc > CMakeFiles/gtest_main.dir/src/gtest_main.cc.i
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/gtest_main.dir/src/gtest_main.cc.s"
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)   -DGTEST_HAS_PTHREAD=1   -S /Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.s
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && /usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS)  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -S /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/src/gtest_main.cc -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.s
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o.requires:
 .PHONY : contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o.requires
@@ -83,8 +83,8 @@ contrib/gtest-1.7.0/libgtest_main.a: contrib/gtest-1.7.0/CMakeFiles/gtest_main.d
 contrib/gtest-1.7.0/libgtest_main.a: contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/build.make
 contrib/gtest-1.7.0/libgtest_main.a: contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --red --bold "Linking CXX static library libgtest_main.a"
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -P CMakeFiles/gtest_main.dir/cmake_clean_target.cmake
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/gtest_main.dir/link.txt --verbose=$(VERBOSE)
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -P CMakeFiles/gtest_main.dir/cmake_clean_target.cmake
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/gtest_main.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/build: contrib/gtest-1.7.0/libgtest_main.a
@@ -94,10 +94,10 @@ contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/requires: contrib/gtest-1.7.0/CMak
 .PHONY : contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/requires
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/clean:
-	cd /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -P CMakeFiles/gtest_main.dir/cmake_clean.cmake
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 && $(CMAKE_COMMAND) -P CMakeFiles/gtest_main.dir/cmake_clean.cmake
 .PHONY : contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/clean
 
 contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/depend:
-	cd /Users/sergei/hyphy2.2 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/sergei/hyphy2.2 /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 /Users/sergei/hyphy2.2 /Users/sergei/hyphy2.2/contrib/gtest-1.7.0 /Users/sergei/hyphy2.2/contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/DependInfo.cmake --color=$(COLOR)
+	cd /Volumes/TeraMonkey/Users/sergei/hyphy2.2 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Volumes/TeraMonkey/Users/sergei/hyphy2.2 /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 /Volumes/TeraMonkey/Users/sergei/hyphy2.2 /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0 /Volumes/TeraMonkey/Users/sergei/hyphy2.2/contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : contrib/gtest-1.7.0/CMakeFiles/gtest_main.dir/depend
 
