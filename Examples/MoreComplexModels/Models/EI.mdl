@@ -1,0 +1,1 @@
+NICETY_LEVEL = 2;EEAA = {20,20};for (i=0; i<19;i=i+1){	for (j=i+1; j<20; j=j+1)	{		EEAA[i][j]:=a;		EEAA[j][i]:=a;				}}Model EqualInputModel = (EEAA, USE_FUNCTION_FREQUENCIES);
