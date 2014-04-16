@@ -10732,7 +10732,7 @@ _CustomFunction::_CustomFunction (_String* arg)
 
     _FormulaParsingContext fpc (&errMsg, nil);
 
-    if (Parse (&myBody, body, fpc) == HY_FORMULA_EXPRESSION) {
+    if (Parse (&myBody, body, fpc, nil) == HY_FORMULA_EXPRESSION) {
         _SimpleList myVars;
         {
             _AVLList al (&myVars);

@@ -1381,7 +1381,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                                 errMsg;
 
                         _FormulaParsingContext fpc (&errMsg, currentProgram.nameSpacePrefix);
-                        if (Parse (&f,argCopy, fpc) == HY_FORMULA_EXPRESSION) {
+                        if (Parse (&f,argCopy, fpc, nil) == HY_FORMULA_EXPRESSION) {
                             thePrintObject = f.Compute(0,currentProgram.nameSpacePrefix);
                         } else {
                             if (errMsg.sLength)

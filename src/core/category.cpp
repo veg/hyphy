@@ -314,7 +314,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
     if (!covariantVar) {
         _FormulaParsingContext fpc (nil, theP);
-        Parse (&density, *param, fpc); // check if the formula is good
+        Parse (&density, *param, fpc, nil); // check if the formula is good
     }
 
     if (!density.IsEmpty()) {
@@ -351,7 +351,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
         } else {
             if(check) {
                 _FormulaParsingContext fpc (nil, theP);
-                Parse(&cumulative,*param,fpc);
+                Parse(&cumulative,*param,fpc, nil);
                 {
                     _SimpleList   densityVars,
                                   existingVars (scannedVarsList);
@@ -400,9 +400,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 _Parameter dns = 1.0/(x_max-x_min);
                 errorMsg = _String(dns);
                 _FormulaParsingContext fpc;
-                Parse(&density, errorMsg,fpc);
+                Parse(&density, errorMsg,fpc, nil);
                 errorMsg = _String(dns)&"*(_x_-"&_String(x_min)&")";
-                Parse(&cumulative, errorMsg,fpc);
+                Parse(&cumulative, errorMsg,fpc, nil);
             }
         }
     } else { // enumerated interval parameters
@@ -512,7 +512,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     if (parameters.countitems()>7) { // aux mean formula
         param = (_String*)parameters(7);
         _FormulaParsingContext fpc (nil, theP);
-        Parse    (&meanC,*param,fpc);
+        Parse    (&meanC,*param,fpc, nil);
 
         if (parameters.lLength>8) {
             _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);

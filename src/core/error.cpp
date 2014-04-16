@@ -413,7 +413,7 @@ _String* ConstructAnErrorMessage         (_String& theMessage)
                  errMsgLocal;
         _FormulaParsingContext fpc (&errMsgLocal, nil);
         
-        if (Parse    (&expression, expr, fpc) == HY_FORMULA_EXPRESSION) {
+        if (Parse    (&expression, expr, fpc, nil) == HY_FORMULA_EXPRESSION) {
             CheckReceptacleAndStore(&errorReportFormatExpressionStr, empty, false, new _FString (theMessage, false), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStack, empty, false, new _Matrix (calls), false);
             CheckReceptacleAndStore(&errorReportFormatExpressionStdin, empty, false, new _Matrix (stdins, false), false);
