@@ -34,7 +34,10 @@ _HXB_env_upperbound             = _HXB_aa_offset_matrix [{{0,1}}][{{0,Columns(_H
 _HXB_Annotation = {};
 
 for (_k = 0; _k < Columns (_HXB_env_region_name); _k += 1) {
-    _HXB_Annotation [_HXB_env_region_name[_k]] = {{_HXB_env_offset__+_HXB_aa_offset_matrix__[_k]*3,_HXB_env_offset__+(_HXB_aa_offset_matrix__[_k+1]*3)-1}};
+    _rn = _HXB_env_region_name[_k];
+    _HXB_Annotation [_rn] = {1,2};
+    (_HXB_Annotation [_rn])[0] = _HXB_env_offset+ _HXB_aa_offset_matrix[_k]*3;
+    (_HXB_Annotation [_rn])[1] = _HXB_env_offset+ _HXB_aa_offset_matrix[_k+1]*3-1;
 }
 
 
