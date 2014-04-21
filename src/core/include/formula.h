@@ -95,10 +95,10 @@ public:
     bool        IsEmpty             (void); // is there anything in the formula
     long        NumberOperations    (void); // how many ops in the formula?
 
-    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula* = nil); 
+    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula*); 
     // the main expression parser
     
-    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer* = nil, char = HY_STRING_DIRECT_REFERENCE);
+    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer*, char);
     // the execution block for "compiled formulae
     /*
      SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference"

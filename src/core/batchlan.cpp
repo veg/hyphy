@@ -1244,7 +1244,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                     _Formula f;
                     _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
-                    long status = Parse (&f, *(_String*)aStatement->parameters(0), fpc);
+                    long status = Parse (&f, *(_String*)aStatement->parameters(0), fpc, nil);
 
                     if (status== HY_FORMULA_EXPRESSION) {
                         aStatement->simpleParameters<<long(f.makeDynamic());
@@ -2559,7 +2559,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain)
             //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 
             _FormulaParsingContext fpc (nil,  chain.nameSpacePrefix);
-            long status = Parse (&f, *(_String*)parameters(0), fpc);
+            long status = Parse (&f, *(_String*)parameters(0), fpc, nil);
 
             //printf ("Print formula: %s\n", _String((_String*)f.toStr()).sData);
 
@@ -4016,7 +4016,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain)
             // and that it is a valid transition matrix
             isExpressionBased = (_Formula*)checkPointer(new _Formula);
             _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-            long parseCode = Parse(isExpressionBased,matrixExpression,fpc);
+            long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
             if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
                 WarnError (defErrMsg );
                 return;

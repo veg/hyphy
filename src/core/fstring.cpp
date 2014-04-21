@@ -404,7 +404,7 @@ _PMathObj _FString::Differentiate (_PMathObj p)
 
     _String copyMe (*theString);
     _FormulaParsingContext fpc;
-    if (Parse (&F,copyMe, fpc) == HY_FORMULA_EXPRESSION) {
+    if (Parse (&F,copyMe, fpc, nil) == HY_FORMULA_EXPRESSION) {
         _Formula *DF = F.Differentiate (*X,true);
         if (DF) {
             DFDX = (_String*)DF->toStr();

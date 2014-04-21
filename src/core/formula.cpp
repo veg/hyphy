@@ -1990,7 +1990,7 @@ _Formula::_Formula (_String&s, _VariableContainer* theParent, _String* reportErr
 
     _FormulaParsingContext fpc (reportErrors, theParent);
     
-    if (Parse (this, s, fpc) != HY_FORMULA_EXPRESSION) {
+    if (Parse (this, s, fpc, nil) != HY_FORMULA_EXPRESSION) {
         Clear();
     }
 }
