@@ -47,9 +47,7 @@ function Uppercase( _str )
     return _upstr;
 }
 
-// -------------------------------------------------------------------------- //
-
-lfunction _cdn_alignment_cleanup (reference, query, offset_nuc) {
+function _cdn_alignment_cleanup (reference, query, offset_nuc) {
     too_short = 0;
     too_long  = 0;
     span      = 0; // how many nucleotides in the reference were covered by non-gaps
@@ -58,61 +56,39 @@ lfunction _cdn_alignment_cleanup (reference, query, offset_nuc) {
     ref_cleaned = ""; ref_cleaned * 128; 
     qry_cleaned = ""; qry_cleaned * 128;
     
-    
-    // only report the sites that are in frame relative to the reference
-    
-    _reference_phase = 0;
-    _query_phase     = 0;
+    _codon_in_reference = 0;
     
 	for ( _rcidx = 0; _rcidx < _seqL; _rcidx += 1 ) {
-	    _ref_char = reference [_rcidx];
-	    _qry_char = query [_rcidx];
-	    
-	    /*
-	    if (^"seqCounter" == 5) {
-	        fprintf (stdout, _ref_char, "/", _qry_char, "   ", _reference_phase%3, ":", _query_phase%3, "\n");
-	    }
-	    */
-	   
-	    
-	    if (_ref_char == "-") {
-	         if (_reference_phase % 3 == 0 && _seqL - _rcidx >=3 ) { // in frame, see if this is a --- 
-	            if (reference[_rcidx+1] == "-" && reference[_rcidx+2] == "-") {
-                    ref_cleaned * "---";
-                    qry_cleaned * query     [_rcidx][_rcidx+2];
-                    _rcidx += 2;
-                    _query_phase += 3;	 
-                } else {
-                    _query_phase += 1;
-                }     
-	         }
+	    _del1 = reference [_rcidx] != (reference [_rcidx]&&1);
+	    if (_del1) {
+	        too_short += 1;
+	        _codon_in_reference += 1;
+	        ref_cleaned * (reference [_rcidx]&&1);
+	        qry_cleaned * (query [_rcidx]&&1);
 	    } else {
-	        if (_qry_char == "-") {
-                ref_cleaned * reference [_rcidx];
-                qry_cleaned * query     [_rcidx];
-                _reference_phase += 1;	            	            
+	        _del1 = query [_rcidx] != (query [_rcidx]&&1);
+	        if (_del1) {
+	            if (_seqL-_rcidx < 3 && _codon_in_reference % 3 == 0) {
+	                break;
+	            }
+	            too_long += 1;
 	        } else {
-                if (_reference_phase % 3 == _query_phase % 3) {
-                    ref_cleaned * reference [_rcidx];
-                    qry_cleaned * query     [_rcidx];
-                    _reference_phase += 1;
-                    _query_phase     += 1;
-                } else {
-                    ref_cleaned * reference [_rcidx];
-                    qry_cleaned * "-";
-                    _reference_phase += 1;
-                    _query_phase += 1;
-                }	        
+                ref_cleaned * (reference [_rcidx]&&1);
+                qry_cleaned * (query [_rcidx]&&1);
+                span += 1;	            
+                _codon_in_reference +=1;
 	        }
-	    }	    
+	    }
 	}
-	
+	/*for (;_rcidx < _seqL; _rcidx += 1 ) {
+        ref_cleaned * (reference [_rcidx]&&1);
+        qry_cleaned * (query [_rcidx]&&1);
+    }*/
 	ref_cleaned * 0; qry_cleaned * 0;
 	
-	//assert (too_long == 0, "\n" + ref_cleaned + "\n"+ qry_cleaned);
-	
-	return {"REF": ref_cleaned, "QRY": qry_cleaned};
+	return {"REF": ref_cleaned, "QRY": qry_cleaned, "TOO_SHORT" : too_short, "TOO_LONG": too_long, "SPAN": span};
 }
+
 
 // -------------------------------------------------------------------------- //
 
