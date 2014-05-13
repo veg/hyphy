@@ -5254,7 +5254,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
     if (cm<1.)
         // use likelihood profile with the appropriate signifcance level
     {
-        _Matrix     sigLevels  (i,3,false,true);
+        _Matrix     sigLevels  (i,7,false,true);
 
         // find the appropriate significance level for chi2
 
@@ -5315,6 +5315,7 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
         _String     fString     = _String("function _profileFit(_xxv_,_variableIndex){SetParameter(")&*myName&",_variableIndex,_xxv_);LFCompute("
                                   //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\" \",_xxres);  return _xxres;}");
                                   &*myName&(",_xxres);return _xxres;}");
+                                  
 
 
         /* ___________________________________ ! NEW CODE BY AFYP ____________________________________ */
@@ -5341,8 +5342,27 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
                 sigLevels.Store (i,0,t2);
             } else {
                 h = FitFla.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
-                sigLevels.Store (i,0,MAX(h,thisVar2->GetLowerBound()));
-            }
+                //sigLevels.Store (i,0,MAX(h,thisVar2->GetLowerBound()));
+                 if (h <= thisVar2->GetLowerBound()) {
+                  _String lf_buffer ("_xxres");
+                  snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
+                  lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+                  _Formula try_again (lf_buffer,nil);
+                  h = try_again.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
+                  sigLevels.Store (i,5,h);
+                  sigLevels.Store (i,0,thisVar2->GetLowerBound());
+
+                } else {
+                  sigLevels.Store (i,0,h);
+                  sigLevels.Store (i,5,h);
+                }
+           }
+            
+            snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,0));
+            _String checkLFDIFF = _String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
+            _PMathObj lf_diff = (_PMathObj) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
+            sigLevels.Store (i,3,lf_diff->Value());
+            DeleteObject (lf_diff);
 
 #ifndef __UNIX__
             finishedCount += 1;
@@ -5356,9 +5376,28 @@ _PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
             if (CheckEqual(t2,thisVar2->GetUpperBound())) {
                 sigLevels.Store (i,2,t2);
             } else {
-                h = FitFla.Brent (thisVar,t2,t2,t2*0.0001+0.000001);
-                sigLevels.Store (i,2,MIN(thisVar2->GetUpperBound(),h));
+                //_List store_evals;
+                h = FitFla.Brent (thisVar,t2,t2,t2*0.0001+0.000001);//, &store_evals);
+                if (h >= thisVar2->GetUpperBound()) {
+                  _String lf_buffer ("_xxres");
+                  snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
+                  lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+                  _Formula try_again (lf_buffer,nil);
+                  h = try_again.Brent (thisVar, t2,t2,t2*0.0001+0.000001);
+                  sigLevels.Store (i,6,h);
+                  sigLevels.Store (i,2,thisVar2->GetUpperBound());
+
+                } else {
+                  sigLevels.Store (i,2,h);
+                  sigLevels.Store (i,6,h);
+                }
             }
+
+             snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,2));
+             checkLFDIFF =_String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
+             lf_diff = (_PMathObj) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
+             sigLevels.Store (i,4,lf_diff->Value());
+             DeleteObject (lf_diff);
 
 #ifndef __UNIX__
             finishedCount += 1;
@@ -7468,17 +7507,22 @@ void    _LikelihoodFunction::Setup (void)
         if (assumeRev > 0.5) {
             ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a reversible model");
         } else {
-            for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
-                long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
-                if (alreadyDone>=0) {
-                    alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
-                } else {
-                    alreadyDone = IsModelReversible (treeModels.lData[m]);
-                    alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
-                }
-                isReversiblePartition = isReversiblePartition && alreadyDone;
+            if (assumeRev < -0.5) {
+              isReversiblePartition = false;
+              ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a non-reversible model");
+            } else {
+              for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
+                  long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.lData[m]);
+                  if (alreadyDone>=0) {
+                      alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
+                  } else {
+                      alreadyDone = IsModelReversible (treeModels.lData[m]);
+                      alreadyDoneModels.Insert ((BaseRef)treeModels.lData[m], alreadyDone);
+                  }
+                  isReversiblePartition = isReversiblePartition && alreadyDone;
+              }
+              ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
             }
-            ReportWarning (_String ("Partition ") & i & " reversible model flag computed as " & (long)isReversiblePartition);
         }
         canUseReversibleSpeedups << isReversiblePartition;
 

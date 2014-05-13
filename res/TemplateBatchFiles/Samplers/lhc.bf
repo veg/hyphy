@@ -10,6 +10,8 @@ fprintf (stdout, "\nObtaining profile likeihood bounds...\n");
 
 svpc = COVARIANCE_PRECISION;
 COVARIANCE_PRECISION = 0.95;
+FindRoot (_std_factor, ZCDF (x) - COVARIANCE_PRECISION, x, 0, 10000);
+
 
 useMPIFlag = MPI_NODE_COUNT > 2 && MPI_NODE_ID == 0 ;
 
@@ -62,7 +64,6 @@ if (useMPIFlag && varCount > 1)
 else
 {
 	ExecuteCommands ("CovarianceMatrix (covMx, `LF_NAME`);");
-
 }
 
 
@@ -106,27 +107,26 @@ if (useMPIFlag)
 	MPI_NODE_STATUS = {availableComputeNodes, 1}["-1"];
 }
 
-for (k=0; k<varCount; k=k+1)
+for (k=0; k<varCount; k+=1)
 {
 	aKey 			    = usedVars[k];
 	ExecuteCommands 	("GetInformation(varRange,"+aKey+");");
 	stashedValues[k][0] = covMx[k][1];
 	/* compute the variance of the approximate normal to the left */
-	leftSTD 		= (covMx[k][1]-covMx[k][0])/1.96 * inflationFactor;
-	rightSTD		= (covMx[k][2]-covMx[k][1])/1.96 * inflationFactor;
-	if (leftSTD)
-	{
-		SAMPLE_LEFT = Min(1,(covMx[k][1]-varRange[1])/(1.96*leftSTD));
-		leftSpan	= Min(covMx[k][1]-varRange[1],1.96*leftSTD);
+	leftSTD 		= (covMx[k][1]-covMx[k][0])/_std_factor * inflationFactor;
+	rightSTD		= (covMx[k][2]-covMx[k][1])/_std_factor * inflationFactor;
+	
+	if (leftSTD) {
+		SAMPLE_LEFT = Min(1,(covMx[k][1]-varRange[1])/(_std_factor*leftSTD));
+		leftSpan	= Min(covMx[k][1]-varRange[1],_std_factor*leftSTD);
 	}
-	else
-	{
+	else {
 		SAMPLE_LEFT = 0;
 	}
-	if (rightSTD)
-	{
-		SAMPLE_RIGHT = Min(1,(varRange[2]-covMx[k][1])/(1.96*rightSTD));
-		rightSpan	 = Min(varRange[2]-covMx[k][1],1.96*rightSTD);
+	
+	if (rightSTD) {
+		SAMPLE_RIGHT = Min(1,(varRange[2]-covMx[k][1])/(_std_factor*rightSTD));
+		rightSpan	 = Min(varRange[2]-covMx[k][1],_std_factor*rightSTD);
 	}
 	else
 	{
