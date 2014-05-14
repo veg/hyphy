@@ -1,3 +1,5 @@
+RequireVersion ("2.220140505");
+
 /*---------------------------------------------------------------------------------------------------------------------*/
 LoadFunctionLibrary ("GrabBag");
 
@@ -9,7 +11,7 @@ inflationFactor = prompt_for_a_value ("Inflation factor for profile likelihood b
 fprintf (stdout, "\nObtaining profile likeihood bounds...\n");
 
 svpc = COVARIANCE_PRECISION;
-COVARIANCE_PRECISION = 0.95;
+COVARIANCE_PRECISION = 0.975;
 FindRoot (_std_factor, ZCDF (x) - COVARIANCE_PRECISION, x, 0, 10000);
 
 
@@ -24,16 +26,13 @@ if (useMPIFlag && varCount > 1)
 	mapper		 = {};
 	dispatched   = {};
 	
-	for (k = 0; k < varCount; k+=1)
-	{
+	for (k = 0; k < varCount; k+=1) {
 		mapper [usedVars[k]] = k;
 	}
 	
-	for (nodeIndex = 0; nodeIndex < availableComputeNodes; nodeIndex += 1)
-	{
+	for (nodeIndex = 0; nodeIndex < availableComputeNodes; nodeIndex += 1) {
 		localCovarianceParameters = {};
-		for (currentIndex = nodeIndex; currentIndex < varCount; currentIndex += availableComputeNodes)
-		{
+		for (currentIndex = nodeIndex; currentIndex < varCount; currentIndex += availableComputeNodes) {
 			localCovarianceParameters[usedVars[currentIndex]] = 1;
 		}
 		
@@ -45,34 +44,31 @@ if (useMPIFlag && varCount > 1)
 		MPISend (nodeIndex+1, lfString);
 	}
 	
-	covMx = {varCount, 3};
+	covMx = {varCount, 7};
 	
-	for (nodeIndex = 0; nodeIndex < availableComputeNodes; nodeIndex += 1)
-	{
+	for (nodeIndex = 0; nodeIndex < availableComputeNodes; nodeIndex += 1) {
 		MPIReceive  (-1, fromNode, res);
 		Eval ("nodeMx="+res);
 		varNames = Rows(dispatched [fromNode]);
 		for (k = 0; k < Columns (varNames); k+=1)
 		{
 			k2			 = mapper[varNames[k]];
-			covMx[k2][0] = nodeMx[k][0];
-			covMx[k2][1] = nodeMx[k][1];
-			covMx[k2][2] = nodeMx[k][2];
+			for (k3 = 0; k3 < 7; k3+=1) {
+			    covMx [k2][k3] = nodeMx[k][k3];
+			}
 		}
 	}
 }
-else
-{
+else {
 	ExecuteCommands ("CovarianceMatrix (covMx, `LF_NAME`);");
 }
 
 
 profileString = "";
 profileString * 128;
-profileString * "Parameter, Lower Bound, MLE, Upper Bound";
-for (k=0; k<varCount; k=k+1)
-{
-    profileString * ("\n"+usedVars[k]+","+covMx[k][0]+","+covMx[k][1]+","+covMx[k][2]);
+profileString * "Parameter, Lower Bound, MLE, Upper Bound, Lower LRT Significance, Upper LRT Significance, Effective Lower Bound, Effective Upper Bound";
+for (k=0; k<varCount; k+=1) {
+    profileString * ("\n"+usedVars[k]+","+Join(",", covMx[k][-1]));
 }
 profileString * 0;
 
@@ -107,35 +103,47 @@ if (useMPIFlag)
 	MPI_NODE_STATUS = {availableComputeNodes, 1}["-1"];
 }
 
-for (k=0; k<varCount; k+=1)
-{
+for (k=0; k<varCount; k+=1) {
 	aKey 			    = usedVars[k];
-	ExecuteCommands 	("GetInformation(varRange,"+aKey+");");
+	ExecuteCommands ("GetInformation(varRange,"+aKey+")");
 	stashedValues[k][0] = covMx[k][1];
 	/* compute the variance of the approximate normal to the left */
-	leftSTD 		= (covMx[k][1]-covMx[k][0])/_std_factor * inflationFactor;
-	rightSTD		= (covMx[k][2]-covMx[k][1])/_std_factor * inflationFactor;
+	
+	FindRoot (_std_factor_left, ZCDF (x) - covMx[k][3], x, 0, 10000);
+	FindRoot (_std_factor_right, ZCDF (x) - covMx[k][4], x, 0, 10000);
+
+	
+	leftSTD 		= (covMx[k][1]-covMx[k][5]) * inflationFactor;
+	rightSTD		= (covMx[k][6]-covMx[k][1]) * inflationFactor;
+	
 	
 	if (leftSTD) {
-		SAMPLE_LEFT = Min(1,(covMx[k][1]-varRange[1])/(_std_factor*leftSTD));
-		leftSpan	= Min(covMx[k][1]-varRange[1],_std_factor*leftSTD);
+		SAMPLE_LEFT = Min(1,(covMx[k][1]-varRange[1])/leftSTD);
+		leftSpan	= Min(covMx[k][1]-varRange[1],leftSTD);
 	}
 	else {
 		SAMPLE_LEFT = 0;
 	}
 	
 	if (rightSTD) {
-		SAMPLE_RIGHT = Min(1,(varRange[2]-covMx[k][1])/(_std_factor*rightSTD));
-		rightSpan	 = Min(varRange[2]-covMx[k][1],_std_factor*rightSTD);
+		SAMPLE_RIGHT = Min(1,(varRange[2]-covMx[k][1])/rightSTD);
+		rightSpan	 = Min(varRange[2]-covMx[k][1],rightSTD);
 	}
 	else
 	{
 		SAMPLE_RIGHT = 0;
 	}
+	
+	leftSTD = leftSTD / _std_factor_left;
+	rightSTD = rightSTD / _std_factor_right;
     
+	// (stdout, covMx[k][-1], "\n", _std_factor_left, ":", leftSTD, ":", SAMPLE_LEFT, ":", leftSpan, " // ", _std_factor_right, ":", rightSTD, ":", SAMPLE_RIGHT, ":", rightSpan, "\n");
+	
+	//assert (0);
+
 	currentVarValue     = covMx[k][1];
-	stashedValues[k][1] = Max(covMx[k][1]-(covMx[k][1]-covMx[k][0])*inflationFactor,varRange[1]);
-	stashedValues[k][2] = Min(covMx[k][1]+(covMx[k][2]-covMx[k][1])*inflationFactor,varRange[2]);
+	stashedValues[k][1] = Max(covMx[k][1]-(covMx[k][1]-covMx[k][5])*inflationFactor,varRange[1]);
+	stashedValues[k][2] = Min(covMx[k][1]+(covMx[k][6]-covMx[k][1])*inflationFactor,varRange[2]);
 	stashedValues[k][3] = (stashedValues[k][2]-stashedValues[k][1])/SAMPLE_N;
 	assignmentString * (aKey+ "=generatedSamples[itCount]["+k+"];\n");
 
@@ -163,7 +171,7 @@ for (k=0; k<varCount; k+=1)
 	}
 	else
 	{
-		fprintf			(stdout, "Preparing sampling grid for ", aKey, " over [", leftSpan, "-", rightSpan, "]\n");		 
+		fprintf			(stdout, "Preparing sampling grid for ", aKey, " over [", covMx[k][1] - leftSpan, "-", covMx[k][1] + rightSpan, "]\n");		 
 		ExecuteCommands (sampleInstructions);
 	}
 	
