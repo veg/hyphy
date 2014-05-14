@@ -63,13 +63,14 @@ _hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l,
   }
 }
 
-
+/*
 template<>
 _hyListReference<_String>::_hyListReference (const _String& the_string, const char separator) {
   this->Initialize   ();
   
-}
+}*/
 
+/*
 template<>
 _hyListReference<_String>::_hyListReference (const char* firstString, const unsigned long number, ...) {
   va_list vl;
@@ -82,7 +83,7 @@ _hyListReference<_String>::_hyListReference (const char* firstString, const unsi
     AppendNewInstance (new _String (val));
   }
   va_end(vl);
-}
+}*/
 
 /*
  Destructor
@@ -176,10 +177,10 @@ void _hyListReference<PAYLOAD>::operator&&(const PAYLOAD* item)
 }
 
   //append the dynamic copy of item
-template<>
+/*template<>
 void _hyListReference<_String>::operator&&(const char* buffer) {
   this->AppendNewInstance (new _String (buffer));
-}
+}*/
 
   //append all elements in the list
 template<typename PAYLOAD>

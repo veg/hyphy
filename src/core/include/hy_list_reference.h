@@ -96,6 +96,7 @@ public:
    * to the constructor
    * @param 2-N: char* to be added to the list
    */
+   
   _hyListReference(const char *, const unsigned long, ...);
 
   /**
@@ -107,7 +108,7 @@ public:
    * @param separator The separator for the string
    */
   
-  _hyListReference(const _String& the_string, const char separator);
+  //_hyListReference(const _String& the_string, const char separator);
 
   virtual ~_hyListReference (void);
   
@@ -168,7 +169,7 @@ public:
    * Only specialized for PAYLOAD == STRING
    * @param buffer make the string from this char *
    */
-  virtual void operator&&(const char*);
+  //virtual void operator&&(const char*);
 
   /**
    * Append all references from the argument to the end of the current list

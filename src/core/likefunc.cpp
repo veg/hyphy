@@ -5759,27 +5759,31 @@ void _LikelihoodFunction::CheckStep(_Parameter & tryStep, _Matrix vect,
     }
 }
 
-//______________________________________________________________________________
+//_______________________________________________________________________________________
 
-_PMathObj _LikelihoodFunction::CovarianceMatrix(_SimpleList * parameterList) {
-
-    if (indexInd.lLength == 0) {
+_PMathObj   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
+{
+    if (indexInd.lLength==0) {
         return nil;
     }
 
-    _Parameter h = 1.e-5,          //STD_GRAD_STEP,
-        functionValue, t1, t2, cm; // small h and L(x_opt)
+    _Parameter  h = 1.e-5,//STD_GRAD_STEP,
+                functionValue,
+                t1,
+                t2,
+                cm; // small h and L(x_opt)
 
-    checkParameter(covariancePrecision, cm, 1.0);
+    checkParameter (covariancePrecision,cm,1.0);
 
-    long i = parameterList ? parameterList->lLength : indexInd.lLength, j;
+    long        i = parameterList?parameterList->lLength:indexInd.lLength,
+                j;
 
     PrepareToCompute();
 
     functionValue = Compute();
-    _Variable *thisVar;
+    _Variable      *thisVar;
 
-    bool useIndirectIndexing = false;
+    bool        useIndirectIndexing = false;
 
     if (parameterList) {
         useIndirectIndexing = true;
@@ -5787,160 +5791,197 @@ _PMathObj _LikelihoodFunction::CovarianceMatrix(_SimpleList * parameterList) {
         parameterList = &indexInd;
     }
 
-    // use likelihood profile with the appropriate signifcance level
-    if (cm < 1.) {
-        _Matrix *sigLevels = new _Matrix (i, 3, false, true);
+    if (cm<1.)
+        // use likelihood profile with the appropriate signifcance level
+    {
+        _Matrix     sigLevels  (i,7,false,true);
+
         // find the appropriate significance level for chi2
+
         {
-            _String xxc("_xx_");
-            thisVar = CheckReceptacle(&xxc, empty);
-            thisVar->SetBounds(-1.e30, 1.e30);
+            _String xxc ("_xx_");
+            thisVar = CheckReceptacle (&xxc, empty);
+            thisVar->SetBounds (-1.e30,1.e30);
         }
 
-        if (cm > 0.0) {
+        if (cm>0.0) {
 
-            _String fString = _String("CChi2(_xx_,1)-") & cm;
-            _Formula CChi2Fla(fString, nil);
-            t1 = CChi2Fla.Brent(thisVar, 0, 0);
-            if (fabs(CChi2Fla.Compute()->Value()) > 1.e-6) {
-                _String errMsg("Failed to compute chi-square significance "
-                               "level in call to CovarianceMatrix");
-                WarnError(errMsg);
+            _String     fString = _String ("CChi2(_xx_,1)-") & cm;
+            _Formula    CChi2Fla (fString,nil);
+            t1 = CChi2Fla.Brent (thisVar,0,0);
+            if (fabs(CChi2Fla.Compute()->Value())>1.e-6) {
+                _String errMsg ("Failed to compute chi-square significance level in call to CovarianceMatrix");
+                WarnError (errMsg);
                 DoneComputing();
-                return sigLevels;
+                return    (_PMathObj)sigLevels.makeDynamic();
             }
-
         } else {
-
-            if (cm < 0.0) {
-                t1 = -2. * cm;
+            if (cm<0.0) {
+                t1 = -2.*cm;
             } else {
-                _String errMsg("Must have a non-zero COVARIANCE_PRECISION in "
-                               "call to CovarianceMatrix.");
-                WarnError(errMsg);
+                _String errMsg ("Must have a non-zero COVARIANCE_PRECISION in call to CovarianceMatrix.");
+                WarnError (errMsg);
                 DoneComputing();
-                return sigLevels;
+                return    (_PMathObj)sigLevels.makeDynamic();
             }
         }
 
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
-        _Parameter totalCount = 2 * parameterList->lLength;
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
+        _Parameter totalCount    = 2*parameterList->lLength;
 
-        long finishedCount = 0;
+        long       finishedCount = 0;
 
-        TimerDifferenceFunction(false);
-        DecideOnDivideBy(this);
+        TimerDifferenceFunction  (false);
+        DecideOnDivideBy (this);
 #endif
 
 
-        thisVar->SetNumericValue(t1);
+        thisVar->SetNumericValue (t1);
 
 
-        // NEW CODE BY AFYP
-        long mastodon = likeFuncList._SimpleList::Find((long) this);
-        _String *myName;
+        /* ____________________________________ NEW CODE BY AFYP _____________________________________ */
+        long        mastodon    = likeFuncList._SimpleList::Find((long)this);
+        _String *   myName;
 
         if (mastodon < 0) {
-            mastodon = scfgList._SimpleList::Find((long) this);
-            myName = (_String *)scfgNamesList(mastodon);
+            mastodon    = scfgList._SimpleList::Find((long)this);
+            myName      = (_String *) scfgNamesList (mastodon);
 
         } else {
             // generate HBL
-            myName = (_String *)likeFuncNamesList(mastodon);
+            myName      = (_String*)likeFuncNamesList (mastodon);
         }
 
-        _String fString =
-            _String(
-                "function _profileFit(_xxv_,_variableIndex){SetParameter(") &
-            *myName & ",_variableIndex,_xxv_);LFCompute("
-            //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\"
-            // \",_xxres);  return _xxres;}");
-            & *myName & (",_xxres);return _xxres;}");
+        _String     fString     = _String("function _profileFit(_xxv_,_variableIndex){SetParameter(")&*myName&",_variableIndex,_xxv_);LFCompute("
+                                  //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\" \",_xxres);  return _xxres;}");
+                                  &*myName&(",_xxres);return _xxres;}");
+                                  
 
 
-        // NEW CODE BY AFYP
-        t1 = functionValue - .5 * t1;
+        /* ___________________________________ ! NEW CODE BY AFYP ____________________________________ */
 
-        _ExecutionList exL(fString);
-        exL.Execute();
 
-        for (i = 0; i < parameterList->lLength; i++) {
-            j = useIndirectIndexing ? parameterList->lData[i] : i;
-            t2 = GetIthIndependent(j);
-            _Variable *thisVar2 = LocateVar(indexInd.lData[j]);
-            thisVar->SetBounds(thisVar2->GetLowerBound(),
-                               thisVar2->GetUpperBound());
-            sigLevels->Store(i, 1, t2);
+        t1 = functionValue-.5*t1;
+
+        _ExecutionList exL (fString);
+        exL.Execute ();
+
+        for (i=0; i<parameterList->lLength; i++) {
+            j = useIndirectIndexing?parameterList->lData[i]:i;
+            t2 = GetIthIndependent (j);
+            _Variable* thisVar2 = LocateVar (indexInd.lData[j]);
+            thisVar->SetBounds (thisVar2->GetLowerBound(),thisVar2->GetUpperBound());
+            sigLevels.Store (i,1,t2);
 
             char buffer[255];
-            snprintf(buffer, sizeof(buffer), "%.14g", t1);
+            snprintf (buffer, sizeof(buffer),"%.14g",t1);
 
-            fString = _String("_profileFit(_xx_,") & j & ")-(" & buffer & ')';
-            _Formula FitFla(fString, nil);
-            if (CheckEqual(t2, thisVar2->GetLowerBound())) {
-                sigLevels->Store(i, 0, t2);
+            fString = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+            _Formula    FitFla (fString,nil);
+            if (CheckEqual(t2,thisVar2->GetLowerBound())) {
+                sigLevels.Store (i,0,t2);
             } else {
-                h = FitFla.Brent(thisVar, t2 + 1, t2, t2 * 0.0001 + 0.000001);
-                sigLevels->Store(i, 0, MAX(h, thisVar2->GetLowerBound()));
-            }
+                h = FitFla.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
+                //sigLevels.Store (i,0,MAX(h,thisVar2->GetLowerBound()));
+                 if (h <= thisVar2->GetLowerBound()) {
+                  _String lf_buffer ("_xxres");
+                  snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
+                  lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+                  _Formula try_again (lf_buffer,nil);
+                  h = try_again.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
+                  sigLevels.Store (i,5,h);
+                  sigLevels.Store (i,0,thisVar2->GetLowerBound());
+
+                } else {
+                  sigLevels.Store (i,0,h);
+                  sigLevels.Store (i,5,h);
+                }
+           }
+            
+            snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,0));
+            _String checkLFDIFF = _String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
+            _PMathObj lf_diff = (_PMathObj) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
+            sigLevels.Store (i,3,lf_diff->Value());
+            DeleteObject (lf_diff);
 
 #ifndef __UNIX__
             finishedCount += 1;
-            if (TimerDifferenceFunction(true) > 1.) {
-                SetStatusBarValue(finishedCount / totalCount * 100., 1, 0);
-                TimerDifferenceFunction(false);
+            if (TimerDifferenceFunction(true)>1.) {
+                SetStatusBarValue (finishedCount/totalCount*100.,1,0);
+                TimerDifferenceFunction (false);
             }
 #endif
 
-            if (CheckEqual(t2, thisVar2->GetUpperBound())) {
-                sigLevels->Store(i, 2, t2);
+
+            if (CheckEqual(t2,thisVar2->GetUpperBound())) {
+                sigLevels.Store (i,2,t2);
             } else {
-                h = FitFla.Brent(thisVar, t2, t2, t2 * 0.0001 + 0.000001);
-                sigLevels->Store(i, 2, MIN(thisVar2->GetUpperBound(), h));
+                //_List store_evals;
+                h = FitFla.Brent (thisVar,t2,t2,t2*0.0001+0.000001);//, &store_evals);
+                if (h >= thisVar2->GetUpperBound()) {
+                  _String lf_buffer ("_xxres");
+                  snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
+                  lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+                  _Formula try_again (lf_buffer,nil);
+                  h = try_again.Brent (thisVar, t2,t2,t2*0.0001+0.000001);
+                  sigLevels.Store (i,6,h);
+                  sigLevels.Store (i,2,thisVar2->GetUpperBound());
+
+                } else {
+                  sigLevels.Store (i,2,h);
+                  sigLevels.Store (i,6,h);
+                }
             }
+
+             snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,2));
+             checkLFDIFF =_String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
+             lf_diff = (_PMathObj) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
+             sigLevels.Store (i,4,lf_diff->Value());
+             DeleteObject (lf_diff);
 
 #ifndef __UNIX__
             finishedCount += 1;
-            if (TimerDifferenceFunction(true) > 1.) {
-                SetStatusBarValue(finishedCount / totalCount * 100., 1, 0);
-                TimerDifferenceFunction(false);
+            if (TimerDifferenceFunction(true)>1.) {
+                SetStatusBarValue (finishedCount/totalCount*100.,1,0);
+                TimerDifferenceFunction (false);
             }
 #endif
-            SetIthIndependent(j, t2);
+
+            SetIthIndependent (j,t2);
         }
 
         DoneComputing();
-        return sigLevels;
+        return  (_PMathObj)sigLevels.makeDynamic();
     }
 
-    _Matrix hessian(i, i, false, true), funcValues(i, 5, false, true),
-        *iMap = nil;
+    _Matrix     hessian    (i,i,false,true),
+                funcValues (i,5,false,true),
+                *iMap = nil;
 
-    _AssociativeList *mapMethod = nil;
+    _AssociativeList * mapMethod = nil;
 
-    _Parameter uim = 0.0;
-    checkParameter(useIntervalMapping, uim, 0.0);
+    _Parameter      uim = 0.0;
+    checkParameter  (useIntervalMapping, uim, 0.0);
 
     if (uim > 0.5) {
-        iMap = new _Matrix(i, 3, false, true);
+        iMap = new _Matrix (i,3,false,true);
         mapMethod = new _AssociativeList;
 
-        checkPointer(iMap);
-        checkPointer(mapMethod);
-    }
+        checkPointer (iMap);
+        checkPointer (mapMethod);
 
+    }
     // y,x',x''
     // first check for boundary values and move the parameter values a bit if needed
-    for (i = 0; i < parameterList->lLength; i++) {
-        long dIndex = useIndirectIndexing ? parameterList->lData[i] : i;
-        thisVar = LocateVar(indexInd.lData[dIndex]);
+    for (i=0; i<parameterList->lLength; i++) {
+        long     dIndex = useIndirectIndexing?parameterList->lData[i]:i;
+        thisVar = LocateVar (indexInd.lData[dIndex]);
         t1 = thisVar->Value();
-        funcValues.Store(i, 3, t1);
+        funcValues.Store (i,3,t1);
 
-        //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
-        _Parameter locH = 1. / 131072.; 
+        _Parameter locH = 1./131072.; //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
 
-        if (locH < 1e-7) {
+        if (locH<1e-7) {
             locH = 1e-7;
         }
 
@@ -5973,211 +6014,205 @@ _PMathObj _LikelihoodFunction::CovarianceMatrix(_SimpleList * parameterList) {
             tryH *= 0.25;
         }*/
 
-        funcValues.Store(i, 4, (locH + t1) - t1);
 
-        if (t1 + locH > thisVar->GetUpperBound()) {
-            SetIthIndependent(dIndex, thisVar->GetUpperBound() - 2.0 * locH);
-        } else if (t1 - locH < thisVar->GetLowerBound()) {
-            SetIthIndependent(dIndex, thisVar->GetLowerBound() + 2.0 * locH);
+        funcValues.Store (i,4,(locH+t1)-t1);
+
+        if (t1+locH > thisVar->GetUpperBound()) {
+            SetIthIndependent (dIndex,thisVar->GetUpperBound()-2.0*locH);
+        } else if (t1-locH < thisVar->GetLowerBound()) {
+            SetIthIndependent (dIndex,thisVar->GetLowerBound()+2.0*locH);
         }
 
         if (uim > 0.5) {
-            _Parameter lb = thisVar->GetLowerBound(),
-                       ub = thisVar->GetUpperBound(), y, dy2, dy;
+            _Parameter      lb  = thisVar->GetLowerBound(),
+                            ub  = thisVar->GetUpperBound(),
+                            y ,
+                            dy2,
+                            dy;
 
-            _FString varKeyName(*thisVar->GetName());
-            _Constant varMapMethod;
+            _FString        varKeyName (*thisVar->GetName());
+            _Constant       varMapMethod;
 
-            // use exp<->log map
-            if (CheckEqual(lb, DEFAULTPARAMETERLBOUND) &&
-                CheckEqual(ub, DEFAULTPARAMETERUBOUND)) {
-                y = log(t1 - lb);
+            if (CheckEqual (lb, DEFAULTPARAMETERLBOUND) && CheckEqual (ub, DEFAULTPARAMETERUBOUND))
+                // use exp<->log map
+            {
+                y = log (t1-lb);
                 dy = exp(y);
                 dy2 = dy;
                 varMapMethod.SetValue(1.);
-            } else {
-                // use logistic map
-                y = (t1 - lb) / (ub - lb);
-                t1 = y / (1 - y);
-                y = log(t1);
-                dy = (ub - lb) * (t1 / (t1 + 1) / (t1 + 1));
-                dy2 = dy * ((1 - t1 * t1) / (t1 + 1) / (t1 + 1));
+            }
+            // use logistic map
+            else {
+                y   = (t1-lb)/(ub-lb);
+                t1  = y/(1-y);
+                y   = log (t1);
+                dy  = (ub-lb)*(t1/(t1+1)/(t1+1));
+                dy2 = dy*((1-t1*t1)/(t1+1)/(t1+1));
                 varMapMethod.SetValue(2.);
             }
-
-            iMap->Store(i, 0, y);
-            iMap->Store(i, 1, dy);
-            iMap->Store(i, 2, dy2);
-            mapMethod->MStore(&varKeyName, &varMapMethod, true);
+            iMap->Store(i,0,y);
+            iMap->Store(i,1,dy);
+            iMap->Store(i,2,dy2);
+            mapMethod->MStore (&varKeyName, &varMapMethod, true);
         }
     }
 
 
 
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__
+#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
+    _Parameter totalCount    = 2*parameterList->lLength;
 
-    _Parameter totalCount = 2 * parameterList->lLength;
-    long finishedCount = 0;
+    long       finishedCount = 0;
 
-    if (cm > 1.1) {
-        totalCount += 2 * parameterList->lLength * (parameterList->lLength - 1);
+    if (cm>1.1) {
+        totalCount += 2*parameterList->lLength*(parameterList->lLength-1);
     } else {
-        totalCount +=
-            (parameterList->lLength * (parameterList->lLength - 1) / 2);
+        totalCount += (parameterList->lLength*(parameterList->lLength-1)/2);
     }
-    DecideOnDivideBy(this);
+
+    DecideOnDivideBy (this);
 #endif
 
     // fill in funcValues with L(...,x_i\pm h,...) and 1st derivatives and get 2nd derivatives
-    for (i = 0; i < parameterList->lLength; i++) {
+    for (i=0; i<parameterList->lLength; i++) {
+        long              pIdx = useIndirectIndexing?parameterList->lData[i]:i;
 
-        long pIdx = useIndirectIndexing ? parameterList->lData[i] : i;
-        _Parameter pVal = GetIthIndependent(pIdx), d1, locH = funcValues(i, 4);
+        _Parameter        pVal = GetIthIndependent (pIdx),
+                          d1,
+                          locH = funcValues (i,4);
 
-        SetIthIndependent(pIdx, pVal - locH); 
-        // - step
+        SetIthIndependent (pIdx,pVal-locH); // - step
         t1 = Compute();
-        funcValues.Store(i, 0, t1);
-        SetIthIndependent(pIdx, pVal + locH); 
-        // + step
+        funcValues.Store (i,0,t1);
+        SetIthIndependent (pIdx,pVal+locH); // + step
         t2 = Compute();
-        funcValues.Store(i, 1, t2); 
-        // reset value
-        SetIthIndependent(pIdx, pVal);
-        d1 = (t2 - t1) / (2.0 * locH);
+        funcValues.Store (i,1,t2);          // reset value
+        SetIthIndependent (pIdx,pVal);
+        d1 = (t2-t1)/(2.0*locH);
         // central 1st derivative
-        funcValues.Store(i, 2, d1);
-        t1 = ((t1 - functionValue) + (t2 - functionValue)) / (locH * locH);
+        funcValues.Store (i,2,d1);
+
+        t1  = ((t1-functionValue)+(t2-functionValue))/(locH*locH);
         // Standard central second derivative
+
         if (uim < 0.5) {
-            hessian.Store(i, i, -t1);
+            hessian.Store (i,i,-t1);
         } else {
-            hessian.Store(i, i, -(t1 * (*iMap)(i, 1) * (*iMap)(i, 1) +
-                                  (*iMap)(i, 2) * d1));
+            hessian.Store (i,i,-(t1*(*iMap)(i,1)*(*iMap)(i,1)+(*iMap)(i,2)*d1));
         }
 
 #ifndef __UNIX__
         finishedCount += 2;
-        if (TimerDifferenceFunction(true) > 1.) {
-            SetStatusBarValue(finishedCount / totalCount * 100., 1, 0);
-            TimerDifferenceFunction(false);
+        if (TimerDifferenceFunction(true)>1.) {
+            SetStatusBarValue (finishedCount/totalCount*100.,1,0);
+            TimerDifferenceFunction (false);
         }
 #endif
     }
 
-    if (cm > 1.1) {
 
+    if (cm>1.1) {
         // fill in off-diagonal elements using the f-la
         // f_xy = 1/4h^2 (f(x+h,y+h)-f(x+h,y-h)+f(x-h,y-h)-f(x-h,y+h))
-        for (i = 0; i < parameterList->lLength - 1; i++) {
 
-            long iidx = useIndirectIndexing ? parameterList->lData[i] : i;
+        for (i=0; i<parameterList->lLength-1; i++) {
+            long        iidx = useIndirectIndexing?parameterList->lData[i]:i;
 
-            //funcValues (i,4);
-            _Parameter ival = GetIthIndependent(iidx), locHi = 1 / 8192.; 
+            _Parameter  ival  = GetIthIndependent(iidx),
+                        locHi = 1/8192.;//funcValues (i,4);
 
-            for (j = i + 1; j < parameterList->lLength; j++) {
-                long jidx = useIndirectIndexing ? parameterList->lData[j] : j;
+            for (j=i+1; j<parameterList->lLength; j++) {
+                long        jidx = useIndirectIndexing?parameterList->lData[j]:j;
 
-                _Parameter jval = GetIthIndependent(jidx),
-                           locHj = locHi, //funcValues (j,4),
-                    a,                    // f (x+h,y+h)
-                    b,                    // f (x+h,y-h)
-                    c,                    // f (x-h,y-h)
-                    d;                    // f (x-h,y+h)
+                _Parameter  jval  = GetIthIndependent(jidx),
+                            locHj = locHi, //funcValues (j,4),
+                            a, // f (x+h,y+h)
+                            b, // f (x+h,y-h)
+                            c, // f (x-h,y-h)
+                            d; // f (x-h,y+h)
 
-                SetIthIndependent(iidx, ival + locHi);
-                SetIthIndependent(jidx, jval + locHj);
+                SetIthIndependent (iidx,ival+locHi);
+                SetIthIndependent (jidx,jval+locHj);
                 a = Compute();
-                SetIthIndependent(jidx, jval - locHj);
+                SetIthIndependent (jidx,jval-locHj);
                 b = Compute();
-                SetIthIndependent(iidx, ival - locHi);
+                SetIthIndependent (iidx,ival-locHi);
                 c = Compute();
-                SetIthIndependent(jidx, jval + locHj);
+                SetIthIndependent (jidx,jval+locHj);
                 d = Compute();
-                t2 = (a - b - d + c) / (4 * locHi * locHj);
+
+                t2 = (a-b-d+c)/(4*locHi*locHj);
 
                 if (uim > 0.5) {
-                    t2 *= (*iMap)(i, 1) * (*iMap)(j, 1);
+                    t2 *= (*iMap)(i,1)*(*iMap)(j,1);
                 }
 
-                hessian.Store(i, j, -t2);
-                hessian.Store(j, i, -t2);
-                SetIthIndependent(iidx, ival);
-                SetIthIndependent(jidx, jval);
+                hessian.Store (i,j,-t2);
+                hessian.Store (j,i,-t2);
+                SetIthIndependent (iidx,ival);
+                SetIthIndependent (jidx,jval);
 #ifndef __UNIX__
                 finishedCount += 4;
-                if (TimerDifferenceFunction(true) > 1.) {
-                    SetStatusBarValue(finishedCount / totalCount * 100., 1, 0);
-                    TimerDifferenceFunction(false);
+                if (TimerDifferenceFunction(true)>1.) {
+                    SetStatusBarValue (finishedCount/totalCount*100.,1,0);
+                    TimerDifferenceFunction (false);
                 }
 #endif
             }
         }
+
     } else {
         // fill in off-diagonal elements using the f-la
         // f_xy = 1/h^2 (f(x+h,y+h)-f(x)-f_x h -f_y h -.5h^2(f_xx+f_yy))
-        if (CheckEqual(cm, 1.)) {
-            for (i = 0; i < parameterList->lLength - 1; i++) {
-                _Parameter t3 = GetIthIndependent(useIndirectIndexing
-                                                      ? parameterList->lData[i]
-                                                      : i),
-                           t5 = hessian(i, i), t6 = funcValues(i, 2);
 
-                SetIthIndependent(
-                    useIndirectIndexing ? parameterList->lData[i] : i, t3 + h);
+        if (CheckEqual(cm,1.)) {
+            for (i=0; i<parameterList->lLength-1; i++) {
+                _Parameter t3 = GetIthIndependent(useIndirectIndexing?parameterList->lData[i]:i),
+                           t5 = hessian(i,i),
+                           t6 = funcValues(i,2);
 
-                for (j = i + 1; j < parameterList->lLength; j++) {
-                    _Parameter t4 = GetIthIndependent(
-                        useIndirectIndexing ? parameterList->lData[j] : j);
-                    SetIthIndependent(
-                        useIndirectIndexing ? parameterList->lData[j] : j,
-                        t4 + h);
+                SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t3+h);
+                for (j=i+1; j<parameterList->lLength; j++) {
+                    _Parameter t4 = GetIthIndependent(useIndirectIndexing?parameterList->lData[j]:j);
+                    SetIthIndependent (useIndirectIndexing?parameterList->lData[j]:j,t4+h);
                     t1 = Compute();
-                    t2 = (t1 - functionValue -
-                          (t6 + funcValues(j, 2) -
-                           .5 * (t5 + hessian(j, j)) * h) * h) / (h * h);
-                    hessian.Store(i, j, -t2);
-                    hessian.Store(j, i, -t2);
-                    SetIthIndependent(
-                        useIndirectIndexing ? parameterList->lData[j] : j, t4);
+                    t2 = (t1-functionValue-(t6+funcValues(j,2)-.5*(t5+hessian(j,j))*h)*h)/(h*h);
+                    hessian.Store (i,j,-t2);
+                    hessian.Store (j,i,-t2);
+                    SetIthIndependent (useIndirectIndexing?parameterList->lData[j]:j,t4);
 #ifndef __UNIX__
-                    finishedCount++;
-                    if (TimerDifferenceFunction(true) > 1.) {
-                        SetStatusBarValue(finishedCount / totalCount * 100., 1,
-                                          0);
-                        TimerDifferenceFunction(false);
+                    finishedCount ++;
+                    if (TimerDifferenceFunction(true)>1.) {
+                        SetStatusBarValue (finishedCount/totalCount*100.,1,0);
+                        TimerDifferenceFunction (false);
                     }
 #endif
                 }
-
-                SetIthIndependent(
-                    useIndirectIndexing ? parameterList->lData[i] : i, t3);
+                SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t3);
             }
         }
     }
-
     // undo changes to var values if needed
+
     DoneComputing();
 
     if (iMap) {
-        DeleteObject(iMap);
-        setParameter(intervalMappingMethod, mapMethod);
-        DeleteObject(mapMethod);
+        DeleteObject (iMap);
+        setParameter (intervalMappingMethod, mapMethod);
+        DeleteObject (mapMethod);
     }
 
-    for (i = 0; i < parameterList->lLength; i++) {
-        t1 = funcValues(i, 3);
-        t2 = GetIthIndependent(useIndirectIndexing ? parameterList->lData[i]
-                                                   : i);
-        if (!CheckEqual(t1, t2)) {
-            SetIthIndependent(useIndirectIndexing ? parameterList->lData[i] : i,
-                              t1);
+    for (i=0; i<parameterList->lLength; i++) {
+        t1 = funcValues(i,3);
+        t2 = GetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i);
+        if (!CheckEqual (t1,t2)) {
+            SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t1);
         }
     }
     return hessian.Inverse();
     //return (_Matrix*)hessian.makeDynamic();
 }
+
 
 //______________________________________________________________________________
 void _LikelihoodFunction::GetGradientStepBound(
