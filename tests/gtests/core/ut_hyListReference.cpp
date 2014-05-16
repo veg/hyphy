@@ -47,18 +47,18 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace {
 
-class _testPayload {
+class _testPayload: public BaseObj {
+
   public:
   
-  _testPayload (void) { data = 0UL; unused = 0UL;}
-  _testPayload (unsigned long p) { data = p; unused = 0UL; }
-  _testPayload (const _testPayload& o) { data = o.data; unused = o.unused; }
-  
-  bool operator == (const _testPayload & o) const { return data == o.data;} 
-  
-  operator unsigned long (void) {return data;}
+  _testPayload (void) { data = 0UL;}
+  _testPayload (const char* p) { data = atoi (p); }
+  _testPayload (const _testPayload& o) { data = o.data; }
+  virtual BaseObj *makeDynamic(void) const { return new _testPayload (*this); }
+  virtual void Duplicate(BaseObj const * ref) { data = ((_testPayload*)ref)->data; }
+  virtual bool Equal (const _testPayload * o) {return data == o->data;}
 
-  unsigned long data, unused;
+  long data;
 };
 
 // The fixture for testing class Foo.
@@ -108,11 +108,45 @@ public:
   
 };
 
+_testPayload test ("10");
+
 TYPED_TEST_CASE_P(_hyListReferenceTest);
 
 
 TYPED_TEST_P (_hyListReferenceTest, ConstuctorTests) {
   
+   TypeParam array [5] = {(TypeParam)"1", (TypeParam)"10", (TypeParam)"2", (TypeParam)"3", (TypeParam)"7"},
+             *array2 [5] = {array, array + 1L, array + 2L, array + 3L, array + 4L},
+             testValue = (TypeParam)"16";
+  
+  _hyListReference <TypeParam> null_list,
+                               single_element_list (testValue),
+                               multiple_element_list (5,array2),
+                               full_stack_copy (multiple_element_list),
+                               partial_stack_copy (multiple_element_list,2,HY_LIST_INSERT_AT_END);
+          
+  ASSERT_EQ (0UL, null_list.countitems()) << "Non-empty null list";
+  ASSERT_EQ (1UL, single_element_list.countitems()) << "Single element list has wrong length";
+  ASSERT_EQ (5UL, multiple_element_list.countitems()) << "Array of elements list has wrong length";
+  ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
+  ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
+  
+  EXPECT_EQ (single_element_list (0), full_stack_copy(3));   
+  for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
+    EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
+  }
+  
+  EXPECT_TRUE(full_stack_copy == multiple_element_list) << "Failed list == list";
+  EXPECT_FALSE(full_stack_copy == partial_stack_copy) << "Failed list != list";
+  
+  EXPECT_EQ (partial_stack_copy (0), multiple_element_list (2));
+  EXPECT_EQ (partial_stack_copy (2), full_stack_copy (4));
+  
+  partial_stack_copy.Clear (false);
+  EXPECT_EQ (0UL, partial_stack_copy.countitems());
+  EXPECT_LT (0UL, partial_stack_copy.allocated());
+  partial_stack_copy.Clear (true);
+  EXPECT_EQ (0UL, partial_stack_copy.allocated());
    
   
   

@@ -42,21 +42,21 @@
 */
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference () : _hyList<PAYLOAD*> () {
+_hyListReference<PAYLOAD>::_hyListReference () : _hyListOrderable<PAYLOAD*> () {
 }
 
+template<typename PAYLOAD>
+_hyListReference<PAYLOAD>::_hyListReference (const unsigned long items) : _hyListOrderable<PAYLOAD*> (items) {
+  
+}
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (PAYLOAD& value) : _hyList<PAYLOAD*> (&value) {
+_hyListReference<PAYLOAD>::_hyListReference (const PAYLOAD& value) : _hyListOrderable<PAYLOAD*> (&value) {
   value.AddAReference ();
 }
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const PAYLOAD* value) : _hyList<PAYLOAD*> (value) {
-}
-
-template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l, const long from, const long to) : _hyList<PAYLOAD*> (l,from,to) {
+_hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l, const long from, const long to) : _hyListOrderable<PAYLOAD*> (l,from,to) {
   for (unsigned long k = 0; k < this->lLength; k++) {
     this->lData[k]->AddAReference();
       // 20140113: CHECK THAT THIS DOESN'T HAVE TO BE A makeDynamic CALL
@@ -65,13 +65,9 @@ _hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l,
 
   // Data constructor (variable number of long constants)
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference(const unsigned long number, PAYLOAD * items[]) : 
-_hyList<PAYLOAD*> () {
-  for (unsigned long k = 0; k < number; k ++) {
-    (*this) << items[k];
-  }
+_hyListReference<PAYLOAD>::_hyListReference(const unsigned long number, const PAYLOAD* items[]) : 
+_hyListOrderable<PAYLOAD> (number, items) {
 }
-
 
 template<typename PAYLOAD>
 _hyListReference<PAYLOAD>::~_hyListReference (void) {
@@ -97,7 +93,7 @@ void _hyListReference<PAYLOAD>::Clear (bool deallocate_memory) {
       this->lData[item]->RemoveAReference();
     }
   }
-  this->_hyList<PAYLOAD*>::Clear(deallocate_memory);
+  this->_hyListOrderable<PAYLOAD*>::Clear(deallocate_memory);
 }
 
 
@@ -181,4 +177,9 @@ bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, const PAYL
   return this->lData[index]->Equal (value);
 }
 
+template<typename PAYLOAD>
+long _hyListReference<PAYLOAD>::Compare(const long i, const long j) const {
+  
+  return this->lData[i]->Compare (this->lData[j]);
+}
 

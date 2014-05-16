@@ -80,7 +80,8 @@ _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const lon
 template<typename PAYLOAD>
 _hyList<PAYLOAD>::_hyList(const unsigned long number, const PAYLOAD items[])
 {
-  Initialize(true);
+  Initialize(false);
+  RequestSpace (number);
   for (unsigned long arg_id = 0UL; arg_id < number; arg_id++) {
     append(items[arg_id]);
   }
