@@ -78,7 +78,7 @@ public:
    * The reference counter for the item will NOT be incremented
    * @param item the element to add to the list
    */
-  _hyListReference(const PAYLOAD*);
+  _hyListReference(PAYLOAD * const);
   
   /**
   * Stack copy contructor
@@ -190,7 +190,7 @@ public:
    * @param value the value to compare the result to
    * @return true if equal.
    */
-  virtual bool ItemEqualToValue (unsigned long index, const PAYLOAD*& value) const;
+  virtual bool ItemEqualToValue (unsigned long index,  PAYLOAD * const & value) const;
   
   
 };

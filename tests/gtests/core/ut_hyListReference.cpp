@@ -53,6 +53,7 @@ class _testPayload: public BaseObj {
   
   _testPayload (void) { data = 0UL;}
   _testPayload (const char* p) { data = atoi (p); }
+  _testPayload (const long p) { data = p; }
   _testPayload (const _testPayload& o) { data = o.data; }
   virtual BaseObj *makeDynamic(void) const { return new _testPayload (*this); }
   virtual void Duplicate(BaseObj const * ref) { data = ((_testPayload*)ref)->data; }
@@ -105,7 +106,6 @@ public:
       // shared_resource_ = NULL;
   }
 
-  
 };
 
 _testPayload test ("10");
@@ -117,44 +117,104 @@ TYPED_TEST_P (_hyListReferenceTest, ConstuctorTests) {
   
    TypeParam array [5] = {(TypeParam)"1", (TypeParam)"10", (TypeParam)"2", (TypeParam)"3", (TypeParam)"7"},
              *array2 [5] = {array, array + 1L, array + 2L, array + 3L, array + 4L},
-             testValue = (TypeParam)"16";
+             testValue = (TypeParam)"3",
+             * dynamic_object = new TypeParam ("3.14");
+             
+  {
   
-  _hyListReference <TypeParam> null_list,
-                               single_element_list (testValue),
-                               multiple_element_list (5,array2),
-                               full_stack_copy (multiple_element_list),
-                               partial_stack_copy (multiple_element_list,2,HY_LIST_INSERT_AT_END);
-          
-  ASSERT_EQ (0UL, null_list.countitems()) << "Non-empty null list";
-  ASSERT_EQ (1UL, single_element_list.countitems()) << "Single element list has wrong length";
-  ASSERT_EQ (5UL, multiple_element_list.countitems()) << "Array of elements list has wrong length";
-  ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
-  ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
-  
-  EXPECT_EQ (single_element_list (0), full_stack_copy(3));   
-  for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
-    EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
+    TypeParam         *another_dynamic_object = new TypeParam ("2.7172");
+    
+    _hyListReference <TypeParam> null_list,
+                                 single_element_list (testValue),
+                                 multiple_element_list (5,array2),
+                                 full_stack_copy (multiple_element_list),
+                                 partial_stack_copy (multiple_element_list,2,HY_LIST_INSERT_AT_END),
+                                 * dynamic_list = new _hyListReference <TypeParam> (dynamic_object),
+                                 * another_dynamic_list = new _hyListReference <TypeParam> (another_dynamic_object);
+            
+    ASSERT_EQ (0UL, null_list.countitems()) << "Non-empty null list";
+    ASSERT_EQ (1UL, single_element_list.countitems()) << "Single element list has wrong length";
+    ASSERT_EQ (5UL, multiple_element_list.countitems()) << "Array of elements list has wrong length";
+    ASSERT_EQ (5UL, full_stack_copy.countitems()) << "Stack copy list has wrong length";
+    ASSERT_EQ (3UL, partial_stack_copy.countitems()) << "Partial stack copy list has wrong length";
+    
+    EXPECT_TRUE (single_element_list (0)->Equal (full_stack_copy(3)));   
+    for (unsigned long i = 0UL; i < multiple_element_list.countitems(); i++) {
+      EXPECT_EQ (full_stack_copy (i), full_stack_copy[i]);
+    }
+    
+    EXPECT_TRUE(full_stack_copy == multiple_element_list) << "Failed list == list";
+    EXPECT_FALSE(full_stack_copy == partial_stack_copy) << "Failed list != list";
+    
+    EXPECT_EQ (partial_stack_copy (0), multiple_element_list (2));
+    EXPECT_EQ (partial_stack_copy (2), full_stack_copy (4));
+    
+    partial_stack_copy.Clear (false);
+    EXPECT_EQ (0UL, partial_stack_copy.countitems());
+    EXPECT_LT (0UL, partial_stack_copy.allocated());
+    partial_stack_copy.Clear (true);
+    EXPECT_EQ (0UL, partial_stack_copy.allocated());
+    EXPECT_EQ (dynamic_object, dynamic_list->Element (0));
+    EXPECT_TRUE (dynamic_object->SingleReference()) << "Incorrect reference count following list operations";
+    
+    EXPECT_TRUE (another_dynamic_list->SingleReference()) << "Incorrect reference count following list operations";
+    
+    full_stack_copy.Clear();
+    delete dynamic_list;
+    delete another_dynamic_list;
   }
   
-  EXPECT_TRUE(full_stack_copy == multiple_element_list) << "Failed list == list";
-  EXPECT_FALSE(full_stack_copy == partial_stack_copy) << "Failed list != list";
+  for (unsigned long k = 0; k < 5L; k++) {
+    EXPECT_TRUE (array[k].SingleReference()) << "Incorrect reference count following list operations";
+  }
+  EXPECT_TRUE (testValue.SingleReference()) << "Incorrect reference count following list operations";
+  //EXPECT_TRUE (dynamic_object->SingleReference()) << "Incorrect reference count following list operations _list (object *)";
   
-  EXPECT_EQ (partial_stack_copy (0), multiple_element_list (2));
-  EXPECT_EQ (partial_stack_copy (2), full_stack_copy (4));
-  
-  partial_stack_copy.Clear (false);
-  EXPECT_EQ (0UL, partial_stack_copy.countitems());
-  EXPECT_LT (0UL, partial_stack_copy.allocated());
-  partial_stack_copy.Clear (true);
-  EXPECT_EQ (0UL, partial_stack_copy.allocated());
-   
-  
-  
+  //DeleteObject(dynamic_object);
 }
 
+TYPED_TEST_P (_hyListReferenceTest, ListManipulationTests) {
+  _hyListReference <TypeParam> list1, 
+                               list2,
+                               list3,
+                               list4;
+                               
+   for (long k = 0; k < 50; k ++) {
+      TypeParam * test_object = new TypeParam (k),
+                * test_object2;
+                
+      list1.AppendNewInstance (test_object);
+      EXPECT_TRUE (test_object->SingleReference()) << "Append New Instance does not maintain reference counts";
+      list2 << test_object; 
+      EXPECT_FALSE (test_object->SingleReference()) << "operator << does not increment reference counts";
+      list3 && test_object; 
+      test_object2 = list3.Element (-1);
+      EXPECT_NE (list2.Element (-1), test_object2) << "operator && does not make a dynamic object copy";
+      EXPECT_TRUE (test_object2->SingleReference()) << "The object added by && does not have a single reference count";
+   }
+   
+   list4 = list1;
+   list4 << list2;
+   
+   list3.Clear();
+   EXPECT_EQ (list4.countitems(), list1.countitems() + list2.countitems()) << "Incorrect list length obtained by <<";
+   
+   _hyListReference <TypeParam> list5 = list1 & list4;
+   EXPECT_EQ (list5.countitems(), list1.countitems() + list4.countitems()) << "Incorrect list length obtained by list & list";
+   
+   TypeParam an_object (64L);
+   EXPECT_EQ (list5.Find (&an_object), HY_NOT_FOUND);
+   list5 = list5 & &an_object;
+   
+   EXPECT_EQ (list5.countitems(), list1.countitems() + list4.countitems() + 1) << "Incorrect list length obtained by list & item";
+   EXPECT_EQ (list5.Find (&an_object), list5.countitems() - 1);
+   
+   
+   
+}
 
-REGISTER_TYPED_TEST_CASE_P (_hyListReferenceTest, ConstuctorTests);
-
+REGISTER_TYPED_TEST_CASE_P (_hyListReferenceTest, ConstuctorTests, ListManipulationTests);
+  
 }
 
 typedef ::testing::Types<_testPayload, _String> _hyListReferenceTestTypes;

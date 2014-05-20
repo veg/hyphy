@@ -52,7 +52,7 @@ _hyListReference<PAYLOAD>::_hyListReference (PAYLOAD& value) : _hyList<PAYLOAD*>
 }
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const PAYLOAD* value) : _hyList<PAYLOAD*> (value) {
+_hyListReference<PAYLOAD>::_hyListReference (PAYLOAD* const value) : _hyList<PAYLOAD*> (value) {
 }
 
 template<typename PAYLOAD>
@@ -120,6 +120,9 @@ _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator=(const _hyLi
 {
    Clear();
    Clone (&l);
+   for (unsigned long item = 0UL; item < this->lLength; item++) {
+    this->lData[item]->AddAReference();
+   }
    return *this;
 }
 
@@ -127,8 +130,8 @@ _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator=(const _hyLi
 template<typename PAYLOAD>
 _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const _hyListReference<PAYLOAD>& l)
 {
-  _hyListReference <PAYLOAD> res (this->llength + l.lLength);
-  
+  _hyListReference <PAYLOAD> res ;
+  res.RequestSpace (this->lLength + l.lLength);
   res << (*this);
   res << l;
   return res;
@@ -138,10 +141,11 @@ _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const _hyLi
 template<typename PAYLOAD>
 _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const PAYLOAD* l)
 {
-  _hyListReference <PAYLOAD> res (this->llength + 1UL);
+  _hyListReference <PAYLOAD> res;
+  res.RequestSpace (this->lLength + 1UL);
   
   res << (*this);
-  (*res) && l;
+  res && l;
   return res;
 }
 
@@ -176,7 +180,7 @@ void _hyListReference<PAYLOAD>::operator<<(const _hyListReference<PAYLOAD>& l)
 */
 
 template<typename PAYLOAD>
-bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, const PAYLOAD* & value) const
+bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, PAYLOAD * const & value) const
 {
   return this->lData[index]->Equal (value);
 }
