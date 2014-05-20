@@ -60,7 +60,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 template <typename PAYLOAD>
-class _hyListOrderable : public _hyList<PAYLOAD> {
+class _hyListOrderable : public virtual _hyList<PAYLOAD> {
   public:
   
     //does nothing

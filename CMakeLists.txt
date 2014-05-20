@@ -434,8 +434,8 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage"
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -O0 "
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${SSE_RELATED_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -O0 "
 )
 
 

@@ -108,7 +108,6 @@ public:
 
 };
 
-_testPayload test ("10");
 
 TYPED_TEST_CASE_P(_hyListReferenceTest);
 

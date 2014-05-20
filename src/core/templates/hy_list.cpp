@@ -72,7 +72,7 @@ _hyList<PAYLOAD>::_hyList(const PAYLOAD item) {
 //Stack copy contructor
 template<typename PAYLOAD>
 _hyList<PAYLOAD>::_hyList(const _hyList <PAYLOAD> &l, const long from, const long to) {
-  Initialize ();
+  Initialize (false);
   Clone (&l, from, to);
 }
 

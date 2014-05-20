@@ -57,10 +57,7 @@ _hyListReference<PAYLOAD>::_hyListReference (PAYLOAD* const value) : _hyList<PAY
 
 template<typename PAYLOAD>
 _hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l, const long from, const long to) : _hyList<PAYLOAD*> (l,from,to) {
-  for (unsigned long k = 0; k < this->lLength; k++) {
-    this->lData[k]->AddAReference();
-      // 20140113: CHECK THAT THIS DOESN'T HAVE TO BE A makeDynamic CALL
-  }
+    this->AddReferenceToItems ();
 }
 
   // Data constructor (variable number of long constants)
@@ -108,6 +105,15 @@ void _hyListReference<PAYLOAD>::Clear (bool deallocate_memory) {
 template<typename PAYLOAD>
 void _hyListReference<PAYLOAD>::AppendNewInstance (PAYLOAD* the_ref) {
   this->append (the_ref);
+}
+
+template<typename PAYLOAD>
+void _hyListReference<PAYLOAD>::AddReferenceToItems (long from, long to) {
+  NormalizeCoordinates(from, to, this->lLength);
+  for (long index = from; index <= to; index++) {
+    this->lData[index]->AddAReference();
+  }
+
 }
 
 /*

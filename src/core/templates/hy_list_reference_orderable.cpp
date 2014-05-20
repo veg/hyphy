@@ -42,143 +42,44 @@
 */
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference () : _hyListOrderable<PAYLOAD*> () {
+_hyListReferenceOrderable<PAYLOAD>::_hyListReferenceOrderable () :
+                                    _hyList <PAYLOAD*> () {
+}
+
+
+template<typename PAYLOAD>
+_hyListReferenceOrderable<PAYLOAD>::_hyListReferenceOrderable (PAYLOAD& value) : 
+                                     _hyList <PAYLOAD*> (&value),
+                                     _hyListReference <PAYLOAD> (value) {
 }
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const unsigned long items) : _hyListOrderable<PAYLOAD*> (items) {
-  
+_hyListReferenceOrderable<PAYLOAD>::_hyListReferenceOrderable (PAYLOAD * const value) : 
+                                     _hyList <PAYLOAD*> (value) {
 }
 
-template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const PAYLOAD& value) : _hyListOrderable<PAYLOAD*> (&value) {
-  value.AddAReference ();
-}
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference (const _hyListReference<PAYLOAD> &l, const long from, const long to) : _hyListOrderable<PAYLOAD*> (l,from,to) {
-  for (unsigned long k = 0; k < this->lLength; k++) {
-    this->lData[k]->AddAReference();
-      // 20140113: CHECK THAT THIS DOESN'T HAVE TO BE A makeDynamic CALL
-  }
+_hyListReferenceOrderable<PAYLOAD>::_hyListReferenceOrderable (const _hyListReference<PAYLOAD> &l, const long from, const long to) : 
+                      _hyList<PAYLOAD*> (l,from,to) {
+                      
+    this->AddReferenceToItems ();
 }
+
 
   // Data constructor (variable number of long constants)
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::_hyListReference(const unsigned long number, const PAYLOAD* items[]) : 
-_hyListOrderable<PAYLOAD> (number, items) {
+_hyListReferenceOrderable<PAYLOAD>::_hyListReferenceOrderable(const unsigned long number, PAYLOAD* items[]) : 
+                    _hyList<PAYLOAD*> (),
+                    _hyListReference <PAYLOAD> (number, items) {
 }
 
 template<typename PAYLOAD>
-_hyListReference<PAYLOAD>::~_hyListReference (void) {
-  for (unsigned long k = 0; k < this->lLength; k++) {
-    if (this->lData[k]->CanFreeMe()) {
-      delete this->lData[k];
-    } else {
-      this->lData[k]->RemoveAReference();
-    }
-  }
-}
-
-/*
- Storage/reference managament functions
- */
-
-template<typename PAYLOAD>
-void _hyListReference<PAYLOAD>::Clear (bool deallocate_memory) {
-  for (unsigned long item = 0UL; item < this->lLength; item++) {
-    if (this->lData[item]->CanFreeMe()) {
-      delete this->lData[item];
-    } else {
-      this->lData[item]->RemoveAReference();
-    }
-  }
-  this->_hyListOrderable<PAYLOAD*>::Clear(deallocate_memory);
-}
-
-
-/*
- Accessor/storage functions
- */
-
-template<typename PAYLOAD>
-void _hyListReference<PAYLOAD>::AppendNewInstance (PAYLOAD* the_ref) {
-  this->append (the_ref);
-}
-
-/*
- Operator overloads
-*/
-
-  //Assignment operator
-template<typename PAYLOAD>
-_hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator=(const _hyListReference<PAYLOAD>& l)
-{
-   Clear();
-   Clone (&l);
-   return *this;
-}
-
-  //Append a list
-template<typename PAYLOAD>
-_hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const _hyListReference<PAYLOAD>& l)
-{
-  _hyListReference <PAYLOAD> res (this->llength + l.lLength);
-  
-  res << (*this);
-  res << l;
-  return res;
-}
-
-  //Append a list
-template<typename PAYLOAD>
-_hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator&(const PAYLOAD* l)
-{
-  _hyListReference <PAYLOAD> res (this->llength + 1UL);
-  
-  res << (*this);
-  (*res) && l;
-  return res;
-}
-
-  //append an element
-template<typename PAYLOAD>
-void _hyListReference<PAYLOAD>::operator<<(PAYLOAD* item)
-{
-  this->append (item);
-  item->AddAReference();
-}
-
-  //append the dynamic copy of item
-template<typename PAYLOAD>
-void _hyListReference<PAYLOAD>::operator&&(const PAYLOAD* item)
-{
-   this->append ((PAYLOAD*) item->makeDynamic());
-}
-
-
-  //append all elements in the list
-template<typename PAYLOAD>
-void _hyListReference<PAYLOAD>::operator<<(const _hyListReference<PAYLOAD>& l)
-{
-  this->RequestSpace (this->lLength + l.lLength);
-  for (unsigned long k = 0UL; k < l.lLength; k++) {
-    (*this) << l.lData[k];
-  }
-}
-
-/*
- Element Comparison Functions
-*/
-
-template<typename PAYLOAD>
-bool _hyListReference<PAYLOAD>::ItemEqualToValue(unsigned long index, const PAYLOAD* & value) const
-{
-  return this->lData[index]->Equal (value);
+_hyListReferenceOrderable<PAYLOAD>::~_hyListReferenceOrderable (void) {
 }
 
 template<typename PAYLOAD>
-long _hyListReference<PAYLOAD>::Compare(const long i, const long j) const {
+long _hyListReferenceOrderable<PAYLOAD>::Compare(const long i, const long j) const {
   
   return this->lData[i]->Compare (this->lData[j]);
 }

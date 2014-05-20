@@ -37,8 +37,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef _HY_LIST_REFERENCE_
-#define _HY_LIST_REFERENCE_
+#ifndef _HY_LIST_REFERENCE_ORDERABLE_
+#define _HY_LIST_REFERENCE_ORDERABLE_
 
 #include "hy_list_orderable.h"
 #include "hy_list_reference.h"
@@ -55,7 +55,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 template <typename PAYLOAD>
-class _hyListReferenceOrderable : public virtual _hyListOrderable <PAYLOAD*>, public virtual _hyListReference <PAYLOAD*> {
+class _hyListReferenceOrderable : public  _hyListOrderable <PAYLOAD*>, public  _hyListReference <PAYLOAD> {
 
 public:
 
@@ -63,21 +63,15 @@ public:
   * A constructor.
   * A simple constructor that does nothing
   */
-  _hyListReferenceOrderable();
+  _hyListReferenceOrderable(void);
 
 
-  /**
-   * A _hyListReference constructor for X items
-   * @param items how many items should the storage be allocated for
-   */
-  _hyListReferenceOrderable(const unsigned long items);
-
-  /**
+   /**
    * A _hyListReference constructor from a single item
    * The reference counter for the item will be incremented
    * @param item the element to add to the list
    */
-  _hyListReferenceOrderable(const PAYLOAD&);
+  _hyListReferenceOrderable(PAYLOAD&);
 
 
   /**
@@ -85,7 +79,7 @@ public:
    * The reference counter for the item will NOT be incremented
    * @param item the element to add to the list
    */
-  _hyListReferenceOrderable(const PAYLOAD*);
+  _hyListReferenceOrderable( PAYLOAD * const);
   
   /**
   * Stack copy contructor
@@ -103,7 +97,7 @@ public:
    * @param const PAYLOAD: the static list of items to pass to the constructor
    */
   
-  _hyListReferenceOrderable (const unsigned long, const PAYLOAD * []);
+  _hyListReferenceOrderable (const unsigned long, PAYLOAD * []);
 
   /**
    * Construct a list of substrings from the original string separated by char
@@ -116,13 +110,8 @@ public:
   
   //_hyListReference(const _String& the_string, const char separator);
 
-  virtual _hyListReferenceOrderable (void);
+  virtual ~_hyListReferenceOrderable (void);
   
-  /**
-   * Add a new reference to the list WITHOUT incrementing the reference counter
-   * \n\n \b Example: \code  list.AppendNewInstance (new _String ("something"))
-   * @param the_ref The reference to be added.
-  */
   
   /**
    * Compares two elements of the list

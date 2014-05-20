@@ -54,7 +54,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 template <typename PAYLOAD>
-class _hyListReference : public _hyList <PAYLOAD*> {
+class _hyListReference : public virtual _hyList <PAYLOAD*> {
 
 public:
 
@@ -192,7 +192,16 @@ public:
    */
   virtual bool ItemEqualToValue (unsigned long index,  PAYLOAD * const & value) const;
   
-  
+protected:
+
+    /**
+  * Stack copy contructor
+  * @param l List to be copied
+  * @param from Beginning index to copy from
+  * @param to Last index to copy to
+  */
+  void AddReferenceToItems (long = 0, long = HY_LIST_INSERT_AT_END);
+
 };
 
 #include "hy_list_reference.cpp"
