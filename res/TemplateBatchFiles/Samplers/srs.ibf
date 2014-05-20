@@ -1,0 +1,339 @@
+/*___________________________________________________________________________________________________________*/
+
+function	PrintTableToFile (dataMatrix, titleMatrix, promptOrNot)
+{
+	SetDialogPrompt ("Export tab separated data to:");
+	
+	if (promptOrNot)
+	{
+		fprintf (baseResPath, CLEAR_FILE, KEEP_OPEN);
+	}
+	
+	fprintf (baseResPath, "Sample\t", titleMatrix[0][0]);
+
+	for (counter1=1; counter1<Columns(titleMatrix); counter1 = counter1+1)
+	{
+		fprintf (baseResPath, "\t", titleMatrix[0][counter1]);
+	}
+	
+	fprintf (baseResPath, "\n");
+
+	for (counter1=0; counter1<Rows(dataMatrix); counter1 = counter1 + 1)
+	{
+		fprintf (baseResPath,counter1+1);
+		for (counter2 = 0; counter2 < Columns (titleMatrix); counter2 = counter2+1)
+		{
+			fprintf (baseResPath,"\t",dataMatrix[counter1][counter2]);
+		}
+		fprintf (baseResPath,"\n");
+	}
+	if (promptOrNot)
+	{
+		fprintf (baseResPath, CLOSE_FILE);
+	}
+	
+	return 1;
+}
+/*___________________________________________________________________________________________________________*/
+
+
+
+fprintf (stdout, "\n\nComputing likelihood weights (this may take a while)...\n");
+
+scores 				= {SAMPLE_N,2};
+bestScore 			= -1e25;
+extras				= {};
+
+
+timer				= Time (1);
+
+extraPopulator		= 0;
+
+
+if (MPI_NODE_ID == 0 && Abs(_ADD_TO_SRS_) == 2 && Type (_ADD_TO_SRS_) == "AssociativeList")
+{
+	extraPopulator = 1;
+}
+
+if (MPI_NODE_COUNT > 1 && MPI_NODE_ID == 0 && SAMPLE_N >= MPI_NODE_COUNT)
+{
+	PRESERVE_SLAVE_NODE_STATE = 1;
+	samplesPerNode = SAMPLE_N$MPI_NODE_COUNT;
+	nodeRanges	   = {MPI_NODE_COUNT,2};
+	done		   = 0;
+	for (itCount = 1; itCount < MPI_NODE_COUNT;  itCount = itCount + 1)
+	{
+		if (extraPopulator)
+		{
+			LF_NEXUS_EXPORT_EXTRA = _ADD_TO_SRS_["INIT"];
+			LF_EXTRA			  = "(MPI_NEXUS_FILE_RETURN[1])[itCount]=" + _ADD_TO_SRS_["EVAL"] + ";\n";
+		}
+		else
+		{
+			LF_NEXUS_EXPORT_EXTRA = "";
+			LF_EXTRA			  = "";
+		}
+	
+		LF_NEXUS_EXPORT_EXTRA	+= "LFCompute("+
+							    LF_NAME+
+							    ",LF_START_COMPUTE);SAMPLE_N="+
+							    samplesPerNode+
+							    ";assignmentString=\""+
+							    assignmentString+"\";";
+							    
+		from				= done;
+		to					= done+samplesPerNode-1;
+		mpiGenSamples = 	generatedSamples[{{from,0}}][{{to,Columns(generatedSamples)-1}}];
+		LF_NEXUS_EXPORT_EXTRA	= LF_NEXUS_EXPORT_EXTRA + "generatedSamples="+mpiGenSamples+";MPI_NEXUS_FILE_RETURN={};MPI_NEXUS_FILE_RETURN[0]={SAMPLE_N,1};MPI_NEXUS_FILE_RETURN[1]={};\nfor (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)\n\t"
+							 +"{ExecuteCommands (assignmentString);LFCompute ("+LF_NAME+",lfWeight);(MPI_NEXUS_FILE_RETURN[0])[itCount]=lfWeight;`LF_EXTRA`}\nLFCompute ("+LF_NAME+",LF_DONE_COMPUTE);\n";
+		
+		ExecuteCommands 	("Export(lfExport,"+LF_NAME+");");
+		
+		MPISend				(itCount, lfExport);
+		
+		done				= done+samplesPerNode;
+		nodeRanges			[itCount][0] = from;
+		nodeRanges			[itCount][1] = to;
+		fprintf				(stdout, "[SENT RANGE ", from+1, " - ", to + 1, " TO MPI NODE ", itCount, "]\n");
+	}
+	ExecuteCommands ("LFCompute ("+LF_NAME+",LF_START_COMPUTE);");
+	toDo = SAMPLE_N-done+1;
+	if (extraPopulator)
+	{
+		ExecuteCommands (_ADD_TO_SRS_["INIT"]);
+	}
+	for (itCount = done; itCount < SAMPLE_N; itCount = itCount + 1)
+	{
+		ExecuteCommands (assignmentString+"LFCompute ("+LF_NAME+",lfWeight);");
+		scores[itCount][0] = lfWeight;
+		if (extraPopulator)
+		{
+			extras[itCount]	   = Eval (_ADD_TO_SRS_["EVAL"]);
+		}
+		if ((1+itCount-done) % 100 == 0)
+		{
+			fprintf (stdout, itCount+1, "/", SAMPLE_N, " evaluations done. Estimated remaining time: ",Format (((SAMPLE_N-itCount-1)/(itCount+1-done))*(Time(1)-timer),5,2)," seconds \n");
+		}
+	}
+	for (itCount = 1; itCount < MPI_NODE_COUNT;  itCount = itCount + 1)
+	{
+		MPIReceive (-1,fromNode,res);
+		ExecuteCommands ("mpiRes="+res);
+		for (sampleCount = 0; sampleCount < Rows(mpiRes[0]); sampleCount = sampleCount + 1)
+		{
+			scores[sampleCount+nodeRanges[fromNode][0]][0] = (mpiRes[0])[sampleCount];
+			extras[sampleCount+nodeRanges[fromNode][0]][0] = (mpiRes[1])[sampleCount];
+		}
+		fprintf				(stdout, "[GOT RANGE ", nodeRanges[fromNode][0]+1, " - ", nodeRanges[fromNode][0]+Rows(mpiRes[0]), " FROM MPI NODE ", fromNode, "]\n");
+	}
+	for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+	{
+		bestScore = Max(bestScore,scores[itCount][0]);
+	}
+	fprintf				(stdout, "[BEST SCORE = ",bestScore,"]\n");
+}
+else
+{
+	ExecuteCommands ("LFCompute ("+LF_NAME+",LF_START_COMPUTE);");
+	if (extraPopulator)
+	{
+		ExecuteCommands (_ADD_TO_SRS_["INIT"]);
+	}
+	for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+	{
+		ExecuteCommands (assignmentString+"LFCompute ("+LF_NAME+",lfWeight);");
+		scores[itCount][0] = lfWeight;
+		if (extraPopulator)
+		{
+			extras[itCount]	   = Eval (_ADD_TO_SRS_["EVAL"]);
+		}
+				
+		if (sMarginals>1)
+		{
+			ExecuteCommands ("ConstructCategoryMatrix(catmat,"+LF_NAME+",COMPLETE);");	
+			for (sit=0; sit < Columns(catVarList); sit = sit+1)
+			{
+				ExecuteCommands ("GetInformation(catVarInfo," + catVarList[sit] + ");");
+				fprintf (marginalOutFileAll,"\n",catVarInfo);
+			}
+			fprintf (marginalOutFileAll,"\n",catmat);
+			fprintf (marginalOutFileLF, "\n",lfWeight);
+		}
+	
+		if (lfWeight > bestScore)
+		{
+			bestScore = lfWeight;
+		}
+		
+		if ((1+itCount) % 100 == 0)
+		{
+			fprintf (stdout, itCount+1, "/", SAMPLE_N, " evaluations done. Estimated remaining time: ",Format (((SAMPLE_N-itCount-1)/(itCount+1))*(Time(1)-timer),5,2)," seconds \n");
+		}
+	}
+}
+
+/* restore to original values */
+
+for (k=0; k<varCount; k=k+1)
+{
+	aKey = usedVars[k];
+	ExecuteCommands (aKey + "=" + stashedValues[k][0] + ";");
+}	
+
+_resamplerReturn = {};
+_resamplerReturn["RAW_SAMPLES"] = generatedSamples; 
+_resamplerReturn["SCORES"] 		= scores; 
+_resamplerReturn["EXTRAS"]		= 0;
+
+if (extraPopulator)
+{
+	_resamplerReturn["EXTRAS"] = {};
+}
+
+ExecuteCommands ("LFCompute ("+LF_NAME+",LF_DONE_COMPUTE);");
+
+fprintf (stdout, "\n\nResampling...\n");
+coord = 0; /* this is the current sum of all weighting factors */
+for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+{
+	scores[itCount][0] = Exp(scores[itCount][0]-bestScore);
+	coord = coord + scores[itCount][0];
+}
+
+N_eff = 0;
+
+for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+{
+	N_eff = N_eff + (scores[itCount][0]/coord)^2;
+}
+
+fprintf (stdout, "Estimated effective sample size: ", 1/N_eff, "\n\n");
+
+j = 0;
+sampledPoints = {SAMPLE_M,varCount+1};
+
+timer = Time (1);
+
+if (sMarginals)
+{
+	ExecuteCommands ("LFCompute ("+LF_NAME+",LF_START_COMPUTE);");
+}
+
+/* resampling loop */
+
+for (itCount = 0; itCount < SAMPLE_M; itCount = itCount + 1)
+{
+	sum 				= Random(0,1);
+	runningSum     		= 0;
+	
+	local_scores		= scores;
+	local_scale			= 0;
+	
+	for (k=0; k<SAMPLE_N;k=k+1)
+	{
+		if (scores[k][1] == 0)
+		{
+			local_scores[k][0] = scores[k][0]/(coord-(itCount+1)*scores[k][0]);
+			if (local_scores[k][0] < 0)
+			{
+				local_scores = scores;
+				local_scale  = coord;
+				break;
+			}
+			local_scale = local_scale + local_scores[k][0];
+		}
+	}
+
+	lastValidIndex 		= 0;
+	
+	for (k=0; k<SAMPLE_N && runningSum < sum;k=k+1)
+	{
+		if (local_scores[k][1] == 0)
+		/* can still sample this point */
+		{
+			lastValidIndex = k;
+			runningSum = runningSum + local_scores[k][0] / local_scale; 
+		}
+	}
+			
+	sampledPoints[j][0] = Log(scores[lastValidIndex][0])+bestScore;
+	
+	for (k = 0; k < varCount; k=k+1)
+	{
+		sampledPoints[j][k+1] = generatedSamples[lastValidIndex][k];	
+	}
+	
+	if (extraPopulator)
+	{
+		(_resamplerReturn["EXTRAS"])[j] = extras[lastValidIndex];
+	}
+	
+	coord = coord - scores[lastValidIndex][0];
+	scores[lastValidIndex][1] = 1;
+	j 						  = j+1;
+
+	if (sMarginals)
+	{
+		sit = itCount;
+		itCount = lastValidIndex;
+		ExecuteCommands (assignmentString+"LFCompute ("+LF_NAME+",lfWeight);ConstructCategoryMatrix(catmat,"+LF_NAME+",COMPLETE);");	
+		itCount = sit;
+		for (sit=0; sit < Columns(catVarList); sit = sit+1)
+		{
+			ExecuteCommands ("GetInformation(catVarInfo," + catVarList[sit] + ");");
+			fprintf (marginalOutFile,"\n",catVarInfo);
+		}
+		fprintf (marginalOutFile,"\n",catmat);
+	}
+
+	if ((1+itCount) % 100 == 0)
+	{
+		fprintf (stdout, itCount+1, "/", SAMPLE_M, " samples drawn. Estimated remaining time: ",Format (((SAMPLE_M-itCount-1)/(itCount+1))*(Time(1)-timer),5,2)," seconds \n");
+	}
+}
+
+
+if (sMarginals)
+{
+	for (k=0; k<varCount; k=k+1)
+	{
+		aKey = usedVars[k];
+		ExecuteCommands (aKey + "=" + stashedValues[k][0] + ";");
+	}	
+	ExecuteCommands ("LFCompute ("+LF_NAME+",LF_DONE_COMPUTE);");
+}
+
+
+labelMatrix = {1,varCount+1};
+
+labelMatrix[0] = "-Log(L)";
+
+_resamplerReturn ["LABELS"] = {};
+(_resamplerReturn ["LABELS"])[0] = labelMatrix[0];
+
+for (k = 0; k < varCount; k=k+1)
+{
+	labelMatrix[k+1] = usedVars[k];	
+	(_resamplerReturn ["LABELS"])[k+1] = usedVars[k];
+}
+
+/* open a chart window */
+
+PrintTableToFile (sampledPoints, labelMatrix, 1);
+
+OpenWindow (CHARTWINDOW,{{"Sampled parameter values"}
+					   {"labelMatrix"},
+					   {"sampledPoints"},
+					   {""},
+					   {"Index"},
+					   {""},
+					   {""},
+					   {""},
+					   {""},
+					   {"3"}},
+					   "(SCREEN_WIDTH-200);(SCREEN_HEIGHT-200);80;100");
+		
+
+_resamplerReturn ["VALUES"] = sampledPoints;
+					   
+return _resamplerReturn;
