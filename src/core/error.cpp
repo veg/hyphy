@@ -145,7 +145,7 @@ void WarnErrorWhileParsing(_String st, _String &context) {
 }
 
 //______________________________________________________________________________
-void WarnError(_String st) {
+void WarnError(const _String& st) {
   if (currentExecutionList &&
       currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
     currentExecutionList->ReportAnExecutionError(st, true);
@@ -305,12 +305,12 @@ void ReturnCurrentCallStack(_List &calls, _List &stdins) {
 #else
 
   //______________________________________________________________________________
-void WarnError(_String st) {
+void WarnError(const _String& st) {
   exit (1);
 }
 
   //______________________________________________________________________________
-void FlagError(_String st) {
+void FlagError(const _String& st) {
   exit (1);
 }
 #endif
@@ -326,7 +326,7 @@ void *checkPointer(void *p) {
 }
 
   //______________________________________________________________________________
-_String DecodeError(long errCode) {
+const _String DecodeError(long errCode) {
   switch (errCode) {
     case -101:
       return "Incompatible Operands";

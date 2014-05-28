@@ -99,7 +99,7 @@ public:
   /**
    * Initializes _String object to 0 allocated length
    */
-  virtual void Initialize(void);
+  virtual void Initialize(bool=false);
 
   virtual ~_StringBuffer(void) {};
 
@@ -108,7 +108,7 @@ public:
   * \n Usage: stringInstance.makeDynamic();
   * @return BaseRef
   */
-  virtual BaseRef makeDynamic(void);
+  virtual BaseRef makeDynamic(void) const;
 
   /**
   * Duplicates a string
