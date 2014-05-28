@@ -153,11 +153,9 @@ _String::_String(const _String &source, long from, long to) {
     if (to >= from) {
       sLength = to - from + 1;
       sData = (char *)MemAllocate(sLength + 1);
-      if (!sData) {
-        warnError(-108);
-      }
+      
 
-      if (sLength > 32) {
+      if (sLength > 32UL) {
         memcpy(sData, source.sData + from, sLength);
       } else
         for (long k = 0; k < sLength; k++) {
@@ -165,13 +163,13 @@ _String::_String(const _String &source, long from, long to) {
         }
 
       sData[sLength] = 0;
-      return;
+      
     }
+  } else {
+    sLength = 0;
+    sData = (char *)MemAllocate(1UL);
+    sData[0] = 0;
   }
-
-  sLength = 0;
-  sData = (char *)MemAllocate(1);
-  sData[0] = 0;
 }
 
 //Stack copy contructor
@@ -183,8 +181,8 @@ _String::_String(_String *s) { CopyDynamicString(s, false); }
 _String::_String(const char *s) {
   // room for the null terminator
   sLength = strlen(s);
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
-  memcpy(sData, s, sLength + 1);
+  sData = (char *)MemAllocate(sLength + 1UL);
+  memcpy(sData, s, sLength + 1UL);
 }
 
 
@@ -208,8 +206,8 @@ _String::_String(const wchar_t *wc) {
 
 //Data constructor
 _String::_String(const char s) {
-  sLength = 1;
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
+  sLength = 1UL;
+  sData = (char *)MemAllocate(2UL);
   sData[0] = s;
   sData[1] = 0;
 }
@@ -218,13 +216,13 @@ _String::_String(const char s) {
 _String::_String(_Parameter val, const char *format) {
   char s_val[128];
   sLength = snprintf(s_val, 128, format ? format : PRINTF_FORMAT_STRING, val);
-  checkPointer(sData = (char *)MemAllocate(sLength + 1));
+  sData = (char *)MemAllocate(sLength + 1UL);
   for (unsigned long k = 0; k <= sLength; k++) {
     sData[k] = s_val[k];
   }
 }
 
-//Does nothing
+//READ FROM FILE
 _String::_String(FILE *F) {
   sLength = 0;
   sData = nil;
@@ -240,14 +238,8 @@ _String::_String(FILE *F) {
 
 //Destructor
 _String::~_String(void) {
-  if (CanFreeMe()) {
-    if (sData) {
-      free(sData);
-      sData = nil;
-    }
-    sLength = 0;
-  } else {
-    RemoveAReference();
+  if (sData) {
+    free(sData);
   }
 }
 
@@ -266,7 +258,7 @@ char &_String::operator[](long index) {
 }
 
 //Element location functions
-char _String::operator()(unsigned long index) {
+char _String::operator()(unsigned long index) const {
   if (index < sLength) {
     return sData[index];
   }
@@ -274,7 +266,7 @@ char _String::operator()(unsigned long index) {
 }
 
 // Assignment operator
-void _String::operator=(_String s) {
+void _String::operator=(const _String& s) {
   if (sData) {
     free(sData);
   }
@@ -286,7 +278,7 @@ void _String::operator=(_String s) {
 bool _String::operator==(_String s) { return Equal(&s); }
 
 //Append operator
-_String _String::operator&(_String s) {
+const _String _String::operator&(const _String& s)  const {
   if (sLength + s.sLength == 0) {
     return empty;
   }
@@ -307,22 +299,22 @@ _String _String::operator&(_String s) {
 
 
 //Return good ole char*
-_String::operator const char *(void) { return sData; }
+_String::operator const char *(void) const { return sData; }
 
 //Lexicographic comparison
-bool _String::operator>(_String s) { return Greater(&s); }
+bool _String::operator>(const _String & s) const { return Compare (&s) > 0; }
 
 //Lexicographic comparison
-bool _String::operator<=(_String s) { return !((*this) > s); }
+bool _String::operator<=(const _String & s) const { return Compare (&s) <= 0; }
 
 //Lexicographic comparison
-bool _String::operator>=(_String s) { return (((*this) > s) || (*this == s)); }
+bool _String::operator>=(const _String & s) const { return Compare (&s) >= 0; }
 
 //Lexicographic comparison
-bool _String::operator!=(_String s) { return !(*this == s); }
+bool _String::operator!=(const _String & s) const { return Compare (&s) != 0; }
 
 //Lexicographic comparison
-bool _String::operator<(_String s) { return Less(&s); }
+bool _String::operator<(const _String & s) const { return Compare (&s) < 0; }
 
 /*
 ==============================================================
@@ -863,7 +855,7 @@ long _String::LempelZivProductionHistory(_SimpleList *rec) {
 }
 
 //String length
-unsigned long _String::Length(void) { return sLength; }
+unsigned long _String::Length(void) const { return sLength; }
 
 //Make dynamic copy
 BaseRef _String::makeDynamic(void) const{
@@ -1213,20 +1205,14 @@ bool _String::contains(_String s) { return Find(s) != -1; }
 
 bool _String::contains(char c) { return Find(c) != -1; }
 
-char _String::Compare(_String *s) {
-  long upTo;
+char _String::Compare(_String const * s) const {
+  unsigned long upTo = MIN (sLength, s->sLength);
 
-  if (sLength > s->sLength) {
-    upTo = s->sLength;
-  } else {
-    upTo = sLength;
-  }
-
-  for (long i = 0; i < upTo; i++) {
-    int res = (sData[i] - s->sData[i]);
-    if (res < 0) {
-      return HY_NOT_FOUND;
-    } else if (res > 0) {
+  for (unsigned long i = 0UL; i < upTo; i++) {
+    if (sData[i] < s->sData[i]) {
+      return -1;
+    }
+    if (sData[i] > s->sData[i]) {
       return 1;
     }
   }
@@ -1235,20 +1221,11 @@ char _String::Compare(_String *s) {
     return 0;
   }
 
-  return 1 - 2 * (sLength < s->sLength);
+  return sLength < s->sLength ? -1 : 1;
 }
 
 bool _String::Equal(const _String *s) const {
-  if (sLength != s->sLength) {
-    return false;
-  }
-
-  for (unsigned long i = 0; i < sLength; i++)
-    if (sData[i] != s->sData[i]) {
-      return false;
-    }
-
-  return true;
+  return Compare (s) == 0;
 }
 
 bool _String::Equal(const char c) const {
@@ -1317,38 +1294,6 @@ bool _String::EqualWithWildChar(_String *s, char wildchar) {
   return (*sP == 0);
 }
 
-bool _String::Greater(_String *s) {
-  unsigned long top = ((s->sLength > sLength) ? sLength : s->sLength);
-
-  for (long i = 0; i < top; i++) {
-    int j = sData[i] - s->sData[i];
-    if (j > 0) {
-      return true;
-    }
-    if (j < 0) {
-      return false;
-    }
-  }
-
-  return (sLength > s->sLength);
-}
-
-bool _String::Less(_String *s) {
-  unsigned long top = ((s->sLength > sLength) ? sLength : s->sLength);
-
-  for (long i = 0; i < top; i++) {
-    int j = sData[i] - s->sData[i];
-    if (j > 0) {
-      return false;
-    }
-    if (j < 0) {
-      return true;
-    }
-  }
-
-  return (sLength < s->sLength);
-
-}
 
 /*
 ==============================================================

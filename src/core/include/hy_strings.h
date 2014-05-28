@@ -209,21 +209,21 @@ public:
   * Element location function
   * @see getChar()
   */
-  char operator()(unsigned long);
+  char operator()(unsigned long) const;
 
   /**
   * Sets string
   * \n\n \b Example: \code _String str = _String("hyphy"); \endcode
   * @see Duplicate()
   */
-  void operator=(_String);
+  void operator=(const _String &);
 
   /**
   * Returns the length of the string
   * \n\n \b Example: \code long l = string.Length(); \endcode
   * @return Length of string
   */
-  unsigned long Length(void);
+  unsigned long Length(void) const;
 
   /**
   * Append operator
@@ -232,7 +232,7 @@ public:
   * @return "AB"
   * @sa EscapeAndAppend()
   */
-  _String operator&(_String);
+  const _String operator&(const _String& ) const;
 
 
 
@@ -254,7 +254,7 @@ public:
   /**
   * Return good ole char*
   */
-  virtual operator const char *(void);
+  virtual operator const char *(void) const;
 
   /**
   * Returns a good ole char*
@@ -475,7 +475,7 @@ public:
   * @return 1 if strings are equal, -1 if strings are not
   * @sa Equal()
   */
-  char Compare(_String *);
+  char Compare(_String const *) const;
 
   /**
   * Lexicographic comparison with a wild character
@@ -491,47 +491,31 @@ public:
   * Checks if String is lexicographically greater
   * @see Greater()
   */
-  bool operator>(_String);
+  bool operator>(const _String&) const;
 
   /**
   * Checks if String is lexicographically less
   * @see Less()
   */
-  bool operator<(_String);
-
-  /**
-  * Checks if String is lexicographically greater
-  * \n Lexicographical essentially means alphabetical order in this context.
-  * \n\n \b Example: \code _String ("House").Greater("Household")\endcode
-  * \n @return House > Household would be false. The example returns false.
-  */
-  bool Greater(_String *);
-
-  /**
-  * Checks if String is lexicographically greater
-  * \n Lexicographical essentially means alphabetical order in this context.
-  * \n\n \b Example: \code _String ("House").Lesser("Household")\endcode
-  * \n House < Household would be true. The example would return true.
-  */
-  bool Less(_String *);
-
+  bool operator<(const _String&) const;
+  
   /**
   * Checks if String is lexicographically greater or equal
   * @see Greater()
   */
-  bool operator>=(_String);
+  bool operator>=(const _String&) const;
 
   /**
   * Checks if String is lexicographically less or equal
   * @see Less()
   */
-  bool operator<=(_String);
+  bool operator<=(const _String&) const ;
 
   /**
   * Checks if string is not lexicographically equal
   * @see Equal()
   */
-  bool operator!=(_String);
+  bool operator!=(const _String&) const;
 
   /**
   * Checks to see if string contains substring
@@ -870,10 +854,10 @@ void SetStatusLineUser(_String);
 Ptr PrepRegExp(_String *, int &, bool);
 void FlushRegExp(Ptr);
 _String GetRegExpError(int);
-void ReportWarning(_String);
-void FlagError(_String);
+void ReportWarning(const _String&);
+void FlagError(const _String&);
 void WarnErrorWhileParsing(_String, _String &);
-void WarnError(_String);
+void WarnError(const _String&);
 _String GetVersionString(void);
 _String GetTimeStamp(bool = false);
 

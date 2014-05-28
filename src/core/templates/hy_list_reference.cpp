@@ -125,7 +125,7 @@ template<typename PAYLOAD>
 _hyListReference<PAYLOAD> const _hyListReference<PAYLOAD>::operator=(const _hyListReference<PAYLOAD>& l)
 {
    Clear();
-   Clone (&l);
+   this->Clone (&l);
    for (unsigned long item = 0UL; item < this->lLength; item++) {
     this->lData[item]->AddAReference();
    }
